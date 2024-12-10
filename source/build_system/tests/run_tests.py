@@ -423,7 +423,7 @@ def MissingDependencyTest():
 	res = RunBuildSystemWithErrors( "missing_dependency" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Dependency \"unknown_dependency\" of a build target \"hello_world\" not found." ) != -1 )
+	assert( stderr.find( "Dependency \"unknown_dependency\" not found." ) != -1 )
 
 
 def DependencyLoop0Test():

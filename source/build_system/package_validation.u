@@ -5,227 +5,6 @@ import "path.uh"
 namespace BK
 {
 
-fn PackageIsValid( Logger &mut logger, PackageInfo& package_info ) : bool
-{
-	var bool mut ok= true;
-
-	var ust::vector</ ust::vector</ust::string8 /> /> mut prev_targets_directories;
-
-	for( auto mut i= 0s; i < package_info.build_targets.size(); ++i )
-	{
-		var BuildTarget& build_target= package_info.build_targets[i];
-		auto& target_name= build_target.name;
-
-		if( !TargetNameIsValid( target_name ) )
-		{
-			logger.LogError( "Error, invalid build target name \"" + target_name + "\"!" );
-			ok= false;
-		}
-
-		for( auto mut j= 0s; j < i; ++j )
-		{
-			if( target_name == package_info.build_targets[j].name )
-			{
-				logger.LogError( "Error, duplicated build target \"" + target_name + "\"!" );
-				ok= false;
-			}
-		}
-
-		if( !build_target.source_files.empty() )
-		{
-			// Check each source - if it's correct.
-			var ust::vector</ust::string8/> mut prev_sources_normalized;
-			foreach( source_name : build_target.source_files )
-			{
-				if( !TargetSourceNameIsValid( source_name ) )
-				{
-					logger.LogError( "Invalid, source name \"" + source_name + "\" of build target \"" + target_name + "\"!" );
-					ok= false;
-					continue;
-				}
-
-				// Check for duplicates.
-				var ust::string8 mut source_name_normalized = NormalizePath( source_name );
-
-				foreach( &prev_source_name : prev_sources_normalized )
-				{
-					if( source_name_normalized == prev_source_name )
-					{
-						logger.LogError( "Error, duplicated source file \"" + source_name_normalized + "\" of the build target \"" + target_name + "\"!" );
-						ok= false;
-					}
-				}
-				prev_sources_normalized.push_back( move(source_name_normalized) );
-			}
-
-			var ust::vector</ust::string8/> mut sources_directory= CalculateBuildTargetSourceFilesCommonDirectory( build_target.source_files );
-
-			var ust::string8 mut sources_directory_str= "";
-			foreach( &component : sources_directory )
-			{
-				sources_directory_str+= component;
-				sources_directory_str+= "/";
-			}
-
-			logger.LogVerbose( "All sources of the build target \"" + target_name + "\" are located within directory \"" + sources_directory_str + "\"." );
-
-			// Check for source directory conflict.
-			foreach( &prev_source_directory : prev_targets_directories )
-			{
-				if( prev_source_directory == sources_directory )
-				{
-					logger.LogError( "Source directory \"" + sources_directory_str + "\" of the build target \"" + target_name + "\" is already in use." );
-					ok= false;
-				}
-				else if( sources_directory.size() < prev_source_directory.size() &&
-					sources_directory == prev_source_directory.range().subrange_end( sources_directory.size() ) )
-				{
-					logger.LogError( "Source directory \"" + sources_directory_str + "\" of the build target \"" + target_name + "\" is a prefix of another used directory." );
-					ok= false;
-				}
-				else if( sources_directory.size() > prev_source_directory.size() &&
-					prev_source_directory == cast_imut(sources_directory).range().subrange_end( prev_source_directory.size() ) )
-				{
-					logger.LogError( "Source directory \"" + sources_directory_str + "\" of the build target \"" + target_name + "\" is located within another used directory." );
-					ok= false;
-				}
-			}
-
-			prev_targets_directories.push_back( move(sources_directory) );
-		}
-
-		foreach( &public_include_directory : build_target.public_include_directories )
-		{
-			if( !TargetSourceNameIsValid( public_include_directory ) )
-			{
-				logger.LogError( "Invalid path of a public source directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\"." );
-				ok= false;
-				continue;
-			}
-			auto mut public_include_directory_component_splitted=
-				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( public_include_directory ).iter() );
-
-			// Check for directory conflict.
-			foreach( &prev_source_directory : prev_targets_directories )
-			{
-				if( prev_source_directory == public_include_directory_component_splitted )
-				{
-					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is already in use." );
-					ok= false;
-				}
-				else if( public_include_directory_component_splitted.size() < prev_source_directory.size() &&
-					public_include_directory_component_splitted == prev_source_directory.range().subrange_end( public_include_directory_component_splitted.size() ) )
-				{
-					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is a prefix of another used directory." );
-					ok= false;
-				}
-				else if( public_include_directory_component_splitted.size() > prev_source_directory.size() &&
-					prev_source_directory == cast_imut(public_include_directory_component_splitted).range().subrange_end( prev_source_directory.size() ) )
-				{
-					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is located within another used directory." );
-					ok= false;
-				}
-			}
-
-			prev_targets_directories.push_back( public_include_directory_component_splitted );
-		}
-	}
-
-	return ok;
-}
-
-fn GetAllTargetPublicDependencies(
-	Logger &mut logger,
-	PackageInfo& package_info,
-	BuildTarget& build_target ) : ust::optional</ust::vector</BuildTargetFullName/>/>
-{
-	var ust::vector</BuildTargetFullName/> mut call_stack, mut result;
-	if( !GetAllTargetPublicDependencies_r( logger, package_info, build_target, call_stack, result ) )
-	{
-		return ust::null_optional;
-	}
-
-	// Remove possible duplicates.
-	ust::sort( result );
-	result.remove_adjacent_duplicates();
-
-	return move(result);
-}
-
-// Returns true on success.
-fn GetAllTargetPublicDependencies_r(
-	Logger &mut logger,
-	PackageInfo& package_info,
-	BuildTarget& build_target,
-	ust::vector</BuildTargetFullName/> &mut call_stack,
-	ust::vector</BuildTargetFullName/> &mut result ) : bool
-{
-	for( auto mut i= 0s; i < call_stack.size(); ++i )
-	{
-		if( build_target.name == call_stack[i].name )
-		{
-			var ust::string8 mut message= "Dependency loop detected: ";
-			for( auto mut j= i; j < call_stack.size(); ++j )
-			{
-				message += "\"";
-				message += call_stack[j].name;
-				message += "\"";
-				message += " -> ";
-			}
-			message += "\"";
-			message += build_target.name;
-			message += "\"";
-
-			logger.LogError( message );
-
-			return false;
-		}
-	}
-
-	call_stack.push_back( BuildTargetFullName{ .name= build_target.name } );
-
-	var bool mut ok= true;
-
-	foreach( &public_dependency : build_target.public_dependencies )
-	{
-		if( public_dependency.name == build_target.name )
-		{
-			logger.LogError( "Build target \"" + build_target.name + "\" depends on itself." );
-			ok= false;
-			continue;
-		}
-
-		result.push_back(public_dependency);
-
-		var bool mut found= false;
-		// TODO - take dependencies from other packages too.
-		foreach( &other_build_target : package_info.build_targets )
-		{
-			if( other_build_target.name == public_dependency.name )
-			{
-				if( other_build_target.target_type != BuildTargetType::Library )
-				{
-					logger.LogError( "Build target \"" + build_target.name + "\" depends on non-library build target \"" + other_build_target.name + "\"." );
-					ok= false;
-				}
-
-				ok&= GetAllTargetPublicDependencies_r( logger, package_info, other_build_target, call_stack, result );
-				found= true;
-				break;
-			}
-		}
-
-		if( !found )
-		{
-			logger.LogError( "Dependency \"" + public_dependency.name + "\" of a build target \"" + build_target.name + "\" not found." );
-			ok= false;
-		}
-	}
-
-	call_stack.pop_back();
-	return ok;
-}
-
 fn GetBuildTargetRelativeSourceDirectory( BuildTarget& build_target ) : ust::string8
 {
 	var ust::string8 mut res;
@@ -366,8 +145,8 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 	return result;
 }
 
-
-fn ValidateAndTransformPackageInfo( Logger &mut logger, PackageInfo& package_info ) : PackageInfoTransformed
+fn ValidateAndTransformPackageInfo( Logger &mut logger, PackageInfo& package_info )
+	: ust::optional</PackageInfoTransformed/>
 {
 	var PackageInfoTransformed mut out_package_info;
 
@@ -406,49 +185,48 @@ fn ValidateAndTransformPackageInfo( Logger &mut logger, PackageInfo& package_inf
 				}
 
 
-				out_build_target.source_files_normalized.push_back( NormalizePath( source_name ) );
+				out_build_target.source_files.push_back( NormalizePath( source_name ) );
 			}
 
 			// Normalize list of sources and remove duplicates.
-			ust::sort( out_build_target.source_files_normalized );
-			for( auto mut i = 1s; i < out_build_target.source_files_normalized.size(); ++i )
+			ust::sort( out_build_target.source_files );
+			for( auto mut i = 1s; i < out_build_target.source_files.size(); ++i )
 			{
-				if( cast_imut(out_build_target).source_files_normalized[ i - 1s ] ==
-					cast_imut(out_build_target).source_files_normalized[i] )
+				if( cast_imut(out_build_target).source_files[ i - 1s ] == cast_imut(out_build_target).source_files[i] )
 				{
-					logger.LogError( "Error, duplicated source file \"" + out_build_target.source_files_normalized[i] + "\" of the build target \"" + target_name + "\"!" );
+					logger.LogError( "Error, duplicated source file \"" + out_build_target.source_files[i] + "\" of the build target \"" + target_name + "\"!" );
 					ok= false;
 				}
 			}
 
-			var ust::vector</ust::string8/> mut sources_directory= CalculateBuildTargetSourceFilesCommonDirectory( out_build_target.source_files_normalized  );
+			var ust::vector</ust::string8/> mut sources_directory= CalculateBuildTargetSourceFilesCommonDirectory( out_build_target.source_files  );
 
 			foreach( &component : sources_directory )
 			{
-				out_build_target.sources_directory_normalized+= component;
-				out_build_target.sources_directory_normalized+= "/";
+				out_build_target.sources_directory+= component;
+				out_build_target.sources_directory+= "/";
 			}
 
-			logger.LogVerbose( "All sources of the build target \"" + target_name + "\" are located within directory \"" + out_build_target.sources_directory_normalized + "\"." );
+			logger.LogVerbose( "All sources of the build target \"" + target_name + "\" are located within directory \"" + out_build_target.sources_directory + "\"." );
 
 			// Check for source directory conflict.
 			foreach( &prev_source_directory : prev_targets_directories )
 			{
 				if( prev_source_directory == sources_directory )
 				{
-					logger.LogError( "Source directory \"" + out_build_target.sources_directory_normalized + "\" of the build target \"" + target_name + "\" is already in use." );
+					logger.LogError( "Source directory \"" + out_build_target.sources_directory + "\" of the build target \"" + target_name + "\" is already in use." );
 					ok= false;
 				}
 				else if( sources_directory.size() < prev_source_directory.size() &&
 					sources_directory == prev_source_directory.range().subrange_end( sources_directory.size() ) )
 				{
-					logger.LogError( "Source directory \"" + out_build_target.sources_directory_normalized + "\" of the build target \"" + target_name + "\" is a prefix of another used directory." );
+					logger.LogError( "Source directory \"" + out_build_target.sources_directory + "\" of the build target \"" + target_name + "\" is a prefix of another used directory." );
 					ok= false;
 				}
 				else if( sources_directory.size() > prev_source_directory.size() &&
 					prev_source_directory == cast_imut(sources_directory).range().subrange_end( prev_source_directory.size() ) )
 				{
-					logger.LogError( "Source directory \"" + out_build_target.sources_directory_normalized + "\" of the build target \"" + target_name + "\" is located within another used directory." );
+					logger.LogError( "Source directory \"" + out_build_target.sources_directory + "\" of the build target \"" + target_name + "\" is located within another used directory." );
 					ok= false;
 				}
 			}
@@ -495,19 +273,129 @@ fn ValidateAndTransformPackageInfo( Logger &mut logger, PackageInfo& package_inf
 				directory_normalized+= component;
 				directory_normalized+= "/";
 			}
-			out_build_target.public_include_directories_normalized.push_back( move(directory_normalized) );
+			out_build_target.public_include_directories.push_back( move(directory_normalized) );
 
 			prev_targets_directories.push_back( move(public_include_directory_component_splitted) );
 		}
 
-		ust::sort( out_build_target.public_include_directories_normalized );
+		ust::sort( out_build_target.public_include_directories );
+
+		out_build_target.public_dependencies= build_target.public_dependencies;
+		ust::sort( out_build_target.public_dependencies );
+		out_build_target.public_dependencies.remove_adjacent_duplicates();
 
 		out_package_info.build_targets.insert( target_name, move( out_build_target ) );
 	}
 
-	// TODO - perform recursive public dependencies retrieval.
+	// After finishing building build targets map perform public dependencies retrieval.
+	foreach( &build_target : package_info.build_targets )
+	{
+		if_var( &mut dependencies : GetAllTargetPublicDependencies( logger, out_package_info, build_target.name ) )
+		{
+			if_var( &mut out_build_target : out_package_info.build_targets.find( build_target.name ) )
+			{
+				out_build_target.public_dependencies_including_transitive= take(dependencies);
+			}
+		}
+		else
+		{
+			ok= false;
+		}
+	}
+
+	if( !ok )
+	{
+		return ust::null_optional;
+	}
 
 	return move(out_package_info);
+}
+
+fn GetAllTargetPublicDependencies(
+	Logger &mut logger,
+	PackageInfoTransformed& package_info,
+	ust::string8& build_target_name ) : ust::optional</ust::vector</BuildTargetFullName/>/>
+{
+	var ust::vector</BuildTargetFullName/> mut call_stack, mut result;
+	if( !GetAllTargetPublicDependencies_r( logger, package_info, build_target_name, call_stack, result ) )
+	{
+		return ust::null_optional;
+	}
+
+	// Remove possible duplicates.
+	ust::sort( result );
+	result.remove_adjacent_duplicates();
+
+	return move(result);
+}
+
+// Returns true on success.
+fn GetAllTargetPublicDependencies_r(
+	Logger &mut logger,
+	PackageInfoTransformed& package_info,
+	ust::string8& build_target_name,
+	ust::vector</BuildTargetFullName/> &mut call_stack,
+	ust::vector</BuildTargetFullName/> &mut result ) : bool
+{
+	for( auto mut i= 0s; i < call_stack.size(); ++i )
+	{
+		if( build_target_name == call_stack[i].name )
+		{
+			var ust::string8 mut message= "Dependency loop detected: ";
+			for( auto mut j= i; j < call_stack.size(); ++j )
+			{
+				message += "\"";
+				message += call_stack[j].name;
+				message += "\"";
+				message += " -> ";
+			}
+			message += "\"";
+			message += build_target_name;
+			message += "\"";
+
+			logger.LogError( message );
+
+			return false;
+		}
+	}
+
+	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
+
+	var bool mut ok= true;
+
+	if_var( &build_target : package_info.build_targets.find( build_target_name ) )
+	{
+		foreach( &public_dependency : build_target.public_dependencies )
+		{
+			if( public_dependency.name == build_target_name )
+			{
+				logger.LogError( "Build target \"" + build_target_name + "\" depends on itself." );
+				ok= false;
+				continue;
+			}
+
+			if_var( &dependent_build_target : package_info.build_targets.find( public_dependency.name ) )
+			{
+				if( dependent_build_target.target_type != BuildTargetType::Library )
+				{
+					logger.LogError( "Build target \"" + build_target_name + "\" depends on non-library build target \"" + public_dependency.name + "\"." );
+					ok= false;
+				}
+			}
+
+			result.push_back(public_dependency);
+
+			ok&= GetAllTargetPublicDependencies_r( logger, package_info, public_dependency.name, call_stack, result );
+		}
+	}
+	else
+	{
+		ok= false;
+		logger.LogError( "Dependency \"" + build_target_name + "\" not found." );
+	}
+
+	call_stack.pop_back();
+	return ok;
 }
 
 } // namespace BK
