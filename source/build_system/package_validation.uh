@@ -1,3 +1,4 @@
+import "/unordered_map.u"
 import "imports/build_system.uh"
 import "logger.uh"
 
@@ -16,5 +17,27 @@ fn GetAllTargetPublicDependencies(
 
 // Returns directory relative to the package root.
 fn GetBuildTargetRelativeSourceDirectory( BuildTarget& build_target ) : ust::string8;
+
+
+struct PackageInfoTransformed
+{
+	struct BuildTarget
+	{
+		BuildTargetType target_type;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::string8/> source_files_normalized;
+
+		// Calculated based on source file paths.
+		ust::string8 sources_directory_normalized;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::string8/> public_include_directories_normalized;
+	}
+
+	ust::unordered_map</ust::string8, BuildTarget/> build_targets;
+}
+
+fn ValidateAndTransformPackageInfo( Logger &mut logger, PackageInfo& package_info ) : PackageInfoTransformed;
 
 } // namespace BK

@@ -366,4 +366,148 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 	return result;
 }
 
+
+fn ValidateAndTransformPackageInfo( Logger &mut logger, PackageInfo& package_info ) : PackageInfoTransformed
+{
+	var PackageInfoTransformed mut out_package_info;
+
+	var bool mut ok= true;
+
+	var ust::vector</ ust::vector</ust::string8 /> /> mut prev_targets_directories;
+
+	foreach( &build_target : package_info.build_targets )
+	{
+		var ust::string8& target_name= build_target.name;
+
+		if( !TargetNameIsValid( target_name ) )
+		{
+			logger.LogError( "Error, invalid build target name \"" + target_name + "\"!" );
+			ok= false;
+		}
+
+		if( out_package_info.build_targets.exists( target_name ) )
+		{
+			logger.LogError( "Error, duplicated build target \"" + target_name + "\"!" );
+			ok= false;
+		}
+
+		var PackageInfoTransformed::BuildTarget mut out_build_target{ .target_type= build_target.target_type };
+
+		if( !build_target.source_files.empty() )
+		{
+			// Check each source - if it's correct.
+			foreach( &source_name : build_target.source_files )
+			{
+				if( !TargetSourceNameIsValid( source_name ) )
+				{
+					logger.LogError( "Invalid, source name \"" + source_name + "\" of build target \"" + target_name + "\"!" );
+					ok= false;
+					continue;
+				}
+
+
+				out_build_target.source_files_normalized.push_back( NormalizePath( source_name ) );
+			}
+
+			// Normalize list of sources and remove duplicates.
+			ust::sort( out_build_target.source_files_normalized );
+			for( auto mut i = 1s; i < out_build_target.source_files_normalized.size(); ++i )
+			{
+				if( cast_imut(out_build_target).source_files_normalized[ i - 1s ] ==
+					cast_imut(out_build_target).source_files_normalized[i] )
+				{
+					logger.LogError( "Error, duplicated source file \"" + out_build_target.source_files_normalized[i] + "\" of the build target \"" + target_name + "\"!" );
+					ok= false;
+				}
+			}
+
+			var ust::vector</ust::string8/> mut sources_directory= CalculateBuildTargetSourceFilesCommonDirectory( out_build_target.source_files_normalized  );
+
+			foreach( &component : sources_directory )
+			{
+				out_build_target.sources_directory_normalized+= component;
+				out_build_target.sources_directory_normalized+= "/";
+			}
+
+			logger.LogVerbose( "All sources of the build target \"" + target_name + "\" are located within directory \"" + out_build_target.sources_directory_normalized + "\"." );
+
+			// Check for source directory conflict.
+			foreach( &prev_source_directory : prev_targets_directories )
+			{
+				if( prev_source_directory == sources_directory )
+				{
+					logger.LogError( "Source directory \"" + out_build_target.sources_directory_normalized + "\" of the build target \"" + target_name + "\" is already in use." );
+					ok= false;
+				}
+				else if( sources_directory.size() < prev_source_directory.size() &&
+					sources_directory == prev_source_directory.range().subrange_end( sources_directory.size() ) )
+				{
+					logger.LogError( "Source directory \"" + out_build_target.sources_directory_normalized + "\" of the build target \"" + target_name + "\" is a prefix of another used directory." );
+					ok= false;
+				}
+				else if( sources_directory.size() > prev_source_directory.size() &&
+					prev_source_directory == cast_imut(sources_directory).range().subrange_end( prev_source_directory.size() ) )
+				{
+					logger.LogError( "Source directory \"" + out_build_target.sources_directory_normalized + "\" of the build target \"" + target_name + "\" is located within another used directory." );
+					ok= false;
+				}
+			}
+
+			prev_targets_directories.push_back( move(sources_directory) );
+		}
+
+		foreach( &public_include_directory : build_target.public_include_directories )
+		{
+			if( !TargetSourceNameIsValid( public_include_directory ) )
+			{
+				logger.LogError( "Invalid path of a public source directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\"." );
+				ok= false;
+				continue;
+			}
+			auto mut public_include_directory_component_splitted=
+				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( public_include_directory ).iter() );
+
+			// Check for directory conflict.
+			foreach( &prev_source_directory : prev_targets_directories )
+			{
+				if( prev_source_directory == public_include_directory_component_splitted )
+				{
+					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is already in use." );
+					ok= false;
+				}
+				else if( public_include_directory_component_splitted.size() < prev_source_directory.size() &&
+					public_include_directory_component_splitted == prev_source_directory.range().subrange_end( public_include_directory_component_splitted.size() ) )
+				{
+					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is a prefix of another used directory." );
+					ok= false;
+				}
+				else if( public_include_directory_component_splitted.size() > prev_source_directory.size() &&
+					prev_source_directory == cast_imut(public_include_directory_component_splitted).range().subrange_end( prev_source_directory.size() ) )
+				{
+					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is located within another used directory." );
+					ok= false;
+				}
+			}
+
+			var ust::string8 mut directory_normalized;
+			foreach( &component : public_include_directory_component_splitted )
+			{
+				directory_normalized+= component;
+				directory_normalized+= "/";
+			}
+			out_build_target.public_include_directories_normalized.push_back( move(directory_normalized) );
+
+			prev_targets_directories.push_back( move(public_include_directory_component_splitted) );
+		}
+
+		ust::sort( out_build_target.public_include_directories_normalized );
+
+		out_package_info.build_targets.insert( target_name, move( out_build_target ) );
+	}
+
+	// TODO - perform recursive public dependencies retrieval.
+
+	return move(out_package_info);
+}
+
 } // namespace BK
