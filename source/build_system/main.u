@@ -1,3 +1,4 @@
+import "/sort.u"
 import "/stdout.u"
 import "build_graph.uh"
 import "entry.uh"
@@ -169,22 +170,35 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	// Construct the build graph for the whole project.
 	var BuildGraph mut build_graph;
-	foreach( &build_target_pair : package_info_transformed.build_targets )
-	{
-		var PackageInfoTransformed::BuildTarget& build_target= build_target_pair.value();
 
-		CreatePackageTargetBuildGraphNodes(
-			build_system_paths,
-			package_source_directory,
-			package_build_directory,
-			options.build_configuration,
-			build_target_pair.key(),
-			build_target,
-			CollectPublicDependenciesPrefixedIncludeDirectories(
-				package_info_transformed,
+	{
+		// Collect and sort a list of build target names,
+		// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
+		var ust::vector</ust::string8/> mut build_target_names;
+		foreach( &build_target_pair : package_info_transformed.build_targets )
+		{
+			build_target_names.push_back( build_target_pair.key() );
+		}
+		ust::sort( build_target_names );
+
+		foreach( &build_target_name : build_target_names )
+		{
+			var PackageInfoTransformed::BuildTarget& build_target=
+				cast_imut(package_info_transformed).build_targets[ build_target_name ];
+
+			CreatePackageTargetBuildGraphNodes(
+				build_system_paths,
 				package_source_directory,
-				build_target.public_dependencies_including_transitive ),
-			build_graph );
+				package_build_directory,
+				options.build_configuration,
+				build_target_name,
+				build_target,
+				CollectPublicDependenciesPrefixedIncludeDirectories(
+					package_info_transformed,
+					package_source_directory,
+					build_target.public_dependencies_including_transitive ),
+				build_graph );
+		}
 	}
 
 	var i32 mut main_result= 0;
