@@ -5,18 +5,7 @@ import "logger.uh"
 namespace BK
 {
 
-// Returns all public dependencies, including transitive.
-// Result list has stable order of elements and contains no duplicates.
-// Returns null optional on error, like circular dependency or missing dependency.
-fn GetAllTargetPublicDependencies(
-	Logger &mut logger,
-	PackageInfo& package_info,
-	BuildTarget& build_target ) : ust::optional</ust::vector</BuildTargetFullName/>/>;
-
-// Returns directory relative to the package root.
-fn GetBuildTargetRelativeSourceDirectory( BuildTarget& build_target ) : ust::string8;
-
-
+// Package info in form which is much better to work with.
 struct PackageInfoTransformed
 {
 	struct BuildTarget
@@ -35,16 +24,16 @@ struct PackageInfoTransformed
 		// List of direct public dependencies. It's sorted and deduplicated.
 		ust::vector</BuildTargetFullName/> public_dependencies;
 
-		// List of all dependencies, including transitive. It's sorted and deduplicated.
+		// List of all public dependencies, including transitive public dependencies. It's sorted and deduplicated.
 		ust::vector</BuildTargetFullName/> public_dependencies_including_transitive;
 	}
 
 	ust::unordered_map</ust::string8, BuildTarget/> build_targets;
 }
 
-// Performs package info transformation , normalization and validation.
+// Performs package info transformation, normalization and validation.
 // Returns empty optional if package isn't valid.
-fn ValidateAndTransformPackageInfo( Logger &mut logger, PackageInfo& package_info )
+fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_info )
 	: ust::optional</PackageInfoTransformed/>;
 
 } // namespace BK

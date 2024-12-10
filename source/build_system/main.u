@@ -5,7 +5,7 @@ import "entry.uh"
 import "filesystem.uh"
 import "make_dep_file.uh"
 import "options.uh"
-import "package_validation.uh"
+import "package_transformation.uh"
 import "path.uh"
 import "process.uh"
 import "shared_library.uh"
@@ -129,9 +129,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
-	var PackageInfo& package_info= package_info_opt.try_deref();
-
-	var ust::optional</PackageInfoTransformed/> package_info_transformed_opt= ValidateAndTransformPackageInfo( bsi.logger_, package_info );
+	var ust::optional</PackageInfoTransformed/> package_info_transformed_opt=
+		TransformAndValidatePackageInfo( bsi.logger_, package_info_opt.try_deref() );
 	if( package_info_transformed_opt.empty() )
 	{
 		bsi.logger_.LogError( "Package is invald." );

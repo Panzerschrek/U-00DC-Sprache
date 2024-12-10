@@ -1,151 +1,11 @@
 import "/sort.u"
-import "package_validation.uh"
+import "package_transformation.uh"
 import "path.uh"
 
 namespace BK
 {
 
-fn GetBuildTargetRelativeSourceDirectory( BuildTarget& build_target ) : ust::string8
-{
-	var ust::string8 mut res;
-	foreach( &component : CalculateBuildTargetSourceFilesCommonDirectory( build_target.source_files ) )
-	{
-		res+= component;
-		res+= "/";
-	}
-
-	return res;
-}
-
-fn TargetNameIsValid( ust::string_view8 name ) : bool
-{
-	if( name.empty() )
-	{
-		return false;
-	}
-
-	if( name.back() == " "c8 )
-	{
-		return false; // Prevent names ending with space (Windows limitation).
-	}
-	if( name.front() == " "c8 )
-	{
-		return false; // Just to be sure prevent leading spaces.
-	}
-
-	foreach( c : name )
-	{
-		// Prevent symbols which may have special meaning in paths.
-		switch(c)
-		{
-			// Dots are allowed in paths, but in target names they may be confusing.
-			// Using dots is legal for file extension, but we don't need they in target names.
-			"."c8,
-			"/"c8,
-			"\\"c8,
-			":"c8,
-			"\""c8,
-			"'"c8,
-			"<"c8,
-			">"c8,
-			"|"c8,
-			"?"c8,
-			"*"c8,
-			char8(0) ... char8(31) // Forbid binary null and all control characters.
-			-> { return false; },
-			default -> {}
-		}
-	}
-
-	return true;
-}
-
-fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
-{
-	if( name.empty() )
-	{
-		return false;
-	}
-
-	if( name.front() == "/"c8 || name.front() == "\\"c8 )
-	{
-		// Do not allow absolute paths.
-		return false;
-	}
-
-	if( name.size() >= 2s && name[0s] >= "A"c8 && name[0s] <= "Z"c8 && name[1s] == ":"c8 )
-	{
-		// Do not allow absolute Windows paths.
-		return false;
-	}
-
-	// Disable "." and ".." in source file names.
-	foreach( &component : SplitPathIntoComponents( name ) )
-	{
-		if( component == "." || component == ".." )
-		{
-			return false;
-		}
-	}
-
-	// Further checks aren't really necessary.
-	// If for example file name is invalid, it will not be found and build will fail.
-
-	return true;
-}
-
-fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::string8/> sources ) : ust::vector</ust::string8/>
-{
-	if( sources.empty() )
-	{
-		return ust::vector</ust::string8/>();
-	}
-
-	var ust::vector</ust::vector</ust::string8/>/> mut sources_splitted_per_component;
-	foreach( &source : sources )
-	{
-		sources_splitted_per_component.push_back( SplitPathIntoComponents(source).iter().collect</ ust::vector</ ust::string8 /> />() );
-	}
-
-	if( sources_splitted_per_component.size() == 1s )
-	{
-		// Special case with only one file - remove last component (presumably file name) and return it.
-		var ust::vector</ust::string8/> mut result= sources_splitted_per_component.pop_back();
-		if( !result.empty() )
-		{
-			result.drop_back();
-		}
-		return result;
-	}
-
-	var ust::vector</ust::string8/> mut result;
-
-	// Calculate common prefix for all files.
-
-	for( auto mut i= 0s; ; ++i ) label component_loop
-	{
-		var ust::vector</ust::string8/>& first_source= sources_splitted_per_component.front();
-		if( i >= first_source.size() )
-		{
-			break label component_loop;
-		}
-		var ust::string8& first_source_component= first_source[i];
-
-		foreach( & source_splitted : cast_imut(sources_splitted_per_component) )
-		{
-			if( i >= source_splitted.size() || source_splitted[i] != first_source_component )
-			{
-				break label component_loop;
-			}
-		}
-
-		result.push_back( first_source_component );
-	}
-
-	return result;
-}
-
-fn ValidateAndTransformPackageInfo( Logger &mut logger, PackageInfo& package_info )
+fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_info )
 	: ust::optional</PackageInfoTransformed/>
 {
 	var PackageInfoTransformed mut out_package_info;
@@ -309,6 +169,134 @@ fn ValidateAndTransformPackageInfo( Logger &mut logger, PackageInfo& package_inf
 	}
 
 	return move(out_package_info);
+}
+
+fn TargetNameIsValid( ust::string_view8 name ) : bool
+{
+	if( name.empty() )
+	{
+		return false;
+	}
+
+	if( name.back() == " "c8 )
+	{
+		return false; // Prevent names ending with space (Windows limitation).
+	}
+	if( name.front() == " "c8 )
+	{
+		return false; // Just to be sure prevent leading spaces.
+	}
+
+	foreach( c : name )
+	{
+		// Prevent symbols which may have special meaning in paths.
+		switch(c)
+		{
+			// Dots are allowed in paths, but in target names they may be confusing.
+			// Using dots is legal for file extension, but we don't need they in target names.
+			"."c8,
+			"/"c8,
+			"\\"c8,
+			":"c8,
+			"\""c8,
+			"'"c8,
+			"<"c8,
+			">"c8,
+			"|"c8,
+			"?"c8,
+			"*"c8,
+			char8(0) ... char8(31) // Forbid binary null and all control characters.
+			-> { return false; },
+			default -> {}
+		}
+	}
+
+	return true;
+}
+
+fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
+{
+	if( name.empty() )
+	{
+		return false;
+	}
+
+	if( name.front() == "/"c8 || name.front() == "\\"c8 )
+	{
+		// Do not allow absolute paths.
+		return false;
+	}
+
+	if( name.size() >= 2s && name[0s] >= "A"c8 && name[0s] <= "Z"c8 && name[1s] == ":"c8 )
+	{
+		// Do not allow absolute Windows paths.
+		return false;
+	}
+
+	// Disable "." and ".." in source file names.
+	foreach( &component : SplitPathIntoComponents( name ) )
+	{
+		if( component == "." || component == ".." )
+		{
+			return false;
+		}
+	}
+
+	// Further checks aren't really necessary.
+	// If for example file name is invalid, it will not be found and build will fail.
+
+	return true;
+}
+
+fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::string8/> sources ) : ust::vector</ust::string8/>
+{
+	if( sources.empty() )
+	{
+		return ust::vector</ust::string8/>();
+	}
+
+	var ust::vector</ust::vector</ust::string8/>/> mut sources_splitted_per_component;
+	foreach( &source : sources )
+	{
+		sources_splitted_per_component.push_back( SplitPathIntoComponents(source).iter().collect</ ust::vector</ ust::string8 /> />() );
+	}
+
+	if( sources_splitted_per_component.size() == 1s )
+	{
+		// Special case with only one file - remove last component (presumably file name) and return it.
+		var ust::vector</ust::string8/> mut result= sources_splitted_per_component.pop_back();
+		if( !result.empty() )
+		{
+			result.drop_back();
+		}
+		return result;
+	}
+
+	var ust::vector</ust::string8/> mut result;
+
+	// Calculate common prefix for all files.
+
+	for( auto mut i= 0s; ; ++i ) label component_loop
+	{
+		var ust::vector</ust::string8/>& first_source= sources_splitted_per_component.front();
+		if( i >= first_source.size() )
+		{
+			break label component_loop;
+		}
+		var ust::string8& first_source_component= first_source[i];
+
+		foreach( & source_splitted : cast_imut(sources_splitted_per_component) )
+		{
+			if( i >= source_splitted.size() || source_splitted[i] != first_source_component )
+			{
+				break label component_loop;
+			}
+		}
+
+		result.push_back( first_source_component );
+	}
+
+	return result;
 }
 
 fn GetAllTargetPublicDependencies(
