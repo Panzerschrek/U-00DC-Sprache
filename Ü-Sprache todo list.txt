@@ -167,8 +167,7 @@ CPP Header converter:
 *) Multiple packages support
 *) Fix JSON floats serialization
 *) Simplify structs to/from json conversion by using template code with typeinfo and mixins usage
-*) Prevent imports ouside allowed import directories
-*) Prevent name comflicts in imports (where multiple files exist for the given import path)
+*) Prevent at leasto some name comflicts in imports (where multiple files exist for the given import path)
 *) Reuse build script shared library among different build confugurations and target triples (build only one copy)
 *) Clean command - to delete build files
 *) Command line option for building only specified build targets
