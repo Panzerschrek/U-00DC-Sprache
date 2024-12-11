@@ -37,6 +37,11 @@ function( CompileUSource u_source_file out_object )
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
+				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/launchers_common
+				--source-dir ${CMAKE_CURRENT_BINARY_DIR}/
 			DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.bc:", but launches custom command in current binary directory
 			COMMENT "Building ${current_subdir}/${u_source_file_relative}.bc"
@@ -57,6 +62,11 @@ function( CompileUSource u_source_file out_object )
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
+				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/launchers_common
+				--source-dir ${CMAKE_CURRENT_BINARY_DIR}/
 			DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
 			COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"
