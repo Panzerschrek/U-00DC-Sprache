@@ -284,23 +284,50 @@ fn BuildAndLoadPackageBuildScript(
 	{
 		logger.LogVerbose( "Building \"" + result_shared_library_path + "\"." );
 
-		var ust::string8 build_script_wrapper_file_path= ust::string8(package_build_directory) + "/" + "build_script_wrapper.u";
+		var ust::string8 build_script_wrapper_file_directory= ust::string8(package_build_directory) + "/build_script_wrapper_sources";
+		if( ! EnsureDirectoryExists( logger, build_script_wrapper_file_directory ) )
+		{
+			return ust::null_optional;
+		}
+
+		var ust::string8 build_script_wrapper_header_file_directory= ust::string8(package_build_directory) + "/build_script_wrapper_headers";
+		if( ! EnsureDirectoryExists( logger, build_script_wrapper_header_file_directory ) )
+		{
+			return ust::null_optional;
+		}
+
+		var ust::string8 build_script_wrapper_file_path= build_script_wrapper_file_directory + "/" + "build_script_wrapper.u";
+		var ust::string8 build_script_header_file_path= build_script_wrapper_header_file_directory + "/" + "build_script_header.uh";
 
 		// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
 		{
-			var ust::string8 mut build_script_wrapper_contents = "import \"/";
-			build_script_wrapper_contents+= build_script_file;
-			build_script_wrapper_contents+= "\"\n\n";
-			build_script_wrapper_contents+= "fn nomangle ";
-			build_script_wrapper_contents+= entry_func_name;
-			build_script_wrapper_contents+= "( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>\n";
+			var ust::string8 mut contents = "import \"/";
+			contents+= build_script_file;
+			contents+= "\"\n";
+			contents+= "import \"/build_script_header.uh\"\n\n";
+			contents+= "fn nomangle ";
+			contents+= entry_func_name;
+			contents+= "( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>\n";
 			// "GetPackageInfo" function itself may return "BK::PackageInfo", not optional of this type.
-			build_script_wrapper_contents += "{ return GetPackageInfo( build_system_interface ); }";
-			build_script_wrapper_contents+= "\n";
+			contents += "{\n\treturn GetPackageInfo( build_system_interface );\n}\n";
 
-			if( !WriteFile( logger, build_script_wrapper_file_path, build_script_wrapper_contents ) )
+			if( !WriteFile( logger, build_script_wrapper_file_path, contents ) )
 			{
 				logger.LogError( "Can't write build script wrapper file." );
+				return ust::null_optional;
+			}
+		}
+
+		// Create also header file. We need it to export entry function name function properly.
+		{
+			var ust::string8 mut contents = "import \"/build_system.uh\"\n\n";
+			contents+= "fn nomangle ";
+			contents+= entry_func_name;
+			contents+= "( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>;\n";
+
+			if( !WriteFile( logger, build_script_header_file_path, contents ) )
+			{
+				logger.LogError( "Can't write build script wrapper header file." );
 				return ust::null_optional;
 			}
 		}
@@ -321,6 +348,9 @@ fn BuildAndLoadPackageBuildScript(
 		// Provide path to declarations of the build system interface.
 		compiler_args.push_back( "--include-dir" );
 		compiler_args.push_back( build_system_paths.build_system_imports_path );
+		// Provide path to build script wrapper headers.
+		compiler_args.push_back( "--include-dir" );
+		compiler_args.push_back( build_script_wrapper_header_file_directory );
 
 		compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
 
@@ -334,7 +364,7 @@ fn BuildAndLoadPackageBuildScript(
 
 		// Provide path to the directory with input file, in order to allow importing it.
 		compiler_args.push_back( "--source-dir" );
-		compiler_args.push_back( package_build_directory );
+		compiler_args.push_back( build_script_wrapper_file_directory );
 
 		// Forbid importing anything outside include directories and source directories.
 		compiler_args.push_back( "--prevent-imports-outside-given-directories" );
