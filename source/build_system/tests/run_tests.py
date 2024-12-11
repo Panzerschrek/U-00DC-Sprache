@@ -478,6 +478,15 @@ def UnallowedImport3():
 	assert( stderr.find( "not allowed to embed file \"" ) != -1 )
 
 
+def UnallowedImport4():
+	res = RunBuildSystemWithErrors( "unallowed_import4" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Importing file \"" ) != -1 )
+	assert( stderr.find( "not_allowed_import4.uh" ) != -1 )
+	assert( stderr.find( "t allowed." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -573,7 +582,8 @@ def main():
 		UnallowedImport0,
 		UnallowedImport1,
 		UnallowedImport2,
-		UnallowedImport3 ]
+		UnallowedImport3,
+		UnallowedImport4 ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

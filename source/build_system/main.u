@@ -332,6 +332,13 @@ fn BuildAndLoadPackageBuildScript(
 		compiler_args.push_back( "-MF" );
 		compiler_args.push_back( result_shared_library_dependency_file_path );
 
+		// Provide path to the directory with input file, in order to allow importing it.
+		compiler_args.push_back( "--source-dir" );
+		compiler_args.push_back( package_build_directory );
+
+		// Forbid importing anything outside include directories and source directories.
+		compiler_args.push_back( "--prevent-imports-outside-given-directories" );
+
 		// This requires compiler to be built with internal LLD (for now we don't support external linkers).
 		compiler_args.push_back( "-filetype=dll" );
 		// Run internalization in order to export only entry function.
