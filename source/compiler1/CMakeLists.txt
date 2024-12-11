@@ -38,6 +38,7 @@ function( CompileUSource u_source_file out_object )
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
 				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
+				# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
 				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib
 				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib
 				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/launchers_common
@@ -63,6 +64,7 @@ function( CompileUSource u_source_file out_object )
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
 				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
+				# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
 				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib
 				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib
 				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/launchers_common
@@ -162,16 +164,7 @@ if( COMPILER1_LTO )
 			-o ${CODE_BUILDER_LIB_O}
 			--input-filetype=bc
 			-lto-mode=link
-			--internalize
-			"--internalize-preserve=\
-U1_BuildProgram,\
-U1_BuildProgramWithErrors,\
-U1_BuildProgramWithSyntaxErrors,\
-U1_BuildMultisourceProgram,\
-U1_BuildMultisourceProgramWithErrors,\
-U1_BuildProgramForLifetimesTest,\
-U1_BuildProgramForMSVCManglingTest,\
-U1_BuildProgramUsingVFS"
+			--internalize-hidden # Internalize all except publically-available symbols.
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Building ${CODE_BUILDER_LIB_O}"
 		)

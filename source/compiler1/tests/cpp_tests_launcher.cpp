@@ -8,7 +8,7 @@
 #include "../../code_builder_lib_common/async_calls_inlining.hpp"
 #include "../../tests/cpp_tests/cpp_tests.hpp"
 #include "../../tests/tests_common.hpp"
-#include  "../launchers_common/funcs_c.hpp"
+#include  "../imports/funcs_c.hpp"
 
 namespace U
 {

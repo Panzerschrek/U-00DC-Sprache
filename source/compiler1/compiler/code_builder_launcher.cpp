@@ -1,5 +1,5 @@
 #include "../../compilers_common_lib/code_builder_launcher.hpp"
-#include "../launchers_common/funcs_c.hpp"
+#include "../imports/funcs_c.hpp"
 
 namespace U
 {
