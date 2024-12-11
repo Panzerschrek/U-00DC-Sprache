@@ -376,7 +376,10 @@ void SetupDLLExport( llvm::Module& module )
 				linkage == llvm::GlobalValue::PrivateLinkage )
 				return; // Set dllexport only for public symbols.
 
-			v.setDLLStorageClass( llvm::GlobalValue::DLLExportStorageClass );
+			if( v.getVisibility() == llvm::GlobalValue::DefaultVisibility )
+				v.setDLLStorageClass( llvm::GlobalValue::DLLExportStorageClass );
+			else
+			{} // Do not export "hidden" symbols from dll.
 		};
 
 	for( llvm::Function& function : module.functions() )
@@ -860,8 +863,7 @@ int Main( int argc, const char* argv[] )
 	// Set visibility of symbols in the result module.
 	SetupSymbolsVisibility( *result_module );
 
-	// A hacky way to export public functions in Windows DLLs.
-	// TODO - find a better way to do this.
+	// Translate "visibility(default)" into "dllexport" for Windows dynamic libraries.
 	if( file_type == FileType::Dll && target_machine->getTargetTriple().getOS() == llvm::Triple::Win32 )
 		SetupDLLExport( *result_module );
 
