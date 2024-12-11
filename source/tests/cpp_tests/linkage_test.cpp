@@ -143,21 +143,25 @@ U_TEST( FunctionLinkage_Test2 )
 	U_TEST_ASSERT( foo != nullptr );
 	U_TEST_ASSERT( foo->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( !foo->hasComdat() );
+	U_TEST_ASSERT( foo->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::Function* const baz= module->getFunction( "_ZN2NN3BazEv" );
 	U_TEST_ASSERT( baz != nullptr );
 	U_TEST_ASSERT( baz->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( !baz->hasComdat() );
+	U_TEST_ASSERT( baz->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::Function* const bar= module->getFunction( "_ZN1S3BarERKS_" );
 	U_TEST_ASSERT( bar != nullptr );
 	U_TEST_ASSERT( bar->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( !bar->hasComdat() );
+	U_TEST_ASSERT( bar->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::Function* const static_method= module->getFunction( "_ZN1S12StaticMethodEv" );
 	U_TEST_ASSERT( static_method != nullptr );
 	U_TEST_ASSERT( static_method->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( !static_method->hasComdat() );
+	U_TEST_ASSERT( static_method->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
 U_TEST( FunctionLinkage_Test3 )
@@ -190,6 +194,7 @@ U_TEST( FunctionLinkage_Test3 )
 	U_TEST_ASSERT( bar != nullptr );
 	U_TEST_ASSERT( bar->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( !bar->hasComdat() );
+	U_TEST_ASSERT( bar->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
 U_TEST( FunctionLinkage_Test4 )
