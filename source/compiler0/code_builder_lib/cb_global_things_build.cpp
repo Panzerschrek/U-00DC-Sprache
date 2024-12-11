@@ -1362,8 +1362,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
 		src_loc= incomplete_global_variable.auto_variable_declaration->src_loc;
 
-	const bool externally_available= !IsSrcLocFromMainFile( src_loc );
-
 	std::string_view name;
 	if( incomplete_global_variable.variables_declaration != nullptr )
 		name= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].name;
@@ -1418,7 +1416,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			llvm::GlobalVariable* const global_variable=
 				is_mutable
-					? CreateGlobalMutableVariable( type, name_mangled, externally_available )
+					? CreateGlobalMutableVariable( type, name_mangled, src_loc )
 					: CreateGlobalConstantVariable( type, name_mangled );
 
 			const VariableMutPtr variable=
@@ -1574,7 +1572,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, auto_variable_declaration->name, variable_reference->type, !is_mutable );
 			llvm::GlobalVariable* const global_variable=
 				is_mutable
-					? CreateGlobalMutableVariable( variable_reference->type, name_mangled, externally_available )
+					? CreateGlobalMutableVariable( variable_reference->type, name_mangled, src_loc )
 					: CreateGlobalConstantVariable( variable_reference->type, name_mangled );
 
 			variable_reference->llvm_value= global_variable;

@@ -2375,7 +2375,8 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	return val;
 }
 
-llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string_view mangled_name, const bool externally_available )
+llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
+	const Type& type, const std::string_view mangled_name, const SrcLoc& src_loc )
 {
 	const auto var=
 		new llvm::GlobalVariable(
@@ -2386,7 +2387,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 			nullptr,
 			StringViewToStringRef(mangled_name) );
 
-	if( externally_available )
+	if( !IsSrcLocFromMainFile( src_loc ) )
 	{
 		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
 		llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
@@ -2394,6 +2395,20 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 		var->setComdat( comdat );
 
 		var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+
+		// TODO - check macro expansion.
+		const uint32_t file_index= src_loc.GetFileIndex();
+		if( file_index != 0 && file_index < source_graph_->nodes_storage.size() &&
+			source_graph_->nodes_storage[file_index].category == SourceGraph::NodeCategory::Import )
+		{
+			// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
+			var->setVisibility( llvm::GlobalValue::DefaultVisibility );
+		}
+		else
+		{
+			// This variable is defined within a private import file - use hidden visibility to hide it from outside.
+			var->setVisibility( llvm::GlobalValue::HiddenVisibility );
+		}
 	}
 	else
 	{

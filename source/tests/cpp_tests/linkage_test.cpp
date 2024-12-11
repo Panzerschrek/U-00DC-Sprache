@@ -379,11 +379,13 @@ U_TEST( VariableLinkage_Test1 )
 	U_TEST_ASSERT( x != nullptr );
 	U_TEST_ASSERT( x->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( x->hasComdat() );
+	U_TEST_ASSERT( x->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::GlobalVariable* const y= engine->FindGlobalVariableNamed( "y", true );
 	U_TEST_ASSERT( y != nullptr );
 	U_TEST_ASSERT( y->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( y->hasComdat() );
+	U_TEST_ASSERT( y->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::GlobalVariable* const z= engine->FindGlobalVariableNamed( "z", true );
 	U_TEST_ASSERT( z != nullptr );
