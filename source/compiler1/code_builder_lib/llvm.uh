@@ -63,6 +63,13 @@ enum LLVMLinkage : u32
 	LinkerPrivateWeak /**< Like LinkerPrivate, but is weak. */
 }
 
+enum LLVMVisibility : u32
+{
+	Default,  /**< The GV is visible */
+	Hidden,   /**< The GV is hidden */
+	Protected /**< The GV is protected */
+}
+
 enum LLVMIntPredicate : u32
 {
 	Dummy00, Dummy01, Dummy02, Dummy03, Dummy04, Dummy05, Dummy06, Dummy07,
@@ -373,6 +380,7 @@ fn nomangle LLVMSetInstructionCallConv(LLVMValueRef Instr, LLVMCallConvID CC) un
 
 fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;
 fn nomangle LLVMSetLinkage(LLVMValueRef Global, LLVMLinkage Linkage) unsafe;
+fn nomangle LLVMSetVisibility(LLVMValueRef Global, LLVMVisibility Viz) unsafe;
 fn nomangle LLVMSetUnnamedAddress(LLVMValueRef Global, LLVMUnnamedAddr UnnamedAddr) unsafe;
 fn nomangle LLVMGetNamedFunction(LLVMModuleRef M, NullTerminatedString& Name) unsafe : LLVMValueRef;
 

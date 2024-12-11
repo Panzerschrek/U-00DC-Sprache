@@ -1178,7 +1178,7 @@ private:
 	fn IsEqualityCompareOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
 
 	fn AddGlobalConstantVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef;
-	fn AddGlobalMutableVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, bool externally_available ) : LLVMValueRef;
+	fn AddGlobalMutableVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, SrcLoc& src_loc ) : LLVMValueRef;
 
 	fn GetAttributeKindByName( ust::string_view8 attr_name ) : u32;
 	fn AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::string_view8 attr_name );

@@ -55,6 +55,13 @@ bool IsImportingFileAllowed(
 	return reinterpret_cast<IVfs*>(this_)->IsImportingFileAllowed( StringViewToString(path_normalized) );
 }
 
+bool IsFileFromSourcesDirectory(
+	const U1_UserHandle this_,
+	const U1_StringView& path_normalized )
+{
+	return reinterpret_cast<IVfs*>(this_)->IsFileFromSourcesDirectory( StringViewToString(path_normalized) );
+}
+
 U1_UserHandle ErrorHanlder(
 	const U1_UserHandle data, // should be "CodeBuilderErrorsContainer"
 	const uint32_t file_index,
@@ -89,7 +96,6 @@ U1_UserHandle TemplateErrorsContextHandler(
 
 	return reinterpret_cast<U1_UserHandle>(&out_error->template_context->errors);
 }
-
 
 void SourceFilePathProcessingFunction(
 	const U1_UserHandle data, // should be "std::vector<IVfs::Path>*"
@@ -134,7 +140,8 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 				reinterpret_cast<U1_UserHandle>(vfs.get()),
 				GetFullFilePath,
 				LoadFileContent,
-				IsImportingFileAllowed },
+				IsImportingFileAllowed,
+				IsFileFromSourcesDirectory },
 			StringToStringView(input_file),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
