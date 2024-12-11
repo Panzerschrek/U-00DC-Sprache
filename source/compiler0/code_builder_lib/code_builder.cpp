@@ -1496,6 +1496,22 @@ void CodeBuilder::BuildFuncCode(
 	// Build debug info only for functions with body.
 	debug_info_builder_->CreateFunctionInfo( func_variable, func_name );
 
+	llvm::GlobalValue::VisibilityTypes visibility= llvm::GlobalValue::HiddenVisibility;
+	{
+		// TODO - imporive this check, process also macro expansion.
+		const uint32_t prototype_file_index= func_variable.prototype_src_loc.GetFileIndex();
+		if( prototype_file_index != 0 && prototype_file_index < source_graph_->nodes_storage.size() &&
+			source_graph_->nodes_storage[prototype_file_index].category == SourceGraph::NodeCategory::Import )
+		{
+			// This function is declared within an imported file,
+			// Which means that is should be acessible outside current build target.
+			// Mark such functions with default visibility. Other functions should have hidden visibility.
+			visibility= llvm::GlobalValue::DefaultVisibility;
+		}
+		else
+			visibility= llvm::GlobalValue::HiddenVisibility;
+	}
+
 	if( parent_names_scope.IsInsideTemplate() )
 	{
 		// Set private visibility for functions inside templates.
@@ -1512,6 +1528,7 @@ void CodeBuilder::BuildFuncCode(
 		// The only reason to use "nomangle" functions is to interact with external code.
 		// For such purposes  external linkage is essential.
 		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
+		llvm_function->setVisibility( visibility );
 	}
 	else if( IsSrcLocFromMainFile( func_variable.prototype_src_loc ) )
 	{
@@ -1524,6 +1541,7 @@ void CodeBuilder::BuildFuncCode(
 		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
 		// Do not need to use comdat here, since this function is defined only in main (compiled) file.
 		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
+		llvm_function->setVisibility( visibility );
 	}
 
 	// Ensure completeness only for functions body.
