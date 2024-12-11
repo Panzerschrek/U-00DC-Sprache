@@ -23,7 +23,6 @@ function( CompileUSource u_source_file out_object )
 			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 			--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
-			--symbols-visibility=hidden # Make functions and variables hidden to avoid exporting them in ELF shared libraries (*.so)
 		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "build_system/main.u.o:", but launches custom command in current binary directory
 		COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"

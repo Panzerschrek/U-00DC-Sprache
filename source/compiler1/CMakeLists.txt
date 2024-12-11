@@ -54,7 +54,6 @@ function( CompileUSource u_source_file out_object )
 				--verify-module
 				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 				--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
-				--symbols-visibility=hidden # Make functions and variables hidden to avoid exporting them in ELF shared libraries (*.so)
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
