@@ -460,11 +460,13 @@ U_TEST( VariableLinkage_Test3 )
 	U_TEST_ASSERT( x_i32 != nullptr );
 	U_TEST_ASSERT( x_i32->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( x_i32->hasComdat() );
+	U_TEST_ASSERT( x_i32->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::GlobalVariable* const x_f64= engine->FindGlobalVariableNamed( "_ZN3BoxIdE19global_template_varE", true );
 	U_TEST_ASSERT( x_f64 != nullptr );
 	U_TEST_ASSERT( x_f64->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( x_f64->hasComdat() );
+	U_TEST_ASSERT( x_f64->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::GlobalVariable* const x_local= engine->FindGlobalVariableNamed( "_ZN8LocalBoxIjE19global_template_varE", true );
 	U_TEST_ASSERT( x_local != nullptr );
@@ -540,6 +542,7 @@ U_TEST( PolymorphClassesDataLinkage_Test3 )
 	U_TEST_ASSERT( type_id_table != nullptr );
 	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( type_id_table->hasComdat() );
+	U_TEST_ASSERT( type_id_table->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
 U_TEST( PolymorphClassesDataLinkage_Test4 )

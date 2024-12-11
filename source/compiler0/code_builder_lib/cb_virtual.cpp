@@ -341,6 +341,20 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 		llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id_table->getName() );
 		type_id_comdat->setSelectionKind( llvm::Comdat::Any );
 		the_class.polymorph_type_id_table->setComdat( type_id_comdat );
+
+		// TODO - check macro expansion.
+		const uint32_t file_index= class_type->syntax_element->src_loc.GetFileIndex();
+		if( file_index != 0 && file_index < source_graph_->nodes_storage.size() &&
+			source_graph_->nodes_storage[file_index].category == SourceGraph::NodeCategory::Import )
+		{
+			// This class is defined within an import file - use default visibility in order to make type id table available for other build targets.
+			the_class.polymorph_type_id_table->setVisibility( llvm::GlobalValue::DefaultVisibility );
+		}
+		else
+		{
+			// This class is defined within a private import file - use hidden visibility to hide type id table from outside.
+			the_class.polymorph_type_id_table->setVisibility( llvm::GlobalValue::HiddenVisibility );
+		}
 	}
 	else
 	{
