@@ -1,0 +1,6 @@
+import "b_internal.uh"
+
+fn FuncImpl() : u32
+{
+	return 2222u;
+}

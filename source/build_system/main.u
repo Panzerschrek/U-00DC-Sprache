@@ -667,6 +667,9 @@ fn CreatePackageTargetBuildGraphNodes(
 			// Do not link public dependencies in libraries.
 			// Instead propatage them to the terminal target - executable or shared library.
 			// TODO - link private dependencies.
+
+			// Internalize hidden symbols - to hide functions/variables which shouldn't be available outside this library.
+			node.command_line.push_back( "--internalize-hidden" );
 		}
 	}
 

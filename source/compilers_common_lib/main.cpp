@@ -287,7 +287,13 @@ cl::opt< llvm::GlobalValue::VisibilityTypes > symbols_visibility(
 
 cl::opt<bool> internalize(
 	"internalize",
-	cl::desc("Internalize symbols with public visibility (functions, global variables) except \"main\" and symobols listed in \"--internalize-preserve\" option. Usefull for whole program optimization."),
+	cl::desc("Internalize symbols with public linkage (functions, global variables) except \"main\" and symobols listed in \"--internalize-preserve\" option. Usefull for whole program optimization."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+cl::opt<bool> internalize_hidden(
+	"internalize-hidden",
+	cl::desc("Internalize symbols with hidden visibility."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -361,6 +367,22 @@ void SetupSymbolsVisibility( llvm::Module& module )
 
 	for( llvm::GlobalVariable& global_variable : module.globals() )
 		set_visibility( global_variable );
+}
+
+void InternalizeHiddenSymbols( llvm::Module& module )
+{
+	const auto internalize=
+		[]( llvm::GlobalValue& v )
+		{
+			if( v.getVisibility() == llvm::GlobalValue::HiddenVisibility )
+				v.setLinkage( llvm::GlobalValue::PrivateLinkage );
+		};
+
+	for( llvm::Function& function : module.functions() )
+		internalize( function );
+
+	for( llvm::GlobalVariable& global_variable : module.globals() )
+		internalize( global_variable );
 }
 
 void SetupDLLExport( llvm::Module& module )
@@ -451,6 +473,7 @@ int Main( int argc, const char* argv[] )
 	Options::verify_module.removeArgument();
 	Options::symbols_visibility.removeArgument();
 	Options::internalize.removeArgument();
+	Options::internalize_hidden.removeArgument();
 	Options::internalize_preserve.removeArgument();
 	Options::lto_mode.removeArgument();
 	Options::linker_args.removeArgument();
@@ -862,6 +885,9 @@ int Main( int argc, const char* argv[] )
 
 	// Set visibility of symbols in the result module.
 	SetupSymbolsVisibility( *result_module );
+
+	if( Options::internalize_hidden )
+		InternalizeHiddenSymbols( *result_module );
 
 	// Translate "visibility(default)" into "dllexport" for Windows dynamic libraries.
 	if( file_type == FileType::Dll && target_machine->getTargetTriple().getOS() == llvm::Triple::Win32 )

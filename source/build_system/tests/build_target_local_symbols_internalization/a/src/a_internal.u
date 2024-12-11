@@ -1,0 +1,6 @@
+import "a_internal.uh"
+
+fn FuncImpl() : u32
+{
+	return 111u;
+}

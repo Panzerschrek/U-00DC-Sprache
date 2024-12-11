@@ -1,0 +1,7 @@
+import "/b/b.uh"
+import "b_internal.uh"
+
+fn BFunc() : u32
+{
+	return FuncImpl();
+}

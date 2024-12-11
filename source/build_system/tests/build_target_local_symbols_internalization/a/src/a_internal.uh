@@ -1,0 +1,3 @@
+// This function should have "public" linkage but "private" visibility.
+// It should be internalized later, so, no conflict with the same name function from other build target should happen.
+fn FuncImpl() : u32;
