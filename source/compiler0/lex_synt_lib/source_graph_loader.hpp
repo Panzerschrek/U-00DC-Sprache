@@ -20,6 +20,9 @@ public:
 
 	// Returns "false" if it isn't allowed to import file given.
 	virtual bool IsImportingFileAllowed( const Path& full_file_path )= 0;
+
+	// Returns "true" if file given is located within one of source directories.
+	virtual bool IsFileFromSourcesDirectory( const Path& full_file_path )= 0;
 };
 
 using IVfsSharedPtr= std::shared_ptr<IVfs>;
@@ -27,13 +30,20 @@ using IVfsSharedPtr= std::shared_ptr<IVfs>;
 // Directed acyclic graph of sources.
 struct SourceGraph
 {
+	enum class NodeCategory : uint8_t
+	{
+		Source,
+		Import,
+		BuiltInPrelude,
+	};
+
 	struct Node
 	{
 		IVfs::Path file_path; // normalized
 		std::string contents_hash;
 		std::vector<size_t> child_nodes_indices;
 		Synt::SyntaxAnalysisResult ast;
-		// Here can be placed cached module.
+		NodeCategory category= NodeCategory::Source;
 	};
 
 	std::vector<Node> nodes_storage; // first element is root

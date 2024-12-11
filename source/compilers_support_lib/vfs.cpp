@@ -41,6 +41,23 @@ fs_path NormalizePath( const fs_path& p )
 	return result;
 }
 
+bool IsWithinGivenDirectory( const llvm::StringRef full_file_path, const llvm::StringRef directory_path )
+{
+	auto given_path_it= llvm::sys::path::begin(full_file_path);
+	const auto given_path_it_end= llvm::sys::path::end(full_file_path);
+
+	auto directory_path_it= llvm::sys::path::begin(directory_path);
+	const auto allowed_path_it_end= llvm::sys::path::end(directory_path);
+	while( directory_path_it != allowed_path_it_end && given_path_it != given_path_it_end )
+	{
+		if( *given_path_it != *directory_path_it )
+			break;
+		++given_path_it;
+		++directory_path_it;
+	}
+
+	return directory_path_it == allowed_path_it_end;
+}
 
 class VfsOverSystemFS final : public IVfs
 {
@@ -125,20 +142,7 @@ public: // IVfs
 		const auto is_within=
 			[&](const fs_path& allowed_path )
 			{
-				auto given_path_it= llvm::sys::path::begin(full_file_path);
-				const auto given_path_it_end= llvm::sys::path::end(full_file_path);
-
-				auto allowed_path_it= llvm::sys::path::begin(allowed_path);
-				const auto allowed_path_it_end= llvm::sys::path::end(allowed_path);
-				while( allowed_path_it != allowed_path_it_end && given_path_it != given_path_it_end )
-				{
-					if( *given_path_it != *allowed_path_it )
-						break;
-					++given_path_it;
-					++allowed_path_it;
-				}
-
-				return allowed_path_it == allowed_path_it_end;
+				return IsWithinGivenDirectory( full_file_path, allowed_path );
 			};
 
 		for( const PrefixedIncludeDir& prefixed_include_dir : include_dirs_ )
@@ -154,6 +158,16 @@ public: // IVfs
 		}
 
 		// Import outside allowed directories.
+		return false;
+	}
+
+	virtual bool IsFileFromSourcesDirectory( const Path& full_file_path ) override
+	{
+		for( const fs_path& source_dir : source_dirs_ )
+		{
+			if( IsWithinGivenDirectory( full_file_path, source_dir ) )
+				return true;
+		}
 		return false;
 	}
 
