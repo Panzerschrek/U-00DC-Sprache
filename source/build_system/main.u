@@ -661,6 +661,9 @@ fn CreatePackageTargetBuildGraphNodes(
 				node.command_line.push_back( lib_file );
 				node.input_files.push_back( lib_file );
 			}
+
+			// Run full internalization in order to export only "main".
+			node.command_line.push_back( "--internalize" );
 		},
 		BuildTargetType::Library ->
 		{
@@ -698,14 +701,11 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			// This requires compiler to be built with internal LLD (for now we don't support external linkers).
 			node.command_line.push_back( "-filetype=exe" );
-			// Run internalization in order to export only "main".
-			node.command_line.push_back( "--internalize" );
 		},
 		BuildTargetType::Library ->
 		{
 			// Produce bitcode file.
 			node.command_line.push_back( "-filetype=bc" );
-			// TODO - run internalization, if necessary.
 		},
 	}
 
