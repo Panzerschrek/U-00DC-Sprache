@@ -1,0 +1,7 @@
+import "/a/a.uh"
+import "a_internal.uh"
+
+fn AFunc() : u32
+{
+	return FuncImpl();
+}

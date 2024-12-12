@@ -4,7 +4,7 @@
 
 #include "../../code_builder_lib_common/code_builder_errors.hpp"
 #include "../../tests/tests_common.hpp"
-#include "../launchers_common/funcs_c.hpp"
+#include "../imports/funcs_c.hpp"
 
 namespace U
 {

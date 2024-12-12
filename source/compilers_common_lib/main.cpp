@@ -132,7 +132,9 @@ cl::list<std::string> include_dir(
 cl::list<std::string> source_dir(
 	"source-dir",
 	cl::Prefix,
-	cl::desc("Mark this directory as source directory, importing files from which is allowed. Allows to import files relative to the given source file if \"prevent-imports-outside-given-directories\" option is used."),
+	cl::desc("Mark this directory as source directory, importing files from which is allowed.\
+ Allows to import files relative to the given source file if \"prevent-imports-outside-given-directories\" option is used.\
+ Also symbols declared in files imported from a source directory considered to be internal for a build target."),
 	cl::value_desc("dir"),
 	cl::ZeroOrMore,
 	cl::cat(options_category));
@@ -275,19 +277,15 @@ cl::opt<bool> verify_module(
 	cl::init(false),
 	cl::cat(options_category) );
 
-cl::opt< llvm::GlobalValue::VisibilityTypes > symbols_visibility(
-	"symbols-visibility",
-	cl::init( llvm::GlobalValue::DefaultVisibility ),
-	cl::desc("Symbols visibility style:"),
-	cl::values(
-		clEnumValN( llvm::GlobalValue::DefaultVisibility, "default", "Default style." ),
-		clEnumValN( llvm::GlobalValue::HiddenVisibility, "hidden", "Hidden style." ),
-		clEnumValN( llvm::GlobalValue::ProtectedVisibility, "protected", "Protected style." ) ),
-	cl::cat(options_category) );
-
 cl::opt<bool> internalize(
 	"internalize",
-	cl::desc("Internalize symbols with public visibility (functions, global variables) except \"main\" and symobols listed in \"--internalize-preserve\" option. Usefull for whole program optimization."),
+	cl::desc("Internalize symbols with public linkage (functions, global variables) except \"main\" and symobols listed in \"--internalize-preserve\" option. Usefull for whole program optimization."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+cl::opt<bool> internalize_hidden(
+	"internalize-hidden",
+	cl::desc("Internalize symbols with hidden visibility."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -336,31 +334,23 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 	return false;
 }
 
-void SetupSymbolsVisibility( llvm::Module& module )
+void InternalizeHiddenSymbols( llvm::Module& module )
 {
-	if( Options::symbols_visibility == llvm::GlobalValue::DefaultVisibility )
-		return; // Do nothing, since visibility of symbols should be already default.
-
-	const auto set_visibility=
-		[]( llvm::GlobalValue& v )
+	const auto internalize=
+		[]( llvm::GlobalObject& v )
 		{
-			if( v.isDeclaration() )
-				return; // Do not touch linkage of declarations.
-
-			const llvm::GlobalValue::LinkageTypes linkage= v.getLinkage();
-			if( linkage == llvm::GlobalValue::InternalLinkage ||
-				linkage == llvm::GlobalValue::PrivateLinkage )
-				return; // Keep default visibility for internal/private symbols.
-
-			// This is non-internal function/variable - set specified visibility.
-			v.setVisibility( Options::symbols_visibility );
+			if( v.getVisibility() == llvm::GlobalValue::HiddenVisibility )
+			{
+				v.setLinkage( llvm::GlobalValue::PrivateLinkage );
+				v.setComdat( nullptr );
+			}
 		};
 
 	for( llvm::Function& function : module.functions() )
-		set_visibility( function );
+		internalize( function );
 
 	for( llvm::GlobalVariable& global_variable : module.globals() )
-		set_visibility( global_variable );
+		internalize( global_variable );
 }
 
 void SetupDLLExport( llvm::Module& module )
@@ -376,7 +366,10 @@ void SetupDLLExport( llvm::Module& module )
 				linkage == llvm::GlobalValue::PrivateLinkage )
 				return; // Set dllexport only for public symbols.
 
-			v.setDLLStorageClass( llvm::GlobalValue::DLLExportStorageClass );
+			if( v.getVisibility() == llvm::GlobalValue::DefaultVisibility )
+				v.setDLLStorageClass( llvm::GlobalValue::DLLExportStorageClass );
+			else
+			{} // Do not export "hidden" symbols from dll.
 		};
 
 	for( llvm::Function& function : module.functions() )
@@ -446,8 +439,8 @@ int Main( int argc, const char* argv[] )
 	Options::halt_mode.removeArgument();
 	Options::no_libc_alloc.removeArgument();
 	Options::verify_module.removeArgument();
-	Options::symbols_visibility.removeArgument();
 	Options::internalize.removeArgument();
+	Options::internalize_hidden.removeArgument();
 	Options::internalize_preserve.removeArgument();
 	Options::lto_mode.removeArgument();
 	Options::linker_args.removeArgument();
@@ -784,6 +777,11 @@ int Main( int argc, const char* argv[] )
 		result_module->print( stream, nullptr );
 	}
 
+	// Internalize hidden symbols, if necessary.
+	// Do it before optimization, to encourange inlining of internalized functions.
+	if( Options::internalize_hidden )
+		InternalizeHiddenSymbols( *result_module );
+
 	// Run async calls inlining.
 	// Enable it for O1, O2, O3, Os, but not O0 and Oz.
 	// It's also important to perform inlining only for compilation from Ü sources directly.
@@ -857,11 +855,7 @@ int Main( int argc, const char* argv[] )
 		module_pass_manager.run( *result_module, module_analysis_manager );
 	}
 
-	// Set visibility of symbols in the result module.
-	SetupSymbolsVisibility( *result_module );
-
-	// A hacky way to export public functions in Windows DLLs.
-	// TODO - find a better way to do this.
+	// Translate "visibility(default)" into "dllexport" for Windows dynamic libraries.
 	if( file_type == FileType::Dll && target_machine->getTargetTriple().getOS() == llvm::Triple::Win32 )
 		SetupDLLExport( *result_module );
 

@@ -54,6 +54,12 @@ public:
 		return true;
 	}
 
+	virtual bool IsFileFromSourcesDirectory( const Path& full_file_path ) override
+	{
+		(void) full_file_path;
+		return true;
+	}
+
 private:
 	const std::vector<SourceEntry> sources_;
 };

@@ -72,6 +72,7 @@ fn LoadSourceGraph(
 				.file_path_normalized= "compiler_generated_prelude",
 				.contents_hash= move(contents_hash),
 				.synt_result= move(synt_result),
+				.category= SourceGraph::Node::Category::BuiltInPrelude,
 			} );
 	}
 
@@ -143,13 +144,19 @@ fn LoadSourceGraph_r(
 
 	var Synt::MacrosPtr node_macros_ptr( Synt::MacrosByContextMap() );
 
+	auto node_category=
+		( vfs.IsFileFromSourcesDirectory( file_path_normalized )
+			? SourceGraph::Node::Category::SourceOrInternalImport
+			: SourceGraph::Node::Category::OtherImport );
+
 	// Reserve place for empty node
 	auto node_index= source_graph.nodes.size();
 	source_graph.nodes.push_back(
 		SourceGraph::Node
 		{
 			.file_path_normalized= file_path_normalized,
-			.synt_result{ .macros= node_macros_ptr }
+			.synt_result{ .macros= node_macros_ptr },
+			.category= node_category,
 		} );
 
 	auto mut lex_result= LexicalAnalysis( file_content_view );
@@ -235,7 +242,8 @@ fn LoadSourceGraph_r(
 			.file_path_normalized= file_path_normalized,
 			.children= move(node_children),
 			.contents_hash= move(contents_hash),
-			.synt_result= move(synt_result)
+			.synt_result= move(synt_result),
+			.category= node_category,
 		};
 
 	return node_index;

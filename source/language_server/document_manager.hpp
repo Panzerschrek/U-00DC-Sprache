@@ -74,6 +74,13 @@ private:
 			return true;
 		}
 
+		virtual bool IsFileFromSourcesDirectory( const Path& full_file_path ) override
+		{
+			// For now consider all files as sources.
+			(void) full_file_path;
+			return true;
+		}
+
 	private:
 		DocumentManager& document_manager_;
 	};

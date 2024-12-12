@@ -44,6 +44,11 @@ size_t LoadNode_r(
 	result.nodes_storage.emplace_back();
 	result.nodes_storage[node_index].file_path= full_file_path;
 
+	result.nodes_storage[node_index].category=
+		vfs.IsFileFromSourcesDirectory( full_file_path )
+			? SourceGraph::Node::Category::SourceOrInternalImport
+			: SourceGraph::Node::Category::OtherImport;
+
 	if( !vfs.IsImportingFileAllowed( full_file_path ) )
 	{
 		result.errors.emplace_back(
@@ -198,6 +203,7 @@ SourceGraph LoadSourceGraph(
 		prelude_node.file_path= "compiler_generated_prelude";
 		prelude_node.contents_hash= std::move(contents_hash);
 		prelude_node.ast= std::move(synt_result);
+		prelude_node.category= SourceGraph::Node::Category::BuiltInPrelude;
 
 		result.nodes_storage.push_back( std::move(prelude_node) );
 	}

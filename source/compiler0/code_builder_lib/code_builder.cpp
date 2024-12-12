@@ -595,6 +595,22 @@ bool CodeBuilder::IsSrcLocFromMainFile( const SrcLoc& src_loc )
 	return IsSrcLocFromMainFile( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
 }
 
+bool CodeBuilder::IsSrcLocFromOtherImportedFile( const SrcLoc& src_loc )
+{
+	const uint32_t file_index= src_loc.GetFileIndex();
+	if( file_index != 0 && file_index < source_graph_->nodes_storage.size() &&
+		source_graph_->nodes_storage[file_index].category == SourceGraph::Node::Category::OtherImport )
+		return true;
+
+	const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
+		return false;
+
+	// If this is a src_loc in macro expansion - check recursively macro expansion point.
+	U_ASSERT( macro_expansion_index < macro_expansion_contexts_->size() );
+	return IsSrcLocFromOtherImportedFile( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
+}
+
 void CodeBuilder::TryCallCopyConstructor(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
@@ -1496,6 +1512,17 @@ void CodeBuilder::BuildFuncCode(
 	// Build debug info only for functions with body.
 	debug_info_builder_->CreateFunctionInfo( func_variable, func_name );
 
+	llvm::GlobalValue::VisibilityTypes visibility= llvm::GlobalValue::HiddenVisibility;
+	if( IsSrcLocFromOtherImportedFile( func_variable.prototype_src_loc ) )
+	{
+		// This function is declared within an imported file,
+		// which means that is should be acessible outside current build target.
+		// Mark such functions with default visibility. Other functions should have hidden visibility.
+		visibility= llvm::GlobalValue::DefaultVisibility;
+	}
+	else
+		visibility= llvm::GlobalValue::HiddenVisibility;
+
 	if( parent_names_scope.IsInsideTemplate() )
 	{
 		// Set private visibility for functions inside templates.
@@ -1512,6 +1539,7 @@ void CodeBuilder::BuildFuncCode(
 		// The only reason to use "nomangle" functions is to interact with external code.
 		// For such purposes  external linkage is essential.
 		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
+		llvm_function->setVisibility( visibility );
 	}
 	else if( IsSrcLocFromMainFile( func_variable.prototype_src_loc ) )
 	{
@@ -1524,6 +1552,7 @@ void CodeBuilder::BuildFuncCode(
 		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
 		// Do not need to use comdat here, since this function is defined only in main (compiled) file.
 		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
+		llvm_function->setVisibility( visibility );
 	}
 
 	// Ensure completeness only for functions body.
@@ -2357,7 +2386,8 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	return val;
 }
 
-llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string_view mangled_name, const bool externally_available )
+llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
+	const Type& type, const std::string_view mangled_name, const SrcLoc& src_loc )
 {
 	const auto var=
 		new llvm::GlobalVariable(
@@ -2368,7 +2398,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 			nullptr,
 			StringViewToStringRef(mangled_name) );
 
-	if( externally_available )
+	if( !IsSrcLocFromMainFile( src_loc ) )
 	{
 		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
 		llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
@@ -2376,6 +2406,17 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 		var->setComdat( comdat );
 
 		var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+
+		if( IsSrcLocFromOtherImportedFile( src_loc ) )
+		{
+			// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
+			var->setVisibility( llvm::GlobalValue::DefaultVisibility );
+		}
+		else
+		{
+			// This variable is defined within a private import file - use hidden visibility to hide it from outside.
+			var->setVisibility( llvm::GlobalValue::HiddenVisibility );
+		}
 	}
 	else
 	{

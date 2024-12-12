@@ -37,6 +37,7 @@ struct U1_IVfsInterface
 	void (*normalize_path_function)( U1_UserHandle this_, const U1_StringView& file_path, const U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, U1_UserHandle user_data );
 	bool (*load_file_content_function)( U1_UserHandle this_, const U1_StringView& full_file_path, FillStringCallback result_callback, U1_UserHandle user_data );
 	bool (*is_importing_file_allowed_function)( U1_UserHandle this_, const U1_StringView& full_file_path );
+	bool (*is_file_from_sources_directory_function)( U1_UserHandle this_, const U1_StringView& full_file_path );
 };
 
 using U1_SourceFilePathCallback= void(*)( U1_UserHandle data, const U1_StringView& file_path_normalized );

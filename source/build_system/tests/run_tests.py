@@ -143,6 +143,11 @@ def MultipleTargetIncludeDirectoriesTest():
 	RunExecutable( "multiple_target_include_directories", "multiple_target_include_directories" )
 
 
+def BuildTargetLocalSymbolsInternalizationTest():
+	RunBuildSystem( "build_target_local_symbols_internalization" )
+	RunExecutable( "build_target_local_symbols_internalization", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -539,6 +544,7 @@ def main():
 		LibraryUsedInTwoExecutablesTest,
 		CommonTransitiveDependencyTest,
 		MultipleTargetIncludeDirectoriesTest,
+		BuildTargetLocalSymbolsInternalizationTest,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,

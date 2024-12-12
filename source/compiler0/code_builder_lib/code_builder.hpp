@@ -279,6 +279,8 @@ private:
 	// Returns true if this is definition in the main file and not in an imported file.
 	bool IsSrcLocFromMainFile( const SrcLoc& src_loc );
 
+	bool IsSrcLocFromOtherImportedFile( const SrcLoc& src_loc );
+
 	// Function context required for accesing local constexpr variables.
 	Type PrepareType( const Synt::TypeName& type_name, NamesScope& names_scope, FunctionContext& function_context );
 
@@ -1393,7 +1395,7 @@ private:
 	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, std::string_view mangled_name, llvm::Constant* initializer= nullptr );
-	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, std::string_view mangled_name, bool externally_available );
+	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, std::string_view mangled_name, const SrcLoc& src_loc );
 
 	bool IsGlobalVariable( const VariablePtr& variable );
 

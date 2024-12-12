@@ -45,6 +45,12 @@ public:
 		return base_->IsImportingFileAllowed( full_file_path );
 	}
 
+	bool IsFileFromSourcesDirectory( const Path& full_file_path ) override
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+		return base_->IsFileFromSourcesDirectory( full_file_path );
+	}
+
 private:
 	std::mutex mutex_;
 	const std::unique_ptr<IVfs> base_;

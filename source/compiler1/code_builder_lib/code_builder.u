@@ -434,6 +434,29 @@ fn CodeBuilder::IsSrcLocFromMainFile( this, SrcLoc& src_loc ) : bool
 	return IsSrcLocFromMainFile( macro_expansion_src_loc );
 }
 
+fn CodeBuilder::IsSrcLocFromOtherImportedFile( this, SrcLoc& src_loc ) : bool
+{
+	with( &nodes : source_graph_.try_deref().nodes )
+	{
+		var size_type file_index( src_loc.GetFileIndex() );
+		if( file_index != 0s && file_index < nodes.size() &&
+			nodes[file_index].category == SourceGraph::Node::Category::OtherImport )
+		{
+			return true;
+		}
+	}
+
+	auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
+	{
+		return false;
+	}
+
+	// If this is a src_loc in macro expansion - check recursively macro expansion point.
+	auto macro_expansion_src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
+	return IsSrcLocFromOtherImportedFile( macro_expansion_src_loc );
+}
+
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 {
 	var [ tup[ Keyword, U_FundamentalType ], 24 ] constexpr types_table
@@ -1096,6 +1119,20 @@ fn CodeBuilder::BuildFuncCode(
 	auto body_syntax_element_ptr= func_variable.body_syntax_element.try_to_non_nullable();
 	var Synt::Function& body_syntax_element= body_syntax_element_ptr.deref();
 
+	var LLVMVisibility mut visibility= LLVMVisibility::Hidden;
+	if( !func_variable.prototype_syntax_element.empty() &&
+		IsSrcLocFromOtherImportedFile( func_variable.prototype_syntax_element.try_deref().src_loc ) )
+	{
+		// This function is declared within an imported file,
+		// which means that is should be acessible outside current build target.
+		// Mark such functions with default visibility. Other functions should have hidden visibility.
+		visibility= LLVMVisibility::Default;
+	}
+	else
+	{
+		visibility= LLVMVisibility::Hidden;
+	}
+
 	if( names_scope.lock_imut().deref().IsInsideTemplate() )
 	{
 		// Set private visibility for functions inside templates.
@@ -1112,6 +1149,7 @@ fn CodeBuilder::BuildFuncCode(
 		// The only reason to use "nomangle" functions is to interact with external code.
 		// For such purposes  external linkage is essential.
 		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::External ) );
+		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 	else if( func_variable.prototype_syntax_element.empty() || IsSrcLocFromMainFile( func_variable.prototype_syntax_element.try_deref().src_loc ) )
 	{
@@ -1124,6 +1162,7 @@ fn CodeBuilder::BuildFuncCode(
 		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
 		// Do not need to use comdat here, since this function is defined only in main (compiled) file.
 		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::External ) );
+		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
 
 	debug_info_builder_.try_deref().CreateFunctionInfo( func_variable );
@@ -2294,7 +2333,7 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string_view8 name_null_ter
 	}
 }
 
-fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, bool externally_available ) : LLVMValueRef
+fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, SrcLoc& src_loc ) : LLVMValueRef
 {
 	debug_assert( !name_null_terminated.empty() && name_null_terminated.back() == "\0"c8, "String is not null-terminated as expected!" );
 
@@ -2304,13 +2343,24 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 		LLVMSetUnnamedAddress( global_variable, LLVMUnnamedAddr::GlobalUnnamedAddr );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
 
-		if( externally_available )
+		if( !IsSrcLocFromMainFile( src_loc ) )
 		{
 			// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
 			LLVMSetLinkage( global_variable, LLVMLinkage::External );
 			auto comdat= LLVMGetOrInsertComdat( module_, name_null_terminated.front() );
 			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
 			LLVMSetComdat( global_variable, comdat );
+
+			if( IsSrcLocFromOtherImportedFile( src_loc ) )
+			{
+				// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
+				LLVMSetVisibility( global_variable, LLVMVisibility::Default );
+			}
+			else
+			{
+				// This variable is defined within a private import file - use hidden visibility to hide it from outside.
+				LLVMSetVisibility( global_variable, LLVMVisibility::Hidden );
+			}
 		}
 		else
 		{

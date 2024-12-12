@@ -37,6 +37,12 @@ public:
 		return true;
 	}
 
+	virtual bool IsFileFromSourcesDirectory( const Path& full_file_path ) override
+	{
+		(void) full_file_path;
+		return true;
+	}
+
 private:
 	const std::string file_path_;
 	const char* const file_text_;

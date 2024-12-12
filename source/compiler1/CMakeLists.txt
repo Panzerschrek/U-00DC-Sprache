@@ -37,6 +37,12 @@ function( CompileUSource u_source_file out_object )
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
+				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
+				# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/launchers_common
+				--source-dir ${CMAKE_CURRENT_BINARY_DIR}/
 			DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.bc:", but launches custom command in current binary directory
 			COMMENT "Building ${current_subdir}/${u_source_file_relative}.bc"
@@ -54,10 +60,15 @@ function( CompileUSource u_source_file out_object )
 				--verify-module
 				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 				--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
-				--symbols-visibility=hidden # Make functions and variables hidden to avoid exporting them in ELF shared libraries (*.so)
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
+				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
+				# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/launchers_common
+				--source-dir ${CMAKE_CURRENT_BINARY_DIR}/
 			DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
 			COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"
@@ -153,16 +164,7 @@ if( COMPILER1_LTO )
 			-o ${CODE_BUILDER_LIB_O}
 			--input-filetype=bc
 			-lto-mode=link
-			--internalize
-			"--internalize-preserve=\
-U1_BuildProgram,\
-U1_BuildProgramWithErrors,\
-U1_BuildProgramWithSyntaxErrors,\
-U1_BuildMultisourceProgram,\
-U1_BuildMultisourceProgramWithErrors,\
-U1_BuildProgramForLifetimesTest,\
-U1_BuildProgramForMSVCManglingTest,\
-U1_BuildProgramUsingVFS"
+			--internalize-hidden # Internalize all except publically-available symbols.
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Building ${CODE_BUILDER_LIB_O}"
 		)

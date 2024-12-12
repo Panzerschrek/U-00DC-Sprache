@@ -341,6 +341,17 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 		llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id_table->getName() );
 		type_id_comdat->setSelectionKind( llvm::Comdat::Any );
 		the_class.polymorph_type_id_table->setComdat( type_id_comdat );
+
+		if( IsSrcLocFromOtherImportedFile( class_type->syntax_element->src_loc ) )
+		{
+			// This class is defined within an import file - use default visibility in order to make type id table available for other build targets.
+			the_class.polymorph_type_id_table->setVisibility( llvm::GlobalValue::DefaultVisibility );
+		}
+		else
+		{
+			// This class is defined within a private import file - use hidden visibility to hide type id table from outside.
+			the_class.polymorph_type_id_table->setVisibility( llvm::GlobalValue::HiddenVisibility );
+		}
 	}
 	else
 	{
