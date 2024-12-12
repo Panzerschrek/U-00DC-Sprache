@@ -335,10 +335,13 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 void InternalizeHiddenSymbols( llvm::Module& module )
 {
 	const auto internalize=
-		[]( llvm::GlobalValue& v )
+		[]( llvm::GlobalObject& v )
 		{
 			if( v.getVisibility() == llvm::GlobalValue::HiddenVisibility )
+			{
 				v.setLinkage( llvm::GlobalValue::PrivateLinkage );
+				v.setComdat( nullptr );
+			}
 		};
 
 	for( llvm::Function& function : module.functions() )
