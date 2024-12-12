@@ -1,0 +1,7 @@
+import "/a0/a0.uh"
+import "/c1/c1.uh"
+
+fn FuncA() : u32
+{
+	return 111u * CommonFunc();
+}

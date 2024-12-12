@@ -153,6 +153,11 @@ def PrivateExeDependencyTest():
 	RunExecutable( "private_exe_dependency", "exe" )
 
 
+def PrivateDependenciesInternalizationTest():
+	RunBuildSystem( "private_dependencies_internalization" )
+	RunExecutable( "private_dependencies_internalization", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -551,6 +556,7 @@ def main():
 		MultipleTargetIncludeDirectoriesTest,
 		BuildTargetLocalSymbolsInternalizationTest,
 		PrivateExeDependencyTest,
+		PrivateDependenciesInternalizationTest,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
