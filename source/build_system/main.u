@@ -183,20 +183,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 		foreach( &build_target_name : build_target_names )
 		{
-			var PackageInfoTransformed::BuildTarget& build_target=
-				cast_imut(package_info_transformed).build_targets[ build_target_name ];
-
 			CreatePackageTargetBuildGraphNodes(
 				build_system_paths,
 				package_source_directory,
 				package_build_directory,
 				options.build_configuration,
+				package_info_transformed,
 				build_target_name,
-				build_target,
-				CollectPublicDependenciesPrefixedIncludeDirectories(
-					package_info_transformed,
-					package_source_directory,
-					build_target.public_dependencies_including_transitive ),
+				package_info_transformed.build_targets[ build_target_name ],
 				build_graph );
 		}
 	}
@@ -510,9 +504,9 @@ fn CreatePackageTargetBuildGraphNodes(
 	ust::string_view8 package_source_directory,
 	ust::string_view8 package_build_directory,
 	BuildConfiguration build_configuration,
+	PackageInfoTransformed& package_info,
 	ust::string_view8 target_name,
 	PackageInfoTransformed::BuildTarget& target,
-	ust::array_view_imut</ust::string8/> public_dependencies_prefixed_include_directories,
 	BuildGraph &mut build_graph )
 {
 	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( package_build_directory, target_name );
@@ -521,18 +515,25 @@ fn CreatePackageTargetBuildGraphNodes(
 	var ust::vector</ust::string8/> mut include_directories_prefixed;
 
 	// Own include directories.
-	foreach( &public_include_directory : target.public_include_directories )
-	{
-		var ust::string8 dir_absolute= NormalizePath( ust::string8(package_source_directory) + "/" + public_include_directory );
-		// Prefix this directory with target name.
-		// So, using
-		//    import "some_target/some_file.uh"
-		// will work.
-		include_directories_prefixed.push_back( dir_absolute + g_include_dir_prefix_separator + target_name );
-	}
+	ExtractDependenciesIncludeDirectories(
+		package_info,
+		package_source_directory,
+		ust::make_array( BuildTargetFullName{ .name= target_name } ),
+		include_directories_prefixed );
 
-	// Include directories of public dependencies.
-	include_directories_prefixed.append( public_dependencies_prefixed_include_directories.iter() );
+	// Include directories of all public dependencies.
+	ExtractDependenciesIncludeDirectories(
+		package_info,
+		package_source_directory,
+		target.public_dependencies_including_transitive,
+		include_directories_prefixed );
+
+	// Include directories of private dependencies.
+	ExtractDependenciesIncludeDirectories(
+		package_info,
+		package_source_directory,
+		target.private_dependencies,
+		include_directories_prefixed );
 
 	var ust::string8 source_dir= NormalizePath( package_source_directory + ( "/" + target.sources_directory ) );
 
@@ -651,7 +652,6 @@ fn CreatePackageTargetBuildGraphNodes(
 		BuildTargetType::Executable ->
 		{
 			// For executables perform linking with all public dependencies.
-			// TODO - link also private dependencies.
 			foreach( &public_dependency : target.public_dependencies_including_transitive )
 			{
 				// Assume this is a library dependency (this should be validated before).
@@ -666,11 +666,21 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			// Do not link public dependencies in libraries.
 			// Instead propatage them to the terminal target - executable or shared library.
-			// TODO - link private dependencies.
 
 			// Internalize hidden symbols - to hide functions/variables which shouldn't be available outside this library.
 			node.command_line.push_back( "--internalize-hidden" );
 		}
+	}
+
+	// For all build target types link private dependencies.
+	// TODO - internalize symbols from them.
+	foreach( &private_dependency : target.private_dependencies )
+	{
+		// Assume this is a library dependency (this should be validated before).
+		var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( private_dependency.name + ".bc" ) ) );
+
+		node.command_line.push_back( lib_file );
+		node.input_files.push_back( lib_file );
 	}
 
 	node.command_line.push_back( "-o" );
@@ -729,15 +739,14 @@ fn CreatePackageTargetBuildGraphNodes(
 	build_graph.nodes.push_back( move(node) );
 }
 
-fn CollectPublicDependenciesPrefixedIncludeDirectories(
+fn ExtractDependenciesIncludeDirectories(
 	PackageInfoTransformed& package_info,
 	ust::string_view8 package_source_directory,
-	ust::array_view_imut</BuildTargetFullName/> public_dependencies ) : ust::vector</ust::string8/>
+	ust::array_view_imut</BuildTargetFullName/> dependencies,
+	ust::vector</ust::string8/> &mut include_directories_prefixed )
 {
-	var ust::vector</ust::string8/> mut result;
-	foreach( &build_target_name : public_dependencies )
+	foreach( &build_target_name : dependencies )
 	{
-		// TODO - fetch other packages.
 		if_var( &build_target : package_info.build_targets.find( build_target_name.name ) )
 		{
 			foreach( &public_include_directory : build_target.public_include_directories )
@@ -749,12 +758,10 @@ fn CollectPublicDependenciesPrefixedIncludeDirectories(
 				var ust::string8 mut path= NormalizePath( package_source_directory + ( "/" + public_include_directory ) );
 				path+= g_include_dir_prefix_separator;
 				path+= build_target_name.name;
-				result.push_back( move(path) );
+				include_directories_prefixed.push_back( move(path) );
 			}
 		}
 	}
-
-	return result;
 }
 
 auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.

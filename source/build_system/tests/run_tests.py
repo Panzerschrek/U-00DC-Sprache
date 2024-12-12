@@ -148,6 +148,11 @@ def BuildTargetLocalSymbolsInternalizationTest():
 	RunExecutable( "build_target_local_symbols_internalization", "exe" )
 
 
+def PrivateExeDependencyTest():
+	RunBuildSystem( "private_exe_dependency" )
+	RunExecutable( "private_exe_dependency", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -545,6 +550,7 @@ def main():
 		CommonTransitiveDependencyTest,
 		MultipleTargetIncludeDirectoriesTest,
 		BuildTargetLocalSymbolsInternalizationTest,
+		PrivateExeDependencyTest,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,

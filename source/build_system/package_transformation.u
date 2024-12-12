@@ -144,6 +144,10 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		ust::sort( out_build_target.public_dependencies );
 		out_build_target.public_dependencies.remove_adjacent_duplicates();
 
+		out_build_target.private_dependencies= build_target.private_dependencies;
+		ust::sort( out_build_target.private_dependencies );
+		out_build_target.private_dependencies.remove_adjacent_duplicates();
+
 		out_package_info.build_targets.insert( target_name, move( out_build_target ) );
 	}
 

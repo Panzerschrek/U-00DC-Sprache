@@ -1,0 +1,6 @@
+import "/lib/lib.uh"
+
+fn LibFunc( i32 x ) : i32
+{
+	return x * 3;
+}
