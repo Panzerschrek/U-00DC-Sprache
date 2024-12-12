@@ -673,7 +673,6 @@ fn CreatePackageTargetBuildGraphNodes(
 	}
 
 	// For all build target types link private dependencies.
-	// TODO - internalize symbols from them.
 	foreach( &private_dependency : target.private_dependencies )
 	{
 		// Assume this is a library dependency (this should be validated before).
@@ -681,6 +680,10 @@ fn CreatePackageTargetBuildGraphNodes(
 
 		node.command_line.push_back( lib_file );
 		node.input_files.push_back( lib_file );
+
+		// Internalize all symbols from private dependencies.
+		node.command_line.push_back( "--internalize-symbols-from" );
+		node.command_line.push_back( lib_file );
 	}
 
 	node.command_line.push_back( "-o" );

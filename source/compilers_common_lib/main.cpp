@@ -297,6 +297,14 @@ cl::list<std::string> internalize_preserve(
 	cl::Optional,
 	cl::cat(options_category) );
 
+cl::list<std::string> internalize_symbols_from(
+	"internalize-symbols-from",
+	cl::Prefix,
+	cl::desc("Internalize symbols from given input file. File name must be specified exactly as it specified in input files option."),
+	cl::value_desc("file"),
+	cl::ZeroOrMore,
+	cl::cat(options_category));
+
 enum class LTOMode{ None, PreLink, Link };
 cl::opt< LTOMode > lto_mode(
 	"lto-mode",
@@ -442,6 +450,7 @@ int Main( int argc, const char* argv[] )
 	Options::internalize.removeArgument();
 	Options::internalize_hidden.removeArgument();
 	Options::internalize_preserve.removeArgument();
+	Options::internalize_symbols_from.removeArgument();
 	Options::lto_mode.removeArgument();
 	Options::linker_args.removeArgument();
 
@@ -565,6 +574,49 @@ int Main( int argc, const char* argv[] )
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
 
+	std::vector<std::string> functions_to_force_inernalize;
+	std::vector<std::string> variables_to_force_inernalize;
+
+	bool have_some_errors= false;
+
+	const auto link_given_module=
+		[&]( std::unique_ptr<llvm::Module> module, const std::string& input_file_name )
+		{
+			bool should_internalize= false;
+			for( const auto& file_name : Options::internalize_symbols_from )
+			{
+				if( input_file_name == file_name )
+				{
+					should_internalize= true;
+					break;
+				}
+			}
+
+			// TODO - move this code into a separate function.
+			if( should_internalize )
+			{
+				for( const llvm::Function& function : module->functions() )
+					if( function.getLinkage() == llvm::GlobalValue::ExternalLinkage )
+						functions_to_force_inernalize.push_back( function.getName().str() );
+
+				for( const llvm::GlobalVariable& global_variable : module->globals() )
+					if( global_variable.getLinkage() == llvm::GlobalValue::ExternalLinkage )
+						variables_to_force_inernalize.push_back( global_variable.getName().str() );
+			}
+
+			if( result_module == nullptr )
+				result_module= std::move( module );
+			else
+			{
+				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(module) );
+				if( not_ok )
+				{
+					std::cerr << "Error, linking file \"" << input_file_name << "\"" << std::endl;
+					have_some_errors= true;
+				}
+			}
+		};
+
 	if( Options::input_files_type == Options::InputFileType::Source )
 	{
 		// Compile multiple input files and link them together.
@@ -590,7 +642,6 @@ int Main( int argc, const char* argv[] )
 		if( Options::print_prelude_code )
 			std::cout << prelude_code << std::endl;
 
-		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
 			CodeBuilderLaunchResult code_builder_launch_result=
@@ -623,17 +674,7 @@ int Main( int argc, const char* argv[] )
 				continue;
 			}
 
-			if( result_module == nullptr )
-				result_module= std::move( code_builder_launch_result.llvm_module );
-			else
-			{
-				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(code_builder_launch_result.llvm_module) );
-				if( not_ok )
-				{
-					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
-					have_some_errors= true;
-				}
-			}
+			link_given_module( std::move(code_builder_launch_result.llvm_module), input_file );
 		}
 
 		if( have_some_errors )
@@ -670,7 +711,6 @@ int Main( int argc, const char* argv[] )
 	{
 		// Load and link together multiple BC or LL files.
 
-		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
 			std::unique_ptr<llvm::Module> module;
@@ -737,17 +777,7 @@ int Main( int argc, const char* argv[] )
 
 			deps_list.push_back( input_file );
 
-			if( result_module == nullptr )
-				result_module= std::move( module );
-			else
-			{
-				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(module) );
-				if( not_ok )
-				{
-					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
-					have_some_errors= true;
-				}
-			}
+			link_given_module( std::move(module), input_file );
 		}
 
 		if( have_some_errors )
@@ -775,6 +805,26 @@ int Main( int argc, const char* argv[] )
 	{
 		llvm::raw_os_ostream stream(std::cout);
 		result_module->print( stream, nullptr );
+	}
+
+	// Internalize symbols from input files listed in "internalize-symbols-from" option.
+	// TODO - move this code into a separate function.
+	for( const std::string& function_name : functions_to_force_inernalize )
+	{
+		if( const auto function= result_module->getFunction( function_name ) )
+		{
+			function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+			function->setComdat( nullptr );
+		}
+	}
+
+	for( const std::string& variable_name : variables_to_force_inernalize )
+	{
+		if( const auto variable= result_module->getGlobalVariable( variable_name ) )
+		{
+			variable->setLinkage( llvm::GlobalValue::PrivateLinkage );
+			variable->setComdat( nullptr );
+		}
 	}
 
 	// Internalize hidden symbols, if necessary.
