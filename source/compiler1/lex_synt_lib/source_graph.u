@@ -72,7 +72,7 @@ fn LoadSourceGraph(
 				.file_path_normalized= "compiler_generated_prelude",
 				.contents_hash= move(contents_hash),
 				.synt_result= move(synt_result),
-				.category= SourceGraph::NodeCategory::BuiltInPrelude,
+				.category= SourceGraph::Node::Category::BuiltInPrelude,
 			} );
 	}
 
@@ -146,8 +146,8 @@ fn LoadSourceGraph_r(
 
 	auto node_category=
 		( vfs.IsFileFromSourcesDirectory( file_path_normalized )
-			? SourceGraph::NodeCategory::Source
-			: SourceGraph::NodeCategory::Import );
+			? SourceGraph::Node::Category::SourceOrInternalImport
+			: SourceGraph::Node::Category::OtherImport );
 
 	// Reserve place for empty node
 	auto node_index= source_graph.nodes.size();

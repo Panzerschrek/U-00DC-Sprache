@@ -30,20 +30,20 @@ using IVfsSharedPtr= std::shared_ptr<IVfs>;
 // Directed acyclic graph of sources.
 struct SourceGraph
 {
-	enum class NodeCategory : uint8_t
-	{
-		Source,
-		Import,
-		BuiltInPrelude,
-	};
-
 	struct Node
 	{
+		enum class Category : uint8_t
+		{
+			SourceOrInternalImport,
+			OtherImport,
+			BuiltInPrelude,
+		};
+
 		IVfs::Path file_path; // normalized
 		std::string contents_hash;
 		std::vector<size_t> child_nodes_indices;
 		Synt::SyntaxAnalysisResult ast;
-		NodeCategory category= NodeCategory::Source;
+		Category category= Category::SourceOrInternalImport;
 	};
 
 	std::vector<Node> nodes_storage; // first element is root

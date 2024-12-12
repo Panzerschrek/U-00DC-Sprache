@@ -345,7 +345,7 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 		// TODO - check macro expansion.
 		const uint32_t file_index= class_type->syntax_element->src_loc.GetFileIndex();
 		if( file_index != 0 && file_index < source_graph_->nodes_storage.size() &&
-			source_graph_->nodes_storage[file_index].category == SourceGraph::NodeCategory::Import )
+			source_graph_->nodes_storage[file_index].category == SourceGraph::Node::Category::OtherImport )
 		{
 			// This class is defined within an import file - use default visibility in order to make type id table available for other build targets.
 			the_class.polymorph_type_id_table->setVisibility( llvm::GlobalValue::DefaultVisibility );

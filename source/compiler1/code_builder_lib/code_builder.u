@@ -1105,7 +1105,7 @@ fn CodeBuilder::BuildFuncCode(
 		// TODO - imporive this check, process also macro expansion.
 		var size_type prototype_file_index( func_variable.prototype_syntax_element.try_deref().src_loc.GetFileIndex() );
 		if( prototype_file_index != 0s && prototype_file_index < nodes.size() &&
-			nodes[prototype_file_index].category == SourceGraph::NodeCategory::Import )
+			nodes[prototype_file_index].category == SourceGraph::Node::Category::OtherImport )
 		{
 			// This function is declared within an imported file,
 			// Which means that is should be acessible outside current build target.
@@ -2340,7 +2340,7 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 			var size_type prototype_file_index( src_loc.GetFileIndex() );
 			auto& nodes= source_graph_.try_deref().nodes;
 			if( prototype_file_index != 0s && prototype_file_index < nodes.size() &&
-				nodes[prototype_file_index].category == SourceGraph::NodeCategory::Import )
+				nodes[prototype_file_index].category == SourceGraph::Node::Category::OtherImport )
 			{
 				// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
 				LLVMSetVisibility( global_variable, LLVMVisibility::Default );

@@ -24,20 +24,20 @@ type IVfsSharedPtr= ust::shared_ptr_mut</IVfs/>;
 
 struct SourceGraph
 {
-	enum NodeCategory
-	{
-		Source,
-		Import,
-		BuiltInPrelude,
-	}
-
 	struct Node
 	{
+		enum Category
+		{
+			SourceOrInternalImport,
+			OtherImport,
+			BuiltInPrelude,
+		}
+
 		ust::string8 file_path_normalized;
 		ust::string8 contents_hash;
 		Synt::SyntaxAnalysisResult synt_result;
 		ust::vector</size_type/> children;
-		NodeCategory category;
+		Category category;
 	}
 
 	ust::vector</Node/> nodes; // Node #0 is root
