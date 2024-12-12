@@ -155,6 +155,8 @@ CPP Header converter:
 *) Improve build directories creation code - create all directories within given path, handle cases when a directory
 	already exists, handle case where a non-directory object (like a file) with given name exists
 *) Build graph - support for a command execution of some internal build system actions (like file/directory creation)
+*) Private dependencies
+*) Disable public include directories and public dependencies for executable build targets
 *) Shared library target type
 *) C static library target type
 *) Allow linking against an external static C library
@@ -166,8 +168,8 @@ CPP Header converter:
 *) Cross-compilation support
 *) Multiple packages support
 *) Fix JSON floats serialization
-*) Simplify structs to/from json conversion by using template code with typeinfo and mixins usage
-*) Prevent at leasto some name comflicts in imports (where multiple files exist for the given import path)
+*) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
+*) Prevent at least some name comflicts in imports (where multiple files exist for the given import path)
 *) Reuse build script shared library among different build confugurations and target triples (build only one copy)
 *) Clean command - to delete build files
 *) Command line option for building only specified build targets
@@ -179,6 +181,7 @@ CPP Header converter:
 *) Investigate necessity/possibility of a centralized packages repository
 
 Documentation:
+*) Documentation for the build system
 *) Other languages (not only russian and english)
 *) Describe more language details
 *) Describe undefined behavior
