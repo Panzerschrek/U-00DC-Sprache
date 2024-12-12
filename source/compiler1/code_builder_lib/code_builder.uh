@@ -122,6 +122,8 @@ private:
 	// Returns true if this is definition in the main file and not in an imported file.
 	fn IsSrcLocFromMainFile( this, SrcLoc& src_loc ) : bool;
 
+	fn IsSrcLocFromOtherImportedFile( this, SrcLoc& src_loc ) : bool;
+
 	//
 	// Resolving
 	//

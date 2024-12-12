@@ -416,11 +416,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
 			LLVMSetComdat( global_value, comdat );
 
-			// TODO - imporive this check, process also macro expansion.
-			var size_type prototype_file_index( class_src_loc.GetFileIndex() );
-			auto& nodes= source_graph_.try_deref().nodes;
-			if( prototype_file_index != 0s && prototype_file_index < nodes.size() &&
-				nodes[prototype_file_index].category == SourceGraph::Node::Category::OtherImport )
+			if( IsSrcLocFromOtherImportedFile( class_src_loc ) )
 			{
 				// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
 				LLVMSetVisibility( global_value, LLVMVisibility::Default );

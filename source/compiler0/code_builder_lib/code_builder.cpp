@@ -595,6 +595,22 @@ bool CodeBuilder::IsSrcLocFromMainFile( const SrcLoc& src_loc )
 	return IsSrcLocFromMainFile( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
 }
 
+bool CodeBuilder::IsSrcLocFromOtherImportedFile( const SrcLoc& src_loc )
+{
+	const uint32_t file_index= src_loc.GetFileIndex();
+	if( file_index != 0 && file_index < source_graph_->nodes_storage.size() &&
+		source_graph_->nodes_storage[file_index].category == SourceGraph::Node::Category::OtherImport )
+		return true;
+
+	const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
+		return false;
+
+	// If this is a src_loc in macro expansion - check recursively macro expansion point.
+	U_ASSERT( macro_expansion_index < macro_expansion_contexts_->size() );
+	return IsSrcLocFromOtherImportedFile( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
+}
+
 void CodeBuilder::TryCallCopyConstructor(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
@@ -1497,20 +1513,15 @@ void CodeBuilder::BuildFuncCode(
 	debug_info_builder_->CreateFunctionInfo( func_variable, func_name );
 
 	llvm::GlobalValue::VisibilityTypes visibility= llvm::GlobalValue::HiddenVisibility;
+	if( IsSrcLocFromOtherImportedFile( func_variable.prototype_src_loc ) )
 	{
-		// TODO - imporive this check, process also macro expansion.
-		const uint32_t prototype_file_index= func_variable.prototype_src_loc.GetFileIndex();
-		if( prototype_file_index != 0 && prototype_file_index < source_graph_->nodes_storage.size() &&
-			source_graph_->nodes_storage[prototype_file_index].category == SourceGraph::Node::Category::OtherImport )
-		{
-			// This function is declared within an imported file,
-			// Which means that is should be acessible outside current build target.
-			// Mark such functions with default visibility. Other functions should have hidden visibility.
-			visibility= llvm::GlobalValue::DefaultVisibility;
-		}
-		else
-			visibility= llvm::GlobalValue::HiddenVisibility;
+		// This function is declared within an imported file,
+		// Which means that is should be acessible outside current build target.
+		// Mark such functions with default visibility. Other functions should have hidden visibility.
+		visibility= llvm::GlobalValue::DefaultVisibility;
 	}
+	else
+		visibility= llvm::GlobalValue::HiddenVisibility;
 
 	if( parent_names_scope.IsInsideTemplate() )
 	{
@@ -2396,10 +2407,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
 
 		var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
-		// TODO - check macro expansion.
-		const uint32_t file_index= src_loc.GetFileIndex();
-		if( file_index != 0 && file_index < source_graph_->nodes_storage.size() &&
-			source_graph_->nodes_storage[file_index].category == SourceGraph::Node::Category::OtherImport )
+		if( IsSrcLocFromOtherImportedFile( src_loc ) )
 		{
 			// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
 			var->setVisibility( llvm::GlobalValue::DefaultVisibility );

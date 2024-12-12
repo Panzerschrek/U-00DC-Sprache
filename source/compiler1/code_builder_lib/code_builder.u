@@ -434,6 +434,29 @@ fn CodeBuilder::IsSrcLocFromMainFile( this, SrcLoc& src_loc ) : bool
 	return IsSrcLocFromMainFile( macro_expansion_src_loc );
 }
 
+fn CodeBuilder::IsSrcLocFromOtherImportedFile( this, SrcLoc& src_loc ) : bool
+{
+	with( &nodes : source_graph_.try_deref().nodes )
+	{
+		var size_type file_index( src_loc.GetFileIndex() );
+		if( file_index != 0s && file_index < nodes.size() &&
+			nodes[file_index].category == SourceGraph::Node::Category::OtherImport )
+		{
+			return true;
+		}
+	}
+
+	auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
+	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
+	{
+		return false;
+	}
+
+	// If this is a src_loc in macro expansion - check recursively macro expansion point.
+	auto macro_expansion_src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
+	return IsSrcLocFromOtherImportedFile( macro_expansion_src_loc );
+}
+
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 {
 	var [ tup[ Keyword, U_FundamentalType ], 24 ] constexpr types_table
@@ -1097,25 +1120,17 @@ fn CodeBuilder::BuildFuncCode(
 	var Synt::Function& body_syntax_element= body_syntax_element_ptr.deref();
 
 	var LLVMVisibility mut visibility= LLVMVisibility::Hidden;
-
-	if( !func_variable.prototype_syntax_element.empty() )
+	if( !func_variable.prototype_syntax_element.empty() &&
+		IsSrcLocFromOtherImportedFile( func_variable.prototype_syntax_element.try_deref().src_loc ) )
 	{
-		auto& nodes= source_graph_.try_deref().nodes;
-
-		// TODO - imporive this check, process also macro expansion.
-		var size_type prototype_file_index( func_variable.prototype_syntax_element.try_deref().src_loc.GetFileIndex() );
-		if( prototype_file_index != 0s && prototype_file_index < nodes.size() &&
-			nodes[prototype_file_index].category == SourceGraph::Node::Category::OtherImport )
-		{
-			// This function is declared within an imported file,
-			// Which means that is should be acessible outside current build target.
-			// Mark such functions with default visibility. Other functions should have hidden visibility.
-			visibility= LLVMVisibility::Default;
-		}
-		else
-		{
-			visibility= LLVMVisibility::Hidden;
-		}
+		// This function is declared within an imported file,
+		// Which means that is should be acessible outside current build target.
+		// Mark such functions with default visibility. Other functions should have hidden visibility.
+		visibility= LLVMVisibility::Default;
+	}
+	else
+	{
+		visibility= LLVMVisibility::Hidden;
 	}
 
 	if( names_scope.lock_imut().deref().IsInsideTemplate() )
@@ -2336,11 +2351,7 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
 			LLVMSetComdat( global_variable, comdat );
 
-			// TODO - imporive this check, process also macro expansion.
-			var size_type prototype_file_index( src_loc.GetFileIndex() );
-			auto& nodes= source_graph_.try_deref().nodes;
-			if( prototype_file_index != 0s && prototype_file_index < nodes.size() &&
-				nodes[prototype_file_index].category == SourceGraph::Node::Category::OtherImport )
+			if( IsSrcLocFromOtherImportedFile( src_loc ) )
 			{
 				// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
 				LLVMSetVisibility( global_variable, LLVMVisibility::Default );
