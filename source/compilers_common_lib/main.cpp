@@ -132,7 +132,9 @@ cl::list<std::string> include_dir(
 cl::list<std::string> source_dir(
 	"source-dir",
 	cl::Prefix,
-	cl::desc("Mark this directory as source directory, importing files from which is allowed. Allows to import files relative to the given source file if \"prevent-imports-outside-given-directories\" option is used."),
+	cl::desc("Mark this directory as source directory, importing files from which is allowed.\
+ Allows to import files relative to the given source file if \"prevent-imports-outside-given-directories\" option is used.\
+ Also symbols declared in files imported from a source directory considered to be internal for a build target."),
 	cl::value_desc("dir"),
 	cl::ZeroOrMore,
 	cl::cat(options_category));

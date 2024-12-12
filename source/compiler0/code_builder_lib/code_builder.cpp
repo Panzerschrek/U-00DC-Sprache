@@ -1516,7 +1516,7 @@ void CodeBuilder::BuildFuncCode(
 	if( IsSrcLocFromOtherImportedFile( func_variable.prototype_src_loc ) )
 	{
 		// This function is declared within an imported file,
-		// Which means that is should be acessible outside current build target.
+		// which means that is should be acessible outside current build target.
 		// Mark such functions with default visibility. Other functions should have hidden visibility.
 		visibility= llvm::GlobalValue::DefaultVisibility;
 	}

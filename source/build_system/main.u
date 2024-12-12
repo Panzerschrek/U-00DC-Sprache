@@ -318,7 +318,7 @@ fn BuildAndLoadPackageBuildScript(
 			}
 		}
 
-		// Create also header file. We need it to export entry function name function properly.
+		// Create also header file. We need it to export entry function properly.
 		{
 			var ust::string8 mut contents = "import \"/build_system.uh\"\n\n";
 			contents+= "fn nomangle ";

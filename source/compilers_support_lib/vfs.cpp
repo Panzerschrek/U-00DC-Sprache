@@ -47,8 +47,8 @@ bool IsWithinGivenDirectory( const llvm::StringRef full_file_path, const llvm::S
 	const auto given_path_it_end= llvm::sys::path::end(full_file_path);
 
 	auto directory_path_it= llvm::sys::path::begin(directory_path);
-	const auto allowed_path_it_end= llvm::sys::path::end(directory_path);
-	while( directory_path_it != allowed_path_it_end && given_path_it != given_path_it_end )
+	const auto directory_path_it_end= llvm::sys::path::end(directory_path);
+	while( directory_path_it != directory_path_it_end && given_path_it != given_path_it_end )
 	{
 		if( *given_path_it != *directory_path_it )
 			break;
@@ -56,7 +56,7 @@ bool IsWithinGivenDirectory( const llvm::StringRef full_file_path, const llvm::S
 		++directory_path_it;
 	}
 
-	return directory_path_it == allowed_path_it_end;
+	return directory_path_it == directory_path_it_end;
 }
 
 class VfsOverSystemFS final : public IVfs
