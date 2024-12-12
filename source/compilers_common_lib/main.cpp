@@ -361,6 +361,61 @@ void InternalizeHiddenSymbols( llvm::Module& module )
 		internalize( global_variable );
 }
 
+struct ExternalSymbolsInfo
+{
+	// Symbols with external linkage have uniqie names, so, we can identify them by name.
+	std::vector<std::string> functions;
+	std::vector<std::string> variables;
+};
+
+void CollectExternalSymbolsForInternalizatioin(
+	const llvm::Module& module,
+	const std::string& input_file_name,
+	ExternalSymbolsInfo& external_symbols_info )
+{
+	bool should_internalize= false;
+	for( const auto& file_name : Options::internalize_symbols_from )
+	{
+		if( input_file_name == file_name )
+		{
+			should_internalize= true;
+			break;
+		}
+	}
+
+	if( !should_internalize )
+		return;
+
+	for( const llvm::Function& function : module.functions() )
+		if( function.getLinkage() == llvm::GlobalValue::ExternalLinkage )
+			external_symbols_info.functions.push_back( function.getName().str() );
+
+	for( const llvm::GlobalVariable& global_variable : module.globals() )
+		if( global_variable.getLinkage() == llvm::GlobalValue::ExternalLinkage )
+			external_symbols_info.variables.push_back( global_variable.getName().str() );
+}
+
+void InternalizeCollectedSymbols( llvm::Module& module, const ExternalSymbolsInfo& external_symbols_info )
+{
+	for( const std::string& function_name : external_symbols_info.functions )
+	{
+		if( const auto function= module.getFunction( function_name ) )
+		{
+			function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+			function->setComdat( nullptr );
+		}
+	}
+
+	for( const std::string& variable_name : external_symbols_info.variables )
+	{
+		if( const auto variable= module.getGlobalVariable( variable_name ) )
+		{
+			variable->setLinkage( llvm::GlobalValue::PrivateLinkage );
+			variable->setComdat( nullptr );
+		}
+	}
+}
+
 void SetupDLLExport( llvm::Module& module )
 {
 	const auto set_dllexport=
@@ -573,49 +628,7 @@ int Main( int argc, const char* argv[] )
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
-
-	std::vector<std::string> functions_to_force_inernalize;
-	std::vector<std::string> variables_to_force_inernalize;
-
-	bool have_some_errors= false;
-
-	const auto link_given_module=
-		[&]( std::unique_ptr<llvm::Module> module, const std::string& input_file_name )
-		{
-			bool should_internalize= false;
-			for( const auto& file_name : Options::internalize_symbols_from )
-			{
-				if( input_file_name == file_name )
-				{
-					should_internalize= true;
-					break;
-				}
-			}
-
-			// TODO - move this code into a separate function.
-			if( should_internalize )
-			{
-				for( const llvm::Function& function : module->functions() )
-					if( function.getLinkage() == llvm::GlobalValue::ExternalLinkage )
-						functions_to_force_inernalize.push_back( function.getName().str() );
-
-				for( const llvm::GlobalVariable& global_variable : module->globals() )
-					if( global_variable.getLinkage() == llvm::GlobalValue::ExternalLinkage )
-						variables_to_force_inernalize.push_back( global_variable.getName().str() );
-			}
-
-			if( result_module == nullptr )
-				result_module= std::move( module );
-			else
-			{
-				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(module) );
-				if( not_ok )
-				{
-					std::cerr << "Error, linking file \"" << input_file_name << "\"" << std::endl;
-					have_some_errors= true;
-				}
-			}
-		};
+	ExternalSymbolsInfo external_symbols_info;
 
 	if( Options::input_files_type == Options::InputFileType::Source )
 	{
@@ -642,6 +655,7 @@ int Main( int argc, const char* argv[] )
 		if( Options::print_prelude_code )
 			std::cout << prelude_code << std::endl;
 
+		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
 			CodeBuilderLaunchResult code_builder_launch_result=
@@ -674,7 +688,19 @@ int Main( int argc, const char* argv[] )
 				continue;
 			}
 
-			link_given_module( std::move(code_builder_launch_result.llvm_module), input_file );
+			CollectExternalSymbolsForInternalizatioin( *code_builder_launch_result.llvm_module, input_file, external_symbols_info );
+
+			if( result_module == nullptr )
+				result_module= std::move( code_builder_launch_result.llvm_module );
+			else
+			{
+				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(code_builder_launch_result.llvm_module) );
+				if( not_ok )
+				{
+					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
+					have_some_errors= true;
+				}
+			}
 		}
 
 		if( have_some_errors )
@@ -711,6 +737,7 @@ int Main( int argc, const char* argv[] )
 	{
 		// Load and link together multiple BC or LL files.
 
+		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
 			std::unique_ptr<llvm::Module> module;
@@ -777,7 +804,19 @@ int Main( int argc, const char* argv[] )
 
 			deps_list.push_back( input_file );
 
-			link_given_module( std::move(module), input_file );
+			CollectExternalSymbolsForInternalizatioin( *module, input_file, external_symbols_info );
+
+			if( result_module == nullptr )
+				result_module= std::move( module );
+			else
+			{
+				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(module) );
+				if( not_ok )
+				{
+					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
+					have_some_errors= true;
+				}
+			}
 		}
 
 		if( have_some_errors )
@@ -808,24 +847,7 @@ int Main( int argc, const char* argv[] )
 	}
 
 	// Internalize symbols from input files listed in "internalize-symbols-from" option.
-	// TODO - move this code into a separate function.
-	for( const std::string& function_name : functions_to_force_inernalize )
-	{
-		if( const auto function= result_module->getFunction( function_name ) )
-		{
-			function->setLinkage( llvm::GlobalValue::PrivateLinkage );
-			function->setComdat( nullptr );
-		}
-	}
-
-	for( const std::string& variable_name : variables_to_force_inernalize )
-	{
-		if( const auto variable= result_module->getGlobalVariable( variable_name ) )
-		{
-			variable->setLinkage( llvm::GlobalValue::PrivateLinkage );
-			variable->setComdat( nullptr );
-		}
-	}
+	InternalizeCollectedSymbols( *result_module, external_symbols_info );
 
 	// Internalize hidden symbols, if necessary.
 	// Do it before optimization, to encourange inlining of internalized functions.
