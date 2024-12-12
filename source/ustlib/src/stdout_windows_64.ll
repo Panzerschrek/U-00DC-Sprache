@@ -15,7 +15,7 @@ declare i8* @__acrt_iob_func( i32 )
 ; STDERR - 2
 
 $ust_stdout_print_impl = comdat any
-define linkonce_odr void @ust_stdout_print_impl( i8* %start, i64 %size ) unnamed_addr comdat
+define linkonce_odr hidden void @ust_stdout_print_impl( i8* %start, i64 %size ) unnamed_addr comdat
 {
 	%stdout_handle = call i8* @__acrt_iob_func( i32 1 )
 	%write_res= call i32 @fwrite( i8* %start, i64 1, i64 %size, i8* %stdout_handle )
@@ -24,7 +24,7 @@ define linkonce_odr void @ust_stdout_print_impl( i8* %start, i64 %size ) unnamed
 }
 
 $ust_stderr_print_impl = comdat any
-define linkonce_odr void @ust_stderr_print_impl( i8* %start, i64 %size ) unnamed_addr comdat
+define linkonce_odr hidden void @ust_stderr_print_impl( i8* %start, i64 %size ) unnamed_addr comdat
 {
 	%stderr_handle = call i8* @__acrt_iob_func( i32 2 )
 	%write_res= call i32 @fwrite( i8* %start, i64 1, i64 %size, i8* %stderr_handle )

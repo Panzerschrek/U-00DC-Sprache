@@ -23,7 +23,7 @@ define linkonce_odr void @__U_default_halt_handler() unnamed_addr #0 comdat
 }
 
 $__U_halt = comdat any
-define linkonce_odr void @__U_halt() unnamed_addr #0 comdat
+define linkonce_odr hidden void @__U_halt() unnamed_addr #0 comdat
 {
 	%1 = load void ()*, void ()** @_U_halt_handler
 	call void %1()
