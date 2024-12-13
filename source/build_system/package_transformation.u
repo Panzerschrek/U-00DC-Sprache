@@ -151,6 +151,12 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		out_package_info.build_targets.insert( target_name, move( out_build_target ) );
 	}
 
+	// After finishing building build targets map check for dependency loops.
+	foreach( &build_target : package_info.build_targets )
+	{
+		ok&= CheckForDependencyLoops( logger, out_package_info, build_target.name );
+	}
+
 	// After finishing building build targets map perform public dependencies retrieval.
 	foreach( &build_target : package_info.build_targets )
 	{
@@ -334,6 +340,64 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 	}
 
 	return result;
+}
+
+// Returns "true: if has NO dependency loops.
+fn CheckForDependencyLoops(
+	Logger &mut logger,
+	PackageInfoTransformed& package_info,
+	ust::string8& build_target_name ) : bool
+{
+	var ust::vector</BuildTargetFullName/> mut call_stack;
+	return CheckForDependencyLoops_r( logger, package_info, build_target_name, call_stack );
+}
+
+fn CheckForDependencyLoops_r(
+	Logger &mut logger,
+	PackageInfoTransformed& package_info,
+	ust::string8& build_target_name,
+	ust::vector</BuildTargetFullName/> &mut call_stack ) : bool
+{
+	for( auto mut i= 0s; i < call_stack.size(); ++i )
+	{
+		if( build_target_name == call_stack[i].name )
+		{
+			var ust::string8 mut message= "Dependency loop detected: ";
+			for( auto mut j= i; j < call_stack.size(); ++j )
+			{
+				message += "\"";
+				message += call_stack[j].name;
+				message += "\"";
+				message += " -> ";
+			}
+			message += "\"";
+			message += build_target_name;
+			message += "\"";
+
+			logger.LogError( message );
+
+			return false;
+		}
+	}
+
+	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
+
+	var bool mut ok= true;
+
+	if_var( &build_target : package_info.build_targets.find( build_target_name ) )
+	{
+		foreach( &public_dependency : build_target.public_dependencies )
+		{
+			ok&= CheckForDependencyLoops_r( logger, package_info, public_dependency.name, call_stack );
+		}
+		foreach( &private_dependency : build_target.private_dependencies )
+		{
+			ok&= CheckForDependencyLoops_r( logger, package_info, private_dependency.name, call_stack );
+		}
+	}
+
+	call_stack.pop_back();
+	return ok;
 }
 
 fn GetAllTargetPublicDependencies(
