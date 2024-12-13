@@ -168,6 +168,11 @@ def PrivateDependencyIsAlsoPublicTest():
 	RunExecutable( "private_dependency_is_also_public", "exe" )
 
 
+def PublicDependencyOfPrivateDependencyIsAlsoPublicDependencyTest():
+	RunBuildSystem( "public_dependency_of_private_dependency_is_also_public_dependency" )
+	RunExecutable( "public_dependency_of_private_dependency_is_also_public_dependency", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -569,6 +574,7 @@ def main():
 		PrivateDependenciesInternalizationTest,
 		PrivateDependencyWithPublicDependencyTest,
 		PrivateDependencyIsAlsoPublicTest,
+		PublicDependencyOfPrivateDependencyIsAlsoPublicDependencyTest,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,

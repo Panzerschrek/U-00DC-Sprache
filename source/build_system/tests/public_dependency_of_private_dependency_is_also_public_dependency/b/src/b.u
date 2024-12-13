@@ -1,0 +1,6 @@
+import "/b/b.uh"
+
+fn BFunc() : Int
+{
+	return CFunc() + 3;
+}

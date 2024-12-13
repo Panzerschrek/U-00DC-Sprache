@@ -1,0 +1,7 @@
+import "/a/a.uh"
+
+fn nomangle main() : i32
+{
+	halt if( AFunc() != (777 + 3) * 5 );
+	return 0;
+}

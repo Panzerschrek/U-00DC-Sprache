@@ -1,0 +1,6 @@
+import "/c/c.uh"
+
+fn CFunc() : Int
+{
+	return 777;
+}

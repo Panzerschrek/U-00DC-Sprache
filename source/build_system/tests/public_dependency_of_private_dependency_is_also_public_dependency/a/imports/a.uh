@@ -1,0 +1,3 @@
+import "/c/c.uh"
+
+fn AFunc() : Int;
