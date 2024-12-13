@@ -4,14 +4,22 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 {
 	ust::ignore_unused( build_system_interface );
 
-	var BK::BuildTarget mut target
+	var BK::BuildTarget mut exe
 	{
 		.name= "multiple_target_include_directories",
 		.target_type = BK::BuildTargetType::Executable,
 		.source_files= ust::make_array</ust::string8/>( "src/main.u" ),
+		.private_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "lib" } ),
+	};
+
+	var BK::BuildTarget mut lib
+	{
+		.name= "lib",
+		.target_type = BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ust::string8/>( "lib/lib.u" ),
 		// Use more than one public include directory.
 		.public_include_directories= ust::make_array</ust::string8/>( "a", "b", "c/d" ),
 	};
 
-	return BK::PackageInfo{ .build_targets= ust::make_array(move(target) ) };
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(exe), move(lib) ) };
 }

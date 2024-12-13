@@ -1,0 +1,9 @@
+import "/a0/a0.uh"
+import "/b0/b0.uh"
+
+fn nomangle main() : i32
+{
+	halt if( FuncA() != 111u * 5u );
+	halt if( FuncB() != 2222u * 7u );
+	return 0;
+}

@@ -1,0 +1,6 @@
+import "/d1/d1.uh"
+
+fn CommonFunc() : u32
+{
+	return 7u;
+}

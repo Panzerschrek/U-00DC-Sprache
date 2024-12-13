@@ -1,0 +1,25 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	var BK::BuildTarget mut exe
+	{
+		.name= "exe",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
+		// For now it's forbidden to specify public dependencies for an executable target, since executables can't export symbols.
+		.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "lib" } )
+	};
+
+	var BK::BuildTarget mut lib
+	{
+		.name= "lib",
+		.target_type = BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ust::string8/>( "lib/src/lib.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "lib/imports" ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(exe), move(lib) ) };
+}

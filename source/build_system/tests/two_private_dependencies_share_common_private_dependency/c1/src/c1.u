@@ -1,0 +1,6 @@
+import "/c1/c1.uh"
+
+fn CFunc() : i32
+{
+	return 321;
+}

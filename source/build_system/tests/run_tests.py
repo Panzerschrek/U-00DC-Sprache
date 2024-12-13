@@ -148,6 +148,41 @@ def BuildTargetLocalSymbolsInternalizationTest():
 	RunExecutable( "build_target_local_symbols_internalization", "exe" )
 
 
+def PrivateExeDependencyTest():
+	RunBuildSystem( "private_exe_dependency" )
+	RunExecutable( "private_exe_dependency", "exe" )
+
+
+def PrivateDependenciesInternalizationTest():
+	RunBuildSystem( "private_dependencies_internalization" )
+	RunExecutable( "private_dependencies_internalization", "exe" )
+
+
+def PrivateDependencyWithPublicDependencyTest():
+	RunBuildSystem( "private_dependency_with_public_dependency" )
+	RunExecutable( "private_dependency_with_public_dependency", "exe" )
+
+
+def PrivateDependencyIsAlsoPublicTest():
+	RunBuildSystem( "private_dependency_is_also_public" )
+	RunExecutable( "private_dependency_is_also_public", "exe" )
+
+
+def PublicDependencyOfPrivateDependencyIsAlsoPublicDependencyTest():
+	RunBuildSystem( "public_dependency_of_private_dependency_is_also_public_dependency" )
+	RunExecutable( "public_dependency_of_private_dependency_is_also_public_dependency", "exe" )
+
+
+def PublicDependencyOfPrivateDependencyIsAlsoPrivateDependencyTest():
+	RunBuildSystem( "public_dependency_of_private_dependency_is_also_private_dependency" )
+	RunExecutable( "public_dependency_of_private_dependency_is_also_private_dependency", "exe" )
+
+
+def TwoPrivateDependenciesSharedCommonPrivateDependency():
+	RunBuildSystem( "two_private_dependencies_share_common_private_dependency" )
+	RunExecutable( "two_private_dependencies_share_common_private_dependency", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -417,8 +452,15 @@ def SourceDirectoriesConflict8Test():
 	assert( stderr.find( "Public include directory \"common_dir\" of the build target \"target_b\" is a prefix of another used directory." ) != -1 )
 
 
-def SelfDependencyTest():
-	res = RunBuildSystemWithErrors( "self_dependency" )
+def SelfDependency0Test():
+	res = RunBuildSystemWithErrors( "self_dependency0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"library_target\" depends on itself." ) != -1 )
+
+
+def SelfDependency1Test():
+	res = RunBuildSystemWithErrors( "self_dependency1" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Build target \"library_target\" depends on itself." ) != -1 )
@@ -445,8 +487,29 @@ def DependencyLoop1Test():
 	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_c\" -> \"lib_d\" -> \"lib_a\"" ) != -1 )
 
 
-def DependencyOnExeTest():
-	res = RunBuildSystemWithErrors( "dependency_on_exe" )
+def DependencyLoop2Test():
+	res = RunBuildSystemWithErrors( "dependency_loop2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_a\"" ) != -1 )
+
+
+def DependencyLoop3Test():
+	res = RunBuildSystemWithErrors( "dependency_loop3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_c\" -> \"lib_d\" -> \"lib_a\"" ) != -1 )
+
+
+def DependencyOnExe0Test():
+	res = RunBuildSystemWithErrors( "dependency_on_exe0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"exe_a\" depends on non-library build target \"exe_b\"." ) != -1 )
+
+
+def DependencyOnExe1Test():
+	res = RunBuildSystemWithErrors( "dependency_on_exe1" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Build target \"exe_a\" depends on non-library build target \"exe_b\"." ) != -1 )
@@ -490,6 +553,20 @@ def UnallowedImport4():
 	assert( stderr.find( "Importing file \"" ) != -1 )
 	assert( stderr.find( "not_allowed_import4.uh" ) != -1 )
 	assert( stderr.find( "t allowed." ) != -1 )
+
+
+def ExePublicDependencyTest():
+	res = RunBuildSystemWithErrors( "exe_public_dependency" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Non-empty public dependencies list for an executable build target \"exe\"." ) != -1 )
+
+
+def ExePublicIncludeDirectoriesTest():
+	res = RunBuildSystemWithErrors( "exe_public_include_directories" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Non-empty public include directories list for an executable build target \"exe\"." ) != -1 )
 
 
 #
@@ -545,6 +622,13 @@ def main():
 		CommonTransitiveDependencyTest,
 		MultipleTargetIncludeDirectoriesTest,
 		BuildTargetLocalSymbolsInternalizationTest,
+		PrivateExeDependencyTest,
+		PrivateDependenciesInternalizationTest,
+		PrivateDependencyWithPublicDependencyTest,
+		PrivateDependencyIsAlsoPublicTest,
+		PublicDependencyOfPrivateDependencyIsAlsoPublicDependencyTest,
+		PublicDependencyOfPrivateDependencyIsAlsoPrivateDependencyTest,
+		TwoPrivateDependenciesSharedCommonPrivateDependency,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
@@ -580,16 +664,22 @@ def main():
 		SourceDirectoriesConflict6Test,
 		SourceDirectoriesConflict7Test,
 		SourceDirectoriesConflict8Test,
-		SelfDependencyTest,
+		SelfDependency0Test,
+		SelfDependency1Test,
 		MissingDependencyTest,
 		DependencyLoop0Test,
 		DependencyLoop1Test,
-		DependencyOnExeTest,
+		DependencyLoop2Test,
+		DependencyLoop3Test,
+		DependencyOnExe0Test,
+		DependencyOnExe1Test,
 		UnallowedImport0,
 		UnallowedImport1,
 		UnallowedImport2,
 		UnallowedImport3,
-		UnallowedImport4 ]
+		UnallowedImport4,
+		ExePublicDependencyTest,
+		ExePublicIncludeDirectoriesTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

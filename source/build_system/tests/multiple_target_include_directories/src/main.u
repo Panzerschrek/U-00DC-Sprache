@@ -1,8 +1,8 @@
 import "/stdout.u"
-// Should found files located in different include directories of this target.
-import "/multiple_target_include_directories/one.uh"
-import "/multiple_target_include_directories/two.uh"
-import "/multiple_target_include_directories/three.uh"
+// Should found files located in different include directories of the dependency library.
+import "/lib/one.uh"
+import "/lib/two.uh"
+import "/lib/three.uh"
 
 fn nomangle main() : i32
 {

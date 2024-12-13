@@ -1,0 +1,7 @@
+import "/b0/b0.uh"
+import "/d1/d1.uh"
+
+fn FuncB() : u32
+{
+	return 2222u * CommonFunc();
+}

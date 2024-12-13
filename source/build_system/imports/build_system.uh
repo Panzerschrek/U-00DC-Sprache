@@ -52,6 +52,9 @@ struct BuildTarget
 
 	// List of dependencies, which should be also dependencies of other build targets dependent on this build target.
 	ust::vector</ BuildTargetFullName /> public_dependencies;
+
+	// List of dependencies of this build target, which are used internally.
+	ust::vector</ BuildTargetFullName /> private_dependencies;
 }
 
 struct PackageInfo
