@@ -828,6 +828,31 @@ int Main( int argc, const char* argv[] )
 	if( !LinkUstLibModules( *result_module, Options::halt_mode, Options::no_libc_alloc, false ) )
 		return 1;
 
+	// Dump llvm code before optimization passes.
+	if( Options::print_llvm_asm_initial )
+	{
+		llvm::raw_os_ostream stream(std::cout);
+		result_module->print( stream, nullptr );
+	}
+
+	// Run async calls inlining.
+	// Enable it for O1, O2, O3, Os, but not O0 and Oz.
+	// It's also important to perform inlining only for compilation from Ü sources directly.
+	// Trying to perform such optimization for already compiled ll/bc files is useless or may lead to errors.
+	if( optimization_level.isOptimizingForSpeed() && optimization_level.getSizeLevel() <= 1 &&
+		! Options::disable_async_calls_inlining &&
+		Options::input_files_type == Options::InputFileType::Source )
+		InlineAsyncCalls( *result_module );
+
+	// Internalize symbols from input files listed in "internalize-symbols-from" option.
+	InternalizeCollectedSymbols( *result_module, external_symbols_info );
+
+	// Internalize hidden symbols, if necessary.
+	// Do it before optimization, to encourange inlining of internalized functions.
+	if( Options::internalize_hidden )
+		InternalizeHiddenSymbols( *result_module );
+
+	// Perform verification after code generation/linking and after special optimizations and internalizations, but before running LLVM optimizations pipeline.
 	if( Options::verify_module )
 	{
 		std::string err_stream_str;
@@ -838,30 +863,6 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 	}
-
-	// Dump llvm code before optimization passes.
-	if( Options::print_llvm_asm_initial )
-	{
-		llvm::raw_os_ostream stream(std::cout);
-		result_module->print( stream, nullptr );
-	}
-
-	// Internalize symbols from input files listed in "internalize-symbols-from" option.
-	InternalizeCollectedSymbols( *result_module, external_symbols_info );
-
-	// Internalize hidden symbols, if necessary.
-	// Do it before optimization, to encourange inlining of internalized functions.
-	if( Options::internalize_hidden )
-		InternalizeHiddenSymbols( *result_module );
-
-	// Run async calls inlining.
-	// Enable it for O1, O2, O3, Os, but not O0 and Oz.
-	// It's also important to perform inlining only for compilation from Ü sources directly.
-	// Trying to perform such optimization for already compiled ll/bc files is useless or may lead to errors.
-	if( optimization_level.isOptimizingForSpeed() && optimization_level.getSizeLevel() <= 1 &&
-		! Options::disable_async_calls_inlining &&
-		Options::input_files_type == Options::InputFileType::Source )
-		InlineAsyncCalls( *result_module );
 
 	// Create and run optimization passes.
 	{
