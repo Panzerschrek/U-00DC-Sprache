@@ -98,6 +98,14 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 
 		// Process public include directories.
 
+		if( build_target.target_type == BuildTargetType::Executable && !build_target.public_include_directories.empty() )
+		{
+			// For now forbid specifying public include directories for executables.
+			// It's useless, since exporting symbols from executables isn't supported.
+			ok= false;
+			logger.LogError( "Non-empty public include directories list for an executable build target \"" + build_target.name + "\"." );
+		}
+
 		foreach( &public_include_directory : build_target.public_include_directories )
 		{
 			if( !TargetSourceNameIsValid( public_include_directory ) )
@@ -149,7 +157,7 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		if( build_target.target_type == BuildTargetType::Executable && !build_target.public_dependencies.empty() )
 		{
 			// For now forbid specifying public dependencies for executables.
-			// It's useless, since experting symbols from executables isn't supported.
+			// It's useless, since exporting symbols from executables isn't supported.
 			ok= false;
 			logger.LogError( "Non-empty public dependencies list for an executable build target \"" + build_target.name + "\"." );
 		}

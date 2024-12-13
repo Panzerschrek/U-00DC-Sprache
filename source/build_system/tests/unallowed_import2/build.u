@@ -7,7 +7,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	var BK::BuildTarget mut target
 	{
 		.name= "unallowed_import",
-		.target_type = BK::BuildTargetType::Executable,
+		.target_type = BK::BuildTargetType::Library,
 		.source_files= ust::make_array</ust::string8/>( "src/main.u" ),
 		.public_include_directories= ust::make_array</ust::string8/>( "imports" ),
 	};

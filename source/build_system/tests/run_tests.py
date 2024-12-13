@@ -557,6 +557,13 @@ def ExePublicDependencyTest():
 	assert( stderr.find( "Non-empty public dependencies list for an executable build target \"exe\"." ) != -1 )
 
 
+def ExePublicIncludeDirectoriesTest():
+	res = RunBuildSystemWithErrors( "exe_public_include_directories" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Non-empty public include directories list for an executable build target \"exe\"." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -665,7 +672,8 @@ def main():
 		UnallowedImport2,
 		UnallowedImport3,
 		UnallowedImport4,
-		ExePublicDependencyTest ]
+		ExePublicDependencyTest,
+		ExePublicIncludeDirectoriesTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
