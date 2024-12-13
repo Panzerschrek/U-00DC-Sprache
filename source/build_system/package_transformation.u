@@ -175,13 +175,16 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		out_package_info.build_targets.insert( target_name, move( out_build_target ) );
 	}
 
-	// After finishing building build targets map check for dependency loops.
+	// After finishing building build targets map can perform dependency graph-based checks and transformations.
+	//
+
+	// Check for dependency loops.
 	foreach( &build_target : package_info.build_targets )
 	{
 		ok&= CheckForDependencyLoops( logger, out_package_info, build_target.name );
 	}
 
-	// After finishing building build targets map perform public dependencies retrieval.
+	// Perform public dependencies retrieval.
 	foreach( &build_target : package_info.build_targets )
 	{
 		if_var( &mut dependencies : GetAllTargetPublicDependencies( logger, out_package_info, build_target.name ) )
@@ -197,7 +200,7 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		}
 	}
 
-	// After finishing building build targets map perform private dependencies retrieval.
+	// Perform private dependencies retrieval.
 	foreach( &build_target : package_info.build_targets )
 	{
 		if_var( &dependencies : GetAllTargetPrivateAndTheirTransitivePublicDependencies( logger, out_package_info, build_target.name ) )

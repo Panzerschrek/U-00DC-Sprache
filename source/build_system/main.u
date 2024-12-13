@@ -676,6 +676,8 @@ fn CreatePackageTargetBuildGraphNodes(
 	}
 
 	// For all build target types link private dependencies.
+	// Link also all transitive public dependencies of these private dependencies.
+	// Exception are libraries which are also public dependencies of this build target, they are not listed here.
 	foreach( &private_dependency : target.private_dependencies_including_transitive_public_dependencies )
 	{
 		// Assume this is a library dependency (this should be validated before).

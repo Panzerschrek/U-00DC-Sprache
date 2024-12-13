@@ -1,5 +1,5 @@
 import "/stdout.u"
-// Should found files located in different include directories of this target.
+// Should found files located in different include directories of the dependency library.
 import "/lib/one.uh"
 import "/lib/two.uh"
 import "/lib/three.uh"

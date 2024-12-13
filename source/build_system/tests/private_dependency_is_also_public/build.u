@@ -32,6 +32,5 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.public_include_directories= ust::make_array</ust::string8/>( "lib_b/imports" ),
 	};
 
-
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(exe), move(lib_a), move(lib_b) ) };
 }
