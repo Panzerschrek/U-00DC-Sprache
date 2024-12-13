@@ -442,8 +442,15 @@ def SourceDirectoriesConflict8Test():
 	assert( stderr.find( "Public include directory \"common_dir\" of the build target \"target_b\" is a prefix of another used directory." ) != -1 )
 
 
-def SelfDependencyTest():
-	res = RunBuildSystemWithErrors( "self_dependency" )
+def SelfDependency0Test():
+	res = RunBuildSystemWithErrors( "self_dependency0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"library_target\" depends on itself." ) != -1 )
+
+
+def SelfDependency1Test():
+	res = RunBuildSystemWithErrors( "self_dependency1" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Build target \"library_target\" depends on itself." ) != -1 )
@@ -610,7 +617,8 @@ def main():
 		SourceDirectoriesConflict6Test,
 		SourceDirectoriesConflict7Test,
 		SourceDirectoriesConflict8Test,
-		SelfDependencyTest,
+		SelfDependency0Test,
+		SelfDependency1Test,
 		MissingDependencyTest,
 		DependencyLoop0Test,
 		DependencyLoop1Test,

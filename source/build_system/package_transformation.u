@@ -373,6 +373,13 @@ fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 	var bool mut ok= true;
 	foreach( &private_dependency : build_target_opt.try_deref().private_dependencies )
 	{
+		if( private_dependency.name == build_target_name )
+		{
+			logger.LogError( "Build target \"" + build_target_name + "\" depends on itself." );
+			ok= false;
+			continue;
+		}
+
 		result.push_back( private_dependency );
 		ok&= GetAllTargetPublicDependencies_r( logger, package_info, private_dependency.name, call_stack, result );
 	}
