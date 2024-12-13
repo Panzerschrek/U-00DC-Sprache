@@ -1,0 +1,6 @@
+import "/lib_b/b.uh"
+
+fn GetSomeInt() : Int
+{
+	return Int(12345);
+}

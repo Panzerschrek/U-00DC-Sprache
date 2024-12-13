@@ -167,13 +167,31 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		}
 	}
 
+	// After finishing building build targets map perform private dependencies retrieval.
 	foreach( &build_target : package_info.build_targets )
 	{
-		if_var( &mut dependencies : GetAllTargetPrivateAndTheirTransitivePublicDependencies( logger, out_package_info, build_target.name ) )
+		if_var( &dependencies : GetAllTargetPrivateAndTheirTransitivePublicDependencies( logger, out_package_info, build_target.name ) )
 		{
 			if_var( &mut out_build_target : out_package_info.build_targets.find( build_target.name ) )
 			{
-				out_build_target.private_dependencies_including_transitive_public_dependencies= take(dependencies);
+				// Remove private dependencies which are also public dependencies.
+
+				auto& public_dependencies= out_build_target.public_dependencies_including_transitive;
+				auto is_not_in_public_dependencies=
+					lambda[&]( BuildTargetFullName& target_name ) : bool
+					{
+						foreach( &dependency : public_dependencies )
+						{
+							if( target_name == dependency )
+							{
+								return false;
+							}
+						}
+						return true;
+					};
+
+				out_build_target.private_dependencies_including_transitive_public_dependencies.append(
+					dependencies.iter().filter( is_not_in_public_dependencies ) );
 			}
 		}
 		else
