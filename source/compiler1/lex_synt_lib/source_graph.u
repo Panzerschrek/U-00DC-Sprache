@@ -117,17 +117,6 @@ fn LoadSourceGraph_r(
 		}
 	}
 
-	if( !vfs.IsImportingFileAllowed( file_path_normalized ) )
-	{
-		var ust::string8 mut str;
-		str+= "Importing file \"";
-		str+= file_path;
-		str+= "\" isn't allowed.";
-
-		source_graph.errors.push_back( LexSyntError( import_src_loc, move(str) ) );
-		return ~0s;
-	}
-
 	auto file_content_opt= vfs.LoadFile( file_path_normalized );
 	if( file_content_opt.empty() )
 	{
@@ -135,6 +124,18 @@ fn LoadSourceGraph_r(
 		str+= "Error, can not read file: \"";
 		str+= file_path;
 		str+= "\"";
+
+		source_graph.errors.push_back( LexSyntError( import_src_loc, move(str) ) );
+		return ~0s;
+	}
+
+	// Check for allowing import after checking for file existence - in order to generate "file not found" error first.
+	if( !vfs.IsImportingFileAllowed( file_path_normalized ) )
+	{
+		var ust::string8 mut str;
+		str+= "Importing file \"";
+		str+= file_path;
+		str+= "\" isn't allowed.";
 
 		source_graph.errors.push_back( LexSyntError( import_src_loc, move(str) ) );
 		return ~0s;
