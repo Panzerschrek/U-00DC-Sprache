@@ -1,0 +1,42 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	var BK::BuildTarget mut exe
+	{
+		.name= "exe",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
+		.private_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "a0" }, BK::BuildTargetFullName{ .name= "b0" } )
+	};
+
+	var BK::BuildTarget mut a0
+	{
+		.name= "a0",
+		.target_type = BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ust::string8/>( "a0/src/a0.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "a0/imports" ),
+		.private_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "c1" } ),
+	};
+
+	var BK::BuildTarget mut b0
+	{
+		.name= "b0",
+		.target_type = BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ust::string8/>( "b0/src/b0.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "b0/imports" ),
+		.private_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "c1" } ),
+	};
+
+	var BK::BuildTarget mut c1
+	{
+		.name= "c1",
+		.target_type = BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ust::string8/>( "c1/src/c1.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "c1/imports" ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(exe), move(a0), move(b0), move(c1) ) };
+}

@@ -1,0 +1,7 @@
+import "/b0/b0.uh"
+import "/c1/c1.uh"
+
+fn BFunc() : i32
+{
+	return CFunc() * 11;
+}
