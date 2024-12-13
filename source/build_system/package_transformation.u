@@ -405,13 +405,13 @@ fn GetAllTargetPublicDependencies(
 	PackageInfoTransformed& package_info,
 	ust::string8& build_target_name ) : ust::optional</ust::vector</BuildTargetFullName/>/>
 {
-	var ust::vector</BuildTargetFullName/> mut call_stack, mut result;
-	if( !GetAllTargetPublicDependencies_r( logger, package_info, build_target_name, call_stack, result ) )
+	var ust::vector</BuildTargetFullName/> mut result;
+	if( !GetAllTargetPublicDependencies_r( logger, package_info, build_target_name, result ) )
 	{
 		return ust::null_optional;
 	}
 
-	// Remove possible duplicates.
+	// Remove possible duplicates and normalize.
 	ust::sort( result );
 	result.remove_adjacent_duplicates();
 
@@ -430,9 +430,7 @@ fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 		return ust::null_optional;
 	}
 
-	var ust::vector</BuildTargetFullName/> mut call_stack, mut result;
-
-	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
+	var ust::vector</BuildTargetFullName/> mut result;
 
 	var bool mut ok= true;
 	foreach( &private_dependency : build_target_opt.try_deref().private_dependencies )
@@ -453,8 +451,8 @@ fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 			}
 		}
 
+		ok&= GetAllTargetPublicDependencies_r( logger, package_info, private_dependency.name, result );
 		result.push_back( private_dependency );
-		ok&= GetAllTargetPublicDependencies_r( logger, package_info, private_dependency.name, call_stack, result );
 	}
 
 	if( !ok )
@@ -462,7 +460,7 @@ fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 		return ust::null_optional;
 	}
 
-	// Remove possible duplicates.
+	// Remove possible duplicates and normalize.
 	ust::sort( result );
 	result.remove_adjacent_duplicates();
 
@@ -474,32 +472,17 @@ fn GetAllTargetPublicDependencies_r(
 	Logger &mut logger,
 	PackageInfoTransformed& package_info,
 	ust::string8& build_target_name,
-	ust::vector</BuildTargetFullName/> &mut call_stack,
 	ust::vector</BuildTargetFullName/> &mut result ) : bool
 {
-	for( auto mut i= 0s; i < call_stack.size(); ++i )
+	foreach( &prev_dependency : result )
 	{
-		if( build_target_name == call_stack[i].name )
+		if( prev_dependency.name == build_target_name )
 		{
-			var ust::string8 mut message= "Dependency loop detected: ";
-			for( auto mut j= i; j < call_stack.size(); ++j )
-			{
-				message += "\"";
-				message += call_stack[j].name;
-				message += "\"";
-				message += " -> ";
-			}
-			message += "\"";
-			message += build_target_name;
-			message += "\"";
-
-			logger.LogError( message );
-
-			return false;
+			// Already visited.
+			// This check prevents infinite recursion in case of circular dependencies.
+			return true;
 		}
 	}
-
-	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
 
 	var bool mut ok= true;
 
@@ -523,9 +506,8 @@ fn GetAllTargetPublicDependencies_r(
 				}
 			}
 
+			ok&= GetAllTargetPublicDependencies_r( logger, package_info, public_dependency.name, result );
 			result.push_back(public_dependency);
-
-			ok&= GetAllTargetPublicDependencies_r( logger, package_info, public_dependency.name, call_stack, result );
 		}
 	}
 	else
@@ -534,7 +516,6 @@ fn GetAllTargetPublicDependencies_r(
 		logger.LogError( "Dependency \"" + build_target_name + "\" not found." );
 	}
 
-	call_stack.pop_back();
 	return ok;
 }
 
