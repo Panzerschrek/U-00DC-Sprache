@@ -160,7 +160,6 @@ CPP Header converter:
 *) Allow linking against an external static C library
 *) Allow linking against an external shared library
 *) Custom target type
-*) Run link-time optimization for native targets (executables, shared libraries, C static libraries)
 *) Support generated sources
 *) Support generated headers
 *) Cross-compilation support

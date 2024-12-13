@@ -602,11 +602,14 @@ fn CreatePackageTargetBuildGraphNodes(
 				node.command_line.push_back( "-g" );
 				// No optimization at all - optimization makes debugging hard.
 				node.command_line.push_back( "-O0" );
+				// No LTO is used for debug builds.
 			},
 			BuildConfiguration::Release ->
 			{
 				// Run full optimization, but not by using O3 - it isn't much better than O2.
 				node.command_line.push_back( "-O2" );
+				// Prepare for LTO.
+				node.command_line.push_back( "--lto-mode=prelink" );
 			},
 		}
 
@@ -730,6 +733,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( "-g" );
 			// No optimization at all - optimization makes debugging hard.
 			node.command_line.push_back( "-O0" );
+			// No LTO is used for debug builds.
 		},
 		BuildConfiguration::Release ->
 		{
@@ -743,6 +747,8 @@ fn CreatePackageTargetBuildGraphNodes(
 			{
 				// Run full optimization, but not by using O3 - it isn't much better than O2.
 				node.command_line.push_back( "-O2" );
+				// Also run LTO.
+				node.command_line.push_back( "--lto-mode=link" );
 			}
 		},
 	}
