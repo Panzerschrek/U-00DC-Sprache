@@ -444,6 +444,15 @@ fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 			continue;
 		}
 
+		if_var( &dependent_build_target : package_info.build_targets.find( private_dependency.name ) )
+		{
+			if( dependent_build_target.target_type != BuildTargetType::Library )
+			{
+				logger.LogError( "Build target \"" + build_target_name + "\" depends on non-library build target \"" + private_dependency.name + "\"." );
+				ok= false;
+			}
+		}
+
 		result.push_back( private_dependency );
 		ok&= GetAllTargetPublicDependencies_r( logger, package_info, private_dependency.name, call_stack, result );
 	}

@@ -491,8 +491,15 @@ def DependencyLoop3Test():
 	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_c\" -> \"lib_d\" -> \"lib_a\"" ) != -1 )
 
 
-def DependencyOnExeTest():
-	res = RunBuildSystemWithErrors( "dependency_on_exe" )
+def DependencyOnExe0Test():
+	res = RunBuildSystemWithErrors( "dependency_on_exe0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"exe_a\" depends on non-library build target \"exe_b\"." ) != -1 )
+
+
+def DependencyOnExe1Test():
+	res = RunBuildSystemWithErrors( "dependency_on_exe1" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Build target \"exe_a\" depends on non-library build target \"exe_b\"." ) != -1 )
@@ -638,7 +645,8 @@ def main():
 		DependencyLoop1Test,
 		DependencyLoop2Test,
 		DependencyLoop3Test,
-		DependencyOnExeTest,
+		DependencyOnExe0Test,
+		DependencyOnExe1Test,
 		UnallowedImport0,
 		UnallowedImport1,
 		UnallowedImport2,
