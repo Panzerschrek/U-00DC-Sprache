@@ -173,6 +173,11 @@ def PublicDependencyOfPrivateDependencyIsAlsoPublicDependencyTest():
 	RunExecutable( "public_dependency_of_private_dependency_is_also_public_dependency", "exe" )
 
 
+def PublicDependencyOfPrivateDependencyIsAlsoPrivateDependencyTest():
+	RunBuildSystem( "public_dependency_of_private_dependency_is_also_private_dependency" )
+	RunExecutable( "public_dependency_of_private_dependency_is_also_private_dependency", "exe" )
+
+
 def TwoPrivateDependenciesSharedCommonPrivateDependency():
 	RunBuildSystem( "two_private_dependencies_share_common_private_dependency" )
 	RunExecutable( "two_private_dependencies_share_common_private_dependency", "exe" )
@@ -622,6 +627,7 @@ def main():
 		PrivateDependencyWithPublicDependencyTest,
 		PrivateDependencyIsAlsoPublicTest,
 		PublicDependencyOfPrivateDependencyIsAlsoPublicDependencyTest,
+		PublicDependencyOfPrivateDependencyIsAlsoPrivateDependencyTest,
 		TwoPrivateDependenciesSharedCommonPrivateDependency,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,

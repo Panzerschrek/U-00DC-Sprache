@@ -1,0 +1,7 @@
+import "/a/a.uh"
+import "/b/b.uh"
+
+fn AFunc() : Int
+{
+	return BFunc() * 5;
+}
