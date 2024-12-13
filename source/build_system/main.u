@@ -532,7 +532,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	ExtractDependenciesIncludeDirectories(
 		package_info,
 		package_source_directory,
-		target.private_dependencies,
+		target.private_dependencies_including_transitive_public_dependencies,
 		include_directories_prefixed );
 
 	var ust::string8 source_dir= NormalizePath( package_source_directory + ( "/" + target.sources_directory ) );
@@ -676,7 +676,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	}
 
 	// For all build target types link private dependencies.
-	foreach( &private_dependency : target.private_dependencies )
+	foreach( &private_dependency : target.private_dependencies_including_transitive_public_dependencies )
 	{
 		// Assume this is a library dependency (this should be validated before).
 		var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( private_dependency.name + ".bc" ) ) );

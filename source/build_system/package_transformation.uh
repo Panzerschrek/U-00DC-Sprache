@@ -29,6 +29,9 @@ struct PackageInfoTransformed
 
 		// List of all public dependencies, including transitive public dependencies. It's sorted and deduplicated.
 		ust::vector</BuildTargetFullName/> public_dependencies_including_transitive;
+
+		// List of all private dependencies and all transitive public dependencies of these dependencies. It's sorted and deduplicated.
+		ust::vector</BuildTargetFullName/> private_dependencies_including_transitive_public_dependencies;
 	}
 
 	ust::unordered_map</ust::string8, BuildTarget/> build_targets;

@@ -167,6 +167,21 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		}
 	}
 
+	foreach( &build_target : package_info.build_targets )
+	{
+		if_var( &mut dependencies : GetAllTargetPrivateAndTheirTransitivePublicDependencies( logger, out_package_info, build_target.name ) )
+		{
+			if_var( &mut out_build_target : out_package_info.build_targets.find( build_target.name ) )
+			{
+				out_build_target.private_dependencies_including_transitive_public_dependencies= take(dependencies);
+			}
+		}
+		else
+		{
+			ok= false;
+		}
+	}
+
 	if( !ok )
 	{
 		return ust::null_optional;
@@ -310,6 +325,41 @@ fn GetAllTargetPublicDependencies(
 {
 	var ust::vector</BuildTargetFullName/> mut call_stack, mut result;
 	if( !GetAllTargetPublicDependencies_r( logger, package_info, build_target_name, call_stack, result ) )
+	{
+		return ust::null_optional;
+	}
+
+	// Remove possible duplicates.
+	ust::sort( result );
+	result.remove_adjacent_duplicates();
+
+	return move(result);
+}
+
+fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
+	Logger &mut logger,
+	PackageInfoTransformed& package_info,
+	ust::string8& build_target_name ) : ust::optional</ust::vector</BuildTargetFullName/>/>
+{
+	auto build_target_opt= package_info.build_targets.find( build_target_name );
+	if( build_target_opt.empty() )
+	{
+		logger.LogError( "Dependency \"" + build_target_name + "\" not found." );
+		return ust::null_optional;
+	}
+
+	var ust::vector</BuildTargetFullName/> mut call_stack, mut result;
+
+	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
+
+	var bool mut ok= true;
+	foreach( &private_dependency : build_target_opt.try_deref().private_dependencies )
+	{
+		result.push_back( private_dependency );
+		ok&= GetAllTargetPublicDependencies_r( logger, package_info, private_dependency.name, call_stack, result );
+	}
+
+	if( !ok )
 	{
 		return ust::null_optional;
 	}
