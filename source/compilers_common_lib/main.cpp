@@ -347,7 +347,7 @@ void InternalizeHiddenSymbols( llvm::Module& module )
 	const auto internalize=
 		[]( llvm::GlobalObject& v )
 		{
-			if( v.getVisibility() == llvm::GlobalValue::HiddenVisibility )
+			if( !v.isDeclaration() && v.getVisibility() == llvm::GlobalValue::HiddenVisibility )
 			{
 				v.setLinkage( llvm::GlobalValue::PrivateLinkage );
 				v.setComdat( nullptr );
@@ -387,11 +387,11 @@ void CollectExternalSymbolsForInternalizatioin(
 		return;
 
 	for( const llvm::Function& function : module.functions() )
-		if( function.getLinkage() == llvm::GlobalValue::ExternalLinkage )
+		if( !function.isDeclaration() && function.getLinkage() == llvm::GlobalValue::ExternalLinkage )
 			external_symbols_info.functions.push_back( function.getName().str() );
 
 	for( const llvm::GlobalVariable& global_variable : module.globals() )
-		if( global_variable.getLinkage() == llvm::GlobalValue::ExternalLinkage )
+		if( !global_variable.isDeclaration() && global_variable.getLinkage() == llvm::GlobalValue::ExternalLinkage )
 			external_symbols_info.variables.push_back( global_variable.getName().str() );
 }
 
