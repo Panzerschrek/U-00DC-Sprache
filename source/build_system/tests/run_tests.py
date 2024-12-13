@@ -550,6 +550,13 @@ def UnallowedImport4():
 	assert( stderr.find( "t allowed." ) != -1 )
 
 
+def ExePublicDependencyTest():
+	res = RunBuildSystemWithErrors( "exe_public_dependency" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Non-empty public dependencies list for an executable build target \"exe\"." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -657,7 +664,8 @@ def main():
 		UnallowedImport1,
 		UnallowedImport2,
 		UnallowedImport3,
-		UnallowedImport4 ]
+		UnallowedImport4,
+		ExePublicDependencyTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
