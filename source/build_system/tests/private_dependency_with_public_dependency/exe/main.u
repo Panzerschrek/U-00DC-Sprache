@@ -1,0 +1,7 @@
+import "/lib_a/a.uh"
+
+fn nomangle main() : i32
+{
+	halt if( GetSomeLargeInt() != 152399025i64 );
+	return 0;
+}

@@ -1,0 +1,6 @@
+import "/lib_a/a.uh"
+
+fn GetSomeLargeInt() : Int
+{
+	return GetSomeInt() * GetSomeInt();
+}

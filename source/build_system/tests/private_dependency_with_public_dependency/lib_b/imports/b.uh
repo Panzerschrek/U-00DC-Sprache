@@ -1,0 +1,3 @@
+type Int= i64;
+
+fn GetSomeInt() : Int;
