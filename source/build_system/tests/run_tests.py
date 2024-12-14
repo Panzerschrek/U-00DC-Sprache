@@ -1,5 +1,7 @@
 import argparse
+import ctypes
 import os
+import platform
 import subprocess
 import sys
 import traceback
@@ -184,7 +186,20 @@ def TwoPrivateDependenciesSharedCommonPrivateDependency():
 
 
 def SharedLibraryTargetTest():
+	# Build the library
 	RunBuildSystem( "shared_library_target" )
+	# Load result shared library.
+	library_file_path= os.path.join( g_tests_build_root_path, "shared_library_target", "release", "shared_library_target" )
+	if platform.system() == "Windows":
+		library_file_path+= ".dll"
+	else:
+		library_file_path+= ".so"
+	library= ctypes.CDLL( library_file_path )
+	# Call some functions.
+	library.AddTwoNumbers.restype = ctypes.c_uint
+	assert( library.AddTwoNumbers( ctypes.c_uint(42), ctypes.c_uint(123) ) == 42 + 123 )
+	library.FloatDiv.restype = ctypes.c_float
+	assert( library.FloatDiv( ctypes.c_float(30.5), ctypes.c_float(4.0) ) == 7.625 )
 
 
 def ExeDependsOnSharedLibraryTest():

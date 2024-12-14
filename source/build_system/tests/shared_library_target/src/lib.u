@@ -1,6 +1,11 @@
 import "/shared_library_target/lib.uh"
 
-fn AddTwoNumbers( i32 x, i32 y ) : i32
+fn nomangle AddTwoNumbers( i32 x, i32 y ) : i32
 {
 	return x + y;
+}
+
+fn nomangle FloatDiv( f32 x, f32 y ) : f32
+{
+	return x / y;
 }
