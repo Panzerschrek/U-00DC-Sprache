@@ -200,6 +200,8 @@ def SharedLibraryTargetTest():
 	assert( library.AddTwoNumbers( ctypes.c_uint(42), ctypes.c_uint(123) ) == 42 + 123 )
 	library.FloatDiv.restype = ctypes.c_float
 	assert( library.FloatDiv( ctypes.c_float(30.5), ctypes.c_float(4.0) ) == 7.625 )
+	# Internal implementation functions shouldn't be exported.
+	assert( not hasattr( library, "InternalFunction" ) )
 
 
 def ExeDependsOnSharedLibraryTest():

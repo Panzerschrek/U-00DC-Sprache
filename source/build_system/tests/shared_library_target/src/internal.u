@@ -1,0 +1,5 @@
+import "internal.uh"
+
+fn nomangle InternalFunction()
+{
+}
