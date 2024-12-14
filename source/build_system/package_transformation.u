@@ -471,7 +471,7 @@ fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 
 		if_var( &dependent_build_target : package_info.build_targets.find( private_dependency.name ) )
 		{
-			if( dependent_build_target.target_type != BuildTargetType::Library )
+			if( !( dependent_build_target.target_type == BuildTargetType::Library || dependent_build_target.target_type == BuildTargetType::SharedLibrary ) )
 			{
 				logger.LogError( "Build target \"" + build_target_name + "\" depends on non-library build target \"" + private_dependency.name + "\"." );
 				ok= false;
@@ -526,7 +526,7 @@ fn GetAllTargetPublicDependencies_r(
 
 			if_var( &dependent_build_target : package_info.build_targets.find( public_dependency.name ) )
 			{
-				if( dependent_build_target.target_type != BuildTargetType::Library )
+				if( !( dependent_build_target.target_type == BuildTargetType::Library || dependent_build_target.target_type == BuildTargetType::SharedLibrary ) )
 				{
 					logger.LogError( "Build target \"" + build_target_name + "\" depends on non-library build target \"" + public_dependency.name + "\"." );
 					ok= false;

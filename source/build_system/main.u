@@ -661,6 +661,12 @@ fn CreatePackageTargetBuildGraphNodes(
 		.comment= target_name,
 	};
 
+	if( target.target_type == BuildTargetType::SharedLibrary && target_is_windows )
+	{
+		// Add also lib file to outputs.
+		node.output_files.push_back( NormalizePath( ust::string8(package_build_directory) + "/" + target_name + ".lib" ) );
+	}
+
 	foreach( &bc_file : bc_files )
 	{
 		node.command_line.push_back( bc_file );
@@ -674,12 +680,37 @@ fn CreatePackageTargetBuildGraphNodes(
 			// For executables perform linking with all public dependencies.
 			foreach( &public_dependency : target.public_dependencies_including_transitive )
 			{
-				// Assume this is a library dependency (this should be validated before).
-				// TODO - process specially public dependencies of executables.
-				var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
+				if_var( &dependency_build_target : package_info.build_targets.find( public_dependency.name ) )
+				{
+					switch( dependency_build_target.target_type )
+					{
+						BuildTargetType::Executable -> {}, // This should be checked before.
+						BuildTargetType::Library ->
+						{
+							var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
 
-				node.command_line.push_back( lib_file );
-				node.input_files.push_back( lib_file );
+							node.command_line.push_back( lib_file );
+							node.input_files.push_back( lib_file );
+						},
+						BuildTargetType::SharedLibrary ->
+						{
+							if( target_is_windows )
+							{
+								var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".lib" ) ) );
+
+								node.command_line.push_back( lib_file );
+								node.input_files.push_back( lib_file );
+							}
+							else
+							{
+								var ust::string8 so_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".so" ) ) );
+
+								node.command_line.push_back( "-Wl," + so_file );
+								node.input_files.push_back( so_file );
+							}
+						},
+					}
+				}
 			}
 
 			// Run full internalization in order to export only "main".
@@ -698,6 +729,8 @@ fn CreatePackageTargetBuildGraphNodes(
 			// For shared libraries perform linking with all public dependencies.
 			foreach( &public_dependency : target.public_dependencies_including_transitive )
 			{
+				// TODO - process shared libraries.
+
 				// Assume this is a library dependency (this should be validated before).
 				// TODO - process specially public dependencies of executables.
 				var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
@@ -711,20 +744,54 @@ fn CreatePackageTargetBuildGraphNodes(
 		},
 	}
 
-	// For all build target types link private dependencies.
+	// For all build target types link private library dependencies.
 	// Link also all transitive public dependencies of these private dependencies.
 	// Exception are libraries which are also public dependencies of this build target, they are not listed here.
 	foreach( &private_dependency : target.private_dependencies_including_transitive_public_dependencies )
 	{
-		// Assume this is a library dependency (this should be validated before).
-		var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( private_dependency.name + ".bc" ) ) );
+		if_var( &dependency_build_target : package_info.build_targets.find( private_dependency.name ) )
+		{
+			if( dependency_build_target.target_type == BuildTargetType::Library )
+			{
+				// Assume this is a library dependency (this should be validated before).
+				var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( private_dependency.name + ".bc" ) ) );
 
-		node.command_line.push_back( lib_file );
-		node.input_files.push_back( lib_file );
+				node.command_line.push_back( lib_file );
+				node.input_files.push_back( lib_file );
 
-		// Internalize all symbols from private dependencies.
-		node.command_line.push_back( "--internalize-symbols-from" );
-		node.command_line.push_back( lib_file );
+				// Internalize all symbols from private dependencies.
+				node.command_line.push_back( "--internalize-symbols-from" );
+				node.command_line.push_back( lib_file );
+			}
+		}
+	}
+
+	if( target.target_type == BuildTargetType::Executable || target.target_type == BuildTargetType::SharedLibrary )
+	{
+		// Link private shared library dependencies for executables and shared libraries.
+		foreach( &private_dependency : target.private_dependencies_including_transitive_public_dependencies )
+		{
+			if_var( &dependency_build_target : package_info.build_targets.find( private_dependency.name ) )
+			{
+				if( dependency_build_target.target_type == BuildTargetType::SharedLibrary )
+				{
+					if( target_is_windows )
+					{
+						var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( private_dependency.name + ".lib" ) ) );
+
+						node.command_line.push_back( lib_file );
+						node.input_files.push_back( lib_file );
+					}
+					else
+					{
+						var ust::string8 so_file= NormalizePath( package_build_directory + ( "/" + ( private_dependency.name + ".so" ) ) );
+
+						node.command_line.push_back( "-Wl," + so_file );
+						node.input_files.push_back( so_file );
+					}
+				}
+			}
+		}
 	}
 
 	node.command_line.push_back( "-o" );

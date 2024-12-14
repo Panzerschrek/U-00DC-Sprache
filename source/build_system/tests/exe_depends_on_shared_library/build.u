@@ -1,0 +1,23 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	var BK::BuildTarget mut lib
+	{
+		.target_type = BK::BuildTargetType::SharedLibrary,
+		.name= "lib",
+		.source_files= ust::make_array</ust::string8/>( "lib/lib.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "lib_imports" ),
+	};
+	var BK::BuildTarget mut exe
+	{
+		.target_type = BK::BuildTargetType::Executable,
+		.name= "exe",
+		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
+		.private_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "lib" } ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(lib), move(exe) ) };
+}

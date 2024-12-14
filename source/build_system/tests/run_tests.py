@@ -117,7 +117,7 @@ def LibraryTargetTest():
 	RunBuildSystem( "library_target" )
 
 
-def ExeDependsOnLibrartTest():
+def ExeDependsOnLibraryTest():
 	RunBuildSystem( "exe_depends_on_library" )
 	RunExecutable( "exe_depends_on_library", "exe" )
 
@@ -185,6 +185,11 @@ def TwoPrivateDependenciesSharedCommonPrivateDependency():
 
 def SharedLibraryTargetTest():
 	RunBuildSystem( "shared_library_target" )
+
+
+def ExeDependsOnSharedLibraryTest():
+	RunBuildSystem( "exe_depends_on_shared_library" )
+	RunExecutable( "exe_depends_on_shared_library", "exe" )
 
 
 def MissingBuildFileTest():
@@ -620,7 +625,7 @@ def main():
 		ТестЮникода,
 		BuildFileWithImportsTest,
 		LibraryTargetTest,
-		ExeDependsOnLibrartTest,
+		ExeDependsOnLibraryTest,
 		TransitiveLibraryDependencyTest,
 		LibraryUsedInTwoExecutablesTest,
 		CommonTransitiveDependencyTest,
@@ -635,6 +640,7 @@ def main():
 		TwoPrivateDependenciesSharedCommonPrivateDependency,
 		MissingBuildFileTest,
 		SharedLibraryTargetTest,
+		ExeDependsOnSharedLibraryTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,
