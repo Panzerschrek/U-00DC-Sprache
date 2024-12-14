@@ -689,6 +689,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		BuildTargetType::SharedLibrary ->
 		{
 			// For executables and shared libraries perform linking with all public dependency libraries.
+			// TODO - skip linking libraries which are also public dependencies of linked shared libraries.
 			foreach( &public_dependency : target.public_dependencies_including_transitive )
 			{
 				if_var( &dependency_build_target : package_info.build_targets.find( public_dependency.name ) )
@@ -745,6 +746,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	// For all build target types link private library dependencies.
 	// Link also all transitive public dependencies of these private dependencies.
 	// Exception are libraries which are also public dependencies of this build target, they are not listed here.
+	// TODO - skip linking libraries which are also public dependencies of linked shared libraries.
 	foreach( &private_dependency : target.private_dependencies_including_transitive_public_dependencies )
 	{
 		if_var( &dependency_build_target : package_info.build_targets.find( private_dependency.name ) )

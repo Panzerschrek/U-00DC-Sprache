@@ -227,6 +227,25 @@ def CommonTransitiveSharedLibraryDependencyTest():
 	RunExecutable( "common_transitive_shared_library_dependency", "exe" )
 
 
+def PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest():
+	test_dir= "private_shared_library_dependency_with_public_library_dependency"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+	# Load result shared library.
+	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
+	if platform.system() == "Windows":
+		library_file_path+= ".dll"
+	else:
+		library_file_path+= ".so"
+	library= ctypes.CDLL( library_file_path )
+	# Call "A" function which is part of public interface "A".
+	library._Z5AFuncv.restype = ctypes.c_uint
+	assert( library._Z5AFuncv() == 66664 * 7 )
+	# Call "B" function which should be also exported, because it's a public dependency of the shared library.
+	library._Z5BFuncv.restype = ctypes.c_uint
+	assert( library._Z5BFuncv() == 66664 )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -690,6 +709,7 @@ def main():
 		PrivateSharedLibraryWithPrivateSharedLibraryDependency,
 		PrivateSharedLibraryWithPublicSharedLibraryDependency,
 		CommonTransitiveSharedLibraryDependencyTest,
+		PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest,
 		MissingBuildFileTest,
 		SharedLibraryTargetTest,
 		ExeDependsOnSharedLibraryTest,
