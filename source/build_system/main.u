@@ -638,6 +638,17 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			result_target_file_path+= ".bc";
 		},
+		BuildTargetType::SharedLibrary ->
+		{
+			if( target_is_windows )
+			{
+				result_target_file_path+= ".dll";
+			}
+			else
+			{
+				result_target_file_path+= ".so";
+			}
+		},
 	}
 
 	var BuildGraph::Node mut node
@@ -681,7 +692,23 @@ fn CreatePackageTargetBuildGraphNodes(
 
 			// Internalize hidden symbols - to hide functions/variables which shouldn't be available outside this library.
 			node.command_line.push_back( "--internalize-hidden" );
-		}
+		},
+		BuildTargetType::SharedLibrary ->
+		{
+			// For shared libraries perform linking with all public dependencies.
+			foreach( &public_dependency : target.public_dependencies_including_transitive )
+			{
+				// Assume this is a library dependency (this should be validated before).
+				// TODO - process specially public dependencies of executables.
+				var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
+
+				node.command_line.push_back( lib_file );
+				node.input_files.push_back( lib_file );
+			}
+
+			// Run internalization of hidden symbols.
+			node.command_line.push_back( "--internalize-hidden" );
+		},
 	}
 
 	// For all build target types link private dependencies.
@@ -717,6 +744,11 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			// Produce bitcode file.
 			node.command_line.push_back( "-filetype=bc" );
+		},
+		BuildTargetType::SharedLibrary ->
+		{
+			// Produce shared librart file.
+			node.command_line.push_back( "-filetype=dll" );
 		},
 	}
 

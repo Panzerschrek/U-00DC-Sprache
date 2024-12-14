@@ -183,6 +183,10 @@ def TwoPrivateDependenciesSharedCommonPrivateDependency():
 	RunExecutable( "two_private_dependencies_share_common_private_dependency", "exe" )
 
 
+def SharedLibraryTargetTest():
+	RunBuildSystem( "shared_library_target" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -630,6 +634,7 @@ def main():
 		PublicDependencyOfPrivateDependencyIsAlsoPrivateDependencyTest,
 		TwoPrivateDependenciesSharedCommonPrivateDependency,
 		MissingBuildFileTest,
+		SharedLibraryTargetTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,

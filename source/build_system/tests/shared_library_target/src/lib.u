@@ -1,0 +1,6 @@
+import "/shared_library_target/lib.uh"
+
+fn AddTwoNumbers( i32 x, i32 y ) : i32
+{
+	return x + y;
+}
