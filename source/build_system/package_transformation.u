@@ -573,9 +573,13 @@ fn GetAllTargetSharedLibraryDependenciesToLink(
 	}
 
 	var PackageInfoTransformed::BuildTarget& build_target= build_target_opt.try_deref();
+
+	var ust::vector</BuildTargetFullName/> mut call_stack;
+	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
+
 	foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 	{
-		GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
+		GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, call_stack, result );
 	}
 
 	// Remove possible duplicates and normalize.
@@ -588,6 +592,7 @@ fn GetAllTargetSharedLibraryDependenciesToLink(
 fn GetAllTargetSharedLibraryDependenciesToLink_r(
 	PackageInfoTransformed& package_info,
 	ust::string8& build_target_name,
+	ust::vector</BuildTargetFullName/> &mut call_stack,
 	ust::vector</BuildTargetFullName/> &mut result )
 {
 	// TODO - prevent recursion in case of dependency loops.
@@ -596,6 +601,17 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 	{
 		return; // Missing dependencies are checked before.
 	}
+
+	foreach( &prev_build_target : call_stack )
+	{
+		if( prev_build_target.name == build_target_name )
+		{
+			// Dependency loop detected.
+			// An error should be generated previously, this code exists only to prevent infinite recursion.
+			return;
+		}
+	}
+	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
 
 	var PackageInfoTransformed::BuildTarget& build_target= build_target_opt.try_deref();
 
@@ -607,7 +623,7 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 			// Extract shared library dependencies of public and private library dependencies.
 			foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 			{
-				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
+				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, call_stack, result );
 			}
 		},
 		BuildTargetType::SharedLibrary ->
@@ -619,10 +635,12 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 			// But DO NOT extract shared library dependencies of private dependencies.
 			foreach( &public_dependency : build_target.public_dependencies )
 			{
-				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, public_dependency.name, result );
+				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, public_dependency.name, call_stack, result );
 			}
 		}
 	}
+
+	call_stack.pop_back();
 }
 
 } // namespace BK

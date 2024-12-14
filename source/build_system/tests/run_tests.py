@@ -530,6 +530,20 @@ def DependencyLoop3Test():
 	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_c\" -> \"lib_d\" -> \"lib_a\"" ) != -1 )
 
 
+def DependencyLoop4Test():
+	res = RunBuildSystemWithErrors( "dependency_loop4" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_a\"" ) != -1 )
+
+
+def DependencyLoop5Test():
+	res = RunBuildSystemWithErrors( "dependency_loop5" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_c\" -> \"lib_d\" -> \"lib_a\"" ) != -1 )
+
+
 def DependencyOnExe0Test():
 	res = RunBuildSystemWithErrors( "dependency_on_exe0" )
 	assert( res.returncode != 0 )
@@ -706,6 +720,8 @@ def main():
 		DependencyLoop1Test,
 		DependencyLoop2Test,
 		DependencyLoop3Test,
+		DependencyLoop4Test,
+		DependencyLoop5Test,
 		DependencyOnExe0Test,
 		DependencyOnExe1Test,
 		UnallowedImport0,
