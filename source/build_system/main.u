@@ -661,10 +661,19 @@ fn CreatePackageTargetBuildGraphNodes(
 		.comment= target_name,
 	};
 
-	if( target.target_type == BuildTargetType::SharedLibrary && target_is_windows )
+	if( target.target_type == BuildTargetType::SharedLibrary )
 	{
-		// Add also lib file to outputs.
-		node.output_files.push_back( NormalizePath( ust::string8(package_build_directory) + "/" + target_name + ".lib" ) );
+		if( target_is_windows )
+		{
+			// Add also ".lib" file to outputs.
+			// This file is implicitly created by the linker.
+			node.output_files.push_back( NormalizePath( ust::string8(package_build_directory) + "/" + target_name + ".lib" ) );
+		}
+		else
+		{
+			// Specify soname, in order to load libraries using only name and not the full path to the library provided to the linker.
+			node.command_line.push_back( ust::string8("-Wl,-soname," ) + target_name + ".so" );
+		}
 	}
 
 	foreach( &bc_file : bc_files )
@@ -710,6 +719,19 @@ fn CreatePackageTargetBuildGraphNodes(
 
 					node.command_line.push_back( "-Wl," + so_file );
 					node.input_files.push_back( so_file );
+				}
+			}
+
+			if( !target.shared_library_dependencies_to_link.empty() )
+			{
+				if( target_is_windows )
+				{
+					// TODO - privide library path?
+				}
+				else
+				{
+					// For now set "rpath" to origin - in order to have possibility to load shared libraries from common directory with all build targets.
+					node.command_line.push_back( "-Wl,-rpath,\\$ORIGIN" );
 				}
 			}
 		},
