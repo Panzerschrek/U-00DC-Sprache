@@ -1,0 +1,6 @@
+import "/b/b.uh"
+
+fn BFunc() : MyInt
+{
+	return 66664u;
+}

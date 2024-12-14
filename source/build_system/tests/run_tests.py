@@ -197,6 +197,16 @@ def ExeDependsOnLibraryWithPrivateSharedLibraryDependency():
 	RunExecutable( "exe_depends_on_library_with_private_shared_library_dependency", "exe" )
 
 
+def PrivateSharedLibraryWithPrivateSharedLibraryDependency():
+	RunBuildSystem( "private_shared_library_dependency_with_private_shared_library_dependency" )
+	RunExecutable( "private_shared_library_dependency_with_private_shared_library_dependency", "exe" )
+
+
+def PrivateSharedLibraryWithPublicSharedLibraryDependency():
+	RunBuildSystem( "private_shared_library_dependency_with_public_shared_library_dependency" )
+	RunExecutable( "private_shared_library_dependency_with_public_shared_library_dependency", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -643,6 +653,8 @@ def main():
 		PublicDependencyOfPrivateDependencyIsAlsoPublicDependencyTest,
 		PublicDependencyOfPrivateDependencyIsAlsoPrivateDependencyTest,
 		TwoPrivateDependenciesSharedCommonPrivateDependency,
+		PrivateSharedLibraryWithPrivateSharedLibraryDependency,
+		PrivateSharedLibraryWithPublicSharedLibraryDependency,
 		MissingBuildFileTest,
 		SharedLibraryTargetTest,
 		ExeDependsOnSharedLibraryTest,
