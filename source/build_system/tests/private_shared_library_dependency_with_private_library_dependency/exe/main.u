@@ -1,0 +1,7 @@
+import "/a/a.uh"
+
+fn nomangle main() : i32
+{
+	halt if( AFunc() != 66664u * 7u );
+	return 0;
+}

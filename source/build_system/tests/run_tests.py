@@ -240,12 +240,32 @@ def PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest():
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
+	# TODO - fetch also MSVC-mangled names.
 	# Call "A" function which is part of public interface "A".
 	library._Z5AFuncv.restype = ctypes.c_uint
 	assert( library._Z5AFuncv() == 66664 * 7 )
-	# Call "B" function which should be also exported, because it's a public dependency of the shared library.
+	# Call "B" function, which should be also exported, because it's a public dependency of the shared library.
 	library._Z5BFuncv.restype = ctypes.c_uint
 	assert( library._Z5BFuncv() == 66664 )
+
+
+def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
+	test_dir= "private_shared_library_dependency_with_private_library_dependency"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+	# Load result shared library.
+	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
+	if platform.system() == "Windows":
+		library_file_path+= ".dll"
+	else:
+		library_file_path+= ".so"
+	library= ctypes.CDLL( library_file_path )
+	# TODO - fetch also MSVC-mangled names.
+	# Call "A" function which is part of public interface "A".
+	library._Z5AFuncv.restype = ctypes.c_uint
+	assert( library._Z5AFuncv() == 66664 * 7 )
+	# Functions from "B" shouldn't be exported, since "B" is a private dependency of shared library "a".
+	assert( not hasattr( library, "_Z5BFuncv" ) )
 
 
 def MissingBuildFileTest():
@@ -712,6 +732,7 @@ def main():
 		PrivateSharedLibraryWithPublicSharedLibraryDependency,
 		CommonTransitiveSharedLibraryDependencyTest,
 		PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest,
+		PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest,
 		MissingBuildFileTest,
 		SharedLibraryTargetTest,
 		ExeDependsOnSharedLibraryTest,
