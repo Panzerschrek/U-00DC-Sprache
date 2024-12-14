@@ -1,0 +1,6 @@
+import "/lib_a/lib_a.uh"
+
+fn ThirdPower( Num x ) : Num
+{
+	return Mul( Mul( x, x ), x );
+}

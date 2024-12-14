@@ -1,0 +1,6 @@
+import "/lib_c/lib_c.uh"
+
+fn Mul( Num x, Num y ) : Num
+{
+	return x * y;
+}

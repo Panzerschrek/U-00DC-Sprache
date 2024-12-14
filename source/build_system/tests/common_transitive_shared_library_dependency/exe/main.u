@@ -1,0 +1,13 @@
+import "/stdout.u"
+import "/string_conversions.u"
+import "/lib_a/lib_a.uh"
+import "/lib_b/lib_b.uh"
+
+fn nomangle main() : i32
+{
+	var Num x(17);
+	auto square= Square(x);
+	auto third_power= ThirdPower(x);
+	ust::stdout_print( ust::to_string8(x) + ": squared is " + ust::to_string8( square ) + ", third power is " + ust::to_string8(third_power) + "\n" );
+	return 0;
+}
