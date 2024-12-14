@@ -1,0 +1,6 @@
+import "/b/b.uh"
+
+fn BFunc() : u32
+{
+	return 66664u;
+}
