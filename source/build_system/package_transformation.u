@@ -565,7 +565,18 @@ fn GetAllTargetSharedLibraryDependenciesToLink(
 	ust::string8& build_target_name ) : ust::vector</BuildTargetFullName/>
 {
 	var ust::vector</BuildTargetFullName/> mut result;
-	GetAllTargetSharedLibraryDependenciesToLink_r( package_info, build_target_name, result );
+
+	auto build_target_opt = package_info.build_targets.find( build_target_name );
+	if( build_target_opt.empty() )
+	{
+		return result; // Missing dependencies are checked before.
+	}
+
+	var PackageInfoTransformed::BuildTarget& build_target= build_target_opt.try_deref();
+	foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
+	{
+		GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
+	}
 
 	// Remove possible duplicates and normalize.
 	ust::sort( result );
@@ -588,33 +599,27 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 
 	var PackageInfoTransformed::BuildTarget& build_target= build_target_opt.try_deref();
 
-	// Iterate over both public and private dependencies.
-	foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
+	switch( build_target.target_type )
 	{
-		if_var( &dependent_build_target : package_info.build_targets.find( dependency.name ) )
+		BuildTargetType::Executable -> {}, // This should be checked before.
+		BuildTargetType::Library ->
 		{
-			switch( dependent_build_target.target_type )
+			// Extract shared library dependencies of public and private library dependencies.
+			foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 			{
-				BuildTargetType::Executable -> {}, // This should be checked before.
-				BuildTargetType::Library ->
-				{
-					// Extrach shared library dependencies of library dependencies.
-					GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
-				},
-				BuildTargetType::SharedLibrary ->
-				{
-					result.push_back( dependency ); // Depend on this shared library dependency.
+				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
+			}
+		},
+		BuildTargetType::SharedLibrary ->
+		{
+			// Use this shared librarty.
+			result.push_back( BuildTargetFullName{ .name= build_target_name } );
 
-					if_var( &shared_library_build_target : package_info.build_targets.find( dependency.name ) )
-					{
-						// Extract also shared library dependencies of public dependencies of this shared library dependency.
-						// But DO NOT extract shared library dependencies of private dependencies.
-						foreach( &shared_library_public_dependency : shared_library_build_target.public_dependencies )
-						{
-							GetAllTargetSharedLibraryDependenciesToLink_r( package_info, shared_library_public_dependency.name, result );
-						}
-					}
-				},
+			// Extract also shared library dependencies of public dependencies of this shared library.
+			// But DO NOT extract shared library dependencies of private dependencies.
+			foreach( &public_dependency : build_target.public_dependencies )
+			{
+				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, public_dependency.name, result );
 			}
 		}
 	}
