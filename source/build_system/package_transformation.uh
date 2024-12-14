@@ -34,6 +34,11 @@ struct PackageInfoTransformed
 		// Dependencies which are also public or transitive public dependencies aren't listed.
 		// It's sorted and deduplicated.
 		ust::vector</BuildTargetFullName/> private_dependencies_including_transitive_public_dependencies;
+
+		// Includes names of all shared library dependencies needed to be linked.
+		// This includes also shared library dependencies of private library dependencies.
+		// It's sorted and deduplicated.
+		ust::vector</BuildTargetFullName/> shared_library_dependencies_to_link;
 	}
 
 	ust::unordered_map</ust::string8, BuildTarget/> build_targets;
