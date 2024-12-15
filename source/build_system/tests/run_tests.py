@@ -305,6 +305,12 @@ def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
 	assert( not hasattr( library, "?CFunc@@YAIXZ" ) )
 
 
+def SharedLibraryUsedInTwoExecutablesTest():
+	RunBuildSystem( "shared_library_used_in_two_executables" )
+	RunExecutable( "shared_library_used_in_two_executables", "exe_a" )
+	RunExecutable( "shared_library_used_in_two_executables", "exe_b" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -771,6 +777,7 @@ def main():
 		PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest,
 		PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest,
 		SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest,
+		SharedLibraryUsedInTwoExecutablesTest,
 		MissingBuildFileTest,
 		SharedLibraryTargetTest,
 		ExeDependsOnSharedLibraryTest,
