@@ -1,0 +1,38 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	// "a" shared library depends on "b" shared library and on "c" Ü library.
+	// Linking "c" should be avoided, since all symbols of "c" are already available in "b".
+
+	var BK::BuildTarget mut a
+	{
+		.target_type = BK::BuildTargetType::SharedLibrary,
+		.name= "a",
+		.source_files= ust::make_array</ust::string8/>( "a/src/a.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "a/imports" ),
+		.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "b" } ),
+	};
+
+	// "b" shared library also exports symbols from "c" Ü library.
+	var BK::BuildTarget mut b
+	{
+		.target_type = BK::BuildTargetType::SharedLibrary,
+		.name= "b",
+		.source_files= ust::make_array</ust::string8/>( "b/src/b.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "b/imports" ),
+		.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "c" } ),
+	};
+
+	var BK::BuildTarget mut c
+	{
+		.target_type = BK::BuildTargetType::Library,
+		.name= "c",
+		.source_files= ust::make_array</ust::string8/>( "c/src/c.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "c/imports" ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array(  move(a), move(b), move(c) ) };
+}

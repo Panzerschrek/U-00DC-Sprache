@@ -277,6 +277,34 @@ def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
 	assert( not hasattr( library, "?BFunc@@YAIXZ" ) )
 
 
+def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
+	test_dir= "shared_library_deduplicated_transitive_public_shared_library_dependency"
+	RunBuildSystem( test_dir )
+	# Load result shared library.
+	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
+	if platform.system() == "Windows":
+		# Hack to allow loading "b.dll" while loading "a.dll"
+		os.environ["PATH"] = os.environ[ "PATH" ] + ";" + os.path.join( g_tests_build_root_path, test_dir, "release" )
+		library_file_path+= ".dll"
+	else:
+		library_file_path+= ".so"
+	library= ctypes.CDLL( library_file_path )
+	if platform.system() == "Windows": # TODO - check for MSVC instead
+		a_func= getattr( library, "?AFunc@@YAIXZ" )
+	else:
+		a_func= getattr( library, "_Z5AFuncv" )
+	# Call "A" function which is part of public interface "A".
+	a_func.restype = ctypes.c_uint
+	assert( a_func() == (11177 + 17) * 5 )
+	# Functions from "b" shouldn't be exported, since "b" is a public shared library dependency of "a".
+	assert( not hasattr( library, "_Z5BFuncv" ) )
+	assert( not hasattr( library, "?BFunc@@YAIXZ" ) )
+	# Functions from "c" shouldn't be exported, since "c" is a public dependency of shared library "b", which is public dependency of "a".
+	# So, "b" already contains "c".
+	assert( not hasattr( library, "_Z5CFuncv" ) )
+	assert( not hasattr( library, "?CFunc@@YAIXZ" ) )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -742,6 +770,7 @@ def main():
 		CommonTransitiveSharedLibraryDependencyTest,
 		PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest,
 		PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest,
+		SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest,
 		MissingBuildFileTest,
 		SharedLibraryTargetTest,
 		ExeDependsOnSharedLibraryTest,

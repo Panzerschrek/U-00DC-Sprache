@@ -1,0 +1,6 @@
+import "/a/a.uh"
+
+fn AFunc() : MyInt
+{
+	return BFunc() * 5u;
+}
