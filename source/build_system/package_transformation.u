@@ -595,7 +595,6 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 	ust::vector</BuildTargetFullName/> &mut call_stack,
 	ust::vector</BuildTargetFullName/> &mut result )
 {
-	// TODO - prevent recursion in case of dependency loops.
 	auto build_target_opt = package_info.build_targets.find( build_target_name );
 	if( build_target_opt.empty() )
 	{
