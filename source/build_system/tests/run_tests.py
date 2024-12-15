@@ -280,6 +280,7 @@ def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
 def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
 	test_dir= "shared_library_deduplicated_transitive_public_shared_library_dependency"
 	RunBuildSystem( test_dir )
+
 	# Load result shared library.
 	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
 	if platform.system() == "Windows":
@@ -289,20 +290,28 @@ def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
+
+	# Call "A" function which is part of public interface "A".
 	if platform.system() == "Windows": # TODO - check for MSVC instead
 		a_func= getattr( library, "?AFunc@@YAIXZ" )
 	else:
 		a_func= getattr( library, "_Z5AFuncv" )
-	# Call "A" function which is part of public interface "A".
 	a_func.restype = ctypes.c_uint
+
 	assert( a_func() == (11177 + 17) * 5 )
-	# Functions from "b" shouldn't be exported, since "b" is a public shared library dependency of "a".
-	assert( not hasattr( library, "_Z5BFuncv" ) )
-	assert( not hasattr( library, "?BFunc@@YAIXZ" ) )
-	# Functions from "c" shouldn't be exported, since "c" is a public dependency of shared library "b", which is public dependency of "a".
-	# So, "b" already contains "c".
-	assert( not hasattr( library, "_Z5CFuncv" ) )
-	assert( not hasattr( library, "?CFunc@@YAIXZ" ) )
+	if platform.system() == "Windows":
+		# Functions from "b" shouldn't be exported, since "b" is a public shared library dependency of "a".
+		# This works only for windows DLLs.
+		assert( not hasattr( library, "_Z5BFuncv" ) )
+		assert( not hasattr( library, "?BFunc@@YAIXZ" ) )
+		# Functions from "c" shouldn't be exported, since "c" is a public dependency of shared library "b", which is public dependency of "a".
+		# So, "b" already contains "c".
+		assert( not hasattr( library, "_Z5CFuncv" ) )
+		assert( not hasattr( library, "?CFunc@@YAIXZ" ) )
+	# Imported symbols are still listed in library functions list of ".so" libraries, in order to load them from dependent libraries properly.
+	# But they are not actually implemented there, only imported.
+	# The similar behavior of "dlsym" function is observable also for any symbols from dependent libraries of this library.
+	# So, even functions like "printf" are present in the result loaded library, even if they are defined in glibc.
 
 
 def SharedLibraryUsedInTwoExecutablesTest():
