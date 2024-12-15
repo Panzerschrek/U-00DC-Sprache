@@ -50,7 +50,7 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 				out_build_target.source_files.push_back( NormalizePath( source_name ) );
 			}
 
-			// Normalize list of sources and remove duplicates.
+			// Normalize list of sources and detect duplicates.
 			ust::sort( out_build_target.source_files );
 			for( auto mut i = 1s; i < out_build_target.source_files.size(); ++i )
 			{
@@ -150,7 +150,7 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 			prev_targets_directories.push_back( move(public_include_directory_component_splitted) );
 		}
 
-		ust::sort( out_build_target.public_include_directories );
+		NormalizeList( out_build_target.public_include_directories );
 
 		// Process public dependencies.
 
@@ -163,14 +163,12 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		}
 
 		out_build_target.public_dependencies= build_target.public_dependencies;
-		ust::sort( out_build_target.public_dependencies );
-		out_build_target.public_dependencies.remove_adjacent_duplicates();
+		NormalizeList(out_build_target.public_dependencies);
 
 		// Process private dependencies.
 
 		out_build_target.private_dependencies= build_target.private_dependencies;
-		ust::sort( out_build_target.private_dependencies );
-		out_build_target.private_dependencies.remove_adjacent_duplicates();
+		NormalizeList(out_build_target.private_dependencies);
 
 		out_package_info.build_targets.insert( target_name, move( out_build_target ) );
 	}
@@ -450,9 +448,7 @@ fn GetAllTargetPublicDependencies(
 	var ust::vector</BuildTargetFullName/> mut result;
 	GetAllTargetPublicDependencies_r( package_info, build_target_name, result );
 
-	// Remove possible duplicates and normalize.
-	ust::sort( result );
-	result.remove_adjacent_duplicates();
+	NormalizeList(result);
 
 	return result;
 }
@@ -470,9 +466,7 @@ fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 		result.push_back( private_dependency );
 	}
 
-	// Remove possible duplicates and normalize.
-	ust::sort( result );
-	result.remove_adjacent_duplicates();
+	NormalizeList(result);
 
 	return result;
 }
@@ -505,9 +499,7 @@ fn GetAllTargetSharedLibraryDependenciesToLink(
 		GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
 	}
 
-	// Remove possible duplicates and normalize.
-	ust::sort( result );
-	result.remove_adjacent_duplicates();
+	NormalizeList(result);
 
 	return result;
 }
@@ -545,6 +537,13 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 			}
 		}
 	}
+}
+
+template</type T/>
+fn NormalizeList( ust::vector</T/> &mut list )
+{
+	ust::sort( list );
+	list.remove_adjacent_duplicates();
 }
 
 } // namespace BK
