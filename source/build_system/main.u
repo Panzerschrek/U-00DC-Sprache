@@ -746,9 +746,16 @@ fn CreatePackageTargetBuildGraphNodes(
 	// For all build target types link private library dependencies.
 	// Link also all transitive public dependencies of these private dependencies.
 	// Exception are libraries which are also public dependencies of this build target, they are not listed here.
-	// TODO - skip linking libraries which are also public dependencies of linked shared libraries.
 	foreach( &private_dependency : target.private_dependencies_including_transitive_public_dependencies )
 	{
+		if( IsPublicDependencyOfSomeLinkedSharedLibrary( package_info, target, private_dependency ) )
+		{
+			// An optimization for result binary size.
+			// If this dependency is also a public dependency of some shared library, which is linked against this build target,
+			// we don't need to link this dependency, since all symbolsof this dependency  will be exposed and obtained from such shared library.
+			continue;
+		}
+
 		if_var( &dependency_build_target : package_info.build_targets.find( private_dependency.name ) )
 		{
 			if( dependency_build_target.target_type == BuildTargetType::Library )
@@ -875,6 +882,28 @@ fn ExtractDependenciesIncludeDirectories(
 }
 
 auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
+
+fn IsPublicDependencyOfSomeLinkedSharedLibrary(
+	PackageInfoTransformed& package_info,
+	PackageInfoTransformed::BuildTarget& build_target,
+	BuildTargetFullName& dependency ) : bool
+{
+	foreach( &shared_library_dependency : build_target.shared_library_dependencies_to_link )
+	{
+		if_var( &shared_library_build_target : package_info.build_targets.find( shared_library_dependency.name ) )
+		{
+			foreach( &shared_library_public_dependency : shared_library_build_target.public_dependencies_including_transitive )
+			{
+				if( dependency == shared_library_public_dependency )
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
 
 class BuildSystemInterfaceImplementation final : BuildSystemInterface
 {
