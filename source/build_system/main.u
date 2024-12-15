@@ -700,15 +700,12 @@ fn CreatePackageTargetBuildGraphNodes(
 					continue;
 				}
 
-				if_var( &dependency_build_target : package_info.build_targets.find( public_dependency.name ) )
+				if( package_info.build_targets[ public_dependency.name ].target_type == BuildTargetType::Library )
 				{
-					if( dependency_build_target.target_type == BuildTargetType::Library )
-					{
-						var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
+					var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
 
-						node.command_line.push_back( lib_file );
-						node.input_files.push_back( lib_file );
-					}
+					node.command_line.push_back( lib_file );
+					node.input_files.push_back( lib_file );
 				}
 			}
 		},
@@ -732,19 +729,16 @@ fn CreatePackageTargetBuildGraphNodes(
 			continue;
 		}
 
-		if_var( &dependency_build_target : package_info.build_targets.find( private_dependency.name ) )
+		if( package_info.build_targets[ private_dependency.name ].target_type == BuildTargetType::Library )
 		{
-			if( dependency_build_target.target_type == BuildTargetType::Library )
-			{
-				var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( private_dependency.name + ".bc" ) ) );
+			var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( private_dependency.name + ".bc" ) ) );
 
-				node.command_line.push_back( lib_file );
-				node.input_files.push_back( lib_file );
+			node.command_line.push_back( lib_file );
+			node.input_files.push_back( lib_file );
 
-				// Internalize all symbols from private dependencies.
-				node.command_line.push_back( "--internalize-symbols-from" );
-				node.command_line.push_back( lib_file );
-			}
+			// Internalize all symbols from private dependencies.
+			node.command_line.push_back( "--internalize-symbols-from" );
+			node.command_line.push_back( lib_file );
 		}
 	}
 
@@ -874,19 +868,16 @@ fn ExtractDependenciesIncludeDirectories(
 {
 	foreach( &build_target_name : dependencies )
 	{
-		if_var( &build_target : package_info.build_targets.find( build_target_name.name ) )
+		foreach( &public_include_directory : package_info.build_targets[ build_target_name.name ].public_include_directories )
 		{
-			foreach( &public_include_directory : build_target.public_include_directories )
-			{
-				// Prefix this directory with target name.
-				// So, using
-				//    import "some_target/some_file.uh"
-				// will work.
-				var ust::string8 mut path= NormalizePath( package_source_directory + ( "/" + public_include_directory ) );
-				path+= g_include_dir_prefix_separator;
-				path+= build_target_name.name;
-				include_directories_prefixed.push_back( move(path) );
-			}
+			// Prefix this directory with target name.
+			// So, using
+			//    import "some_target/some_file.uh"
+			// will work.
+			var ust::string8 mut path= NormalizePath( package_source_directory + ( "/" + public_include_directory ) );
+			path+= g_include_dir_prefix_separator;
+			path+= build_target_name.name;
+			include_directories_prefixed.push_back( move(path) );
 		}
 	}
 }
@@ -900,16 +891,14 @@ fn IsPublicDependencyOfDirectPublicSharedLibraryDependency(
 {
 	foreach( &public_dependency : build_target.public_dependencies )
 	{
-		if_var( &public_dependency_build_target : package_info.build_targets.find( public_dependency.name ) )
+		auto& public_dependency_build_target = package_info.build_targets[ public_dependency.name ];
+		if( public_dependency_build_target.target_type == BuildTargetType::SharedLibrary )
 		{
-			if( public_dependency_build_target.target_type == BuildTargetType::SharedLibrary )
+			foreach( &shared_library_public_dependency : public_dependency_build_target.public_dependencies_including_transitive )
 			{
-				foreach( &shared_library_public_dependency : public_dependency_build_target.public_dependencies_including_transitive )
+				if( dependency == shared_library_public_dependency )
 				{
-					if( dependency == shared_library_public_dependency )
-					{
-						return true;
-					}
+					return true;
 				}
 			}
 		}
@@ -925,14 +914,11 @@ fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 {
 	foreach( &shared_library_dependency : build_target.shared_library_dependencies_to_link )
 	{
-		if_var( &shared_library_build_target : package_info.build_targets.find( shared_library_dependency.name ) )
+		foreach( &shared_library_public_dependency : package_info.build_targets[ shared_library_dependency.name ].public_dependencies_including_transitive )
 		{
-			foreach( &shared_library_public_dependency : shared_library_build_target.public_dependencies_including_transitive )
+			if( dependency == shared_library_public_dependency )
 			{
-				if( dependency == shared_library_public_dependency )
-				{
-					return true;
-				}
+				return true;
 			}
 		}
 	}

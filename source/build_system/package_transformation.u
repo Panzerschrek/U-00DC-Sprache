@@ -178,73 +178,58 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 	// After finishing building build targets map can perform dependency graph-based checks and transformations.
 	//
 
-	// Check for dependency loops.
+	// Check for dependency graph validity.
 	foreach( &build_target : package_info.build_targets )
 	{
-		ok&= CheckForDependencyLoops( logger, out_package_info, build_target.name );
+		ok&= DependencyGraphIsValid( logger, out_package_info, build_target.name );
+	}
+
+	if( !ok )
+	{
+		// Stop here, if we have errors.
+		// Avoid performing dependency graph analysis steps if dependency graph isn't valid.
+		return ust::null_optional;
 	}
 
 	// Perform public dependencies retrieval.
 	foreach( &build_target : package_info.build_targets )
 	{
-		if_var( &mut dependencies : GetAllTargetPublicDependencies( logger, out_package_info, build_target.name ) )
-		{
-			if_var( &mut out_build_target : out_package_info.build_targets.find( build_target.name ) )
-			{
-				out_build_target.public_dependencies_including_transitive= take(dependencies);
-			}
-		}
-		else
-		{
-			ok= false;
-		}
+		auto mut dependencies = GetAllTargetPublicDependencies( out_package_info, build_target.name );
+		out_package_info.build_targets[build_target.name].public_dependencies_including_transitive= move(dependencies);
 	}
 
 	// Perform private dependencies retrieval.
 	foreach( &build_target : package_info.build_targets )
 	{
-		if_var( &dependencies : GetAllTargetPrivateAndTheirTransitivePublicDependencies( logger, out_package_info, build_target.name ) )
-		{
-			if_var( &mut out_build_target : out_package_info.build_targets.find( build_target.name ) )
+		auto dependencies = GetAllTargetPrivateAndTheirTransitivePublicDependencies( out_package_info, build_target.name );
+
+		auto &mut out_build_target= out_package_info.build_targets[ build_target.name ];
+
+		// Remove private dependencies which are also public dependencies.
+
+		auto& public_dependencies= out_build_target.public_dependencies_including_transitive;
+		auto is_not_in_public_dependencies=
+			lambda[&]( BuildTargetFullName& target_name ) : bool
 			{
-				// Remove private dependencies which are also public dependencies.
-
-				auto& public_dependencies= out_build_target.public_dependencies_including_transitive;
-				auto is_not_in_public_dependencies=
-					lambda[&]( BuildTargetFullName& target_name ) : bool
+				foreach( &dependency : public_dependencies )
+				{
+					if( target_name == dependency )
 					{
-						foreach( &dependency : public_dependencies )
-						{
-							if( target_name == dependency )
-							{
-								return false;
-							}
-						}
-						return true;
-					};
+						return false;
+					}
+				}
+				return true;
+			};
 
-				out_build_target.private_dependencies_including_transitive_public_dependencies.append(
-					dependencies.iter().filter( is_not_in_public_dependencies ) );
-			}
-		}
-		else
-		{
-			ok= false;
-		}
+		out_build_target.private_dependencies_including_transitive_public_dependencies.append(
+			dependencies.iter().filter( is_not_in_public_dependencies ) );
 	}
 
 	// Perform shared libraries to link retrieval.
 	foreach( &build_target : package_info.build_targets )
 	{
 		auto mut dependencies= GetAllTargetSharedLibraryDependenciesToLink( out_package_info, build_target.name );
-		if_var( &mut out_build_target : out_package_info.build_targets.find( build_target.name ) )
-		{
-			out_build_target.shared_library_dependencies_to_link= move(dependencies);
-		}
-		else
-		{
-			move(dependencies);
-		}
+		out_package_info.build_targets[ build_target.name ].shared_library_dependencies_to_link= move(dependencies);
 	}
 
 	if( !ok )
@@ -383,17 +368,17 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 	return result;
 }
 
-// Returns "true: if has NO dependency loops.
-fn CheckForDependencyLoops(
+// Returns true if dependency graph is valid.
+fn DependencyGraphIsValid(
 	Logger &mut logger,
 	PackageInfoTransformed& package_info,
 	ust::string8& build_target_name ) : bool
 {
 	var ust::vector</BuildTargetFullName/> mut call_stack;
-	return CheckForDependencyLoops_r( logger, package_info, build_target_name, call_stack );
+	return DependencyGraphIsValid_r( logger, package_info, build_target_name, call_stack );
 }
 
-fn CheckForDependencyLoops_r(
+fn DependencyGraphIsValid_r(
 	Logger &mut logger,
 	PackageInfoTransformed& package_info,
 	ust::string8& build_target_name,
@@ -427,128 +412,24 @@ fn CheckForDependencyLoops_r(
 
 	if_var( &build_target : package_info.build_targets.find( build_target_name ) )
 	{
-		foreach( &public_dependency : build_target.public_dependencies )
+		foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 		{
-			ok&= CheckForDependencyLoops_r( logger, package_info, public_dependency.name, call_stack );
-		}
-		foreach( &private_dependency : build_target.private_dependencies )
-		{
-			ok&= CheckForDependencyLoops_r( logger, package_info, private_dependency.name, call_stack );
-		}
-	}
-
-	call_stack.pop_back();
-	return ok;
-}
-
-fn GetAllTargetPublicDependencies(
-	Logger &mut logger,
-	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name ) : ust::optional</ust::vector</BuildTargetFullName/>/>
-{
-	var ust::vector</BuildTargetFullName/> mut result;
-	if( !GetAllTargetPublicDependencies_r( logger, package_info, build_target_name, result ) )
-	{
-		return ust::null_optional;
-	}
-
-	// Remove possible duplicates and normalize.
-	ust::sort( result );
-	result.remove_adjacent_duplicates();
-
-	return move(result);
-}
-
-fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
-	Logger &mut logger,
-	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name ) : ust::optional</ust::vector</BuildTargetFullName/>/>
-{
-	auto build_target_opt= package_info.build_targets.find( build_target_name );
-	if( build_target_opt.empty() )
-	{
-		logger.LogError( "Dependency \"" + build_target_name + "\" not found." );
-		return ust::null_optional;
-	}
-
-	var ust::vector</BuildTargetFullName/> mut result;
-
-	var bool mut ok= true;
-	foreach( &private_dependency : build_target_opt.try_deref().private_dependencies )
-	{
-		if( private_dependency.name == build_target_name )
-		{
-			logger.LogError( "Build target \"" + build_target_name + "\" depends on itself." );
-			ok= false;
-			continue;
-		}
-
-		if_var( &dependent_build_target : package_info.build_targets.find( private_dependency.name ) )
-		{
-			if( !( dependent_build_target.target_type == BuildTargetType::Library || dependent_build_target.target_type == BuildTargetType::SharedLibrary ) )
-			{
-				logger.LogError( "Build target \"" + build_target_name + "\" depends on non-library build target \"" + private_dependency.name + "\"." );
-				ok= false;
-			}
-		}
-
-		ok&= GetAllTargetPublicDependencies_r( logger, package_info, private_dependency.name, result );
-		result.push_back( private_dependency );
-	}
-
-	if( !ok )
-	{
-		return ust::null_optional;
-	}
-
-	// Remove possible duplicates and normalize.
-	ust::sort( result );
-	result.remove_adjacent_duplicates();
-
-	return move(result);
-}
-
-// Returns true on success.
-fn GetAllTargetPublicDependencies_r(
-	Logger &mut logger,
-	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name,
-	ust::vector</BuildTargetFullName/> &mut result ) : bool
-{
-	foreach( &prev_dependency : result )
-	{
-		if( prev_dependency.name == build_target_name )
-		{
-			// Already visited.
-			// This check prevents infinite recursion in case of circular dependencies.
-			return true;
-		}
-	}
-
-	var bool mut ok= true;
-
-	if_var( &build_target : package_info.build_targets.find( build_target_name ) )
-	{
-		foreach( &public_dependency : build_target.public_dependencies )
-		{
-			if( public_dependency.name == build_target_name )
+			if( dependency.name == build_target_name )
 			{
 				logger.LogError( "Build target \"" + build_target_name + "\" depends on itself." );
 				ok= false;
 				continue;
 			}
-
-			if_var( &dependent_build_target : package_info.build_targets.find( public_dependency.name ) )
+			if_var( &dependency_build_target : package_info.build_targets.find( dependency.name ) )
 			{
-				if( !( dependent_build_target.target_type == BuildTargetType::Library || dependent_build_target.target_type == BuildTargetType::SharedLibrary ) )
+				if( !( dependency_build_target.target_type == BuildTargetType::Library || dependency_build_target.target_type == BuildTargetType::SharedLibrary ) )
 				{
-					logger.LogError( "Build target \"" + build_target_name + "\" depends on non-library build target \"" + public_dependency.name + "\"." );
+					logger.LogError( "Build target \"" + build_target_name + "\" depends on non-library build target \"" + dependency.name + "\"." );
 					ok= false;
 				}
 			}
 
-			ok&= GetAllTargetPublicDependencies_r( logger, package_info, public_dependency.name, result );
-			result.push_back(public_dependency);
+			ok&= DependencyGraphIsValid_r( logger, package_info, dependency.name, call_stack );
 		}
 	}
 	else
@@ -557,29 +438,71 @@ fn GetAllTargetPublicDependencies_r(
 		logger.LogError( "Dependency \"" + build_target_name + "\" not found." );
 	}
 
+	call_stack.pop_back();
 	return ok;
+}
+
+fn GetAllTargetPublicDependencies(
+	PackageInfoTransformed& package_info, ust::string8& build_target_name ) : ust::vector</BuildTargetFullName/>
+{
+	// Build targets existence should be checked before.
+
+	var ust::vector</BuildTargetFullName/> mut result;
+	GetAllTargetPublicDependencies_r( package_info, build_target_name, result );
+
+	// Remove possible duplicates and normalize.
+	ust::sort( result );
+	result.remove_adjacent_duplicates();
+
+	return result;
+}
+
+fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
+	PackageInfoTransformed& package_info, ust::string8& build_target_name ) : ust::vector</BuildTargetFullName/>
+{
+	// Build targets existence should be checked before.
+
+	var ust::vector</BuildTargetFullName/> mut result;
+
+	foreach( &private_dependency : package_info.build_targets[ build_target_name ].private_dependencies )
+	{
+		GetAllTargetPublicDependencies_r( package_info, private_dependency.name, result );
+		result.push_back( private_dependency );
+	}
+
+	// Remove possible duplicates and normalize.
+	ust::sort( result );
+	result.remove_adjacent_duplicates();
+
+	return result;
+}
+
+fn GetAllTargetPublicDependencies_r(
+	PackageInfoTransformed& package_info,
+	ust::string8& build_target_name,
+	ust::vector</BuildTargetFullName/> &mut result )
+{
+	// Possible dependency loops and target names validity should be checked before.
+
+	foreach( &public_dependency : package_info.build_targets[ build_target_name ].public_dependencies )
+	{
+		GetAllTargetPublicDependencies_r( package_info, public_dependency.name, result );
+		result.push_back(public_dependency);
+	}
 }
 
 fn GetAllTargetSharedLibraryDependenciesToLink(
 	PackageInfoTransformed& package_info,
 	ust::string8& build_target_name ) : ust::vector</BuildTargetFullName/>
 {
+	// Possible dependency loops and target names validity should be checked before.
+
+	var PackageInfoTransformed::BuildTarget& build_target= package_info.build_targets[ build_target_name ];
 	var ust::vector</BuildTargetFullName/> mut result;
-
-	auto build_target_opt = package_info.build_targets.find( build_target_name );
-	if( build_target_opt.empty() )
-	{
-		return result; // Missing dependencies are checked before.
-	}
-
-	var PackageInfoTransformed::BuildTarget& build_target= build_target_opt.try_deref();
-
-	var ust::vector</BuildTargetFullName/> mut call_stack;
-	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
 
 	foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 	{
-		GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, call_stack, result );
+		GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
 	}
 
 	// Remove possible duplicates and normalize.
@@ -592,27 +515,11 @@ fn GetAllTargetSharedLibraryDependenciesToLink(
 fn GetAllTargetSharedLibraryDependenciesToLink_r(
 	PackageInfoTransformed& package_info,
 	ust::string8& build_target_name,
-	ust::vector</BuildTargetFullName/> &mut call_stack,
 	ust::vector</BuildTargetFullName/> &mut result )
 {
-	auto build_target_opt = package_info.build_targets.find( build_target_name );
-	if( build_target_opt.empty() )
-	{
-		return; // Missing dependencies are checked before.
-	}
+	// Possible dependency loops and target names validity should be checked before.
 
-	foreach( &prev_build_target : call_stack )
-	{
-		if( prev_build_target.name == build_target_name )
-		{
-			// Dependency loop detected.
-			// An error should be generated previously, this code exists only to prevent infinite recursion.
-			return;
-		}
-	}
-	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
-
-	var PackageInfoTransformed::BuildTarget& build_target= build_target_opt.try_deref();
+	var PackageInfoTransformed::BuildTarget& build_target= package_info.build_targets[ build_target_name ];
 
 	switch( build_target.target_type )
 	{
@@ -622,7 +529,7 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 			// Extract shared library dependencies of public and private library dependencies.
 			foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 			{
-				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, call_stack, result );
+				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
 			}
 		},
 		BuildTargetType::SharedLibrary ->
@@ -634,12 +541,10 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 			// But DO NOT extract shared library dependencies of private dependencies.
 			foreach( &public_dependency : build_target.public_dependencies )
 			{
-				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, public_dependency.name, call_stack, result );
+				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, public_dependency.name, result );
 			}
 		}
 	}
-
-	call_stack.pop_back();
 }
 
 } // namespace BK
