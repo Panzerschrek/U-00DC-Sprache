@@ -603,6 +603,8 @@ int Main( int argc, const char* argv[] )
 		: Options::mangling_scheme;
 
 	llvm::LLVMContext llvm_context;
+	llvm_context.setOpaquePointers(true);
+
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
 	ExternalSymbolsInfo external_symbols_info;
