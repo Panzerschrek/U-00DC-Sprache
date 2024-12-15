@@ -95,7 +95,13 @@ bool LinkUstLibModules(
 
 		if( !std_lib_module )
 		{
-			std::cerr << "Internal compiler error - stdlib module parse error" << std::endl;
+			std::cerr << "Internal compiler error - stdlib module parse error: " << std::endl;
+			auto ignore= llvm::handleErrors(
+				std_lib_module.takeError(),
+				[]( const llvm::ErrorInfoBase& base )
+				{
+					std::cerr << base.message() << std::endl;
+				} );
 			return false;
 		}
 
