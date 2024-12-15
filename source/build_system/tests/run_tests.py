@@ -1,5 +1,7 @@
 import argparse
+import ctypes
 import os
+import platform
 import subprocess
 import sys
 import traceback
@@ -117,7 +119,7 @@ def LibraryTargetTest():
 	RunBuildSystem( "library_target" )
 
 
-def ExeDependsOnLibrartTest():
+def ExeDependsOnLibraryTest():
 	RunBuildSystem( "exe_depends_on_library" )
 	RunExecutable( "exe_depends_on_library", "exe" )
 
@@ -181,6 +183,141 @@ def PublicDependencyOfPrivateDependencyIsAlsoPrivateDependencyTest():
 def TwoPrivateDependenciesSharedCommonPrivateDependency():
 	RunBuildSystem( "two_private_dependencies_share_common_private_dependency" )
 	RunExecutable( "two_private_dependencies_share_common_private_dependency", "exe" )
+
+
+def SharedLibraryTargetTest():
+	# Build the library
+	RunBuildSystem( "shared_library_target" )
+	# Load result shared library.
+	library_file_path= os.path.join( g_tests_build_root_path, "shared_library_target", "release", "shared_library_target" )
+	if platform.system() == "Windows":
+		library_file_path+= ".dll"
+	else:
+		library_file_path+= ".so"
+	library= ctypes.CDLL( library_file_path )
+	# Call some functions.
+	library.AddTwoNumbers.restype = ctypes.c_uint
+	assert( library.AddTwoNumbers( ctypes.c_uint(42), ctypes.c_uint(123) ) == 42 + 123 )
+	library.FloatDiv.restype = ctypes.c_float
+	assert( library.FloatDiv( ctypes.c_float(30.5), ctypes.c_float(4.0) ) == 7.625 )
+	# Internal implementation functions shouldn't be exported.
+	assert( not hasattr( library, "InternalFunction" ) )
+
+
+def ExeDependsOnSharedLibraryTest():
+	RunBuildSystem( "exe_depends_on_shared_library" )
+	RunExecutable( "exe_depends_on_shared_library", "exe" )
+
+
+def ExeDependsOnLibraryWithPrivateSharedLibraryDependency():
+	RunBuildSystem( "exe_depends_on_library_with_private_shared_library_dependency" )
+	RunExecutable( "exe_depends_on_library_with_private_shared_library_dependency", "exe" )
+
+
+def PrivateSharedLibraryWithPrivateSharedLibraryDependency():
+	RunBuildSystem( "private_shared_library_dependency_with_private_shared_library_dependency" )
+	RunExecutable( "private_shared_library_dependency_with_private_shared_library_dependency", "exe" )
+
+
+def PrivateSharedLibraryWithPublicSharedLibraryDependency():
+	RunBuildSystem( "private_shared_library_dependency_with_public_shared_library_dependency" )
+	RunExecutable( "private_shared_library_dependency_with_public_shared_library_dependency", "exe" )
+
+
+def CommonTransitiveSharedLibraryDependencyTest():
+	RunBuildSystem( "common_transitive_shared_library_dependency" )
+	RunExecutable( "common_transitive_shared_library_dependency", "exe" )
+
+
+def PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest():
+	test_dir= "private_shared_library_dependency_with_public_library_dependency"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+	# Load result shared library.
+	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
+	if platform.system() == "Windows":
+		library_file_path+= ".dll"
+	else:
+		library_file_path+= ".so"
+	library= ctypes.CDLL( library_file_path )
+	if platform.system() == "Windows": # TODO - check for MSVC instead
+		a_func= getattr( library, "?AFunc@@YAIXZ" )
+		b_func= getattr( library, "?BFunc@@YAIXZ" )
+	else:
+		a_func= getattr( library, "_Z5AFuncv" )
+		b_func= getattr( library, "_Z5BFuncv" )
+	# Call "A" function which is part of public interface "A".
+	a_func.restype = ctypes.c_uint
+	assert( a_func() == 66664 * 7 )
+	# Call "B" function, which should be also exported, because it's a public dependency of the shared library.
+	b_func.restype = ctypes.c_uint
+	assert( b_func() == 66664 )
+
+
+def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
+	test_dir= "private_shared_library_dependency_with_private_library_dependency"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+	# Load result shared library.
+	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
+	if platform.system() == "Windows":
+		library_file_path+= ".dll"
+	else:
+		library_file_path+= ".so"
+	library= ctypes.CDLL( library_file_path )
+	if platform.system() == "Windows": # TODO - check for MSVC instead
+		a_func= getattr( library, "?AFunc@@YAIXZ" )
+	else:
+		a_func= getattr( library, "_Z5AFuncv" )
+	# Call "A" function which is part of public interface "A".
+	a_func.restype = ctypes.c_uint
+	assert( a_func() == 66664 * 7 )
+	# Functions from "B" shouldn't be exported, since "B" is a private dependency of shared library "a".
+	assert( not hasattr( library, "_Z5BFuncv" ) )
+	assert( not hasattr( library, "?BFunc@@YAIXZ" ) )
+
+
+def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
+	test_dir= "shared_library_deduplicated_transitive_public_shared_library_dependency"
+	RunBuildSystem( test_dir )
+
+	# Load result shared library.
+	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
+	if platform.system() == "Windows":
+		# Hack to allow loading "b.dll" while loading "a.dll"
+		os.environ["PATH"] = os.environ[ "PATH" ] + ";" + os.path.join( g_tests_build_root_path, test_dir, "release" )
+		library_file_path+= ".dll"
+	else:
+		library_file_path+= ".so"
+	library= ctypes.CDLL( library_file_path )
+
+	# Call "A" function which is part of public interface "A".
+	if platform.system() == "Windows": # TODO - check for MSVC instead
+		a_func= getattr( library, "?AFunc@@YAIXZ" )
+	else:
+		a_func= getattr( library, "_Z5AFuncv" )
+	a_func.restype = ctypes.c_uint
+
+	assert( a_func() == (11177 + 17) * 5 )
+	if platform.system() == "Windows":
+		# Functions from "b" shouldn't be exported, since "b" is a public shared library dependency of "a".
+		# This works only for windows DLLs.
+		assert( not hasattr( library, "_Z5BFuncv" ) )
+		assert( not hasattr( library, "?BFunc@@YAIXZ" ) )
+		# Functions from "c" shouldn't be exported, since "c" is a public dependency of shared library "b", which is public dependency of "a".
+		# So, "b" already contains "c".
+		assert( not hasattr( library, "_Z5CFuncv" ) )
+		assert( not hasattr( library, "?CFunc@@YAIXZ" ) )
+	# Imported symbols are still listed in library functions list of ".so" libraries, in order to load them from dependent libraries properly.
+	# But they are not actually implemented there, only imported.
+	# The similar behavior of "dlsym" function is observable also for any symbols from dependent libraries of this library.
+	# So, even functions like "printf" are present in the result loaded library, even if they are defined in glibc.
+
+
+def SharedLibraryUsedInTwoExecutablesTest():
+	RunBuildSystem( "shared_library_used_in_two_executables" )
+	RunExecutable( "shared_library_used_in_two_executables", "exe_a" )
+	RunExecutable( "shared_library_used_in_two_executables", "exe_b" )
 
 
 def MissingBuildFileTest():
@@ -501,6 +638,20 @@ def DependencyLoop3Test():
 	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_c\" -> \"lib_d\" -> \"lib_a\"" ) != -1 )
 
 
+def DependencyLoop4Test():
+	res = RunBuildSystemWithErrors( "dependency_loop4" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_a\"" ) != -1 )
+
+
+def DependencyLoop5Test():
+	res = RunBuildSystemWithErrors( "dependency_loop5" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Dependency loop detected: \"lib_a\" -> \"lib_b\" -> \"lib_c\" -> \"lib_d\" -> \"lib_a\"" ) != -1 )
+
+
 def DependencyOnExe0Test():
 	res = RunBuildSystemWithErrors( "dependency_on_exe0" )
 	assert( res.returncode != 0 )
@@ -616,7 +767,7 @@ def main():
 		ТестЮникода,
 		BuildFileWithImportsTest,
 		LibraryTargetTest,
-		ExeDependsOnLibrartTest,
+		ExeDependsOnLibraryTest,
 		TransitiveLibraryDependencyTest,
 		LibraryUsedInTwoExecutablesTest,
 		CommonTransitiveDependencyTest,
@@ -629,6 +780,16 @@ def main():
 		PublicDependencyOfPrivateDependencyIsAlsoPublicDependencyTest,
 		PublicDependencyOfPrivateDependencyIsAlsoPrivateDependencyTest,
 		TwoPrivateDependenciesSharedCommonPrivateDependency,
+		SharedLibraryTargetTest,
+		ExeDependsOnSharedLibraryTest,
+		ExeDependsOnLibraryWithPrivateSharedLibraryDependency,
+		PrivateSharedLibraryWithPrivateSharedLibraryDependency,
+		PrivateSharedLibraryWithPublicSharedLibraryDependency,
+		CommonTransitiveSharedLibraryDependencyTest,
+		PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest,
+		PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest,
+		SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest,
+		SharedLibraryUsedInTwoExecutablesTest,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
@@ -671,6 +832,8 @@ def main():
 		DependencyLoop1Test,
 		DependencyLoop2Test,
 		DependencyLoop3Test,
+		DependencyLoop4Test,
+		DependencyLoop5Test,
 		DependencyOnExe0Test,
 		DependencyOnExe1Test,
 		UnallowedImport0,

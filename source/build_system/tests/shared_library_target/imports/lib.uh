@@ -1,0 +1,4 @@
+// Do not mangle functions, in order to access them from non-Ü code.
+
+fn nomangle AddTwoNumbers( i32 x, i32 y ) : i32;
+fn nomangle FloatDiv( f32 x, f32 y ) : f32;

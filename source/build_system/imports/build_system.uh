@@ -10,8 +10,9 @@ enum BuildTargetType
 	Executable,
 	// Ü library, which can be used by other targets.
 	Library,
-	// TODO - enable these target types.
-	// SharedLibrary,
+	// Native shared library, ".so" or ".dll".
+	SharedLibrary,
+	// TODO - enable this target type.
 	// NativeStaticLibrary,
 }
 

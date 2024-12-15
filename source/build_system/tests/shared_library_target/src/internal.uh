@@ -1,0 +1,2 @@
+// Shouldn't export this function from the shared library, since it's defined in a private header.
+fn nomangle InternalFunction();

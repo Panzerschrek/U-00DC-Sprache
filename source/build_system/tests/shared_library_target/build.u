@@ -1,0 +1,16 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	var BK::BuildTarget mut target
+	{
+		.target_type = BK::BuildTargetType::SharedLibrary,
+		.name=  "shared_library_target",
+		.source_files= ust::make_array</ust::string8/>( "src/lib.u", "src/internal.u" ),
+		.public_include_directories=  ust::make_array</ust::string8/>( "imports" ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}

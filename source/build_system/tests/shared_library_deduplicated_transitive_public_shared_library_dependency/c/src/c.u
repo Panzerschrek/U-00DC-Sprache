@@ -1,0 +1,6 @@
+import "/c/c.uh"
+
+fn CFunc() : MyInt
+{
+	return 11177u;
+}

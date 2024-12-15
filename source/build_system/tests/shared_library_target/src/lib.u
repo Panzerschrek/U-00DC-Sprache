@@ -1,0 +1,14 @@
+import "/shared_library_target/lib.uh"
+import "internal.uh"
+
+fn nomangle AddTwoNumbers( i32 x, i32 y ) : i32
+{
+	InternalFunction();
+	return x + y;
+}
+
+fn nomangle FloatDiv( f32 x, f32 y ) : f32
+{
+	InternalFunction();
+	return x / y;
+}
