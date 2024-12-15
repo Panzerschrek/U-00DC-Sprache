@@ -64,29 +64,6 @@ void PrintAvailableTargets()
 	std::cout << "Available targets: " << targets_list << std::endl;
 }
 
-void AddModuleGlobalConstant( llvm::Module& module, llvm::Constant* const initializer, const std::string& name )
-{
-	const auto prev_variable= module.getGlobalVariable( name );
-	if( prev_variable != nullptr )
-	{
-		if( prev_variable->getInitializer() != initializer )
-			std::cout << "Warning, overrideing Module constant \"" << name << "\" value" << std::endl;
-		return;
-	}
-
-	const auto variable=
-		new llvm::GlobalVariable(
-			module,
-			initializer->getType(),
-			true, // is_constant
-			llvm::GlobalValue::ExternalLinkage,
-			initializer,
-			name );
-	llvm::Comdat* const comdat= module.getOrInsertComdat( variable->getName() );
-	comdat->setSelectionKind( llvm::Comdat::Any );
-	variable->setComdat( comdat );
-}
-
 namespace Options
 {
 
@@ -391,10 +368,7 @@ void CollectExternalSymbolsForInternalizatioin(
 			external_symbols_info.functions.push_back( function.getName().str() );
 
 	for( const llvm::GlobalVariable& global_variable : module.globals() )
-		if( !global_variable.isDeclaration() && global_variable.getLinkage() == llvm::GlobalValue::ExternalLinkage &&
-			// Hack! Prevent internalizing these specific variables, since they are defined in each module and should remain public.
-			global_variable.getName() != "__U_sprache_compiler_version" &&
-			global_variable.getName() != "__U_sprache_compiler_generation" )
+		if( !global_variable.isDeclaration() && global_variable.getLinkage() == llvm::GlobalValue::ExternalLinkage )
 			external_symbols_info.variables.push_back( global_variable.getName().str() );
 }
 
@@ -717,21 +691,6 @@ int Main( int argc, const char* argv[] )
 				result_module->addModuleFlag( llvm::Module::Warning, "CodeView", 1 );
 			else
 				result_module->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
-		}
-
-		// Add module flags and global constants for compiler version and generation.
-		{
-			const auto constant= llvm::ConstantDataArray::getString( llvm_context, StringViewToStringRef( getFullVersion() ) );
-			result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler version", constant );
-			AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_version" );
-		}
-		{
-			const auto constant=
-				llvm::ConstantInt::get(
-					llvm::IntegerType::getInt32Ty(llvm_context),
-					uint64_t(c_compiler_generation), false );
-			result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler generation", constant );
-			AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_generation" );
 		}
 	}
 	else if(
