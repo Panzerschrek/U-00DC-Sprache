@@ -240,13 +240,18 @@ def PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest():
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
-	# TODO - fetch also MSVC-mangled names.
+	if platform.system() == "Windows": # TODO - check for MSVC instead
+		a_func= getattr( library, "?AFunc@@YAIXZ" )
+		b_func= getattr( library, "?BFunc@@YAIXZ" )
+	else:
+		a_func= getattr( library, "_Z5AFuncv" )
+		b_func= getattr( library, "_Z5BFuncv" )
 	# Call "A" function which is part of public interface "A".
-	library._Z5AFuncv.restype = ctypes.c_uint
-	assert( library._Z5AFuncv() == 66664 * 7 )
+	a_func.restype = ctypes.c_uint
+	assert( a_func() == 66664 * 7 )
 	# Call "B" function, which should be also exported, because it's a public dependency of the shared library.
-	library._Z5BFuncv.restype = ctypes.c_uint
-	assert( library._Z5BFuncv() == 66664 )
+	b_func.restype = ctypes.c_uint
+	assert( b_func() == 66664 )
 
 
 def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
@@ -260,12 +265,16 @@ def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
-	# TODO - fetch also MSVC-mangled names.
+	if platform.system() == "Windows": # TODO - check for MSVC instead
+		a_func= getattr( library, "?AFunc@@YAIXZ" )
+	else:
+		a_func= getattr( library, "_Z5AFuncv" )
 	# Call "A" function which is part of public interface "A".
-	library._Z5AFuncv.restype = ctypes.c_uint
-	assert( library._Z5AFuncv() == 66664 * 7 )
+	a_func.restype = ctypes.c_uint
+	assert( a_func() == 66664 * 7 )
 	# Functions from "B" shouldn't be exported, since "B" is a private dependency of shared library "a".
 	assert( not hasattr( library, "_Z5BFuncv" ) )
+	assert( not hasattr( library, "?BFunc@@YAIXZ" ) )
 
 
 def MissingBuildFileTest():
