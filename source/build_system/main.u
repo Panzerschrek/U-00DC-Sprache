@@ -114,6 +114,13 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
+	auto mut errno_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, "__errno_location" );
+	if( ust::is_nullptr(errno_raw_ptr) )
+	{
+		bsi.logger_.LogError( "Failed to load function __errno_location" );
+		return -1;
+	}
+
 	// A hacky way to cast byte8 pointer to a function pointer.
 	var GetPackageInfoFunctionType mut func_ptr= zero_init;
 	unsafe( ust::memory_copy(

@@ -1,0 +1,50 @@
+import "/memory.u"
+import "errno.uh"
+
+namespace BK
+{
+
+fn GetErrno() : i32
+{
+	// HACK! Since we can't reference in Ü symbols starting with underscore, access this symbol dynamically.
+	unsafe
+	{
+		if( !g_errno_location_initialized )
+		{
+			g_errno_location_initialized= true;
+
+			auto mut name= "__errno_location\0";
+			// Passing nullptr as first argument should perform search in main module.
+			auto mut func_raw_ptr = ::dlsym( ust::nullptr</byte8/>(), $<(name[0]) );
+
+			unsafe( ust::memory_copy(
+				ust::ptr_cast_to_byte8( $<(g_errno_location_ptr) ),
+				ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
+				typeinfo</ typeof(func_raw_ptr) />.size_of ) );
+		}
+
+		var ErrnoLocationFunctionType null_function_ptr= zero_init;
+		if( g_errno_location_ptr == null_function_ptr )
+		{
+			return 1234567;
+		}
+
+		var $(i32) location= g_errno_location_ptr();
+		if( ust::is_nullptr( location ) )
+		{
+			return 1234567;
+		}
+
+		return $>( location );
+	}
+
+}
+
+type ErrnoLocationFunctionType= fn() unsafe : $(i32);
+
+var bool mut g_errno_location_initialized= false; // Use separate flag in order to avoid requesting "errno" again if its request returned nullptr.
+var ErrnoLocationFunctionType mut g_errno_location_ptr= zero_init;
+
+} // namespace BK
+
+fn nomangle dlsym( $(byte8) handle, $(char8) symbol_null_terminated ) unsafe : $(byte8);

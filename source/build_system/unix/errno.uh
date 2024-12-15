@@ -1,5 +1,10 @@
-// A function implemented in C++ to access errno.
-fn nomangle BKGetErrno() : i32;
-
 // Some used error codes.
 auto constexpr EEXIST = 17;
+
+namespace BK
+{
+
+// A wrapper function to access "errno".
+fn GetErrno() : i32;
+
+} // namespace BK
