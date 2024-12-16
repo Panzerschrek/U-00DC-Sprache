@@ -9,6 +9,8 @@ option( U_BUILD_PY_TESTS "Enable compilation of py_tests" YES )
 option( U_BUILD_CPP_HEADER_CONVERTER "Enable compilation of c++ header converter (clang required)" YES )
 option( U_BUILD_INTERPRETER "Build Interpreter" YES )
 option( U_BUILD_LANGUAGE_SERVER "Build language server" YES )
+option( U_BUILD_BUILD_SYSTEM "Build build system" YES )
+option( U_BUILD_BUILD_SYSTEM_TESTS "Build build system tests" YES )
 option( U_BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
 option( U_BUILD_DOCS "Enable Ü docs (Sphinx Required)" YES )
 option( U_BUILD_EXAMPLES "Build examples" YES )
@@ -115,8 +117,8 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_INTERPRETER Interpreter MCJIT ${L
 
 # Python
 
-if( U_BUILD_PY_TESTS )
-	message( STATUS "Build py_tests" )
+if( U_BUILD_PY_TESTS OR U_BUILD_BUILD_SYSTEM_TESTS )
+	message( STATUS "Searching Python" )
 
 	# Fix python search on systems with both python2/python3 installed.
 	# LLVM CMake file calls "FindPythonInterp" without version specified, so, version 2 may be found.
@@ -132,7 +134,7 @@ if( U_BUILD_PY_TESTS )
 	find_package( PythonInterp 3 REQUIRED )
 
 else()
-	message( STATUS "Skip py_tests" )
+	message( STATUS "Skip searching Python" )
 endif()
 
 #
@@ -221,7 +223,7 @@ endif()
 
 add_subdirectory( compiler0 )
 
-if( U_BUILD_COMPILER )
+if( U_BUILD_COMPILER AND U_BUILD_BUILD_SYSTEM )
 	add_subdirectory( build_system )
 endif()
 

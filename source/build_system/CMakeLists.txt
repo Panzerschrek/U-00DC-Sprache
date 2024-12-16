@@ -73,7 +73,7 @@ install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
 # The build system uses the compiler executable itself to produce shared libraries and executables.
 # This requires internal LLD.
 # So, if no LLD is linked, disable build system tests.
-if( U_BUILD_PY_TESTS AND TARGET lldCommon )
+if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 
 	# Run tests for build system.
 	# Do this if the build system executable or some of tests were changed.
@@ -82,6 +82,12 @@ if( U_BUILD_PY_TESTS AND TARGET lldCommon )
 	make_directory( ${CMAKE_CURRENT_BINARY_DIR}/tests )
 
 	file( GLOB_RECURSE TESTS_FILES "tests/*" ) # All files of tests, including the test script file, build scripts, sources, etc.
+
+	if( WIN32 )
+		# HACK! There are problems with Unicode under windows (shitty ninja uses ASCII), so, ignore for now unicode test.
+		file( GLOB_RECURSE UNICODE_TESTS_FILES "tests/Тест Юникода/*" )
+		list( REMOVE_ITEM TESTS_FILES ${UNICODE_TESTS_FILES} )
+	endif()
 
 	file( GLOB_RECURSE USTLIB_FILES "${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/*.u" )
 
