@@ -994,6 +994,11 @@ public: // BuildSystemInterface
 		return build_configuration_;
 	}
 
+	fn virtual final GetTargetTriple(this) : TargetTriple
+	{
+		return target_triple_;
+	}
+
 	fn virtual final LogVerbose( mut this, ust::string_view8 message )
 	{
 		logger_.LogVerbose( message );

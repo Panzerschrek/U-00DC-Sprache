@@ -1,15 +1,7 @@
-import "/string.u"
+import "imports/build_system.uh"
 
 namespace BK
 {
-
-struct TargetTriple
-{
-	ust::string8 architecture;
-	ust::string8 vendor;
-	ust::string8 operating_system;
-	ust::string8 environment;
-}
 
 fn GetHostTargetTriple() : TargetTriple;
 
