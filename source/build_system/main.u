@@ -10,6 +10,7 @@ import "path.uh"
 import "process.uh"
 import "shared_library.uh"
 import "string_utils.uh"
+import "target_triple.uh"
 
 namespace BK
 {
@@ -30,6 +31,16 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	{
 		ust::stdout_print( GetHelpMessage() );
 		return 0;
+	}
+
+	if( !options.target_triple.empty() )
+	{
+		auto target_triple_opt= ParseTargetTriple( options.target_triple );
+		if( target_triple_opt.empty() )
+		{
+			ust::stderr_print( "Failed to parse target triple!\n" );
+			return -1;
+		}
 	}
 
 	var BuildSystemInterfaceImplementation mut bsi( options );

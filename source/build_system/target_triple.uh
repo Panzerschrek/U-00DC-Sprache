@@ -1,0 +1,16 @@
+import "/string.u"
+
+namespace BK
+{
+
+struct TargetTriple
+{
+	ust::string8 architecture;
+	ust::string8 vendor;
+	ust::string8 operating_system;
+	ust::string8 environment;
+}
+
+fn ParseTargetTriple( ust::string_view8 target_triple_str ) : ust::optional</TargetTriple/>;
+
+} // namespace BK
