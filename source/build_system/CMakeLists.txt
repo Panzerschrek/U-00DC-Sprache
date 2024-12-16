@@ -73,7 +73,7 @@ install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
 # The build system uses the compiler executable itself to produce shared libraries and executables.
 # This requires internal LLD.
 # So, if no LLD is linked, disable build system tests.
-if( U_BUILD_PY_TESTS AND TARGET lldCommon )
+if( PythonInterp_FOUND AND TARGET lldCommon )
 
 	# Run tests for build system.
 	# Do this if the build system executable or some of tests were changed.
