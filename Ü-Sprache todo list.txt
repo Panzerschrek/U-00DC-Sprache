@@ -32,6 +32,7 @@ General:
 	name inside it
 *) Allow default constructors for interfaces
 *) Allow zero-sized fields for interfaces (to create inner reference tags, for example)
+*) Add a possibility to provide an arbitrary name for a "nomangle" function
 
 References:
 *) Support second order inner references for coroutine types
@@ -156,13 +157,12 @@ CPP Header converter:
 	already exists, handle case where a non-directory object (like a file) with given name exists
 *) Build graph - support for a command execution of some internal build system actions (like file/directory creation)
 *) C static library target type
-*) Allow linking against an external static C library
-*) Allow linking against an external shared library
+*) Allow linking against an external static C libraries and shared libraries
 *) Custom target type
 *) Support generated sources
 *) Support generated headers
-*) Cross-compilation support
 *) Multiple packages support
+*) Support compiling some build targets for host system, or at least some packages
 *) Fix JSON floats serialization
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
 *) Prevent at least some name comflicts in imports (where multiple files exist for the given import path)

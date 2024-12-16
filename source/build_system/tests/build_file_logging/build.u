@@ -6,6 +6,23 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	build_system_interface.LogInfo( "Test build script info logging" );
 	build_system_interface.LogError( "Test build script error logging" );
 
+	var BK::TargetTriple target_triple= build_system_interface.GetTargetTriple();
+
+	var ust::string8 mut str= "Target triple is: \n";
+	str+= "Architecture: ";
+	str+= target_triple.architecture;
+	str+= "\n";
+	str+= "Vendor: ";
+	str+= target_triple.vendor;
+	str+= "\n";
+	str+= "Operating system: ";
+	str+= target_triple.operating_system;
+	str+= "\n";
+	str+= "Environment: ";
+	str+= target_triple.environment;
+	str+= "\n";
+	build_system_interface.LogInfo( str );
+
 	// Package with no targets.
 	return BK::PackageInfo{};
 }

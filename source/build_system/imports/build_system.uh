@@ -77,6 +77,7 @@ type GetPackageInfoFunctionType = fn( BuildSystemInterface &mut build_system_int
 class BuildSystemInterface interface
 {
 	fn virtual pure GetBuildConfiguration(this) : BuildConfiguration;
+	fn virtual pure GetTargetTriple(this) : TargetTriple;
 
 	fn virtual pure LogVerbose( mut this, ust::string_view8 message );
 	fn virtual pure LogInfo( mut this, ust::string_view8 message );
@@ -88,6 +89,15 @@ enum BuildConfiguration
 	Debug,
 	Release,
 	// TODO - add other configurations
+}
+
+struct TargetTriple
+{
+	// Components are all lowercase strings.
+	ust::string8 architecture;
+	ust::string8 vendor;
+	ust::string8 operating_system;
+	ust::string8 environment;
 }
 
 } // namespace BK
