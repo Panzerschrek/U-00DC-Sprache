@@ -11,6 +11,8 @@ struct TargetTriple
 	ust::string8 environment;
 }
 
+fn GetHostTargetTriple() : TargetTriple;
+
 fn ParseTargetTriple( ust::string_view8 target_triple_str ) : ust::optional</TargetTriple/>;
 
 } // namespace BK

@@ -3,6 +3,17 @@ import "target_triple.uh"
 namespace BK
 {
 
+fn GetHostTargetTriple() : TargetTriple
+{
+	return TargetTriple
+	{
+		.architecture= compiler::target::arch,
+		.vendor= compiler::target::vendor,
+		.operating_system= compiler::target::os,
+		.environment= compiler::target::environment,
+	};
+}
+
 fn ParseTargetTriple( ust::string_view8 mut target_triple_str ) : ust::optional</TargetTriple/>
 {
 	var TargetTriple mut result;

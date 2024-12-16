@@ -33,6 +33,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return 0;
 	}
 
+	var TargetTriple mut target_triple;
 	if( !options.target_triple.empty() )
 	{
 		auto target_triple_opt= ParseTargetTriple( options.target_triple );
@@ -42,8 +43,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			return -1;
 		}
 	}
+	else
+	{
+		target_triple= GetHostTargetTriple();
+	}
 
-	var BuildSystemInterfaceImplementation mut bsi( options );
+	var BuildSystemInterfaceImplementation mut bsi( options, move(target_triple) );
 
 	bsi.logger_.LogInfo( "Bürokratie - the Ü build system!" );
 
@@ -198,7 +203,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 				build_system_paths,
 				package_source_directory,
 				package_build_directory,
-				options.build_configuration,
+				bsi.build_configuration_,
+				bsi.target_triple_,
 				package_info_transformed,
 				build_target_name,
 				package_info_transformed.build_targets[ build_target_name ],
@@ -523,6 +529,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	ust::string_view8 package_source_directory,
 	ust::string_view8 package_build_directory,
 	BuildConfiguration build_configuration,
+	TargetTriple& target_triple,
 	PackageInfoTransformed& package_info,
 	ust::string_view8 target_name,
 	PackageInfoTransformed::BuildTarget& target,
@@ -628,6 +635,8 @@ fn CreatePackageTargetBuildGraphNodes(
 				node.command_line.push_back( "--lto-mode=prelink" );
 			},
 		}
+
+		AddTargetTripleCompilerFlags( target_triple, node.command_line );
 
 		// Perform verification just to be sure nothing is broken.
 		node.command_line.push_back( "--verify-module" );
@@ -878,10 +887,27 @@ fn CreatePackageTargetBuildGraphNodes(
 		},
 	}
 
+	AddTargetTripleCompilerFlags( target_triple, node.command_line );
+
 	// Perform verification just to be sure nothing is broken.
 	node.command_line.push_back( "--verify-module" );
 
 	build_graph.nodes.push_back( move(node) );
+}
+
+fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::string8/> &mut compiler_flags )
+{
+	compiler_flags.push_back( "--target-arch" );
+	compiler_flags.push_back( target_triple.architecture );
+
+	compiler_flags.push_back( "--target-vendor" );
+	compiler_flags.push_back( target_triple.vendor );
+
+	compiler_flags.push_back( "--target-os" );
+	compiler_flags.push_back( target_triple.operating_system );
+
+	compiler_flags.push_back( "--target-environment" );
+	compiler_flags.push_back( target_triple.environment );
 }
 
 fn ExtractDependenciesIncludeDirectories(
@@ -953,12 +979,13 @@ fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 class BuildSystemInterfaceImplementation final : BuildSystemInterface
 {
 public:
-	fn constructor( Options& options )
+	fn constructor( Options& options, TargetTriple mut target_triple )
 		( logger_(
 			( options.verbose
 				? Logger::Level::Verbose
 				: ( options.quiet ? Logger::Level::Quiet : Logger::Level::Normal ) ) ),
-		build_configuration_= options.build_configuration )
+		build_configuration_= options.build_configuration,
+		target_triple_= move(target_triple) )
 	{}
 
 public: // BuildSystemInterface
@@ -986,6 +1013,7 @@ public: // Provide direct access for some fields where it's safe to use them dir
 	Logger logger_;
 
 	BuildConfiguration imut build_configuration_;
+	TargetTriple imut target_triple_;
 
 private:
 }
