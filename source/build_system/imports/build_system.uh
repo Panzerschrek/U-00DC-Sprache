@@ -93,6 +93,7 @@ enum BuildConfiguration
 
 struct TargetTriple
 {
+	// Components are all lowercase strings.
 	ust::string8 architecture;
 	ust::string8 vendor;
 	ust::string8 operating_system;

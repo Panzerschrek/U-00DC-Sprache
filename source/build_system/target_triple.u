@@ -21,6 +21,7 @@ fn ParseTargetTriple( ust::string_view8 mut target_triple_str ) : ust::optional<
 	if_var( &mut architecture : ParseTargetTripleComponent( target_triple_str ) )
 	{
 		result.architecture= take(architecture);
+		NormalizeTargetTripleComponent(result.architecture);
 	}
 	else
 	{
@@ -35,6 +36,7 @@ fn ParseTargetTriple( ust::string_view8 mut target_triple_str ) : ust::optional<
 	if_var( &mut vendor : ParseTargetTripleComponent( target_triple_str ) )
 	{
 		result.vendor= take(vendor);
+		NormalizeTargetTripleComponent(result.vendor);
 	}
 	else
 	{
@@ -49,6 +51,7 @@ fn ParseTargetTriple( ust::string_view8 mut target_triple_str ) : ust::optional<
 	if_var( &mut operating_system : ParseTargetTripleComponent( target_triple_str ) )
 	{
 		result.operating_system= take(operating_system);
+		NormalizeTargetTripleComponent(result.operating_system);
 	}
 	else
 	{
@@ -67,6 +70,7 @@ fn ParseTargetTriple( ust::string_view8 mut target_triple_str ) : ust::optional<
 		if_var( &mut environment : ParseTargetTripleComponent( target_triple_str ) )
 		{
 			result.environment= take(environment);
+			NormalizeTargetTripleComponent(result.environment);
 		}
 		else
 		{
@@ -109,6 +113,18 @@ fn ParseTargetTripleSeparator( ust::string_view8 &mut target_triple_str ) : bool
 	}
 	target_triple_str.drop_front();
 	return true;
+}
+
+fn NormalizeTargetTripleComponent( ust::string8 &mut component )
+{
+	foreach( &mut c : component )
+	{
+		// Convert uppercase to lowercase.
+		if( c >= "A"c8 && c <= "Z"c8 )
+		{
+			c= char8( u32(c) - u32("A"c8) + u32("a"c8) );
+		}
+	}
 }
 
 } // namespace BK
