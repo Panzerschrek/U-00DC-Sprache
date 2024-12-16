@@ -647,8 +647,7 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	// Combine multiple ".bc" files into single result.
 
-	// TODO - fix this check, do not use host OS.
-	var bool target_is_windows = ust::string_view8(compiler::target::os) == "windows";
+	var bool target_is_windows = target_triple.operating_system == "windows";
 
 	var ust::string8 mut result_target_file_path = NormalizePath( ust::string8(package_build_directory) + "/" + target_name );
 	switch( target.target_type )
