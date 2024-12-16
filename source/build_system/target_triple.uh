@@ -5,6 +5,8 @@ namespace BK
 
 fn GetHostTargetTriple() : TargetTriple;
 
+fn TargetTripleToString( TargetTriple& target_triple ) : ust::string8;
+
 fn ParseTargetTriple( ust::string_view8 target_triple_str ) : ust::optional</TargetTriple/>;
 
 } // namespace BK

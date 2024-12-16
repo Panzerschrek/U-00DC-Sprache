@@ -14,6 +14,24 @@ fn GetHostTargetTriple() : TargetTriple
 	};
 }
 
+fn TargetTripleToString( TargetTriple& target_triple ) : ust::string8
+{
+	var ust::string8 mut res;
+	res+= target_triple.architecture;
+	res.push_back( g_target_triple_separator );
+	res+= target_triple.vendor;
+	res.push_back( g_target_triple_separator );
+	res+= target_triple.operating_system;
+	if( !target_triple.environment.empty() )
+	{
+		// Environment is optional.
+		res.push_back( g_target_triple_separator );
+		res+= target_triple.environment;
+	}
+
+	return res;
+}
+
 fn ParseTargetTriple( ust::string_view8 mut target_triple_str ) : ust::optional</TargetTriple/>
 {
 	var TargetTriple mut result;
@@ -96,7 +114,7 @@ fn ParseTargetTripleComponent( ust::string_view8 &mut target_triple_str ) : ust:
 
 	// For now just parse until separator.
 	var ust::string8 mut res;
-	while( !( target_triple_str.empty() || target_triple_str.front() == "-"c8 ) )
+	while( !( target_triple_str.empty() || target_triple_str.front() == g_target_triple_separator ) )
 	{
 		res.push_back( target_triple_str.drop_and_get_front() );
 	}
@@ -107,7 +125,7 @@ fn ParseTargetTripleComponent( ust::string_view8 &mut target_triple_str ) : ust:
 // Returns "true" if successfully parsed.
 fn ParseTargetTripleSeparator( ust::string_view8 &mut target_triple_str ) : bool
 {
-	if( target_triple_str.empty() || target_triple_str.front() != "-"c8 )
+	if( target_triple_str.empty() || target_triple_str.front() != g_target_triple_separator )
 	{
 		return false;
 	}
@@ -126,5 +144,7 @@ fn NormalizeTargetTripleComponent( ust::string8 &mut component )
 		}
 	}
 }
+
+auto constexpr g_target_triple_separator= "-"c8;
 
 } // namespace BK
