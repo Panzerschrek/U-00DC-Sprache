@@ -13,6 +13,7 @@ g_build_system_executable = ""
 g_compiler_executable=  ""
 g_build_system_imports_path = ""
 g_ustlib_path = ""
+g_mangling_scheme = "itaniumabi"
 
 
 def RunBuildSystemWithExplicitConfiguration( project_subdirectory, configuration ):
@@ -240,7 +241,7 @@ def PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest():
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
-	if platform.system() == "Windows": # TODO - check for MSVC instead
+	if g_mangling_scheme == "msvc":
 		a_func= getattr( library, "?AFunc@@YAIXZ" )
 		b_func= getattr( library, "?BFunc@@YAIXZ" )
 	else:
@@ -265,7 +266,7 @@ def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
-	if platform.system() == "Windows": # TODO - check for MSVC instead
+	if g_mangling_scheme == "msvc":
 		a_func= getattr( library, "?AFunc@@YAIXZ" )
 	else:
 		a_func= getattr( library, "_Z5AFuncv" )
@@ -292,7 +293,7 @@ def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
 	library= ctypes.CDLL( library_file_path )
 
 	# Call "A" function which is part of public interface "A".
-	if platform.system() == "Windows": # TODO - check for MSVC instead
+	if g_mangling_scheme == "msvc":
 		a_func= getattr( library, "?AFunc@@YAIXZ" )
 	else:
 		a_func= getattr( library, "_Z5AFuncv" )
@@ -733,6 +734,7 @@ def main():
 	parser.add_argument( "--compiler-executable", help= "path to compiler executable", type=str, required= True )
 	parser.add_argument( "--build-system-imports-path", help= "path to build system imports", type=str, required= True )
 	parser.add_argument( "--ustlib-path", help= "path to ustlib", type=str, required= True )
+	parser.add_argument( "--mangling-scheme", help= "mangling scheme - msvc or intaniumabi", type=str, default= "itaniumabi" )
 
 	args= parser.parse_args()
 
@@ -753,6 +755,9 @@ def main():
 
 	global g_ustlib_path
 	g_ustlib_path= args.ustlib_path
+
+	global g_mangling_scheme
+	g_mangling_scheme= args.mangling_scheme
 
 	test_funcs = [
 		HelloWorldTest,

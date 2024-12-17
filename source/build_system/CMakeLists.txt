@@ -103,6 +103,16 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 
 	set( TIMESTAMP_FILE ${CMAKE_CURRENT_BINARY_DIR}/tests_timestamp )
 
+	if( WIN32 )
+		if( MINGW )
+			set( MANGLING_SCHEME "itaniumabi" )
+		else()
+			set( MANGLING_SCHEME "msvc" )
+		endif()
+	else()
+		set( MANGLING_SCHEME "itaniumabi" )
+	endif()
+
 	# Actual command which runs tests.
 	add_custom_command(
 		OUTPUT ${TIMESTAMP_FILE}
@@ -114,6 +124,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 			--compiler-executable ${CMAKE_CURRENT_BINARY_DIR}/../compiler0/Compiler # For now hardcode here path to the compiler executable build
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib
+			--mangling-scheme ${MANGLING_SCHEME}
 		COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE} # A hacky step to produce a marker file for this command.
 		DEPENDS BuildSystem
 		DEPENDS ${TESTS_FILES}
