@@ -6,6 +6,8 @@ else()
 	set( U_LLVM_AS llvm-as )
 endif()
 
+file( MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bc_files )
+
 function( CompileLLFile ll_file )
 	get_filename_component( source_name ${ll_file} NAME_WE )
 	set( bc_name ${CMAKE_CURRENT_BINARY_DIR}/bc_files/${source_name}.bc )
