@@ -15,12 +15,14 @@ namespace U
 bool RunLinkerCOFF(
 	const char* const argv0,
 	const llvm::ArrayRef<std::string> additional_args,
+	const std::string& sysroot,
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
 	const bool produce_shared_library,
 	const bool remove_unreferenced_symbols )
 {
+	(void)sysroot;
 	(void)triple;
 
 	llvm::raw_os_ostream cout(std::cout);

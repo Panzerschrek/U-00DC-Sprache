@@ -302,6 +302,13 @@ cl::list<std::string> linker_args(
 	cl::CommaSeparated,
 	cl::cat(options_category) );
 
+cl::opt<std::string> sysroot(
+	"sysroot",
+	cl::desc("System root durectiry path. Needed for things like libraries search paths for linking."),
+	cl::value_desc("path"),
+	cl::Optional,
+	cl::cat(options_category) );
+
 } // namespace Options
 
 bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
@@ -1011,6 +1018,7 @@ int Main( int argc, const char* argv[] )
 			const bool linker_ok= RunLinker(
 				argv[0],
 				Options::linker_args,
+				Options::sysroot,
 				target_triple,
 				temp_object_file_name,
 				Options::output_file_name,

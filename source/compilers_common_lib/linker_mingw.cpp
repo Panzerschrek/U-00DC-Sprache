@@ -15,6 +15,7 @@ namespace U
 bool RunLinkerMinGW(
 	const char* const argv0,
 	const llvm::ArrayRef<std::string> additional_args,
+	const std::string& sysroot,
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
@@ -49,13 +50,15 @@ bool RunLinkerMinGW(
 	if( remove_unreferenced_symbols )
 		args.push_back( "-s" );
 
-	std::string toolchain_file_path= "C:/QtInstall/Tools/mingw730_64/x86_64-w64-mingw32/lib/";
+	const std::string toolchain_file_path= sysroot;
 
 	args.push_back( "-L" );
 	args.push_back( toolchain_file_path.data() );
 
+	const std::string libgcc_path= sysroot + "/gcc/x86_64-w64-mingw32/7.3.0/"; // TODO - detect GCC version properly.
+
 	args.push_back( "-L" );
-	args.push_back( "C:/QtInstall/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/" );
+	args.push_back( libgcc_path.data() );
 
 	const std::string crt2= toolchain_file_path + ( produce_shared_library ? "dllcrt2.o" : "crt2.o" );
 	const std::string crtbegin= toolchain_file_path + "crtbegin.o";
