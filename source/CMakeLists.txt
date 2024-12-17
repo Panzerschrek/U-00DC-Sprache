@@ -192,9 +192,6 @@ else()
 	string( APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -s -Wl,--gc-sections" )
 	string( APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -s -Wl,--gc-sections" )
 
-	# 32 MB stack for deep recursion. Necessary for things like VariantLinkedList.
-	add_link_options( "-Wl,-z,stack-size=33554432" )
-
 endif()
 
 #
