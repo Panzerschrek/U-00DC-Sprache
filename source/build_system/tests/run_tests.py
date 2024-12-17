@@ -415,7 +415,7 @@ def LinkingError0Test():
 	res = RunBuildSystemWithErrors( "linking_error0" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( ( stderr.find( "undefined symbol" ) != -1 and stderr.find( "main" ) != -1 ) or stderr.find( "subsystem must be defined" ) != -1 )
+	assert( ( stderr.find( "undefined symbol" ) != -1 and ( stderr.find( "main" ) != -1 or stderr.find( "WinMain" ) != -1 ) ) or stderr.find( "subsystem must be defined" ) != -1 )
 
 
 def LinkingError1Test():
