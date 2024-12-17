@@ -21,8 +21,6 @@ bool RunLinkerMinGW(
 	const bool produce_shared_library,
 	const bool remove_unreferenced_symbols )
 {
-	(void)triple; // TODO - use it.
-
 	llvm::raw_os_ostream cout(std::cout);
 	llvm::raw_os_ostream cerr(std::cerr);
 
@@ -34,7 +32,16 @@ bool RunLinkerMinGW(
 	args.push_back( input_temp_file_path.data() );
 
 	if( produce_shared_library )
+	{
 		args.push_back( "--shared" );
+
+		args.push_back("-e");
+		if( triple.getArch() == llvm::Triple::x86 )
+			args.push_back( "_DllMainCRTStartup@12" );
+		else
+			args.push_back( "DllMainCRTStartup" );
+		args.push_back("--enable-auto-image-base");
+	}
 
 	if( pic && !produce_shared_library )
 		args.push_back( "-pie" );
@@ -50,9 +57,9 @@ bool RunLinkerMinGW(
 	args.push_back( "-L" );
 	args.push_back( "C:/QtInstall/Tools/mingw730_64/lib/gcc/x86_64-w64-mingw32/7.3.0/" );
 
-	std::string crt2= toolchain_file_path + "crt2.o";
-	std::string crtbegin= toolchain_file_path + "crtbegin.o";
-	std::string crtend= toolchain_file_path + "crtend.o";
+	const std::string crt2= toolchain_file_path + ( produce_shared_library ? "dllcrt2.o" : "crt2.o" );
+	const std::string crtbegin= toolchain_file_path + "crtbegin.o";
+	const std::string crtend= toolchain_file_path + "crtend.o";
 
 	args.push_back( crt2.data() );
 	args.push_back( crtbegin.data() );
