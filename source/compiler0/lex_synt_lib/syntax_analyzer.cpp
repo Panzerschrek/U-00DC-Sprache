@@ -982,7 +982,10 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 				member_access_operator->expression= std::move(expr);
 
 				if( it_->type == Lexem::Type::TemplateBracketLeft )
+				{
 					member_access_operator->template_args= ParseTemplateArgs();
+					member_access_operator->has_template_args= true;
+				}
 
 				return TryParseBinaryOperatorComponentPostfixOperator( std::move(member_access_operator) );
 			}
@@ -1100,7 +1103,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 				ternary_operator->branches[1]= ParseExpression();
 				ExpectLexem( Lexem::Type::BracketRight );
 
-				return ternary_operator;
+				return std::move(ternary_operator);
 			}
 
 			PushErrorMessage(); // Something unexpected.

@@ -631,7 +631,10 @@ struct MemberAccessOperator
 	SrcLoc src_loc;
 	Expression expression;
 	std::string member_name;
-	std::optional<std::vector<Expression>> template_args;
+
+	// Hack! Use combination of vector and bool instead of optional, since it causes nasty compilation bugs on old versions of GCC.
+	std::vector<Expression> template_args;
+	bool has_template_args= false;
 };
 
 struct AwaitOperator

@@ -487,7 +487,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// Try to perform lazy typeinfo field fetch.
 	if( std::holds_alternative< TypeinfoClassDescription >( class_type->generated_class_data ) &&
-		member_access_operator.template_args == std::nullopt )
+		!member_access_operator.has_template_args )
 	{
 		if( const VariablePtr fetch_result= TryFetchTypeinfoClassLazyField( variable->type, member_access_operator.member_name ) )
 		{
@@ -551,7 +551,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.overloaded_methods_set= functions_set;
 
-		if( member_access_operator.template_args != std::nullopt )
+		if( member_access_operator.has_template_args )
 		{
 			if( functions_set->template_functions.empty() )
 				REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), member_access_operator.src_loc );
@@ -561,7 +561,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					ParameterizeFunctionTemplate(
 						member_access_operator.src_loc,
 						functions_set,
-						*member_access_operator.template_args,
+						member_access_operator.template_args,
 						names_scope,
 						function_context );
 
@@ -573,7 +573,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return std::move(this_overloaded_methods_set);
 	}
 
-	if( member_access_operator.template_args != std::nullopt )
+	if( member_access_operator.has_template_args )
 		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), member_access_operator.src_loc );
 
 	if( const ClassFieldPtr field= class_member->value.GetClassField() )
