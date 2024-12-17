@@ -705,7 +705,14 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			// Add also ".lib" file to outputs.
 			// This file is implicitly created by the linker.
-			node.output_files.push_back( NormalizePath( ust::string8(package_build_directory) + "/" + target_name + ".lib" ) );
+			var ust::string8 lib_name = NormalizePath( ust::string8(package_build_directory) + "/" + target_name + ".lib" );
+			node.output_files.push_back( lib_name );
+
+			if( target_triple.environment == "gnu" )
+			{
+				// MinGW linker requires a special option to produce such library.
+				node.command_line.push_back( "-Wl,--out-implib," + lib_name );
+			}
 		}
 		else
 		{
