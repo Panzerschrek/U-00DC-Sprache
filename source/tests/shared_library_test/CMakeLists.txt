@@ -2,7 +2,11 @@ set( SHARED_LIBRARY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/shared_library.u )
 CompileUSources( "${SHARED_LIBRARY_SOURCES}" SHARED_LIBRARY_OBJECTS )
 
 if(WIN32)
-	set( SHARED_LIBRARY_SOURCES ${SHARED_LIBRARY_SOURCES} shared_library.def )
+	if( MINGW )
+		set( SHARED_LIBRARY_SOURCES ${SHARED_LIBRARY_SOURCES} shared_library_mingw.def )
+	else()
+		set( SHARED_LIBRARY_SOURCES ${SHARED_LIBRARY_SOURCES} shared_library_msvc.def )
+	endif()
 endif()
 
 add_library( SharedLibraryTest_Library${CURRENT_COMPILER_GENERATION} SHARED ../dummy.cpp ${SHARED_LIBRARY_SOURCES} ${SHARED_LIBRARY_OBJECTS} )
