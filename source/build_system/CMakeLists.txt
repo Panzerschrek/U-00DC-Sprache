@@ -11,6 +11,12 @@ function( CompileUSource u_source_file out_object )
 	file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
 	file( RELATIVE_PATH u_source_file_relative ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
 
+	if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
+		set( DEPFILE_OPTION DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d )
+	else()
+		set( DEPFILE_OPTION "" )
+	endif()
+
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o
 		DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
@@ -25,7 +31,7 @@ function( CompileUSource u_source_file out_object )
 			# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 			--source-dir ${CMAKE_CURRENT_SOURCE_DIR}
 			--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
-		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
+		${DEPFILE_OPTION}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "build_system/main.u.o:", but launches custom command in current binary directory
 		COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"
 		)
