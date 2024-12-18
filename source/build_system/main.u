@@ -707,6 +707,10 @@ fn CreatePackageTargetBuildGraphNodes(
 				result_target_file_path+= ".so";
 			}
 		},
+		BuildTargetType::ObjectFile ->
+		{
+			result_target_file_path+= ".o";
+		},
 	}
 
 	var BuildGraph::Node mut node
@@ -757,9 +761,10 @@ fn CreatePackageTargetBuildGraphNodes(
 	switch( target.target_type )
 	{
 		BuildTargetType::Executable,
-		BuildTargetType::SharedLibrary ->
+		BuildTargetType::SharedLibrary,
+		BuildTargetType::ObjectFile ->
 		{
-			// For executables and shared libraries perform linking with all public dependency libraries.
+			// For executables, shared libraries and object files perform linking with all public dependency libraries.
 			foreach( &public_dependency : target.public_dependencies_including_transitive )
 			{
 				if( IsPublicDependencyOfDirectPublicSharedLibraryDependency( package_info, target, public_dependency ) )
@@ -844,7 +849,8 @@ fn CreatePackageTargetBuildGraphNodes(
 				node.command_line.push_back( "-Wl,-rpath,\\$ORIGIN" );
 			}
 		},
-		BuildTargetType::Library -> {}, // No need to link shared libraries against Ü libraries.
+		BuildTargetType::Library -> {}, // No need to link Ü libraries against  shared libraries.
+		BuildTargetType::ObjectFile -> {}, // No need to link object files against shared libraries.
 	}
 
 	node.command_line.push_back( "-o" );
@@ -870,6 +876,11 @@ fn CreatePackageTargetBuildGraphNodes(
 			// Produce shared librart file.
 			node.command_line.push_back( "-filetype=dll" );
 		},
+		BuildTargetType::ObjectFile ->
+		{
+			// Produce object file.
+			node.command_line.push_back( "-filetype=obj" );
+		},
 	}
 
 	// Internalization.
@@ -888,6 +899,11 @@ fn CreatePackageTargetBuildGraphNodes(
 		BuildTargetType::SharedLibrary ->
 		{
 			// Run internalization of hidden symbols.
+			node.command_line.push_back( "--internalize-hidden" );
+		},
+		BuildTargetType::ObjectFile ->
+		{
+			// Run internalization of hidden symbols, preserve others, in order to access them by external code using this object file.
 			node.command_line.push_back( "--internalize-hidden" );
 		},
 	}

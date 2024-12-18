@@ -535,7 +535,8 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 			{
 				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, public_dependency.name, result );
 			}
-		}
+		},
+		BuildTargetType::ObjectFile -> {}, // This should be checked before.
 	}
 }
 
