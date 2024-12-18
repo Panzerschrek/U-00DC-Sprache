@@ -4,6 +4,9 @@
 #include <lld/Common/Driver.h>
 #include <llvm/ADT/Triple.h>
 #include <llvm/CodeGen/CommandFlags.h>
+#include <llvm/Support/Filesystem.h>
+#include <llvm/Support/Path.h>
+#include <llvm/Support/VersionTuple.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
@@ -11,6 +14,60 @@
 
 namespace U
 {
+
+namespace
+{
+
+std::string GetSubdirName( const std::string& sysroot, const llvm::Triple& triple )
+{
+	std::string subdirs[]
+	{
+		(triple.getArchName() + "-w64-mingw32").str(),
+		"mingw32",
+	};
+	for( const std::string& subdir : subdirs )
+	{
+		if( llvm::sys::fs::exists( sysroot + "/" + subdir ) )
+			return subdir;
+	}
+	return "";
+}
+
+std::string GetLibGCCPath( const std::string& sysroot, const std::string& subdir )
+{
+	const char* const lib_dirs[]{ "lib", "lib64" };
+
+	for( const char* const lib_dir : lib_dirs )
+	{
+		const std::string lib_gcc_dir = sysroot + "/" + lib_dir + "/gcc/" + subdir;
+
+		llvm::VersionTuple newest_version;
+		std::string newest_version_path;
+
+		std::error_code ec;
+		for( llvm::sys::fs::directory_iterator it(lib_gcc_dir, ec), it_end;
+			!ec && it != it_end;
+			it = it.increment(ec))
+		{
+			llvm::VersionTuple version;
+			if( !version.tryParse( llvm::sys::path::filename(it->path()) ) )
+			{
+				if( version > newest_version )
+				{
+					newest_version= version;
+					newest_version_path= it->path();
+				}
+			}
+		}
+
+		if( !newest_version_path.empty() )
+			return newest_version_path;
+	}
+
+	return "";
+}
+
+} // namespace
 
 bool RunLinkerMinGW(
 	const char* const argv0,
@@ -22,11 +79,25 @@ bool RunLinkerMinGW(
 	const bool produce_shared_library,
 	const bool remove_unreferenced_symbols )
 {
+	const std::string subdir= GetSubdirName( sysroot, triple );
+	if( subdir.empty() )
+	{
+		std::cerr << "Failed to find MinGW installation in sysroot \"" << sysroot << "\" for architecture " << triple.getArchName().str() << "!" << std::endl;
+		return false;
+	}
+
+	const std::string lib_gcc_path = GetLibGCCPath( sysroot, subdir );
+	if( lib_gcc_path.empty() )
+	{
+		std::cerr << "Failed to find MinGW lib_gcc path in sysroot \"" << sysroot << "\" for architecture " << triple.getArchName().str() << "!" << std::endl;
+		return false;
+	}
+
 	llvm::raw_os_ostream cout(std::cout);
 	llvm::raw_os_ostream cerr(std::cerr);
 
 	// TODO - check if this is correct.
-	const bool pic= llvm::codegen::getRelocModel() == llvm::Reloc::PIC_;
+	//const bool pic= llvm::codegen::getRelocModel() == llvm::Reloc::PIC_;
 
 	llvm::SmallVector<const char*, 32> args;
 	args.push_back( argv0 );
@@ -44,25 +115,23 @@ bool RunLinkerMinGW(
 		args.push_back("--enable-auto-image-base");
 	}
 
-	if( pic && !produce_shared_library )
-		args.push_back( "-pie" );
+	//if( pic && !produce_shared_library )
+	//	args.push_back( "-pie" );
 
 	if( remove_unreferenced_symbols )
 		args.push_back( "-s" );
 
-	const std::string toolchain_file_path= sysroot;
+	const std::string lib_path= sysroot + "/" + subdir + "/lib/";
 
 	args.push_back( "-L" );
-	args.push_back( toolchain_file_path.data() );
-
-	const std::string libgcc_path= sysroot + "/gcc/x86_64-w64-mingw32/7.3.0/"; // TODO - detect GCC version properly.
+	args.push_back( lib_path.data() );
 
 	args.push_back( "-L" );
-	args.push_back( libgcc_path.data() );
+	args.push_back( lib_gcc_path.data() );
 
-	const std::string crt2= toolchain_file_path + ( produce_shared_library ? "dllcrt2.o" : "crt2.o" );
-	const std::string crtbegin= toolchain_file_path + "crtbegin.o";
-	const std::string crtend= toolchain_file_path + "crtend.o";
+	const std::string crt2= lib_path + ( produce_shared_library ? "dllcrt2.o" : "crt2.o" );
+	const std::string crtbegin= lib_path + "crtbegin.o";
+	const std::string crtend= lib_path + "crtend.o";
 
 	args.push_back( crt2.data() );
 	args.push_back( crtbegin.data() );
