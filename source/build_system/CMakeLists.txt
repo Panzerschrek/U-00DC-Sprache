@@ -113,6 +113,16 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 		set( MANGLING_SCHEME "itaniumabi" )
 	endif()
 
+	if( MINGW )
+		# We need to provide path to MinGW libraries for linking.
+		# Detect MinGW installation using g++ path.
+		get_filename_component( MINGW_BIN_DIR ${CMAKE_CXX_COMPILER} DIRECTORY )
+		set( MINGW_INSTALLATION_PATH ${MINGW_BIN_DIR}/../ )
+		set( SYSROOT_OPTION "--sysroot \"${MINGW_INSTALLATION_PATH}\"" )
+	else()
+		set( SYSROOT_OPTION "" )
+	endif()
+
 	# Actual command which runs tests.
 	add_custom_command(
 		OUTPUT ${TIMESTAMP_FILE}
@@ -125,6 +135,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib
 			--mangling-scheme ${MANGLING_SCHEME}
+			${SYSROOT_OPTION}
 		COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE} # A hacky step to produce a marker file for this command.
 		DEPENDS BuildSystem
 		DEPENDS ${TESTS_FILES}
