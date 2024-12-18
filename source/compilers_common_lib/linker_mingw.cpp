@@ -104,11 +104,10 @@ bool RunLinkerMinGW(
 	{
 		args.push_back( "--shared" );
 
-		args.push_back("-e");
-		if( triple.getArch() == llvm::Triple::x86 )
-			args.push_back( "_DllMainCRTStartup@12" );
-		else
-			args.push_back( "DllMainCRTStartup" );
+		// Provide DLL entry point.
+		args.push_back( "-e" );
+		args.push_back( triple.getArch() == llvm::Triple::x86 ? "_DllMainCRTStartup@12" : "DllMainCRTStartup" );
+
 		args.push_back( "--enable-auto-image-base" );
 	}
 

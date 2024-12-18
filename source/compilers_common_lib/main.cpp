@@ -304,7 +304,7 @@ cl::list<std::string> linker_args(
 
 cl::opt<std::string> sysroot(
 	"sysroot",
-	cl::desc("System root durectiry path. Needed for things like libraries search paths for linking."),
+	cl::desc("System root directory path. Needed for things like libraries search paths for linking."),
 	cl::value_desc("path"),
 	cl::Optional,
 	cl::cat(options_category) );

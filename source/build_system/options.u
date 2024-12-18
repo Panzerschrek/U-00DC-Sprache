@@ -34,7 +34,7 @@ auto constexpr g_help_message=
 	"  --compiler-executable <path>       - custom path to the compiler executable\n" +
 	"  --ustlib-path <path>               - custom path to the ustlib directory\n" +
 	"  --build-system-imports-path <path> - custom path to the build system imports directory\n" +
-	"  --sysroot <path>                   - provide sysroot option for the compiler (in order to find system libraries)\n"
+	"  --sysroot <path>                   - provide sysroot directory for the compiler (in order to find system libraries for linking)\n"
 	;
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>

@@ -13,7 +13,7 @@ bool RunLinker(
 	const bool produce_shared_library,
 	const bool remove_unreferenced_symbols )
 {
-	// TODO - support other targets - MachO, Wasm.
+	// TODO - support other linker drivers - MachO, Wasm.
 	if( triple.getOS() == llvm::Triple::Win32 )
 	{
 		if( triple.getEnvironment() == llvm::Triple::GNU )
