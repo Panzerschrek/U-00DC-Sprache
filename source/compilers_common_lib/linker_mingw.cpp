@@ -131,7 +131,6 @@ bool RunLinkerMinGW(
 
 	args.push_back( crt2.data() );
 	args.push_back( crtbegin.data() );
-	args.push_back( crtend.data() );
 
 	args.push_back( "-lmingw32" );
 	args.push_back( "-lgcc_s" );
@@ -139,8 +138,14 @@ bool RunLinkerMinGW(
 	args.push_back( "-lmoldname" );
 	args.push_back( "-lmingwex" );
 	args.push_back( "-lmsvcrt" );
+	args.push_back( "-lpthread" );
 
-	args.push_back("-lkernel32");
+	args.push_back( "-ladvapi32" );
+	args.push_back( "-lshell32" );
+	args.push_back( "-luser32" );
+	args.push_back( "-lkernel32" );
+
+	args.push_back( crtend.data() );
 
 	args.push_back( "-o" );
 	args.push_back( output_file_path.data() );
