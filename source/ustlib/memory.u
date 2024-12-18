@@ -145,10 +145,25 @@ fn nullptr() : $(T)
 	return ptr;
 }
 
+// Returns zero function pointer. Template argument is function pointer type itself.
+// Has distinct from "nullptr" function name, because it has sligtly different interface.
+template</type FuncPtr/>
+fn zero_function_pointer() : FuncPtr
+{
+	var FuncPtr res= zero_init;
+	return res;
+}
+
 template</type T/>
 fn is_nullptr( $(T) ptr ) : bool
 {
 	return ptr == nullptr</T/>();
+}
+
+template</type FuncPtr/>
+fn enable_if( typeinfo</FuncPtr/>.is_function_pointer ) is_nullptr( FuncPtr p ) : bool
+{
+	return p == zero_function_pointer</FuncPtr/>();
 }
 
 template</type T/>
