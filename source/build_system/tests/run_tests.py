@@ -330,6 +330,22 @@ def SharedLibraryUsedInTwoExecutablesTest():
 	RunExecutable( "shared_library_used_in_two_executables", "exe_b" )
 
 
+def ObjectFileTargetTest():
+	RunBuildSystem( "object_file_target" )
+	if platform.system() == "Linux":
+		# Run "nm" and check output - which symbols are present in result object file.
+		object_file_path= os.path.join( g_tests_build_root_path, "object_file_target", "release", "object_file_target.o" )
+		nm_res= subprocess.run( [ "nm", object_file_path ], stdout=subprocess.PIPE )
+		assert( nm_res.returncode == 0 )
+		stdout= str(nm_res.stdout)
+		# Should export public functions
+		assert( stdout.find( "AddTwoNumbers" ) != -1 )
+		assert( stdout.find( "FloatDiv" ) != -1 )
+		assert( stdout.find( "FloatDiv" ) != -1 )
+		# Should not export internal functions
+		assert( stdout.find( "InternalFunction" ) == -1 )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -676,6 +692,13 @@ def DependencyOnExe1Test():
 	assert( stderr.find( "Build target \"exe_a\" depends on non-library build target \"exe_b\"." ) != -1 )
 
 
+def DependencyOnObjectFileTest():
+	res = RunBuildSystemWithErrors( "dependency_on_object_file" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"exe\" depends on non-library build target \"object_file\"." ) != -1 )
+
+
 def UnallowedImport0():
 	res = RunBuildSystemWithErrors( "unallowed_import0" )
 	assert( res.returncode != 0 )
@@ -808,6 +831,7 @@ def main():
 		PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest,
 		SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest,
 		SharedLibraryUsedInTwoExecutablesTest,
+		ObjectFileTargetTest,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
@@ -854,6 +878,7 @@ def main():
 		DependencyLoop5Test,
 		DependencyOnExe0Test,
 		DependencyOnExe1Test,
+		DependencyOnObjectFileTest,
 		UnallowedImport0,
 		UnallowedImport1,
 		UnallowedImport2,

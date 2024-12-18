@@ -420,7 +420,13 @@ fn DependencyGraphIsValid_r(
 			}
 			if_var( &dependency_build_target : package_info.build_targets.find( dependency.name ) )
 			{
-				if( !( dependency_build_target.target_type == BuildTargetType::Library || dependency_build_target.target_type == BuildTargetType::SharedLibrary ) )
+				if( !(
+					dependency_build_target.target_type == BuildTargetType::Library ||
+					dependency_build_target.target_type == BuildTargetType::SharedLibrary
+					// For now do not allow depend on object file build target.
+					// Technically it can be possible, but has a lot of caveats, so it's better not to support it.
+					// Regular library targets should be used, if some common code needed to be used in some another build target(s).
+					) )
 				{
 					logger.LogError( "Build target \"" + build_target_name + "\" depends on non-library build target \"" + dependency.name + "\"." );
 					ok= false;
@@ -535,7 +541,8 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 			{
 				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, public_dependency.name, result );
 			}
-		}
+		},
+		BuildTargetType::ObjectFile -> {}, // This should be checked before.
 	}
 }
 

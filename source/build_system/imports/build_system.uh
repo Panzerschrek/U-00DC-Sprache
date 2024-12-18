@@ -12,8 +12,8 @@ enum BuildTargetType
 	Library,
 	// Native shared library, ".so" or ".dll".
 	SharedLibrary,
-	// TODO - enable this target type.
-	// NativeStaticLibrary,
+	// Object file, which may be used by a native linker to link result binary file.
+	ObjectFile,
 }
 
 struct BuildTargetFullName
