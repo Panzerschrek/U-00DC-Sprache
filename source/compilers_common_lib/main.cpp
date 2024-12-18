@@ -364,11 +364,11 @@ void CollectExternalSymbolsForInternalizatioin(
 		return;
 
 	for( const llvm::Function& function : module.functions() )
-		if( !function.isDeclaration() && function.getLinkage() == llvm::GlobalValue::ExternalLinkage )
+		if( !function.isDeclaration() && !function.hasLocalLinkage() )
 			external_symbols_info.functions.push_back( function.getName().str() );
 
 	for( const llvm::GlobalVariable& global_variable : module.globals() )
-		if( !global_variable.isDeclaration() && global_variable.getLinkage() == llvm::GlobalValue::ExternalLinkage )
+		if( !global_variable.isDeclaration() && !global_variable.hasLocalLinkage() )
 			external_symbols_info.variables.push_back( global_variable.getName().str() );
 }
 
