@@ -50,6 +50,7 @@ For now following features are implemented:
 * Library build targets
 * Dependencies between build targets - public and private
 * Shared library build targets
+* Object file build targets
 * Imports isolation - in each build target it's allowed to import only own header files or header files of dependencies
 * Isolation of symbols in different libraries - in order to prevent possible name conflicts and have possibility to build different versions of the same library into one result binary
 * Build results caching - if nothing was changed, nothing will be rebuilt, if only some source files were changed, only these files and their dependencies will be rebuilt.
