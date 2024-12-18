@@ -5,7 +5,7 @@ if( U_BUILD_COMPILER )
 	if( TARGET lldCommon )
 		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "linker_stub.cpp" )
 	else()
-		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "linker.cpp" "linker_elf.cpp" "linker_coff.cpp" )
+		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "linker.cpp" "linker_elf.cpp" "linker_coff.cpp" "linker_mingw.cpp" )
 	endif()
 	list( REMOVE_ITEM COMPILERS_COMMON_LIB_SOURCES ${COMPILERS_COMMON_LIB_EXCLUDE_SOURCES} )
 

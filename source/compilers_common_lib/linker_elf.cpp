@@ -149,6 +149,7 @@ std::string GetLinuxMultiarchTriple( const llvm::Triple& triple )
 bool RunLinkerELF(
 	const char* const argv0,
 	const llvm::ArrayRef<std::string> additional_args,
+	const std::string& sysroot,
 	const llvm::Triple& triple,
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
@@ -161,7 +162,7 @@ bool RunLinkerELF(
 	// TODO - check if this is correct.
 	const bool pic= llvm::codegen::getRelocModel() == llvm::Reloc::PIC_;
 
-	const std::string toolchain_file_path= "/usr/lib/" + GetLinuxMultiarchTriple( triple ) + "/";
+	const std::string toolchain_file_path= sysroot + "/usr/lib/" + GetLinuxMultiarchTriple( triple ) + "/";
 
 	llvm::SmallVector<const char*, 32> args;
 	args.push_back( argv0 );

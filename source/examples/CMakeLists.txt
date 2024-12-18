@@ -13,6 +13,12 @@ foreach( EXAMPLE_SOURCE ${EXAMPLES_SOURCES} )
 	file( RELATIVE_PATH EXAMPLE_SOURCE_RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${EXAMPLE_SOURCE} )
 	set( DEP_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE_SOURCE_RELATIVE}.d )
 
+	if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
+		set( DEPFILE_OPTION DEPFILE ${DEP_FILE} )
+	else()
+		set( DEPFILE_OPTION "" )
+	endif()
+
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE_SOURCE_RELATIVE}.o
 		DEPENDS ${EXAMPLE_SOURCE} Compiler${CURRENT_COMPILER_GENERATION}
@@ -26,7 +32,7 @@ foreach( EXAMPLE_SOURCE ${EXAMPLES_SOURCES} )
 			--verify-module
 			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "examples/hello_world.u.o:", but launches custom command in current binary directory
-		DEPFILE ${DEP_FILE}
+		${DEPFILE_OPTION}
 		)
 
 	get_filename_component( EXAMPLE_SOURCE_BASE_NAME ${EXAMPLE_SOURCE_RELATIVE} NAME_WE )

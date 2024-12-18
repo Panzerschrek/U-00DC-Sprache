@@ -106,6 +106,24 @@ A proper external linker should be used instead (ld, link.exe, etc).
 Generally if an Ü program uses some parts written in C or C++ it's recommended to use a C++ compiler/linker to produce result executable file, rather than using the Ü compiler as linker.
 
 
+### Internal LLD third-party dependencies
+
+Creating an executable or a shared library with internal LLD requires some third-party dependencies - runtime libraries.
+
+For GNU/Linux _gcc_ libraries are required, like `Scrt1.o`, `crti.o`, `crtn.o`.
+These libraries provide proper entry point and ensure linking against system `glibc`.
+Usually these libraries are already installed in the system, so, no special work is needed to build an executable for GNU/Linux.
+
+For Windows with MSVC environment Windows SDK installation is required to find libraries like `msvcrt` or `libcmt`.
+These libraries ensure linking against MSVC runtime dynamic libraries.
+So, installation of Windows SDK and (maybe) MS build tools is needed.
+
+For Windows with MinGW environment MinGW installation is required.
+The MinGW installation path should be specified with `--sysroot` option.
+Various static libraries from this installation are used, like `crt2.o`, `libgcc.a`, `libgcc_s.a`, `libmingwex.a`, `libkernel32.a` and many others.
+These libraries usually ensure linking against `MSVCRT.DLL`, but this may be different for different MinGW versions and different flags specified.
+
+
 ### Embedded ustlib implementation functions
 
 The compiler includes some implementation functions for ustlib (see ustlib/src).

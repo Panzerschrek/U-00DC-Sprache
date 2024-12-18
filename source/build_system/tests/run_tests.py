@@ -13,12 +13,18 @@ g_build_system_executable = ""
 g_compiler_executable=  ""
 g_build_system_imports_path = ""
 g_ustlib_path = ""
+g_mangling_scheme = "itaniumabi"
+g_sysroot = None
 
 
 def RunBuildSystemWithExplicitConfiguration( project_subdirectory, configuration ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
 	build_system_args= [ g_build_system_executable, "build", "-q", "--build-configuration", configuration, "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
 
 	# Run the build.
 	subprocess.check_call( build_system_args )
@@ -34,6 +40,10 @@ def RunBuildSystemWithErrors( project_subdirectory ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
 	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
 
 	# Run the build.
 	return subprocess.run( build_system_args, stderr=subprocess.PIPE )
@@ -240,7 +250,7 @@ def PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest():
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
-	if platform.system() == "Windows": # TODO - check for MSVC instead
+	if g_mangling_scheme == "msvc":
 		a_func= getattr( library, "?AFunc@@YAIXZ" )
 		b_func= getattr( library, "?BFunc@@YAIXZ" )
 	else:
@@ -265,7 +275,7 @@ def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
-	if platform.system() == "Windows": # TODO - check for MSVC instead
+	if g_mangling_scheme == "msvc":
 		a_func= getattr( library, "?AFunc@@YAIXZ" )
 	else:
 		a_func= getattr( library, "_Z5AFuncv" )
@@ -292,7 +302,7 @@ def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
 	library= ctypes.CDLL( library_file_path )
 
 	# Call "A" function which is part of public interface "A".
-	if platform.system() == "Windows": # TODO - check for MSVC instead
+	if g_mangling_scheme == "msvc":
 		a_func= getattr( library, "?AFunc@@YAIXZ" )
 	else:
 		a_func= getattr( library, "_Z5AFuncv" )
@@ -414,7 +424,7 @@ def LinkingError0Test():
 	res = RunBuildSystemWithErrors( "linking_error0" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( ( stderr.find( "undefined symbol" ) != -1 and stderr.find( "main" ) != -1 ) or stderr.find( "subsystem must be defined" ) != -1 )
+	assert( ( stderr.find( "undefined symbol" ) != -1 and ( stderr.find( "main" ) != -1 or stderr.find( "WinMain" ) != -1 ) ) or stderr.find( "subsystem must be defined" ) != -1 )
 
 
 def LinkingError1Test():
@@ -733,6 +743,8 @@ def main():
 	parser.add_argument( "--compiler-executable", help= "path to compiler executable", type=str, required= True )
 	parser.add_argument( "--build-system-imports-path", help= "path to build system imports", type=str, required= True )
 	parser.add_argument( "--ustlib-path", help= "path to ustlib", type=str, required= True )
+	parser.add_argument( "--mangling-scheme", help= "mangling scheme - msvc or intaniumabi", type=str, default= "itaniumabi" )
+	parser.add_argument( "--sysroot", help= "provide sysroot for the compiler", type=str, default= None )
 
 	args= parser.parse_args()
 
@@ -753,6 +765,12 @@ def main():
 
 	global g_ustlib_path
 	g_ustlib_path= args.ustlib_path
+
+	global g_mangling_scheme
+	g_mangling_scheme= args.mangling_scheme
+
+	global g_sysroot
+	g_sysroot= args.sysroot
 
 	test_funcs = [
 		HelloWorldTest,

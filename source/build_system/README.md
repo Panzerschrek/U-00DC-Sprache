@@ -46,3 +46,13 @@ For more info, run the build system executable using ``--help`` option.
 
 Since build scripts are normal Ü programs it's possible to trigger crash by using `halt` or by messing with unsafe code.
 Since build script code is running inside the build system process, the whole process is terminated if an error in one of build script occurs.
+
+
+### Necessary dependencies
+
+If the build system executable was build using MSVC, Windows SDK installation in the system is required.
+If the build system executable was build using MinGW, MinGW installation in the system is required and its path should be provided via `--sysroot` option.
+Such dependencies are necessary in order to build build script shared libraries using the same (or at least compatible) runtime libraries as for the build system executable itself.
+
+Building target code for different from host systems/environments is still possible, regardless of how the build system itself was built.
+But it may be necessary to specify `--sysroot` in order to do this.

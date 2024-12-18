@@ -33,7 +33,8 @@ auto constexpr g_help_message=
 	"  --build-directory <path>           - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
 	"  --compiler-executable <path>       - custom path to the compiler executable\n" +
 	"  --ustlib-path <path>               - custom path to the ustlib directory\n" +
-	"  --build-system-imports-path <path> - custom path to the build system imports directory\n"
+	"  --build-system-imports-path <path> - custom path to the build system imports directory\n" +
+	"  --sysroot <path>                   - provide sysroot directory for the compiler (in order to find system libraries for linking)\n"
 	;
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
@@ -158,6 +159,16 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 				return ust::null_optional;
 			}
 			res.build_system_imports_path= args[i + 1s];
+			i+= 2s;
+		}
+		else if( args[i] == "--sysroot" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--sysroot\".\n" );
+				return ust::null_optional;
+			}
+			res.sysroot= args[i + 1s];
 			i+= 2s;
 		}
 		else

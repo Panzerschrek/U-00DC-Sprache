@@ -78,6 +78,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			( options.build_system_imports_path.empty()
 				? default_build_system_imports_path
 				: MakePathAbsolute(options.build_system_imports_path) ) ),
+		.sysroot= options.sysroot,
 	};
 
 	// If "options.root_package_directory" is empty this will become current directory.
@@ -277,6 +278,7 @@ struct BuildSystemPaths
 	ust::string8 compiler_executable_path;
 	ust::string8 ustlib_path;
 	ust::string8 build_system_imports_path;
+	ust::string8 sysroot;
 }
 
 fn BuildAndLoadPackageBuildScript(
@@ -364,6 +366,14 @@ fn BuildAndLoadPackageBuildScript(
 		optimization_level.push_back( compiler::options::optimization_level );
 
 		var ust::vector</ust::string_view8/> mut compiler_args;
+
+		// TODO - provide additional sysroot for host compiler?
+		if( !build_system_paths.sysroot.empty() )
+		{
+			compiler_args.push_back( "--sysroot" );
+			compiler_args.push_back( build_system_paths.sysroot );
+		}
+
 		// Add path to the package directory in order to import "build.u" inside the wrapper.
 		compiler_args.push_back( "--include-dir" );
 		compiler_args.push_back( package_source_directory );
@@ -427,7 +437,11 @@ fn BuildAndLoadPackageBuildScript(
 			// So, use this option for building the shared library.
 			compiler_args.push_back( "--relocation-model" );
 			compiler_args.push_back( "pic" );
+		}
 
+		if( ust::string_view8( compiler::target::os ) != "windows" ||
+			ust::string_view8( compiler::target::environment ) == "gnu" )
+		{
 			// Put symbols into sections and remove unnecessary ones.
 			compiler_args.push_back( "--function-sections" );
 			compiler_args.push_back( "--data-sections" );
@@ -597,6 +611,12 @@ fn CreatePackageTargetBuildGraphNodes(
 			.comment= source_file + ".bc",
 		};
 
+		if( !build_system_paths.sysroot.empty() )
+		{
+			node.command_line.push_back( "--sysroot" );
+			node.command_line.push_back( build_system_paths.sysroot );
+		}
+
 		node.command_line.push_back( source_file_absolute );
 
 		node.command_line.push_back( "-o" );
@@ -699,13 +719,26 @@ fn CreatePackageTargetBuildGraphNodes(
 		.comment= target_name,
 	};
 
+	if( !build_system_paths.sysroot.empty() )
+	{
+		node.command_line.push_back( "--sysroot" );
+		node.command_line.push_back( build_system_paths.sysroot );
+	}
+
 	if( target.target_type == BuildTargetType::SharedLibrary )
 	{
 		if( target_is_windows )
 		{
 			// Add also ".lib" file to outputs.
 			// This file is implicitly created by the linker.
-			node.output_files.push_back( NormalizePath( ust::string8(package_build_directory) + "/" + target_name + ".lib" ) );
+			var ust::string8 lib_name = NormalizePath( ust::string8(package_build_directory) + "/" + target_name + ".lib" );
+			node.output_files.push_back( lib_name );
+
+			if( target_triple.environment == "gnu" )
+			{
+				// MinGW linker requires a special option to produce such library.
+				node.command_line.push_back( "-Wl,--out-implib," + lib_name );
+			}
 		}
 		else
 		{
@@ -889,7 +922,7 @@ fn CreatePackageTargetBuildGraphNodes(
 				// Also run LTO.
 				node.command_line.push_back( "--lto-mode=link" );
 
-				if( !target_is_windows )
+				if( !target_is_windows || target_triple.environment == "gnu" )
 				{
 					// Put symbols into sections and remove unnecessary ones.
 					node.command_line.push_back( "--function-sections" );

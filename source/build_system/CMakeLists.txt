@@ -11,6 +11,12 @@ function( CompileUSource u_source_file out_object )
 	file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
 	file( RELATIVE_PATH u_source_file_relative ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
 
+	if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
+		set( DEPFILE_OPTION DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d )
+	else()
+		set( DEPFILE_OPTION "" )
+	endif()
+
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o
 		DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
@@ -25,7 +31,7 @@ function( CompileUSource u_source_file out_object )
 			# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 			--source-dir ${CMAKE_CURRENT_SOURCE_DIR}
 			--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
-		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
+		${DEPFILE_OPTION}
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "build_system/main.u.o:", but launches custom command in current binary directory
 		COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"
 		)
@@ -58,6 +64,10 @@ foreach( source ${BUILD_SYSTEM_SOURCES} )
 	CompileUSource( ${source} out_object )
 	list( APPEND BUILD_SYSTEM_OBJECTS ${out_object} )
 endforeach()
+
+if( MINGW )
+	add_link_options( "-municode" ) # Allow "wmain" as entry point.
+endif()
 
 add_executable( BuildSystem ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} ${BUILD_SYSTEM_SOURCES_CPP} )
 
@@ -93,6 +103,26 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 
 	set( TIMESTAMP_FILE ${CMAKE_CURRENT_BINARY_DIR}/tests_timestamp )
 
+	if( WIN32 )
+		if( MINGW )
+			set( MANGLING_SCHEME "itaniumabi" )
+		else()
+			set( MANGLING_SCHEME "msvc" )
+		endif()
+	else()
+		set( MANGLING_SCHEME "itaniumabi" )
+	endif()
+
+	if( MINGW )
+		# We need to provide path to MinGW libraries for linking.
+		# Detect MinGW installation using g++ path.
+		get_filename_component( MINGW_BIN_DIR ${CMAKE_CXX_COMPILER} DIRECTORY )
+		set( MINGW_INSTALLATION_PATH ${MINGW_BIN_DIR}/../ )
+		set( SYSROOT_OPTION "--sysroot \"${MINGW_INSTALLATION_PATH}\"" )
+	else()
+		set( SYSROOT_OPTION "" )
+	endif()
+
 	# Actual command which runs tests.
 	add_custom_command(
 		OUTPUT ${TIMESTAMP_FILE}
@@ -104,6 +134,8 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 			--compiler-executable ${CMAKE_CURRENT_BINARY_DIR}/../compiler0/Compiler # For now hardcode here path to the compiler executable build
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib
+			--mangling-scheme ${MANGLING_SCHEME}
+			${SYSROOT_OPTION}
 		COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE} # A hacky step to produce a marker file for this command.
 		DEPENDS BuildSystem
 		DEPENDS ${TESTS_FILES}
