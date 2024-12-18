@@ -437,7 +437,11 @@ fn BuildAndLoadPackageBuildScript(
 			// So, use this option for building the shared library.
 			compiler_args.push_back( "--relocation-model" );
 			compiler_args.push_back( "pic" );
+		}
 
+		if( ust::string_view8( compiler::target::os ) != "windows" ||
+			ust::string_view8( compiler::target::environment ) == "gnu" )
+		{
 			// Put symbols into sections and remove unnecessary ones.
 			compiler_args.push_back( "--function-sections" );
 			compiler_args.push_back( "--data-sections" );
@@ -918,7 +922,7 @@ fn CreatePackageTargetBuildGraphNodes(
 				// Also run LTO.
 				node.command_line.push_back( "--lto-mode=link" );
 
-				if( !target_is_windows )
+				if( !target_is_windows || target_triple.environment == "gnu" )
 				{
 					// Put symbols into sections and remove unnecessary ones.
 					node.command_line.push_back( "--function-sections" );
