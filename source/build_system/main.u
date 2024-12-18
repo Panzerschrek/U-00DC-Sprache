@@ -139,18 +139,18 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 
 	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
-	if( ust::is_nullptr(func_raw_ptr) )
-	{
-		bsi.logger_.LogError( "Failed to load function " + entry_func_name );
-		return -1;
-	}
-
 	// A hacky way to cast byte8 pointer to a function pointer.
 	var GetPackageInfoFunctionType mut func_ptr= zero_init;
 	unsafe( ust::memory_copy(
 		ust::ptr_cast_to_byte8( $<(func_ptr) ),
 		ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
 		typeinfo</ typeof(func_ptr) />.size_of ) );
+
+	if( ust::is_nullptr(func_ptr) )
+	{
+		bsi.logger_.LogError( "Failed to load function " + entry_func_name );
+		return -1;
+	}
 
 	// Obtain package info by calling a shared library function.
 	var ust::optional</PackageInfo/> package_info_opt= func_ptr( bsi );
