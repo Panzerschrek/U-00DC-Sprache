@@ -692,6 +692,13 @@ def DependencyOnExe1Test():
 	assert( stderr.find( "Build target \"exe_a\" depends on non-library build target \"exe_b\"." ) != -1 )
 
 
+def DependencyOnObjectFileTest():
+	res = RunBuildSystemWithErrors( "dependency_on_object_file" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"exe\" depends on non-library build target \"object_file\"." ) != -1 )
+
+
 def UnallowedImport0():
 	res = RunBuildSystemWithErrors( "unallowed_import0" )
 	assert( res.returncode != 0 )
@@ -871,6 +878,7 @@ def main():
 		DependencyLoop5Test,
 		DependencyOnExe0Test,
 		DependencyOnExe1Test,
+		DependencyOnObjectFileTest,
 		UnallowedImport0,
 		UnallowedImport1,
 		UnallowedImport2,
