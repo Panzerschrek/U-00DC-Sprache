@@ -96,9 +96,6 @@ bool RunLinkerMinGW(
 	llvm::raw_os_ostream cout(std::cout);
 	llvm::raw_os_ostream cerr(std::cerr);
 
-	// TODO - check if this is correct.
-	//const bool pic= llvm::codegen::getRelocModel() == llvm::Reloc::PIC_;
-
 	llvm::SmallVector<const char*, 32> args;
 	args.push_back( argv0 );
 	args.push_back( input_temp_file_path.data() );
@@ -112,11 +109,10 @@ bool RunLinkerMinGW(
 			args.push_back( "_DllMainCRTStartup@12" );
 		else
 			args.push_back( "DllMainCRTStartup" );
-		args.push_back("--enable-auto-image-base");
+		args.push_back( "--enable-auto-image-base" );
 	}
 
-	//if( pic && !produce_shared_library )
-	//	args.push_back( "-pie" );
+	// Ignore position-independent options - they are not supported by lld.
 
 	if( remove_unreferenced_symbols )
 		args.push_back( "-s" );
