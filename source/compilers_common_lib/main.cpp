@@ -42,7 +42,6 @@
 #include "../lex_synt_lib_common/assert.hpp"
 #include "../sprache_version/sprache_version.hpp"
 #include  "code_builder_launcher.hpp"
-#include "dep_file.hpp"
 #include "linker.hpp"
 #include "make_dep_file.hpp"
 
@@ -193,12 +192,6 @@ cl::opt<std::string> dep_file_name(
 	cl::desc("Output dependency file"),
 	cl::value_desc("filename"),
 	cl::Optional,
-	cl::cat(options_category) );
-
-cl::opt<bool> deps_tracking(
-	"deps-tracking",
-	cl::desc("Create dependency file for output file, do not rebuild output file if input files listed in output dependency file are not changed."),
-	cl::init(false),
 	cl::cat(options_category) );
 
 cl::opt<bool> tests_output(
@@ -471,7 +464,6 @@ int Main( int argc, const char* argv[] )
 	Options::target_environment.removeArgument();
 	Options::mangling_scheme.removeArgument();
 	Options::dep_file_name.removeArgument();
-	Options::deps_tracking.removeArgument();
 	Options::tests_output.removeArgument();
 	Options::print_llvm_asm.removeArgument();
 	Options::print_llvm_asm_initial.removeArgument();
@@ -491,9 +483,6 @@ int Main( int argc, const char* argv[] )
 		std::cerr << "No output file specified" << std::endl;
 		return 1;
 	}
-
-	if( Options::deps_tracking && DepFile::NothingChanged( Options::output_file_name, argc, argv ) )
-		return 0;
 
 	// Select optimization level.
 	llvm::OptimizationLevel optimization_level= llvm::OptimizationLevel::O0;
@@ -1033,9 +1022,6 @@ int Main( int argc, const char* argv[] )
 
 	// Left only unique paths in dependencies list.
 	DeduplicateAndFilterDepsList(deps_list);
-
-	if( Options::deps_tracking )
-		DepFile::Write( Options::output_file_name, argc, argv, deps_list );
 
 	if( !Options::dep_file_name.empty() &&
 		!WriteDepFile( Options::output_file_name, deps_list, Options::dep_file_name ) )
