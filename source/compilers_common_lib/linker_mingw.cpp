@@ -4,7 +4,7 @@
 #include <lld/Common/Driver.h>
 #include <llvm/ADT/Triple.h>
 #include <llvm/CodeGen/CommandFlags.h>
-#include <llvm/Support/Filesystem.h>
+#include <llvm/Support/FileSystem.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/VersionTuple.h>
 #include <llvm/Support/raw_os_ostream.h>
