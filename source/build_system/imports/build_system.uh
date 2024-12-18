@@ -12,7 +12,7 @@ enum BuildTargetType
 	Library,
 	// Native shared library, ".so" or ".dll".
 	SharedLibrary,
-	// An object file, which may be used by a native linker to link result binary file.
+	// Object file, which may be used by a native linker to link result binary file.
 	ObjectFile,
 }
 
