@@ -189,6 +189,9 @@ bool RunLinkerELF(
 	args.push_back( "--dynamic-linker" );
 	args.push_back( dynamic_linker.data() );
 
+	// Push this flag before specifying libraries to link only needed shared libraries.
+	args.push_back( "--as-needed" );
+
 	// ustlib uses some libc and math library functions.
 	args.push_back( "-lc" );
 	args.push_back( "-lm" );
