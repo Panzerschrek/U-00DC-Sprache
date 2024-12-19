@@ -1,0 +1,36 @@
+;
+; WinAPI functions
+;
+
+declare x86_stdcallcc i8* @GetProcessHeap()
+declare x86_stdcallcc i8* @HeapAlloc( i8*, i32, i32 )
+declare x86_stdcallcc i8* @HeapReAlloc( i8*, i32, i8*, i32 )
+declare x86_stdcallcc void @HeapFree( i8*, i32, i8* )
+
+; Impl functions
+
+$ust_memory_allocate_impl = comdat any
+define linkonce_odr hidden i8* @ust_memory_allocate_impl( i32 %size ) unnamed_addr comdat
+{
+	%heap = call x86_stdcallcc i8* @GetProcessHeap()
+	%res = call x86_stdcallcc i8* @HeapAlloc( i8* %heap, i32 0, i32 %size )
+	ret i8* %res
+}
+
+$ust_memory_reallocate_impl = comdat any
+define linkonce_odr hidden i8* @ust_memory_reallocate_impl( i8* %ptr, i32 %size ) unnamed_addr comdat
+{
+	%heap = call x86_stdcallcc i8* @GetProcessHeap()
+	%res = call x86_stdcallcc i8* @HeapReAlloc( i8* %heap, i32 0, i8* %ptr, i32 %size )
+	ret i8* %res
+}
+
+$ust_memory_free_impl = comdat any
+define linkonce_odr hidden void @ust_memory_free_impl( i8* %ptr ) unnamed_addr comdat
+{
+	%heap = call x86_stdcallcc i8* @GetProcessHeap()
+	call x86_stdcallcc void @HeapFree( i8* %heap, i32 0, i8* %ptr )
+	ret void
+}
+
+attributes #0 = { argmemonly nounwind }
