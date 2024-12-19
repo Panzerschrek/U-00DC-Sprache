@@ -24,7 +24,7 @@ fn LoadConfigurationOptions( Logger &mut logger, ust::string_view8 file_path ) :
 	var ust::optional_ref_imut</JsonValue::Object/> root_object= root_json.try_deref().AsObject();
 	if( root_object.empty() )
 	{
-		logger.LogError( "Configuration options file JSON is not an object!" );
+		logger.LogError( "Configuration options JSON is not an object!" );
 		return ust::null_optional;
 	}
 
@@ -34,6 +34,7 @@ fn LoadConfigurationOptions( Logger &mut logger, ust::string_view8 file_path ) :
 	{
 		if_var( &string_value : pair.value().AsString() )
 		{
+			// For now support only string options, but not other values.
 			result.insert( pair.key(), string_value );
 		}
 		else

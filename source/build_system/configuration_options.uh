@@ -4,8 +4,10 @@ import "logger.uh"
 namespace BK
 {
 
+// Simple options in form of key-value pairs.
 type ConfigurationOptions= ust::unordered_map</ust::string8, ust::string8/>;
 
+// Input file should be a JSON with root object.
 fn LoadConfigurationOptions( Logger &mut logger, ust::string_view8 file_path ) : ust::optional</ConfigurationOptions/>;
 
 } // namespace BK
