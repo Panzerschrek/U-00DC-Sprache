@@ -62,7 +62,7 @@ Thus you can use this option and provide your own allocation/deallocation functi
 
 List of built-in functionality:
 
-* Allocation functionality (alloc_32.ll, alloc_64.ll, alloc_dummy.ll)
+* Allocation functionality (alloc_libc_32.ll, alloc_libc_64.ll, alloc_winapi_32.ll, alloc_winapi_64.ll, alloc_dummy.ll)
 * Atomic operations (atomic.ll)
 * Math functions with overflow checks (checked_math.ll)
 * Coroutines helpers (coro.ll)
