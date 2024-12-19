@@ -98,6 +98,24 @@ def BuildFileLoggingTest():
 	RunBuildSystem( "build_file_logging" )
 
 
+def ConfigurationOptions0Test():
+	project_subdirectory = "configuration_options0"
+	project_root = os.path.join( g_tests_path, project_subdirectory )
+	build_root = os.path.join( g_tests_build_root_path, project_subdirectory )
+	options_file_path = os.path.join( project_root, "options.json" )
+	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
+
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+
+	# Run the build.
+	subprocess.check_call( build_system_args )
+
+	# Should find executable with name dependent on configuration options.
+	RunExecutable( project_subdirectory, "configuration_options_1234" )
+
+
 def TwoFilesExeTest():
 	RunBuildSystem( "two_files_exe" )
 	RunExecutable( "two_files_exe", "two_files_exe" )
@@ -802,6 +820,7 @@ def main():
 		ConfigurationDependentTargetTest,
 		EmptyPackageTest,
 		BuildFileLoggingTest,
+		ConfigurationOptions0Test,
 		TwoFilesExeTest,
 		TwoTargetsTest,
 		SourcesInDirectoriesTest,
