@@ -69,7 +69,11 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	var BuildSystemInterfaceImplementation mut bsi( move(logger), options.build_configuration, move(target_triple) );
+	var BuildSystemInterfaceImplementation mut bsi(
+		move(logger),
+		options.build_configuration,
+		move(target_triple),
+		move(configuration_options) );
 
 	var ust::string8 exe_directory_path = MakePathAbsolute( ExtractExeDirectoryPath( exe_path ) );
 
@@ -1060,11 +1064,17 @@ fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 class BuildSystemInterfaceImplementation final : BuildSystemInterface
 {
 public:
-	fn constructor( Logger mut logger, BuildConfiguration build_configuration, TargetTriple mut target_triple )
-		(
-			logger_= move(logger),
-			build_configuration_= build_configuration,
-			target_triple_= move(target_triple) )
+	fn constructor(
+		Logger mut logger,
+		BuildConfiguration build_configuration,
+		TargetTriple mut target_triple,
+		ConfigurationOptions mut configuration_options )
+			(
+				logger_= move(logger),
+				build_configuration_= build_configuration,
+				target_triple_= move(target_triple),
+				configuration_options_= move(configuration_options)
+			)
 	{}
 
 public: // BuildSystemInterface
@@ -1093,6 +1103,15 @@ public: // BuildSystemInterface
 		logger_.LogError( message );
 	}
 
+	fn virtual final GetConfigurationOption( this, ust::string_view8 name ) : ust::optional</ust::string8/>
+	{
+		if_var( &option_value : configuration_options_.find(name) )
+		{
+			return option_value;
+		}
+		return ust::null_optional;
+	}
+
 public: // Provide direct access for some fields where it's safe to use them directly.
 	Logger logger_;
 
@@ -1100,6 +1119,7 @@ public: // Provide direct access for some fields where it's safe to use them dir
 	TargetTriple imut target_triple_;
 
 private:
+	ConfigurationOptions imut configuration_options_;
 }
 
 } // namespace BK
