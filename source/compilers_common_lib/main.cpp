@@ -229,9 +229,9 @@ cl::opt< HaltMode > halt_mode(
 		clEnumValN( HaltMode::Unreachable, "unreachable", "Treat \"halt\" as unreachable instruction. behavior is undefined if \"halt\" happens." ) ),
 	cl::cat(options_category) );
 
-cl::opt<bool> no_libc_alloc(
-	"no-libc-alloc",
-	cl::desc("Disable usage of libc allocation functions."),
+cl::opt<bool> no_system_alloc(
+	"no-system-alloc",
+	cl::desc("Disable usage of system allocation functions."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -476,7 +476,7 @@ int Main( int argc, const char* argv[] )
 	Options::print_llvm_asm_initial.removeArgument();
 	Options::print_prelude_code.removeArgument();
 	Options::halt_mode.removeArgument();
-	Options::no_libc_alloc.removeArgument();
+	Options::no_system_alloc.removeArgument();
 	Options::verify_module.removeArgument();
 	Options::internalize.removeArgument();
 	Options::internalize_hidden.removeArgument();
@@ -785,7 +785,7 @@ int Main( int argc, const char* argv[] )
 	else
 		U_ASSERT(false);
 
-	if( !LinkUstLibModules( *result_module, Options::halt_mode, Options::no_libc_alloc, false ) )
+	if( !LinkUstLibModules( *result_module, Options::halt_mode, Options::no_system_alloc, false ) )
 		return 1;
 
 	// Dump llvm code before optimization passes.

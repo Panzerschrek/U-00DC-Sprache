@@ -917,7 +917,7 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 		ProcessMalloc( instruction );
 		return;
 	}
-	else if( function_name == "realloc" )
+	else if( function_name == "realloc" || function_name == "ust_memory_reallocate_impl" )
 	{
 		ProcessRealloc( instruction );
 		return;
