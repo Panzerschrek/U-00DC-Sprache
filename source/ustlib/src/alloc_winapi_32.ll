@@ -5,7 +5,7 @@
 declare x86_stdcallcc i8* @GetProcessHeap()
 declare x86_stdcallcc i8* @HeapAlloc( i8*, i32, i32 )
 declare x86_stdcallcc i8* @HeapReAlloc( i8*, i32, i8*, i32 )
-declare x86_stdcallcc void @HeapFree( i8*, i32, i8* )
+declare x86_stdcallcc i32 @HeapFree( i8*, i32, i8* )
 
 ; Impl functions
 
@@ -29,7 +29,8 @@ $ust_memory_free_impl = comdat any
 define linkonce_odr hidden void @ust_memory_free_impl( i8* %ptr ) unnamed_addr comdat
 {
 	%heap = call x86_stdcallcc i8* @GetProcessHeap()
-	call x86_stdcallcc void @HeapFree( i8* %heap, i32 0, i8* %ptr )
+	%free_res = call x86_stdcallcc i32 @HeapFree( i8* %heap, i32 0, i8* %ptr )
+	; For now ignore result of "HeapFree"
 	ret void
 }
 
