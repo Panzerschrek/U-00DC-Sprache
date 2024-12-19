@@ -1,0 +1,49 @@
+import "configuration_options.uh"
+import "filesystem.uh"
+import "json/parsing.uh"
+
+namespace BK
+{
+
+fn LoadConfigurationOptions( Logger &mut logger, ust::string_view8 file_path ) : ust::optional</ConfigurationOptions/>
+{
+	var ust::optional</ust::string8/> file_contents= ReadFile( file_path );
+	if( file_contents.empty() )
+	{
+		logger.LogError( ust::string8( "Failed to load configuration options file \"" ) + file_path + "\"!" );
+		return ust::null_optional;
+	}
+
+	var ust::optional</JsonValue/> root_json= ParseJson( file_contents.try_deref() );
+	if( root_json.empty() )
+	{
+		logger.LogError( ust::string8( "Failed to parse configuration options file \"" ) + file_path + "\"!" );
+		return ust::null_optional;
+	}
+
+	var ust::optional_ref_imut</JsonValue::Object/> root_object= root_json.try_deref().AsObject();
+	if( root_object.empty() )
+	{
+		logger.LogError( "Configuration options file JSON is not an object!" );
+		return ust::null_optional;
+	}
+
+	var ConfigurationOptions mut result;
+
+	foreach( &pair : root_object.try_deref() )
+	{
+		if_var( &string_value : pair.value().AsString() )
+		{
+			result.insert( pair.key(), string_value );
+		}
+		else
+		{
+			// TODO - log warning.
+			logger.LogInfo( "Configuration option \"" + pair.key() + "\" is not a string!" );
+		}
+	}
+
+	return move(result);
+}
+
+} // namespace BK

@@ -1,6 +1,7 @@
 import "/sort.u"
 import "/stdout.u"
 import "build_graph.uh"
+import "configuration_options.uh"
 import "entry.uh"
 import "filesystem.uh"
 import "make_dep_file.uh"
@@ -50,6 +51,18 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 
 	var BuildSystemInterfaceImplementation mut bsi( options, move(target_triple) );
+
+	var ConfigurationOptions mut configuration_options;
+	if( !options.configuration_options_file.empty() )
+	{
+		auto mut configuration_options_opt= LoadConfigurationOptions( bsi.logger_, options.configuration_options_file );
+		if( configuration_options_opt.empty() )
+		{
+			ust::stderr_print( "Failed to load configuration options!\n" );
+			return -1;
+		}
+		configuration_options= configuration_options_opt.try_take();
+	}
 
 	bsi.logger_.LogInfo( "Bürokratie - the Ü build system!" );
 

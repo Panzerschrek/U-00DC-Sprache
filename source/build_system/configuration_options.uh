@@ -1,0 +1,11 @@
+import "/unordered_map.u"
+import "logger.uh"
+
+namespace BK
+{
+
+type ConfigurationOptions= ust::unordered_map</ust::string8, ust::string8/>;
+
+fn LoadConfigurationOptions( Logger &mut logger, ust::string_view8 file_path ) : ust::optional</ConfigurationOptions/>;
+
+} // namespace BK
