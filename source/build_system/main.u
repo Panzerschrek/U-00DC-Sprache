@@ -28,6 +28,13 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var Options& options= options_opt.try_deref();
 
+	var Logger mut logger(
+		( options.verbose
+			? Logger::Level::Verbose
+			: ( options.quiet ? Logger::Level::Quiet : Logger::Level::Normal ) ) );
+
+	logger.LogInfo( "Bürokratie - the Ü build system!" );
+
 	if( options.command == Options::Command::Help || options.help )
 	{
 		ust::stdout_print( GetHelpMessage() );
@@ -40,7 +47,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		auto mut target_triple_opt= ParseTargetTriple( options.target_triple );
 		if( target_triple_opt.empty() )
 		{
-			ust::stderr_print( "Failed to parse target triple!\n" );
+			logger.LogError( "Failed to parse target triple!\n" );
 			return -1;
 		}
 		target_triple= target_triple_opt.try_take();
@@ -50,12 +57,10 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		target_triple= GetHostTargetTriple();
 	}
 
-	var BuildSystemInterfaceImplementation mut bsi( options, move(target_triple) );
-
 	var ConfigurationOptions mut configuration_options;
 	if( !options.configuration_options_file.empty() )
 	{
-		auto mut configuration_options_opt= LoadConfigurationOptions( bsi.logger_, options.configuration_options_file );
+		auto mut configuration_options_opt= LoadConfigurationOptions( logger, options.configuration_options_file );
 		if( configuration_options_opt.empty() )
 		{
 			ust::stderr_print( "Failed to load configuration options!\n" );
@@ -64,7 +69,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	bsi.logger_.LogInfo( "Bürokratie - the Ü build system!" );
+	var BuildSystemInterfaceImplementation mut bsi( move(logger), options.build_configuration, move(target_triple) );
 
 	var ust::string8 exe_directory_path = MakePathAbsolute( ExtractExeDirectoryPath( exe_path ) );
 
@@ -1055,13 +1060,11 @@ fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 class BuildSystemInterfaceImplementation final : BuildSystemInterface
 {
 public:
-	fn constructor( Options& options, TargetTriple mut target_triple )
-		( logger_(
-			( options.verbose
-				? Logger::Level::Verbose
-				: ( options.quiet ? Logger::Level::Quiet : Logger::Level::Normal ) ) ),
-		build_configuration_= options.build_configuration,
-		target_triple_= move(target_triple) )
+	fn constructor( Logger mut logger, BuildConfiguration build_configuration, TargetTriple mut target_triple )
+		(
+			logger_= move(logger),
+			build_configuration_= build_configuration,
+			target_triple_= move(target_triple) )
 	{}
 
 public: // BuildSystemInterface
