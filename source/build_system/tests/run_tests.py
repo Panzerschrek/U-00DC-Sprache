@@ -116,6 +116,30 @@ def ConfigurationOptions0Test():
 	RunExecutable( project_subdirectory, "configuration_options_1234" )
 
 
+def ConfigurationOptions1Test():
+	project_subdirectory = "configuration_options1"
+	project_root = os.path.join( g_tests_path, project_subdirectory )
+	build_root = os.path.join( g_tests_build_root_path, project_subdirectory )
+	options_file_path = os.path.join( project_root, "non_existing_file.json" )
+	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
+
+	call_res= subprocess.run( build_system_args, stderr=subprocess.PIPE )
+	stderr= str(call_res.stderr)
+	assert( stderr.find( "Failed to load configuration options file" ) != -1 )
+
+
+def ConfigurationOptions2Test():
+	project_subdirectory = "configuration_options2"
+	project_root = os.path.join( g_tests_path, project_subdirectory )
+	build_root = os.path.join( g_tests_build_root_path, project_subdirectory )
+	options_file_path = os.path.join( project_root, "options.json" )
+	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
+
+	call_res= subprocess.run( build_system_args, stderr=subprocess.PIPE )
+	stderr= str(call_res.stderr)
+	assert( stderr.find( "Failed to parse configuration options file" ) != -1 )
+
+
 def TwoFilesExeTest():
 	RunBuildSystem( "two_files_exe" )
 	RunExecutable( "two_files_exe", "two_files_exe" )
@@ -821,6 +845,8 @@ def main():
 		EmptyPackageTest,
 		BuildFileLoggingTest,
 		ConfigurationOptions0Test,
+		ConfigurationOptions1Test,
+		ConfigurationOptions2Test,
 		TwoFilesExeTest,
 		TwoTargetsTest,
 		SourcesInDirectoriesTest,
