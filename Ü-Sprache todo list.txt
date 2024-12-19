@@ -80,11 +80,6 @@ Standart library:
 *) Priority heap support
 *) Binary search routines
 *) Detachable thread
-*) Consider implementing allocation functionality in a separate shared library - in order to ensure that all
-	allocations and deallocations in Ü code are performed with the same allocator. This is especially necessary for
-	the build system, where build system executable and build script shared libraries may be built with different
-	versions of compiler runtime (MSVC, MinGW) and thus depend of different allocator implementations within these
-	runtimes
 
 Compiler:
 *) Fix possible overflows in numeric literals
