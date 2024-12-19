@@ -1,0 +1,30 @@
+import "/assert.u"
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	auto option_a = build_system_interface.GetConfigurationOption( "option_a" );
+	assert( option_a.try_deref() == "khe-khe" );
+	build_system_interface.LogInfo( "Option A: " + option_a.try_deref() );
+
+	auto option_b = build_system_interface.GetConfigurationOption( "OptioN B-" );
+	assert( option_b.try_deref() == "Really option" );
+	build_system_interface.LogInfo( "Option B: " + option_b.try_deref() );
+
+	auto some_num = build_system_interface.GetConfigurationOption( "SomeNum" );
+	assert( some_num.try_deref() == "1234" );
+	build_system_interface.LogInfo( "SomeNum: " + some_num.try_deref() );
+
+	auto unknown_option= build_system_interface.GetConfigurationOption( "UnknownOption" );
+	assert( unknown_option.empty() );
+
+	var BK::BuildTarget mut target
+	{
+		.target_type = BK::BuildTargetType::Executable,
+		// Make target name dependent on configuration options.
+		.name= "configuration_options_" + some_num.try_deref(),
+		.source_files= ust::make_array</ust::string8/>( "main.u" ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}

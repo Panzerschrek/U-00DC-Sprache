@@ -28,6 +28,7 @@ auto constexpr g_help_message=
 	"  -v                                 - be verbose\n" +
 	"  -h, --help                         - show this message\n" +
 	"  --build-configuration              - select build configuration. Available configuarations are \"debug\", \"release\". Default configuration is \"release\".\n" +
+	"  --configuration-options            - provide path to configuration options JSON file\n" +
 	"  --target-triple                    - select target triple in form of architecture-vendor-operating_system or architecture-vendor-operating_system-environment.\n" +
 	"  --project-directory <path>         - path to the root package directory. Default is current directory.\n" +
 	"  --build-directory <path>           - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
@@ -99,6 +100,16 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 				return ust::null_optional;
 			}
 			res.build_configuration= conf.try_deref();
+			i+= 2s;
+		}
+		else if( args[i] == "--configuration-options" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--configuration-options\".\n" );
+				return ust::null_optional;
+			}
+			res.configuration_options_file= args[i + 1s];
 			i+= 2s;
 		}
 		else if( args[i] == "--target-triple" )

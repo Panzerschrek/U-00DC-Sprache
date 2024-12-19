@@ -82,6 +82,13 @@ class BuildSystemInterface interface
 	fn virtual pure LogVerbose( mut this, ust::string_view8 message );
 	fn virtual pure LogInfo( mut this, ust::string_view8 message );
 	fn virtual pure LogError( mut this, ust::string_view8 message );
+
+	// Get value for given configuration option.
+	// Options are specified via a configuration file provided as build system command line option.
+	// Returns empty ust::optional if option with given name wasn't specified.
+	// Both option names and values are case-sensetive.
+	// Non-string options are not supported.
+	fn virtual pure GetConfigurationOption( this, ust::string_view8 name ) : ust::optional</ust::string8/>;
 }
 
 enum BuildConfiguration
