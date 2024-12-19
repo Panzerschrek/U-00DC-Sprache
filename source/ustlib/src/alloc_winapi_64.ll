@@ -2,10 +2,10 @@
 ; WinAPI functions
 ;
 
-declare i8* @GetProcessHeap()
-declare i8* @HeapAlloc( i8*, i32, i64 )
-declare i8* @HeapReAlloc( i8*, i32, i8*, i64 )
-declare i32 @HeapFree( i8*, i32, i8* )
+declare dllimport i8* @GetProcessHeap()
+declare dllimport i8* @HeapAlloc( i8*, i32, i64 )
+declare dllimport i8* @HeapReAlloc( i8*, i32, i8*, i64 )
+declare dllimport i32 @HeapFree( i8*, i32, i8* )
 
 ; Impl functions
 
