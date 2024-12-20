@@ -884,8 +884,16 @@ fn CreatePackageTargetBuildGraphNodes(
 			foreach( &external_library : target.all_external_libraries_to_link )
 			{
 				node.command_line.push_back( "-Wl," + external_library );
-				// TODO - avoid doing this for non-absolute paths, like "kernel32".
-				node.input_files.push_back( external_library );
+				if( IsAbsolutePath( external_library ) )
+				{
+					node.input_files.push_back( external_library );
+				}
+				else
+				{
+					// Assume that non-absolute external libraries are system libraries loaded from known system directories.
+					// Examples are "pthread", "kernel32".
+					// In such case we don't need to track changes in these files - assume they are immutable and thus no needed to be listed in input files.
+				}
 			}
 		},
 		BuildTargetType::Library -> {}, // No need to link Ü libraries against external libraries.
