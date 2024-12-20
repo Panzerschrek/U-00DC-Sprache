@@ -56,6 +56,9 @@ struct BuildTarget
 
 	// List of dependencies of this build target, which are used internally.
 	ust::vector</ BuildTargetFullName /> private_dependencies;
+
+	// Contains names or paths of external libraries to link, like system libraries or libraries built outside Ü built system.
+	ust::vector</ust::string8/> external_libraries;
 }
 
 struct PackageInfo

@@ -389,6 +389,11 @@ def ObjectFileTargetTest():
 		assert( stdout.find( "InternalFunction" ) == -1 )
 
 
+def ExternalLibraryLinking0Test():
+	RunBuildSystem( "external_library_linking0" )
+	RunExecutable( "external_library_linking0", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -882,6 +887,7 @@ def main():
 		SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest,
 		SharedLibraryUsedInTwoExecutablesTest,
 		ObjectFileTargetTest,
+		ExternalLibraryLinking0Test,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,

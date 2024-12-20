@@ -170,6 +170,10 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		out_build_target.private_dependencies= build_target.private_dependencies;
 		NormalizeList(out_build_target.private_dependencies);
 
+		// Process external libraries.
+		out_build_target.external_libraries= build_target.external_libraries;
+		NormalizeList( out_build_target.external_libraries );
+
 		out_package_info.build_targets.insert( target_name, move( out_build_target ) );
 	}
 

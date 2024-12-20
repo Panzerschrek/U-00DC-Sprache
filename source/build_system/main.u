@@ -875,6 +875,23 @@ fn CreatePackageTargetBuildGraphNodes(
 		BuildTargetType::ObjectFile -> {}, // No need to link object files against shared libraries.
 	}
 
+	// Link external library dependencies.
+	switch( target.target_type )
+	{
+		BuildTargetType::Executable,
+		BuildTargetType::SharedLibrary ->
+		{
+			foreach( &external_library : target.external_libraries )
+			{
+				node.command_line.push_back( "-Wl," + external_library );
+				// TODO - avoid doing this for non-absolute paths, like "kernel32".
+				node.input_files.push_back( external_library );
+			}
+		},
+		BuildTargetType::Library -> {}, // No need to link Ü libraries against external libraries.
+		BuildTargetType::ObjectFile -> {}, // No need to link object files against external libraries.
+	}
+
 	node.command_line.push_back( "-o" );
 	node.command_line.push_back( result_target_file_path );
 
