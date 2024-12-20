@@ -1,0 +1,8 @@
+fn nomangle main() : i32
+{
+	halt if( SharedLibFunc( 7u, 15u ) != 7u * 7u + 15u * 15u * 2u );
+	halt if( SharedLibFunc( 34u, 10u ) != 34u * 7u + 10u * 10u * 1u );
+	return 0;
+}
+
+fn nomangle SharedLibFunc( u32 x, u32 y ) : u32;

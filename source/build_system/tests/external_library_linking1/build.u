@@ -1,0 +1,17 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	auto libs_dir = build_system_interface.GetConfigurationOption( "tests_libs_directory" );
+	var ust::string8 library = libs_dir.try_deref() + "/" + "libBuildSystemTestsSharedLibrary.so";
+
+	var BK::BuildTarget mut exe
+	{
+		.target_type = BK::BuildTargetType::Executable,
+		.name= "exe",
+		.source_files= ust::make_array</ust::string8/>( "main.u" ),
+		.external_libraries= ust::make_array</ust::string8/>(library)
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(exe) ) };
+}

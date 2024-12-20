@@ -394,6 +394,19 @@ def ExternalLibraryLinking0Test():
 	RunExecutable( "external_library_linking0", "exe" )
 
 
+def ExternalLibraryLinking1Test():
+	test_dir = "external_library_linking1"
+	RunBuildSystem( test_dir )
+
+	external_shared_lib_dir = os.path.normpath( g_tests_build_root_path + "/.." )
+	# Slightly hacky way to find necessary shared library upon launch - set LD_LIBRARY_PATH.
+	env_tweaked = os.environ
+	if platform.system() == "Linux":
+		env_tweaked["LD_LIBRARY_PATH"]= external_shared_lib_dir
+	# Set also current directory - Windows searches for dll's in current directory.
+	subprocess.run( [ os.path.join( g_tests_build_root_path, test_dir, "release", "exe" ) ], env= env_tweaked, cwd = external_shared_lib_dir )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -888,6 +901,7 @@ def main():
 		SharedLibraryUsedInTwoExecutablesTest,
 		ObjectFileTargetTest,
 		ExternalLibraryLinking0Test,
+		ExternalLibraryLinking1Test,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
