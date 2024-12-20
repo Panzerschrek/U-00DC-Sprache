@@ -85,6 +85,15 @@ install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
 # So, if no LLD is linked, disable build system tests.
 if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 
+	# Create a couple of test libraries - to test linking against them
+	add_library( BuildSystemTestsStaticLibrary test_static_lib/test_static_lib.cpp )
+	add_library( BuildSystemTestsSharedLibrary SHARED test_shared_lib/test_shared_lib.cpp )
+
+	# Generate a configuration options JSON file for tests.
+	set( CONFIGURATION_OPTIONS_FILE "${CMAKE_CURRENT_BINARY_DIR}/tests/tests_configuration_options.json" )
+	set( CONFIGURATION_OPTIONS_FILE_CONTENTS "{\n\t\"tests_libs_directory\" : \"${CMAKE_CURRENT_BINARY_DIR}\"\n}\n" )
+	file( GENERATE OUTPUT ${CONFIGURATION_OPTIONS_FILE} CONTENT ${CONFIGURATION_OPTIONS_FILE_CONTENTS} )
+
 	# Run tests for build system.
 	# Do this if the build system executable or some of tests were changed.
 	# Use combination of a custom command and custom target in order to achieve this.
@@ -134,12 +143,15 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 			--compiler-executable ${CMAKE_CURRENT_BINARY_DIR}/../compiler0/Compiler # For now hardcode here path to the compiler executable build
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib
+			--configuration-options ${CONFIGURATION_OPTIONS_FILE}
 			--mangling-scheme ${MANGLING_SCHEME}
 			${SYSROOT_OPTION}
 		COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE} # A hacky step to produce a marker file for this command.
 		DEPENDS BuildSystem
 		DEPENDS ${TESTS_FILES}
 		DEPENDS ${USTLIB_FILES} # Build scripts and sources may import "ustlib". So, make sure we re-run tests if something in ustlib changes.
+		DEPENDS BuildSystemTestsStaticLibrary
+		DEPENDS BuildSystemTestsSharedLibrary
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		)
 

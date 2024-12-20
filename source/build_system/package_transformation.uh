@@ -39,6 +39,13 @@ struct PackageInfoTransformed
 		// This includes also shared library dependencies of private library dependencies.
 		// It's sorted and deduplicated.
 		ust::vector</BuildTargetFullName/> shared_library_dependencies_to_link;
+
+		// External libraries list - sorted and deduplicated.
+		ust::vector</ust::string8/> external_libraries;
+
+		// List of all external libraries to link, including libraries of dependencies (except shared library dependencies).
+		// This list is sorted and deduplicated.
+		ust::vector</ust::string8/> all_external_libraries_to_link;
 	}
 
 	ust::unordered_map</ust::string8, BuildTarget/> build_targets;

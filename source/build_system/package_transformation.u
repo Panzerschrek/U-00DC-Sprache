@@ -170,6 +170,10 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		out_build_target.private_dependencies= build_target.private_dependencies;
 		NormalizeList(out_build_target.private_dependencies);
 
+		// Process external libraries.
+		out_build_target.external_libraries= build_target.external_libraries;
+		NormalizeList( out_build_target.external_libraries );
+
 		out_package_info.build_targets.insert( target_name, move( out_build_target ) );
 	}
 
@@ -228,6 +232,13 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 	{
 		auto mut dependencies= GetAllTargetSharedLibraryDependenciesToLink( out_package_info, build_target.name );
 		out_package_info.build_targets[ build_target.name ].shared_library_dependencies_to_link= move(dependencies);
+	}
+
+	// Perform external libraries to link retrieval.
+	foreach( &build_target : package_info.build_targets )
+	{
+		auto mut libraries= GetAllTargetExternalLibrariesToLink( out_package_info, build_target.name );
+		out_package_info.build_targets[ build_target.name ].all_external_libraries_to_link= move(libraries);
 	}
 
 	if( !ok )
@@ -544,6 +555,47 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 		},
 		BuildTargetType::ObjectFile -> {}, // This should be checked before.
 	}
+}
+
+fn GetAllTargetExternalLibrariesToLink(
+	PackageInfoTransformed& package_info,
+	ust::string8& build_target_name ) : ust::vector</ust::string8/>
+{
+	// Possible dependency loops and target names validity should be checked before.
+
+	var ust::vector</ust::string8/> mut result;
+	GetAllTargetExternalLibrariesToLink_r( package_info, build_target_name, result );
+	NormalizeList(result);
+
+	return result;
+}
+
+fn GetAllTargetExternalLibrariesToLink_r(
+	PackageInfoTransformed& package_info,
+	ust::string8& build_target_name,
+	ust::vector</ust::string8/> &mut result )
+{
+	// Possible dependency loops and target names validity should be checked before.
+
+	var PackageInfoTransformed::BuildTarget& build_target= package_info.build_targets[ build_target_name ];
+
+	foreach( &external_library : build_target.external_libraries )
+	{
+		result.push_back( external_library );
+	}
+
+	// Extract external libraries of public and private library dependencies.
+	foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
+	{
+		if( package_info.build_targets[ dependency.name ].target_type == BuildTargetType::SharedLibrary )
+		{
+			// Do not extract external libraries of dependencies of shared library.
+			// Assume that external libraries are used inside a shared library only privately.
+			continue;
+		}
+		GetAllTargetExternalLibrariesToLink_r( package_info, dependency.name, result );
+	}
+
 }
 
 template</type T/>

@@ -3,6 +3,19 @@ import "path.uh"
 namespace BK
 {
 
+fn IsAbsolutePath( ust::string_view8 path ) : bool
+{
+	if( ust::string_view8( compiler::target::os ) == "windows" )
+	{
+		// TODO - handle also universal paths.
+		return path.size() >= 2s && path[0s] >= "A"c8 && path[0s] <= "Z"c8 && path[1s] == ":"c8;
+	}
+	else
+	{
+		return !path.empty() && path.front() == "/"c8;
+	}
+}
+
 fn SplitPathIntoComponents( ust::string_view8 path )
 	: ust::vector</ust::string_view8/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
 {

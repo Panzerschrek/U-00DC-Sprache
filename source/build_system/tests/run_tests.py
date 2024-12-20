@@ -13,6 +13,7 @@ g_build_system_executable = ""
 g_compiler_executable=  ""
 g_build_system_imports_path = ""
 g_ustlib_path = ""
+g_configuration_options_file_path = ""
 g_mangling_scheme = "itaniumabi"
 g_sysroot = None
 
@@ -20,7 +21,7 @@ g_sysroot = None
 def RunBuildSystemWithExplicitConfiguration( project_subdirectory, configuration ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
-	build_system_args= [ g_build_system_executable, "build", "-q", "--build-configuration", configuration, "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+	build_system_args= [ g_build_system_executable, "build", "-q", "--build-configuration", configuration, "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--configuration-options", g_configuration_options_file_path, "--project-directory", project_root, "--build-directory", build_root ]
 
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
@@ -386,6 +387,29 @@ def ObjectFileTargetTest():
 		assert( stdout.find( "FloatDiv" ) != -1 )
 		# Should not export internal functions
 		assert( stdout.find( "InternalFunction" ) == -1 )
+
+
+def ExternalLibraryLinking0Test():
+	RunBuildSystem( "external_library_linking0" )
+	RunExecutable( "external_library_linking0", "exe" )
+
+
+def ExternalLibraryLinking1Test():
+	test_dir = "external_library_linking1"
+	RunBuildSystem( test_dir )
+
+	external_shared_lib_dir = os.path.normpath( g_tests_build_root_path + "/.." )
+	# Slightly hacky way to find necessary shared library upon launch - set LD_LIBRARY_PATH.
+	env_tweaked = os.environ
+	if platform.system() == "Linux":
+		env_tweaked["LD_LIBRARY_PATH"]= external_shared_lib_dir
+	# Set also current directory - Windows searches for dll's in current directory.
+	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_dir, "release", "exe" ) ], env= env_tweaked, cwd = external_shared_lib_dir )
+
+
+def ExternalLibraryLinking2Test():
+	RunBuildSystem( "external_library_linking2" )
+	RunExecutable( "external_library_linking2", "exe" )
 
 
 def MissingBuildFileTest():
@@ -808,6 +832,7 @@ def main():
 	parser.add_argument( "--compiler-executable", help= "path to compiler executable", type=str, required= True )
 	parser.add_argument( "--build-system-imports-path", help= "path to build system imports", type=str, required= True )
 	parser.add_argument( "--ustlib-path", help= "path to ustlib", type=str, required= True )
+	parser.add_argument( "--configuration-options-file-path", help= "path to configuration options JSON file", type=str, required= True )
 	parser.add_argument( "--mangling-scheme", help= "mangling scheme - msvc or intaniumabi", type=str, default= "itaniumabi" )
 	parser.add_argument( "--sysroot", help= "provide sysroot for the compiler", type=str, default= None )
 
@@ -830,6 +855,9 @@ def main():
 
 	global g_ustlib_path
 	g_ustlib_path= args.ustlib_path
+
+	global g_configuration_options_file_path
+	g_configuration_options_file_path= args.configuration_options_file_path
 
 	global g_mangling_scheme
 	g_mangling_scheme= args.mangling_scheme
@@ -877,6 +905,9 @@ def main():
 		SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest,
 		SharedLibraryUsedInTwoExecutablesTest,
 		ObjectFileTargetTest,
+		ExternalLibraryLinking0Test,
+		ExternalLibraryLinking1Test,
+		ExternalLibraryLinking2Test,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,

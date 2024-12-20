@@ -4,6 +4,8 @@ import "/vector.u"
 namespace BK
 {
 
+fn IsAbsolutePath( ust::string_view8 path ) : bool;
+
 // Split into components - for each directory and (possible) file name at end.
 // Preserves "." and ".." as components.
 // Doesn't preserve initial "/" as separate component, so result for "foo/bar" and "/foo/bar" is the same.

@@ -1,0 +1,28 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	auto libs_dir = build_system_interface.GetConfigurationOption( "tests_libs_directory" );
+
+	var ust::string_view8 mut library_name;
+	var BK::TargetTriple target_triple = build_system_interface.GetTargetTriple();
+	if( target_triple.operating_system == "windows" && target_triple.environment == "msvc" )
+	{
+		library_name = "BuildSystemTestsStaticLibrary.lib";
+	}
+	else
+	{
+		library_name = "libBuildSystemTestsStaticLibrary.a";
+	}
+	var ust::string8 library = libs_dir.try_deref() + "/" + library_name;
+
+	var BK::BuildTarget mut exe
+	{
+		.target_type = BK::BuildTargetType::Executable,
+		.name= "exe",
+		.source_files= ust::make_array</ust::string8/>( "main.u" ),
+		.external_libraries= ust::make_array</ust::string8/>(library)
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(exe) ) };
+}
