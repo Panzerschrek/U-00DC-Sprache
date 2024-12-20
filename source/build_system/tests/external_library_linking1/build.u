@@ -5,9 +5,17 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	auto libs_dir = build_system_interface.GetConfigurationOption( "tests_libs_directory" );
 
 	var ust::string_view8 mut library_name;
-	if( build_system_interface.GetTargetTriple().operating_system == "windows" )
+	var BK::TargetTriple target_triple = build_system_interface.GetTargetTriple();
+	if( target_triple.operating_system == "windows" )
 	{
-		library_name = "BuildSystemTestsSharedLibrary.lib"; // Interface static library for shared library.
+		if( target_triple.environment == "msvc" )
+		{
+			library_name = "BuildSystemTestsSharedLibrary.lib"; // Interface static library for shared library.
+		}
+		else
+		{
+			library_name = "libBuildSystemTestsSharedLibrary.dll.a"; // Interface static library for shared library - MinGW version.
+		}
 	}
 	else
 	{
