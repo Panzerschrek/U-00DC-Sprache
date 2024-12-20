@@ -15,6 +15,12 @@ else()
 	set( SYSROOT_OPTION "" )
 endif()
 
+if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
+	set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
+else()
+	set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
+endif()
+
 set( COMPILER_EXE_RESULT_TEST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/compiler_exe_result_test.u )
 set( COMPILER_EXE_RESULT_TEST_FILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/compiler_exe_result_test${CURRENT_COMPILER_GENERATION}.exe )
 add_custom_command(
@@ -26,7 +32,9 @@ add_custom_command(
 		-o ${COMPILER_EXE_RESULT_TEST_FILE_OUT}
 		-filetype=exe
 		${SPRACHE_COMPILER_PIC_OPTIONS}
+		${SPRACHE_COMPILER_OPT_OPTIONS}
 		--verify-module
+		--internalize
 		${SYSROOT_OPTION}
 	)
 
