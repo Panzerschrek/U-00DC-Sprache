@@ -85,6 +85,10 @@ install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
 # So, if no LLD is linked, disable build system tests.
 if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 
+	# Create a couple of test libraries - to test linking against them
+	add_library( BuildSystemTestsStaticLibrary test_static_lib/test_static_lib.cpp )
+	add_library( BuildSystemTestsSharedLibrary SHARED test_shared_lib/test_shared_lib.cpp )
+
 	# Run tests for build system.
 	# Do this if the build system executable or some of tests were changed.
 	# Use combination of a custom command and custom target in order to achieve this.
