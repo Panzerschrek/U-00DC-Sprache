@@ -1,0 +1,9 @@
+import "/lib/lib.uh"
+
+fn Foo()
+{
+	halt if( StaticLibFunc( 7u, 15u ) != 7u * 7u + 3u * 15u );
+	halt if( StaticLibFunc( 34u, 10u ) != 34u * 34u + 3u * 10u );
+}
+
+fn nomangle StaticLibFunc( u32 x, u32 y ) : u32;

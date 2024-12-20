@@ -407,6 +407,11 @@ def ExternalLibraryLinking1Test():
 	subprocess.run( [ os.path.join( g_tests_build_root_path, test_dir, "release", "exe" ) ], env= env_tweaked, cwd = external_shared_lib_dir )
 
 
+def ExternalLibraryLinking2Test():
+	RunBuildSystem( "external_library_linking2" )
+	RunExecutable( "external_library_linking2", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -902,6 +907,7 @@ def main():
 		ObjectFileTargetTest,
 		ExternalLibraryLinking0Test,
 		ExternalLibraryLinking1Test,
+		ExternalLibraryLinking2Test,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,

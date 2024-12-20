@@ -1,0 +1,26 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	auto libs_dir = build_system_interface.GetConfigurationOption( "tests_libs_directory" );
+	var ust::string8 external_library = libs_dir.try_deref() + "/" + "libBuildSystemTestsStaticLibrary.a";
+
+	var BK::BuildTarget mut exe
+	{
+		.name= "exe",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
+		.private_dependencies= ust::make_array</BK::BuildTargetFullName/>( BK::BuildTargetFullName{ .name= "lib" } ),
+	};
+
+	var BK::BuildTarget mut lib
+	{
+		.name= "lib",
+		.target_type = BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ust::string8/>( "lib/src/lib.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "lib/imports" ),
+		.external_libraries= ust::make_array</ust::string8/>( external_library ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(exe), move(lib) ) };
+}
