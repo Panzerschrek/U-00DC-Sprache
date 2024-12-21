@@ -1,4 +1,5 @@
 import "/string.u"
+import "/variant.u"
 import "/vector.u"
 
 namespace BK
@@ -61,10 +62,38 @@ struct BuildTarget
 	ust::vector</ust::string8/> external_libraries;
 }
 
+struct PackageDependency
+{
+	// Dependency on a subpackage located in directory "path" withing current package.
+	struct RelativeName
+	{
+		ust::string8 path;
+	}
+
+	// A package from global packages directory, with version specified.
+	struct GlobalVersionedName
+	{
+		ust::string8 package_name;
+		ust::string8 version; // TODO - use other version type?
+	}
+
+	enum RequiredSystem
+	{
+		Target,
+		Host,
+		Both,
+	}
+
+	ust::variant</ tup[ RelativeName, GlobalVersionedName ] /> name;
+	RequiredSystem required_system= RequiredSystem::Target;
+}
+
 struct PackageInfo
 {
 	// Build targets of a package. Order is irrelevant.
 	ust::vector</BuildTarget/> build_targets;
+
+	ust::vector</PackageDependency/> package_dependencies;
 }
 
 // Signature of a function that should return package info.
