@@ -254,6 +254,9 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 			add_typeinfo_field( "coroutine_return_type", coroutine_type_description->return_type );
 			add_bool_field( "coroutine_return_value_is_reference", coroutine_type_description->return_value_type != ValueType::Value );
 			add_bool_field( "coroutine_return_value_is_mutable"  , coroutine_type_description->return_value_type == ValueType::ReferenceMut );
+
+			add_reference_notation_field( "coroutine_return_references", GetReturnReferencesConstant( coroutine_type_description->return_references ) );
+			add_reference_notation_field( "coroutine_return_inner_references", GetReturnInnerReferencesConstant( coroutine_type_description->return_inner_references ) );
 		}
 		else
 			add_bool_field( "is_coroutine", false );

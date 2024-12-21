@@ -415,6 +415,9 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 			ADD_TYPEINFO_FIELD( "coroutine_return_type", coroutine_type_description.return_type )
 			ADD_BOOL_FIELD( "coroutine_return_value_is_reference", coroutine_type_description.return_value_type != ValueType::Value )
 			ADD_BOOL_FIELD( "coroutine_return_value_is_mutable"  , coroutine_type_description.return_value_type == ValueType::ReferenceMut )
+
+			ADD_REFERENCE_NOTATION_FIELD( "coroutine_return_references", GetReturnReferencesConstant( coroutine_type_description.return_references ) )
+			ADD_REFERENCE_NOTATION_FIELD( "coroutine_return_inner_references", GetReturnInnerReferencesConstant( coroutine_type_description.return_inner_references ) )
 		}
 		else
 		{
