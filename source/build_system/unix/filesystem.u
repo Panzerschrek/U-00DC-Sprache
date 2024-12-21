@@ -59,8 +59,8 @@ fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
 	var i32 errno = BKGetErrno();
 	if( errno == EEXIST )
 	{
-		// TODO - handle case where the path specified already exists but isn't a directory.
-		return true;
+		// If given path already exists, check if it's a directory and not a file, symlink or something else.
+		return unsafe( BKIsDirectory(path_null_terminated.data() ) );
 	}
 
 	return false;

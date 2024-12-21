@@ -22,3 +22,13 @@ extern "C" int64_t BKGetFileSize( const int32_t fd )
 
 	return s.st_size;
 }
+
+extern "C" bool BKIsDirectory(  const char* const file_name_null_terminated )
+{
+	struct stat s{};
+	const auto res= ::lstat( file_name_null_terminated, &s );
+	if( res != 0 )
+		return false;
+
+	return (s.st_mode & S_IFMT) == S_IFDIR;
+}
