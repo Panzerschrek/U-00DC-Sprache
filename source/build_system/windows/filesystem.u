@@ -1,5 +1,6 @@
 import "/string_conversions.u"
 import "../filesystem.uh"
+import "../path.uh"
 import "wide_string.uh"
 import "windows.uh"
 
@@ -20,26 +21,43 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
 
 fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 {
-	// TODO - handle case with composed path name, like some/long/path
+	var ust::string8 path_absolute= MakePathAbsolute( path );
 
-	var WideString mut path_null_terminated= UTF8ToWideString( path );
+	// Optimistically assume that we need to create only one directory.
+	if( EnsureSingleDirectoryExists( path_absolute ) )
+	{
+		return true;
+	}
+
+	// Failed to create it. Try to create all directories in given path.
+
+	auto components= SplitPathIntoComponents( path_absolute );
+
+	var ust::string8 mut path_iterative= components.front();
+	path_iterative+= "/";
+
+	foreach( &component : components.range().subrange_start(1s) )
+	{
+		path_iterative+= component;
+		path_iterative+= "/";
+		if( !EnsureSingleDirectoryExists( path_iterative ) )
+		{
+			logger.LogInfo( "Failed to create directory \"" + ( path_iterative + "\": " ) );
+			return false;
+		}
+	}
+
+	return true;
+}
+
+fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
+{
+	var WideString mut path_null_terminated= UTF8ToWideString( path_absolute );
 	path_null_terminated.push_back( WCHAR(0) );
 
 	var i32 res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), ust::nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
-	if( res == 1 )
-	{
-		return true;
-	}
-
-	var DWORD err = unsafe( GetLastError() );
-	if( err == DWORD(ERROR_ALREADY_EXISTS) )
-	{
-		return true;
-	}
-
-	logger.LogError( "Failed to create directory \"" + ( path + ( "\": " + ust::to_string8(err) ) ) );
-
-	return false;
+	// TODO - what if path exists but it's a file?
+	return res == 1 || unsafe( GetLastError() ) == DWORD(ERROR_ALREADY_EXISTS);
 }
 
 fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
