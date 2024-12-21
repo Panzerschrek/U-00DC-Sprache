@@ -326,9 +326,9 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 			// Sort template args by name in order to obtain some stable order.
 			// This order should not be the same as order in the template itself, it should only be deterministic.
-			ust::sort(
-				named_template_args.range(),
-				lambda( NamedTemplateArg& l, NamedTemplateArg& r ) : bool { return l[0] < r[0]; } );
+			ust::sort_by_key(
+				named_template_args,
+				lambda( NamedTemplateArg& a ) : ust::string8& { return a[0]; } );
 
 			template_args.append(
 				named_template_args.iter().map(

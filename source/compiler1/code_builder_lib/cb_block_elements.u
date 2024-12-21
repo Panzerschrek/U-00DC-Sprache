@@ -1972,15 +1972,11 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		// Sorting is needed in order to simplify ranges overlapping and gaps searching.
 		if( is_signed )
 		{
-			ust::sort(
-				all_ranges.range(),
-				lambda( SwitchCaseRange& l, SwitchCaseRange& r ) : bool { return i64(l.low) < i64(r.low); } );
+			ust::sort_by_key( all_ranges, lambda( SwitchCaseRange& r ) : i64 { return i64(r.low); } );
 		}
 		else
 		{
-			ust::sort(
-				all_ranges.range(),
-				lambda( SwitchCaseRange& l, SwitchCaseRange& r ) : bool { return l.low < r.low; } );
+			ust::sort_by_key( all_ranges, lambda( SwitchCaseRange& r ) : u64 { return r.low; } );
 		}
 
 		// Check for overlaps and gaps between ranges.

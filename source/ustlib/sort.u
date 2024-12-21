@@ -31,6 +31,24 @@ fn sort( random_access_range</T, true/> range, Compare& comp )
 	unsafe( sort_impl::do_sort( range.data(), range.data() + range.size(), comp ) );
 }
 
+// sort_by_key overloading for containers
+template</type T, type KeyProvider/>
+fn sort_by_key( T &mut container, KeyProvider mut key_provider )
+{
+	sort_by_key( container.range(), move(key_provider) );
+}
+
+// Sort by key obtained via given key provider function.
+// This function accepts a single value and should return a value or a reference with operator <=> defined for its type.
+template</type T, type KeyProvider/>
+fn sort_by_key( random_access_range</T, true/> range, KeyProvider mut key_provider )
+{
+	unsafe( sort_impl::do_sort(
+		range.data(),
+		range.data() + range.size(),
+		sort_impl::compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } ) );
+}
+
 namespace sort_impl
 {
 
@@ -40,6 +58,17 @@ struct default_compare
 	op()( this, T& a, T& b ) : bool
 	{
 		return a < b;
+	}
+}
+
+template</type T, type KeyProvider/>
+struct compare_by_key
+{
+	KeyProvider key_provider;
+	op()( this, T& a, T& b ) : bool
+	{
+		// Compare here whatever given function returns.
+		return key_provider(a) < key_provider(b);
 	}
 }
 
