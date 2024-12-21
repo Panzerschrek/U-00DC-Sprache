@@ -1,5 +1,6 @@
 import "/string_conversions.u"
 import "../filesystem.uh"
+import "../path.uh"
 import "errno.uh"
 import "stat.uh"
 
@@ -19,9 +20,34 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
 
 fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 {
-	// TODO - handle case with composed path name, like some/long/path
+	var ust::string8 path_absolute= MakePathAbsolute( path );
 
-	var ust::string8 mut path_null_terminated= path;
+	// Optimistically assume that we need to create only one directory.
+	if( EnsureSingleDirectoryExists( path_absolute ) )
+	{
+		return true;
+	}
+
+	// Failed to create it. Try to create all directories in given path.
+
+	var ust::string8 mut path_iterative;
+	foreach( &component : SplitPathIntoComponents( path_absolute ) )
+	{
+		path_iterative+= "/";
+		path_iterative+= component;
+		if( !EnsureSingleDirectoryExists( path_iterative ) )
+		{
+			logger.LogInfo( "Failed to create directory \"" + ( path_iterative + "\": " ) );
+			return false;
+		}
+	}
+
+	return true;
+}
+
+fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
+{
+	var ust::string8 mut path_null_terminated= path_absolute;
 	path_null_terminated+= "\0";
 
 	var i32 res= unsafe( ::mkdir( path_null_terminated.data(), 0o755u ) );
@@ -33,11 +59,10 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 	var i32 errno = BKGetErrno();
 	if( errno == EEXIST )
 	{
-		// TODO - handle case where the path specified already exists but isn't a directory.
-		return true;
+		// If given path already exists, check if it's a directory and not a file, symlink or something else.
+		return unsafe( BKIsDirectory(path_null_terminated.data() ) );
 	}
 
-	logger.LogError( "Failed to create directory \"" + ( path + ( "\": " + ust::to_string8(errno) ) ) );
 	return false;
 }
 

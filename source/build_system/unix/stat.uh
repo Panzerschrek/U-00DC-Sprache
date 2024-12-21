@@ -7,3 +7,6 @@ fn nomangle BKGetFileModificationTimeImpl( $(char8) file_name_null_terminated ) 
 // This is a wrapper to calling "fstat".
 // We can't call it from Ü, since "struct stat" layout is platform-dependent.
 fn nomangle BKGetFileSize( i32 fd ) unsafe : i64;
+
+// Check if given path exists and is a directory.
+fn nomangle BKIsDirectory( $(char8) file_name_null_terminated ) unsafe : bool;

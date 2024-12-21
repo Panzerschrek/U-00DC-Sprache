@@ -153,8 +153,6 @@ CPP Header converter:
 *) Handle some subset of C++ headers
 
 Ü Build system:
-*) Improve build directories creation code - create all directories within given path, handle cases when a directory
-	already exists, handle case where a non-directory object (like a file) with given name exists
 *) Build graph - support for a command execution of some internal build system actions (like file/directory creation)
 *) Custom target type
 *) Support generated sources

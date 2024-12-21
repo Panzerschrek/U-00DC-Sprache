@@ -112,12 +112,6 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			? ( package_source_directory + "/build" )
 			: NormalizePath( MakePathAbsolute( options.build_directory ) ) );
 
-	if( !EnsureDirectoryExists( bsi.logger_, package_build_directory_base ) )
-	{
-		bsi.logger_.LogError( "Can't create build directory." );
-		return -1;
-	}
-
 	// Create, if necessary, subdirectory for target triple.
 	// Do it only if this target triple isn't equal to host triple.
 	var ust::string8 mut package_build_directory = package_build_directory_base;
@@ -125,16 +119,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	{
 		package_build_directory+= "/";
 		package_build_directory+= TargetTripleToString( bsi.target_triple_ );
-		if( !EnsureDirectoryExists( bsi.logger_, package_build_directory ) )
-		{
-			bsi.logger_.LogError( "Can't create build directory." );
-			return -1;
-		}
 	}
 
 	// Create a subdirectory for configuration specified.
 	package_build_directory+= "/";
 	package_build_directory+= BuildConfigurationToString( options.build_configuration );
+
 	if( !EnsureDirectoryExists( bsi.logger_, package_build_directory ) )
 	{
 		bsi.logger_.LogError( "Can't create build directory." );
