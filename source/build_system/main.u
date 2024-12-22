@@ -133,22 +133,19 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	bsi.logger_.LogVerbose( "Build project in \"" + root_package_source_directory + "\" using build directory \"" + root_package_build_directory + "\"" );
 
-	var ust::unordered_map</ust::string8, PackageInfo/> mut packages_map;
+	var ust::unordered_map</WorkspaceInfo::PackageAbsoluteName, PackageInfo/> mut packages_map;
 
-	var ust::vector</ust::string8/> mut packages_queue;
-	packages_queue.push_back(""); // Push root package.
+	var ust::vector</WorkspaceInfo::PackageAbsoluteName/> mut packages_queue;
+	packages_queue.push_back( WorkspaceInfo::PackageAbsoluteName{} ); // Push root package.
 
 	for( auto mut i= 0s; i < packages_queue.size(); ++i ) // Use index-based iterations, because this list is populated within the loop.
 	{
-		// TODO - use more complex type for package name.
-		var ust::string8 package_name= packages_queue[i];
+		var WorkspaceInfo::PackageAbsoluteName package_name= packages_queue[i];
 		if( packages_map.exists( package_name ) )
 		{
 			continue; // Already loaded this package.
 		}
 
-		var ust::string8 package_source_directort= root_package_source_directory + "/" + package_name;
-		var ust::string8 package_build_directory= root_package_build_directory + "/" + package_name;
 
 		// TODO - customize it based on package name?
 		auto constexpr entry_func_name = "GetPackageInfoImpl";
@@ -156,10 +153,10 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		auto shared_library_opt = BuildAndLoadPackageBuildScript(
 			bsi.logger_,
 			build_system_paths,
-			package_source_directort,
+			GetPackageSourceDirectory( root_package_source_directory, package_name ),
 			// For now use directory for build configuration specified.
 			// TODO - reuse build script shared libraries among configurations and target triples.
-			package_build_directory,
+			GetPackageBuildDirectory( root_package_build_directory, package_name ),
 			entry_func_name );
 		if( shared_library_opt.empty() )
 		{
@@ -185,29 +182,20 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		var ust::optional</PackageInfo/> mut package_info_opt= func_ptr( bsi );
 		if( package_info_opt.empty() )
 		{
-			bsi.logger_.LogError( "Failed to get package info for package \"" + package_name + "\"- build script returned empty optional." );
+			bsi.logger_.LogError( "Failed to get package info for package \"" + package_name.path + "\"- build script returned empty optional." );
 			return -1;
 		}
 
 		// Add dependencies to the queue.
 		foreach( &dependency : package_info_opt.try_deref().package_dependencies )
 		{
-			if_var( &relative_path : dependency.name.get</PackageRelativePath/>() )
+			auto mut dependency_package_absolute_name= ResolvePackageAbsoluteName( bsi.logger_, package_name, dependency.name );
+			if( dependency_package_absolute_name.empty() )
 			{
-				// TODO - process ".." properly.
-				var ust::string8 mut dependent_package_path;
-				if( !package_name.empty() )
-				{
-					dependent_package_path+= package_name;
-					dependent_package_path+= "/";
-				}
-				dependent_package_path+= relative_path.path;
-				packages_queue.push_back( dependent_package_path );
+				bsi.logger_.LogError( "Failed to find package dependency within package \"" + package_name.path + "\"!" );
+				return -1;
 			}
-			else
-			{
-				bsi.logger_.LogError( "Packages other than relative not supported yet!" );
-			}
+			packages_queue.push_back( dependency_package_absolute_name.try_take() );
 		}
 
 		packages_map.insert( package_name, package_info_opt.try_take() );
@@ -218,15 +206,15 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	var bool mut has_package_transformation_errors= false;
 	foreach( &pair : cast_imut(packages_map) )
 	{
-		var ust::string8& package_name= pair.key();
+		var WorkspaceInfo::PackageAbsoluteName& package_name= pair.key();
 
 		if( !TransformAndValidatePackageInfo(
 			bsi.logger_,
 			pair.value(),
-			WorkspaceInfo::PackageAbsoluteName{ .path= package_name },
+			package_name,
 			workspace ) )
 		{
-			bsi.logger_.LogError( "Package \"" + package_name + "\" is invald." );
+			bsi.logger_.LogError( "Package \"" + package_name.path + "\" is invald." );
 			has_package_transformation_errors= true;
 		}
 	}
@@ -261,7 +249,6 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	// Construct the build graph for the whole project.
 	var BuildGraph mut build_graph;
-
 
 	// Create directories for intermediate files for each build target.
 	foreach( &build_target_pair : workspace.build_targets )

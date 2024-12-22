@@ -172,16 +172,26 @@ fn TransformAndValidatePackageInfo(
 		// Process public dependencies.
 		foreach( &public_dependency : build_target.public_dependencies )
 		{
-			out_build_target.public_dependencies.push_back(
-				TransformDependencyName( package_absolute_name, public_dependency ) );
+			auto mut dependency_name= TransformDependencyName( logger, package_absolute_name, public_dependency );
+			if( dependency_name.empty() )
+			{
+				ok= false;
+				continue;
+			}
+			out_build_target.public_dependencies.push_back( dependency_name.try_take() );
 		}
 		NormalizeList(out_build_target.public_dependencies);
 
 		// Process private dependencies.
 		foreach( &private_dependency : build_target.private_dependencies )
 		{
-			out_build_target.private_dependencies.push_back(
-				TransformDependencyName( package_absolute_name, private_dependency ) );
+			auto mut dependency_name= TransformDependencyName( logger, package_absolute_name, private_dependency );
+			if( dependency_name.empty() )
+			{
+				ok= false;
+				continue;
+			}
+			out_build_target.private_dependencies.push_back( dependency_name.try_take() );
 		}
 		NormalizeList(out_build_target.private_dependencies);
 
@@ -268,6 +278,35 @@ fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut wor
 	}
 
 	return ok;
+}
+
+fn ResolvePackageAbsoluteName(
+	Logger &mut logger,
+	WorkspaceInfo::PackageAbsoluteName& parent_package_absolute_name,
+	PackageName& package_name ) : ust::optional</WorkspaceInfo::PackageAbsoluteName/>
+{
+	if_var( &relative_path : package_name.get</PackageRelativePath/>() )
+	{
+		if( relative_path.path.empty() )
+		{
+			return parent_package_absolute_name;
+		}
+
+		var ust::string8 mut path;
+		if( !parent_package_absolute_name.path.empty() )
+		{
+			path+= parent_package_absolute_name.path;
+			path+= "/";
+		}
+		path+= relative_path.path;
+
+		return WorkspaceInfo::PackageAbsoluteName{ .path= NormalizePath( path ) };
+	}
+	else
+	{
+		logger.LogError( "Non-relative package paths aren't supported yet!" );
+		return ust::null_optional;
+	}
 }
 
 fn TargetNameIsValid( ust::string_view8 name ) : bool
@@ -399,36 +438,21 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 }
 
 fn TransformDependencyName(
+	Logger& mut logger,
 	WorkspaceInfo::PackageAbsoluteName& package_absolute_name,
-	DependencyName& dependency_name ) : WorkspaceInfo::BuildTargetAbsoluteName
+	DependencyName& dependency_name ) : ust::optional</WorkspaceInfo::BuildTargetAbsoluteName/>
 {
-	if_var( &relative_path : dependency_name.package_name.get</PackageRelativePath/>() )
+	auto mut dependency_package_name= ResolvePackageAbsoluteName( logger, package_absolute_name, dependency_name.package_name );
+	if( dependency_package_name.empty() )
 	{
-		if( relative_path.path.empty() )
-		{
-			return WorkspaceInfo::BuildTargetAbsoluteName{ .package_name= package_absolute_name, .name= dependency_name.name };
-		}
-
-		var ust::string8 mut path;
-		if( !package_absolute_name.path.empty() )
-		{
-			path+= package_absolute_name.path;
-			path+= "/";
-		}
-		path+= relative_path.path;
-
-		return WorkspaceInfo::BuildTargetAbsoluteName
-		{
-			// TODO - process "..".
-			.package_name{ .path= NormalizePath( path ) },
-			.name= dependency_name.name
-		};
+		return ust::null_optional;
 	}
-	else
+
+	return WorkspaceInfo::BuildTargetAbsoluteName
 	{
-		// TODO - support global versioned dependencies.
-		halt;
-	}
+		.package_name= dependency_package_name.try_take(),
+		.name= dependency_name.name
+	};
 }
 
 // Returns true if dependency graph is valid.

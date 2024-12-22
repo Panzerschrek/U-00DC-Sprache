@@ -108,4 +108,11 @@ fn TransformAndValidatePackageInfo(
 // Returns false on error.
 fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool;
 
+// Given current package name and package name within it calculate result package absolute name.
+// Returns empty optional if can't do this.
+fn ResolvePackageAbsoluteName(
+	Logger &mut logger,
+	WorkspaceInfo::PackageAbsoluteName& parent_package_absolute_name,
+	PackageName& package_name ) : ust::optional</WorkspaceInfo::PackageAbsoluteName/>;
+
 } // namespace BK
