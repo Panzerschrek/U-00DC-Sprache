@@ -1,0 +1,6 @@
+import "/lib_b/lib_b.uh"
+
+fn LibBFunc( MyInt x ) : MyInt
+{
+	return x * x + 5 * x;
+}
