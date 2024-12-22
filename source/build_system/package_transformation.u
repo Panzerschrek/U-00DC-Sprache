@@ -205,12 +205,11 @@ fn TransformAndValidatePackageInfo(
 	// Check if package directories doesn't conflict with source/header directories.
 	foreach( &dependency : package_info.package_dependencies )
 	{
-		if_var( &relative_path : dependency.name.get</PackageRelativePath/>() )
+		if( dependency.name.name_base.has</ PackageName::CurrentPackage />() ) // Process only relative paths.
 		{
 			auto mut relative_path_component_splitted=
-				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( relative_path.path ).iter() );
+				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( dependency.name.path ).iter() );
 
-			// Process only relative paths.
 			var bool mut moves_up= false;
 			foreach( &component : relative_path_component_splitted )
 			{
@@ -227,19 +226,19 @@ fn TransformAndValidatePackageInfo(
 			{
 				if( prev_source_directory == relative_path_component_splitted )
 				{
-					logger.LogError( "Package dependency directory \"" + relative_path.path + "\" is already in use." );
+					logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" is already in use." );
 					ok= false;
 				}
 				else if( relative_path_component_splitted.size() < prev_source_directory.size() &&
 					relative_path_component_splitted == prev_source_directory.range().subrange_end( relative_path_component_splitted.size() ) )
 				{
-					logger.LogError( "Package dependency directory \"" + relative_path.path + "\" is a prefix of another used directory." );
+					logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" is a prefix of another used directory." );
 					ok= false;
 				}
 				else if( relative_path_component_splitted.size() > prev_source_directory.size() &&
 					prev_source_directory == cast_imut(relative_path_component_splitted).range().subrange_end( prev_source_directory.size() ) )
 				{
-					logger.LogError( "Package dependency directory \"" + relative_path.path + "\" is located within another used directory." );
+					logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" is located within another used directory." );
 					ok= false;
 				}
 			}
@@ -332,9 +331,9 @@ fn ResolvePackageAbsoluteName(
 	WorkspaceInfo::PackageAbsoluteName& parent_package_absolute_name,
 	PackageName& package_name ) : ust::optional</WorkspaceInfo::PackageAbsoluteName/>
 {
-	if_var( &relative_path : package_name.get</PackageRelativePath/>() )
+	if( package_name.name_base.has</ PackageName::CurrentPackage/>() )
 	{
-		if( relative_path.path.empty() )
+		if( package_name.path.empty() )
 		{
 			return parent_package_absolute_name;
 		}
@@ -345,7 +344,7 @@ fn ResolvePackageAbsoluteName(
 			components.push_back( parent_component );
 		}
 
-		foreach( &child_component : SplitPathIntoComponents( relative_path.path ) )
+		foreach( &child_component : SplitPathIntoComponents( package_name.path ) )
 		{
 			if( child_component == "." )
 			{}
@@ -353,7 +352,7 @@ fn ResolvePackageAbsoluteName(
 			{
 				if( components.empty() )
 				{
-					logger.LogError( "Failed to resolve package dependency \"" + relative_path.path + "\" relative to \"" + parent_package_absolute_name.path + "\" - too many \"..\"!" );
+					logger.LogError( "Failed to resolve package dependency \"" + package_name.path + "\" relative to \"" + parent_package_absolute_name.path + "\" - too many \"..\"!" );
 					return ust::null_optional;
 				}
 				components.pop_back();

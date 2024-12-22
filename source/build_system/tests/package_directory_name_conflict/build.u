@@ -7,7 +7,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	// This package is incorrect.
 	// Sources directory is ".", which is also used as package dependency directory.
 
-	var BK::PackageName sub_package= BK::PackageRelativePath{ .path= "sub_package" };
+	var BK::PackageName sub_package{ .path= "sub_package" };
 
 	var BK::BuildTarget mut target
 	{

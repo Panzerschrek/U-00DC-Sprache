@@ -53,26 +53,28 @@ struct BuildTarget
 
 struct DependencyName
 {
-	// A package where dependency is located, possible in form of relative path to current package.
+	// A package where dependency is located.
 	PackageName package_name;
 	// Name of dependency. Should be a name of a build target within package specified.
 	ust::string8 name;
 }
 
-// Package name in two of possible forms.
-// Default value is empty relative path to current package, which means this package name.
-type PackageName= ust::variant</ tup[ PackageRelativePath, PackageGlobalVersionedName ] />;
-
-// Subpackage located in directory "path" within current package.
-struct PackageRelativePath
+// Package name - used for package dependencies and target names.
+struct PackageName
 {
+	// Marker of case where this is name relative to current package.
+	struct CurrentPackage{}
+
+	// Base of package name (where to search it).
+	ust::variant</ tup[ CurrentPackage, GlobalVersionedPackageName ] /> name_base;
+	// Path starting from base.
 	ust::string8 path;
 }
 
-// A package from global packages directory, with version specified.
-struct PackageGlobalVersionedName
+// A package from global packages directory/centralized repository, with version specified.
+struct GlobalVersionedPackageName
 {
-	ust::string8 package_name;
+	ust::string8 name;
 	ust::string8 version; // TODO - use other version type?
 }
 

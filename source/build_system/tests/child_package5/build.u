@@ -5,7 +5,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	ust::ignore_unused( build_system_interface );
 
 	// Required package is located within directory with complex path.
-	var BK::PackageName sub_package= BK::PackageRelativePath{ .path= "sub_package/dir0/dir1/dir2" };
+	var BK::PackageName sub_package{ .path= "sub_package/dir0/dir1/dir2" };
 
 	var BK::BuildTarget mut target
 	{

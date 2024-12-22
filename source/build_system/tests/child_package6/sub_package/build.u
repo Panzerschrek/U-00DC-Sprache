@@ -5,7 +5,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	ust::ignore_unused( build_system_interface );
 
 	// Use here dependency on parent package.
-	var BK::PackageName sub_package= BK::PackageRelativePath{ .path= ".." };
+	var BK::PackageName sub_package{ .path= ".." };
 
 	var BK::BuildTarget mut target
 	{
