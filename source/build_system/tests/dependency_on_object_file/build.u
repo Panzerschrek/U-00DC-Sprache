@@ -10,7 +10,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.target_type = BK::BuildTargetType::Executable,
 		.source_files= ust::make_array</ust::string8/>( "exe/exe.u" ),
 		// Error here - can't for now depend on an object file target.
-		.private_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "object_file" } ),
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= "object_file" } ),
 	};
 
 	var BK::BuildTarget mut object_file

@@ -192,9 +192,21 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		// Add dependencies to the queue.
 		foreach( &dependency : package_info_opt.try_deref().package_dependencies )
 		{
-			if_var( &relative_name : dependency.name.get</PackageDependency::RelativeName/>() )
+			if_var( &relative_path : dependency.name.get</PackageRelativePath/>() )
 			{
-				packages_queue.push_back( relative_name.path );
+				// TODO - process ".." properly.
+				var ust::string8 mut dependent_package_path;
+				if( !package_name.empty() )
+				{
+					dependent_package_path+= package_name;
+					dependent_package_path+= "/";
+				}
+				dependent_package_path+= relative_path.path;
+				packages_queue.push_back( dependent_package_path );
+			}
+			else
+			{
+				bsi.logger_.LogError( "Packages other than relative not supported yet!" );
 			}
 		}
 

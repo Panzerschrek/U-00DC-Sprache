@@ -9,7 +9,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.name= "lib_a",
 		.target_type = BK::BuildTargetType::SharedLibrary,
 		.source_files= ust::make_array</ust::string8/>( "lib_a/lib_a.u" ),
-		.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "lib_b" } ),
+		.public_dependencies= ust::make_array( BK::DependencyName{ .name= "lib_b" } ),
 	};
 
 	var BK::BuildTarget mut lib_b
@@ -17,7 +17,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.name= "lib_b",
 		.target_type = BK::BuildTargetType::SharedLibrary,
 		.source_files= ust::make_array</ust::string8/>( "lib_b/lib_b.u" ),
-		.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "lib_a" } ),
+		.public_dependencies= ust::make_array( BK::DependencyName{ .name= "lib_a" } ),
 	};
 
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(lib_a), move(lib_b) ) };

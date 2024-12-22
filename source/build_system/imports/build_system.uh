@@ -17,17 +17,6 @@ enum BuildTargetType
 	ObjectFile,
 }
 
-struct BuildTargetFullName
-{
-	// TODO - add package prefix.
-	ust::string8 name;
-
-	op<=>( BuildTargetFullName& l, BuildTargetFullName& r ) : i32
-	{
-		return l.name <=> r.name;
-	}
-}
-
 struct BuildTarget
 {
 	// Type of the build target. This should be specified explicitly.
@@ -53,30 +42,43 @@ struct BuildTarget
 	ust::vector</ust::string8/> public_include_directories;
 
 	// List of dependencies, which should be also dependencies of other build targets dependent on this build target.
-	ust::vector</ BuildTargetFullName /> public_dependencies;
+	ust::vector</ DependencyName /> public_dependencies;
 
 	// List of dependencies of this build target, which are used internally.
-	ust::vector</ BuildTargetFullName /> private_dependencies;
+	ust::vector</ DependencyName /> private_dependencies;
 
 	// Contains names or paths of external libraries to link, like system libraries or libraries built outside Ü built system.
 	ust::vector</ust::string8/> external_libraries;
 }
 
+struct DependencyName
+{
+	// A package where dependency is located, possible in form of relative path to current package.
+	PackageName package_name;
+	// Name of dependency. Should be a name of a build target within package specified.
+	ust::string8 name;
+}
+
+// Package name in two of possible forms.
+// Default value is empty relative path to current package, which means this package name.
+type PackageName= ust::variant</ tup[ PackageRelativePath, PackageGlobalVersionedName ] />;
+
+// Subpackage located in directory "path" within current package.
+struct PackageRelativePath
+{
+	ust::string8 path;
+}
+
+// A package from global packages directory, with version specified.
+struct PackageGlobalVersionedName
+{
+	ust::string8 package_name;
+	ust::string8 version; // TODO - use other version type?
+}
+
+// Dependency description for a package.
 struct PackageDependency
 {
-	// Dependency on a subpackage located in directory "path" withing current package.
-	struct RelativeName
-	{
-		ust::string8 path;
-	}
-
-	// A package from global packages directory, with version specified.
-	struct GlobalVersionedName
-	{
-		ust::string8 package_name;
-		ust::string8 version; // TODO - use other version type?
-	}
-
 	enum RequiredSystem
 	{
 		Target,
@@ -84,7 +86,9 @@ struct PackageDependency
 		Both,
 	}
 
-	ust::variant</ tup[ RelativeName, GlobalVersionedName ] /> name;
+	// Which package to depend on.
+	PackageName name;
+	// How to depend on this package.
 	RequiredSystem required_system= RequiredSystem::Target;
 }
 

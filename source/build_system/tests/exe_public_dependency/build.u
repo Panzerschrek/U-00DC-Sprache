@@ -10,7 +10,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.target_type = BK::BuildTargetType::Executable,
 		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
 		// For now it's forbidden to specify public dependencies for an executable target, since executables can't export symbols.
-		.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "lib" } )
+		.public_dependencies= ust::make_array( BK::DependencyName{ .name= "lib" } )
 	};
 
 	var BK::BuildTarget mut lib
