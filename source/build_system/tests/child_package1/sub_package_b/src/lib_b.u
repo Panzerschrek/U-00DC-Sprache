@@ -1,0 +1,6 @@
+import "/lib_b/lib_b.uh"
+
+fn LibBFunc( i32 x ) : i32
+{
+	return x * x * x - 28 * x;
+}
