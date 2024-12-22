@@ -146,7 +146,6 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			continue; // Already loaded this package.
 		}
 
-
 		// TODO - customize it based on package name?
 		auto constexpr entry_func_name = "GetPackageInfoImpl";
 

@@ -442,6 +442,11 @@ def ChildPackage5Test():
 	RunExecutable( "child_package5", "exe" )
 
 
+def ChildPackage6Test():
+	RunBuildSystem( "child_package6" )
+	RunExecutable( "child_package6", "sub_package/exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -947,6 +952,7 @@ def main():
 		ChildPackage3Test,
 		ChildPackage4Test,
 		ChildPackage5Test,
+		ChildPackage6Test,
 		MissingBuildFileTest,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,

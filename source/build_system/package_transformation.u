@@ -292,13 +292,40 @@ fn ResolvePackageAbsoluteName(
 			return parent_package_absolute_name;
 		}
 
-		var ust::string8 mut path;
-		if( !parent_package_absolute_name.path.empty() )
+		var ust::vector</ust::string8/> mut components;
+		foreach( &parent_component : SplitPathIntoComponents( parent_package_absolute_name.path ) )
 		{
-			path+= parent_package_absolute_name.path;
-			path+= "/";
+			components.push_back( parent_component );
 		}
-		path+= relative_path.path;
+
+		foreach( &child_component : SplitPathIntoComponents( relative_path.path ) )
+		{
+			if( child_component == "." )
+			{}
+			else if( child_component == ".." )
+			{
+				if( components.empty() )
+				{
+					logger.LogError( "Failed to resolve package dependency \"" + relative_path.path + "\" relative to \"" + parent_package_absolute_name.path + "\" - too many \"..\"!" );
+					return ust::null_optional;
+				}
+				components.pop_back();
+			}
+			else
+			{
+				components.push_back( child_component );
+			}
+		}
+
+		var ust::string8 mut path;
+		foreach( &component : components )
+		{
+			if( !path.empty() )
+			{
+				path+= "/";
+			}
+			path+= component;
+		}
 
 		return WorkspaceInfo::PackageAbsoluteName{ .path= NormalizePath( path ) };
 	}
