@@ -414,7 +414,7 @@ def ExternalLibraryLinking2Test():
 
 def ChildPackage0Test():
 	RunBuildSystem( "child_package0" )
-	RunExecutable( "external_library_linking2", "exe" )
+	RunExecutable( "child_package0", "exe" )
 
 
 def MissingBuildFileTest():

@@ -619,9 +619,7 @@ fn GetTargetBuildFilesDirectoryPath(
 	ust::string_view8 root_package_build_directory,
 	WorkspaceInfo::BuildTargetAbsoluteName& target_name ) : ust::string8
 {
-	var ust::string8 mut res= root_package_build_directory;
-	res+= "/";
-	res+= target_name.package_name.path;
+	var ust::string8 mut res= GetPackageBuildDirectory( root_package_build_directory, target_name.package_name );
 	res+= "/";
 	res+= target_name.name;
 	res+= ".dir"; // Use postfix with dot. Since dots in target names aren't allowed, we prevent possible file name conflict.
@@ -640,7 +638,14 @@ fn CreatePackageTargetBuildGraphNodes(
 {
 	var WorkspaceInfo::BuildTarget& target= workspace.build_targets[target_name];
 
-	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( root_package_build_directory, target_name );
+	var ust::string8 package_source_direcotry=
+		GetPackageSourceDirectory( root_package_source_directory, target_name.package_name );
+
+	var ust::string8 package_build_directory=
+		GetPackageBuildDirectory( root_package_build_directory, target_name.package_name );
+
+	var ust::string8 target_build_files_directory=
+		GetTargetBuildFilesDirectoryPath( root_package_build_directory, target_name );
 
 	// Retrieve include directories.
 	var ust::vector</ust::string8/> mut include_directories_prefixed;
@@ -666,9 +671,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		target.private_dependencies_including_transitive_public_dependencies,
 		include_directories_prefixed );
 
-	var ust::string8 mut source_dir= root_package_source_directory;
-	source_dir+= "/";
-	source_dir+= target_name.package_name.path;
+	var ust::string8 mut source_dir= package_source_direcotry;
 	source_dir+= "/";
 	source_dir+= target.sources_directory;
 	source_dir= NormalizePath( source_dir );
@@ -678,9 +681,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	{
 		// Create nodes for compilation of each source file into a ".bc" file.
 
-		var ust::string8 mut source_file_absolute= root_package_source_directory;
-		source_file_absolute+= "/";
-		source_file_absolute+= target_name.package_name.path;
+		var ust::string8 mut source_file_absolute= package_source_direcotry;
 		source_file_absolute+= "/";
 		source_file_absolute+= source_file;
 		source_file_absolute= NormalizePath(source_file_absolute);
@@ -770,9 +771,7 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	var bool target_is_windows = target_triple.operating_system == "windows";
 
-	var ust::string8 mut result_target_file_path= root_package_build_directory;
-	result_target_file_path+= "/";
-	result_target_file_path+= target_name.package_name.path;
+	var ust::string8 mut result_target_file_path= package_build_directory;
 	result_target_file_path+= "/";
 	result_target_file_path+= target_name.name;
 
@@ -830,7 +829,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			// Add also ".lib" file to outputs.
 			// This file is implicitly created by the linker.
-			var ust::string8 lib_name = NormalizePath( ust::string8(root_package_build_directory) + "/" + target_name.name + ".lib" );
+			var ust::string8 lib_name = NormalizePath( package_build_directory + "/" + target_name.name + ".lib" );
 			node.output_files.push_back( lib_name );
 
 			if( target_triple.environment == "gnu" )
@@ -873,11 +872,14 @@ fn CreatePackageTargetBuildGraphNodes(
 
 				if( workspace.build_targets[ public_dependency ].target_type == BuildTargetType::Library )
 				{
-					// TODO - use full path to lib file.
-					var ust::string8 lib_file= NormalizePath( root_package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
+					var ust::string8 mut lib_file= GetPackageBuildDirectory( root_package_build_directory, public_dependency.package_name );
+					lib_file+= "/";
+					lib_file+= public_dependency.name;
+					lib_file+= ".bc";
+					lib_file= NormalizePath( lib_file );
 
 					node.command_line.push_back( lib_file );
-					node.input_files.push_back( lib_file );
+					node.input_files.push_back( move(lib_file) );
 				}
 			}
 		},
@@ -903,15 +905,18 @@ fn CreatePackageTargetBuildGraphNodes(
 
 		if( workspace.build_targets[ private_dependency ].target_type == BuildTargetType::Library )
 		{
-			// TODO - use full path to lib file.
-			var ust::string8 lib_file= NormalizePath( root_package_build_directory + ( "/" + ( private_dependency.name + ".bc" ) ) );
+			var ust::string8 mut lib_file= GetPackageBuildDirectory( root_package_build_directory, private_dependency.package_name );
+			lib_file+= "/";
+			lib_file+= private_dependency.name;
+			lib_file+= ".bc";
+			lib_file= NormalizePath( lib_file );
 
 			node.command_line.push_back( lib_file );
 			node.input_files.push_back( lib_file );
 
 			// Internalize all symbols from private dependencies.
 			node.command_line.push_back( "--internalize-symbols-from" );
-			node.command_line.push_back( lib_file );
+			node.command_line.push_back( move(lib_file) );
 		}
 	}
 
@@ -924,21 +929,23 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			foreach( &shared_library_dependency : target.shared_library_dependencies_to_link )
 			{
+				var ust::string8 mut file_to_link= GetPackageBuildDirectory( root_package_build_directory, shared_library_dependency.package_name );
+				file_to_link+= "/";
+				file_to_link+= shared_library_dependency.name;
+
 				if( target_is_windows )
 				{
 					// Windows dynamic libraries aren't linked directly, a proxy static library is used instead.
-					// TODO - use full path to lib file.
-					var ust::string8 lib_file= NormalizePath( root_package_build_directory + ( "/" + ( shared_library_dependency.name + ".lib" ) ) );
+					var ust::string8 mut lib_file= NormalizePath( file_to_link + ".lib" );
 					node.command_line.push_back( "-Wl," + lib_file );
-					node.input_files.push_back( lib_file );
+					node.input_files.push_back( move(lib_file) );
 				}
 				else
 				{
 					// Unix shared libraries are specified directly.
-					// TODO - use full path to lib file.
-					var ust::string8 so_file= NormalizePath( root_package_build_directory + ( "/" + ( shared_library_dependency.name + ".so" ) ) );
+					var ust::string8 mut so_file= NormalizePath( file_to_link + ".so" );
 					node.command_line.push_back( "-Wl," + so_file );
-					node.input_files.push_back( so_file );
+					node.input_files.push_back( move(so_file) );
 				}
 			}
 
@@ -1112,9 +1119,7 @@ fn ExtractDependenciesIncludeDirectories(
 			//    import "some_target/some_file.uh"
 			// will work.
 
-			var ust::string8 mut path= root_package_source_directory;
-			path+= "/";
-			path+= build_target_name.package_name.path;
+			var ust::string8 mut path= GetPackageSourceDirectory( root_package_source_directory, build_target_name.package_name );
 			path+= "/";
 			path+= public_include_directory;
 			path= NormalizePath( path );
@@ -1128,6 +1133,32 @@ fn ExtractDependenciesIncludeDirectories(
 }
 
 auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
+
+fn GetPackageBuildDirectory(
+	ust::string_view8 root_package_build_direcotry,
+	WorkspaceInfo::PackageAbsoluteName& package_name ) : ust::string8
+{
+	var ust::string8 mut res= root_package_build_direcotry;
+	if( !package_name.path.empty() )
+	{
+		res+= "/";
+		res+= package_name.path;
+	}
+	return res;
+}
+
+fn GetPackageSourceDirectory(
+	ust::string_view8 root_package_source_direcotry,
+	WorkspaceInfo::PackageAbsoluteName& package_name ) : ust::string8
+{
+	var ust::string8 mut res= root_package_source_direcotry;
+	if( !package_name.path.empty() )
+	{
+		res+= "/";
+		res+= package_name.path;
+	}
+	return res;
+}
 
 fn IsPublicDependencyOfDirectPublicSharedLibraryDependency(
 	WorkspaceInfo& workspace,
