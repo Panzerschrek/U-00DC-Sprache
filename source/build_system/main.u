@@ -633,7 +633,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	BuildConfiguration build_configuration,
 	TargetTriple& target_triple,
 	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName target_name,
+	WorkspaceInfo::BuildTargetAbsoluteName& target_name,
 	BuildGraph &mut build_graph )
 {
 	var WorkspaceInfo::BuildTarget& target= workspace.build_targets[target_name];
@@ -654,7 +654,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	ExtractDependenciesIncludeDirectories(
 		workspace,
 		root_package_source_directory,
-		ust::make_array( target_name ),
+		ust::single_element_array_view( target_name ),
 		include_directories_prefixed );
 
 	// Include directories of all public dependencies.
