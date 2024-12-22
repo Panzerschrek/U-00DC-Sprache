@@ -1,0 +1,24 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	// This package is incorrect.
+	// Sources directory is ".", which is also used as package dependency directory.
+
+	var BK::PackageName sub_package= BK::PackageRelativePath{ .path= "sub_package" };
+
+	var BK::BuildTarget mut target
+	{
+		.name= "exe",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "main.u" )
+	};
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(target) ),
+		.package_dependencies= ust::make_array( BK::PackageDependency{ .name= sub_package } )
+	};
+}

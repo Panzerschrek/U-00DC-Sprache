@@ -751,6 +751,13 @@ def SourceDirectoriesConflict8Test():
 	assert( stderr.find( "Public include directory \"common_dir\" of the build target \"target_b\" is a prefix of another used directory." ) != -1 )
 
 
+def PackageDirectoryNameConflictTest():
+	res = RunBuildSystemWithErrors( "package_directory_name_conflict" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Package dependency directory \"sub_package\" is located within another used directory." ) != -1 )
+
+
 def SelfDependency0Test():
 	res = RunBuildSystemWithErrors( "self_dependency0" )
 	assert( res.returncode != 0 )
@@ -1024,6 +1031,7 @@ def main():
 		SourceDirectoriesConflict6Test,
 		SourceDirectoriesConflict7Test,
 		SourceDirectoriesConflict8Test,
+		PackageDirectoryNameConflictTest,
 		SelfDependency0Test,
 		SelfDependency1Test,
 		MissingDependencyTest,
