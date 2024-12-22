@@ -224,6 +224,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
+	if( !ProcessWorkspaceDependenciesGraph( bsi.logger_, workspace ) )
+	{
+		bsi.logger_.LogError( "Project dependencies aren't valid!" );
+		return -1;
+	}
+
 	var ust::string8 build_graph_state_file_path= root_package_build_directory + "/build_graph.json";
 
 	// Load previous build graph state.

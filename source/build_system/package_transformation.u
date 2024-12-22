@@ -53,7 +53,6 @@ fn TransformAndValidatePackageInfo(
 					continue;
 				}
 
-
 				out_build_target.source_files.push_back( NormalizePath( source_name ) );
 			}
 
@@ -192,10 +191,12 @@ fn TransformAndValidatePackageInfo(
 		workspace.build_targets.insert( target_absolute_name, move( out_build_target ) );
 	}
 
-	// After finishing building build targets map can perform dependency graph-based checks and transformations.
-	//
+	return ok;
+}
 
-	// TODO - do this only once for whole workspace.
+fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool
+{
+	var bool mut ok= true;
 
 	// Check for dependency graph validity.
 	foreach( &pair : cast_imut(workspace).build_targets )

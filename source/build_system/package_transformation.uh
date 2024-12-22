@@ -103,4 +103,9 @@ fn TransformAndValidatePackageInfo(
 	WorkspaceInfo::PackageAbsoluteName& package_absolute_name,
 	WorkspaceInfo &mut workspace_info ) : bool;
 
+// Checks if dependencies are correct (there is no loops, missing dependencies, incorrect dependencies).
+// Also it populates various lists of transitive dependencies.
+// Returns false on error.
+fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool;
+
 } // namespace BK
