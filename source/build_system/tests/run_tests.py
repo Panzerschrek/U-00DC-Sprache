@@ -426,7 +426,8 @@ def BuildScriptNullResultTest():
 	res = RunBuildSystemWithErrors( "build_script_null_result" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Failed to get package info - build script returned empty optional" ) != -1 )
+	assert( stderr.find( "Failed to get package info") != -1 )
+	assert( stderr.find( "build script returned empty optional" ) != -1 )
 
 
 def BrokenBuildFile0Test():
@@ -522,7 +523,8 @@ def DuplicatedBuildTargetTest():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Error, duplicated build target \"target_c\"" ) != -1 )
-	assert( stderr.find( "Package is invald" ) != -1 )
+	assert( stderr.find( "Package" ) != -1 )
+	assert( stderr.find( "is invald" ) != -1 )
 
 
 def DuplicatedSourceFileTest():
@@ -531,7 +533,8 @@ def DuplicatedSourceFileTest():
 	stderr = str(res.stderr)
 	assert( stderr.find( "Error, duplicated source file \"main.u\" of the build target \"hello_world\"" ) != -1 )
 	assert( stderr.find( "Error, duplicated source file \"dir/other.u\" of the build target \"hello_world\"" ) != -1 )
-	assert( stderr.find( "Package is invald" ) != -1 )
+	assert( stderr.find( "Package" ) != -1 )
+	assert( stderr.find( "is invald" ) != -1 )
 
 
 def InvalidTargetName0Test():

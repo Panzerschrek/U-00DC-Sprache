@@ -104,97 +104,126 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	};
 
 	// If "options.root_package_directory" is empty this will become current directory.
-	var ust::string8 package_source_directory = NormalizePath( MakePathAbsolute( options.root_package_directory ) );
+	var ust::string8 root_package_source_directory = NormalizePath( MakePathAbsolute( options.root_package_directory ) );
 
 	// By default use "build" directory within root package directory.
-	var ust::string8 package_build_directory_base =
+	var ust::string8 root_package_build_directory_base =
 		( options.build_directory.empty()
-			? ( package_source_directory + "/build" )
+			? ( root_package_source_directory + "/build" )
 			: NormalizePath( MakePathAbsolute( options.build_directory ) ) );
 
 	// Create, if necessary, subdirectory for target triple.
 	// Do it only if this target triple isn't equal to host triple.
-	var ust::string8 mut package_build_directory = package_build_directory_base;
+	var ust::string8 mut root_package_build_directory = root_package_build_directory_base;
 	if( bsi.target_triple_ != GetHostTargetTriple() )
 	{
-		package_build_directory+= "/";
-		package_build_directory+= TargetTripleToString( bsi.target_triple_ );
+		root_package_build_directory+= "/";
+		root_package_build_directory+= TargetTripleToString( bsi.target_triple_ );
 	}
 
 	// Create a subdirectory for configuration specified.
-	package_build_directory+= "/";
-	package_build_directory+= BuildConfigurationToString( options.build_configuration );
+	root_package_build_directory+= "/";
+	root_package_build_directory+= BuildConfigurationToString( options.build_configuration );
 
-	if( !EnsureDirectoryExists( bsi.logger_, package_build_directory ) )
+	if( !EnsureDirectoryExists( bsi.logger_, root_package_build_directory ) )
 	{
 		bsi.logger_.LogError( "Can't create build directory." );
 		return -1;
 	}
 
-	bsi.logger_.LogVerbose( "Build project in \"" + package_source_directory + "\" using build directory \"" + package_build_directory + "\"" );
+	bsi.logger_.LogVerbose( "Build project in \"" + root_package_source_directory + "\" using build directory \"" + root_package_build_directory + "\"" );
 
-	// TODO - customize it based on package name?
-	auto constexpr entry_func_name = "GetPackageInfoImpl";
+	var ust::unordered_map</ust::string8, PackageInfo/> mut packages_map;
 
-	auto shared_library_opt = BuildAndLoadPackageBuildScript(
-		bsi.logger_,
-		build_system_paths,
-		package_source_directory,
-		// For now use directory for build configuration specified.
-		// TODO - reuse build script shared libraries among configurations and target triples.
-		package_build_directory,
-		entry_func_name );
-	if( shared_library_opt.empty() )
+	var ust::vector</ust::string8/> mut packages_queue;
+	packages_queue.push_back(""); // Push root package.
+
+	for( auto mut i= 0s; i < packages_queue.size(); ++i ) // Use index-based iterations, because this list is populated within the loop.
 	{
-		bsi.logger_.LogError( "Failed to load/build the build script shared library." );
-		return -1;
-	}
-
-	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
-	// A hacky way to cast byte8 pointer to a function pointer.
-	var GetPackageInfoFunctionType mut func_ptr= zero_init;
-	unsafe( ust::memory_copy(
-		ust::ptr_cast_to_byte8( $<(func_ptr) ),
-		ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
-		typeinfo</ typeof(func_ptr) />.size_of ) );
-
-	if( ust::is_nullptr(func_ptr) )
-	{
-		bsi.logger_.LogError( "Failed to load function " + entry_func_name );
-		return -1;
-	}
-
-	// Obtain package info by calling a shared library function.
-	var ust::optional</PackageInfo/> package_info_opt= func_ptr( bsi );
-	if( package_info_opt.empty() )
-	{
-		bsi.logger_.LogError( "Failed to get package info - build script returned empty optional." );
-		return -1;
-	}
-
-	var ust::optional</PackageInfoTransformed/> package_info_transformed_opt=
-		TransformAndValidatePackageInfo( bsi.logger_, package_info_opt.try_deref() );
-	if( package_info_transformed_opt.empty() )
-	{
-		bsi.logger_.LogError( "Package is invald." );
-		return -1;
-	}
-
-	var PackageInfoTransformed& package_info_transformed= package_info_transformed_opt.try_deref();
-
-	// Create directories for intermediate files for each build target.
-	foreach( &build_target_pair : package_info_transformed.build_targets )
-	{
-		auto& build_target_name= build_target_pair.key();
-		auto dir_name= GetTargetBuildFilesDirectoryPath( package_build_directory, build_target_name );
-		if( !EnsureDirectoryExists( bsi.logger_, dir_name ) )
+		// TODO - use more complex type for package name.
+		var ust::string8 package_name= packages_queue[i];
+		if( packages_map.exists( package_name ) )
 		{
-			bsi.logger_.LogError( "Can't create build directory for target \"" + build_target_name + "\"." );
+			continue; // Already loaded this package.
+		}
+
+		var ust::string8 package_source_directort= root_package_source_directory + "/" + package_name;
+		var ust::string8 package_build_directory= root_package_build_directory + "/" + package_name;
+
+		// TODO - customize it based on package name?
+		auto constexpr entry_func_name = "GetPackageInfoImpl";
+
+		auto shared_library_opt = BuildAndLoadPackageBuildScript(
+			bsi.logger_,
+			build_system_paths,
+			package_source_directort,
+			// For now use directory for build configuration specified.
+			// TODO - reuse build script shared libraries among configurations and target triples.
+			package_build_directory,
+			entry_func_name );
+		if( shared_library_opt.empty() )
+		{
+			bsi.logger_.LogError( "Failed to load/build the build script shared library." );
 			return -1;
 		}
+
+		auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
+		// A hacky way to cast byte8 pointer to a function pointer.
+		var GetPackageInfoFunctionType mut func_ptr= zero_init;
+		unsafe( ust::memory_copy(
+			ust::ptr_cast_to_byte8( $<(func_ptr) ),
+			ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
+			typeinfo</ typeof(func_ptr) />.size_of ) );
+
+		if( ust::is_nullptr(func_ptr) )
+		{
+			bsi.logger_.LogError( "Failed to load function " + entry_func_name );
+			return -1;
+		}
+
+		// Obtain package info by calling a shared library function.
+		var ust::optional</PackageInfo/> mut package_info_opt= func_ptr( bsi );
+		if( package_info_opt.empty() )
+		{
+			bsi.logger_.LogError( "Failed to get package info for package \"" + package_name + "\"- build script returned empty optional." );
+			return -1;
+		}
+
+		// Add dependencies to the queue.
+		foreach( &dependency : package_info_opt.try_deref().package_dependencies )
+		{
+			if_var( &relative_name : dependency.name.get</PackageDependency::RelativeName/>() )
+			{
+				packages_queue.push_back( relative_name.path );
+			}
+		}
+
+		packages_map.insert( package_name, package_info_opt.try_take() );
 	}
 
-	var ust::string8 build_graph_state_file_path= package_build_directory + "/build_graph.json";
+	// Transform packages loaded.
+	var ust::unordered_map</ust::string8, PackageInfoTransformed/> mut transformed_packages_map;
+	var bool mut has_package_transformation_errors= false;
+	foreach( &pair : cast_imut(packages_map) )
+	{
+		var ust::string8& package_name= pair.key();
+
+		var ust::optional</PackageInfoTransformed/> mut package_info_transformed_opt=
+			TransformAndValidatePackageInfo( bsi.logger_, pair.value() );
+		if( package_info_transformed_opt.empty() )
+		{
+			bsi.logger_.LogError( "Package \"" + package_name + "\" is invald." );
+			has_package_transformation_errors= true;
+		}
+		transformed_packages_map.insert( package_name, package_info_transformed_opt.try_take() );
+	}
+
+	if( has_package_transformation_errors )
+	{
+		return -1;
+	}
+
+	var ust::string8 build_graph_state_file_path= root_package_build_directory + "/build_graph.json";
 
 	// Load previous build graph state.
 	var ust::optional</BuildGraph/> mut prev_build_graph;
@@ -215,27 +244,58 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	var BuildGraph mut build_graph;
 
 	{
-		// Collect and sort a list of build target names,
+		// Collect and sort a list of packages,
 		// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
-		var ust::vector</ust::string8/> mut build_target_names;
-		foreach( &build_target_pair : package_info_transformed.build_targets )
+		var ust::vector</ust::string8/> mut package_names;
+		foreach( &pair : cast_imut(transformed_packages_map) )
 		{
-			build_target_names.push_back( build_target_pair.key() );
+			package_names.push_back( pair.key() );
 		}
-		ust::sort( build_target_names );
+		ust::sort( package_names );
 
-		foreach( &build_target_name : build_target_names )
+		foreach( &package_name : package_names )
 		{
-			CreatePackageTargetBuildGraphNodes(
-				build_system_paths,
-				package_source_directory,
-				package_build_directory,
-				bsi.build_configuration_,
-				bsi.target_triple_,
-				package_info_transformed,
-				build_target_name,
-				package_info_transformed.build_targets[ build_target_name ],
-				build_graph );
+			var PackageInfoTransformed& package_info_transformed= transformed_packages_map[package_name];
+
+			var ust::string8 package_source_directort= root_package_source_directory + "/" + package_name;
+			var ust::string8 package_build_directory= root_package_build_directory + "/" + package_name;
+
+			// Create directories for intermediate files for each build target.
+			foreach( &build_target_pair : package_info_transformed.build_targets )
+			{
+				auto& build_target_name= build_target_pair.key();
+				auto dir_name= GetTargetBuildFilesDirectoryPath( package_build_directory, build_target_name );
+				if( !EnsureDirectoryExists( bsi.logger_, dir_name ) )
+				{
+					bsi.logger_.LogError( "Can't create build directory for target \"" + build_target_name + "\"." );
+					return -1;
+				}
+			}
+
+			{
+				// Collect and sort a list of build target names,
+				// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
+				var ust::vector</ust::string8/> mut build_target_names;
+				foreach( &build_target_pair : package_info_transformed.build_targets )
+				{
+					build_target_names.push_back( build_target_pair.key() );
+				}
+				ust::sort( build_target_names );
+
+				foreach( &build_target_name : build_target_names )
+				{
+					CreatePackageTargetBuildGraphNodes(
+						build_system_paths,
+						package_source_directort,
+						package_build_directory,
+						bsi.build_configuration_,
+						bsi.target_triple_,
+						package_info_transformed,
+						build_target_name,
+						package_info_transformed.build_targets[ build_target_name ],
+						build_graph );
+				}
+			}
 		}
 	}
 
