@@ -202,20 +202,21 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 
 	// Transform packages loaded.
-	var ust::unordered_map</ust::string8, PackageInfoTransformed/> mut transformed_packages_map;
+	var WorkspaceInfo mut workspace;
 	var bool mut has_package_transformation_errors= false;
 	foreach( &pair : cast_imut(packages_map) )
 	{
 		var ust::string8& package_name= pair.key();
 
-		var ust::optional</PackageInfoTransformed/> mut package_info_transformed_opt=
-			TransformAndValidatePackageInfo( bsi.logger_, pair.value() );
-		if( package_info_transformed_opt.empty() )
+		if( !TransformAndValidatePackageInfo(
+			bsi.logger_,
+			pair.value(),
+			WorkspaceInfo::PackageAbsoluteName{ .path= package_name },
+			workspace ) )
 		{
 			bsi.logger_.LogError( "Package \"" + package_name + "\" is invald." );
 			has_package_transformation_errors= true;
 		}
-		transformed_packages_map.insert( package_name, package_info_transformed_opt.try_take() );
 	}
 
 	if( has_package_transformation_errors )
@@ -243,59 +244,40 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// Construct the build graph for the whole project.
 	var BuildGraph mut build_graph;
 
+
+	// Create directories for intermediate files for each build target.
+	foreach( &build_target_pair : workspace.build_targets )
 	{
-		// Collect and sort a list of packages,
-		// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
-		var ust::vector</ust::string8/> mut package_names;
-		foreach( &pair : cast_imut(transformed_packages_map) )
+		auto& build_target_name= build_target_pair.key();
+		auto dir_name= GetTargetBuildFilesDirectoryPath( root_package_build_directory, build_target_name );
+		if( !EnsureDirectoryExists( bsi.logger_, dir_name ) )
 		{
-			package_names.push_back( pair.key() );
+			bsi.logger_.LogError( "Can't create build directory for target \"" + build_target_name.name + "\"." );
+			return -1;
 		}
-		ust::sort( package_names );
+	}
 
-		foreach( &package_name : package_names )
+	{
+		// Collect and sort a list of build target names,
+		// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
+		var ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/> mut build_target_names;
+		foreach( &build_target_pair : workspace.build_targets )
 		{
-			var PackageInfoTransformed& package_info_transformed= transformed_packages_map[package_name];
+			build_target_names.push_back( build_target_pair.key() );
+		}
+		ust::sort( build_target_names );
 
-			var ust::string8 package_source_directort= root_package_source_directory + "/" + package_name;
-			var ust::string8 package_build_directory= root_package_build_directory + "/" + package_name;
-
-			// Create directories for intermediate files for each build target.
-			foreach( &build_target_pair : package_info_transformed.build_targets )
-			{
-				auto& build_target_name= build_target_pair.key();
-				auto dir_name= GetTargetBuildFilesDirectoryPath( package_build_directory, build_target_name );
-				if( !EnsureDirectoryExists( bsi.logger_, dir_name ) )
-				{
-					bsi.logger_.LogError( "Can't create build directory for target \"" + build_target_name.name + "\"." );
-					return -1;
-				}
-			}
-
-			{
-				// Collect and sort a list of build target names,
-				// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
-				var ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/> mut build_target_names;
-				foreach( &build_target_pair : package_info_transformed.build_targets )
-				{
-					build_target_names.push_back( build_target_pair.key() );
-				}
-				ust::sort( build_target_names );
-
-				foreach( &build_target_name : build_target_names )
-				{
-					CreatePackageTargetBuildGraphNodes(
-						build_system_paths,
-						package_source_directort,
-						package_build_directory,
-						bsi.build_configuration_,
-						bsi.target_triple_,
-						package_info_transformed,
-						build_target_name,
-						package_info_transformed.build_targets[ build_target_name ],
-						build_graph );
-				}
-			}
+		foreach( &build_target_name : build_target_names )
+		{
+			CreatePackageTargetBuildGraphNodes(
+				build_system_paths,
+				root_package_source_directory,
+				root_package_build_directory,
+				bsi.build_configuration_,
+				bsi.target_triple_,
+				workspace,
+				build_target_name,
+				build_graph );
 		}
 	}
 
@@ -616,10 +598,12 @@ fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 }
 
 fn GetTargetBuildFilesDirectoryPath(
-	ust::string_view8 package_build_directory,
-	PackageInfoTransformed::BuildTargetAbsoluteName target_name ) : ust::string8
+	ust::string_view8 root_package_build_directory,
+	WorkspaceInfo::BuildTargetAbsoluteName& target_name ) : ust::string8
 {
-	var ust::string8 mut res= package_build_directory;
+	var ust::string8 mut res= root_package_build_directory;
+	res+= "/";
+	res+= target_name.package_name.path;
 	res+= "/";
 	res+= target_name.name;
 	res+= ".dir"; // Use postfix with dot. Since dots in target names aren't allowed, we prevent possible file name conflict.
@@ -628,49 +612,61 @@ fn GetTargetBuildFilesDirectoryPath(
 
 fn CreatePackageTargetBuildGraphNodes(
 	BuildSystemPaths& build_system_paths,
-	ust::string_view8 package_source_directory,
-	ust::string_view8 package_build_directory,
+	ust::string_view8 root_package_source_directory,
+	ust::string_view8 root_package_build_directory,
 	BuildConfiguration build_configuration,
 	TargetTriple& target_triple,
-	PackageInfoTransformed& package_info,
-	PackageInfoTransformed::BuildTargetAbsoluteName target_name,
-	PackageInfoTransformed::BuildTarget& target,
+	WorkspaceInfo& workspace,
+	WorkspaceInfo::BuildTargetAbsoluteName target_name,
 	BuildGraph &mut build_graph )
 {
-	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( package_build_directory, target_name );
+	var WorkspaceInfo::BuildTarget& target= workspace.build_targets[target_name];
+
+	var ust::string8 target_build_files_directory= GetTargetBuildFilesDirectoryPath( root_package_build_directory, target_name );
 
 	// Retrieve include directories.
 	var ust::vector</ust::string8/> mut include_directories_prefixed;
 
 	// Own include directories.
 	ExtractDependenciesIncludeDirectories(
-		package_info,
-		package_source_directory,
+		workspace,
+		root_package_source_directory,
 		ust::make_array( target_name ),
 		include_directories_prefixed );
 
 	// Include directories of all public dependencies.
 	ExtractDependenciesIncludeDirectories(
-		package_info,
-		package_source_directory,
+		workspace,
+		root_package_source_directory,
 		target.public_dependencies_including_transitive,
 		include_directories_prefixed );
 
 	// Include directories of private dependencies.
 	ExtractDependenciesIncludeDirectories(
-		package_info,
-		package_source_directory,
+		workspace,
+		root_package_source_directory,
 		target.private_dependencies_including_transitive_public_dependencies,
 		include_directories_prefixed );
 
-	var ust::string8 source_dir= NormalizePath( package_source_directory + ( "/" + target.sources_directory ) );
+	var ust::string8 mut source_dir= root_package_source_directory;
+	source_dir+= "/";
+	source_dir+= target_name.package_name.path;
+	source_dir+= "/";
+	source_dir+= target.sources_directory;
+	source_dir= NormalizePath( source_dir );
 
 	var ust::vector</ust::string8/> mut bc_files;
 	foreach( &source_file : target.source_files )
 	{
 		// Create nodes for compilation of each source file into a ".bc" file.
 
-		var ust::string8 source_file_absolute= NormalizePath( ust::string8(package_source_directory) + "/" + source_file );
+		var ust::string8 mut source_file_absolute= root_package_source_directory;
+		source_file_absolute+= "/";
+		source_file_absolute+= target_name.package_name.path;
+		source_file_absolute+= "/";
+		source_file_absolute+= source_file;
+		source_file_absolute= NormalizePath(source_file_absolute);
+
 		var ust::string8 bc_file = NormalizePath( target_build_files_directory + "/" + source_file + ".bc" );
 
 		bc_files.push_back( bc_file );
@@ -756,7 +752,12 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	var bool target_is_windows = target_triple.operating_system == "windows";
 
-	var ust::string8 mut result_target_file_path = NormalizePath( ust::string8(package_build_directory) + "/" + target_name.name );
+	var ust::string8 mut result_target_file_path= root_package_build_directory;
+	result_target_file_path+= "/";
+	result_target_file_path+= target_name.package_name.path;
+	result_target_file_path+= "/";
+	result_target_file_path+= target_name.name;
+
 	switch( target.target_type )
 	{
 		BuildTargetType::Executable ->
@@ -787,6 +788,8 @@ fn CreatePackageTargetBuildGraphNodes(
 		},
 	}
 
+	result_target_file_path= NormalizePath( result_target_file_path );
+
 	var BuildGraph::Node mut node
 	{
 		.program= build_system_paths.compiler_executable_path,
@@ -809,7 +812,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			// Add also ".lib" file to outputs.
 			// This file is implicitly created by the linker.
-			var ust::string8 lib_name = NormalizePath( ust::string8(package_build_directory) + "/" + target_name.name + ".lib" );
+			var ust::string8 lib_name = NormalizePath( ust::string8(root_package_build_directory) + "/" + target_name.name + ".lib" );
 			node.output_files.push_back( lib_name );
 
 			if( target_triple.environment == "gnu" )
@@ -841,7 +844,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			// For executables, shared libraries and object files perform linking with all public dependency libraries.
 			foreach( &public_dependency : target.public_dependencies_including_transitive )
 			{
-				if( IsPublicDependencyOfDirectPublicSharedLibraryDependency( package_info, target, public_dependency ) )
+				if( IsPublicDependencyOfDirectPublicSharedLibraryDependency( workspace, target, public_dependency ) )
 				{
 					// An optimization for result binary size.
 					// If this dependency is also a public dependency of a direct shared library dependency,
@@ -850,10 +853,10 @@ fn CreatePackageTargetBuildGraphNodes(
 					continue;
 				}
 
-				if( package_info.build_targets[ public_dependency ].target_type == BuildTargetType::Library )
+				if( workspace.build_targets[ public_dependency ].target_type == BuildTargetType::Library )
 				{
 					// TODO - use full path to lib file.
-					var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
+					var ust::string8 lib_file= NormalizePath( root_package_build_directory + ( "/" + ( public_dependency.name + ".bc" ) ) );
 
 					node.command_line.push_back( lib_file );
 					node.input_files.push_back( lib_file );
@@ -872,7 +875,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	// Exception are libraries which are also public dependencies of this build target, they are not listed here.
 	foreach( &private_dependency : target.private_dependencies_including_transitive_public_dependencies )
 	{
-		if( IsPublicDependencyOfSomeLinkedSharedLibrary( package_info, target, private_dependency ) )
+		if( IsPublicDependencyOfSomeLinkedSharedLibrary( workspace, target, private_dependency ) )
 		{
 			// An optimization for result binary size.
 			// If this dependency is also a public dependency of some shared library, which is linked against this build target,
@@ -880,10 +883,10 @@ fn CreatePackageTargetBuildGraphNodes(
 			continue;
 		}
 
-		if( package_info.build_targets[ private_dependency ].target_type == BuildTargetType::Library )
+		if( workspace.build_targets[ private_dependency ].target_type == BuildTargetType::Library )
 		{
 			// TODO - use full path to lib file.
-			var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( private_dependency.name + ".bc" ) ) );
+			var ust::string8 lib_file= NormalizePath( root_package_build_directory + ( "/" + ( private_dependency.name + ".bc" ) ) );
 
 			node.command_line.push_back( lib_file );
 			node.input_files.push_back( lib_file );
@@ -907,7 +910,7 @@ fn CreatePackageTargetBuildGraphNodes(
 				{
 					// Windows dynamic libraries aren't linked directly, a proxy static library is used instead.
 					// TODO - use full path to lib file.
-					var ust::string8 lib_file= NormalizePath( package_build_directory + ( "/" + ( shared_library_dependency.name + ".lib" ) ) );
+					var ust::string8 lib_file= NormalizePath( root_package_build_directory + ( "/" + ( shared_library_dependency.name + ".lib" ) ) );
 					node.command_line.push_back( "-Wl," + lib_file );
 					node.input_files.push_back( lib_file );
 				}
@@ -915,7 +918,7 @@ fn CreatePackageTargetBuildGraphNodes(
 				{
 					// Unix shared libraries are specified directly.
 					// TODO - use full path to lib file.
-					var ust::string8 so_file= NormalizePath( package_build_directory + ( "/" + ( shared_library_dependency.name + ".so" ) ) );
+					var ust::string8 so_file= NormalizePath( root_package_build_directory + ( "/" + ( shared_library_dependency.name + ".so" ) ) );
 					node.command_line.push_back( "-Wl," + so_file );
 					node.input_files.push_back( so_file );
 				}
@@ -1077,22 +1080,30 @@ fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::
 }
 
 fn ExtractDependenciesIncludeDirectories(
-	PackageInfoTransformed& package_info,
-	ust::string_view8 package_source_directory,
-	ust::array_view_imut</PackageInfoTransformed::BuildTargetAbsoluteName/> dependencies,
+	WorkspaceInfo& workspace,
+	ust::string_view8 root_package_source_directory,
+	ust::array_view_imut</WorkspaceInfo::BuildTargetAbsoluteName/> dependencies,
 	ust::vector</ust::string8/> &mut include_directories_prefixed )
 {
 	foreach( &build_target_name : dependencies )
 	{
-		foreach( &public_include_directory : package_info.build_targets[ build_target_name ].public_include_directories )
+		foreach( &public_include_directory : workspace.build_targets[ build_target_name ].public_include_directories )
 		{
 			// Prefix this directory with target name.
 			// So, using
 			//    import "some_target/some_file.uh"
 			// will work.
-			var ust::string8 mut path= NormalizePath( package_source_directory + ( "/" + public_include_directory ) );
+
+			var ust::string8 mut path= root_package_source_directory;
+			path+= "/";
+			path+= build_target_name.package_name.path;
+			path+= "/";
+			path+= public_include_directory;
+			path= NormalizePath( path );
+
 			path+= g_include_dir_prefix_separator;
 			path+= build_target_name.name;
+
 			include_directories_prefixed.push_back( move(path) );
 		}
 	}
@@ -1101,13 +1112,13 @@ fn ExtractDependenciesIncludeDirectories(
 auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
 
 fn IsPublicDependencyOfDirectPublicSharedLibraryDependency(
-	PackageInfoTransformed& package_info,
-	PackageInfoTransformed::BuildTarget& build_target,
-	PackageInfoTransformed::BuildTargetAbsoluteName& dependency ) : bool
+	WorkspaceInfo& workspace,
+	WorkspaceInfo::BuildTarget& build_target,
+	WorkspaceInfo::BuildTargetAbsoluteName& dependency ) : bool
 {
 	foreach( &public_dependency : build_target.public_dependencies )
 	{
-		auto& public_dependency_build_target = package_info.build_targets[ public_dependency ];
+		auto& public_dependency_build_target = workspace.build_targets[ public_dependency ];
 		if( public_dependency_build_target.target_type == BuildTargetType::SharedLibrary )
 		{
 			foreach( &shared_library_public_dependency : public_dependency_build_target.public_dependencies_including_transitive )
@@ -1124,13 +1135,13 @@ fn IsPublicDependencyOfDirectPublicSharedLibraryDependency(
 }
 
 fn IsPublicDependencyOfSomeLinkedSharedLibrary(
-	PackageInfoTransformed& package_info,
-	PackageInfoTransformed::BuildTarget& build_target,
-	PackageInfoTransformed::BuildTargetAbsoluteName& dependency ) : bool
+	WorkspaceInfo& workspace,
+	WorkspaceInfo::BuildTarget& build_target,
+	WorkspaceInfo::BuildTargetAbsoluteName& dependency ) : bool
 {
 	foreach( &shared_library_dependency : build_target.shared_library_dependencies_to_link )
 	{
-		foreach( &shared_library_public_dependency : package_info.build_targets[ shared_library_dependency ].public_dependencies_including_transitive )
+		foreach( &shared_library_public_dependency : workspace.build_targets[ shared_library_dependency ].public_dependencies_including_transitive )
 		{
 			if( dependency == shared_library_public_dependency )
 			{

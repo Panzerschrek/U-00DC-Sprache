@@ -5,8 +5,9 @@ import "logger.uh"
 namespace BK
 {
 
-// Package info in form which is much better to work with.
-struct PackageInfoTransformed
+// Workspace info in form which is much better to work with.
+// TODO - use other name?
+struct WorkspaceInfo
 {
 	struct PackageAbsoluteName
 	{
@@ -95,8 +96,11 @@ struct PackageInfoTransformed
 }
 
 // Performs package info transformation, normalization and validation.
-// Returns empty optional if package isn't valid.
-fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_info )
-	: ust::optional</PackageInfoTransformed/>;
+// Returns false if package isn't valid.
+fn TransformAndValidatePackageInfo(
+	Logger &mut logger,
+	PackageInfo& package_info,
+	WorkspaceInfo::PackageAbsoluteName& package_absolute_name,
+	WorkspaceInfo &mut workspace_info ) : bool;
 
 } // namespace BK
