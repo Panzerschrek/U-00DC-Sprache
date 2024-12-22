@@ -462,6 +462,33 @@ def MissingBuildFileTest():
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 
+def MissingPackage0Test():
+	res = RunBuildSystemWithErrors( "missing_package0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Can not get modification time for" ) != -1 )
+	assert( stderr.find( "non_existing_package/build.u" ) != -1 )
+	assert( stderr.find( "file does not exists?" ) != -1 )
+	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
+
+
+def MissingPackage1Test():
+	res = RunBuildSystemWithErrors( "missing_package1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Can not get modification time for" ) != -1 )
+	assert( stderr.find( "sub_package/build.u" ) != -1 )
+	assert( stderr.find( "file does not exists?" ) != -1 )
+	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
+
+
+def MissingPackage2Test():
+	res = RunBuildSystemWithErrors( "missing_package2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Failed to resolve package dependency \"..\" relative to \"\" - too many \"..\"!" ) != -1 )
+
+
 def BuildScriptNullResultTest():
 	res = RunBuildSystemWithErrors( "build_script_null_result" )
 	assert( res.returncode != 0 )
@@ -960,6 +987,9 @@ def main():
 		ChildPackage6Test,
 		ChildPackage7Test,
 		MissingBuildFileTest,
+		MissingPackage0Test,
+		MissingPackage1Test,
+		MissingPackage2Test,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,
