@@ -188,7 +188,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		// Add dependencies to the queue.
 		foreach( &dependency : package_info_opt.try_deref().package_dependencies )
 		{
-			auto mut dependency_package_absolute_name= ResolvePackageAbsoluteName( bsi.logger_, package_name, dependency.name );
+			auto mut dependency_package_absolute_name=
+				ResolvePackageAbsoluteName( bsi.logger_, package_name, dependency.name );
 			if( dependency_package_absolute_name.empty() )
 			{
 				bsi.logger_.LogError( "Failed to find package dependency within package \"" + package_name.path + "\"!" );
@@ -207,11 +208,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	{
 		var WorkspaceInfo::PackageAbsoluteName& package_name= pair.key();
 
-		if( !TransformAndValidatePackageInfo(
-			bsi.logger_,
-			pair.value(),
-			package_name,
-			workspace ) )
+		if( !TransformAndValidatePackageInfo( bsi.logger_, pair.value(), package_name, workspace ) )
 		{
 			bsi.logger_.LogError( "Package \"" + package_name.path + "\" is invald." );
 			has_package_transformation_errors= true;

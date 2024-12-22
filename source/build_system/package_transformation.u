@@ -469,7 +469,8 @@ fn TransformDependencyName(
 	WorkspaceInfo::PackageAbsoluteName& package_absolute_name,
 	DependencyName& dependency_name ) : ust::optional</WorkspaceInfo::BuildTargetAbsoluteName/>
 {
-	auto mut dependency_package_name= ResolvePackageAbsoluteName( logger, package_absolute_name, dependency_name.package_name );
+	auto mut dependency_package_name=
+		ResolvePackageAbsoluteName( logger, package_absolute_name, dependency_name.package_name );
 	if( dependency_package_name.empty() )
 	{
 		return ust::null_optional;
