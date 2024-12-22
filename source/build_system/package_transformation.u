@@ -24,7 +24,9 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 			ok= false;
 		}
 
-		if( out_package_info.build_targets.exists( target_name ) )
+		var PackageInfoTransformed::BuildTargetAbsoluteName target_absolute_name{ .name= target_name };
+
+		if( out_package_info.build_targets.exists( target_absolute_name ) )
 		{
 			logger.LogError( "Error, duplicated build target \"" + target_name + "\"!" );
 			ok= false;
@@ -162,28 +164,36 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 			logger.LogError( "Non-empty public dependencies list for an executable build target \"" + build_target.name + "\"." );
 		}
 
-		out_build_target.public_dependencies= build_target.public_dependencies;
+		foreach( &public_dependency : build_target.public_dependencies )
+		{
+			// TODO - map package name to absolute package name.
+			out_build_target.public_dependencies.push_back( PackageInfoTransformed::BuildTargetAbsoluteName{ .name= public_dependency.name } );
+		}
 		NormalizeList(out_build_target.public_dependencies);
 
 		// Process private dependencies.
 
-		out_build_target.private_dependencies= build_target.private_dependencies;
+		foreach( &private_dependency : build_target.private_dependencies )
+		{
+			// TODO - map package name to absolute package name.
+			out_build_target.private_dependencies.push_back( PackageInfoTransformed::BuildTargetAbsoluteName{ .name= private_dependency.name } );
+		}
 		NormalizeList(out_build_target.private_dependencies);
 
 		// Process external libraries.
 		out_build_target.external_libraries= build_target.external_libraries;
 		NormalizeList( out_build_target.external_libraries );
 
-		out_package_info.build_targets.insert( target_name, move( out_build_target ) );
+		out_package_info.build_targets.insert( target_absolute_name, move( out_build_target ) );
 	}
 
 	// After finishing building build targets map can perform dependency graph-based checks and transformations.
 	//
 
 	// Check for dependency graph validity.
-	foreach( &build_target : package_info.build_targets )
+	foreach( &pair : cast_imut(out_package_info).build_targets )
 	{
-		ok&= DependencyGraphIsValid( logger, out_package_info, build_target.name );
+		ok&= DependencyGraphIsValid( logger, out_package_info, pair.key() );
 	}
 
 	if( !ok )
@@ -193,25 +203,32 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 		return ust::null_optional;
 	}
 
-	// Perform public dependencies retrieval.
-	foreach( &build_target : package_info.build_targets )
+	// Collect build target names in order to have possibility to iterate and change build targets map elements.
+	var ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/> mut build_target_names;
+	foreach( &pair : out_package_info.build_targets )
 	{
-		auto mut dependencies = GetAllTargetPublicDependencies( out_package_info, build_target.name );
-		out_package_info.build_targets[build_target.name].public_dependencies_including_transitive= move(dependencies);
+		build_target_names.push_back( pair.key() );
+	}
+
+	// Perform public dependencies retrieval.
+	foreach( &build_target_name : build_target_names )
+	{
+		auto mut dependencies = GetAllTargetPublicDependencies( out_package_info, build_target_name );
+		out_package_info.build_targets[build_target_name].public_dependencies_including_transitive= move(dependencies);
 	}
 
 	// Perform private dependencies retrieval.
-	foreach( &build_target : package_info.build_targets )
+	foreach( &build_target_name : build_target_names )
 	{
-		auto dependencies = GetAllTargetPrivateAndTheirTransitivePublicDependencies( out_package_info, build_target.name );
+		auto dependencies = GetAllTargetPrivateAndTheirTransitivePublicDependencies( out_package_info, build_target_name );
 
-		auto &mut out_build_target= out_package_info.build_targets[ build_target.name ];
+		auto &mut out_build_target= out_package_info.build_targets[ build_target_name ];
 
 		// Remove private dependencies which are also public dependencies.
 
 		auto& public_dependencies= out_build_target.public_dependencies_including_transitive;
 		auto is_not_in_public_dependencies=
-			lambda[&]( BuildTargetFullName& target_name ) : bool
+			lambda[&]( PackageInfoTransformed::BuildTargetAbsoluteName& target_name ) : bool
 			{
 				foreach( &dependency : public_dependencies )
 				{
@@ -228,17 +245,17 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 	}
 
 	// Perform shared libraries to link retrieval.
-	foreach( &build_target : package_info.build_targets )
+	foreach( &build_target_name : build_target_names )
 	{
-		auto mut dependencies= GetAllTargetSharedLibraryDependenciesToLink( out_package_info, build_target.name );
-		out_package_info.build_targets[ build_target.name ].shared_library_dependencies_to_link= move(dependencies);
+		auto mut dependencies= GetAllTargetSharedLibraryDependenciesToLink( out_package_info, build_target_name );
+		out_package_info.build_targets[ build_target_name ].shared_library_dependencies_to_link= move(dependencies);
 	}
 
 	// Perform external libraries to link retrieval.
-	foreach( &build_target : package_info.build_targets )
+	foreach( &build_target_name : build_target_names )
 	{
-		auto mut libraries= GetAllTargetExternalLibrariesToLink( out_package_info, build_target.name );
-		out_package_info.build_targets[ build_target.name ].all_external_libraries_to_link= move(libraries);
+		auto mut libraries= GetAllTargetExternalLibrariesToLink( out_package_info, build_target_name );
+		out_package_info.build_targets[ build_target_name ].all_external_libraries_to_link= move(libraries);
 	}
 
 	if( !ok )
@@ -381,21 +398,21 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 fn DependencyGraphIsValid(
 	Logger &mut logger,
 	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name ) : bool
+	PackageInfoTransformed::BuildTargetAbsoluteName& build_target_name ) : bool
 {
-	var ust::vector</BuildTargetFullName/> mut call_stack;
+	var ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/> mut call_stack;
 	return DependencyGraphIsValid_r( logger, package_info, build_target_name, call_stack );
 }
 
 fn DependencyGraphIsValid_r(
 	Logger &mut logger,
 	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name,
-	ust::vector</BuildTargetFullName/> &mut call_stack ) : bool
+	PackageInfoTransformed::BuildTargetAbsoluteName& build_target_name,
+	ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/> &mut call_stack ) : bool
 {
 	for( auto mut i= 0s; i < call_stack.size(); ++i )
 	{
-		if( build_target_name == call_stack[i].name )
+		if( build_target_name == call_stack[i] )
 		{
 			var ust::string8 mut message= "Dependency loop detected: ";
 			for( auto mut j= i; j < call_stack.size(); ++j )
@@ -406,7 +423,7 @@ fn DependencyGraphIsValid_r(
 				message += " -> ";
 			}
 			message += "\"";
-			message += build_target_name;
+			message += build_target_name.name;
 			message += "\"";
 
 			logger.LogError( message );
@@ -415,7 +432,7 @@ fn DependencyGraphIsValid_r(
 		}
 	}
 
-	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
+	call_stack.push_back( build_target_name );
 
 	var bool mut ok= true;
 
@@ -423,13 +440,13 @@ fn DependencyGraphIsValid_r(
 	{
 		foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 		{
-			if( dependency.name == build_target_name )
+			if( dependency == build_target_name )
 			{
-				logger.LogError( "Build target \"" + build_target_name + "\" depends on itself." );
+				logger.LogError( "Build target \"" + build_target_name.name + "\" depends on itself." );
 				ok= false;
 				continue;
 			}
-			if_var( &dependency_build_target : package_info.build_targets.find( dependency.name ) )
+			if_var( &dependency_build_target : package_info.build_targets.find( dependency ) )
 			{
 				if( !(
 					dependency_build_target.target_type == BuildTargetType::Library ||
@@ -439,18 +456,18 @@ fn DependencyGraphIsValid_r(
 					// Regular library targets should be used, if some common code needed to be used in some another build target(s).
 					) )
 				{
-					logger.LogError( "Build target \"" + build_target_name + "\" depends on non-library build target \"" + dependency.name + "\"." );
+					logger.LogError( "Build target \"" + build_target_name.name + "\" depends on non-library build target \"" + dependency.name + "\"." );
 					ok= false;
 				}
 			}
 
-			ok&= DependencyGraphIsValid_r( logger, package_info, dependency.name, call_stack );
+			ok&= DependencyGraphIsValid_r( logger, package_info, dependency, call_stack );
 		}
 	}
 	else
 	{
 		ok= false;
-		logger.LogError( "Dependency \"" + build_target_name + "\" not found." );
+		logger.LogError( "Dependency \"" + build_target_name.name + "\" not found." );
 	}
 
 	call_stack.pop_back();
@@ -458,11 +475,13 @@ fn DependencyGraphIsValid_r(
 }
 
 fn GetAllTargetPublicDependencies(
-	PackageInfoTransformed& package_info, ust::string8& build_target_name ) : ust::vector</BuildTargetFullName/>
+	PackageInfoTransformed& package_info,
+	PackageInfoTransformed::BuildTargetAbsoluteName& build_target_name )
+	: ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/>
 {
 	// Build targets existence should be checked before.
 
-	var ust::vector</BuildTargetFullName/> mut result;
+	var ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/> mut result;
 	GetAllTargetPublicDependencies_r( package_info, build_target_name, result );
 
 	NormalizeList(result);
@@ -471,15 +490,17 @@ fn GetAllTargetPublicDependencies(
 }
 
 fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
-	PackageInfoTransformed& package_info, ust::string8& build_target_name ) : ust::vector</BuildTargetFullName/>
+	PackageInfoTransformed& package_info,
+	PackageInfoTransformed::BuildTargetAbsoluteName& build_target_name )
+	: ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/>
 {
 	// Build targets existence should be checked before.
 
-	var ust::vector</BuildTargetFullName/> mut result;
+	var ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/> mut result;
 
 	foreach( &private_dependency : package_info.build_targets[ build_target_name ].private_dependencies )
 	{
-		GetAllTargetPublicDependencies_r( package_info, private_dependency.name, result );
+		GetAllTargetPublicDependencies_r( package_info, private_dependency, result );
 		result.push_back( private_dependency );
 	}
 
@@ -490,30 +511,30 @@ fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 
 fn GetAllTargetPublicDependencies_r(
 	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name,
-	ust::vector</BuildTargetFullName/> &mut result )
+	PackageInfoTransformed::BuildTargetAbsoluteName& build_target_name,
+	ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/> &mut result )
 {
 	// Possible dependency loops and target names validity should be checked before.
 
 	foreach( &public_dependency : package_info.build_targets[ build_target_name ].public_dependencies )
 	{
-		GetAllTargetPublicDependencies_r( package_info, public_dependency.name, result );
+		GetAllTargetPublicDependencies_r( package_info, public_dependency, result );
 		result.push_back(public_dependency);
 	}
 }
 
 fn GetAllTargetSharedLibraryDependenciesToLink(
 	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name ) : ust::vector</BuildTargetFullName/>
+	PackageInfoTransformed::BuildTargetAbsoluteName& build_target_name ) : ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/>
 {
 	// Possible dependency loops and target names validity should be checked before.
 
 	var PackageInfoTransformed::BuildTarget& build_target= package_info.build_targets[ build_target_name ];
-	var ust::vector</BuildTargetFullName/> mut result;
+	var ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/> mut result;
 
 	foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 	{
-		GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
+		GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency, result );
 	}
 
 	NormalizeList(result);
@@ -523,8 +544,8 @@ fn GetAllTargetSharedLibraryDependenciesToLink(
 
 fn GetAllTargetSharedLibraryDependenciesToLink_r(
 	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name,
-	ust::vector</BuildTargetFullName/> &mut result )
+	PackageInfoTransformed::BuildTargetAbsoluteName& build_target_name,
+	ust::vector</PackageInfoTransformed::BuildTargetAbsoluteName/> &mut result )
 {
 	// Possible dependency loops and target names validity should be checked before.
 
@@ -538,19 +559,19 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 			// Extract shared library dependencies of public and private library dependencies.
 			foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 			{
-				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
+				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency, result );
 			}
 		},
 		BuildTargetType::SharedLibrary ->
 		{
 			// Use this shared librarty.
-			result.push_back( BuildTargetFullName{ .name= build_target_name } );
+			result.push_back( build_target_name );
 
 			// Extract also shared library dependencies of public dependencies of this shared library.
 			// But DO NOT extract shared library dependencies of private dependencies.
 			foreach( &public_dependency : build_target.public_dependencies )
 			{
-				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, public_dependency.name, result );
+				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, public_dependency, result );
 			}
 		},
 		BuildTargetType::ObjectFile -> {}, // This should be checked before.
@@ -559,7 +580,7 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 
 fn GetAllTargetExternalLibrariesToLink(
 	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name ) : ust::vector</ust::string8/>
+	PackageInfoTransformed::BuildTargetAbsoluteName& build_target_name ) : ust::vector</ust::string8/>
 {
 	// Possible dependency loops and target names validity should be checked before.
 
@@ -572,7 +593,7 @@ fn GetAllTargetExternalLibrariesToLink(
 
 fn GetAllTargetExternalLibrariesToLink_r(
 	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name,
+	PackageInfoTransformed::BuildTargetAbsoluteName& build_target_name,
 	ust::vector</ust::string8/> &mut result )
 {
 	// Possible dependency loops and target names validity should be checked before.
@@ -587,13 +608,13 @@ fn GetAllTargetExternalLibrariesToLink_r(
 	// Extract external libraries of public and private library dependencies.
 	foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 	{
-		if( package_info.build_targets[ dependency.name ].target_type == BuildTargetType::SharedLibrary )
+		if( package_info.build_targets[ dependency ].target_type == BuildTargetType::SharedLibrary )
 		{
 			// Do not extract external libraries of dependencies of shared library.
 			// Assume that external libraries are used inside a shared library only privately.
 			continue;
 		}
-		GetAllTargetExternalLibrariesToLink_r( package_info, dependency.name, result );
+		GetAllTargetExternalLibrariesToLink_r( package_info, dependency, result );
 	}
 
 }

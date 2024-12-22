@@ -8,6 +8,49 @@ namespace BK
 // Package info in form which is much better to work with.
 struct PackageInfoTransformed
 {
+	struct PackageAbsoluteName
+	{
+		// TODO - support global versioned packages.
+		ust::string8 path;
+
+		type hasher= Hasher;
+
+		op<=>( PackageAbsoluteName& l, PackageAbsoluteName& r ) : i32
+		{
+			return l.path <=> r.path;
+		}
+	}
+
+	struct BuildTargetAbsoluteName
+	{
+		PackageAbsoluteName package_name;
+		ust::string8 name;
+
+		type hasher= Hasher;
+
+		op<=>( BuildTargetAbsoluteName& l, BuildTargetAbsoluteName& r ) : i32
+		{
+			if( l.package_name != r.package_name )
+			{
+				return l.package_name <=> r.package_name;
+			}
+			return l.name <=> r.name;
+		}
+	}
+
+	struct Hasher
+	{
+		fn hash( PackageAbsoluteName& n ) : size_type
+		{
+			return ust::default_hasher::hash( n.path );
+		}
+		fn hash( BuildTargetAbsoluteName& n ) : size_type
+		{
+			// TODO - imporove this.
+			return ust::default_hasher::hash( n.package_name ) ^ ust::default_hasher::hash( n.name );
+		}
+	}
+
 	struct BuildTarget
 	{
 		BuildTargetType target_type;
@@ -22,23 +65,23 @@ struct PackageInfoTransformed
 		ust::vector</ust::string8/> public_include_directories;
 
 		// List of direct public dependencies. It's sorted and deduplicated.
-		ust::vector</BuildTargetFullName/> public_dependencies;
+		ust::vector</BuildTargetAbsoluteName/> public_dependencies;
 
 		// List of direct private dependencies. It's sorted and deduplicated.
-		ust::vector</BuildTargetFullName/> private_dependencies;
+		ust::vector</BuildTargetAbsoluteName/> private_dependencies;
 
 		// List of all public dependencies, including transitive public dependencies. It's sorted and deduplicated.
-		ust::vector</BuildTargetFullName/> public_dependencies_including_transitive;
+		ust::vector</BuildTargetAbsoluteName/> public_dependencies_including_transitive;
 
 		// List of all private dependencies and all transitive public dependencies of these dependencies.
 		// Dependencies which are also public or transitive public dependencies aren't listed.
 		// It's sorted and deduplicated.
-		ust::vector</BuildTargetFullName/> private_dependencies_including_transitive_public_dependencies;
+		ust::vector</BuildTargetAbsoluteName/> private_dependencies_including_transitive_public_dependencies;
 
 		// Includes names of all shared library dependencies needed to be linked.
 		// This includes also shared library dependencies of private library dependencies.
 		// It's sorted and deduplicated.
-		ust::vector</BuildTargetFullName/> shared_library_dependencies_to_link;
+		ust::vector</BuildTargetAbsoluteName/> shared_library_dependencies_to_link;
 
 		// External libraries list - sorted and deduplicated.
 		ust::vector</ust::string8/> external_libraries;
@@ -48,7 +91,7 @@ struct PackageInfoTransformed
 		ust::vector</ust::string8/> all_external_libraries_to_link;
 	}
 
-	ust::unordered_map</ust::string8, BuildTarget/> build_targets;
+	ust::unordered_map</BuildTargetAbsoluteName, BuildTarget/> build_targets;
 }
 
 // Performs package info transformation, normalization and validation.
