@@ -1,0 +1,23 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	// Required package is located within directory with complex path.
+	var BK::PackageName sub_package= BK::PackageRelativePath{ .path= "sub_package/dir0/dir1/dir2" };
+
+	var BK::BuildTarget mut target
+	{
+		.name= "exe",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= "lib", .package_name= sub_package } )
+	};
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(target) ),
+		.package_dependencies= ust::make_array( BK::PackageDependency{ .name= sub_package } )
+	};
+}
