@@ -1,0 +1,7 @@
+import "/two_returner/two_returner.uh"
+
+fn nomangle main() : i32
+{
+	halt if( GetTwo() != 2 );
+	return 0;
+}

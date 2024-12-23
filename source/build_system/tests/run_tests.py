@@ -17,11 +17,25 @@ g_configuration_options_file_path = ""
 g_mangling_scheme = "itaniumabi"
 g_sysroot = None
 
+g_packages_repository_dir= "packages_repository"
+
 
 def RunBuildSystemWithExplicitConfiguration( project_subdirectory, configuration ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
-	build_system_args= [ g_build_system_executable, "build", "-q", "--build-configuration", configuration, "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--configuration-options", g_configuration_options_file_path, "--project-directory", project_root, "--build-directory", build_root ]
+	build_system_args= [
+		g_build_system_executable,
+		"build",
+		"-q",
+		"--build-configuration", configuration,
+		"--compiler-executable", g_compiler_executable,
+		"--build-system-imports-path", g_build_system_imports_path,
+		"--ustlib-path", g_ustlib_path,
+		"--configuration-options", g_configuration_options_file_path,
+		"--project-directory", project_root,
+		"--build-directory", build_root,
+		"--packages-repository-directory", os.path.join( g_tests_path, g_packages_repository_dir ),
+		]
 
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
@@ -40,7 +54,17 @@ def RunBuildSystem( project_subdirectory ):
 def RunBuildSystemWithErrors( project_subdirectory ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
-	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+	build_system_args= [
+		g_build_system_executable,
+		"build",
+		"-q",
+		"--compiler-executable", g_compiler_executable,
+		"--build-system-imports-path", g_build_system_imports_path,
+		"--ustlib-path", g_ustlib_path,
+		"--project-directory", project_root,
+		"--build-directory", build_root,
+		"--packages-repository-directory", os.path.join( g_tests_path, g_packages_repository_dir ),
+		]
 
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
@@ -457,6 +481,32 @@ def ChildPackage8Test():
 	RunExecutable( "child_package8", "exe" )
 
 
+def UsePackageFromRepositoryTest0():
+	RunBuildSystem( "use_package_from_repository0" )
+	RunExecutable( "use_package_from_repository0", "exe" )
+
+
+def UsePackageFromRepositoryTest1():
+	RunBuildSystem( "use_package_from_repository1" )
+	RunExecutable( "use_package_from_repository1", "exe" )
+
+
+def UsePackageFromRepositoryTest2():
+	RunBuildSystem( "use_package_from_repository2" )
+	RunExecutable( "use_package_from_repository2", "exe" )
+
+
+def UsePackageFromRepositoryTest3():
+	RunBuildSystem( "use_package_from_repository3" )
+	RunExecutable( "use_package_from_repository3", "exe1" )
+	RunExecutable( "use_package_from_repository3", "exe2" )
+
+
+def UsePackageFromRepositoryTest4():
+	RunBuildSystem( "use_package_from_repository4" )
+	RunExecutable( "use_package_from_repository4", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -691,6 +741,20 @@ def InvalidSourceName6Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Invalid, source name \".\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidGlobalPackageName0Test():
+	res = RunBuildSystemWithErrors( "invalid_global_package_name0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Global package dependency \"wrong . name\" is not valid!" ) != -1 )
+
+
+def InvalidGlobalPackageName1Test():
+	res = RunBuildSystemWithErrors( "invalid_global_package_name1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Can\\'t specify zero version for global package \"two_returner\"!" ) != -1 )
 
 
 def SourceDirectoriesConflict0Test():
@@ -1013,6 +1077,11 @@ def main():
 		ChildPackage6Test,
 		ChildPackage7Test,
 		ChildPackage8Test,
+		UsePackageFromRepositoryTest0,
+		UsePackageFromRepositoryTest1,
+		UsePackageFromRepositoryTest2,
+		UsePackageFromRepositoryTest3,
+		UsePackageFromRepositoryTest4,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
@@ -1042,6 +1111,8 @@ def main():
 		InvalidSourceName4Test,
 		InvalidSourceName5Test,
 		InvalidSourceName6Test,
+		InvalidGlobalPackageName0Test,
+		InvalidGlobalPackageName1Test,
 		SourceDirectoriesConflict0Test,
 		SourceDirectoriesConflict1Test,
 		SourceDirectoriesConflict2Test,

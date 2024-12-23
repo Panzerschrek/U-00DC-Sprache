@@ -58,7 +58,7 @@ For now following features are implemented:
 * Configuration options - for tweaking build targets
 * Target triple specifying
 * Limited (for now) cross-compilation support - using `--sysroot` option
-* Packages - for now in form of subpackages in directories of another packages
+* Packages - as subpackages within directories of another packages or as global versioned packages
 
 
 ### Caveats

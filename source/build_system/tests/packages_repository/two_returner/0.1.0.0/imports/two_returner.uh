@@ -1,0 +1,1 @@
+fn GetTwo() : i32;

@@ -1,0 +1,7 @@
+import "/integer_adder/integer_adder.uh"
+
+fn nomangle main() : i32
+{
+	halt if( AddInts( 7, 25 ) != 32 );
+	return 0;
+}

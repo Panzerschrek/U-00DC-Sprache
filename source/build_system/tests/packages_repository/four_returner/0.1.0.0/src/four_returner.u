@@ -1,0 +1,7 @@
+import "/four_returner/four_returner.uh"
+import "/two_returner/two_returner.uh"
+
+fn GetFour() : i32
+{
+	return GetTwo() * GetTwo();
+}
