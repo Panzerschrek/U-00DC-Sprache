@@ -245,18 +245,6 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// Construct the build graph for the whole project.
 	var BuildGraph mut build_graph;
 
-	// Create directories for intermediate files for each build target.
-	foreach( &build_target_pair : workspace.build_targets )
-	{
-		auto& build_target_name= build_target_pair.key();
-		auto dir_name= GetTargetBuildFilesDirectoryPath( root_package_build_directory, build_target_name );
-		if( !EnsureDirectoryExists( bsi.logger_, dir_name ) )
-		{
-			bsi.logger_.LogError( "Can't create build directory for target \"" + build_target_name.name + "\"." );
-			return -1;
-		}
-	}
-
 	{
 		// Collect and sort a list of build target names,
 		// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
