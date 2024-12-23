@@ -13,7 +13,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.name= "a",
 		.source_files= ust::make_array</ust::string8/>( "a/src/a.u" ),
 		.public_include_directories= ust::make_array</ust::string8/>( "a/imports" ),
-		.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "b" } ),
+		.public_dependencies= ust::make_array( BK::DependencyName{ .name= "b" } ),
 	};
 
 	// "b" shared library also exports symbols from "c" Ü library.
@@ -23,7 +23,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.name= "b",
 		.source_files= ust::make_array</ust::string8/>( "b/src/b.u" ),
 		.public_include_directories= ust::make_array</ust::string8/>( "b/imports" ),
-		.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "c" } ),
+		.public_dependencies= ust::make_array( BK::DependencyName{ .name= "c" } ),
 	};
 
 	var BK::BuildTarget mut c

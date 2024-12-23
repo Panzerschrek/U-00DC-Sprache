@@ -1,4 +1,5 @@
 import "/string.u"
+import "/variant.u"
 import "/vector.u"
 
 namespace BK
@@ -14,17 +15,6 @@ enum BuildTargetType
 	SharedLibrary,
 	// Object file, which may be used by a native linker to link result binary file.
 	ObjectFile,
-}
-
-struct BuildTargetFullName
-{
-	// TODO - add package prefix.
-	ust::string8 name;
-
-	op<=>( BuildTargetFullName& l, BuildTargetFullName& r ) : i32
-	{
-		return l.name <=> r.name;
-	}
 }
 
 struct BuildTarget
@@ -52,19 +42,64 @@ struct BuildTarget
 	ust::vector</ust::string8/> public_include_directories;
 
 	// List of dependencies, which should be also dependencies of other build targets dependent on this build target.
-	ust::vector</ BuildTargetFullName /> public_dependencies;
+	ust::vector</ DependencyName /> public_dependencies;
 
 	// List of dependencies of this build target, which are used internally.
-	ust::vector</ BuildTargetFullName /> private_dependencies;
+	ust::vector</ DependencyName /> private_dependencies;
 
 	// Contains names or paths of external libraries to link, like system libraries or libraries built outside Ü built system.
 	ust::vector</ust::string8/> external_libraries;
+}
+
+struct DependencyName
+{
+	// A package where dependency is located.
+	PackageName package_name;
+	// Name of dependency. Should be a name of a build target within package specified.
+	ust::string8 name;
+}
+
+// Package name - used for package dependencies and target names.
+struct PackageName
+{
+	// Marker of case where this is name relative to current package.
+	struct CurrentPackage{}
+
+	// Base of package name (where to search it).
+	ust::variant</ tup[ CurrentPackage, GlobalVersionedPackageName ] /> name_base;
+	// Path starting from base.
+	ust::string8 path;
+}
+
+// A package from global packages directory/centralized repository, with version specified.
+struct GlobalVersionedPackageName
+{
+	ust::string8 name;
+	ust::string8 version; // TODO - use other version type?
+}
+
+// Dependency description for a package.
+struct PackageDependency
+{
+	enum RequiredSystem
+	{
+		Target,
+		Host,
+		Both,
+	}
+
+	// Which package to depend on.
+	PackageName name;
+	// How to depend on this package.
+	RequiredSystem required_system= RequiredSystem::Target;
 }
 
 struct PackageInfo
 {
 	// Build targets of a package. Order is irrelevant.
 	ust::vector</BuildTarget/> build_targets;
+
+	ust::vector</PackageDependency/> package_dependencies;
 }
 
 // Signature of a function that should return package info.

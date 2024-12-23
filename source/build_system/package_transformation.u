@@ -1,36 +1,44 @@
 import "/sort.u"
 import "package_transformation.uh"
+import "options.uh"
 import "path.uh"
 
 namespace BK
 {
 
-fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_info )
-	: ust::optional</PackageInfoTransformed/>
+fn TransformAndValidatePackageInfo(
+	Logger &mut logger,
+	PackageInfo& package_info,
+	PackageAbsoluteName& package_absolute_name,
+	WorkspaceInfo &mut workspace ) : bool
 {
-	var PackageInfoTransformed mut out_package_info;
-
 	var bool mut ok= true;
 
 	var ust::vector</ ust::vector</ust::string8 /> /> mut prev_targets_directories;
 
 	foreach( &build_target : package_info.build_targets )
 	{
-		var ust::string8& target_name= build_target.name;
-
-		if( !TargetNameIsValid( target_name ) )
+		if( !TargetNameIsValid(  build_target.name ) )
 		{
-			logger.LogError( "Error, invalid build target name \"" + target_name + "\"!" );
+			logger.LogError( "Error, invalid build target name \"" +  build_target.name + "\"!" );
 			ok= false;
 		}
 
-		if( out_package_info.build_targets.exists( target_name ) )
+		var BuildTargetAbsoluteName target_absolute_name
 		{
-			logger.LogError( "Error, duplicated build target \"" + target_name + "\"!" );
+			.package_name= package_absolute_name,
+			.name= build_target.name,
+		};
+
+		var ust::string8 target_printable_name= BuildTargetAbsoluteNameToPrintableString( target_absolute_name );
+
+		if( workspace.build_targets.exists( target_absolute_name ) )
+		{
+			logger.LogError( "Error, duplicated build target \"" + target_printable_name + "\"!" );
 			ok= false;
 		}
 
-		var PackageInfoTransformed::BuildTarget mut out_build_target{ .target_type= build_target.target_type };
+		var WorkspaceInfo::BuildTarget mut out_build_target{ .target_type= build_target.target_type };
 
 		// Process sources.
 
@@ -41,11 +49,10 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 			{
 				if( !TargetSourceNameIsValid( source_name ) )
 				{
-					logger.LogError( "Invalid, source name \"" + source_name + "\" of build target \"" + target_name + "\"!" );
+					logger.LogError( "Invalid, source name \"" + source_name + "\" of build target \"" + target_printable_name + "\"!" );
 					ok= false;
 					continue;
 				}
-
 
 				out_build_target.source_files.push_back( NormalizePath( source_name ) );
 			}
@@ -56,7 +63,7 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 			{
 				if( cast_imut(out_build_target).source_files[ i - 1s ] == cast_imut(out_build_target).source_files[i] )
 				{
-					logger.LogError( "Error, duplicated source file \"" + out_build_target.source_files[i] + "\" of the build target \"" + target_name + "\"!" );
+					logger.LogError( "Error, duplicated source file \"" + out_build_target.source_files[i] + "\" of the build target \"" + target_printable_name + "\"!" );
 					ok= false;
 				}
 			}
@@ -69,26 +76,26 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 				out_build_target.sources_directory+= "/";
 			}
 
-			logger.LogVerbose( "All sources of the build target \"" + target_name + "\" are located within directory \"" + out_build_target.sources_directory + "\"." );
+			logger.LogVerbose( "All sources of the build target \"" + target_printable_name + "\" are located within directory \"" + out_build_target.sources_directory + "\"." );
 
 			// Check for source directory conflict.
 			foreach( &prev_source_directory : prev_targets_directories )
 			{
 				if( prev_source_directory == sources_directory )
 				{
-					logger.LogError( "Source directory \"" + out_build_target.sources_directory + "\" of the build target \"" + target_name + "\" is already in use." );
+					logger.LogError( "Source directory \"" + out_build_target.sources_directory + "\" of the build target \"" + target_printable_name + "\" is already in use." );
 					ok= false;
 				}
 				else if( sources_directory.size() < prev_source_directory.size() &&
 					sources_directory == prev_source_directory.range().subrange_end( sources_directory.size() ) )
 				{
-					logger.LogError( "Source directory \"" + out_build_target.sources_directory + "\" of the build target \"" + target_name + "\" is a prefix of another used directory." );
+					logger.LogError( "Source directory \"" + out_build_target.sources_directory + "\" of the build target \"" + target_printable_name + "\" is a prefix of another used directory." );
 					ok= false;
 				}
 				else if( sources_directory.size() > prev_source_directory.size() &&
 					prev_source_directory == cast_imut(sources_directory).range().subrange_end( prev_source_directory.size() ) )
 				{
-					logger.LogError( "Source directory \"" + out_build_target.sources_directory + "\" of the build target \"" + target_name + "\" is located within another used directory." );
+					logger.LogError( "Source directory \"" + out_build_target.sources_directory + "\" of the build target \"" + target_printable_name + "\" is located within another used directory." );
 					ok= false;
 				}
 			}
@@ -103,14 +110,14 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 			// For now forbid specifying public include directories for executables.
 			// It's useless, since exporting symbols from executables isn't supported.
 			ok= false;
-			logger.LogError( "Non-empty public include directories list for an executable build target \"" + build_target.name + "\"." );
+			logger.LogError( "Non-empty public include directories list for an executable build target \"" + target_printable_name + "\"." );
 		}
 
 		foreach( &public_include_directory : build_target.public_include_directories )
 		{
 			if( !TargetSourceNameIsValid( public_include_directory ) )
 			{
-				logger.LogError( "Invalid path of a public source directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\"." );
+				logger.LogError( "Invalid path of a public source directory \"" + public_include_directory + "\" of the build target \"" + target_printable_name + "\"." );
 				ok= false;
 				continue;
 			}
@@ -122,19 +129,19 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 			{
 				if( prev_source_directory == public_include_directory_component_splitted )
 				{
-					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is already in use." );
+					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_printable_name + "\" is already in use." );
 					ok= false;
 				}
 				else if( public_include_directory_component_splitted.size() < prev_source_directory.size() &&
 					public_include_directory_component_splitted == prev_source_directory.range().subrange_end( public_include_directory_component_splitted.size() ) )
 				{
-					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is a prefix of another used directory." );
+					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_printable_name + "\" is a prefix of another used directory." );
 					ok= false;
 				}
 				else if( public_include_directory_component_splitted.size() > prev_source_directory.size() &&
 					prev_source_directory == cast_imut(public_include_directory_component_splitted).range().subrange_end( prev_source_directory.size() ) )
 				{
-					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_name + "\" is located within another used directory." );
+					logger.LogError( "Public include directory \"" + public_include_directory + "\" of the build target \"" + target_printable_name + "\" is located within another used directory." );
 					ok= false;
 				}
 			}
@@ -159,59 +166,167 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 			// For now forbid specifying public dependencies for executables.
 			// It's useless, since exporting symbols from executables isn't supported.
 			ok= false;
-			logger.LogError( "Non-empty public dependencies list for an executable build target \"" + build_target.name + "\"." );
+			logger.LogError( "Non-empty public dependencies list for an executable build target \"" + target_printable_name + "\"." );
 		}
 
-		out_build_target.public_dependencies= build_target.public_dependencies;
+
+		// Process public dependencies.
+		foreach( &public_dependency : build_target.public_dependencies )
+		{
+			auto mut dependency_name= TransformDependencyName( logger, package_absolute_name, public_dependency );
+			if( dependency_name.empty() )
+			{
+				ok= false;
+				continue;
+			}
+			out_build_target.public_dependencies.push_back( dependency_name.try_take() );
+		}
 		NormalizeList(out_build_target.public_dependencies);
 
 		// Process private dependencies.
-
-		out_build_target.private_dependencies= build_target.private_dependencies;
+		foreach( &private_dependency : build_target.private_dependencies )
+		{
+			auto mut dependency_name= TransformDependencyName( logger, package_absolute_name, private_dependency );
+			if( dependency_name.empty() )
+			{
+				ok= false;
+				continue;
+			}
+			out_build_target.private_dependencies.push_back( dependency_name.try_take() );
+		}
 		NormalizeList(out_build_target.private_dependencies);
 
 		// Process external libraries.
 		out_build_target.external_libraries= build_target.external_libraries;
 		NormalizeList( out_build_target.external_libraries );
 
-		out_package_info.build_targets.insert( target_name, move( out_build_target ) );
+		workspace.build_targets.insert( target_absolute_name, move( out_build_target ) );
 	}
 
-	// After finishing building build targets map can perform dependency graph-based checks and transformations.
-	//
+	// Check if package directories doesn't conflict with source/header directories.
+	foreach( &dependency : package_info.package_dependencies )
+	{
+		if( dependency.name.name_base.has</ PackageName::CurrentPackage />() ) // Process only relative paths.
+		{
+			auto mut relative_path_component_splitted=
+				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( dependency.name.path ).iter() );
+
+			var bool mut moves_up= false;
+			foreach( &component : relative_path_component_splitted )
+			{
+				moves_up|= component == "..";
+			}
+
+			if( moves_up )
+			{
+				// For now ignore paths with ".." - we can't process them properly.
+				continue;
+			}
+
+			if( !relative_path_component_splitted.empty() )
+			{
+				// Forbid using the same name for build targets and subpackages.
+				// It's needed to avoid name conflicts in the package build directory.
+				auto& first_component= relative_path_component_splitted.front();
+				foreach( &build_target : package_info.build_targets )
+				{
+					if( first_component == build_target.name )
+					{
+						logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" conflicts with build target name \"" + build_target.name + "\"!" );
+						ok= false;
+					}
+				}
+			}
+
+			// Do not allow some package names - to avoid conflicts in the build directory.
+			foreach( &component : relative_path_component_splitted )
+			{
+				// TODO - check other reserved names.
+				if( component == BuildConfigurationToString( BuildConfiguration::Debug ) ||
+					component == BuildConfigurationToString( BuildConfiguration::Release ) )
+				{
+					logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" contains a reserved word!" );
+					ok= false;
+				}
+				if( !TargetNameIsValid( component ) ) // Use for package names check identical to target names check.
+				{
+					logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" name is invalid!" );
+					ok= false;
+				}
+			}
+
+			foreach( &prev_source_directory : prev_targets_directories )
+			{
+				if( prev_source_directory == relative_path_component_splitted )
+				{
+					logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" is already in use." );
+					ok= false;
+				}
+				else if( relative_path_component_splitted.size() < prev_source_directory.size() &&
+					relative_path_component_splitted == prev_source_directory.range().subrange_end( relative_path_component_splitted.size() ) )
+				{
+					logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" is a prefix of another used directory." );
+					ok= false;
+				}
+				else if( relative_path_component_splitted.size() > prev_source_directory.size() &&
+					prev_source_directory == cast_imut(relative_path_component_splitted).range().subrange_end( prev_source_directory.size() ) )
+				{
+					logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" is located within another used directory." );
+					ok= false;
+				}
+			}
+
+			// Do not store directory of this package dependency in "prev_targets_directories" list.
+			// It's allowed to access package dependencies within other package dependencies.
+		}
+	}
+
+	return ok;
+}
+
+fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool
+{
+	var bool mut ok= true;
 
 	// Check for dependency graph validity.
-	foreach( &build_target : package_info.build_targets )
+	foreach( &pair : cast_imut(workspace).build_targets )
 	{
-		ok&= DependencyGraphIsValid( logger, out_package_info, build_target.name );
+		ok&= DependencyGraphIsValid( logger, workspace, pair.key() );
 	}
 
 	if( !ok )
 	{
 		// Stop here, if we have errors.
 		// Avoid performing dependency graph analysis steps if dependency graph isn't valid.
-		return ust::null_optional;
+		return false;
+	}
+
+	// Collect build target names in order to have possibility to iterate and change build targets map elements.
+	var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
+	foreach( &pair : workspace.build_targets )
+	{
+		build_target_names.push_back( pair.key() );
 	}
 
 	// Perform public dependencies retrieval.
-	foreach( &build_target : package_info.build_targets )
+	foreach( &build_target_name : build_target_names )
 	{
-		auto mut dependencies = GetAllTargetPublicDependencies( out_package_info, build_target.name );
-		out_package_info.build_targets[build_target.name].public_dependencies_including_transitive= move(dependencies);
+		auto mut dependencies = GetAllTargetPublicDependencies( workspace, build_target_name );
+		workspace.build_targets[build_target_name].public_dependencies_including_transitive= move(dependencies);
 	}
 
 	// Perform private dependencies retrieval.
-	foreach( &build_target : package_info.build_targets )
+	foreach( &build_target_name : build_target_names )
 	{
-		auto dependencies = GetAllTargetPrivateAndTheirTransitivePublicDependencies( out_package_info, build_target.name );
+		auto dependencies = GetAllTargetPrivateAndTheirTransitivePublicDependencies( workspace, build_target_name );
 
-		auto &mut out_build_target= out_package_info.build_targets[ build_target.name ];
+		auto &mut out_build_target= workspace.build_targets[ build_target_name ];
 
 		// Remove private dependencies which are also public dependencies.
 
 		auto& public_dependencies= out_build_target.public_dependencies_including_transitive;
 		auto is_not_in_public_dependencies=
-			lambda[&]( BuildTargetFullName& target_name ) : bool
+			lambda[&]( BuildTargetAbsoluteName& target_name ) : bool
 			{
 				foreach( &dependency : public_dependencies )
 				{
@@ -228,25 +343,106 @@ fn TransformAndValidatePackageInfo( Logger &mut logger, PackageInfo& package_inf
 	}
 
 	// Perform shared libraries to link retrieval.
-	foreach( &build_target : package_info.build_targets )
+	foreach( &build_target_name : build_target_names )
 	{
-		auto mut dependencies= GetAllTargetSharedLibraryDependenciesToLink( out_package_info, build_target.name );
-		out_package_info.build_targets[ build_target.name ].shared_library_dependencies_to_link= move(dependencies);
+		auto mut dependencies= GetAllTargetSharedLibraryDependenciesToLink( workspace, build_target_name );
+		workspace.build_targets[ build_target_name ].shared_library_dependencies_to_link= move(dependencies);
 	}
 
 	// Perform external libraries to link retrieval.
-	foreach( &build_target : package_info.build_targets )
+	foreach( &build_target_name : build_target_names )
 	{
-		auto mut libraries= GetAllTargetExternalLibrariesToLink( out_package_info, build_target.name );
-		out_package_info.build_targets[ build_target.name ].all_external_libraries_to_link= move(libraries);
+		auto mut libraries= GetAllTargetExternalLibrariesToLink( workspace, build_target_name );
+		workspace.build_targets[ build_target_name ].all_external_libraries_to_link= move(libraries);
 	}
 
-	if( !ok )
+	// Check dependency name conflicts.
+	foreach( &pair : cast_imut(workspace).build_targets )
 	{
+		var BuildTargetAbsoluteName& build_target_name= pair.key();
+		var WorkspaceInfo::BuildTarget& build_target= pair.value();
+
+		auto all_deps=
+			build_target.public_dependencies_including_transitive.iter().chain(
+				build_target.private_dependencies_including_transitive_public_dependencies.iter() );
+
+		foreach( &dep_a : all_deps )
+		{
+			foreach( &dep_b : all_deps )
+			{
+				if( dep_a.name == dep_b.name && dep_a.package_name < dep_b.package_name )
+				{
+					// Forbid having multiple dependnecies, including public and private and their transitive dependencies,
+					// if they have identical name but come from different packages.
+					// It's needed, since imports are prefixed just by dependency name without package name.
+					logger.LogError(
+						"Build target \"" +
+						BuildTargetAbsoluteNameToPrintableString( build_target_name ) +
+						"\" has dependencies with identical name \"" +
+						BuildTargetAbsoluteNameToPrintableString( dep_a ) +
+						"\" and \"" +
+						BuildTargetAbsoluteNameToPrintableString( dep_b ) +
+						"\"!" );
+					ok= false;
+				}
+			}
+		}
+	}
+
+	return ok;
+}
+
+fn ResolvePackageAbsoluteName(
+	Logger &mut logger,
+	PackageAbsoluteName& parent_package_absolute_name,
+	PackageName& package_name ) : ust::optional</PackageAbsoluteName/>
+{
+	if( package_name.name_base.has</ PackageName::CurrentPackage/>() )
+	{
+		if( package_name.path.empty() )
+		{
+			return parent_package_absolute_name;
+		}
+
+		var ust::vector</ust::string8/> mut components;
+		components.append( SplitPathIntoComponents( parent_package_absolute_name.path ).iter() );
+
+		foreach( &child_component : SplitPathIntoComponents( package_name.path ) )
+		{
+			if( child_component == "." )
+			{} // Do not push "."
+			else if( child_component == ".." )
+			{
+				if( components.empty() )
+				{
+					logger.LogError( "Failed to resolve package dependency \"" + package_name.path + "\" relative to \"" + parent_package_absolute_name.path + "\" - too many \"..\"!" );
+					return ust::null_optional;
+				}
+				components.pop_back();
+			}
+			else
+			{
+				components.push_back( child_component );
+			}
+		}
+
+		var ust::string8 mut path;
+		foreach( &component : components )
+		{
+			if( !path.empty() )
+			{
+				path+= "/";
+			}
+			path+= component;
+		}
+
+		return PackageAbsoluteName{ .path= NormalizePath( path ) };
+	}
+	else
+	{
+		logger.LogError( "Non-relative package paths aren't supported yet!" );
 		return ust::null_optional;
 	}
-
-	return move(out_package_info);
 }
 
 fn TargetNameIsValid( ust::string_view8 name ) : bool
@@ -377,36 +573,49 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 	return result;
 }
 
+fn TransformDependencyName(
+	Logger& mut logger,
+	PackageAbsoluteName& package_absolute_name,
+	DependencyName& dependency_name ) : ust::optional</BuildTargetAbsoluteName/>
+{
+	auto mut dependency_package_name=
+		ResolvePackageAbsoluteName( logger, package_absolute_name, dependency_name.package_name );
+	if( dependency_package_name.empty() )
+	{
+		return ust::null_optional;
+	}
+
+	return BuildTargetAbsoluteName{ .package_name= dependency_package_name.try_take(), .name= dependency_name.name };
+}
+
 // Returns true if dependency graph is valid.
 fn DependencyGraphIsValid(
-	Logger &mut logger,
-	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name ) : bool
+	Logger &mut logger, WorkspaceInfo& workspace, BuildTargetAbsoluteName& build_target_name ) : bool
 {
-	var ust::vector</BuildTargetFullName/> mut call_stack;
-	return DependencyGraphIsValid_r( logger, package_info, build_target_name, call_stack );
+	var ust::vector</BuildTargetAbsoluteName/> mut call_stack;
+	return DependencyGraphIsValid_r( logger, workspace, build_target_name, call_stack );
 }
 
 fn DependencyGraphIsValid_r(
 	Logger &mut logger,
-	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name,
-	ust::vector</BuildTargetFullName/> &mut call_stack ) : bool
+	WorkspaceInfo& workspace,
+	BuildTargetAbsoluteName& build_target_name,
+	ust::vector</BuildTargetAbsoluteName/> &mut call_stack ) : bool
 {
 	for( auto mut i= 0s; i < call_stack.size(); ++i )
 	{
-		if( build_target_name == call_stack[i].name )
+		if( build_target_name == call_stack[i] )
 		{
 			var ust::string8 mut message= "Dependency loop detected: ";
 			for( auto mut j= i; j < call_stack.size(); ++j )
 			{
 				message += "\"";
-				message += call_stack[j].name;
+				message += BuildTargetAbsoluteNameToPrintableString( call_stack[j] );
 				message += "\"";
 				message += " -> ";
 			}
 			message += "\"";
-			message += build_target_name;
+			message += BuildTargetAbsoluteNameToPrintableString( build_target_name );
 			message += "\"";
 
 			logger.LogError( message );
@@ -415,21 +624,21 @@ fn DependencyGraphIsValid_r(
 		}
 	}
 
-	call_stack.push_back( BuildTargetFullName{ .name= build_target_name } );
+	call_stack.push_back( build_target_name );
 
 	var bool mut ok= true;
 
-	if_var( &build_target : package_info.build_targets.find( build_target_name ) )
+	if_var( &build_target : workspace.build_targets.find( build_target_name ) )
 	{
 		foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 		{
-			if( dependency.name == build_target_name )
+			if( dependency == build_target_name )
 			{
-				logger.LogError( "Build target \"" + build_target_name + "\" depends on itself." );
+				logger.LogError( "Build target \"" + BuildTargetAbsoluteNameToPrintableString( build_target_name ) + "\" depends on itself." );
 				ok= false;
 				continue;
 			}
-			if_var( &dependency_build_target : package_info.build_targets.find( dependency.name ) )
+			if_var( &dependency_build_target : workspace.build_targets.find( dependency ) )
 			{
 				if( !(
 					dependency_build_target.target_type == BuildTargetType::Library ||
@@ -439,18 +648,18 @@ fn DependencyGraphIsValid_r(
 					// Regular library targets should be used, if some common code needed to be used in some another build target(s).
 					) )
 				{
-					logger.LogError( "Build target \"" + build_target_name + "\" depends on non-library build target \"" + dependency.name + "\"." );
+					logger.LogError( "Build target \"" + BuildTargetAbsoluteNameToPrintableString( build_target_name ) + "\" depends on non-library build target \"" + dependency.name + "\"." );
 					ok= false;
 				}
 			}
 
-			ok&= DependencyGraphIsValid_r( logger, package_info, dependency.name, call_stack );
+			ok&= DependencyGraphIsValid_r( logger, workspace, dependency, call_stack );
 		}
 	}
 	else
 	{
 		ok= false;
-		logger.LogError( "Dependency \"" + build_target_name + "\" not found." );
+		logger.LogError( "Dependency \"" + BuildTargetAbsoluteNameToPrintableString( build_target_name ) + "\" not found." );
 	}
 
 	call_stack.pop_back();
@@ -458,12 +667,14 @@ fn DependencyGraphIsValid_r(
 }
 
 fn GetAllTargetPublicDependencies(
-	PackageInfoTransformed& package_info, ust::string8& build_target_name ) : ust::vector</BuildTargetFullName/>
+	WorkspaceInfo& workspace,
+	BuildTargetAbsoluteName& build_target_name )
+	: ust::vector</BuildTargetAbsoluteName/>
 {
 	// Build targets existence should be checked before.
 
-	var ust::vector</BuildTargetFullName/> mut result;
-	GetAllTargetPublicDependencies_r( package_info, build_target_name, result );
+	var ust::vector</BuildTargetAbsoluteName/> mut result;
+	GetAllTargetPublicDependencies_r( workspace, build_target_name, result );
 
 	NormalizeList(result);
 
@@ -471,15 +682,17 @@ fn GetAllTargetPublicDependencies(
 }
 
 fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
-	PackageInfoTransformed& package_info, ust::string8& build_target_name ) : ust::vector</BuildTargetFullName/>
+	WorkspaceInfo& workspace,
+	BuildTargetAbsoluteName& build_target_name )
+	: ust::vector</BuildTargetAbsoluteName/>
 {
 	// Build targets existence should be checked before.
 
-	var ust::vector</BuildTargetFullName/> mut result;
+	var ust::vector</BuildTargetAbsoluteName/> mut result;
 
-	foreach( &private_dependency : package_info.build_targets[ build_target_name ].private_dependencies )
+	foreach( &private_dependency : workspace.build_targets[ build_target_name ].private_dependencies )
 	{
-		GetAllTargetPublicDependencies_r( package_info, private_dependency.name, result );
+		GetAllTargetPublicDependencies_r( workspace, private_dependency, result );
 		result.push_back( private_dependency );
 	}
 
@@ -489,31 +702,31 @@ fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 }
 
 fn GetAllTargetPublicDependencies_r(
-	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name,
-	ust::vector</BuildTargetFullName/> &mut result )
+	WorkspaceInfo& workspace,
+	BuildTargetAbsoluteName& build_target_name,
+	ust::vector</BuildTargetAbsoluteName/> &mut result )
 {
 	// Possible dependency loops and target names validity should be checked before.
 
-	foreach( &public_dependency : package_info.build_targets[ build_target_name ].public_dependencies )
+	foreach( &public_dependency : workspace.build_targets[ build_target_name ].public_dependencies )
 	{
-		GetAllTargetPublicDependencies_r( package_info, public_dependency.name, result );
+		GetAllTargetPublicDependencies_r( workspace, public_dependency, result );
 		result.push_back(public_dependency);
 	}
 }
 
 fn GetAllTargetSharedLibraryDependenciesToLink(
-	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name ) : ust::vector</BuildTargetFullName/>
+	WorkspaceInfo& workspace,
+	BuildTargetAbsoluteName& build_target_name ) : ust::vector</BuildTargetAbsoluteName/>
 {
 	// Possible dependency loops and target names validity should be checked before.
 
-	var PackageInfoTransformed::BuildTarget& build_target= package_info.build_targets[ build_target_name ];
-	var ust::vector</BuildTargetFullName/> mut result;
+	var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ build_target_name ];
+	var ust::vector</BuildTargetAbsoluteName/> mut result;
 
 	foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 	{
-		GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
+		GetAllTargetSharedLibraryDependenciesToLink_r( workspace, dependency, result );
 	}
 
 	NormalizeList(result);
@@ -522,13 +735,13 @@ fn GetAllTargetSharedLibraryDependenciesToLink(
 }
 
 fn GetAllTargetSharedLibraryDependenciesToLink_r(
-	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name,
-	ust::vector</BuildTargetFullName/> &mut result )
+	WorkspaceInfo& workspace,
+	BuildTargetAbsoluteName& build_target_name,
+	ust::vector</BuildTargetAbsoluteName/> &mut result )
 {
 	// Possible dependency loops and target names validity should be checked before.
 
-	var PackageInfoTransformed::BuildTarget& build_target= package_info.build_targets[ build_target_name ];
+	var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ build_target_name ];
 
 	switch( build_target.target_type )
 	{
@@ -538,19 +751,19 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 			// Extract shared library dependencies of public and private library dependencies.
 			foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 			{
-				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, dependency.name, result );
+				GetAllTargetSharedLibraryDependenciesToLink_r( workspace, dependency, result );
 			}
 		},
 		BuildTargetType::SharedLibrary ->
 		{
 			// Use this shared librarty.
-			result.push_back( BuildTargetFullName{ .name= build_target_name } );
+			result.push_back( build_target_name );
 
 			// Extract also shared library dependencies of public dependencies of this shared library.
 			// But DO NOT extract shared library dependencies of private dependencies.
 			foreach( &public_dependency : build_target.public_dependencies )
 			{
-				GetAllTargetSharedLibraryDependenciesToLink_r( package_info, public_dependency.name, result );
+				GetAllTargetSharedLibraryDependenciesToLink_r( workspace, public_dependency, result );
 			}
 		},
 		BuildTargetType::ObjectFile -> {}, // This should be checked before.
@@ -558,26 +771,23 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 }
 
 fn GetAllTargetExternalLibrariesToLink(
-	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name ) : ust::vector</ust::string8/>
+	WorkspaceInfo& workspace, BuildTargetAbsoluteName& build_target_name ) : ust::vector</ust::string8/>
 {
 	// Possible dependency loops and target names validity should be checked before.
 
 	var ust::vector</ust::string8/> mut result;
-	GetAllTargetExternalLibrariesToLink_r( package_info, build_target_name, result );
+	GetAllTargetExternalLibrariesToLink_r( workspace, build_target_name, result );
 	NormalizeList(result);
 
 	return result;
 }
 
 fn GetAllTargetExternalLibrariesToLink_r(
-	PackageInfoTransformed& package_info,
-	ust::string8& build_target_name,
-	ust::vector</ust::string8/> &mut result )
+	WorkspaceInfo& workspace, BuildTargetAbsoluteName& build_target_name, ust::vector</ust::string8/> &mut result )
 {
 	// Possible dependency loops and target names validity should be checked before.
 
-	var PackageInfoTransformed::BuildTarget& build_target= package_info.build_targets[ build_target_name ];
+	var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ build_target_name ];
 
 	foreach( &external_library : build_target.external_libraries )
 	{
@@ -587,15 +797,26 @@ fn GetAllTargetExternalLibrariesToLink_r(
 	// Extract external libraries of public and private library dependencies.
 	foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 	{
-		if( package_info.build_targets[ dependency.name ].target_type == BuildTargetType::SharedLibrary )
+		if( workspace.build_targets[ dependency ].target_type == BuildTargetType::SharedLibrary )
 		{
 			// Do not extract external libraries of dependencies of shared library.
 			// Assume that external libraries are used inside a shared library only privately.
 			continue;
 		}
-		GetAllTargetExternalLibrariesToLink_r( package_info, dependency.name, result );
+		GetAllTargetExternalLibrariesToLink_r( workspace, dependency, result );
 	}
+}
 
+fn BuildTargetAbsoluteNameToPrintableString( BuildTargetAbsoluteName& name ) : ust::string8
+{
+	var ust::string8 mut res;
+	if( !name.package_name.path.empty() )
+	{
+		res+= name.package_name.path;
+		res+= "/";
+	}
+	res+= name.name;
+	return res;
 }
 
 template</type T/>

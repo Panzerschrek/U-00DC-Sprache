@@ -1,0 +1,6 @@
+import "/lib_c/lib_c.uh"
+
+fn LibCFunc( i32 x ) : i32
+{
+	return x * x;
+}

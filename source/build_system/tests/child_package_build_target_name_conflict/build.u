@@ -1,0 +1,22 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	var BK::PackageName sub_package{ .path= "sub_package" };
+
+	var BK::BuildTarget mut target
+	{
+		// Error here - build target name is identical to subpackage name, which isn't allowed.
+		.name= "sub_package",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
+	};
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(target) ),
+		.package_dependencies= ust::make_array( BK::PackageDependency{ .name= sub_package } )
+	};
+}

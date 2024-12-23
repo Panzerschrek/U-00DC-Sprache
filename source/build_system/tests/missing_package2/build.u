@@ -1,0 +1,12 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	return BK::PackageInfo
+	{
+		// ".." can't be found if this package is root package.
+		.package_dependencies= ust::make_array( BK::PackageDependency{ .name{ .path= ".." } } )
+	};
+}

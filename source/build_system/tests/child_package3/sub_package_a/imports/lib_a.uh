@@ -1,0 +1,3 @@
+import "/lib_b/lib_b.uh"
+
+fn LibAFunc( MyInt x ) : MyInt;

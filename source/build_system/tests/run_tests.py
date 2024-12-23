@@ -412,6 +412,51 @@ def ExternalLibraryLinking2Test():
 	RunExecutable( "external_library_linking2", "exe" )
 
 
+def ChildPackage0Test():
+	RunBuildSystem( "child_package0" )
+	RunExecutable( "child_package0", "exe" )
+
+
+def ChildPackage1Test():
+	RunBuildSystem( "child_package1" )
+	RunExecutable( "child_package1", "exe" )
+
+
+def ChildPackage2Test():
+	RunBuildSystem( "child_package2" )
+	RunExecutable( "child_package2", "exe" )
+
+
+def ChildPackage3Test():
+	RunBuildSystem( "child_package3" )
+	RunExecutable( "child_package3", "exe" )
+
+
+def ChildPackage4Test():
+	RunBuildSystem( "child_package4" )
+	RunExecutable( "child_package4", "sub_package/child_package_exe" )
+
+
+def ChildPackage5Test():
+	RunBuildSystem( "child_package5" )
+	RunExecutable( "child_package5", "exe" )
+
+
+def ChildPackage6Test():
+	RunBuildSystem( "child_package6" )
+	RunExecutable( "child_package6", "sub_package/exe" )
+
+
+def ChildPackage7Test():
+	RunBuildSystem( "child_package7" )
+	RunExecutable( "child_package7", "exe" )
+
+
+def ChildPackage8Test():
+	RunBuildSystem( "child_package8" )
+	RunExecutable( "child_package8", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -422,11 +467,39 @@ def MissingBuildFileTest():
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 
+def MissingPackage0Test():
+	res = RunBuildSystemWithErrors( "missing_package0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Can not get modification time for" ) != -1 )
+	assert( stderr.find( "non_existing_package/build.u" ) != -1 )
+	assert( stderr.find( "file does not exists?" ) != -1 )
+	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
+
+
+def MissingPackage1Test():
+	res = RunBuildSystemWithErrors( "missing_package1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Can not get modification time for" ) != -1 )
+	assert( stderr.find( "sub_package/build.u" ) != -1 )
+	assert( stderr.find( "file does not exists?" ) != -1 )
+	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
+
+
+def MissingPackage2Test():
+	res = RunBuildSystemWithErrors( "missing_package2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Failed to resolve package dependency \"..\" relative to \"\" - too many \"..\"!" ) != -1 )
+
+
 def BuildScriptNullResultTest():
 	res = RunBuildSystemWithErrors( "build_script_null_result" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Failed to get package info - build script returned empty optional" ) != -1 )
+	assert( stderr.find( "Failed to get package info") != -1 )
+	assert( stderr.find( "build script returned empty optional" ) != -1 )
 
 
 def BrokenBuildFile0Test():
@@ -522,7 +595,8 @@ def DuplicatedBuildTargetTest():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Error, duplicated build target \"target_c\"" ) != -1 )
-	assert( stderr.find( "Package is invald" ) != -1 )
+	assert( stderr.find( "Package" ) != -1 )
+	assert( stderr.find( "is invald" ) != -1 )
 
 
 def DuplicatedSourceFileTest():
@@ -531,7 +605,8 @@ def DuplicatedSourceFileTest():
 	stderr = str(res.stderr)
 	assert( stderr.find( "Error, duplicated source file \"main.u\" of the build target \"hello_world\"" ) != -1 )
 	assert( stderr.find( "Error, duplicated source file \"dir/other.u\" of the build target \"hello_world\"" ) != -1 )
-	assert( stderr.find( "Package is invald" ) != -1 )
+	assert( stderr.find( "Package" ) != -1 )
+	assert( stderr.find( "is invald" ) != -1 )
 
 
 def InvalidTargetName0Test():
@@ -681,6 +756,13 @@ def SourceDirectoriesConflict8Test():
 	assert( stderr.find( "Public include directory \"common_dir\" of the build target \"target_b\" is a prefix of another used directory." ) != -1 )
 
 
+def PackageDirectoryNameConflictTest():
+	res = RunBuildSystemWithErrors( "package_directory_name_conflict" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Package dependency directory \"sub_package\" is located within another used directory." ) != -1 )
+
+
 def SelfDependency0Test():
 	res = RunBuildSystemWithErrors( "self_dependency0" )
 	assert( res.returncode != 0 )
@@ -700,6 +782,20 @@ def MissingDependencyTest():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Dependency \"unknown_dependency\" not found." ) != -1 )
+
+
+def DependencyNameConflictTest():
+	res = RunBuildSystemWithErrors( "dependency_name_conflict" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"exe\" has dependencies with identical name \"sub_package_a/lib\" and \"sub_package_b/lib\"!" ) != -1 )
+
+
+def ChildPackageBuildTargetNameConflictTest():
+	res = RunBuildSystemWithErrors( "child_package_build_target_name_conflict" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Package dependency directory \"sub_package\" conflicts with build target name \"sub_package\"!" ) != -1 )
 
 
 def DependencyLoop0Test():
@@ -908,7 +1004,19 @@ def main():
 		ExternalLibraryLinking0Test,
 		ExternalLibraryLinking1Test,
 		ExternalLibraryLinking2Test,
+		ChildPackage0Test,
+		ChildPackage1Test,
+		ChildPackage2Test,
+		ChildPackage3Test,
+		ChildPackage4Test,
+		ChildPackage5Test,
+		ChildPackage6Test,
+		ChildPackage7Test,
+		ChildPackage8Test,
 		MissingBuildFileTest,
+		MissingPackage0Test,
+		MissingPackage1Test,
+		MissingPackage2Test,
 		BuildScriptNullResultTest,
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,
@@ -943,9 +1051,12 @@ def main():
 		SourceDirectoriesConflict6Test,
 		SourceDirectoriesConflict7Test,
 		SourceDirectoriesConflict8Test,
+		PackageDirectoryNameConflictTest,
 		SelfDependency0Test,
 		SelfDependency1Test,
 		MissingDependencyTest,
+		DependencyNameConflictTest,
+		ChildPackageBuildTargetNameConflictTest,
 		DependencyLoop0Test,
 		DependencyLoop1Test,
 		DependencyLoop2Test,

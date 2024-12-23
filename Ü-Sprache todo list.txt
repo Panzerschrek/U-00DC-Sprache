@@ -154,11 +154,11 @@ CPP Header converter:
 
 Ü Build system:
 *) Build graph - support for a command execution of some internal build system actions (like file/directory creation)
+*) Global versioned packages - for now stored in a centralized repository-like directory
 *) Custom target type
 *) Support generated sources
 *) Support generated headers
-*) Multiple packages support
-*) Support compiling some build targets for host system, or at least some packages
+*) Support compiling dependency packages for host system (if it's needed)
 *) Fix JSON floats serialization
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
 *) Fix possible global mutable variables and type id tables duplication because of private linking of a library into
@@ -173,7 +173,7 @@ CPP Header converter:
 *) Build the build system itself using the build system (create second build copy)
 *) Build Compiler2 and (possible) Compiler1 using the build system
 *) Support overriding "rpath" for executables
-*) Investigate necessity/possibility of a centralized packages repository
+*) Centralized packages repository
 
 Documentation:
 *) Documentation for the build system

@@ -12,7 +12,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.target_type = BK::BuildTargetType::Executable,
 		.name= "exe",
 		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
-		.private_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "a" } ),
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= "a" } ),
 	};
 
 	var BK::BuildTarget mut a
@@ -21,7 +21,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.name= "a",
 		.source_files= ust::make_array</ust::string8/>( "a/src/a.u" ),
 		.public_include_directories= ust::make_array</ust::string8/>( "a/imports" ),
-		.public_dependencies= ust::make_array( BK::BuildTargetFullName{ .name= "b" } ),
+		.public_dependencies= ust::make_array( BK::DependencyName{ .name= "b" } ),
 	};
 
 	var BK::BuildTarget mut b

@@ -1,0 +1,7 @@
+import "/lib_a/lib_a.uh"
+import "/lib_b/lib_b.uh"
+
+fn LibAFunc( i32 x ) : i32
+{
+	return LibBFunc( x - 6 );
+}

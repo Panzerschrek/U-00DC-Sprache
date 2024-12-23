@@ -1,0 +1,8 @@
+import "/lib_a/lib_a.uh"
+
+fn nomangle main() : i32
+{
+	halt if( LibAFunc( 8 ) != - (8 - 6) * (8 - 6) + 13 * (8 - 6) );
+	halt if( LibAFunc( 37 ) != - (37 - 6) * (37 - 6) + 13 * (37 - 6) );
+	return 0;
+}
