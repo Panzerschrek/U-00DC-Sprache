@@ -1,0 +1,28 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	// This global package depends on another global package.
+
+	var BK::PackageName two_returner_package
+	{
+		.name_base= BK::GlobalVersionedPackageName{ .name= "two_returner", .version(0u, 1u) },
+	};
+
+	var BK::BuildTarget mut target
+	{
+		.name= "four_returner",
+		.target_type = BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ust::string8/>( "src/four_returner.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "imports" ),
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= "two_returner", .package_name= two_returner_package } ),
+	};
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(target) ),
+		.package_dependencies= ust::make_array( BK::PackageDependency{ .name= two_returner_package } ),
+	};
+}

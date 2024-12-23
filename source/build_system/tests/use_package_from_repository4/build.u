@@ -1,0 +1,27 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	// Use global package which uses another global package internally.
+
+	var BK::PackageName sub_package
+	{
+		.name_base= BK::GlobalVersionedPackageName{ .name= "four_returner", .version(0u, 1u) },
+	};
+
+	var BK::BuildTarget mut target
+	{
+		.name= "exe",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= "four_returner", .package_name= sub_package } )
+	};
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(target) ),
+		.package_dependencies= ust::make_array( BK::PackageDependency{ .name= sub_package } )
+	};
+}
