@@ -496,6 +496,12 @@ def UsePackageFromRepositoryTest2():
 	RunExecutable( "use_package_from_repository2", "exe" )
 
 
+def UsePackageFromRepositoryTest3():
+	RunBuildSystem( "use_package_from_repository3" )
+	RunExecutable( "use_package_from_repository3", "exe1" )
+	RunExecutable( "use_package_from_repository3", "exe2" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1055,6 +1061,7 @@ def main():
 		UsePackageFromRepositoryTest0,
 		UsePackageFromRepositoryTest1,
 		UsePackageFromRepositoryTest2,
+		UsePackageFromRepositoryTest3,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,

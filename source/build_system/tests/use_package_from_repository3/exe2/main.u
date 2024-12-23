@@ -1,0 +1,8 @@
+import "/two_returner/two_returner.uh"
+
+fn nomangle main() : i32
+{
+	halt if( GetTwoFloat() != 2.0f );
+
+	return 0;
+}

@@ -1,0 +1,11 @@
+import "/two_returner/two_returner.uh"
+
+fn GetTwo() : i32
+{
+	return 3; // Value of constant two is changed in version 0.2.0.0
+}
+
+fn GetTwoFloat() : f32
+{
+	return 2.0f;
+}

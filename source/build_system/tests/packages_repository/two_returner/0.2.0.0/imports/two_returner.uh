@@ -1,0 +1,3 @@
+fn GetTwo() : i32;
+
+fn GetTwoFloat() : f32;
