@@ -77,8 +77,11 @@ bool RunLinkerMinGW(
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
 	const bool produce_shared_library,
-	const bool remove_unreferenced_symbols )
+	const bool remove_unreferenced_symbols,
+	const bool debug )
 {
+	(void)debug;
+
 	const std::string subdir= GetSubdirName( sysroot, triple );
 	if( subdir.empty() )
 	{

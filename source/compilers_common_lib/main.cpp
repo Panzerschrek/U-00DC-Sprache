@@ -1012,7 +1012,8 @@ int Main( int argc, const char* argv[] )
 				temp_object_file_name,
 				Options::output_file_name,
 				produce_shared_library,
-				remove_unreferenced_symbols );
+				remove_unreferenced_symbols,
+				Options::generate_debug_info );
 
 			llvm::sys::fs::remove( temp_object_file_name, true );
 			if( !linker_ok )

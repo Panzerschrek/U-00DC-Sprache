@@ -18,7 +18,8 @@ bool RunLinker(
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
 	bool produce_shared_library,
-	bool remove_unreferenced_symbols );
+	bool remove_unreferenced_symbols,
+	bool debug );
 
 bool RunLinkerCOFF(
 	const char* argv0,
@@ -28,7 +29,8 @@ bool RunLinkerCOFF(
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
 	bool produce_shared_library,
-	bool remove_unreferenced_symbols );
+	bool remove_unreferenced_symbols,
+	bool debug );
 
 bool RunLinkerMinGW(
 	const char* argv0,
@@ -38,7 +40,8 @@ bool RunLinkerMinGW(
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
 	bool produce_shared_library,
-	bool remove_unreferenced_symbols );
+	bool remove_unreferenced_symbols,
+	bool debug );
 
 bool RunLinkerELF(
 	const char* argv0,
@@ -48,6 +51,7 @@ bool RunLinkerELF(
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
 	bool produce_shared_library,
-	bool remove_unreferenced_symbols );
+	bool remove_unreferenced_symbols,
+	bool debug );
 
 } // namespace U

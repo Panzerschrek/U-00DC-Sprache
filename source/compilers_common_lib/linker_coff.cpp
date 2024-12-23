@@ -20,7 +20,8 @@ bool RunLinkerCOFF(
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
 	const bool produce_shared_library,
-	const bool remove_unreferenced_symbols )
+	const bool remove_unreferenced_symbols,
+	const bool debug )
 {
 	(void)sysroot;
 	(void)triple;
@@ -40,6 +41,9 @@ bool RunLinkerCOFF(
 
 	if( remove_unreferenced_symbols )
 		args.push_back( "/opt:ref" );
+
+	if( debug )
+		args.push_back( "/debug:full" );
 
 	const bool static_link_crt= false; // TODO - allow to specify it.
 	args.push_back( static_link_crt ? "-defaultlib:libcmt" : "-defaultlib:msvcrt" );

@@ -11,7 +11,8 @@ bool RunLinker(
 	const std::string& input_temp_file_path,
 	const std::string& output_file_path,
 	const bool produce_shared_library,
-	const bool remove_unreferenced_symbols )
+	const bool remove_unreferenced_symbols,
+	const bool debug )
 {
 	// TODO - support other linker drivers - MachO, Wasm.
 	if( triple.getOS() == llvm::Triple::Win32 )
@@ -25,7 +26,8 @@ bool RunLinker(
 				input_temp_file_path,
 				output_file_path,
 				produce_shared_library,
-				remove_unreferenced_symbols );
+				remove_unreferenced_symbols,
+				debug );
 		else
 			return RunLinkerCOFF(
 				argv0,
@@ -35,7 +37,8 @@ bool RunLinker(
 				input_temp_file_path,
 				output_file_path,
 				produce_shared_library,
-				remove_unreferenced_symbols );
+				remove_unreferenced_symbols,
+				debug );
 	}
 	else
 		return RunLinkerELF(
@@ -46,7 +49,8 @@ bool RunLinker(
 			input_temp_file_path,
 			output_file_path,
 			produce_shared_library,
-			remove_unreferenced_symbols );
+			remove_unreferenced_symbols,
+			debug );
 }
 
 } // namespace U
