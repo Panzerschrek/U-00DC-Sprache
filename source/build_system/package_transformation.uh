@@ -7,13 +7,27 @@ namespace BK
 
 struct PackageAbsoluteName
 {
-	// TODO - support global versioned packages.
+	ust::variant</ tup[ RootPackage, GlobalVersionedPackageName ] /> name_base;
 	ust::string8 path;
+
+	struct RootPackage{}
 
 	type hasher= PackageAbsoluteNameHasher;
 
 	op<=>( PackageAbsoluteName& l, PackageAbsoluteName& r ) : i32
 	{
+		if( l.name_base != r.name_base )
+		{
+			if_var( &l_global_versioned : l.name_base.get</GlobalVersionedPackageName/>() )
+			{
+				if_var( &r_global_versioned : r.name_base.get</GlobalVersionedPackageName/>() )
+				{
+					return l_global_versioned <=> r_global_versioned;
+				}
+			}
+
+			return ( l.name_base.has</ RootPackage />() ? (1) : (-1) );
+		}
 		return l.path <=> r.path;
 	}
 }

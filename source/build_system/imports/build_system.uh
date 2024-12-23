@@ -76,6 +76,12 @@ struct GlobalVersionedPackageName
 {
 	ust::string8 name;
 	SemanticVersion version;
+
+	op<=>( GlobalVersionedPackageName& l, GlobalVersionedPackageName& r ) : i32
+	{
+		if( l.name != r.name ) { return l.name <=> r.name; }
+		return l.version <=> r.version;
+	}
 }
 
 struct SemanticVersion

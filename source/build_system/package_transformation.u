@@ -438,9 +438,22 @@ fn ResolvePackageAbsoluteName(
 
 		return PackageAbsoluteName{ .path= NormalizePath( path ) };
 	}
+	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
+	{
+		foreach( &component : SplitPathIntoComponents( package_name.path ) )
+		{
+			if( component == "." || component == ".." )
+			{
+				logger.LogError( "Paths with \".\" and \"..\" aren't allowed in global package names!" );
+				return ust::null_optional;
+			}
+		}
+
+		return PackageAbsoluteName{ .name_base= global_versioned_package, .path= package_name.path };
+	}
 	else
 	{
-		logger.LogError( "Non-relative package paths aren't supported yet!" );
+		logger.LogError( "Non-handled package base name kind!" );
 		return ust::null_optional;
 	}
 }
