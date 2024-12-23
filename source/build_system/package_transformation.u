@@ -9,7 +9,7 @@ namespace BK
 fn TransformAndValidatePackageInfo(
 	Logger &mut logger,
 	PackageInfo& package_info,
-	WorkspaceInfo::PackageAbsoluteName& package_absolute_name,
+	PackageAbsoluteName& package_absolute_name,
 	WorkspaceInfo &mut workspace ) : bool
 {
 	var bool mut ok= true;
@@ -24,10 +24,10 @@ fn TransformAndValidatePackageInfo(
 			ok= false;
 		}
 
-		var WorkspaceInfo::BuildTargetAbsoluteName target_absolute_name
+		var BuildTargetAbsoluteName target_absolute_name
 		{
 			.package_name= package_absolute_name,
-			.name=  build_target.name,
+			.name= build_target.name,
 		};
 
 		var ust::string8 target_printable_name= BuildTargetAbsoluteNameToPrintableString( target_absolute_name );
@@ -302,7 +302,7 @@ fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut wor
 	}
 
 	// Collect build target names in order to have possibility to iterate and change build targets map elements.
-	var ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/> mut build_target_names;
+	var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
 	foreach( &pair : workspace.build_targets )
 	{
 		build_target_names.push_back( pair.key() );
@@ -326,7 +326,7 @@ fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut wor
 
 		auto& public_dependencies= out_build_target.public_dependencies_including_transitive;
 		auto is_not_in_public_dependencies=
-			lambda[&]( WorkspaceInfo::BuildTargetAbsoluteName& target_name ) : bool
+			lambda[&]( BuildTargetAbsoluteName& target_name ) : bool
 			{
 				foreach( &dependency : public_dependencies )
 				{
@@ -359,7 +359,7 @@ fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut wor
 	// Check dependency name conflicts.
 	foreach( &pair : cast_imut(workspace).build_targets )
 	{
-		var WorkspaceInfo::BuildTargetAbsoluteName& build_target_name= pair.key();
+		var BuildTargetAbsoluteName& build_target_name= pair.key();
 		var WorkspaceInfo::BuildTarget& build_target= pair.value();
 
 		auto all_deps=
@@ -394,8 +394,8 @@ fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut wor
 
 fn ResolvePackageAbsoluteName(
 	Logger &mut logger,
-	WorkspaceInfo::PackageAbsoluteName& parent_package_absolute_name,
-	PackageName& package_name ) : ust::optional</WorkspaceInfo::PackageAbsoluteName/>
+	PackageAbsoluteName& parent_package_absolute_name,
+	PackageName& package_name ) : ust::optional</PackageAbsoluteName/>
 {
 	if( package_name.name_base.has</ PackageName::CurrentPackage/>() )
 	{
@@ -439,7 +439,7 @@ fn ResolvePackageAbsoluteName(
 			path+= component;
 		}
 
-		return WorkspaceInfo::PackageAbsoluteName{ .path= NormalizePath( path ) };
+		return PackageAbsoluteName{ .path= NormalizePath( path ) };
 	}
 	else
 	{
@@ -578,8 +578,8 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 
 fn TransformDependencyName(
 	Logger& mut logger,
-	WorkspaceInfo::PackageAbsoluteName& package_absolute_name,
-	DependencyName& dependency_name ) : ust::optional</WorkspaceInfo::BuildTargetAbsoluteName/>
+	PackageAbsoluteName& package_absolute_name,
+	DependencyName& dependency_name ) : ust::optional</BuildTargetAbsoluteName/>
 {
 	auto mut dependency_package_name=
 		ResolvePackageAbsoluteName( logger, package_absolute_name, dependency_name.package_name );
@@ -588,28 +588,22 @@ fn TransformDependencyName(
 		return ust::null_optional;
 	}
 
-	return WorkspaceInfo::BuildTargetAbsoluteName
-	{
-		.package_name= dependency_package_name.try_take(),
-		.name= dependency_name.name
-	};
+	return BuildTargetAbsoluteName{ .package_name= dependency_package_name.try_take(), .name= dependency_name.name };
 }
 
 // Returns true if dependency graph is valid.
 fn DependencyGraphIsValid(
-	Logger &mut logger,
-	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName& build_target_name ) : bool
+	Logger &mut logger, WorkspaceInfo& workspace, BuildTargetAbsoluteName& build_target_name ) : bool
 {
-	var ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/> mut call_stack;
+	var ust::vector</BuildTargetAbsoluteName/> mut call_stack;
 	return DependencyGraphIsValid_r( logger, workspace, build_target_name, call_stack );
 }
 
 fn DependencyGraphIsValid_r(
 	Logger &mut logger,
 	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName& build_target_name,
-	ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/> &mut call_stack ) : bool
+	BuildTargetAbsoluteName& build_target_name,
+	ust::vector</BuildTargetAbsoluteName/> &mut call_stack ) : bool
 {
 	for( auto mut i= 0s; i < call_stack.size(); ++i )
 	{
@@ -677,12 +671,12 @@ fn DependencyGraphIsValid_r(
 
 fn GetAllTargetPublicDependencies(
 	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName& build_target_name )
-	: ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/>
+	BuildTargetAbsoluteName& build_target_name )
+	: ust::vector</BuildTargetAbsoluteName/>
 {
 	// Build targets existence should be checked before.
 
-	var ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/> mut result;
+	var ust::vector</BuildTargetAbsoluteName/> mut result;
 	GetAllTargetPublicDependencies_r( workspace, build_target_name, result );
 
 	NormalizeList(result);
@@ -692,12 +686,12 @@ fn GetAllTargetPublicDependencies(
 
 fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName& build_target_name )
-	: ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/>
+	BuildTargetAbsoluteName& build_target_name )
+	: ust::vector</BuildTargetAbsoluteName/>
 {
 	// Build targets existence should be checked before.
 
-	var ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/> mut result;
+	var ust::vector</BuildTargetAbsoluteName/> mut result;
 
 	foreach( &private_dependency : workspace.build_targets[ build_target_name ].private_dependencies )
 	{
@@ -712,8 +706,8 @@ fn GetAllTargetPrivateAndTheirTransitivePublicDependencies(
 
 fn GetAllTargetPublicDependencies_r(
 	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName& build_target_name,
-	ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/> &mut result )
+	BuildTargetAbsoluteName& build_target_name,
+	ust::vector</BuildTargetAbsoluteName/> &mut result )
 {
 	// Possible dependency loops and target names validity should be checked before.
 
@@ -726,12 +720,12 @@ fn GetAllTargetPublicDependencies_r(
 
 fn GetAllTargetSharedLibraryDependenciesToLink(
 	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName& build_target_name ) : ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/>
+	BuildTargetAbsoluteName& build_target_name ) : ust::vector</BuildTargetAbsoluteName/>
 {
 	// Possible dependency loops and target names validity should be checked before.
 
 	var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ build_target_name ];
-	var ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/> mut result;
+	var ust::vector</BuildTargetAbsoluteName/> mut result;
 
 	foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
 	{
@@ -745,8 +739,8 @@ fn GetAllTargetSharedLibraryDependenciesToLink(
 
 fn GetAllTargetSharedLibraryDependenciesToLink_r(
 	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName& build_target_name,
-	ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/> &mut result )
+	BuildTargetAbsoluteName& build_target_name,
+	ust::vector</BuildTargetAbsoluteName/> &mut result )
 {
 	// Possible dependency loops and target names validity should be checked before.
 
@@ -780,8 +774,7 @@ fn GetAllTargetSharedLibraryDependenciesToLink_r(
 }
 
 fn GetAllTargetExternalLibrariesToLink(
-	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName& build_target_name ) : ust::vector</ust::string8/>
+	WorkspaceInfo& workspace, BuildTargetAbsoluteName& build_target_name ) : ust::vector</ust::string8/>
 {
 	// Possible dependency loops and target names validity should be checked before.
 
@@ -793,9 +786,7 @@ fn GetAllTargetExternalLibrariesToLink(
 }
 
 fn GetAllTargetExternalLibrariesToLink_r(
-	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName& build_target_name,
-	ust::vector</ust::string8/> &mut result )
+	WorkspaceInfo& workspace, BuildTargetAbsoluteName& build_target_name, ust::vector</ust::string8/> &mut result )
 {
 	// Possible dependency loops and target names validity should be checked before.
 
@@ -819,7 +810,7 @@ fn GetAllTargetExternalLibrariesToLink_r(
 	}
 }
 
-fn BuildTargetAbsoluteNameToPrintableString( WorkspaceInfo::BuildTargetAbsoluteName& name ) : ust::string8
+fn BuildTargetAbsoluteNameToPrintableString( BuildTargetAbsoluteName& name ) : ust::string8
 {
 	var ust::string8 mut res;
 	if( !name.package_name.path.empty() )

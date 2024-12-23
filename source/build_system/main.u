@@ -133,14 +133,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	bsi.logger_.LogVerbose( "Build project in \"" + root_package_source_directory + "\" using build directory \"" + root_package_build_directory + "\"" );
 
-	var ust::unordered_map</WorkspaceInfo::PackageAbsoluteName, PackageInfo/> mut packages_map;
+	var ust::unordered_map</PackageAbsoluteName, PackageInfo/> mut packages_map;
 
-	var ust::vector</WorkspaceInfo::PackageAbsoluteName/> mut packages_queue;
-	packages_queue.push_back( WorkspaceInfo::PackageAbsoluteName{} ); // Push root package.
+	var ust::vector</PackageAbsoluteName/> mut packages_queue;
+	packages_queue.push_back( PackageAbsoluteName{} ); // Push root package.
 
 	for( auto mut i= 0s; i < packages_queue.size(); ++i ) // Use index-based iterations, because this list is populated within the loop.
 	{
-		var WorkspaceInfo::PackageAbsoluteName package_name= packages_queue[i];
+		var PackageAbsoluteName package_name= packages_queue[i];
 		if( packages_map.exists( package_name ) )
 		{
 			continue; // Already loaded this package.
@@ -206,8 +206,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	var bool mut has_package_transformation_errors= false;
 	foreach( &pair : cast_imut(packages_map) )
 	{
-		var WorkspaceInfo::PackageAbsoluteName& package_name= pair.key();
-
+		var PackageAbsoluteName& package_name= pair.key();
 		if( !TransformAndValidatePackageInfo( bsi.logger_, pair.value(), package_name, workspace ) )
 		{
 			bsi.logger_.LogError( "Package \"" + package_name.path + "\" is invald." );
@@ -261,7 +260,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	{
 		// Collect and sort a list of build target names,
 		// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
-		var ust::vector</WorkspaceInfo::BuildTargetAbsoluteName/> mut build_target_names;
+		var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
 		foreach( &build_target_pair : workspace.build_targets )
 		{
 			build_target_names.push_back( build_target_pair.key() );
@@ -599,8 +598,7 @@ fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 }
 
 fn GetTargetBuildFilesDirectoryPath(
-	ust::string_view8 root_package_build_directory,
-	WorkspaceInfo::BuildTargetAbsoluteName& target_name ) : ust::string8
+	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& target_name ) : ust::string8
 {
 	var ust::string8 mut res= GetPackageBuildDirectory( root_package_build_directory, target_name.package_name );
 	res+= "/";
@@ -616,7 +614,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	BuildConfiguration build_configuration,
 	TargetTriple& target_triple,
 	WorkspaceInfo& workspace,
-	WorkspaceInfo::BuildTargetAbsoluteName& target_name,
+	BuildTargetAbsoluteName& target_name,
 	BuildGraph &mut build_graph )
 {
 	var WorkspaceInfo::BuildTarget& target= workspace.build_targets[target_name];
@@ -1090,7 +1088,7 @@ fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::
 fn ExtractDependenciesIncludeDirectories(
 	WorkspaceInfo& workspace,
 	ust::string_view8 root_package_source_directory,
-	ust::array_view_imut</WorkspaceInfo::BuildTargetAbsoluteName/> dependencies,
+	ust::array_view_imut</BuildTargetAbsoluteName/> dependencies,
 	ust::vector</ust::string8/> &mut include_directories_prefixed )
 {
 	foreach( &build_target_name : dependencies )
@@ -1118,8 +1116,7 @@ fn ExtractDependenciesIncludeDirectories(
 auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
 
 fn GetPackageBuildDirectory(
-	ust::string_view8 root_package_build_direcotry,
-	WorkspaceInfo::PackageAbsoluteName& package_name ) : ust::string8
+	ust::string_view8 root_package_build_direcotry, PackageAbsoluteName& package_name ) : ust::string8
 {
 	var ust::string8 mut res= root_package_build_direcotry;
 	if( !package_name.path.empty() )
@@ -1131,8 +1128,7 @@ fn GetPackageBuildDirectory(
 }
 
 fn GetPackageSourceDirectory(
-	ust::string_view8 root_package_source_direcotry,
-	WorkspaceInfo::PackageAbsoluteName& package_name ) : ust::string8
+	ust::string_view8 root_package_source_direcotry, PackageAbsoluteName& package_name ) : ust::string8
 {
 	var ust::string8 mut res= root_package_source_direcotry;
 	if( !package_name.path.empty() )
@@ -1146,7 +1142,7 @@ fn GetPackageSourceDirectory(
 fn IsPublicDependencyOfDirectPublicSharedLibraryDependency(
 	WorkspaceInfo& workspace,
 	WorkspaceInfo::BuildTarget& build_target,
-	WorkspaceInfo::BuildTargetAbsoluteName& dependency ) : bool
+	BuildTargetAbsoluteName& dependency ) : bool
 {
 	foreach( &public_dependency : build_target.public_dependencies )
 	{
@@ -1169,7 +1165,7 @@ fn IsPublicDependencyOfDirectPublicSharedLibraryDependency(
 fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 	WorkspaceInfo& workspace,
 	WorkspaceInfo::BuildTarget& build_target,
-	WorkspaceInfo::BuildTargetAbsoluteName& dependency ) : bool
+	BuildTargetAbsoluteName& dependency ) : bool
 {
 	foreach( &shared_library_dependency : build_target.shared_library_dependencies_to_link )
 	{

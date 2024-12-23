@@ -5,53 +5,53 @@ import "logger.uh"
 namespace BK
 {
 
+struct PackageAbsoluteName
+{
+	// TODO - support global versioned packages.
+	ust::string8 path;
+
+	type hasher= PackageAbsoluteNameHasher;
+
+	op<=>( PackageAbsoluteName& l, PackageAbsoluteName& r ) : i32
+	{
+		return l.path <=> r.path;
+	}
+}
+
+struct BuildTargetAbsoluteName
+{
+	PackageAbsoluteName package_name;
+	ust::string8 name;
+
+	type hasher= PackageAbsoluteNameHasher;
+
+	op<=>( BuildTargetAbsoluteName& l, BuildTargetAbsoluteName& r ) : i32
+	{
+		if( l.package_name != r.package_name )
+		{
+			return l.package_name <=> r.package_name;
+		}
+		return l.name <=> r.name;
+	}
+}
+
+struct PackageAbsoluteNameHasher
+{
+	fn hash( PackageAbsoluteName& n ) : size_type
+	{
+		return ust::default_hasher::hash( n.path );
+	}
+	fn hash( BuildTargetAbsoluteName& n ) : size_type
+	{
+		// TODO - imporove this.
+		return ust::default_hasher::hash( n.package_name ) ^ ust::default_hasher::hash( n.name );
+	}
+}
+
 // Workspace info in form which is much better to work with.
 // TODO - use other name?
 struct WorkspaceInfo
 {
-	struct PackageAbsoluteName
-	{
-		// TODO - support global versioned packages.
-		ust::string8 path;
-
-		type hasher= Hasher;
-
-		op<=>( PackageAbsoluteName& l, PackageAbsoluteName& r ) : i32
-		{
-			return l.path <=> r.path;
-		}
-	}
-
-	struct BuildTargetAbsoluteName
-	{
-		PackageAbsoluteName package_name;
-		ust::string8 name;
-
-		type hasher= Hasher;
-
-		op<=>( BuildTargetAbsoluteName& l, BuildTargetAbsoluteName& r ) : i32
-		{
-			if( l.package_name != r.package_name )
-			{
-				return l.package_name <=> r.package_name;
-			}
-			return l.name <=> r.name;
-		}
-	}
-
-	struct Hasher
-	{
-		fn hash( PackageAbsoluteName& n ) : size_type
-		{
-			return ust::default_hasher::hash( n.path );
-		}
-		fn hash( BuildTargetAbsoluteName& n ) : size_type
-		{
-			// TODO - imporove this.
-			return ust::default_hasher::hash( n.package_name ) ^ ust::default_hasher::hash( n.name );
-		}
-	}
-
 	struct BuildTarget
 	{
 		BuildTargetType target_type;
@@ -100,7 +100,7 @@ struct WorkspaceInfo
 fn TransformAndValidatePackageInfo(
 	Logger &mut logger,
 	PackageInfo& package_info,
-	WorkspaceInfo::PackageAbsoluteName& package_absolute_name,
+	PackageAbsoluteName& package_absolute_name,
 	WorkspaceInfo &mut workspace_info ) : bool;
 
 // Checks if dependencies are correct (there is no loops, missing dependencies, incorrect dependencies).
@@ -112,7 +112,7 @@ fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut wor
 // Returns empty optional if can't do this.
 fn ResolvePackageAbsoluteName(
 	Logger &mut logger,
-	WorkspaceInfo::PackageAbsoluteName& parent_package_absolute_name,
-	PackageName& package_name ) : ust::optional</WorkspaceInfo::PackageAbsoluteName/>;
+	PackageAbsoluteName& parent_package_absolute_name,
+	PackageName& package_name ) : ust::optional</PackageAbsoluteName/>;
 
 } // namespace BK
