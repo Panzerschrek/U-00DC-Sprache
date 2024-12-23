@@ -6,11 +6,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	var BK::PackageName sub_package
 	{
-		.name_base=
-			BK::GlobalVersionedPackageName
-			{
-				.name= "two_returner", .version{ .major= 0u, .minor= 1u }
-			},
+		.name_base= BK::GlobalVersionedPackageName{ .name= "two_returner", .version(0u, 1u) },
 	};
 
 	var BK::BuildTarget mut target

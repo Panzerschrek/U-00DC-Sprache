@@ -8,20 +8,12 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	var BK::PackageName sub_package_a
 	{
-		.name_base=
-			BK::GlobalVersionedPackageName
-			{
-				.name= "two_returner", .version{ .major= 0u, .minor= 1u }
-			},
+		.name_base= BK::GlobalVersionedPackageName{ .name= "two_returner", .version(0u, 1u) },
 	};
 
 	var BK::PackageName sub_package_b
 	{
-		.name_base=
-			BK::GlobalVersionedPackageName
-			{
-				.name= "integer_adder", .version{ .major= 1u, .minor= 2u, .patch= 3u, .tweak= 4u }
-			},
+		.name_base= BK::GlobalVersionedPackageName{ .name= "integer_adder", .version( 1u, 2u, 3u, 4u ) },
 		.path= "impl",
 	};
 

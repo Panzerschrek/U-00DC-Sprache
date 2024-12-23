@@ -7,11 +7,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	// Depend on a sub-package of a global versioned package.
 	var BK::PackageName sub_package
 	{
-		.name_base=
-			BK::GlobalVersionedPackageName
-			{
-				.name= "integer_adder", .version{ .major= 1u, .minor= 2u, .patch= 3u, .tweak= 4u }
-			},
+		.name_base= BK::GlobalVersionedPackageName{ .name= "integer_adder", .version( 1u, 2u, 3u, 4u ) },
 		.path= "impl",
 	};
 

@@ -86,11 +86,24 @@ struct GlobalVersionedPackageName
 
 struct SemanticVersion
 {
-	// Major and minor numbers must be specified. Other are zero by default.
 	u32 major;
 	u32 minor;
-	u32 patch= 0u;
-	u32 tweak= 0u;
+	u32 patch;
+	u32 tweak;
+
+	// Major and minor numbers must be specified. Other are zero by default.
+
+	fn constructor( u32 in_major, u32 in_minor )
+		( major= in_major, minor= in_minor, patch= 0u, tweak= 0u )
+	{}
+
+	fn constructor( u32 in_major, u32 in_minor, u32 in_patch )
+		( major= in_major, minor= in_minor, patch= in_patch, tweak= 0u )
+	{}
+
+	fn constructor( u32 in_major, u32 in_minor, u32 in_patch, u32 in_tweak )
+		( major= in_major, minor= in_minor, patch= in_patch, tweak= in_tweak )
+	{}
 
 	// Order compate for semantic version.
 	op<=>( SemanticVersion& l, SemanticVersion& r ) : i32
