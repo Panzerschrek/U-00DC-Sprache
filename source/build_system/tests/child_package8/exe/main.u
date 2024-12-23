@@ -1,0 +1,11 @@
+import "/lib_a/lib_a.uh"
+import "/lib_b/lib_b.uh"
+
+fn nomangle main() : i32
+{
+	halt if( LibAFunc( 17 ) != 17 * 17 + 9 * 17 );
+	halt if( LibAFunc( -5 ) != 5 * 5 - 9 * 5 );
+	halt if( LibBFunc( 17 ) != 17 * 17 * 17 - 28 * 17 );
+	halt if( LibBFunc( -5 ) != -5 * 5 * 5 + 28 * 5 );
+	return 0;
+}
