@@ -154,7 +154,6 @@ CPP Header converter:
 
 Ü Build system:
 *) Build graph - support for a command execution of some internal build system actions (like file/directory creation)
-*) Global versioned packages - for now stored in a centralized repository-like directory
 *) Custom target type
 *) Support generated sources
 *) Support generated headers
@@ -169,6 +168,8 @@ CPP Header converter:
 *) A command to build a single-file program with no dependencies
 *) A command to create an empty project (create build script stub)
 *) Multithreaded targets building - to utilize all CPU cores and thus speed-up the build
+*) Dependency versions unification - if a build target depends on several versions of the same build target, change
+	versions to newest used package version. Propogate these changes down to dependencies where it is necessary.
 *) Build the build system itself using the build system (create second build copy)
 *) Build Compiler2 and (possible) Compiler1 using the build system
 *) Support overriding "rpath" for executables
