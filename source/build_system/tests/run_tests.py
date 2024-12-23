@@ -738,6 +738,20 @@ def InvalidSourceName6Test():
 	assert( stderr.find( "Invalid, source name \".\" of build target \"hello_world\"" ) != -1 )
 
 
+def InvalidGlobalPackageName0Test():
+	res = RunBuildSystemWithErrors( "invalid_global_package_name0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Global package dependency \"wrong . name\" is not valid!" ) != -1 )
+
+
+def InvalidGlobalPackageName1Test():
+	res = RunBuildSystemWithErrors( "invalid_global_package_name1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Can\\'t specify zero version for global package \"two_returner\"!" ) != -1 )
+
+
 def SourceDirectoriesConflict0Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict0" )
 	assert( res.returncode != 0 )
@@ -1091,6 +1105,8 @@ def main():
 		InvalidSourceName4Test,
 		InvalidSourceName5Test,
 		InvalidSourceName6Test,
+		InvalidGlobalPackageName0Test,
+		InvalidGlobalPackageName1Test,
 		SourceDirectoriesConflict0Test,
 		SourceDirectoriesConflict1Test,
 		SourceDirectoriesConflict2Test,

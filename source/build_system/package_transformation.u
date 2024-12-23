@@ -203,10 +203,10 @@ fn TransformAndValidatePackageInfo(
 		workspace.build_targets.insert( target_absolute_name, move( out_build_target ) );
 	}
 
-	// Check if package directories doesn't conflict with source/header directories.
+	// Check if package directories are correct.
 	foreach( &dependency : package_info.package_dependencies )
 	{
-		if( dependency.name.name_base.has</ PackageName::CurrentPackage />() ) // Process only relative paths.
+		if( dependency.name.name_base.has</ PackageName::CurrentPackage />() )
 		{
 			auto mut relative_path_component_splitted=
 				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( dependency.name.path ).iter() );
@@ -278,6 +278,22 @@ fn TransformAndValidatePackageInfo(
 
 			// Do not store directory of this package dependency in "prev_targets_directories" list.
 			// It's allowed to access package dependencies within other package dependencies.
+		}
+		else if_var( &global_versioned_package : dependency.name.name_base.get</ GlobalVersionedPackageName />() )
+		{
+			// Check here if package name is valid.
+			// But generally this check isn't so necessary, since package naming correctnes should be enforced in a repository.
+
+			if( !TargetNameIsValid( global_versioned_package.name ) ) // For now apply build target naming rules.
+			{
+				logger.LogError( "Global package dependency \"" + global_versioned_package.name + "\" is not valid!" );
+				ok= false;
+			}
+			if( global_versioned_package.version == SemanticVersion() )
+			{
+				logger.LogError( "Can't specify zero version for global package \"" + global_versioned_package.name + "\"!" );
+				ok= false;
+			}
 		}
 	}
 
