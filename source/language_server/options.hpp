@@ -22,6 +22,13 @@ inline cl::opt<std::string> log_file_path(
 	cl::Optional,
 	cl::cat(options_category) );
 
+inline cl::opt<std::string> error_log_file_path(
+	"error-log-file",
+	cl::desc("Error log file name"),
+	cl::value_desc("filename"),
+	cl::Optional,
+	cl::cat(options_category) );
+
 inline cl::opt<uint32_t> num_threads(
 	"num-threads",
 	cl::desc("Number of threads for background tasks. Use 0 to create threads for all awailable CPU cores."),

@@ -1,6 +1,7 @@
 #include <fstream>
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/InitLLVM.h>
+#include <llvm/Support/Signals.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../options.hpp"
@@ -15,9 +16,22 @@ namespace LangServer
 namespace
 {
 
+void PrintStackTraceSignalHandler(void*)
+{
+	const std::string path= Options::error_log_file_path;
+	if( !path.empty() )
+	{
+		std::error_code file_error_code;
+		llvm::raw_fd_ostream file_stream( path, file_error_code );
+		llvm::sys::PrintStackTrace(file_stream);
+	}
+}
+
 int Main( int argc, const char* argv[] )
 {
 	const llvm::InitLLVM llvm_initializer(argc, argv);
+
+	llvm::sys::AddSignalHandler( PrintStackTraceSignalHandler, nullptr );
 
 	llvm::cl::HideUnrelatedOptions( Options::options_category );
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache language server\n" );
