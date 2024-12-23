@@ -1,5 +1,6 @@
 import "/sort.u"
 import "package_transformation.uh"
+import "options.uh"
 import "path.uh"
 
 namespace BK
@@ -234,6 +235,23 @@ fn TransformAndValidatePackageInfo(
 						logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" conflicts with build target name \"" + build_target.name + "\"!" );
 						ok= false;
 					}
+				}
+			}
+
+			// Do not allow some package names - to avoid conflicts in the build directory.
+			foreach( &component : relative_path_component_splitted )
+			{
+				// TODO - check other reserved names.
+				if( component == BuildConfigurationToString( BuildConfiguration::Debug ) ||
+					component == BuildConfigurationToString( BuildConfiguration::Release ) )
+				{
+					logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" contains a reserved word!" );
+					ok= false;
+				}
+				if( !TargetNameIsValid( component ) ) // Use for package names check identical to target names check.
+				{
+					logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" name is invalid!" );
+					ok= false;
 				}
 			}
 
