@@ -1099,6 +1099,8 @@ fn ExtractDependenciesIncludeDirectories(
 			// So, using
 			//    import "some_target/some_file.uh"
 			// will work.
+			// Package path isn't used here, so,
+			// it should be ensured prior to this code that a build target has dependencies with unique names.
 
 			var ust::string8 mut path= GetPackageSourceDirectory( root_package_source_directory, build_target_name.package_name );
 			path+= "/";
@@ -1115,10 +1117,10 @@ fn ExtractDependenciesIncludeDirectories(
 
 auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
 
-fn GetPackageBuildDirectory(
-	ust::string_view8 root_package_build_direcotry, PackageAbsoluteName& package_name ) : ust::string8
+fn GetPackageSourceDirectory(
+	ust::string_view8 root_package_source_direcotry, PackageAbsoluteName& package_name ) : ust::string8
 {
-	var ust::string8 mut res= root_package_build_direcotry;
+	var ust::string8 mut res= root_package_source_direcotry;
 	if( !package_name.path.empty() )
 	{
 		res+= "/";
@@ -1127,10 +1129,10 @@ fn GetPackageBuildDirectory(
 	return res;
 }
 
-fn GetPackageSourceDirectory(
-	ust::string_view8 root_package_source_direcotry, PackageAbsoluteName& package_name ) : ust::string8
+fn GetPackageBuildDirectory(
+	ust::string_view8 root_package_build_direcotry, PackageAbsoluteName& package_name ) : ust::string8
 {
-	var ust::string8 mut res= root_package_source_direcotry;
+	var ust::string8 mut res= root_package_build_direcotry;
 	if( !package_name.path.empty() )
 	{
 		res+= "/";

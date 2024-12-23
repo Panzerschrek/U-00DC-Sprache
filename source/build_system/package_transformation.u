@@ -405,15 +405,12 @@ fn ResolvePackageAbsoluteName(
 		}
 
 		var ust::vector</ust::string8/> mut components;
-		foreach( &parent_component : SplitPathIntoComponents( parent_package_absolute_name.path ) )
-		{
-			components.push_back( parent_component );
-		}
+		components.append( SplitPathIntoComponents( parent_package_absolute_name.path ).iter() );
 
 		foreach( &child_component : SplitPathIntoComponents( package_name.path ) )
 		{
 			if( child_component == "." )
-			{}
+			{} // Do not push "."
 			else if( child_component == ".." )
 			{
 				if( components.empty() )
