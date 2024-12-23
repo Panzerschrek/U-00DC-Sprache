@@ -75,7 +75,25 @@ struct PackageName
 struct GlobalVersionedPackageName
 {
 	ust::string8 name;
-	ust::string8 version; // TODO - use other version type?
+	SemanticVersion version;
+}
+
+struct SemanticVersion
+{
+	// Major and minor numbers must be specified. Other are zero by default.
+	u32 major;
+	u32 minor;
+	u32 patch= 0u;
+	u32 tweak= 0u;
+
+	// Order compate for semantic version.
+	op<=>( SemanticVersion& l, SemanticVersion& r ) : i32
+	{
+		if( l.major != r.major ) { return l.major <=> r.major; }
+		if( l.minor != r.minor ) { return l.minor <=> r.minor; }
+		if( l.tweak != r.tweak ) { return l.tweak <=> r.tweak; }
+		return l.patch <=> r.patch;
+	}
 }
 
 // Dependency description for a package.
