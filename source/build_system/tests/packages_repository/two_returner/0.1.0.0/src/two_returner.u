@@ -1,0 +1,6 @@
+import "/two_returner/two_returner.uh"
+
+fn GetTwo() : i32
+{
+	return 2;
+}
