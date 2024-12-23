@@ -153,9 +153,9 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			bsi.logger_,
 			build_system_paths,
 			GetPackageSourceDirectory( root_package_source_directory, package_name ),
-			// For now use directory for build configuration specified.
-			// TODO - reuse build script shared libraries among configurations and target triples.
-			GetPackageBuildDirectory( root_package_build_directory, package_name ),
+			// Output build script into base build directory, ignoring build configuration and target triple.
+			// Doing so we allow reusing build script for different configuration and target systems.
+			GetPackageBuildDirectory( root_package_build_directory_base, package_name ),
 			entry_func_name );
 		if( shared_library_opt.empty() )
 		{

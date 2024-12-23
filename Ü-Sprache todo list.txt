@@ -164,7 +164,6 @@ CPP Header converter:
 *) Fix possible global mutable variables and type id tables duplication because of private linking of a library into
 	more than one other build targets, which end up in the same result executable or shared library
 *) Prevent at least some name comflicts in imports (where multiple files exist for the given import path)
-*) Reuse build script shared library among different build confugurations and target triples (build only one copy)
 *) Clean command - to delete build files
 *) Command line option for building only specified build targets
 *) A command to build a single-file program with no dependencies
