@@ -282,14 +282,15 @@ fn TransformAndValidatePackageInfo(
 		else if_var( &global_versioned_package : dependency.name.name_base.get</ GlobalVersionedPackageName />() )
 		{
 			// Check here if package name is valid.
-			// But generally this check isn't so necessary, since package naming correctnes should be enforced in a repository.
+			// But generally this check isn't so necessary,
+			// since package naming correctnes should be enforced by the authority of a repository.
 
 			if( !TargetNameIsValid( global_versioned_package.name ) ) // For now apply build target naming rules.
 			{
 				logger.LogError( "Global package dependency \"" + global_versioned_package.name + "\" is not valid!" );
 				ok= false;
 			}
-			if( global_versioned_package.version == SemanticVersion() )
+			if( global_versioned_package.version == SemanticVersion( 0u, 0u ) )
 			{
 				logger.LogError( "Can't specify zero version for global package \"" + global_versioned_package.name + "\"!" );
 				ok= false;

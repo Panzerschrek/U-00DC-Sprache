@@ -18,16 +18,20 @@ struct PackageAbsoluteName
 	{
 		if( l.name_base != r.name_base )
 		{
-			if_var( &l_global_versioned : l.name_base.get</GlobalVersionedPackageName/>() )
+			// Different bases - compare them.
+			if_var( &l_global_versioned_package : l.name_base.get</GlobalVersionedPackageName/>() )
 			{
-				if_var( &r_global_versioned : r.name_base.get</GlobalVersionedPackageName/>() )
+				if_var( &r_global_versioned_package : r.name_base.get</GlobalVersionedPackageName/>() )
 				{
-					return l_global_versioned <=> r_global_versioned;
+					// If these are two global versioned packages - compare name/version.
+					return l_global_versioned_package <=> r_global_versioned_package;
 				}
 			}
 
+			// global <=> root or root <=> global comparison.
 			return ( l.name_base.has</ RootPackage />() ? (1) : (-1) );
 		}
+		// Same base names - compare paths within base package.
 		return l.path <=> r.path;
 	}
 }

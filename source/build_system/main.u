@@ -142,7 +142,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	var ust::unordered_map</PackageAbsoluteName, PackageInfo/> mut packages_map;
 
 	var ust::vector</PackageAbsoluteName/> mut packages_queue;
-	packages_queue.push_back( PackageAbsoluteName{} ); // Push root package.
+	// Push root package.
+	packages_queue.push_back( PackageAbsoluteName{ .name_base= PackageAbsoluteName::RootPackage{}, .path= "" } );
 
 	for( auto mut i= 0s; i < packages_queue.size(); ++i ) // Use index-based iterations, because this list is populated within the loop.
 	{
@@ -1148,13 +1149,14 @@ fn GetPackageBuildDirectory(
 	var ust::string8 mut res= root_package_build_direcotry;
 
 	if( package_name.name_base.has</ PackageAbsoluteName::RootPackage />() )
-	{}
+	{
+		// Root package - build it in the root directory.
+	}
 	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
 	{
 		// Put build directories of all global packages into a subdirectory.
-		// TODO - prevent usage of this directory for target names and local package names.
 		res+= "/";
-		res+= "global_packages";
+		res+= "global.packages"; // Use directory with dot to avoid name conflicts with subpackages and build targets.
 		res+= "/";
 		res+= global_versioned_package.name;
 		res+= "/";
@@ -1178,11 +1180,11 @@ fn StringifySemanticVersion( SemanticVersion& v ) : ust::string8
 {
 	var ust::string8 mut res;
 	res+= ust::to_string8( v.major );
-	res+= ".";
+	res.push_back( "."c8 );
 	res+= ust::to_string8( v.minor );
-	res+= ".";
+	res.push_back( "."c8 );
 	res+= ust::to_string8( v.patch );
-	res+= ".";
+	res.push_back( "."c8 );
 	res+= ust::to_string8( v.tweak );
 	return res;
 }
