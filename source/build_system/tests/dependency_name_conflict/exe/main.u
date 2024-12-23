@@ -1,0 +1,7 @@
+import "/lib/lib.uh"
+import "/lib/lib.uh"
+
+fn nomangle main() : i32
+{
+	return 0;
+}

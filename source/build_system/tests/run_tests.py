@@ -779,6 +779,13 @@ def MissingDependencyTest():
 	assert( stderr.find( "Dependency \"unknown_dependency\" not found." ) != -1 )
 
 
+def DependencyNameConflictTest():
+	res = RunBuildSystemWithErrors( "dependency_name_conflict" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Build target \"exe\" has dependencies with identical name \"sub_package_a/lib\" and \"sub_package_b/lib\"!" ) != -1 )
+
+
 def DependencyLoop0Test():
 	res = RunBuildSystemWithErrors( "dependency_loop0" )
 	assert( res.returncode != 0 )
@@ -1035,6 +1042,7 @@ def main():
 		SelfDependency0Test,
 		SelfDependency1Test,
 		MissingDependencyTest,
+		DependencyNameConflictTest,
 		DependencyLoop0Test,
 		DependencyLoop1Test,
 		DependencyLoop2Test,

@@ -323,6 +323,39 @@ fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut wor
 		workspace.build_targets[ build_target_name ].all_external_libraries_to_link= move(libraries);
 	}
 
+	// Check dependency name conflicts.
+	foreach( &pair : cast_imut(workspace).build_targets )
+	{
+		var WorkspaceInfo::BuildTargetAbsoluteName& build_target_name= pair.key();
+		var WorkspaceInfo::BuildTarget& build_target= pair.value();
+
+		auto all_deps=
+			build_target.public_dependencies_including_transitive.iter().chain(
+				build_target.private_dependencies_including_transitive_public_dependencies.iter() );
+
+		foreach( &dep_a : all_deps )
+		{
+			foreach( &dep_b : all_deps )
+			{
+				if( dep_a.name == dep_b.name && dep_a.package_name < dep_b.package_name )
+				{
+					// Forbid having multiple dependnecies, including public and private and their transitive dependencies,
+					// if they have identical name but come from different packages.
+					// It's needed, since imports are prefixed just by dependency name without package name.
+					logger.LogError(
+						"Build target \"" +
+						BuildTargetAbsoluteNameToPrintableString( build_target_name ) +
+						"\" has dependencies with identical name \"" +
+						BuildTargetAbsoluteNameToPrintableString( dep_a ) +
+						"\" and \"" +
+						BuildTargetAbsoluteNameToPrintableString( dep_b ) +
+						"\"!" );
+					ok= false;
+				}
+			}
+		}
+	}
+
 	return ok;
 }
 
