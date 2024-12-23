@@ -481,6 +481,11 @@ def ChildPackage8Test():
 	RunExecutable( "child_package8", "exe" )
 
 
+def UsePackageFromRepositoryTest0():
+	RunBuildSystem( "use_package_from_repository0" )
+	RunExecutable( "use_package_from_repository0", "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1037,6 +1042,7 @@ def main():
 		ChildPackage6Test,
 		ChildPackage7Test,
 		ChildPackage8Test,
+		UsePackageFromRepositoryTest0,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
