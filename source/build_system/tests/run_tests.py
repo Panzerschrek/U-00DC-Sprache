@@ -17,11 +17,25 @@ g_configuration_options_file_path = ""
 g_mangling_scheme = "itaniumabi"
 g_sysroot = None
 
+g_packages_repository_dir= "packages_repository"
+
 
 def RunBuildSystemWithExplicitConfiguration( project_subdirectory, configuration ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
-	build_system_args= [ g_build_system_executable, "build", "-q", "--build-configuration", configuration, "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--configuration-options", g_configuration_options_file_path, "--project-directory", project_root, "--build-directory", build_root ]
+	build_system_args= [
+		g_build_system_executable,
+		"build",
+		"-q",
+		"--build-configuration", configuration,
+		"--compiler-executable", g_compiler_executable,
+		"--build-system-imports-path", g_build_system_imports_path,
+		"--ustlib-path", g_ustlib_path,
+		"--configuration-options", g_configuration_options_file_path,
+		"--project-directory", project_root,
+		"--build-directory", build_root,
+		"--packages-repository-directory", os.path.join( g_tests_path, g_packages_repository_dir ),
+		]
 
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
@@ -40,7 +54,17 @@ def RunBuildSystem( project_subdirectory ):
 def RunBuildSystemWithErrors( project_subdirectory ):
 	project_root = os.path.join( g_tests_path, project_subdirectory )
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
-	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root ]
+	build_system_args= [
+		g_build_system_executable,
+		"build",
+		"-q",
+		"--compiler-executable", g_compiler_executable,
+		"--build-system-imports-path", g_build_system_imports_path,
+		"--ustlib-path", g_ustlib_path,
+		"--project-directory", project_root,
+		"--build-directory", build_root,
+		"--packages-repository-directory", os.path.join( g_tests_path, g_packages_repository_dir ),
+		]
 
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )

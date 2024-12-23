@@ -24,18 +24,19 @@ auto constexpr g_help_message=
 	"\n" +
 	"OPTIONS:\n" +
 	"\n" +
-	"  -q                                 - be quiet\n" +
-	"  -v                                 - be verbose\n" +
-	"  -h, --help                         - show this message\n" +
-	"  --build-configuration              - select build configuration. Available configuarations are \"debug\", \"release\". Default configuration is \"release\".\n" +
-	"  --configuration-options            - provide path to configuration options JSON file\n" +
-	"  --target-triple                    - select target triple in form of architecture-vendor-operating_system or architecture-vendor-operating_system-environment.\n" +
-	"  --project-directory <path>         - path to the root package directory. Default is current directory.\n" +
-	"  --build-directory <path>           - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
-	"  --compiler-executable <path>       - custom path to the compiler executable\n" +
-	"  --ustlib-path <path>               - custom path to the ustlib directory\n" +
-	"  --build-system-imports-path <path> - custom path to the build system imports directory\n" +
-	"  --sysroot <path>                   - provide sysroot directory for the compiler (in order to find system libraries for linking)\n"
+	"  -q                                     - be quiet\n" +
+	"  -v                                     - be verbose\n" +
+	"  -h, --help                             - show this message\n" +
+	"  --build-configuration                  - select build configuration. Available configuarations are \"debug\", \"release\". Default configuration is \"release\".\n" +
+	"  --configuration-options                - provide path to configuration options JSON file\n" +
+	"  --target-triple                        - select target triple in form of architecture-vendor-operating_system or architecture-vendor-operating_system-environment.\n" +
+	"  --project-directory <path>             - path to the root package directory. Default is current directory.\n" +
+	"  --build-directory <path>               - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
+	"  --compiler-executable <path>           - custom path to the compiler executable\n" +
+	"  --ustlib-path <path>                   - custom path to the ustlib directory\n" +
+	"  --build-system-imports-path <path>     - custom path to the build system imports directory\n" +
+	"  --packages-repository-directory <path> - provide path to packages repository directory\n" +
+	"  --sysroot <path>                       - provide sysroot directory for the compiler (in order to find system libraries for linking)\n"
 	;
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
@@ -170,6 +171,16 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 				return ust::null_optional;
 			}
 			res.build_system_imports_path= args[i + 1s];
+			i+= 2s;
+		}
+		else if( args[i] == "--packages-repository-directory" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--packages-repository-directory\".\n" );
+				return ust::null_optional;
+			}
+			res.packages_repository_directory= args[i + 1s];
 			i+= 2s;
 		}
 		else if( args[i] == "--sysroot" )
