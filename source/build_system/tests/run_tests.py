@@ -786,6 +786,13 @@ def DependencyNameConflictTest():
 	assert( stderr.find( "Build target \"exe\" has dependencies with identical name \"sub_package_a/lib\" and \"sub_package_b/lib\"!" ) != -1 )
 
 
+def ChildPackageBuildTargetNameConflictTest():
+	res = RunBuildSystemWithErrors( "child_package_build_target_name_conflict" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Package dependency directory \"sub_package\" conflicts with build target name \"sub_package\"!" ) != -1 )
+
+
 def DependencyLoop0Test():
 	res = RunBuildSystemWithErrors( "dependency_loop0" )
 	assert( res.returncode != 0 )
@@ -1043,6 +1050,7 @@ def main():
 		SelfDependency1Test,
 		MissingDependencyTest,
 		DependencyNameConflictTest,
+		ChildPackageBuildTargetNameConflictTest,
 		DependencyLoop0Test,
 		DependencyLoop1Test,
 		DependencyLoop2Test,

@@ -222,6 +222,21 @@ fn TransformAndValidatePackageInfo(
 				continue;
 			}
 
+			if( !relative_path_component_splitted.empty() )
+			{
+				// Forbid using the same name for build targets and subpackages.
+				// It's needed to avoid name conflicts in the package build directory.
+				auto& first_component= relative_path_component_splitted.front();
+				foreach( &build_target : package_info.build_targets )
+				{
+					if( first_component == build_target.name )
+					{
+						logger.LogError( "Package dependency directory \"" + dependency.name.path + "\" conflicts with build target name \"" + build_target.name + "\"!" );
+						ok= false;
+					}
+				}
+			}
+
 			foreach( &prev_source_directory : prev_targets_directories )
 			{
 				if( prev_source_directory == relative_path_component_splitted )
