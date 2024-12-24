@@ -8,6 +8,6 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	return BK::PackageInfo
 	{
-		.package_dependencies= ust::make_array( BK::PackageDependency{ .name= BK::PackageName{ .path= "sub_package" } } )
+		.package_dependencies= ust::make_array</BK::PackageDependency/>( BK::PackageName{ .path= "sub_package" } )
 	};
 }

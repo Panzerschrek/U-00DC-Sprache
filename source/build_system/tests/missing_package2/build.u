@@ -7,6 +7,6 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	return BK::PackageInfo
 	{
 		// ".." can't be found if this package is root package.
-		.package_dependencies= ust::make_array( BK::PackageDependency{ .name{ .path= ".." } } )
+		.package_dependencies= ust::make_array</BK::PackageDependency/>( BK::PackageName{ .path= ".." } )
 	};
 }

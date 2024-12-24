@@ -133,7 +133,17 @@ struct PackageDependency
 	// Which package to depend on.
 	PackageName name;
 	// How to depend on this package.
-	RequiredSystem required_system= RequiredSystem::Target;
+	RequiredSystem required_system;
+
+	// Construct from package name - with required system equal to target.
+	fn conversion_constructor( PackageName mut in_name )
+		( name= move(in_name), required_system= RequiredSystem::Target )
+	{}
+
+	// Construct with both params.
+	fn constructor( PackageName mut in_name, RequiredSystem in_required_system )
+		( name= move(in_name), required_system= in_required_system )
+	{}
 }
 
 struct PackageInfo
