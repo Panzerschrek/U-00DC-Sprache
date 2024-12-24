@@ -99,8 +99,7 @@ public:
 		stream.flush();
 
 		out_
-			<< "Content-Length: "
-			<< str_.length()
+			<< ( "Content-Length: " + std::to_string(str_.length()) )
 			<< "\r\n\r\n"
 			<< str_
 			<< std::flush;
