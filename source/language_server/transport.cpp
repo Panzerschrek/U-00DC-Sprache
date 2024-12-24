@@ -87,8 +87,8 @@ private:
 class JsonMessageWrite final : public IJsonMessageWrite
 {
 public:
-	explicit JsonMessageWrite( std::ostream& out )
-		: out_(out)
+	explicit JsonMessageWrite( std::ostream& out, Logger& log )
+		: out_(out), log_(log)
 	{}
 
 	void Write( const Json::Value& value ) override
@@ -97,6 +97,13 @@ public:
 		llvm::raw_string_ostream stream(str_);
 		stream << value;
 		stream.flush();
+
+		log_()
+			<< "Content-Length: "
+			<< str_.length()
+			<< "\r\n\r\n"
+			<< str_
+			<< std::endl;
 
 		out_
 			<< "Content-Length: "
@@ -109,6 +116,7 @@ public:
 private:
 	std::ostream& out_;
 	std::string str_; // Reuse output buffer.
+	Logger& log_;
 };
 
 } // namespace
@@ -117,7 +125,7 @@ std::pair<IJsonMessageReadPtr, IJsonMessageWritePtr> OpenJSONStdioTransport( Log
 {
 	llvm::sys::ChangeStdinToBinary();
 	llvm::sys::ChangeStdoutToBinary();
-	return std::make_pair( std::make_unique<JsonMessageRead>( std::cin, log ), std::make_unique<JsonMessageWrite>( std::cout ) );
+	return std::make_pair( std::make_unique<JsonMessageRead>( std::cin, log ), std::make_unique<JsonMessageWrite>( std::cout, log ) );
 }
 
 } // namespace LangServer
