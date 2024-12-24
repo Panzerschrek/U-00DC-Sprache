@@ -170,7 +170,7 @@
 		</context>
 
 		<context name="string_escape" attribute="String" lineEndContext="#stay" >
-			<AnyChar attribute="String" String="&quot;ubfnrt0" context="#pop"/>
+			<AnyChar attribute="String" String="&quot;ubfnrt0\\" context="#pop"/>
 		</context>
 
 		<context name="line_comment" attribute="Comment" lineEndContext="#pop" >
