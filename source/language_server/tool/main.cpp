@@ -23,7 +23,9 @@ void PrintStackTraceSignalHandler(void*)
 	{
 		std::error_code file_error_code;
 		llvm::raw_fd_ostream file_stream( path, file_error_code );
+		file_stream << "SHIT HAPPENS";
 		llvm::sys::PrintStackTrace(file_stream);
+		file_stream.flush();
 	}
 }
 
@@ -63,6 +65,7 @@ int Main( int argc, const char* argv[] )
 			std::error_code file_error_code;
 			llvm::raw_fd_ostream file_stream( path, file_error_code );
 			file_stream << "Crashed with exception: " << ex.what();
+			file_stream.flush();
 		}
 	}
 
