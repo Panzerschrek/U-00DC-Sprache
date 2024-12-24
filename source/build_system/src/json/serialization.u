@@ -253,7 +253,6 @@ fn SerializeJsonString( ust::string8 &mut out, JsonValue::String& string_value )
 		{
 			"\""c8 -> { out+= "\\\"" ; },
 			"\\"c8 -> { out+= "\\\\" ; },
-			"/"c8  -> { out+= "\\/" ; },
 			"\b"c8 -> { out+= "\\b" ; },
 			"\f"c8 -> { out+= "\\f" ; },
 			"\n"c8 -> { out+= "\\n" ; },
