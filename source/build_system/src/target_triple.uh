@@ -1,4 +1,4 @@
-import "imports/build_system.uh"
+import "../imports/build_system.uh"
 
 namespace BK
 {

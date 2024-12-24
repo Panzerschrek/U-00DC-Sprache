@@ -39,25 +39,25 @@ function( CompileUSource u_source_file out_object )
 
 endfunction()
 
-file( GLOB BUILD_SYSTEM_HEADERS "*.uh" "json/*.uh" "imports/*.uh" )
-file( GLOB BUILD_SYSTEM_SOURCES "*.u" "json/*.u" )
+file( GLOB BUILD_SYSTEM_HEADERS "src/*.uh" "src/json/*.uh" "imports/*.uh" )
+file( GLOB BUILD_SYSTEM_SOURCES "src/*.u" "src/json/*.u" )
 
 if( WIN32 )
-	file( GLOB BUILD_SYSTEM_SOURCES_WINDOWS "windows/*.u" )
+	file( GLOB BUILD_SYSTEM_SOURCES_WINDOWS "src/windows/*.u" )
 	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_WINDOWS} )
 
-	file( GLOB BUILD_SYSTEM_HEADERS_WINDOWS "windows/*.uh" )
+	file( GLOB BUILD_SYSTEM_HEADERS_WINDOWS "src/windows/*.uh" )
 	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_WINDOWS} )
 
-	file( GLOB BUILD_SYSTEM_SOURCES_CPP "windows/*.cpp" )
+	file( GLOB BUILD_SYSTEM_SOURCES_CPP "src/windows/*.cpp" )
 else()
-	file( GLOB BUILD_SYSTEM_SOURCES_UNIX "unix/*.u" )
+	file( GLOB BUILD_SYSTEM_SOURCES_UNIX "src/unix/*.u" )
 	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_UNIX} )
 
-	file( GLOB BUILD_SYSTEM_HEADERS_UNIX "unix/*.uh" )
+	file( GLOB BUILD_SYSTEM_HEADERS_UNIX "src/unix/*.uh" )
 	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_UNIX} )
 
-	file( GLOB BUILD_SYSTEM_SOURCES_CPP "unix/*.cpp" )
+	file( GLOB BUILD_SYSTEM_SOURCES_CPP "src/unix/*.cpp" )
 endif()
 
 foreach( source ${BUILD_SYSTEM_SOURCES} )
