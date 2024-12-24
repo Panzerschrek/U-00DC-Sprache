@@ -29,26 +29,42 @@ void PrintStackTraceSignalHandler(void*)
 
 int Main( int argc, const char* argv[] )
 {
-	const llvm::InitLLVM llvm_initializer(argc, argv);
+	try
+	{
+		const llvm::InitLLVM llvm_initializer(argc, argv);
 
-	llvm::sys::AddSignalHandler( PrintStackTraceSignalHandler, nullptr );
+		llvm::sys::AddSignalHandler( PrintStackTraceSignalHandler, nullptr );
 
-	llvm::cl::HideUnrelatedOptions( Options::options_category );
-	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache language server\n" );
+		llvm::cl::HideUnrelatedOptions( Options::options_category );
+		llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache language server\n" );
 
-	const std::string log_file_path= Options::log_file_path;
+		const std::string log_file_path= Options::log_file_path;
 
-	std::ofstream log_file;
-	if( !log_file_path.empty() )
-		log_file.open( log_file_path );
+		std::ofstream log_file;
+		if( !log_file_path.empty() )
+			log_file.open( log_file_path );
 
-	Logger logger( log_file );
+		Logger logger( log_file );
 
-	logger() << "Start language server" << std::endl;
+		logger() << "Start language server" << std::endl;
 
-	RunAsyncServer( logger );
+		if( !Options::error_log_file_path.empty() )
+			logger() << "Error log file path: " << Options::error_log_file_path << std::endl;
 
-	logger() << "End language server" << std::endl;
+		RunAsyncServer( logger );
+
+		logger() << "End language server" << std::endl;
+	}
+	catch( const std::exception& ex )
+	{
+		const std::string path= Options::error_log_file_path;
+		if( !path.empty() )
+		{
+			std::error_code file_error_code;
+			llvm::raw_fd_ostream file_stream( path, file_error_code );
+			file_stream << "Crashed with exception: " << ex.what();
+		}
+	}
 
 	return 0;
 }
