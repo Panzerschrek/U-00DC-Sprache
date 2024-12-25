@@ -26,7 +26,7 @@ fn ToString( ust::shared_ptr_final</T/>& b ) : ust::string8
 
 fn ToString( FundamentalType& fundamental_type ) : ust::string8
 {
-	return ust::string8( GetFundamentalTypeName( fundamental_type.fundamental_type ) );
+	return GetFundamentalTypeName( fundamental_type.fundamental_type );
 }
 
 fn ToString( ArrayType& array_type ) : ust::string8

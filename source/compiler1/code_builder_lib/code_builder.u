@@ -917,7 +917,7 @@ fn CodeBuilder::PrepareFunction(
 		if( prev_function.is_conversion_constructor != function_variable.is_conversion_constructor )
 		{
 			// TODO -use separate error code
-			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.src_loc, ust::string8("changing conversion constructor name") )
+			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.src_loc, "changing conversion constructor name" )
 			return false;
 		}
 

@@ -268,7 +268,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 				}
 				if( function_name == KeywordToString( Keyword::destructor_ ) )
 				{
-					REPORT_ERROR( PureDestructor, class_members_ptr, src_loc, ust::string8("/TODO - name") )
+					REPORT_ERROR( PureDestructor, class_members_ptr, src_loc, "/TODO - name" )
 				}
 
 				// TODO - prevent body generation for pure functions.

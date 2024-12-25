@@ -1536,7 +1536,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		if( fundamental_type.empty() || !IsInteger( fundamental_type.try_deref().fundamental_type ) )
 		{
 			// SPRACHE_TODO - maybe allow inheritance of enums?
-			REPORT_ERROR( TypesMismatch, names_scope_ptr, enum_declaration.src_loc, ust::string8("any integer type"), t )
+			REPORT_ERROR( TypesMismatch, names_scope_ptr, enum_declaration.src_loc, "any integer type", t )
 			underlying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
 		}
 		else
