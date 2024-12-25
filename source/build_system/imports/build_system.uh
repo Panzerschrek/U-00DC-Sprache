@@ -146,11 +146,42 @@ struct PackageDependency
 	{}
 }
 
+// Custom build step - for producing a file (or several files), possibly based on another files.
+struct CustomBuildStep
+{
+	// An executable to run.
+	struct ExeCommand
+	{
+		// Path to the executable.
+		ust::string8 exe_path;
+		// Command line arguments.
+		ust::vector</ust::string8/> command_line;
+	}
+
+	// List of full paths to input files.
+	ust::vector</ust::string8/> input_files;
+	// List of full paths to output files.
+	ust::vector</ust::string8/> output_files;
+
+	// What to execute.
+	// TODO - add CopyFile, GenerateFile, etc.
+	ust::variant</ tup[ ExeCommand ] /> command;
+
+	// What to display during the build.
+	ust::string8 comment;
+
+	// TODO - support dep-files.
+}
+
 struct PackageInfo
 {
 	// Build targets of a package. Order is irrelevant.
 	ust::vector</BuildTarget/> build_targets;
 
+	// Custom build steps.
+	ust::vector</CustomBuildStep/> custom_build_steps;
+
+	// Dependencies of this package.
 	ust::vector</PackageDependency/> package_dependencies;
 }
 
