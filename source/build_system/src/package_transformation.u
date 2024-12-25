@@ -202,6 +202,56 @@ fn TransformAndValidatePackageInfo(
 		workspace.build_targets.insert( target_absolute_name, move( out_build_target ) );
 	}
 
+	foreach( mut custom_build_step : package_info.custom_build_steps )
+	{
+		foreach( &mut in_file : custom_build_step.input_files )
+		{
+			if( !IsAbsolutePath( in_file ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step input file path \"", in_file, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				in_file= NormalizePath( in_file );
+			}
+		}
+
+		foreach( &mut out_file : custom_build_step.output_files )
+		{
+			if( !IsAbsolutePath( out_file ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step output file path \"", out_file, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				out_file= NormalizePath( out_file );
+			}
+		}
+
+		NormalizeList( custom_build_step.input_files );
+		NormalizeList( custom_build_step.output_files );
+
+		if_var( &mut exe_command : custom_build_step.command.get</CustomBuildStep::ExeCommand/>() )
+		{
+			if( !IsAbsolutePath( exe_command.exe_path ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step executable path \"", exe_command.exe_path, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				exe_command.exe_path= NormalizePath( exe_command.exe_path );
+			}
+		}
+
+		workspace.custom_build_steps.push_back( move(custom_build_step) );
+	}
+
+	// TODO - check to two custom build steps share output files.
+	// TODO - check custom build steps outputs are located within package build directory.
+
 	// Check if package directories are correct.
 	foreach( &dependency : package_info.package_dependencies )
 	{

@@ -111,6 +111,9 @@ struct WorkspaceInfo
 	}
 
 	ust::unordered_map</BuildTargetAbsoluteName, BuildTarget/> build_targets;
+
+	// Same as PackageInfo::custom_build_steps, but with normalization - file lists are deduplicated, paths are normalized.
+	ust::vector</CustomBuildStep/> custom_build_steps;
 }
 
 // Performs package info transformation, normalization and validation.
