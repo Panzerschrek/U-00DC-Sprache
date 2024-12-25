@@ -23,7 +23,7 @@ fn Lexem::ToDiagnosticString(this) : ust::string8
 	if( lexem_type == Lexem::Type::String )
 	{
 		// For now ignore escape sequences (for simplicity).
-		return "\"" + text + "\"";
+		return ust::concat( "\"", text, "\"" );
 	}
 	if( lexem_type == Lexem::Type::Number )
 	{

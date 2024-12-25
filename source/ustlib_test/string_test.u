@@ -268,5 +268,100 @@ fn nomangle main() : i32
 		halt if( s.substr( 7s, s.size() ) != "12345" );
 		halt if( !s.substr( 8s, 8s ).empty() );
 	}
+	{ // concat.
+		var [ ust::string_view8, 4 ] parts[ "Quick", "Brown", "Fox", "Jumps" ];
+
+		var ust::string8 parts_concatenated= ust::string8::concat( parts );
+		halt if( parts_concatenated != "QuickBrownFoxJumps" );
+		halt if( parts_concatenated.size() != 18s );
+	}
+	{ // concat.
+		var [ ust::string_view8, 5 ] parts[ "1", "22", "333", "4444", "55555" ];
+
+		var ust::string8 parts_concatenated= ust::string8::concat( parts );
+		halt if( parts_concatenated != "122333444455555" );
+		halt if( parts_concatenated.size() != 15s );
+	}
+	{ // concat.
+		var [ ust::string_view8, 6 ] parts[ "abc", "", "def", "", "", "ghij" ];
+
+		var ust::string8 parts_concatenated= ust::string8::concat( parts );
+		halt if( parts_concatenated != "abcdefghij" );
+		halt if( parts_concatenated.size() != 10s );
+	}
+	{ // concat.
+		var [ ust::string_view8, 0 ] parts[];
+
+		var ust::string8 parts_concatenated= ust::string8::concat( parts );
+		halt if( parts_concatenated != "" );
+		halt if( parts_concatenated.size() != 0s );
+	}
+	{ // concat.
+		var [ ust::string_view8, 2 ] parts[ "", "" ];
+
+		var ust::string8 parts_concatenated= ust::string8::concat( parts );
+		halt if( parts_concatenated != "" );
+		halt if( parts_concatenated.size() != 0s );
+	}
+	{ // concat helper.
+
+		var ust::string8 c1= ust::concat( "7uuj" );
+		halt if( c1 != "7uuj" );
+
+		var ust::string8 c2= ust::concat( "aa aa", "bbb" );
+		halt if( c2 != "aa aabbb" );
+
+		var ust::string8 c3= ust::concat( "TT", "-", "33" );
+		halt if( c3 != "TT-33" );
+
+		var ust::string8 c4= ust::concat( "4", "8", "15", "16" );
+		halt if( c4 != "481516" );
+
+		var ust::string8 c5= ust::concat( "Schlaf", "mein", "Freund", "und", "träume" );
+		halt if( c5 != "SchlafmeinFreundundträume" );
+
+		var ust::string8 c6= ust::concat( "es", "gibt", "nichts", "mehr", "zu", "tun" );
+		halt if( c6 != "esgibtnichtsmehrzutun" );
+
+		var ust::string8 c7= ust::concat( "mit ", "etwas ", "Laub ", "bedeckt, ", "im ", "Wald ", "versteckt" );
+		halt if( c7 != "mit etwas Laub bedeckt, im Wald versteckt" );
+
+		var ust::string8 c8= ust::concat( "Verzeih ", "mir, ", "dass ", "ich ", "bin, ", "was ", "ich ", "bin" );
+		halt if( c8 != "Verzeih mir, dass ich bin, was ich bin" );
+	}
+	{ // concat helper - string16.
+
+		var ust::string16 c1= ust::concat( "7uuj"u16 );
+		halt if( c1 != "7uuj"u16 );
+
+		var ust::string16 c2= ust::concat( "aa aa"u16, "bbb"u16 );
+		halt if( c2 != "aa aabbb"u16 );
+
+		var ust::string16 c3= ust::concat( "TT"u16, "-"u16, "33"u16 );
+		halt if( c3 != "TT-33"u16 );
+
+		var ust::string16 c4= ust::concat( "4"u16, "8"u16, "15"u16, "16"u16 );
+		halt if( c4 != "481516"u16 );
+
+		var ust::string16 c5= ust::concat( "Schlaf"u16, "mein"u16, "Freund"u16, "und"u16, "träume"u16 );
+		halt if( c5 != "SchlafmeinFreundundträume"u16 );
+	}
+	{ // concat helper - string32.
+
+		var ust::string32 c1= ust::concat( "7uuj"u32 );
+		halt if( c1 != "7uuj"u32 );
+
+		var ust::string32 c2= ust::concat( "aa aa"u32, "bbb"u32 );
+		halt if( c2 != "aa aabbb"u32 );
+
+		var ust::string32 c3= ust::concat( "TT"u32, "-"u32, "33"u32 );
+		halt if( c3 != "TT-33"u32 );
+
+		var ust::string32 c4= ust::concat( "4"u32, "8"u32, "15"u32, "16"u32 );
+		halt if( c4 != "481516"u32 );
+
+		var ust::string32 c5= ust::concat( "Schlaf"u32, "mein"u32, "Freund"u32, "und"u32, "träume"u32 );
+		halt if( c5 != "SchlafmeinFreundundträume"u32 );
+	}
 	return 0;
 }

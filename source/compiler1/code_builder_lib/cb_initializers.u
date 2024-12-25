@@ -187,7 +187,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		foreach( &element_initializer : sequence_initializer.elements_initializers )
 		{
 			var LLVMValueRef element_llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) );
-			var ust::string8 element_name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]";
+			var ust::string8 element_name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" );
 
 			var VariablePtr element_variable_ptr=
 				Variable
@@ -274,7 +274,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 			var Type& element_type= tuple_type.element_types[i];
 
 			var LLVMValueRef element_llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) );
-			var ust::string8 element_name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]";
+			var ust::string8 element_name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" );
 
 			var VariablePtr element_variable_ptr=
 				Variable
@@ -431,7 +431,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		else
 		{
 			var LLVMValueRef member_llvm_value= CreateClassFieldGEP( function_context, variable, class_field );
-			var ust::string8 member_name= variable_ptr.lock_imut().deref().name + "." + member_initializer.name;
+			var ust::string8 member_name= ust::concat( variable_ptr.lock_imut().deref().name, ".", member_initializer.name );
 
 			var VariablePtr member_variable_ptr=
 				Variable
@@ -510,7 +510,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 				.value_type= ValueType::ReferenceMut,
 				.location= Variable::Location::Pointer,
 				.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
-				.name= variable_ptr.lock_imut().deref().name + "." + field_name,
+				.name= ust::concat( variable_ptr.lock_imut().deref().name, ".", field_name ),
 			}.CreatePtr();
 
 		function_context.references_graph.AddNode( member_variable_ptr );
@@ -629,7 +629,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
-					.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
+					.name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( element_variable_ptr );
@@ -680,7 +680,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
-					.name= variable_ptr.lock_imut().deref().name + "." + field_pair[0],
+					.name= ust::concat( variable_ptr.lock_imut().deref().name, ".", field_pair[0] ),
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( member_variable_ptr );
@@ -778,7 +778,7 @@ fn CodeBuilder::ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
-					.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
+					.name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( element_variable_ptr );
@@ -1538,7 +1538,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 						.value_type= ValueType::ReferenceMut,
 						.location= Variable::Location::Pointer,
 						.llvm_value= CreateClassFieldGEP( function_context, this_ptr, class_field ),
-						.name= this_ptr.lock_imut().deref().name + "." + field_name,
+						.name= ust::concat( this_ptr.lock_imut().deref().name, ".", field_name ),
 					}.CreatePtr();
 
 				function_context.references_graph.AddNode( field_variable_ptr );
@@ -1572,7 +1572,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 						.value_type= ValueType::ReferenceMut,
 						.location= Variable::Location::Pointer,
 						.llvm_value= CreateClassFieldGEP( function_context, this_ptr, class_field ),
-						.name= this_ptr.lock_imut().deref().name + "." + field_name,
+						.name= ust::concat( this_ptr.lock_imut().deref().name, ".", field_name ),
 					}.CreatePtr();
 
 				function_context.references_graph.AddNode( field_variable_ptr );
@@ -1625,7 +1625,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.llvm_value= CreateClassFieldGEP( function_context, this_ptr, class_field ),
-					.name= this_ptr.lock_imut().deref().name + "." + member_initializer.name,
+					.name= ust::concat( this_ptr.lock_imut().deref().name, ".", member_initializer.name ),
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( field_variable_ptr );

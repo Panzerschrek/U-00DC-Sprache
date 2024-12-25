@@ -99,7 +99,8 @@ fn LoadSourceGraph_r(
 			var ust::string8 mut imports_loop_str= "Import loop detected: ";
 			for( auto mut j= i - 1s; j < imports_stack.size(); ++j )
 			{
-				imports_loop_str+= imports_stack[j] + " -> ";
+				imports_loop_str+= imports_stack[j];
+				imports_loop_str+= " -> ";
 			}
 			imports_loop_str+= file_path_normalized;
 
@@ -120,24 +121,14 @@ fn LoadSourceGraph_r(
 	auto file_content_opt= vfs.LoadFile( file_path_normalized );
 	if( file_content_opt.empty() )
 	{
-		var ust::string8 mut str;
-		str+= "Error, can not read file: \"";
-		str+= file_path;
-		str+= "\"";
-
-		source_graph.errors.push_back( LexSyntError( import_src_loc, move(str) ) );
+		source_graph.errors.push_back( LexSyntError( import_src_loc, ust::concat( "Error, can not read file: \"", file_path, "\"" ) ) );
 		return ~0s;
 	}
 
 	// Check for allowing import after checking for file existence - in order to generate "file not found" error first.
 	if( !vfs.IsImportingFileAllowed( file_path_normalized ) )
 	{
-		var ust::string8 mut str;
-		str+= "Importing file \"";
-		str+= file_path;
-		str+= "\" isn't allowed.";
-
-		source_graph.errors.push_back( LexSyntError( import_src_loc, move(str) ) );
+		source_graph.errors.push_back( LexSyntError( import_src_loc, ust::concat( "Importing file \"", file_path, "\" isn't allowed." ) ) );
 		return ~0s;
 	}
 
@@ -218,8 +209,8 @@ fn LoadSourceGraph_r(
 					else if( dst_map[ macro.key() ].deref().src_loc != macro.value().deref().src_loc )
 					{
 						source_graph.errors.push_back( LexSyntError(
-							macro.value().deref().src_loc ,
-							"Macro \"" + macro.key() + "\" redefinition." ) );
+							macro.value().deref().src_loc,
+							ust::concat( "Macro \"", macro.key(), "\" redefinition." ) ) );
 					}
 				}
 			}

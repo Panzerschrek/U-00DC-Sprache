@@ -229,27 +229,27 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	{
 		t= ( numeric_constant.num.has_fractional_point ? U_FundamentalType::f64_ : U_FundamentalType::i32_ );
 	}
-	else if( type_suffix == ust::string8("u") )
+	else if( type_suffix == "u" )
 	{
 		t= U_FundamentalType::u32_;
 	}
-	else if( type_suffix == ust::string8("s") )
+	else if( type_suffix == "s" )
 	{
 		t= U_FundamentalType::size_type_;
 	}
-	else if( type_suffix == ust::string8("f") )
+	else if( type_suffix == "f" )
 	{
 		t= U_FundamentalType::f32_;
 	}
-	else if( type_suffix == ust::string8("c8") )
+	else if( type_suffix == "c8" )
 	{
 		t= U_FundamentalType::char8_;
 	}
-	else if( type_suffix == ust::string8("c16") )
+	else if( type_suffix == "c16" )
 	{
 		t= U_FundamentalType::char16_;
 	}
-	else if( type_suffix == ust::string8("c32") )
+	else if( type_suffix == "c32" )
 	{
 		t= U_FundamentalType::char32_;
 	}
@@ -260,7 +260,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( t == U_FundamentalType::InvalidType )
 	{
-		REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, ust::string8(type_suffix) )
+		REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, type_suffix )
 		return ErrorValue();
 	}
 
@@ -681,7 +681,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.value_type= ValueType::ReferenceImut,
 		.location= Variable::Location::Pointer,
 		.constexpr_value= v.constexpr_value,
-		.name= "cast_imut(" + v.name + ")",
+		.name= ust::concat( "cast_imut(", v.name, ")" ),
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
@@ -723,7 +723,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.t= v.t,
 		.value_type= ValueType::ReferenceMut,
 		.location= Variable::Location::Pointer,
-		.name= "cast_mut(" + v.name + ")",
+		.name= ust::concat( "cast_mut(", v.name, ")" ),
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
@@ -1414,7 +1414,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			.location= Variable::Location::LLVMRegister,
 			.value_type= ValueType::Value,
 			.llvm_value= v.llvm_value, // llvm value of reference is actually value of pointer
-			.name= "$>(" + v.name + ")",
+			.name= ust::concat( "$>(", v.name, ")" ),
 		}.CreatePtr();
 
 	// Register variable for references checking.
@@ -1474,7 +1474,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			.location= Variable::Location::Pointer,
 			.value_type= ValueType::ReferenceMut, // Unlike C++ all raw pointers in Ü are mutable.
 			.llvm_value= llvm_value,
-			.name= "$<(" + v.name + ")",
+			.name= ust::concat( "$<(", v.name, ")" ),
 		}.CreatePtr();
 
 	// Register variable for references checking.
@@ -1643,7 +1643,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				IsUnsignedInteger( index_fundamental_type.fundamental_type ) ||
 				( IsSignedInteger( index_fundamental_type.fundamental_type ) && index.constexpr_value != LLVMValueRef::Null ) ) )
 			{
-				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, ust::string8("any unsigned integer"), index.t )
+				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, "any unsigned integer", index.t )
 				return ErrorValue();
 			}
 			if( variable.location != Variable::Location::Pointer )
@@ -1723,7 +1723,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			RegisterTemporaryVariable( function_context, result_ptr );
 			return result_ptr;
 		}
-		REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, ust::string8("any unsigned integer"), index.t )
+		REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, "any unsigned integer", index.t )
 	}
 	else if_var( &tuple_type : variable.t.GetTupleType() )
 	{
@@ -1741,7 +1741,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		{
 			if( !IsInteger( index_fundamental_type.fundamental_type ) )
 			{
-				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, ust::string8("any integer"), index.t )
+				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, "any integer", index.t )
 				return ErrorValue();
 			}
 			if( index.constexpr_value == LLVMValueRef::Null )
@@ -1796,7 +1796,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				.location= Variable::Location::Pointer,
 				.value_type= ( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.llvm_value= ForceCreateConstantIndexGEP( function_context, tuple_type.llvm_type, v.llvm_value, u32(type_index) ),
-				.name= v.name + "[" + ust::to_string8(type_index) + "]",
+				.name= ust::concat( v.name, "[", ust::to_string8(type_index), "]" ),
 			};
 			if( variable.constexpr_value != LLVMValueRef::Null )
 			{
@@ -1881,7 +1881,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( functions_set.empty() )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, call_operator.src_loc, ust::string8("non-function value") )
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, call_operator.src_loc, "non-function value" )
 		return ErrorValue();
 	}
 
@@ -2043,7 +2043,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		}
 	}
 
-	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, ust::string8("class members, except fields or methods") )
+	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, "class members, except fields or methods" )
 	return ErrorValue();
 }
 
@@ -2477,10 +2477,6 @@ fn CodeBuilder::AccessDirectClassField(
 	var ClassTypePtr class_type= variable.t.GetClassType().try_deref();
 	debug_assert( class_type == field.source_class, "Accessing non-direct class field!" );
 
-	var ust::string8 mut node_name= variable_ptr.lock_imut().deref().name;
-	node_name+= ".";
-	node_name+= field_name;
-
 	if( field.is_reference )
 	{
 		var Variable mut result
@@ -2488,7 +2484,7 @@ fn CodeBuilder::AccessDirectClassField(
 			.t= field.t,
 			.location= Variable::Location::Pointer,
 			.value_type= ( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-			.name= move(node_name),
+			.name= ust::concat( variable_ptr.lock_imut().deref().name, ".", field_name ),
 		};
 
 		if( variable.constexpr_value != LLVMValueRef::Null )
@@ -2593,7 +2589,7 @@ fn CodeBuilder::AccessDirectClassField(
 			.location= Variable::Location::Pointer,
 			.value_type= ( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, field.index ),
-			.name= v.name + "." + field_name,
+			.name= ust::concat( v.name, ".", field_name ),
 		};
 		if( variable.constexpr_value != LLVMValueRef::Null )
 		{

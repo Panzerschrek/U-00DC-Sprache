@@ -1120,18 +1120,13 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 		var ust::vector</VariablePtr/> mut accessible_variables;
 		for( auto mut i= 0s; i < reference_tag_count; ++i )
 		{
-			var ust::string8 mut name= "referenced variable ";
-			name+= ust::to_string8(i);
-			name+= " of captured lambda variable ";
-			name+= v.name;
-
 			accessible_variables.push_back(
 				Variable
 				{
 					.t= invalid_type_,
 					.value_type= ValueType::Value,
 					.location= Variable::Location::Pointer,
-					.name= move(name),
+					.name= ust::concat( "referenced variable ", ust::to_string8(i), " of captured lambda variable ", v.name ),
 				}.CreatePtr() );
 		}
 

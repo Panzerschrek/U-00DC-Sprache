@@ -15,7 +15,7 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
 		return path;
 	}
 
-	return GetCurrentDirectory() + "/" + path;
+	return ust::concat( GetCurrentDirectory(), "/", path );
 }
 
 fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
@@ -37,7 +37,7 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 		path_iterative+= component;
 		if( !EnsureSingleDirectoryExists( path_iterative ) )
 		{
-			logger.LogInfo( "Failed to create directory \"" + ( path_iterative + "\": " ) );
+			logger.LogInfo( ust::concat( "Failed to create directory \"", path_iterative, "\": " ) );
 			return false;
 		}
 	}
@@ -74,7 +74,7 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 	var i32 fd = unsafe( ::open( path_null_terminated.data(), O_WRONLY | O_CREAT | O_TRUNC, 0o755u ) );
 	if( fd == -1 )
 	{
-		logger.LogError( "Failed to open file \"" + (path + ( "\" for writing, error: " + ust::to_string8( BKGetErrno() ) ) ) );
+		logger.LogError( ust::concat( "Failed to open file \"", path, "\" for writing, error: ", ust::to_string8( BKGetErrno() ) ) );
 		return false;
 	}
 
@@ -89,7 +89,7 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 		if( write_res < ssize_type(0) )
 		{
 			// Write failed.
-			logger.LogError( "Failed to write to file \"" + (path + ( "\", error: " + ust::to_string8( BKGetErrno() ) ) ) );
+			logger.LogError( ust::concat( "Failed to write to file \"", path, "\", error: ", ust::to_string8( BKGetErrno() ) ) );
 			unsafe( ::close(fd) );
 			return false;
 		}

@@ -282,7 +282,7 @@ private:
 			errors_.push_back(
 				LexSyntError(
 					expansion_src_loc,
-					"Macro expansions limit " + ust::to_string8(total_expansions_limit) + " reached"
+					ust::concat( "Macro expansions limit ", ust::to_string8(total_expansions_limit), " reached" )
 				) );
 
 			return T();
@@ -3746,7 +3746,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	else if( macro_context_str == "namespace" ) { macro_context= Macro::Context::Namespace; }
 	else
 	{
-		PushMacroErrorMessage( macro_context_src_loc, "\"" + macro_context_str + "\" unknown macro context" );
+		PushMacroErrorMessage( macro_context_src_loc, ust::concat( "\"", macro_context_str, "\" unknown macro context" ) );
 	}
 
 	// Match block
@@ -3780,7 +3780,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	}
 	else
 	{
-		PushMacroErrorMessage( macro.src_loc, "\"" + macro.name + "\" macro redefinition." );
+		PushMacroErrorMessage( macro.src_loc, ust::concat( "\"", macro.name, "\" macro redefinition." ) );
 		move(macro);
 	}
 }
@@ -3859,7 +3859,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 			}
 			else
 			{
-				PushMacroErrorMessage( element_type_src_loc, "\"" + element_type + "\" unknown macro variable type" );
+				PushMacroErrorMessage( element_type_src_loc, ust::concat( "\"", element_type, "\" unknown macro variable type" ) );
 			}
 
 			// Check if name is ok.
@@ -3869,7 +3869,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 			}
 			if( elements_set.exists( match_element.name ) )
 			{
-				PushMacroErrorMessage( match_element_src_loc, "\"" + match_element.name + "\" macro parameter redefinition." );
+				PushMacroErrorMessage( match_element_src_loc, ust::concat( "\"", match_element.name, "\" macro parameter redefinition." ) );
 			}
 			elements_set.insert( match_element.name );
 
@@ -3915,7 +3915,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 		}
 		else
 		{
-			PushMacroErrorMessage( match_element_src_loc, "Expected lexem at start or after \"" + match_elements[i].name + "\" element." );
+			PushMacroErrorMessage( match_element_src_loc, ust::concat( "Expected lexem at start or after \"", match_elements[i].name, "\" element." ) );
 		}
 
 		if( element_kind == Macro::MatchElementKind::Optional )
@@ -4253,12 +4253,13 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 			{
 				if( !unique_macro_indentifiers_map.exists( result_element.lexem.text ) )
 				{
-					var ust::string8 mut name= "_macro_ident_";
-					name+= result_element.lexem.text;
-					name+= "_";
-					name+= macro_unique_identifiers_base_name;
-					name+= "_";
-					name+= ust::to_string8(unique_macro_indentifiers_map.size());
+					var ust::string8 mut name= ust::concat(
+						"_macro_ident_",
+						result_element.lexem.text,
+						"_",
+						 macro_unique_identifiers_base_name,
+						"_",
+						ust::to_string8(unique_macro_indentifiers_map.size()) );
 					unique_macro_indentifiers_map.insert( result_element.lexem.text, move(name) );
 				}
 
@@ -4283,7 +4284,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 			}
 			else
 			{
-				PushMacroErrorMessage( expansion_src_loc, "\"" + result_element.name + "\" - not found" );
+				PushMacroErrorMessage( expansion_src_loc, ust::concat( "\"", result_element.name, "\" - not found" ) );
 				continue;
 			}
 		}
@@ -4292,7 +4293,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 			auto variable_opt= FetchMacroVariable( macro_variables_maps_stack, result_element.name );
 			if( variable_opt.empty() )
 			{
-				PushMacroErrorMessage( expansion_src_loc, "\"" + result_element.name + "\" - not found" );
+				PushMacroErrorMessage( expansion_src_loc, ust::concat( "\"", result_element.name, "\" - not found" ) );
 				continue;
 			}
 
@@ -4388,7 +4389,10 @@ fn SyntaxAnalyzer::PushErrorMessage( mut this )
 {
 	if( errors_.empty() || errors_.back().src_loc != it_.front().src_loc )
 	{
-		errors_.push_back( LexSyntError( it_.front().src_loc, "Syntax error - unexpected lexem: \"" + it_.front().ToDiagnosticString() + "\"" ) );
+		errors_.push_back(
+			LexSyntError(
+				it_.front().src_loc,
+				ust::concat( "Syntax error - unexpected lexem: \"", it_.front().ToDiagnosticString(), "\"" ) ) );
 	}
 
 	// HACK! Advance current position if we report about error in current position multiple times.

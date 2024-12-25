@@ -78,7 +78,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var ust::string8 exe_directory_path = MakePathAbsolute( ExtractExeDirectoryPath( exe_path ) );
 
-	bsi.logger_.LogVerbose( "Build system executable directory path: \"" + exe_directory_path + "\"" );
+	bsi.logger_.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory_path, "\"" ) );
 
 	// For now use "Compiler1" as compiler default. TODO - allow to tune it.
 	var ust::string8 default_compiler_executable_path = exe_directory_path + "/Compiler1";
@@ -137,7 +137,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
-	bsi.logger_.LogVerbose( "Build project in \"" + build_system_paths.root_package_source_directory + "\" using build directory \"" + root_package_build_directory + "\"" );
+	bsi.logger_.LogVerbose( ust::concat( "Build project in \"", build_system_paths.root_package_source_directory, "\" using build directory \"", root_package_build_directory, "\"" ) );
 
 	var ust::unordered_map</PackageAbsoluteName, PackageInfo/> mut packages_map;
 
@@ -188,7 +188,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		var ust::optional</PackageInfo/> mut package_info_opt= func_ptr( bsi );
 		if( package_info_opt.empty() )
 		{
-			bsi.logger_.LogError( "Failed to get package info for package \"" + package_name.path + "\"- build script returned empty optional." );
+			bsi.logger_.LogError( ust::concat( "Failed to get package info for package \"", package_name.path, "\"- build script returned empty optional." ) );
 			return -1;
 		}
 
@@ -199,7 +199,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 				ResolvePackageAbsoluteName( bsi.logger_, package_name, dependency.name );
 			if( dependency_package_absolute_name.empty() )
 			{
-				bsi.logger_.LogError( "Failed to find package dependency within package \"" + package_name.path + "\"!" );
+				bsi.logger_.LogError( ust::concat( "Failed to find package dependency within package \"", package_name.path, "\"!" ) );
 				return -1;
 			}
 			packages_queue.push_back( dependency_package_absolute_name.try_take() );
@@ -216,7 +216,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		var PackageAbsoluteName& package_name= pair.key();
 		if( !TransformAndValidatePackageInfo( bsi.logger_, pair.value(), package_name, workspace ) )
 		{
-			bsi.logger_.LogError( "Package \"" + package_name.path + "\" is invald." );
+			bsi.logger_.LogError( ust::concat( "Package \"", package_name.path, "\" is invald." ) );
 			has_package_transformation_errors= true;
 		}
 	}
@@ -341,52 +341,51 @@ fn BuildAndLoadPackageBuildScript(
 	// TODO - select more catchy name for root build script file.
 	auto constexpr build_script_file= "build.u";
 
-	var ust::string8 build_script_file_full_path= ust::string8(package_source_directory) + "/" + build_script_file;
+	var ust::string8 build_script_file_full_path= ust::concat(package_source_directory, "/", build_script_file );
 
 	// TODO - do we need to have this check here?
 	if( GetFileModificationTime( build_script_file_full_path ).empty() )
 	{
-		logger.LogError( "Can not get modification time for \"" + build_script_file_full_path + "\" - file does not exists?" );
+		logger.LogError( ust::concat( "Can not get modification time for \"", build_script_file_full_path, "\" - file does not exists?" ) );
 		return ust::null_optional;
 	}
 
-	var ust::string8 mut result_shared_library_path= package_build_directory;
-	result_shared_library_path+= "/build.";
-	result_shared_library_path+= GetNativeSharedLibraryExtension();
+	var ust::string8 result_shared_library_path= ust::concat( package_build_directory, "/build.", GetNativeSharedLibraryExtension() );
 
 	var ust::string8 result_shared_library_dependency_file_path = GetDependencyFilePath( result_shared_library_path );
 
 	// TODO - check also if compilation options were changed (including import directories).
 	if( CheckRebuildIsNeededBasedOnDepFile( logger, result_shared_library_dependency_file_path ) )
 	{
-		logger.LogVerbose( "Building \"" + result_shared_library_path + "\"." );
+		logger.LogVerbose( ust::concat( "Building \"", result_shared_library_path, "\"." ) );
 
-		var ust::string8 build_script_wrapper_file_directory= ust::string8(package_build_directory) + "/build_script_wrapper_sources";
+		var ust::string8 build_script_wrapper_file_directory= ust::concat( package_build_directory, "/build_script_wrapper_sources" );
 		if( ! EnsureDirectoryExists( logger, build_script_wrapper_file_directory ) )
 		{
 			return ust::null_optional;
 		}
 
-		var ust::string8 build_script_wrapper_header_file_directory= ust::string8(package_build_directory) + "/build_script_wrapper_headers";
+		var ust::string8 build_script_wrapper_header_file_directory= ust::concat( package_build_directory, "/build_script_wrapper_headers" );
 		if( ! EnsureDirectoryExists( logger, build_script_wrapper_header_file_directory ) )
 		{
 			return ust::null_optional;
 		}
 
-		var ust::string8 build_script_wrapper_file_path= build_script_wrapper_file_directory + "/" + "build_script_wrapper.u";
-		var ust::string8 build_script_header_file_path= build_script_wrapper_header_file_directory + "/" + "build_script_header.uh";
+		var ust::string8 build_script_wrapper_file_path= ust::concat( build_script_wrapper_file_directory, "/", "build_script_wrapper.u" );
+		var ust::string8 build_script_header_file_path= ust::concat( build_script_wrapper_header_file_directory, "/", "build_script_header.uh" );
 
 		// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
 		{
-			var ust::string8 mut contents = "import \"/";
-			contents+= build_script_file;
-			contents+= "\"\n";
-			contents+= "import \"/build_script_header.uh\"\n\n";
-			contents+= "fn nomangle ";
-			contents+= entry_func_name;
-			contents+= "( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>\n";
-			// "GetPackageInfo" function itself may return "BK::PackageInfo", not optional of this type.
-			contents += "{\n\treturn GetPackageInfo( build_system_interface );\n}\n";
+			var ust::string8 contents = ust::concat(
+				"import \"/",
+				build_script_file,
+				"\"\n",
+				"import \"/build_script_header.uh\"\n\n",
+				"fn nomangle ",
+				entry_func_name,
+				"( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>\n",
+				// "GetPackageInfo" function itself may return "BK::PackageInfo", not optional of this type.
+				"{\n\treturn GetPackageInfo( build_system_interface );\n}\n" );
 
 			if( !WriteFile( logger, build_script_wrapper_file_path, contents ) )
 			{
@@ -397,10 +396,11 @@ fn BuildAndLoadPackageBuildScript(
 
 		// Create also header file. We need it to export entry function properly.
 		{
-			var ust::string8 mut contents = "import \"/build_system.uh\"\n\n";
-			contents+= "fn nomangle ";
-			contents+= entry_func_name;
-			contents+= "( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>;\n";
+			var ust::string8 contents = ust::concat(
+				"import \"/build_system.uh\"\n\n",
+				"fn nomangle ",
+				entry_func_name,
+				"( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>;\n" );
 
 			if( !WriteFile( logger, build_script_header_file_path, contents ) )
 			{
@@ -409,7 +409,7 @@ fn BuildAndLoadPackageBuildScript(
 			}
 		}
 
-		var ust::string8 internalize_preserve_option = ust::string8("--internalize-preserve=") + entry_func_name;
+		var ust::string8 internalize_preserve_option = ust::concat( "--internalize-preserve=", entry_func_name );
 
 		// Use optimization level which was used to compile the build system executable.
 		var ust::string8 mut optimization_level= "-O";
@@ -515,10 +515,10 @@ fn BuildAndLoadPackageBuildScript(
 	}
 	else
 	{
-		logger.LogVerbose( "Skip building \"" + result_shared_library_path + "\"." );
+		logger.LogVerbose( ust::concat( "Skip building \"", result_shared_library_path,  "\"." ) );
 	}
 
-	logger.LogVerbose( "Loading " + result_shared_library_path );
+	logger.LogVerbose( ust::concat( "Loading \"", result_shared_library_path, "\"" ) );
 
 	auto shared_library_opt = LoadSharedLibrary( logger, result_shared_library_path );
 	if( shared_library_opt.empty() )
@@ -536,14 +536,14 @@ fn CheckRebuildIsNeededBasedOnDepFile( Logger &mut logger, ust::string_view8 dep
 	if( file_contents.empty() )
 	{
 		// Dep file is not created yet.
-		logger.LogVerbose( "No dependency file \"" + ust::string8(dep_file_path) + "\" - perform the build." );
+		logger.LogVerbose( ust::concat( "No dependency file \"", dep_file_path, "\" - perform the build." ) );
 		return true;
 	}
 
 	var ust::optional</MakeDepFile/> dep_file_opt= ParseMakeDepFileContents( file_contents.try_deref() );
 	if( dep_file_opt.empty() )
 	{
-		logger.LogError( "Failed to parse dep file \"" + ust::string8(dep_file_path) + "\"" );
+		logger.LogError( ust::concat( "Failed to parse dep file \"", dep_file_path, "\"" ) );
 		return true;
 	}
 
@@ -553,7 +553,7 @@ fn CheckRebuildIsNeededBasedOnDepFile( Logger &mut logger, ust::string_view8 dep
 	if( dst_modification_time_opt.empty() )
 	{
 		// Destination deosn't exist.
-		logger.LogVerbose( "No destination file \"" + dep_file.destination  + "\" - perform the build." );
+		logger.LogVerbose( ust::concat( "No destination file \"", dep_file.destination, "\" - perform the build." ) );
 		return true;
 	}
 
@@ -566,18 +566,18 @@ fn CheckRebuildIsNeededBasedOnDepFile( Logger &mut logger, ust::string_view8 dep
 		{
 			// This source file is missing.
 			// In some cases it's ok, like if an imported file was deleted together with deletion of the corresponding "import" directive.
-			logger.LogVerbose( "No source file \"" + dependency  + "\" - perform the build." );
+			logger.LogVerbose( ust::concat( "No source file \"", dependency, "\" - perform the build." ) );
 			return true;
 		}
 		if( src_modification_time_opt.try_deref() >= dst_modification_time )
 		{
-			logger.LogVerbose( "Source file \"" + dependency  + "\" is newer than the destination - perform the build." );
+			logger.LogVerbose( ust::concat( "Source file \"", dependency, "\" is newer than the destination - perform the build." ) );
 			return true;
 		}
 	}
 
 	// Rebuild is not required if we reached this point.
-	logger.LogVerbose( "No rebuild is required for dependency of the dep file \"" + ust::string8(dep_file_path) + "\"." );
+	logger.LogVerbose( ust::concat( "No rebuild is required for dependency of the dep file \"", dep_file_path, "\"." ) );
 	return false;
 }
 
@@ -588,19 +588,18 @@ fn GetNativeSharedLibraryExtension() : ust::string_view8
 
 fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 {
-	var ust::string8 mut res= path;
-	res+= ".d";
-	return res;
+	return ust::concat( path, ".d" );
 }
 
 fn GetTargetBuildFilesDirectoryPath(
 	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& target_name ) : ust::string8
 {
-	var ust::string8 mut res= GetPackageBuildDirectory( root_package_build_directory, target_name.package_name );
-	res+= "/";
-	res+= target_name.name;
-	res+= ".dir"; // Use postfix with dot. Since dots in target names aren't allowed, we prevent possible file name conflict.
-	return res;
+	return
+		ust::concat(
+			GetPackageBuildDirectory( root_package_build_directory, target_name.package_name ),
+			"/",
+			target_name.name,
+			".dir" ); // Use postfix with dot. Since dots in target names aren't allowed, we prevent possible file name conflict.
 }
 
 fn CreatePackageTargetBuildGraphNodes(
@@ -647,22 +646,16 @@ fn CreatePackageTargetBuildGraphNodes(
 		target.private_dependencies_including_transitive_public_dependencies,
 		include_directories_prefixed );
 
-	var ust::string8 mut source_dir= package_source_direcotry;
-	source_dir+= "/";
-	source_dir+= target.sources_directory;
-	source_dir= NormalizePath( source_dir );
+	var ust::string8 source_dir= NormalizePath( ust::concat( package_source_direcotry, "/", target.sources_directory ) );
 
 	var ust::vector</ust::string8/> mut bc_files;
 	foreach( &source_file : target.source_files )
 	{
 		// Create nodes for compilation of each source file into a ".bc" file.
 
-		var ust::string8 mut source_file_absolute= package_source_direcotry;
-		source_file_absolute+= "/";
-		source_file_absolute+= source_file;
-		source_file_absolute= NormalizePath(source_file_absolute);
+		var ust::string8 source_file_absolute= NormalizePath( ust::concat( package_source_direcotry, "/", source_file ) );
 
-		var ust::string8 bc_file = NormalizePath( target_build_files_directory + "/" + source_file + ".bc" );
+		var ust::string8 bc_file = NormalizePath( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) );
 
 		bc_files.push_back( bc_file );
 
@@ -805,7 +798,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			// Add also ".lib" file to outputs.
 			// This file is implicitly created by the linker.
-			var ust::string8 lib_name = NormalizePath( package_build_directory + "/" + target_name.name + ".lib" );
+			var ust::string8 lib_name = NormalizePath( ust::concat( package_build_directory, "/", target_name.name, ".lib" ) );
 			node.output_files.push_back( lib_name );
 
 			if( target_triple.environment == "gnu" )
@@ -817,7 +810,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		else
 		{
 			// Specify soname, in order to load libraries using only name and not the full path to the library provided to the linker.
-			node.command_line.push_back( ust::string8("-Wl,-soname," ) + target_name.name + ".so" );
+			node.command_line.push_back( ust::concat( "-Wl,-soname,", target_name.name, ".so" ) );
 		}
 	}
 
@@ -848,11 +841,12 @@ fn CreatePackageTargetBuildGraphNodes(
 
 				if( workspace.build_targets[ public_dependency ].target_type == BuildTargetType::Library )
 				{
-					var ust::string8 mut lib_file= GetPackageBuildDirectory( root_package_build_directory, public_dependency.package_name );
-					lib_file+= "/";
-					lib_file+= public_dependency.name;
-					lib_file+= ".bc";
-					lib_file= NormalizePath( lib_file );
+					var ust::string8 mut lib_file=
+						NormalizePath( ust::concat(
+							GetPackageBuildDirectory( root_package_build_directory, public_dependency.package_name ),
+							"/",
+							public_dependency.name,
+							".bc" ) );
 
 					node.command_line.push_back( lib_file );
 					node.input_files.push_back( move(lib_file) );
@@ -881,11 +875,12 @@ fn CreatePackageTargetBuildGraphNodes(
 
 		if( workspace.build_targets[ private_dependency ].target_type == BuildTargetType::Library )
 		{
-			var ust::string8 mut lib_file= GetPackageBuildDirectory( root_package_build_directory, private_dependency.package_name );
-			lib_file+= "/";
-			lib_file+= private_dependency.name;
-			lib_file+= ".bc";
-			lib_file= NormalizePath( lib_file );
+			var ust::string8 mut lib_file=
+				NormalizePath( ust::concat(
+					GetPackageBuildDirectory( root_package_build_directory, private_dependency.package_name ),
+					"/",
+					private_dependency.name,
+					".bc" ) );
 
 			node.command_line.push_back( lib_file );
 			node.input_files.push_back( lib_file );
@@ -905,9 +900,10 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			foreach( &shared_library_dependency : target.shared_library_dependencies_to_link )
 			{
-				var ust::string8 mut file_to_link= GetPackageBuildDirectory( root_package_build_directory, shared_library_dependency.package_name );
-				file_to_link+= "/";
-				file_to_link+= shared_library_dependency.name;
+				var ust::string8 mut file_to_link= ust::concat(
+					GetPackageBuildDirectory( root_package_build_directory, shared_library_dependency.package_name ),
+					"/",
+					shared_library_dependency.name );
 
 				if( target_is_windows )
 				{
@@ -1178,15 +1174,15 @@ fn GetPackageBuildDirectory(
 
 fn StringifySemanticVersion( SemanticVersion& v ) : ust::string8
 {
-	var ust::string8 mut res;
-	res+= ust::to_string8( v.major );
-	res.push_back( "."c8 );
-	res+= ust::to_string8( v.minor );
-	res.push_back( "."c8 );
-	res+= ust::to_string8( v.patch );
-	res.push_back( "."c8 );
-	res+= ust::to_string8( v.tweak );
-	return res;
+	return
+		ust::concat(
+			ust::to_string8( v.major ),
+			".",
+			ust::to_string8( v.minor ),
+			".",
+			ust::to_string8( v.patch ),
+			".",
+			ust::to_string8( v.tweak ) );
 }
 
 fn IsPublicDependencyOfDirectPublicSharedLibraryDependency(

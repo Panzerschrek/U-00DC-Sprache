@@ -917,7 +917,7 @@ fn CodeBuilder::PrepareFunction(
 		if( prev_function.is_conversion_constructor != function_variable.is_conversion_constructor )
 		{
 			// TODO -use separate error code
-			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.src_loc, ust::string8("changing conversion constructor name") )
+			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.src_loc, "changing conversion constructor name" )
 			return false;
 		}
 
@@ -1335,7 +1335,7 @@ fn CodeBuilder::BuildFuncCode(
 									? ValueType::ReferenceImut
 									: ValueType::ReferenceMut ),
 							.location= Variable::Location::Pointer,
-							.name= in_param.name + " referenced variable " + ust::to_string8(i) + " inner reference",
+							.name= ust::concat( in_param.name, " referenced variable ", ust::to_string8(i), " inner reference" ),
 							.is_inner_reference_node= true,
 							.is_variable_inner_reference_node= true,
 						}.CreatePtr();
@@ -1360,7 +1360,7 @@ fn CodeBuilder::BuildFuncCode(
 							.t= invalid_type_,
 							.value_type= ValueType::Value,
 							.location= Variable::Location::Pointer,
-							.name= in_param.name + " second order referenced variable " + ust::to_string8(i),
+							.name= ust::concat( in_param.name, " second order referenced variable ", ust::to_string8(i) ),
 						}.CreatePtr();
 
 					function_context.references_graph.AddNode( second_order_accesible_variable );
@@ -1481,7 +1481,7 @@ fn CodeBuilder::BuildFuncCode(
 													? ValueType::ReferenceImut
 													: ValueType::ReferenceMut ),
 											.location= Variable::Location::Pointer,
-											.name= field_name + " referenced variable " + ust::to_string8(i) + " inner reference",
+											.name= ust::concat( field_name, " referenced variable ", ust::to_string8(i), " inner reference" ),
 											.is_inner_reference_node= true,
 											.is_variable_inner_reference_node= true,
 										}.CreatePtr();
@@ -2834,7 +2834,7 @@ fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Cl
 		return LLVMValueRef::Null;
 	}
 
-	auto op_name_nt= "." + field.syntax_element.deref().name + "\0";
+	auto op_name_nt= ust::concat( ".", field.syntax_element.deref().name, "\0" );
 	unsafe
 	{
 		var [ LLVMValueRef, 2 ] mut indexes
@@ -2906,7 +2906,7 @@ fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, 
 		return LLVMValueRef::Null;
 	}
 
-	auto op_name_nt= "[" + ust::to_string8(element_index) + "]\0";
+	auto op_name_nt= ust::concat( "[", ust::to_string8(element_index), "]\0" );
 	unsafe
 	{
 		var [ LLVMValueRef, 2 ] mut indexes

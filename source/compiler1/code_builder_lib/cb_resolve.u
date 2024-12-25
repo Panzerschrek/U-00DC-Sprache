@@ -239,7 +239,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		{
 			return ust::shared_ptr_imut</TypeTemplatesSet/>( TypeTemplatesSet{ .type_templates= ust::make_array(type_template) } );
 		}
-		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, src_loc, ust::string8("") )
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, src_loc, "" )
 	}
 
 	auto type_templates_set_ptr= names_scope_value.Get</TypeTemplatesSet/>();
@@ -504,7 +504,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			}
 			else
 			{
-				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, template_parameterization.src_loc, ust::string8("") )
+				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, template_parameterization.src_loc, "" )
 			}
 		}
 		return ust::null_optional;

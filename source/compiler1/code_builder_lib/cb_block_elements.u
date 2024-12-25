@@ -3068,7 +3068,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 							var CodeBuilderError mut error{ .code= CodeBuilderErrorCode::StaticAssertionFailed, .src_loc= static_assert_.src_loc };
 							if_var( &message : static_assert_.message )
 							{
-								error.text= "Static assertion failed: " + message + ".";
+								error.text= ust::concat( "Static assertion failed: ", message, "." );
 							}
 							else
 							{

@@ -60,7 +60,7 @@ fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_
 
 	if( creation_result == 0 )
 	{
-		ust::stderr_print( "CreateProcessW error: " + ust::to_string8( unsafe( GetLastError() ) ) + "\n" );
+		ust::stderr_print( ust::concat( "CreateProcessW error: ", ust::to_string8( unsafe( GetLastError() ) ), "\n" ) );
 		return false;
 	}
 

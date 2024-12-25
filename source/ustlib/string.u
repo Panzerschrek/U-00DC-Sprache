@@ -11,4 +11,123 @@ type string_view8 = array_view_imut</char8 />;
 type string_view16= array_view_imut</char16/>;
 type string_view32= array_view_imut</char32/>;
 
+//
+// string8 concat overloads.
+//
+
+fn concat( string_view8 a ) : string8
+{
+	return a;
+}
+
+fn concat( string_view8 a, string_view8 b ) : string8
+{
+	var [ string_view8, 2 ] arr[ a, b ];
+	return string8::concat( arr );
+}
+
+fn concat( string_view8 a, string_view8 b, string_view8 c ) : string8
+{
+	var [ string_view8, 3 ] arr[ a, b, c ];
+	return string8::concat( arr );
+}
+
+fn concat( string_view8 a, string_view8 b, string_view8 c, string_view8 d ) : string8
+{
+	var [ string_view8, 4 ] arr[ a, b, c, d ];
+	return string8::concat( arr );
+}
+
+fn concat( string_view8 a, string_view8 b, string_view8 c, string_view8 d, string_view8 e ) : string8
+{
+	var [ string_view8, 5 ] arr[ a, b, c, d, e ];
+	return string8::concat( arr );
+}
+
+fn concat( string_view8 a, string_view8 b, string_view8 c, string_view8 d, string_view8 e, string_view8 f ) : string8
+{
+	var [ string_view8, 6 ] arr[ a, b, c, d, e, f ];
+	return string8::concat( arr );
+}
+
+fn concat( string_view8 a, string_view8 b, string_view8 c, string_view8 d, string_view8 e, string_view8 f, string_view8 g ) : string8
+{
+	var [ string_view8, 7 ] arr[ a, b, c, d, e, f, g ];
+	return string8::concat( arr );
+}
+
+fn concat( string_view8 a, string_view8 b, string_view8 c, string_view8 d, string_view8 e, string_view8 f, string_view8 g, string_view8 h ) : string8
+{
+	var [ string_view8, 8 ] arr[ a, b, c, d, e, f, g, h ];
+	return string8::concat( arr );
+}
+
+//
+// string16 concat overloads.
+// Has less overloads than for string8, since this string type is rarely used.
+//
+
+fn concat( string_view16 a ) : string16
+{
+	return a;
+}
+
+fn concat( string_view16 a, string_view16 b ) : string16
+{
+	var [ string_view16, 2 ] arr[ a, b ];
+	return string16::concat( arr );
+}
+
+fn concat( string_view16 a, string_view16 b, string_view16 c ) : string16
+{
+	var [ string_view16, 3 ] arr[ a, b, c ];
+	return string16::concat( arr );
+}
+
+fn concat( string_view16 a, string_view16 b, string_view16 c, string_view16 d ) : string16
+{
+	var [ string_view16, 4 ] arr[ a, b, c, d ];
+	return string16::concat( arr );
+}
+
+fn concat( string_view16 a, string_view16 b, string_view16 c, string_view16 d, string_view16 e ) : string16
+{
+	var [ string_view16, 5 ] arr[ a, b, c, d, e ];
+	return string16::concat( arr );
+}
+
+//
+// string32 concat overloads.
+// Has less overloads than for string8, since this string type is rarely used.
+//
+
+fn concat( string_view32 a ) : string32
+{
+	return a;
+}
+
+fn concat( string_view32 a, string_view32 b ) : string32
+{
+	var [ string_view32, 2 ] arr[ a, b ];
+	return string32::concat( arr );
+}
+
+fn concat( string_view32 a, string_view32 b, string_view32 c ) : string32
+{
+	var [ string_view32, 3 ] arr[ a, b, c ];
+	return string32::concat( arr );
+}
+
+fn concat( string_view32 a, string_view32 b, string_view32 c, string_view32 d ) : string32
+{
+	var [ string_view32, 4 ] arr[ a, b, c, d ];
+	return string32::concat( arr );
+}
+
+fn concat( string_view32 a, string_view32 b, string_view32 c, string_view32 d, string_view32 e ) : string32
+{
+	var [ string_view32, 5 ] arr[ a, b, c, d, e ];
+	return string32::concat( arr );
+}
+
 } // namespace ust
