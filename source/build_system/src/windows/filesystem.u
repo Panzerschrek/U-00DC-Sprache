@@ -16,7 +16,7 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
 		return path;
 	}
 
-	return GetCurrentDirectory() + "/" + path;
+	return ust::concat( GetCurrentDirectory(), "/", path );
 }
 
 fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
@@ -42,7 +42,7 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 		path_iterative+= "/";
 		if( !EnsureSingleDirectoryExists( path_iterative ) )
 		{
-			logger.LogInfo( "Failed to create directory \"" + ( path_iterative + "\": " ) );
+			logger.LogInfo( ust::concat( "Failed to create directory \"", path_iterative, "\": " ) );
 			return false;
 		}
 	}
@@ -75,7 +75,7 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 		ust::nullptr</byte8/>() ) );
 	if( ust::is_nullptr(handle) || handle == GetInvalidHandle() )
 	{
-		logger.LogError( "Failed to open file \"" + (path + ( "\" for writing, error: " + ust::to_string8( unsafe( GetLastError() ) ) ) ) );
+		logger.LogError( ust::concat( "Failed to open file \"", path, "\" for writing, error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
 		return false;
 	}
 

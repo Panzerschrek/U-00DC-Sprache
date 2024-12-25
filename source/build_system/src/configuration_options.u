@@ -10,14 +10,14 @@ fn LoadConfigurationOptions( Logger &mut logger, ust::string_view8 file_path ) :
 	var ust::optional</ust::string8/> file_contents= ReadFile( file_path );
 	if( file_contents.empty() )
 	{
-		logger.LogError( ust::string8( "Failed to load configuration options file \"" ) + file_path + "\"!" );
+		logger.LogError( ust::concat( "Failed to load configuration options file \"", file_path, "\"!" ) );
 		return ust::null_optional;
 	}
 
 	var ust::optional</JsonValue/> root_json= ParseJson( file_contents.try_deref() );
 	if( root_json.empty() )
 	{
-		logger.LogError( ust::string8( "Failed to parse configuration options file \"" ) + file_path + "\"!" );
+		logger.LogError( ust::concat( "Failed to parse configuration options file \"", file_path, "\"!" ) );
 		return ust::null_optional;
 	}
 
@@ -40,7 +40,7 @@ fn LoadConfigurationOptions( Logger &mut logger, ust::string_view8 file_path ) :
 		else
 		{
 			// TODO - log warning.
-			logger.LogInfo( "Configuration option \"" + pair.key() + "\" is not a string!" );
+			logger.LogInfo( ust::concat( "Configuration option \"", pair.key(), "\" is not a string!" ) );
 		}
 	}
 

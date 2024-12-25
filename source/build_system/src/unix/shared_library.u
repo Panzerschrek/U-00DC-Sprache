@@ -14,7 +14,7 @@ fn LoadSharedLibrary( Logger &mut logger, ust::string_view8 path ) : ust::option
 	auto handle = unsafe( ::dlopen( path_null_terminated.data(), RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE ) );
 	if( ust::is_nullptr(handle) )
 	{
-		logger.LogError( ust::string8("dlopen error: ") + unsafe( NullTerminatedStringToStringView( dlerror() ) ) );
+		logger.LogError( ust::concat( "dlopen error: ", unsafe( NullTerminatedStringToStringView( dlerror() ) ) ) );
 		return ust::null_optional;
 	}
 
@@ -30,7 +30,7 @@ fn SharedLibrary::LoadSymbol( imut this, Logger &mut logger, ust::string_view8 s
 
 	if( ust::is_nullptr( res ) )
 	{
-		logger.LogError( ust::string8("dlsym error: ") + unsafe( NullTerminatedStringToStringView( dlerror() ) ) );
+		logger.LogError( ust::concat( "dlsym error: ", unsafe( NullTerminatedStringToStringView( dlerror() ) ) ) );
 	}
 
 	return res;

@@ -65,7 +65,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 	}
 	else
 	{
-		ust::stderr_print( ust::string8( "Error, unknown command \"" ) +command  + "\".\n" );
+		ust::stderr_print( ust::concat( "Error, unknown command \"", command, "\".\n" ) );
 		return ust::null_optional;
 	}
 
@@ -97,7 +97,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 			auto conf = StringToBuildConfiguration( args[i + 1s] );
 			if( conf.empty() )
 			{
-				ust::stderr_print( "Error, unknown build configuration \"" + ust::string8(args[i + 1s]) + "\".\n" );
+				ust::stderr_print( ust::concat( "Error, unknown build configuration \"", args[i + 1s], "\".\n" ) );
 				return ust::null_optional;
 			}
 			res.build_configuration= conf.try_deref();
@@ -195,7 +195,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 		}
 		else
 		{
-			ust::stderr_print( "Error, unrecognized option \"" + ust::string8(args[i]) + "\".\n" );
+			ust::stderr_print( ust::concat( "Error, unrecognized option \"", args[i], "\".\n" ) );
 			return ust::null_optional;
 		}
 	}

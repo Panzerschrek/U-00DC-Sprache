@@ -14,7 +14,7 @@ fn LoadSharedLibrary( Logger &mut logger, ust::string_view8 path ) : ust::option
 	var HMODULE mut handle = unsafe( ::LoadLibraryW( path_null_terminated.data() ) );
 	if( ust::is_nullptr(handle) )
 	{
-		logger.LogError( "LoadLibraryW error: " + ust::to_string8( unsafe( GetLastError() ) ) );
+		logger.LogError( ust::concat( "LoadLibraryW error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
 		return ust::null_optional;
 	}
 
@@ -29,7 +29,7 @@ fn SharedLibrary::LoadSymbol( imut this, Logger &mut logger, ust::string_view8 s
 	auto res = unsafe( ::GetProcAddress( ust::byte_ptr_cast</HINSTANCE__/>( system_handle_ ), symbol_null_terminated.data() ) );
 	if( ust::is_nullptr(res) )
 	{
-		logger.LogError( "GetProcAddress error: " + ust::to_string8( unsafe( GetLastError() ) ) );
+		logger.LogError( ust::concat( "GetProcAddress error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
 	}
 
 	return res;

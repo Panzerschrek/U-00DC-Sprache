@@ -88,7 +88,7 @@ fn PerformGraphBuild(
 
 			if( !has_this_node_in_prev_build_graph )
 			{
-				logger.LogVerbose( "Command \"" + node.comment + "\" seems to be missing in the previous build graph - mark for rebuild." );
+				logger.LogVerbose( ust::concat( "Command \"", node.comment, "\" seems to be missing in the previous build graph - mark for rebuild." ) );
 				need_to_rebuild= true;
 				continue label nodes_loop;
 			}
@@ -96,7 +96,7 @@ fn PerformGraphBuild(
 			if( !node.dep_file.empty() && dep_file_opt.empty() )
 			{
 				// No dep file where it should be - rebuild is needed.
-				logger.LogVerbose( "No dep file for command \"" + node.comment + "\" - mark for rebuild." );
+				logger.LogVerbose( ust::concat( "No dep file for command \"", node.comment, "\" - mark for rebuild." ) );
 				need_to_rebuild= true;
 				continue label nodes_loop;
 			}
@@ -105,7 +105,7 @@ fn PerformGraphBuild(
 			{
 				if( files_with_modification_time[dep_file.destination].empty() )
 				{
-					logger.LogVerbose( "No output file \"" + dep_file.destination + "\" for command \"" + node.comment + "\" - mark for rebuild." );
+					logger.LogVerbose( ust::concat( "No output file \"", dep_file.destination, "\" for command \"", node.comment, "\" - mark for rebuild." ) );
 					need_to_rebuild= true;
 					continue label nodes_loop;
 				}
@@ -113,7 +113,7 @@ fn PerformGraphBuild(
 				{
 					if( files_with_modification_time[dependency].empty() )
 					{
-						logger.LogVerbose( "No input file \"" + dependency + "\" for command \"" + node.comment + "\" - mark for rebuild." );
+						logger.LogVerbose( ust::concat( "No input file \"", dependency, "\" for command \"", node.comment, "\" - mark for rebuild." ) );
 						need_to_rebuild= true;
 						continue label nodes_loop;
 					}
@@ -124,7 +124,7 @@ fn PerformGraphBuild(
 			{
 				if( files_with_modification_time[input_file].empty() )
 				{
-					logger.LogVerbose( "No input file \"" + input_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
+					logger.LogVerbose( ust::concat( "No input file \"", input_file, "\" for command \"", node.comment, "\" - mark for rebuild." ) );
 					need_to_rebuild= true;
 					continue label nodes_loop;
 				}
@@ -134,7 +134,7 @@ fn PerformGraphBuild(
 			{
 				if( files_with_modification_time[output_file].empty() )
 				{
-					logger.LogVerbose( "No output file \"" + output_file + "\" for command \"" + node.comment + "\" - mark for rebuild." );
+					logger.LogVerbose( ust::concat( "No output file \"", output_file, "\" for command \"", node.comment, "\" - mark for rebuild." ) );
 					need_to_rebuild= true;
 					continue label nodes_loop;
 				}
@@ -171,7 +171,7 @@ fn PerformGraphBuild(
 			need_to_rebuild = max_input_modification_time >= min_output_modification_time;
 			if( need_to_rebuild )
 			{
-				logger.LogVerbose( "One of input files of the command \"" + node.comment + "\" is newer than one of output files - mark for rebuild." );
+				logger.LogVerbose( ust::concat( "One of input files of the command \"", node.comment, "\" is newer than one of output files - mark for rebuild." ) );
 			}
 		}
 
@@ -218,7 +218,7 @@ fn PerformGraphBuild(
 			{
 				if( nodes_to_rebuild[i] )
 				{
-					logger.LogVerbose( "Push node \"" + build_graph.nodes[i].comment + "\" to search stack." );
+					logger.LogVerbose( ust::concat( "Push node \"", build_graph.nodes[i].comment, "\" to search stack." ) );
 					stack.push_back(i);
 				}
 			}
@@ -238,13 +238,13 @@ fn PerformGraphBuild(
 				var BuildGraph::Node& node= build_graph.nodes[node_id];
 				var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[node_id];
 
-				logger.LogVerbose( "Visit node \"" + node.comment + "\"." );
+				logger.LogVerbose( ust::concat( "Visit node \"", node.comment, "\"." ) );
 
 				if( !nodes_to_rebuild[node_id] )
 				{
 					nodes_to_rebuild[node_id]= true;
 
-					logger.LogVerbose( "Mark command \"" + node.comment + "\" for rebuild, since one of its dependencies is also marked for rebuild." );
+					logger.LogVerbose( ust::concat( "Mark command \"", node.comment, "\" for rebuild, since one of its dependencies is also marked for rebuild." ) );
 				}
 
 				// If this node is marked for rebuild - mark for rebuild also nodes which use outputs of this node as inputs.
@@ -327,7 +327,7 @@ fn PerformGraphBuild(
 			}
 		}
 		var ust::string8 num_nodes_to_rebuild_str= ust::to_string8(num_nodes_to_rebuild);
-		logger.LogVerbose( "Has " + num_nodes_to_rebuild_str + " nodes to rebuild." );
+		logger.LogVerbose( ust::concat( "Has ", num_nodes_to_rebuild_str, " nodes to rebuild." ) );
 
 		for( var size_type mut displayed_build_step_index= 1s; displayed_build_step_index <= num_nodes_to_rebuild; ++displayed_build_step_index )
 		{
@@ -386,11 +386,19 @@ fn PerformGraphBuild(
 
 			var BuildGraph::Node& node_to_rebuild = build_graph.nodes[node_to_rebuild_index];
 
-			logger.LogInfo( "[" + ust::to_string8(displayed_build_step_index) + "/" + num_nodes_to_rebuild_str + "] Building \"" + node_to_rebuild.comment + "\"." );
+			logger.LogInfo(
+				ust::concat(
+					"[",
+					ust::to_string8(displayed_build_step_index),
+					"/",
+					num_nodes_to_rebuild_str,
+					"] Building \"",
+					node_to_rebuild.comment,
+					"\"." ) );
 
 			if( !RunExecutable( node_to_rebuild.program, ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )
 			{
-				logger.LogError( "Command \"" + node_to_rebuild.comment + "\" execution failed." );
+				logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
 				return false;
 			}
 
@@ -402,7 +410,7 @@ fn PerformGraphBuild(
 		{
 			if( nodes_state[i] != BuildGraphNodeState::Ready )
 			{
-				logger.LogError( "Broken build graph - node \"" + build_graph.nodes[i].comment + "\" was not built." );
+				logger.LogError( ust::concat( "Broken build graph - node \"", build_graph.nodes[i].comment, "\" was not built." ) );
 				return false;
 			}
 		}
@@ -423,14 +431,14 @@ fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : 
 	if( file_contents.empty() )
 	{
 		// Dep file is not created yet.
-		logger.LogVerbose( "No dependency file \"" + ust::string8(dep_file_path) + "\"." );
+		logger.LogVerbose( ust::concat( "No dependency file \"", dep_file_path, "\"." ) );
 		return ust::null_optional;
 	}
 
 	var ust::optional</MakeDepFile/> dep_file_opt= ParseMakeDepFileContents( file_contents.try_deref() );
 	if( dep_file_opt.empty() )
 	{
-		logger.LogError( "Failed to parse dep file \"" + ust::string8(dep_file_path) + "\"" );
+		logger.LogError( ust::concat( "Failed to parse dep file \"", dep_file_path, "\"" ) );
 	}
 	return dep_file_opt;
 }
