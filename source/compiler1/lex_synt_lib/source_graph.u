@@ -99,7 +99,8 @@ fn LoadSourceGraph_r(
 			var ust::string8 mut imports_loop_str= "Import loop detected: ";
 			for( auto mut j= i - 1s; j < imports_stack.size(); ++j )
 			{
-				imports_loop_str+= imports_stack[j] + " -> ";
+				imports_loop_str+= imports_stack[j];
+				imports_loop_str+= " -> ";
 			}
 			imports_loop_str+= file_path_normalized;
 
@@ -218,8 +219,8 @@ fn LoadSourceGraph_r(
 					else if( dst_map[ macro.key() ].deref().src_loc != macro.value().deref().src_loc )
 					{
 						source_graph.errors.push_back( LexSyntError(
-							macro.value().deref().src_loc ,
-							"Macro \"" + macro.key() + "\" redefinition." ) );
+							macro.value().deref().src_loc,
+							ust::concat( "Macro \"", macro.key(), "\" redefinition." ) ) );
 					}
 				}
 			}

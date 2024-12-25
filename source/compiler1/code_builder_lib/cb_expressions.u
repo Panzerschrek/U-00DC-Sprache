@@ -681,7 +681,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.value_type= ValueType::ReferenceImut,
 		.location= Variable::Location::Pointer,
 		.constexpr_value= v.constexpr_value,
-		.name= "cast_imut(" + v.name + ")",
+		.name= ust::concat( "cast_imut(", v.name, ")" ),
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
@@ -723,7 +723,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.t= v.t,
 		.value_type= ValueType::ReferenceMut,
 		.location= Variable::Location::Pointer,
-		.name= "cast_mut(" + v.name + ")",
+		.name= ust::concat( "cast_mut(", v.name, ")" ),
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
@@ -1414,7 +1414,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			.location= Variable::Location::LLVMRegister,
 			.value_type= ValueType::Value,
 			.llvm_value= v.llvm_value, // llvm value of reference is actually value of pointer
-			.name= "$>(" + v.name + ")",
+			.name= ust::concat( "$>(", v.name, ")" ),
 		}.CreatePtr();
 
 	// Register variable for references checking.
@@ -1474,7 +1474,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			.location= Variable::Location::Pointer,
 			.value_type= ValueType::ReferenceMut, // Unlike C++ all raw pointers in Ü are mutable.
 			.llvm_value= llvm_value,
-			.name= "$<(" + v.name + ")",
+			.name= ust::concat( "$<(", v.name, ")" ),
 		}.CreatePtr();
 
 	// Register variable for references checking.
@@ -1796,7 +1796,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				.location= Variable::Location::Pointer,
 				.value_type= ( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.llvm_value= ForceCreateConstantIndexGEP( function_context, tuple_type.llvm_type, v.llvm_value, u32(type_index) ),
-				.name= v.name + "[" + ust::to_string8(type_index) + "]",
+				.name= ust::concat( v.name, "[", ust::to_string8(type_index), "]" ),
 			};
 			if( variable.constexpr_value != LLVMValueRef::Null )
 			{
@@ -2593,7 +2593,7 @@ fn CodeBuilder::AccessDirectClassField(
 			.location= Variable::Location::Pointer,
 			.value_type= ( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, field.index ),
-			.name= v.name + "." + field_name,
+			.name= ust::concat( v.name, ".", field_name ),
 		};
 		if( variable.constexpr_value != LLVMValueRef::Null )
 		{
