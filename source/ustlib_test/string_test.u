@@ -303,5 +303,31 @@ fn nomangle main() : i32
 		halt if( parts_concatenated != "" );
 		halt if( parts_concatenated.size() != 0s );
 	}
+	{ // concat helper.
+
+		var ust::string8 c1= ust::concat( "7uuj" );
+		halt if( c1 != "7uuj" );
+
+		var ust::string8 c2= ust::concat( "aa aa", "bbb" );
+		halt if( c2 != "aa aabbb" );
+
+		var ust::string8 c3= ust::concat( "TT", "-", "33" );
+		halt if( c3 != "TT-33" );
+
+		var ust::string8 c4= ust::concat( "4", "8", "15", "16" );
+		halt if( c4 != "481516" );
+
+		var ust::string8 c5= ust::concat( "Schlaf", "mein", "Freund", "und", "träume" );
+		halt if( c5 != "SchlafmeinFreundundträume" );
+
+		var ust::string8 c6= ust::concat( "es", "gibt", "nichts", "mehr", "zu", "tun" );
+		halt if( c6 != "esgibtnichtsmehrzutun" );
+
+		var ust::string8 c7= ust::concat( "mit ", "etwas ", "Laub ", "bedeckt, ", "im ", "Wald ", "versteckt" );
+		halt if( c7 != "mit etwas Laub bedeckt, im Wald versteckt" );
+
+		var ust::string8 c8= ust::concat( "Verzeih ", "mir, ", "dass ", "ich ", "bin, ", "was ", "ich ", "bin" );
+		halt if( c8 != "Verzeih mir, dass ich bin, was ich bin" );
+	}
 	return 0;
 }
