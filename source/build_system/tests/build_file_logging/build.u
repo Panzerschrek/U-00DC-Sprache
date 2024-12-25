@@ -23,6 +23,12 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	str+= "\n";
 	build_system_interface.LogInfo( str );
 
+	auto source_dir= build_system_interface.GetCurrentPackageSourceDirectory();
+	auto build_dir= build_system_interface.GetCurrentPackageBuildDirectory();
+
+	build_system_interface.LogInfo( "Obtained source directory: " + source_dir );
+	build_system_interface.LogInfo( "Obtained build directory: " + build_dir );
+
 	// Package with no targets.
 	return BK::PackageInfo{};
 }

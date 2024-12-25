@@ -70,15 +70,9 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	var BuildSystemInterfaceImplementation mut bsi(
-		move(logger),
-		options.build_configuration,
-		move(target_triple),
-		move(configuration_options) );
-
 	var ust::string8 exe_directory_path = MakePathAbsolute( ExtractExeDirectoryPath( exe_path ) );
 
-	bsi.logger_.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory_path, "\"" ) );
+	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory_path, "\"" ) );
 
 	// For now use "Compiler1" as compiler default. TODO - allow to tune it.
 	var ust::string8 default_compiler_executable_path = exe_directory_path + "/Compiler1";
@@ -87,7 +81,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// Build system imports are located in "/build_system/imports"
 	var ust::string8 default_build_system_imports_path = exe_directory_path + "../build_system/imports";
 
-	var BuildSystemPaths build_system_paths
+	var BuildSystemPaths mut build_system_paths
 	{
 		.compiler_executable_path= NormalizePath(
 			( options.compiler_executable_path.empty()
@@ -121,23 +115,31 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// Create, if necessary, subdirectory for target triple.
 	// Do it only if this target triple isn't equal to host triple.
 	var ust::string8 mut root_package_build_directory = root_package_build_directory_base;
-	if( bsi.target_triple_ != GetHostTargetTriple() )
+	if( target_triple != GetHostTargetTriple() )
 	{
 		root_package_build_directory+= "/";
-		root_package_build_directory+= TargetTripleToString( bsi.target_triple_ );
+		root_package_build_directory+= TargetTripleToString( target_triple );
 	}
 
 	// Create a subdirectory for configuration specified.
 	root_package_build_directory+= "/";
 	root_package_build_directory+= BuildConfigurationToString( options.build_configuration );
 
-	if( !EnsureDirectoryExists( bsi.logger_, root_package_build_directory ) )
+	if( !EnsureDirectoryExists( logger, root_package_build_directory ) )
 	{
-		bsi.logger_.LogError( "Can't create build directory." );
+		logger.LogError( "Can't create build directory." );
 		return -1;
 	}
 
-	bsi.logger_.LogVerbose( ust::concat( "Build project in \"", build_system_paths.root_package_source_directory, "\" using build directory \"", root_package_build_directory, "\"" ) );
+	logger.LogVerbose( ust::concat( "Build project in \"", build_system_paths.root_package_source_directory, "\" using build directory \"", root_package_build_directory, "\"" ) );
+
+	var BuildSystemInterfaceImplementation mut bsi(
+		move(logger),
+		options.build_configuration,
+		move(target_triple),
+		move(configuration_options),
+		move(build_system_paths),
+		move(root_package_build_directory) );
 
 	var ust::unordered_map</PackageAbsoluteName, PackageInfo/> mut packages_map;
 
@@ -153,13 +155,16 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			continue; // Already loaded this package.
 		}
 
+		// Tweak build system interface for current package.
+		bsi.SetCurrentPackageName( package_name );
+
 		// TODO - customize it based on package name?
 		auto constexpr entry_func_name = "GetPackageInfoImpl";
 
 		auto shared_library_opt = BuildAndLoadPackageBuildScript(
 			bsi.logger_,
-			build_system_paths,
-			GetPackageSourceDirectory( build_system_paths, package_name ),
+			bsi.build_system_paths_,
+			GetPackageSourceDirectory( bsi.build_system_paths_, package_name ),
 			// Output build script into base build directory, ignoring build configuration and target triple.
 			// Doing so we allow reusing build script for different configuration and target systems.
 			GetPackageBuildDirectory( root_package_build_directory_base, package_name ),
@@ -232,7 +237,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
-	var ust::string8 build_graph_state_file_path= root_package_build_directory + "/build_graph.json";
+	var ust::string8 build_graph_state_file_path= bsi.root_package_build_directory_ + "/build_graph.json";
 
 	// Load previous build graph state.
 	var ust::optional</BuildGraph/> mut prev_build_graph;
@@ -265,8 +270,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		foreach( &build_target_name : build_target_names )
 		{
 			CreatePackageTargetBuildGraphNodes(
-				build_system_paths,
-				root_package_build_directory,
+				bsi.build_system_paths_,
+				bsi.root_package_build_directory_,
 				bsi.build_configuration_,
 				bsi.target_triple_,
 				workspace,
@@ -1234,14 +1239,23 @@ public:
 		Logger mut logger,
 		BuildConfiguration build_configuration,
 		TargetTriple mut target_triple,
-		ConfigurationOptions mut configuration_options )
+		ConfigurationOptions mut configuration_options,
+		BuildSystemPaths mut build_system_paths,
+		ust::string8 mut root_package_build_directory )
 			(
 				logger_= move(logger),
 				build_configuration_= build_configuration,
 				target_triple_= move(target_triple),
-				configuration_options_= move(configuration_options)
+				configuration_options_= move(configuration_options),
+				build_system_paths_= move(build_system_paths),
+				root_package_build_directory_= move(root_package_build_directory),
 			)
 	{}
+
+	fn SetCurrentPackageName( mut this, PackageAbsoluteName mut name )
+	{
+		current_package_name_= move(name);
+	}
 
 public: // BuildSystemInterface
 	fn virtual final GetBuildConfiguration(this) : BuildConfiguration
@@ -1278,14 +1292,27 @@ public: // BuildSystemInterface
 		return ust::null_optional;
 	}
 
+	fn virtual final GetCurrentPackageSourceDirectory( this ) : ust::string8
+	{
+		return GetPackageSourceDirectory( build_system_paths_, current_package_name_ );
+	}
+
+	fn virtual final GetCurrentPackageBuildDirectory( this ) : ust::string8
+	{
+		return GetPackageBuildDirectory( root_package_build_directory_, current_package_name_ );
+	}
+
 public: // Provide direct access for some fields where it's safe to use them directly.
 	Logger logger_;
 
 	BuildConfiguration imut build_configuration_;
 	TargetTriple imut target_triple_;
+	BuildSystemPaths imut build_system_paths_;
+	ust::string8 imut root_package_build_directory_;
 
 private:
 	ConfigurationOptions imut configuration_options_;
+	PackageAbsoluteName current_package_name_;
 }
 
 } // namespace BK

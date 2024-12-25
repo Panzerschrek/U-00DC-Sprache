@@ -210,6 +210,12 @@ class BuildSystemInterface interface
 	// Both option names and values are case-sensetive.
 	// Non-string options are not supported.
 	fn virtual pure GetConfigurationOption( this, ust::string_view8 name ) : ust::optional</ust::string8/>;
+
+	// Get absolute path to the root source directory of current package.
+	fn virtual pure GetCurrentPackageSourceDirectory( this ) : ust::string8;
+
+	// Get absolute path to the build directory of current package for current target triple and build configuration..
+	fn virtual pure GetCurrentPackageBuildDirectory( this ) : ust::string8;
 }
 
 enum BuildConfiguration
