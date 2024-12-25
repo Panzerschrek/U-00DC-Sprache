@@ -88,6 +88,8 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 	# Create a couple of test libraries - to test linking against them
 	add_library( BuildSystemTestsStaticLibrary test_static_lib/test_static_lib.cpp )
 	add_library( BuildSystemTestsSharedLibrary SHARED test_shared_lib/test_shared_lib.cpp )
+	# Create also a test executable for using in tests as command for custom build steps
+	add_executable( BuildSystemTestFileGenerationTool test_file_generation_tool/main.cpp )
 
 	# Generate a configuration options JSON file for tests.
 	set( CONFIGURATION_OPTIONS_FILE "${CMAKE_CURRENT_BINARY_DIR}/tests/tests_configuration_options.json" )
