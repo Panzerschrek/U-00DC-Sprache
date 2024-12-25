@@ -268,5 +268,40 @@ fn nomangle main() : i32
 		halt if( s.substr( 7s, s.size() ) != "12345" );
 		halt if( !s.substr( 8s, 8s ).empty() );
 	}
+	{ // concat.
+		var [ ust::string_view8, 4 ] parts[ "Quick", "Brown", "Fox", "Jumps" ];
+
+		var ust::string8 parts_concatenated= ust::string8::concat( parts );
+		halt if( parts_concatenated != "QuickBrownFoxJumps" );
+		halt if( parts_concatenated.size() != 18s );
+	}
+	{ // concat.
+		var [ ust::string_view8, 5 ] parts[ "1", "22", "333", "4444", "55555" ];
+
+		var ust::string8 parts_concatenated= ust::string8::concat( parts );
+		halt if( parts_concatenated != "122333444455555" );
+		halt if( parts_concatenated.size() != 15s );
+	}
+	{ // concat.
+		var [ ust::string_view8, 6 ] parts[ "abc", "", "def", "", "", "ghij" ];
+
+		var ust::string8 parts_concatenated= ust::string8::concat( parts );
+		halt if( parts_concatenated != "abcdefghij" );
+		halt if( parts_concatenated.size() != 10s );
+	}
+	{ // concat.
+		var [ ust::string_view8, 0 ] parts[];
+
+		var ust::string8 parts_concatenated= ust::string8::concat( parts );
+		halt if( parts_concatenated != "" );
+		halt if( parts_concatenated.size() != 0s );
+	}
+	{ // concat.
+		var [ ust::string_view8, 2 ] parts[ "", "" ];
+
+		var ust::string8 parts_concatenated= ust::string8::concat( parts );
+		halt if( parts_concatenated != "" );
+		halt if( parts_concatenated.size() != 0s );
+	}
 	return 0;
 }

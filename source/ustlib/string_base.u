@@ -33,6 +33,37 @@ public:
 		return result;
 	}
 
+	// A method for constructing a string by concatenating several other strings.
+	// It's faster compared to chained concatenation via op+.
+	fn concat( array_view_imut</range_imut/> parts ) : this_type
+	{
+		var size_type mut total_size= 0s;
+		foreach( &part : parts )
+		{
+			total_size+= part.size();
+		}
+
+		var this_type mut res;
+
+		unsafe( res.ensure_capacity( total_size ) );
+
+		var size_type mut offset= 0s;
+		foreach( &part : parts )
+		{
+			unsafe( memory_copy_aligned(
+				c_element_alignment_,
+				ptr_cast_to_byte8( res.ptr_ + offset ),
+				ptr_cast_to_byte8( part.data() ),
+				part.size() * c_element_size_ ) );
+
+			offset+= part.size();
+		}
+
+		res.size_= total_size;
+
+		return res;
+	}
+
 public:
 	// Default constructor.
 	fn constructor()= default;
