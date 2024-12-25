@@ -4253,12 +4253,13 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 			{
 				if( !unique_macro_indentifiers_map.exists( result_element.lexem.text ) )
 				{
-					var ust::string8 mut name= "_macro_ident_";
-					name+= result_element.lexem.text;
-					name+= "_";
-					name+= macro_unique_identifiers_base_name;
-					name+= "_";
-					name+= ust::to_string8(unique_macro_indentifiers_map.size());
+					var ust::string8 mut name= ust::concat(
+						"_macro_ident_",
+						result_element.lexem.text,
+						"_",
+						 macro_unique_identifiers_base_name,
+						"_",
+						ust::to_string8(unique_macro_indentifiers_map.size()) );
 					unique_macro_indentifiers_map.insert( result_element.lexem.text, move(name) );
 				}
 

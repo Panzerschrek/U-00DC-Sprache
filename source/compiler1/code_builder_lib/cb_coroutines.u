@@ -103,8 +103,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 			// Second order references are possible in some cases, but for now not for coroutines.
 			if( EnsureTypeComplete( param.t ) && param.t.ReferenceTagCount() > 0u )
 			{
-				var ust::string8 mut field_name= "param of type ";
-				field_name+= param.t.ToString();
+				var ust::string8 field_name= ust::concat( "param of type ", param.t.ToString() );
 				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
 			}
 

@@ -31,13 +31,7 @@ fn ToString( FundamentalType& fundamental_type ) : ust::string8
 
 fn ToString( ArrayType& array_type ) : ust::string8
 {
-	var ust::string8 mut result;
-	result+= "[ ";
-	result+= array_type.element_type.ToString();
-	result+= ", ";
-	result+= ust::to_string8(array_type.element_count);
-	result+= " ]";
-	return result;
+	return ust::concat( "[ ", array_type.element_type.ToString(), ", ", ust::to_string8(array_type.element_count), " ]" );
 }
 
 fn ToString( TupleType& tuple_type ) : ust::string8
@@ -68,13 +62,7 @@ fn ToString( TupleType& tuple_type ) : ust::string8
 
 fn ToString( RawPointerType& raw_pointer_type ) : ust::string8
 {
-	var ust::string8 mut result;
-	result+= "$";
-	result+= "(";
-	result+= raw_pointer_type.element_type.ToString();
-	result+= ")";
-
-	return result;
+	return ust::concat( "$", "(", raw_pointer_type.element_type.ToString(), ")" );
 }
 
 fn ToString( FunctionType& function_type ) : ust::string8
@@ -1023,15 +1011,11 @@ fn Variable::CreatePtr( byval mut this ) : VariablePtr
 	{
 		// Create inner reference node.
 
-		auto mut name= this.name;
-		name+= " inner reference ";
-		name+= ust::to_string8(i);
-
 		var Variable mut node_src
 		{
 			.value_type= ( this.t.GetInnerReferenceKind( size_type(i) ) == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
-			.name= move(name),
+			.name= ust::concat( this.name, " inner reference ", ust::to_string8(i) ),
 			.is_variable_inner_reference_node= this.value_type == ValueType::Value,
 			.is_inner_reference_node= true,
 		};
@@ -1830,15 +1814,14 @@ fn NamesScope::ToString( this ) : ust::string8
 		}
 		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ TypeinfoClassDescription />() )
 		{
-			var ust::string8 mut res;
-			res= KeywordToString(Keyword::typeof_);
-			res+= "(";
-			res+= KeywordToString(Keyword::typeinfo_);
-			res+= "</";
-			res+= typeinfo_class_description.source_type.ToString();
-			res+= "/>";
-			res+=")";
-			return res;
+			return ust::concat(
+				KeywordToString(Keyword::typeof_),
+				"(",
+				KeywordToString(Keyword::typeinfo_),
+				"</",
+				typeinfo_class_description.source_type.ToString(),
+				 "/>",
+				")" );
 		}
 		if_var( &coroutine_type_description : class_type.generated_class_data.get</ CoroutineTypeDescription />() )
 		{

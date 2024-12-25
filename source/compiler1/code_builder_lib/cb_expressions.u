@@ -2477,10 +2477,6 @@ fn CodeBuilder::AccessDirectClassField(
 	var ClassTypePtr class_type= variable.t.GetClassType().try_deref();
 	debug_assert( class_type == field.source_class, "Accessing non-direct class field!" );
 
-	var ust::string8 mut node_name= variable_ptr.lock_imut().deref().name;
-	node_name+= ".";
-	node_name+= field_name;
-
 	if( field.is_reference )
 	{
 		var Variable mut result
@@ -2488,7 +2484,7 @@ fn CodeBuilder::AccessDirectClassField(
 			.t= field.t,
 			.location= Variable::Location::Pointer,
 			.value_type= ( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-			.name= move(node_name),
+			.name= ust::concat( variable_ptr.lock_imut().deref().name, ".", field_name ),
 		};
 
 		if( variable.constexpr_value != LLVMValueRef::Null )
