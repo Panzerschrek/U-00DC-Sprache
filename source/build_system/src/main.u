@@ -366,7 +366,7 @@ fn BuildAndLoadPackageBuildScript(
 	// TODO - do we need to have this check here?
 	if( GetFileModificationTime( build_script_file_full_path ).empty() )
 	{
-		logger.LogError( ust::concat( "Can not get modification time for \"", build_script_file_full_path, "\" - file does not exists?" ) );
+		logger.LogError( ust::concat( "Can not get modification time for \"", build_script_file_full_path, "\" - file does not exist?" ) );
 		return ust::null_optional;
 	}
 

@@ -413,7 +413,7 @@ void CodeBuilder::MergeNameScopes(
 			NamesScopeValue* const dst_member= dst.GetThisScopeValue(src_name );
 			if( dst_member == nullptr )
 			{
-				// All ok - name form "src" does not exists in "dst".
+				// All ok - name form "src" does not exist in "dst".
 				if( const NamesScopePtr names_scope= src_member.value.GetNamespace() )
 				{
 					// We copy namespaces, instead of taking same shared pointer,

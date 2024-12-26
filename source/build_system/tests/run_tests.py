@@ -557,7 +557,7 @@ def MissingBuildFileTest():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not get modification time for" ) != -1 )
-	assert( stderr.find( "file does not exists?" ) != -1 )
+	assert( stderr.find( "file does not exist?" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 
@@ -567,7 +567,7 @@ def MissingPackage0Test():
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not get modification time for" ) != -1 )
 	assert( stderr.find( "non_existing_package/build.u" ) != -1 )
-	assert( stderr.find( "file does not exists?" ) != -1 )
+	assert( stderr.find( "file does not exist?" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 
@@ -577,7 +577,7 @@ def MissingPackage1Test():
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not get modification time for" ) != -1 )
 	assert( stderr.find( "sub_package/build.u" ) != -1 )
-	assert( stderr.find( "file does not exists?" ) != -1 )
+	assert( stderr.find( "file does not exist?" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
 

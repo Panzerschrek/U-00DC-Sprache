@@ -230,7 +230,7 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFS(
 		fs::make_absolute(dir_path);
 		if( !fs::exists(dir_path) )
 		{
-			std::cerr << "include dir \"" << fs_dir << "\" does not exists." << std::endl;
+			std::cerr << "include dir \"" << fs_dir << "\" does not exist." << std::endl;
 			all_ok= false;
 			continue;
 		}

@@ -959,9 +959,9 @@ def TypeinfoForTypeinfo_Test3():
 		{
 			var I32Typeinfo default_constructed_typeinfo;
 			var I32Typeinfo copy_constructed_typeinfo= t;
-			unsafe{ cast_mut(t) = typeinfo</i32/>; } // Copy assignment operator doesn't exists.
-			t == t; // Equality compare operator doesn't exists.
-			t > t; // Order compare operator doesn't exists.
+			unsafe{ cast_mut(t) = typeinfo</i32/>; } // Copy assignment operator doesn't exist.
+			t == t; // Equality compare operator doesn't exist.
+			t > t; // Order compare operator doesn't exist.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
