@@ -756,6 +756,99 @@ fn CreatePackageTargetBuildGraphNodes(
 		build_graph.nodes.push_back( move(node) );
 	}
 
+	if( !target.generated_source_files.empty() )
+	{
+		var ust::string8 generated_sources_dir= GetPackageBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
+
+		// TODO - remove copypaste.
+
+		foreach( &generated_source_file : target.generated_source_files )
+		{
+			var ust::string8 generated_source_file_absolute= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source_file ) );
+
+			// Place "bc" files near to generated source files.
+			var ust::string8 bc_file = generated_source_file_absolute + ".bc";
+
+			bc_files.push_back( bc_file );
+
+			var BuildGraph::Node mut node
+			{
+				.program= build_system_paths.compiler_executable_path,
+				// Use a dep-file to track changes in imported files and trigger rebuild if one of them is changed.
+				.dep_file= GetDependencyFilePath( bc_file ),
+				.input_files= ust::make_array( generated_source_file_absolute ),
+				.output_files= ust::make_array( bc_file ),
+				.comment= generated_source_file + ".bc",
+			};
+
+			if( !build_system_paths.sysroot.empty() )
+			{
+				node.command_line.push_back( "--sysroot" );
+				node.command_line.push_back( build_system_paths.sysroot );
+			}
+
+			node.command_line.push_back( generated_source_file_absolute );
+
+			node.command_line.push_back( "-o" );
+			node.command_line.push_back( bc_file );
+
+			// Produce also a dependency file.
+			node.command_line.push_back( "-MF" );
+			node.command_line.push_back( node.dep_file );
+
+			// Provide standard library imports.
+			node.command_line.push_back( "--include-dir" );
+			node.command_line.push_back( build_system_paths.ustlib_path );
+
+			foreach( &include_dir_prefixed : include_directories_prefixed )
+			{
+				node.command_line.push_back( "--include-dir" );
+				node.command_line.push_back( include_dir_prefixed );
+			}
+
+			// Provide path to source directory, in order to allow relative imports.
+			node.command_line.push_back( "--source-dir" );
+			node.command_line.push_back( generated_sources_dir );
+
+			// Forbid importing anything outside include directories and source directories.
+			node.command_line.push_back( "--prevent-imports-outside-given-directories" );
+
+			// Produce an LLVM bitcode file.
+			node.command_line.push_back( "-filetype=bc" );
+
+			// TODO - disable "pic" by default for windows target.
+			node.command_line.push_back( "--relocation-model" );
+			node.command_line.push_back( "pic" );
+
+			// Build configuration-dependent options.
+			switch( build_configuration )
+			{
+				BuildConfiguration::Debug ->
+				{
+					// Generate debug information.
+					node.command_line.push_back( "-g" );
+					// No optimization at all - optimization makes debugging hard.
+					node.command_line.push_back( "-O0" );
+					// No LTO is used for debug builds.
+				},
+				BuildConfiguration::Release ->
+				{
+					// Run full optimization, but not by using O3 - it isn't much better than O2.
+					node.command_line.push_back( "-O2" );
+					// Prepare for LTO.
+					node.command_line.push_back( "--lto-mode=prelink" );
+				},
+			}
+
+			AddTargetTripleCompilerFlags( target_triple, node.command_line );
+
+			// Perform verification just to be sure nothing is broken.
+			node.command_line.push_back( "--verify-module" );
+
+			build_graph.nodes.push_back( move(node) );
+		}
+	}
+
 	// Combine multiple ".bc" files into single result.
 
 	var bool target_is_windows = target_triple.operating_system == "windows";
