@@ -1,0 +1,22 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	auto mut in_file= ust::concat( build_system_interface.GetCurrentPackageSourceDirectory(), "/", "some_file.txt" );
+	auto mut out_file= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "some_file_multiplied.txt" );
+
+	auto mut program= ust::concat( build_system_interface.GetConfigurationOption( "tests_libs_directory" ).try_deref(), "/", "BuildSystemTestFileGenerationTool" );
+
+	var BK::CustomBuildStep mut step
+	{
+		.comment= "mutlitpy abc",
+		.input_files= ust::make_array( in_file ),
+		.output_files= ust::make_array( out_file ),
+		.command= BK::CustomBuildStep::ExeCommand
+		{
+			.exe_path= move(program),
+			.command_line= ust::make_array( move(in_file), "-o", move(out_file), "-n", "4" ),
+		}
+	};
+	return BK::PackageInfo { .custom_build_steps= ust::make_array( move(step) ), };
+}

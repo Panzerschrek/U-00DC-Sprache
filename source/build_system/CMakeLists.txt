@@ -154,6 +154,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 		DEPENDS ${USTLIB_FILES} # Build scripts and sources may import "ustlib". So, make sure we re-run tests if something in ustlib changes.
 		DEPENDS BuildSystemTestsStaticLibrary
 		DEPENDS BuildSystemTestsSharedLibrary
+		DEPENDS BuildSystemTestFileGenerationTool
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		)
 

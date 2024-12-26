@@ -507,6 +507,14 @@ def UsePackageFromRepositoryTest4():
 	RunExecutable( "use_package_from_repository4", "exe" )
 
 
+def CustomBuildStep0Test():
+	test_dir= "custom_build_step0"
+	RunBuildSystem( test_dir )
+	with open( os.path.join( g_tests_build_root_path, test_dir, "release", "some_file_multiplied.txt" ), "r") as file:
+		data = file.read()
+		assert( data == "abcabcabcabc" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1082,6 +1090,7 @@ def main():
 		UsePackageFromRepositoryTest2,
 		UsePackageFromRepositoryTest3,
 		UsePackageFromRepositoryTest4,
+		CustomBuildStep0Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
