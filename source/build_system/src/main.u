@@ -249,6 +249,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// Create directories for generated sources.
 	foreach( &target_pair : workspace.build_targets )
 	{
+		// TODO - create generaated sources directory only if it's necessary.
 		if( !EnsureDirectoryExists( bsi.logger_, GetPackageBuildTargetGeneratedSourcesDirectory( bsi.root_package_build_directory_, target_pair.key() ) ) )
 		{
 			return -1;
@@ -678,6 +679,13 @@ fn CreatePackageTargetBuildGraphNodes(
 	var ust::string8 sources_dir= NormalizePath( ust::concat( package_source_directory, "/", target.sources_directory ) );
 	var ust::string8 generated_sources_dir= GetPackageBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
 
+	var ust::vector</ust::string8/> mut generated_headers_dependencies;
+	foreach( &generated_private_header : target.generated_private_header_files )
+	{
+		generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_sources_dir, "/", generated_private_header ) ) );
+	}
+	// TODO - extract here generated public headers of all dependencies.
+
 	auto fill_source_file_compilation_command =
 	lambda[&]( BuildGraph::Node &mut node, ust::string_view8 source_file_absolute, ust::string_view8 bc_file )
 	{
@@ -688,6 +696,10 @@ fn CreatePackageTargetBuildGraphNodes(
 
 		node.input_files = ust::make_array</ust::string8/>( source_file_absolute );
 		node.output_files = ust::make_array</ust::string8/>( bc_file );
+
+		// Add dependencies on generated headers of this built target and generated public headers of dependencies.
+		// Do this in order to ensure headers are generated before this source file is compiled.
+		node.input_files.append( generated_headers_dependencies.iter() );
 
 		node.command_line.push_back( source_file_absolute );
 
@@ -713,7 +725,6 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( "--include-dir" );
 			node.command_line.push_back( include_dir_prefixed );
 		}
-
 
 		// Provide path to source directory, in order to allow relative imports.
 		node.command_line.push_back( "--source-dir" );

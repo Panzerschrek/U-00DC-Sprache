@@ -33,11 +33,20 @@ struct BuildTarget
 	ust::vector</ust::string8/> source_files;
 
 	// List of generated source files of this build target. Order is irrelevant.
-	// Contains paths relative to the generated source directory of this build target.
+	// Contains paths relative to the generated sources directory of this build target.
 	// Paths with "." and ".." aren't allowed.
 	// Duplicates aren't allowed.
 	// For each generated source file there should be a custom build step which generates it.
 	ust::vector</ust::string8/> generated_source_files;
+
+	// List of generated private header files of this build target. Order is irrelevant.
+	// Contains paths relative to the generated sources directory of this build target.
+	// Paths with "." and ".." aren't allowed.
+	// Duplicates aren't allowed.
+	// For each generated private header file there should be a custom build step which generates it.
+	// Specifying generated headers is necessary
+	// in order to perform their generation before compiling source files which use them.
+	ust::vector</ust::string8/> generated_private_header_files;
 
 	// Publuc include directories of this build target.
 	// They are used in this target and in all build targets dependent on it.
