@@ -249,7 +249,6 @@ fn TransformAndValidatePackageInfo(
 		workspace.custom_build_steps.push_back( move(custom_build_step) );
 	}
 
-	// TODO - check to two custom build steps share output files.
 	// TODO - check custom build steps outputs are located within package build directory.
 
 	// Check if package directories are correct.
@@ -451,6 +450,38 @@ fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut wor
 							BuildTargetAbsoluteNameToPrintableString( dep_b ),
 							"\"!" ) );
 					ok= false;
+				}
+			}
+		}
+	}
+
+	// Check custom build steps.
+	// For now only check if no two steps produce same files.
+	// TODO - detect dependency loops.
+	for( auto mut i= 0s; i < workspace.custom_build_steps.size(); ++i )
+	{
+		var CustomBuildStep& step_i= workspace.custom_build_steps[i];
+		for( auto mut j= i + 1s; j < workspace.custom_build_steps.size(); ++j )
+		{
+			var CustomBuildStep& step_j= cast_imut(workspace).custom_build_steps[j];
+
+			foreach( &output_file_i : step_i.output_files )
+			{
+				foreach( &output_file_j : step_j.output_files )
+				{
+					// This should work because paths should be normalized previously.
+					if( output_file_i == output_file_j )
+					{
+						logger.LogError( ust::concat(
+							"Error, two custom build steps \"",
+							step_i.comment,
+							"\" and \"",
+							step_j.comment,
+							"\" share same output file \"",
+							output_file_i,
+							"\"!" ) );
+						ok= false;
+					}
 				}
 			}
 		}

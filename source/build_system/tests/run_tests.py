@@ -1028,6 +1028,13 @@ def CustomBuildStepFilePathIsNotAbsolute2Test():
 	assert( stderr.find( "Error, custom build step executable path \"BuildSystemTestFileGenerationTool\" is not absolute!" ) != -1 )
 
 
+def CustomBuildStepsShareSameOutputFileTest():
+	res = RunBuildSystemWithErrors( "custom_build_steps_share_same_output_file" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, two custom build steps \"step0\" and \"step1\" share same output file" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -1198,7 +1205,8 @@ def main():
 		ExePublicIncludeDirectoriesTest,
 		CustomBuildStepFilePathIsNotAbsolute0Test,
 		CustomBuildStepFilePathIsNotAbsolute1Test,
-		CustomBuildStepFilePathIsNotAbsolute2Test ]
+		CustomBuildStepFilePathIsNotAbsolute2Test,
+		CustomBuildStepsShareSameOutputFileTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
