@@ -69,6 +69,9 @@ namespace SpecialBuildCommands
 // Copy file from one place to another. command_line[0]= destination, command_line[1]= source
 auto& copy_file= "??copy";
 
+// Create file with contents specified. command_line[0]= destination, command_line[1]= contents
+auto& generate_file= "??generate_file";
+
 } // namespace SpecialBuildCommands
 
 } // namespace BK

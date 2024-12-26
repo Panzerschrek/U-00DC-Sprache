@@ -405,6 +405,15 @@ fn PerformGraphBuild(
 					return false;
 				}
 			}
+			else if( node_to_rebuild.program == SpecialBuildCommands::generate_file )
+			{
+				// TODO - create destination directory first?
+				if( !WriteFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
+				{
+					logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
+					return false;
+				}
+			}
 			else
 			{
 				if( !RunExecutable( node_to_rebuild.program, ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )

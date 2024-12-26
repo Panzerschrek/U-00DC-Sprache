@@ -273,6 +273,18 @@ fn TransformAndValidatePackageInfo(
 				ok= false;
 			}
 		}
+		if_var( &mut generate_command : custom_build_step.command.get</ CustomBuildStep::GenerateFileCommand />() )
+		{
+			if( !IsAbsolutePath( generate_command.destination_path ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step generate destination \"", generate_command.destination_path, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				generate_command.destination_path= NormalizePath( generate_command.destination_path );
+			}
+		}
 
 		workspace.custom_build_steps.push_back( move(custom_build_step) );
 	}

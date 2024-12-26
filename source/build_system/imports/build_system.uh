@@ -165,13 +165,23 @@ struct CustomBuildStep
 		ust::string8 source_path;
 	}
 
+	// Generate file with contents specified.
+	// This command is designed to generate relative small files,
+	// if result file contents is too big, prefer using external command instead.
+	struct GenerateFileCommand
+	{
+		ust::string8 destination_path;
+		// TODO - support here binary contents.
+		ust::string8 contents;
+	}
+
 	// List of full paths to input files.
 	ust::vector</ust::string8/> input_files;
 	// List of full paths to output files.
 	ust::vector</ust::string8/> output_files;
 
 	// What to execute.
-	ust::variant</ tup[ ExeCommand, CopyCommand ] /> command;
+	ust::variant</ tup[ ExeCommand, CopyCommand, GenerateFileCommand ] /> command;
 
 	// What to display during the build.
 	ust::string8 comment;

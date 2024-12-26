@@ -1142,6 +1142,11 @@ fn CreateCustomBuildStepBuildGraphNodes( CustomBuildStep& custom_build_step, Bui
 		node.program= SpecialBuildCommands::copy_file;
 		node.command_line= ust::make_array( copy_command.destination_path, copy_command.source_path );
 	}
+	else if_var( &generate_command : custom_build_step.command.get</ CustomBuildStep::GenerateFileCommand />() )
+	{
+		node.program= SpecialBuildCommands::generate_file;
+		node.command_line= ust::make_array( generate_command.destination_path, generate_command.contents );
+	}
 	else
 	{
 		// Unhadled kind of command.

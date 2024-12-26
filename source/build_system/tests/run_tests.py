@@ -543,6 +543,14 @@ def CustomBuildStep3Test():
 		assert( data == "abc" )
 
 
+def CustomBuildStep4Test():
+	test_dir= "custom_build_step4"
+	RunBuildSystem( test_dir )
+	with open( os.path.join( g_tests_build_root_path, test_dir, "release", "some_generated_file.txt" ), "r") as file:
+		data = file.read()
+		assert( data == "Ewigheim" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1159,6 +1167,7 @@ def main():
 		CustomBuildStep1Test,
 		CustomBuildStep2Test,
 		CustomBuildStep3Test,
+		CustomBuildStep4Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
