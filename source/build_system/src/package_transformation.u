@@ -760,7 +760,6 @@ fn TransformDependencyName(
 	return BuildTargetAbsoluteName{ .package_name= dependency_package_name.try_take(), .name= dependency_name.name };
 }
 
-
 fn IsInFilesList( ust::array_view_imut</ust::string8/> files, ust::string_view8 f ) : bool
 {
 	foreach( &list_file : files )

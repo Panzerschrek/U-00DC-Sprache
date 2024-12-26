@@ -230,7 +230,7 @@ class BuildSystemInterface interface
 	// Get absolute path to the root source directory of current package.
 	fn virtual pure GetCurrentPackageSourceDirectory( this ) : ust::string8;
 
-	// Get absolute path to the build directory of current package for current target triple and build configuration..
+	// Get absolute path to the build directory of current package for current target triple and build configuration.
 	fn virtual pure GetCurrentPackageBuildDirectory( this ) : ust::string8;
 }
 
