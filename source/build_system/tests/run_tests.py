@@ -526,6 +526,14 @@ def CustomBuildStep1Test():
 		assert( data == "abcabcabcabcabcabc" )
 
 
+def CustomBuildStep2Test():
+	test_dir= "custom_build_step2"
+	RunBuildSystem( test_dir )
+	with open( os.path.join( g_tests_build_root_path, test_dir, "release", "combined.txt" ), "r") as file:
+		data = file.read()
+		assert( data == "12345671234567123456712345671234567" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1103,6 +1111,7 @@ def main():
 		UsePackageFromRepositoryTest4,
 		CustomBuildStep0Test,
 		CustomBuildStep1Test,
+		CustomBuildStep2Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,

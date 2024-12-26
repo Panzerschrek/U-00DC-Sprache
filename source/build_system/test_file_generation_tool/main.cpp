@@ -1,10 +1,11 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <vector>
 
 int main( const int argc, const char* const argv[] )
 {
-	const char* input_file_path= nullptr;
+	std::vector<const char*> input_files;
 	const char* output_file_path= nullptr;
 	int32_t num_repeats= 1;
 
@@ -43,19 +44,14 @@ int main( const int argc, const char* const argv[] )
 		}
 		else
 		{
-			if( input_file_path != nullptr )
-			{
-				std::cerr << "Duplicated input file \"" << argv[i] << "\"!" << std::endl;
-				return -1;
-			}
-			input_file_path= argv[i];
+			input_files.push_back( argv[i] );
 			++i;
 		}
 	}
 
-	if( input_file_path == nullptr )
+	if( input_files.empty() )
 	{
-		std::cerr << "No input file!" << std::endl;
+		std::cerr << "No input files!" << std::endl;
 		return -1;
 	}
 
@@ -71,15 +67,15 @@ int main( const int argc, const char* const argv[] )
 		return -1;
 	}
 
-	std::cout << "Read file \"" << input_file_path << "\" and repeat it " << num_repeats << " times into \"" << output_file_path << "\"." << std::endl;
+	std::vector<std::string> in_files_contents;
+	in_files_contents.reserve( input_files.size() );
 
-	std::string in_file_contents;
-
+	for( const auto input_file : input_files )
 	{
-		std::ifstream in_file( input_file_path, std::ios::binary );
+		std::ifstream in_file( input_file, std::ios::binary );
 		if( in_file.fail() )
 		{
-			std::cerr << "Failed to open file \"" << input_file_path << "\" for reading!" << std::endl;
+			std::cerr << "Failed to open file \"" << input_file << "\" for reading!" << std::endl;
 			return -1;
 		}
 
@@ -87,19 +83,23 @@ int main( const int argc, const char* const argv[] )
 		const ssize_t size = in_file.tellg();
 		if( size < 0 )
 		{
-			std::cerr << "Failed to get file \"" << input_file_path << "\"size!" << std::endl;
+			std::cerr << "Failed to get file \"" << input_file << "\"size!" << std::endl;
 			return -1;
 		}
 
-		in_file_contents.resize( size_t(size) );
+		std::string in_file_conents;
+
+		in_file_conents.resize( size_t(size) );
 		in_file.seekg(0);
-		in_file.read( in_file_contents.data(), size );
+		in_file.read( in_file_conents.data(), size );
 
 		if( in_file.fail() )
 		{
-			std::cerr << "Faild to read from \"" << input_file_path << "\"!" << std::endl;
+			std::cerr << "Faild to read from \"" << input_file << "\"!" << std::endl;
 			return -1;
 		}
+
+		in_files_contents.push_back( std::move(in_file_conents) );
 	}
 
 	std::ofstream out_file( output_file_path, std::ios::binary );
@@ -110,7 +110,10 @@ int main( const int argc, const char* const argv[] )
 	}
 
 	for( int32_t i= 0; i < num_repeats && !out_file.fail(); ++i )
-		out_file << in_file_contents;
+	{
+		for( const std::string& in_file_contents : in_files_contents )
+			out_file << in_file_contents;
+	}
 
 	if( out_file.fail() )
 	{

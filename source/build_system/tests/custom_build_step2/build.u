@@ -1,0 +1,25 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	// More than one input file.
+
+	auto mut in_file_a= ust::concat( build_system_interface.GetCurrentPackageSourceDirectory(), "/", "file_a.txt" );
+	auto mut in_file_b= ust::concat( build_system_interface.GetCurrentPackageSourceDirectory(), "/", "file_b.txt" );
+	auto mut out_file= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "combined.txt" );
+
+	auto mut program= ust::concat( build_system_interface.GetConfigurationOption( "tests_libs_directory" ).try_deref(), "/", "BuildSystemTestFileGenerationTool" );
+
+	var BK::CustomBuildStep mut step
+	{
+		.comment= "combine and multiply files A and B",
+		.input_files= ust::make_array( in_file_a, in_file_b ),
+		.output_files= ust::make_array( out_file ),
+		.command= BK::CustomBuildStep::ExeCommand
+		{
+			.exe_path= move(program),
+			.command_line= ust::make_array( move(in_file_a), move(in_file_b), "-o", move(out_file), "-n", "5" ),
+		}
+	};
+	return BK::PackageInfo { .custom_build_steps= ust::make_array( move(step) ), };
+}
