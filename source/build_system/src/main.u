@@ -246,6 +246,15 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
+	// Create directories for generated sources.
+	foreach( &target_pair : workspace.build_targets )
+	{
+		if( !EnsureDirectoryExists( bsi.logger_, GetPackageBuildTargetGeneratedSourcesDirectory( bsi.root_package_build_directory_, target_pair.key() ) ) )
+		{
+			return -1;
+		}
+	}
+
 	var ust::string8 build_graph_state_file_path= bsi.root_package_build_directory_ + "/build_graph.json";
 
 	// Load previous build graph state.
@@ -666,15 +675,8 @@ fn CreatePackageTargetBuildGraphNodes(
 		target.private_dependencies_including_transitive_public_dependencies,
 		include_directories_prefixed );
 
-	var ust::string8 sources_dir=
-		( target.source_files.empty()
-			? ust::string8()
-			: NormalizePath( ust::concat( package_source_directory, "/", target.sources_directory ) ) );
-
-	var ust::string8 generated_sources_dir=
-		( target.generated_source_files.empty()
-			? ust::string8()
-			: GetPackageBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name ) );
+	var ust::string8 sources_dir= NormalizePath( ust::concat( package_source_directory, "/", target.sources_directory ) );
+	var ust::string8 generated_sources_dir= GetPackageBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
 
 	auto fill_source_file_compilation_command =
 	lambda[&]( BuildGraph::Node &mut node, ust::string_view8 source_file_absolute, ust::string_view8 bc_file )
@@ -712,26 +714,20 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( include_dir_prefixed );
 		}
 
-		if( !sources_dir.empty() )
-		{
-			// Provide path to source directory, in order to allow relative imports.
-			node.command_line.push_back( "--source-dir" );
-			node.command_line.push_back( sources_dir );
 
-			// Allow importing files from sources directory used target name-prefixed path.
-			node.command_line.push_back( "--include-dir" );
-			node.command_line.push_back( ust::concat( sources_dir, g_include_dir_prefix_separator, target_name.name ) );
-		}
-		if( !generated_sources_dir.empty() )
-		{
-			// Provide path to source directory, in order to allow relative imports.
-			node.command_line.push_back( "--source-dir" );
-			node.command_line.push_back( generated_sources_dir );
+		// Provide path to source directory, in order to allow relative imports.
+		node.command_line.push_back( "--source-dir" );
+		node.command_line.push_back( sources_dir );
+		node.command_line.push_back( "--source-dir" );
+		node.command_line.push_back( generated_sources_dir );
 
-			// Allow importing files from generated sources directory used target name-prefixed path.
-			node.command_line.push_back( "--include-dir" );
-			node.command_line.push_back( ust::concat( generated_sources_dir, g_include_dir_prefix_separator, target_name.name ) );
-		}
+		// Allow importing files from sources directory used target name-prefixed path.
+		node.command_line.push_back( "--include-dir" );
+		node.command_line.push_back( ust::concat( sources_dir, g_include_dir_prefix_separator, target_name.name ) );
+
+		// Allow importing files from generated sources directory used target name-prefixed path.
+		node.command_line.push_back( "--include-dir" );
+		node.command_line.push_back( ust::concat( generated_sources_dir, g_include_dir_prefix_separator, target_name.name ) );
 
 		// Forbid importing anything outside include directories and source directories.
 		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
