@@ -158,14 +158,20 @@ struct CustomBuildStep
 		ust::vector</ust::string8/> command_line;
 	}
 
+	// Copy file from one place to another.
+	struct CopyCommand
+	{
+		ust::string8 destination_path;
+		ust::string8 source_path;
+	}
+
 	// List of full paths to input files.
 	ust::vector</ust::string8/> input_files;
 	// List of full paths to output files.
 	ust::vector</ust::string8/> output_files;
 
 	// What to execute.
-	// TODO - add CopyFile, GenerateFile, etc.
-	ust::variant</ tup[ ExeCommand ] /> command;
+	ust::variant</ tup[ ExeCommand, CopyCommand ] /> command;
 
 	// What to display during the build.
 	ust::string8 comment;

@@ -17,8 +17,10 @@ struct BuildGraph
 	{
 		// Program to run.
 		// Caution! If this program is generated during the build or may be changed in some another way, it should be listed in input files!
+		// May contain special build command name instead of executable path. Such commands are processed internally.
 		ust::string8 program;
-		// Its arguments.
+
+		// Program arguments.
 		ust::vector</ust::string8/> command_line;
 
 		// What is shown to the user during rebuild.
@@ -58,5 +60,15 @@ fn PerformGraphBuild(
 
 fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8;
 fn DeserializeBuildGraph( ust::string_view8 build_graph_serialized ) : ust::optional</BuildGraph/>;
+
+namespace SpecialBuildCommands
+{
+
+// Prefix all special commands with "??" - regular paths can't start with it.
+
+// Copy file from one place to another. command_line[0]= destination, command_line[1]= source
+auto& copy_file= "??copy";
+
+} // namespace SpecialBuildCommands
 
 } // namespace BK

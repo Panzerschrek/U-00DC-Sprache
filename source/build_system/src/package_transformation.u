@@ -245,6 +245,34 @@ fn TransformAndValidatePackageInfo(
 				exe_command.exe_path= NormalizePath( exe_command.exe_path );
 			}
 		}
+		if_var( &mut copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
+		{
+			if( !IsAbsolutePath( copy_command.destination_path ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step copy destination \"", copy_command.destination_path, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				copy_command.destination_path= NormalizePath( copy_command.destination_path );
+			}
+
+			if( !IsAbsolutePath( copy_command.source_path ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step copy source \"", copy_command.source_path, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				copy_command.source_path= NormalizePath( copy_command.source_path );
+			}
+
+			if( copy_command.destination_path == copy_command.source_path )
+			{
+				logger.LogError( ust::concat( "Error, custom build step copy source and destination are same path \"", copy_command.source_path, "\"!" ) );
+				ok= false;
+			}
+		}
 
 		workspace.custom_build_steps.push_back( move(custom_build_step) );
 	}

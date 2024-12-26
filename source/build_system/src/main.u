@@ -1137,6 +1137,11 @@ fn CreateCustomBuildStepBuildGraphNodes( CustomBuildStep& custom_build_step, Bui
 		// Executable may be changed by external code or during the build. So, add it into set of input files.
 		node.input_files.push_back( exe_command.exe_path );
 	}
+	else if_var( &copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
+	{
+		node.program= SpecialBuildCommands::copy_file;
+		node.command_line= ust::make_array( copy_command.destination_path, copy_command.source_path );
+	}
 	else
 	{
 		// Unhadled kind of command.

@@ -396,10 +396,22 @@ fn PerformGraphBuild(
 					node_to_rebuild.comment,
 					"\"." ) );
 
-			if( !RunExecutable( node_to_rebuild.program, ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )
+			if( node_to_rebuild.program == SpecialBuildCommands::copy_file )
 			{
-				logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
-				return false;
+				// TODO - create destination directory first?
+				if( !CopyFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
+				{
+					logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
+					return false;
+				}
+			}
+			else
+			{
+				if( !RunExecutable( node_to_rebuild.program, ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )
+				{
+					logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
+					return false;
+				}
 			}
 
 			nodes_state[node_to_rebuild_index]= BuildGraphNodeState::Ready;
