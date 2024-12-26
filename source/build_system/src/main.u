@@ -1230,6 +1230,16 @@ fn GetPackageBuildDirectory(
 	return res;
 }
 
+fn GetPackageBuildTargetGeneratedSourcesDirectory(
+	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
+{
+	return
+		ust::concat(
+			GetTargetBuildFilesDirectoryPath( root_package_build_directory, build_target_name ),
+			"/",
+			".generated.sources" );
+}
+
 fn StringifySemanticVersion( SemanticVersion& v ) : ust::string8
 {
 	return
@@ -1353,6 +1363,14 @@ public: // BuildSystemInterface
 	fn virtual final GetCurrentPackageBuildDirectory( this ) : ust::string8
 	{
 		return GetPackageBuildDirectory( root_package_build_directory_, current_package_name_ );
+	}
+
+	fn virtual final GetCurrentPackageBuildTargetGeneratedSorucesDirectory( this, ust::string_view8 build_target_name ): ust::string8
+	{
+		return
+			GetPackageBuildTargetGeneratedSourcesDirectory(
+				root_package_build_directory_,
+				BuildTargetAbsoluteName{ .package_name= current_package_name_, .name= build_target_name } );
 	}
 
 public: // Provide direct access for some fields where it's safe to use them directly.

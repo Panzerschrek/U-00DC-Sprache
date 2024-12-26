@@ -32,6 +32,13 @@ struct BuildTarget
 	// Duplicates aren't allowed.
 	ust::vector</ust::string8/> source_files;
 
+	// List of generated source files of this build target. Order is irrelevant.
+	// Contains paths relative to the generated source directory of this build target.
+	// Paths with "." and ".." aren't allowed.
+	// Duplicates aren't allowed.
+	// For each generated source file there should be a custom build step which generates it.
+	ust::vector</ust::string8/> generated_source_files;
+
 	// Publuc include directories of this build target.
 	// They are used in this target and in all build targets dependent on it.
 	// Imports like
@@ -232,6 +239,9 @@ class BuildSystemInterface interface
 
 	// Get absolute path to the build directory of current package for current target triple and build configuration.
 	fn virtual pure GetCurrentPackageBuildDirectory( this ) : ust::string8;
+
+	// Get absolute path to the generated sources directory for a build target of current package.
+	fn virtual pure GetCurrentPackageBuildTargetGeneratedSorucesDirectory( this, ust::string_view8 build_target_name ) : ust::string8;
 }
 
 enum BuildConfiguration
