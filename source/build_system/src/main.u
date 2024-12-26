@@ -666,6 +666,16 @@ fn CreatePackageTargetBuildGraphNodes(
 		target.private_dependencies_including_transitive_public_dependencies,
 		include_directories_prefixed );
 
+	var ust::string8 sources_dir=
+		( target.source_files.empty()
+			? ust::string8()
+			: NormalizePath( ust::concat( package_source_directory, "/", target.sources_directory ) ) );
+
+	var ust::string8 generated_sources_dir=
+		( target.generated_source_files.empty()
+			? ust::string8()
+			: GetPackageBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name ) );
+
 	auto fill_source_file_compilation_command =
 	lambda[&]( BuildGraph::Node &mut node, ust::string_view8 source_file_absolute, ust::string_view8 bc_file )
 	{
@@ -700,6 +710,27 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			node.command_line.push_back( "--include-dir" );
 			node.command_line.push_back( include_dir_prefixed );
+		}
+
+		if( !sources_dir.empty() )
+		{
+			// Provide path to source directory, in order to allow relative imports.
+			node.command_line.push_back( "--source-dir" );
+			node.command_line.push_back( sources_dir );
+
+			// Allow importing files from sources directory used target name-prefixed path.
+			node.command_line.push_back( "--include-dir" );
+			node.command_line.push_back( ust::concat( sources_dir, g_include_dir_prefix_separator, target_name.name ) );
+		}
+		if( !generated_sources_dir.empty() )
+		{
+			// Provide path to source directory, in order to allow relative imports.
+			node.command_line.push_back( "--source-dir" );
+			node.command_line.push_back( generated_sources_dir );
+
+			// Allow importing files from generated sources directory used target name-prefixed path.
+			node.command_line.push_back( "--include-dir" );
+			node.command_line.push_back( ust::concat( generated_sources_dir, g_include_dir_prefix_separator, target_name.name ) );
 		}
 
 		// Forbid importing anything outside include directories and source directories.
@@ -742,51 +773,33 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	var ust::vector</ust::string8/> mut bc_files;
 
-	if( !target.source_files.empty() )
+	foreach( &source_file : target.source_files )
 	{
-		var ust::string8 source_dir= NormalizePath( ust::concat( package_source_directory, "/", target.sources_directory ) );
+		var ust::string8 source_file_absolute= NormalizePath( ust::concat( package_source_directory, "/", source_file ) );
 
-		foreach( &source_file : target.source_files )
-		{
-			var ust::string8 source_file_absolute= NormalizePath( ust::concat( package_source_directory, "/", source_file ) );
+		var ust::string8 bc_file = NormalizePath( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) );
 
-			var ust::string8 bc_file = NormalizePath( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) );
+		bc_files.push_back( bc_file );
 
-			bc_files.push_back( bc_file );
+		var BuildGraph::Node mut node{ .comment= source_file + ".bc"};
+		fill_source_file_compilation_command( node, source_file_absolute, bc_file );
 
-			var BuildGraph::Node mut node{ .comment= source_file + ".bc"};
-			fill_source_file_compilation_command( node, source_file_absolute, bc_file );
-
-			// Provide path to source directory, in order to allow relative imports.
-			node.command_line.push_back( "--source-dir" );
-			node.command_line.push_back( source_dir );
-
-			build_graph.nodes.push_back( move(node) );
-		}
+		build_graph.nodes.push_back( move(node) );
 	}
 
-	if( !target.generated_source_files.empty() )
+	foreach( &generated_source_file : target.generated_source_files )
 	{
-		var ust::string8 generated_sources_dir= GetPackageBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
+		var ust::string8 generated_source_file_absolute= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source_file ) );
 
-		foreach( &generated_source_file : target.generated_source_files )
-		{
-			var ust::string8 generated_source_file_absolute= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source_file ) );
+		// Place "bc" files near to generated source files.
+		var ust::string8 bc_file = generated_source_file_absolute + ".bc";
 
-			// Place "bc" files near to generated source files.
-			var ust::string8 bc_file = generated_source_file_absolute + ".bc";
+		bc_files.push_back( bc_file );
 
-			bc_files.push_back( bc_file );
+		var BuildGraph::Node mut node{ .comment= generated_source_file + ".bc"};
+		fill_source_file_compilation_command( node, generated_source_file_absolute, bc_file );
 
-			var BuildGraph::Node mut node{ .comment= generated_source_file + ".bc"};
-			fill_source_file_compilation_command( node, generated_source_file_absolute, bc_file );
-
-			// Provide path to source directory, in order to allow relative imports.
-			node.command_line.push_back( "--source-dir" );
-			node.command_line.push_back( generated_sources_dir );
-
-			build_graph.nodes.push_back( move(node) );
-		}
+		build_graph.nodes.push_back( move(node) );
 	}
 
 	// Combine multiple ".bc" files into single result.

@@ -557,6 +557,12 @@ def GeneratedSources0Test():
 	RunExecutable( test_dir, "generated_sources0" )
 
 
+def GeneratedSources1Test():
+	test_dir= "generated_sources1"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "generated_sources1" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1176,6 +1182,7 @@ def main():
 		CustomBuildStep4Test,
 		MissingBuildFileTest,
 		GeneratedSources0Test,
+		GeneratedSources1Test,
 		MissingPackage0Test,
 		MissingPackage1Test,
 		MissingPackage2Test,
