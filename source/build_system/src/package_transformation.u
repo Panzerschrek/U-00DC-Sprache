@@ -202,6 +202,110 @@ fn TransformAndValidatePackageInfo(
 		workspace.build_targets.insert( target_absolute_name, move( out_build_target ) );
 	}
 
+	foreach( mut custom_build_step : package_info.custom_build_steps )
+	{
+		foreach( &mut in_file : custom_build_step.input_files )
+		{
+			if( !IsAbsolutePath( in_file ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step input file path \"", in_file, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				in_file= NormalizePath( in_file );
+			}
+		}
+
+		foreach( &mut out_file : custom_build_step.output_files )
+		{
+			if( !IsAbsolutePath( out_file ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step output file path \"", out_file, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				out_file= NormalizePath( out_file );
+			}
+		}
+
+		NormalizeList( custom_build_step.input_files );
+		NormalizeList( custom_build_step.output_files );
+
+		if_var( &mut exe_command : custom_build_step.command.get</CustomBuildStep::ExeCommand/>() )
+		{
+			if( !IsAbsolutePath( exe_command.exe_path ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step executable path \"", exe_command.exe_path, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				exe_command.exe_path= NormalizePath( exe_command.exe_path );
+			}
+		}
+		if_var( &mut copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
+		{
+			if( !IsAbsolutePath( copy_command.destination_path ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step copy destination \"", copy_command.destination_path, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				copy_command.destination_path= NormalizePath( copy_command.destination_path );
+				if( !IsInFilesList( custom_build_step.output_files, copy_command.destination_path ) )
+				{
+					logger.LogError( ust::concat( "Error, copy command destination file \"", copy_command.destination_path, "\" is not listed in output files!" ) );
+					ok= false;
+				}
+			}
+
+			if( !IsAbsolutePath( copy_command.source_path ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step copy source \"", copy_command.source_path, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				copy_command.source_path= NormalizePath( copy_command.source_path );
+				if( !IsInFilesList( custom_build_step.input_files, copy_command.source_path ) )
+				{
+					logger.LogError( ust::concat( "Error, copy command source file \"", copy_command.source_path, "\" is not listed in input files!" ) );
+					ok= false;
+				}
+			}
+
+			if( copy_command.destination_path == copy_command.source_path )
+			{
+				logger.LogError( ust::concat( "Error, custom build step copy source and destination are same path \"", copy_command.source_path, "\"!" ) );
+				ok= false;
+			}
+		}
+		if_var( &mut generate_command : custom_build_step.command.get</ CustomBuildStep::GenerateFileCommand />() )
+		{
+			if( !IsAbsolutePath( generate_command.destination_path ) )
+			{
+				logger.LogError( ust::concat( "Error, custom build step generate destination \"", generate_command.destination_path, "\" is not absolute!" ) );
+				ok= false;
+			}
+			else
+			{
+				generate_command.destination_path= NormalizePath( generate_command.destination_path );
+				if( !IsInFilesList( custom_build_step.output_files, generate_command.destination_path ) )
+				{
+					logger.LogError( ust::concat( "Error, generate command destination file \"", generate_command.destination_path, "\" is not listed in output files!" ) );
+					ok= false;
+				}
+			}
+		}
+
+		workspace.custom_build_steps.push_back( move(custom_build_step) );
+	}
+
+	// TODO - check custom build steps outputs are located within package build directory.
+
 	// Check if package directories are correct.
 	foreach( &dependency : package_info.package_dependencies )
 	{
@@ -401,6 +505,38 @@ fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut wor
 							BuildTargetAbsoluteNameToPrintableString( dep_b ),
 							"\"!" ) );
 					ok= false;
+				}
+			}
+		}
+	}
+
+	// Check custom build steps.
+	// For now only check if no two steps produce same files.
+	// TODO - detect dependency loops.
+	for( auto mut i= 0s; i < workspace.custom_build_steps.size(); ++i )
+	{
+		var CustomBuildStep& step_i= workspace.custom_build_steps[i];
+		for( auto mut j= i + 1s; j < workspace.custom_build_steps.size(); ++j )
+		{
+			var CustomBuildStep& step_j= cast_imut(workspace).custom_build_steps[j];
+
+			foreach( &output_file_i : step_i.output_files )
+			{
+				foreach( &output_file_j : step_j.output_files )
+				{
+					// This should work because paths should be normalized previously.
+					if( output_file_i == output_file_j )
+					{
+						logger.LogError( ust::concat(
+							"Error, two custom build steps \"",
+							step_i.comment,
+							"\" and \"",
+							step_j.comment,
+							"\" share same output file \"",
+							output_file_i,
+							"\"!" ) );
+						ok= false;
+					}
 				}
 			}
 		}
@@ -622,6 +758,18 @@ fn TransformDependencyName(
 	}
 
 	return BuildTargetAbsoluteName{ .package_name= dependency_package_name.try_take(), .name= dependency_name.name };
+}
+
+fn IsInFilesList( ust::array_view_imut</ust::string8/> files, ust::string_view8 f ) : bool
+{
+	foreach( &list_file : files )
+	{
+		if( f == list_file )
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 // Returns true if dependency graph is valid.

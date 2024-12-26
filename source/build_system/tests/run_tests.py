@@ -61,6 +61,7 @@ def RunBuildSystemWithErrors( project_subdirectory ):
 		"--compiler-executable", g_compiler_executable,
 		"--build-system-imports-path", g_build_system_imports_path,
 		"--ustlib-path", g_ustlib_path,
+		"--configuration-options", g_configuration_options_file_path,
 		"--project-directory", project_root,
 		"--build-directory", build_root,
 		"--packages-repository-directory", os.path.join( g_tests_path, g_packages_repository_dir ),
@@ -505,6 +506,49 @@ def UsePackageFromRepositoryTest3():
 def UsePackageFromRepositoryTest4():
 	RunBuildSystem( "use_package_from_repository4" )
 	RunExecutable( "use_package_from_repository4", "exe" )
+
+
+def CustomBuildStep0Test():
+	test_dir= "custom_build_step0"
+	RunBuildSystem( test_dir )
+	with open( os.path.join( g_tests_build_root_path, test_dir, "release", "some_file_multiplied.txt" ), "r") as file:
+		data = file.read()
+		assert( data == "abcabcabcabc" )
+
+
+def CustomBuildStep1Test():
+	test_dir= "custom_build_step1"
+	RunBuildSystem( test_dir )
+	with open( os.path.join( g_tests_build_root_path, test_dir, "release", "some_file_intermediate.txt" ), "r") as file:
+		data = file.read()
+		assert( data == "abcabc" )
+	with open( os.path.join( g_tests_build_root_path, test_dir, "release", "some_file_final.txt" ), "r") as file:
+		data = file.read()
+		assert( data == "abcabcabcabcabcabc" )
+
+
+def CustomBuildStep2Test():
+	test_dir= "custom_build_step2"
+	RunBuildSystem( test_dir )
+	with open( os.path.join( g_tests_build_root_path, test_dir, "release", "combined.txt" ), "r") as file:
+		data = file.read()
+		assert( data == "12345671234567123456712345671234567" )
+
+
+def CustomBuildStep3Test():
+	test_dir= "custom_build_step3"
+	RunBuildSystem( test_dir )
+	with open( os.path.join( g_tests_build_root_path, test_dir, "release", "some_file_copy.txt" ), "r") as file:
+		data = file.read()
+		assert( data == "abc" )
+
+
+def CustomBuildStep4Test():
+	test_dir= "custom_build_step4"
+	RunBuildSystem( test_dir )
+	with open( os.path.join( g_tests_build_root_path, test_dir, "release", "some_generated_file.txt" ), "r") as file:
+		data = file.read()
+		assert( data == "Ewigheim" )
 
 
 def MissingBuildFileTest():
@@ -979,6 +1023,43 @@ def ExePublicIncludeDirectoriesTest():
 	assert( stderr.find( "Non-empty public include directories list for an executable build target \"exe\"." ) != -1 )
 
 
+def CustomBuildStepFilePathIsNotAbsolute0Test():
+	res = RunBuildSystemWithErrors( "custom_build_step_file_path_is_not_absolute0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, custom build step input file path \"some_file.txt\" is not absolute!" ) != -1 )
+
+
+def CustomBuildStepFilePathIsNotAbsolute1Test():
+	res = RunBuildSystemWithErrors( "custom_build_step_file_path_is_not_absolute1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, custom build step output file path \"some_file_multiplied.txt\" is not absolute!" ) != -1 )
+
+
+def CustomBuildStepFilePathIsNotAbsolute2Test():
+	res = RunBuildSystemWithErrors( "custom_build_step_file_path_is_not_absolute2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, custom build step executable path \"BuildSystemTestFileGenerationTool\" is not absolute!" ) != -1 )
+
+
+def CustomBuildStepsShareSameOutputFileTest():
+	res = RunBuildSystemWithErrors( "custom_build_steps_share_same_output_file" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, two custom build steps \"step0\" and \"step1\" share same output file" ) != -1 )
+
+
+def CustomBuildStepsDependencyLoopTest():
+	res = RunBuildSystemWithErrors( "custom_build_steps_dependency_loop" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert(
+		stderr.find( "Broken build graph - node \"step0\" was not built, likely due to dependency loops." ) != -1 or
+		stderr.find( "Broken build graph - node \"step1\" was not built, likely due to dependency loops." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -1082,6 +1163,11 @@ def main():
 		UsePackageFromRepositoryTest2,
 		UsePackageFromRepositoryTest3,
 		UsePackageFromRepositoryTest4,
+		CustomBuildStep0Test,
+		CustomBuildStep1Test,
+		CustomBuildStep2Test,
+		CustomBuildStep3Test,
+		CustomBuildStep4Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
@@ -1143,7 +1229,12 @@ def main():
 		UnallowedImport3,
 		UnallowedImport4,
 		ExePublicDependencyTest,
-		ExePublicIncludeDirectoriesTest ]
+		ExePublicIncludeDirectoriesTest,
+		CustomBuildStepFilePathIsNotAbsolute0Test,
+		CustomBuildStepFilePathIsNotAbsolute1Test,
+		CustomBuildStepFilePathIsNotAbsolute2Test,
+		CustomBuildStepsShareSameOutputFileTest,
+		CustomBuildStepsDependencyLoopTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

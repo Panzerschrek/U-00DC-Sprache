@@ -1,0 +1,17 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	// Generate file.
+	auto mut out_file= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "some_generated_file.txt" );
+
+	var BK::CustomBuildStep mut step
+	{
+		.comment= "generate a file",
+		.input_files(), // No input files.
+		.output_files= ust::make_array( out_file ),
+		.command= BK::CustomBuildStep::GenerateFileCommand{ .destination_path= out_file, .contents= "Ewigheim", },
+	};
+
+	return BK::PackageInfo { .custom_build_steps= ust::make_array( move(step) ), };
+}

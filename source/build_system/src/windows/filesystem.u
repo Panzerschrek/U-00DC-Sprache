@@ -94,6 +94,24 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 	return true;
 }
 
+fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool
+{
+	var WideString mut destination_path_null_terminated = UTF8ToWideString( destination_path );
+	destination_path_null_terminated.push_back( WCHAR(0) );
+
+	var WideString mut source_path_null_terminated = UTF8ToWideString( source_path );
+	source_path_null_terminated.push_back( WCHAR(0) );
+
+	auto res = unsafe( ::CopyFileW( source_path_null_terminated.data(), destination_path_null_terminated.data(), BOOL(0) ) );
+	if( res == 0 )
+	{
+		logger.LogError( ust::concat( "Failed to copy file from \"", source_path, "\" to \"", destination_path, "\", error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+		return false;
+	}
+
+	return true;
+}
+
 fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 {
 	var WideString mut path_null_terminated = UTF8ToWideString( path );

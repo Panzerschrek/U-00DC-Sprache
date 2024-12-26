@@ -1,0 +1,36 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	auto mut in_file= ust::concat( build_system_interface.GetCurrentPackageSourceDirectory(), "/", "some_file.txt" );
+	auto mut intermediate_file= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "some_file_intermediate.txt" );
+	auto mut final_file= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "some_file_final.txt" );
+
+	auto mut program= ust::concat( build_system_interface.GetConfigurationOption( "tests_libs_directory" ).try_deref(), "/", "BuildSystemTestFileGenerationTool" );
+
+	var BK::CustomBuildStep mut step0
+	{
+		.comment= "intermediate file",
+		.input_files= ust::make_array( in_file ),
+		.output_files= ust::make_array( intermediate_file ),
+		.command= BK::CustomBuildStep::ExeCommand
+		{
+			.exe_path= program,
+			.command_line= ust::make_array( move(in_file), "-o", intermediate_file, "-n", "2" ),
+		}
+	};
+	var BK::CustomBuildStep mut step1
+	{
+		.comment= "final file",
+		.input_files= ust::make_array( intermediate_file ),
+		.output_files= ust::make_array( final_file ),
+		.command= BK::CustomBuildStep::ExeCommand
+		{
+			.exe_path= move(program),
+			.command_line= ust::make_array( move(intermediate_file), "-o", move(final_file), "-n", "3" ),
+		}
+	};
+
+	// Use here reverse order, to prove, that it's actually irrelevant and build will be performed in dependency order.
+	return BK::PackageInfo { .custom_build_steps= ust::make_array( move(step1), move(step0) ), };
+}

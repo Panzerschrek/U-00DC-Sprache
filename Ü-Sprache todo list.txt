@@ -153,8 +153,6 @@ CPP Header converter:
 *) Handle some subset of C++ headers
 
 Ü Build system:
-*) Build graph - support for a command execution of some internal build system actions (like file/directory creation)
-*) Custom target type
 *) Support generated sources
 *) Support generated headers
 *) Support compiling dependency packages for host system (if it's needed)
@@ -167,6 +165,12 @@ CPP Header converter:
 *) Command line option for building only specified build targets
 *) A command to build a single-file program with no dependencies
 *) A command to create an empty project (create build script stub)
+*) Support specifying working directory for custom build steps
+*) Support dependency files for custom build steps
+*) Ensure output files of custom build steps are located within package build directory or at least within root build
+	directory
+*) Try to detect dependency loops involving custom build steps before executing the build
+*) Create directories for output files of custom build steps (if necessary)
 *) Multithreaded targets building - to utilize all CPU cores and thus speed-up the build
 *) Dependency versions unification - if a build target depends on several versions of the same build target, change
 	versions to newest used package version. Propogate these changes down to dependencies where it is necessary.

@@ -102,6 +102,55 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 	return true;
 }
 
+fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool
+{
+	var ust::string8 mut source_path_null_terminated = source_path;
+	source_path_null_terminated+= "\0";
+
+	var i32 fd_source = unsafe( ::open( source_path_null_terminated.data(), O_RDONLY, 0u ) );
+	if( fd_source == -1 )
+	{
+		logger.LogError( ust::concat( "Failed to open file \"", source_path, "\" for reading, error: ", ust::to_string8( BKGetErrno() ) ) );
+		return false;
+	}
+
+	var i64 source_file_size= unsafe( BKGetFileSize( fd_source ) );
+	if( source_file_size < 0i64 )
+	{
+		logger.LogError( ust::concat( "Failed to get file size for \"", source_path, "\"." ) );
+		unsafe( ::close(fd_source) );
+		return false;
+	}
+
+	var ust::string8 mut destination_path_null_terminated = destination_path;
+	destination_path_null_terminated+= "\0";
+
+	var i32 fd_destination = unsafe( ::open( destination_path_null_terminated.data(), O_WRONLY | O_CREAT | O_TRUNC, 0o755u ) );
+	if( fd_destination == -1 )
+	{
+		logger.LogError( ust::concat( "Failed to open file \"", destination_path, "\" for writing, error: ", ust::to_string8( BKGetErrno() ) ) );
+		unsafe( ::close( fd_source ) );
+		return false;
+	}
+
+	for( var u64 mut offset(0); offset < u64(source_file_size); )
+	{
+		var ssize_type bytes_sent= unsafe( ::sendfile( fd_destination, fd_source, offset, size_type( u64(source_file_size) - offset ) ) );
+		if( bytes_sent <= ssize_type(0) )
+		{
+			logger.LogError( ust::concat( "sendfile failed for destination \"", destination_path, "\" and source \"", source_path, "\", error: ", ust::to_string8( BKGetErrno() ) ) );
+			unsafe( ::close( fd_source ) );
+			unsafe( ::close( fd_destination ) );
+			return false;
+		}
+		offset+= u64(bytes_sent);
+	}
+
+	unsafe( ::close( fd_source ) );
+	unsafe( ::close( fd_destination ) );
+	return true;
+}
+
 fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 {
 	var ust::string8 mut path_null_terminated = path;
@@ -207,6 +256,8 @@ fn nomangle close( i32 fd ) : i32;
 
 fn nomangle write( i32 fd, $(byte8) buf, size_type count ) unsafe : ssize_type;
 fn nomangle read( i32 fd, $(byte8) buf, size_type count ) unsafe : ssize_type;
+
+fn nomangle sendfile( i32 out_fd, i32 in_fd, u64 offset, size_type count ) unsafe : ssize_type;
 
 fn nomangle getcwd( $(char8) buff, size_type size ) unsafe : $(char8);
 
