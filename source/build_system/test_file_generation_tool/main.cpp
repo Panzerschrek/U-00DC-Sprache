@@ -61,9 +61,9 @@ int main( const int argc, const char* const argv[] )
 		return -1;
 	}
 
-	if( num_repeats == 128 )
+	if( num_repeats >= 128 )
 	{
-		std::cerr << "Number of repeats is too heigh!" << std::endl;
+		std::cerr << "Number of repeats is too high!" << std::endl;
 		return -1;
 	}
 
@@ -80,7 +80,7 @@ int main( const int argc, const char* const argv[] )
 		}
 
 		in_file.seekg( 0, std::ios::end );
-		const ssize_t size = in_file.tellg();
+		const auto size = in_file.tellg();
 		if( size < 0 )
 		{
 			std::cerr << "Failed to get file \"" << input_file << "\"size!" << std::endl;
@@ -91,7 +91,7 @@ int main( const int argc, const char* const argv[] )
 
 		in_file_conents.resize( size_t(size) );
 		in_file.seekg(0);
-		in_file.read( in_file_conents.data(), size );
+		in_file.read( in_file_conents.data(), std::streamsize( size ) );
 
 		if( in_file.fail() )
 		{
