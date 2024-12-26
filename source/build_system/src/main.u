@@ -280,6 +280,11 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		}
 	}
 
+	foreach( &custom_build_step : workspace.custom_build_steps )
+	{
+		CreateCustomBuildStepBuildGraphNodes( custom_build_step, build_graph );
+	}
+
 	var i32 mut main_result= 0;
 
 	// This executes the build.
@@ -1112,6 +1117,31 @@ fn ExtractDependenciesIncludeDirectories(
 }
 
 auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
+
+fn CreateCustomBuildStepBuildGraphNodes( CustomBuildStep& custom_build_step, BuildGraph &mut build_graph )
+{
+	// Paths should be already normalized.
+	var BuildGraph::Node mut node
+	{
+		.input_files= custom_build_step.input_files,
+		.output_files= custom_build_step.output_files,
+		.comment= custom_build_step.comment,
+		// TODO - add possibility to set dep-file
+	};
+
+	if_var( &exe_command : custom_build_step.command.get</ CustomBuildStep::ExeCommand />() )
+	{
+		node.program= exe_command.exe_path;
+		node.command_line= exe_command.command_line;
+	}
+	else
+	{
+		// Unhadled kind of command.
+		halt;
+	}
+
+	build_graph.nodes.push_back( move(node) );
+}
 
 fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& package_name ) : ust::string8
 {
