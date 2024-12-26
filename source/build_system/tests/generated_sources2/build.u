@@ -1,0 +1,31 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	// Generate only private header.
+
+	var BK::BuildTarget mut target
+	{
+		.name= "generated_sources2",
+		.target_type= BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "main.u" ),
+	};
+
+	var ust::string8 generated_private_header= "foo.uh";
+	auto mut out_file= ust::concat( build_system_interface.GetCurrentPackageBuildTargetGeneratedSorucesDirectory( target.name ), "/", generated_private_header );
+
+	auto& contents= "import \"/generated_sources2/foo.uh\"\nfn Foo() : i32 { return 987987; }";
+
+	var BK::CustomBuildStep mut generate_source_step
+	{
+		.comment= "generate " + generated_private_header,
+		.output_files= ust::make_array( out_file ),
+		.command= BK::CustomBuildStep::GenerateFileCommand{ .destination_path= out_file, .contents= contents, },
+	};
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(target) ),
+		.custom_build_steps= ust::make_array( move(generate_source_step) ),
+	};
+}

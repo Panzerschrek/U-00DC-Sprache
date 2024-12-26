@@ -1,0 +1,7 @@
+import "/generated_sources2/foo.uh"
+
+fn nomangle main() : i32
+{
+	halt if( Foo() != 987987 );
+	return 0;
+}
