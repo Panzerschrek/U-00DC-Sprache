@@ -215,20 +215,29 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	// Transform packages loaded.
 	var WorkspaceInfo mut workspace;
-	var bool mut has_package_transformation_errors= false;
-	foreach( &pair : cast_imut(packages_map) )
 	{
-		var PackageAbsoluteName& package_name= pair.key();
-		if( !TransformAndValidatePackageInfo( bsi.logger_, pair.value(), package_name, workspace ) )
+		// Collect and sort a list of pacakge names,
+		// then iterate in this sorted order - to avoid processing packages in non-deterministic hashtable order.
+		var ust::vector</PackageAbsoluteName/> mut package_names;
+		foreach( &pair : packages_map )
 		{
-			bsi.logger_.LogError( ust::concat( "Package \"", package_name.path, "\" is invald." ) );
-			has_package_transformation_errors= true;
+			package_names.push_back( pair.key() );
 		}
-	}
+		ust::sort( package_names );
 
-	if( has_package_transformation_errors )
-	{
-		return -1;
+		var bool mut has_package_transformation_errors= false;
+		foreach( &package_name : package_names )
+		{
+			if( !TransformAndValidatePackageInfo( bsi.logger_, packages_map[ package_name ], package_name, workspace ) )
+			{
+				bsi.logger_.LogError( ust::concat( "Package \"", package_name.path, "\" is invald." ) );
+				has_package_transformation_errors= true;
+			}
+		}
+		if( has_package_transformation_errors )
+		{
+			return -1;
+		}
 	}
 
 	if( !ProcessWorkspaceDependenciesGraph( bsi.logger_, workspace ) )
@@ -280,6 +289,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		}
 	}
 
+	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
 	foreach( &custom_build_step : workspace.custom_build_steps )
 	{
 		CreateCustomBuildStepBuildGraphNodes( custom_build_step, build_graph );
