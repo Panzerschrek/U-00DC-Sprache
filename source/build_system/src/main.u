@@ -689,11 +689,37 @@ fn CreatePackageTargetBuildGraphNodes(
 			: GetPackageBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name ) );
 
 	var ust::vector</ust::string8/> mut generated_headers_dependencies;
+
+	// Get generated private headers of this build target.
 	foreach( &generated_private_header : target.generated_private_header_files )
 	{
 		generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_sources_dir, "/", generated_private_header ) ) );
 	}
-	// TODO - extract here generated public headers of all dependencies.
+
+	// Get generated public headers of this build target.
+	if( !target.generated_public_header_files.empty() )
+	{
+		var ust::string8 generated_public_headers_dir= GetPackageBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, target_name );
+		foreach( &generated_public_header : target.generated_private_header_files )
+		{
+			generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
+		}
+	}
+
+	// Get generated public headers of all dependencies of this build target.
+	foreach( &dependency_name :
+		target.public_dependencies_including_transitive.iter().chain( target.private_dependencies_including_transitive_public_dependencies.iter() ) )
+	{
+		auto& dependency_target = workspace.build_targets[ dependency_name ];
+		if( !dependency_target.generated_public_header_files.empty() )
+		{
+			var ust::string8 generated_public_headers_dir= GetPackageBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, dependency_name );
+			foreach( &generated_public_header : dependency_target.generated_public_header_files )
+			{
+				generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
+			}
+		}
+	}
 
 	auto fill_source_file_compilation_command =
 	lambda[&]( BuildGraph::Node &mut node, ust::string_view8 source_file_absolute, ust::string_view8 bc_file )
@@ -1309,6 +1335,16 @@ fn GetPackageBuildTargetGeneratedSourcesDirectory(
 			"generated.sources" );
 }
 
+fn GetPackageBuildTargetGeneratedPublicHeadersDirectory(
+	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
+{
+	return
+		ust::concat(
+			GetTargetBuildFilesDirectoryPath( root_package_build_directory, build_target_name ),
+			"/",
+			"generated.public_headers" );
+}
+
 fn StringifySemanticVersion( SemanticVersion& v ) : ust::string8
 {
 	return
@@ -1438,6 +1474,14 @@ public: // BuildSystemInterface
 	{
 		return
 			GetPackageBuildTargetGeneratedSourcesDirectory(
+				root_package_build_directory_,
+				BuildTargetAbsoluteName{ .package_name= current_package_name_, .name= build_target_name } );
+	}
+
+	fn virtual final GetCurrentPackageBuildTargetGeneratedPublicHeadersDirectory( this, ust::string_view8 build_target_name ) : ust::string8
+	{
+		return
+			GetPackageBuildTargetGeneratedPublicHeadersDirectory(
 				root_package_build_directory_,
 				BuildTargetAbsoluteName{ .package_name= current_package_name_, .name= build_target_name } );
 	}

@@ -153,6 +153,31 @@ fn TransformAndValidatePackageInfo(
 			}
 		}
 
+		// Process generated public headers.
+
+		foreach( &generated_public_header_file : build_target.generated_public_header_files )
+		{
+			if( !TargetSourceNameIsValid( generated_public_header_file ) )
+			{
+				logger.LogError( ust::concat( "Invalid, generated public header file name \"", generated_public_header_file, "\" of build target \"", target_printable_name, "\"!" ) );
+				ok= false;
+				continue;
+			}
+
+			out_build_target.generated_public_header_files.push_back( NormalizePath( generated_public_header_file ) );
+		}
+
+		// Normalize list of generated public headers and detect duplicates.
+		ust::sort( out_build_target.generated_public_header_files );
+		for( auto mut i = 1s; i < out_build_target.generated_public_header_files.size(); ++i )
+		{
+			if( cast_imut(out_build_target).generated_public_header_files[ i - 1s ] == cast_imut(out_build_target).generated_public_header_files[i] )
+			{
+				logger.LogError( ust::concat( "Error, duplicated generated public header file \"", out_build_target.generated_public_header_files[i], "\" of the build target \"", target_printable_name, "\"!" ) );
+				ok= false;
+			}
+		}
+
 		// Process public include directories.
 
 		if( build_target.target_type == BuildTargetType::Executable && !build_target.public_include_directories.empty() )
