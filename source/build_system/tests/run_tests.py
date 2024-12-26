@@ -551,6 +551,12 @@ def CustomBuildStep4Test():
 		assert( data == "Ewigheim" )
 
 
+def GeneratedSources0Test():
+	test_dir= "generated_sources0"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "generated_sources0" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1169,6 +1175,7 @@ def main():
 		CustomBuildStep3Test,
 		CustomBuildStep4Test,
 		MissingBuildFileTest,
+		GeneratedSources0Test,
 		MissingPackage0Test,
 		MissingPackage1Test,
 		MissingPackage2Test,
