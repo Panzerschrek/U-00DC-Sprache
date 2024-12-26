@@ -6,6 +6,7 @@ import "filesystem.uh"
 import "json/parsing.uh"
 import "json/serialization.uh"
 import "make_dep_file.uh"
+import "path.uh"
 import "process.uh"
 
 
@@ -398,8 +399,8 @@ fn PerformGraphBuild(
 
 			if( node_to_rebuild.program == SpecialBuildCommands::copy_file )
 			{
-				// TODO - create destination directory first?
-				if( !CopyFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
+				if(!EnsureDirectoryExists( logger, GetParentPath( node_to_rebuild.command_line[0s] ) ) ||
+					!CopyFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
 				{
 					logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
 					return false;
@@ -407,8 +408,8 @@ fn PerformGraphBuild(
 			}
 			else if( node_to_rebuild.program == SpecialBuildCommands::generate_file )
 			{
-				// TODO - create destination directory first?
-				if( !WriteFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
+				if( !EnsureDirectoryExists( logger, GetParentPath( node_to_rebuild.command_line[0s] ) ) ||
+					!WriteFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
 				{
 					logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
 					return false;
