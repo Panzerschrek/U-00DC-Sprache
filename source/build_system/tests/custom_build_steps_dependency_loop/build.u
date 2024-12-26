@@ -1,0 +1,36 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	// Error here - two custom build steps depend on each other and thus form a dependency loop.
+
+	auto file_a= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "file_a.txt" );
+	auto file_b= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "file_b.txt" );
+
+	auto program= ust::concat( build_system_interface.GetConfigurationOption( "tests_libs_directory" ).try_deref(), "/", "BuildSystemTestFileGenerationTool" );
+
+	var BK::CustomBuildStep mut step0
+	{
+		.comment= "step0",
+		.input_files= ust::make_array( file_a ),
+		.output_files= ust::make_array( file_b ),
+		.command= BK::CustomBuildStep::ExeCommand
+		{
+			.exe_path= program,
+			.command_line= ust::make_array( file_a, "-o", file_b, "-n", "2" ),
+		}
+	};
+	var BK::CustomBuildStep mut step1
+	{
+		.comment= "step1",
+		.input_files= ust::make_array( file_b ),
+		.output_files= ust::make_array( file_a ),
+		.command= BK::CustomBuildStep::ExeCommand
+		{
+			.exe_path= program,
+			.command_line= ust::make_array( file_b, "-o", file_a, "-n", "3" ),
+		}
+	};
+
+	return BK::PackageInfo { .custom_build_steps= ust::make_array( move(step0), move(step1) ), };
+}

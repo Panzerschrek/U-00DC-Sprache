@@ -1035,6 +1035,15 @@ def CustomBuildStepsShareSameOutputFileTest():
 	assert( stderr.find( "Error, two custom build steps \"step0\" and \"step1\" share same output file" ) != -1 )
 
 
+def CustomBuildStepsDependencyLoopTest():
+	res = RunBuildSystemWithErrors( "custom_build_steps_dependency_loop" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert(
+		stderr.find( "Broken build graph - node \"step0\" was not built, likely due to dependency loops." ) != -1 or
+		stderr.find( "Broken build graph - node \"step1\" was not built, likely due to dependency loops." ) != -1 )
+
+
 #
 # End tests list
 #
@@ -1206,7 +1215,8 @@ def main():
 		CustomBuildStepFilePathIsNotAbsolute0Test,
 		CustomBuildStepFilePathIsNotAbsolute1Test,
 		CustomBuildStepFilePathIsNotAbsolute2Test,
-		CustomBuildStepsShareSameOutputFileTest ]
+		CustomBuildStepsShareSameOutputFileTest,
+		CustomBuildStepsDependencyLoopTest ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

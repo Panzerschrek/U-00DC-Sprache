@@ -406,11 +406,16 @@ fn PerformGraphBuild(
 		}
 
 		// Last check to be sure all was really built (may not be true for bad graphs with cycles).
+		// It's strictly necessary, since custom build steps may create dependency loops.
 		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
 		{
 			if( nodes_state[i] != BuildGraphNodeState::Ready )
 			{
-				logger.LogError( ust::concat( "Broken build graph - node \"", build_graph.nodes[i].comment, "\" was not built." ) );
+				logger.LogError(
+					ust::concat(
+						"Broken build graph - node \"",
+						build_graph.nodes[i].comment,
+						"\" was not built, likely due to dependency loops.") );
 				return false;
 			}
 		}
