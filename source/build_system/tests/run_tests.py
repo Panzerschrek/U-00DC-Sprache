@@ -61,6 +61,7 @@ def RunBuildSystemWithErrors( project_subdirectory ):
 		"--compiler-executable", g_compiler_executable,
 		"--build-system-imports-path", g_build_system_imports_path,
 		"--ustlib-path", g_ustlib_path,
+		"--configuration-options", g_configuration_options_file_path,
 		"--project-directory", project_root,
 		"--build-directory", build_root,
 		"--packages-repository-directory", os.path.join( g_tests_path, g_packages_repository_dir ),
@@ -1006,6 +1007,27 @@ def ExePublicIncludeDirectoriesTest():
 	assert( stderr.find( "Non-empty public include directories list for an executable build target \"exe\"." ) != -1 )
 
 
+def CustomBuildStepFilePathIsNotAbsolute0Test():
+	res = RunBuildSystemWithErrors( "custom_build_step_file_path_is_not_absolute0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, custom build step input file path \"some_file.txt\" is not absolute!" ) != -1 )
+
+
+def CustomBuildStepFilePathIsNotAbsolute1Test():
+	res = RunBuildSystemWithErrors( "custom_build_step_file_path_is_not_absolute1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, custom build step output file path \"some_file_multiplied.txt\" is not absolute!" ) != -1 )
+
+
+def CustomBuildStepFilePathIsNotAbsolute2Test():
+	res = RunBuildSystemWithErrors( "custom_build_step_file_path_is_not_absolute2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, custom build step executable path \"BuildSystemTestFileGenerationTool\" is not absolute!" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -1173,7 +1195,10 @@ def main():
 		UnallowedImport3,
 		UnallowedImport4,
 		ExePublicDependencyTest,
-		ExePublicIncludeDirectoriesTest ]
+		ExePublicIncludeDirectoriesTest,
+		CustomBuildStepFilePathIsNotAbsolute0Test,
+		CustomBuildStepFilePathIsNotAbsolute1Test,
+		CustomBuildStepFilePathIsNotAbsolute2Test ]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
