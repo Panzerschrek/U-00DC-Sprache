@@ -255,6 +255,11 @@ fn TransformAndValidatePackageInfo(
 			else
 			{
 				copy_command.destination_path= NormalizePath( copy_command.destination_path );
+				if( !IsInFilesList( custom_build_step.output_files, copy_command.destination_path ) )
+				{
+					logger.LogError( ust::concat( "Error, copy command destination file \"", copy_command.destination_path, "\" is not listed in output files!" ) );
+					ok= false;
+				}
 			}
 
 			if( !IsAbsolutePath( copy_command.source_path ) )
@@ -265,6 +270,11 @@ fn TransformAndValidatePackageInfo(
 			else
 			{
 				copy_command.source_path= NormalizePath( copy_command.source_path );
+				if( !IsInFilesList( custom_build_step.input_files, copy_command.source_path ) )
+				{
+					logger.LogError( ust::concat( "Error, copy command source file \"", copy_command.source_path, "\" is not listed in input files!" ) );
+					ok= false;
+				}
 			}
 
 			if( copy_command.destination_path == copy_command.source_path )
@@ -283,6 +293,11 @@ fn TransformAndValidatePackageInfo(
 			else
 			{
 				generate_command.destination_path= NormalizePath( generate_command.destination_path );
+				if( !IsInFilesList( custom_build_step.output_files, generate_command.destination_path ) )
+				{
+					logger.LogError( ust::concat( "Error, generate command destination file \"", generate_command.destination_path, "\" is not listed in output files!" ) );
+					ok= false;
+				}
 			}
 		}
 
@@ -743,6 +758,19 @@ fn TransformDependencyName(
 	}
 
 	return BuildTargetAbsoluteName{ .package_name= dependency_package_name.try_take(), .name= dependency_name.name };
+}
+
+
+fn IsInFilesList( ust::array_view_imut</ust::string8/> files, ust::string_view8 f ) : bool
+{
+	foreach( &list_file : files )
+	{
+		if( f == list_file )
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 // Returns true if dependency graph is valid.
