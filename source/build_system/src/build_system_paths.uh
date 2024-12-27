@@ -1,0 +1,30 @@
+import "package_transformation.u"
+
+namespace BK
+{
+
+struct BuildSystemPaths
+{
+	ust::string8 compiler_executable_path;
+	ust::string8 ustlib_path;
+	ust::string8 build_system_imports_path;
+	ust::string8 sysroot;
+	ust::string8 root_package_source_directory;
+	ust::string8 packages_repository_directory;
+}
+
+fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& package_name ) : ust::string8;
+
+fn GetPackageBuildDirectory(
+	ust::string_view8 root_package_build_directory, PackageAbsoluteName& package_name ) : ust::string8;
+
+fn GetTargetBuildFilesDirectoryPath(
+	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& target_name ) : ust::string8;
+
+fn GetBuildTargetGeneratedSourcesDirectory(
+	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8;
+
+fn GetBuildTargetGeneratedPublicHeadersDirectory(
+	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8;
+
+} // namespace BK

@@ -1,7 +1,7 @@
 import "/sort.u"
 import "/stdout.u"
-import "/string_conversions.u"
 import "build_graph.uh"
+import "build_system_paths.uh"
 import "configuration_options.uh"
 import "entry.uh"
 import "filesystem.uh"
@@ -355,16 +355,6 @@ fn ExtractExeDirectoryPath( ust::string_view8 exe_path )
 	return p;
 }
 
-struct BuildSystemPaths
-{
-	ust::string8 compiler_executable_path;
-	ust::string8 ustlib_path;
-	ust::string8 build_system_imports_path;
-	ust::string8 sysroot;
-	ust::string8 root_package_source_directory;
-	ust::string8 packages_repository_directory;
-}
-
 fn BuildAndLoadPackageBuildScript(
 	Logger &mut logger,
 	BuildSystemPaths& build_system_paths,
@@ -623,17 +613,6 @@ fn GetNativeSharedLibraryExtension() : ust::string_view8
 fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 {
 	return ust::concat( path, ".d" );
-}
-
-fn GetTargetBuildFilesDirectoryPath(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& target_name ) : ust::string8
-{
-	return
-		ust::concat(
-			GetPackageBuildDirectory( root_package_build_directory, target_name.package_name ),
-			"/",
-			target_name.name,
-			".dir" ); // Use postfix with dot. Since dots in target names aren't allowed, we prevent possible file name conflict.
 }
 
 fn CreatePackageTargetBuildGraphNodes(
@@ -1266,103 +1245,6 @@ fn CreateCustomBuildStepBuildGraphNodes( CustomBuildStep& custom_build_step, Bui
 	}
 
 	build_graph.nodes.push_back( move(node) );
-}
-
-fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& package_name ) : ust::string8
-{
-	var ust::string8 mut res;
-
-	if( package_name.name_base.has</ PackageAbsoluteName::RootPackage />() )
-	{
-		res= paths.root_package_source_directory;
-	}
-	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
-	{
-		res= paths.packages_repository_directory;
-		res+= "/";
-		res+= global_versioned_package.name;
-		res+= "/";
-		res+= StringifySemanticVersion( global_versioned_package.version );
-	}
-	else
-	{
-		// Unhandled package base name.
-		halt;
-	}
-
-	if( !package_name.path.empty() )
-	{
-		res+= "/";
-		res+= package_name.path;
-	}
-
-	return res;
-}
-
-fn GetPackageBuildDirectory(
-	ust::string_view8 root_package_build_directory, PackageAbsoluteName& package_name ) : ust::string8
-{
-	var ust::string8 mut res= root_package_build_directory;
-
-	if( package_name.name_base.has</ PackageAbsoluteName::RootPackage />() )
-	{
-		// Root package - build it in the root directory.
-	}
-	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
-	{
-		// Put build directories of all global packages into a subdirectory.
-		res+= "/";
-		res+= "global.packages"; // Use directory with dot to avoid name conflicts with subpackages and build targets.
-		res+= "/";
-		res+= global_versioned_package.name;
-		res+= "/";
-		res+= StringifySemanticVersion( global_versioned_package.version );
-	}
-	else
-	{
-		// Unhandled package base name.
-		halt;
-	}
-
-	if( !package_name.path.empty() )
-	{
-		res+= "/";
-		res+= package_name.path;
-	}
-	return res;
-}
-
-fn GetBuildTargetGeneratedSourcesDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
-{
-	return
-		ust::concat(
-			GetTargetBuildFilesDirectoryPath( root_package_build_directory, build_target_name ),
-			"/",
-			"generated.sources" );
-}
-
-fn GetBuildTargetGeneratedPublicHeadersDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
-{
-	return
-		ust::concat(
-			GetTargetBuildFilesDirectoryPath( root_package_build_directory, build_target_name ),
-			"/",
-			"generated.public_headers" );
-}
-
-fn StringifySemanticVersion( SemanticVersion& v ) : ust::string8
-{
-	return
-		ust::concat(
-			ust::to_string8( v.major ),
-			".",
-			ust::to_string8( v.minor ),
-			".",
-			ust::to_string8( v.patch ),
-			".",
-			ust::to_string8( v.tweak ) );
 }
 
 fn IsPublicDependencyOfDirectPublicSharedLibraryDependency(
