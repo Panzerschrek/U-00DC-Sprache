@@ -633,7 +633,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		GetPackageBuildDirectory( root_package_build_directory, target_name.package_name );
 
 	var ust::string8 target_build_files_directory=
-		GetTargetBuildFilesDirectoryPath( root_package_build_directory, target_name );
+		GetBuildTargetBuildFilesDirectory( root_package_build_directory, target_name );
 
 	// Retrieve include directories.
 	var ust::vector</ust::string8/> mut include_directories_prefixed;
