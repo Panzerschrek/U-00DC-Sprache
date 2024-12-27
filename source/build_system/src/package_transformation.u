@@ -155,6 +155,14 @@ fn TransformAndValidatePackageInfo(
 
 		// Process generated public headers.
 
+		if( build_target.target_type == BuildTargetType::Executable && !build_target.generated_public_header_files.empty() )
+		{
+			// For now forbid specifying public generated headers for executables.
+			// It's useless, since exporting symbols from executables isn't supported.
+			logger.LogError( ust::concat( "Non-empty generated public headers list for an executable build target \"", target_printable_name, "\"." ) );
+			ok= false;
+		}
+
 		foreach( &generated_public_header_file : build_target.generated_public_header_files )
 		{
 			if( !TargetSourceNameIsValid( generated_public_header_file ) )

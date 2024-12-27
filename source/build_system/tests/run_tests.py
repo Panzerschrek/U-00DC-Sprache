@@ -1053,6 +1053,13 @@ def ExePublicIncludeDirectoriesTest():
 	assert( stderr.find( "Non-empty public include directories list for an executable build target \"exe\"." ) != -1 )
 
 
+def ExePublicGeneratedHeadersTest():
+	res = RunBuildSystemWithErrors( "exe_public_generated_headers" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Non-empty generated public headers list for an executable build target \"exe\"." ) != -1 )
+
+
 def CustomBuildStepFilePathIsNotAbsolute0Test():
 	res = RunBuildSystemWithErrors( "custom_build_step_file_path_is_not_absolute0" )
 	assert( res.returncode != 0 )
@@ -1265,6 +1272,7 @@ def main():
 		UnallowedImport4,
 		ExePublicDependencyTest,
 		ExePublicIncludeDirectoriesTest,
+		ExePublicGeneratedHeadersTest,
 		CustomBuildStepFilePathIsNotAbsolute0Test,
 		CustomBuildStepFilePathIsNotAbsolute1Test,
 		CustomBuildStepFilePathIsNotAbsolute2Test,
