@@ -700,10 +700,11 @@ fn CreatePackageTargetBuildGraphNodes(
 	if( !target.generated_public_header_files.empty() )
 	{
 		var ust::string8 generated_public_headers_dir= GetPackageBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, target_name );
-		foreach( &generated_public_header : target.generated_private_header_files )
+		foreach( &generated_public_header : target.generated_public_header_files )
 		{
 			generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
 		}
+		include_directories_prefixed.push_back( ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, target_name.name ) );
 	}
 
 	// Get generated public headers of all dependencies of this build target.
@@ -718,6 +719,8 @@ fn CreatePackageTargetBuildGraphNodes(
 			{
 				generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
 			}
+
+			include_directories_prefixed.push_back( ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, dependency_name.name ) );
 		}
 	}
 
