@@ -70,16 +70,16 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	var ust::string8 exe_directory_path = MakePathAbsolute( ExtractExeDirectoryPath( exe_path ) );
+	var ust::string8 exe_directory = MakePathAbsolute( GetParentPath( exe_path ) );
 
-	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory_path, "\"" ) );
+	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory, "\"" ) );
 
 	// For now use "Compiler1" as compiler default. TODO - allow to tune it.
-	var ust::string8 default_compiler_executable_path = exe_directory_path + "/Compiler1";
+	var ust::string8 default_compiler_executable_path = exe_directory + "/Compiler1";
 	// "ustlib" is located in the root of the Üpackage.
-	var ust::string8 default_ustlib_path = exe_directory_path + "../ustlib";
+	var ust::string8 default_ustlib_path = exe_directory + "/../ustlib";
 	// Build system imports are located in "/build_system/imports"
-	var ust::string8 default_build_system_imports_path = exe_directory_path + "../build_system/imports";
+	var ust::string8 default_build_system_imports_path = exe_directory + "/../build_system/imports";
 
 	var BuildSystemPaths mut build_system_paths
 	{
@@ -343,17 +343,6 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	return main_result;
 }
 
-fn ExtractExeDirectoryPath( ust::string_view8 exe_path )
-	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
-{
-	var ust::string_view8 mut p = exe_path;
-	while( !p.empty() && !( p.back() == "/"c8 || p.back() == "\\"c8 ) )
-	{
-		p.drop_back();
-	}
-
-	return p;
-}
 
 fn BuildAndLoadPackageBuildScript(
 	Logger &mut logger,
