@@ -59,6 +59,7 @@ For now following features are implemented:
 * Target triple specifying
 * Limited (for now) cross-compilation support - using `--sysroot` option
 * Packages - as subpackages within directories of another packages or as global versioned packages
+* Generated sources and headers
 
 
 ### Caveats

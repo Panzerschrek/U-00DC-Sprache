@@ -551,6 +551,36 @@ def CustomBuildStep4Test():
 		assert( data == "Ewigheim" )
 
 
+def GeneratedSources0Test():
+	test_dir= "generated_sources0"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "generated_sources0" )
+
+
+def GeneratedSources1Test():
+	test_dir= "generated_sources1"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "generated_sources1" )
+
+
+def GeneratedSources2Test():
+	test_dir= "generated_sources2"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "generated_sources2" )
+
+
+def GeneratedSources3Test():
+	test_dir= "generated_sources3"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+
+
+def GeneratedSources4Test():
+	test_dir= "generated_sources4"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -669,6 +699,13 @@ def SourceFileCompilationError2Test():
 	assert( stderr.find( "Command \"main.u.bc\" execution failed" ) != -1 )
 
 
+def SourceFileCompilationError3Test():
+	res = RunBuildSystemWithErrors( "source_file_compilation_error3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Missing \"return\" in function, returning non-void." ) != -1 )
+
+
 def LinkingError0Test():
 	res = RunBuildSystemWithErrors( "linking_error0" )
 	assert( res.returncode != 0 )
@@ -701,6 +738,14 @@ def DuplicatedSourceFileTest():
 	assert( stderr.find( "Error, duplicated source file \"dir/other.u\" of the build target \"hello_world\"" ) != -1 )
 	assert( stderr.find( "Package" ) != -1 )
 	assert( stderr.find( "is invald" ) != -1 )
+
+
+def DuplicatedGeneratedPublicHeaderFileTest():
+	res = RunBuildSystemWithErrors( "duplicated_generated_public_header_file" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, duplicated generated public header file \"dir/other.uh\" of the build target \"hello_world\"!" ) != -1 )
+	assert( stderr.find( "Error, duplicated generated public header file \"some.uh\" of the build target \"hello_world\"!" ) != -1 )
 
 
 def InvalidTargetName0Test():
@@ -785,6 +830,20 @@ def InvalidSourceName6Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Invalid, source name \".\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName7Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name7" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, generated source name \"../some.u\" of build target \"hello_world\"!" ) != -1 )
+
+
+def InvalidSourceName8Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name8" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, generated public header file name \"\" of build target \"hello_world\"!" ) != -1 )
 
 
 def InvalidGlobalPackageName0Test():
@@ -1023,6 +1082,13 @@ def ExePublicIncludeDirectoriesTest():
 	assert( stderr.find( "Non-empty public include directories list for an executable build target \"exe\"." ) != -1 )
 
 
+def ExePublicGeneratedHeadersTest():
+	res = RunBuildSystemWithErrors( "exe_public_generated_headers" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Non-empty generated public headers list for an executable build target \"exe\"." ) != -1 )
+
+
 def CustomBuildStepFilePathIsNotAbsolute0Test():
 	res = RunBuildSystemWithErrors( "custom_build_step_file_path_is_not_absolute0" )
 	assert( res.returncode != 0 )
@@ -1169,6 +1235,11 @@ def main():
 		CustomBuildStep3Test,
 		CustomBuildStep4Test,
 		MissingBuildFileTest,
+		GeneratedSources0Test,
+		GeneratedSources1Test,
+		GeneratedSources2Test,
+		GeneratedSources3Test,
+		GeneratedSources4Test,
 		MissingPackage0Test,
 		MissingPackage1Test,
 		MissingPackage2Test,
@@ -1181,10 +1252,12 @@ def main():
 		SourceFileCompilationError0Test,
 		SourceFileCompilationError1Test,
 		SourceFileCompilationError2Test,
+		SourceFileCompilationError3Test,
 		LinkingError0Test,
 		LinkingError1Test,
 		DuplicatedBuildTargetTest,
 		DuplicatedSourceFileTest,
+		DuplicatedGeneratedPublicHeaderFileTest,
 		InvalidTargetName0Test,
 		InvalidTargetName1Test,
 		InvalidTargetName2Test,
@@ -1197,6 +1270,8 @@ def main():
 		InvalidSourceName4Test,
 		InvalidSourceName5Test,
 		InvalidSourceName6Test,
+		InvalidSourceName7Test,
+		InvalidSourceName8Test,
 		InvalidGlobalPackageName0Test,
 		InvalidGlobalPackageName1Test,
 		SourceDirectoriesConflict0Test,
@@ -1230,6 +1305,7 @@ def main():
 		UnallowedImport4,
 		ExePublicDependencyTest,
 		ExePublicIncludeDirectoriesTest,
+		ExePublicGeneratedHeadersTest,
 		CustomBuildStepFilePathIsNotAbsolute0Test,
 		CustomBuildStepFilePathIsNotAbsolute1Test,
 		CustomBuildStepFilePathIsNotAbsolute2Test,

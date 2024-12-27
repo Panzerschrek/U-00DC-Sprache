@@ -1,0 +1,7 @@
+import "foo.uh"
+
+fn nomangle main() : i32
+{
+	halt if( Foo() != 678123 );
+	return 0;
+}

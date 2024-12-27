@@ -1,0 +1,7 @@
+// Import generated public header in "lib".
+import "/lib/lib.uh"
+
+fn Foo() : i32
+{
+	return 555544;
+}

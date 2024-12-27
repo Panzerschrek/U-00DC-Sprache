@@ -246,6 +246,20 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
+	// Create directories for generated sources, if necessary.
+	foreach( &target_pair : cast_imut(workspace).build_targets )
+	{
+		auto& build_target_name= target_pair.key();
+		auto& build_target= target_pair.value();
+		if( !build_target.generated_source_files.empty() || !build_target.generated_private_header_files.empty() )
+		{
+			if( !EnsureDirectoryExists( bsi.logger_, GetBuildTargetGeneratedSourcesDirectory( bsi.root_package_build_directory_, build_target_name ) ) )
+			{
+				return -1;
+			}
+		}
+	}
+
 	var ust::string8 build_graph_state_file_path= bsi.root_package_build_directory_ + "/build_graph.json";
 
 	// Load previous build graph state.
@@ -666,28 +680,88 @@ fn CreatePackageTargetBuildGraphNodes(
 		target.private_dependencies_including_transitive_public_dependencies,
 		include_directories_prefixed );
 
-	var ust::string8 source_dir= NormalizePath( ust::concat( package_source_directory, "/", target.sources_directory ) );
+	var ust::string8 sources_dir=
+		( target.source_files.empty()
+			? ust::string8()
+			: NormalizePath( ust::concat( package_source_directory, "/", target.sources_directory ) ) );
 
-	var ust::vector</ust::string8/> mut bc_files;
+	var ust::string8 generated_sources_dir=
+		( ( target.generated_source_files.empty() && target.generated_private_header_files.empty() )
+			? ust::string8()
+			: GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name ) );
+
+	var ust::vector</ust::string8/> mut generated_headers_dependencies;
+
+	// Get generated private headers of this build target.
+	foreach( &generated_private_header : target.generated_private_header_files )
+	{
+		generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_sources_dir, "/", generated_private_header ) ) );
+	}
+
+	// Get generated public headers of this build target and all dependencies of this build target.
+	foreach( &build_target_name :
+		ust::single_element_array_view( target_name ).iter()
+		.chain( target.public_dependencies_including_transitive.iter() )
+		.chain( (target.private_dependencies_including_transitive_public_dependencies.iter() ) ) )
+	{
+		auto& dependency_target = workspace.build_targets[ build_target_name ];
+		if( !dependency_target.generated_public_header_files.empty() )
+		{
+			var ust::string8 generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, build_target_name );
+			foreach( &generated_public_header : dependency_target.generated_public_header_files )
+			{
+				generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
+			}
+
+			include_directories_prefixed.push_back( ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, build_target_name.name ) );
+		}
+	}
+
+	// Create nodes for compilation of each source file into a ".bc" file.
+	var ust::vector</SourceFileToCompile/> mut source_files_to_compile;
+
 	foreach( &source_file : target.source_files )
 	{
-		// Create nodes for compilation of each source file into a ".bc" file.
+		source_files_to_compile.push_back(
+			SourceFileToCompile
+			{
+				.source_file_full_path= NormalizePath( ust::concat( package_source_directory, "/", source_file ) ),
+				.bc_file_full_path=  NormalizePath( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) ),
+				.comment= source_file + ".bc",
+			} );
+	}
 
-		var ust::string8 source_file_absolute= NormalizePath( ust::concat( package_source_directory, "/", source_file ) );
+	foreach( &generated_source_file : target.generated_source_files )
+	{
+		var ust::string8 generated_source_file_absolute= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source_file ) );
 
-		var ust::string8 bc_file = NormalizePath( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) );
+		source_files_to_compile.push_back(
+			SourceFileToCompile
+			{
+				.source_file_full_path= generated_source_file_absolute,
+				// Place "bc" files near to generated source files.
+				.bc_file_full_path= generated_source_file_absolute + ".bc",
+				.comment= generated_source_file + ".bc",
+			} );
+	}
 
-		bc_files.push_back( bc_file );
-
+	foreach( &source_file_to_compile : source_files_to_compile )
+	{
 		var BuildGraph::Node mut node
 		{
 			.program= build_system_paths.compiler_executable_path,
 			// Use a dep-file to track changes in imported files and trigger rebuild if one of them is changed.
-			.dep_file= GetDependencyFilePath( bc_file ),
-			.input_files= ust::make_array( source_file_absolute ),
-			.output_files= ust::make_array( bc_file ),
-			.comment= source_file + ".bc",
+			.dep_file= GetDependencyFilePath( source_file_to_compile.bc_file_full_path ),
+			.input_files= ust::make_array( source_file_to_compile.source_file_full_path ),
+			.output_files= ust::make_array( source_file_to_compile.bc_file_full_path ),
+			.comment= source_file_to_compile.comment,
 		};
+
+		// Add dependencies on generated headers of this build target and generated public headers of dependencies.
+		// Do this in order to ensure headers are generated before this source file is compiled.
+		node.input_files.append( generated_headers_dependencies.iter() );
+
+		node.command_line.push_back( source_file_to_compile.source_file_full_path );
 
 		if( !build_system_paths.sysroot.empty() )
 		{
@@ -695,10 +769,8 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( build_system_paths.sysroot );
 		}
 
-		node.command_line.push_back( source_file_absolute );
-
 		node.command_line.push_back( "-o" );
-		node.command_line.push_back( bc_file );
+		node.command_line.push_back( source_file_to_compile.bc_file_full_path );
 
 		// Produce also a dependency file.
 		node.command_line.push_back( "-MF" );
@@ -714,9 +786,32 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( include_dir_prefixed );
 		}
 
-		// Provide path to source directory, in order to allow relative imports.
-		node.command_line.push_back( "--source-dir" );
-		node.command_line.push_back( source_dir );
+		// Provide path to source directory (directories), in order to allow relative imports.
+		if( !sources_dir.empty() )
+		{
+			node.command_line.push_back( "--source-dir" );
+			node.command_line.push_back( sources_dir );
+		}
+
+		if( !generated_sources_dir.empty() )
+		{
+			node.command_line.push_back( "--source-dir" );
+			node.command_line.push_back( generated_sources_dir );
+		}
+
+		if( !sources_dir.empty() )
+		{
+			// Allow importing files from sources directory using target name-prefixed path.
+			node.command_line.push_back( "--include-dir" );
+			node.command_line.push_back( ust::concat( sources_dir, g_include_dir_prefix_separator, target_name.name ) );
+		}
+
+		if( !generated_sources_dir.empty() )
+		{
+			// Allow importing files from generated sources directory using target name-prefixed path.
+			node.command_line.push_back( "--include-dir" );
+			node.command_line.push_back( ust::concat( generated_sources_dir, g_include_dir_prefix_separator, target_name.name ) );
+		}
 
 		// Forbid importing anything outside include directories and source directories.
 		node.command_line.push_back( "--prevent-imports-outside-given-directories" );
@@ -834,10 +929,10 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 	}
 
-	foreach( &bc_file : bc_files )
+	foreach( &source_file_to_compile : source_files_to_compile )
 	{
-		node.command_line.push_back( bc_file );
-		node.input_files.push_back( bc_file );
+		node.command_line.push_back( source_file_to_compile.bc_file_full_path );
+		node.input_files.push_back( source_file_to_compile.bc_file_full_path );
 	}
 
 	// Link public dependencies.
@@ -1081,6 +1176,13 @@ fn CreatePackageTargetBuildGraphNodes(
 	build_graph.nodes.push_back( move(node) );
 }
 
+struct SourceFileToCompile
+{
+	ust::string8 source_file_full_path;
+	ust::string8 bc_file_full_path;
+	ust::string8 comment;
+}
+
 fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::string8/> &mut compiler_flags )
 {
 	compiler_flags.push_back( "--target-arch" );
@@ -1230,6 +1332,26 @@ fn GetPackageBuildDirectory(
 	return res;
 }
 
+fn GetBuildTargetGeneratedSourcesDirectory(
+	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
+{
+	return
+		ust::concat(
+			GetTargetBuildFilesDirectoryPath( root_package_build_directory, build_target_name ),
+			"/",
+			"generated.sources" );
+}
+
+fn GetBuildTargetGeneratedPublicHeadersDirectory(
+	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
+{
+	return
+		ust::concat(
+			GetTargetBuildFilesDirectoryPath( root_package_build_directory, build_target_name ),
+			"/",
+			"generated.public_headers" );
+}
+
 fn StringifySemanticVersion( SemanticVersion& v ) : ust::string8
 {
 	return
@@ -1353,6 +1475,22 @@ public: // BuildSystemInterface
 	fn virtual final GetCurrentPackageBuildDirectory( this ) : ust::string8
 	{
 		return GetPackageBuildDirectory( root_package_build_directory_, current_package_name_ );
+	}
+
+	fn virtual final GetCurrentPackageBuildTargetGeneratedSourcesDirectory( this, ust::string_view8 build_target_name ): ust::string8
+	{
+		return
+			GetBuildTargetGeneratedSourcesDirectory(
+				root_package_build_directory_,
+				BuildTargetAbsoluteName{ .package_name= current_package_name_, .name= build_target_name } );
+	}
+
+	fn virtual final GetCurrentPackageBuildTargetGeneratedPublicHeadersDirectory( this, ust::string_view8 build_target_name ) : ust::string8
+	{
+		return
+			GetBuildTargetGeneratedPublicHeadersDirectory(
+				root_package_build_directory_,
+				BuildTargetAbsoluteName{ .package_name= current_package_name_, .name= build_target_name } );
 	}
 
 public: // Provide direct access for some fields where it's safe to use them directly.

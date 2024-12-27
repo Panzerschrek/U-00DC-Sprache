@@ -103,6 +103,89 @@ fn TransformAndValidatePackageInfo(
 			prev_targets_directories.push_back( move(sources_directory) );
 		}
 
+		// Process generated sources.
+
+		foreach( &generated_source_file : build_target.generated_source_files )
+		{
+			if( !TargetSourceNameIsValid( generated_source_file ) )
+			{
+				logger.LogError( ust::concat( "Invalid, generated source name \"", generated_source_file, "\" of build target \"", target_printable_name, "\"!" ) );
+				ok= false;
+				continue;
+			}
+
+			out_build_target.generated_source_files.push_back( NormalizePath( generated_source_file ) );
+		}
+
+		// Normalize list of generated sources and detect duplicates.
+		ust::sort( out_build_target.generated_source_files );
+		for( auto mut i = 1s; i < out_build_target.generated_source_files.size(); ++i )
+		{
+			if( cast_imut(out_build_target).generated_source_files[ i - 1s ] == cast_imut(out_build_target).generated_source_files[i] )
+			{
+				logger.LogError( ust::concat( "Error, duplicated generated source file \"", out_build_target.generated_source_files[i], "\" of the build target \"", target_printable_name, "\"!" ) );
+				ok= false;
+			}
+		}
+
+		// Process generated private headers.
+
+		foreach( &generated_private_header_file : build_target.generated_private_header_files )
+		{
+			if( !TargetSourceNameIsValid( generated_private_header_file ) )
+			{
+				logger.LogError( ust::concat( "Invalid, generated private header file name \"", generated_private_header_file, "\" of build target \"", target_printable_name, "\"!" ) );
+				ok= false;
+				continue;
+			}
+
+			out_build_target.generated_private_header_files.push_back( NormalizePath( generated_private_header_file ) );
+		}
+
+		// Normalize list of generated private headers and detect duplicates.
+		ust::sort( out_build_target.generated_private_header_files );
+		for( auto mut i = 1s; i < out_build_target.generated_private_header_files.size(); ++i )
+		{
+			if( cast_imut(out_build_target).generated_private_header_files[ i - 1s ] == cast_imut(out_build_target).generated_private_header_files[i] )
+			{
+				logger.LogError( ust::concat( "Error, duplicated generated private header file \"", out_build_target.generated_private_header_files[i], "\" of the build target \"", target_printable_name, "\"!" ) );
+				ok= false;
+			}
+		}
+
+		// Process generated public headers.
+
+		if( build_target.target_type == BuildTargetType::Executable && !build_target.generated_public_header_files.empty() )
+		{
+			// For now forbid specifying public generated headers for executables.
+			// It's useless, since exporting symbols from executables isn't supported.
+			logger.LogError( ust::concat( "Non-empty generated public headers list for an executable build target \"", target_printable_name, "\"." ) );
+			ok= false;
+		}
+
+		foreach( &generated_public_header_file : build_target.generated_public_header_files )
+		{
+			if( !TargetSourceNameIsValid( generated_public_header_file ) )
+			{
+				logger.LogError( ust::concat( "Invalid, generated public header file name \"", generated_public_header_file, "\" of build target \"", target_printable_name, "\"!" ) );
+				ok= false;
+				continue;
+			}
+
+			out_build_target.generated_public_header_files.push_back( NormalizePath( generated_public_header_file ) );
+		}
+
+		// Normalize list of generated public headers and detect duplicates.
+		ust::sort( out_build_target.generated_public_header_files );
+		for( auto mut i = 1s; i < out_build_target.generated_public_header_files.size(); ++i )
+		{
+			if( cast_imut(out_build_target).generated_public_header_files[ i - 1s ] == cast_imut(out_build_target).generated_public_header_files[i] )
+			{
+				logger.LogError( ust::concat( "Error, duplicated generated public header file \"", out_build_target.generated_public_header_files[i], "\" of the build target \"", target_printable_name, "\"!" ) );
+				ok= false;
+			}
+		}
+
 		// Process public include directories.
 
 		if( build_target.target_type == BuildTargetType::Executable && !build_target.public_include_directories.empty() )

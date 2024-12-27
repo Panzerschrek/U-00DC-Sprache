@@ -1,0 +1,8 @@
+// Import generated public header in "exe".
+import "/lib/lib.uh"
+
+fn nomangle main() : i32
+{
+	halt if( Foo() != 555544 );
+	return 0;
+}

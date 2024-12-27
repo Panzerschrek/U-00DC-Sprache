@@ -4,13 +4,13 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 {
 	ust::ignore_unused( build_system_interface );
 
-	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable };
+	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Library };
 	// Add the same source file two times.
-	target.source_files.push_back( "main.u" );
-	target.source_files.push_back( "main.u" );
+	target.generated_public_header_files.push_back( "some.uh" );
+	target.generated_public_header_files.push_back( "some.uh" );
 	// Add the same file two times, with non-identical path.
-	target.source_files.push_back( "dir/other.u" );
-	target.source_files.push_back( "dir\\other.u" );
+	target.generated_public_header_files.push_back( "dir/other.uh" );
+	target.generated_public_header_files.push_back( "dir\\other.uh" );
 	target.name= "hello_world";
 
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };

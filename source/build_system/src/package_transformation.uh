@@ -77,6 +77,15 @@ struct WorkspaceInfo
 		// Paths are normalized and the whole list is sorted.
 		ust::vector</ust::string8/> source_files;
 
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::string8/> generated_source_files;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::string8/> generated_private_header_files;
+
+		// Paths are normalized and the whole list is sorted.
+		ust::vector</ust::string8/> generated_public_header_files;
+
 		// Calculated based on source file paths.
 		ust::string8 sources_directory;
 

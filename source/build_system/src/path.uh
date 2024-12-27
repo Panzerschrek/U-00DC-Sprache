@@ -15,4 +15,8 @@ fn SplitPathIntoComponents( ust::string_view8 path )
 // Replaces separators with preferrable, removes duplicated separators, removes trailing separator (if present), performs (if possible) relative paths resolution.
 fn NormalizePath( ust::string_view8 path ) : ust::string8;
 
+// Returns parent path for given path. Basically cuts contents from tail until "/" isn't reached.
+fn GetParentPath( ust::string_view8 path )
+	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 );
+
 } // namespace BK
