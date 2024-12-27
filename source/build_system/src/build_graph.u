@@ -417,7 +417,7 @@ fn PerformGraphBuild(
 			}
 			else
 			{
-				if( !RunExecutable( node_to_rebuild.program, ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )
+				if( !RunExecutable( logger, node_to_rebuild.program, ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )
 				{
 					logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
 					return false;

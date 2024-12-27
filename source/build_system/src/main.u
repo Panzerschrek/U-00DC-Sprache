@@ -513,7 +513,7 @@ fn BuildAndLoadPackageBuildScript(
 		// Perform verification just to be sure nothing is broken.
 		compiler_args.push_back( "--verify-module" );
 
-		if( !RunExecutable( build_system_paths.compiler_executable_path, compiler_args ) )
+		if( !RunExecutable( logger, build_system_paths.compiler_executable_path, compiler_args ) )
 		{
 			logger.LogError( "Compiler execution failed." );
 			return ust::null_optional;

@@ -3,3 +3,6 @@ fn nomangle BKGetErrno() : i32;
 
 // Some used error codes.
 auto constexpr EEXIST = 17;
+
+// TODO - move into another place.
+fn nomangle BKGetEnvironment() : $($(char8));

@@ -1,32 +1,75 @@
+import "/string_conversions.u"
+import "/vector.u"
 import "../process.uh"
+import "errno.uh"
 import "process.uh"
 
 namespace BK
 {
 
-fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
+fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
 {
-	var ust::string8 mut full_command;
-	full_command+= "\"";
-	full_command+= exe_path;
-	full_command+= "\"";
+	var ust::string8 mut exe_path_null_terminated= ust::concat( exe_path, "\0" );
 
+	var ust::vector</ust::string8/> mut args_null_terminated;
+	args_null_terminated.push_back( exe_path_null_terminated );
 	foreach( &arg : command_line )
 	{
-		full_command+= " \"";
-		full_command+= arg;
-		full_command+= "\"";
+		args_null_terminated.push_back( ust::concat( arg, "\0" ) );
 	}
 
-	full_command+= "\0";
+	var ust::vector</$(char8)/> mut argv_vec;
+	foreach( &mut arg_null_terminated : args_null_terminated )
+	{
+		argv_vec.push_back( unsafe( arg_null_terminated.data() ) );
+	}
+	argv_vec.push_back( ust::nullptr</char8/>() ); // This vector itself is null-terminated.
 
-	// TODO - try find a better way to execute a process - without shell execution and combining/parsing command line arguments.
-	var i32 exe_res= unsafe( ::system( full_command.data() ) );
+	var posix_spawn_file_actions_t mut file_actions= zero_init;
+	if( unsafe( posix_spawn_file_actions_init( $<(file_actions ) ) ) != 0 )
+	{
+		logger.LogError( ust::concat( "posix_spawn_file_actions_init error: ", ust::to_string8( BKGetErrno() ) ) );
+		return false;
+	}
 
-	return exe_res == 0;
+	var posix_spawnattr_t mut spawn_attributes= zero_init;
+	if( unsafe( ::posix_spawnattr_init( $<(spawn_attributes) ) ) != 0 )
+	{
+		logger.LogError( ust::concat( "posix_spawnattr_init error: ", ust::to_string8( BKGetErrno() ) ) );
+		unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
+		return false;
+	}
+
+	var pid_t mut pid= zero_init;
+
+	auto spawn_res =
+		unsafe( ::posix_spawn(
+			$<(pid),
+			exe_path_null_terminated.data(),
+			$<(file_actions),
+			$<(spawn_attributes),
+			argv_vec.data(),
+			BKGetEnvironment() ) );
+
+	if( spawn_res != 0 )
+	{
+		logger.LogError( ust::concat( "posix_spawn error: ", ust::to_string8( BKGetErrno() ) ) );
+		return false;
+	}
+
+	unsafe( ::posix_spawnattr_destroy( $<(spawn_attributes) ) );
+	unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
+
+	// Wait for specified process to finish.
+	var i32 mut status= 99999;
+	auto wait_res= unsafe( ::waitpid( pid, $<(status), 0 ) );
+	if( wait_res != pid )
+	{
+		logger.LogError( ust::concat( "waitpid error: ", ust::to_string8( BKGetErrno() ) ) );
+		return false;
+	}
+
+	return status == 0;
 }
 
 } // namespace BK
-
-// C standard library function
-fn nomangle system( $(char8) command_null_terminated ) unsafe : i32;

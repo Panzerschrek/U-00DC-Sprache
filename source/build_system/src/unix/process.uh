@@ -13,6 +13,9 @@ fn nomangle posix_spawnattr_init( $(posix_spawnattr_t) ü__attr ) unsafe : i32;
 fn nomangle posix_spawnattr_setflags( $(posix_spawnattr_t) ü_attr, i16 ü__flags ) unsafe : i32;
 fn nomangle posix_spawnattr_setsigmask( $(posix_spawnattr_t) ü__attr, $(sigset_t) ü__sigmask ) unsafe : i32;
 
+fn nomangle wait( $(i32) ü__stat_loc ) unsafe : ü__pid_t;
+fn nomangle waitpid( ü__pid_t ü__pid, $(i32) ü__stat_loc, i32 ü__options ) unsafe : ü__pid_t;
+
 struct sigset_t ordered
 {
 	[ u64, 16u ] ü__val;
@@ -48,4 +51,5 @@ struct sched_param ordered
 }
 
 type mode_t = u32;
-type pid_t = i32;
+type pid_t = ü__pid_t;
+type ü__pid_t = i32;
