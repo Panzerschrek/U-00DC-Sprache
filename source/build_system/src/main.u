@@ -1,7 +1,7 @@
 import "/sort.u"
 import "/stdout.u"
-import "/string_conversions.u"
 import "build_graph.uh"
+import "build_system_paths.uh"
 import "configuration_options.uh"
 import "entry.uh"
 import "filesystem.uh"
@@ -70,30 +70,23 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	var ust::string8 exe_directory_path = MakePathAbsolute( ExtractExeDirectoryPath( exe_path ) );
+	var ust::string8 exe_directory = MakePathAbsolute( GetParentPath( exe_path ) );
 
-	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory_path, "\"" ) );
-
-	// For now use "Compiler1" as compiler default. TODO - allow to tune it.
-	var ust::string8 default_compiler_executable_path = exe_directory_path + "/Compiler1";
-	// "ustlib" is located in the root of the Üpackage.
-	var ust::string8 default_ustlib_path = exe_directory_path + "../ustlib";
-	// Build system imports are located in "/build_system/imports"
-	var ust::string8 default_build_system_imports_path = exe_directory_path + "../build_system/imports";
+	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory, "\"" ) );
 
 	var BuildSystemPaths mut build_system_paths
 	{
 		.compiler_executable_path= NormalizePath(
 			( options.compiler_executable_path.empty()
-				? default_compiler_executable_path
+				? ( exe_directory + "/Compiler1" ) // For now use "Compiler1" as compiler default. TODO - allow to tune it.
 				: MakePathAbsolute(options.compiler_executable_path) ) ),
 		.ustlib_path= NormalizePath(
 			( options.ustlib_path.empty()
-				? default_ustlib_path
+				? ( exe_directory + "/../ustlib" ) // "ustlib" is located in the root of the Ü package.
 				: MakePathAbsolute(options.ustlib_path) ) ),
 		.build_system_imports_path= NormalizePath(
 			( options.build_system_imports_path.empty()
-				? default_build_system_imports_path
+				? ( exe_directory + "/../build_system/imports" ) // Build system imports are located in "/build_system/imports".
 				: MakePathAbsolute(options.build_system_imports_path) ) ),
 		.sysroot= options.sysroot,
 		.packages_repository_directory=
@@ -240,7 +233,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		}
 	}
 
-	if( !ProcessWorkspaceDependenciesGraph( bsi.logger_, workspace ) )
+	if( !ProcessWorkspaceDependenciesGraph( bsi.logger_, workspace, bsi.root_package_build_directory_ ) )
 	{
 		bsi.logger_.LogError( "Project dependencies aren't valid!" );
 		return -1;
@@ -343,27 +336,6 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	return main_result;
 }
 
-fn ExtractExeDirectoryPath( ust::string_view8 exe_path )
-	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
-{
-	var ust::string_view8 mut p = exe_path;
-	while( !p.empty() && !( p.back() == "/"c8 || p.back() == "\\"c8 ) )
-	{
-		p.drop_back();
-	}
-
-	return p;
-}
-
-struct BuildSystemPaths
-{
-	ust::string8 compiler_executable_path;
-	ust::string8 ustlib_path;
-	ust::string8 build_system_imports_path;
-	ust::string8 sysroot;
-	ust::string8 root_package_source_directory;
-	ust::string8 packages_repository_directory;
-}
 
 fn BuildAndLoadPackageBuildScript(
 	Logger &mut logger,
@@ -625,17 +597,6 @@ fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 	return ust::concat( path, ".d" );
 }
 
-fn GetTargetBuildFilesDirectoryPath(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& target_name ) : ust::string8
-{
-	return
-		ust::concat(
-			GetPackageBuildDirectory( root_package_build_directory, target_name.package_name ),
-			"/",
-			target_name.name,
-			".dir" ); // Use postfix with dot. Since dots in target names aren't allowed, we prevent possible file name conflict.
-}
-
 fn CreatePackageTargetBuildGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 root_package_build_directory,
@@ -654,7 +615,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		GetPackageBuildDirectory( root_package_build_directory, target_name.package_name );
 
 	var ust::string8 target_build_files_directory=
-		GetTargetBuildFilesDirectoryPath( root_package_build_directory, target_name );
+		GetBuildTargetBuildFilesDirectory( root_package_build_directory, target_name );
 
 	// Retrieve include directories.
 	var ust::vector</ust::string8/> mut include_directories_prefixed;
@@ -1266,103 +1227,6 @@ fn CreateCustomBuildStepBuildGraphNodes( CustomBuildStep& custom_build_step, Bui
 	}
 
 	build_graph.nodes.push_back( move(node) );
-}
-
-fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& package_name ) : ust::string8
-{
-	var ust::string8 mut res;
-
-	if( package_name.name_base.has</ PackageAbsoluteName::RootPackage />() )
-	{
-		res= paths.root_package_source_directory;
-	}
-	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
-	{
-		res= paths.packages_repository_directory;
-		res+= "/";
-		res+= global_versioned_package.name;
-		res+= "/";
-		res+= StringifySemanticVersion( global_versioned_package.version );
-	}
-	else
-	{
-		// Unhandled package base name.
-		halt;
-	}
-
-	if( !package_name.path.empty() )
-	{
-		res+= "/";
-		res+= package_name.path;
-	}
-
-	return res;
-}
-
-fn GetPackageBuildDirectory(
-	ust::string_view8 root_package_build_directory, PackageAbsoluteName& package_name ) : ust::string8
-{
-	var ust::string8 mut res= root_package_build_directory;
-
-	if( package_name.name_base.has</ PackageAbsoluteName::RootPackage />() )
-	{
-		// Root package - build it in the root directory.
-	}
-	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
-	{
-		// Put build directories of all global packages into a subdirectory.
-		res+= "/";
-		res+= "global.packages"; // Use directory with dot to avoid name conflicts with subpackages and build targets.
-		res+= "/";
-		res+= global_versioned_package.name;
-		res+= "/";
-		res+= StringifySemanticVersion( global_versioned_package.version );
-	}
-	else
-	{
-		// Unhandled package base name.
-		halt;
-	}
-
-	if( !package_name.path.empty() )
-	{
-		res+= "/";
-		res+= package_name.path;
-	}
-	return res;
-}
-
-fn GetBuildTargetGeneratedSourcesDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
-{
-	return
-		ust::concat(
-			GetTargetBuildFilesDirectoryPath( root_package_build_directory, build_target_name ),
-			"/",
-			"generated.sources" );
-}
-
-fn GetBuildTargetGeneratedPublicHeadersDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
-{
-	return
-		ust::concat(
-			GetTargetBuildFilesDirectoryPath( root_package_build_directory, build_target_name ),
-			"/",
-			"generated.public_headers" );
-}
-
-fn StringifySemanticVersion( SemanticVersion& v ) : ust::string8
-{
-	return
-		ust::concat(
-			ust::to_string8( v.major ),
-			".",
-			ust::to_string8( v.minor ),
-			".",
-			ust::to_string8( v.patch ),
-			".",
-			ust::to_string8( v.tweak ) );
 }
 
 fn IsPublicDependencyOfDirectPublicSharedLibraryDependency(

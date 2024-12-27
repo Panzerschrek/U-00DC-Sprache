@@ -1,0 +1,16 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	var BK::BuildTarget mut target
+	{
+		.name= "exe",
+		.target_type= BK::BuildTargetType::Executable,
+		// Error here - a generated source is specified, but thiere is no custom build step to generate it.
+		.generated_source_files= ust::make_array</ust::string8/>( "main.u" ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}

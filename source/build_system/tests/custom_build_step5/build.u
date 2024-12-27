@@ -1,0 +1,35 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	var BK::BuildTarget mut target
+	{
+		.target_type = BK::BuildTargetType::Executable,
+		.name = "custom_build_step5",
+		.source_files= ust::make_array</ust::string8/>( "main.u" ),
+	};
+
+	auto exe_suffix =
+		( build_system_interface.GetTargetTriple().operating_system == "windows"
+			? ust::string_view8(".exe")
+			: ust::string_view8() );
+
+	// Copy result executable.
+	auto build_dir= build_system_interface.GetCurrentPackageBuildDirectory();
+	auto mut in_file= ust::concat( build_dir, "/", target.name, exe_suffix );
+	auto mut out_file= ust::concat( build_dir, "/", target.name, "_copy", exe_suffix );
+
+	var BK::CustomBuildStep mut step
+	{
+		.comment= "copy " + target.name,
+		.input_files= ust::make_array( in_file ),
+		.output_files= ust::make_array( out_file ),
+		.command= BK::CustomBuildStep::CopyCommand{ .destination_path= move(out_file), .source_path= move(in_file), },
+	};
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(target) ),
+		.custom_build_steps= ust::make_array( move(step) ),
+	};
+}

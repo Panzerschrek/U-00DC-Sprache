@@ -1,0 +1,38 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	// Generate private file for embedding.
+	// Use an external program to generate it.
+	var ust::string8 generated_private_file_for_embedding= "test.txt";
+
+	var BK::BuildTarget mut target
+	{
+		.name= "generated_sources5",
+		.target_type= BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "main.u" ),
+		.generated_private_header_files= ust::make_array( generated_private_file_for_embedding ),
+	};
+
+	auto mut in_file= ust::concat( build_system_interface.GetCurrentPackageSourceDirectory(), "/", "test_base.txt" );
+	auto mut out_file= ust::concat( build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( target.name ), "/", generated_private_file_for_embedding );
+	auto mut program= ust::concat( build_system_interface.GetConfigurationOption( "tests_libs_directory" ).try_deref(), "/", "BuildSystemTestFileGenerationTool" );
+
+	var BK::CustomBuildStep mut generate_source_step
+	{
+		.comment= "generate " + generated_private_file_for_embedding,
+		.input_files= ust::make_array( in_file ),
+		.output_files= ust::make_array( out_file ),
+		.command= BK::CustomBuildStep::ExeCommand
+		{
+			.exe_path= move(program),
+			.command_line= ust::make_array( move(in_file), "-o", move(out_file), "-n", "2" ),
+		}
+	};
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(target) ),
+		.custom_build_steps= ust::make_array( move(generate_source_step) ),
+	};
+}

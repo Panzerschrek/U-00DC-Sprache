@@ -551,6 +551,13 @@ def CustomBuildStep4Test():
 		assert( data == "Ewigheim" )
 
 
+def CustomBuildStep5Test():
+	test_dir= "custom_build_step5"
+	RunBuildSystem( test_dir )
+	# Run copy of an executable build target, which was produces by custom build step.
+	RunExecutable( test_dir, "custom_build_step5_copy" )
+
+
 def GeneratedSources0Test():
 	test_dir= "generated_sources0"
 	RunBuildSystem( test_dir )
@@ -579,6 +586,12 @@ def GeneratedSources4Test():
 	test_dir= "generated_sources4"
 	RunBuildSystem( test_dir )
 	RunExecutable( test_dir, "exe" )
+
+
+def GeneratedSources5Test():
+	test_dir= "generated_sources5"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "generated_sources5" )
 
 
 def MissingBuildFileTest():
@@ -1126,6 +1139,27 @@ def CustomBuildStepsDependencyLoopTest():
 		stderr.find( "Broken build graph - node \"step1\" was not built, likely due to dependency loops." ) != -1 )
 
 
+def MissingCustomBuildStepForGeneratedFile0Test():
+	res = RunBuildSystemWithErrors( "missing_custom_build_step_for_generated_file0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "No custom build step found for generated source file \"main.u\" of build target \"exe\"!" ) != -1 )
+
+
+def MissingCustomBuildStepForGeneratedFile1Test():
+	res = RunBuildSystemWithErrors( "missing_custom_build_step_for_generated_file1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "No custom build step found for generated private header file \"some.uh\" of build target \"exe\"!" ) != -1 )
+
+
+def MissingCustomBuildStepForGeneratedFile2Test():
+	res = RunBuildSystemWithErrors( "missing_custom_build_step_for_generated_file2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "No custom build step found for generated public header file \"some.uh\" of build target \"lib\"!" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -1234,12 +1268,14 @@ def main():
 		CustomBuildStep2Test,
 		CustomBuildStep3Test,
 		CustomBuildStep4Test,
-		MissingBuildFileTest,
+		CustomBuildStep5Test,
 		GeneratedSources0Test,
 		GeneratedSources1Test,
 		GeneratedSources2Test,
 		GeneratedSources3Test,
 		GeneratedSources4Test,
+		GeneratedSources5Test,
+		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
 		MissingPackage2Test,
@@ -1310,7 +1346,11 @@ def main():
 		CustomBuildStepFilePathIsNotAbsolute1Test,
 		CustomBuildStepFilePathIsNotAbsolute2Test,
 		CustomBuildStepsShareSameOutputFileTest,
-		CustomBuildStepsDependencyLoopTest ]
+		CustomBuildStepsDependencyLoopTest,
+		MissingCustomBuildStepForGeneratedFile0Test,
+		MissingCustomBuildStepForGeneratedFile1Test,
+		MissingCustomBuildStepForGeneratedFile2Test,
+		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
