@@ -551,6 +551,13 @@ def CustomBuildStep4Test():
 		assert( data == "Ewigheim" )
 
 
+def CustomBuildStep5Test():
+	test_dir= "custom_build_step5"
+	RunBuildSystem( test_dir )
+	# Run copy of an executable build target, which was produces by custom build step.
+	RunExecutable( test_dir, "custom_build_step5_copy" )
+
+
 def GeneratedSources0Test():
 	test_dir= "generated_sources0"
 	RunBuildSystem( test_dir )
@@ -1234,6 +1241,7 @@ def main():
 		CustomBuildStep2Test,
 		CustomBuildStep3Test,
 		CustomBuildStep4Test,
+		CustomBuildStep5Test,
 		MissingBuildFileTest,
 		GeneratedSources0Test,
 		GeneratedSources1Test,
