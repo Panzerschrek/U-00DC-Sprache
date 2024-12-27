@@ -699,6 +699,13 @@ def SourceFileCompilationError2Test():
 	assert( stderr.find( "Command \"main.u.bc\" execution failed" ) != -1 )
 
 
+def SourceFileCompilationError3Test():
+	res = RunBuildSystemWithErrors( "source_file_compilation_error3" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Missing \"return\" in function, returning non-void." ) != -1 )
+
+
 def LinkingError0Test():
 	res = RunBuildSystemWithErrors( "linking_error0" )
 	assert( res.returncode != 0 )
@@ -1223,6 +1230,7 @@ def main():
 		SourceFileCompilationError0Test,
 		SourceFileCompilationError1Test,
 		SourceFileCompilationError2Test,
+		SourceFileCompilationError3Test,
 		LinkingError0Test,
 		LinkingError1Test,
 		DuplicatedBuildTargetTest,
