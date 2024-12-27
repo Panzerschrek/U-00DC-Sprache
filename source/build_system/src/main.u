@@ -681,7 +681,10 @@ fn CreatePackageTargetBuildGraphNodes(
 		target.private_dependencies_including_transitive_public_dependencies,
 		include_directories_prefixed );
 
-	var ust::string8 sources_dir= NormalizePath( ust::concat( package_source_directory, "/", target.sources_directory ) );
+	var ust::string8 sources_dir=
+		( target.source_files.empty()
+			? ust::string8()
+			: NormalizePath( ust::concat( package_source_directory, "/", target.sources_directory ) ) );
 
 	var ust::string8 generated_sources_dir=
 		( ( target.generated_source_files.empty() && target.generated_private_header_files.empty() )
@@ -756,8 +759,11 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 
 		// Provide path to source directory (directories), in order to allow relative imports.
-		node.command_line.push_back( "--source-dir" );
-		node.command_line.push_back( sources_dir );
+		if( !sources_dir.empty() )
+		{
+			node.command_line.push_back( "--source-dir" );
+			node.command_line.push_back( sources_dir );
+		}
 
 		if( !generated_sources_dir.empty() )
 		{
@@ -765,9 +771,12 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( generated_sources_dir );
 		}
 
-		// Allow importing files from sources directory using target name-prefixed path.
-		node.command_line.push_back( "--include-dir" );
-		node.command_line.push_back( ust::concat( sources_dir, g_include_dir_prefix_separator, target_name.name ) );
+		if( !sources_dir.empty() )
+		{
+			// Allow importing files from sources directory using target name-prefixed path.
+			node.command_line.push_back( "--include-dir" );
+			node.command_line.push_back( ust::concat( sources_dir, g_include_dir_prefix_separator, target_name.name ) );
+		}
 
 		if( !generated_sources_dir.empty() )
 		{
@@ -1464,7 +1473,7 @@ public: // BuildSystemInterface
 		return GetPackageBuildDirectory( root_package_build_directory_, current_package_name_ );
 	}
 
-	fn virtual final GetCurrentPackageBuildTargetGeneratedSorucesDirectory( this, ust::string_view8 build_target_name ): ust::string8
+	fn virtual final GetCurrentPackageBuildTargetGeneratedSourcesDirectory( this, ust::string_view8 build_target_name ): ust::string8
 	{
 		return
 			GetPackageBuildTargetGeneratedSourcesDirectory(

@@ -259,7 +259,7 @@ class BuildSystemInterface interface
 	fn virtual pure GetCurrentPackageBuildDirectory( this ) : ust::string8;
 
 	// Get absolute path to the generated sources directory for a build target of current package.
-	fn virtual pure GetCurrentPackageBuildTargetGeneratedSorucesDirectory( this, ust::string_view8 build_target_name ) : ust::string8;
+	fn virtual pure GetCurrentPackageBuildTargetGeneratedSourcesDirectory( this, ust::string_view8 build_target_name ) : ust::string8;
 
 	// Get absolute path to the generated public headers directory for a build target of current package.
 	fn virtual pure GetCurrentPackageBuildTargetGeneratedPublicHeadersDirectory( this, ust::string_view8 build_target_name ) : ust::string8;

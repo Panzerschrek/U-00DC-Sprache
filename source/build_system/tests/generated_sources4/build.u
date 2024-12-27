@@ -1,0 +1,60 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	var BK::BuildTarget mut exe
+	{
+		.name= "exe",
+		.target_type= BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= "lib" } ),
+	};
+
+	// Generate both public headers and sources for a library.
+
+	var ust::string8 generated_public_header= "lib.uh";
+	auto& generated_public_header_contents= "fn Foo() : i32;";
+
+	var ust::string8 generated_source= "lib.u";
+	auto& generated_source_contents= "import \"/lib/lib.uh\" fn Foo() : i32 { return 1234321; }";
+
+	var BK::BuildTarget mut lib
+	{
+		.name= "lib",
+		.target_type= BK::BuildTargetType::Library,
+		.generated_public_header_files= ust::make_array( generated_public_header ),
+		.generated_source_files= ust::make_array( generated_source ),
+	};
+
+	auto mut out_generated_public_header=
+		ust::concat(
+			build_system_interface.GetCurrentPackageBuildTargetGeneratedPublicHeadersDirectory( lib.name ),
+			"/",
+			generated_public_header );
+
+	var BK::CustomBuildStep mut generate_public_header_step
+	{
+		.comment= "generate " + generated_public_header,
+		.output_files= ust::make_array( out_generated_public_header ),
+		.command= BK::CustomBuildStep::GenerateFileCommand{ .destination_path= out_generated_public_header, .contents= generated_public_header_contents, },
+	};
+
+	auto mut out_generated_source=
+		ust::concat(
+			build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( lib.name ),
+			"/",
+			generated_source );
+
+	var BK::CustomBuildStep mut generate_source_step
+	{
+		.comment= "generate " + generated_source,
+		.output_files= ust::make_array( out_generated_source ),
+		.command= BK::CustomBuildStep::GenerateFileCommand{ .destination_path= out_generated_source, .contents= generated_source_contents, },
+	};
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(exe), move(lib) ),
+		.custom_build_steps= ust::make_array( move(generate_public_header_step), move(generate_source_step) ),
+	};
+}
