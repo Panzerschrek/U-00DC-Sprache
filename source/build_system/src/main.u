@@ -718,22 +718,51 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 	}
 
-	auto fill_source_file_compilation_command =
-	lambda[&]( BuildGraph::Node &mut node, ust::string_view8 source_file_absolute, ust::string_view8 bc_file )
+	// Create nodes for compilation of each source file into a ".bc" file.
+	var ust::vector</SourceFileToCompile/> mut source_files_to_compile;
+
+	foreach( &source_file : target.source_files )
 	{
-		node.program= build_system_paths.compiler_executable_path;
+		source_files_to_compile.push_back(
+			SourceFileToCompile
+			{
+				.source_file_full_path= NormalizePath( ust::concat( package_source_directory, "/", source_file ) ),
+				.bc_file_full_path=  NormalizePath( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) ),
+				.comment= source_file + ".bc",
+			} );
+	}
 
-		// Use a dep-file to track changes in imported files and trigger rebuild if one of them is changed.
-		node.dep_file= GetDependencyFilePath( bc_file );
+	foreach( &generated_source_file : target.generated_source_files )
+	{
+		var ust::string8 generated_source_file_absolute= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source_file ) );
 
-		node.input_files = ust::make_array</ust::string8/>( source_file_absolute );
-		node.output_files = ust::make_array</ust::string8/>( bc_file );
+		source_files_to_compile.push_back(
+			SourceFileToCompile
+			{
+				.source_file_full_path= generated_source_file_absolute,
+				// Place "bc" files near to generated source files.
+				.bc_file_full_path= generated_source_file_absolute + ".bc",
+				.comment= generated_source_file + ".bc",
+			} );
+	}
+
+	foreach( &source_file_to_compile : source_files_to_compile )
+	{
+		var BuildGraph::Node mut node
+		{
+			.program= build_system_paths.compiler_executable_path,
+			// Use a dep-file to track changes in imported files and trigger rebuild if one of them is changed.
+			.dep_file= GetDependencyFilePath( source_file_to_compile.bc_file_full_path ),
+			.input_files= ust::make_array( source_file_to_compile.source_file_full_path ),
+			.output_files= ust::make_array( source_file_to_compile.bc_file_full_path ),
+			.comment= source_file_to_compile.comment,
+		};
 
 		// Add dependencies on generated headers of this built target and generated public headers of dependencies.
 		// Do this in order to ensure headers are generated before this source file is compiled.
 		node.input_files.append( generated_headers_dependencies.iter() );
 
-		node.command_line.push_back( source_file_absolute );
+		node.command_line.push_back( source_file_to_compile.source_file_full_path );
 
 		if( !build_system_paths.sysroot.empty() )
 		{
@@ -742,7 +771,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 
 		node.command_line.push_back( "-o" );
-		node.command_line.push_back( bc_file );
+		node.command_line.push_back( source_file_to_compile.bc_file_full_path );
 
 		// Produce also a dependency file.
 		node.command_line.push_back( "-MF" );
@@ -819,37 +848,6 @@ fn CreatePackageTargetBuildGraphNodes(
 
 		// Perform verification just to be sure nothing is broken.
 		node.command_line.push_back( "--verify-module" );
-	};
-
-	// Create nodes for compilation of each source file into a ".bc" file.
-
-	var ust::vector</ust::string8/> mut bc_files;
-
-	foreach( &source_file : target.source_files )
-	{
-		var ust::string8 source_file_absolute= NormalizePath( ust::concat( package_source_directory, "/", source_file ) );
-
-		var ust::string8 bc_file = NormalizePath( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) );
-
-		bc_files.push_back( bc_file );
-
-		var BuildGraph::Node mut node{ .comment= source_file + ".bc"};
-		fill_source_file_compilation_command( node, source_file_absolute, bc_file );
-
-		build_graph.nodes.push_back( move(node) );
-	}
-
-	foreach( &generated_source_file : target.generated_source_files )
-	{
-		var ust::string8 generated_source_file_absolute= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source_file ) );
-
-		// Place "bc" files near to generated source files.
-		var ust::string8 bc_file = generated_source_file_absolute + ".bc";
-
-		bc_files.push_back( bc_file );
-
-		var BuildGraph::Node mut node{ .comment= generated_source_file + ".bc"};
-		fill_source_file_compilation_command( node, generated_source_file_absolute, bc_file );
 
 		build_graph.nodes.push_back( move(node) );
 	}
@@ -932,10 +930,10 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 	}
 
-	foreach( &bc_file : bc_files )
+	foreach( &source_file_to_compile : source_files_to_compile )
 	{
-		node.command_line.push_back( bc_file );
-		node.input_files.push_back( bc_file );
+		node.command_line.push_back( source_file_to_compile.bc_file_full_path );
+		node.input_files.push_back( source_file_to_compile.bc_file_full_path );
 	}
 
 	// Link public dependencies.
@@ -1177,6 +1175,13 @@ fn CreatePackageTargetBuildGraphNodes(
 	node.command_line.push_back( "--verify-module" );
 
 	build_graph.nodes.push_back( move(node) );
+}
+
+struct SourceFileToCompile
+{
+	ust::string8 source_file_full_path;
+	ust::string8 bc_file_full_path;
+	ust::string8 comment;
 }
 
 fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::string8/> &mut compiler_flags )
