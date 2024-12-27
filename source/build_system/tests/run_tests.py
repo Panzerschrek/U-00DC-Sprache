@@ -1133,6 +1133,27 @@ def CustomBuildStepsDependencyLoopTest():
 		stderr.find( "Broken build graph - node \"step1\" was not built, likely due to dependency loops." ) != -1 )
 
 
+def MissingCustomBuildStepForGeneratedFile0Test():
+	res = RunBuildSystemWithErrors( "missing_custom_build_step_for_generated_file0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "No custom build step found for generated source file \"main.u\" of build target \"exe\"!" ) != -1 )
+
+
+def MissingCustomBuildStepForGeneratedFile1Test():
+	res = RunBuildSystemWithErrors( "missing_custom_build_step_for_generated_file1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "No custom build step found for generated private header file \"some.uh\" of build target \"exe\"!" ) != -1 )
+
+
+def MissingCustomBuildStepForGeneratedFile2Test():
+	res = RunBuildSystemWithErrors( "missing_custom_build_step_for_generated_file2" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "No custom build step found for generated public header file \"some.uh\" of build target \"lib\"!" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -1318,7 +1339,11 @@ def main():
 		CustomBuildStepFilePathIsNotAbsolute1Test,
 		CustomBuildStepFilePathIsNotAbsolute2Test,
 		CustomBuildStepsShareSameOutputFileTest,
-		CustomBuildStepsDependencyLoopTest ]
+		CustomBuildStepsDependencyLoopTest,
+		MissingCustomBuildStepForGeneratedFile0Test,
+		MissingCustomBuildStepForGeneratedFile1Test,
+		MissingCustomBuildStepForGeneratedFile2Test,
+		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 

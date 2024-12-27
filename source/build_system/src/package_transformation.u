@@ -1,5 +1,6 @@
 import "/sort.u"
 import "package_transformation.uh"
+import "build_system_paths.uh"
 import "options.uh"
 import "path.uh"
 
@@ -487,7 +488,8 @@ fn TransformAndValidatePackageInfo(
 	return ok;
 }
 
-fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool
+fn ProcessWorkspaceDependenciesGraph(
+	Logger &mut logger, WorkspaceInfo &mut workspace, ust::string_view8 root_package_build_directory ) : bool
 {
 	var bool mut ok= true;
 
@@ -620,6 +622,82 @@ fn ProcessWorkspaceDependenciesGraph( Logger &mut logger, WorkspaceInfo &mut wor
 							"\"!" ) );
 						ok= false;
 					}
+				}
+			}
+		}
+	}
+
+	auto is_file_produces_by_custom_build_step=
+		lambda [&custom_build_steps= workspace.custom_build_steps]( ust::string_view8 file ) : bool
+		{
+			foreach( &step : custom_build_steps )
+			{
+				foreach( &output_file : step.output_files )
+				{
+					if( file == output_file )
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		};
+
+	// Check if for each generated source/header there is a custom build step which produces it.
+	foreach( &target_pair : cast_imut(workspace.build_targets) )
+	{
+		var BuildTargetAbsoluteName& target_name= target_pair.key();
+		var WorkspaceInfo::BuildTarget& build_target= target_pair.value();
+
+		if( !build_target.generated_source_files.empty() || !build_target.generated_private_header_files.empty() )
+		{
+			var ust::string8 generated_sources_dir= GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
+			foreach( &generated_source : build_target.generated_source_files )
+			{
+				var ust::string8 file_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source ) );
+				if( !is_file_produces_by_custom_build_step( file_path ) )
+				{
+					logger.LogError( ust::concat(
+						"No custom build step found for generated source file \"",
+						generated_source,
+						"\" of build target \"",
+						BuildTargetAbsoluteNameToPrintableString( target_name ),
+						"\"!" ) );
+					ok= false;
+				}
+			}
+
+			foreach( &generated_private_header : build_target.generated_private_header_files )
+			{
+				var ust::string8 file_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_private_header ) );
+				if( !is_file_produces_by_custom_build_step( file_path ) )
+				{
+					logger.LogError( ust::concat(
+						"No custom build step found for generated private header file \"",
+						generated_private_header,
+						"\" of build target \"",
+						BuildTargetAbsoluteNameToPrintableString( target_name ),
+						"\"!" ) );
+					ok= false;
+				}
+			}
+		}
+
+		if( !build_target.generated_public_header_files.empty() )
+		{
+			var ust::string8 generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, target_name );
+			foreach( &generated_public_header : build_target.generated_public_header_files )
+			{
+				var ust::string8 file_path= NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) );
+				if( !is_file_produces_by_custom_build_step( file_path ) )
+				{
+					logger.LogError( ust::concat(
+						"No custom build step found for generated public header file \"",
+						generated_public_header,
+						"\" of build target \"",
+						BuildTargetAbsoluteNameToPrintableString( target_name ),
+						"\"!" ) );
+					ok= false;
 				}
 			}
 		}

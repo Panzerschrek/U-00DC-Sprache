@@ -233,7 +233,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		}
 	}
 
-	if( !ProcessWorkspaceDependenciesGraph( bsi.logger_, workspace ) )
+	if( !ProcessWorkspaceDependenciesGraph( bsi.logger_, workspace, bsi.root_package_build_directory_ ) )
 	{
 		bsi.logger_.LogError( "Project dependencies aren't valid!" );
 		return -1;

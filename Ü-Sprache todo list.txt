@@ -163,7 +163,6 @@ CPP Header converter:
 *) Command line option for building only specified build targets
 *) A command to build a single-file program with no dependencies
 *) A command to create an empty project (create build script stub)
-*) Check if there are custom build steps producing generated sources/headers
 *) Support specifying working directory for custom build steps
 *) Support dependency files for custom build steps
 *) Ensure output files of custom build steps are located within package build directory or at least within root build
