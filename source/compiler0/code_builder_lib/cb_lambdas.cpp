@@ -757,6 +757,9 @@ ClassPtr CodeBuilder::GetLambdaPreprocessingDummyClass( NamesScope& names_scope 
 
 std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda, const llvm::ArrayRef<uint32_t> tuple_for_indices )
 {
+	// TODO - fix a tricky case in langauge server.
+	// We can't access source graph, since lambda syntax element may be from different source graph in case of completion or signature help.
+
 	std::string name;
 	name+= "_lambda_"; // Start with "_" in order to avoid collisions with user names.
 

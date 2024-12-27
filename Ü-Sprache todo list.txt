@@ -123,6 +123,9 @@ QtCreator plugin:
 
 Language server:
 *) Fix crashes occuring sometimes during editing (possible because of broken code)
+*) Fix possible crashes due to accessing source graph instance stored withing CodeBuilder class instance while
+	performing completion or signature help. It's wrong, since new syntax elements are constructed for completion or
+	signature help and accessing source graph based on source location from new syntax elements is incorrect.
 *) Reduce memory usage - avoid building unnecessary code, clear unused internal data structures, make mangled names shorter, etc.
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
 *) Go to definition - pick definition of function, defined in other document (that is not imported directly)
