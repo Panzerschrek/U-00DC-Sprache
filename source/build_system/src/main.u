@@ -696,31 +696,22 @@ fn CreatePackageTargetBuildGraphNodes(
 		generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_sources_dir, "/", generated_private_header ) ) );
 	}
 
-	// Get generated public headers of this build target.
-	if( !target.generated_public_header_files.empty() )
+	// Get generated public headers of this build target and all dependencies of this build target.
+	foreach( &build_target_name :
+		ust::single_element_array_view( target_name ).iter()
+		.chain( target.public_dependencies_including_transitive.iter() )
+		.chain( (target.private_dependencies_including_transitive_public_dependencies.iter() ) ) )
 	{
-		var ust::string8 generated_public_headers_dir= GetPackageBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, target_name );
-		foreach( &generated_public_header : target.generated_public_header_files )
-		{
-			generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
-		}
-		include_directories_prefixed.push_back( ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, target_name.name ) );
-	}
-
-	// Get generated public headers of all dependencies of this build target.
-	foreach( &dependency_name :
-		target.public_dependencies_including_transitive.iter().chain( target.private_dependencies_including_transitive_public_dependencies.iter() ) )
-	{
-		auto& dependency_target = workspace.build_targets[ dependency_name ];
+		auto& dependency_target = workspace.build_targets[ build_target_name ];
 		if( !dependency_target.generated_public_header_files.empty() )
 		{
-			var ust::string8 generated_public_headers_dir= GetPackageBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, dependency_name );
+			var ust::string8 generated_public_headers_dir= GetPackageBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, build_target_name );
 			foreach( &generated_public_header : dependency_target.generated_public_header_files )
 			{
 				generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
 			}
 
-			include_directories_prefixed.push_back( ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, dependency_name.name ) );
+			include_directories_prefixed.push_back( ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, build_target_name.name ) );
 		}
 	}
 
