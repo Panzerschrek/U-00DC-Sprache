@@ -74,26 +74,19 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory, "\"" ) );
 
-	// For now use "Compiler1" as compiler default. TODO - allow to tune it.
-	var ust::string8 default_compiler_executable_path = exe_directory + "/Compiler1";
-	// "ustlib" is located in the root of the Üpackage.
-	var ust::string8 default_ustlib_path = exe_directory + "/../ustlib";
-	// Build system imports are located in "/build_system/imports"
-	var ust::string8 default_build_system_imports_path = exe_directory + "/../build_system/imports";
-
 	var BuildSystemPaths mut build_system_paths
 	{
 		.compiler_executable_path= NormalizePath(
 			( options.compiler_executable_path.empty()
-				? default_compiler_executable_path
+				? ( exe_directory + "/Compiler1" ) // For now use "Compiler1" as compiler default. TODO - allow to tune it.
 				: MakePathAbsolute(options.compiler_executable_path) ) ),
 		.ustlib_path= NormalizePath(
 			( options.ustlib_path.empty()
-				? default_ustlib_path
+				? ( exe_directory + "/../ustlib" ) // "ustlib" is located in the root of the Ü package.
 				: MakePathAbsolute(options.ustlib_path) ) ),
 		.build_system_imports_path= NormalizePath(
 			( options.build_system_imports_path.empty()
-				? default_build_system_imports_path
+				? ( exe_directory + "/../build_system/imports" ) // Build system imports are located in "/build_system/imports".
 				: MakePathAbsolute(options.build_system_imports_path) ) ),
 		.sysroot= options.sysroot,
 		.packages_repository_directory=
