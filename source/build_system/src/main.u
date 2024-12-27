@@ -246,15 +246,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return -1;
 	}
 
-	// Create directories for generated sources.
+	// Create directories for generated sources, if necessary.
 	foreach( &target_pair : cast_imut(workspace).build_targets )
 	{
 		auto& build_target_name= target_pair.key();
 		auto& build_target= target_pair.value();
 		if( !build_target.generated_source_files.empty() || !build_target.generated_private_header_files.empty() )
 		{
-			// Create generated sources directory.
-			if( !EnsureDirectoryExists( bsi.logger_, GetPackageBuildTargetGeneratedSourcesDirectory( bsi.root_package_build_directory_, build_target_name ) ) )
+			if( !EnsureDirectoryExists( bsi.logger_, GetBuildTargetGeneratedSourcesDirectory( bsi.root_package_build_directory_, build_target_name ) ) )
 			{
 				return -1;
 			}
@@ -689,7 +688,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	var ust::string8 generated_sources_dir=
 		( ( target.generated_source_files.empty() && target.generated_private_header_files.empty() )
 			? ust::string8()
-			: GetPackageBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name ) );
+			: GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name ) );
 
 	var ust::vector</ust::string8/> mut generated_headers_dependencies;
 
@@ -708,7 +707,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		auto& dependency_target = workspace.build_targets[ build_target_name ];
 		if( !dependency_target.generated_public_header_files.empty() )
 		{
-			var ust::string8 generated_public_headers_dir= GetPackageBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, build_target_name );
+			var ust::string8 generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, build_target_name );
 			foreach( &generated_public_header : dependency_target.generated_public_header_files )
 			{
 				generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
@@ -758,7 +757,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			.comment= source_file_to_compile.comment,
 		};
 
-		// Add dependencies on generated headers of this built target and generated public headers of dependencies.
+		// Add dependencies on generated headers of this build target and generated public headers of dependencies.
 		// Do this in order to ensure headers are generated before this source file is compiled.
 		node.input_files.append( generated_headers_dependencies.iter() );
 
@@ -1333,7 +1332,7 @@ fn GetPackageBuildDirectory(
 	return res;
 }
 
-fn GetPackageBuildTargetGeneratedSourcesDirectory(
+fn GetBuildTargetGeneratedSourcesDirectory(
 	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
 {
 	return
@@ -1343,7 +1342,7 @@ fn GetPackageBuildTargetGeneratedSourcesDirectory(
 			"generated.sources" );
 }
 
-fn GetPackageBuildTargetGeneratedPublicHeadersDirectory(
+fn GetBuildTargetGeneratedPublicHeadersDirectory(
 	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
 {
 	return
@@ -1481,7 +1480,7 @@ public: // BuildSystemInterface
 	fn virtual final GetCurrentPackageBuildTargetGeneratedSourcesDirectory( this, ust::string_view8 build_target_name ): ust::string8
 	{
 		return
-			GetPackageBuildTargetGeneratedSourcesDirectory(
+			GetBuildTargetGeneratedSourcesDirectory(
 				root_package_build_directory_,
 				BuildTargetAbsoluteName{ .package_name= current_package_name_, .name= build_target_name } );
 	}
@@ -1489,7 +1488,7 @@ public: // BuildSystemInterface
 	fn virtual final GetCurrentPackageBuildTargetGeneratedPublicHeadersDirectory( this, ust::string_view8 build_target_name ) : ust::string8
 	{
 		return
-			GetPackageBuildTargetGeneratedPublicHeadersDirectory(
+			GetBuildTargetGeneratedPublicHeadersDirectory(
 				root_package_build_directory_,
 				BuildTargetAbsoluteName{ .package_name= current_package_name_, .name= build_target_name } );
 	}

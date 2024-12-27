@@ -399,7 +399,7 @@ fn PerformGraphBuild(
 
 			if( node_to_rebuild.program == SpecialBuildCommands::copy_file )
 			{
-				if(!EnsureDirectoryExists( logger, GetParentPath( node_to_rebuild.command_line[0s] ) ) ||
+				if( !EnsureDirectoryExists( logger, GetParentPath( node_to_rebuild.command_line[0s] ) ) ||
 					!CopyFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
 				{
 					logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
