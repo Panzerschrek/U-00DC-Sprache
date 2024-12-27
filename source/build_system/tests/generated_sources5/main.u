@@ -1,0 +1,5 @@
+fn nomangle main() : i32
+{
+	static_assert( embed</char8/>( "/generated_sources5/test.txt" ) == "PTNPNHPTNPNH" );
+	return 0;
+}
