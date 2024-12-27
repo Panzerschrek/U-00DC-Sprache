@@ -740,6 +740,14 @@ def DuplicatedSourceFileTest():
 	assert( stderr.find( "is invald" ) != -1 )
 
 
+def DuplicatedGeneratedPublicHeaderFileTest():
+	res = RunBuildSystemWithErrors( "duplicated_generated_public_header_file" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Error, duplicated generated public header file \"dir/other.uh\" of the build target \"hello_world\"!" ) != -1 )
+	assert( stderr.find( "Error, duplicated generated public header file \"some.uh\" of the build target \"hello_world\"!" ) != -1 )
+
+
 def InvalidTargetName0Test():
 	res = RunBuildSystemWithErrors( "invalid_target_name0" )
 	assert( res.returncode != 0 )
@@ -822,6 +830,20 @@ def InvalidSourceName6Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Invalid, source name \".\" of build target \"hello_world\"" ) != -1 )
+
+
+def InvalidSourceName7Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name7" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, generated source name \"../some.u\" of build target \"hello_world\"!" ) != -1 )
+
+
+def InvalidSourceName8Test():
+	res = RunBuildSystemWithErrors( "invalid_source_name8" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Invalid, generated public header file name \"\" of build target \"hello_world\"!" ) != -1 )
 
 
 def InvalidGlobalPackageName0Test():
@@ -1235,6 +1257,7 @@ def main():
 		LinkingError1Test,
 		DuplicatedBuildTargetTest,
 		DuplicatedSourceFileTest,
+		DuplicatedGeneratedPublicHeaderFileTest,
 		InvalidTargetName0Test,
 		InvalidTargetName1Test,
 		InvalidTargetName2Test,
@@ -1247,6 +1270,8 @@ def main():
 		InvalidSourceName4Test,
 		InvalidSourceName5Test,
 		InvalidSourceName6Test,
+		InvalidSourceName7Test,
+		InvalidSourceName8Test,
 		InvalidGlobalPackageName0Test,
 		InvalidGlobalPackageName1Test,
 		SourceDirectoriesConflict0Test,
