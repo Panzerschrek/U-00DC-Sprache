@@ -1000,7 +1000,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			if( !target.shared_library_dependencies_to_link.empty() && !target_is_windows )
 			{
 				// For now set "rpath" to origin - in order to have possibility to load shared libraries from common directory with all build targets.
-				node.command_line.push_back( "-Wl,-rpath,\\$ORIGIN" );
+				node.command_line.push_back( "-Wl,-rpath,$ORIGIN" );
 			}
 		},
 		BuildTargetType::Library -> {}, // No need to link Ü libraries against shared libraries.
