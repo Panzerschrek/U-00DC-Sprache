@@ -1,4 +1,5 @@
 import "/sort.u"
+import "/string_conversions.u"
 import "/stdout.u"
 import "build_graph.uh"
 import "build_system_paths.uh"
@@ -10,6 +11,7 @@ import "options.uh"
 import "package_transformation.uh"
 import "path.uh"
 import "process.uh"
+import "proc.uh"
 import "shared_library.uh"
 import "string_utils.uh"
 import "target_triple.uh"
@@ -304,8 +306,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var i32 mut main_result= 0;
 
+	var u32 max_number_of_parallel_jobs=
+		ust::max( 1u, ust::min( ( options.number_of_jobs == 0u ? GetNumberOfCPUs() : options.number_of_jobs ), 128u ) );
+	bsi.LogVerbose( ust::concat( "Building using ", ust::to_string8(max_number_of_parallel_jobs), " threads." ) );
+
 	// This executes the build.
-	if( !PerformGraphBuild( bsi.logger_, build_graph, prev_build_graph.as_ref() ) )
+	if( !PerformGraphBuild( bsi.logger_, build_graph, prev_build_graph.as_ref(), max_number_of_parallel_jobs ) )
 	{
 		bsi.logger_.LogError( "Build failed." );
 		main_result= -1;
@@ -335,7 +341,6 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	return main_result;
 }
-
 
 fn BuildAndLoadPackageBuildScript(
 	Logger &mut logger,

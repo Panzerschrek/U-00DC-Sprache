@@ -17,7 +17,8 @@ namespace BK
 fn PerformGraphBuild(
 	Logger &mut logger,
 	BuildGraph& build_graph,
-	ust::optional_ref_imut</BuildGraph/> prev_build_graph_opt ) : bool
+	ust::optional_ref_imut</BuildGraph/> prev_build_graph_opt,
+	u32 max_number_of_parallel_jobs ) : bool
 {
 	// Collect dep-files.
 	scoped_array ust::optional</MakeDepFile/> mut nodes_dep_files[ build_graph.nodes.size() ];
@@ -339,8 +340,6 @@ fn PerformGraphBuild(
 		}
 		var ProcessGroupInterface &mut process_group= process_group_out.try_deref();
 
-		var size_type max_running_processes= 4s; // TODO - tune this.
-
 		var size_type mut build_steps_started= 0s, mut build_steps_finished= 0s;
 
 		loop
@@ -375,7 +374,7 @@ fn PerformGraphBuild(
 				break;
 			}
 
-			if( process_group.GetNumberOfRunningProcesses() < max_running_processes )
+			if( process_group.GetNumberOfRunningProcesses() < size_type(max_number_of_parallel_jobs) )
 			{
 				// Try starting new process, if number of running processes is less than limit.
 
