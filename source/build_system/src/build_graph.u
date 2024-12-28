@@ -332,13 +332,13 @@ fn PerformGraphBuild(
 		var ust::string8 num_nodes_to_rebuild_str= ust::to_string8(num_nodes_to_rebuild);
 		logger.LogVerbose( ust::concat( "Has ", num_nodes_to_rebuild_str, " nodes to rebuild." ) );
 
-		auto mut process_group_out= CreateProcessGroup( logger );
-		if( process_group_out.empty() )
+		auto mut process_group_opt= CreateProcessGroup( logger );
+		if( process_group_opt.empty() )
 		{
 			logger.LogError( "Failed to create process group!" );
 			return false;
 		}
-		var ProcessGroupInterface &mut process_group= process_group_out.try_deref();
+		var ProcessGroupInterface &mut process_group= process_group_opt.try_deref();
 
 		var size_type mut build_steps_started= 0s, mut build_steps_finished= 0s;
 
@@ -426,7 +426,7 @@ fn PerformGraphBuild(
 				if( node_to_rebuild_index >= build_graph.nodes.size() )
 				{
 					// Can't select node to rebuild.
-					if( process_group.GetNumberOfRunningProcesses() > 0s )
+					if( build_steps_finished < build_steps_started )
 					{
 						// There are still running processes.
 						// This means that we may need to wait for some dependency to be finished in order to select next node to rebuild.
@@ -478,7 +478,7 @@ fn PerformGraphBuild(
 				}
 				else
 				{
-					if( ! process_group.RunProcess(
+					if( !process_group.StartProcess(
 						logger,
 						node_to_rebuild_index,
 						node_to_rebuild.program,

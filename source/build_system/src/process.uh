@@ -13,16 +13,16 @@ class ProcessGroupInterface interface
 	// A number to distinguish between processes started.
 	type ProcessId= size_type;
 
-	// Run process and return as soon as possible, without waiting for it to finish.
+	// Start process and return as soon as possible, without waiting for it to finish.
 	// Returns false on error.
-	fn virtual pure RunProcess(
+	fn virtual pure StartProcess(
 		mut this,
 		Logger &mut logger,
 		ProcessId process_id,
 		ust::string_view8 exe_path,
 		ust::array_view_imut</ust::string_view8/> command_line ) : bool;
 
-	// Perform work to manage processes - read their output, close (if necessary).
+	// Perform work to manage processes - read their output, finish (if necessary).
 	// This call may block until an input is recieved or at least one of processes finishes.
 	// Returns false on error.
 	fn virtual pure DoWork( mut this, Logger &mut logger ) : bool;
