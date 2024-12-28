@@ -344,36 +344,6 @@ fn PerformGraphBuild(
 
 		loop label build_loop
 		{
-			// Do work with processes.
-			if( !process_group.DoWork( logger ) )
-			{
-				logger.LogError( "Process group DoWork error!" );
-				return false;
-			}
-
-			// Extract finished processes.
-			loop
-			{
-				if_var( &finished_process_id : process_group.TakeFinishedProcess() )
-				{
-					assert( finished_process_id < build_graph.nodes.size() );
-					assert( nodes_state[finished_process_id] == BuildGraphNodeState::RebuildInProgress );
-					nodes_state[finished_process_id]= BuildGraphNodeState::Ready;
-					logger.LogVerbose( ust::concat( "Finished building \"", build_graph.nodes[ finished_process_id ].comment, "\"." ) );
-					++build_steps_finished;
-				}
-				else
-				{
-					break;
-				}
-			}
-
-			if( build_steps_finished >= num_nodes_to_rebuild )
-			{
-				// Nothing left.
-				break;
-			}
-
 			// Try starting new processes, until number of running processes is less than limit.
 			while( process_group.GetNumberOfRunningProcesses() < size_type(max_number_of_parallel_jobs) &&
 				build_steps_started < num_nodes_to_rebuild )
@@ -487,6 +457,36 @@ fn PerformGraphBuild(
 						return false;
 					}
 				}
+			}
+
+			// Do work with processes. Potentially wait for at least one of them to finish.
+			if( !process_group.DoWork( logger ) )
+			{
+				logger.LogError( "Process group DoWork error!" );
+				return false;
+			}
+
+			// Extract finished processes.
+			loop
+			{
+				if_var( &finished_process_id : process_group.TakeFinishedProcess() )
+				{
+					assert( finished_process_id < build_graph.nodes.size() );
+					assert( nodes_state[finished_process_id] == BuildGraphNodeState::RebuildInProgress );
+					nodes_state[finished_process_id]= BuildGraphNodeState::Ready;
+					logger.LogVerbose( ust::concat( "Finished building \"", build_graph.nodes[ finished_process_id ].comment, "\"." ) );
+					++build_steps_finished;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			if( build_steps_finished >= num_nodes_to_rebuild )
+			{
+				// Nothing left.
+				break;
 			}
 		}
 
