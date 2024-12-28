@@ -1,0 +1,6 @@
+import "inc.uh"
+
+fn FuncD() : i32
+{
+	return 3;
+}

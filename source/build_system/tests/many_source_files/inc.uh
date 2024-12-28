@@ -1,0 +1,29 @@
+fn FuncA() : i32;
+fn FuncB() : i32;
+fn FuncC() : i32;
+fn FuncD() : i32;
+fn FuncE() : i32;
+fn FuncF() : i32;
+fn FuncG() : i32;
+fn FuncH() : i32;
+fn FuncI() : i32;
+fn FuncJ() : i32;
+fn FuncK() : i32;
+fn FuncL() : i32;
+fn FuncM() : i32;
+fn FuncN() : i32;
+fn FuncO() : i32;
+fn FuncP() : i32;
+
+// Perform long constexpr calculations to slow-down compilation.
+var u32 constexpr large_sum= GetSumUpTo( 1u << 18u );
+
+fn constexpr  GetSumUpTo( u32 x ) : u32
+{
+	var u32 mut sum= 0u;
+	for( var u32 mut i= 0u; i < x; ++i )
+	{
+		sum+= i;
+	}
+	return sum;
+}

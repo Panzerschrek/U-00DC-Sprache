@@ -1,0 +1,6 @@
+import "inc.uh"
+
+fn FuncC() : i32
+{
+	return 2;
+}

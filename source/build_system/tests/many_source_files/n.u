@@ -1,0 +1,6 @@
+import "inc.uh"
+
+fn FuncN() : i32
+{
+	return 13;
+}

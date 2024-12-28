@@ -171,6 +171,11 @@ def TwoFilesExeTest():
 	RunExecutable( "two_files_exe", "two_files_exe" )
 
 
+def ManySourceFilesTest():
+	RunBuildSystem( "many_source_files" )
+	RunExecutable( "many_source_files", "many_source_files" )
+
+
 def TwoTargetsTest():
 	RunBuildSystem( "two_targets" )
 	RunExecutable( "two_targets", "target_a" )
@@ -1213,6 +1218,7 @@ def main():
 		ConfigurationOptions1Test,
 		ConfigurationOptions2Test,
 		TwoFilesExeTest,
+		ManySourceFilesTest,
 		TwoTargetsTest,
 		SourcesInDirectoriesTest,
 		ТестЮникода,

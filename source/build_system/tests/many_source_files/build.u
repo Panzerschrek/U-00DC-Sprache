@@ -1,0 +1,27 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable, .name= "many_source_files" };
+	target.source_files.push_back( "main.u" );
+	target.source_files.push_back( "a.u" );
+	target.source_files.push_back( "b.u" );
+	target.source_files.push_back( "c.u" );
+	target.source_files.push_back( "d.u" );
+	target.source_files.push_back( "e.u" );
+	target.source_files.push_back( "f.u" );
+	target.source_files.push_back( "g.u" );
+	target.source_files.push_back( "h.u" );
+	target.source_files.push_back( "i.u" );
+	target.source_files.push_back( "j.u" );
+	target.source_files.push_back( "k.u" );
+	target.source_files.push_back( "l.u" );
+	target.source_files.push_back( "m.u" );
+	target.source_files.push_back( "n.u" );
+	target.source_files.push_back( "o.u" );
+	target.source_files.push_back( "p.u" );
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}

@@ -1,0 +1,22 @@
+import "inc.uh"
+
+fn nomangle main() : i32
+{
+	halt if( FuncA() !=  0 );
+	halt if( FuncB() !=  1 );
+	halt if( FuncC() !=  2 );
+	halt if( FuncD() !=  3 );
+	halt if( FuncE() !=  4 );
+	halt if( FuncF() !=  5 );
+	halt if( FuncG() !=  6 );
+	halt if( FuncH() !=  7 );
+	halt if( FuncI() !=  8 );
+	halt if( FuncJ() !=  9 );
+	halt if( FuncK() != 10 );
+	halt if( FuncL() != 11 );
+	halt if( FuncM() != 12 );
+	halt if( FuncN() != 13 );
+	halt if( FuncO() != 14 );
+	halt if( FuncP() != 15 );
+	return 0;
+}
