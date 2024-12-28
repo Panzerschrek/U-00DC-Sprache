@@ -341,7 +341,7 @@ fn PerformGraphBuild(
 
 		var size_type max_running_processes= 4s; // TODO - tune this.
 
-		var size_type mut build_steps_started= 0s;
+		var size_type mut build_steps_started= 0s, mut build_steps_finished= 0s;
 
 		loop
 		{
@@ -361,6 +361,7 @@ fn PerformGraphBuild(
 					assert( nodes_state[finished_process_id] == BuildGraphNodeState::RebuildInProgress );
 					nodes_state[finished_process_id]= BuildGraphNodeState::Ready;
 					logger.LogVerbose( ust::concat( "Finished building \"", build_graph.nodes[ finished_process_id ].comment, "\"." ) );
+					++build_steps_finished;
 				}
 				else
 				{
@@ -368,7 +369,7 @@ fn PerformGraphBuild(
 				}
 			}
 
-			if( process_group.GetNumberOfRunningProcesses() == 0s && build_steps_started >= num_nodes_to_rebuild )
+			if( build_steps_finished >= num_nodes_to_rebuild )
 			{
 				// Nothing left.
 				break;
