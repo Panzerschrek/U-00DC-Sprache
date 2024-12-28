@@ -9,7 +9,7 @@ import "process.uh"
 namespace BK
 {
 
-fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
+fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool
 {
 	var ProcessGroupInterface::ProcessId useless_id(0);
 
@@ -37,7 +37,7 @@ public:
 		Logger &mut logger,
 		ProcessGroupInterface::ProcessId id,
 		ust::string_view8 exe_path,
-		ust::array_view_imut</ust::string_view8/> command_line ) : ust::optional</Process/>
+		ust::array_view_imut</ust::string8/> command_line ) : ust::optional</Process/>
 	{
 		var [ i32, 2 ] mut pipe_fd= zero_init;
 		if( unsafe( ::pipe( $<(pipe_fd[0]) ) ) != 0 )
@@ -234,7 +234,7 @@ public: // ProcessGroupInterface
 		Logger &mut logger,
 		ProcessId process_id,
 		ust::string_view8 exe_path,
-		ust::array_view_imut</ust::string_view8/> command_line ) : bool
+		ust::array_view_imut</ust::string8/> command_line ) : bool
 	{
 		auto mut process_opt= Process::Start( logger, process_id, exe_path, command_line );
 		if( process_opt.empty() )

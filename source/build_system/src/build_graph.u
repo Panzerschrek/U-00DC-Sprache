@@ -479,10 +479,7 @@ fn PerformGraphBuild(
 				else
 				{
 					if( !process_group.StartProcess(
-						logger,
-						node_to_rebuild_index,
-						node_to_rebuild.program,
-						ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )
+						logger, node_to_rebuild_index, node_to_rebuild.program, node_to_rebuild.command_line ) )
 					{
 						logger.LogError( ust::concat( "Failed to start process for command \"", node_to_rebuild.comment, "\"." ) );
 						return false;
@@ -539,24 +536,6 @@ enum BuildGraphNodeState
 	Ready,
 	RebuildRequired,
 	RebuildInProgress,
-}
-
-fn ViewOfStringsToVectorOfViews( ust::array_view_imut</ust::string8/> strings )
-	: ust::vector</ust::string_view8/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
-{
-	var ust::vector</ust::string_view8/> mut res;
-
-	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
-	if(false)
-	{
-		res.push_back( strings.front() );
-	}
-	for( auto mut i= 0s; i < strings.size(); ++i )
-	{
-		res.push_back( strings[i] );
-	}
-
-	return res;
 }
 
 fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8

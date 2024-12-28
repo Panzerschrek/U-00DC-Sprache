@@ -420,13 +420,8 @@ fn BuildAndLoadPackageBuildScript(
 			}
 		}
 
-		var ust::string8 internalize_preserve_option = ust::concat( "--internalize-preserve=", entry_func_name );
 
-		// Use optimization level which was used to compile the build system executable.
-		var ust::string8 mut optimization_level= "-O";
-		optimization_level.push_back( compiler::options::optimization_level );
-
-		var ust::vector</ust::string_view8/> mut compiler_args;
+		var ust::vector</ust::string8/> mut compiler_args;
 
 		// TODO - provide additional sysroot for host compiler?
 		if( !build_system_paths.sysroot.empty() )
@@ -469,8 +464,10 @@ fn BuildAndLoadPackageBuildScript(
 		compiler_args.push_back( "-filetype=dll" );
 		// Run internalization in order to export only entry function.
 		compiler_args.push_back( "--internalize" );
-		compiler_args.push_back( internalize_preserve_option );
-		compiler_args.push_back( optimization_level );
+		compiler_args.push_back( ust::concat( "--internalize-preserve=", entry_func_name ) );
+
+		// Use optimization level which was used to compile the build system executable.
+		compiler_args.push_back( ust::concat( "-O", ust::single_element_array_view( compiler::options::optimization_level ) ) );
 
 		// If the build system executable was compiled with debug information - generate it for the shared library too.
 		if( compiler::options::generate_debug_info )
