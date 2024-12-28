@@ -126,7 +126,7 @@ public:
 
 	// Constructor for internal usage.
 	fn constructor( ProcessGroupInterface::ProcessId id, pid_t pid, i32 pipe_read_fd ) unsafe
-		( id_= id, pid_= pid, pipe_read_fd_= pipe_read_fd, buf_= zero_init )
+		( id_= id, pid_= pid, pipe_read_fd_= pipe_read_fd )
 	{
 		debug_assert( pid_ != c_empty_descriptor );
 		debug_assert( pipe_read_fd_ != c_empty_descriptor );
@@ -174,23 +174,28 @@ public:
 	// May block if pipe isn't closed, but empty.
 	fn PipeRead( mut this )
 	{
-		var ssize_type read_res= unsafe( ::read( pipe_read_fd_, $<( buf_[0] ), c_buf_size ) );
-		if( read_res > ssize_type(0) )
+		unsafe
 		{
-			// Append buffer contents to stdout.
-			// TODO - limit internal buffer size, in case if a process produces too much output.
-			for( auto mut i= 0s; i < size_type(read_res); ++i )
+			auto buf_size= 4096s;
+			var [ byte8, buf_size ] mut buf= uninitialized;
+			var ssize_type read_res= ::read( pipe_read_fd_, $<( buf[0] ), buf_size );
+			if( read_res > ssize_type(0) )
 			{
-				process_out_.push_back( char8( buf_[i] ) );
+				// Append buffer contents to stdout.
+				// TODO - limit internal buffer size, in case if a process produces too much output.
+				for( auto mut i= 0s; i < size_type(read_res); ++i )
+				{
+					process_out_.push_back( char8( buf[i] ) );
+				}
 			}
-		}
-		else
-		{
-			// If can't read more - close the pipe.
-			// Normalyl this happens only if process finishes and closes its pipe end.
-			// TODO - handle read error.
-			unsafe( ::close( pipe_read_fd_ ) );
-			pipe_read_fd_= c_empty_descriptor;
+			else
+			{
+				// If can't read more - close the pipe.
+				// Normalyl this happens only if process finishes and closes its pipe end.
+				// TODO - handle read error.
+				::close( pipe_read_fd_ );
+				pipe_read_fd_= c_empty_descriptor;
+			}
 		}
 	}
 
@@ -212,8 +217,6 @@ public:
 	}
 
 private:
-	auto c_buf_size= 1024s;
-
 	var i32 c_empty_descriptor= -1;
 
 private:
@@ -221,7 +224,6 @@ private:
 	pid_t pid_;
 	i32 pipe_read_fd_;
 	ust::string8 process_out_;
-	[ byte8, c_buf_size ] buf_; // TODO - avoid storing this buffer inline.
 }
 
 class ProcessGroup final : ProcessGroupInterface
