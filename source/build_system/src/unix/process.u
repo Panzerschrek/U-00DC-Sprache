@@ -128,17 +128,17 @@ public:
 	fn constructor( ProcessGroupInterface::ProcessId id, pid_t pid, i32 pipe_read_fd ) unsafe
 		( id_= id, pid_= pid, pipe_read_fd_= pipe_read_fd, buf_= zero_init )
 	{
-		debug_assert( pid_ != -1 );
-		debug_assert( pipe_read_fd_ != -1 );
+		debug_assert( pid_ != c_empty_descriptor );
+		debug_assert( pipe_read_fd_ != c_empty_descriptor );
 	}
 
 	fn destructor()
 	{
-		if( pipe_read_fd_ != -1 )
+		if( pipe_read_fd_ != c_empty_descriptor )
 		{
 			unsafe( ::close( pipe_read_fd_ ) );
 		}
-		if( pid_ != -1 )
+		if( pid_ != c_empty_descriptor )
 		{
 			var i32 mut status= 99999;
 			auto wait_res= unsafe( ::waitpid( pid_, $<(status), 0 ) );
@@ -152,7 +152,7 @@ public:
 	fn Finish( byval mut this, Logger &mut logger ) : bool
 	{
 		// If pipe wasn't closed before - read until it isn't closed.
-		while( IsPipeOpened() )
+		while( PipeIsOpened() )
 		{
 			PipeRead();
 		}
@@ -163,7 +163,7 @@ public:
 		{
 			logger.LogError( ust::concat( "waitpid error: ", ust::to_string8( BKGetErrno() ) ) );
 		}
-		pid_= -1; // Reset pid in order to avoid calling waitpid in destructor again.
+		pid_= c_empty_descriptor; // Reset pid in order to avoid calling waitpid in destructor again.
 
 		( status == 0 ? logger.LogInfo( process_out_ ) : logger.LogError( process_out_ ) );
 
@@ -190,17 +190,17 @@ public:
 			// Normalyl this happens only if process finishes and closes its pipe end.
 			// TODO - handle read error.
 			unsafe( ::close( pipe_read_fd_ ) );
-			pipe_read_fd_= -1;
+			pipe_read_fd_= c_empty_descriptor;
 		}
 	}
 
-	// TODO - rename?
-	fn IsPipeOpened( this ) : bool
+	fn PipeIsOpened( this ) : bool
 	{
-		return pipe_read_fd_ != -1;
+		return pipe_read_fd_ != c_empty_descriptor;
 	}
 
-	// Get pipe file descriptor. User should not attempt to close it or read from it.
+	// Get pipe file descriptor. You should not attempt to close it or read from it.
+	// But it's fine to call something like "ppoll" or "pselect".
 	fn GetPipeFD( this ) unsafe : i32
 	{
 		return pipe_read_fd_;
@@ -213,6 +213,8 @@ public:
 
 private:
 	auto c_buf_size= 1024s;
+
+	var i32 c_empty_descriptor= -1;
 
 private:
 	ProcessGroupInterface::ProcessId imut id_;
@@ -288,7 +290,7 @@ public: // ProcessGroupInterface
 		// Find finished processes and remove them from the list.
 		for( auto mut i= 0s; i < running_processes_.size(); )
 		{
-			if( !running_processes_[i].IsPipeOpened() )
+			if( !running_processes_[i].PipeIsOpened() )
 			{
 				auto s= running_processes_.size();
 				running_processes_.swap( i, s - 1s );
