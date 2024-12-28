@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/scoped_array.u"
 import "/string_conversions.u"
 import "/vector.u"
 import "../process.uh"
@@ -10,7 +11,9 @@ namespace BK
 
 fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
 {
-	auto mut process_opt= Process::Run( logger, exe_path, command_line );
+	var ProcessGroupInterface::ProcessId useless_id(0);
+
+	auto mut process_opt= Process::Run( logger, useless_id, exe_path, command_line );
 	if( process_opt.empty() )
 	{
 		return false;
@@ -27,6 +30,12 @@ fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_vie
 	}
 }
 
+fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
+{
+	ust::ignore_unused(logger);
+	return ust::make_box( ProcessGroup() );
+}
+
 class Process
 {
 public:
@@ -34,6 +43,7 @@ public:
 	// Returns empty optional on error.
 	fn Run(
 		Logger &mut logger,
+		ProcessGroupInterface::ProcessId id,
 		ust::string_view8 exe_path,
 		ust::array_view_imut</ust::string_view8/> command_line ) : ust::optional</Process/>
 	{
@@ -117,14 +127,14 @@ public:
 		// Close pipe write end in parent process - it's unnecessary.
 		unsafe( ::close( pipe_write_end ) );
 
-		return unsafe( Process( pid, pipe_read_end ) );
+		return unsafe( Process( id, pid, pipe_read_end ) );
 	}
 
 	fn constructor() = delete;
 
 	// Constructor for internal usage.
-	fn constructor( pid_t pid, i32 pipe_read_fd ) unsafe
-		( pid_(pid), pipe_read_fd_(pipe_read_fd), buf_= zero_init )
+	fn constructor( ProcessGroupInterface::ProcessId id, pid_t pid, i32 pipe_read_fd ) unsafe
+		( id_= id, pid_= pid, pipe_read_fd_= pipe_read_fd, buf_= zero_init )
 	{
 		debug_assert( pid_ != -1 );
 		debug_assert( pipe_read_fd_ != -1 );
@@ -192,19 +202,136 @@ public:
 		}
 	}
 
+	// TODO - rename?
 	fn IsPipeOpened( this ) : bool
 	{
 		return pipe_read_fd_ != -1;
+	}
+
+	// Get pipe file descriptor. User should not attempt to close it or read from it.
+	fn GetPipeFD( this ) unsafe : i32
+	{
+		return pipe_read_fd_;
+	}
+
+	fn GetId( this ) : ProcessGroupInterface::ProcessId
+	{
+		return id_;
 	}
 
 private:
 	auto c_buf_size= 1024s;
 
 private:
+	ProcessGroupInterface::ProcessId imut id_;
 	pid_t pid_;
 	i32 pipe_read_fd_;
 	ust::string8 process_out_;
-	[ byte8, c_buf_size ] buf_;
+	[ byte8, c_buf_size ] buf_; // TODO - avoid storing this buffer inline.
+}
+
+class ProcessGroup final : ProcessGroupInterface
+{
+public: // ProcessGroupInterface
+	fn virtual final RunProcess(
+		mut this,
+		Logger &mut logger,
+		ProcessId process_id,
+		ust::string_view8 exe_path,
+		ust::array_view_imut</ust::string_view8/> command_line ) : bool
+	{
+		auto mut process_opt= Process::Run( logger, process_id, exe_path, command_line );
+		if( process_opt.empty() )
+		{
+			return false;
+		}
+
+		running_processes_.push_back( process_opt.try_take() );
+
+		return true;
+	}
+
+	fn virtual final DoWork( mut this, Logger &mut logger ) : bool
+	{
+		var pollfd zero_poll_fd= zero_init;
+
+		scoped_array pollfd mut poll_fds[ running_processes_.size() ]( zero_poll_fd );
+
+		for( auto mut i= 0s; i < running_processes_.size(); ++i )
+		{
+			var pollfd& mut poll_fd= poll_fds[i];
+			poll_fd.fd= unsafe( running_processes_[i].GetPipeFD() );
+			poll_fd.events= i16( POLLIN | POLLPRI );
+			poll_fd.revents= i16(0);
+		}
+
+		// Wait until there is at least one pipe to read.
+		auto ppoll_res=
+			unsafe( ::ppoll(
+				poll_fds.data(),
+				nfds_t(poll_fds.size()),
+				ust::nullptr</timespec/>(),
+				ust::nullptr</ü__sigset_t/>() ) );
+		if( ppoll_res < 0 )
+		{
+			logger.LogError( ust::concat( "ppoll error: ", ust::to_string8( BKGetErrno() ) ) );
+			return false;
+		}
+
+		// Read from ready pipes.
+		for( auto mut i= 0s; i < running_processes_.size(); ++i )
+		{
+			if( poll_fds[i].revents != i16(0) )
+			{
+				running_processes_[i].PipeRead();
+			}
+		}
+
+		// Find finished processes and remove them from the list.
+		for( auto mut i= 0s; i < running_processes_.size(); )
+		{
+			if( !running_processes_[i].IsPipeOpened() )
+			{
+				auto s= running_processes_.size();
+				running_processes_.swap( i, s - 1s );
+				var Process mut last= running_processes_.pop_back();
+				var ProcessId id= last.GetId();
+				if_var( &out : move(last).Finish( logger ) )
+				{
+					logger.LogInfo( out );
+					finished_processes_.push_back( id );
+				}
+				else
+				{
+					return false;
+				}
+			}
+			else
+			{
+				++i;
+			}
+		}
+
+		return true;
+	}
+
+	fn virtual final TakeFinishedProcess( mut this ) : ust::optional</ProcessId/>
+	{
+		if( !finished_processes_.empty() )
+		{
+			return finished_processes_.pop_back();
+		}
+		return ust::null_optional;
+	}
+
+	fn virtual final GetNumberOfRunningProcesses( mut this ) : size_type
+	{
+		return running_processes_.size();
+	}
+
+private:
+	ust::vector</Process/> running_processes_;
+	ust::vector</ProcessId/> finished_processes_;
 }
 
 } // namespace BK
@@ -214,6 +341,20 @@ auto g_stdout_fd= 1;
 auto g_stderr_fd= 2;
 
 fn nomangle pipe( $(i32) ü__pipedes ) unsafe : i32;
+
+fn nomangle ppoll( $(pollfd) ü__fds, nfds_t ü__nfds, $(timespec) ü__timeout, $(ü__sigset_t) ü__ss ) unsafe : i32;
+
+struct pollfd ordered
+{
+	i32 fd;
+	i16 events;
+	i16 revents;
+}
+
+type nfds_t = u64;
+
+auto constexpr POLLIN = 1;
+auto constexpr POLLPRI = 2;
 
 // TODO - remove copypaste.
 fn nomangle close( i32 fd ) unsafe : i32;

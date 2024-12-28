@@ -1,3 +1,4 @@
+import "/box_nullable.u"
 import "logger.uh"
 
 namespace BK
@@ -6,5 +7,36 @@ namespace BK
 // Synchronously execute a process.
 // Returns true on ok.
 fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool;
+
+class ProcessGroupInterface interface
+{
+	// A number to distinguish between processes started.
+	type ProcessId= size_type;
+
+	// Run process and return as soon as possible, without waiting for it to finish.
+	// Returns false on error.
+	fn virtual pure RunProcess(
+		mut this,
+		Logger &mut logger,
+		ProcessId process_id,
+		ust::string_view8 exe_path,
+		ust::array_view_imut</ust::string_view8/> command_line ) : bool;
+
+	// Perform work to manage processes - read their output, close (if necessary).
+	// This call may block until an input is recieved or at least one of processes finishes.
+	// Returns false on error.
+	fn virtual pure DoWork( mut this, Logger &mut logger ) : bool;
+
+	// Returns id of finished process. Returns nothing if no pendning unfinished processes left.
+	// This function should be called multiple times in a row - in case if more than one pending finished process exists.
+	// Order of finished processes isn't specified.
+	fn virtual pure TakeFinishedProcess( mut this ) : ust::optional</ProcessId/>;
+
+	// Returns how many processes are still running.
+	fn virtual pure GetNumberOfRunningProcesses( mut this ) : size_type;
+}
+
+// Crete process group. Returns empty box on error.
+fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>;
 
 } // namespace BK
