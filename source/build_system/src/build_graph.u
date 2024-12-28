@@ -342,7 +342,7 @@ fn PerformGraphBuild(
 
 		var size_type mut build_steps_started= 0s, mut build_steps_finished= 0s;
 
-		loop
+		loop label build_loop
 		{
 			// Do work with processes.
 			if( !process_group.DoWork( logger ) )
@@ -374,10 +374,10 @@ fn PerformGraphBuild(
 				break;
 			}
 
-			if( process_group.GetNumberOfRunningProcesses() < size_type(max_number_of_parallel_jobs) )
+			// Try starting new processes, until number of running processes is less than limit.
+			while( process_group.GetNumberOfRunningProcesses() < size_type(max_number_of_parallel_jobs) &&
+				build_steps_started < num_nodes_to_rebuild )
 			{
-				// Try starting new process, if number of running processes is less than limit.
-
 				// Select a node to rebuild - which dependencies are all ready.
 				// TODO - speed-up this, replace linear search with something more satisfying.
 				var size_type mut node_to_rebuild_index = build_graph.nodes.size();
@@ -430,13 +430,13 @@ fn PerformGraphBuild(
 					{
 						// There are still running processes.
 						// This means that we may need to wait for some dependency to be finished in order to select next node to rebuild.
-						continue;
+						break;
 					}
 					else
 					{
 						// There is no running processes and we can't select next node to rebuild.
 						// This means that we likely have a dependency loop.
-						break;
+						break label build_loop;
 					}
 				}
 
@@ -465,6 +465,7 @@ fn PerformGraphBuild(
 						return false;
 					}
 					nodes_state[node_to_rebuild_index]= BuildGraphNodeState::Ready;
+					++build_steps_finished;
 				}
 				else if( node_to_rebuild.program == SpecialBuildCommands::generate_file )
 				{
@@ -475,6 +476,7 @@ fn PerformGraphBuild(
 						return false;
 					}
 					nodes_state[node_to_rebuild_index]= BuildGraphNodeState::Ready;
+					++build_steps_finished;
 				}
 				else
 				{
