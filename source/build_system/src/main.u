@@ -692,18 +692,22 @@ fn CreatePackageTargetBuildGraphNodes(
 			} );
 	}
 
-	foreach( &generated_source_file : target.generated_source_files )
+	if( !target.generated_source_files.empty() )
 	{
-		var ust::string8 generated_source_file_absolute= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source_file ) );
+		var ust::string8 generated_sources_build_dir=
+			GetBuildTargetGeneratedSourcesBuildDirectory( root_package_build_directory, target_name );
 
-		source_files_to_compile.push_back(
-			SourceFileToCompile
-			{
-				.source_file_full_path= generated_source_file_absolute,
-				// Place "bc" files near to generated source files.
-				.bc_file_full_path= generated_source_file_absolute + ".bc",
-				.comment= generated_source_file + ".bc",
-			} );
+		foreach( &generated_source_file : target.generated_source_files )
+		{
+			source_files_to_compile.push_back(
+				SourceFileToCompile
+				{
+					.source_file_full_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source_file ) ),
+					// Place "bc" files in separate build directory.
+					.bc_file_full_path= NormalizePath( ust::concat( generated_sources_build_dir, "/", generated_source_file, ".bc" ) ),
+					.comment= generated_source_file + ".bc",
+				} );
+		}
 	}
 
 	foreach( &source_file_to_compile : source_files_to_compile )
