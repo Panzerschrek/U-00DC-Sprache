@@ -437,6 +437,11 @@ def ExternalLibraryLinking2Test():
 	RunExecutable( "external_library_linking2", "exe" )
 
 
+def ExternalLibraryLinking3Test():
+	RunBuildSystem( "external_library_linking3" )
+	RunExecutable( "external_library_linking3", "exe" )
+
+
 def ChildPackage0Test():
 	RunBuildSystem( "child_package0" )
 	RunExecutable( "child_package0", "exe" )
@@ -1249,6 +1254,7 @@ def main():
 		ExternalLibraryLinking0Test,
 		ExternalLibraryLinking1Test,
 		ExternalLibraryLinking2Test,
+		ExternalLibraryLinking3Test,
 		ChildPackage0Test,
 		ChildPackage1Test,
 		ChildPackage2Test,

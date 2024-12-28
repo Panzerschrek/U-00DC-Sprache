@@ -280,7 +280,12 @@ fn TransformAndValidatePackageInfo(
 		NormalizeList(out_build_target.private_dependencies);
 
 		// Process external libraries.
-		out_build_target.external_libraries= build_target.external_libraries;
+		foreach( &external_library : build_target.external_libraries )
+		{
+			// Normalize absolute paths, preserve relative paths.
+			out_build_target.external_libraries.push_back(
+				( IsAbsolutePath(external_library) ? NormalizePath( external_library ) : external_library ) );
+		}
 		NormalizeList( out_build_target.external_libraries );
 
 		workspace.build_targets.insert( target_absolute_name, move( out_build_target ) );

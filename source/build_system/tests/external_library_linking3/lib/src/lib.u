@@ -1,0 +1,6 @@
+import "/lib/lib.uh"
+
+fn LibFunc( u32 x ) : u32
+{
+	return x * x + x * 7u + 25u;
+}

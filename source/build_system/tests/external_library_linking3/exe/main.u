@@ -1,0 +1,10 @@
+fn nomangle main() : i32
+{
+	halt if( LibFunc( 3u ) != 3u * 3u + 3u * 7u + 25u );
+	halt if( LibFunc( 29u ) != 29u * 29u + 29u * 7u + 25u );
+	return 0;
+}
+
+// Declare a protortpe here.
+// We can't import proper header file, since we have no proper dependency on this library.
+fn LibFunc( u32 x ) : u32;

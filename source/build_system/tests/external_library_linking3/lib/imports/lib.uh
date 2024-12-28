@@ -1,0 +1,1 @@
+fn LibFunc( u32 x ) : u32;
