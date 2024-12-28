@@ -19,15 +19,7 @@ fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_vie
 		return false;
 	}
 
-	if_var( &out : process_opt.try_take().Finish( logger ) )
-	{
-		logger.LogInfo( out );
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+	return process_opt.try_take().Finish( logger );
 }
 
 fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
@@ -155,9 +147,9 @@ public:
 		}
 	}
 
-	// Finish this process, returning output if is fine.
+	// Finish this process, returning true on success
 	// May block if pipe is still opened.
-	fn Finish( byval mut this, Logger &mut logger ) : ust::optional</ust::string8/>
+	fn Finish( byval mut this, Logger &mut logger ) : bool
 	{
 		// If pipe wasn't closed before - read until it isn't closed.
 		while( IsPipeOpened() )
@@ -170,12 +162,12 @@ public:
 		if( wait_res != pid_ )
 		{
 			logger.LogError( ust::concat( "waitpid error: ", ust::to_string8( BKGetErrno() ) ) );
-			pid_= -1;
-			return ust::null_optional;
 		}
 		pid_= -1; // Reset pid in order to avoid calling waitpid in destructor again.
 
-		return take(process_out_);
+		( status == 0 ? logger.LogInfo( process_out_ ) : logger.LogError( process_out_ ) );
+
+		return status == 0;
 	}
 
 	// Read a portion of data from the communication pipe.
@@ -302,15 +294,11 @@ public: // ProcessGroupInterface
 				running_processes_.swap( i, s - 1s );
 				var Process mut last= running_processes_.pop_back();
 				var ProcessId id= last.GetId();
-				if_var( &out : move(last).Finish( logger ) )
-				{
-					logger.LogInfo( out );
-					finished_processes_.push_back( id );
-				}
-				else
+				if( !move(last).Finish( logger ) )
 				{
 					return false;
 				}
+				finished_processes_.push_back(id);
 			}
 			else
 			{
