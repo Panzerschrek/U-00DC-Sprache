@@ -2,6 +2,7 @@ import "/string_conversions.u"
 import "../filesystem.uh"
 import "../path.uh"
 import "errno.uh"
+import "unix.uh"
 import "stat.uh"
 
 
@@ -133,9 +134,9 @@ fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string
 		return false;
 	}
 
-	for( var u64 mut offset(0); offset < u64(source_file_size); )
+	for( var off_t mut offset(0); offset < off_t(source_file_size); )
 	{
-		var ssize_type bytes_sent= unsafe( ::sendfile( fd_destination, fd_source, offset, size_type( u64(source_file_size) - offset ) ) );
+		var ssize_type bytes_sent= unsafe( ::sendfile( fd_destination, fd_source, $<(offset), size_t( off_t(source_file_size) - offset ) ) );
 		if( bytes_sent <= ssize_type(0) )
 		{
 			logger.LogError( ust::concat( "sendfile failed for destination \"", destination_path, "\" and source \"", source_path, "\", error: ", ust::to_string8( BKGetErrno() ) ) );
@@ -143,7 +144,6 @@ fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string
 			unsafe( ::close( fd_destination ) );
 			return false;
 		}
-		offset+= u64(bytes_sent);
 	}
 
 	unsafe( ::close( fd_source ) );
@@ -247,23 +247,3 @@ fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModifi
 }
 
 } // namespace BK
-
-// Unix function for directory creation.
-fn nomangle mkdir( $(char8) path_null_terminated, u32 mode ) unsafe : i32;
-
-fn nomangle open( $(char8) path_null_terminated, i32 flags, u32 mode ) unsafe : i32;
-fn nomangle close( i32 fd ) : i32;
-
-fn nomangle write( i32 fd, $(byte8) buf, size_type count ) unsafe : ssize_type;
-fn nomangle read( i32 fd, $(byte8) buf, size_type count ) unsafe : ssize_type;
-
-fn nomangle sendfile( i32 out_fd, i32 in_fd, u64 offset, size_type count ) unsafe : ssize_type;
-
-fn nomangle getcwd( $(char8) buff, size_type size ) unsafe : $(char8);
-
-auto constexpr O_RDONLY = 0o0;
-auto constexpr O_WRONLY = 0o1;
-auto constexpr O_CREAT = 0o100;
-auto constexpr O_TRUNC = 0o1000;
-
-auto constexpr ERANGE = 34;
