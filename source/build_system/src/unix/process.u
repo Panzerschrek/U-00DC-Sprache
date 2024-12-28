@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/string_conversions.u"
 import "/vector.u"
 import "../process.uh"
@@ -9,131 +10,201 @@ namespace BK
 
 fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
 {
-	var [ i32, 2 ] mut pipe_fd= zero_init;
-	if( unsafe( ::pipe( $<(pipe_fd[0]) ) ) != 0 )
+	auto mut process_opt= Process::Run( logger, exe_path, command_line );
+	if( process_opt.empty() )
 	{
-		logger.LogError( ust::concat( "pipe error: ", ust::to_string8( BKGetErrno() ) ) );
-		return false;
-	}
-	var i32 pipe_read_end= pipe_fd[0];
-	var i32 pipe_write_end= pipe_fd[1];
-
-	var ust::string8 mut exe_path_null_terminated= ust::concat( exe_path, "\0" );
-
-	var ust::vector</ust::string8/> mut args_null_terminated;
-	args_null_terminated.push_back( exe_path_null_terminated );
-	foreach( &arg : command_line )
-	{
-		args_null_terminated.push_back( ust::concat( arg, "\0" ) );
-	}
-
-	var ust::vector</$(char8)/> mut argv_vec;
-	foreach( &mut arg_null_terminated : args_null_terminated )
-	{
-		argv_vec.push_back( unsafe( arg_null_terminated.data() ) );
-	}
-	argv_vec.push_back( ust::nullptr</char8/>() ); // This vector itself is null-terminated.
-
-	var posix_spawn_file_actions_t mut file_actions= zero_init;
-	if( unsafe( posix_spawn_file_actions_init( $<(file_actions ) ) ) != 0 )
-	{
-		logger.LogError( ust::concat( "posix_spawn_file_actions_init error: ", ust::to_string8( BKGetErrno() ) ) );
-		unsafe( ::close( pipe_read_end ) );
-		unsafe( ::close( pipe_write_end ) );
 		return false;
 	}
 
-	// Close pipe read end in child process - it's unnecessary there.
-	unsafe( ::posix_spawn_file_actions_addclose( $<(file_actions), pipe_read_end ) );
-	// Redirect in child process stdin and stdout into the pipe.
-	unsafe( ::posix_spawn_file_actions_adddup2( $<(file_actions), pipe_write_end, g_stdout_fd ) );
-	unsafe( ::posix_spawn_file_actions_adddup2( $<(file_actions), pipe_write_end, g_stderr_fd ) );
-	// Redirect stdin to /dev/null.
-	auto mut dev_null_name_nt= "/dev/null\0";
-	unsafe( ::posix_spawn_file_actions_addopen( $<(file_actions), g_stdin_fd, $<(dev_null_name_nt[0]), O_RDONLY, 0u ) );
-
-	var posix_spawnattr_t mut spawn_attributes= zero_init;
-	if( unsafe( ::posix_spawnattr_init( $<(spawn_attributes) ) ) != 0 )
+	if_var( &out : process_opt.try_take().Finish( logger ) )
 	{
-		logger.LogError( ust::concat( "posix_spawnattr_init error: ", ust::to_string8( BKGetErrno() ) ) );
-		unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
-		unsafe( ::close( pipe_read_end ) );
-		unsafe( ::close( pipe_write_end ) );
+		logger.LogInfo( out );
+		return true;
+	}
+	else
+	{
 		return false;
 	}
+}
 
-	var pid_t mut pid= zero_init;
-
-	auto spawn_res =
-		unsafe( ::posix_spawn(
-			$<(pid),
-			exe_path_null_terminated.data(),
-			$<(file_actions),
-			$<(spawn_attributes),
-			argv_vec.data(),
-			BKGetEnvironment() ) );
-
-	if( spawn_res != 0 )
+class Process
+{
+public:
+	// Run process.
+	// Returns empty optional on error.
+	fn Run(
+		Logger &mut logger,
+		ust::string_view8 exe_path,
+		ust::array_view_imut</ust::string_view8/> command_line ) : ust::optional</Process/>
 	{
-		logger.LogError( ust::concat( "posix_spawn error: ", ust::to_string8( BKGetErrno() ) ) );
-		unsafe( ::posix_spawnattr_destroy( $<(spawn_attributes) ) );
-		unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
-		unsafe( ::close( pipe_read_end ) );
-		unsafe( ::close( pipe_write_end ) );
-		return false;
-	}
-
-	unsafe( ::posix_spawnattr_destroy( $<(spawn_attributes) ) );
-	unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
-
-	// Close pipe write end in parent process - it's unnecessary.
-	unsafe( ::close( pipe_write_end ) );
-
-	// Read from pipe until it's not closed.
-	{
-		var ust::string8 mut process_out;
-		auto buf_size= 1024s;
-		var [ byte8, buf_size ] mut buf= zero_init;
-		loop
+		var [ i32, 2 ] mut pipe_fd= zero_init;
+		if( unsafe( ::pipe( $<(pipe_fd[0]) ) ) != 0 )
 		{
-			var ssize_type read_res= unsafe( ::read( pipe_read_end, $<( buf[0] ), buf_size ) );
-			if( read_res > ssize_type(0) )
-			{
-				// Append buffer contents to stdout.
-				// TODO - limit internal buffer size, in case if a process produces too much output.
-				for( auto mut i= 0s; i < size_type(read_res); ++i )
-				{
-					process_out.push_back( char8( buf[i] ) );
-				}
-			}
-			else
-			{
-				if( read_res < ssize_type(0) )
-				{
-					logger.LogError( ust::concat( "Pipe read error: ", ust::to_string8( BKGetErrno() ) ) );
-				}
-				unsafe( ::close( pipe_read_end ) );
-				break;
-			}
+			logger.LogError( ust::concat( "pipe error: ", ust::to_string8( BKGetErrno() ) ) );
+			return ust::null_optional;
+		}
+		var i32 pipe_read_end= pipe_fd[0];
+		var i32 pipe_write_end= pipe_fd[1];
+
+		var ust::string8 mut exe_path_null_terminated= ust::concat( exe_path, "\0" );
+
+		var ust::vector</ust::string8/> mut args_null_terminated;
+		args_null_terminated.push_back( exe_path_null_terminated );
+		foreach( &arg : command_line )
+		{
+			args_null_terminated.push_back( ust::concat( arg, "\0" ) );
 		}
 
-		// Output all process out at once.
-		logger.LogInfo( process_out );
+		var ust::vector</$(char8)/> mut argv_vec;
+		foreach( &mut arg_null_terminated : args_null_terminated )
+		{
+			argv_vec.push_back( unsafe( arg_null_terminated.data() ) );
+		}
+		argv_vec.push_back( ust::nullptr</char8/>() ); // This vector itself is null-terminated.
+
+		var posix_spawn_file_actions_t mut file_actions= zero_init;
+		if( unsafe( posix_spawn_file_actions_init( $<(file_actions ) ) ) != 0 )
+		{
+			logger.LogError( ust::concat( "posix_spawn_file_actions_init error: ", ust::to_string8( BKGetErrno() ) ) );
+			unsafe( ::close( pipe_read_end ) );
+			unsafe( ::close( pipe_write_end ) );
+			return ust::null_optional;
+		}
+
+		// Close pipe read end in child process - it's unnecessary there.
+		unsafe( ::posix_spawn_file_actions_addclose( $<(file_actions), pipe_read_end ) );
+		// Redirect in child process stdin and stdout into the pipe.
+		unsafe( ::posix_spawn_file_actions_adddup2( $<(file_actions), pipe_write_end, g_stdout_fd ) );
+		unsafe( ::posix_spawn_file_actions_adddup2( $<(file_actions), pipe_write_end, g_stderr_fd ) );
+		// Redirect stdin to /dev/null.
+		auto mut dev_null_name_nt= "/dev/null\0";
+		unsafe( ::posix_spawn_file_actions_addopen( $<(file_actions), g_stdin_fd, $<(dev_null_name_nt[0]), O_RDONLY, 0u ) );
+
+		var posix_spawnattr_t mut spawn_attributes= zero_init;
+		if( unsafe( ::posix_spawnattr_init( $<(spawn_attributes) ) ) != 0 )
+		{
+			logger.LogError( ust::concat( "posix_spawnattr_init error: ", ust::to_string8( BKGetErrno() ) ) );
+			unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
+			unsafe( ::close( pipe_read_end ) );
+			unsafe( ::close( pipe_write_end ) );
+			return ust::null_optional;
+		}
+
+		var pid_t mut pid= zero_init;
+
+		auto spawn_res =
+			unsafe( ::posix_spawn(
+				$<(pid),
+				exe_path_null_terminated.data(),
+				$<(file_actions),
+				$<(spawn_attributes),
+				argv_vec.data(),
+				BKGetEnvironment() ) );
+
+		if( spawn_res != 0 )
+		{
+			logger.LogError( ust::concat( "posix_spawn error: ", ust::to_string8( BKGetErrno() ) ) );
+			unsafe( ::posix_spawnattr_destroy( $<(spawn_attributes) ) );
+			unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
+			unsafe( ::close( pipe_read_end ) );
+			unsafe( ::close( pipe_write_end ) );
+			return ust::null_optional;
+		}
+
+		unsafe( ::posix_spawnattr_destroy( $<(spawn_attributes) ) );
+		unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
+
+		// Close pipe write end in parent process - it's unnecessary.
+		unsafe( ::close( pipe_write_end ) );
+
+		return unsafe( Process( pid, pipe_read_end ) );
 	}
 
-	// After the communication pipe was closed, we can wait for the process to finish.
-	// Normally at this moment it should finish, because the pipe should be closed only on exity.
+	fn constructor() = delete;
 
-	// Wait for specified process to finish.
-	var i32 mut status= 99999;
-	auto wait_res= unsafe( ::waitpid( pid, $<(status), 0 ) );
-	if( wait_res != pid )
+	// Constructor for internal usage.
+	fn constructor( pid_t pid, i32 pipe_read_fd ) unsafe
+		( pid_(pid), pipe_read_fd_(pipe_read_fd), buf_= zero_init )
 	{
-		logger.LogError( ust::concat( "waitpid error: ", ust::to_string8( BKGetErrno() ) ) );
-		return false;
+		debug_assert( pid_ != -1 );
+		debug_assert( pipe_read_fd_ != -1 );
 	}
 
-	return status == 0;
+	fn destructor()
+	{
+		if( pipe_read_fd_ != -1 )
+		{
+			unsafe( ::close( pipe_read_fd_ ) );
+		}
+		if( pid_ != -1 )
+		{
+			var i32 mut status= 99999;
+			auto wait_res= unsafe( ::waitpid( pid_, $<(status), 0 ) );
+			// Can't return status from destructor.
+			ust::ignore_unused( wait_res );
+		}
+	}
+
+	// Finish this process, returning output if is fine.
+	// May block if pipe is still opened.
+	fn Finish( byval mut this, Logger &mut logger ) : ust::optional</ust::string8/>
+	{
+		// If pipe wasn't closed before - read until it isn't closed.
+		while( IsPipeOpened() )
+		{
+			PipeRead();
+		}
+
+		var i32 mut status= 99999;
+		auto wait_res= unsafe( ::waitpid( pid_, $<(status), 0 ) );
+		if( wait_res != pid_ )
+		{
+			logger.LogError( ust::concat( "waitpid error: ", ust::to_string8( BKGetErrno() ) ) );
+			pid_= -1;
+			return ust::null_optional;
+		}
+		pid_= -1; // Reset pid in order to avoid calling waitpid in destructor again.
+
+		return take(process_out_);
+	}
+
+	// Read a portion of data from the communication pipe.
+	// May block if pipe isn't closed, but empty.
+	fn PipeRead( mut this )
+	{
+		var ssize_type read_res= unsafe( ::read( pipe_read_fd_, $<( buf_[0] ), c_buf_size ) );
+		if( read_res > ssize_type(0) )
+		{
+			// Append buffer contents to stdout.
+			// TODO - limit internal buffer size, in case if a process produces too much output.
+			for( auto mut i= 0s; i < size_type(read_res); ++i )
+			{
+				process_out_.push_back( char8( buf_[i] ) );
+			}
+		}
+		else
+		{
+			// If can't read more - close the pipe.
+			// Normalyl this happens only if process finishes and closes its pipe end.
+			// TODO - handle read error.
+			unsafe( ::close( pipe_read_fd_ ) );
+			pipe_read_fd_= -1;
+		}
+	}
+
+	fn IsPipeOpened( this ) : bool
+	{
+		return pipe_read_fd_ != -1;
+	}
+
+private:
+	auto c_buf_size= 1024s;
+
+private:
+	pid_t pid_;
+	i32 pipe_read_fd_;
+	ust::string8 process_out_;
+	[ byte8, c_buf_size ] buf_;
 }
 
 } // namespace BK
