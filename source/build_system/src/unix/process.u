@@ -92,6 +92,10 @@ public:
 			return ust::null_optional;
 		}
 
+		// Require using "vfork" - it should be slightly faster.
+		var i16 spawn_flags(POSIX_SPAWN_USEVFORK);
+		unsafe( ::posix_spawnattr_setflags( $<(spawn_attributes), spawn_flags ) );
+
 		var pid_t mut pid= zero_init;
 
 		auto spawn_res =
