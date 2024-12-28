@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/scoped_array.u"
 import "/string_conversions.u"
 import "/unordered_map.u"
@@ -330,36 +331,68 @@ fn PerformGraphBuild(
 		var ust::string8 num_nodes_to_rebuild_str= ust::to_string8(num_nodes_to_rebuild);
 		logger.LogVerbose( ust::concat( "Has ", num_nodes_to_rebuild_str, " nodes to rebuild." ) );
 
-		for( var size_type mut displayed_build_step_index= 1s; displayed_build_step_index <= num_nodes_to_rebuild; ++displayed_build_step_index )
+		auto mut process_group_out= CreateProcessGroup( logger );
+		if( process_group_out.empty() )
 		{
-			// Select a node to rebuild - which dependencies are all ready.
-			// TODO - speed-up this, replace linear search with something more satisfying.
-			var size_type mut node_to_rebuild_index = build_graph.nodes.size();
-			for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
+			logger.LogError( "Failed to create process group!" );
+			return false;
+		}
+		var ProcessGroupInterface &mut process_group= process_group_out.try_deref();
+
+		var size_type max_running_processes= 4s; // TODO - tune this.
+
+		var size_type mut build_steps_started= 0s;
+
+		loop
+		{
+			// Do work with processes.
+			if( !process_group.DoWork( logger ) )
 			{
-				if( nodes_state[i] == BuildGraphNodeState::RebuildRequired )
+				logger.LogError( "Process group DoWork error!" );
+				return false;
+			}
+
+			// Extract finished processes.
+			loop
+			{
+				if_var( &finished_process_id : process_group.TakeFinishedProcess() )
 				{
-					var BuildGraph::Node& node= build_graph.nodes[i];
-					var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+					assert( finished_process_id < build_graph.nodes.size() );
+					assert( nodes_state[finished_process_id] == BuildGraphNodeState::RebuildInProgress );
+					nodes_state[finished_process_id]= BuildGraphNodeState::Ready;
+					logger.LogVerbose( ust::concat( "Finished building \"", build_graph.nodes[ finished_process_id ].comment, "\"." ) );
+				}
+				else
+				{
+					break;
+				}
+			}
 
-					var bool mut can_start_rebuild= true;
+			if( process_group.GetNumberOfRunningProcesses() == 0s && build_steps_started >= num_nodes_to_rebuild )
+			{
+				// Nothing left.
+				break;
+			}
 
-					foreach( &input_file : node.input_files )
+			if( process_group.GetNumberOfRunningProcesses() < max_running_processes )
+			{
+				// Try starting new process, if number of running processes is less than limit.
+
+				// Select a node to rebuild - which dependencies are all ready.
+				// TODO - speed-up this, replace linear search with something more satisfying.
+				var size_type mut node_to_rebuild_index = build_graph.nodes.size();
+				for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
+				{
+					if( nodes_state[i] == BuildGraphNodeState::RebuildRequired )
 					{
-						if_var( &input_nodes : output_file_to_node_id_map.find( input_file ) )
-						{
-							foreach( input_node : input_nodes )
-							{
-								can_start_rebuild &= nodes_state[input_node] == BuildGraphNodeState::Ready;
-							}
-						}
-					}
+						var BuildGraph::Node& node= build_graph.nodes[i];
+						var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
 
-					if_var( &dep_file : dep_file_opt )
-					{
-						foreach( &dependency : dep_file.dependencies )
+						var bool mut can_start_rebuild= true;
+
+						foreach( &input_file : node.input_files )
 						{
-							if_var( &input_nodes : output_file_to_node_id_map.find( dependency ) )
+							if_var( &input_nodes : output_file_to_node_id_map.find( input_file ) )
 							{
 								foreach( input_node : input_nodes )
 								{
@@ -367,64 +400,95 @@ fn PerformGraphBuild(
 								}
 							}
 						}
-					}
 
-					if( can_start_rebuild )
+						if_var( &dep_file : dep_file_opt )
+						{
+							foreach( &dependency : dep_file.dependencies )
+							{
+								if_var( &input_nodes : output_file_to_node_id_map.find( dependency ) )
+								{
+									foreach( input_node : input_nodes )
+									{
+										can_start_rebuild &= nodes_state[input_node] == BuildGraphNodeState::Ready;
+									}
+								}
+							}
+						}
+
+						if( can_start_rebuild )
+						{
+							node_to_rebuild_index= i;
+							break;
+						}
+					}
+				}
+
+				if( node_to_rebuild_index >= build_graph.nodes.size() )
+				{
+					// Can't select node to rebuild.
+					if( process_group.GetNumberOfRunningProcesses() > 0s )
 					{
-						node_to_rebuild_index= i;
+						// There are still running processes.
+						// This means that we may need to wait for some dependency to be finished in order to select next node to rebuild.
+						continue;
+					}
+					else
+					{
+						// There is no running processes and we can't select next node to rebuild.
+						// This means that we likely have a dependency loop.
 						break;
 					}
 				}
-			}
 
-			if( node_to_rebuild_index >= build_graph.nodes.size() )
-			{
-				// Nothing left to rebuild or we have dependency loops (check them later).
-				break;
-			}
+				nodes_state[node_to_rebuild_index]= BuildGraphNodeState::RebuildInProgress;
 
-			nodes_state[node_to_rebuild_index]= BuildGraphNodeState::RebuildInProgress;
+				var BuildGraph::Node& node_to_rebuild = build_graph.nodes[node_to_rebuild_index];
 
-			var BuildGraph::Node& node_to_rebuild = build_graph.nodes[node_to_rebuild_index];
+				logger.LogInfo(
+					ust::concat(
+						"[",
+						ust::to_string8( build_steps_started + 1s ),
+						"/",
+						num_nodes_to_rebuild_str,
+						"] Building \"",
+						node_to_rebuild.comment,
+						"\"." ) );
 
-			logger.LogInfo(
-				ust::concat(
-					"[",
-					ust::to_string8(displayed_build_step_index),
-					"/",
-					num_nodes_to_rebuild_str,
-					"] Building \"",
-					node_to_rebuild.comment,
-					"\"." ) );
+				++build_steps_started;
 
-			if( node_to_rebuild.program == SpecialBuildCommands::copy_file )
-			{
-				if( !EnsureDirectoryExists( logger, GetParentPath( node_to_rebuild.command_line[0s] ) ) ||
-					!CopyFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
+				if( node_to_rebuild.program == SpecialBuildCommands::copy_file )
 				{
-					logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
-					return false;
+					if( !EnsureDirectoryExists( logger, GetParentPath( node_to_rebuild.command_line[0s] ) ) ||
+						!CopyFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
+					{
+						logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
+						return false;
+					}
+					nodes_state[node_to_rebuild_index]= BuildGraphNodeState::Ready;
+				}
+				else if( node_to_rebuild.program == SpecialBuildCommands::generate_file )
+				{
+					if( !EnsureDirectoryExists( logger, GetParentPath( node_to_rebuild.command_line[0s] ) ) ||
+						!WriteFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
+					{
+						logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
+						return false;
+					}
+					nodes_state[node_to_rebuild_index]= BuildGraphNodeState::Ready;
+				}
+				else
+				{
+					if( ! process_group.RunProcess(
+						logger,
+						node_to_rebuild_index,
+						node_to_rebuild.program,
+						ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )
+					{
+						logger.LogError( ust::concat( "Failed to start process for command \"", node_to_rebuild.comment, "\"." ) );
+						return false;
+					}
 				}
 			}
-			else if( node_to_rebuild.program == SpecialBuildCommands::generate_file )
-			{
-				if( !EnsureDirectoryExists( logger, GetParentPath( node_to_rebuild.command_line[0s] ) ) ||
-					!WriteFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
-				{
-					logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
-					return false;
-				}
-			}
-			else
-			{
-				if( !RunExecutable( logger, node_to_rebuild.program, ViewOfStringsToVectorOfViews( node_to_rebuild.command_line ) ) )
-				{
-					logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
-					return false;
-				}
-			}
-
-			nodes_state[node_to_rebuild_index]= BuildGraphNodeState::Ready;
 		}
 
 		// Last check to be sure all was really built (may not be true for bad graphs with cycles).

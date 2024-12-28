@@ -253,6 +253,12 @@ public: // ProcessGroupInterface
 
 	fn virtual final DoWork( mut this, Logger &mut logger ) : bool
 	{
+		if( running_processes_.empty() )
+		{
+			// Nothing to do.
+			return true;
+		}
+
 		var pollfd zero_poll_fd= zero_init;
 
 		scoped_array pollfd mut poll_fds[ running_processes_.size() ]( zero_poll_fd );
