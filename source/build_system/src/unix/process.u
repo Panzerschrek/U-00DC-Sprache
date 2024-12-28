@@ -9,6 +9,15 @@ namespace BK
 
 fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
 {
+	var [ i32, 2 ] mut pipe_fd= zero_init;
+	if( unsafe( ::pipe( $<(pipe_fd[0]) ) ) != 0 )
+	{
+		logger.LogError( ust::concat( "pipe error: ", ust::to_string8( BKGetErrno() ) ) );
+		return false;
+	}
+	var i32 pipe_read_end= pipe_fd[0];
+	var i32 pipe_write_end= pipe_fd[1];
+
 	var ust::string8 mut exe_path_null_terminated= ust::concat( exe_path, "\0" );
 
 	var ust::vector</ust::string8/> mut args_null_terminated;
@@ -29,14 +38,27 @@ fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_vie
 	if( unsafe( posix_spawn_file_actions_init( $<(file_actions ) ) ) != 0 )
 	{
 		logger.LogError( ust::concat( "posix_spawn_file_actions_init error: ", ust::to_string8( BKGetErrno() ) ) );
+		unsafe( ::close( pipe_read_end ) );
+		unsafe( ::close( pipe_write_end ) );
 		return false;
 	}
+
+	// Close pipe read end in child process - it's unnecessary there.
+	unsafe( ::posix_spawn_file_actions_addclose( $<(file_actions), pipe_read_end ) );
+	// Redirect in child process stdin and stdout into the pipe.
+	unsafe( ::posix_spawn_file_actions_adddup2( $<(file_actions), pipe_write_end, g_stdout_fd ) );
+	unsafe( ::posix_spawn_file_actions_adddup2( $<(file_actions), pipe_write_end, g_stderr_fd ) );
+	// Redirect stdin to /dev/null.
+	auto mut dev_null_name_nt= "/dev/null\0";
+	unsafe( ::posix_spawn_file_actions_addopen( $<(file_actions), g_stdin_fd, $<(dev_null_name_nt[0]), O_RDONLY, 0u ) );
 
 	var posix_spawnattr_t mut spawn_attributes= zero_init;
 	if( unsafe( ::posix_spawnattr_init( $<(spawn_attributes) ) ) != 0 )
 	{
 		logger.LogError( ust::concat( "posix_spawnattr_init error: ", ust::to_string8( BKGetErrno() ) ) );
 		unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
+		unsafe( ::close( pipe_read_end ) );
+		unsafe( ::close( pipe_write_end ) );
 		return false;
 	}
 
@@ -54,11 +76,53 @@ fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_vie
 	if( spawn_res != 0 )
 	{
 		logger.LogError( ust::concat( "posix_spawn error: ", ust::to_string8( BKGetErrno() ) ) );
+		unsafe( ::posix_spawnattr_destroy( $<(spawn_attributes) ) );
+		unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
+		unsafe( ::close( pipe_read_end ) );
+		unsafe( ::close( pipe_write_end ) );
 		return false;
 	}
 
 	unsafe( ::posix_spawnattr_destroy( $<(spawn_attributes) ) );
 	unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
+
+	// Close pipe write end in parent process - it's unnecessary.
+	unsafe( ::close( pipe_write_end ) );
+
+	// Read from pipe until it's not closed.
+	{
+		var ust::string8 mut process_out;
+		auto buf_size= 1024s;
+		var [ byte8, buf_size ] mut buf= zero_init;
+		loop
+		{
+			var ssize_type read_res= unsafe( ::read( pipe_read_end, $<( buf[0] ), buf_size ) );
+			if( read_res > ssize_type(0) )
+			{
+				// Append buffer contents to stdout.
+				// TODO - limit internal buffer size, in case if a process produces too much output.
+				for( auto mut i= 0s; i < size_type(read_res); ++i )
+				{
+					process_out.push_back( char8( buf[i] ) );
+				}
+			}
+			else
+			{
+				if( read_res < ssize_type(0) )
+				{
+					logger.LogError( ust::concat( "Pipe read error: ", ust::to_string8( BKGetErrno() ) ) );
+				}
+				unsafe( ::close( pipe_read_end ) );
+				break;
+			}
+		}
+
+		// Output all process out at once.
+		logger.LogInfo( process_out );
+	}
+
+	// After the communication pipe was closed, we can wait for the process to finish.
+	// Normally at this moment it should finish, because the pipe should be closed only on exity.
 
 	// Wait for specified process to finish.
 	var i32 mut status= 99999;
@@ -73,3 +137,15 @@ fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_vie
 }
 
 } // namespace BK
+
+auto g_stdin_fd= 0;
+auto g_stdout_fd= 1;
+auto g_stderr_fd= 2;
+
+fn nomangle pipe( $(i32) ü__pipedes ) unsafe : i32;
+
+// TODO - remove copypaste.
+fn nomangle close( i32 fd ) unsafe : i32;
+fn nomangle read( i32 fd, $(byte8) buf, size_type count ) unsafe : ssize_type;
+
+auto constexpr O_RDONLY = 0o0;
