@@ -289,6 +289,12 @@ public: // ProcessGroupInterface
 
 	fn virtual override DoWork( mut this, Logger &mut logger ) : bool
 	{
+		if( runnung_processes_.empty() )
+		{
+			// Nothing to do.
+			return true;
+		}
+
 		var DWORD mut bytes_read= 0u;
 		var ULONG_PTR mut process_int_ptr= zero_init;
 		var LPOVERLAPPED mut overlapped= zero_init;
