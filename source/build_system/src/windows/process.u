@@ -77,4 +77,56 @@ fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_vie
 	return exit_code == 0u;
 }
 
+fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
+{
+	ust::ignore_unused(logger);
+	return ust::make_box( ProcessGroup() );
+}
+
+class ProcessGroup final : ProcessGroupInterface
+{
+public:
+
+public: // ProcessGroupInterface
+	fn virtual override StartProcess(
+		mut this,
+		Logger &mut logger,
+		ProcessId process_id,
+		ust::string_view8 exe_path,
+		ust::array_view_imut</ust::string8/> command_line ) : bool
+	{
+		var bool ok= RunExecutable( logger, exe_path, command_line );
+		if( !ok )
+		{
+			return false;
+		}
+		finished_processes_.push_back( process_id );
+		return true;
+	}
+
+	fn virtual override DoWork( mut this, Logger &mut logger ) : bool
+	{
+		ust::ignore_unused(logger);
+		return true;
+	}
+
+	fn virtual override TakeFinishedProcess( mut this ) : ust::optional</ProcessId/>
+	{
+		if( !finished_processes_.empty() )
+		{
+			return finished_processes_.pop_back();
+		}
+		return ust::null_optional;
+	}
+
+	fn virtual override GetNumberOfRunningProcesses( mut this ) : size_type
+	{
+		return 0s;
+	}
+
+private:
+	ust::vector</ProcessId/> finished_processes_;
+}
+
+
 } // namespace BK
