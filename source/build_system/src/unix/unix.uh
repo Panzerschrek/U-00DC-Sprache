@@ -1,4 +1,5 @@
-// Definitions in this header was generated and manually tweaked.
+// This file contains some definitions from UNIX (pparticulary Linux) headers, which are used inside the build system.
+// These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
 fn nomangle close( i32 ü__fd ) unsafe : i32;
 fn nomangle dlerror() unsafe : $(char8);

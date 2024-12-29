@@ -466,7 +466,7 @@ fn PerformGraphBuild(
 				}
 			}
 
-			// Do work with processes. Potentially wait for at least one of them to finish.
+			// Do work with processes. Potentially wait for output or finish.
 			if( !process_group.DoWork( logger ) )
 			{
 				logger.LogError( "Process group DoWork error!" );

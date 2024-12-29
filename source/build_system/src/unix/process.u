@@ -141,10 +141,12 @@ public:
 	{
 		if( pipe_read_fd_ != c_empty_descriptor )
 		{
+			// Close pipe first - so any writen into stdout/stderr in the process will not block.
 			unsafe( ::close( pipe_read_fd_ ) );
 		}
 		if( pid_ != c_empty_descriptor )
 		{
+			// Wait until process finishes.
 			var i32 mut status= 99999;
 			auto wait_res= unsafe( ::waitpid( pid_, $<(status), 0 ) );
 			// Can't return status from destructor.
@@ -299,11 +301,11 @@ public: // ProcessGroupInterface
 		{
 			if( !running_processes_[i].PipeIsOpened() )
 			{
-				auto s= running_processes_.size();
-				running_processes_.swap( i, s - 1s );
-				var Process mut last= running_processes_.pop_back();
-				var ProcessId id= last.GetId();
-				if( !move(last).Finish( logger ) )
+				auto last_index= running_processes_.size() - 1s;
+				running_processes_.swap( i, last_index );
+				var Process mut process= running_processes_.pop_back();
+				var ProcessId id= process.GetId();
+				if( !move(process).Finish( logger ) )
 				{
 					return false;
 				}

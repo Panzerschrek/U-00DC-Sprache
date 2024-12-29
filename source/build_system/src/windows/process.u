@@ -1,6 +1,5 @@
 import "/assert.u"
 import "/atomic.u"
-import "/stdout.u"
 import "/string_conversions.u"
 import "../process.uh"
 import "invalid_handle.uh"
@@ -109,7 +108,7 @@ public: // ProcessGroupInterface
 				.process_handle= GetInvalidHandle(),
 				.overlapped= zero_init,
 				.buffer= uninitialized, // leave uninitialized, since it's costly to initialize it.
-				.is_reading= false,
+				.is_reading= false, // Not started read request yet.
 			} ) );
 
 		// Use global variable for pipes counter - to ensure uniqueness.
@@ -387,7 +386,7 @@ private:
 
 		if( process.is_reading )
 		{
-			// Extract bytes from buffer if reading was scheduled previously (it's not first call).
+			// Extract bytes from buffer if reading was scheduled previously (it's not the first call).
 			for( auto mut i= 0u; i < bytes; ++i )
 			{
 				process.output.push_back( char8( process.buffer[i] ) );
@@ -437,7 +436,7 @@ private:
 
 		if( !ok )
 		{
-			logger.LogVerbose( ust::concat( "Process exited with code ", ust::to_string8(exit_code), "." ) );
+			logger.LogError( ust::concat( "Process exited with code ", ust::to_string8(exit_code), "." ) );
 		}
 
 		( ok ? logger.LogInfo( process.output ) : logger.LogError( process.output ) );
@@ -477,12 +476,11 @@ private:
 	type ProcessPtr= ust::box</Process/>;
 
 private:
-	// Global counter for the whole process.
+	// Global counter for the whole process. Needed to ensure all pipe names are unique.
 	var u32 mut g_pipe_counter= 0u;
 
 private:
 	HANDLE imut io_port_;
-
 
 	ust::vector</ProcessPtr/> runnung_processes_;
 	ust::vector</ProcessId/> finished_processes_;

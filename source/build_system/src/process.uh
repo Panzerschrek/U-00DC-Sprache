@@ -8,6 +8,8 @@ namespace BK
 // Returns true on ok.
 fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool;
 
+// An interface for a class which runs and manages processes.
+// There are implementations for different platforms.
 class ProcessGroupInterface interface
 {
 	// A number to distinguish between processes started.

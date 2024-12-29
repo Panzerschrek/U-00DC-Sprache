@@ -12,6 +12,3 @@ fn GetNumberOfCPUs() : u32
 }
 
 } // namespace BK
-
-// Function from "sys/sysinfo.h".
-fn nomangle get_nprocs() : i32;
