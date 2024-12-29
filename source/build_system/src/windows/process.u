@@ -7,7 +7,7 @@ import "windows.uh"
 namespace BK
 {
 
-fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
+fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool
 {
 	var WideString exe_path_wide = UTF8ToWideString( exe_path );
 
@@ -60,7 +60,7 @@ fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_
 
 	if( creation_result == 0 )
 	{
-		ust::stderr_print( ust::concat( "CreateProcessW error: ", ust::to_string8( unsafe( GetLastError() ) ), "\n" ) );
+		logger.LogError( ust::concat( "CreateProcessW error: ", ust::to_string8( unsafe( GetLastError() ) ), "\n" ) );
 		return false;
 	}
 
