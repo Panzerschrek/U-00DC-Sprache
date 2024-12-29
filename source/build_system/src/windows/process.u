@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/atomic.u"
 import "/stdout.u"
 import "/string_conversions.u"
 import "../process.uh"
@@ -158,11 +159,19 @@ public: // ProcessGroupInterface
 				.is_reading= false,
 			} );
 
-		// TODO - use global counter.
-		var ust::string8 pipe_name= ust::concat( "\\\\.\\pipe\\BuildSystemProcessPipe_", ust::to_string8(pipe_counter_), "\0" );
-		++pipe_counter_;
+		// Use global variable for pipes counter - to ensure uniqueness.
+		// Use atomic increment to ensure correct work in multiple threads.
+		// Also use process id, since pipe names are global across whole system.
+		var ust::string8 pipe_name_nt=
+			ust::concat(
+				"\\\\.\\pipe\\",
+				"BuildSystem_Process_",
+				ust::to_string8( unsafe( GetCurrentProcessId() ) ),
+				"_Pipe_",
+				ust::to_string8( unsafe( ust::atomic_inc(g_pipe_counter) ) ),
+				"\0" );
 
-		var WideString mut pipe_name_w= UTF8ToWideString( pipe_name );
+		var WideString mut pipe_name_w= UTF8ToWideString( pipe_name_nt );
 
 		out_process.deref().pipe_handle =
 			unsafe( ::CreateNamedPipeW(
@@ -506,8 +515,12 @@ private:
 	type ProcessPtr= ust::box</Process/>;
 
 private:
+	// Global counter for the whole process.
+	var u32 mut g_pipe_counter= 0u;
+
+private:
 	HANDLE imut io_port_;
-	u32 pipe_counter_= 0u;
+
 
 	ust::vector</ProcessPtr/> runnung_processes_;
 	ust::vector</ProcessId/> finished_processes_;

@@ -27,6 +27,7 @@ fn nomangle GetCurrentDirectoryA( DWORD nBufferLength, LPSTR lpBuffer ) unsafe c
 fn nomangle GetCurrentDirectoryW( DWORD nBufferLength, LPWSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
 
 fn nomangle GetCurrentProcess() unsafe call_conv( "system" ) : HANDLE;
+fn nomangle GetCurrentProcessId() unsafe call_conv( "system" ) : DWORD;
 
 fn nomangle GetExitCodeProcess( HANDLE hProcess, LPDWORD lpExitCode ) unsafe call_conv( "system" ) : BOOL;
 
