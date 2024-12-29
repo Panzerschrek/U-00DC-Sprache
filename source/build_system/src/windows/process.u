@@ -91,20 +91,6 @@ public:
 	fn destructor()
 	{
 		unsafe( ::CloseHandle( io_port_ ) );
-
-		// Wait for child processes to finish in case if they were not processed properly before.
-		foreach( &process_ptr : runnung_processes_ )
-		{
-			var Process& process= process_ptr.deref();
-			if( process.process_handle != GetInvalidHandle() )
-			{
-				unsafe( WaitForProcessAndCloseIt( process.process_handle ) );
-			}
-			if( process.pipe_handle != GetInvalidHandle() )
-			{
-				unsafe( CloseHandle( process.pipe_handle ) );
-			}
-		}
 	}
 
 public: // ProcessGroupInterface
@@ -449,6 +435,11 @@ private:
 
 		var bool ok = exit_code == 0u;
 
+		if( !ok )
+		{
+			logger.LogVerbose( ust::concat( "Process exited with code ", ust::to_string8(exit_code), "." ) );
+		}
+
 		( ok ? logger.LogInfo( process.output ) : logger.LogError( process.output ) );
 		return ok;
 	}
@@ -465,6 +456,21 @@ private:
 		ü_OVERLAPPED overlapped;
 		[ byte8, c_buffer_size ] buffer;
 		bool is_reading;
+
+		fn destructor()
+		{
+			// Normally process should be finished before. This code handles error conditions.
+			// Close pipe prior for waiting,
+			// in order to avoid deadlock when child process waits on full pipe and parent process waits for child process.
+			if( pipe_handle != GetInvalidHandle() )
+			{
+				unsafe( CloseHandle( pipe_handle ) );
+			}
+			if( process_handle != GetInvalidHandle() )
+			{
+				unsafe( WaitForProcessAndCloseIt( process_handle ) );
+			}
+		}
 	}
 
 	// Put this structure into a box, because we need stable address.
