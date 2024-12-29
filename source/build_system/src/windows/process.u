@@ -123,6 +123,7 @@ public:
 	{
 		unsafe( ::CloseHandle( io_port_ ) );
 
+		// Wait for child processes to finish in case if they were not processed properly before.
 		foreach( &process_ptr : runnung_processes_ )
 		{
 			var Process& process= process_ptr.deref();
@@ -148,16 +149,16 @@ public: // ProcessGroupInterface
 		ust::string_view8 exe_path,
 		ust::array_view_imut</ust::string8/> command_line ) : bool
 	{
-		auto mut out_process= ust::make_box(
+		auto mut out_process= ust::make_box( unsafe(
 			Process
 			{
 				.id= process_id,
 				.pipe_handle= GetInvalidHandle(),
 				.process_handle= GetInvalidHandle(),
 				.overlapped= zero_init,
-				.buffer= zero_init, // TODO - leave uninitialized.
+				.buffer= uninitialized, // leave uninitialized, since it's costly to initialize it.
 				.is_reading= false,
-			} );
+			} ) );
 
 		// Use global variable for pipes counter - to ensure uniqueness.
 		// Use atomic increment to ensure correct work in multiple threads.
@@ -278,8 +279,7 @@ public: // ProcessGroupInterface
 		// TODO - do we really need to do this here?
 		if(exe_path.size() < 4s || exe_path.subrange_start( exe_path.size() - 4s ) != ".exe" )
 		{
-			auto mut extension = UTF8ToWideString( ".exe" );
-			exe_path_null_terminated.append( extension );
+			exe_path_null_terminated.append( UTF8ToWideString( ".exe" ).iter() );
 		}
 
 		exe_path_null_terminated.push_back( WCHAR(0) );
@@ -302,6 +302,7 @@ public: // ProcessGroupInterface
 
 		command_line_combined.push_back( WCHAR(0) );
 
+		// Setup standard streams redirection for child process.
 		var ü_STARTUPINFOW mut startup_info = zero_init;
 		startup_info.cb = u32( typeinfo</ü_STARTUPINFOA/>.size_of );
 		startup_info.dwFlags = DWORD( STARTF_USESTDHANDLES );
@@ -346,16 +347,17 @@ public: // ProcessGroupInterface
 
 	fn virtual override DoWork( mut this, Logger &mut logger ) : bool
 	{
-		var DWORD mut bytes_read(0);
+		var DWORD mut bytes_read= 0u;
 		var ULONG_PTR mut process_int_ptr= zero_init;
 		var LPOVERLAPPED mut overlapped= zero_init;
 
+		// Wait for reading on one of process pipes is finished.
 		if ( unsafe( ::GetQueuedCompletionStatus(
-				io_port_,
-				$<(bytes_read),
-				$<(process_int_ptr),
-				$<(overlapped),
-				DWORD(INFINITE) ) ) == 0 )
+			io_port_,
+			$<(bytes_read),
+			$<(process_int_ptr),
+			$<(overlapped),
+			DWORD(INFINITE) ) ) == 0 )
 		{
 			auto err= unsafe( ::GetLastError() );
 			if( err != DWORD(ERROR_BROKEN_PIPE) )
@@ -365,13 +367,14 @@ public: // ProcessGroupInterface
 			}
 		}
 
+		// Should obtain completion key for finished operation - in our case process structure raw pointer.
 		var $(Process) process_ptr= unsafe( ust::int_to_ptr</Process/>( process_int_ptr ) );
-
 		if( ust::is_nullptr(process_ptr) )
 		{
 			return true;
 		}
 
+		// Find index in runnung processes vector for obtained pointer. This is necessary to ensure this pointer is valid.
 		var size_type mut index= runnung_processes_.size();
 		for( auto mut i= 0s; i < runnung_processes_.size(); ++i )
 		{
@@ -388,6 +391,7 @@ public: // ProcessGroupInterface
 			return false;
 		}
 
+		// We can now obtain read result and schedule next read.
 		if( !ProcessReadPipe( logger, runnung_processes_[index].deref() ) )
 		{
 			return false;
@@ -427,22 +431,28 @@ public: // ProcessGroupInterface
 private:
 	fn ProcessReadPipe( Logger &mut logger, Process &mut process ) : bool
 	{
+		// Get result for previous read operation.
 		var DWORD mut bytes(0);
 		if ( unsafe( ::GetOverlappedResult( process.pipe_handle, $<( process.overlapped ), $<(bytes), 1 ) ) == 0 )
 		{
 			auto err= unsafe( ::GetLastError() );
 			if( err == DWORD(ERROR_BROKEN_PIPE) )
 			{
+				// Pipe was closed - we are done.
 				unsafe( ::CloseHandle( process.pipe_handle ) );
 				process.pipe_handle= GetInvalidHandle();
 				return true;
 			}
-			logger.LogError( ust::concat( "GetOverlappedResult error: ", ust::to_string8( err ), "\n" ) );
-			return false;
+			else
+			{
+				logger.LogError( ust::concat( "GetOverlappedResult error: ", ust::to_string8( err ), "\n" ) );
+				return false;
+			}
 		}
 
 		if( process.is_reading )
 		{
+			// Extract bytes from buffer if reading was scheduled previously (it's not first call).
 			for( auto mut i= 0u; i < bytes; ++i )
 			{
 				process.output.push_back( char8( process.buffer[i] ) );
@@ -450,6 +460,8 @@ private:
 		}
 
 		process.is_reading= true;
+
+		// Schedule async reading operation.
 		if( unsafe( ::ReadFile(
 			process.pipe_handle,
 			$<( process.buffer[0] ),
@@ -460,11 +472,13 @@ private:
 			auto err= unsafe( ::GetLastError() );
 			if( err == DWORD(ERROR_BROKEN_PIPE) )
 			{
+				// Pipe was closed - we are done.
 				unsafe( ::CloseHandle( process.pipe_handle ) );
 				process.pipe_handle= GetInvalidHandle();
 				return true;
 			}
-			if( err != DWORD(ERROR_IO_PENDING) )
+			else if( err == DWORD(ERROR_IO_PENDING) ) {}
+			else
 			{
 				logger.LogError( ust::concat( "ReadFile error: ", ust::to_string8( err ), "\n" ) );
 				return false;
@@ -504,8 +518,8 @@ private:
 	{
 		ProcessId id;
 		ust::string8 output;
-		HANDLE process_handle;
-		HANDLE pipe_handle;
+		HANDLE process_handle; // INVALID_HANDLE_VALUE if done
+		HANDLE pipe_handle; // INVALID_HANDLE_VALUE if done
 		ü_OVERLAPPED overlapped;
 		[ byte8, c_buffer_size ] buffer;
 		bool is_reading;
