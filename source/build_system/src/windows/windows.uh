@@ -26,6 +26,8 @@ fn nomangle DuplicateHandle( HANDLE hSourceProcessHandle, HANDLE hSourceHandle, 
 fn nomangle GetCurrentDirectoryA( DWORD nBufferLength, LPSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetCurrentDirectoryW( DWORD nBufferLength, LPWSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
 
+fn nomangle GetCurrentProcess() unsafe call_conv( "system" ) : HANDLE;
+
 fn nomangle GetExitCodeProcess( HANDLE hProcess, LPDWORD lpExitCode ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle GetFileAttributesExW( LPCWSTR lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, LPVOID lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
@@ -207,18 +209,25 @@ type ULONG_PTR = size_type;
 type WCHAR = wchar_t;
 type WORD = u16;
 
+auto constexpr ERROR_BROKEN_PIPE = 109;
 auto constexpr ERROR_ALREADY_EXISTS = 183;
+auto constexpr ERROR_IO_PENDING = 997;
+
+auto constexpr DUPLICATE_SAME_ACCESS = 2;
 
 auto constexpr FILE_FLAG_OVERLAPPED = 1073741824;
+auto constexpr FILE_FLAG_SEQUENTIAL_SCAN = 0x08000000;
 
 auto constexpr FILE_SHARE_READ = 1;
-
-auto constexpr INFINITE = -1;
+auto constexpr FILE_SHARE_WRITE = 2;
+auto constexpr FILE_SHARE_DELETE = 4;
 
 auto constexpr GENERIC_READ = 0x80000000u;
 auto constexpr GENERIC_WRITE = 0x40000000u;
 auto constexpr GENERIC_EXECUTE = 0x20000000u;
 auto constexpr GENERIC_ALL = 0x10000000u;
+
+auto constexpr INFINITE = -1;
 
 auto constexpr CREATE_ALWAYS = 2;
 auto constexpr OPEN_EXISTING = 3;
@@ -228,4 +237,4 @@ auto constexpr PIPE_ACCESS_INBOUND = 1;
 auto constexpr PIPE_TYPE_BYTE = 0;
 auto constexpr PIPE_UNLIMITED_INSTANCES = 255;
 
-auto FILE_FLAG_SEQUENTIAL_SCAN = 0x08000000;
+auto constexpr STARTF_USESTDHANDLES = 256;
