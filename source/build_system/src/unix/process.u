@@ -3,6 +3,7 @@ import "/scoped_array.u"
 import "/string_conversions.u"
 import "/vector.u"
 import "../process.uh"
+import "environ.uh"
 import "errno.uh"
 import "unix.uh"
 

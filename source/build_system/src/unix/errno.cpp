@@ -8,10 +8,3 @@ extern "C" int BKGetErrno()
 {
 	return errno;
 }
-
-extern char** environ;
-
-extern "C" char** BKGetEnvironment()
-{
-	return environ;
-}
