@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/stdout.u"
 import "/string_conversions.u"
 import "../process.uh"
@@ -79,13 +80,48 @@ fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_vie
 
 fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
 {
-	ust::ignore_unused(logger);
-	return ust::make_box( ProcessGroup() );
+	auto mut process_group_opt= ProcessGroup::Create( logger );
+	if( process_group_opt.empty() )
+	{
+		return ust::box_nullable</ProcessGroupInterface/>();
+	}
+	return ust::make_box( process_group_opt.try_take() );
 }
 
 class ProcessGroup final : ProcessGroupInterface
 {
 public:
+	fn Create( Logger &mut logger ) : ust::optional</ProcessGroup/>
+	{
+		var HANDLE io_port=
+			unsafe( ::CreateIoCompletionPort(
+				GetInvalidHandle(),
+				ust::nullptr</byte8/>(),
+				ULONG_PTR(0),
+				1u ) );
+
+		if( ust::is_nullptr( io_port ) )
+		{
+			logger.LogError( "Failed to create IO completion port!" );
+			return ust::null_optional;
+		}
+
+		return unsafe( ProcessGroup( io_port ) );
+	}
+
+	fn constructor()= delete;
+
+	// constructor for internal usage
+	fn constructor( HANDLE io_port ) unsafe
+		( io_port_= io_port )
+	{
+		assert( !ust::is_nullptr( io_port_ ) );
+	}
+
+	fn destructor()
+	{
+		unsafe( ::CloseHandle( io_port_ ) );
+	}
 
 public: // ProcessGroupInterface
 	fn virtual override StartProcess(
@@ -125,8 +161,27 @@ public: // ProcessGroupInterface
 	}
 
 private:
+	HANDLE imut io_port_;
 	ust::vector</ProcessId/> finished_processes_;
 }
 
+// Produces INVALID_HANDLE_VALUE.
+fn GetInvalidHandle() : HANDLE
+{
+	static_assert( typeinfo</ size_type />.size_of == typeinfo</HANDLE/>.size_of );
+
+	// Make -1.
+	var size_type mut s(0);
+	--s;
+
+	var HANDLE mut handle= zero_init;
+
+	unsafe( ust::memory_copy(
+		ust::ptr_cast_to_byte8( $<(handle) ),
+		ust::ptr_cast_to_byte8( $<(s) ),
+		typeinfo</ HANDLE />.size_of ) );
+
+	return handle;
+}
 
 } // namespace BK
