@@ -180,6 +180,7 @@ public: // ProcessGroupInterface
 			}
 		}
 
+		// Open pipe for writing and duplicate handle - to pass this writing handle to the child process.
 		var HANDLE mut output_write_child= zero_init;
 		{
 			var HANDLE output_write_handle =
@@ -200,7 +201,7 @@ public: // ProcessGroupInterface
 					current_process_handle,
 					$<(output_write_child),
 					0u,
-					1,
+					1, // Inherit handle.
 					DWORD(DUPLICATE_SAME_ACCESS) ) ) == 0 )
 			{
 				logger.LogError( ust::concat( "Failed to duplicate handle! Error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
