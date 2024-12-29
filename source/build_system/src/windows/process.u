@@ -131,12 +131,40 @@ public: // ProcessGroupInterface
 		ust::string_view8 exe_path,
 		ust::array_view_imut</ust::string8/> command_line ) : bool
 	{
+		// TODO - use global counter.
+		var ust::string8 pipe_name= ust::concat( "\\\\.\\pipe\\BuildSystemProcessPipe_", ust::to_string8(pipe_counter_), "\0" );
+		++pipe_counter_;
+
+		var WideString mut pipe_name_w= UTF8ToWideString( pipe_name );
+
+		var HANDLE pipe =
+			unsafe( ::CreateNamedPipeW(
+				pipe_name_w.data(),
+				DWORD( PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED ),
+				DWORD( PIPE_TYPE_BYTE ),
+				DWORD( PIPE_UNLIMITED_INSTANCES ),
+				0u,
+				0u,
+				u32(INFINITE),
+				ust::nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
+
+		if( pipe == GetInvalidHandle() )
+		{
+			logger.LogError( ust::concat( "Failed to create pipe! Error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+			return false;
+		}
+
 		var bool ok= RunExecutable( logger, exe_path, command_line );
 		if( !ok )
 		{
+			unsafe( ::CloseHandle(pipe) );
 			return false;
 		}
+
 		finished_processes_.push_back( process_id );
+
+		unsafe( ::CloseHandle(pipe) );
+
 		return true;
 	}
 
@@ -162,6 +190,7 @@ public: // ProcessGroupInterface
 
 private:
 	HANDLE imut io_port_;
+	u32 pipe_counter_= 0u;
 	ust::vector</ProcessId/> finished_processes_;
 }
 
