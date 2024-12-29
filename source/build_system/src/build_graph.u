@@ -329,6 +329,13 @@ fn PerformGraphBuild(
 				++num_nodes_to_rebuild;
 			}
 		}
+
+		if( num_nodes_to_rebuild == 0s )
+		{
+			logger.LogInfo( "Nothing to do" );
+			return true;
+		}
+
 		var ust::string8 num_nodes_to_rebuild_str= ust::to_string8(num_nodes_to_rebuild);
 		logger.LogVerbose( ust::concat( "Has ", num_nodes_to_rebuild_str, " nodes to rebuild." ) );
 
