@@ -392,6 +392,10 @@ public: // ProcessGroupInterface
 				return false;
 			}
 			finished_processes_.push_back( id );
+
+			auto last_index= runnung_processes_.size() - 1s;
+			runnung_processes_.swap( index, last_index );
+			runnung_processes_.drop_back();
 		}
 
 		return true;
@@ -408,7 +412,7 @@ public: // ProcessGroupInterface
 
 	fn virtual override GetNumberOfRunningProcesses( mut this ) : size_type
 	{
-		return 0s;
+		return runnung_processes_.size();
 	}
 
 private:
