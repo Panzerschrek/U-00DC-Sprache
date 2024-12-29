@@ -11,37 +11,12 @@ namespace BK
 
 fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool
 {
-	var WideString exe_path_wide = UTF8ToWideString( exe_path );
+	var WideString exe_path_wide = CorrectExecutablePathAndMakeItWide( exe_path );
 
 	var WideString mut exe_path_null_terminated = exe_path_wide;
-
-	// Append exe if necessary.
-	// TODO - do we really need to do this here?
-	if(exe_path.size() < 4s || exe_path.subrange_start( exe_path.size() - 4s ) != ".exe" )
-	{
-		auto mut extension = UTF8ToWideString( ".exe" );
-		exe_path_null_terminated.append( extension );
-	}
-
 	exe_path_null_terminated.push_back( WCHAR(0) );
 
-	var WideString space = UTF8ToWideString( " " );
-	var WideString quote = UTF8ToWideString( "\"" );
-
-	var WideString mut command_line_combined;
-	command_line_combined.append( quote.iter() );
-	command_line_combined.append( exe_path_wide.iter() ); // Repeat exe path in command line - it's necessary to fill argv[0]
-	command_line_combined.append( quote.iter() );
-
-	foreach( &arg : command_line )
-	{
-		command_line_combined.append( space.iter() );
-		command_line_combined.append( quote.iter() );
-		command_line_combined.append( UTF8ToWideString( arg ).iter() );
-		command_line_combined.append( quote.iter() );
-	}
-
-	command_line_combined.push_back( WCHAR(0) );
+	var WideString mut command_line_combined= ConstructCommandLineNullTerminated( exe_path_wide, command_line );
 
 	var ü_STARTUPINFOW mut startup_info = zero_init;
 	startup_info.cb = u32( typeinfo</ü_STARTUPINFOA/>.size_of );
@@ -66,17 +41,10 @@ fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_vie
 		return false;
 	}
 
-	// TODO - check if waiting fails.
-	unsafe( WaitForSingleObject( process_information.hProcess, u32(INFINITE) ) );
-
-	var DWORD mut exit_code = 100u;
-	// TODO - check if retrieving exit code fails.
-	unsafe( GetExitCodeProcess( process_information.hProcess, $<(exit_code) ) );
-
-	unsafe( CloseHandle( process_information.hProcess ) );
+	// Close unused handle.
 	unsafe( CloseHandle( process_information.hThread ) );
 
-	return exit_code == 0u;
+	return unsafe( WaitForProcessAndCloseIt( process_information.hProcess ) ) == 0u;
 }
 
 fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
@@ -127,13 +95,10 @@ public:
 		foreach( &process_ptr : runnung_processes_ )
 		{
 			var Process& process= process_ptr.deref();
-
 			if( process.process_handle != GetInvalidHandle() )
 			{
-				unsafe( WaitForSingleObject( process.process_handle, u32(INFINITE) ) );
-				unsafe( CloseHandle( process.process_handle ) );
+				unsafe( WaitForProcessAndCloseIt( process.process_handle ) );
 			}
-
 			if( process.pipe_handle != GetInvalidHandle() )
 			{
 				unsafe( CloseHandle( process.pipe_handle ) );
@@ -271,36 +236,12 @@ public: // ProcessGroupInterface
 			return false;
 		}
 
-		var WideString exe_path_wide = UTF8ToWideString( exe_path );
+		var WideString exe_path_wide = CorrectExecutablePathAndMakeItWide( exe_path );
 
 		var WideString mut exe_path_null_terminated = exe_path_wide;
-
-		// Append exe if necessary.
-		// TODO - do we really need to do this here?
-		if(exe_path.size() < 4s || exe_path.subrange_start( exe_path.size() - 4s ) != ".exe" )
-		{
-			exe_path_null_terminated.append( UTF8ToWideString( ".exe" ).iter() );
-		}
-
 		exe_path_null_terminated.push_back( WCHAR(0) );
 
-		var WideString space = UTF8ToWideString( " " );
-		var WideString quote = UTF8ToWideString( "\"" );
-
-		var WideString mut command_line_combined;
-		command_line_combined.append( quote.iter() );
-		command_line_combined.append( exe_path_wide.iter() ); // Repeat exe path in command line - it's necessary to fill argv[0]
-		command_line_combined.append( quote.iter() );
-
-		foreach( &arg : command_line )
-		{
-			command_line_combined.append( space.iter() );
-			command_line_combined.append( quote.iter() );
-			command_line_combined.append( UTF8ToWideString( arg ).iter() );
-			command_line_combined.append( quote.iter() );
-		}
-
-		command_line_combined.push_back( WCHAR(0) );
+		var WideString mut command_line_combined= ConstructCommandLineNullTerminated( exe_path_wide, command_line );
 
 		// Setup standard streams redirection for child process.
 		var ü_STARTUPINFOW mut startup_info = zero_init;
@@ -495,14 +436,7 @@ private:
 
 	fn ProcessFinish( Logger &mut logger, Process &mut process ) : bool
 	{
-		// TODO - check waiting is correct.
-		unsafe( WaitForSingleObject( process.process_handle, u32(INFINITE) ) );
-
-		var DWORD mut exit_code = 100u;
-		// TODO - check if retrieving exit code fails.
-		unsafe( GetExitCodeProcess( process.process_handle, $<(exit_code) ) );
-
-		unsafe( ::CloseHandle( process.process_handle ) );
+		var DWORD exit_code= unsafe( WaitForProcessAndCloseIt( process.process_handle ) );
 		process.process_handle= GetInvalidHandle();
 
 		var bool ok = exit_code == 0u;
@@ -538,6 +472,55 @@ private:
 
 	ust::vector</ProcessPtr/> runnung_processes_;
 	ust::vector</ProcessId/> finished_processes_;
+}
+
+fn CorrectExecutablePathAndMakeItWide( ust::string_view8 exe_path ) : WideString
+{
+	var WideString mut exe_path_wide = UTF8ToWideString( exe_path );
+
+	if(exe_path.size() < 4s || exe_path.subrange_start( exe_path.size() - 4s ) != ".exe" )
+	{
+		exe_path_wide.append( UTF8ToWideString( ".exe" ).iter() );
+	}
+	return exe_path_wide;
+}
+
+fn ConstructCommandLineNullTerminated(
+	WideStringView exe_path,
+	ust::array_view_imut</ust::string8/> command_line ) : WideString
+{
+	var WideString space = UTF8ToWideString( " " );
+	var WideString quote = UTF8ToWideString( "\"" );
+
+	var WideString mut command_line_combined;
+	command_line_combined.append( quote.iter() );
+	command_line_combined.append( exe_path.iter() ); // Repeat exe path in command line - it's necessary to fill argv[0]
+	command_line_combined.append( quote.iter() );
+
+	foreach( &arg : command_line )
+	{
+		command_line_combined.append( space.iter() );
+		command_line_combined.append( quote.iter() );
+		command_line_combined.append( UTF8ToWideString( arg ).iter() );
+		command_line_combined.append( quote.iter() );
+	}
+
+	command_line_combined.push_back( WCHAR(0) );
+
+	return command_line_combined;
+}
+
+fn WaitForProcessAndCloseIt( HANDLE process_handle ) unsafe : DWORD
+{
+	// TODO - check if wait fails.
+	unsafe( WaitForSingleObject( process_handle, u32(INFINITE) ) );
+
+	var DWORD mut exit_code = 100u;
+	// TODO - check if retrieving exit code fails.
+	unsafe( GetExitCodeProcess( process_handle, $<(exit_code) ) );
+
+	unsafe( ::CloseHandle( process_handle ) );
+	return exit_code;
 }
 
 // Produces INVALID_HANDLE_VALUE.
