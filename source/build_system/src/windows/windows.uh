@@ -3,6 +3,8 @@
 
 fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
 
+fn nomangle ConnectNamedPipe( HANDLE hNamedPipe, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
+
 fn nomangle CopyFileW( LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, BOOL bFailIfExists ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle CreateDirectoryA( LPCSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : BOOL;
@@ -11,8 +13,15 @@ fn nomangle CreateDirectoryW( LPCWSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecuri
 fn nomangle CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
 
+fn nomangle CreateIoCompletionPort( HANDLE FileHandle, HANDLE ExistingCompletionPort, ULONG_PTR CompletionKey, DWORD NumberOfConcurrentThreads ) unsafe call_conv( "system" ) : HANDLE;
+
+fn nomangle CreateNamedPipeA( LPCSTR lpName, DWORD dwOpenMode, DWORD dwPipeMode, DWORD nMaxInstances, DWORD nOutBufferSize, DWORD nInBufferSize, DWORD nDefaultTimeOut, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : HANDLE;
+fn nomangle CreateNamedPipeW( LPCWSTR lpName, DWORD dwOpenMode, DWORD dwPipeMode, DWORD nMaxInstances, DWORD nOutBufferSize, DWORD nInBufferSize, DWORD nDefaultTimeOut, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : HANDLE;
+
 fn nomangle CreateProcessA( LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle CreateProcessW( LPCWSTR lpApplicationName, LPWSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCWSTR lpCurrentDirectory, LPSTARTUPINFOW lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation ) unsafe call_conv( "system" ) : BOOL;
+
+fn nomangle DuplicateHandle( HANDLE hSourceProcessHandle, HANDLE hSourceHandle, HANDLE hTargetProcessHandle, LPHANDLE lpTargetHandle, DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwOptions ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle GetCurrentDirectoryA( DWORD nBufferLength, LPSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetCurrentDirectoryW( DWORD nBufferLength, LPWSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
@@ -25,7 +34,11 @@ fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call
 
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
 
+fn nomangle GetOverlappedResult( HANDLE hFile, LPOVERLAPPED lpOverlapped, LPDWORD lpNumberOfBytesTransferred, BOOL bWait ) unsafe call_conv( "system" ) : BOOL;
+
 fn nomangle GetProcAddress( HMODULE hModule, LPCSTR lpProcName ) unsafe call_conv( "system" ) : $(byte8);
+
+fn nomangle GetQueuedCompletionStatus( HANDLE CompletionPort, LPDWORD lpNumberOfBytesTransferred, PULONG_PTR lpCompletionKey, $(LPOVERLAPPED) lpOverlapped, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle GetSystemInfo( LPSYSTEM_INFO lpSystemInfo ) unsafe call_conv( "system" ) : void;
 
@@ -62,8 +75,16 @@ struct ü_LARGE_INTEGER ordered
 
 struct ü_OVERLAPPED ordered
 {
-	// For now disable it.
-	fn constructor() = delete;
+	ULONG_PTR Internal;
+	ULONG_PTR InternalHigh;
+
+	struct ü_anon_record_190 ordered
+	{
+		[ byte32, 2 ] union_contents;
+	}
+	ü_anon_record_190 ü_anon_field_636;
+
+	HANDLE hEvent;
 }
 
 struct ü_PROCESS_INFORMATION ordered
@@ -165,11 +186,12 @@ type HANDLE = $(byte8);
 type HINSTANCE = $(HINSTANCE__);
 type HMODULE = HINSTANCE;
 type LARGE_INTEGER = ü_LARGE_INTEGER;
+type LPBYTE = $(BYTE);
 type LPCSTR = $(CHAR);
 type LPCVOID = $(byte8);
 type LPCWSTR = $(WCHAR);
-type LPBYTE = $(BYTE);
 type LPDWORD = $(DWORD);
+type LPHANDLE = $(HANDLE);
 type LPOVERLAPPED = $(ü_OVERLAPPED);
 type LPPROCESS_INFORMATION = $(ü_PROCESS_INFORMATION);
 type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
@@ -180,6 +202,7 @@ type LPSYSTEM_INFO = $(ü_SYSTEM_INFO);
 type LPVOID = $(byte8);
 type LPWSTR = $(WCHAR);
 type PLARGE_INTEGER = $(LARGE_INTEGER);
+type PULONG_PTR = $(ULONG_PTR);
 type ULONG_PTR = size_type;
 type WCHAR = wchar_t;
 type WORD = u16;
