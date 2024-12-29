@@ -99,7 +99,7 @@ public:
 		var pid_t mut pid= zero_init;
 
 		auto spawn_res =
-			unsafe( ::posix_spawn(
+			unsafe( ::posix_spawnp(
 				$<(pid),
 				exe_path_null_terminated.data(),
 				$<(file_actions),

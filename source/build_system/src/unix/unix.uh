@@ -17,6 +17,7 @@ fn nomangle posix_spawn_file_actions_init( $(posix_spawn_file_actions_t) ü__fil
 fn nomangle posix_spawnattr_destroy( $(posix_spawnattr_t) ü__attr ) unsafe : i32;
 fn nomangle posix_spawnattr_init( $(posix_spawnattr_t) ü__attr ) unsafe : i32;
 fn nomangle posix_spawnattr_setflags( $(posix_spawnattr_t) ü_attr, i16 ü__flags ) unsafe : i32;
+fn nomangle posix_spawnp( $(pid_t) ü__pid, $(char8) ü__file, $(posix_spawn_file_actions_t) ü__file_actions, $(posix_spawnattr_t) ü__attrp, $($(char8)) ü__argv, $($(char8)) ü__envp ) unsafe : i32;
 fn nomangle ppoll( $(pollfd) ü__fds, nfds_t ü__nfds, $(timespec) ü__timeout, $(ü__sigset_t) ü__ss ) unsafe : i32;
 fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe : ssize_t;
 fn nomangle sendfile( i32 ü__out_fd, i32 ü__in_fd, $(off_t) ü__offset, size_t ü__count ) unsafe : ssize_t;
