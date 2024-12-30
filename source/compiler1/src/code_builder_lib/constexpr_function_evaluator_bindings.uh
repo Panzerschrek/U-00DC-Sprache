@@ -1,4 +1,4 @@
-import "llvm.uh"
+import "llvm_ext.uh"
 
 // If this file changed, "constexpr_function_evaluator_bindings.cpp" must be changed too!
 

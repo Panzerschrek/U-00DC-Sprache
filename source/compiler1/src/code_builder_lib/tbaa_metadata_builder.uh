@@ -1,4 +1,4 @@
-import "llvm.uh"
+import "llvm_ext.uh"
 import "mangling.uh"
 import "structs_combined.uh"
 

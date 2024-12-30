@@ -1,4 +1,4 @@
-import "llvm.uh"
+import "../../imports/llvm.uh"
 
 // This file contains some helper functions for LLVM structures manipulations, implementing, using C++.
 // If this file changed, "llvm_ext.cpp" must be changed too!
