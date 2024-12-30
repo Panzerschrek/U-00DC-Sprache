@@ -1,3 +1,4 @@
+import "../../imports/mangling_scheme.uh"
 import "../lex_synt_lib/source_graph.uh"
 import "/code_builder_errors.uh"
 import "constexpr_function_evaluator.uh"
@@ -12,15 +13,6 @@ namespace U1
 
 type GlobalThingsStack= ust::vector</NamesScopeValue/>;
 type GlobalThingsStackPtr= ust::shared_ptr_mut</GlobalThingsStack/>;
-
-// This enum must match same enum in Compiler0 code!
-enum ManglingScheme
-{
-	ItaniumABI,
-	MSVC, // Auto-select 32-bit or 64-bit scheme.
-	MSVC32,
-	MSVC64,
-}
 
 struct CodeBuilderOptions
 {

@@ -1,0 +1,13 @@
+namespace U1
+{
+
+// This enum must match same enum in Compiler0 code!
+enum ManglingScheme
+{
+	ItaniumABI,
+	MSVC, // Auto-select 32-bit or 64-bit scheme.
+	MSVC32,
+	MSVC64,
+}
+
+} // namespace U1
