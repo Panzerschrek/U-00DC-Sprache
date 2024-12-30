@@ -1,5 +1,5 @@
 import "/sort.u"
-import "/keywords.uh"
+import "/CodeBuilderLib/keywords.uh"
 import "error_reporting.uh"
 
 namespace U1

@@ -2,17 +2,93 @@ import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
-	ust::ignore_unused( build_system_interface );
+	auto& lib_name= "CodeBuilderLib";
+
+	auto& keywords_file= "keywords.uh";
+
+	var ust::string8 mut keywords_generated_file=
+		ust::concat(
+			build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( lib_name ),
+			"/",
+			keywords_file );
+
+	var BK::CustomBuildStep mut keywords_step
+	{
+		.output_files= ust::make_array( keywords_generated_file ),
+		.command=
+			BK::CustomBuildStep::GenerateFileCommand
+			{
+				.destination_path= move(keywords_generated_file),
+				.contents= CreateKeywordsHeaderFileContents()
+			},
+	};
 
 	var BK::BuildTarget mut target
 	{
 		.target_type = BK::BuildTargetType::ObjectFile,
-		.name= "CodeBuilderLib",
+		.name= lib_name,
 		.public_include_directories= ust::make_array</ust::string8/>( "imports" ),
+		.generated_private_header_files= ust::make_array</ust::string8/>( keywords_file ),
 	};
+
 	target.source_files.push_back( "src/launchers_common/funcs_u.u" );
 	target.source_files.push_back( "src/lex_synt_lib/source_graph.u" );
+	target.source_files.push_back( "src/lex_synt_lib/syntax_analyzer.u" );
 	target.source_files.push_back( "src/code_builder_lib/code_builder.u" );
 
-	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(target) ),
+		.custom_build_steps= ust::make_array( move(keywords_step) ),
+	};
+}
+
+fn CreateKeywordsHeaderFileContents() : ust::string8
+{
+	var ust::string8 mut contents;
+	contents+= "import \"/string.u\"\n\n";
+	contents+= "namespace U1\n{\n\n";
+
+	contents+= "enum Keyword\n{\n";
+
+	foreach( &keyword : GetKeywordsList() )
+	{
+		contents+= "\t";
+		contents+= keyword;
+		contents+= "_";
+		contents+= ",\n";
+	}
+
+	contents+= "}\n\n";
+
+	contents+= "} // namespace U1\n";
+
+	return contents;
+}
+
+fn GetKeywordsList() : ust::vector</ust::string8/>
+{
+	var ust::string_view8 keywords_list= embed</char8/>( "keywords_list.txt" );
+
+	var ust::vector</ust::string8/> mut out_keywords;
+
+	var size_type mut word_start= 0s;
+	for( auto mut i= 0s; i < keywords_list.size(); ++i )
+	{
+		var char8 c= keywords_list[i];
+		if( c == "\n"c8 || c == "\r"c8 )
+		{
+			if( i - word_start > 1s )
+			{
+				out_keywords.push_back( keywords_list.subrange( word_start, i ) );
+			}
+			word_start= i + 1s;
+		}
+	}
+	if( keywords_list.size() - word_start > 1s )
+	{
+		out_keywords.push_back( keywords_list.subrange_start( word_start ) );
+	}
+
+	return out_keywords;
 }

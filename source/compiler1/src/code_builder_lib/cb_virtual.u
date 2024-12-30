@@ -1,4 +1,4 @@
-import "/keywords.uh"
+import "/CodeBuilderLib/keywords.uh"
 import "/sort.u"
 import "error_reporting.uh"
 import "code_builder.uh"

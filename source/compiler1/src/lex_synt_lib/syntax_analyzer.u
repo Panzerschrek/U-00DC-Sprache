@@ -2,7 +2,7 @@ import "/assert.u"
 import "/shared_ptr.u"
 import "/string_conversions.u"
 import "/unordered_set.u"
-import "/keywords.uh"
+import "/CodeBuilderLib/keywords.uh"
 import "syntax_analyzer.uh"
 
 namespace U1

@@ -1,7 +1,7 @@
 import "/assert.u"
 import "/helpers.u"
 import "/scoped_array.u"
-import "/keywords.uh"
+import "/CodeBuilderLib/keywords.uh"
 import "../lex_synt_lib/program_string.uh"
 import "error_reporting.uh"
 import "source_file_contents_hash_wrapper.uh"

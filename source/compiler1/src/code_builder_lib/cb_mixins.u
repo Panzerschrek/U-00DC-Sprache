@@ -1,4 +1,4 @@
-import "/keywords.uh"
+import "/CodeBuilderLib/keywords.uh"
 import "../lex_synt_lib/lexical_analyzer.uh"
 import "../lex_synt_lib/syntax_analyzer.uh"
 import "error_reporting.uh"

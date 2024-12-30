@@ -198,7 +198,9 @@ endif()
 # Generated stuff
 #
 
-file( READ keywords_list.txt KEYWORDS_LIST_CONTENT )
+# Put keywords list inot compiler1, because build system which is used to build it doesn't allow to import files outside root project directory.
+# TODO - fix this, read file in runtime.
+file( READ compiler1/keywords_list.txt KEYWORDS_LIST_CONTENT )
 set( KEYWORDS_LIST_REGEXP "[A-Za-z][A-Za-z0-9_]*" )
 
 #

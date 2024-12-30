@@ -2,7 +2,7 @@ import "/composite.u"
 import "/random_access_range.u"
 import "/string_conversions.u"
 import "/vector.u"
-import "/code_builder_errors.uh"
+import "/CodeBuilderLib/code_builder_errors.uh"
 import "../lex_synt_lib/syntax_analyzer.uh"
 import "structs_combined.uh"
 

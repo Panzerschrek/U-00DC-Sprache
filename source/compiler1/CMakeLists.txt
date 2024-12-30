@@ -1,8 +1,8 @@
 message( STATUS "Build compiler ${NEXT_COMPILER_GENERATION}")
 
 file( GLOB_RECURSE CODE_BUILDER_LIB_CPP_SOURCES "src/*.cpp" )
-file( GLOB_RECURSE CODE_BUILDER_LIB_HEADERS "src/*.uh" )
-file( GLOB_RECURSE CODE_BUILDER_LIB_SOURCES "src/*.u" "imports/*.uh" )
+file( GLOB_RECURSE CODE_BUILDER_LIB_HEADERS "src/*.uh" "imports/*.uh" )
+file( GLOB_RECURSE CODE_BUILDER_LIB_SOURCES "src/*.u" )
 
 if( TARGET BuildSystem AND ${NEXT_COMPILER_GENERATION} STREQUAL "2" )
 
@@ -75,7 +75,7 @@ else()
 					${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
-					--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
+					--include-dir ${CMAKE_CURRENT_BINARY_DIR}/::CodeBuilderLib
 					# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 					# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
 					--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -99,7 +99,7 @@ else()
 					--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
-					--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
+					--include-dir ${CMAKE_CURRENT_BINARY_DIR}/::CodeBuilderLib
 					# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 					# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
 					--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/

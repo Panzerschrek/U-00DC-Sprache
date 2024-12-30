@@ -1,4 +1,4 @@
-import "/keywords.uh"
+import "/CodeBuilderLib/keywords.uh"
 
 namespace U1
 {

@@ -2,7 +2,7 @@ import "/assert.u"
 import "/helpers.u"
 import "/sort.u"
 import "/string_conversions.u"
-import "/keywords.uh"
+import "/CodeBuilderLib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
 

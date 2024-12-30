@@ -8,7 +8,7 @@ import "../lex_synt_lib/syntax_elements.uh"
 import "lang_types.uh"
 import "llvm_ext.uh"
 import "mixins.uh"
-import "/code_builder_errors.uh"
+import "/CodeBuilderLib/code_builder_errors.uh"
 
 /*
 
