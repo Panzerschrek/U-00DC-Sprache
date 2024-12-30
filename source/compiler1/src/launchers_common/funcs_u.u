@@ -3,7 +3,7 @@ import "/string_conversions.u"
 import "../lex_synt_lib/source_graph.uh"
 import "../code_builder_lib/code_builder.uh"
 import "../code_builder_lib/source_file_contents_hash_wrapper.uh"
-import "../imports/funcs_u.uh"
+import "../../imports/funcs_u.uh"
 
 fn nomangle U1_BuildProgram(
 	U1_StringView& program_text,

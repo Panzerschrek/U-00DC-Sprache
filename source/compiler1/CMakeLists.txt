@@ -41,13 +41,11 @@ function( CompileUSource u_source_file out_object )
 				--verify-module
 				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
-				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
+				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
 				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 				# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
-				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib
-				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib
-				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/launchers_common
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/src
 				--source-dir ${CMAKE_CURRENT_BINARY_DIR}/
 			${DEPFILE_OPTION}
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.bc:", but launches custom command in current binary directory
@@ -67,13 +65,11 @@ function( CompileUSource u_source_file out_object )
 				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 				--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
-				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
+				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
 				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 				# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
-				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/code_builder_lib
-				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/lex_synt_lib
-				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/launchers_common
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
 				--source-dir ${CMAKE_CURRENT_BINARY_DIR}/
 			${DEPFILE_OPTION}
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
@@ -117,7 +113,7 @@ string(
 	ERROR_CODE_TO_STRING_LIST
 	${ERRORS_LIST_CONTENT} )
 
-configure_file( code_builder_lib/code_builder_errors.uh.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
+configure_file( src/code_builder_lib/code_builder_errors.uh.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
 
 #
 # CodeBuilderLib
@@ -130,16 +126,16 @@ string(
 	KEYWORDS_LIST
 	${KEYWORDS_LIST_CONTENT} )
 
-configure_file( lex_synt_lib/keywords.uh.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.uh )
+configure_file( src/lex_synt_lib/keywords.uh.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.uh )
 
 set( CODE_BUILDER_LIB_HEADERS_GENERATED
 	${CMAKE_CURRENT_BINARY_DIR}/keywords.uh
 	${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh
 	)
 
-file( GLOB CODE_BUILDER_LIB_CPP_SOURCES "code_builder_lib/*.cpp" "launchers_common/*.cpp" )
-file( GLOB CODE_BUILDER_LIB_HEADERS "lex_synt_lib/*.uh" "code_builder_lib/*.uh" "launchers_common/*.uh" )
-file( GLOB CODE_BUILDER_LIB_SOURCES "lex_synt_lib/*.u" "code_builder_lib/*.u" "launchers_common/*.u" )
+file( GLOB_RECURSE CODE_BUILDER_LIB_CPP_SOURCES "src/*.cpp" )
+file( GLOB_RECURSE CODE_BUILDER_LIB_HEADERS "src/*.uh" )
+file( GLOB_RECURSE CODE_BUILDER_LIB_SOURCES "src/*.u" )
 
 CompileUSources( CODE_BUILDER_LIB_SOURCES CODE_BUILDER_LIB_OBJECTS )
 

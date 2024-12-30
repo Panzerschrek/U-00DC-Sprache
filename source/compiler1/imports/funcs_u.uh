@@ -1,4 +1,4 @@
-import "../code_builder_lib/code_builder.uh"
+import "../src/code_builder_lib/code_builder.uh"
 
 // If contents of this file changed, funcs_c.hpp must be changed too!
 

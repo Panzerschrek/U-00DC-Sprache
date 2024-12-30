@@ -1,6 +1,6 @@
 // If this file changed, "constexpr_function_evaluator_bindings.uh" must be changed too!
 
-#include "../../code_builder_lib_common/interpreter.hpp"
+#include "../../../code_builder_lib_common/interpreter.hpp"
 
 extern "C"
 {

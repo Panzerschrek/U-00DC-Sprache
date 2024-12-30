@@ -1,4 +1,4 @@
-#include "../../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../../../code_builder_lib_common/source_file_contents_hash.hpp"
 
 // If contents of this file changed, source_file_contents_hash_wrapper.uh must be changed too!
 
