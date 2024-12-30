@@ -126,6 +126,10 @@ public:
 		// Close pipe write end in parent process - it's unnecessary.
 		unsafe( ::close( pipe_write_end ) );
 
+		// Prevent our pipe handle to be inherited in child processes created later.
+		// This is necessary to prevent deadlocks.
+		unsafe( ::fcntl( pipe_read_end, F_SETFD, FD_CLOEXEC ) );
+
 		return unsafe( Process( id, pid, pipe_read_end ) );
 	}
 
