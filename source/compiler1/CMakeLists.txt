@@ -123,9 +123,6 @@ configure_file( code_builder_lib/code_builder_errors.uh.in ${CMAKE_CURRENT_BINAR
 # CodeBuilderLib
 #
 
-# Combine together lexical/syntaxis analyzer lib and code builder to speed up build.
-# Add also some files, needed by tests
-
 string(
 	REGEX REPLACE
 	${KEYWORDS_LIST_REGEXP}
@@ -135,24 +132,16 @@ string(
 
 configure_file( lex_synt_lib/keywords.uh.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.uh )
 
-file( GLOB LEX_SYNT_LIB_HEADERS "lex_synt_lib/*.uh" )
-file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*.u" )
-set( LEX_SYNT_LIB_SOURCES_GENERATED
+set( CODE_BUILDER_LIB_HEADERS_GENERATED
 	${CMAKE_CURRENT_BINARY_DIR}/keywords.uh
+	${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh
 	)
-CompileUSources( LEX_SYNT_LIB_SOURCES LEX_SYNT_LIB_OBJECTS )
 
-file( GLOB CODE_BUILDER_LIB_HEADERS "code_builder_lib/*.uh" )
-file( GLOB CODE_BUILDER_LIB_SOURCES "code_builder_lib/*.u" )
-file( GLOB CODE_BUILDER_LIB_CPP_SOURCES "code_builder_lib/*.cpp" )
-set( CODE_BUILDER_LIB_HEADERS ${CODE_BUILDER_LIB_HEADERS} ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
+file( GLOB CODE_BUILDER_LIB_CPP_SOURCES "code_builder_lib/*.cpp" "launchers_common/*.cpp" )
+file( GLOB CODE_BUILDER_LIB_HEADERS "lex_synt_lib/*.uh" "code_builder_lib/*.uh" "launchers_common/*.uh" )
+file( GLOB CODE_BUILDER_LIB_SOURCES "lex_synt_lib/*.u" "code_builder_lib/*.u" "launchers_common/*.u" )
+
 CompileUSources( CODE_BUILDER_LIB_SOURCES CODE_BUILDER_LIB_OBJECTS )
-
-file( GLOB LAUNCHERS_COMMON_HEADERS "launchers_common/*.uh" )
-file( GLOB LAUNCHERS_COMMON_SOURCES "launchers_common/*.u" )
-file( GLOB LAUNCHERS_COMMON_CPP_SOURCES "launchers_common/*.cpp" )
-file( GLOB LAUNCHERS_COMMON_CPP_HEADERS "launchers_common/*.hpp" )
-CompileUSources( LAUNCHERS_COMMON_SOURCES LAUNCHERS_COMMON_OBJECTS )
 
 if( COMPILER1_LTO )
 	set( CODE_BUILDER_LIB_BC ${CMAKE_CURRENT_BINARY_DIR}/CodeBuilderLib.bc )
@@ -160,12 +149,10 @@ if( COMPILER1_LTO )
 
 	add_custom_command(
 		OUTPUT ${CODE_BUILDER_LIB_O}
-		DEPENDS ${LEX_SYNT_LIB_OBJECTS}
 		DEPENDS ${CODE_BUILDER_LIB_OBJECTS}
-		DEPENDS ${LAUNCHERS_COMMON_OBJECTS}
 		COMMAND
 			Compiler${CURRENT_COMPILER_GENERATION}
-			${LEX_SYNT_LIB_OBJECTS} ${CODE_BUILDER_LIB_OBJECTS} ${LAUNCHERS_COMMON_OBJECTS}
+			${CODE_BUILDER_LIB_OBJECTS}
 			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 			-o ${CODE_BUILDER_LIB_O}
 			--input-filetype=bc
@@ -178,35 +165,19 @@ if( COMPILER1_LTO )
 	add_library(
 		CodeBuilderLib${NEXT_COMPILER_GENERATION}
 			${CODE_BUILDER_LIB_O}
-			${LEX_SYNT_LIB_HEADERS}
-			${LEX_SYNT_LIB_SOURCES}
-			${LEX_SYNT_LIB_SOURCES_GENERATED}
-			${LEX_SYNT_LIB_OBJECTS}
+			${CODE_BUILDER_LIB_CPP_SOURCES}
+			${CODE_BUILDER_LIB_HEADERS_GENERATED}
 			${CODE_BUILDER_LIB_HEADERS}
 			${CODE_BUILDER_LIB_SOURCES}
-			${CODE_BUILDER_LIB_CPP_SOURCES}
-			${LAUNCHERS_COMMON_CPP_SOURCES}
-			${LAUNCHERS_COMMON_CPP_HEADERS}
-			${LAUNCHERS_COMMON_SOURCES}
-			${LAUNCHERS_COMMON_HEADERS}
-			${LAUNCHERS_COMMON_OBJECTS}
 		)
 else()
 	add_library(
 		CodeBuilderLib${NEXT_COMPILER_GENERATION}
-			${LEX_SYNT_LIB_HEADERS}
-			${LEX_SYNT_LIB_SOURCES}
-			${LEX_SYNT_LIB_SOURCES_GENERATED}
-			${LEX_SYNT_LIB_OBJECTS}
+			${CODE_BUILDER_LIB_OBJECTS}
 			${CODE_BUILDER_LIB_CPP_SOURCES}
+			${CODE_BUILDER_LIB_HEADERS_GENERATED}
 			${CODE_BUILDER_LIB_HEADERS}
 			${CODE_BUILDER_LIB_SOURCES}
-			${CODE_BUILDER_LIB_OBJECTS}
-			${LAUNCHERS_COMMON_CPP_SOURCES}
-			${LAUNCHERS_COMMON_CPP_HEADERS}
-			${LAUNCHERS_COMMON_SOURCES}
-			${LAUNCHERS_COMMON_HEADERS}
-			${LAUNCHERS_COMMON_OBJECTS}
 		)
 endif()
 target_link_libraries( CodeBuilderLib${NEXT_COMPILER_GENERATION} LexSyntLibCommon CodeBuilderLibCommon )
