@@ -1,0 +1,126 @@
+import "/CodeBuilderLib/keywords.uh"
+import "lang_types.uh"
+
+namespace U1
+{
+
+fn IsUnsignedInteger( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::u8_  ||
+		t == U_FundamentalType::u16_ ||
+		t == U_FundamentalType::u32_ ||
+		t == U_FundamentalType::u64_ ||
+		t == U_FundamentalType::u128_ ||
+		t == U_FundamentalType::size_type_;
+}
+
+fn IsSignedInteger( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::i8_  ||
+		t == U_FundamentalType::i16_ ||
+		t == U_FundamentalType::i32_ ||
+		t == U_FundamentalType::i64_ ||
+		t == U_FundamentalType::i128_ ||
+		t == U_FundamentalType::ssize_type_;
+}
+
+fn IsInteger( U_FundamentalType t ) : bool
+{
+	return IsSignedInteger( t ) || IsUnsignedInteger( t );
+}
+
+fn IsFloatingPoint( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::f32_ ||
+		t == U_FundamentalType::f64_;
+}
+
+fn IsNumericType( U_FundamentalType t ) : bool
+{
+	return IsInteger( t ) || IsFloatingPoint( t );
+}
+
+fn IsChar( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::char8_  ||
+		t == U_FundamentalType::char16_ ||
+		t == U_FundamentalType::char32_;
+}
+
+fn IsByte( U_FundamentalType t ) : bool
+{
+	return
+		t == U_FundamentalType::byte8_  ||
+		t == U_FundamentalType::byte16_ ||
+		t == U_FundamentalType::byte32_ ||
+		t == U_FundamentalType::byte64_ ||
+		t == U_FundamentalType::byte128_;
+}
+
+fn GetFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
+{
+	switch(t)
+	{
+		U_FundamentalType::InvalidType	-> { return "invalid_type"; },
+		U_FundamentalType::void_		-> { return KeywordToString( Keyword::void_	); },
+		U_FundamentalType::bool_		-> { return KeywordToString( Keyword::bool_	); },
+		U_FundamentalType::i8_			-> { return KeywordToString( Keyword::i8_	); },
+		U_FundamentalType::u8_			-> { return KeywordToString( Keyword::u8_	); },
+		U_FundamentalType::i16_		-> { return KeywordToString( Keyword::i16_	); },
+		U_FundamentalType::u16_		-> { return KeywordToString( Keyword::u16_	); },
+		U_FundamentalType::i32_		-> { return KeywordToString( Keyword::i32_	); },
+		U_FundamentalType::u32_		-> { return KeywordToString( Keyword::u32_	); },
+		U_FundamentalType::i64_		-> { return KeywordToString( Keyword::i64_	); },
+		U_FundamentalType::u64_		-> { return KeywordToString( Keyword::u64_	); },
+		U_FundamentalType::i128_	-> { return KeywordToString( Keyword::i128_	); },
+		U_FundamentalType::u128_	-> { return KeywordToString( Keyword::u128_	); },
+		U_FundamentalType::ssize_type_-> { return KeywordToString( Keyword::ssize_type_ ); },
+		U_FundamentalType::size_type_ -> { return KeywordToString( Keyword::size_type_  ); },
+		U_FundamentalType::f32_		-> { return KeywordToString( Keyword::f32_	); },
+		U_FundamentalType::f64_		-> { return KeywordToString( Keyword::f64_	); },
+		U_FundamentalType::char8_	-> { return KeywordToString( Keyword::char8_ ); },
+		U_FundamentalType::char16_	-> { return KeywordToString( Keyword::char16_); },
+		U_FundamentalType::char32_	-> { return KeywordToString( Keyword::char32_); },
+		U_FundamentalType::byte8_	-> { return KeywordToString( Keyword::byte8_	); },
+		U_FundamentalType::byte16_	-> { return KeywordToString( Keyword::byte16_	); },
+		U_FundamentalType::byte32_	-> { return KeywordToString( Keyword::byte32_	); },
+		U_FundamentalType::byte64_	-> { return KeywordToString( Keyword::byte64_	); },
+		U_FundamentalType::byte128_	-> { return KeywordToString( Keyword::byte128_	); },
+	}
+}
+
+fn GetFundamentalTypeByName( ust::string_view8 name ) : U_FundamentalType
+{
+	if( name == KeywordToString( Keyword::void_ ) ) { return U_FundamentalType::void_; }
+	if( name == KeywordToString( Keyword::bool_ ) ) { return U_FundamentalType::bool_; }
+	if( name == KeywordToString( Keyword::i8_   ) ) { return U_FundamentalType::i8_  ; }
+	if( name == KeywordToString( Keyword::u8_   ) ) { return U_FundamentalType::u8_  ; }
+	if( name == KeywordToString( Keyword::i16_  ) ) { return U_FundamentalType::i16_ ; }
+	if( name == KeywordToString( Keyword::u16_  ) ) { return U_FundamentalType::u16_ ; }
+	if( name == KeywordToString( Keyword::i32_  ) ) { return U_FundamentalType::i32_ ; }
+	if( name == KeywordToString( Keyword::u32_  ) ) { return U_FundamentalType::u32_ ; }
+	if( name == KeywordToString( Keyword::i64_  ) ) { return U_FundamentalType::i64_ ; }
+	if( name == KeywordToString( Keyword::u64_  ) ) { return U_FundamentalType::u64_ ; }
+	if( name == KeywordToString( Keyword::i128_ ) ) { return U_FundamentalType::i128_; }
+	if( name == KeywordToString( Keyword::u128_ ) ) { return U_FundamentalType::u128_; }
+	if( name == KeywordToString( Keyword::f32_ ) ) { return U_FundamentalType::f32_; }
+	if( name == KeywordToString( Keyword::f64_ ) ) { return U_FundamentalType::f64_; }
+	if( name == KeywordToString( Keyword::ssize_type_ ) ) { return U_FundamentalType::ssize_type_; }
+	if( name == KeywordToString( Keyword::size_type_  ) ) { return U_FundamentalType::size_type_ ; }
+	if( name == KeywordToString( Keyword::char8_  ) ) { return U_FundamentalType::char8_ ; }
+	if( name == KeywordToString( Keyword::char16_ ) ) { return U_FundamentalType::char16_; }
+	if( name == KeywordToString( Keyword::char32_ ) ) { return U_FundamentalType::char32_; }
+	if( name == KeywordToString( Keyword::byte8_   ) ) { return U_FundamentalType::byte8_  ; }
+	if( name == KeywordToString( Keyword::byte16_  ) ) { return U_FundamentalType::byte16_ ; }
+	if( name == KeywordToString( Keyword::byte32_  ) ) { return U_FundamentalType::byte32_ ; }
+	if( name == KeywordToString( Keyword::byte64_  ) ) { return U_FundamentalType::byte64_ ; }
+	if( name == KeywordToString( Keyword::byte128_ ) ) { return U_FundamentalType::byte128_; }
+
+	return U_FundamentalType::InvalidType;
+}
+
+} // namespace U1

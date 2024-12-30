@@ -1,0 +1,31 @@
+import "/shared_ptr.u"
+import "/string.u"
+import "/vector.u"
+import "/CodeBuilderLib/code_builder_error_code.uh"
+import "../lex_synt_lib/src_loc.uh"
+
+namespace U1
+{
+
+struct CodeBuilderError
+{
+	CodeBuilderErrorCode code;
+	SrcLoc src_loc;
+	ust::string8 text;
+	ust::shared_ptr_nullable_mut</TemplateErrorsContext/> errors_context;
+
+	op<=>(CodeBuilderError& l, CodeBuilderError& r) : i32;
+}
+
+type ErrorsContainer= ust::vector</ CodeBuilderError />;
+
+struct TemplateErrorsContext
+{
+	ust::shared_ptr_mut</ErrorsContainer/> errors;
+	SrcLoc context_declaration_src_loc; // Declaration position of context, macro.
+
+	ust::string8 context_name; // Name of template, macro.
+	ust::string8 args_description;
+}
+
+} // namespace U1

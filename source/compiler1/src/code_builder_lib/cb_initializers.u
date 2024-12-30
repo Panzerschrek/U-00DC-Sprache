@@ -1,0 +1,1709 @@
+import "/helpers.u"
+import "/scoped_array.u"
+import "/CodeBuilderLib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::ApplyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef
+{
+	variant_visit( &i : initializer )
+	{
+		return ApplyInitializerImpl( names_scope, function_context, variable_ptr, i );
+	}
+	halt;
+}
+
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
+{
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( function_context );
+	ust::ignore_unused( variable_ptr );
+	ust::ignore_unused( empty_initializer );
+	halt;
+}
+
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& expression_initializer ) : LLVMValueRef
+{
+	auto src_loc= Synt::GetSrcLoc(expression_initializer);
+	var VariableLite variable= variable_ptr;
+	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() || !variable.t.GetRawPointerType().empty() )
+	{
+		var VariableLite expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
+		if( expr_result.t != variable.t )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr_result.t )
+			return LLVMValueRef::Null;
+		}
+
+		auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
+		CreateTypedStore( function_context, variable.t, value_in_register, variable.llvm_value );
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+
+		return expr_result.constexpr_value;
+	}
+	if( !variable.t.GetFunctionPointerType().empty() )
+	{
+		return InitializeFunctionPointer( names_scope, function_context, variable_ptr, expression_initializer );
+	}
+	if( !variable.t.GetArrayType().empty() || !variable.t.GetTupleType().empty() )
+	{
+		var VariablePtr expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
+		var VariableLite expr_result= expr_result_ptr;
+		if( expr_result.t != variable.t )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr_result.t )
+			return LLVMValueRef::Null;
+		}
+
+		SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
+
+		if( expr_result.value_type == ValueType::Value )
+		{
+			// Move.
+			function_context.references_graph.MoveNode( expr_result_ptr );
+
+			if( !function_context.is_functionless_context )
+			{
+				CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+				CreateLifetimeEnd( function_context, expr_result.llvm_value );
+			}
+		}
+		else
+		{
+			// Copy.
+			if( !variable.t.IsCopyConstructible() )
+			{
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, variable.t )
+				return LLVMValueRef::Null;
+			}
+
+			if( !function_context.is_functionless_context )
+			{
+				BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, variable.t, src_loc );
+			}
+		}
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+
+		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
+		return expr_result.constexpr_value;
+	}
+	if_var( &class_type : variable.t.GetClassType() )
+	{
+		var VariablePtr expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
+		var VariableLite expr_result= expr_result_ptr;
+
+		if( expr_result.t.ReferenceIsConvertibleTo( variable.t ) )
+		{
+			SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
+
+			if( expr_result.value_type == ValueType::Value && expr_result.t == variable.t )
+			{
+				// Move.
+				function_context.references_graph.MoveNode( expr_result_ptr );
+				if( !function_context.is_functionless_context )
+				{
+					CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+					CreateLifetimeEnd( function_context, expr_result.llvm_value );
+				}
+			}
+			else if( !function_context.is_functionless_context )
+			{
+				// Copy.
+				auto mut value_for_copy= CreateReferenceCast( expr_result.llvm_value, expr_result.t, variable.t, function_context );
+				TryCallCopyConstructor( names_scope, function_context, variable.llvm_value, value_for_copy, class_type, src_loc );
+			}
+
+			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+			// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
+			return expr_result.constexpr_value;
+		}
+
+		if_var( &conversion_constructor_ :
+			GetConversionConstructor(
+				names_scope,
+				variable.t,
+				VariableTypeExtended{ .t= expr_result.t, .value_type= expr_result.value_type },
+				src_loc ) )
+		{
+			// Create temp variables storage for preventing of destruction of "expr".
+			WithVariablesFrame(
+				function_context,
+				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+				{
+					var LLVMValueRef llvm_function= self.EnsureLLVMFunctionCreated( conversion_constructor_ );
+
+					self.DoCallFunction(
+						names_scope,
+						function_context,
+						conversion_constructor_.t,
+						llvm_function,
+						false, // Non-constexpr call.
+						ust::make_array( variable_ptr, expr_result_ptr ),
+						ust::empty_range,
+						ArgsEvaluationOrder::Direct,
+						src_loc );
+
+					self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+				} );
+
+			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+			return LLVMValueRef::Null;
+		}
+
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr_result.t )
+		return LLVMValueRef::Null;
+	}
+
+	halt; // Unhandled type kind
+}
+
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef
+{
+	var VariableLite variable= variable_ptr;
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		if( sequence_initializer.elements_initializers.size() != size_type(array_type.element_count) )
+		{
+			REPORT_ERROR( ArrayInitializersCountMismatch,
+				names_scope,
+				sequence_initializer.src_loc,
+				array_type.element_count,
+				sequence_initializer.elements_initializers.size() )
+			return LLVMValueRef::Null;
+		}
+
+		auto mut is_constant= variable.t.CanBeConstexpr();
+		var ust::vector</ LLVMValueRef /> mut elements_constants;
+
+		var bool requires_destruction= array_type.element_type.HasDestructor();
+		var ust::vector</VariablePtr/> mut temp_initialized_variables;
+
+		auto mut i= 0s;
+		foreach( &element_initializer : sequence_initializer.elements_initializers )
+		{
+			var LLVMValueRef element_llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) );
+			var ust::string8 element_name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" );
+
+			var VariablePtr element_variable_ptr=
+				Variable
+				{
+					.t= array_type.element_type,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= element_llvm_value,
+					.name= element_name,
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( element_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+			function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, sequence_initializer.src_loc );
+
+			auto element_constant= ApplyInitializer( names_scope, function_context, element_variable_ptr, element_initializer );
+
+			function_context.references_graph.RemoveNode( element_variable_ptr );
+
+			if( is_constant )
+			{
+				if( element_constant == LLVMValueRef::Null )
+				{
+					is_constant= false;
+				}
+				else
+				{
+					elements_constants.push_back( element_constant );
+				}
+			}
+
+			if( requires_destruction )
+			{
+				var VariablePtr temp_initialized_variable_ptr=
+					Variable
+					{
+						.t= array_type.element_type,
+						.value_type= ValueType::Value,
+						.location= Variable::Location::Pointer,
+						.llvm_value= element_llvm_value,
+						.name= element_name,
+						.preserve_temporary= true
+					}.CreatePtr();
+
+				function_context.references_graph.AddNode( temp_initialized_variable_ptr );
+				RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
+				temp_initialized_variables.push_back( temp_initialized_variable_ptr );
+			}
+
+			++i;
+		}
+
+		foreach( & temp_initialized_variable : temp_initialized_variables )
+		{
+			function_context.references_graph.MoveNode( temp_initialized_variable );
+		}
+
+		if( is_constant )
+		{
+			halt if( elements_constants.size() != size_type(array_type.element_count) ); // TODO - replace with assert
+			return unsafe( LLVMConstArray( array_type.element_type.GetLLVMType(), elements_constants.data(), u32(elements_constants.size()) ) );
+		}
+		return LLVMValueRef::Null;
+	}
+	if_var( tuple_type : variable.t.GetTupleType() )
+	{
+		if( sequence_initializer.elements_initializers.size() != tuple_type.element_types.size() )
+		{
+			REPORT_ERROR( TupleInitializersCountMismatch,
+				names_scope,
+				sequence_initializer.src_loc,
+				tuple_type.element_types.size(),
+				sequence_initializer.elements_initializers.size() )
+			return LLVMValueRef::Null;
+		}
+
+		auto mut is_constant= variable.t.CanBeConstexpr();
+		var ust::vector</ LLVMValueRef /> mut elements_constants;
+
+		var ust::vector</VariablePtr/> mut temp_initialized_variables;
+
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var Type& element_type= tuple_type.element_types[i];
+
+			var LLVMValueRef element_llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) );
+			var ust::string8 element_name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" );
+
+			var VariablePtr element_variable_ptr=
+				Variable
+				{
+					.t= element_type,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= element_llvm_value,
+					.name= element_name,
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( element_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, sequence_initializer.src_loc );
+
+			auto element_constant= ApplyInitializer( names_scope, function_context, element_variable_ptr, sequence_initializer.elements_initializers[i] );
+
+			function_context.references_graph.RemoveNode( element_variable_ptr );
+
+			if( is_constant )
+			{
+				if( element_constant == LLVMValueRef::Null )
+				{
+					is_constant= false;
+				}
+				else
+				{
+					elements_constants.push_back( element_constant );
+				}
+			}
+
+			if( element_type.HasDestructor() )
+			{
+				var VariablePtr temp_initialized_variable_ptr=
+					Variable
+					{
+						.t= element_type,
+						.value_type= ValueType::Value,
+						.location= Variable::Location::Pointer,
+						.llvm_value= element_llvm_value,
+						.name= element_name,
+						.preserve_temporary= true
+					}.CreatePtr();
+
+				function_context.references_graph.AddNode( temp_initialized_variable_ptr );
+				RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
+				temp_initialized_variables.push_back( temp_initialized_variable_ptr );
+			}
+		}
+
+		foreach( & temp_initialized_variable : temp_initialized_variables )
+		{
+			function_context.references_graph.MoveNode( temp_initialized_variable );
+		}
+
+		if( is_constant )
+		{
+			halt if( elements_constants.size() != tuple_type.element_types.size() ); // TODO - replace with assert
+			return unsafe( LLVMConstStructInContext( llvm_context_, elements_constants.data(), u32(elements_constants.size()), LLVMBool::False ) );
+		}
+		return LLVMValueRef::Null;
+	}
+
+	REPORT_ERROR( ArrayInitializerForNonArray, names_scope, sequence_initializer.src_loc )
+	return LLVMValueRef::Null;
+}
+
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef
+{
+	var VariableLite variable= variable_ptr;
+
+	auto class_type_ref= variable.t.GetClassType();
+	if( class_type_ref.empty() )
+	{
+		REPORT_ERROR( StructInitializerForNonStruct, names_scope, struct_named_initializer.src_loc )
+		return LLVMValueRef::Null;
+	}
+	var ClassTypePtr& class_type_ptr= class_type_ref.try_deref();
+	auto class_type_lock= class_type_ptr.lock_imut();
+	var ClassType& class_type= class_type_lock.deref();
+
+	auto members_lock= class_type.members.lock_imut();
+	var NamesScope& class_members= members_lock.deref();
+
+	if( class_type.has_explicit_noncopy_constructors )
+	{
+		REPORT_ERROR( InitializerDisabledBecauseClassHasExplicitNoncopyConstructors, names_scope, struct_named_initializer.src_loc )
+	}
+	if( class_type.kind != ClassType::Kind::Struct )
+	{
+		REPORT_ERROR( StructInitializerForNonStruct, names_scope, struct_named_initializer.src_loc )
+	}
+
+	var size_type num_llvm_fields( unsafe( LLVMCountStructElementTypes( class_type.llvm_type ) ) );
+
+	var ust::vector</LLVMValueRef/> mut constant_initializers;
+	auto mut is_constexpr= class_type.can_be_constexpr;
+	if( is_constexpr )
+	{
+		constant_initializers.resize( num_llvm_fields, LLVMValueRef::Null );
+	}
+
+	scoped_array bool mut initialized_fields[ num_llvm_fields ]( false );
+
+	var ust::vector</VariablePtr/> mut temp_initialized_variables;
+
+	foreach( &member_initializer : struct_named_initializer.members_initializers )
+	{
+		auto member_ref= class_members.GetThisScopeValue( member_initializer.name );
+		if( member_ref.empty() )
+		{
+			REPORT_ERROR( NameNotFound, names_scope, member_initializer.src_loc, member_initializer.name )
+			return LLVMValueRef::Null;
+		}
+		auto field_ptr= member_ref.try_deref().Get</ClassField/>();
+		if( field_ptr.empty() )
+		{
+			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.src_loc, member_initializer.name )
+			return LLVMValueRef::Null;
+		}
+
+		var ClassField class_field= field_ptr.try_lock_imut().deref(); // Copy to avoid holding lock object.
+
+		var size_type field_index( class_field.index );
+		if( field_index < initialized_fields.size() )
+		{
+			if( initialized_fields[field_index] )
+			{
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
+			}
+			initialized_fields[field_index]= true;
+		}
+
+		if( class_field.source_class != class_type_ptr )
+		{
+			REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.src_loc, member_initializer.name )
+			return LLVMValueRef::Null;
+		}
+
+		if( class_field.index == ~0u ){ is_constexpr= false; continue; } // May be in case of error
+
+		if( class_field.is_reference )
+		{
+			auto initializer= InitializeReferenceField( names_scope, function_context, variable_ptr, class_field, member_initializer.initializer );
+			if( initializer == LLVMValueRef::Null )
+			{
+				is_constexpr= false;
+			}
+			if( is_constexpr )
+			{
+				constant_initializers[ size_type(class_field.index) ]= initializer;
+			}
+		}
+		else
+		{
+			var LLVMValueRef member_llvm_value= CreateClassFieldGEP( function_context, variable, class_field );
+			var ust::string8 member_name= ust::concat( variable_ptr.lock_imut().deref().name, ".", member_initializer.name );
+
+			var VariablePtr member_variable_ptr=
+				Variable
+				{
+					.t= class_field.t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= member_llvm_value,
+					.name= member_name,
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( member_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, class_field, names_scope, member_initializer.src_loc );
+
+			auto initializer= ApplyInitializer( names_scope, function_context, member_variable_ptr, member_initializer.initializer );
+
+			function_context.references_graph.RemoveNode( member_variable_ptr );
+
+			if( initializer == LLVMValueRef::Null )
+			{
+				is_constexpr= false;
+			}
+			if( is_constexpr )
+			{
+				constant_initializers[ size_type(class_field.index) ]= initializer;
+			}
+
+			if( class_field.t.HasDestructor() )
+			{
+				var VariablePtr temp_initialized_variable_ptr=
+					Variable
+					{
+						.t= class_field.t,
+						.value_type= ValueType::Value,
+						.location= Variable::Location::Pointer,
+						.llvm_value= member_llvm_value,
+						.name= member_name,
+						.preserve_temporary= true
+					}.CreatePtr();
+
+				function_context.references_graph.AddNode( temp_initialized_variable_ptr );
+				RegisterTemporaryVariable( function_context, temp_initialized_variable_ptr );
+				temp_initialized_variables.push_back( temp_initialized_variable_ptr );
+			}
+		}
+	}
+
+	foreach( & temp_initialized_variable : temp_initialized_variables )
+	{
+		function_context.references_graph.MoveNode( temp_initialized_variable );
+	}
+
+	// Use initial class members namespace for own fields initializers evaluation.
+	auto class_members_initial= class_type.members_initial;
+
+	// Apply default initializer for fields, missing in struct named initializer.
+	foreach( &field_pair : class_type.fields_order )
+	{
+		var ust::string8& field_name= field_pair[0];
+
+		var ClassField field= field_pair[1].lock_imut().deref(); // Copy to avoid holding lock object.
+
+		var size_type field_index( field.index );
+		if( field_index < initialized_fields.size() && initialized_fields[ field_index ] )
+		{
+			continue;
+		}
+
+		if( field.index == ~0u ){ continue; } // May be in case of error
+
+		var VariablePtr member_variable_ptr=
+			Variable
+			{
+				.t= field.t,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
+				.name= ust::concat( variable_ptr.lock_imut().deref().name, ".", field_name ),
+			}.CreatePtr();
+
+		function_context.references_graph.AddNode( member_variable_ptr );
+		function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
+		function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, field, names_scope, struct_named_initializer.src_loc );
+
+		auto mut constexpr_initializer= LLVMValueRef::Null;
+		auto& initializer= field.syntax_element.deref().initializer;
+		if( initializer.has</Synt::EmptyVariant/>() )
+		{
+			if( field.is_reference )
+			{
+				REPORT_ERROR( ExpectedInitializer, names_scope, struct_named_initializer.src_loc, field_name )
+			}
+			else
+			{
+				constexpr_initializer= ApplyEmptyInitializer( names_scope, function_context, member_variable_ptr, field_name, struct_named_initializer.src_loc );
+			}
+		}
+		else
+		{
+			if( field.is_reference )
+			{
+				constexpr_initializer= InitializeReferenceField( class_members_initial, function_context, variable_ptr, field, initializer );
+			}
+			else
+			{
+				constexpr_initializer= ApplyInitializer( class_members_initial, function_context, member_variable_ptr, initializer );
+			}
+		}
+
+		function_context.references_graph.RemoveNode( member_variable_ptr );
+
+		if( constexpr_initializer == LLVMValueRef::Null )
+		{
+			is_constexpr= false;
+		}
+		if( is_constexpr )
+		{
+			constant_initializers[ size_type(field.index) ]= constexpr_initializer;
+		}
+
+		// No need to register temporary variable for initialized struct member here, since it's not possible to return or await from default initializer.
+	}
+
+	if( is_constexpr )
+	{
+		return unsafe( LLVMConstNamedStruct( class_type.llvm_type, constant_initializers.data(), u32(constant_initializers.size()) ) );
+	}
+
+	return LLVMValueRef::Null;
+}
+
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
+{
+	return ApplyConstructorInitializer( names_scope, function_context, variable_ptr, constructor_initializer.args, constructor_initializer.src_loc );
+}
+
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
+{
+	var VariableLite variable= variable_ptr;
+
+	if( !variable.t.GetFundamentalType().empty() ||
+		!variable.t.GetEnumType().empty() ||
+		!variable.t.GetRawPointerType().empty() ||
+		!variable.t.GetFunctionPointerType().empty() )
+	{
+		// Currently, first element of enum has zero value.
+		unsafe
+		{
+			auto zero_value= LLVMConstNull( variable.t.GetLLVMType() );
+			CreateTypedStore( function_context, variable.t, zero_value, variable.llvm_value );
+			return zero_value;
+		}
+	}
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		GenerateLoop(
+			function_context,
+			array_type.element_count,
+			lambda[&]( CodeBuilder &mut self, FunctionContext& mut function_context, LLVMValueRef counter_value )
+			{
+				var VariablePtr element_variable_ptr=
+					Variable
+					{
+						.t= array_type.element_type,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= self.CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
+						.name= variable_ptr.lock_imut().deref().name + "[]",
+					}.CreatePtr();
+
+				function_context.references_graph.AddNode( element_variable_ptr );
+				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+				function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, zero_initializer.src_loc );
+
+				self.ApplyInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
+
+				function_context.references_graph.RemoveNode( element_variable_ptr );
+			} );
+
+		if( variable.t.CanBeConstexpr() )
+		{
+			return unsafe( LLVMConstNull( array_type.llvm_type ) );
+		}
+		return LLVMValueRef::Null;
+	}
+	if_var( &tuple_type : variable.t.GetTupleType() )
+	{
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var VariablePtr element_variable_ptr=
+				Variable
+				{
+					.t= tuple_type.element_types[i],
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
+					.name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( element_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, zero_initializer.src_loc );
+
+			ApplyInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
+
+			function_context.references_graph.RemoveNode( element_variable_ptr );
+		}
+
+		if( variable.t.CanBeConstexpr() )
+		{
+			return unsafe( LLVMConstNull( tuple_type.llvm_type ) );
+		}
+		return LLVMValueRef::Null;
+	}
+	if_var( &class_type_ptr : variable.t.GetClassType() )
+	{
+		auto class_type_lock= class_type_ptr.lock_imut();
+		var ClassType& class_type= class_type_lock.deref();
+
+		if( class_type.has_explicit_noncopy_constructors )
+		{
+			REPORT_ERROR( InitializerDisabledBecauseClassHasExplicitNoncopyConstructors, names_scope, zero_initializer.src_loc )
+		}
+		if( class_type.kind != ClassType::Kind::Struct )
+		{
+			REPORT_ERROR( ZeroInitializerForClass, names_scope, zero_initializer.src_loc )
+		}
+
+		foreach( &field_pair : class_type.fields_order )
+		{
+			var ClassField field= field_pair[1].lock_imut().deref(); // Copy to avoid holding lock object.
+
+			if( field.index == ~0u ){ continue; } // May be in case of error
+
+			if( field.is_reference )
+			{
+				REPORT_ERROR( UnsupportedInitializerForReference, names_scope, zero_initializer.src_loc )
+				continue;
+			}
+
+			var VariablePtr member_variable_ptr=
+				Variable
+				{
+					.t= field.t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
+					.name= ust::concat( variable_ptr.lock_imut().deref().name, ".", field_pair[0] ),
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( member_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForClassField( variable_ptr, member_variable_ptr, field, names_scope, zero_initializer.src_loc );
+
+			ApplyInitializer( names_scope, function_context, member_variable_ptr, zero_initializer );
+
+			function_context.references_graph.RemoveNode( member_variable_ptr );
+		}
+
+		if( class_type.can_be_constexpr )
+		{
+			return unsafe( LLVMConstNull( class_type.llvm_type ) );
+		}
+		return LLVMValueRef::Null;
+	}
+
+	halt;
+}
+
+fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
+{
+	ust::ignore_unused( variable_ptr );
+
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, names_scope, uninitialized_initializer.src_loc )
+	}
+	return LLVMValueRef::Null;
+}
+
+fn CodeBuilder::ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef
+{
+	var VariableLite variable= variable_ptr;
+
+	if( !variable.t.IsDefaultConstructible() )
+	{
+		REPORT_ERROR( ExpectedInitializer, names_scope, src_loc, variable_name )
+		return LLVMValueRef::Null;
+	}
+
+	if( !variable.t.GetFundamentalType().empty() )
+	{
+		// This is void type.
+		return unsafe( LLVMConstNull( fundamental_llvm_types_.void_ ) );
+	}
+
+	if_var( &array_type : variable.t.GetArrayType() )
+	{
+		var LLVMValueRef mut constant_initializer = LLVMValueRef::Null;
+
+		GenerateLoop(
+			function_context,
+			array_type.element_count,
+			lambda[&]( CodeBuilder &mut self, FunctionContext& mut function_context, LLVMValueRef counter_value )
+			{
+				var VariablePtr element_variable_ptr=
+					Variable
+					{
+						.t= array_type.element_type,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= self.CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
+						.name= variable_ptr.lock_imut().deref().name + "[]",
+					}.CreatePtr();
+
+				function_context.references_graph.AddNode( element_variable_ptr );
+
+				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+				function_context.references_graph.TryAddInnerLinks( variable_ptr, element_variable_ptr, names_scope, src_loc );
+
+				constant_initializer= self.ApplyEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
+
+				function_context.references_graph.RemoveNode( element_variable_ptr );
+			} );
+
+		if( constant_initializer != LLVMValueRef::Null )
+		{
+			scoped_array LLVMValueRef mut initializers[ size_type(array_type.element_count) ]( constant_initializer );
+			return unsafe( LLVMConstArray( array_type.element_type.GetLLVMType(), initializers.data(), u32(initializers.size()) ) );
+		}
+		return LLVMValueRef::Null;
+	}
+	if_var( &tuple_type : variable.t.GetTupleType() )
+	{
+		var ust::vector</LLVMValueRef/> mut constant_initializers;
+
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var VariablePtr element_variable_ptr=
+				Variable
+				{
+					.t= tuple_type.element_types[i],
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
+					.name= ust::concat( variable_ptr.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( element_variable_ptr );
+
+			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForTupleElement( variable_ptr, element_variable_ptr, i, names_scope, src_loc );
+
+			var LLVMValueRef constant_initializer= ApplyEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
+
+			function_context.references_graph.RemoveNode( element_variable_ptr );
+
+			if( constant_initializer != LLVMValueRef::Null )
+			{
+				constant_initializers.push_back( constant_initializer );
+			}
+		}
+
+		if( constant_initializers.size() == tuple_type.element_types.size() )
+		{
+			return unsafe( LLVMConstStructInContext( llvm_context_, constant_initializers.data(), u32(constant_initializers.size()), LLVMBool::False ) );
+		}
+		return LLVMValueRef::Null;
+	}
+	if_var( &class_type_ptr : variable.t.GetClassType() )
+	{
+		auto class_members= class_type_ptr.lock_imut().deref().members;
+		auto members_lock= class_members.lock_imut();
+
+		auto member= members_lock.deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
+		if( member.empty() )
+		{
+			// May be in case of error
+			return LLVMValueRef::Null;
+		}
+
+		// Should be functions set 100%
+		auto constructors_ptr= member.try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+		PrepareFunctionsSetAndBuildConstexprBodies( class_members, constructors_ptr );
+
+		CallFunctionsSet(
+			names_scope,
+			function_context,
+			variable_ptr,
+			constructors_ptr,
+			ust::empty_range,
+			src_loc );
+
+		return LLVMValueRef::Null;
+	}
+
+	halt;
+}
+
+fn CodeBuilder::ApplyConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> /> args, SrcLoc& src_loc )  : LLVMValueRef
+{
+	var VariableLite variable= variable_ptr;
+
+	if_var( &dst_type : variable.t.GetFundamentalType() )
+	{
+		if( dst_type.fundamental_type == U_FundamentalType::void_ && args.empty() )
+		{
+			return unsafe( LLVMConstNull( dst_type.llvm_type ) );
+		}
+
+		if( args.size() != 1s )
+		{
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, src_loc )
+			return LLVMValueRef::Null;
+		}
+
+		var VariableLite src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
+
+		var FundamentalType mut src_type;
+		if_var( &fundamental_type : src_var.t.GetFundamentalType() )
+		{
+			src_type= fundamental_type;
+		}
+		else if_var( &enum_type : src_var.t.GetEnumType() )
+		{
+			src_type= enum_type.lock_imut().deref().underlying_type;
+		}
+
+		if( src_type.llvm_type == LLVMTypeRef::Null )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, src_var.t )
+			return LLVMValueRef::Null;
+		}
+
+		auto mut llvm_value= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
+		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+		if( llvm_value != LLVMValueRef::Null )
+		{
+			var u32 src_size= GetFundamentalTypeSize( src_type.fundamental_type );
+			var u32 dst_size= GetFundamentalTypeSize( dst_type.fundamental_type );
+
+			unsafe
+			{
+				if( src_type.fundamental_type == dst_type.fundamental_type )
+				{}
+				else if( IsInteger( dst_type.fundamental_type ) && IsInteger( src_type.fundamental_type ) )
+				{
+					// int to int
+					if( src_size < dst_size )
+					{
+						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
+						if( IsUnsignedInteger( dst_type.fundamental_type ) )
+						{
+							llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+						}
+						else
+						{
+							llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+						}
+					}
+					else if( src_size > dst_size )
+					{
+						llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+					}
+					else{} // Same size integers - do nothing
+				}
+				else if( IsFloatingPoint( dst_type.fundamental_type ) && IsFloatingPoint( src_type.fundamental_type ) )
+				{
+					// float to float
+					if( src_size < dst_size )
+					{
+						llvm_value= LLVMBuildFPExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+					}
+					else if( src_size > dst_size )
+					{
+						llvm_value= LLVMBuildFPTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+					}
+					else{ halt; } // WTF?
+				}
+				else if( IsFloatingPoint( dst_type.fundamental_type ) && IsInteger( src_type.fundamental_type ) )
+				{
+					// int to float
+					if( IsSignedInteger( src_type.fundamental_type ) )
+					{
+						llvm_value= LLVMBuildSIToFP( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+					}
+					else
+					{
+						llvm_value= LLVMBuildUIToFP( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+					}
+				}
+				else if( IsInteger( dst_type.fundamental_type ) && IsFloatingPoint( src_type.fundamental_type ) )
+				{
+					// float to int
+					if( IsSignedInteger( dst_type.fundamental_type ) )
+					{
+						llvm_value= LLVMBuildFPToSI( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+					}
+					else
+					{
+						llvm_value= LLVMBuildFPToUI( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+					}
+				}
+				else if( IsChar( dst_type.fundamental_type ) && ( IsInteger( src_type.fundamental_type ) || IsChar( src_type.fundamental_type ) ) )
+				{
+					// int to char or char to char
+					if( src_size < dst_size )
+					{
+						llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+					}
+					else if( src_size > dst_size )
+					{
+						llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+					}
+				}
+				else if( IsInteger( dst_type.fundamental_type ) && IsChar( src_type.fundamental_type ) )
+				{
+					// char to int
+					if( src_size < dst_size )
+					{
+						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
+						if( IsUnsignedInteger( dst_type.fundamental_type ) )
+						{
+							llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+						}
+						else
+						{
+							llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+						}
+					}
+					else if( src_size > dst_size )
+					{
+						llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+					}
+					else{} // Same size - do nothing
+				}
+				else if( src_size == dst_size && (
+					( IsByte( dst_type.fundamental_type ) && IsInteger( src_type.fundamental_type ) ) ||
+					( IsInteger( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
+				{
+					// Perform int -> bytes or bytes -> int conversion.
+					// Do nothing, because internally bytes and int of same size is same type.
+				}
+				else if( src_size == dst_size && (
+					( IsByte( dst_type.fundamental_type ) && IsChar( src_type.fundamental_type ) ) ||
+					( IsChar( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
+				{
+					// Perform char -> bytes or bytes -> char conversion.
+					// Do nothing, because internally bytes and char of same size is same type.
+				}
+				else if( src_size == dst_size && (
+					( IsByte( dst_type.fundamental_type ) && IsFloatingPoint( src_type.fundamental_type ) ) ||
+					( IsFloatingPoint( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
+				{
+					// Perfrom float -> bytes or bytes->float conversion.
+					llvm_value= LLVMBuildBitCast( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
+				}
+				else
+				{
+					if( dst_type.fundamental_type == U_FundamentalType::bool_ )
+					{
+						// TODO - error, bool have no constructors from other types
+					}
+					REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, src_var.t )
+					return LLVMValueRef::Null;
+				}
+
+				CreateTypedStore( function_context, variable.t, llvm_value, variable.llvm_value );
+			}
+		}
+
+		if( llvm_value != LLVMValueRef::Null && unsafe( LLVMIsConstant( llvm_value ) ) == LLVMBool::True ){ return llvm_value; }
+
+		return LLVMValueRef::Null;
+	}
+	if( !variable.t.GetArrayType().empty() || !variable.t.GetTupleType().empty() )
+	{
+		if( args.size() != 1s )
+		{
+			REPORT_ERROR( ConstructorInitializerForUnsupportedType, names_scope, src_loc )
+			return LLVMValueRef::Null;
+		}
+
+		var VariablePtr expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
+		var VariableLite expr_result= expr_result_ptr;
+		if( expr_result.t != variable.t )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr_result.t )
+			return LLVMValueRef::Null;
+		}
+
+		SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
+
+		if( expr_result.value_type == ValueType::Value )
+		{
+			// Move.
+			function_context.references_graph.MoveNode( expr_result_ptr );
+			if( !function_context.is_functionless_context )
+			{
+				CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+				CreateLifetimeEnd( function_context, expr_result.llvm_value );
+			}
+		}
+		else
+		{
+			// Copy.
+			if( !variable.t.IsCopyConstructible() )
+			{
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, variable.t )
+				return LLVMValueRef::Null;
+			}
+
+			if( !function_context.is_functionless_context )
+			{
+				BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, variable.t, src_loc );
+			}
+		}
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+
+		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
+		return expr_result.constexpr_value;
+	}
+	if( !variable.t.GetEnumType().empty() || !variable.t.GetRawPointerType().empty() )
+	{
+		if( args.size() != 1s )
+		{
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, src_loc )
+			return LLVMValueRef::Null;
+		}
+
+		auto mut constexpr_value= LLVMValueRef::Null;
+		with( &expr : BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() ).lock_imut().deref() )
+		{
+			if( expr.t != variable.t )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr.t )
+				return LLVMValueRef::Null;
+			}
+
+			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+			CreateTypedStore( function_context, variable.t, value_in_register, variable.llvm_value );
+
+			constexpr_value= expr.constexpr_value;
+		}
+		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+
+		return constexpr_value;
+	}
+	if( !variable.t.GetFunctionPointerType().empty() )
+	{
+		if( args.size() != 1s )
+		{
+			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, src_loc )
+			return LLVMValueRef::Null;
+		}
+
+		return InitializeFunctionPointer( names_scope, function_context, variable_ptr, args.front().deref() );
+	}
+	if_var( &class_type : variable.t.GetClassType() )
+	{
+		var bool mut needs_move_construct = false;
+		if( args.size() == 1s )
+		{
+			WithVariablesFrame(
+				function_context,
+				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+				{
+					var bool prev_is_functionless_context= function_context.is_functionless_context;
+					function_context.is_functionless_context= true;
+
+					auto state= SaveFunctionContextState( function_context );
+
+					with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() ).lock_imut().deref() )
+					{
+						needs_move_construct= arg.t == variable.t && arg.value_type == ValueType::Value;
+					}
+
+					RestoreFunctionContextState( function_context, state );
+					function_context.is_functionless_context= prev_is_functionless_context;
+				} );
+		}
+
+		if( needs_move_construct )
+		{
+			var VariablePtr expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
+			SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
+
+			function_context.references_graph.MoveNode( expr_result_ptr );
+
+			with( &expr_result : expr_result_ptr.lock_imut().deref() )
+			{
+				if( !function_context.is_functionless_context )
+				{
+					CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
+					CreateLifetimeEnd( function_context, expr_result.llvm_value );
+				}
+
+				return expr_result.constexpr_value; // Move can preserve constexpr.
+			}
+		}
+
+		auto class_members= class_type.lock_imut().deref().members;
+		auto members_lock= class_members.lock_imut();
+
+		auto member= members_lock.deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) );
+		if( member.empty() )
+		{
+			REPORT_ERROR( ClassHasNoConstructors, names_scope, src_loc )
+			return LLVMValueRef::Null;
+		}
+
+		// Should be functions set 100%
+		auto constructors_ptr= member.try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+		PrepareFunctionsSetAndBuildConstexprBodies( class_members, constructors_ptr );
+
+		CallFunctionsSet(
+			names_scope,
+			function_context,
+			variable_ptr,
+			constructors_ptr,
+			args,
+			src_loc );
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+
+		return LLVMValueRef::Null;
+	}
+
+	REPORT_ERROR( ConstructorInitializerForUnsupportedType, names_scope, src_loc )
+	return LLVMValueRef::Null;
+}
+
+fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& initializer_expression ) : LLVMValueRef
+{
+	var VariableLite variable= variable_ptr;
+
+	auto initializer_src_loc= Synt::GetSrcLoc( initializer_expression );
+	auto initializer_value= BuildExpressionCode( names_scope, function_context, initializer_expression );
+
+	var FunctionType& function_type= variable.t.GetFunctionPointerType().try_deref().function_type;
+
+	if_var( &initializer_variable_ptr : initializer_value.get</VariablePtr/>() )
+	{
+		var VariableLite initializer_variable= initializer_variable_ptr;
+
+		if( !( !initializer_variable.t.GetFunctionPointerType().empty() &&
+			initializer_variable.t.GetFunctionPointerType().try_deref().function_type.PointerCanBeConvertedTo( function_type ) ) )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, initializer_src_loc, variable.t, initializer_variable.t )
+			return LLVMValueRef::Null;
+		}
+
+		unsafe
+		{
+			auto mut value_for_store= CreateMoveToLLVMRegisterInstruction( initializer_variable, function_context );
+			if( initializer_variable.t != variable.t )
+			{
+				value_for_store= LLVMBuildPointerCast( function_context.llvm_ir_builder, value_for_store, variable.t.GetLLVMType(), g_null_string );
+			}
+			CreateTypedStore( function_context, variable.t, value_for_store, variable.llvm_value );
+		}
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, initializer_src_loc );
+
+		return initializer_variable.constexpr_value;
+	}
+
+	var ust::shared_ptr_nullable_imut</FunctionsSet/> mut functions_set_opt;
+	if_var( &functions_set : initializer_value.get</FunctionsSetPtr/>() )
+	{
+		functions_set_opt= functions_set;
+	}
+	if_var( &this_methods_set : initializer_value.get</ThisMethodsSet/>() )
+	{
+		functions_set_opt= this_methods_set.functions_set;
+	}
+
+	if( !functions_set_opt.empty() )
+	{
+		var ust::vector</ FunctionVariable /> mut exact_type_functions;
+		var ust::vector</ FunctionVariable /> mut functions_with_conversion;
+		with( &functions_set : functions_set_opt.try_lock_imut().deref() )
+		{
+			foreach( &function_variable : functions_set.functions )
+			{
+				if( function_variable.t == function_type )
+				{
+					exact_type_functions.push_back( function_variable );
+				}
+				else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
+				{
+					functions_with_conversion.push_back( function_variable );
+				}
+			}
+
+			foreach( &parameterized_function_template : functions_set.parameterized_function_templates )
+			{
+				auto function_template_lock= parameterized_function_template.base_template.lock_imut();
+				var FunctionTemplate& function_template= function_template_lock.deref();
+				if( parameterized_function_template.known_args.size() != function_template.params.size() )
+				{
+					continue;
+				}
+
+				if_var( &function_variable : FinishFunctionTemplateParameterization( parameterized_function_template, initializer_src_loc ) )
+				{
+					if( function_variable.t == function_type )
+					{
+						exact_type_functions.push_back( function_variable );
+					}
+					else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
+					{
+						functions_with_conversion.push_back( function_variable );
+					}
+				}
+			}
+
+			foreach( &function_template : functions_set.function_templates )
+			{
+				if( !function_template.lock_imut().deref().params.empty() )
+				{
+					continue;
+				}
+
+				var ParameterizedFunctionTemplate parameterized_function_template
+				{
+					.base_template= function_template,
+					.instantiation_point_names_scope= names_scope,
+				};
+				if_var( &function_variable : FinishFunctionTemplateParameterization( parameterized_function_template, initializer_src_loc ) )
+				{
+					if( function_variable.t == function_type )
+					{
+						exact_type_functions.push_back( function_variable );
+					}
+					else if( function_variable.t.PointerCanBeConvertedTo( function_type ) )
+					{
+						functions_with_conversion.push_back( function_variable );
+					}
+				}
+			}
+		}
+
+		if( exact_type_functions.size() == 1s )
+		{
+			auto& function_variable= exact_type_functions.front();
+			if( function_variable.is_deleted )
+			{
+				REPORT_ERROR( AccessingDeletedMethod, names_scope, initializer_src_loc )
+				return LLVMValueRef::Null;
+			}
+
+			with( mut lock : function_variable.llvm_function.lock_mut() )
+			{
+				lock.deref().referenced= true;
+			}
+
+			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
+			CreateTypedStore( function_context, variable.t, llvm_function, variable.llvm_value );
+
+			return llvm_function;
+		}
+		else if( exact_type_functions.size() > 1s )
+		{
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params ) )
+		}
+		else if( functions_with_conversion.size() == 1s )
+		{
+			auto& function_variable= functions_with_conversion.front();
+			if( function_variable.is_deleted )
+			{
+				REPORT_ERROR( AccessingDeletedMethod, names_scope, initializer_src_loc )
+				return LLVMValueRef::Null;
+			}
+
+			with( mut lock : function_variable.llvm_function.lock_mut() )
+			{
+				lock.deref().referenced= true;
+			}
+
+			// TODO - maybe disable conversion for expression initializer?
+			auto ptr_casted= unsafe( LLVMBuildPointerCast( function_context.llvm_ir_builder, EnsureLLVMFunctionCreated( function_variable ), variable.t.GetLLVMType(), g_null_string ) );
+			CreateTypedStore( function_context, variable.t, ptr_casted, variable.llvm_value );
+			return ptr_casted;
+		}
+		else if( functions_with_conversion.empty() )
+		{
+			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params ) )
+		}
+		else
+		{
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, initializer_src_loc, FunctionParamsToString( function_type.params ) )
+		}
+		return LLVMValueRef::Null;
+	}
+
+	// TODO - generate separate error
+	REPORT_ERROR( ExpectedVariable, names_scope, initializer_src_loc, GetValueKindName(initializer_value) )
+
+	return LLVMValueRef::Null;
+}
+
+fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ClassField& field, Synt::Initializer& initializer ) : LLVMValueRef
+{
+	var VariableLite variable= variable_ptr;
+
+	auto initializer_src_loc= Synt::GetSrcLoc( initializer );
+
+	var ust::optional_ref_imut</Synt::Expression/> mut initializer_expression;
+	if_var( &expression_initializer : initializer.get</Synt::Expression/>() )
+	{
+		initializer_expression.reset(expression_initializer);
+	}
+	if_var( &constructor_initializer : initializer.get</Synt::ConstructorInitializer/>() )
+	{
+		if( constructor_initializer.args.size() != 1s )
+		{
+			REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, initializer_src_loc )
+			return LLVMValueRef::Null;
+		}
+
+		initializer_expression.reset( constructor_initializer.args.front().deref() );
+	}
+
+	if( initializer_expression.empty() )
+	{
+		REPORT_ERROR( UnsupportedInitializerForReference, names_scope, initializer_src_loc )
+		return LLVMValueRef::Null;
+	}
+
+	var VariablePtr initializer_variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.try_deref() );
+	var VariableLite initializer_variable= initializer_variable_ptr;
+
+	var SrcLoc initializer_expression_src_loc= Synt::GetSrcLoc( initializer_expression.try_deref() );
+	if( initializer_variable.t != field.t && !initializer_variable.t.ReferenceIsConvertibleTo( field.t ) )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, initializer_expression_src_loc, field.t, initializer_variable.t )
+		return LLVMValueRef::Null;
+	}
+	if( initializer_variable.value_type == ValueType::Value )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, initializer_expression_src_loc )
+		return LLVMValueRef::Null;
+	}
+	if( field.is_mutable && initializer_variable.value_type == ValueType::ReferenceImut )
+	{
+		REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, initializer_expression_src_loc )
+		return LLVMValueRef::Null;
+	}
+
+	auto reference_converted= CreateReferenceCast( initializer_variable.llvm_value, initializer_variable.t, field.t, function_context );
+	auto address_of_reference= CreateClassFieldGEP( function_context, variable, field );
+	CreateTypedReferenceStore( function_context, field.t, reference_converted, address_of_reference );
+
+	function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+		initializer_variable_ptr,
+		variable_ptr.lock_imut().deref().inner_reference_nodes[ size_type( field.reference_tag ) ],
+		names_scope,
+		initializer_expression_src_loc );
+
+	// Destroy temporary variables after creating links to prevent destruction of variables, linked with initializer reference.
+	DestroyUnusedTemporaryVariables( names_scope, function_context, initializer_expression_src_loc );
+
+	if( initializer_variable.constexpr_value != LLVMValueRef::Null )
+	{
+		// Only global variables can have constant address, so, create it.
+		// TODO - create only if needed.
+		auto global_variable= AddGlobalConstantVariable( "_temp_const\0", initializer_variable.t.GetLLVMType(), initializer_variable.constexpr_value );
+		return CreateReferenceCast( global_variable, initializer_variable.t, field.t, function_context );
+	}
+
+	return LLVMValueRef::Null;
+}
+
+fn CodeBuilder::BuildConstructorInitialization(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::StructNamedInitializer& constructor_initialization_list )
+{
+	// Function context should contain "this" with class type
+	var VariablePtr this_ptr= function_context.this_.try_to_non_nullable();
+	auto class_type= this_ptr.lock_imut().deref().t.GetClassType().try_deref();
+	auto class_members_ptr= class_type.lock_imut().deref().members;
+	auto class_members_lock= class_members_ptr.lock_imut();
+	var NamesScope& class_members= class_members_lock.deref();
+	auto base_class= class_type.lock_imut().deref().base_class;
+
+	// Check for errors, build list of initialized fields.
+	scoped_array bool mut initialized_fields[ size_type( unsafe( LLVMCountStructElementTypes( class_type.lock_imut().deref().llvm_type ) ) ) ]( false );
+
+	auto mut has_fields_errors= false;
+	auto mut base_initialized= false;
+	foreach( &member_initializer : constructor_initialization_list.members_initializers )
+	{
+		if( member_initializer.name == KeywordToString( Keyword::base_ ) )
+		{
+			if( base_class.empty() )
+			{
+				has_fields_errors= true;
+				REPORT_ERROR( BaseUnavailable, names_scope, constructor_initialization_list.src_loc )
+				continue;
+			}
+			if( base_initialized )
+			{
+				has_fields_errors= true;
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, constructor_initialization_list.src_loc, member_initializer.name )
+				continue;
+			}
+			base_initialized= true;
+			continue;
+		}
+
+		auto member= class_members.GetThisScopeValue( member_initializer.name );
+		if( member.empty() )
+		{
+			has_fields_errors= true;
+			REPORT_ERROR( NameNotFound, names_scope, member_initializer.src_loc, member_initializer.name )
+			continue;
+		}
+		auto class_field_ptr= member.try_deref().Get</ClassField/>();
+		if( class_field_ptr.empty() )
+		{
+			has_fields_errors= true;
+			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.src_loc, member_initializer.name )
+			continue;
+		}
+		with( &class_field : class_field_ptr.try_lock_imut().deref() )
+		{
+			if( class_field.source_class != class_type )
+			{
+				has_fields_errors= true;
+				REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.src_loc, member_initializer.name )
+				continue;
+			}
+
+			var size_type field_index( class_field.index );
+			if( field_index < initialized_fields.size() )
+			{
+				if( initialized_fields[ field_index ] )
+				{
+					has_fields_errors= true;
+					REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
+					continue;
+				}
+				initialized_fields[ field_index ]= true;
+			}
+		}
+	}
+
+	if( has_fields_errors )
+	{
+		return;
+	}
+
+	function_context.whole_this_is_unavailable= true;
+	function_context.initialized_this_fields.resize( size_type( unsafe( LLVMCountStructElementTypes( class_type.lock_imut().deref().llvm_type ) ) ), false );
+
+	auto base_field_index= 0s;
+
+	// Initialize fields, missing in initializer list.
+	if( !base_class.empty() && !base_initialized )
+	{
+		var VariablePtr base_variable_ptr= AccessClassBase( function_context, this_ptr );
+		ApplyEmptyInitializer( names_scope, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), constructor_initialization_list.src_loc );
+		function_context.initialized_this_fields[ base_field_index ]= true;
+	}
+
+	// Use initial class members namespace for own fields initializers evaluation.
+	auto class_members_initial= class_type.lock_imut().deref().members_initial;
+
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
+	{
+		var ust::string8& field_name= field_pair[0];
+
+		var ClassField class_field= field_pair[1].lock_imut().deref(); // Take copy in order to avoid holding lock object.
+
+		var size_type field_index( class_field.index );
+		if( field_index < initialized_fields.size() && initialized_fields[ field_index ] )
+		{
+			continue;
+		}
+
+		if( class_field.index == ~0u ){ continue; } // May be in case of error
+
+		auto& initializer= class_field.syntax_element.deref().initializer;
+		if( initializer.has</Synt::EmptyVariant/>() )
+		{
+			if( class_field.is_reference )
+			{
+				REPORT_ERROR( ExpectedInitializer, names_scope, constructor_initialization_list.src_loc, field_name )
+				continue;
+			}
+			else if( !class_field.is_mutable )
+			{
+				// HACK! Can't use "AccessDirectClassField" here, since it returns immtable reference.
+				// So, just create derived reference field, not a child node for the field.
+				var VariablePtr field_variable_ptr=
+					Variable
+					{
+						.t= class_field.t,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= CreateClassFieldGEP( function_context, this_ptr, class_field ),
+						.name= ust::concat( this_ptr.lock_imut().deref().name, ".", field_name ),
+					}.CreatePtr();
+
+				function_context.references_graph.AddNode( field_variable_ptr );
+				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
+				function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
+
+				ApplyEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
+
+				function_context.references_graph.RemoveNode( field_variable_ptr );
+			}
+			else
+			{
+				var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, field_name, constructor_initialization_list.src_loc );
+				ApplyEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
+			}
+		}
+		else
+		{
+			if( class_field.is_reference )
+			{
+				InitializeReferenceField( class_members_initial, function_context, this_ptr, class_field, initializer );
+			}
+			else if( !class_field.is_mutable )
+			{
+				// HACK! Can't use "AccessDirectClassField" here, since it returns immtable reference.
+				// So, just create derived reference field, not a child node for the field.
+				var VariablePtr field_variable_ptr=
+					Variable
+					{
+						.t= class_field.t,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= CreateClassFieldGEP( function_context, this_ptr, class_field ),
+						.name= ust::concat( this_ptr.lock_imut().deref().name, ".", field_name ),
+					}.CreatePtr();
+
+				function_context.references_graph.AddNode( field_variable_ptr );
+				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
+				function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
+
+				ApplyInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
+
+				function_context.references_graph.RemoveNode( field_variable_ptr );
+			}
+			else
+			{
+				var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, field_name, constructor_initialization_list.src_loc );
+				ApplyInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
+			}
+		}
+
+		function_context.initialized_this_fields[ size_type(class_field.index) ]= true;
+	}
+
+	// Apply explicit initializers.
+	foreach( &member_initializer : constructor_initialization_list.members_initializers )
+	{
+		if( member_initializer.name == KeywordToString( Keyword::base_ ) )
+		{
+			var VariablePtr base_variable_ptr= AccessClassBase( function_context, this_ptr );
+			ApplyInitializer( names_scope, function_context, base_variable_ptr, member_initializer.initializer );
+
+			function_context.initialized_this_fields[ base_field_index ]= true;
+			continue;
+		}
+
+		auto field_ptr= class_members.GetThisScopeValue( member_initializer.name ).try_deref().Get</ClassField/>();
+		var ClassField class_field= field_ptr.try_lock_imut().deref(); // Take copy in order to avoid holding lock object.
+
+		if( class_field.index == ~0u ){ continue; } // May be in case of error
+
+		if( class_field.is_reference )
+		{
+			InitializeReferenceField( names_scope, function_context, this_ptr, class_field, member_initializer.initializer );
+		}
+		else if( !class_field.is_mutable )
+		{
+			// HACK! Can't use "AccessDirectClassField" here, since it returns immtable reference.
+			// So, just create derived reference field, not a child node for the field.
+			var VariablePtr field_variable_ptr=
+				Variable
+				{
+					.t= class_field.t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateClassFieldGEP( function_context, this_ptr, class_field ),
+					.name= ust::concat( this_ptr.lock_imut().deref().name, ".", member_initializer.name ),
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( field_variable_ptr );
+			function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
+			function_context.references_graph.TryAddInnerLinksForClassField( this_ptr, field_variable_ptr, class_field, names_scope, constructor_initialization_list.src_loc );
+
+			ApplyInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer );
+
+			function_context.references_graph.RemoveNode( field_variable_ptr );
+		}
+		else
+		{
+			var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, member_initializer.name, member_initializer.src_loc );
+			ApplyInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer );
+		}
+
+		function_context.initialized_this_fields[ size_type(class_field.index) ]= true;
+	}
+
+	function_context.whole_this_is_unavailable= false;
+	function_context.initialized_this_fields.clear();
+}
+
+fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type )
+{
+	auto class_members_ptr= class_type.lock_imut().deref().members;
+
+	auto mut function_context= CreateGlobalFunctionContext();
+
+	var VariablePtr this_variable_ptr=
+		Variable
+		{
+			.t= class_type,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
+			.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, g_null_string ) ),
+			.name= KeywordToString( Keyword::this_ ),
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( this_variable_ptr );
+
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
+	{
+		var ClassField class_field= field_pair[1].lock_imut().deref(); // Take copy in order to avoid holding lock object.
+
+		if( class_field.index == ~0u ){ continue; } // May be in case of error
+
+		auto& initializer= class_field.syntax_element.deref().initializer;
+		if( initializer.has</Synt::EmptyVariant/>() )
+		{
+			continue; // Skip empty initializers.
+		}
+
+		if( class_field.is_reference )
+		{
+			InitializeReferenceField( class_members_ptr, function_context, this_variable_ptr, class_field, initializer );
+		}
+		else
+		{
+			var VariablePtr field_variable_ptr=
+				Variable
+				{
+					.t= class_field.t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateClassFieldGEP( function_context, this_variable_ptr, class_field ),
+					.name= field_pair[0],
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( field_variable_ptr );
+
+			ApplyInitializer( class_members_ptr, function_context, field_variable_ptr, initializer );
+
+			function_context.references_graph.RemoveNode( field_variable_ptr );
+		}
+	}
+
+	function_context.references_graph.RemoveNode( this_variable_ptr );
+}
+
+} // namespace U1

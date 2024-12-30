@@ -1,0 +1,94 @@
+import "/CodeBuilderLib/keywords.uh"
+import "syntax_elements.uh"
+
+namespace U1
+{
+
+namespace Synt
+{
+
+// Size asserts - calculated for 64 bit.
+static_assert( typeinfo</ComplexName/>.size_of <= 40s );
+static_assert( typeinfo</TypeName/>.size_of <= 48s );
+static_assert( typeinfo</Expression/>.size_of <= 48s );
+static_assert( typeinfo</Initializer/>.size_of <= 56s );
+static_assert( typeinfo</BlockElement/>.size_of <= 96s );
+static_assert( typeinfo</IfAlternative/>.size_of <= 48s );
+
+fn FunctionType::IsAutoReturn( this ) : bool
+{
+	if_var( &r : return_type )
+	{
+		if_var( &n : r.get</ComplexName/>() )
+		{
+			if_var( &l : n.get</NameLookup/>() )
+			{
+				return l.name == KeywordToString( Keyword::auto_ );
+			}
+		}
+	}
+	return false;
+}
+
+fn GetSrcLocImpl( EmptyVariant& e ) : SrcLoc
+{
+	ust::ignore_unused(e);
+	return SrcLoc();
+}
+
+template</type T/>
+fn GetSrcLocImpl( T& t ) : SrcLoc
+{
+	return t.src_loc;
+}
+
+template</type T/>
+fn GetSrcLocImpl( ust::box</T/>& t ) : SrcLoc
+{
+	return GetSrcLocImpl(t.deref());
+}
+
+template</type T, bool is_nullable/>
+fn GetSrcLocImpl( ust::shared_ptr_final_base</T, is_nullable/>& t ) : SrcLoc
+{
+	return GetSrcLocImpl(t.deref());
+}
+
+template</type Tup/>
+fn GetSrcLocImpl( ust::variant</Tup/>& t ) : SrcLoc
+{
+	variant_visit( &el : t )
+	{
+		return GetSrcLocImpl(el);
+	}
+	halt;
+}
+
+fn GetSrcLoc( Initializer& initializer ) : SrcLoc
+{
+	return GetSrcLocImpl(initializer);
+}
+
+fn GetSrcLoc( TypeName& type_name ) : SrcLoc
+{
+	return GetSrcLocImpl(type_name);
+}
+
+fn GetSrcLoc( ComplexName& complex_name ) : SrcLoc
+{
+	return GetSrcLocImpl(complex_name);
+}
+
+fn GetSrcLoc( Expression& expression ) : SrcLoc
+{
+	return GetSrcLocImpl(expression);
+}
+
+fn GetSrcLoc( BlockElement& block_element ) : SrcLoc
+{
+	return GetSrcLocImpl(block_element);
+}
+
+} // namespace Synt
+
+} // namespace U1

@@ -1,4 +1,5 @@
-import "../code_builder_lib/code_builder.uh"
+import "mangling_scheme.uh"
+import "llvm.uh"
 
 // If contents of this file changed, funcs_c.hpp must be changed too!
 

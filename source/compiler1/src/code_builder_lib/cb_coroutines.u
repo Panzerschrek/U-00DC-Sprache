@@ -1,0 +1,960 @@
+import "/assert.u"
+import "/scoped_array.u"
+import "/sort.u"
+import "/CodeBuilderLib/keywords.uh"
+import "code_builder.uh"
+import "error_reporting.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( mut this, FunctionType& function_type, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	// Require completeness of all param types and return type in order to perform reference notation checks.
+
+	foreach( &param : function_type.params )
+	{
+		EnsureTypeComplete( param.t );
+	}
+
+	EnsureTypeComplete( function_type.return_type );
+
+	auto return_type_tag_count= function_type.return_type.ReferenceTagCount();
+	// For coroutines use strict criteria - require setting reference notation with exact size.
+	if( function_type.return_inner_references.size() != size_type(return_type_tag_count) )
+	{
+		REPORT_ERROR( InnerReferenceTagCountMismatch, names_scope, src_loc, return_type_tag_count, function_type.return_inner_references.size() )
+	}
+
+	CheckFunctionReferencesNotationInnerReferences( function_type, names_scope, src_loc );
+}
+
+fn CodeBuilder::TransformCoroutineFunctionType(
+	mut this,
+	FunctionType &mut coroutine_function_type,
+	FunctionVariable::Kind kind,
+	NamesScopePtr& names_scope,
+	SrcLoc& src_loc )
+{
+	var CoroutineTypeDescription mut coroutine_type_description
+	{
+		.kind= CoroutineKind::Generator, // Set later.
+		.return_type= coroutine_function_type.return_type,
+		.return_value_type= coroutine_function_type.return_value_type,
+		.non_sync_= false, // Set later
+	};
+
+	switch( kind )
+	{
+		FunctionVariable::Kind::Regular -> { halt; },
+		FunctionVariable::Kind::Generator -> { coroutine_type_description.kind= CoroutineKind::Generator; },
+		FunctionVariable::Kind::Async -> { coroutine_type_description.kind= CoroutineKind::AsyncFunc; },
+	}
+
+	// Non-sync property is based on non-sync property of args and return values.
+	// Evaluate it immediately.
+	coroutine_type_description.non_sync_= false;
+	if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
+		GetTypeNonSync( coroutine_function_type.return_type, names_scope, src_loc ) )
+	{
+		coroutine_type_description.non_sync_= true;
+	}
+
+	foreach( &param : coroutine_function_type.params )
+	{
+		if( EnsureTypeComplete( param.t ) && GetTypeNonSync( param.t, names_scope, src_loc ) )
+		{
+			coroutine_type_description.non_sync_= true;
+		}
+	}
+
+	// Calculate inner references.
+	// Each reference param adds new inner reference.
+	// Each value param creates number of references equal to number of inner references of its type.
+	// For now reference params of types with references inside are not supported.
+
+	// If this changed, "GetCoroutineInnerReferenceForParamNode" function must be changed too!
+
+	scoped_array size_type mut param_to_first_inner_reference_tag[ coroutine_function_type.params.size() ]( 0s );
+
+	var FunctionType::ReturnInnerReferences mut coroutine_return_inner_ferences;
+
+	for( auto mut param_index= 0s; param_index < coroutine_function_type.params.size(); ++param_index )
+	{
+		var FunctionType::Param& param= coroutine_function_type.params[param_index];
+		param_to_first_inner_reference_tag[param_index]= coroutine_type_description.inner_references.size();
+		if( param.value_type == ValueType::Value )
+		{
+			// Require type completeness for value params in order to know inner references.
+			if( EnsureTypeComplete( param.t ) )
+			{
+				auto reference_tag_count= param.t.ReferenceTagCount();
+				for( auto mut i= 0u; i < reference_tag_count; ++i )
+				{
+					coroutine_type_description.inner_references.push_back( param.t.GetInnerReferenceKind( size_type(i) ) );
+					coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= u8(i) } ) );
+				}
+			}
+		}
+		else
+		{
+			// Coroutine is an object, that holds references to reference-args of coroutine function.
+			// It's generally not allowed to create types with references to other types with references inside.
+			// Second order references are possible in some cases, but for now not for coroutines.
+			if( EnsureTypeComplete( param.t ) && param.t.ReferenceTagCount() > 0u )
+			{
+				var ust::string8 field_name= ust::concat( "param of type ", param.t.ToString() );
+				REPORT_ERROR( ReferenceIndirectionDepthExceeded, names_scope, src_loc, 1, field_name ) // TODO - use separate error code.
+			}
+
+			// Assume this is a reference to type with no references inside.
+			// This is checked later - when building function code.
+			// Do this later in order to avoid full type building for reference params.
+			coroutine_type_description.inner_references.push_back( ( param.value_type == ValueType::ReferenceMut ? InnerReferenceKind::Mut : InnerReferenceKind::Imut ) );
+
+			coroutine_return_inner_ferences.push_back( ust::make_array( FunctionType::ParamReference{ .param_index= u8(param_index), .reference_index= FunctionType::c_param_reference_number } ) );
+		}
+	}
+
+	// Fill references of return value.
+	foreach( &param_reference : coroutine_function_type.return_references )
+	{
+		if( size_type( param_reference.param_index) >= coroutine_function_type.params.size() )
+		{
+			continue;
+		}
+
+		coroutine_type_description.return_references.push_back(
+			FunctionType::ParamReference
+			{
+				.param_index(0),
+				.reference_index= (
+					param_reference.reference_index == FunctionType::c_param_reference_number
+						? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
+						: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
+			} );
+	}
+
+	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
+	for( auto mut i= 0s; i < coroutine_function_type.return_inner_references.size(); ++i )
+	{
+		foreach( &param_reference : coroutine_function_type.return_inner_references[i] )
+		{
+			if( size_type( param_reference.param_index) >= coroutine_function_type.params.size() )
+			{
+				continue;
+			}
+
+			coroutine_type_description.return_inner_references[i].push_back(
+				FunctionType::ParamReference
+				{
+					.param_index(0),
+					.reference_index= (
+						param_reference.reference_index == FunctionType::c_param_reference_number
+							? u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] )
+							: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
+				} );
+		}
+	}
+
+	// Coroutine function returns value of coroutine type.
+	coroutine_function_type.return_type= GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );
+	coroutine_function_type.return_value_type= ValueType::Value;
+
+	// Params references and references inside param types are mapped to coroutine type inner references.
+	coroutine_function_type.return_inner_references= move(coroutine_return_inner_ferences);
+	coroutine_function_type.return_references.clear();
+}
+
+fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr
+{
+	if_var( &prev_class : coroutine_classes_.find( coroutine_type_description ) )
+	{
+		return prev_class;
+	}
+
+	var ust::string_view8 mut class_base_name;
+	switch( coroutine_type_description.kind )
+	{
+		CoroutineKind::Generator -> { class_base_name= KeywordToString( Keyword::generator_ ); },
+		CoroutineKind::AsyncFunc -> { class_base_name= KeywordToString( Keyword::async_ ); },
+	}
+
+	var NamesScopeMutPtr class_members_ptr( NamesScope( class_base_name, root_namespace ) );
+
+	var ClassTypePtr class_type_ptr(
+		ClassType
+		{
+			.members= class_members_ptr,
+			.members_initial= class_members_ptr,
+			.is_complete= true,
+			.is_default_constructible= false,
+			.is_copy_constructible= false,
+			.is_copy_assignable= false,
+			.is_equality_comparable= true,
+			.has_explicit_noncopy_constructors= false,
+			// This class allocates heep memory and because of that can't be constexpr.
+			.can_be_constexpr= false,
+			.parents_list_prepared= true,
+			.inner_references=
+				coroutine_type_description
+				.inner_references
+				.iter()
+				.map( lambda( InnerReferenceKind k ) : InnerReference { return InnerReference{ .kind= k }; } )
+				.collect</ ust::vector />(),
+			.generated_class_data( coroutine_type_description ),
+		} );
+
+	var ust::string8 class_name= mangler_.deref().MangleType( class_type_ptr );
+	var LLVMTypeRef llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, class_name.front() ) );
+	var LLVMTypeRef mut coroutine_handle_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
+	unsafe( LLVMStructSetBody( llvm_type, $<(coroutine_handle_type), 1u, LLVMBool::False ) );
+	with( mut lock : class_type_ptr.lock_mut() )
+	{
+		lock.deref().llvm_type= llvm_type;
+	}
+
+	with( mut lock : class_members_ptr.lock_mut() )
+	{
+		var FunctionsSet functions_set{ .class_= class_type_ptr };
+		lock.deref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
+		lock.deref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
+		lock.deref().AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
+		lock.deref().SetClass( class_type_ptr );
+	}
+
+	{ // Generate destructor.
+		TryGenerateDestructorPrototype( class_type_ptr );
+
+		auto class_members_lock= class_members_ptr.lock_imut();
+		auto& class_members= class_members_lock.deref();
+
+		// Destructors value should always exists and should always be FunctionsSet.
+		auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</FunctionsSet/>();
+		auto mut destructors_lock= destructors_ptr.try_lock_mut();
+		var FunctionsSet &mut destructors= destructors_lock.deref();
+
+		var FunctionVariable &mut function_variable= destructors.functions.back();
+		function_variable.is_generated= true;
+
+		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
+
+		var LLVMBuilderRef ir_builder= unsafe( LLVMCreateBuilderInContext( llvm_context_ ) );
+		unsafe( LLVMPositionBuilderAtEnd( ir_builder, LLVMAppendBasicBlockInContext( llvm_context_, llvm_function, "func_code\0"[0] ) ) );
+
+		var LLVMValueRef this_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
+		var LLVMValueRef mut coro_handle= unsafe( LLVMBuildLoad2( ir_builder, coroutine_handle_type, this_llvm_value, g_null_string ) );
+		unsafe( LLVMBuildCall2( ir_builder, U1_GetFunctionType(coro_.destroy), coro_.destroy, $<(coro_handle), 1u, g_null_string ) );
+		unsafe( LLVMBuildRetVoid( ir_builder ) );
+
+		unsafe( LLVMDisposeBuilder( ir_builder ) );
+	}
+	{ // Generate == operator
+
+		// Prepare function type.
+		var FunctionType mut function_type
+		{
+			.return_type( bool_type_ ),
+			.return_value_type= ValueType::Value,
+			.params( 2s, FunctionType::Param{ .t( class_type_ptr ), .value_type= ValueType::ReferenceImut } )
+		};
+
+		auto op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+
+		// Prepare function variable.
+		var FunctionVariable mut function_variable
+		{
+			.is_this_call= false,
+			.is_generated= true,
+			.llvm_function( LazyLLVMFunction(
+				mangler_.deref().MangleFunction(
+					class_members_ptr.lock_imut().deref(),
+					op_name,
+					function_type ) ) ),
+			.t= move(function_type),
+		};
+
+		{
+			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
+
+			var LLVMBuilderRef ir_builder= unsafe( LLVMCreateBuilderInContext( llvm_context_ ) );
+			unsafe( LLVMPositionBuilderAtEnd( ir_builder, LLVMAppendBasicBlockInContext( llvm_context_, llvm_function, "func_code\0"[0] ) ) );
+
+			var LLVMValueRef l_address= unsafe( LLVMGetParam( llvm_function, 0u ) );
+			var LLVMValueRef r_address= unsafe( LLVMGetParam( llvm_function, 1u ) );
+			var LLVMValueRef l_value= unsafe( LLVMBuildLoad2( ir_builder, coroutine_handle_type, l_address, g_null_string ) );
+			var LLVMValueRef r_value= unsafe( LLVMBuildLoad2( ir_builder, coroutine_handle_type, r_address, g_null_string ) );
+			var LLVMValueRef cmp= unsafe( LLVMBuildICmp( ir_builder, LLVMIntPredicate::EQ, l_value, r_value, g_null_string ) );
+			unsafe( LLVMBuildRet( ir_builder, cmp ) );
+
+			unsafe( LLVMDisposeBuilder( ir_builder ) );
+		}
+
+		with( mut lock : class_members_ptr.lock_mut() )
+		{
+			lock.deref().AddName( op_name, FunctionsSet{ .class_= class_type_ptr, .functions= ust::make_array( move(function_variable) ) } );
+		}
+	}
+
+	coroutine_classes_.insert( coroutine_type_description, class_type_ptr );
+	return class_type_ptr;
+}
+
+fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_context )
+{
+	// We need to mark somehow basic blocks for further optimizations.
+	// Since it's not possible to associate metadata with blocks, associate it with first block instrucitons.
+
+	unsafe // Because a lot of llvm-calls.
+	{
+		var LLVMTypeRef pointer_type= LLVMPointerTypeInContext( llvm_context_, 0u );
+
+		var ClassTypePtr coroutine_class= function_context.function_type.return_type.GetClassType().try_deref();
+		var CoroutineTypeDescription coroutine_type_description= coroutine_class.lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
+		var LLVMTypeRef promise_type= (
+			coroutine_type_description.return_value_type == ValueType::Value
+				? coroutine_type_description.return_type.GetLLVMType()
+				: pointer_type );
+
+		var LLVMValueRef promise= LLVMBuildAlloca( function_context.alloca_ir_builder, promise_type, "coro_promise\0"[0] );
+		function_context.s_ret= promise;
+
+		var LLVMBasicBlockRef block_core_prepare= LLVMCreateBasicBlockInContext( llvm_context_, "coro_prepare\0"[0] );
+		LLVMBuildBr( function_context.llvm_ir_builder, block_core_prepare );
+
+		// Coro prepare block.
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_core_prepare );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_core_prepare );
+
+		var LLVMValueRef null= LLVMConstNull( pointer_type );
+
+		var [ LLVMValueRef, 4 ] mut coro_id_args[ LLVMConstInt( fundamental_llvm_types_.u32_, 0u64, LLVMBool::False ), promise, null, null ];
+		var LLVMValueRef mut coro_id= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.id), coro_.id, $<(coro_id_args[0]), 4u, "coro_id\0"[0] );
+		MarkInstructionWithEmptyMetadata( coro_id, "u_coro_block_prepare" );
+
+		var LLVMValueRef coro_need_to_alloc= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.alloc), coro_.alloc, $<(coro_id), 1u, "coro_need_to_alloc\0"[0] );
+
+		var LLVMBasicBlockRef coro_need_to_alloc_check_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+
+		var LLVMBasicBlockRef block_need_to_alloc= LLVMCreateBasicBlockInContext( llvm_context_, "need_to_alloc\0"[0] );
+		var LLVMBasicBlockRef block_coro_begin= LLVMCreateBasicBlockInContext( llvm_context_, "block_coro_begin\0"[0] );
+
+		LLVMBuildCondBr( function_context.llvm_ir_builder, coro_need_to_alloc, block_need_to_alloc, block_coro_begin );
+
+		// Need to alloc block.
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_need_to_alloc );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_need_to_alloc );
+
+		var LLVMValueRef mut coro_frame_size= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.size), coro_.size, ust::nullptr</LLVMValueRef/>(), 0u, "coro_frame_size\0"[0] );
+		MarkInstructionWithEmptyMetadata( coro_frame_size, "u_coro_block" );
+
+		var LLVMValueRef coro_frame_memory_allocated= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( malloc_function_ ), malloc_function_, $<(coro_frame_size), 1u, "coro_frame_memory_allocated\0"[0] );
+
+		LLVMBuildBr( function_context.llvm_ir_builder, block_coro_begin );
+
+		// block_coro_begin
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_coro_begin );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_coro_begin );
+
+		var LLVMValueRef coro_frame_memory= LLVMBuildPhi( function_context.llvm_ir_builder, pointer_type, "coro_frame_memory\0"[0] );
+		var [ LLVMValueRef, 2 ] mut phi_values[ null, coro_frame_memory_allocated ];
+		var [ LLVMBasicBlockRef, 2 ] mut phi_blocks[ coro_need_to_alloc_check_block, block_need_to_alloc ];
+		LLVMAddIncoming( coro_frame_memory, $<(phi_values[0]), $<(phi_blocks[0]), 2u );
+
+		MarkInstructionWithEmptyMetadata( coro_frame_memory, "u_coro_block_begin" );
+
+		var [ LLVMValueRef, 2 ] mut coro_begin_args[ coro_id, coro_frame_memory ];
+		var LLVMValueRef coro_handle= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.begin ), coro_.begin, $<(coro_begin_args[0]), 2u, "coro_handle\0"[0] );
+
+		function_context.coro_suspend_bb= LLVMCreateBasicBlockInContext( llvm_context_, "coro_suspend\0"[0] );
+
+		var LLVMBasicBlockRef func_code_block= LLVMCreateBasicBlockInContext( llvm_context_, "func_code\0"[0] );
+		LLVMBuildBr( function_context.llvm_ir_builder, func_code_block );
+
+		// Cleanup block.
+		function_context.coro_cleanup_bb= LLVMCreateBasicBlockInContext( llvm_context_, "coro_cleanup\0"[0] );
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.coro_cleanup_bb );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.coro_cleanup_bb );
+
+		var [ LLVMValueRef, 2 ] mut coro_free_args[ coro_id, coro_handle ];
+		var LLVMValueRef mut mem_for_free= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.free ), coro_.free, $<(coro_free_args[0]), 2u, "coro_frame_memory_for_free\0"[0] );
+		MarkInstructionWithEmptyMetadata( mem_for_free, "u_coro_block_cleanup" );
+
+		var LLVMValueRef need_to_free= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, mem_for_free, null, "coro_need_to_free\0"[0] );
+
+		var LLVMBasicBlockRef block_need_to_free= LLVMCreateBasicBlockInContext( llvm_context_, "need_to_free\0"[0] );
+		LLVMBuildCondBr( function_context.llvm_ir_builder, need_to_free, block_need_to_free, function_context.coro_suspend_bb );
+
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_need_to_free );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_need_to_free );
+
+		var LLVMValueRef free_call= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( free_function_ ), free_function_, $<(mem_for_free), 1u, g_null_string );
+		MarkInstructionWithEmptyMetadata( free_call, "u_coro_block" );
+		LLVMBuildBr( function_context.llvm_ir_builder, function_context.coro_suspend_bb );
+
+		// Suspend block.
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.coro_suspend_bb );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.coro_suspend_bb );
+
+		var [ LLVMValueRef, 2 ] mut coro_end_args[ coro_handle, LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ];
+		var LLVMValueRef end_call= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.end ), coro_.end, $<(coro_end_args[0]), 2u, g_null_string );
+		MarkInstructionWithEmptyMetadata( end_call, "u_coro_block_suspend" );
+
+		LLVMBuildRet( function_context.llvm_ir_builder, coro_handle );
+
+		// End suspention point.
+		function_context.coro_final_suspend_bb= LLVMCreateBasicBlockInContext( llvm_context_, "coro_suspend_final\0"[0] );
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.coro_final_suspend_bb );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.coro_final_suspend_bb );
+
+		var [ LLVMValueRef, 2 ] mut final_suspend_args[ U1_ConstantTokenNone( llvm_context_ ), LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False ) ];
+		var LLVMValueRef final_suspend_value= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.suspend ), coro_.suspend, $<(final_suspend_args[0]), 2u, "final_suspend_value\0"[0] );
+		MarkInstructionWithEmptyMetadata( final_suspend_value, "u_coro_block_suspend_final" );
+
+		var LLVMBasicBlockRef unreachable_block= LLVMCreateBasicBlockInContext( llvm_context_, "coro_final_suspend_unreachable\0"[0] );
+
+		var LLVMValueRef switch_instr= LLVMBuildSwitch( function_context.llvm_ir_builder, final_suspend_value, function_context.coro_suspend_bb, 2u );
+		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 0u64, LLVMBool::False ), unreachable_block );
+		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 1u64, LLVMBool::False ), function_context.coro_cleanup_bb );
+
+		// Final suspend unreachable block.
+		// It's undefined behaviour to resume coroutine in final suspention state. So, just add unreachable instruction here.
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, unreachable_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, unreachable_block );
+		var LLVMValueRef unreachable_instruction= LLVMBuildUnreachable( function_context.llvm_ir_builder );
+		MarkInstructionWithEmptyMetadata( unreachable_instruction, "u_coro_block" );
+
+		// Block for further function code.
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, func_code_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, func_code_block );
+	}
+}
+
+fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc )
+{
+	if( function_context.coro_suspend_bb == LLVMBasicBlockRef::Null )
+	{
+		REPORT_ERROR( YieldOutsideCoroutine, names_scope, src_loc )
+		return;
+	}
+
+	// TODO - avoid taking copy
+	var CoroutineTypeDescription coroutine_type_description=
+		function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
+
+	var Type& yield_type= coroutine_type_description.return_type;
+	var ValueType return_value_type= coroutine_type_description.return_value_type;
+
+	if( expression.has</Synt::EmptyVariant/>() )
+	{
+		switch( coroutine_type_description.kind )
+		{
+			CoroutineKind::Generator ->
+			{
+				// Allow empty expression "yield" for void-return generators.
+				if( !( yield_type == void_type_ && return_value_type == ValueType::Value ) )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, src_loc, yield_type, void_type_ )
+				}
+			},
+			CoroutineKind::AsyncFunc ->
+			{
+				// Allow only empty "yield" for async functions.
+			}
+		}
+
+		CoroutineSuspend( names_scope, function_context, src_loc );
+		return;
+	}
+
+	if( coroutine_type_description.kind == CoroutineKind::AsyncFunc )
+	{
+		REPORT_ERROR( NonEmptyYieldInAsyncFunction, names_scope, src_loc )
+		CoroutineSuspend( names_scope, function_context, src_loc );
+		return;
+	}
+
+	// Perform "yield" for a generator.
+
+	// Fill promise.
+	var LLVMValueRef promise= function_context.s_ret;
+
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var VariablePtr mut expr_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+			if( return_value_type == ValueType::Value )
+			{
+				var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
+				if( expr_initial_type.ReferenceIsConvertibleTo( yield_type ) )
+				{}
+				else if_var( &conversion_constructor_ :
+					self.GetConversionConstructor(
+						names_scope,
+						yield_type,
+						VariableTypeExtended{ .t= expr_initial_type, .value_type= expr_ptr.lock_imut().deref().value_type },
+						src_loc ) )
+				{
+					expr_ptr= self.ConvertVariable( names_scope, function_context, expr_ptr, yield_type, conversion_constructor_, src_loc );
+				}
+				else
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, src_loc, yield_type, expr_initial_type )
+					return;
+				}
+
+				CheckAsyncReturnInnerReferencesAreAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
+
+				var VariableLite expr= expr_ptr;
+				if( !yield_type.GetClassType().empty() || !yield_type.GetArrayType().empty() || !yield_type.GetTupleType().empty() )
+				{
+					// Process composite value.
+					if( expr.value_type == ValueType::Value && expr.t == yield_type )
+					{
+						// Move.
+						function_context.references_graph.MoveNode( expr_ptr );
+
+						self.CopyBytes( promise, expr.llvm_value, yield_type, function_context );
+						self.CreateLifetimeEnd( function_context, expr.llvm_value );
+					}
+					else
+					{
+						// Copy.
+						if( !yield_type.IsCopyConstructible() )
+						{
+							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, yield_type )
+						}
+						else if( yield_type.IsAbstract() )
+						{
+							REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, src_loc, yield_type )
+						}
+						else
+						{
+							var LLVMValueRef expr_reference_converted= self.CreateReferenceCast( expr.llvm_value, expr.t, yield_type, function_context );
+							self.BuildCopyConstructorPart( names_scope, function_context, promise, expr_reference_converted, yield_type, src_loc );
+						}
+					}
+				}
+				else
+				{
+					// Just copy simple scalar.
+					var LLVMValueRef val= self.CreateMoveToLLVMRegisterInstruction( expr, function_context );
+					self.CreateTypedStore( function_context, yield_type, val, promise );
+				}
+			}
+			else
+			{
+				var VariableLite expr= expr_ptr;
+				if(!expr.t.ReferenceIsConvertibleTo( yield_type ) )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, src_loc, yield_type, expr.t )
+					return;
+				}
+				if( expr.value_type == ValueType::Value )
+				{
+					REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
+					return;
+				}
+				if( return_value_type == ValueType::ReferenceMut && expr.value_type != ValueType::ReferenceMut )
+				{
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
+				}
+
+				CheckAsyncReturnReferenceIsAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
+
+				var LLVMValueRef ref_casted= self.CreateReferenceCast( expr.llvm_value, expr.t, yield_type, function_context );
+				self.CreateTypedReferenceStore( function_context, yield_type, ref_casted, promise );
+			}
+
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+		});
+
+	// Suspend generator. Now generator caller will recieve filled promise.
+	CoroutineSuspend( names_scope, function_context, src_loc );
+}
+
+fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc )
+{
+	if( function_context.coro_suspend_bb == LLVMBasicBlockRef::Null )
+	{
+		REPORT_ERROR( YieldOutsideCoroutine, names_scope, src_loc )
+		return;
+	}
+
+	// TODO - avoid taking copy
+	var CoroutineTypeDescription coroutine_type_description=
+		function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
+
+	var Type& return_type= coroutine_type_description.return_type;
+	var ValueType return_value_type= coroutine_type_description.return_value_type;
+
+	var LLVMValueRef promise= function_context.s_ret;
+
+	var VariablePtr return_node=
+		Variable
+		{
+			.t= return_type,
+			.value_type= return_value_type,
+			.location= Variable::Location::Pointer,
+			.name= "async return value",
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( return_node );
+
+	// Fill promise.
+
+	var VariablePtr mut expr_ptr=
+		( return_value_type == ValueType::Value
+			? BuildExpressionCodeForValueReturn( names_scope, function_context, expression )
+			: BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ) );
+	if( return_value_type == ValueType::Value )
+	{
+		var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
+		if( expr_initial_type.ReferenceIsConvertibleTo( return_type ) )
+		{}
+		else if_var( &conversion_constructor_ :
+			GetConversionConstructor(
+				names_scope,
+				return_type,
+				VariableTypeExtended{ .t= expr_initial_type, .value_type= expr_ptr.lock_imut().deref().value_type },
+				src_loc ) )
+		{
+			expr_ptr= ConvertVariable( names_scope, function_context, expr_ptr, return_type, conversion_constructor_, src_loc );
+		}
+		else
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, src_loc, return_type, expr_initial_type )
+			function_context.references_graph.RemoveNode( return_node );
+			return;
+		}
+
+		CheckAsyncReturnInnerReferencesAreAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
+		function_context.references_graph.TryAddInnerLinks( expr_ptr, return_node, names_scope, src_loc );
+
+		var VariableLite expr= expr_ptr;
+		if( !return_type.GetClassType().empty() || !return_type.GetArrayType().empty() || !return_type.GetTupleType().empty() )
+		{
+			// Process composite value.
+			if( expr.value_type == ValueType::Value && expr.t == return_type )
+			{
+				// Move.
+				function_context.references_graph.MoveNode( expr_ptr );
+
+				CopyBytes( promise, expr.llvm_value, return_type, function_context );
+				CreateLifetimeEnd( function_context, expr.llvm_value );
+			}
+			else
+			{
+				// Copy.
+				if( !return_type.IsCopyConstructible() )
+				{
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, return_type )
+				}
+				else if( return_type.IsAbstract() )
+				{
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, src_loc, return_type )
+				}
+				else
+				{
+					var LLVMValueRef expr_reference_converted= CreateReferenceCast( expr.llvm_value, expr.t, return_type, function_context );
+					BuildCopyConstructorPart( names_scope, function_context, promise, expr_reference_converted, return_type, src_loc );
+				}
+			}
+		}
+		else
+		{
+			// Just copy simple scalar.
+			var LLVMValueRef val= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+			CreateTypedStore( function_context, return_type, val, promise );
+		}
+	}
+	else
+	{
+		var VariableLite expr= expr_ptr;
+		if( !expr.t.ReferenceIsConvertibleTo( return_type ) )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, src_loc, return_type, expr.t )
+			function_context.references_graph.RemoveNode( return_node );
+			return;
+		}
+		if( expr.value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
+			function_context.references_graph.RemoveNode( return_node );
+			return;
+		}
+		if( return_value_type == ValueType::ReferenceMut && expr.value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
+		}
+
+		CheckAsyncReturnReferenceIsAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
+
+		// Add link to return value in order to catch error, when reference to local variable is returned.
+		function_context.references_graph.TryAddLink( expr_ptr, return_node, names_scope, src_loc );
+		function_context.references_graph.TryAddInnerLinks( expr_ptr, return_node, names_scope, src_loc );
+
+		var LLVMValueRef ref_casted= CreateReferenceCast( expr.llvm_value, expr.t, return_type, function_context );
+		CreateTypedReferenceStore( function_context, return_type, ref_casted, promise );
+	}
+
+	CallDestructorsForAllVariablesFrames( names_scope, function_context, src_loc );
+	CheckReferencesPollutionBeforeReturn( names_scope, function_context, src_loc );
+	function_context.references_graph.RemoveNode( return_node );
+
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.coro_final_suspend_bb ) );
+}
+
+fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc ) : Value
+{
+	var VariablePtr async_func_variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+
+	var VariableLite async_func_variable= async_func_variable_ptr;
+	if( async_func_variable.t == invalid_type_ )
+	{
+		return ErrorValue();
+	}
+
+	if( async_func_variable.value_type != ValueType::Value )
+	{
+		REPORT_ERROR( ImmediateValueExpectedInAwaitOperator, names_scope, src_loc )
+		return ErrorValue();
+	}
+
+	auto class_type_opt= async_func_variable.t.GetClassType();
+	if( class_type_opt.empty() )
+	{
+		REPORT_ERROR( AwaitForNonAsyncFunctionValue, names_scope, src_loc )
+		return ErrorValue();
+	}
+	var ClassTypePtr class_type= class_type_opt.try_deref();
+
+	var ust::optional</ CoroutineTypeDescription /> mut coroutine_type_description_opt;
+	if_var( &coroutine_type_description_inner : class_type.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />() )
+	{
+		if( coroutine_type_description_inner.kind != CoroutineKind::AsyncFunc )
+		{
+			REPORT_ERROR( AwaitForNonAsyncFunctionValue, names_scope, src_loc )
+			return ErrorValue();
+		}
+
+		coroutine_type_description_opt= coroutine_type_description_inner;
+	}
+	else
+	{
+		REPORT_ERROR( AwaitForNonAsyncFunctionValue, names_scope, src_loc )
+		return ErrorValue();
+	}
+	var CoroutineTypeDescription& coroutine_type_description= coroutine_type_description_opt.try_deref();
+
+	if( function_context.coro_suspend_bb == LLVMBasicBlockRef::Null )
+	{
+		REPORT_ERROR( AwaitOutsideAsyncFunction, names_scope, src_loc )
+		return ErrorValue();
+	}
+	if_var( &function_class_type : function_context.function_type.return_type.GetClassType() )
+	{
+		if_var( &function_coroutine_type_description : function_class_type.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />() )
+		{
+			if( function_coroutine_type_description.kind != CoroutineKind::AsyncFunc )
+			{
+				REPORT_ERROR( AwaitOutsideAsyncFunction, names_scope, src_loc )
+				return ErrorValue();
+			}
+		}
+	}
+
+	var Type& return_type= coroutine_type_description.return_type;
+	var ValueType& return_value_type= coroutine_type_description.return_value_type;
+
+	var Variable mut result
+	{
+		.t= return_type,
+		.value_type= return_value_type,
+		.location= Variable::Location::Pointer,
+		.name= async_func_variable_ptr.lock_imut().deref().name + " await result"
+	};
+
+	if( !function_context.is_functionless_context )
+	{
+		var LLVMBasicBlockRef already_done_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "already_done\0"[0] ) );
+		var LLVMBasicBlockRef loop_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "await_loop\0"[0] ) );
+		var LLVMBasicBlockRef not_done_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "await_not_done\0"[0] ) );
+		var LLVMBasicBlockRef done_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "await_done\0"[0] ) );
+
+		var LLVMTypeRef pointer_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
+
+		var LLVMValueRef mut coro_handle= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, pointer_type, async_func_variable.llvm_value, "coro_handle\0"[0] ) );
+		MarkInstructionWithEmptyMetadata( coro_handle, "u_await_coro_handle" );
+
+		var LLVMValueRef done= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.done), coro_.done, $<(coro_handle), 1u, "coro_done\0"[0] ) );
+
+		unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, done, already_done_block, loop_block ) );
+
+		// Already done block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, already_done_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, already_done_block ) );
+		// Halt if coroutine is already finished. There is no other way to create a fallback in such case.
+		// Normally this should not happen - in most case "await" operator should be used directly for async function call result.
+		unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, g_null_string ) );
+		unsafe( LLVMBuildUnreachable( function_context.llvm_ir_builder ) );
+
+		// Loop block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block ) );
+
+		var LLVMValueRef resume_call= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.resume), coro_.resume, $<(coro_handle), 1u, g_null_string ) );
+		MarkInstructionWithEmptyMetadata( resume_call, "u_await_resume" );
+
+		var LLVMValueRef done_after_resume= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.done), coro_.done, $<(coro_handle), 1u, "coro_done_after_resume\0"[0] ) );
+		unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, done_after_resume, done_block, not_done_block ) );
+
+		// Not done block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, not_done_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, not_done_block ) );
+
+		// TODO - perform context save independent on suspend?
+		CoroutineSuspend( names_scope, function_context, src_loc );
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) ); // Continue to check if the coroutine is done.
+
+		// Done block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, done_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, done_block ) );
+
+		var LLVMTypeRef promise_llvm_type= ( return_value_type == ValueType::Value ? return_type.GetLLVMType() : pointer_type );
+
+		var [ LLVMValueRef, 3 ] mut promise_args
+		[
+			coro_handle,
+			unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(LLVMABIAlignmentOfType( data_layout_, promise_llvm_type )), LLVMBool::False ) ),
+			unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ),
+		];
+		var LLVMValueRef promise= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.promise), coro_.promise, $<(promise_args[0]), 3u, "await_promise\0"[0] ) );
+
+		if( return_value_type == ValueType::Value )
+		{
+			result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, return_type.GetLLVMType(), "await result\0"[0] ) );
+			CreateLifetimeStart( function_context, result.llvm_value );
+			CopyBytes( result.llvm_value, promise, return_type, function_context );
+		}
+		else
+		{
+			result.llvm_value= CreateTypedReferenceLoad( function_context, return_type, promise );
+		}
+	}
+
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+
+	if( return_value_type == ValueType::Value )
+	{
+		with( &inner_references : async_func_variable_ptr.lock_imut().deref().inner_reference_nodes )
+		{
+			foreach( pair : result_ptr.lock_imut().deref().inner_reference_nodes.iter().zip( coroutine_type_description.return_inner_references.iter() ) )
+			{
+				foreach( &param_reference : pair.second )
+				{
+					debug_assert( param_reference.param_index == 0u8 );
+					debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
+					if( size_type(param_reference.reference_index) < inner_references.size() )
+					{
+						function_context.references_graph.TryAddLink(
+							inner_references[ size_type(param_reference.reference_index) ],
+							pair.first,
+							names_scope,
+							src_loc );
+					}
+				}
+			}
+		}
+	}
+	else
+	{
+		with( &inner_references : async_func_variable_ptr.lock_imut().deref().inner_reference_nodes )
+		{
+			foreach( &param_reference : coroutine_type_description.return_references )
+			{
+				debug_assert( param_reference.param_index == 0u8 );
+				debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
+				if( size_type(param_reference.reference_index) < inner_references.size() )
+				{
+					function_context.references_graph.TryAddLink(
+						inner_references[ size_type(param_reference.reference_index) ],
+						result_ptr,
+						names_scope,
+						src_loc );
+				}
+			}
+		}
+	}
+
+	// Move async function value, call destructor and create lifetime end.
+	// TODO - does it make sense to call a destructor for finished coroutine?
+
+	function_context.references_graph.MoveNode( async_func_variable_ptr );
+
+	if( !function_context.is_functionless_context )
+	{
+		debug_assert( async_func_variable.t.HasDestructor() );
+
+		with( &destructor_ :
+			class_type.lock_imut().deref().
+			members.lock_imut().deref().
+			GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</FunctionsSet/>()
+			.try_lock_imut().deref().functions.front() )
+		{
+			auto mut v= async_func_variable.llvm_value;
+			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( destructor_ );
+			var LLVMValueRef call_instruction= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( llvm_function ), llvm_function, $<(v), 1u, g_null_string ) );
+
+			MarkInstructionWithEmptyMetadata( call_instruction, "u_await_destructor_call" );
+		}
+
+		debug_assert( async_func_variable.location == Variable::Location::Pointer );
+		CreateLifetimeEnd( function_context, async_func_variable.llvm_value );
+	}
+
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::CoroutineSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
+{
+	unsafe
+	{
+		var [ LLVMValueRef, 2 ] mut suspend_args[ U1_ConstantTokenNone( llvm_context_ ), LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ];
+		var LLVMValueRef suspend_value= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( coro_.suspend ), coro_.suspend, $<(suspend_args[0]), 2u, "suspend_value\0"[0] );
+
+		var LLVMBasicBlockRef next_block= LLVMCreateBasicBlockInContext( llvm_context_, "suspend_normal\0"[0] );
+		var LLVMBasicBlockRef destroy_block= LLVMCreateBasicBlockInContext( llvm_context_, "suspend_destroy\0"[0] );
+
+		var LLVMValueRef switch_instr= LLVMBuildSwitch( function_context.llvm_ir_builder, suspend_value, function_context.coro_suspend_bb, 2u );
+		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 0u64, LLVMBool::False ), next_block );
+		LLVMAddCase( switch_instr, LLVMConstInt( fundamental_llvm_types_.i8_, 1u64, LLVMBool::False ), destroy_block );
+
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, destroy_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, destroy_block );
+		{
+			var ReferencesGraph mut references_graph= function_context.references_graph;
+			CallDestructorsForAllVariablesFrames( names_scope, function_context, src_loc );
+			CheckReferencesPollutionBeforeReturn( names_scope, function_context, src_loc );
+			function_context.references_graph= move(references_graph);
+		}
+		LLVMBuildBr( function_context.llvm_ir_builder, function_context.coro_cleanup_bb );
+
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, next_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_block );
+	}
+}
+
+fn CodeBuilder::CoroutineFinalSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
+{
+	// We can destroy all local variables right now. Leave only coroutine cleanup code in destroy block.
+	CallDestructorsForAllVariablesFrames( names_scope, function_context, src_loc );
+	CheckReferencesPollutionBeforeReturn( names_scope, function_context, src_loc );
+
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.coro_final_suspend_bb ) );
+}
+
+} // namespace U1

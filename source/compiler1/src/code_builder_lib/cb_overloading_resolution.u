@@ -1,0 +1,1112 @@
+import "/assert.u"
+import "/scoped_array.u"
+import "/CodeBuilderLib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+// "Class" of function argument in terms of overloading.
+enum ArgOverloadingClass
+{
+	// Value-args (both mutable and immutable), immutable references.
+	ImmutableReference,
+	// Mutable references.
+	MutalbeReference,
+}
+
+fn GetArgOverloadingClass( VariableTypeExtended& arg ) : ArgOverloadingClass
+{
+	return ( arg.value_type == ValueType::ReferenceMut ? ArgOverloadingClass::MutalbeReference : ArgOverloadingClass::ImmutableReference );
+}
+
+enum ConversionsCompareResult
+{
+	Same,
+	LeftIsBetter,
+	RightIsBetter,
+	Incomparable
+}
+
+fn ComplareConversionsType(
+	Type& src,
+	Type& dst_left,
+	Type& dst_right ) : ConversionsCompareResult
+{
+	if( dst_left == dst_right )
+	{
+		return ConversionsCompareResult::Same;
+	}
+	if( src == dst_left )
+	{
+		return ConversionsCompareResult::LeftIsBetter;
+	}
+	if( src == dst_right )
+	{
+		return ConversionsCompareResult::RightIsBetter;
+	}
+
+	if( src.ReferenceIsConvertibleTo( dst_left ) && src.ReferenceIsConvertibleTo( dst_right ) )
+	{
+		// SPRACHE_TODO - select more relevant compare function.
+
+		//const Class&   src_class= *src.GetClassType();
+		//const Class&  left_class= *src.GetClassType();
+		//const Class& right_class= *src.GetClassType();
+
+		if( dst_right.ReferenceIsConvertibleTo( dst_left  ) )
+		{
+			return ConversionsCompareResult::RightIsBetter;
+		}
+		if( dst_left .ReferenceIsConvertibleTo( dst_right ) )
+		{
+			return ConversionsCompareResult::LeftIsBetter;
+		}
+	}
+	// Reference conversions are better, than type conversions.
+	if( src.ReferenceIsConvertibleTo( dst_left  ) )
+	{
+		return ConversionsCompareResult::LeftIsBetter ;
+	}
+	if( src.ReferenceIsConvertibleTo( dst_right ) )
+	{
+		return ConversionsCompareResult::RightIsBetter;
+	}
+
+	return ConversionsCompareResult::Incomparable;
+}
+
+fn CompareConversionsMutability(
+	VariableTypeExtended& src,
+	FunctionType::Param& dst_left,
+	FunctionType::Param& dst_right ) : ConversionsCompareResult
+{
+	ust::ignore_unused( src ); // TODO - use it?
+
+	auto  left_overloding_class= GetArgOverloadingClass(dst_left );
+	auto right_overloding_class= GetArgOverloadingClass(dst_right);
+
+	if( left_overloding_class == right_overloding_class )
+	{
+		return ConversionsCompareResult::Same;
+	}
+	if( left_overloding_class == ArgOverloadingClass::MutalbeReference )
+	{
+		return ConversionsCompareResult::LeftIsBetter;
+	}
+	if( right_overloding_class == ArgOverloadingClass::MutalbeReference )
+	{
+		return ConversionsCompareResult::RightIsBetter;
+	}
+
+	return ConversionsCompareResult::Incomparable;
+}
+
+fn CompareConversions(
+	VariableTypeExtended& src,
+	FunctionType::Param& dst_left,
+	FunctionType::Param& dst_right ) : ConversionsCompareResult
+{
+	auto types_compare= ComplareConversionsType( src.t, dst_left.t, dst_right.t );
+	auto mutability_compare= CompareConversionsMutability( src, dst_left, dst_right );
+
+	if( types_compare == mutability_compare )
+	{
+		return types_compare;
+	}
+
+	if( types_compare == ConversionsCompareResult::Incomparable || mutability_compare == ConversionsCompareResult::Incomparable )
+	{
+		return ConversionsCompareResult::Incomparable;
+	}
+	if( types_compare == ConversionsCompareResult::Same )
+	{
+		return mutability_compare;
+	}
+	if( mutability_compare == ConversionsCompareResult::Same )
+	{
+		return types_compare;
+	}
+
+	return ConversionsCompareResult::Incomparable;
+}
+
+fn CompareConversions(
+	VariableTypeExtended& src,
+	FunctionType::Param& dst_left,
+	FunctionType::Param& dst_right,
+	TemplateSignatureParam& template_param_l,
+	TemplateSignatureParam& template_param_r ) : ConversionsCompareResult
+{
+	// Conversion result has greater preority. Compare template specialization only if conversions comare results are same.
+
+	auto conversions_compare= CompareConversions( src, dst_left, dst_right );
+	auto template_specialization_compare= CompareTemplateSpecialization( template_param_l, template_param_r );
+
+	if( conversions_compare == ConversionsCompareResult::Incomparable )
+	{
+		return ConversionsCompareResult::Incomparable;
+	}
+
+	if( conversions_compare == ConversionsCompareResult::LeftIsBetter ||
+		conversions_compare == ConversionsCompareResult::RightIsBetter )
+	{
+		return conversions_compare;
+	}
+
+	return template_specialization_compare;
+}
+
+fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignatureParam& r ) : ConversionsCompareResult
+{
+	if( !l.GetTemplateParam().empty() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::Same;
+		}
+		if( !r.GetType().empty() ||
+			!r.GetVariable().empty() ||
+			!r.GetTypeTemplate().empty() ||
+			!r.GetArray().empty() ||
+			!r.GetTuple().empty() ||
+			!r.GetRawPointer().empty() ||
+			!r.GetFunction().empty() ||
+			!r.GetCoroutine().empty() ||
+			!r.GetSpecializedTemplate().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter;
+		}
+	}
+	if( !l.GetType().empty() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Concrete type is better, than template parameter.
+		}
+		if( !r.GetType().empty() )
+		{
+			return ConversionsCompareResult::Same;
+		}
+		if( !r.GetArray().empty() ||
+			!r.GetTuple().empty() ||
+			!r.GetRawPointer().empty() ||
+			!r.GetFunction().empty() ||
+			!r.GetCoroutine().empty() ||
+			!r.GetSpecializedTemplate().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter;
+		}
+	}
+	if( !l.GetVariable().empty() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Concrete variable is better, than template parameter.
+		}
+		if( !r.GetVariable().empty() )
+		{
+			return ConversionsCompareResult::Same;
+		}
+	}
+	if( !l.GetTypeTemplate().empty() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Concrete type template is better, than template parameter.
+		}
+		if( !r.GetTypeTemplate().empty() )
+		{
+			return ConversionsCompareResult::Same;
+		}
+	}
+	if_var( &l_array_type : l.GetArray() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Array type is more specialized, than template parameter.
+		}
+		if( !r.GetType().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than array type.
+		}
+		if_var( &r_array_type : r.GetArray() )
+		{
+			auto type_compare_result= CompareTemplateSpecialization( l_array_type.element_type, r_array_type.element_type );
+			auto count_compare_result= CompareTemplateSpecialization( l_array_type.element_count, r_array_type.element_count );
+			if( type_compare_result == ConversionsCompareResult::Incomparable || count_compare_result == ConversionsCompareResult::Incomparable )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+			if( type_compare_result == ConversionsCompareResult::Same )
+			{
+				return count_compare_result;
+			}
+			if( count_compare_result == ConversionsCompareResult::Same )
+			{
+				return type_compare_result;
+			}
+			if( type_compare_result == count_compare_result )
+			{
+				return type_compare_result;
+			}
+			return ConversionsCompareResult::Incomparable;
+		}
+	}
+	if_var( &l_tuple_type : l.GetTuple() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Tuple type is more specialized, than template parameter.
+		}
+		if( !r.GetType().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than tupe type.
+		}
+		if_var( &r_tuple_type : r.GetTuple() )
+		{
+			if( l_tuple_type.element_types.size() != r_tuple_type.element_types.size() )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+
+			auto mut result= ConversionsCompareResult::Same;
+			foreach( pair : l_tuple_type.element_types.iter().zip( r_tuple_type.element_types.iter() ) )
+			{
+				auto param_result= CompareTemplateSpecialization( pair.first, pair.second );
+				if( param_result == ConversionsCompareResult::Incomparable )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+
+				if( param_result == ConversionsCompareResult::Same )
+				{}
+				else if( result == ConversionsCompareResult::Same )
+				{
+					result= param_result;
+				}
+				else if( result != param_result )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+			return result;
+		}
+	}
+	if_var( &l_raw_pointer_type : l.GetRawPointer() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Raw pointer type is more specialized, than template parameter.
+		}
+		if( !r.GetType().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than raw pointer type.
+		}
+		if_var( &r_raw_pointer_type : r.GetRawPointer() )
+		{
+			return CompareTemplateSpecialization( l_raw_pointer_type.element_type, r_raw_pointer_type.element_type );
+		}
+	}
+	if_var( &l_function_type : l.GetFunction() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Function type is more specialized, than template parameter.
+		}
+		if( !r.GetType().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than function type.
+		}
+		if_var( &r_function_type : r.GetFunction() )
+		{
+			halt if( l_function_type.params.size() != r_function_type.params.size() );
+
+			auto mut result= CompareTemplateSpecialization( l_function_type.return_type, r_function_type.return_type );
+			foreach( pair : l_function_type.params.iter().zip( r_function_type.params.iter() ) )
+			{
+				auto param_result= CompareTemplateSpecialization( pair.first.t, pair.second.t );
+				if( param_result == ConversionsCompareResult::Incomparable )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+
+				if( param_result == ConversionsCompareResult::Same )
+				{}
+				else if( result == ConversionsCompareResult::Same )
+				{
+					result= param_result;
+				}
+				else if( result != param_result )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+			return result;
+		}
+	}
+	if_var( &l_coroutine_type : l.GetCoroutine() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Coroutine type is more specialized, than template parameter.
+		}
+		if( !r.GetType().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than coroutine type.
+		}
+		if_var( &r_coroutine_type : r.GetCoroutine() )
+		{
+			if( l_coroutine_type.kind != r_coroutine_type.kind ||
+				l_coroutine_type.return_value_type != r_coroutine_type.return_value_type ||
+				l_coroutine_type.return_references != r_coroutine_type.return_references ||
+				l_coroutine_type.return_inner_references != r_coroutine_type.return_inner_references ||
+				l_coroutine_type.inner_references != r_coroutine_type.inner_references )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+
+			return CompareTemplateSpecialization( l_coroutine_type.return_type, r_coroutine_type.return_type );
+		}
+	}
+	if_var( &l_specialized_template : l.GetSpecializedTemplate() )
+	{
+		if( !r.GetTemplateParam().empty() )
+		{
+			return ConversionsCompareResult::LeftIsBetter; // Specialized template is more specialized, than template parameter.
+		}
+		if( !r.GetType().empty() )
+		{
+			return ConversionsCompareResult::RightIsBetter; // Concrete type is better, than specialized template.
+		}
+		if_var( &r_specialized_template : r.GetSpecializedTemplate() )
+		{
+			auto mut result= ConversionsCompareResult::Same;
+
+			if( l_specialized_template.type_templates.size() != r_specialized_template.type_templates.size() )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+			if( l_specialized_template.type_templates.size() == 1s )
+			{
+				// A case with type template params and/or single specific template.
+				result= CompareTemplateSpecialization( l_specialized_template.type_templates.front(), r_specialized_template.type_templates.front() );
+				if( result == ConversionsCompareResult::Incomparable )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+			else
+			{
+				// For complex cases do not compare conversions.
+				if( l_specialized_template.type_templates != r_specialized_template.type_templates )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+
+			// Templates with different arg count are uincomparable.
+			// This may happen for specializations which do not specialize at least some default signature arguments.
+			if( l_specialized_template.params.size() != r_specialized_template.params.size() )
+			{
+				return ConversionsCompareResult::Incomparable;
+			}
+
+			foreach( pair : l_specialized_template.params.iter().zip( r_specialized_template.params.iter() ) )
+			{
+				auto param_result= CompareTemplateSpecialization( pair.first, pair.second );
+				if( param_result == ConversionsCompareResult::Incomparable )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+
+				if( param_result == ConversionsCompareResult::Same )
+				{}
+				else if( result == ConversionsCompareResult::Same )
+				{
+					result= param_result;
+				}
+				else if( result != param_result )
+				{
+					return ConversionsCompareResult::Incomparable;
+				}
+			}
+			return result;
+		}
+	}
+
+	halt; // Unhandled combination of template signature parameter kinds.
+}
+
+fn ActualArgsToString( ust::array_view_imut</VariableTypeExtended/> actual_args ) : ust::string8
+{
+	var ust::string8 mut result;
+	foreach( &type_extended : actual_args )
+	{
+		result+= type_extended.t.ToString();
+		result+= " ";
+
+		if( type_extended.value_type == ValueType::ReferenceMut )
+		{
+			result+= "&mut ";
+		}
+		else if( type_extended.value_type == ValueType::ReferenceImut )
+		{
+			result+= "&imut ";
+		}
+
+		result+= "_"; // use some dummy for param name.
+
+		if( ust::ref_cmp_ne( type_extended, actual_args.back() ) )
+		{
+			result+= ", ";
+		}
+	}
+
+	return result;
+}
+
+fn CodeBuilder::GetFunctionWithSameType( FunctionsSet & mut functions_set, FunctionType& function_type ) : ust::optional_ref_mut</ FunctionVariable /> @(ust::reference_notation::return_inner_references::param0)
+{
+	foreach( &mut function : functions_set.functions )
+	{
+		if( function.t == function_type )
+		{
+			return function;
+		}
+	}
+
+	return ust::null_optional_ref;
+}
+
+fn CodeBuilder::ApplyOverloadedFunction(
+	FunctionsSet &mut functions_set,
+	FunctionVariable mut function,
+	NamesScopePtr& names_scope,
+	SrcLoc& src_loc ) : bool
+{
+	if( functions_set.functions.empty() )
+	{
+		functions_set.functions.push_back(function);
+		return true;
+	}
+
+	{
+		auto& function_type= function.t;
+
+		/*
+		Algorithm for overloading applying:
+		If parameter count differs - overload function.
+		If "ArgOverloadingClass" of one or more arguments differs - overload function.
+		*/
+		foreach( & set_function : functions_set.functions )
+		{
+			if( function.no_mangle || set_function.no_mangle )
+			{
+				REPORT_ERROR( CouldNotOverloadFunction, names_scope, src_loc )
+				return false;
+			}
+
+			auto& set_function_type= set_function.t;
+
+			// If argument count differs - allow overloading.
+			// SPRACHE_TODO - handle default arguments.
+			if( function_type.params.size() != set_function_type.params.size() )
+			{
+				continue;
+			}
+
+			auto mut arg_is_same_count= 0s;
+			foreach( pair : function_type.params.iter().zip( set_function_type.params.iter() ) )
+			{
+				auto& param= pair.first;
+				auto& set_param= pair.second;
+				if( param.t == set_param.t && GetArgOverloadingClass( param ) == GetArgOverloadingClass( set_param ) )
+				{
+					++arg_is_same_count;
+				}
+			}
+
+			if( arg_is_same_count == function_type.params.size() )
+			{
+				REPORT_ERROR( CouldNotOverloadFunction, names_scope, src_loc )
+				return false;
+			}
+		} // For functions in set.
+	}
+
+	// No error - add function to set.
+	functions_set.functions.push_back( move(function) );
+	return true;
+}
+
+fn CodeBuilder::OverloadingResolutionItemGetParamExtendedType( mut this, OverloadingResolutionItem& item, size_type param_index ) : VariableTypeExtended
+{
+	if_var( &variable : item.get</FunctionVariable/>() )
+	{
+		return variable.t.params[param_index];
+	}
+	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
+	{
+		auto function_template_lock= template_function.function_template.lock_imut();
+		var FunctionTemplate& function_template= function_template_lock.deref();
+
+		auto& params= function_template.syntax_element.deref().function.deref().function_type.params;
+		var Synt::FunctionType::Param& param= params[param_index];
+
+		var ValueType mut value_type= ValueType::Value;
+		if( param.reference_modifier == Synt::ReferenceModifier::Reference )
+		{
+			value_type= ( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		}
+
+		var Type mut t;
+		if( param.name == KeywordToString( Keyword::this_ ) )
+		{
+			auto& class_type_opt= function_template.class_;
+			if( !class_type_opt.empty() )
+			{
+				t= class_type_opt.try_to_non_nullable();
+			}
+			else
+			{
+				t= invalid_type_; // May be in case of error.
+			}
+		}
+		else
+		{
+			var FunctionContext mut global_function_context= CreateGlobalFunctionContext();
+			t= PrepareType( template_function.args_names_scope, global_function_context, param.t );
+		}
+
+		return VariableTypeExtended{ .value_type= value_type, .t= move(t) };
+	}
+	halt;
+}
+
+fn CodeBuilder::OverloadingResolutionItemGetTemplateSignatureParam( mut this, OverloadingResolutionItem& item, size_type param_index ) : TemplateSignatureParam
+{
+	if( item.has</FunctionVariable/>() )
+	{
+		return TemplateSignatureParam::Type();
+	}
+	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
+	{
+		return template_function.function_template.lock_imut().deref().signature_params[param_index];
+	}
+	halt;
+}
+
+fn CodeBuilder::OverloadingResolutionItemIsThisCall( mut this, OverloadingResolutionItem& item ) : bool
+{
+	if_var( &variable : item.get</FunctionVariable/>() )
+	{
+		return variable.is_this_call;
+	}
+	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
+	{
+		with( & params : template_function.function_template.lock_imut().deref().syntax_element.deref().function.deref().function_type.params )
+		{
+			return !params.empty() && params.front().name == KeywordToString( Keyword::this_ );
+		}
+	}
+	halt;
+}
+
+fn CodeBuilder::OverloadingResolutionItemIsConversionConstructor( mut this, OverloadingResolutionItem& item ) : bool
+{
+	if_var( &variable : item.get</FunctionVariable/>() )
+	{
+		return variable.is_conversion_constructor;
+	}
+	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
+	{
+		return template_function.function_template.lock_imut().deref().syntax_element.deref().function.deref().is_conversion_constructor;
+	}
+	halt;
+}
+
+fn CodeBuilder::FinalizeSelectedFunction(
+	mut this,
+	OverloadingResolutionItem& item,
+	NamesScopePtr& names_scope, // Needed only for errors reporting
+	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
+{
+	if_var( &variable : item.get</FunctionVariable/>() )
+	{
+		return variable;
+	}
+	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
+	{
+		return FinishTemplateFunctionGeneration( template_function.function_template, template_function.args_names_scope, names_scope, src_loc );
+	}
+	halt;
+}
+
+fn CodeBuilder::FetchMatchedOverloadedFunctions(
+	mut this,
+	FunctionsSet& functions_set,
+	ust::array_view_imut</VariableTypeExtended/> actual_args,
+	bool first_actual_arg_is_this,
+	NamesScopePtr& names_scope, // Needed only for errors reporting
+	SrcLoc& src_loc,
+	bool allow_type_conversions,
+	ust::vector</OverloadingResolutionItem/> &mut out_matched_functions )
+{
+	foreach( & function : functions_set.functions )
+	{
+		var FunctionType& function_type= function.t;
+
+		auto mut actual_args_corrected= actual_args;
+		if( first_actual_arg_is_this && !function.is_this_call )
+		{
+			actual_args_corrected.drop_front();
+		}
+
+		if( function_type.params.size() != actual_args_corrected.size() )
+		{
+			continue;
+		}
+
+		auto mut all_args_are_compatible= true;
+		for( auto mut arg_n= 0s; arg_n < actual_args_corrected.size(); ++arg_n )
+		{
+			auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
+			auto parameter_overloading_class= GetArgOverloadingClass( function_type.params[arg_n] );
+
+			auto& src_type= actual_args_corrected[arg_n].t;
+			auto& dst_type= function_type.params[arg_n].t;
+			if( src_type != dst_type )
+			{
+				if( !( EnsureTypeComplete( src_type ) && EnsureTypeComplete( dst_type ) ) )
+				{
+					REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
+					all_args_are_compatible= false;
+					break;
+				}
+
+				if( src_type.ReferenceIsConvertibleTo( dst_type ) )
+				{} // Ok - convert references.
+				else if(
+					allow_type_conversions &&
+					parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+					!function.is_conversion_constructor && // Disable conversion for conversion constructor.
+					!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().try_deref() ) ) && // Disable conversion for copy constructor.
+					HasConversionConstructor( names_scope, dst_type, actual_args_corrected[arg_n], src_loc ) )
+				{} // Ok, can convert arg.
+				else
+				{
+					all_args_are_compatible= false;
+					break;
+				}
+			}
+
+			if( arg_overloading_class == parameter_overloading_class )
+			{} // All ok, exact match
+			else if( parameter_overloading_class == ArgOverloadingClass::MutalbeReference &&
+				arg_overloading_class != ArgOverloadingClass::MutalbeReference )
+			{
+				// We can only bind nonconst-reference arg to nonconst-reference parameter.
+				all_args_are_compatible= false;
+				break;
+			}
+			else if( parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
+				arg_overloading_class == ArgOverloadingClass::MutalbeReference )
+			{} // Ok, mut to imut conversion.
+			else{ halt; }
+		}
+
+		if( all_args_are_compatible )
+		{
+			out_matched_functions.push_back(function);
+		}
+	}
+
+	foreach( &function_template : functions_set.function_templates )
+	{
+		if_var( mut preparation_result : PrepareTemplateFunction( function_template, ust::empty_range, actual_args, first_actual_arg_is_this, src_loc ) )
+		{
+			out_matched_functions.push_back( move(preparation_result) );
+		}
+	}
+
+	foreach( &parameterized_function_template : functions_set.parameterized_function_templates )
+	{
+		if_var( mut preparation_result : PrepareTemplateFunction( parameterized_function_template.base_template, parameterized_function_template.known_args, actual_args, first_actual_arg_is_this, src_loc ) )
+		{
+			out_matched_functions.push_back( move(preparation_result) );
+		}
+	}
+}
+
+fn CodeBuilder::SelectOverloadedFunction(
+	mut this,
+	ust::array_view_imut</VariableTypeExtended/> actual_args,
+	bool first_actual_arg_is_this,
+	NamesScopePtr& names_scope, // Needed only for errors reporting
+	SrcLoc& src_loc,
+	ust::array_view_imut</OverloadingResolutionItem/> matched_functions ) : size_type
+{
+	if( matched_functions.empty() )
+	{
+		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
+		return ~0s;
+	}
+
+	scoped_array bool mut best_functions[ matched_functions.size() ]( true );
+
+	// For each argument search functions, which is better, than another functions.
+	// For NOT better (four current arg) functions set flags to false.
+
+	for( auto mut arg_n= 0s; arg_n < actual_args.size(); ++arg_n )
+	{
+		foreach( &l_function : matched_functions )
+		{
+			auto mut l_arg_n= arg_n;
+			if( first_actual_arg_is_this && !OverloadingResolutionItemIsThisCall(l_function) )
+			{
+				if( l_arg_n == 0s )
+				{
+					continue;
+				}
+				--l_arg_n;
+			}
+
+			auto mut is_best_function_for_current_arg= true;
+			foreach( &r_function : matched_functions )
+			{
+				auto mut r_arg_n= arg_n;
+				if( first_actual_arg_is_this && !OverloadingResolutionItemIsThisCall(r_function) )
+				{
+					if( r_arg_n == 0s )
+					{
+						continue;
+					}
+					--r_arg_n;
+				}
+
+				auto comp=
+					CompareConversions(
+						actual_args[arg_n],
+						OverloadingResolutionItemGetParamExtendedType( l_function, l_arg_n ),
+						OverloadingResolutionItemGetParamExtendedType( r_function, r_arg_n ),
+						OverloadingResolutionItemGetTemplateSignatureParam( l_function, l_arg_n ),
+						OverloadingResolutionItemGetTemplateSignatureParam( r_function, r_arg_n ) );
+
+				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
+				{}
+				else
+				{
+					is_best_function_for_current_arg= false;
+					break;
+				}
+			} // for functions right
+
+			// Set best functions bits.
+			if( is_best_function_for_current_arg )
+			{
+				for( auto mut func_n= 0s; func_n < matched_functions.size(); ++func_n )
+				{
+					var OverloadingResolutionItem& r_function= matched_functions[func_n];
+
+					auto mut r_arg_n= arg_n;
+					if( first_actual_arg_is_this && !OverloadingResolutionItemIsThisCall(r_function) )
+					{
+						if( r_arg_n == 0s )
+						{
+							continue;
+						}
+						--r_arg_n;
+					}
+
+					auto comp=
+						CompareConversions(
+							actual_args[arg_n],
+							OverloadingResolutionItemGetParamExtendedType( l_function, l_arg_n ),
+							OverloadingResolutionItemGetParamExtendedType( r_function, r_arg_n ),
+							OverloadingResolutionItemGetTemplateSignatureParam( l_function, l_arg_n ),
+							OverloadingResolutionItemGetTemplateSignatureParam( r_function, r_arg_n ) );
+					if( comp != ConversionsCompareResult::Same )
+					{
+						best_functions[func_n]= false;
+					}
+				}
+			}
+		} // for functions left
+	}
+
+	var size_type mut selected_function= ~0s;
+	for( auto mut func_n= 0s; func_n < matched_functions.size(); ++func_n )
+	{
+		if( best_functions[func_n] )
+		{
+			if( selected_function >= matched_functions.size() )
+			{
+				selected_function= func_n;
+			}
+			else
+			{
+				selected_function= ~0s;
+				break;
+			}
+		}
+	}
+
+	if( selected_function >= matched_functions.size() )
+	{
+		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, src_loc, ActualArgsToString(actual_args) )
+	}
+
+	return selected_function;
+}
+
+fn CodeBuilder::GetOverloadedFunction(
+	mut this,
+	FunctionsSet& functions_set,
+	ust::array_view_imut</VariableTypeExtended/> actual_args,
+	bool first_actual_arg_is_this,
+	NamesScopePtr& names_scope,
+	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
+{
+	var ust::vector</OverloadingResolutionItem/> mut matched_functions;
+	FetchMatchedOverloadedFunctions( functions_set, actual_args, first_actual_arg_is_this, names_scope, src_loc, true, matched_functions );
+	var size_type function_index= SelectOverloadedFunction( actual_args, first_actual_arg_is_this, names_scope, src_loc, matched_functions );
+	if( function_index < matched_functions.size() )
+	{
+		return FinalizeSelectedFunction( matched_functions[ function_index ], names_scope, src_loc );
+	}
+	return ust::null_optional;
+}
+
+fn CodeBuilder::GetOverloadedOperator(
+	mut this,
+	ust::array_view_imut</VariableTypeExtended/> args,
+	OverloadedOperator operator,
+	NamesScopePtr& names_scope,
+	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
+{
+	var ust::vector</OverloadingResolutionItem/> mut matched_functions;
+	var ust::vector</ tup[ ClassTypePtr, Synt::ClassVisibility ] /> mut classes_visibility;
+	var ust::vector</ClassTypePtr/> mut processed_classes;
+	foreach( &arg : args ) label for_args
+	{
+		if_var( &class_type : arg.t.GetClassType() )
+		{
+			// Process each class exactly once - in order to fetch only single functions set for each class, even if arguments have same class type.
+			foreach( &prev_class : processed_classes )
+			{
+				if( class_type == prev_class )
+				{
+					continue label for_args;
+				}
+			}
+			processed_classes.push_back( class_type );
+
+			if_var( &operators_value : ResolveClassValue( class_type, OverloadedOperatorToString( operator ) ) )
+			{
+				auto functions_set_ptr= operators_value[0].Get</FunctionsSet/>();
+				if( !functions_set_ptr.empty() )
+				{
+					PrepareFunctionsSetAndBuildConstexprBodies( operators_value[2], functions_set_ptr.try_to_non_nullable() );
+
+					var size_type prev_size= matched_functions.size();
+					FetchMatchedOverloadedFunctions( functions_set_ptr.try_lock_imut().deref(), args, false, names_scope, src_loc, true, matched_functions );
+					var size_type new_size= matched_functions.size();
+
+					for( auto mut i= prev_size; i < new_size; ++i )
+					{
+						classes_visibility.push_back( ust::make_tuple( class_type, operators_value[1] ) );
+					}
+				}
+			}
+		}
+
+		if( operator == OverloadedOperator::Indexing || operator == OverloadedOperator::Call )
+		{
+			break; // For indexing and call operators only check first argument.
+		}
+	}
+
+	debug_assert( classes_visibility.size() == matched_functions.size(), "Wrong size!" );
+
+	if( !matched_functions.empty() )
+	{
+		var size_type function_index= SelectOverloadedFunction( args, false, names_scope, src_loc, matched_functions );
+		if( function_index < matched_functions.size() )
+		{
+			auto result= FinalizeSelectedFunction( matched_functions[function_index], names_scope, src_loc );
+			if( !result.empty() )
+			{
+				// Check access rights after function selection.
+				auto& visibility= classes_visibility[ function_index ];
+				auto& class_type= visibility[0];
+				if( names_scope.lock_imut().deref().GetAccessFor( class_type ) < visibility[1] )
+				{
+					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, OverloadedOperatorToString( operator ), Type(class_type).ToString() )
+				}
+			}
+
+			return result;
+		}
+	}
+
+	return ust::null_optional;
+}
+
+fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, VariableTypeExtended mut src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
+{
+	if( !EnsureTypeComplete( dst ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, dst )
+		return ust::null_optional;
+	}
+	if( dst.GetClassType().empty() )
+	{
+		return ust::null_optional;
+	}
+
+	auto dst_class_members= dst.GetClassType().try_deref().lock_imut().deref().members;
+
+	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+	PrepareFunctionsSetAndBuildConstexprBodies( dst_class_members, constructors_ptr );
+	auto constructors_lock= constructors_ptr.lock_imut();
+	var FunctionsSet& constructors= constructors_lock.deref();
+
+	var [ VariableTypeExtended, 2 ] constructor_args
+	[
+		{ .t= dst, .value_type= ValueType::ReferenceMut },
+		move(src),
+	];
+
+	var ust::vector</OverloadingResolutionItem/> mut matched_functions;
+	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, matched_functions );
+	if( !matched_functions.empty() )
+	{
+		var size_type function_index= SelectOverloadedFunction( constructor_args, true, names_scope, src_loc, matched_functions );
+		if( function_index < matched_functions.size() )
+		{
+			if_var( function_selected : FinalizeSelectedFunction( matched_functions[ function_index ], names_scope, src_loc ) )
+			{
+				if( function_selected.is_conversion_constructor )
+				{
+					return function_selected;
+				}
+			}
+		}
+	}
+	return ust::null_optional;
+}
+
+fn CodeBuilder::HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, VariableTypeExtended mut src, SrcLoc& src_loc ) : bool
+{
+	if( !EnsureTypeComplete( dst ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, dst )
+		return false;
+	}
+	if( dst.GetClassType().empty() )
+	{
+		return false;
+	}
+
+	auto dst_class_members= dst.GetClassType().try_deref().lock_imut().deref().members;
+
+	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>().try_to_non_nullable();
+	PrepareFunctionsSetAndBuildConstexprBodies( dst_class_members, constructors_ptr );
+	auto constructors_lock= constructors_ptr.lock_imut();
+	var FunctionsSet& constructors= constructors_lock.deref();
+
+	var [ VariableTypeExtended, 2 ] constructor_args
+	[
+		{ .t= dst, .value_type= ValueType::ReferenceMut },
+		move(src),
+	];
+
+	var ust::vector</OverloadingResolutionItem/> mut matched_functions;
+	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, matched_functions );
+
+	foreach( &item : matched_functions )
+	{
+		if( OverloadingResolutionItemIsConversionConstructor( item ) )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+fn CodeBuilder::SelectMoreSpecializedTemplate(
+	mut this,
+	ust::array_view_imut</TypeTemplatePtr/> type_templates,
+	size_type signature_args_to_check ) : size_type
+{
+	if( type_templates.empty() )
+	{
+		return ~0s;
+	}
+
+	if( type_templates.size() == 1s )
+	{
+		return 0s;
+	}
+
+	scoped_array bool mut best_templates[ type_templates.size() ]( true );
+
+	for( auto mut arg_n= 0s; arg_n < signature_args_to_check; ++arg_n )
+	{
+		foreach( &candidate_l_ptr : type_templates ) label templates_search
+		{
+			auto l_lock= candidate_l_ptr.lock_imut();
+			auto& candidate_l= l_lock.deref();
+
+			foreach( &candidate_r_ptr : type_templates )
+			{
+				auto r_lock= candidate_r_ptr.lock_imut();
+				auto& candidate_r= r_lock.deref();
+
+				auto comp= CompareTemplateSpecialization(
+					candidate_l.signature_params[arg_n],
+					candidate_r.signature_params[arg_n] );
+				if( comp == ConversionsCompareResult::Incomparable || comp == ConversionsCompareResult::RightIsBetter )
+				{
+					continue label templates_search;
+				}
+			}
+
+			for( auto mut index_r= 0s; index_r < type_templates.size(); ++index_r )
+			{
+				auto r_lock= type_templates[index_r].lock_imut();
+				auto& candidate_r= r_lock.deref();
+				auto comp= CompareTemplateSpecialization(
+					candidate_l.signature_params[arg_n],
+					candidate_r.signature_params[arg_n] );
+
+				if( comp != ConversionsCompareResult::Same )
+				{
+					best_templates[index_r]= false;
+				}
+			}
+		}
+	}
+
+	auto mut selected_template= ~0s;
+	for( auto mut i= 0s; i < type_templates.size(); ++i )
+	{
+		if( best_templates[i] )
+		{
+			if( selected_template == ~0s )
+			{
+				selected_template= i;
+			}
+			else
+			{
+				return ~0s;
+			}
+		}
+	}
+
+	return selected_template;
+}
+
+} // namespace U1

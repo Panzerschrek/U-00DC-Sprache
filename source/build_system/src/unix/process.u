@@ -79,6 +79,8 @@ public:
 		// Redirect in child process stdin and stdout into the pipe.
 		unsafe( ::posix_spawn_file_actions_adddup2( $<(file_actions), pipe_write_end, STDOUT_FILENO ) );
 		unsafe( ::posix_spawn_file_actions_adddup2( $<(file_actions), pipe_write_end, STDERR_FILENO ) );
+		// Close initial pipe write end in child process.
+		unsafe( ::posix_spawn_file_actions_addclose( $<(file_actions), pipe_write_end ) );
 		// Redirect stdin to /dev/null.
 		auto mut dev_null_name_nt= "/dev/null\0";
 		unsafe( ::posix_spawn_file_actions_addopen( $<(file_actions), STDIN_FILENO, $<(dev_null_name_nt[0]), O_RDONLY, 0u ) );
@@ -123,6 +125,10 @@ public:
 
 		// Close pipe write end in parent process - it's unnecessary.
 		unsafe( ::close( pipe_write_end ) );
+
+		// Prevent our pipe handle to be inherited in child processes created later.
+		// This is necessary to prevent deadlocks.
+		unsafe( ::fcntl( pipe_read_end, F_SETFD, FD_CLOEXEC ) );
 
 		return unsafe( Process( id, pid, pipe_read_end ) );
 	}

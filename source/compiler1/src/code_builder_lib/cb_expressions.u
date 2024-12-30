@@ -1,0 +1,4932 @@
+import "/assert.u"
+import "/helpers.u"
+import "/scoped_array.u"
+import "/CodeBuilderLib/keywords.uh"
+import "../lex_synt_lib/program_string.uh"
+import "error_reporting.uh"
+import "source_file_contents_hash_wrapper.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr
+{
+	var Value mut value= BuildExpressionCode( names_scope, function_context, expression );
+
+	if_var( &v_ptr : value.get</VariablePtr/>())
+	{
+		return v_ptr;
+	}
+
+	var ust::shared_ptr_nullable_imut</FunctionsSet/> mut functions_set_ptr;
+	if_var( &f : value.get</FunctionsSetPtr/>() )
+	{
+		functions_set_ptr= f;
+	}
+	if_var( &m : value.get</ThisMethodsSet/>() )
+	{
+		functions_set_ptr= m.functions_set;
+	}
+	if( !functions_set_ptr.empty() )
+	{
+		with( &functions_set : functions_set_ptr.try_lock_imut().deref() )
+		{
+			if( functions_set.functions.size() == 1s && functions_set.function_templates.empty() && functions_set.parameterized_function_templates.empty() )
+			{
+				// If an variable is expected but given value is a functions set with exactly one non-template function,
+				// create function pointer for this function.
+				var FunctionVariable& function= functions_set.functions.front();
+
+				with( mut lock : function.llvm_function.lock_mut() )
+				{
+					lock.deref().referenced= true;
+				}
+
+
+				auto llvm_function= EnsureLLVMFunctionCreated( function );
+
+				var VariablePtr function_pointer_ptr=
+					Variable
+					{
+						.t=
+							FunctionPointerType
+							{
+								.function_type= function.t,
+								.llvm_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) )
+							},
+						.value_type= ValueType::Value,
+						.location= Variable::Location::LLVMRegister,
+						.llvm_value= llvm_function,
+						.constexpr_value= llvm_function,
+						.name= "single function pointer"
+					}.CreatePtr();
+
+				function_context.references_graph.AddNode( function_pointer_ptr );
+				RegisterTemporaryVariable( function_context, function_pointer_ptr );
+				return function_pointer_ptr;
+			}
+		}
+	}
+
+	REPORT_ERROR( ExpectedVariable, names_scope, Synt::GetSrcLoc(expression), GetValueKindName(value) )
+
+	var VariablePtr dummy_ptr=
+		Variable
+		{
+			.t= invalid_type_,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::LLVMRegister,
+			.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.invalid_type_ ) ),
+			.name= "error value"
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( dummy_ptr );
+	RegisterTemporaryVariable( function_context, dummy_ptr );
+	return dummy_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeForValueReturn(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::Expression& expression ) : VariablePtr
+{
+	// Try to automatically move local variable in return.
+	if_var( &complex_name : expression.get</Synt::ComplexName/>() )
+	{
+		if_var( &name_lookup : complex_name.get</Synt::NameLookup/>() )
+		{
+			var ust::shared_ptr_nullable_mut</Variable/> mut variable_opt;
+			if( name_lookup.name == KeywordToString( Keyword::this_ ) )
+			{
+				if( !function_context.this_.empty() && !function_context.whole_this_is_unavailable )
+				{
+					variable_opt= function_context.this_;
+				}
+			}
+			else
+			{
+				if_var( &name_lookup_result : LookupName( names_scope, function_context, name_lookup.name, name_lookup.src_loc ) )
+				{
+					variable_opt= name_lookup_result[1].Get</Variable/>();
+
+					if( !variable_opt.empty() && !function_context.lambda_preprocessing_context.empty() )
+					{
+						var VariablePtr variable= variable_opt.try_to_non_nullable();
+						LambdaPreprocessingCheckVariableUsage( names_scope, function_context, variable, name_lookup.name, name_lookup.src_loc );
+						if( function_context.lambda_preprocessing_context.try_lock_imut().deref().external_variables.exists( variable ) )
+						{
+							// Do not try to auto-move lambda external variables.
+							return LambdaPreprocessingAccessExternalVariable( function_context, variable, name_lookup.name );
+						}
+					}
+				}
+			}
+
+			if( !variable_opt.empty() )
+			{
+				var VariablePtr variable_reference_ptr= variable_opt.try_to_non_nullable();
+
+				with( mut lock : variable_reference_ptr.lock_mut() )
+				{
+					lock.deref().referenced= true;
+				}
+
+				if( !IsGlobalVariable( variable_reference_ptr ) &&
+					!function_context.references_graph.NodeIsMoved( variable_reference_ptr ) &&
+					!function_context.references_graph.HasOutgoingLinks( variable_reference_ptr ) )
+				{
+					auto variable_reference_lock= variable_reference_ptr.lock_imut();
+					var Variable& reference= variable_reference_lock.deref();
+
+					// Enable auto-move in "return" for immutable local variables too.
+					if( reference.value_type == ValueType::ReferenceMut || reference.value_type == ValueType::ReferenceImut )
+					{
+						var ReferencesGraph::NodesSet input_nodes= function_context.references_graph.GetNodeInputLinks( variable_reference_ptr );
+						if( input_nodes.size() == 1s )
+						{
+							var VariablePtr& variable_for_move= input_nodes.iter().first().try_deref();
+							if( variable_for_move.lock_imut().deref().value_type == ValueType::Value )
+							{
+								auto mut found_in_variables= false;
+								foreach( & frame : function_context.variables_frames ) label variable_frames_loop
+								{
+									foreach( &frame_variable : frame.variables )
+									{
+										if( frame_variable == variable_for_move )
+										{
+											found_in_variables= true;
+											break label variable_frames_loop;
+										}
+									}
+								}
+
+								if( found_in_variables )
+								{
+									var VariablePtr result_ptr=
+										Variable
+										{
+											.t= reference.t,
+											.value_type= ValueType::Value,
+											.location= reference.location,
+											.llvm_value= reference.llvm_value,
+											// Preserve "constexpr" value (if has one) for immutable variables.
+											.constexpr_value= ( reference.value_type == ValueType::ReferenceImut ? reference.constexpr_value : LLVMValueRef::Null ),
+											.name= "moved " + reference.name,
+										}.CreatePtr();
+
+									function_context.references_graph.AddNode( result_ptr );
+
+									function_context.references_graph.TryAddInnerLinks( variable_reference_ptr, result_ptr, names_scope, name_lookup.src_loc );
+
+									function_context.references_graph.MoveNode( variable_reference_ptr );
+									function_context.references_graph.MoveNode( variable_for_move );
+
+									RegisterTemporaryVariable( function_context, result_ptr );
+									return result_ptr;
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+}
+
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
+{
+	variant_visit( &el : expression )
+	{
+		return BuildExpressionCodeImpl( names_scope, function_context, el );
+	}
+
+	halt;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value
+{
+	// "EmptyVariant" used only as stub during expression building in syntax analyzer. It should never be in final result.
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( function_context );
+	ust::ignore_unused( empty_variant );
+	halt;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
+{
+	var ust::string_view8 mut type_suffix( numeric_constant.num.type_suffix );
+	while( !type_suffix.empty() && type_suffix.back() == "\0"c8 )
+	{
+		type_suffix.drop_back();
+	}
+
+	auto mut t= U_FundamentalType::InvalidType;
+	if( type_suffix.empty() )
+	{
+		t= ( numeric_constant.num.has_fractional_point ? U_FundamentalType::f64_ : U_FundamentalType::i32_ );
+	}
+	else if( type_suffix == "u" )
+	{
+		t= U_FundamentalType::u32_;
+	}
+	else if( type_suffix == "s" )
+	{
+		t= U_FundamentalType::size_type_;
+	}
+	else if( type_suffix == "f" )
+	{
+		t= U_FundamentalType::f32_;
+	}
+	else if( type_suffix == "c8" )
+	{
+		t= U_FundamentalType::char8_;
+	}
+	else if( type_suffix == "c16" )
+	{
+		t= U_FundamentalType::char16_;
+	}
+	else if( type_suffix == "c32" )
+	{
+		t= U_FundamentalType::char32_;
+	}
+	else
+	{
+		t= GetFundamentalTypeByName( type_suffix );
+	}
+
+	if( t == U_FundamentalType::InvalidType )
+	{
+		REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+		return ErrorValue();
+	}
+
+	var Variable mut result
+	{
+		.t= Type( FundamentalType( t, GetFundamentalLLVMType(t) ) ),
+		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
+		.name= "numeric constant ",
+	};
+
+	unsafe
+	{
+		if( IsFloatingPoint( t ) )
+		{
+			result.constexpr_value= LLVMConstReal( result.t.GetLLVMType(), numeric_constant.num.value_double );
+		}
+		else if( IsSignedInteger( t ) )
+		{
+			result.constexpr_value= LLVMConstInt( result.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::True  );
+		}
+		else if( IsUnsignedInteger( t ) || IsChar( t ) )
+		{
+			result.constexpr_value= LLVMConstInt( result.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::False );
+		}
+		else{ halt; }
+	}
+	result.llvm_value= result.constexpr_value;
+
+	// Register variable for references checking.
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value
+{
+	ust::ignore_unused( names_scope );
+	var Variable mut result
+	{
+		.t= bool_type_,
+		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
+		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, ( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ) ),
+		.name= KeywordToString( ( boolean_constant.value ? Keyword::true_ : Keyword::false_ ) ),
+	};
+	result.llvm_value= result.constexpr_value;
+
+	// Register variable for references checking.
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StringLiteral& string_literal ) : Value
+{
+	auto mut char_type= U_FundamentalType::InvalidType;
+	auto mut is_array= true;
+
+	auto& type_suffix= string_literal.type_suffix;
+	if( type_suffix == "" || type_suffix == "u8" )
+	{
+		char_type= U_FundamentalType::char8_;
+		is_array= true;
+	}
+	else if( type_suffix == "u16" )
+	{
+		char_type= U_FundamentalType::char16_;
+		is_array= true;
+	}
+	else if( type_suffix == "u32" )
+	{
+		char_type= U_FundamentalType::char32_;
+		is_array= true;
+	}
+	else if( type_suffix == "c8"  || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
+	{
+		char_type= U_FundamentalType::char8_ ;
+		is_array= false;
+	}
+	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
+	{
+		char_type= U_FundamentalType::char16_;
+		is_array= false;
+	}
+	else if( type_suffix == "c32" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char32_ ) )
+	{
+		char_type= U_FundamentalType::char32_;
+		is_array= false;
+	}
+	else
+	{
+		REPORT_ERROR( UnknownStringLiteralSuffix, names_scope, string_literal.src_loc, string_literal.type_suffix )
+		return ErrorValue();
+	}
+
+	auto element_llvm_type= GetFundamentalLLVMType(char_type);
+
+	var ust::string8& string_literal_value = string_literal.value;
+	if( is_array )
+	{
+		auto mut array_size= 0s;
+		auto mut llvm_type= LLVMTypeRef::Null;
+		auto mut constexpr_value= LLVMValueRef::Null;
+		auto mut global_value= LLVMValueRef::Null;
+		unsafe
+		{
+			if( char_type == U_FundamentalType::char8_ )
+			{
+				constexpr_value= LLVMConstStringInContext( llvm_context_, cast_mut(string_literal_value).data(), u32(string_literal_value.size()), LLVMBool::True );
+				array_size= string_literal_value.size();
+
+				if( !string_literals_cache_[0].exists( string_literal_value ) )
+				{
+					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
+					string_literals_cache_[0].insert( string_literal_value, global_value );
+				}
+				else
+				{
+					global_value= string_literals_cache_[0][string_literal_value];
+				}
+			}
+			else if( char_type == U_FundamentalType::char16_ )
+			{
+				var ust::string16 mut buff= ConvertUTF8ToUTF16( string_literal_value );
+
+				array_size= buff.size();
+
+				constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte8(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
+
+				if( !string_literals_cache_[1].exists( buff ) )
+				{
+					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
+					string_literals_cache_[1].insert( buff, global_value );
+				}
+				else
+				{
+					global_value= string_literals_cache_[1][buff];
+				}
+			}
+			else if( char_type == U_FundamentalType::char32_ )
+			{
+				var ust::string32 mut buff= ConvertUTF8ToUTF32( string_literal_value );
+
+				array_size= buff.size();
+
+				constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte8(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
+
+				if( !string_literals_cache_[2].exists( buff ) )
+				{
+					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
+					string_literals_cache_[2].insert( buff, global_value );
+				}
+				else
+				{
+					global_value= string_literals_cache_[2][buff];
+				}
+			}
+			else { halt; }
+
+			llvm_type= LLVMTypeOf( constexpr_value );
+		}
+
+		var VariablePtr result_ptr=
+			Variable
+			{
+				.t=
+					ArrayType
+					{
+						.element_type= FundamentalType( char_type, element_llvm_type ),
+						.element_count= u64(array_size),
+						.llvm_type= llvm_type,
+					},
+				.location= Variable::Location::Pointer,
+				.value_type= ValueType::ReferenceImut,
+				.llvm_value= global_value,
+				.constexpr_value= constexpr_value,
+				.name= "string literal",
+			}.CreatePtr();
+
+		function_context.references_graph.AddNode( result_ptr );
+		RegisterTemporaryVariable( function_context, result_ptr );
+		return result_ptr;
+	}
+	else
+	{
+		auto mut constexpr_value= LLVMValueRef::Null;
+		unsafe
+		{
+			if( char_type == U_FundamentalType::char8_ )
+			{
+				if( string_literal_value.size() != 1s )
+				{
+					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
+					return ErrorValue();
+				}
+
+				constexpr_value= LLVMConstInt( element_llvm_type, u64(string_literal_value.front()), LLVMBool::False );
+			}
+			else if( char_type == U_FundamentalType::char16_ )
+			{
+				var ust::string16 s= ConvertUTF8ToUTF16( string_literal_value );
+				if( s.size() != 1s )
+				{
+					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
+					return ErrorValue();
+				}
+
+				constexpr_value= LLVMConstInt( element_llvm_type, u64(s.front()), LLVMBool::False );
+			}
+			else if( char_type == U_FundamentalType::char32_ )
+			{
+				var ust::string32 s= ConvertUTF8ToUTF32( string_literal_value );
+				if( s.size() != 1s )
+				{
+					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
+					return ErrorValue();
+				}
+
+				constexpr_value= LLVMConstInt( element_llvm_type, u64(s.front()), LLVMBool::False );
+			}
+			else{ halt; }
+		}
+
+		var VariablePtr result_ptr=
+			Variable
+			{
+				.t= FundamentalType( char_type, element_llvm_type ),
+				.location= Variable::Location::LLVMRegister,
+				.value_type= ValueType::Value,
+				.llvm_value= constexpr_value,
+				.constexpr_value= constexpr_value,
+				.name= "char literal",
+			}.CreatePtr();
+
+		function_context.references_graph.AddNode( result_ptr );
+		RegisterTemporaryVariable( function_context, result_ptr );
+		return result_ptr;
+	}
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
+{
+	auto name_lookup_ref= named_operand.get</Synt::NameLookup/>();
+	if( name_lookup_ref.empty() )
+	{
+		return ResolveValue( names_scope, function_context, named_operand );
+	}
+
+	// Process special simple names here.
+	var ust::string8& name= name_lookup_ref.try_deref().name;
+	var SrcLoc src_loc= name_lookup_ref.try_deref().src_loc;
+	if( name == KeywordToString( Keyword::this_ ) )
+	{
+		if( function_context.this_.empty() || function_context.whole_this_is_unavailable )
+		{
+			REPORT_ERROR( ThisUnavailable, names_scope, src_loc )
+			return ErrorValue();
+		}
+
+		auto this_non_null= function_context.this_.try_to_non_nullable();
+		if( function_context.references_graph.NodeIsMoved( this_non_null ) )
+		{
+			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, KeywordToString( Keyword::this_ ) )
+			return ErrorValue();
+		}
+		return this_non_null;
+	}
+	if( name == KeywordToString( Keyword::base_ ) )
+	{
+		if( function_context.this_.empty() )
+		{
+			REPORT_ERROR( BaseUnavailable, names_scope, src_loc )
+			return ErrorValue();
+		}
+
+		var VariablePtr this_ptr= function_context.this_.try_to_non_nullable();
+		if( function_context.references_graph.NodeIsMoved( this_ptr ) )
+		{
+			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, KeywordToString( Keyword::base_ ) )
+			return ErrorValue();
+		}
+
+		auto this_lock= this_ptr.lock_imut();
+		var Variable& this_= this_lock.deref();
+
+		if( function_context.destructor_end_block != LLVMBasicBlockRef::Null && this_.t.ContainsMutableReferences() )
+		{
+			// Forbid accessing "base" in destructors of types with mutable references inside, since it's possible to access such mutable fields via a virtual call.
+			REPORT_ERROR( BaseUnavailable, names_scope, src_loc )
+			return ErrorValue();
+		}
+
+		auto class_type= this_.t.GetClassType().try_deref();
+		auto base_class= class_type.lock_imut().deref().base_class;
+		if( base_class.empty() )
+		{
+			REPORT_ERROR( BaseUnavailable, names_scope, src_loc )
+			return ErrorValue();
+		}
+		var ClassTypePtr base_class_non_null= base_class.try_to_non_nullable();
+
+		if( function_context.whole_this_is_unavailable )
+		{
+			auto base_field_index= 0s;
+			if( ( base_field_index < function_context.initialized_this_fields.size() && !function_context.initialized_this_fields[ base_field_index ] ) ||
+				base_class_non_null.lock_imut().deref().kind == ClassType::Kind::Abstract )
+			{
+				REPORT_ERROR( FieldIsNotInitializedYet, names_scope,src_loc, KeywordToString( Keyword::base_ ) )
+				return ErrorValue();
+			}
+		}
+
+		var VariablePtr base_ptr=
+			Variable
+			{
+				.t= base_class_non_null,
+				.value_type= this_.value_type,
+				.location= Variable::Location::Pointer,
+				.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, base_class_non_null, function_context ),
+				.name= KeywordToString( Keyword::base_ ),
+			}.CreatePtr();
+
+		function_context.references_graph.AddNode( base_ptr );
+		function_context.references_graph.TryAddLink( this_ptr, base_ptr, names_scope, src_loc );
+
+		RegisterTemporaryVariable( function_context, base_ptr );
+		return base_ptr;
+	}
+
+	return ResolveValue( names_scope, function_context, named_operand );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeinfo& typeinfo_ ) : Value
+{
+	var Type t= PrepareType( names_scope, function_context, typeinfo_.type_name );
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, typeinfo_.src_loc, t.ToString() )
+		return ErrorValue();
+	}
+
+	var VariablePtr result= BuildTypeinfo( t, GetRootNamespace( names_scope ) );
+	function_context.references_graph.AddNodeIfNotExists( result );
+	return result;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SameType& same_type_ ) : Value
+{
+	var Type l= PrepareType( names_scope, function_context, same_type_.l );
+	var Type r= PrepareType( names_scope, function_context, same_type_.r );
+	var bool same= l == r;
+
+	var Variable mut result
+	{
+		.t= bool_type_,
+		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
+		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, ( same ? 1u64 : 0u64 ), LLVMBool::True ) ),
+		.name= KeywordToString( Keyword::same_type_ ),
+	};
+	result.llvm_value= result.constexpr_value;
+
+	// Register variable for references checking.
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncExpression& non_sync_expression ) : Value
+{
+	var Type t= PrepareType( names_scope, function_context, non_sync_expression.type_name );
+	var bool is_non_sync= GetTypeNonSync( t, names_scope, non_sync_expression.src_loc );
+
+	var Variable mut result
+	{
+		.t= bool_type_,
+		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
+		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, ( is_non_sync ? 1u64 : 0u64 ), LLVMBool::True ) ),
+		.name= KeywordToString( Keyword::non_sync_ ),
+	};
+	result.llvm_value= result.constexpr_value;
+
+	// Register variable for references checking.
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRef& cast_ref_ ) : Value
+{
+	return DoReferenceCast( names_scope, function_context, cast_ref_.t, cast_ref_.expression, cast_ref_.src_loc, false );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRefUnsafe& cast_ref_unsafe_ ) : Value
+{
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, names_scope, cast_ref_unsafe_.src_loc )
+	}
+	return DoReferenceCast( names_scope, function_context, cast_ref_unsafe_.t, cast_ref_unsafe_.expression, cast_ref_unsafe_.src_loc, true );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastImut& cast_imut_ ) : Value
+{
+	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_imut_.expression );
+	auto v_lock= v_ptr.lock_imut();
+	var Variable& v= v_lock.deref();
+
+	var Variable mut result
+	{
+		.t= v.t,
+		.value_type= ValueType::ReferenceImut,
+		.location= Variable::Location::Pointer,
+		.constexpr_value= v.constexpr_value,
+		.name= ust::concat( "cast_imut(", v.name, ")" ),
+	};
+
+	// TODO - maybe forbid reference casting for ValueType::Value?
+	if( v.location == Variable::Location::LLVMRegister )
+	{
+		if( !function_context.is_functionless_context )
+		{
+			result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
+			CreateTypedStore( function_context, v.t, v.llvm_value, result.llvm_value );
+		}
+	}
+	else
+	{
+		result.llvm_value= v.llvm_value;
+	}
+
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, cast_imut_.src_loc );
+	function_context.references_graph.TryAddInnerLinks( v_ptr, result_ptr, names_scope, cast_imut_.src_loc );
+
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastMut& cast_mut_ ) : Value
+{
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( MutableReferenceCastOutsideUnsafeBlock, names_scope, cast_mut_.src_loc )
+	}
+
+	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, cast_mut_.expression );
+	auto v_lock= v_ptr.lock_imut();
+	var Variable& v= v_lock.deref();
+
+	var Variable mut result
+	{
+		.t= v.t,
+		.value_type= ValueType::ReferenceMut,
+		.location= Variable::Location::Pointer,
+		.name= ust::concat( "cast_mut(", v.name, ")" ),
+	};
+
+	// TODO - maybe forbid reference casting for ValueType::Value?
+	if( v.location == Variable::Location::LLVMRegister )
+	{
+		if( !function_context.is_functionless_context )
+		{
+			result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
+			CreateTypedStore( function_context, v.t, v.llvm_value, result.llvm_value );
+		}
+	}
+	else
+	{
+		result.llvm_value= v.llvm_value;
+	}
+
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, cast_mut_.src_loc );
+	function_context.references_graph.TryAddInnerLinks( v_ptr, result_ptr, names_scope, cast_mut_.src_loc );
+
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Embed& embed_ ) : Value
+{
+	var VariableLite variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, embed_.expression );
+	if( variable.t == invalid_type_ )
+	{
+		return ErrorValue();
+	}
+
+	auto array_type= variable.t.GetArrayType();
+	if( array_type.empty() || array_type.try_deref().element_type != FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ) )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, embed_.src_loc, "char8 array", variable.t.ToString() )
+		return ErrorValue();
+	}
+
+	if( variable.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope, embed_.src_loc )
+		return ErrorValue();
+	}
+
+	var ust::string8 mut file_path;
+	if( unsafe( LLVMIsAConstantDataArray( variable.constexpr_value ) ) != LLVMValueRef::Null )
+	{
+		unsafe
+		{
+			var size_type mut str_length= 0s;
+			var $(char8) str_start= unsafe( LLVMGetAsString( variable.constexpr_value, str_length ) );
+			file_path= ust::string_view8( str_start, str_length );
+		}
+	}
+	else if( unsafe( LLVMIsAConstantAggregateZero( variable.constexpr_value ) ) != LLVMValueRef::Null )
+	{
+		file_path= "";
+	}
+	else
+	{
+		REPORT_ERROR( NotImplemented, names_scope, embed_.src_loc, "non-trivial embed file name constants" )
+		return ErrorValue();
+	}
+
+	var ust::string8& parent_file_path= source_graph_.try_deref().nodes[ size_type( embed_.src_loc.GetFileIndex() ) ].file_path_normalized;
+
+	var ust::string8 mut full_file_path;
+	var ust::optional</ust::string8/> mut loaded_file_opt;
+
+	with( mut lock : vfs_.lock_mut() )
+	{
+		var IVfs &mut vfs= lock.deref();
+
+		full_file_path= vfs.NormalizeFilePath( file_path, parent_file_path );
+
+		// Cache result.
+		auto mut prev_cache_value= embed_cache_.find( full_file_path );
+		if( prev_cache_value.empty() )
+		{
+			move(prev_cache_value);
+
+			if( !vfs.IsImportingFileAllowed( full_file_path ) )
+			{
+				REPORT_ERROR( EmbeddingThisFileIsNotAllowed, names_scope, embed_.src_loc, full_file_path )
+			}
+
+			loaded_file_opt= vfs.LoadFile( full_file_path );
+			embed_cache_.insert( full_file_path, loaded_file_opt );
+		}
+		else
+		{
+			loaded_file_opt= prev_cache_value.try_deref();
+			move(prev_cache_value);
+		}
+	}
+
+	if( loaded_file_opt.empty() )
+	{
+		REPORT_ERROR( EmbedFileNotFound, names_scope, embed_.src_loc, file_path )
+		return ErrorValue();
+	}
+	var ust::string8& loaded_file= loaded_file_opt.try_deref();
+
+	var U_FundamentalType mut element_type= U_FundamentalType::byte8_;
+	if_var( &element_type_name : embed_.element_type )
+	{
+		var Type t= PrepareTypeImpl( names_scope, function_context, element_type_name );
+		auto fundamental_type= t.GetFundamentalType();
+		if( fundamental_type.empty() || GetFundamentalTypeSize( fundamental_type.try_deref().fundamental_type ) != 1u )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( element_type_name ), "any fundamental 8-bit type", t.ToString() )
+			return ErrorValue();
+		}
+
+		element_type= fundamental_type.try_deref().fundamental_type;
+
+		// Do not care if in case of char8 element embedded file contents isn't valid UTF-8.
+	}
+
+	var u64 array_size( loaded_file.size() );
+	var LLVMTypeRef element_llvm_type= GetFundamentalLLVMType( element_type );
+
+	// Use contents hash-based names for embed arrays.
+	var ust::string8 mut name= "_embed_array_" + CalculateSourceFileContentsHash( loaded_file );
+	name.push_back( "\0"c8 );
+
+	var LLVMValueRef constexpr_value= unsafe( LLVMConstStringInContext( llvm_context_, cast_mut(loaded_file).data(), u32(array_size), LLVMBool::True ) );
+	var LLVMValueRef global_value= unsafe( AddGlobalConstantVariable( name, LLVMTypeOf( constexpr_value ), constexpr_value ) );
+
+	name.drop_back();
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t=
+				ArrayType
+				{
+					.element_type= FundamentalType( element_type, element_llvm_type ),
+					.element_count= array_size,
+					.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( array_size ) ) ),
+				},
+			.location= Variable::Location::Pointer,
+			.value_type= ValueType::ReferenceImut,
+			.llvm_value= global_value,
+			.constexpr_value= constexpr_value,
+			.name= move(name),
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
+{
+	auto prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= false;
+	auto result= BuildExpressionCode( names_scope, function_context, safe_expression.expression );
+	function_context.is_in_unsafe_block= prev_unsafe;
+	return result;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnsafeExpression& unsafe_expression ) : Value
+{
+	if( function_context.llvm_function == global_llvm_function_ )
+	{
+		REPORT_ERROR( UnsafeExpressionInGlobalContext, names_scope, unsafe_expression.src_loc )
+	}
+
+	// "unsafe" expression usage should prevent function to be "constexpr".
+	function_context.has_non_constexpr_operations_inside= true;
+
+	auto prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= true;
+	auto result= BuildExpressionCode( names_scope, function_context, unsafe_expression.expression );
+	function_context.is_in_unsafe_block= prev_unsafe;
+
+	// Avoid passing constexpr values trough unsafe expression.
+	if_var( &variable_ptr : result.get</VariablePtr/>() )
+	{
+		auto variable_lock= variable_ptr.lock_imut();
+		var Variable& variable= variable_lock.deref();
+		if( variable.constexpr_value != LLVMValueRef::Null )
+		{
+			var VariablePtr variable_copy_ptr=
+				Variable
+				{
+					.t= variable.t,
+					.value_type= variable.value_type,
+					.location= variable.location,
+					.llvm_value= variable.llvm_value,
+					.constexpr_value= LLVMValueRef::Null,
+					.name= variable.name,
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( variable_copy_ptr );
+
+			if( variable.value_type != ValueType::Value )
+			{
+				function_context.references_graph.TryAddLink( variable_ptr, variable_copy_ptr, names_scope, unsafe_expression.src_loc );
+			}
+
+			function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_copy_ptr, names_scope, unsafe_expression.src_loc );
+
+			if( variable.value_type == ValueType::Value )
+			{
+				function_context.references_graph.MoveNode( variable_ptr );
+			}
+
+			RegisterTemporaryVariable( function_context, variable_copy_ptr );
+			return variable_copy_ptr;
+		}
+	}
+
+	return result;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
+{
+	var ust::shared_ptr_nullable_mut</Variable/> mut variable_opt;
+	if( move_operator.variable_name == KeywordToString( Keyword::this_ ) )
+	{
+		if( function_context.this_.empty() || function_context.whole_this_is_unavailable )
+		{
+			REPORT_ERROR( ThisUnavailable, names_scope, move_operator.src_loc )
+			return ErrorValue();
+		}
+		variable_opt= function_context.this_;
+	}
+	else
+	{
+		auto name_lookup_result= LookupName( names_scope, function_context, move_operator.variable_name, move_operator.src_loc );
+		if( name_lookup_result.empty() )
+		{
+			return ErrorValue();
+		}
+		variable_opt= name_lookup_result.try_deref()[1].Get</Variable/>();
+
+		if( !variable_opt.empty() && !function_context.lambda_preprocessing_context.empty() )
+		{
+			var VariablePtr variable= variable_opt.try_to_non_nullable();
+			LambdaPreprocessingCheckVariableUsage( names_scope, function_context, variable, move_operator.variable_name, move_operator.src_loc );
+			if( function_context.lambda_preprocessing_context.try_lock_imut().deref().external_variables.exists( variable ) )
+			{
+				return LambdaPreprocessingHandleCapturedVariableMove( names_scope, function_context, variable, move_operator.variable_name, move_operator.src_loc );
+			}
+		}
+	}
+
+	if( variable_opt.empty() )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "non-variable" )
+		return ErrorValue();
+	}
+
+	var VariablePtr variable_reference_ptr= variable_opt.try_to_non_nullable();
+
+	with( mut lock : variable_reference_ptr.lock_mut() )
+	{
+		lock.deref().referenced= true;
+	}
+
+	if( IsGlobalVariable( variable_reference_ptr ) )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "global variable" )
+		return ErrorValue();
+	}
+
+	auto variable_reference_lock= variable_reference_ptr.lock_imut();
+	var Variable& reference= variable_reference_lock.deref();
+
+	if( reference.value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, move_operator.src_loc )
+		return ErrorValue();
+	}
+	if( function_context.references_graph.NodeIsMoved( variable_reference_ptr ) )
+	{
+		REPORT_ERROR( AccessingMovedVariable, names_scope, move_operator.src_loc, reference.name )
+		return ErrorValue();
+	}
+	if( function_context.references_graph.HasOutgoingLinks( variable_reference_ptr ) )
+	{
+		REPORT_ERROR( MovedVariableHasReferences, names_scope, move_operator.src_loc, reference.name )
+		return ErrorValue();
+	}
+
+	var ReferencesGraph::NodesSet input_nodes= function_context.references_graph.GetNodeInputLinks( variable_reference_ptr );
+	if( input_nodes.size() != 1s )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "wrong reference" )
+		return ErrorValue();
+	}
+
+	var VariablePtr& variable_for_move= input_nodes.iter().first().try_deref();
+	if( variable_for_move.lock_imut().deref().value_type != ValueType::Value )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "wrong reference" )
+		return ErrorValue();
+	}
+
+	auto mut found_in_variables= false;
+	foreach( & frame : function_context.variables_frames ) label variable_frames_loop
+	{
+		foreach( &frame_variable : frame.variables )
+		{
+			if( frame_variable == variable_for_move )
+			{
+				found_in_variables= true;
+				break label variable_frames_loop;
+			}
+		}
+	}
+
+	if( !found_in_variables )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "wrong reference" )
+		return ErrorValue();
+	}
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= reference.t,
+			.value_type= ValueType::Value,
+			.location= reference.location,
+			.llvm_value= reference.llvm_value,
+			.name= "moved " + reference.name,
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+
+	function_context.references_graph.TryAddInnerLinks( variable_reference_ptr, result_ptr, names_scope, move_operator.src_loc );
+
+	function_context.references_graph.MoveNode( variable_reference_ptr );
+	function_context.references_graph.MoveNode( variable_for_move );
+
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TakeOperator& take_operator ) : Value
+{
+	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, take_operator.expression );
+	auto mut variable_lock= variable_ptr.lock_imut();
+	if( variable_lock.deref().value_type == ValueType::Value )
+	{
+		return variable_ptr; // If it is value - just pass it.
+	}
+
+	var Type t= variable_lock.deref().t;
+
+	if( variable_lock.deref().value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, take_operator.src_loc )
+		return ErrorValue();
+	}
+	if( function_context.references_graph.HasOutgoingLinks( variable_ptr ) )
+	{
+		REPORT_ERROR( MovedVariableHasReferences, names_scope, take_operator.src_loc, variable_lock.deref().name )
+		return ErrorValue();
+	}
+	if( t.IsAbstract() )
+	{
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, take_operator.src_loc, t )
+		return ErrorValue();
+	}
+	if_var( class_type : t.GetClassType() )
+	{
+		// Do not allow taking values of polymorph non-final classes to avoid calling default constructor of base class in place of derived class.
+		// It may break derived class invariants and will overwrite virtual table pointer.
+		auto kind= class_type.lock_imut().deref().kind;
+		if( kind == ClassType::Kind::Interface || kind == ClassType::Kind::Abstract || kind == ClassType::Kind::PolymorphNonFinal )
+		{
+			REPORT_ERROR( TakeForNonFinalPolymorphClass, names_scope, take_operator.src_loc, t )
+			return ErrorValue();
+		}
+	}
+
+	var ust::string8 src_variable_name= variable_lock.deref().name;
+
+	var ust::string8 mut variable_name= "taken ";
+	variable_name+= src_variable_name;
+
+	var Variable mut result
+	{
+		.t= t,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::Pointer,
+		.name= variable_name,
+	};
+
+	variable_name.push_back( "\0"c8 );
+	if( !function_context.is_functionless_context )
+	{
+		result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), variable_name.front() ) );
+		CreateLifetimeStart( function_context, result.llvm_value );
+	}
+
+	// Copy content to new variable.
+	CopyBytes( result.llvm_value, variable_lock.deref().llvm_value, result.t, function_context );
+
+	move(variable_lock);
+
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+
+	function_context.references_graph.TryAddInnerLinks( variable_ptr, result_ptr, names_scope, take_operator.src_loc );
+
+	// Apply empty initializer for source variable.
+	ApplyEmptyInitializer( names_scope, function_context, variable_ptr, src_variable_name, take_operator.src_loc );
+
+	// Register variable for references checking and destruction.
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Lambda& lambda_ ) : Value
+{
+	return BuildLambda( names_scope, function_context, lambda_ );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TernaryOperator& ternary_operator ) : Value
+{
+	auto mut condition_in_register= LLVMValueRef::Null;
+	auto mut condition_constexpr_value= LLVMValueRef::Null;
+	with( &condition: BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.condition ).lock_imut().deref() )
+	{
+		if( condition.t != bool_type_ )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, ternary_operator.src_loc, bool_type_, condition.t )
+			return ErrorValue();
+		}
+
+		condition_in_register= CreateMoveToLLVMRegisterInstruction( condition, function_context );
+		condition_constexpr_value= condition.constexpr_value;
+	}
+
+	// Know type and value type of each branch.
+	var [ VariableTypeExtended, 2 ] mut branches_types[ { .value_type= zero_init }, { .value_type= zero_init } ];
+	for( auto mut i= 0s; i < 2s; ++i )
+	{
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+			{
+				var bool prev_is_functionless_context= function_context.is_functionless_context;
+				function_context.is_functionless_context= true;
+
+				auto state= SaveFunctionContextState( function_context );
+
+				with( &branch_value : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i] ).lock_imut().deref() )
+				{
+					branches_types[i].t= branch_value.t;
+					branches_types[i].value_type= branch_value.value_type;
+				}
+				self.DestroyUnusedTemporaryVariables( names_scope, function_context, ternary_operator.src_loc );
+
+				self.RestoreFunctionContextState( function_context, state );
+				function_context.is_functionless_context= prev_is_functionless_context;
+			} );
+	}
+
+	auto& branches_types_imut = branches_types;
+
+	if( branches_types_imut[0].t != branches_types_imut[1].t )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, ternary_operator.src_loc, branches_types_imut[0].t, branches_types_imut[1].t )
+		return ErrorValue();
+	}
+
+	var Type& t= branches_types_imut[0].t;
+	auto mut value_type= ValueType::Value;
+	auto mut llvm_value= LLVMValueRef::Null;
+	if( branches_types_imut[0].value_type == ValueType::Value || branches_types_imut[1].value_type == ValueType::Value )
+	{
+		value_type= ValueType::Value;
+
+		if( !EnsureTypeComplete( t ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, ternary_operator.src_loc, t )
+			return ErrorValue();
+		}
+		if( !function_context.is_functionless_context )
+		{
+			llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), "select_result\0"[0] ) );
+			CreateLifetimeStart( function_context, llvm_value );
+		}
+	}
+	else if( branches_types_imut[0].value_type == ValueType::ReferenceImut || branches_types_imut[1].value_type == ValueType::ReferenceImut )
+	{
+		value_type= ValueType::ReferenceImut;
+	}
+	else
+	{
+		value_type= ValueType::ReferenceMut;
+	}
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= t,
+			.value_type= value_type,
+			.location= Variable::Location::Pointer,
+			.llvm_value= llvm_value,
+			.name= "ternary_operator_result",
+		}.CreatePtr();
+
+	// Do not forget to remove this node in case of error-return!!!
+	function_context.references_graph.AddNode( result_ptr );
+
+	var LLVMBasicBlockRef mut result_block= zero_init;
+	var [ LLVMBasicBlockRef, 2 ] mut branches_blocks= zero_init, mut branches_end_blocks= zero_init;
+	if( !function_context.is_functionless_context )
+	{
+		unsafe
+		{
+			result_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+			branches_blocks[0]= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+			branches_blocks[1]= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+
+			LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, branches_blocks[0], branches_blocks[1] );
+		}
+	}
+
+	var ReferencesGraph references_graph_before= take(function_context.references_graph);
+	var [ ReferencesGraph, 2 ] mut branches_references_graphs;
+	var [ LLVMValueRef, 2 ] mut branches_reference_values= zero_init, mut branches_constexpr_values= zero_init;
+	for( auto mut i= 0s; i < 2s; ++i )
+	{
+		function_context.references_graph= references_graph_before;
+
+		if( !function_context.is_functionless_context )
+		{
+			unsafe
+			{
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, branches_blocks[i] );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, branches_blocks[i] );
+			}
+		}
+
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+			{
+				var Synt::Expression& branch_expr= ternary_operator.branches[i];
+				var VariablePtr branch_result_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, branch_expr );
+				var VariableLite branch_result= branch_result_ptr;
+
+				branches_constexpr_values[i]= branch_result.constexpr_value;
+
+				function_context.references_graph.TryAddInnerLinks( branch_result_ptr, result_ptr, names_scope, ternary_operator.src_loc );
+
+				if( value_type == ValueType::Value )
+				{
+					if( t != self.void_type_ )
+					{
+						if( branch_result.value_type == ValueType::Value )
+						{
+							function_context.references_graph.MoveNode( branch_result_ptr );
+
+							if( !function_context.is_functionless_context )
+							{
+								if( branch_result.location == Variable::Location::Pointer )
+								{
+									self.CopyBytes( llvm_value, branch_result.llvm_value, t, function_context );
+									self.CreateLifetimeEnd( function_context, branch_result.llvm_value );
+								}
+								else
+								{
+									self.CreateTypedStore( function_context, t, branch_result.llvm_value, llvm_value );
+								}
+							}
+						}
+						else
+						{
+							if( !t.IsCopyConstructible() )
+							{
+								REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, ternary_operator.src_loc, t )
+							}
+							else if( t.IsAbstract() )
+							{
+								REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, ternary_operator.src_loc, t )
+							}
+							else if( !function_context.is_functionless_context )
+							{
+								self.BuildCopyConstructorPart( names_scope, function_context, llvm_value, branch_result.llvm_value, t, ternary_operator.src_loc );
+							}
+						}
+					}
+				}
+				else
+				{
+					branches_reference_values[i]= branch_result.llvm_value;
+					function_context.references_graph.TryAddLink( branch_result_ptr, result_ptr, names_scope, ternary_operator.src_loc );
+				}
+
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetSrcLoc(branch_expr) );
+			} );
+
+		if( !function_context.is_functionless_context )
+		{
+			unsafe
+			{
+				branches_end_blocks[i]= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+				LLVMBuildBr( function_context.llvm_ir_builder, result_block );
+			}
+		}
+		branches_references_graphs[i]= take(function_context.references_graph);
+	}
+
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( branches_references_graphs, names_scope, ternary_operator.src_loc );
+
+	if( !function_context.is_functionless_context )
+	{
+		unsafe
+		{
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, result_block );
+			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, result_block );
+
+			if( value_type != ValueType::Value )
+			{
+				auto phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, LLVMPointerType( t.GetLLVMType(), 0u ), "ternary_operator_result\0"[0] );
+				LLVMAddIncoming( phi_node, $<(branches_reference_values[0]), $<(branches_end_blocks[0]), 2u );
+				with( mut lock : result_ptr.lock_mut() )
+				{
+					lock.deref().llvm_value= phi_node;
+				}
+			}
+		}
+	}
+
+	if( condition_constexpr_value != LLVMValueRef::Null )
+	{
+		with( mut lock : result_ptr.lock_mut() )
+		{
+			lock.deref().constexpr_value=
+				branches_constexpr_values[ ( unsafe( LLVMConstIntGetZExtValue( condition_constexpr_value ) ) != 0u64 ? 0u : 1u ) ];
+		}
+	}
+
+	// Register variable for references checking and destruction.
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator ) : Value
+{
+	// TODO - maybe allow reference to pointer conversion only in unsafe code?
+
+	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, reference_to_raw_pointer_operator.expression );
+	auto v_lock= v_ptr.lock_imut();
+	var Variable& v= v_lock.deref();
+
+	if( v.value_type == ValueType::Value )
+	{
+		REPORT_ERROR( ValueIsNotReference, names_scope, reference_to_raw_pointer_operator.src_loc )
+		return ErrorValue();
+	}
+	if( v.value_type == ValueType::ReferenceImut )
+	{
+		// Disable immutable reference to pointer conversion, because pointer dereference produces mutable value.
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, reference_to_raw_pointer_operator.src_loc )
+		return ErrorValue();
+	}
+
+	// Reference to pointer conversion can break functional purity, so, disable such conversions in constexpr functions.
+	// For example:
+	/*
+		fn constexpr GetX(i32& x, i32& y) : size_type // Memory location of reference arguments is unpredictable.
+		{
+			return $<(x) - $<(y);
+		}
+	*/
+	function_context.has_non_constexpr_operations_inside= true;
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t=
+				RawPointerType
+				{
+					.element_type= v.t,
+					.llvm_type= unsafe( LLVMPointerType( v.t.GetLLVMType(), 0u32 ) )
+				},
+			.location= Variable::Location::LLVMRegister,
+			.value_type= ValueType::Value,
+			.llvm_value= v.llvm_value, // llvm value of reference is actually value of pointer
+			.name= ust::concat( "$>(", v.name, ")" ),
+		}.CreatePtr();
+
+	// Register variable for references checking.
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator ) : Value
+{
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, names_scope, raw_pointer_to_reference_operator.src_loc )
+	}
+
+	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, raw_pointer_to_reference_operator.expression );
+	auto v_lock= v_ptr.lock_imut();
+	var Variable& v= v_lock.deref();
+
+	auto pointer_type_ref= v.t.GetRawPointerType();
+	if( pointer_type_ref.empty() )
+	{
+		REPORT_ERROR( ValueIsNotPointer, names_scope, raw_pointer_to_reference_operator.src_loc, v.t )
+		return ErrorValue();
+	}
+
+	auto llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context ); // llvm value of reference is actually value of pointer
+
+	// If a pointer dereference result is an instruction produced in current basic block,
+	// mark it as non-null, because references are never null.
+	// Current basic block check if needed in cases,
+	// where this pointer may be null and dereference happens only in a non-null branch.
+	// Generally more deep control flow analysis is required, but same basic block check is fine enough.
+	// Non-null marking is needed in order to give a hint to the optimizer that possible further null checks are not needed.
+	if( llvm_value != LLVMValueRef::Null &&
+		unsafe( LLVMIsAInstruction( llvm_value ) ) != LLVMValueRef::Null &&
+		unsafe( LLVMGetInstructionParent( llvm_value ) ) == unsafe( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ) )
+	{
+		auto opcode= unsafe( LLVMGetInstructionOpcode( llvm_value ) );
+		// nonnull metadata is allowed only for "load" instructions.
+		if( opcode == LLVMOpcode::Load )
+		{
+			MarkLoadInstructionWithNonNullMetadata( llvm_value );
+		}
+		// For "call" instructions use return value attribute "nonnull".
+		if( opcode == LLVMOpcode::Call )
+		{
+			auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("nonnull"), 0u64 ) );
+			unsafe( LLVMAddCallSiteAttribute( llvm_value, LLVMAttributeReturnIndex, attr ) );
+		}
+	}
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= pointer_type_ref.try_deref().element_type,
+			.location= Variable::Location::Pointer,
+			.value_type= ValueType::ReferenceMut, // Unlike C++ all raw pointers in Ü are mutable.
+			.llvm_value= llvm_value,
+			.name= ust::concat( "$<(", v.name, ")" ),
+		}.CreatePtr();
+
+	// Register variable for references checking.
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
+{
+	if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd || binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
+	{
+		return BuildLazyBinaryOperator( names_scope, function_context, binary_operator );
+	}
+
+	auto overloaded_operator= GetOverloadedOperatorForBinaryOperator( binary_operator.operator );
+
+	if_var( &mut res :
+		TryCallOverloadedBinaryOperator(
+			names_scope,
+			function_context,
+			overloaded_operator,
+			binary_operator.l,
+			binary_operator.r,
+			ArgsEvaluationOrder::Direct,
+			binary_operator.src_loc ) )
+	{
+		if_var( &variable_ptr : res.get</VariablePtr/>() )
+		{
+			auto variable_lock= variable_ptr.lock_imut();
+			var Variable& variable= variable_lock.deref();
+			if( binary_operator.operator == BinaryOperatorType::NotEqual && variable.t == bool_type_ )
+			{
+				// "!=" is implemented via "==", so, invert result.
+				var Variable mut result
+				{
+					.t= bool_type_,
+					.value_type= ValueType::Value,
+					.location= Variable::Location::LLVMRegister,
+					.name= BinaryOperatorToString( BinaryOperatorType::NotEqual ),
+				};
+
+				auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+				if( value_in_register != LLVMValueRef::Null )
+				{
+					unsafe
+					{
+						result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );
+						if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
+					}
+				}
+
+				var VariablePtr result_ptr= move(result).CreatePtr();
+				function_context.references_graph.AddNode( result_ptr );
+				RegisterTemporaryVariable( function_context, result_ptr );
+				return result_ptr;
+			}
+			else if( overloaded_operator == OverloadedOperator::CompareOrder &&
+				binary_operator.operator != BinaryOperatorType::CompareOrder &&
+				!variable.t.GetFundamentalType().empty() &&
+				IsSignedInteger( variable.t.GetFundamentalType().try_deref().fundamental_type ) )
+			{
+				var Variable mut result
+				{
+					.t= bool_type_,
+					.value_type= ValueType::Value,
+					.location= Variable::Location::LLVMRegister,
+					.name= OverloadedOperatorToString( overloaded_operator ),
+				};
+
+				var LLVMValueRef value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+				if( value_in_register != LLVMValueRef::Null )
+				{
+					auto zero= unsafe( LLVMConstInt( variable.t.GetLLVMType(), 0u64, LLVMBool::False ) );
+					switch( binary_operator.operator )
+					{
+						BinaryOperatorType::Less ->
+						{
+							result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, value_in_register, zero, "<\0"[0] ) );
+						},
+						BinaryOperatorType::LessEqual ->
+						{
+							result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, value_in_register, zero, "<=\0"[0] ) );
+						},
+						BinaryOperatorType::Greater ->
+						{
+							result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, value_in_register, zero, ">\0"[0] ) );
+						},
+						BinaryOperatorType::GreaterEqual->
+						{
+							result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, value_in_register, zero, ">=\0"[0] ) );
+						},
+						default -> { halt; }
+					}
+				}
+
+				if( result.llvm_value != LLVMValueRef::Null && unsafe(LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+				{
+					result.constexpr_value= result.llvm_value;
+				}
+
+				var VariablePtr result_ptr= move(result).CreatePtr();
+				function_context.references_graph.AddNode( result_ptr );
+				RegisterTemporaryVariable( function_context, result_ptr );
+				return result_ptr;
+			}
+		}
+
+		return res;
+	}
+
+	var VariableLite mut l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.deref() );
+	// Save l_var in register, prevent its modification during r_var calculation.
+	l_var.llvm_value= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+	l_var.location= Variable::Location::LLVMRegister;
+	l_var.value_type= ValueType::Value;
+
+	// Destroy temporaries of left part.
+	DestroyUnusedTemporaryVariables( names_scope, function_context, binary_operator.src_loc );
+
+	var VariableLite r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.deref() );
+
+	return BuildBinaryOperator( names_scope, function_context, l_var, r_var, binary_operator.operator, binary_operator.src_loc );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IndexationOperator& indexation_operator ) : Value
+{
+	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.value.deref() );
+	var VariableLite variable= variable_ptr;
+
+	if( !variable.t.GetClassType().empty() )
+	{
+		// Try to call overloaded [] operator for class.
+		if_var( &mut res : TryCallOverloadedPostfixOperator( names_scope, function_context, OverloadedOperator::Indexing, variable_ptr, ust::single_element_array_view(indexation_operator.index), indexation_operator.src_loc ) )
+		{
+			return take(res);
+		}
+	}
+
+	// This is not a class - process indexation operator for array or tuple.
+
+	if_var( &variable_array_type : variable.t.GetArrayType() )
+	{
+		// Prevent modification of variable during index calculation.
+		// Do not forget to remove this node in case of error-return!!!
+		var VariablePtr variable_lock_node=
+			Variable
+			{
+				.t= variable.t,
+				.value_type= ( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+				.location= Variable::Location::Pointer,
+				.name= "lock []",
+				.preserve_temporary= true,
+			}.CreatePtr();
+
+		function_context.references_graph.AddNode( variable_lock_node );
+		function_context.references_graph.TryAddLink( variable_ptr, variable_lock_node, names_scope, indexation_operator.src_loc );
+		function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_lock_node, names_scope, indexation_operator.src_loc );
+		RegisterTemporaryVariable( function_context, variable_lock_node );
+
+		var VariableLite index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() );
+
+		if_var( &index_fundamental_type : index.t.GetFundamentalType() )
+		{
+			if( !(
+				IsUnsignedInteger( index_fundamental_type.fundamental_type ) ||
+				( IsSignedInteger( index_fundamental_type.fundamental_type ) && index.constexpr_value != LLVMValueRef::Null ) ) )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, "any unsigned integer", index.t )
+				return ErrorValue();
+			}
+			if( variable.location != Variable::Location::Pointer )
+			{
+				// TODO - Strange variable location.
+				return ErrorValue();
+			}
+
+			var LLVMValueRef index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
+			DestroyUnusedTemporaryVariables( names_scope, function_context, indexation_operator.src_loc ); // Destroy index.
+			if( index.constexpr_value != LLVMValueRef::Null )
+			{
+				// Statically check index.
+				auto index_value_num= unsafe( LLVMConstIntGetZExtValue( index_value ) );
+				if( index_value_num >= variable_array_type.element_count )
+				{
+					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope, indexation_operator.src_loc, index_value_num, variable_array_type.element_count )
+					return ErrorValue();
+				}
+			}
+			else if( !function_context.is_functionless_context )
+			{
+				// Dynamically check index.
+				unsafe
+				{
+					auto mut index_value_for_compare= index_value;
+					auto index_type_size= GetFundamentalTypeSize( index_fundamental_type.fundamental_type );
+					auto size_type_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
+					if( index_type_size > size_type_size )
+					{
+						index_value_for_compare= LLVMBuildTrunc( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.size_type_, g_null_string );
+					}
+					else if( index_type_size < size_type_size )
+					{
+						index_value_for_compare= LLVMBuildZExt( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.size_type_, g_null_string );
+					}
+
+					auto size_value= LLVMConstInt( fundamental_llvm_types_.size_type_, variable_array_type.element_count, LLVMBool::False );
+					auto condition= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, index_value_for_compare, size_value, g_null_string );
+					auto halt_block = LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+					auto ok_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+
+					LLVMBuildCondBr( function_context.llvm_ir_builder, condition, halt_block, ok_block );
+
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, halt_block );
+					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, halt_block );
+
+					LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, g_null_string );
+					LLVMBuildUnreachable( function_context.llvm_ir_builder );
+
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, ok_block );
+					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, ok_block );
+				}
+			}
+
+			var Variable mut result
+			{
+				.t= variable_array_type.element_type,
+				.location= Variable::Location::Pointer,
+				.value_type= ( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+				.llvm_value= CreateArrayElementGEP( function_context, variable_array_type, variable.llvm_value, index_value ),
+				.name= variable_ptr.lock_imut().deref().name + "[]",
+			};
+
+			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
+			{
+				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32( LLVMConstIntGetZExtValue( index_value ) ) ) );
+			}
+
+			var VariablePtr result_ptr= move(result).CreatePtr();
+			function_context.references_graph.AddNode( result_ptr );
+			function_context.references_graph.AddLink( variable_lock_node, result_ptr );
+			function_context.references_graph.TryAddInnerLinks( variable_lock_node, result_ptr, names_scope, indexation_operator.src_loc );
+
+			function_context.references_graph.MoveNode( variable_lock_node );
+			// Register variable for references checking.
+			RegisterTemporaryVariable( function_context, result_ptr );
+			return result_ptr;
+		}
+		REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, "any unsigned integer", index.t )
+	}
+	else if_var( &tuple_type : variable.t.GetTupleType() )
+	{
+		 // Create new stack frame to prevent deletion of variable during index calculation.
+		var VariableLite index= WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
+			{
+				auto result= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, indexation_operator.src_loc );
+				return result;
+			} );
+
+		if_var( &index_fundamental_type : index.t.GetFundamentalType() )
+		{
+			if( !IsInteger( index_fundamental_type.fundamental_type ) )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, "any integer", index.t )
+				return ErrorValue();
+			}
+			if( index.constexpr_value == LLVMValueRef::Null )
+			{
+				REPORT_ERROR( ExpectedConstantExpression, names_scope, indexation_operator.src_loc )
+				return ErrorValue();
+			}
+
+			var u64 mut type_index= ~0u64;
+			var i64 mut type_index_signed(-1);
+			unsafe
+			{
+				type_index= LLVMConstIntGetZExtValue( index.constexpr_value );
+				type_index_signed= LLVMConstIntGetSExtValue( index.constexpr_value );
+			}
+
+			if( IsSignedInteger( index_fundamental_type.fundamental_type ) )
+			{
+				if( type_index_signed >= i64(tuple_type.element_types.size()) || type_index_signed < 0i64 )
+				{
+					REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.src_loc, type_index_signed, tuple_type.element_types.size() )
+					return ErrorValue();
+				}
+			}
+			else
+			{
+				if( type_index >= u64(tuple_type.element_types.size()) )
+				{
+					REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.src_loc, type_index, tuple_type.element_types.size() )
+					return ErrorValue();
+				}
+			}
+
+			auto mut lock= variable_ptr.lock_mut();
+			var Variable& mut v= lock.deref();
+
+			v.children.resize( tuple_type.element_types.size() );
+			{
+				var VariableNullablePtr prev_node= v.children[ size_type(type_index) ];
+				if( !prev_node.empty() )
+				{
+					var VariablePtr prev_node_non_null= prev_node.try_to_non_nullable();
+					function_context.references_graph.AddNodeIfNotExists( prev_node_non_null );
+					return prev_node_non_null;
+				}
+			}
+
+			var Type& element_type= tuple_type.element_types[ size_type(type_index) ];
+			var Variable mut result
+			{
+				.t= element_type,
+				.location= Variable::Location::Pointer,
+				.value_type= ( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+				.llvm_value= ForceCreateConstantIndexGEP( function_context, tuple_type.llvm_type, v.llvm_value, u32(type_index) ),
+				.name= ust::concat( v.name, "[", ust::to_string8(type_index), "]" ),
+			};
+			if( variable.constexpr_value != LLVMValueRef::Null )
+			{
+				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(type_index) ) );
+			}
+
+			auto element_type_reference_tag_count= element_type.ReferenceTagCount();
+			if( element_type_reference_tag_count > 0u )
+			{
+				var size_type mut offset= 0s;
+				foreach( &element_type : tuple_type.element_types.iter().limit( size_type(type_index) ) )
+				{
+					offset+= size_type( element_type.ReferenceTagCount() );
+				}
+
+				for( auto mut i= 0s; i < size_type(element_type_reference_tag_count); ++i )
+				{
+					result.inner_reference_nodes.push_back( v.inner_reference_nodes[ i + offset ] );
+				}
+			}
+
+			var VariablePtr result_ptr= move(result).CreateChildPtr( variable_ptr );
+			function_context.references_graph.AddNode( result_ptr );
+			v.children[ size_type(type_index) ]= result_ptr;
+			return result_ptr;
+		}
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.src_loc, index.t )
+	}
+
+	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.src_loc, variable.t )
+	return ErrorValue();
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CallOperator& call_operator ) : Value
+{
+	auto function= BuildExpressionCode( names_scope, function_context, call_operator.value.deref() );
+
+	var ust::shared_ptr_nullable_mut</ FunctionsSet /> mut functions_set;
+	var VariableNullablePtr mut this_;
+
+	if_var( &t : function.get</Type/>() )
+	{
+		return BuildTempVariableConstruction( names_scope, function_context, t, call_operator.args, call_operator.src_loc );
+	}
+	if_var( & in_functions_set : function.get</FunctionsSetPtr/>() )
+	{
+		functions_set= in_functions_set;
+	}
+	if_var( & this_methods_set : function.get</ThisMethodsSet/>() )
+	{
+		functions_set= this_methods_set.functions_set;
+		this_= this_methods_set.this_;
+	}
+	if_var( &variable_ptr : function.get</VariablePtr/>() )
+	{
+		var VariableLite variable= variable_ptr;
+
+		if_var( &function_pointer_type : variable.t.GetFunctionPointerType() )
+		{
+			var LLVMValueRef function_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+
+			function_context.has_non_constexpr_operations_inside= true; // Call via pointer is not constexpr.
+
+			return DoCallFunction(
+				names_scope,
+				function_context,
+				VariableNullablePtr(),
+				function_pointer_type.function_type,
+				function_value,
+				false, // Call via pointer is not constexpr.
+				call_operator.args,
+				call_operator.src_loc );
+		}
+
+		// Try to call overloaded () operator.
+		// Do it here and not call "CallFunctionsSet" to allow non-this-call operator ().
+		if_var( &mut res : TryCallOverloadedPostfixOperator( names_scope, function_context, OverloadedOperator::Call, variable_ptr, call_operator.args, call_operator.src_loc ) )
+		{
+			return take(res);
+		}
+	}
+
+	if( functions_set.empty() )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, call_operator.src_loc, "non-function value" )
+		return ErrorValue();
+	}
+
+	return CallFunctionsSet( names_scope, function_context, this_, functions_set.try_to_non_nullable(), call_operator.args, call_operator.src_loc );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
+{
+	if( member_access_operator.member_name == KeywordToString( Keyword::constructor_ ) ||
+		member_access_operator.member_name == KeywordToString( Keyword::destructor_ ) )
+	{
+		if( !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, member_access_operator.src_loc, member_access_operator.member_name )
+		}
+	}
+
+	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, member_access_operator.value );
+	var VariableLite variable= variable_ptr;
+
+	if( !EnsureTypeComplete( variable.t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, member_access_operator.src_loc, variable.t )
+		return ErrorValue();
+	}
+
+	auto class_type_ref= variable.t.GetClassType();
+	if( class_type_ref.empty() )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, member_access_operator.src_loc, variable.t )
+		return ErrorValue();
+	}
+	var ClassTypePtr class_type= class_type_ref.try_deref();
+
+	if( member_access_operator.template_args.empty() &&
+		class_type.lock_imut().deref().generated_class_data.has</ TypeinfoClassDescription />() )
+	{
+		var VariableNullablePtr fetch_result_opt= TryFetchTypeinfoClassLazyField( variable.t, member_access_operator.member_name );
+		if( !fetch_result_opt.empty() )
+		{
+			var VariablePtr fetch_result= fetch_result_opt.try_to_non_nullable();
+			function_context.references_graph.AddNodeIfNotExists( fetch_result );
+			if( variable.constexpr_value != LLVMValueRef::Null )
+			{
+				// Pass constexpr fetch result for constexpr typeinfo variable.
+				return fetch_result;
+			}
+			else
+			{
+				// This is a typeinfo element access via non-constexpr typeinfo variable.
+				// Since typeinfo classes have no constructors it's impossible to construct typeinfo variable.
+				// So, assume this instance is instance of single true (generated) typeinfo variable.
+				// It is still possible to create value of typeinfo class via unsafe-hacks, but ignore such possibility and return one legit possible value.
+				//
+				// Note that we create here immutable reference, even if source variable is mutable.
+				// So, typeinfo list pseudo-field behaves like immutable field.
+				// Doing so we prevent possible modification of returned variable, since it is de-facto global constant and thus can't be modified.
+
+				auto fetch_result_lock= fetch_result.lock_imut();
+				var Variable& fetch_result_data= fetch_result_lock.deref();
+
+				var VariablePtr result_ptr=
+					Variable
+					{
+						.t= fetch_result_data.t,
+						.value_type= ValueType::ReferenceImut,
+						.location= Variable::Location::Pointer,
+						.llvm_value= fetch_result_data.llvm_value,
+						.constexpr_value= LLVMValueRef::Null, // Create reference node with null constexpr value, since source variable is not constexpr.
+						.name= fetch_result_data.name,
+					}.CreatePtr();
+
+				function_context.references_graph.AddNode( result_ptr );
+
+				function_context.references_graph.TryAddLink( fetch_result, result_ptr, names_scope, member_access_operator.src_loc );
+				function_context.references_graph.TryAddInnerLinks( fetch_result, result_ptr, names_scope, member_access_operator.src_loc );
+
+				RegisterTemporaryVariable( function_context, result_ptr );
+				return result_ptr;
+			}
+		}
+	}
+
+	auto mut class_member_opt= ResolveClassValue( class_type, member_access_operator.member_name );
+	if( class_member_opt.empty() )
+	{
+		REPORT_ERROR( NameNotFound, names_scope, member_access_operator.src_loc, member_access_operator.member_name )
+		return ErrorValue();
+	}
+	auto& class_member= class_member_opt.try_deref();
+
+	if( names_scope.lock_imut().deref().GetAccessFor( class_type ) < class_member[1] )
+	{
+		REPORT_ERROR( AccessingNonpublicClassMember, names_scope, member_access_operator.src_loc, member_access_operator.member_name, variable.t.ToString() )
+	}
+
+	auto field_ptr= class_member[0].Get</ClassField/>();
+	if( !field_ptr.empty() )
+	{
+		if( !member_access_operator.template_args.empty() )
+		{
+			REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
+		}
+
+		with( mut lock : field_ptr.try_lock_mut() )
+		{
+			lock.deref().used= true;
+		}
+
+		return AccessClassField( names_scope, function_context, variable_ptr, field_ptr.try_lock_imut().deref(), member_access_operator.member_name, member_access_operator.src_loc );
+	}
+
+	auto functions_set_ptr= class_member[0].Get</FunctionsSet/>();
+	if( !functions_set_ptr.empty() )
+	{
+		var FunctionsSetPtr functions_set_non_null= functions_set_ptr.try_to_non_nullable();
+		PrepareFunctionsSetAndBuildConstexprBodies( class_member[2], functions_set_non_null );
+
+		if_var( &template_args : member_access_operator.template_args )
+		{
+			if( functions_set_non_null.lock_imut().deref().function_templates.empty() )
+			{
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
+				return ErrorValue();
+			}
+
+			// Prevent destruction of variable during evaluation of member function template args.
+			// Do not forget to remove node in case of error-return!!!
+			var VariablePtr variable_lock_node=
+				Variable
+				{
+					.value_type= ( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.location= Variable::Location::Pointer,
+					.name= variable_ptr.lock_imut().deref().name + " lock",
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( variable_lock_node );
+			function_context.references_graph.AddLink( variable_ptr, variable_lock_node );
+
+			auto parameterization_result= ParameterizeTemplateFunctions(
+				names_scope,
+				function_context,
+				functions_set_non_null,
+				template_args,
+				member_access_operator.src_loc );
+
+			function_context.references_graph.RemoveNode( variable_lock_node );
+
+			if( parameterization_result.empty() )
+			{
+				return ErrorValue();
+			}
+
+			return ThisMethodsSet{ .this_= variable_ptr, .functions_set= parameterization_result.try_to_non_nullable() };
+		}
+		else
+		{
+			return ThisMethodsSet{ .this_= variable_ptr, .functions_set= functions_set_ptr.try_to_non_nullable() };
+		}
+	}
+
+	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, "class members, except fields or methods" )
+	return ErrorValue();
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::VariableInitialization& variable_initialization ) : Value
+{
+	var Value type_value= BuildExpressionCode( names_scope, function_context, variable_initialization.type_name );
+	auto type_name_opt= type_value.get</Type/>();
+	if(type_name_opt.empty())
+	{
+		REPORT_ERROR( NameIsNotTypeName, names_scope, variable_initialization.src_loc, GetValueKindName(type_value) )
+		return ErrorValue();
+	}
+
+	var Type& t= type_name_opt.try_deref();
+
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, variable_initialization.src_loc, t )
+		return ErrorValue();
+	}
+	if( t.IsAbstract() )
+	{
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, variable_initialization.src_loc, t )
+		return ErrorValue();
+	}
+
+	var ust::string8 mut name= "temp " + t.ToString();
+
+	var Variable mut result
+	{
+		.t= t,
+		.location= Variable::Location::Pointer,
+		.value_type= ValueType::Value,
+		.name= name,
+	};
+
+	auto mut llvm_value= LLVMValueRef::Null;
+	if( !function_context.is_functionless_context )
+	{
+		name += "\0";
+		llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), name.front() ) );
+		CreateLifetimeStart( function_context, llvm_value );
+	}
+	result.llvm_value= llvm_value;
+
+	var VariablePtr result_ptr= move(result).CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+
+	{
+		var VariablePtr variable_for_initialization_ptr=
+			Variable
+			{
+				.t= t,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= llvm_value,
+				.name= name,
+			}.CreatePtr();
+
+		function_context.references_graph.AddNode( variable_for_initialization_ptr );
+		function_context.references_graph.AddLink( result_ptr, variable_for_initialization_ptr );
+		function_context.references_graph.TryAddInnerLinks( result_ptr, variable_for_initialization_ptr, names_scope, variable_initialization.src_loc );
+
+		var LLVMValueRef constexpr_value= ApplyInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_initialization.initializer );
+
+		function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
+
+		with( mut lock : result_ptr.lock_mut() )
+		{
+			lock.deref().constexpr_value= constexpr_value;
+		}
+	}
+
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AwaitOperator& await_operator ) : Value
+{
+	return BuildAwait( names_scope, function_context, await_operator.value, await_operator.src_loc );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value
+{
+	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, unary_minus.expr );
+	var VariableLite variable= variable_ptr;
+
+	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::Sub, variable_ptr, unary_minus.src_loc ) )
+	{
+		return take(res);
+	}
+
+	auto fundamental_type= variable.t.GetFundamentalType();
+	if( fundamental_type.empty() )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, unary_minus.src_loc, variable.t )
+		return ErrorValue();
+	}
+	var U_FundamentalType t= fundamental_type.try_deref().fundamental_type;
+
+	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	DestroyUnusedTemporaryVariables( names_scope, function_context, unary_minus.src_loc );
+
+	var Variable mut result
+	{
+		.t= variable.t,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::LLVMRegister,
+		.name= "-",
+	};
+
+	if( IsInteger( t ) )
+	{
+		if( value_in_register != LLVMValueRef::Null )
+		{
+			result.llvm_value= unsafe( LLVMBuildNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
+		}
+	}
+	else if( IsFloatingPoint( t ) )
+	{
+		if( value_in_register != LLVMValueRef::Null )
+		{
+			result.llvm_value= unsafe( LLVMBuildFNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
+		}
+	}
+	else
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, unary_minus.src_loc, variable.t )
+		return ErrorValue();
+	}
+
+	if( result.llvm_value != LLVMValueRef::Null && unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+	{
+		result.constexpr_value= result.llvm_value;
+	}
+
+	// Register variable for references checking.
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value
+{
+	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, logical_not.expr );
+	var VariableLite variable= variable_ptr;
+
+	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::LogicalNot, variable_ptr, logical_not.src_loc ) )
+	{
+		return take(res);
+	}
+
+	if( variable.t != bool_type_ )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, logical_not.src_loc, variable.t )
+		return ErrorValue();
+	}
+
+	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	DestroyUnusedTemporaryVariables( names_scope, function_context, logical_not.src_loc );
+
+	var Variable mut result
+	{
+		.t= bool_type_,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::LLVMRegister,
+		.name= "!",
+	};
+
+	if( value_in_register != LLVMValueRef::Null )
+	{
+		result.llvm_value= unsafe( LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] ) );
+		if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+		{
+			result.constexpr_value= result.llvm_value;
+		}
+	}
+
+	// Register variable for references checking.
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value
+{
+	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, bitwise_not.expr );
+	var VariableLite variable= variable_ptr;
+
+	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::BitwiseNot, variable_ptr, bitwise_not.src_loc ) )
+	{
+		return take(res);
+	}
+
+	auto fundamental_type= variable.t.GetFundamentalType();
+	if( fundamental_type.empty() || !IsInteger( fundamental_type.try_deref().fundamental_type ) )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, bitwise_not.src_loc, variable.t )
+		return ErrorValue();
+	}
+
+	auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+	DestroyUnusedTemporaryVariables( names_scope, function_context, bitwise_not.src_loc );
+
+	var Variable mut result
+	{
+		.t= variable.t,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::LLVMRegister,
+		.name= "~",
+	};
+
+	if( value_in_register != LLVMValueRef::Null )
+	{
+		result.llvm_value= unsafe( LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] ) );
+		if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+		{
+			result.constexpr_value= result.llvm_value;
+		}
+	}
+
+	// Register variable for references checking.
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ArrayType& array_type ) : Value
+{
+	return PrepareTypeImpl( names_scope, function_context, array_type );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Value
+{
+	return PrepareTypeImpl( names_scope, function_context, tuple_type );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerType& raw_pointer_type ) : Value
+{
+	return PrepareTypeImpl( names_scope, function_context, raw_pointer_type );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Value
+{
+	return PrepareTypeImpl( names_scope, function_context, function_type );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CoroutineType& coroutine_type ) : Value
+{
+	return PrepareTypeImpl( names_scope, function_context, coroutine_type );
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Value
+{
+	if_var( &expression : ExpandExpressionMixin( names_scope, function_context, mixin_ ) )
+	{
+		return BuildExpressionCode( names_scope, function_context, expression );
+	}
+
+	return ErrorValue(); // An error should be generated earlier.
+}
+
+fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value
+{
+	var Type t= PrepareType( names_scope, function_context, type_name );
+	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+	var VariableLite v= v_ptr;
+
+	// We needs complete types to check reference conversion possibility.
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, t )
+		return ErrorValue();
+	}
+	if( !EnsureTypeComplete( v.t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, v.t )
+		return ErrorValue();
+	}
+
+	var Variable mut result
+	{
+		.t= t,
+		.value_type= ( v.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
+		.name= "casted " + v_ptr.lock_imut().deref().name,
+	};
+
+	// TODO - maybe forbid reference casting for ValueType::Value?
+	auto mut src_llvm_value= v.llvm_value;
+	if( v.location == Variable::Location::LLVMRegister && !function_context.is_functionless_context )
+	{
+		src_llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
+		CreateTypedStore( function_context, v.t, v.llvm_value, src_llvm_value );
+	}
+
+	var bool types_are_compatible= v.t.ReferenceIsConvertibleTo( t );
+
+	if( v.t == t )
+	{
+		result.llvm_value= src_llvm_value;
+	}
+	else
+	{
+		if( types_are_compatible )
+		{
+			result.llvm_value= CreateReferenceCast( src_llvm_value, v.t, t, function_context );
+		}
+		else
+		{
+			if( allow_unsafe )
+			{
+				if( src_llvm_value != LLVMValueRef::Null )
+				{
+					unsafe
+					{
+						auto dst_pointer_type= LLVMPointerType( t.GetLLVMType(), 0u );
+						result.llvm_value= LLVMBuildPointerCast( function_context.llvm_ir_builder, src_llvm_value, dst_pointer_type, g_null_string );
+					}
+				}
+			}
+			else
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, t, v.t )
+				return ErrorValue();
+			}
+		}
+	}
+
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, src_loc );
+
+	if( types_are_compatible )
+	{
+		function_context.references_graph.TryAddInnerLinks( v_ptr, result_ptr, names_scope, src_loc );
+	}
+
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context, VariablePtr& variable_ptr ) : VariablePtr
+{
+	var size_type base_field_index(0); // Base is always first field.
+
+	auto mut variable_lock= variable_ptr.lock_mut();
+	var Variable &mut variable= variable_lock.deref();
+
+	auto class_type= variable.t.GetClassType().try_deref();
+	var LLVMTypeRef class_llvm_type= class_type.lock_imut().deref().llvm_type;
+
+	variable.children.resize( size_type( unsafe( LLVMCountStructElementTypes( class_llvm_type ) ) ) );
+	{
+		var VariableNullablePtr prev_node= variable.children[ base_field_index ];
+		if( !prev_node.empty() )
+		{
+			var VariablePtr prev_node_non_null= prev_node.try_to_non_nullable();
+			function_context.references_graph.AddNodeIfNotExists( prev_node_non_null );
+			return prev_node_non_null;
+		}
+	}
+
+	var Type base_type= class_type.lock_imut().deref().base_class.try_to_non_nullable();
+
+	var Variable mut base_
+	{
+		.t= base_type,
+		.value_type= ( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
+		.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, u32(base_field_index) ),
+		.name= variable.name + ".base",
+	};
+
+	// Child class reference tags are mapped 1 to 1 to parent class tags.
+	for( var size_type mut i= 0s, reference_tag_count= size_type(base_type.ReferenceTagCount()); i < reference_tag_count; ++i )
+	{
+		base_.inner_reference_nodes.push_back( variable.inner_reference_nodes[i] );
+	}
+
+	var VariablePtr base_ptr= move(base_).CreateChildPtr( variable_ptr );
+
+	variable.children[ base_field_index ]= base_ptr;
+	function_context.references_graph.AddNode( base_ptr );
+
+	return base_ptr;
+}
+
+fn CodeBuilder::AccessClassField(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	VariablePtr& variable_ptr,
+	ClassField& field,
+	ust::string8& field_name,
+	SrcLoc& src_loc ) : Value
+{
+	if( field.index == ~0u ) { return ErrorValue(); }
+
+	var ClassTypePtr class_type= variable_ptr.lock_imut().deref().t.GetClassType().try_deref();
+
+	if( field.source_class != class_type )
+	{
+		if( !class_type.lock_imut().deref().base_class.empty() )
+		{
+			var VariablePtr base_= AccessClassBase( function_context, variable_ptr );
+			return AccessClassField( names_scope, function_context, base_, field, field_name, src_loc );
+		}
+
+		REPORT_ERROR( AccessOfNonThisClassField, names_scope, src_loc, field_name )
+		return ErrorValue();
+	}
+
+	return AccessDirectClassField( names_scope, function_context, variable_ptr, field, field_name, src_loc );
+}
+
+fn CodeBuilder::AccessDirectClassField(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	VariablePtr& variable_ptr,
+	ClassField& field,
+	ust::string8& field_name,
+	SrcLoc& src_loc ) : VariablePtr
+{
+	var VariableLite variable= variable_ptr;
+	var ClassTypePtr class_type= variable.t.GetClassType().try_deref();
+	debug_assert( class_type == field.source_class, "Accessing non-direct class field!" );
+
+	if( field.is_reference )
+	{
+		var Variable mut result
+		{
+			.t= field.t,
+			.location= Variable::Location::Pointer,
+			.value_type= ( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.name= ust::concat( variable_ptr.lock_imut().deref().name, ".", field_name ),
+		};
+
+		if( variable.constexpr_value != LLVMValueRef::Null )
+		{
+			// Create constant "extractvalue" instead of "load" for constexpr structs.
+			if( EnsureTypeComplete( field.t ) )
+			{
+				unsafe
+				{
+					result.llvm_value= LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) );
+
+					// References in constexpr structs should be implementing, using global variables or ConstantGEP for global variables.
+					var LLVMValueRef constant_expression= LLVMIsAConstantExpr( result.llvm_value ) ;
+					if( constant_expression != LLVMValueRef::Null )
+					{
+						// Assume constant GEP.
+						var LLVMValueRef global_variable= LLVMGetOperand( constant_expression, 0u );
+						var i32 num_operands= LLVMGetNumOperands( constant_expression );
+						var LLVMValueRef mut element= LLVMGetInitializer( global_variable );
+						for( var i32 mut i= 2; i < num_operands; ++i ) // Skip first zero index.
+						{
+							auto index= u32( LLVMConstIntGetZExtValue( LLVMGetOperand( constant_expression, u32(i) ) ) );
+							element= LLVMGetAggregateElement( element, index );
+						}
+						result.constexpr_value= element;
+					}
+					else
+					{
+						if( class_type.lock_imut().deref().generated_class_data.has</ TypeinfoClassDescription />() && field_name == "type_id" )
+						{
+							// HACK!
+							// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.
+							// This is used for type_id in typeinfo classes.
+							result.constexpr_value= LLVMGetAggregateElement( LLVMGetAggregateElement( LLVMGetInitializer( result.llvm_value ), 0u ), 0u );
+						}
+						else
+						{
+							result.constexpr_value= LLVMGetInitializer( result.llvm_value );
+						}
+					}
+				}
+			}
+			else
+			{
+				return variable_ptr; // Actual error will be reported in another place.
+			}
+		}
+		else
+		{
+			var LLVMValueRef gep_result= CreateClassFieldGEP( function_context, variable, field );
+			result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, gep_result );
+		}
+
+		var VariablePtr result_ptr= move(result).CreatePtr();
+		function_context.references_graph.AddNode( result_ptr );
+
+		auto node_index= size_type( field.reference_tag );
+		var VariablePtr inner_node= variable_ptr.lock_imut().deref().inner_reference_nodes[ node_index ];
+		function_context.references_graph.TryAddLink( inner_node, result_ptr, names_scope, src_loc );
+
+		// Setup inner reference node links for reference fields with references inside.
+		// Only reference-fields with single inner reference tag are supported.
+		if( field.t.ReferenceTagCount() == 1u )
+		{
+			var VariablePtr dst_node= result_ptr.lock_imut().deref().inner_reference_nodes.front();
+			foreach( &accessible_node : function_context.references_graph.GetAllAccessibleNonInnerNodes( inner_node ) )
+			{
+				// Usually we should have here only one inner reference node.
+				// But it may be more if a member of a composite value is referenced.
+				// In such case it's necessary to create links for all inner reference nodes, even if sometimes it can create false-positive reference protection errors.
+				foreach( & src_node : accessible_node.lock_imut().deref().inner_reference_nodes )
+				{
+					function_context.references_graph.TryAddLink( src_node, dst_node, names_scope, src_loc );
+				}
+			}
+		}
+
+		// Register variable for references checking.
+		RegisterTemporaryVariable( function_context, result_ptr );
+		return result_ptr;
+	}
+	else
+	{
+		auto mut lock= variable_ptr.lock_mut();
+		var Variable& mut v= lock.deref();
+
+		var LLVMTypeRef class_llvm_type= v.t.GetLLVMType();
+		v.children.resize( size_type( unsafe( LLVMCountStructElementTypes( class_llvm_type ) ) ) );
+		{
+			var VariableNullablePtr prev_node= v.children[ size_type(field.index) ];
+			if( !prev_node.empty() )
+			{
+				var VariablePtr prev_node_non_null= prev_node.try_to_non_nullable();
+				function_context.references_graph.AddNodeIfNotExists( prev_node_non_null );
+				return prev_node_non_null;
+			}
+		}
+
+		var Variable mut result
+		{
+			.t= field.t,
+			.location= Variable::Location::Pointer,
+			.value_type= ( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, field.index ),
+			.name= ust::concat( v.name, ".", field_name ),
+		};
+		if( variable.constexpr_value != LLVMValueRef::Null )
+		{
+			result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
+		}
+
+		foreach( tag : field.inner_reference_tags.iter().limit( size_type( field.t.ReferenceTagCount() ) ) )
+		{
+			result.inner_reference_nodes.push_back( v.inner_reference_nodes[ size_type( tag ) ] );
+		}
+
+		var VariablePtr result_ptr= move(result).CreateChildPtr( variable_ptr );
+		function_context.references_graph.AddNode( result_ptr );
+
+		v.children[ size_type(field.index) ]= result_ptr;
+
+		return result_ptr;
+	}
+}
+
+fn CodeBuilder::BuildBinaryOperator(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	VariableLite& l_var,
+	VariableLite& r_var,
+	BinaryOperatorType operator,
+	SrcLoc& src_loc ) : Value
+{
+	auto l_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+	auto r_in_register= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+
+	var Type& l_type= l_var.t;
+	var Type& r_type= r_var.t;
+	auto l_fundamental_type= l_type.GetFundamentalType();
+	auto r_fundamental_type= r_type.GetFundamentalType();
+	auto l_raw_pointer_type= l_type.GetRawPointerType();
+	auto r_raw_pointer_type= r_type.GetRawPointerType();
+	auto l_enum_type= l_type.GetEnumType();
+
+	var bool mut is_float= false, mut is_integer= false, mut is_signed= false, mut is_void= false;
+	if( !l_fundamental_type.empty() )
+	{
+		auto& t= l_fundamental_type.try_deref().fundamental_type;
+		is_float= IsFloatingPoint(t);
+		is_integer= IsInteger(t);
+		is_signed= IsSignedInteger(t);
+		is_void= t == U_FundamentalType::void_;
+	}
+	else if_var( &enum_type : l_enum_type )
+	{
+		is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
+	}
+
+	var Variable mut result
+	{
+		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
+		.name= BinaryOperatorToString( operator ),
+	};
+
+	if( operator == BinaryOperatorType::Add && ( !l_raw_pointer_type.empty() || !r_raw_pointer_type.empty() ) )
+	{
+		// Add pointer and integer.
+
+		// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
+		if( !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope, src_loc )
+		}
+
+		var u32 pointer_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
+
+		var LLVMValueRef mut ptr_value= LLVMValueRef::Null, mut index_value= LLVMValueRef::Null;
+		var U_FundamentalType mut int_type= U_FundamentalType::InvalidType;
+
+		if( r_raw_pointer_type.empty() )
+		{
+			if( r_fundamental_type.empty() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, r_type )
+				return ErrorValue();
+			}
+			int_type= r_fundamental_type.try_deref().fundamental_type;
+
+			result.t= l_type;
+			ptr_value= l_in_register;
+			index_value= r_in_register;
+		}
+		else if( l_raw_pointer_type.empty() )
+		{
+			if( l_fundamental_type.empty() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+				return ErrorValue();
+			}
+			int_type= l_fundamental_type.try_deref().fundamental_type;
+
+			result.t= r_type;
+			ptr_value= r_in_register;
+			index_value= l_in_register;
+		}
+		else
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+
+		auto int_size= GetFundamentalTypeSize( int_type );
+
+		var Type element_type= result.t.GetRawPointerType().try_deref().element_type;
+		if( !EnsureTypeComplete( element_type ) )
+		{
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
+			return ErrorValue();
+		}
+		if( !IsInteger( int_type ) || int_size > pointer_size )
+		{
+			// TODO - maybe generate another error?
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, GetFundamentalTypeName( int_type ) )
+			return ErrorValue();
+		}
+
+		if( !function_context.is_functionless_context )
+		{
+			if( int_size < pointer_size )
+			{
+				if( IsSignedInteger( int_type ) )
+				{
+					index_value= unsafe( LLVMBuildSExt( function_context.llvm_ir_builder, index_value, fundamental_llvm_types_.size_type_, g_null_string ) );
+				}
+				else
+				{
+					index_value= unsafe( LLVMBuildZExt( function_context.llvm_ir_builder, index_value, fundamental_llvm_types_.size_type_, g_null_string ) );
+				}
+			}
+
+			result.llvm_value= unsafe( LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), ptr_value, $<(index_value), 1u, "+\0"[0] ) );
+		}
+	}
+	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() && !r_raw_pointer_type.empty() )
+	{
+		if( l_type != r_type )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
+			return ErrorValue();
+		}
+
+		// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
+		if( !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope, src_loc )
+		}
+
+		var Type& element_type= l_raw_pointer_type.try_deref().element_type;
+		if( !EnsureTypeComplete( element_type ) )
+		{
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
+			return ErrorValue();
+		}
+
+		var U_FundamentalType diff_type= U_FundamentalType::ssize_type_;
+		var LLVMTypeRef diff_llvm_type= GetFundamentalLLVMType( diff_type );
+
+		result.t= FundamentalType( diff_type, diff_llvm_type );
+
+		unsafe
+		{
+			var u64 element_size= LLVMABISizeOfType( data_layout_, element_type.GetLLVMType() );
+
+			if( element_size == 0u64 )
+			{
+				REPORT_ERROR( DifferenceBetweenRawPointersWithZeroElementSize, names_scope, src_loc, l_type )
+				return ErrorValue();
+			}
+
+			if( !function_context.is_functionless_context )
+			{
+				var LLVMValueRef
+					l_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, l_in_register, diff_llvm_type, g_null_string ),
+					r_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, r_in_register, diff_llvm_type, g_null_string ),
+					diff= LLVMBuildSub( function_context.llvm_ir_builder, l_as_int, r_as_int, "-\0"[0] ),
+					element_size_contant= LLVMConstInt( diff_llvm_type, element_size, LLVMBool::False ),
+					diff_divided= LLVMBuildExactSDiv( function_context.llvm_ir_builder, diff, element_size_contant, "/\0"[0] );
+				result.llvm_value= diff_divided;
+			}
+		}
+	}
+	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() )
+	{
+		// Subtract integer from pointer.
+
+		// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
+		if( !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope, src_loc )
+		}
+
+		if( r_fundamental_type.empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, r_type )
+			return ErrorValue();
+		}
+
+		var U_FundamentalType int_type= r_fundamental_type.try_deref().fundamental_type;
+
+		var u32
+			int_size= GetFundamentalTypeSize( r_fundamental_type.try_deref().fundamental_type ),
+			pointer_size= GetFundamentalTypeSize( U_FundamentalType::size_type_ );
+
+		if( !IsInteger( int_type ) || int_size > pointer_size )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, r_type )
+			return ErrorValue();
+		}
+
+		var Type& element_type= l_raw_pointer_type.try_deref().element_type;
+		if( !EnsureTypeComplete( element_type ) )
+		{
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
+			return ErrorValue();
+		}
+
+		result.t= l_type;
+
+		if( !function_context.is_functionless_context )
+		{
+			var LLVMValueRef mut sub_value= r_in_register;
+			if( int_size < pointer_size )
+			{
+				if( IsSignedInteger( int_type ) )
+				{
+					sub_value= unsafe( LLVMBuildSExt( function_context.llvm_ir_builder, sub_value, fundamental_llvm_types_.size_type_, g_null_string ) );
+				}
+				else
+				{
+					sub_value= unsafe( LLVMBuildZExt( function_context.llvm_ir_builder, sub_value, fundamental_llvm_types_.size_type_, g_null_string ) );
+				}
+			}
+			auto mut index_negative= unsafe( LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, g_null_string ) );
+
+			result.llvm_value= unsafe( LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] ) );
+		}
+	}
+	else if(
+		operator == BinaryOperatorType::Add ||
+		operator == BinaryOperatorType::Sub ||
+		operator == BinaryOperatorType::Mul ||
+		operator == BinaryOperatorType::Div ||
+		operator == BinaryOperatorType::Rem )
+	{
+		if( l_type != r_type )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
+			return ErrorValue();
+		}
+		if( l_fundamental_type.empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+		if( GetFundamentalTypeSize( l_fundamental_type.try_deref().fundamental_type ) < 4u )
+		{
+			// Operation supported only for 32 and 64bit operands
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+
+		if( !( is_integer || is_float ) )
+		{
+			// this operations allowed only for integer and floating point operands.
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+
+		result.t= l_type;
+
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
+		{
+			switch( operator )
+			{
+				BinaryOperatorType::Add ->
+				{
+					if( is_float )
+					{
+						result.llvm_value= unsafe( LLVMBuildFAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] ) );
+					}
+					else
+					{
+						result.llvm_value= unsafe( LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] ) );
+					}
+				},
+				BinaryOperatorType::Sub ->
+				{
+					if( is_float )
+					{
+						result.llvm_value= unsafe( LLVMBuildFSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] ) );
+					}
+					else
+					{
+						result.llvm_value= unsafe( LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] ) );
+					}
+				},
+				BinaryOperatorType::Mul ->
+				{
+					if( is_float )
+					{
+						result.llvm_value= unsafe( LLVMBuildFMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] ) );
+					}
+					else
+					{
+						result.llvm_value= unsafe( LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] ) );
+					}
+				},
+				BinaryOperatorType::Div ->
+				{
+					if( is_float )
+					{
+						result.llvm_value= unsafe( LLVMBuildFDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] ) );
+					}
+					else if( is_signed )
+					{
+						result.llvm_value= unsafe( LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] ) );
+					}
+					else
+					{
+						result.llvm_value= unsafe( LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] ) );
+					}
+				},
+				BinaryOperatorType::Rem ->
+				{
+					if( is_float )
+					{
+						result.llvm_value= unsafe( LLVMBuildFRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] ) );
+					}
+					else if( is_signed )
+					{
+						result.llvm_value= unsafe( LLVMBuildSRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] ) );
+					}
+					else
+					{
+						result.llvm_value= unsafe( LLVMBuildURem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] ) );
+					}
+				},
+				default -> { halt; },
+			}
+
+			if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+			{
+				result.constexpr_value= result.llvm_value;
+
+				if( unsafe( LLVMIsUndef( result.constexpr_value ) ) == LLVMBool::True )
+				{
+					result.constexpr_value= LLVMValueRef::Null;
+					REPORT_ERROR( ConstantExpressionResultIsUndefined, names_scope, src_loc )
+				}
+			}
+		}
+	}
+	else if(
+		operator == BinaryOperatorType::And ||
+		operator == BinaryOperatorType::Or  ||
+		operator == BinaryOperatorType::Xor )
+	{
+		if( l_type != r_type )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
+			return ErrorValue();
+		}
+		if( l_fundamental_type.empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+		if( !( IsInteger( l_fundamental_type.try_deref().fundamental_type ) || l_fundamental_type.try_deref().fundamental_type == U_FundamentalType::bool_ ) )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+
+		result.t= l_type;
+
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
+		{
+			switch( operator )
+			{
+				BinaryOperatorType::And ->
+				{
+					result.llvm_value= unsafe( LLVMBuildAnd( function_context.llvm_ir_builder, l_in_register, r_in_register, "&\0"[0] ) );
+				},
+				BinaryOperatorType::Or  ->
+				{
+					result.llvm_value= unsafe( LLVMBuildOr ( function_context.llvm_ir_builder, l_in_register, r_in_register, "|\0"[0] ) );
+				},
+				BinaryOperatorType::Xor ->
+				{
+					result.llvm_value= unsafe( LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] ) );
+				},
+				default -> { halt; },
+			}
+		}
+	}
+	else if( operator == BinaryOperatorType::ShiftLeft || operator == BinaryOperatorType::ShiftRight )
+	{
+		if( l_fundamental_type.empty() || !is_integer )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+		if( r_fundamental_type.empty() || !IsUnsignedInteger( r_fundamental_type.try_deref().fundamental_type ) )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope,src_loc, r_type )
+			return ErrorValue();
+		}
+
+		auto l_value_for_op= l_in_register;
+		auto mut r_value_for_op= r_in_register;
+
+		result.t= l_type;
+
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
+		{
+			var u32 l_size= GetFundamentalTypeSize( l_fundamental_type.try_deref().fundamental_type );
+			var u32 r_size= GetFundamentalTypeSize( r_fundamental_type.try_deref().fundamental_type );
+			unsafe
+			{
+				// Convert value of shift to type of shifted value. LLVM Reuqired this.
+				if( r_size > l_size )
+				{
+					r_value_for_op= LLVMBuildTrunc( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), g_null_string );
+				}
+				else if( r_size < l_size )
+				{
+					r_value_for_op= LLVMBuildZExt( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), g_null_string );
+				}
+
+				// Cut upper bits of shift value to avoid undefined behaviour.
+				r_value_for_op =
+					LLVMBuildAnd(
+						function_context.llvm_ir_builder,
+						r_value_for_op,
+						LLVMConstInt(
+							l_type.GetLLVMType(),
+							u64(l_size) * 8u64 - 1u64,
+							LLVMBool::False ),
+						g_null_string );
+
+				if( operator == BinaryOperatorType::ShiftLeft )
+				{
+					result.llvm_value= LLVMBuildShl( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+				}
+				else if( operator == BinaryOperatorType::ShiftRight )
+				{
+					if( IsSignedInteger( l_fundamental_type.try_deref().fundamental_type ) )
+					{
+						result.llvm_value= LLVMBuildAShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+					}
+					else
+					{
+						result.llvm_value= LLVMBuildLShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+					}
+				}
+				else{ halt; }
+			}
+		}
+	}
+	else if( operator == BinaryOperatorType::Equal || operator == BinaryOperatorType::NotEqual )
+	{
+		if( l_type != r_type )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
+			return ErrorValue();
+		}
+		if( l_fundamental_type.empty() && l_enum_type.empty() && l_raw_pointer_type.empty() && l_type.GetFunctionPointerType().empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+
+		result.t= bool_type_;
+
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
+		{
+			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
+			unsafe
+			{
+				// LLVM constants folder produces wrong compare result for function pointers to "unnamed_addr" functions.
+				// Perform manual constant functions compare instead.
+				auto l_function= LLVMIsAFunction( l_in_register );
+				auto r_function= LLVMIsAFunction( r_in_register );
+
+					 if( operator == BinaryOperatorType::Equal )
+				{
+					if( is_void )
+					{
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False ); // Two "void" values are always equal.
+					}
+					else if( is_float )
+					{
+						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l_in_register, r_in_register, "==\0"[0] );
+					}
+					else if( l_function != LLVMValueRef::Null && r_function != LLVMValueRef::Null )
+					{
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, ( l_function == r_function ? 1u64 : 0u64 ), LLVMBool::False );
+					}
+					else
+					{
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l_in_register, r_in_register, "==\0"[0] );
+					}
+				}
+				else if( operator == BinaryOperatorType::NotEqual )
+				{
+					if( is_void )
+					{
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
+					}
+					else if( is_float )
+					{
+						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::UNE, l_in_register, r_in_register, "!=\0"[0] );
+					}
+					else if( l_function != LLVMValueRef::Null && r_function != LLVMValueRef::Null )
+					{
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, ( l_function != r_function ? 1u64 : 0u64 ), LLVMBool::False );
+					}
+					else
+					{
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, l_in_register, r_in_register, "!=\0"[0] );
+					}
+				}
+				else { halt; }
+			}
+		}
+	}
+	else if(
+		operator == BinaryOperatorType::Less ||
+		operator == BinaryOperatorType::LessEqual ||
+		operator == BinaryOperatorType::Greater ||
+		operator == BinaryOperatorType::GreaterEqual )
+	{
+		if( l_type != r_type )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
+			return ErrorValue();
+		}
+		if( l_fundamental_type.empty() && l_raw_pointer_type.empty() && l_enum_type.empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+
+		if( !l_fundamental_type.empty() && !( is_integer || is_float || IsChar( l_fundamental_type.try_deref().fundamental_type ) ) )
+		{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+				return ErrorValue();
+		}
+
+		result.t= bool_type_;
+
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
+		{
+			switch( operator )
+			{
+				BinaryOperatorType::Less ->
+				{
+					if( is_float )
+					{
+						result.llvm_value= unsafe( LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] ) );
+					}
+					else if( is_signed )
+					{
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] ) );
+					}
+					else
+					{
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] ) );
+					}
+				},
+				BinaryOperatorType::LessEqual ->
+				{
+					if( is_float )
+					{
+						result.llvm_value= unsafe( LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLE, l_in_register, r_in_register, "<=\0"[0] ) );
+					}
+					else if( is_signed )
+					{
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, l_in_register, r_in_register, "<=\0"[0] ) );
+					}
+					else
+					{
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULE, l_in_register, r_in_register, "<=\0"[0] ) );
+					}
+				},
+				BinaryOperatorType::Greater ->
+				{
+					if( is_float )
+					{
+						result.llvm_value= unsafe( LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] ) );
+					}
+					else if( is_signed )
+					{
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] ) );
+					}
+					else
+					{
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] ) );
+					}
+				},
+				BinaryOperatorType::GreaterEqual ->
+				{
+					if( is_float )
+					{
+						result.llvm_value= unsafe( LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGE, l_in_register, r_in_register, ">=\0"[0] ) );
+					}
+					else if( is_signed )
+					{
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, l_in_register, r_in_register, ">=\0"[0] ) );
+					}
+					else
+					{
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, l_in_register, r_in_register, ">=\0"[0] ) );
+					}
+				},
+				default -> { halt; }
+			}
+		}
+	}
+	else if( operator == BinaryOperatorType::CompareOrder )
+	{
+		if( l_type != r_type )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
+			return ErrorValue();
+		}
+		if( l_fundamental_type.empty() && l_raw_pointer_type.empty() && l_enum_type.empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+
+		if( !l_fundamental_type.empty() && !( is_integer || is_float || IsChar( l_fundamental_type.try_deref().fundamental_type ) ) )
+		{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+				return ErrorValue();
+		}
+
+		auto result_fundamental_type= U_FundamentalType::i32_;
+		var LLVMTypeRef result_llvm_type= GetFundamentalLLVMType( result_fundamental_type );
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
+		{
+			unsafe
+			{
+				var LLVMValueRef mut less= zero_init, mut greater= zero_init;
+				if( is_float )
+				{
+					less= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
+					greater= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
+				}
+				else if( is_signed )
+				{
+					less= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] );
+					greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] );
+				}
+				else
+				{
+					less= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] );
+					greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
+				}
+
+				var LLVMValueRef zero= LLVMConstInt( result_llvm_type, 0u64, LLVMBool::True );
+				var LLVMValueRef plus_one= LLVMConstInt( result_llvm_type, 1u64, LLVMBool::True );
+				var LLVMValueRef minus_one= LLVMConstInt( result_llvm_type, ~0u64, LLVMBool::True );
+
+				result.llvm_value=
+					LLVMBuildSelect(
+						function_context.llvm_ir_builder,
+						less,
+						minus_one,
+						LLVMBuildSelect( function_context.llvm_ir_builder, greater, plus_one, zero, g_null_string ),
+						g_null_string );
+			}
+		}
+		result.t= FundamentalType( result_fundamental_type, result_llvm_type );
+	}
+	else{ halt; }
+
+	if( l_var.constexpr_value != LLVMValueRef::Null &&
+		r_var.constexpr_value != LLVMValueRef::Null &&
+		unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+	{
+		result.constexpr_value= result.llvm_value;
+	}
+
+	// Register variable for references checking.
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
+{
+	var VariableLite l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.deref() );
+	if( l_var.t != bool_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, binary_operator.src_loc, bool_type_, l_var.t )
+		return ErrorValue();
+	}
+
+	auto l_var_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
+	DestroyUnusedTemporaryVariables( names_scope, function_context, binary_operator.src_loc ); // Destroy right part temporaries.
+
+	var [ ReferencesGraph, 2 ] mut branches_references_graphs;
+	branches_references_graphs[0]= function_context.references_graph;
+
+	var LLVMBasicBlockRef mut l_part_block= zero_init, mut r_part_block= zero_init, mut block_after_operator= zero_init;
+	if( !function_context.is_functionless_context )
+	{
+		unsafe
+		{
+			l_part_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+			r_part_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+			block_after_operator= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+
+			if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
+			{
+				LLVMBuildCondBr( function_context.llvm_ir_builder, l_var_in_register, r_part_block, block_after_operator );
+			}
+			else if( binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
+			{
+				LLVMBuildCondBr( function_context.llvm_ir_builder, l_var_in_register, block_after_operator, r_part_block );
+			}
+			else { halt; }
+
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, r_part_block );
+			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, r_part_block );
+		}
+	}
+
+	auto mut r_var_in_register= LLVMValueRef::Null;
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			with( &r_var : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.deref() ).lock_imut().deref() )
+			{
+				if( r_var.t != self.bool_type_ )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, binary_operator.src_loc, self.bool_type_, r_var.t )
+				}
+				else
+				{
+					r_var_in_register= self.CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+				}
+			}
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, binary_operator.src_loc );
+		} );
+
+	if( !function_context.is_functionless_context && r_var_in_register == LLVMValueRef::Null )
+	{
+		return ErrorValue();
+	}
+
+	branches_references_graphs[1]= function_context.references_graph;
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( branches_references_graphs, names_scope, binary_operator.src_loc );
+
+	auto mut phi_node= LLVMValueRef::Null;
+	if( !function_context.is_functionless_context )
+	{
+		unsafe
+		{
+			auto r_part_end_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+			LLVMBuildBr( function_context.llvm_ir_builder, block_after_operator );
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_operator );
+			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_operator );
+
+			phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, g_null_string );
+
+			var [ LLVMValueRef, 2 ] mut incoming_values[ l_var_in_register, r_var_in_register ];
+			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ l_part_block, r_part_end_block ];
+			LLVMAddIncoming( phi_node, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
+		}
+	}
+
+	var Variable mut result
+	{
+		.t= bool_type_,
+		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
+		.llvm_value= phi_node,
+		.name= BinaryOperatorToString( binary_operator.operator ),
+	};
+
+	unsafe
+	{
+		if( l_var_in_register != LLVMValueRef::Null && LLVMIsConstant( l_var_in_register ) == LLVMBool::True &&
+			r_var_in_register != LLVMValueRef::Null && LLVMIsConstant( r_var_in_register ) == LLVMBool::True )
+		{
+			if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
+			{
+				result.constexpr_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_var_in_register, r_var_in_register, g_null_string );
+			}
+			else if( binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
+			{
+				result.constexpr_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_var_in_register, r_var_in_register, g_null_string );
+			}
+			else{ halt; }
+		}
+	}
+
+	// Register variable for references checking.
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::TryCallOverloadedBinaryOperator(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	OverloadedOperator operator,
+	ust::shared_ptr_final</Synt::Expression/>& arg_l,
+	ust::shared_ptr_final</Synt::Expression/>& arg_r,
+	ArgsEvaluationOrder args_evaluation_order,
+	SrcLoc& src_loc ) : ust::optional</Value/>
+{
+	auto in_args= ust::make_array( arg_l, arg_r );
+
+	var ust::vector</VariableTypeExtended/> mut args;
+
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
+
+			auto state= SaveFunctionContextState( function_context );
+
+			foreach( &in_arg : in_args )
+			{
+				if( !function_context.args_preevaluation_cache.exists( in_arg ) )
+				{
+					with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
+					{
+						function_context.args_preevaluation_cache.insert( in_arg, VariableTypeExtended{ .t(arg.t), .value_type= arg.value_type } );
+					}
+					self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+				}
+				args.push_back( function_context.args_preevaluation_cache[in_arg] );
+			}
+
+			RestoreFunctionContextState( function_context, state );
+			function_context.is_functionless_context= prev_is_functionless_context;
+		} );
+
+	auto& args_ref= args;
+
+	if( operator == OverloadedOperator::Assign &&
+		args_ref.front().t == args_ref.back().t &&
+		( !args_ref.front().t.GetClassType().empty() || !args_ref.front().t.GetArrayType().empty() || !args_ref.front().t.GetTupleType().empty() ) &&
+		args_ref.front().value_type == ValueType::ReferenceMut &&
+		args_ref.back().value_type == ValueType::Value )
+	{
+		// Do move assign.
+		// TODO - what exact evaluation order should be here?
+
+		if_var( class_type : args_ref.front().t.GetClassType() )
+		{
+			// Forbid move-assignment for destination of non-final polymorph class.
+			// This is needed to prevent changing class fields (including virtual table pointer) relevant to derived class with class fields relevant to base class.
+			// For example
+			// cast_ref</Base/>(derived)= Base();
+			auto kind= class_type.lock_imut().deref().kind;
+			if( kind == ClassType::Kind::Interface || kind == ClassType::Kind::Abstract || kind == ClassType::Kind::PolymorphNonFinal )
+			{
+				REPORT_ERROR( MoveAssignForNonFinalPolymorphClass, names_scope, src_loc, args_ref.front().t )
+			}
+		}
+
+		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
+		var VariableLite r_var= r_var_ptr;
+
+		// Prevent modification of r_var during l_val calculation.
+		var VariablePtr r_var_lock_node=
+			Variable
+			{
+				.t= r_var.t,
+				.value_type= ValueType::ReferenceImut,
+				.location= Variable::Location::Pointer,
+				.name= r_var_ptr.lock_imut().deref().name + " lock",
+				.preserve_temporary= true,
+			}.CreatePtr();
+
+		function_context.references_graph.AddNode( r_var_lock_node );
+		function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node, names_scope, src_loc );
+		function_context.references_graph.TryAddInnerLinks( r_var_ptr, r_var_lock_node, names_scope, src_loc );
+		RegisterTemporaryVariable( function_context, r_var_lock_node );
+
+		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+		var VariableLite l_var= l_var_ptr;
+
+		function_context.references_graph.EnsureHasNoOutgoingLinks( l_var_ptr, names_scope, src_loc );
+
+		function_context.references_graph.MoveNode( r_var_lock_node );
+
+		if( l_var.t.HasDestructor() )
+		{
+			BuildDestructorPart( names_scope, function_context, l_var.llvm_value, l_var.t, src_loc );
+		}
+
+		SetupReferencesInCopyOrMove( names_scope, function_context, l_var_ptr, r_var_ptr, src_loc );
+
+		function_context.references_graph.MoveNode( r_var_ptr );
+
+		CopyBytes( l_var.llvm_value, r_var.llvm_value, r_var.t, function_context );
+		CreateLifetimeEnd( function_context, r_var.llvm_value );
+
+		return Value( VariablePtr( Variable{ .t= void_type_, .value_type= ValueType::Value, .location= Variable::Location::LLVMRegister } ) );
+	}
+	else if( operator == OverloadedOperator::Add && AreCharArraysWithSameElementType( args_ref.front().t, args_ref.back().t ) )
+	{
+		return ConcatenateCharArrays( names_scope, function_context, arg_l, arg_r, src_loc );
+	}
+	else if( args_ref.front().t == args_ref.back().t && ( !args_ref.front().t.GetArrayType().empty() || !args_ref.front().t.GetTupleType().empty() ) )
+	{
+		return CallBinaryOperatorForArrayOrTuple( names_scope, function_context, operator, arg_l, arg_r, src_loc );
+	}
+
+	if_var( &overloaded_operator : GetOverloadedOperator( args_ref, operator, names_scope, src_loc ) )
+	{
+		if( overloaded_operator.is_deleted )
+		{
+			REPORT_ERROR( AccessingDeletedMethod, names_scope, src_loc )
+			return ust::null_optional;
+		}
+
+		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		{
+			function_context.has_non_constexpr_operations_inside= true;
+		}
+
+		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
+		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( overloaded_operator );
+
+		return DoCallFunction(
+			names_scope,
+			function_context,
+			overloaded_operator.t,
+			llvm_function,
+			overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
+			ust::empty_range,
+			in_args,
+			args_evaluation_order,
+			src_loc );
+	}
+
+	return ust::null_optional;
+}
+
+fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	OverloadedOperator operator,
+	ust::shared_ptr_final</Synt::Expression/>& arg_l,
+	ust::shared_ptr_final</Synt::Expression/>& arg_r,
+	SrcLoc& src_loc ) : Value
+{
+	if( operator == OverloadedOperator::Assign )
+	{
+		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
+		var VariableLite r_var= r_var_ptr;
+
+		if( r_var.t == invalid_type_ )
+		{
+			return ErrorValue();
+		}
+
+		// Prevent modification of r_var during l_val calculation.
+		var VariablePtr r_var_lock_node=
+			Variable
+			{
+				.t= r_var.t,
+				.value_type= ValueType::ReferenceImut,
+				.location= Variable::Location::Pointer,
+				.name= r_var_ptr.lock_imut().deref().name + " lock",
+				.preserve_temporary= true,
+			}.CreatePtr();
+
+		function_context.references_graph.AddNode( r_var_lock_node );
+		function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node, names_scope, src_loc );
+		function_context.references_graph.TryAddInnerLinks( r_var_ptr, r_var_lock_node, names_scope, src_loc );
+		RegisterTemporaryVariable( function_context, r_var_lock_node );
+
+		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+		var VariableLite l_var= l_var_ptr;
+
+		function_context.references_graph.EnsureHasNoOutgoingLinks( l_var_ptr, names_scope, src_loc );
+
+		function_context.references_graph.MoveNode( r_var_lock_node );
+
+		if( l_var.t == invalid_type_ )
+		{
+			return ErrorValue();
+		}
+		debug_assert( r_var.t == l_var.t ); // Checked before
+
+		if( !l_var.t.IsCopyAssignable() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.t )
+			return ErrorValue();
+		}
+		if( l_var.value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
+			return ErrorValue();
+		}
+
+		SetupReferencesInCopyOrMove( names_scope, function_context, l_var_ptr, r_var_ptr, src_loc );
+
+		BuildCopyAssignmentOperatorPart( names_scope, function_context, l_var.llvm_value, r_var.llvm_value, l_var.t, src_loc );
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+
+		return VariablePtr( Variable{ .t= void_type_, .value_type= ValueType::Value, .location= Variable::Location::LLVMRegister } );
+	}
+	else if( operator == OverloadedOperator::CompareEqual )
+	{
+		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+		var VariableLite l_var= l_var_ptr;
+
+		if( l_var.t == invalid_type_ )
+		{
+			return ErrorValue();
+		}
+
+		var VariablePtr l_var_lock_node=
+			Variable
+			{
+				.t= l_var.t,
+				.value_type= ValueType::ReferenceImut,
+				.location= Variable::Location::Pointer,
+				.name= l_var_ptr.lock_imut().deref().name + " lock",
+				.preserve_temporary= true,
+			}.CreatePtr();
+
+		function_context.references_graph.AddNode( l_var_lock_node );
+		function_context.references_graph.TryAddLink( l_var_ptr, l_var_lock_node, names_scope, src_loc );
+		function_context.references_graph.TryAddInnerLinks( l_var_ptr, l_var_lock_node, names_scope, src_loc );
+		RegisterTemporaryVariable( function_context, l_var_lock_node );
+
+		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
+		var VariableLite r_var= r_var_ptr;
+
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( r_var_ptr, names_scope, src_loc );
+
+		function_context.references_graph.MoveNode( l_var_lock_node );
+
+		if( r_var.t == invalid_type_ )
+		{
+			return ErrorValue();
+		}
+		debug_assert( l_var.t == r_var.t ); // Checked before
+
+		if( !l_var.t.IsEqualityComparable() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.t )
+			return ErrorValue();
+		}
+
+		var Variable mut result
+		{
+			.t= bool_type_,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::LLVMRegister,
+			.name= "==",
+		};
+
+		unsafe
+		{
+			if( l_var.constexpr_value != LLVMValueRef::Null && r_var.constexpr_value != LLVMValueRef::Null )
+			{
+				result.constexpr_value= ConstexprCompareEqual( names_scope, function_context, l_var.constexpr_value, r_var.constexpr_value, l_var.t, src_loc );
+				result.llvm_value= result.constexpr_value;
+			}
+			else
+			{
+				var LLVMBasicBlockRef false_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+				var LLVMBasicBlockRef end_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+
+				BuildEqualityCompareOperatorPart(
+					names_scope,
+					function_context,
+					l_var.llvm_value,
+					r_var.llvm_value,
+					l_var.t,
+					false_basic_block,
+					src_loc );
+
+				if( U1_BasicBlockHasPredecessors( false_basic_block ) )
+				{
+					// True branch.
+					var LLVMBasicBlockRef true_basic_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+					LLVMBuildBr( function_context.llvm_ir_builder, end_basic_block );
+
+					// False branch.
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, false_basic_block );
+					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, false_basic_block );
+					LLVMBuildBr( function_context.llvm_ir_builder, end_basic_block );
+
+					// End basic block.
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, end_basic_block );
+					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_basic_block );
+
+					var LLVMValueRef phi= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, g_null_string );
+
+					var LLVMValueRef false_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
+					var LLVMValueRef true_value = LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+
+					var [ LLVMValueRef, 2 ] mut values[ false_value, true_value ];
+					var [ LLVMBasicBlockRef, 2 ] mut blocks[ false_basic_block, true_basic_block ];
+					LLVMAddIncoming( phi, $<(values[0]), $<(blocks[0]), 2u );
+
+					result.llvm_value= phi;
+				}
+				else
+				{
+					// Empty tuple or array.
+
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, false_basic_block );
+					LLVMDeleteBasicBlock( false_basic_block );
+
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, end_basic_block );
+					LLVMDeleteBasicBlock( end_basic_block );
+
+					result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+				}
+			}
+		}
+
+		var VariablePtr result_ptr= move(result).CreatePtr();
+		function_context.references_graph.AddNode( result_ptr );
+		RegisterTemporaryVariable( function_context, result_ptr );
+		return result_ptr;
+	}
+	else
+	{
+		var VariablePtr l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.lock_imut().deref().t )
+		return ErrorValue();
+	}
+}
+
+fn CodeBuilder::ConcatenateCharArrays(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::shared_ptr_final</Synt::Expression/>& arg_l,
+	ust::shared_ptr_final</Synt::Expression/>& arg_r,
+	SrcLoc& src_loc ) : Value
+{
+	var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+	var VariableLite l_var= l_var_ptr;
+
+	if( l_var.t == invalid_type_ )
+	{
+		return ErrorValue();
+	}
+
+	var VariablePtr l_var_lock_node=
+		Variable
+		{
+			.t= l_var.t,
+			.value_type= ValueType::ReferenceImut,
+			.location= Variable::Location::Pointer,
+			.name= l_var_ptr.lock_imut().deref().name + " lock",
+			.preserve_temporary= true,
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( l_var_lock_node );
+	function_context.references_graph.TryAddLink( l_var_ptr, l_var_lock_node, names_scope, src_loc );
+	function_context.references_graph.TryAddInnerLinks( l_var_ptr, l_var_lock_node, names_scope, src_loc );
+	RegisterTemporaryVariable( function_context, l_var_lock_node );
+
+	var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
+	var VariableLite r_var= r_var_ptr;
+
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( r_var_ptr, names_scope, src_loc );
+
+	function_context.references_graph.MoveNode( l_var_lock_node );
+
+	var ArrayType& l_array_type= l_var.t.GetArrayType().try_deref();
+	var ArrayType& r_array_type= r_var.t.GetArrayType().try_deref();
+	debug_assert( l_array_type.element_type == r_array_type.element_type );
+
+	var ArrayType mut result_array_type
+	{
+		.element_count= l_array_type.element_count + r_array_type.element_count,
+		.element_type= l_array_type.element_type,
+	};
+	result_array_type.llvm_type= unsafe( LLVMArrayType( result_array_type.element_type.GetLLVMType(), u32(result_array_type.element_count) ) );
+
+	var Variable mut result
+	{
+		.t= result_array_type,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::Pointer,
+		.name= "+",
+	};
+
+	if( !function_context.is_functionless_context )
+	{
+		result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, result_array_type.llvm_type, "temp +\0"[0] ) );
+		CreateLifetimeStart( function_context, result.llvm_value );
+
+		if( l_var.llvm_value != LLVMValueRef::Null && r_var.llvm_value != LLVMValueRef::Null )
+		{
+			unsafe
+			{
+				var u64 size_l= LLVMABISizeOfType( data_layout_, l_var.t.GetLLVMType() );
+				var u64 size_r= LLVMABISizeOfType( data_layout_, r_var.t.GetLLVMType() );
+				var u32 alignment= LLVMABIAlignmentOfType( data_layout_, l_array_type.element_type.GetLLVMType() );
+
+				// Copy l_var bytes into destination.
+				LLVMBuildMemCpy(
+					function_context.llvm_ir_builder,
+					result.llvm_value, alignment,
+					l_var.llvm_value , alignment,
+					LLVMConstInt( fundamental_llvm_types_.u64_, size_l, LLVMBool::False ) );
+
+				// Copy r_var bytes into destination.
+				var LLVMValueRef mut one_value= LLVMConstInt( fundamental_llvm_types_.size_type_, 1u64, LLVMBool::False );
+				var LLVMValueRef dst_r= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, l_array_type.llvm_type, result.llvm_value, $<(one_value), 1u, g_null_string );
+
+				LLVMBuildMemCpy(
+					function_context.llvm_ir_builder,
+					dst_r, alignment,
+					r_var.llvm_value, alignment,
+					LLVMConstInt( fundamental_llvm_types_.u64_, size_r, LLVMBool::False ) );
+			}
+		}
+	}
+	if( l_var.constexpr_value != LLVMValueRef::Null && r_var.constexpr_value != LLVMValueRef::Null )
+	{
+		// TODO - speed-up this, handle the case where both constexpr values are llvm::ConstantDataArray instances.
+
+		scoped_array LLVMValueRef mut constants[ size_type(result_array_type.element_count) ]( LLVMValueRef::Null );
+
+		for( auto mut i= 0u; i < u32(l_array_type.element_count); ++i )
+		{
+			constants[size_type(i)]= unsafe( LLVMGetAggregateElement( l_var.constexpr_value, i ) );
+		}
+		for( auto mut i= 0u; i < u32(r_array_type.element_count); ++i )
+		{
+			constants[size_type(i) + size_type(l_array_type.element_count)]= unsafe( LLVMGetAggregateElement( r_var.constexpr_value, i ) );
+		}
+
+		result.constexpr_value= unsafe( LLVMConstArray( result_array_type.element_type.GetLLVMType(), constants.data(), u32(constants.size()) ) );
+	}
+
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::TryCallOverloadedUnaryOperator(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	OverloadedOperator operator,
+	VariablePtr& variable_ptr,
+	SrcLoc& src_loc ) : ust::optional</Value/>
+{
+	var VariableLite variable= variable_ptr;
+	if( variable.t.GetClassType().empty() )
+	{
+		return ust::null_optional;
+	}
+
+	var [ VariableTypeExtended, 1 ] args[ { .t(variable.t), .value_type= variable.value_type } ];
+
+	if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
+	{
+		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
+
+		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		{
+			function_context.has_non_constexpr_operations_inside= true;
+		}
+
+		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
+		return DoCallFunction(
+			names_scope,
+			function_context,
+			fetch_result[0],
+			overloaded_operator.t,
+			fetch_result[1],
+			overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
+			ust::empty_range,
+			src_loc );
+	}
+
+	return ust::null_optional;
+}
+
+fn CodeBuilder::TryCallOverloadedPostfixOperator(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	OverloadedOperator operator,
+	VariablePtr& variable_ptr,
+	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& synt_args,
+	SrcLoc& src_loc ) : ust::optional</Value/>
+{
+	var VariableLite variable= variable_ptr;
+
+	var ust::vector</ VariableTypeExtended /> mut args(
+		1s, VariableTypeExtended{ .t(variable.t), .value_type= variable.value_type } );
+
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
+
+			auto state= SaveFunctionContextState( function_context );
+
+			foreach( &in_arg : synt_args )
+			{
+				with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
+				{
+					args.push_back( VariableTypeExtended{ .t(arg.t), .value_type= arg.value_type } );
+				}
+				self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+			}
+
+			RestoreFunctionContextState( function_context, state );
+			function_context.is_functionless_context= prev_is_functionless_context;
+		} );
+
+	if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
+	{
+		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
+
+		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		{
+			function_context.has_non_constexpr_operations_inside= true;
+		}
+
+		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
+		return DoCallFunction(
+			names_scope,
+			function_context,
+			fetch_result[0],
+			overloaded_operator.t,
+			fetch_result[1],
+			overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
+			synt_args,
+			src_loc );
+	}
+
+	return ust::null_optional;
+}
+
+fn CodeBuilder::CallFunctionsSet(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	VariableNullablePtr mut this_,
+	FunctionsSetPtr& functions_set,
+	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	SrcLoc& src_loc ) : Value
+{
+	// Pre-evaluate arguments to know exact types and select exact function.
+	var ust::vector</VariableTypeExtended/> mut args_evaluated;
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
+
+			auto state= SaveFunctionContextState( function_context );
+
+			if( !this_.empty() )
+			{
+				with( &thi : this_.try_lock_imut().deref() )
+				{
+					args_evaluated.push_back( VariableTypeExtended{ .t( thi.t ), .value_type= thi.value_type } );
+				}
+			}
+
+			foreach( &arg : args )
+			{
+				if( !function_context.args_preevaluation_cache.exists( arg ) )
+				{
+					with( &arg_variable : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.deref() ).lock_imut().deref() )
+					{
+						function_context.args_preevaluation_cache.insert( arg, VariableTypeExtended{ .t( arg_variable.t ), .value_type= arg_variable.value_type } );
+					}
+					self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+				}
+				args_evaluated.push_back( function_context.args_preevaluation_cache[arg] );
+			}
+
+			RestoreFunctionContextState( function_context, state );
+			function_context.is_functionless_context= prev_is_functionless_context;
+		} );
+
+	auto function_selected_opt=
+		GetOverloadedFunction(
+			functions_set.lock_imut().deref(),
+			args_evaluated,
+			!this_.empty(),
+			names_scope,
+			src_loc );
+	if( function_selected_opt.empty() )
+	{
+		return ErrorValue();
+	}
+	var FunctionVariable& function_selected= function_selected_opt.try_deref();
+
+	if( function_selected.is_deleted )
+	{
+		REPORT_ERROR( AccessingDeletedMethod, names_scope, src_loc )
+		return ErrorValue();
+	}
+
+	if( !this_.empty() && !function_selected.is_this_call )
+	{
+		this_.reset();
+	}
+
+	if( !( function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+	{
+		function_context.has_non_constexpr_operations_inside= true;
+	}
+
+	with( mut lock : function_selected.llvm_function.lock_mut() )
+	{
+		lock.deref().referenced= true;
+	}
+
+	var bool is_constexpr= function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete;
+
+	if( !this_.empty() )
+	{
+		auto fetch_res= TryFetchVirtualFunction( this_.try_to_non_nullable(), function_selected, names_scope, function_context, src_loc );
+		return DoCallFunction(
+			names_scope,
+			function_context,
+			fetch_res[0],
+			function_selected.t,
+			fetch_res[1],
+			is_constexpr,
+			args,
+			src_loc );
+	}
+
+	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_selected );
+
+	return DoCallFunction(
+		names_scope,
+		function_context,
+		this_,
+		function_selected.t,
+		llvm_function,
+		is_constexpr,
+		args,
+		src_loc );
+}
+
+fn CodeBuilder::DoCallFunction(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	VariableNullablePtr& this_,
+	FunctionType& function_type,
+	LLVMValueRef function,
+	bool is_constexpr,
+	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	SrcLoc& src_loc ) : Value
+{
+	var ust::vector</ VariablePtr /> mut preevaluated_args;
+	if( !this_.empty() )
+	{
+		preevaluated_args.push_back( this_.try_to_non_nullable() );
+	}
+
+	return DoCallFunction(
+		names_scope,
+		function_context,
+		function_type,
+		function,
+		is_constexpr,
+		preevaluated_args,
+		args,
+		ArgsEvaluationOrder::Direct,
+		src_loc );
+}
+
+fn CodeBuilder::DoCallFunction(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	FunctionType& function_type,
+	LLVMValueRef function,
+	bool mut is_constexpr,
+	ust::array_view_imut</ VariablePtr />& preevaluated_args,
+	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	ArgsEvaluationOrder args_evaluation_order,
+	SrcLoc& src_loc ) : Value
+{
+	var size_type total_args= preevaluated_args.size() + args.size();
+	if( total_args != function_type.params.size() )
+	{
+		REPORT_ERROR( InvalidFunctionArgumentCount, names_scope, src_loc, total_args, function_type.params.size() )
+		return ErrorValue();
+	}
+
+	// TODO - maybe forbid calling functions with incomplete type for returned reference?
+	if( function_type.return_value_type == ValueType::Value && !EnsureTypeComplete( function_type.return_type ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, function_type.return_type )
+		return ErrorValue();
+	}
+	if( function_type.is_unsafe && !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
+	}
+
+	var ust::vector</LLVMValueRef/> mut llvm_args;
+
+	auto mut s_ret_value= LLVMValueRef::Null;
+	var bool return_value_is_composite= function_type.ReturnsCompositeValue();
+	var bool return_value_is_sret= FunctionTypeIsSRet( function_type );
+	if( return_value_is_composite )
+	{
+		if( !function_context.is_functionless_context )
+		{
+			s_ret_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.GetLLVMType(), g_null_string ) );
+		}
+
+		if( return_value_is_sret )
+		{
+			llvm_args.push_back( s_ret_value );
+		}
+	}
+
+	auto first_llvm_arg_number= ( return_value_is_sret ? 1s : 0s );
+	llvm_args.resize( first_llvm_arg_number + total_args, LLVMValueRef::Null );
+
+	var ust::vector</ LLVMValueRef /> mut constexpr_args;
+	if( is_constexpr && function_type.return_value_type == ValueType::Value && function_type.return_type.ReferenceTagCount() == 0u )
+	{
+		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
+	}
+	else
+	{
+		is_constexpr= false; // Can't call constexpr function, returning reference.
+	}
+
+	scoped_array VariableNullablePtr mut args_nodes[total_args];
+	scoped_array ust::vector</VariableNullablePtr/> mut second_order_reference_nodes[total_args];
+
+	var ust::vector</LLVMValueRef/> mut value_args_for_lifetime_end_call;
+
+	for( var size_type mut i= 0s; i < total_args; ++i )
+	{
+		auto arg_n= ( args_evaluation_order == ArgsEvaluationOrder::Direct ? i : total_args - i - 1s );
+		auto &mut llvm_arg= llvm_args[ first_llvm_arg_number + arg_n ];
+
+		var ust::string8 arg_number_str= ust::to_string8(arg_n);
+
+		auto& param= function_type.params[arg_n];
+		var Type& expected_arg_type= param.t;
+		var VariablePtr mut arg_ptr=
+			( arg_n < preevaluated_args.size()
+				? preevaluated_args[arg_n]
+				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - preevaluated_args.size() ].deref() ) );
+
+		// Convert variable in function call.
+
+		if( arg_ptr.lock_imut().deref().t != expected_arg_type )
+		{
+			auto t= arg_ptr.lock_imut().deref().t;
+			auto value_type= arg_ptr.lock_imut().deref().value_type;
+			if_var( &conversion_constructor_ :
+				GetConversionConstructor(
+					names_scope,
+					expected_arg_type,
+					VariableTypeExtended{ .t= t, .value_type= value_type },
+					src_loc ) )
+			{
+				arg_ptr= ConvertVariable( names_scope, function_context, arg_ptr, expected_arg_type, conversion_constructor_, src_loc );
+			}
+		}
+
+		var VariableLite arg= arg_ptr;
+
+		if( arg.constexpr_value == LLVMValueRef::Null || param.value_type == ValueType::ReferenceMut )
+		{
+			is_constexpr= false;
+		}
+
+		if( param.value_type == ValueType::Value )
+		{
+			if( !arg.t.ReferenceIsConvertibleTo( expected_arg_type ) )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, arg.t, expected_arg_type )
+				return ErrorValue();
+			}
+
+			var VariablePtr arg_node=
+				Variable
+				{
+					.t= expected_arg_type,
+					.value_type= ValueType::Value,
+					.location= Variable::Location::Pointer, // Set later
+					.name= "value arg " + arg_number_str,
+					.llvm_value= LLVMValueRef::Null, // Set later
+					.preserve_temporary= true,
+				}.CreatePtr();
+
+			args_nodes[arg_n]= arg_node;
+			function_context.references_graph.AddNode( arg_node );
+
+			function_context.references_graph.TryAddInnerLinks( arg_ptr, arg_node, names_scope, src_loc );
+
+			if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
+			{
+				var LLVMTypeRef single_scalar_type= GetSingleScalarType( arg.t.GetLLVMType() );
+				if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null )
+				{
+					if( single_scalar_type == LLVMTypeRef::Null )
+					{
+						constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
+					}
+					else
+					{
+						constexpr_args[ first_llvm_arg_number + arg_n ]= UnwrapRawScalarConstant( arg.constexpr_value );
+					}
+				}
+
+				if( arg.value_type == ValueType::Value && arg.t == expected_arg_type )
+				{
+					// Move value to argument.
+					function_context.references_graph.MoveNode( arg_ptr );
+
+					if( !function_context.is_functionless_context )
+					{
+						if( single_scalar_type == LLVMTypeRef::Null )
+						{
+							llvm_arg= arg.llvm_value;
+						}
+						else
+						{
+							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, arg.llvm_value, g_null_string ) );
+						}
+						value_args_for_lifetime_end_call.push_back( arg.llvm_value );
+					}
+
+					with( &mut lock : arg_node.lock_mut() )
+					{
+						lock.deref().location= Variable::Location::Pointer;
+						lock.deref().llvm_value= arg.llvm_value;
+					}
+				}
+				else
+				{
+					// Allow value params of abstract types (it is useful in templates) but disallow call of such functions.
+					if( expected_arg_type.IsAbstract() )
+					{
+						REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, src_loc, expected_arg_type )
+						return ErrorValue();
+					}
+
+					if( !function_context.is_functionless_context )
+					{
+						var LLVMTypeRef expected_arg_llvm_type= expected_arg_type.GetLLVMType();
+						auto var_copy= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_llvm_type, g_null_string ) );
+						CreateLifetimeStart( function_context, var_copy );
+
+						auto value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
+						BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, src_loc );
+
+						if( single_scalar_type == LLVMTypeRef::Null )
+						{
+							llvm_arg= var_copy;
+
+						}
+						else
+						{
+							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, var_copy, g_null_string ) );
+						}
+						value_args_for_lifetime_end_call.push_back( var_copy );
+
+						with( &mut lock : arg_node.lock_mut() )
+						{
+							lock.deref().llvm_value= var_copy;
+						}
+					}
+					else
+					{
+						if( !expected_arg_type.IsCopyConstructible() )
+						{
+							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, expected_arg_type )
+						}
+					}
+
+					with( &mut lock : arg_node.lock_mut() )
+					{
+						lock.deref().location= Variable::Location::Pointer;
+					}
+				}
+			}
+			else
+			{
+				if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null )
+				{
+					constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
+				}
+
+				llvm_arg= CreateMoveToLLVMRegisterInstruction( arg, function_context );
+
+				with( &mut lock : arg_node.lock_mut() )
+				{
+					lock.deref().location= Variable::Location::LLVMRegister;
+					lock.deref().llvm_value= llvm_arg;
+				}
+			}
+
+			RegisterTemporaryVariable( function_context, arg_node );
+		}
+		else
+		{
+			if( param.value_type == ValueType::ReferenceMut )
+			{
+				if( arg.value_type == ValueType::Value )
+				{
+					REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
+				}
+				else if( arg.value_type != ValueType::ReferenceMut )
+				{
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
+				}
+			}
+			if( arg.t != expected_arg_type && !arg.t.ReferenceIsConvertibleTo( expected_arg_type ) )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, arg.t, expected_arg_type )
+				return ErrorValue();
+			}
+
+			if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null && param.value_type != ValueType::ReferenceMut )
+			{
+				// TODO - what about types conversion in constexpr call?
+				constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
+			}
+
+			if( arg.location == Variable::Location::LLVMRegister )
+			{
+				// Bind value to const reference.
+				if( !function_context.is_functionless_context )
+				{
+					auto temp_storage= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, arg.t.GetLLVMType(), g_null_string ) );
+					CreateTypedStore( function_context, arg.t, arg.llvm_value, temp_storage );
+					llvm_arg= temp_storage;
+					// Do not call here lifetime.start since there is no way to call lifetime.end for this value, because this allocation logically linked with some temp variable and can extend it's lifetime.
+				}
+			}
+			else
+			{
+				llvm_arg= arg.llvm_value;
+			}
+
+			llvm_arg= CreateReferenceCast( llvm_arg, arg.t, expected_arg_type, function_context );
+
+			var VariablePtr arg_node=
+				Variable
+				{
+					.t= expected_arg_type,
+					.value_type= param.value_type,
+					.location= Variable::Location::Pointer,
+					.llvm_value= llvm_arg,
+					.name= "reference arg " + arg_number_str,
+					.preserve_temporary= true,
+				}.CreatePtr();
+
+			args_nodes[arg_n]= arg_node;
+			function_context.references_graph.AddNode( arg_node );
+			function_context.references_graph.TryAddLink( arg_ptr, arg_node, names_scope, src_loc );
+			function_context.references_graph.TryAddInnerLinks( arg_ptr, arg_node, names_scope, src_loc );
+			RegisterTemporaryVariable( function_context, arg_node );
+		}
+
+		// Create second order lock nodes (for both value and reference args).
+		auto reference_tag_count= size_type( param.t.ReferenceTagCount() );
+		for( auto mut i= 0s; i < reference_tag_count; ++i )
+		{
+			var SecondOrderInnerReferenceKind second_order_inner_reference_kind= param.t.GetSecondOrderInnerReferenceKind(i);
+			if( second_order_inner_reference_kind != SecondOrderInnerReferenceKind::None )
+			{
+				var VariablePtr second_order_reference_node=
+					Variable
+					{
+						.t= void_type_,
+						.value_type=
+							( second_order_inner_reference_kind == SecondOrderInnerReferenceKind::Imut
+								? ValueType::ReferenceImut
+								: ValueType::ReferenceMut ),
+						.location= Variable::Location::Pointer,
+						.preserve_temporary= true,
+					}.CreatePtr();
+
+				second_order_reference_nodes[arg_n].resize( reference_tag_count );
+				second_order_reference_nodes[arg_n][i]= second_order_reference_node;
+
+				function_context.references_graph.AddNode( second_order_reference_node );
+
+				foreach( &accessible_non_inner_node :
+					function_context.references_graph.GetAllAccessibleNonInnerNodes( args_nodes[arg_n].try_lock_imut().deref().inner_reference_nodes[i] ) )
+				{
+					// Usually we should have here only one inner reference node.
+					// But it may be more if a member of a composite value is referenced.
+					// In such case it's necessary to create links for all inner reference nodes, even if sometimes it can create false-positive reference protection errors.
+					foreach( & src_node : accessible_non_inner_node.lock_imut().deref().inner_reference_nodes )
+					{
+						function_context.references_graph.TryAddLink(
+							src_node, second_order_reference_node, names_scope, src_loc );
+					}
+				}
+			}
+		}
+
+		// Destroy unused temporary variables after each arg evaluation.
+		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+	}
+
+	var Variable mut result
+	{
+		.t= function_type.return_type,
+		.value_type= function_type.return_value_type,
+		.location= Variable::Location::Pointer, // set later
+		.name= "call result " + function_type.return_type.ToString(),
+	};
+
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		if( return_value_is_composite )
+		{
+			result.location= Variable::Location::Pointer;
+			result.llvm_value= s_ret_value;
+			CreateLifetimeStart( function_context, s_ret_value ); // Create lifetime start after args evaluation but before call.
+		}
+		else
+		{
+			result.location= Variable::Location::LLVMRegister;
+		}
+	}
+	else
+	{
+		result.location= Variable::Location::Pointer;
+	}
+
+	if( is_constexpr )
+	{
+		result_match( constexpr_function_evaluator_.Evaluate( function, constexpr_args ) )
+		{
+			Ok(constant) ->
+			{
+				if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
+				{
+					result.constexpr_value= unsafe( LLVMConstNull( fundamental_llvm_types_.void_ ) );
+					result.llvm_value= result.constexpr_value;
+				}
+				else if( return_value_is_composite )
+				{
+					if( return_value_is_sret )
+					{
+						MoveConstantToMemory( s_ret_value, constant, function_context );
+						result.constexpr_value= constant;
+					}
+					else
+					{
+						if( !function_context.is_functionless_context )
+						{
+							unsafe( LLVMBuildStore( function_context.llvm_ir_builder, constant, result.llvm_value ) );
+						}
+						result.constexpr_value= WrapRawScalarConstant( constant, function_type.return_type.GetLLVMType() );
+					}
+				}
+				else
+				{
+					result.llvm_value= constant;
+					result.constexpr_value= constant;
+				}
+			},
+			Err(errors) ->
+			{
+				with( mut lock : names_scope.lock_imut().deref().GetErrors().try_lock_mut() )
+				{
+					foreach( &err : errors )
+					{
+						lock.deref().push_back(
+							CodeBuilderError
+							{
+								.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+								.src_loc= src_loc,
+								.text= err,
+							} );
+					}
+				}
+				return ErrorValue();
+			},
+		}
+	}
+	else if( !function_context.is_functionless_context )
+	{
+		var bool is_function= unsafe( LLVMIsAFunction( function ) ) != LLVMValueRef::Null;
+
+		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
+		var LLVMTypeRef function_llvm_type=
+			unsafe( ( is_function ? U1_GetFunctionType( function ) : GetLLVMFunctionType( function_type ) ) );
+
+		var LLVMValueRef call_result=
+			unsafe( LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				function_llvm_type,
+				function,
+				llvm_args.data(), u32(llvm_args.size()),
+				g_null_string ) );
+
+		unsafe( LLVMSetInstructionCallConv( call_result, function_type.calling_convention ) );
+
+		if( !is_function && function_type.return_value_type != ValueType::Value )
+		{
+			// In calls via function pointer set "nonnull" attribute for functions returning references.
+			// It is needed only for pointer calls, since regular functions already have "nonnull" attribute on return value.
+			auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("nonnull"), 0u64 ) );
+			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
+		}
+
+		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
+		{
+			result.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.void_ ) );
+		}
+		else if( return_value_is_composite )
+		{
+			if( !return_value_is_sret )
+			{
+				unsafe( LLVMBuildStore( function_context.llvm_ir_builder, call_result, result.llvm_value ) );
+			}
+		}
+		else
+		{
+			result.llvm_value= call_result;
+		}
+	}
+
+	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
+	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
+	// Do this only after call even for passed by single scalar values,
+	// because we still need to have an alive address during furter args evaluation in order to call properly destructor in case of return or await.
+	if( !function_context.is_functionless_context )
+	{
+		foreach( value_arg : value_args_for_lifetime_end_call )
+		{
+			CreateLifetimeEnd( function_context, value_arg );
+		}
+	}
+
+	var VariablePtr result_ptr= move(result).CreatePtr();
+	function_context.references_graph.AddNode( result_ptr );
+
+	// Prepare result references.
+	if( function_type.return_value_type != ValueType::Value )
+	{
+		foreach( &param_reference : function_type.return_references )
+		{
+			var size_type i(param_reference.param_index);
+
+			// Setup also second order references.
+			// Do this specially since we have for now no special notation to specify returning of second order references.
+			if( param_reference.reference_index != FunctionType::c_param_reference_number &&
+				i < second_order_reference_nodes.size() )
+			{
+				auto& arg_second_order_reference_nodes= second_order_reference_nodes[i];
+				if( size_type( param_reference.reference_index ) < arg_second_order_reference_nodes.size() )
+				{
+					var VariableNullablePtr& node= arg_second_order_reference_nodes[ size_type( param_reference.reference_index ) ];
+					if( !node.empty() )
+					{
+						var VariablePtr node_non_null= node.try_to_non_nullable();
+						// Perform linking for all result inner references, we have no way to pick only some of them.
+						foreach( & inner_reference_node : result_ptr.lock_imut().deref().inner_reference_nodes )
+						{
+							function_context.references_graph.TryAddLink( node_non_null, inner_reference_node, names_scope, src_loc );
+						}
+					}
+				}
+			}
+
+			if( i >= args_nodes.size() || args_nodes[i].empty() )
+			{
+				continue;
+			}
+			var VariablePtr arg_node= args_nodes[i].try_to_non_nullable();
+
+			if( param_reference.reference_index == FunctionType::c_param_reference_number )
+			{
+				function_context.references_graph.TryAddLink( arg_node, result_ptr, names_scope, src_loc );
+			}
+			else
+			{
+				with( &inner_reference_nodes : arg_node.lock_imut().deref().inner_reference_nodes )
+				{
+					if( size_type(param_reference.reference_index) < inner_reference_nodes.size() )
+					{
+						function_context.references_graph.TryAddLink( inner_reference_nodes[ size_type(param_reference.reference_index) ], result_ptr, names_scope, src_loc );
+					}
+				}
+			}
+		}
+	}
+	with( &result_inner_reference_nodes : result_ptr.lock_imut().deref().inner_reference_nodes )
+	{
+		foreach( pair : result_inner_reference_nodes.iter().zip( function_type.return_inner_references.iter() ) )
+		{
+			var VariablePtr& result_inner_reference_node= pair.first;
+			foreach( &param_reference : pair.second )
+			{
+				var size_type i(param_reference.param_index);
+				if( i >= args_nodes.size() || args_nodes[i].empty() )
+				{
+					continue;
+				}
+				var VariablePtr arg_node= args_nodes[i].try_to_non_nullable();
+
+				if( param_reference.reference_index == FunctionType::c_param_reference_number )
+				{
+					function_context.references_graph.TryAddLink( arg_node, result_inner_reference_node, names_scope, src_loc );
+				}
+				else
+				{
+					with( &inner_reference_nodes : arg_node.lock_imut().deref().inner_reference_nodes )
+					{
+						if( size_type(param_reference.reference_index) < inner_reference_nodes.size() )
+						{
+							function_context.references_graph.TryAddLink( inner_reference_nodes[ size_type(param_reference.reference_index) ], result_inner_reference_node, names_scope, src_loc );
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Setup references after call.
+	foreach( &reference_pollution : function_type.references_pollution )
+	{
+		var size_type src_arg(reference_pollution.src.param_index);
+		var size_type dst_arg(reference_pollution.dst.param_index);
+		if(
+			src_arg >= args_nodes.size() ||
+			dst_arg >= args_nodes.size() ||
+			args_nodes[src_arg].empty() ||
+			args_nodes[dst_arg].empty() ||
+			function_type.params[ dst_arg ].value_type == ValueType::Value ) // Skip reference pollution for value params. TODO - is this correct?
+		{
+			continue;
+		}
+
+		var VariablePtr src_node= args_nodes[src_arg].try_to_non_nullable();
+		var VariablePtr dst_node= args_nodes[dst_arg].try_to_non_nullable();
+		with( &dst_inner_reference_nodes : dst_node.lock_imut().deref().inner_reference_nodes )
+		{
+			if( size_type( reference_pollution.dst.reference_index ) >= dst_inner_reference_nodes.size() )
+			{
+				continue;
+			}
+			var VariablePtr& dst_inner_reference_node= dst_inner_reference_nodes[ size_type( reference_pollution.dst.reference_index ) ];
+
+			if( reference_pollution.src.reference_index == FunctionType::c_param_reference_number )
+			{
+				function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+					src_node,
+					dst_inner_reference_node,
+					names_scope,
+					src_loc );
+			}
+			else
+			{
+				with( &src_inner_reference_nodes : src_node.lock_imut().deref().inner_reference_nodes )
+				{
+					if( size_type( reference_pollution.src.reference_index ) >= src_inner_reference_nodes.size() )
+					{
+						continue;
+					}
+
+					function_context.references_graph.TryAddLinkToAllAccessibleVariableNodesInnerReferences(
+						src_inner_reference_nodes[ size_type( reference_pollution.src.reference_index ) ],
+						dst_inner_reference_node,
+						names_scope,
+						src_loc );
+				}
+			}
+		}
+	}
+
+	// Move arg nodes.
+	// It is safe for variable-args, since the callee is responsible for its destruction.
+	foreach( &node : args_nodes )
+	{
+		if( !node.empty() )
+		{
+			function_context.references_graph.MoveNode( node.try_to_non_nullable() );
+		}
+	}
+
+	foreach( & nodes : second_order_reference_nodes )
+	{
+		foreach( &node : nodes )
+		{
+			if( !node.empty() )
+			{
+				function_context.references_graph.MoveNode( node.try_to_non_nullable() );
+			}
+		}
+	}
+
+	DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy temporary args.
+
+	// Register result variable for destruction and references graph checks.
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildTempVariableConstruction(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Type& t,
+	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> /> args,
+	SrcLoc& src_loc ) : Value
+{
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, t )
+		return ErrorValue();
+	}
+	if( t.IsAbstract() )
+	{
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, src_loc, t )
+		return ErrorValue();
+	}
+
+	var ust::string8 mut name= "temp " + t.ToString();
+
+	var Variable mut result
+	{
+		.t= t,
+		.location= Variable::Location::Pointer,
+		.value_type= ValueType::Value,
+		.name= name,
+	};
+
+	auto mut llvm_value= LLVMValueRef::Null;
+	if( !function_context.is_functionless_context )
+	{
+		name += "\0";
+		llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), name.front() ) );
+		CreateLifetimeStart( function_context, llvm_value );
+	}
+	result.llvm_value= llvm_value;
+
+	var VariablePtr result_ptr= move(result).CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+
+	{
+		var VariablePtr variable_for_initialization_ptr=
+			Variable
+			{
+				.t= t,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= llvm_value,
+				.name= name,
+			}.CreatePtr();
+
+		function_context.references_graph.AddNode( variable_for_initialization_ptr );
+		function_context.references_graph.AddLink( result_ptr, variable_for_initialization_ptr );
+		function_context.references_graph.TryAddInnerLinks( result_ptr, variable_for_initialization_ptr, names_scope, src_loc );
+
+		var LLVMValueRef constexpr_value= ApplyConstructorInitializer( names_scope, function_context, variable_for_initialization_ptr, args, src_loc );
+
+		function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
+
+		with( mut lock : result_ptr.lock_mut() )
+		{
+			lock.deref().constexpr_value= constexpr_value;
+		}
+	}
+
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::ConvertVariable(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	VariablePtr& src,
+	Type& dst_type,
+	FunctionVariable& conversion_constructor_,
+	SrcLoc& src_loc ) : VariablePtr
+{
+	auto mut llvm_value= LLVMValueRef::Null;
+	if( !function_context.is_functionless_context )
+	{
+		llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, dst_type.GetLLVMType(), g_null_string ) );
+		CreateLifetimeStart( function_context, llvm_value );
+	}
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= dst_type,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::Pointer,
+			.llvm_value= llvm_value,
+			.name= "converted " + dst_type.ToString(),
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+
+	// Create temp variables storage for preventing of destruction of "arg".
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var VariablePtr result_for_constructor_call_ptr=
+				Variable
+				{
+					.t= dst_type,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= llvm_value,
+					.name= "converted " + dst_type.ToString(),
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( result_for_constructor_call_ptr );
+			function_context.references_graph.AddLink( result_ptr, result_for_constructor_call_ptr );
+			function_context.references_graph.TryAddInnerLinks( result_ptr, result_for_constructor_call_ptr, names_scope, src_loc );
+
+			var LLVMValueRef llvm_function= self.EnsureLLVMFunctionCreated( conversion_constructor_ );
+
+			self.DoCallFunction(
+				names_scope,
+				function_context,
+				conversion_constructor_.t,
+				llvm_function,
+				false, // Can't call for now constructors as constexpr functions.
+				ust::make_array( result_for_constructor_call_ptr, src ),
+				ust::empty_range,
+				ArgsEvaluationOrder::Direct,
+				src_loc );
+
+			function_context.references_graph.RemoveNode( result_for_constructor_call_ptr );
+
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+		} );
+
+	DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy source, if needed.
+
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::EvaluateBoolConstantExpression( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : bool
+{
+	with( &v : BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref() )
+	{
+		if( v.t != bool_type_ )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( expression ), bool_type_, v.t )
+			return false;
+		}
+		if( v.constexpr_value == LLVMValueRef::Null )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( expression ) )
+			return false;
+		}
+
+		// Do not need to destroy variables here, because this function is normally called only in constexr context.
+
+		return unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) != 0u64;
+	}
+}
+
+fn AreCharArraysWithSameElementType( Type& l, Type& r ) : bool
+{
+	if_var( &l_array : l.GetArrayType() )
+	{
+		if_var( & r_array : r.GetArrayType() )
+		{
+			if( l_array.element_type == r_array.element_type )
+			{
+				if_var( &fundamental_type : l_array.element_type.GetFundamentalType() )
+				{
+					if( IsChar( fundamental_type.fundamental_type ) )
+					{
+						return true;
+					}
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+} // namespace U1

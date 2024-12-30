@@ -1,0 +1,3490 @@
+import "/assert.u"
+import "/helpers.u"
+import "/sort.u"
+import "/string_conversions.u"
+import "/CodeBuilderLib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::BuildBlockElements( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::array_view_imut</Synt::BlockElement/>& elements ) : BlockElementBuildInfo
+{
+	var BlockElementBuildInfo mut block_element_build_info;
+	foreach( &block_element : elements )
+	{
+		if( block_element_build_info.has_terminal_instruction_inside )
+		{
+			REPORT_ERROR( UnreachableCode, names_scope, Synt::GetSrcLoc(block_element) )
+		}
+
+		debug_info_builder_.try_deref().SetCurrentLocation( function_context, Synt::GetSrcLoc(block_element) );
+
+		variant_visit( &el : block_element )
+		{
+			auto info = BuildBlockElementImpl( names_scope, function_context, el );
+			block_element_build_info.has_terminal_instruction_inside |= info.has_terminal_instruction_inside;
+		}
+	}
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo
+{
+	return WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		{
+			return self.BuildBlockImpl( names_scope, function_context, block );
+		} );
+}
+
+fn CodeBuilder::BuildBlockImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo
+{
+	var NamesScopeMutPtr block_names_scope( NamesScope( "", names_scope ) );
+
+	auto prev_debug_info_block= debug_info_builder_.try_deref().StartBlock( function_context, block.src_loc );
+
+	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( block_names_scope, function_context, block.elements );
+	if( !block_element_build_info.has_terminal_instruction_inside )
+	{
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, block.end_src_loc );
+	}
+
+	debug_info_builder_.try_deref().EndBlock( function_context, prev_debug_info_block );
+
+	CheckForUnusedLocalNames( block_names_scope );
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildIfAlternative( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfAlternative& if_alternative ) : BlockElementBuildInfo
+{
+	variant_visit( &el : if_alternative )
+	{
+		return BuildBlockElementImpl( names_scope, function_context, el );
+	}
+	halt;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo
+{
+	// Empty variant - legal element kind for C style "for" operator variables declaration part.
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( function_context );
+	ust::ignore_unused( empty_variant );
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo
+{
+	return BuildBlock( names_scope, function_context, block );
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ScopeBlock& scope_block ) : BlockElementBuildInfo
+{
+	auto prev_safety= function_context.is_in_unsafe_block;
+
+	if( scope_block.safety == Synt::ScopeBlock::Safety::None ) {}// Keep old safety
+	else if( scope_block.safety == Synt::ScopeBlock::Safety::Safe )
+	{
+		function_context.is_in_unsafe_block= false;
+	}
+	else if( scope_block.safety == Synt::ScopeBlock::Safety::Unsafe )
+	{
+		function_context.is_in_unsafe_block=  true;
+		function_context.has_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+	}
+
+	var LLVMBasicBlockRef mut break_block= LLVMBasicBlockRef::Null;
+	if( !scope_block.label_.empty() )
+	{
+		break_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+		AddLoopFrame( names_scope, function_context, break_block, LLVMBasicBlockRef::Null, scope_block.label_ );
+	}
+
+	var BlockElementBuildInfo mut block_element_build_info= BuildBlock( names_scope, function_context, scope_block.block );
+
+	if( break_block != LLVMBasicBlockRef::Null )
+	{
+		var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
+		if( !block_element_build_info.has_terminal_instruction_inside )
+		{
+			references_graphs_for_merge.push_back( function_context.references_graph );
+		}
+
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, scope_block.block.end_src_loc );
+
+		function_context.loops_stack.drop_back();
+
+		if( !block_element_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, break_block ) );
+		}
+
+		block_element_build_info.has_terminal_instruction_inside= references_graphs_for_merge.empty();
+
+		if( !block_element_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, break_block ) );
+			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, break_block ) );
+		}
+		else
+		{
+			// Block contains no "break" and ends with "return" or "break" to outer loop/block.
+			// In such case we do not needs break block.
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, break_block ) );
+			unsafe( LLVMDeleteBasicBlock( break_block ) );
+		}
+	}
+
+	function_context.is_in_unsafe_block= prev_safety;
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo
+{
+	auto t= PrepareType( names_scope, function_context, variables_declaration.t );
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, variables_declaration.src_loc, t )
+		return BlockElementBuildInfo();
+	}
+
+	foreach( &variable_declaration : variables_declaration.variables )
+	{
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+			{
+				self.BuildVariableDeclarationImpl( names_scope, function_context, variable_declaration, t );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, variable_declaration.src_loc );
+			} );
+	}
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration::VariableEntry& variable_declaration, Type& t )
+{
+	if( IsKeyword( variable_declaration.name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope, variable_declaration.src_loc )
+	}
+
+	if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && !t.CanBeConstexpr() )
+	{
+		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope, variable_declaration.src_loc )
+	}
+
+	if( variable_declaration.reference_modifier != Synt::ReferenceModifier::Reference && !t.CanBeConstexpr() )
+	{
+		function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+	}
+
+	var bool is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+	var VariablePtr mut variable_reference=
+		Variable
+		{
+			.t= t,
+			.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.name= variable_declaration.name,
+			.src_loc= variable_declaration.src_loc,
+			.referenced= variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(t)
+		}.CreatePtr();
+
+	// Do not forget to remove node in case of error-return!!!
+	function_context.references_graph.AddNode( variable_reference );
+
+	auto mut constexpr_value= LLVMValueRef::Null;
+	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
+	{
+		if( t.IsAbstract() )
+		{
+			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, variable_declaration.src_loc, t )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+
+		var LLVMValueRef llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), (variable_declaration.name + "\0").front() ) );
+		CreateLifetimeStart( function_context, llvm_value );
+
+		var Variable mut variable
+		{
+			.t= t,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::Pointer,
+			.llvm_value= llvm_value,
+			.name= variable_declaration.name,
+		};
+
+		debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, variable_declaration.name, variable_declaration.src_loc );
+
+		var VariablePtr variable_ptr= move(variable).CreatePtr();
+		function_context.references_graph.AddNode( variable_ptr );
+		function_context.references_graph.AddLink( variable_ptr, variable_reference );
+
+		{
+			var VariablePtr variable_for_initialization_ptr=
+				Variable
+				{
+					.t= t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= llvm_value,
+					.name= variable_declaration.name,
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( variable_for_initialization_ptr );
+			function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
+			function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_for_initialization_ptr, names_scope, variable_declaration.src_loc );
+
+			if( variable_declaration.initializer.has</Synt::EmptyVariant/>() )
+			{
+				constexpr_value= ApplyEmptyInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.name, variable_declaration.src_loc );
+			}
+			else
+			{
+				constexpr_value= ApplyInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.initializer );
+			}
+
+			function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
+		}
+
+		with( mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().llvm_value= llvm_value;
+		}
+
+		function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, variable_declaration.src_loc );
+		RegisterFrameVariable( function_context, variable_ptr, 1s );
+	}
+	else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
+	{
+		if( variable_declaration.initializer.has</Synt::EmptyVariant/>() )
+		{
+			REPORT_ERROR( ExpectedInitializer, names_scope, variable_declaration.src_loc, variable_declaration.name )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+
+		var ust::optional_ref_imut</Synt::Expression/> mut initializer_expression;
+		if_var( &expression_initializer : variable_declaration.initializer.get</Synt::Expression/>() )
+		{
+			initializer_expression.reset(expression_initializer);
+		}
+		if_var( &constructor_initializer : variable_declaration.initializer.get</Synt::ConstructorInitializer/>() )
+		{
+			if( constructor_initializer.args.size() != 1s )
+			{
+				REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, constructor_initializer.src_loc )
+				function_context.references_graph.RemoveNode( variable_reference );
+				return;
+			}
+
+			initializer_expression.reset( constructor_initializer.args.front().deref() );
+		}
+
+		if( initializer_expression.empty() )
+		{
+			REPORT_ERROR( UnsupportedInitializerForReference, names_scope, variable_declaration.src_loc )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+
+		var VariablePtr expression_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.try_deref() );
+		auto expression_result_lock= expression_result_ptr.lock_imut();
+		var Variable& expression_result= expression_result_lock.deref();
+
+		if( expression_result.t != t && !expression_result.t.ReferenceIsConvertibleTo( t ) )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, variable_declaration.src_loc, t, expression_result.t )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+		if( expression_result.value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, variable_declaration.src_loc )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+		if( is_mutable && expression_result.value_type == ValueType::ReferenceImut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, variable_declaration.src_loc )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+
+		function_context.references_graph.TryAddLink( expression_result_ptr, variable_reference, names_scope, variable_declaration.src_loc );
+		function_context.references_graph.TryAddInnerLinks( expression_result_ptr, variable_reference, names_scope, variable_declaration.src_loc );
+
+		with( mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().llvm_value= CreateReferenceCast( expression_result.llvm_value, expression_result.t, t, function_context );
+		}
+		constexpr_value= expression_result.constexpr_value;
+
+		debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), variable_declaration.name, variable_declaration.src_loc );
+	}
+	else{ halt; }
+
+	if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.src_loc )
+	}
+
+	if( !is_mutable )
+	{
+		// Set constexpr value only for immutable variables.
+		with( mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().constexpr_value= constexpr_value;
+		}
+	}
+
+	// Register variable for destruction and reference checking.
+	RegisterFrameVariable( function_context, variable_reference, 1s );
+
+	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope.lock_mut() )
+	{
+		insert_not_ok= lock.deref().AddName( variable_declaration.name, move(variable_reference) ).empty();
+	}
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope, variable_declaration.src_loc, variable_declaration.name )
+	}
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )  : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildAutoVariableDeclarationImpl( names_scope, function_context, auto_variable_declaration );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, auto_variable_declaration.src_loc );
+		} );
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration )
+{
+	var VariablePtr expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );
+	var VariableLite expr= expr_ptr;
+	if( expr.t == invalid_type_ )
+	{
+		return; // Some error was generated before.
+	}
+
+	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && expr.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, auto_variable_declaration.src_loc )
+	}
+
+	var bool is_mutable= auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+	var VariablePtr mut variable_reference=
+		Variable
+		{
+			.t= expr.t,
+			.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.constexpr_value= ( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ),
+			.name= auto_variable_declaration.name,
+			.src_loc= auto_variable_declaration.src_loc,
+			.referenced= auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
+		}.CreatePtr();
+
+	// Do not forget to remove node in case of errror-return!!!
+	function_context.references_graph.AddNode( variable_reference );
+
+	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
+	{
+		if( expr.value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, auto_variable_declaration.src_loc )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+		if( is_mutable && expr.value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, auto_variable_declaration.src_loc )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+
+		function_context.references_graph.TryAddLink( expr_ptr, variable_reference, names_scope, auto_variable_declaration.src_loc );
+		function_context.references_graph.TryAddInnerLinks( expr_ptr, variable_reference, names_scope, auto_variable_declaration.src_loc );
+
+		with( mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().llvm_value= expr.llvm_value;
+		}
+
+		debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), auto_variable_declaration.name, auto_variable_declaration.src_loc );
+	}
+	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
+	{
+		if( expr.t.IsAbstract() )
+		{
+			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, auto_variable_declaration.src_loc, expr.t )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return;
+		}
+
+		if( !expr.t.CanBeConstexpr() )
+		{
+			function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+		}
+
+		auto mut llvm_value= LLVMValueRef::Null;
+		unsafe
+		{
+			if( expr.value_type == ValueType::Value &&
+				expr.location == Variable::Location::Pointer &&
+				LLVMTypeOf( expr.llvm_value ) == LLVMPointerType( expr.t.GetLLVMType(), 0u ) &&
+				( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null || LLVMIsAArgument( expr.llvm_value ) != LLVMValueRef::Null ) )
+			{
+				// Just reuse "alloca" instruction or argument for move-initialization, avoid copying value into new memory location.
+				llvm_value= expr.llvm_value;
+			}
+			else
+			{
+				llvm_value=
+					LLVMBuildAlloca( function_context.alloca_ir_builder, expr.t.GetLLVMType(), (auto_variable_declaration.name + "\0").front() );
+				CreateLifetimeStart( function_context, llvm_value );
+			}
+		}
+
+		var Variable mut variable
+		{
+			.t= expr.t,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::Pointer,
+			.llvm_value= llvm_value,
+			.name= auto_variable_declaration.name,
+		};
+
+		debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, auto_variable_declaration.name, auto_variable_declaration.src_loc );
+
+		var VariablePtr variable_ptr= move(variable).CreatePtr();
+		function_context.references_graph.AddNode( variable_ptr );
+		function_context.references_graph.AddLink( variable_ptr, variable_reference );
+		RegisterFrameVariable( function_context, variable_ptr, 1s );
+
+		function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, auto_variable_declaration.src_loc );
+		function_context.references_graph.TryAddInnerLinks( expr_ptr, variable_ptr, names_scope, auto_variable_declaration.src_loc );
+
+		if( expr.value_type == ValueType::Value )
+		{
+			// Move.
+			function_context.references_graph.MoveNode( expr_ptr );
+
+			if( llvm_value != expr.llvm_value )
+			{
+				if( expr.location == Variable::Location::Pointer )
+				{
+					CopyBytes( llvm_value, expr.llvm_value, expr.t, function_context );
+					CreateLifetimeEnd( function_context, expr.llvm_value );
+				}
+				else
+				{
+					CreateTypedStore( function_context, expr.t, expr.llvm_value, llvm_value );
+				}
+			}
+		}
+		else
+		{
+			// Copy.
+			if( !expr.t.IsCopyConstructible() )
+			{
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, auto_variable_declaration.src_loc, expr.t )
+				function_context.references_graph.RemoveNode( variable_reference );
+				return;
+			}
+
+			if( expr.location == Variable::Location::Pointer )
+			{
+				BuildCopyConstructorPart( names_scope, function_context, llvm_value, expr.llvm_value, expr.t, auto_variable_declaration.src_loc );
+			}
+			else
+			{
+				CreateTypedStore( function_context, expr.t, expr.llvm_value, llvm_value );
+			}
+		}
+
+		with( mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().llvm_value= llvm_value;
+		}
+	}
+	else { halt; }
+
+	// Register variable for destruction and reference checking.
+	RegisterFrameVariable( function_context, variable_reference, 1s );
+
+	if( IsKeyword( auto_variable_declaration.name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope, auto_variable_declaration.src_loc )
+	}
+
+	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope.lock_mut() )
+	{
+		insert_not_ok= lock.deref().AddName( auto_variable_declaration.name, move(variable_reference) ).empty();
+	}
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope, auto_variable_declaration.src_loc, auto_variable_declaration.name )
+	}
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::AllocaDeclaration/>& alloca_declaration ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildAllocaDeclarationImpl( names_scope, function_context, alloca_declaration.deref() );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, alloca_declaration.deref().src_loc );
+		} );
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AllocaDeclaration& alloca_declaration )
+{
+	if( IsKeyword( alloca_declaration.name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope, alloca_declaration.src_loc )
+	}
+
+	if( function_context.coro_suspend_bb != LLVMBasicBlockRef::Null )
+	{
+		// "alloca" is impossible to use inside a coroutine, since coroutines require fixed stack size.
+		REPORT_ERROR( AllocaInsideCorouine, names_scope, alloca_declaration.src_loc )
+		return;
+	}
+
+	// For now "alloca" can't be used in constexpr functions, since it creates raw pointer variable and raw pointers aren't constexpr types.
+	function_context.has_non_constexpr_operations_inside= true;
+
+	var Type t= PrepareType( names_scope, function_context, alloca_declaration.t );
+	if( !EnsureTypeComplete( t ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, alloca_declaration.src_loc, t )
+		return;
+	}
+
+	var VariableLite size_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, alloca_declaration.size );
+	if( size_variable.t != size_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, alloca_declaration.src_loc, size_type_, size_variable.t )
+		return;
+	}
+
+	var LLVMTypeRef element_llvm_type= t.GetLLVMType();
+	var LLVMTypeRef ptr_llvm_type= unsafe( LLVMPointerType( element_llvm_type, 0u ) );
+
+	var LLVMValueRef mut alloca_variable_address= LLVMValueRef::Null;
+
+	unsafe // Because of a lot of LLVM calls.
+	{
+		// Perform stack allocation for small blocks.
+		// Perform heap allocation for large memory blocks.
+		var u64 constexpr c_min_bytes_for_heap_allocation( 4096 );
+
+		var LLVMValueRef num_elements= CreateMoveToLLVMRegisterInstruction( size_variable, function_context );
+
+		var LLVMValueRef mut memory_size=
+			LLVMBuildMul(
+				function_context.llvm_ir_builder,
+				num_elements,
+				LLVMConstInt(
+					fundamental_llvm_types_.size_type_,
+					LLVMABISizeOfType( data_layout_, element_llvm_type ),
+					LLVMBool::False ),
+				"alloca_num_bytes\0"[0] );
+
+		var LLVMValueRef less_than_limit=
+			LLVMBuildICmp(
+				function_context.llvm_ir_builder,
+				LLVMIntPredicate::ULT,
+				memory_size,
+				LLVMConstInt(
+					fundamental_llvm_types_.size_type_,
+					c_min_bytes_for_heap_allocation,
+					LLVMBool::False ),
+				"alloca_less_than_stack_allocation_limit\0"[0] );
+
+		var LLVMBasicBlockRef stack_allocation_block=LLVMCreateBasicBlockInContext( llvm_context_, "stack_allocation_block\0"[0] );
+		var LLVMBasicBlockRef heap_allocation_block= LLVMCreateBasicBlockInContext( llvm_context_, "heap_allocation_block\0"[0] );
+		var LLVMBasicBlockRef end_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+
+		LLVMBuildCondBr( function_context.llvm_ir_builder, less_than_limit, stack_allocation_block, heap_allocation_block );
+
+		// Stack allocation block.
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, stack_allocation_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, stack_allocation_block );
+		var LLVMValueRef stacksave_result=
+			LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				U1_GetFunctionType(stacksave_intrinsic_),
+				stacksave_intrinsic_,
+				ust::nullptr</LLVMValueRef/>(),
+				0u,
+				"alloca_stacksave_result\0"[0] );
+		var LLVMValueRef stack_allocation= LLVMBuildArrayAlloca( function_context.llvm_ir_builder, element_llvm_type, num_elements, "alloca_stack\0"[0] );
+		LLVMBuildBr( function_context.llvm_ir_builder, end_block );
+
+		// Heap allocation block.
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, heap_allocation_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, heap_allocation_block );
+		var LLVMValueRef heap_allocation=
+			LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				U1_GetFunctionType( malloc_function_ ),
+				malloc_function_,
+				$<(memory_size),
+				1u,
+				"alloca_heap\0"[0] );
+		LLVMBuildBr( function_context.llvm_ir_builder, end_block );
+
+		// End block.
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, end_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_block );
+
+		var LLVMValueRef alloca_result= LLVMBuildPhi( function_context.llvm_ir_builder, ptr_llvm_type, "alloca_res\0"[0] );
+		{
+			var [ LLVMValueRef, 2 ] mut incoming_values[ stack_allocation, heap_allocation ];
+			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ stack_allocation_block, heap_allocation_block ];
+			LLVMAddIncoming( alloca_result, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
+		}
+
+		var LLVMValueRef ptr_for_free= LLVMBuildPhi( function_context.llvm_ir_builder, ptr_llvm_type, "alloca_ptr_for_free\0"[0] );
+		{
+			var [ LLVMValueRef, 2 ] mut incoming_values[ stacksave_result, heap_allocation ];
+			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ stack_allocation_block, heap_allocation_block ];
+			LLVMAddIncoming( ptr_for_free, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
+		}
+
+		var size_type frame_index= function_context.variables_frames.size() - 2s;
+		function_context.variables_frames[frame_index].allocas.push_back(
+			AllocaInfo{ .is_stack_allocation= less_than_limit, .ptr_for_free= ptr_for_free } );
+
+		alloca_variable_address= LLVMBuildAlloca( function_context.alloca_ir_builder, ptr_llvm_type, (alloca_declaration.name + "\0").front() );
+		CreateLifetimeStart( function_context, alloca_variable_address );
+		LLVMBuildStore( function_context.llvm_ir_builder, alloca_result, alloca_variable_address );
+	}
+
+	var Type variable_type= RawPointerType{ .element_type= t, .llvm_type= ptr_llvm_type };
+
+	var Variable mut variable
+	{
+		.t= variable_type,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::Pointer,
+		.llvm_value= alloca_variable_address,
+		.name= alloca_declaration.name,
+	};
+
+	debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, alloca_declaration.name, alloca_declaration.src_loc );
+
+	var VariablePtr variable_ptr= move(variable).CreatePtr();
+
+	function_context.references_graph.AddNode( variable_ptr );
+	RegisterFrameVariable( function_context, variable_ptr, 1s );
+
+	var VariablePtr mut variable_reference=
+		Variable
+		{
+			.t= variable_type,
+			.value_type= ValueType::ReferenceImut, // "alloca" declaration result is always immutable variable.
+			.location= Variable::Location::Pointer,
+			.llvm_value= alloca_variable_address,
+			.name= alloca_declaration.name,
+			.src_loc= alloca_declaration.src_loc,
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( variable_reference );
+	RegisterFrameVariable( function_context, variable_reference, 1s );
+
+	function_context.references_graph.AddLink( variable_ptr, variable_reference );
+
+	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope.lock_mut() )
+	{
+		insert_not_ok= lock.deref().AddName( alloca_declaration.name, move(variable_reference) ).empty();
+	}
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope, alloca_declaration.src_loc, alloca_declaration.name )
+	}
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildReturnOperatorImpl( names_scope, function_context, return_operator );
+		} );
+
+	return BlockElementBuildInfo{ .has_terminal_instruction_inside= true };
+}
+
+fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator )
+{
+	if( return_operator.expr.has</Synt::EmptyVariant/>() )
+	{
+		if( function_context.coro_suspend_bb != LLVMBasicBlockRef::Null )
+		{
+			auto coroutine_type_description= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
+			switch(coroutine_type_description.kind)
+			{
+				CoroutineKind::Generator ->
+				{
+					// For generators enter into final suspend state in case of manual "return".
+					CoroutineFinalSuspend( names_scope, function_context, return_operator.src_loc );
+				},
+				CoroutineKind::AsyncFunc ->
+				{
+					// For void-return async functions do not evaluate result - just return.
+					if( !( coroutine_type_description.return_type == void_type_ && coroutine_type_description.return_value_type == ValueType::Value ) )
+					{
+						REPORT_ERROR( TypesMismatch, names_scope, return_operator.src_loc, void_type_, coroutine_type_description.return_type )
+					}
+
+					CoroutineFinalSuspend( names_scope, function_context, return_operator.src_loc );
+				},
+			}
+		}
+		else if( !function_context.return_type_deduction_context.empty() )
+		{
+			if( function_context.function_type.return_value_type != ValueType::Value )
+			{
+				REPORT_ERROR( ExpectedReferenceValue, names_scope, return_operator.src_loc )
+				return;
+			}
+			with( mut lock : function_context.return_type_deduction_context.try_lock_mut() )
+			{
+				var ReturnTypeDeductionContext &mut return_type_deduction_context= lock.deref();
+				if( return_type_deduction_context.return_type.empty() )
+				{
+					return_type_deduction_context.return_type= void_type_;
+				}
+				else if( return_type_deduction_context.return_type != void_type_ )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, return_operator.src_loc, function_context.function_type.return_type, void_type_ )
+				}
+			}
+			if( !function_context.reference_notation_deduction_context.empty() )
+			{
+				CollectReferencePollution( function_context );
+			}
+		}
+		else
+		{
+			BuildEmptyReturn( names_scope, function_context, return_operator.src_loc );
+		}
+		return;
+	}
+
+	if( function_context.coro_suspend_bb != LLVMBasicBlockRef::Null )
+	{
+		auto coroutine_kind= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />().kind;
+		switch(coroutine_kind)
+		{
+			CoroutineKind::Generator ->
+			{
+				// For generators process "return" with value as combination "yield" and empty "return".
+				CoroutineYield( names_scope, function_context, return_operator.expr, return_operator.src_loc );
+				CoroutineFinalSuspend( names_scope, function_context, return_operator.src_loc );
+			},
+			CoroutineKind::AsyncFunc ->
+			{
+				AsyncReturn( names_scope, function_context, return_operator.expr, return_operator.src_loc );
+			},
+		}
+		return;
+	}
+
+	auto mut ret= LLVMValueRef::Null;
+
+	var VariablePtr mut expr_ptr=
+		( function_context.function_type.return_value_type == ValueType::Value
+			? BuildExpressionCodeForValueReturn( names_scope, function_context, return_operator.expr )
+			: BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr ) );
+
+	if( !function_context.return_type_deduction_context.empty() )
+	{
+		var Type expr_type= expr_ptr.lock_imut().deref().t;
+		with( mut lock : function_context.return_type_deduction_context.try_lock_mut() )
+		{
+			var ReturnTypeDeductionContext &mut return_type_deduction_context= lock.deref();
+
+			// Do not try to perform here any reference conversion or type conversion.
+			// Such conversions may be confusing for a programmer.
+			// So, allow only simplest way of return type deduction - where types in all return operators are identical.
+			if( return_type_deduction_context.return_type.empty() )
+			{
+				return_type_deduction_context.return_type= expr_type;
+			}
+			else if( return_type_deduction_context.return_type != expr_type )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, return_operator.src_loc, return_type_deduction_context.return_type.try_deref(), expr_type )
+			}
+		}
+		if( !function_context.reference_notation_deduction_context.empty() )
+		{
+			if( function_context.function_type.return_value_type != ValueType::Value )
+			{
+				CollectReturnReferences( function_context, expr_ptr );
+			}
+
+			CollectReturnInnerReferences( function_context, expr_ptr );
+
+			CollectReferencePollution( function_context );
+		}
+		return;
+	}
+
+	// Create return reference node and link it with expression node.
+	var VariablePtr return_node=
+		Variable
+		{
+			.t= function_context.function_type.return_type,
+			.value_type= function_context.function_type.return_value_type,
+			.location= Variable::Location::Pointer,
+			.name= "return value",
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( return_node );
+
+	if( function_context.function_type.return_value_type == ValueType::Value )
+	{
+		var Type ret_type= function_context.function_type.return_type;
+		var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
+		if( expr_initial_type.ReferenceIsConvertibleTo( ret_type ) )
+		{}
+		else if_var( &conversion_constructor_ :
+			GetConversionConstructor(
+				names_scope,
+				ret_type,
+				VariableTypeExtended{ .t= expr_initial_type, .value_type= expr_ptr.lock_imut().deref().value_type },
+				return_operator.src_loc ) )
+		{
+			expr_ptr= ConvertVariable( names_scope, function_context, expr_ptr, ret_type, conversion_constructor_, return_operator.src_loc );
+		}
+		else
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, return_operator.src_loc, function_context.function_type.return_type, expr_initial_type )
+			function_context.references_graph.RemoveNode( return_node );
+			return;
+		}
+
+		var VariableLite expr= expr_ptr;
+
+		if( !function_context.reference_notation_deduction_context.empty() )
+		{
+			CollectReturnInnerReferences( function_context, expr_ptr );
+		}
+		else
+		{
+			CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
+		}
+
+		function_context.references_graph.TryAddInnerLinks( expr_ptr, return_node, names_scope, return_operator.src_loc );
+
+		if( !ret_type.GetClassType().empty() || !ret_type.GetArrayType().empty() || !ret_type.GetTupleType().empty() )
+		{
+			var LLVMTypeRef single_scalar_type= GetSingleScalarType( ret_type.GetLLVMType() );
+
+			if( expr.value_type == ValueType::Value && expr.t == ret_type )
+			{
+				// Move
+				function_context.references_graph.MoveNode( expr_ptr );
+
+				if( single_scalar_type == LLVMTypeRef::Null )
+				{
+					CopyBytes( function_context.s_ret, expr.llvm_value, ret_type, function_context );
+					CreateLifetimeEnd( function_context, expr.llvm_value );
+				}
+				else
+				{
+					ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, expr.llvm_value, g_null_string ) );
+					CreateLifetimeEnd( function_context, expr.llvm_value );
+				}
+			}
+			else
+			{
+				// Copy
+				var LLVMValueRef expr_reference_converted= CreateReferenceCast( expr.llvm_value, expr.t, ret_type, function_context );
+				if( !ret_type.IsCopyConstructible() )
+				{
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, return_operator.src_loc, ret_type )
+				}
+				else if( ret_type.IsAbstract() )
+				{
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, return_operator.src_loc, ret_type )
+				}
+				else if( single_scalar_type == LLVMTypeRef::Null )
+				{
+					// Copy into "s_ret".
+					BuildCopyConstructorPart( names_scope, function_context, function_context.s_ret, expr_reference_converted, ret_type, return_operator.src_loc );
+				}
+				else
+				{
+					// Copy into temp address, than load the result.
+					var LLVMValueRef temp= unsafe( LLVMBuildAlloca( function_context.llvm_ir_builder, ret_type.GetLLVMType(), g_null_string ) );
+					CreateLifetimeStart( function_context, temp );
+
+					BuildCopyConstructorPart( names_scope, function_context, temp, expr_reference_converted, ret_type, return_operator.src_loc );
+
+					ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, temp, g_null_string ) );
+					CreateLifetimeEnd( function_context, temp );
+				}
+			}
+		}
+		else
+		{
+			if( ret_type != void_type_ )
+			{
+				ret= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+			}
+		}
+	}
+	else
+	{
+		var VariableLite expr= expr_ptr;
+
+		if( expr.t != function_context.function_type.return_type && !expr.t.ReferenceIsConvertibleTo( function_context.function_type.return_type ) )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, return_operator.src_loc, function_context.function_type.return_type, expr.t )
+			function_context.references_graph.RemoveNode( return_node );
+			return;
+		}
+		if( function_context.function_type.return_value_type == ValueType::ReferenceMut && expr.value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, return_operator.src_loc )
+		}
+		if( expr.value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, return_operator.src_loc )
+			function_context.references_graph.RemoveNode( return_node );
+			return;
+		}
+
+		if( !function_context.reference_notation_deduction_context.empty() )
+		{
+			CollectReturnReferences( function_context, expr_ptr );
+			CollectReturnInnerReferences( function_context, expr_ptr );
+		}
+		else
+		{
+			CheckReturnedReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
+			CheckReturnedInnerReferenceIsAllowed( names_scope, function_context, expr_ptr, return_operator.src_loc );
+		}
+
+		// Link result with return node. This allow us to prevent returning of reference to local variable.
+		function_context.references_graph.TryAddLink( expr_ptr, return_node, names_scope, return_operator.src_loc );
+
+		ret= CreateReferenceCast( expr.llvm_value, expr.t, function_context.function_type.return_type, function_context );
+	}
+
+	CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
+
+	if( !function_context.reference_notation_deduction_context.empty() )
+	{
+		CollectReferencePollution( function_context );
+	}
+	else
+	{
+		CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+	}
+
+	function_context.references_graph.RemoveNode( return_node );
+
+	if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
+	{
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block ) );
+	}
+	else if( ret != LLVMValueRef::Null )
+	{
+		unsafe( LLVMBuildRet( function_context.llvm_ir_builder, ret ) );
+	}
+	else
+	{
+		unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
+	}
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::YieldOperator& yield_operator ) : BlockElementBuildInfo
+{
+	CoroutineYield( names_scope, function_context, yield_operator.expr, yield_operator.src_loc );
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildAssignmentOperatorImpl( names_scope, function_context, assignment_operator );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, assignment_operator.src_loc );
+		} );
+		return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildAssignmentOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator )
+{
+	if( !TryCallOverloadedBinaryOperator(
+			names_scope,
+			function_context,
+			OverloadedOperator::Assign,
+			assignment_operator.l,
+			assignment_operator.r,
+			ArgsEvaluationOrder::Reversed,
+			assignment_operator.src_loc ).empty() )
+	{}
+	else
+	{
+		var VariableLite r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r.deref() );
+		if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() && r.t.GetRawPointerType().empty() && r.t.GetFunctionPointerType().empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, assignment_operator.src_loc, r.t )
+			return;
+		}
+
+		auto r_in_register= CreateMoveToLLVMRegisterInstruction( r, function_context );
+
+		// Destroy temporaries of right part.
+		DestroyUnusedTemporaryVariables( names_scope, function_context, assignment_operator.src_loc );
+
+		var VariablePtr l_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.l.deref() );
+		auto l_lock= l_ptr.lock_imut();
+		var Variable& l= l_lock.deref();
+
+		if( r.t != l.t )
+		{
+			REPORT_ERROR( TypesMismatch, names_scope, assignment_operator.src_loc, l.t, r.t )
+			return;
+		}
+		if( l.value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, assignment_operator.src_loc )
+			return;
+		}
+		function_context.references_graph.EnsureHasNoOutgoingLinks( l_ptr, names_scope, assignment_operator.src_loc );
+
+		CreateTypedStore( function_context, r.t, r_in_register, l.llvm_value );
+	}
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CompoundAssignmentOperator& compound_assignment_operator ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildCompoundAssignmentOperatorImpl( names_scope, function_context, compound_assignment_operator );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, compound_assignment_operator.src_loc );
+		} );
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildCompoundAssignmentOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CompoundAssignmentOperator& compound_assignment_operator )
+{
+	if( !TryCallOverloadedBinaryOperator(
+			names_scope,
+			function_context,
+			GetOverloadedOperatorForCompoundAssignmentOperator( compound_assignment_operator.operator ),
+			compound_assignment_operator.l,
+			compound_assignment_operator.r,
+			ArgsEvaluationOrder::Reversed,
+			compound_assignment_operator.src_loc ).empty() )
+	{}
+	else
+	{
+		var VariableLite mut r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, compound_assignment_operator.r.deref() );
+		// Save r_var in register, prevent its modification during l_var calculation.
+		r_var.llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+		r_var.location= Variable::Location::LLVMRegister;
+		r_var.value_type= ValueType::Value;
+
+		// Destroy temporaries of right part.
+		DestroyUnusedTemporaryVariables( names_scope, function_context, compound_assignment_operator.src_loc );
+
+		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, compound_assignment_operator.l.deref() );
+		var VariableLite l_var= l_var_ptr;
+		if( l_var.value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, compound_assignment_operator.src_loc )
+			return;
+		}
+		function_context.references_graph.EnsureHasNoOutgoingLinks( l_var_ptr, names_scope, compound_assignment_operator.src_loc );
+
+		auto op_result= BuildBinaryOperator( names_scope, function_context, l_var, r_var, compound_assignment_operator.operator, compound_assignment_operator.src_loc );
+		auto op_result_variable_ptr_ref= op_result.get</VariablePtr/>();
+		if( op_result_variable_ptr_ref.empty() )
+		{
+			return;
+		}
+		with( &op_result_variable : op_result_variable_ptr_ref.try_deref().lock_imut().deref() )
+		{
+			if( op_result_variable.t != l_var.t )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, compound_assignment_operator.src_loc, l_var.t, op_result_variable.t )
+				return;
+			}
+
+			auto val= CreateMoveToLLVMRegisterInstruction( op_result_variable, function_context );
+			CreateTypedStore( function_context, l_var.t, val, l_var.llvm_value );
+		}
+	}
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildDeltaOneOperator( names_scope, function_context, increment_operator.expression, increment_operator.src_loc,  1 );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, increment_operator.src_loc );
+		} );
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::DecrementOperator& decrement_operator ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildDeltaOneOperator( names_scope, function_context, decrement_operator.expression, decrement_operator.src_loc, -1 );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, decrement_operator.src_loc );
+		} );
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var Value value= self.BuildExpressionCode( names_scope, function_context, expression );
+
+			if_var( &variable_ptr : value.get</VariablePtr/>() )
+			{
+				if( SingleExpressionIsUseless( expression ) )
+				{
+					with( & variable : variable_ptr.lock_imut().deref() )
+					{
+						if( !( variable.t == self.void_type_ && variable.value_type == ValueType::Value ) )
+						{
+							REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
+						}
+					}
+				}
+			}
+			if( value.has</Type/>() ||
+				value.has</FunctionsSetPtr/>() ||
+				value.has</ThisMethodsSet/>() ||
+				value.has</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
+			{
+				REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
+			}
+
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetSrcLoc(expression) );
+		} );
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo
+{
+	var LLVMBasicBlockRef if_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	var LLVMBasicBlockRef alternative_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+	var ReferencesGraph mut references_graph_before_branching;
+
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var VariableLite condition_expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, if_operator.condition );
+			if( condition_expression.t != self.bool_type_ )
+			{
+				REPORT_ERROR( TypesMismatch,
+					names_scope,
+					Synt::GetSrcLoc( if_operator.condition ),
+					self.bool_type_,
+					condition_expression.t )
+
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, if_operator.src_loc );
+				unsafe( LLVMBuildBr( function_context.llvm_ir_builder, if_block ) );
+			}
+			else
+			{
+				auto condition_in_register= self.CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, if_operator.src_loc );
+
+				unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, if_block, alternative_block ) );
+			}
+
+			references_graph_before_branching= function_context.references_graph;
+		} );
+
+	// If block.
+	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, if_block ) );
+	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, if_block ) );
+	var BlockElementBuildInfo if_block_build_info= BuildBlock( names_scope, function_context, if_operator.block );
+
+	var ust::vector</ReferencesGraph/> mut references_graphs;
+
+	var BlockElementBuildInfo mut block_element_build_info;
+
+	if( !if_operator.alternative.has</Synt::EmptyVariant/>() )
+	{
+		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+		if( !if_block_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		// Else block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
+
+		function_context.references_graph= move(references_graph_before_branching);
+		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_operator.alternative );
+
+		if( !alternative_block_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		block_element_build_info.has_terminal_instruction_inside=
+			if_block_build_info.has_terminal_instruction_inside && alternative_block_build_info.has_terminal_instruction_inside;
+
+		if( !block_element_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
+			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_if ) );
+		}
+		else
+		{
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
+			unsafe( LLVMDeleteBasicBlock( block_after_if ) );
+		}
+	}
+	else
+	{
+		if( !if_block_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, alternative_block ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		references_graphs.push_back( move(references_graph_before_branching) );
+
+		block_element_build_info.has_terminal_instruction_inside= false;
+
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
+	}
+
+	if( !references_graphs.empty() )
+	{
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs, names_scope, if_operator.end_src_loc );
+	}
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticIfOperator& static_if_operator ) : BlockElementBuildInfo
+{
+	var bool condition_res= WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : bool
+		{
+			var bool res= self.EvaluateBoolConstantExpression( names_scope, function_context, static_if_operator.condition );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, static_if_operator.end_src_loc );
+			return res;
+		} );
+
+	if( condition_res )
+	{
+		return BuildBlock( names_scope, function_context, static_if_operator.block );
+	}
+	if( !static_if_operator.alternative.has</Synt::EmptyVariant/>() )
+	{
+		return BuildIfAlternative( names_scope, function_context, static_if_operator.alternative );
+	}
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo
+{
+	return WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		{
+			return self.BuildIfCoroAdvanceOperatorImpl( names_scope, function_context, if_coro_advance_operator );
+		} );
+}
+
+fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo
+{
+	var VariablePtr coro_expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, if_coro_advance_operator.expression );
+	var VariableLite coro_expr= coro_expr_ptr;
+
+	auto coro_class_type_opt= coro_expr.t.GetClassType();
+	if( coro_class_type_opt.empty() )
+	{
+		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names_scope, if_coro_advance_operator.src_loc, coro_expr.t )
+		return BlockElementBuildInfo();
+	}
+	var ClassTypePtr coro_class_type= coro_class_type_opt.try_deref();
+	if( !coro_class_type.lock_imut().deref().generated_class_data.has</ CoroutineTypeDescription />() )
+	{
+		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names_scope, if_coro_advance_operator.src_loc, coro_expr.t )
+		return BlockElementBuildInfo();
+	}
+	// TODO - avoid taking copy
+	var CoroutineTypeDescription coroutine_type_description= coro_class_type.lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
+
+	if( coro_expr.value_type == ValueType::ReferenceImut )
+	{
+		REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, if_coro_advance_operator.src_loc )
+		return BlockElementBuildInfo();
+	}
+
+	var VariablePtr coro_expr_lock=
+		Variable
+		{
+			.t= coro_expr.t,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
+			.llvm_value= coro_expr.llvm_value,
+			.constexpr_value= coro_expr.constexpr_value,
+			.name= coro_expr_ptr.lock_imut().deref().name + " lock",
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( coro_expr_lock );
+
+	function_context.references_graph.TryAddLink( coro_expr_ptr, coro_expr_lock, names_scope, if_coro_advance_operator.src_loc );
+	function_context.references_graph.TryAddInnerLinks( coro_expr_ptr, coro_expr_lock, names_scope, if_coro_advance_operator.src_loc );
+
+	RegisterTopFrameVariable( function_context, coro_expr_lock );
+
+	var ReferencesGraph mut references_graph_before_branching= function_context.references_graph;
+
+	var LLVMTypeRef pointer_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
+
+	var LLVMValueRef mut coro_handle= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, pointer_type, coro_expr.llvm_value, "coro_handle\0"[0] ) );
+
+	/* for generators code looks like this:
+			if( !llvm.coro.done( coro_handle ) )
+			{
+				llvm.coro.resume( coro_handle )
+				if( !llvm.coro.done( coro_handle ) )
+				{
+					auto promise= llvm.coro.promise( coro_handle );
+				}
+			}
+	 */
+	/* for async functions code looks like this:
+			if( !llvm.coro.done( coro_handle ) )
+			{
+				llvm.coro.resume( coro_handle )
+				if( llvm.coro.done( coro_handle ) )
+				{
+					auto promise= llvm.coro.promise( coro_handle );
+				}
+			}
+	 */
+
+	var LLVMValueRef done= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.done), coro_.done, $<(coro_handle), 1u, "coro_done\0"[0] ) );
+
+	var LLVMBasicBlockRef alternative_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "if_coro_advance_else\0"[0] ) );
+
+	var LLVMBasicBlockRef not_done_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "coro_not_done\0"[0] ) );
+	unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, done, alternative_block, not_done_block ) );
+
+	// Not done block.
+	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, not_done_block ) );
+	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, not_done_block ) );
+
+	unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.resume), coro_.resume, $<(coro_handle), 1u, g_null_string ) );
+
+	var LLVMValueRef done_after_resume= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.done), coro_.done, $<(coro_handle), 1u, "coro_done_after_resume\0"[0] ) );
+
+	var LLVMBasicBlockRef not_done_after_resume_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "not_done_after_resume\0"[0] ) );
+
+	switch( coroutine_type_description.kind )
+	{
+		CoroutineKind::Generator -> { unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, done_after_resume, alternative_block, not_done_after_resume_block ) ); },
+		CoroutineKind::AsyncFunc -> { unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, done_after_resume, not_done_after_resume_block, alternative_block ) ); },
+	}
+
+	// Not done after resume block.
+	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, not_done_after_resume_block ) );
+	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, not_done_after_resume_block ) );
+
+	var Type& result_type= coroutine_type_description.return_type;
+	var ValueType result_value_type= coroutine_type_description.return_value_type;
+
+	EnsureTypeComplete( result_type );
+
+	var LLVMTypeRef promise_llvm_type= ( result_value_type == ValueType::Value ? result_type.GetLLVMType() : pointer_type );
+
+	var [ LLVMValueRef, 3 ] mut promise_args
+	[
+		coro_handle,
+		unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(LLVMABIAlignmentOfType( data_layout_, promise_llvm_type )), LLVMBool::False ) ),
+		unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ),
+	];
+	var LLVMValueRef promise= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.promise), coro_.promise, $<(promise_args[0]), 3u, "promise\0"[0] ) );
+
+	var BlockElementBuildInfo mut if_block_build_info;
+
+	if( !result_type.CanBeConstexpr() )
+	{
+		function_context.has_non_constexpr_operations_inside= true;
+	}
+
+	// TODO - try to avoid using so long lambda here.
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var VariablePtr mut variable_reference=
+				Variable
+				{
+					.t= result_type,
+					.value_type= ( if_coro_advance_operator.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.location= Variable::Location::Pointer,
+					.name= if_coro_advance_operator.variable_name,
+					.src_loc= if_coro_advance_operator.src_loc,
+					.referenced=
+						( result_value_type == ValueType::Value || if_coro_advance_operator.reference_modifier == Synt::ReferenceModifier::None ) &&
+						VariableExistanceMayHaveSideEffects(result_type)
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( variable_reference );
+
+			if( result_value_type == ValueType::Value )
+			{
+				// Create variable for value result of coroutine.
+				var Variable mut variable
+				{
+					.t= result_type,
+					.value_type= ValueType::Value,
+					.location= Variable::Location::Pointer,
+					.llvm_value= promise,
+					.name= if_coro_advance_operator.variable_name,
+				};
+				unsafe( LLVMSetValueName2( promise, cast_mut(if_coro_advance_operator.variable_name).data(), if_coro_advance_operator.variable_name.size() ) );
+
+				self.debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, if_coro_advance_operator.variable_name, if_coro_advance_operator.src_loc );
+
+				var VariablePtr variable_ptr= move(variable).CreatePtr();
+				function_context.references_graph.AddNode( variable_ptr );
+				function_context.references_graph.AddLink( variable_ptr, variable_reference );
+				RegisterTopFrameVariable( function_context, variable_ptr );
+
+				with( mut lock : variable_reference.lock_mut() )
+				{
+					lock.deref().llvm_value= promise;
+				}
+
+				function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, if_coro_advance_operator.src_loc );
+
+				with( &inner_references : coro_expr_lock.lock_imut().deref().inner_reference_nodes )
+				{
+					foreach( pair : variable_ptr.lock_imut().deref().inner_reference_nodes.iter().zip( coroutine_type_description.return_inner_references.iter() ) )
+					{
+						var VariablePtr& variable_inner_reference= pair.first;
+						foreach( &param_reference : pair.second )
+						{
+							debug_assert( param_reference.param_index == 0u8 );
+							debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
+							if( size_type(param_reference.reference_index) < inner_references.size() )
+							{
+								function_context.references_graph.TryAddLink(
+									inner_references[ size_type(param_reference.reference_index) ],
+									variable_inner_reference,
+									names_scope,
+									if_coro_advance_operator.src_loc );
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				var LLVMValueRef coroutine_reference_result= self.CreateTypedReferenceLoad( function_context, result_type, promise );
+				if( if_coro_advance_operator.reference_modifier == Synt::ReferenceModifier::None )
+				{
+					// Create variable and copy into it reference result of coroutine.
+
+					if( result_type.IsAbstract() )
+					{
+						REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, if_coro_advance_operator.src_loc, result_type )
+					}
+
+					var LLVMValueRef llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, result_type.GetLLVMType(), (if_coro_advance_operator.variable_name + "\0").front() ) );
+					self.CreateLifetimeStart( function_context, llvm_value );
+
+					var Variable mut variable
+					{
+						.t= result_type,
+						.value_type= ValueType::Value,
+						.location= Variable::Location::Pointer,
+						.llvm_value= llvm_value,
+						.name= if_coro_advance_operator.variable_name,
+					};
+
+					self.debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, if_coro_advance_operator.variable_name, if_coro_advance_operator.src_loc );
+
+					var VariablePtr variable_ptr= move(variable).CreatePtr();
+					function_context.references_graph.AddNode( variable_ptr );
+					function_context.references_graph.AddLink( variable_ptr, variable_reference );
+					RegisterTopFrameVariable( function_context, variable_ptr );
+
+					if( !result_type.IsCopyConstructible() )
+					{
+						REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, if_coro_advance_operator.src_loc, result_type )
+					}
+					else
+					{
+						self.BuildCopyConstructorPart( names_scope, function_context, llvm_value, coroutine_reference_result, result_type, if_coro_advance_operator.src_loc );
+					}
+
+					with( mut lock : variable_reference.lock_mut() )
+					{
+						lock.deref().llvm_value= llvm_value;
+					}
+
+					function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, if_coro_advance_operator.src_loc );
+
+					//No need to setup references here, because we can't return from generator reference to type with references inside.
+				}
+				else
+				{
+					// Create reference to reference result of coroutine.
+
+					if( result_value_type == ValueType::ReferenceImut && variable_reference.lock_imut().deref().value_type != ValueType::ReferenceImut )
+					{
+						REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, if_coro_advance_operator.src_loc )
+					}
+
+					with( mut lock : variable_reference.lock_mut() )
+					{
+						lock.deref().llvm_value= coroutine_reference_result;
+					}
+
+					with( &inner_references : coro_expr_lock.lock_imut().deref().inner_reference_nodes )
+					{
+						foreach( &param_reference : coroutine_type_description.return_references )
+						{
+							debug_assert( param_reference.param_index == 0u8 );
+							debug_assert( param_reference.reference_index != FunctionType::c_param_reference_number );
+							if( size_type(param_reference.reference_index) < inner_references.size() )
+							{
+								function_context.references_graph.TryAddLink(
+									inner_references[ size_type(param_reference.reference_index) ],
+									variable_reference,
+									names_scope,
+									if_coro_advance_operator.src_loc );
+							}
+						}
+					}
+				}
+			}
+
+			if( IsKeyword( if_coro_advance_operator.variable_name ) )
+			{
+				REPORT_ERROR( UsingKeywordAsName, names_scope, if_coro_advance_operator.src_loc )
+			}
+
+			RegisterTopFrameVariable( function_context, variable_reference );
+			var NamesScopeMutPtr variable_names_scope( NamesScope( "", names_scope ) );
+			with( mut lock : variable_names_scope.lock_mut() )
+			{
+				lock.deref().AddName( if_coro_advance_operator.variable_name, move(variable_reference) );
+			}
+
+			// Reuse names scope of the variable for the block.
+			if_block_build_info= self.BuildBlockElements( variable_names_scope, function_context, if_coro_advance_operator.block.elements );
+			if( !if_block_build_info.has_terminal_instruction_inside )
+			{
+				// Destroy coro result variable.
+				self.CallDestructorsForTopVariablesFrame( variable_names_scope, function_context, if_coro_advance_operator.src_loc );
+			}
+
+			self.CheckForUnusedLocalNames( variable_names_scope );
+		} );
+
+	var ust::vector</ReferencesGraph/> mut references_graphs;
+
+	var BlockElementBuildInfo mut block_element_build_info;
+
+	if( !if_coro_advance_operator.alternative.has</Synt::EmptyVariant/>() )
+	{
+		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "after_if_coro_advance\0"[0] ) );
+
+		if( !if_block_build_info.has_terminal_instruction_inside )
+		{
+			// Destroy temporarie in coroutine expression.
+			CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
+
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		// Else block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
+
+		function_context.references_graph= move(references_graph_before_branching);
+
+		// Destroy temporarie in coroutine expression.
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
+
+		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_coro_advance_operator.alternative );
+
+		if( !alternative_block_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		block_element_build_info.has_terminal_instruction_inside=
+			if_block_build_info.has_terminal_instruction_inside && alternative_block_build_info.has_terminal_instruction_inside;
+
+		if( !block_element_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
+			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_if ) );
+		}
+		else
+		{
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
+			unsafe( LLVMDeleteBasicBlock( block_after_if ) );
+		}
+	}
+	else
+	{
+		if( !if_block_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, alternative_block ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		references_graphs.push_back( move(references_graph_before_branching) );
+
+		block_element_build_info.has_terminal_instruction_inside= false;
+
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
+
+		// Destroy temporarie in coroutine expression.
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
+	}
+
+	if( !references_graphs.empty() )
+	{
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs, names_scope, if_coro_advance_operator.end_src_loc );
+	}
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SwitchOperator& switch_operator ) : BlockElementBuildInfo
+{
+	var Type mut switch_type;
+	var LLVMValueRef mut switch_value= LLVMValueRef::Null;
+
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var VariableLite expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, switch_operator.value );
+			var bool mut type_ok= false;
+			if( !expression.t.GetEnumType().empty() )
+			{
+				type_ok= true;
+			}
+			else if_var( &fundamental_type : expression.t.GetFundamentalType() )
+			{
+				type_ok= IsInteger( fundamental_type.fundamental_type ) || IsChar( fundamental_type.fundamental_type );
+			}
+			else
+			{
+				type_ok= false;
+			}
+
+			var SrcLoc src_loc= Synt::GetSrcLoc( switch_operator.value );
+
+			if( !type_ok )
+			{
+				REPORT_ERROR(
+					TypesMismatch,
+					names_scope,
+					src_loc,
+					"Enum, integer or char type",
+					expression.t )
+				return;
+			}
+
+			switch_type= expression.t;
+			switch_value= self.CreateMoveToLLVMRegisterInstruction( expression, function_context );
+
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+		} );
+
+	if( switch_value == LLVMValueRef::Null )
+	{
+		return BlockElementBuildInfo();
+	}
+
+	// TODO - support 128bit values.
+	var u64 mut type_low(0), mut type_high(0);
+	var bool mut is_signed= false;
+	if_var( &enum_type_ptr : switch_type.GetEnumType() )
+	{
+		type_low= u64(0);
+		type_high= u64( enum_type_ptr.lock_imut().deref().elements.size() - 1s );
+	}
+	else if_var( &fundamental_type : switch_type.GetFundamentalType() )
+	{
+		var u32 size_in_bits= GetFundamentalTypeSize( fundamental_type.fundamental_type ) * 8u;
+		if( size_in_bits > 64u )
+		{
+			REPORT_ERROR(
+				NotImplemented,
+				names_scope,
+				switch_operator.src_loc,
+				"Types greater, than 64 bits in switch" )
+			return BlockElementBuildInfo();
+		}
+
+		is_signed= IsSignedInteger( fundamental_type.fundamental_type );
+		if( is_signed )
+		{
+			if( size_in_bits == 64u )
+			{
+				type_low = 0x8000000000000000u64;
+				type_high= 0x7FFFFFFFFFFFFFFFu64;
+			}
+			else
+			{
+				type_low = u64( (-1i64) << (size_in_bits - 1u) );
+				type_high= ( 1u64 << (size_in_bits - 1u) ) - 1u64;
+			}
+		}
+		else
+		{
+			type_low= 0u64;
+			if( size_in_bits == 64u )
+			{
+				type_high= 0xFFFFFFFFFFFFFFFFu64;
+			}
+			else
+			{
+				type_high= ( 1u64 << size_in_bits ) - 1u64;
+			}
+		}
+	}
+	else { halt; }
+
+	// Preevaluate case values. It is fine, since only constexpr expressions are allowed.
+	var ust::vector</SwitchCaseValues/> mut branches_ranges;
+	var bool mut all_cases_are_ok= true;
+	var bool mut has_default_branch= false;
+	foreach( &case_ : switch_operator.cases )
+	{
+		var SwitchCaseValues mut case_values;
+		if_var( &values : case_.values.get</ ust::vector</ Synt::SwitchOperator::CaseValue/> />() )
+		{
+			foreach( &value : values )
+			{
+				if_var( &single_value : value.get</ Synt::Expression />() )
+				{
+					var VariableLite expression_variable= WithVariablesFrame(
+						function_context,
+						lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
+						{
+							var VariableLite res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, single_value );
+							self.CallDestructorsForTopVariablesFrame( names_scope, function_context, switch_operator.src_loc );
+							return res;
+						} );
+					var SrcLoc src_loc= Synt::GetSrcLoc( single_value );
+					if( expression_variable.t != switch_type )
+					{
+						REPORT_ERROR(
+							TypesMismatch,
+							names_scope,
+							src_loc,
+							switch_type,
+							expression_variable.t )
+						all_cases_are_ok= false;
+						continue;
+					}
+					if( expression_variable.constexpr_value == LLVMValueRef::Null )
+					{
+						REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
+						all_cases_are_ok= false;
+						continue;
+					}
+
+					var u64 val= (
+						is_signed
+							? u64( unsafe( LLVMConstIntGetSExtValue( expression_variable.constexpr_value ) ) )
+							: unsafe( LLVMConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
+
+					case_values.push_back( SwitchCaseRange{ .low= val, .high= val, .src_loc= src_loc } );
+				}
+				else if_var( &range : value.get</ Synt::SwitchOperator::CaseRange />() )
+				{
+					var [ u64, 2 ] mut range_constants[ type_low, type_high ];
+					for( auto mut i= 0s; i < 2s; ++i )
+					{
+						var Synt::Expression& expression = ( i == 0s ? range.low : range.high );
+						if( expression.has</ Synt::EmptyVariant />() )
+						{
+							continue;
+						}
+
+						var VariableLite expression_variable= WithVariablesFrame(
+							function_context,
+							lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
+							{
+								var VariableLite res= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+								self.CallDestructorsForTopVariablesFrame( names_scope, function_context, switch_operator.src_loc );
+								return res;
+							} );
+
+						if( expression_variable.t != switch_type )
+						{
+							REPORT_ERROR(
+								TypesMismatch,
+								names_scope,
+								Synt::GetSrcLoc( expression ),
+								switch_type,
+								expression_variable.t )
+							all_cases_are_ok= false;
+							continue;
+						}
+						if( expression_variable.constexpr_value == LLVMValueRef::Null )
+						{
+							REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( expression ) )
+							all_cases_are_ok= false;
+							continue;
+						}
+						range_constants[i]= (
+							is_signed
+								? u64( unsafe( LLVMConstIntGetSExtValue( expression_variable.constexpr_value ) ) )
+								: unsafe( LLVMConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
+					}
+
+					var SrcLoc src_loc= case_.block.src_loc; // TODO - use proper src_loc;
+					if( !( is_signed ? ( i64(range_constants[0]) <= i64(range_constants[1]) ) : ( range_constants[0] <= range_constants[1] ) ) )
+					{
+						REPORT_ERROR(
+							SwitchInvalidRange,
+							names_scope,
+							src_loc,
+							cast_imut(range_constants)[0],
+							cast_imut(range_constants)[1] )
+						all_cases_are_ok= false;
+						continue;
+					}
+
+					case_values.push_back( SwitchCaseRange{ .low= range_constants[0], .high= range_constants[1], .src_loc= src_loc } );
+				}
+				else { halt; }
+			}
+		}
+		else if( case_.values.has</ Synt::SwitchOperator::DefaultPlaceholder />() )
+		{
+			if( has_default_branch )
+			{
+					REPORT_ERROR(
+						SwitchDuplicatedDefaultLabel,
+						names_scope,
+						case_.block.src_loc ) // TODO - use proper src_loc
+					all_cases_are_ok= false;
+			}
+			else
+			{
+				has_default_branch= true;
+			}
+		}
+		else { halt; }
+
+		branches_ranges.push_back( move(case_values) );
+	}
+
+	if( !all_cases_are_ok || branches_ranges.size() != switch_operator.cases.size() )
+	{
+		return BlockElementBuildInfo(); // Some error generated before.
+	}
+
+	var ust::optional_ref_imut</Synt::Block/> mut default_branch_synt_block;
+	foreach( &case_ : switch_operator.cases )
+	{
+		if( case_.values.has</ Synt::SwitchOperator::DefaultPlaceholder />() )
+		{
+			default_branch_synt_block.reset( case_.block );
+			break;
+		}
+	}
+
+	// Perform checks of ranges.
+	{
+		// Collect all ranges.
+		var SwitchCaseValues mut all_ranges;
+		foreach( &case_ranges : branches_ranges )
+		{
+			all_ranges.append( case_ranges.iter() );
+		}
+
+		// Sort by low. Use comparator depending on switch type signness.
+		// Sorting is needed in order to simplify ranges overlapping and gaps searching.
+		if( is_signed )
+		{
+			ust::sort_by_key( all_ranges, lambda( SwitchCaseRange& r ) : i64 { return i64(r.low); } );
+		}
+		else
+		{
+			ust::sort_by_key( all_ranges, lambda( SwitchCaseRange& r ) : u64 { return r.low; } );
+		}
+
+		// Check for overlaps and gaps between ranges.
+		var bool mut has_gaps= false;
+		for( auto mut i = 0s; i + 1s < all_ranges.size(); ++i )
+		{
+			var SwitchCaseRange& current_range= all_ranges[i];
+			var SwitchCaseRange& next_range= cast_imut(all_ranges)[i + 1s];
+
+			var u64 current_high= current_range.high;
+			var u64 next_low= next_range.low;
+
+			if( ( is_signed ? (i64(current_high) < i64(next_low)) : (current_high < next_low) ) )
+			{
+				// Because of condition above diff is always non-negative.
+				var u64 gap_size= next_low - current_high - 1u64;
+				if( gap_size != 0u64 )
+				{
+					has_gaps= true;
+					if( !has_default_branch )
+					{
+						if( gap_size == 1u64 )
+						{
+							REPORT_ERROR(
+								SwitchUndhandledValue,
+								names_scope,
+								ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
+								ust::to_string8(current_high + 1u64) )
+						}
+						else
+						{
+							REPORT_ERROR(
+								SwitchUndhandledRange,
+								names_scope,
+								ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
+								ust::to_string8(current_high + 1u64),
+								ust::to_string8(next_low - 1u64) )
+						}
+					}
+				}
+			}
+			else
+			{
+				REPORT_ERROR(
+					SwitchRangesOverlapping,
+					names_scope,
+					ust::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
+					ust::to_string8(current_range.low ),
+					ust::to_string8(current_range.high),
+					ust::to_string8(next_range.low ),
+					ust::to_string8(next_range.high) )
+			}
+		}
+
+		if( !all_ranges.empty() )
+		{
+			// Process begin range.
+			var u64 first_range_low= all_ranges.front().low;
+			var u64 begin_gap_size= first_range_low - type_low;
+			if( begin_gap_size != 0u64 )
+			{
+				has_gaps= true;
+				if( !has_default_branch )
+				{
+					if( begin_gap_size == 1u64 )
+					{
+						REPORT_ERROR(
+							SwitchUndhandledValue,
+							names_scope,
+							all_ranges.front().src_loc,
+							ust::to_string8(type_low) )
+					}
+					else
+					{
+						REPORT_ERROR(
+							SwitchUndhandledRange,
+							names_scope,
+							all_ranges.front().src_loc,
+							ust::to_string8(type_low),
+							ust::to_string8(first_range_low - 1u64) )
+					}
+				}
+			}
+			// Process end range.
+			var u64 last_range_high= all_ranges.back().high;
+			var u64 end_gap_size= type_high - last_range_high;
+			if( end_gap_size != 0u64 )
+			{
+				has_gaps= true;
+				if( !has_default_branch )
+				{
+					if( end_gap_size == 1u64 )
+					{
+						REPORT_ERROR(
+							SwitchUndhandledValue,
+							names_scope,
+							all_ranges.back().src_loc,
+							ust::to_string8(type_high) )
+					}
+					else
+					{
+						REPORT_ERROR(
+							SwitchUndhandledRange,
+							names_scope,
+							all_ranges.back().src_loc,
+							ust::to_string8(last_range_high + 1u64),
+							ust::to_string8(type_high) )
+					}
+				}
+			}
+		}
+		else
+		{
+			// No ranges at all - this is a gap.
+			has_gaps= true;
+			if( !has_default_branch )
+			{
+				if( type_high == type_low )
+				{
+					REPORT_ERROR(
+						SwitchUndhandledValue,
+						names_scope,
+						switch_operator.src_loc,
+						ust::to_string8(type_high) )
+				}
+				else
+				{
+					REPORT_ERROR(
+						SwitchUndhandledRange,
+						names_scope,
+						switch_operator.src_loc,
+						ust::to_string8(type_low),
+						ust::to_string8(type_high) )
+				}
+			}
+		}
+
+		if( !default_branch_synt_block.empty() && !has_gaps )
+		{
+			REPORT_ERROR(
+				SwitchUnreachableDefaultBranch,
+				names_scope,
+				default_branch_synt_block.try_deref().src_loc )
+		}
+	}
+
+	var ReferencesGraph references_graph_before_branching= function_context.references_graph;
+	var ust::vector</ReferencesGraph/> mut breances_states_after_case;
+
+	var LLVMBasicBlockRef block_after_switch= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	var LLVMBasicBlockRef mut next_case_block= LLVMBasicBlockRef::Null;
+	var LLVMBasicBlockRef default_branch=
+		( default_branch_synt_block.empty() ? LLVMBasicBlockRef::Null : unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) ) );
+	var bool mut all_branches_are_terminal= true;
+
+	var LLVMTypeRef switch_llvm_type= switch_type.GetLLVMType();
+	foreach( pair : switch_operator.cases.iter().zip( branches_ranges.iter() ) )
+	{
+		var Synt::SwitchOperator::Case& case_= pair.first;
+		if( case_.values.has</Synt::SwitchOperator::DefaultPlaceholder/>() )
+		{
+			// Default branch - handle it later.
+			continue;
+		}
+
+		var LLVMBasicBlockRef case_handle_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+		next_case_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+		var SwitchCaseValues& case_values= pair.second;
+		debug_assert( !case_values.empty() );
+		var LLVMValueRef mut value_equals= LLVMValueRef::Null;
+		foreach( & case_range : case_values )
+		{
+			var LLVMValueRef mut current_value_equals= LLVMValueRef::Null;
+
+			var LLVMValueRef constant_low= unsafe( LLVMConstInt( switch_llvm_type, case_range.low, ( is_signed ? LLVMBool::True : LLVMBool::False ) ) );
+			if( case_range.low == case_range.high )
+			{
+				current_value_equals= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, switch_value, constant_low, g_null_string ) );
+			}
+			else
+			{
+				var LLVMValueRef constant_high= unsafe( LLVMConstInt( switch_llvm_type, case_range.high, ( is_signed ? LLVMBool::True : LLVMBool::False ) ) );
+				if( is_signed )
+				{
+					current_value_equals= unsafe(
+						LLVMBuildAnd(
+							function_context.llvm_ir_builder,
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, switch_value, constant_low , g_null_string ),
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, switch_value, constant_high, g_null_string ),
+							g_null_string ) );
+				}
+				else
+				{
+					current_value_equals= unsafe(
+						LLVMBuildAnd(
+							function_context.llvm_ir_builder,
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, switch_value, constant_low , g_null_string ),
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULE, switch_value, constant_high, g_null_string ),
+							g_null_string ) );
+				}
+			}
+
+			if( value_equals == LLVMValueRef::Null )
+			{
+				value_equals= current_value_equals;
+			}
+			else
+			{
+				value_equals= unsafe( LLVMBuildOr( function_context.llvm_ir_builder, value_equals, current_value_equals, g_null_string ) );
+			}
+		}
+
+		unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, value_equals, case_handle_block, next_case_block ) );
+
+		// Case handle block
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, case_handle_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, case_handle_block ) );
+
+		function_context.references_graph= references_graph_before_branching;
+		var BlockElementBuildInfo block_build_info= BuildBlock( names_scope, function_context, case_.block );
+
+		if( !block_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_switch ) );
+			breances_states_after_case.push_back( function_context.references_graph );
+			all_branches_are_terminal= false;
+		}
+
+		// Next case block
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, next_case_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_case_block ) );
+	}
+
+	// Handle default branch lastly.
+	if( !default_branch_synt_block.empty() && default_branch != LLVMBasicBlockRef::Null )
+	{
+		if( next_case_block == LLVMBasicBlockRef::Null )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, default_branch ) );
+		}
+		else
+		{
+			unsafe( LLVMReplaceAllUsesWith( cast_ref_unsafe</LLVMValueRef/>(next_case_block), cast_ref_unsafe</LLVMValueRef/>(default_branch) ) );
+			unsafe( LLVMDeleteBasicBlock( next_case_block ) );
+		}
+
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, default_branch ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, default_branch ) );
+
+		function_context.references_graph= references_graph_before_branching;
+		var BlockElementBuildInfo block_build_info= BuildBlock( names_scope, function_context, default_branch_synt_block.try_deref() );
+
+		if( !block_build_info.has_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_switch ) );
+			breances_states_after_case.push_back( function_context.references_graph );
+			all_branches_are_terminal= false;
+		}
+	}
+	else
+	{
+		if( next_case_block == LLVMBasicBlockRef::Null )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_switch ) );
+		}
+		else
+		{
+			unsafe( LLVMReplaceAllUsesWith( cast_ref_unsafe</LLVMValueRef/>(next_case_block), cast_ref_unsafe</LLVMValueRef/>(block_after_switch) ) );
+			unsafe( LLVMDeleteBasicBlock( next_case_block ) );
+		}
+
+		// No default branch - all values must be handled in normal branches.
+		// This was checked after ranges calculation.
+	}
+
+	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_switch ) );
+	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_switch ) );
+
+	var BlockElementBuildInfo mut block_build_info;
+
+	if( all_branches_are_terminal )
+	{
+		block_build_info.has_terminal_instruction_inside= true;
+		// There is no reason to merge variables state here.
+
+		unsafe( LLVMBuildUnreachable( function_context.llvm_ir_builder ) );
+	}
+	else
+	{
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( breances_states_after_case, names_scope, switch_operator.end_src_loc );
+	}
+
+	return block_build_info;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo
+{
+	auto mut references_graph_before_loop= function_context.references_graph;
+
+	var LLVMBasicBlockRef test_block = unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	var LLVMBasicBlockRef while_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	var LLVMBasicBlockRef block_after_while= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	unsafe
+	{
+		// Break to test block. We must push terminal instruction at and of current block.
+		LLVMBuildBr( function_context.llvm_ir_builder, test_block );
+
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, test_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, test_block );
+	}
+
+	// Test block code.
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var VariableLite condition_expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition );
+			var SrcLoc condition_src_loc= Synt::GetSrcLoc( while_operator.condition );
+			if( condition_expression.t != self.bool_type_ )
+			{
+				REPORT_ERROR( TypesMismatch,
+					names_scope,
+					condition_src_loc,
+					self.bool_type_,
+					condition_expression.t )
+
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, condition_src_loc );
+				unsafe( LLVMBuildBr( function_context.llvm_ir_builder, while_block ) );
+			}
+			else
+			{
+				auto condition_in_register= self.CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, condition_src_loc );
+
+				unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, while_block, block_after_while ) );
+			}
+		} );
+
+	// While block code.
+	AddLoopFrame( names_scope, function_context, block_after_while, test_block, while_operator.label_ );
+
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, while_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, while_block );
+	}
+
+	auto info= BuildBlock( names_scope, function_context, while_operator.block );
+	if( !info.has_terminal_instruction_inside )
+	{
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, test_block ) );
+		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
+	}
+
+	// Disallow outer variables state change in "continue" branches.
+	foreach( &state_after : function_context.loops_stack.back().continue_references_graphs )
+	{
+		CheckReferencesGraphAfterLoop( references_graph_before_loop, state_after, names_scope, while_operator.block.end_src_loc );
+	}
+
+	// Result graph state is combination of graph state before loop and graph state of all branches terminated with "break".
+	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
+	references_graphs_for_merge.push_back( move( references_graph_before_loop ) );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, while_operator.block.end_src_loc );
+
+	function_context.loops_stack.drop_back();
+
+	// Block after while code.
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_while );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_while );
+	}
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LoopOperator& loop_operator ) : BlockElementBuildInfo
+{
+	auto references_graph_before_loop= function_context.references_graph;
+
+	var LLVMBasicBlockRef loop_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	var LLVMBasicBlockRef block_after_loop= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+	// Break to loop block. We must push terminal instruction at and of current block.
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) );
+
+	// Loop block code.
+	AddLoopFrame( names_scope, function_context, block_after_loop, loop_block, loop_operator.label_ );
+
+	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_block ) );
+	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block ) );
+
+	auto loop_info= BuildBlock( names_scope, function_context, loop_operator.block );
+	if( !loop_info.has_terminal_instruction_inside )
+	{
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) );
+		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
+	}
+
+	// Disallow outer variables state change in "continue" branches.
+	foreach( &state_after : function_context.loops_stack.back().continue_references_graphs )
+	{
+		CheckReferencesGraphAfterLoop( references_graph_before_loop, state_after, names_scope, loop_operator.block.end_src_loc );
+	}
+
+	// Result graph state is combination of graph state of all branches terminated with "break".
+	var ust::vector</ReferencesGraph/> references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, loop_operator.block.end_src_loc );
+
+	function_context.loops_stack.drop_back();
+
+	// This loop is terminal, if it contains no "break" inside - only "break" to outer labels or "return".
+	// Any code, that follows infinite loop without "break" inside is unreachable.
+	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= references_graphs_for_merge.empty() };
+	if( !block_element_build_info.has_terminal_instruction_inside )
+	{
+		// Block after loop code.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_loop ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_loop ) );
+	}
+	else
+	{
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_loop ) );
+		unsafe( LLVMDeleteBasicBlock( block_after_loop ) );
+	}
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo
+{
+	return WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		{
+			return self.BuildRangeForOperatorImpl( names_scope, function_context, range_for_operator );
+		} );
+}
+
+fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo
+{
+	var BlockElementBuildInfo mut block_element_build_info;
+
+	var VariablePtr sequence_expression_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, range_for_operator.sequence );
+	var VariableLite sequence_expression= sequence_expression_ptr;
+
+	auto is_mutable= range_for_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+	var VariablePtr sequence_lock_node=
+		Variable
+		{
+			.t= sequence_expression.t,
+			.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.name= sequence_expression_ptr.lock_imut().deref().name + " sequence lock",
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( sequence_lock_node );
+	function_context.references_graph.TryAddLink( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
+	function_context.references_graph.TryAddInnerLinks( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
+
+	function_context.variables_frames.back().variables.push_back( sequence_lock_node );
+
+	if_var( &tuple_type : sequence_expression.t.GetTupleType() )
+	{
+		auto mut finish_basic_block= LLVMBasicBlockRef::Null;
+		if( !tuple_type.element_types.empty() )
+		{
+			finish_basic_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+		}
+
+		var ust::vector</ReferencesGraph/> mut references_graphs_for_merge;
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var bool is_last_iteration= i + 1s == tuple_type.element_types.size();
+
+			auto next_basic_block= ( is_last_iteration ? finish_basic_block : unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) ) );
+
+			var ust::string8 variable_name= range_for_operator.loop_variable_name + ust::to_string8(i);
+
+			var Type& variable_type= tuple_type.element_types[i];
+
+			// Create separate names_scope for loop variable.
+			var NamesScopeMutPtr names_scope( NamesScope( "", names_scope ) );
+
+			WithVariablesFrame(
+				function_context,
+				lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+				{
+					var VariablePtr mut variable_reference=
+						Variable
+						{
+							.t= variable_type,
+							.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+							.location= Variable::Location::Pointer,
+							.constexpr_value= ( is_mutable || sequence_expression.constexpr_value == LLVMValueRef::Null
+								? LLVMValueRef::Null
+								: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
+							.name= range_for_operator.loop_variable_name,
+							.src_loc= range_for_operator.src_loc,
+							.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_type)
+						}.CreatePtr();
+
+					// Do not forget to remove node in case of error-return!!!
+					function_context.references_graph.AddNode( variable_reference );
+
+					auto src_element_llvm_value= self.CreateTupleElementGEP( function_context, sequence_expression, u32(i) );
+
+					if( range_for_operator.reference_modifier == Synt::ReferenceModifier::Reference )
+					{
+						if( is_mutable && sequence_expression.value_type != ValueType::ReferenceMut )
+						{
+							REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, range_for_operator.src_loc )
+						}
+
+						with( mut lock : variable_reference.lock_mut() )
+						{
+							lock.deref().llvm_value= src_element_llvm_value;
+						}
+
+						self.debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), variable_name, range_for_operator.src_loc );
+
+						function_context.references_graph.TryAddLink( sequence_lock_node, variable_reference, names_scope, range_for_operator.src_loc );
+						function_context.references_graph.TryAddInnerLinksForTupleElement( sequence_lock_node, variable_reference, i, names_scope, range_for_operator.src_loc );
+					}
+					else if( range_for_operator.reference_modifier == Synt::ReferenceModifier::None )
+					{
+						var Variable mut variable
+						{
+							.t= variable_type,
+							.value_type= ValueType::Value,
+							.location= Variable::Location::Pointer,
+							.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, variable_type.GetLLVMType(), (range_for_operator.loop_variable_name + "\0").front() ) ),
+							.name= range_for_operator.loop_variable_name,
+						};
+
+						self.CreateLifetimeStart( function_context, variable.llvm_value );
+						self.debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, variable_name, range_for_operator.src_loc );
+
+						with( mut lock : variable_reference.lock_mut() )
+						{
+							lock.deref().llvm_value= variable.llvm_value;
+						}
+
+						if( !sequence_expression.t.IsCopyConstructible() )
+						{
+							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, range_for_operator.src_loc, variable.t )
+						}
+						else if( sequence_expression.t.IsAbstract() )
+						{
+							REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, range_for_operator.src_loc, sequence_expression.t )
+						}
+						else
+						{
+							self.BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, src_element_llvm_value, variable.t, range_for_operator.src_loc );
+						}
+
+						var VariablePtr variable_ptr= move(variable).CreatePtr();
+						function_context.references_graph.AddNode( variable_ptr );
+						function_context.references_graph.AddLink( variable_ptr, variable_reference );
+						RegisterTopFrameVariable( function_context, variable_ptr );
+
+						function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, range_for_operator.src_loc );
+						function_context.references_graph.TryAddInnerLinksForTupleElement( sequence_lock_node, variable_ptr, i, names_scope, range_for_operator.src_loc );
+					}
+					else{ halt; }
+
+					// Register variable for destruction and reference checking.
+					RegisterTopFrameVariable( function_context, variable_reference );
+
+					with( mut lock : names_scope.lock_mut() )
+					{
+						lock.deref().AddName( range_for_operator.loop_variable_name, move(variable_reference) ).empty();
+
+						// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
+						// TODO - maybe make this counter available for a programmer?
+
+						auto index_value= unsafe( LLVMConstInt( self.fundamental_llvm_types_.u32_, u64(i), LLVMBool::False ) );
+						lock.deref().AddName(
+							" tuple for index",
+							Variable
+							{
+								.t= FundamentalType( U_FundamentalType::u32_, self.fundamental_llvm_types_.u32_ ),
+								.value_type= ValueType::Value,
+								.location= Variable::Location::LLVMRegister,
+								.llvm_value= index_value,
+								.constexpr_value= index_value,
+								.referenced= true,
+							}.CreatePtr() ).empty();
+					}
+
+					self.AddLoopFrame( names_scope, function_context, finish_basic_block, next_basic_block, range_for_operator.label_ );
+					function_context.loops_stack.back().variable_frames_stack_size= function_context.variables_frames.size() - 1s; // Extra 1 for loop variable destruction in 'break' or 'continue'.
+
+					// Reuse names scope of tuple element variable for the block.
+					auto block_build_info= self.BuildBlockElements( names_scope, function_context, range_for_operator.block.elements );
+					if( !block_build_info.has_terminal_instruction_inside )
+					{
+						self.CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc ); // destroy loop variable
+						function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
+						unsafe( LLVMBuildBr( function_context.llvm_ir_builder, next_basic_block ) );
+					}
+				} );
+
+			// Graph state in next iteration is combination of graph state of all branches with "continue" on previous iteration.
+			var bool continue_branches_is_empty= function_context.loops_stack.back().continue_references_graphs.empty();
+			if( !continue_branches_is_empty )
+			{
+				function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs, names_scope, range_for_operator.block.end_src_loc );
+			}
+
+			references_graphs_for_merge.append( function_context.loops_stack.back().break_references_graphs );
+
+			function_context.loops_stack.drop_back();
+
+			// Clear args preevaluation cache because we evaluationg same expressions multiple times in different context.
+			function_context.args_preevaluation_cache.clear();
+
+			CheckForUnusedLocalNames( names_scope );
+
+			if( !continue_branches_is_empty )
+			{
+				unsafe
+				{
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, next_basic_block );
+					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_basic_block );
+				}
+
+				if( is_last_iteration )
+				{
+					references_graphs_for_merge.push_back( function_context.references_graph );
+				}
+			}
+			else
+			{
+				// Finish building tuple-for if current iteration have no "continue" branches.
+				unsafe
+				{
+					if( !is_last_iteration )
+					{
+						LLVMAppendExistingBasicBlock( function_context.llvm_function, next_basic_block );
+						LLVMDeleteBasicBlock( next_basic_block );
+					}
+					if( !references_graphs_for_merge.empty() )
+					{
+						LLVMAppendExistingBasicBlock( function_context.llvm_function, finish_basic_block );
+						LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, finish_basic_block );
+					}
+					else
+					{
+						LLVMAppendExistingBasicBlock( function_context.llvm_function, finish_basic_block );
+						LLVMDeleteBasicBlock( finish_basic_block );
+					}
+				}
+				break;
+			}
+		}
+
+		if( tuple_type.element_types.empty() )
+		{} // Just keep references graph state.
+		// References graph state after tuple-for is combination of graph state of all branches with "break" of all iterations.
+		else if( !references_graphs_for_merge.empty() )
+		{
+			function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, range_for_operator.block.end_src_loc );
+		}
+		else
+		{
+			block_element_build_info.has_terminal_instruction_inside= true;
+		}
+	}
+	else
+	{
+		// TODO - support array types.
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, range_for_operator.src_loc, sequence_expression.t )
+	}
+
+	if( !block_element_build_info.has_terminal_instruction_inside )
+	{
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc );
+	}
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			self.BuildCStyleForOperatorImpl( names_scope, function_context, c_style_for_operator );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, c_style_for_operator.src_loc );
+		} );
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator )
+{
+	// Create separate names_scope for loop variables.
+	var NamesScopeMutPtr names_scope( NamesScope( "", in_names_scope ) );
+
+	// Variables declaration part.
+	variant_visit( &element : c_style_for_operator.variable_declaration_part )
+	{
+		BuildBlockElementImpl( names_scope, function_context, element );
+	}
+
+	auto references_graph_before_loop= function_context.references_graph;
+
+	var LLVMBasicBlockRef mut test_block= zero_init, mut loop_block= zero_init, mut loop_iteration_block= zero_init, mut block_after_loop= zero_init;
+	unsafe
+	{
+		test_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		loop_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		loop_iteration_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		block_after_loop= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+	}
+
+	// Test block.
+	unsafe
+	{
+		LLVMBuildBr( function_context.llvm_ir_builder, test_block );
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, test_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, test_block );
+	}
+
+	if( c_style_for_operator.loop_condition.has</Synt::EmptyVariant/>() )
+	{
+		// No condition.
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) );
+	}
+	else
+	{
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+			{
+				var VariableLite condition_expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, c_style_for_operator.loop_condition );
+				var SrcLoc condition_src_loc= Synt::GetSrcLoc( c_style_for_operator.loop_condition );
+				if( condition_expression.t != self.bool_type_ )
+				{
+					REPORT_ERROR( TypesMismatch, names_scope, condition_src_loc, self.bool_type_, condition_expression.t )
+				}
+				else
+				{
+					auto condition_in_register= self.CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+					self.CallDestructorsForTopVariablesFrame( names_scope, function_context, condition_src_loc );
+
+					unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, loop_block, block_after_loop ) );
+				}
+			} );
+	}
+
+	auto mut references_graph_after_test_block= function_context.references_graph;
+
+	// Loop block code.
+	AddLoopFrame( names_scope, function_context, block_after_loop, loop_iteration_block, c_style_for_operator.label_ );
+
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block );
+	}
+
+	auto info= BuildBlock( names_scope, function_context, c_style_for_operator.block );
+	if( !info.has_terminal_instruction_inside )
+	{
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_iteration_block ) );
+		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
+	}
+
+	var bool loop_iteration_block_is_reachable= !function_context.loops_stack.back().continue_references_graphs.empty();
+
+	// References graph state before loop iteration block is combination of references graph states of each branch terminated with "continue".
+	if( loop_iteration_block_is_reachable )
+	{
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( function_context.loops_stack.back().continue_references_graphs, names_scope, c_style_for_operator.block.end_src_loc );
+	}
+	else
+	{
+		// Loop iteration block is unreachable.
+		// Use some valid but not relevant variables state for it.
+		function_context.references_graph= references_graph_after_test_block;
+	}
+
+	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
+	references_graphs_for_merge.push_back( move(references_graph_after_test_block) );
+
+	function_context.loops_stack.drop_back();
+
+	// Loop iteration block.
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_iteration_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_iteration_block );
+	}
+	foreach( &element : c_style_for_operator.iteration_part_elements )
+	{
+		variant_visit( &el : element )
+		{
+			BuildBlockElementImpl( names_scope, function_context, el );
+		}
+	}
+
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, test_block ) );
+
+	if( loop_iteration_block_is_reachable )
+	{
+		CheckReferencesGraphAfterLoop( references_graph_before_loop, function_context.references_graph, names_scope, c_style_for_operator.block.end_src_loc );
+	}
+
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge, names_scope, c_style_for_operator.block.end_src_loc );
+
+	// Block after loop.
+	unsafe
+	{
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_loop );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_loop );
+	}
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo
+{
+	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
+
+	var size_type frame_index= FetchLoopFrame( names_scope, function_context, break_operator.label_ );
+	if( frame_index >= function_context.loops_stack.size() )
+	{
+		REPORT_ERROR( BreakOutsideLoop, names_scope, break_operator.src_loc )
+		return block_element_build_info;
+	}
+
+	var size_type variable_frames_stack_size= function_context.loops_stack[frame_index].variable_frames_stack_size;
+	CallDestructorsForLoopInnerVariables( names_scope, function_context, variable_frames_stack_size, break_operator.src_loc );
+
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack[frame_index].block_for_break ) );
+
+	function_context.loops_stack[frame_index].break_references_graphs.push_back( function_context.references_graph );
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo
+{
+	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
+
+	var size_type frame_index= FetchLoopFrame( names_scope, function_context, continue_operator.label_ );
+	if( frame_index >= function_context.loops_stack.size() )
+	{
+		REPORT_ERROR( ContinueOutsideLoop, names_scope, continue_operator.src_loc )
+		return block_element_build_info;
+	}
+	if( function_context.loops_stack[frame_index].block_for_continue == LLVMBasicBlockRef::Null )
+	{
+		// This is non-loop frame.
+		REPORT_ERROR( ContinueForBlock, names_scope, continue_operator.src_loc )
+		return block_element_build_info;
+	}
+
+	var size_type variable_frames_stack_size= function_context.loops_stack[frame_index].variable_frames_stack_size;
+	CallDestructorsForLoopInnerVariables( names_scope, function_context, variable_frames_stack_size, continue_operator.src_loc );
+
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack[frame_index].block_for_continue ) );
+
+	function_context.loops_stack[frame_index].continue_references_graphs.push_back( function_context.references_graph );
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo
+{
+	return WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		{
+			return self.BuildWithOperatorImpl( names_scope, function_context, with_operator );
+		} );
+}
+
+fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo
+{
+	var VariablePtr expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, with_operator.expression );
+	var VariableLite expr= expr_ptr;
+	if( expr.t == invalid_type_ )
+	{
+		return BlockElementBuildInfo(); // Some error was generated before.
+	}
+
+	var bool is_mutable= with_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+	var VariablePtr mut variable_reference=
+		Variable
+		{
+			.t= expr.t,
+			.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
+			.constexpr_value= ( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ), // Constexpr is preserved for move/copy.
+			.name= with_operator.variable_name,
+			.src_loc= with_operator.src_loc,
+			.referenced= with_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
+		}.CreatePtr();
+
+	// Do not forget to remove node in case of error-return!!!
+	function_context.references_graph.AddNode( variable_reference );
+
+	if( with_operator.reference_modifier == Synt::ReferenceModifier::Reference )
+	{
+		if( is_mutable && expr.value_type == ValueType::ReferenceImut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, with_operator.src_loc )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return BlockElementBuildInfo();
+		}
+
+		auto mut llvm_value= LLVMValueRef::Null;
+		if( expr.location == Variable::Location::LLVMRegister )
+		{
+			// Binding value to reference.
+			unsafe
+			{
+				llvm_value=
+					LLVMBuildAlloca( function_context.alloca_ir_builder, expr.t.GetLLVMType(), (with_operator.variable_name + "\0").front() );
+				CreateLifetimeStart( function_context, llvm_value );
+				CreateTypedStore( function_context, expr.t, expr.llvm_value, llvm_value );
+			}
+		}
+		else
+		{
+			llvm_value= expr.llvm_value;
+		}
+
+		with( &mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().llvm_value= llvm_value;
+		}
+
+		debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), with_operator.variable_name, with_operator.src_loc );
+
+		function_context.references_graph.TryAddLink( expr_ptr, variable_reference, names_scope, with_operator.src_loc );
+		function_context.references_graph.TryAddInnerLinks( expr_ptr, variable_reference, names_scope, with_operator.src_loc );
+	}
+	else if( with_operator.reference_modifier == Synt::ReferenceModifier::None )
+	{
+		if( expr.t.IsAbstract() )
+		{
+			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, with_operator.src_loc, expr.t )
+			function_context.references_graph.RemoveNode( variable_reference );
+			return BlockElementBuildInfo();
+		}
+
+		if( !expr.t.CanBeConstexpr() )
+		{
+			function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+		}
+
+		auto mut llvm_value= LLVMValueRef::Null;
+		unsafe
+		{
+			if( expr.value_type == ValueType::Value &&
+				expr.location == Variable::Location::Pointer &&
+				LLVMTypeOf( expr.llvm_value ) == LLVMPointerType( expr.t.GetLLVMType(), 0u ) &&
+				( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null || LLVMIsAArgument( expr.llvm_value ) != LLVMValueRef::Null ) )
+			{
+				// Just reuse "alloca" instruction or argument for move-initialization, avoid copying value into new memory location.
+				llvm_value= expr.llvm_value;
+			}
+			else
+			{
+				llvm_value=
+					LLVMBuildAlloca( function_context.alloca_ir_builder, expr.t.GetLLVMType(), (with_operator.variable_name + "\0").front() );
+				CreateLifetimeStart( function_context, llvm_value );
+			}
+		}
+
+		var Variable mut variable
+		{
+			.t= expr.t,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::Pointer,
+			.llvm_value= llvm_value,
+			.name= with_operator.variable_name,
+		};
+
+		debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, with_operator.variable_name, with_operator.src_loc );
+
+		var VariablePtr variable_ptr= move(variable).CreatePtr();
+		function_context.references_graph.AddNode( variable_ptr );
+		function_context.references_graph.AddLink( variable_ptr, variable_reference );
+		RegisterTopFrameVariable( function_context, variable_ptr );
+
+		function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, with_operator.src_loc );
+		function_context.references_graph.TryAddInnerLinks( expr_ptr, variable_ptr, names_scope, with_operator.src_loc );
+
+		if( expr.value_type == ValueType::Value )
+		{
+			// Move.
+			function_context.references_graph.MoveNode( expr_ptr );
+
+			if( llvm_value != expr.llvm_value )
+			{
+				if( expr.location == Variable::Location::Pointer )
+				{
+					CopyBytes( llvm_value, expr.llvm_value, expr.t, function_context );
+					CreateLifetimeEnd( function_context, expr.llvm_value );
+				}
+				else
+				{
+					CreateTypedStore( function_context, expr.t, expr.llvm_value, llvm_value );
+				}
+			}
+		}
+		else
+		{
+			// Copy.
+			if( !expr.t.IsCopyConstructible() )
+			{
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, with_operator.src_loc, expr.t )
+			}
+			else if( expr.location == Variable::Location::Pointer )
+			{
+				BuildCopyConstructorPart( names_scope, function_context, llvm_value, expr.llvm_value, expr.t, with_operator.src_loc );
+			}
+			else
+			{
+				CreateTypedStore( function_context, expr.t, expr.llvm_value, llvm_value );
+			}
+		}
+
+		with( mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().llvm_value= llvm_value;
+		}
+	}
+	else { halt; }
+
+	// Destroy temporary variables of initializer expression. Do it before registretion of variable to prevent its destruction.
+	DestroyUnusedTemporaryVariables( names_scope, function_context, with_operator.src_loc );
+
+	// Register variable for destruction and reference checking.
+	RegisterTopFrameVariable( function_context, variable_reference );
+
+	if( IsKeyword( with_operator.variable_name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope, with_operator.src_loc )
+	}
+
+	// Create separate namespace for variable. Redefinition here is not possible.
+	var NamesScopeMutPtr variable_names_scope( NamesScope( "", names_scope ) );
+	with( mut lock : variable_names_scope.lock_mut() )
+	{
+		lock.deref().AddName( with_operator.variable_name, move(variable_reference) ).empty();
+	}
+
+	// Build block. Reuse scope of with variable for this block.
+	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block.elements );
+
+	if( !block_element_build_info.has_terminal_instruction_inside )
+	{
+		// Destroy "with" variable and linked temporaries.
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, with_operator.src_loc );
+	}
+
+	CheckForUnusedLocalNames( variable_names_scope );
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
+
+			auto state= SaveFunctionContextState( function_context );
+
+			with( &condition_variable : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression ).lock_imut().deref() )
+			{
+				if( condition_variable.t == self.bool_type_ )
+				{
+					if( condition_variable.constexpr_value != LLVMValueRef::Null )
+					{
+						if( unsafe( LLVMConstIntGetZExtValue( condition_variable.constexpr_value ) ) == 0u64 )
+						{
+							var CodeBuilderError mut error{ .code= CodeBuilderErrorCode::StaticAssertionFailed, .src_loc= static_assert_.src_loc };
+							if_var( &message : static_assert_.message )
+							{
+								error.text= ust::concat( "Static assertion failed: ", message, "." );
+							}
+							else
+							{
+								error.text= "Static assertion failed.";
+							}
+							PutErrorIntoContainer( names_scope, move(error) );
+						}
+					}
+					else
+					{
+						REPORT_ERROR( StaticAssertExpressionIsNotConstant, names_scope, static_assert_.src_loc )
+					}
+				}
+				else
+				{
+					REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names_scope, static_assert_.src_loc )
+				}
+			}
+
+			RestoreFunctionContextState( function_context, state );
+			function_context.is_functionless_context= prev_is_functionless_context;
+		} );
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias_ptr ) : BlockElementBuildInfo
+{
+	auto& type_alias= type_alias_ptr.deref();
+
+	if( IsKeyword( type_alias.name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope, type_alias.src_loc )
+	}
+
+	// Insert "TypeAlias" instead of "type" into namespace in order to check usage (it is performed only for type aliases).
+	var TypeAlias mut out_type_alias
+	{
+		.t( PrepareType( names_scope, function_context, type_alias.type_name ) ),
+		.syntax_element= type_alias_ptr,
+	};
+
+	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope.lock_mut() )
+	{
+		insert_not_ok= lock.deref().AddName( type_alias.name, NamesScopeValue( move(out_type_alias) ) ).empty();
+	}
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope, type_alias.src_loc, type_alias.name )
+	}
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo
+{
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( halt_ );
+
+	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
+
+	unsafe
+	{
+		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, g_null_string );
+		LLVMBuildUnreachable( function_context.llvm_ir_builder );
+	}
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo
+{
+	var LLVMValueRef mut condition_in_register= LLVMValueRef::Null;
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var VariableLite condition= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, halt_if.condition );
+			if( condition.t != self.bool_type_ )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( halt_if.condition ), self.bool_type_, condition.t )
+			}
+			else
+			{
+				condition_in_register= self.CreateMoveToLLVMRegisterInstruction( condition, function_context );
+				self.CallDestructorsForTopVariablesFrame( names_scope, function_context, halt_if.src_loc );
+			}
+		} );
+
+	if( condition_in_register == LLVMValueRef::Null )
+	{
+		return BlockElementBuildInfo();
+	}
+
+	unsafe
+	{
+		auto true_block = LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		auto false_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+
+		LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, true_block, false_block );
+
+		// True branch
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, true_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, true_block );
+
+		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, g_null_string );
+		LLVMBuildUnreachable( function_context.llvm_ir_builder );
+
+		// False branch
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, false_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, false_block );
+	}
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : BlockElementBuildInfo
+{
+	if_var( &block_elements : ExpandBlockMixin( names_scope, function_context, mixin_ ) )
+	{
+		return BuildBlockElements( names_scope, function_context, block_elements );
+	}
+
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildEmptyReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
+{
+	if( !( function_context.function_type.return_type == void_type_ && function_context.function_type.return_value_type == ValueType::Value ) )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, function_context.function_type.return_type, void_type_ )
+		return;
+	}
+
+	CallDestructorsForAllVariablesFrames( names_scope, function_context, src_loc );
+
+	if( !function_context.reference_notation_deduction_context.empty() )
+	{
+		CollectReferencePollution( function_context );
+	}
+	else
+	{
+		CheckReferencesPollutionBeforeReturn( names_scope, function_context, src_loc );
+	}
+
+	if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
+	{
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block ) );
+	}
+	else
+	{
+		unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
+	}
+}
+
+fn CodeBuilder::AddLoopFrame(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	LLVMBasicBlockRef break_block,
+	LLVMBasicBlockRef continue_block,
+	ust::optional</Synt::Label/>& label_ )
+{
+	var LoopFrame mut loop_frame
+	{
+		.block_for_break= break_block,
+		.block_for_continue= continue_block,
+		.variable_frames_stack_size= function_context.variables_frames.size(),
+	};
+
+	if_var( &l : label_ )
+	{
+		if( IsKeyword( l.name ) )
+		{
+			REPORT_ERROR( UsingKeywordAsName, names_scope, l.src_loc )
+		}
+
+		foreach( &prev_frame : function_context.loops_stack )
+		{
+			if( prev_frame.name == l.name )
+			{
+				REPORT_ERROR( Redefinition, names_scope, l.src_loc, l.name )
+			}
+		}
+
+		loop_frame.name= l.name;
+	}
+
+	function_context.loops_stack.push_back( move(loop_frame) );
+}
+
+fn CodeBuilder::FetchLoopFrame(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::optional</Synt::Label/>& label_ ) : size_type
+{
+	if( function_context.loops_stack.empty() )
+	{
+		return ~0s;
+	}
+
+	var size_type mut frame_index(~0);
+	if_var( &l : label_ )
+	{
+		for( auto mut i= 0s; i < function_context.loops_stack.size(); ++i )
+		{
+			if( function_context.loops_stack[i].name == l.name )
+			{
+				frame_index= i;
+				break;
+			}
+		}
+
+		if( frame_index >= function_context.loops_stack.size() )
+		{
+			REPORT_ERROR( NameNotFound, names_scope, l.src_loc, l.name )
+		}
+
+		return frame_index;
+	}
+
+	// In case of "break" or "continue" without label skip non-loop frames (block frames, where only "break" is available).
+	var size_type mut index= function_context.loops_stack.size() - 1s;
+	loop
+	{
+		var bool is_loop_frame= function_context.loops_stack[index].block_for_continue != LLVMBasicBlockRef::Null;
+		if( is_loop_frame )
+		{
+			return index;
+		}
+
+		if( index == 0s )
+		{
+			break;
+		}
+		--index;
+	}
+	return ~0s;
+}
+
+fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta )
+{
+	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+	var VariableLite variable= variable_ptr;
+
+	if( variable.value_type != ValueType::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
+		return;
+	}
+	function_context.references_graph.EnsureHasNoOutgoingLinks( variable_ptr, names_scope, src_loc );
+
+	// Try process overloaded operator.
+	if( ! variable.t.GetClassType().empty() )
+	{
+		var [ VariableTypeExtended, 1 ] args
+		[ {
+			.t(variable.t),
+			.value_type= variable.value_type,
+		} ];
+
+		auto operator= ( delta == 1 ? OverloadedOperator::Increment : OverloadedOperator::Decrement );
+		if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
+		{
+			auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
+
+			if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+			{
+				function_context.has_non_constexpr_operations_inside= true;
+			}
+
+			with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+			{
+				lock.deref().referenced= true;
+			}
+
+			DoCallFunction(
+				names_scope,
+				function_context,
+				fetch_result[0],
+				overloaded_operator.t,
+				fetch_result[1],
+				false, // non-constexpr call.
+				ust::empty_range,
+				src_loc );
+			return;
+		}
+	}
+
+	if_var( &fundamental_type : variable.t.GetFundamentalType() )
+	{
+		// Process operator for fundamental type.
+		if( !IsInteger( fundamental_type.fundamental_type ) )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, variable.t )
+			return;
+		}
+
+		unsafe
+		{
+			auto operand_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+			auto one_value= LLVMConstInt( variable.t.GetLLVMType(), 1u64, LLVMBool::True );
+			auto result_value= ( delta > 0
+				? LLVMBuildAdd( function_context.llvm_ir_builder, operand_value, one_value, "++\0"[0] )
+				: LLVMBuildSub( function_context.llvm_ir_builder, operand_value, one_value, "--\0"[0] ) );
+			CreateTypedStore( function_context, variable.t, result_value, variable.llvm_value );
+		}
+	}
+	else if_var( &pointer_type : variable.t.GetRawPointerType() )
+	{
+		var Type& element_type= pointer_type.element_type;
+		if( !EnsureTypeComplete( element_type ) )
+		{
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
+			return;
+		}
+
+		// Pointer arithmetic considered to be unsafe, since overflow is undefined behavior.
+		if( !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( RawPointerArithmeticOutsideUnsafeBlock, names_scope, src_loc )
+		}
+
+		var LLVMValueRef pointer_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+		auto& op_name= ( delta > 0 ? "++\0" : "--\0" );
+		unsafe
+		{
+			var LLVMValueRef
+				mut delta_value= LLVMConstInt( fundamental_llvm_types_.size_type_, u64(i64(delta)), LLVMBool::True ),
+				result_value= LLVMBuildInBoundsGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), pointer_value, $<(delta_value), 1u, op_name[0] );
+			CreateTypedStore( function_context, variable.t, result_value, variable.llvm_value );
+		}
+	}
+	else
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, variable.t )
+		return;
+	}
+}
+
+// Return true, if root of expression is useless in single expression block element.
+// "useless" meant that expression root is useless, not whole expression.
+fn SingleExpressionIsUseless( Synt::Expression& expression ) : bool
+{
+	variant_visit( &el : expression )
+	{
+		return SingleExpressionIsUselessImpl(el);
+	}
+	halt;
+}
+
+template</type T/>
+fn SingleExpressionIsUselessImpl( ust::box</T/>& e ) : bool { return SingleExpressionIsUselessImpl(e.deref()); }
+
+fn SingleExpressionIsUselessImpl( Synt::EmptyVariant& e ) : bool { ust::ignore_unused( e ); return false; }
+// Calls generally are not useless. Useless may be constexpr calls.
+// But sometimes constexpr/non-constepxr call result may depend on template context.
+// So, in order to avoid generating too many errors, assume, that all calls are not useless.
+fn SingleExpressionIsUselessImpl( Synt::CallOperator& e ) : bool { ust::ignore_unused(e); return false; }
+// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
+fn SingleExpressionIsUselessImpl( Synt::IndexationOperator& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::MemberAccessOperator& e ) : bool { ust::ignore_unused(e); return true; }
+// It's useless to initialize new variable and not using it.
+fn SingleExpressionIsUselessImpl( Synt::VariableInitialization& e ) : bool { ust::ignore_unused(e); return true; }
+// Await operator is basically an operator for an async call.
+fn SingleExpressionIsUselessImpl( Synt::AwaitOperator& e ) : bool { ust::ignore_unused(e); return false; }
+fn SingleExpressionIsUselessImpl( Synt::UnaryMinus& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::LogicalNot& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::BitwiseNot& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::BinaryOperator& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::TernaryOperator& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::ReferenceToRawPointerOperator& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::RawPointerToReferenceOperator& e ) : bool { ust::ignore_unused(e); return true; }
+// Name resolving itself has no side effects.
+fn SingleExpressionIsUselessImpl( Synt::ComplexName& e ) : bool { ust::ignore_unused(e); return true; }
+// Simple constant expressions have no side effects.
+fn SingleExpressionIsUselessImpl( Synt::NumericConstant& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::BooleanConstant& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::StringLiteral& e ) : bool { ust::ignore_unused(e); return true; }
+// Move and take have side effects.
+fn SingleExpressionIsUselessImpl( Synt::MoveOperator& e ) : bool { ust::ignore_unused(e); return false; }
+fn SingleExpressionIsUselessImpl( Synt::TakeOperator& e ) : bool { ust::ignore_unused(e); return false; }
+// It's dumm to define lambda and do not use it.
+fn SingleExpressionIsUselessImpl( Synt::Lambda& e ) : bool { ust::ignore_unused(e); return true; }
+// Casts have no side effects.
+fn SingleExpressionIsUselessImpl( Synt::CastMut& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastImut& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastRef& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastRefUnsafe& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::Embed& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::Typeinfo& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::SameType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::NonSyncExpression& e ) : bool { ust::ignore_unused(e); return true; }
+// safe/unsafe expressions needs to be visited deeply.
+// safe/unsafe expression can't be discarded, because it has meaning.
+fn SingleExpressionIsUselessImpl( Synt::SafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression ); }
+fn SingleExpressionIsUselessImpl( Synt::UnsafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression ); }
+// Type names have no side-effects.
+fn SingleExpressionIsUselessImpl( Synt::ArrayType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::FunctionType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::TupleType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::RawPointerType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CoroutineType& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( ust::shared_ptr_final</Synt::Mixin/>& e ) : bool { ust::ignore_unused(e); return true; }
+
+type SwitchCaseValues= ust::vector</SwitchCaseRange/>;
+
+struct SwitchCaseRange
+{
+	// TODO - support 128-bit types.
+	u64 low;
+	u64 high;
+	SrcLoc src_loc;
+}
+
+} // namespace U1

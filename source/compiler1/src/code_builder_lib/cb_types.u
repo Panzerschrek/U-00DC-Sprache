@@ -1,0 +1,462 @@
+import "/sort.u"
+import "/scoped_array.u"
+import "/CodeBuilderLib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name ) : Type
+{
+	variant_visit( &t : type_name )
+	{
+		return PrepareTypeImpl( names_scope, function_context, t );
+	}
+
+	halt;
+}
+
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_type ) : Type
+{
+	var Value resolved_value= ResolveValue( names_scope, function_context, named_type );
+	if_var( & t : resolved_value.get</Type/>() )
+	{
+		return t;
+	}
+
+	REPORT_ERROR( NameIsNotTypeName, names_scope, Synt::GetSrcLoc(named_type), GetValueKindName(resolved_value) )
+	return Type( FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ) );
+}
+
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ArrayType& array_type ) : Type
+{
+	var Type mut element_type= PrepareType( names_scope, function_context, array_type.element_type );
+
+	var u64 mut element_count(0);
+
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
+
+			auto state= SaveFunctionContextState( function_context );
+			with( &index_variable: self.BuildExpressionCodeEnsureVariable( names_scope, function_context, array_type.element_count ).lock_imut().deref() )
+			{
+				if( index_variable.constexpr_value != LLVMValueRef::Null )
+				{
+					{
+						if_var( &fundamental_type : index_variable.t.GetFundamentalType() )
+						{
+							if( IsInteger( fundamental_type.fundamental_type ) )
+							{
+								if( IsSignedInteger( fundamental_type.fundamental_type ) )
+								{
+									auto s= unsafe( LLVMConstIntGetSExtValue( index_variable.constexpr_value ) );
+									if( s >= 0i64 )
+									{
+										element_count= u64(s);
+									}
+									else
+									{
+										element_count= 0u64;
+										REPORT_ERROR( ArraySizeIsNegative, names_scope, array_type.src_loc  )
+									}
+								}
+								else
+								{
+									element_count= unsafe( LLVMConstIntGetZExtValue( index_variable.constexpr_value ) );
+								}
+								break label integer_check;
+							}
+						}
+						REPORT_ERROR( ArraySizeIsNotInteger, names_scope, array_type.src_loc )
+
+					} label integer_check
+				}
+				else
+				{
+					REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.src_loc )
+				}
+			}
+
+			RestoreFunctionContextState( function_context, state );
+
+			function_context.is_functionless_context= prev_is_functionless_context;
+		} );
+
+	return ArrayType
+	{
+		.llvm_type= unsafe( LLVMArrayType( element_type.GetLLVMType(), u32(element_count) ) ),
+		.element_type= move(element_type),
+		.element_count= element_count,
+	};
+}
+
+
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Type
+{
+	var TupleType mut out_tuple_type;
+
+	foreach( & element : tuple_type.elements )
+	{
+		out_tuple_type.element_types.push_back( PrepareType( names_scope, function_context, element ) );
+	}
+
+	scoped_array LLVMTypeRef mut element_llvm_types[ out_tuple_type.element_types.size() ]( out_tuple_type.element_types.iter().map( Type::GetLLVMType ) );
+
+	out_tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
+
+	return out_tuple_type;
+}
+
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerType& raw_pointer_type ) : Type
+{
+	var RawPointerType mut out_type{ .element_type = PrepareType( names_scope, function_context, raw_pointer_type.element_type ) };
+	out_type.llvm_type= unsafe( LLVMPointerType( out_type.element_type.GetLLVMType(), 0u ) );
+
+	return out_type;
+}
+
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type
+{
+	if( function_type.IsAutoReturn() )
+	{
+		REPORT_ERROR( AutoForFunctionTypeReturnType, names_scope, function_type.src_loc )
+	}
+
+	var FunctionType mut res= PrepareFunctionType( names_scope, function_context, function_type, ust::shared_ptr_nullable_mut</ClassType/>() );
+	return FunctionTypeToPointer( move(res) );
+}
+
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CoroutineType& coroutine_type ) : Type
+{
+	var CoroutineTypeDescription mut coroutine_type_description
+	{
+		.kind= coroutine_type.kind,
+		.return_type= PrepareType( names_scope, function_context, coroutine_type.return_type ),
+		.return_value_type= ( coroutine_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference
+			? ( coroutine_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
+				? ValueType::ReferenceMut
+				: ValueType::ReferenceImut )
+			: ValueType::Value ),
+		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type.non_sync_tag ),
+		.inner_references=
+			coroutine_type.inner_reference_tags.iter()
+			.map(
+				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
+				{
+					return ( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
+				} )
+			.collect</ ust::vector/>()
+	};
+
+	if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, coroutine_type.src_loc  ) )
+	{
+		REPORT_ERROR( CoroutineNonSyncRequired, names_scope, coroutine_type.src_loc )
+	}
+
+	auto num_params= 1s;
+	if_var( &return_value_reference_expression : coroutine_type.return_value_reference_expression )
+	{
+		coroutine_type_description.return_references= EvaluateFunctionReturnReferences( names_scope, function_context, return_value_reference_expression, num_params );
+	}
+	if_var( &return_value_inner_references_expression : coroutine_type.return_value_inner_references_expression )
+	{
+		coroutine_type_description.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, function_context, return_value_inner_references_expression, num_params );
+	}
+
+	// For now there is no reason to process reference tag.
+	// Assume, that if generator returns a reference, it points to single possible reference tag - inner reference tag.
+	return GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );
+}
+
+fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Type
+{
+	if_var( &type_name : ExpandTypeNameMixin( names_scope, function_context, mixin_ ) )
+	{
+		return PrepareType( names_scope, function_context, type_name );
+	}
+
+	return invalid_type_; // An error should be generated earlier.
+}
+
+fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType
+{
+	var FunctionType mut res
+	{
+		.return_type(
+			( function_type.return_type.empty() || function_type.IsAutoReturn()
+				? Type( void_type_ )
+				: PrepareType( names_scope, function_context, function_type.return_type.try_deref() ) ) ),
+		.return_value_type= ValueType::Value,
+		.is_unsafe= function_type.is_unsafe,
+		.calling_convention= GetLLVMCallingConvention( function_type.calling_convention, names_scope, function_type.src_loc ),
+	};
+
+	if( function_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference )
+	{
+		res.return_value_type= ( function_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+	}
+
+	foreach( &param : function_type.params )
+	{
+		var FunctionType::Param mut out_param
+		{
+			.t( invalid_type_ ),
+			.value_type= ValueType::Value,
+		};
+
+		if( param.reference_modifier == Synt::ReferenceModifier::Reference )
+		{
+			out_param.value_type= ( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		}
+
+		if( param.name == KeywordToString( Keyword::this_ ) )
+		{
+			if( class_type.empty() )
+			{
+				REPORT_ERROR( ThisInNonclassFunction, names_scope, param.src_loc )
+			}
+			else if( ust::ref_cmp_ne( param, function_type.params.front() ) )
+			{
+				REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
+			}
+			else
+			{
+				auto mut param_ok= false;
+				if_var( &param_type_complex_name : param.t.get</Synt::ComplexName/>() )
+				{
+					if_var( &name_lookup : param_type_complex_name.get</Synt::NameLookup/>() )
+					{
+						param_ok= name_lookup.name.empty();
+					}
+				}
+				if( !param_ok )
+				{
+					REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
+				}
+
+				out_param.t= class_type.try_to_non_nullable();
+			}
+		}
+		else
+		{
+			if( IsKeyword( param.name ) )
+			{
+				REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
+			}
+
+			out_param.t= PrepareType( names_scope, function_context, param.t );
+		}
+
+		res.params.push_back( move(out_param) );
+	}
+
+	auto num_params= res.params.size();
+	if_var( &references_pollution_expression : function_type.references_pollution_expression )
+	{
+		res.references_pollution= EvaluateFunctionReferencePollution( names_scope, function_context, references_pollution_expression, num_params );
+	}
+	if_var( &return_value_reference_expression : function_type.return_value_reference_expression )
+	{
+		res.return_references= EvaluateFunctionReturnReferences( names_scope, function_context, return_value_reference_expression, num_params );
+	}
+	if_var( &return_value_inner_references_expression : function_type.return_value_inner_references_expression )
+	{
+		res.return_inner_references= EvaluateFunctionReturnInnerReferences( names_scope, function_context, return_value_inner_references_expression, num_params );
+	}
+
+	// Generate mapping of input references to output references if return reference notation is not specified.
+	// Assume that immutable return reference may point to any reference param and mutable return reference only to mutable reference params.
+	if( res.return_value_type != ValueType::Value &&
+		function_type.return_value_reference_expression.empty() &&
+		function_type.return_value_inner_references_expression.empty() )
+	{
+		for( auto mut i= 0s; i < res.params.size(); ++i )
+		{
+			if( ( res.return_value_type == ValueType::ReferenceImut && res.params[i].value_type != ValueType::Value ) ||
+				( res.return_value_type == ValueType::ReferenceMut  && res.params[i].value_type == ValueType::ReferenceMut ) )
+			{
+				res.return_references.push_back( FunctionType::ParamReference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number } );
+			}
+		}
+		ust::sort( res.return_references );
+	}
+
+	return res;
+}
+
+fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef
+{
+	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
+
+	if( function_type.ReturnsCompositeValue() )
+	{
+		EnsureTypeComplete( function_type.return_type );
+	}
+
+	var bool is_s_ret= FunctionTypeIsSRet( function_type );
+	if( is_s_ret )
+	{
+		llvm_param_types.push_back( unsafe( LLVMPointerType( function_type.return_type.GetLLVMType(), 0u ) ) );
+	}
+
+	var LLVMTypeRef mut ret_llvm_type= function_type.return_type.GetLLVMType();
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		if( function_type.return_type == void_type_ )
+		{
+			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
+		}
+		else if( function_type.ReturnsCompositeValue() )
+		{
+			var LLVMTypeRef single_scalar_type= GetSingleScalarType( ret_llvm_type );
+			if( single_scalar_type != LLVMTypeRef::Null )
+			{
+				ret_llvm_type= single_scalar_type;
+			}
+			else
+			{
+				ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
+			}
+		}
+	}
+	else
+	{
+		ret_llvm_type= unsafe( LLVMPointerType( ret_llvm_type, 0u ) );
+	}
+
+	foreach( &param : function_type.params )
+	{
+		var LLVMTypeRef mut llvm_type= param.t.GetLLVMType();
+		if( param.value_type == ValueType::Value )
+		{
+			if( EnsureTypeComplete( param.t ) )
+			{
+				if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
+				{
+					var LLVMTypeRef single_scalar_type= GetSingleScalarType( param.t.GetLLVMType() );
+					if( single_scalar_type != LLVMTypeRef::Null )
+					{
+						// Pass composite types with single scalar inside in register, using type of this scalar.
+						llvm_type= single_scalar_type;
+					}
+					else
+					{
+						// Pass aggregate types by-reference.
+						llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
+					}
+				}
+			}
+		}
+		else
+		{
+			llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
+		}
+
+		llvm_param_types.push_back( llvm_type );
+	}
+
+	return unsafe( LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool::False ) );
+}
+
+fn CodeBuilder::FunctionTypeToPointer( mut this, FunctionType mut function_type ) : FunctionPointerType
+{
+	return FunctionPointerType
+	{
+		.function_type= move(function_type),
+		.llvm_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) )
+	};
+}
+
+fn CodeBuilder::GetLLVMCallingConvention(
+	this,
+	ust::optional</ust::string8/>& calling_convention_name,
+	NamesScopePtr& names_scope,
+	SrcLoc& src_loc ) : LLVMCallConvID
+{
+	if( calling_convention_name.empty() )
+	{
+		return LLVMCallConv::C;
+	}
+
+	var ust::string8& cc= calling_convention_name.try_deref();
+
+	if( cc == "C" ||
+		cc == "default" ||
+		cc == "Ü" )
+	{
+		return LLVMCallConv::C;
+	}
+
+	if( cc == "fast" )
+	{
+		return LLVMCallConv::Fast;
+	}
+
+	if( cc == "cold" )
+	{
+		return LLVMCallConv::Cold;
+	}
+
+	if( cc == "system" )
+	{
+		if( target_triple_str_ == "i686-pc-windows-gnu\0" ||
+			target_triple_str_ == "i686-pc-windows-msvc\0" )
+		{
+			return LLVMCallConv::X86Stdcall;
+		}
+
+		return LLVMCallConv::C;
+	}
+
+	REPORT_ERROR( UnknownCallingConvention, names_scope, src_loc, cc )
+	return LLVMCallConv::C;
+}
+
+fn CodeBuilder::FunctionTypeIsSRet( FunctionType& function_type ) : bool
+{
+	return
+		function_type.ReturnsCompositeValue() &&
+		GetSingleScalarType( function_type.return_type.GetLLVMType() ) == LLVMTypeRef::Null;
+}
+
+fn CodeBuilder::GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
+{
+	loop
+	{
+		var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
+		if( t_kind == LLVMTypeKind::Struct && unsafe( LLVMCountStructElementTypes( t ) ) == 1u )
+		{
+			t= unsafe( LLVMStructGetTypeAtIndex( t, 0u ) );
+			continue;
+		}
+		if( t_kind == LLVMTypeKind::Array && unsafe( LLVMGetArrayLength( t ) ) == 1u )
+		{
+			t= unsafe( LLVMGetElementType( t ) );
+			continue;
+		}
+
+		break; // Not a composite.
+	}
+
+	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
+	if( t_kind == LLVMTypeKind::Half ||
+		t_kind == LLVMTypeKind::Float ||
+		t_kind == LLVMTypeKind::Double ||
+		t_kind == LLVMTypeKind::X86_FP80 ||
+		t_kind == LLVMTypeKind::P128 ||
+		t_kind == LLVMTypeKind::PPC_FP128 ||
+		t_kind == LLVMTypeKind::Integer ||
+		t_kind == LLVMTypeKind::Pointer )
+	{
+		return t;
+	}
+
+	return LLVMTypeRef::Null;
+}
+
+} // namespace U1

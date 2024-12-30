@@ -1,0 +1,21 @@
+import "/string.u"
+
+namespace U1
+{
+
+enum CodeBuilderErrorCode
+{
+
+@CODE_BUILDER_ERRORS_LIST@
+
+}
+
+fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::string_view8
+{
+	switch(e)
+	{
+		@ERROR_CODE_TO_STRING_LIST@
+	}
+}
+
+} // namespace U1

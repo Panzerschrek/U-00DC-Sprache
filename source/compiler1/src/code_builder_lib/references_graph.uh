@@ -1,0 +1,91 @@
+import "/unordered_set.u"
+import "code_builder_errors.uh"
+import "structs_combined.uh"
+
+namespace U1
+{
+
+class ReferencesGraph
+{
+public:
+	fn constructor( mut this, ReferencesGraph& other )= default;
+	op=( mut this, ReferencesGraph& other )= default;
+
+public:
+	fn AddNode( mut this, VariablePtr& node );
+	fn AddNodeIfNotExists( mut this, VariablePtr& node );
+
+	fn RemoveNode( mut this, VariablePtr& node );
+	fn AddLink( mut this, VariablePtr& from, VariablePtr& to );
+
+	// Produces error in case if this link violates reference protection rules.
+	fn TryAddLink( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	// Destination should contain no more inner references than source.
+	fn TryAddInnerLinks( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	// Create inner links between tuple node and tuple element node.
+	// "from" shold be tuple.
+	fn TryAddInnerLinksForTupleElement( mut this, VariablePtr& from, VariablePtr& to, size_type element_index, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	// Create inner links between class node and class field node.
+	// "from" shold be class.
+	fn TryAddInnerLinksForClassField( mut this, VariablePtr& from, VariablePtr& to, ClassField& field, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	fn MoveNode( mut this, VariablePtr& node );
+	fn NodeIsMoved( this, VariablePtr& node ) : bool;
+
+	fn HasOutgoingLinks( this, VariablePtr& from ) : bool;
+	fn HasOutgoingMutableNodes( this, VariablePtr& from ) : bool;
+
+	fn EnsureHasNoOutgoingLinks( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
+	fn EnsureHasNoOutgoingMutableNodes( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	type NodesSet= ust::unordered_set</VariablePtr/>;
+	fn GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet;
+	fn GetNodeInputLinks( this, VariablePtr& node ) : NodesSet;
+
+	fn GetAllAccessibleNonInnerNodes( this, VariablePtr& node ) : NodesSet;
+
+	// Recursively search references graph starting from "to" in order to reach inner reference node of some variable.
+	// Than create link between "from" and this node.
+	fn TryAddLinkToAllAccessibleVariableNodesInnerReferences( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, ErrorsContainer &mut errors, SrcLoc& src_loc ) : ReferencesGraph;
+	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, ErrorsContainer &mut errors, SrcLoc& src_loc );
+
+private:
+	fn GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut out_nodes );
+
+	fn HasDirectOutgoingLinks( this, VariablePtr& from ) : bool;
+	fn HasOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr& from ) : bool;
+
+	fn HasDirectOutgoingMutableNodes( this, VariablePtr& from ) : bool;
+	fn HasOutgoingMutableNodesIncludingChildrenNodes_r( this, VariablePtr& from ) : bool;
+
+	fn GetAllAccessibleNonInnerNodes_r( this VariablePtr& node, NodesSet &mut result_set );
+
+	fn TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
+
+	fn RemoveNodeLinks( mut this, VariablePtr& node );
+
+private:
+	struct NodeState
+	{
+		bool moved;
+	}
+
+	struct Link
+	{
+		VariablePtr src;
+		VariablePtr dst;
+	}
+
+private:
+	ust::unordered_map</VariablePtr, NodeState/> nodes_;
+
+	// Should NOT contain duplicates. // TODO - use sometthing like unordered_set.
+	ust::vector</Link/> links_;
+}
+
+} // namespace U1

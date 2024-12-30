@@ -327,7 +327,13 @@ void InternalizeHiddenSymbols( llvm::Module& module )
 			if( !v.isDeclaration() && v.getVisibility() == llvm::GlobalValue::HiddenVisibility )
 			{
 				v.setLinkage( llvm::GlobalValue::PrivateLinkage );
-				v.setComdat( nullptr );
+				if( const auto comdat = v.getComdat() )
+				{
+					v.setComdat( nullptr );
+					// HACK! LLVM Doesn't remove unused comdat. Make this manually.
+					if( comdat->getName() == v.getName() )
+						v.getParent()->getComdatSymbolTable().erase( comdat->getName() );
+				}
 			}
 		};
 
@@ -379,7 +385,13 @@ void InternalizeCollectedSymbols( llvm::Module& module, const ExternalSymbolsInf
 		if( const auto function= module.getFunction( function_name ) )
 		{
 			function->setLinkage( llvm::GlobalValue::PrivateLinkage );
-			function->setComdat( nullptr );
+			if( const auto comdat = function->getComdat() )
+			{
+				function->setComdat( nullptr );
+				// HACK! LLVM Doesn't remove unused comdat. Make this manually.
+				if( comdat->getName() == function->getName() )
+					function->getParent()->getComdatSymbolTable().erase( comdat->getName() );
+			}
 		}
 	}
 
@@ -388,7 +400,13 @@ void InternalizeCollectedSymbols( llvm::Module& module, const ExternalSymbolsInf
 		if( const auto variable= module.getGlobalVariable( variable_name ) )
 		{
 			variable->setLinkage( llvm::GlobalValue::PrivateLinkage );
-			variable->setComdat( nullptr );
+			if( const auto comdat = variable->getComdat() )
+			{
+				variable->setComdat( nullptr );
+				// HACK! LLVM Doesn't remove unused comdat. Make this manually.
+				if( comdat->getName() == variable->getName() )
+					variable->getParent()->getComdatSymbolTable().erase( comdat->getName() );
+			}
 		}
 	}
 }

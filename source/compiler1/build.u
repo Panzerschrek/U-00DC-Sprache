@@ -1,0 +1,433 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	auto& lib_name= "CodeBuilderLib";
+	var ust::string8 generated_sources_directory= build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( lib_name );
+
+	auto& keywords_file= "keywords.uh";
+	var ust::string8 mut keywords_generated_file= ust::concat( generated_sources_directory, "/", keywords_file );
+
+	var BK::CustomBuildStep mut keywords_step
+	{
+		.output_files= ust::make_array( keywords_generated_file ),
+		.command= BK::CustomBuildStep::GenerateFileCommand
+		{
+			.destination_path= move(keywords_generated_file),
+			.contents= CreateKeywordsHeaderFileContents()
+		},
+		.comment= keywords_file,
+	};
+
+	auto& code_builder_error_code_file= "code_builder_error_code.uh";
+	var ust::string8 mut code_builder_error_code_generated_file=
+		ust::concat( generated_sources_directory, "/", code_builder_error_code_file );
+
+	var BK::CustomBuildStep mut code_builder_error_code_step
+	{
+		.output_files= ust::make_array( code_builder_error_code_generated_file ),
+		.command= BK::CustomBuildStep::GenerateFileCommand
+		{
+			.destination_path= move(code_builder_error_code_generated_file),
+			.contents= CreateCodeBuilderErrorCodeFileContents()
+		},
+		.comment= code_builder_error_code_file,
+	};
+
+	var BK::BuildTarget mut code_builder_lib_build_target
+	{
+		.target_type = BK::BuildTargetType::ObjectFile,
+		.name= lib_name,
+		.public_include_directories= ust::make_array</ust::string8/>( "imports" ),
+		.generated_private_header_files= ust::make_array</ust::string8/>( keywords_file, code_builder_error_code_file ),
+	};
+
+	var [ ust::string_view8, 42 ] source_files
+	[
+		"code_builder_lib/cb_block_elements.u",
+		"code_builder_lib/cb_coroutines.u",
+		"code_builder_lib/cb_expressions.u",
+		"code_builder_lib/cb_global_things_build.u",
+		"code_builder_lib/cb_initializers.u",
+		"code_builder_lib/cb_lambdas.u",
+		"code_builder_lib/cb_method_gen.u",
+		"code_builder_lib/cb_mixins.u",
+		"code_builder_lib/cb_names_scope_build.u",
+		"code_builder_lib/cb_names_scope_fill.u",
+		"code_builder_lib/cb_names_scope_merge.u",
+		"code_builder_lib/cb_non_sync.u",
+		"code_builder_lib/cb_overloading_resolution.u",
+		"code_builder_lib/cb_reference_checking.u",
+		"code_builder_lib/cb_reference_notation.u",
+		"code_builder_lib/cb_resolve.u",
+		"code_builder_lib/cb_templates.u",
+		"code_builder_lib/cb_typeinfo.u",
+		"code_builder_lib/cb_types.u",
+		"code_builder_lib/cb_virtual.u",
+		"code_builder_lib/code_builder.u",
+		"code_builder_lib/constexpr_function_evaluator.u",
+		"code_builder_lib/debug_info_builder.u",
+		"code_builder_lib/error_reporting.u",
+		"code_builder_lib/function_context.u",
+		"code_builder_lib/lang_types.u",
+		"code_builder_lib/mangling_itanium_abi.u",
+		"code_builder_lib/mangling_msvc.u",
+		"code_builder_lib/mixins.u",
+		"code_builder_lib/references_graph.u",
+		"code_builder_lib/source_file_contents_hash_wrapper.u",
+		"code_builder_lib/structs_combined.u",
+		"code_builder_lib/tbaa_metadata_builder.u",
+		"launchers_common/funcs_u.u",
+		"lex_synt_lib/keywords.u",
+		"lex_synt_lib/lexical_analyzer.u",
+		"lex_synt_lib/operators.u",
+		"lex_synt_lib/program_string.u",
+		"lex_synt_lib/source_graph.u",
+		"lex_synt_lib/src_loc.u",
+		"lex_synt_lib/syntax_analyzer.u",
+		"lex_synt_lib/syntax_elements.u",
+	];
+
+	foreach( &f : source_files )
+	{
+		code_builder_lib_build_target.source_files.push_back( ust::concat( "src/", f ) );
+	}
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(code_builder_lib_build_target) ),
+		.custom_build_steps= ust::make_array( move(keywords_step), move(code_builder_error_code_step) ),
+	};
+}
+
+fn CreateKeywordsHeaderFileContents() : ust::string8
+{
+	var ust::string8 mut contents;
+	contents+= "import \"/string.u\"\n\n";
+	contents+= "namespace U1\n{\n\n";
+
+	contents+= "enum Keyword\n{\n";
+
+	foreach( &keyword : GetKeywordsList() )
+	{
+		contents+= "\t";
+		contents+= keyword;
+		contents+= "_";
+		contents+= ",\n";
+	}
+
+	contents+= "}\n\n";
+
+	contents+= "fn IsKeyword( ust::string_view8& str ) : bool;\n";
+	contents+= "fn KeywordToString( Keyword k ) : ust::string_view8;\n\n";
+
+	contents+= "} // namespace U1\n";
+
+	return contents;
+}
+
+fn GetKeywordsList() : ust::vector</ust::string8/>
+{
+	// Embed keywords list into the build script directly.
+	var ust::string_view8 keywords_list= embed</char8/>( "keywords_list.txt" );
+
+	var ust::vector</ust::string8/> mut out_keywords;
+
+	var size_type mut word_start= 0s;
+	for( auto mut i= 0s; i < keywords_list.size(); ++i )
+	{
+		var char8 c= keywords_list[i];
+		if( c == "\n"c8 || c == "\r"c8 )
+		{
+			if( i - word_start > 1s )
+			{
+				out_keywords.push_back( keywords_list.subrange( word_start, i ) );
+			}
+			word_start= i + 1s;
+		}
+	}
+	if( keywords_list.size() - word_start > 1s )
+	{
+		out_keywords.push_back( keywords_list.subrange_start( word_start ) );
+	}
+
+	return out_keywords;
+}
+
+fn CreateCodeBuilderErrorCodeFileContents() : ust::string8
+{
+	auto errors_list= GetCodeBuilderErrors();
+
+	var ust::string8 mut contents;
+	contents+= "import \"/string.u\"\n";
+	contents+= "\n";
+	contents+= "namespace U1\n{\n\n";
+	contents+= "enum CodeBuilderErrorCode\n{\n";
+
+	foreach( &error : errors_list )
+	{
+		contents+= "\t";
+		contents+= error.code;
+		contents+= ",\n";
+	}
+
+	contents+= "}\n\n";
+
+	contents+= "fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::string_view8\n";
+	contents+= "{\n";
+	contents+= "\tswitch( e )\n";
+	contents+= "\t{\n";
+
+	foreach( &error : errors_list )
+	{
+		contents+= "\tCodeBuilderErrorCode::";
+		contents+= error.code;
+		contents+= " -> { return ";
+		contents+= MakeStringLiteral( error.message );
+		contents+= "; },\n";
+	}
+
+	contents+= "\t}\n";
+	contents+= "}\n\n";
+
+	contents+= "} // namespace U1\n";
+
+	return contents;
+}
+
+struct CodeBuilderError
+{
+	ust::string8 code;
+	ust::string8 message;
+}
+
+fn GetCodeBuilderErrors() : ust::vector</CodeBuilderError/>
+{
+	var ust::vector</CodeBuilderError/> mut out_errors;
+
+	// Embed errors list into the build script directly.
+	var ust::string_view8 mut file_contents= embed</char8/>( "errors_list.hpp" );
+	loop
+	{
+		auto mut e= ParseNextCodeBuilderError( file_contents );
+		if( e.empty() )
+		{
+			break;
+		}
+		out_errors.push_back( e.try_take() );
+	}
+
+	return out_errors;
+}
+
+fn ParseNextCodeBuilderError( ust::string_view8 &mut s ) : ust::optional</CodeBuilderError/>
+{
+	SkipWhitespaceAndCPPComments( s );
+
+	var ust::string_view8 start_token= "PROCESS_ERROR";
+	loop
+	{
+		if( s.size() < start_token.size() )
+		{
+			return ust::null_optional;
+		}
+		if( s.subrange_end( start_token.size() ) == start_token )
+		{
+			s= s.subrange_start( start_token.size() );
+			break;
+		}
+		s.drop_front();
+	}
+
+	SkipWhitespaceAndCPPComments( s );
+
+	if( s.empty() || s.front() != "("c8 )
+	{
+		return ust::null_optional;
+	}
+	s.drop_front();
+
+	SkipWhitespaceAndCPPComments( s );
+
+	auto mut code= ParseCPPIdentifier( s );
+	if( code == ust::null_optional )
+	{
+		return ust::null_optional;
+	}
+
+	SkipWhitespaceAndCPPComments( s );
+
+	if( s.empty() || s.front() != ","c8 )
+	{
+		return ust::null_optional;
+	}
+	s.drop_front();
+
+	SkipWhitespaceAndCPPComments( s );
+
+	auto mut message= ParseCPPString( s );
+	if( message.empty() )
+	{
+		return ust::null_optional;
+	}
+
+	return CodeBuilderError{ .code= code.try_take(), .message= message.try_take() };
+}
+
+// Parse C++-like identifier.
+fn ParseCPPIdentifier( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
+{
+	var ust::string8 mut res;
+
+	if( s.empty() || !IsCPPIdentifierStartChar( s.front() ) )
+	{
+		return ust::null_optional;
+	}
+	res.push_back( s.drop_and_get_front() );
+
+	while( !s.empty() )
+	{
+		var char8 c= s.front();
+		if( IsCPPIdentifierChar( c ) )
+		{
+			res.push_back(c);
+			s.drop_front();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return move(res);
+}
+
+fn IsCPPIdentifierStartChar( char8 c ) : bool
+{
+	return ( c >= "a"c8 && c <= "z"c8 ) || ( c >= "A"c8 && c <= "Z"c8 );
+}
+
+fn IsCPPIdentifierChar( char8 c ) : bool
+{
+	return IsCPPIdentifierStartChar( c ) || ( c >= "0"c8 && c <= "9"c8 );
+}
+
+// Parse C++-like string syntax.
+fn ParseCPPString( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
+{
+	if( s.empty() || s.front() != "\""c8 )
+	{
+		return ust::null_optional;
+	}
+	s.drop_front();
+
+	var ust::string8 mut res;
+	while( !s.empty() )
+	{
+		var char8 c= s.front();
+		if( c == "\""c8 )
+		{
+			s.drop_front();
+			break;
+		}
+		else if( c == "\\"c8 )
+		{
+			s.drop_front();
+			if( s.empty() )
+			{
+				break;
+			}
+			var char8 c2= s.drop_and_get_front();
+			switch( c2 )
+			{
+				"\""c8 -> { res.push_back( "\""c8 ); },
+				"\\"c8 -> { res.push_back( "\""c8 ); },
+				"t"c8 -> { res.push_back( "\t"c8 ); },
+				"n"c8 -> { res.push_back( "\n"c8 ); },
+				"r"c8 -> { res.push_back( "\r"c8 ); },
+				"f"c8 -> { res.push_back( "\f"c8 ); },
+				"b"c8 -> { res.push_back( "\b"c8 ); },
+				default -> { res.push_back( c2 ); },
+			}
+		}
+		else
+		{
+			res.push_back( c );
+			s.drop_front();
+		}
+	}
+
+	return move(res);
+}
+
+fn SkipWhitespaceAndCPPComments( ust::string_view8 &mut s )
+{
+	loop
+	{
+		SkipWhitespace( s );
+
+		if( s.size() >= 2s )
+		{
+			if( s[0s] == "/"c8 && s[1s] == "/"c8 )
+			{
+				s.drop_front();
+				s.drop_front();
+				while( !s.empty() && s.front() != "\n"c8 )
+				{
+					s.drop_front();
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+fn SkipWhitespace( ust::string_view8 &mut s )
+{
+	while( !s.empty() )
+	{
+		var char8 c= s.front();
+		if( c == " "c8 || c == "\t"c8 || c == "\n"c8 || c == "\r"c8 )
+		{
+			s.drop_front();
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
+// Makes Ü string literal from given sting - adds "", escapes symbols if necessary.
+fn MakeStringLiteral( ust::string_view8 s ) : ust::string8
+{
+	var ust::string8 mut res;
+	res.push_back( "\""c8 );
+
+	foreach( c : s )
+	{
+		switch( c )
+		{
+			"\""c8 -> { res+= "\\\""; },
+			"\\"c8 -> { res+= "\\\\"; },
+			"\n"c8 -> { res+= "\\n"; },
+			"\r"c8 -> { res+= "\\r"; },
+			"\t"c8 -> { res+= "\\t"; },
+			"\f"c8 -> { res+= "\\f"; },
+			"\b"c8 -> { res+= "\\b"; },
+			"\0"c8 -> { res+= "\\0"; },
+			default -> { res.push_back(c); },
+		}
+	}
+
+	res.push_back( "\""c8 );
+
+	return res;
+}

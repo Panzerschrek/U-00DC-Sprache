@@ -5,6 +5,7 @@ fn nomangle close( i32 ü__fd ) unsafe : i32;
 fn nomangle dlerror() unsafe : $(char8);
 fn nomangle dlopen( $(char8) ü__file, i32 ü__mode ) unsafe : $(byte8);
 fn nomangle dlsym( $(byte8) ü__handle, $(char8) ü__name ) unsafe : $(byte8);
+fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe : i32;
 fn nomangle getcwd( $(char8) ü__buf, size_t ü__size ) unsafe : $(char8);
 fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe : i32;
@@ -88,6 +89,10 @@ type ü__time_t = i64;
 
 auto constexpr EEXIST = 17;
 auto constexpr ERANGE = 34;
+
+auto constexpr FD_CLOEXEC = 1;
+
+auto constexpr F_SETFD = 2;
 
 auto constexpr O_RDONLY = 0;
 auto constexpr O_WRONLY = 1;

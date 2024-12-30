@@ -13,7 +13,7 @@ enum class CodeBuilderErrorCode : uint8_t // Make uint16_t if 255 values will be
 {
 	// WARNING! Values of this enum must be equal to same values in Ü compiler1.
 	#define PROCESS_ERROR( Code, Message ) Code,
-	#include "../errors_list.hpp"
+	#include "../compiler1/errors_list.hpp"
 	#undef PROCESS_ERROR
 };
 

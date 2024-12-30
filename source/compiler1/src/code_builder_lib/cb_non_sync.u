@@ -1,0 +1,243 @@
+import "/CodeBuilderLib/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::GetTypeNonSync( mut this, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool
+{
+	var size_type mut loop_start= non_sync_expression_stack_.size();
+	for( auto mut i= 0s; i < non_sync_expression_stack_.size(); ++i )
+	{
+		if( t == non_sync_expression_stack_[i] )
+		{
+			loop_start= i;
+			break;
+		}
+	}
+
+	if( loop_start < non_sync_expression_stack_.size() )
+	{
+		var ust::string8 mut description;
+
+		for( auto mut i= loop_start; i < non_sync_expression_stack_.size(); ++i )
+		{
+			description += KeywordToString( Keyword::non_sync_ );
+			description += "</";
+			description += non_sync_expression_stack_[i].ToString();
+			description += "/>";
+			description += " -> ";
+		}
+
+		description += KeywordToString( Keyword::non_sync_ );
+		description += "</";
+		description += t.ToString();
+		description += "/>";
+
+		auto mut errors_container_lock= root_errors_container_.try_lock_mut();
+
+		errors_container_lock.deref().push_back(
+			ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, src_loc, description ) );
+
+		return false;
+	}
+
+	non_sync_expression_stack_.push_back(t);
+
+	var ust::vector</Type/> mut types_stack;
+	var bool result= GetTypeNonSyncImpl( types_stack, t, names_scope, src_loc );
+
+	non_sync_expression_stack_.drop_back();
+	return result;
+}
+
+fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_types_stack, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool
+{
+	// Simple non-recursive types without "non_sync" tag.
+	if( !t.GetFundamentalType().empty() ||
+		!t.GetRawPointerType().empty() ||
+		!t.GetFunctionPointerType().empty() ||
+		!t.GetEnumType().empty() )
+	{
+		return false;
+	}
+
+	// Break recursive dependency. It is fine, since "x = y || x" is equivalent to " x = y || false".
+	foreach( &prev_type : prev_types_stack )
+	{
+		if( t == prev_type )
+		{
+			return false;
+		}
+	}
+
+	// Do not forget to call "drop_back" before return!
+	prev_types_stack.push_back( t );
+
+	if_var( &array_type : t.GetArrayType() )
+	{
+		var bool is_non_sync= GetTypeNonSyncImpl( prev_types_stack, array_type.element_type, names_scope, src_loc );
+		prev_types_stack.drop_back();
+		return is_non_sync;
+	}
+
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( GetTypeNonSyncImpl( prev_types_stack, element_type, names_scope, src_loc ) )
+			{
+				prev_types_stack.drop_back();
+				return true;
+			}
+		}
+
+		prev_types_stack.drop_back();
+		return false;
+	}
+
+	if_var( &class_type : t.GetClassType() )
+	{
+		// Check non_sync tag existence first.
+		auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
+		if_var( &syntax_element : syntax_element_ptr )
+		{
+			if( syntax_element.non_sync_tag.has</Synt::NonSyncTagNone/>() )
+			{}
+			if( syntax_element.non_sync_tag.has</Synt::NonSyncTagTrue/>() )
+			{
+				prev_types_stack.drop_back();
+				return true;
+			}
+			if_var( &expression_ptr : syntax_element.non_sync_tag.get</ust::shared_ptr_final</Synt::Expression/>/>() )
+			{
+				var Synt::Expression& expression= expression_ptr.deref();
+
+				var NamesScopePtr class_parent_scope= class_type.lock_imut().deref().members_initial.lock_imut().deref().GetParent().try_to_non_nullable();
+
+				var FunctionContext mut function_context= CreateGlobalFunctionContext();
+
+				if_var( &non_sync_expression : expression.get</ust::box</Synt::NonSyncExpression/>/>() )
+				{
+					var Type dependent_type= PrepareType( class_parent_scope, function_context, non_sync_expression.deref().type_name );
+					if( GetTypeNonSyncImpl( prev_types_stack, dependent_type, names_scope, src_loc ) )
+					{
+						prev_types_stack.drop_back();
+						return true;
+					}
+				}
+				else
+				{
+					if( EvaluateBoolConstantExpression( class_parent_scope, function_context, expression ) )
+					{
+						prev_types_stack.drop_back();
+						return true;
+					}
+				}
+			}
+		}
+
+		if_var( &coroutine_type_description : class_type.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />() )
+		{
+			if( coroutine_type_description.non_sync_ )
+			{
+				prev_types_stack.drop_back();
+				return true;
+			}
+		}
+
+		// Check "non_sync" tag existence for parents.
+		PrepareClassParentsList( class_type );
+
+		auto parents= class_type.lock_imut().deref().parents; // Copy parents container to avoid recursive call under class lock.
+		foreach( &parent : parents )
+		{
+			if( GetTypeNonSyncImpl( prev_types_stack, parent.class_, names_scope, src_loc ) )
+			{
+				prev_types_stack.drop_back();
+				return true;
+			}
+		}
+
+		// Check "non_sync" tag existence for fields. Type completion is required for this.
+
+		if( !EnsureTypeComplete( t ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, t )
+			prev_types_stack.drop_back();
+			return false;
+		}
+
+		auto fields= class_type.lock_imut().deref().fields_order; // Copy fields container to avoid recursive call under class lock.
+
+		foreach( &field : fields )
+		{
+			var Type field_type= field[1].lock_imut().deref().t; // Copy type to avoid recursive call under class field lock.
+			if( GetTypeNonSyncImpl( prev_types_stack, field_type, names_scope, src_loc ) )
+			{
+				prev_types_stack.drop_back();
+				return true;
+			}
+		}
+
+		prev_types_stack.drop_back();
+		return false;
+	}
+
+	// Unhandled type kind.
+	halt;
+}
+
+fn CodeBuilder::ImmediateEvaluateNonSyncTag( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncTag& non_sync_tag ) : bool
+{
+	if( non_sync_tag.has</Synt::NonSyncTagNone/>() )
+	{
+		return false;
+	}
+	if( non_sync_tag.has</Synt::NonSyncTagTrue/>() )
+	{
+		return true;
+	}
+	if_var( &expression_ptr : non_sync_tag.get</ust::shared_ptr_final</Synt::Expression/>/>() )
+	{
+		return EvaluateBoolConstantExpression( names_scope, function_context, expression_ptr.deref() );
+	}
+
+	halt; // Unhandled non-sync tag type
+}
+
+fn CodeBuilder::CheckClassNonSyncTagExpression( mut this, ClassTypePtr& class_type )
+{
+	auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
+	if_var( &syntax_element : syntax_element_ptr )
+	{
+		var NamesScopePtr class_parent_scope= class_type.lock_imut().deref().members_initial.lock_imut().deref().GetParent().try_to_non_nullable();
+		var FunctionContext mut function_context= CreateGlobalFunctionContext();
+		ImmediateEvaluateNonSyncTag( class_parent_scope, function_context, syntax_element.non_sync_tag );
+	}
+}
+
+fn CodeBuilder::CheckClassNonSyncTagInheritance( mut this, ClassTypePtr& class_type )
+{
+	var NamesScopePtr class_parent_scope= class_type.lock_imut().deref().members_initial.lock_imut().deref().GetParent().try_to_non_nullable();
+
+	var SrcLoc src_loc= GetValueSrcLoc( class_type );
+
+	if( !GetTypeNonSync( class_type, class_parent_scope, src_loc ) )
+	{
+		// If type is not "non_sync" - do not care about "non_sync" tag existance on parents.
+		return;
+	}
+
+	auto parents= class_type.lock_imut().deref().parents; // Copy parents container to avoid recursive call under class lock.
+	foreach( &parent : parents )
+	{
+		if( !GetTypeNonSync( parent.class_, class_parent_scope, src_loc ) )
+		{
+			REPORT_ERROR( NonSyncTagAdditionInInheritance, class_parent_scope, src_loc, Type(class_type), Type(parent.class_) )
+		}
+	}
+}
+
+} // namespace U1

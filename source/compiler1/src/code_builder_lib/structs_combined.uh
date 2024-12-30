@@ -1,0 +1,1062 @@
+import "/box.u"
+import "/shared_ptr.u"
+import "/shared_ptr_final.u"
+import "/unordered_map.u"
+import "/variant.u"
+import "/vector.u"
+import "../lex_synt_lib/syntax_elements.uh"
+import "code_builder_errors.uh"
+import "lang_types.uh"
+import "llvm_ext.uh"
+import "mixins.uh"
+
+/*
+
+This header contains defenitions of Type structs, Value structs, NamesScopeValue structs, NamesScope, Class.
+This needed, because of dependency loop Type->Class->NamesScope->Value->Type.
+
+*/
+
+namespace U1
+{
+
+//
+// Type
+//
+
+enum InnerReferenceKind
+{
+	Imut, // Type has immutable inner reference
+	Mut, // Type has mutable inner reference
+}
+
+enum SecondOrderInnerReferenceKind
+{
+	None, // No second order reference.
+	Imut,
+	Mut,
+}
+
+struct InnerReference
+{
+	InnerReferenceKind kind;
+	SecondOrderInnerReferenceKind second_order_kind= SecondOrderInnerReferenceKind::None;
+}
+
+struct FundamentalType
+{
+	U_FundamentalType fundamental_type= U_FundamentalType::InvalidType;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	fn constructor()= default;
+	fn constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type );
+
+	op==( FundamentalType& l, FundamentalType& r ) : bool;
+}
+
+struct ArrayType
+{
+	Type element_type;
+	u64 element_count;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	op==( ArrayType& l, ArrayType& r ) : bool;
+}
+
+struct TupleType
+{
+	ust::vector</ Type /> element_types;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	op==( TupleType& l, TupleType& r ) : bool;
+}
+
+struct RawPointerType
+{
+	Type element_type;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	op==( RawPointerType& l, RawPointerType& r ) : bool;
+}
+
+struct FunctionType
+{
+	// Inner types.
+	//
+
+	type Param = VariableTypeExtended;
+
+	struct ParamReference
+	{
+		u8 param_index;
+		u8 reference_index; // ~0 for param reference, 0 for inner reference
+
+		op<=>(ParamReference& l, ParamReference& r) : i32;
+	}
+	var u8 c_param_reference_number= ~0u8;
+
+	type ParamReferences= ust::vector</ParamReference/>; // Sorted by param index.
+	type ReturnInnerReferences= ust::vector</ParamReferences/>;
+
+	struct ReferencePollution
+	{
+		ParamReference dst;
+		ParamReference src;
+
+		op<=>(ReferencePollution& l, ReferencePollution& r) : i32;
+	}
+
+	type ReferencesPollution= ust::vector</ReferencePollution/>;
+
+	// Fields
+	//
+
+	ust::vector</Param/> params;
+	Type return_type;
+	ValueType return_value_type;
+
+	LLVMCallConvID calling_convention = LLVMCallConv::C;
+	bool is_unsafe= false;
+
+	ParamReferences return_references;
+	ReturnInnerReferences return_inner_references; // References for inner reference tags.
+	ReferencesPollution references_pollution; // Sorted.
+
+	// Methods
+	//
+
+	// Can use default == operator, since this struct contains no LLVM type.
+	op==( FunctionType& l, FunctionType& r ) : bool = default;
+
+	fn PointerCanBeConvertedTo( this, FunctionType& dst ) : bool;
+	fn ReturnsCompositeValue( this ) : bool;
+}
+
+fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8;
+
+struct FunctionPointerType
+{
+	FunctionType function_type;
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	op==( FunctionPointerType& l, FunctionPointerType& r ) : bool;
+}
+
+//
+// Typeinfo stuff
+//
+
+struct TypeinfoClassDescription
+{
+	Type source_type; // Type for which this typeinfo class was generated.
+	bool is_main_class= false; // Main class - a class produced by typeinfo operator. Non-main class - some other typeinfo class, like list node class.
+}
+
+struct TypeinfoCacheElement
+{
+	VariablePtr variable; // Variable - result of typeinfo operator call.
+
+	// Various typeinfo lists. They are created lazily.
+	VariableNullablePtr elements_list; // For enums and tuples.
+	VariableNullablePtr fields_list;
+	VariableNullablePtr types_list;
+	VariableNullablePtr functions_list;
+	VariableNullablePtr parents_list;
+	VariableNullablePtr params_list;
+}
+
+//
+// Class type
+//
+
+struct ClassType
+{
+	//
+	// Types
+	//
+
+	enum Kind
+	{
+		Struct,
+		NonPolymorph,
+		Interface,
+		Abstract,
+		PolymorphNonFinal,
+		PolymorphFinal,
+	}
+
+	struct BaseTemplate
+	{
+		TypeTemplatePtr class_template;
+		TemplateArgsFinished signature_args;
+	}
+
+	struct NonGeneratedClassTag{}
+
+	// Class is just regular class or it has base template or it is typeinfo class or it is coroutine class.
+	type GeneratedClassData= ust::variant</ tup[ NonGeneratedClassTag, BaseTemplate, TypeinfoClassDescription, CoroutineTypeDescription, LambdaClassData ] />;
+
+	struct Parent
+	{
+		ClassTypePtr class_;
+		u32 field_number= ~0u; // Allways 0 for base class.
+	}
+
+	struct VirtualTableEntry
+	{
+		ust::string8 name;
+		FunctionVariable function_variable;
+		bool is_pure;
+		bool is_final;
+
+		// Virtual table may consist of many nested structs, because virtual table of child contains virtual tables of parents.
+		u32 index_in_table;
+		u32 parent_virtual_table_index;
+	}
+
+	type FieldOrdered= tup[ust::string8, ClassFieldPtr];
+
+	//
+	// Methods
+	//
+
+	fn GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility;
+	fn SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility );
+
+	fn HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool;
+
+	//
+	// Fields
+	//
+
+	NamesScopeMutPtr members; // Mutable, because it may be filled in class build process in case of inheritance.
+
+	// Namespace of class declaration.
+	// This namespace does not changes in import.
+	NamesScopeMutPtr members_initial;
+
+	ust::shared_ptr_final_nullable</ Synt::Class /> syntax_element;
+
+	// This class fields names ordered by offset.
+	ust::vector</FieldOrdered/> fields_order;
+	u32 field_count= 0u;
+
+	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+
+	bool is_complete= false;
+	bool referenced= false;
+
+	bool is_default_constructible= false;
+	bool is_copy_constructible= false;
+	bool is_copy_assignable= false;
+	bool is_equality_comparable= false;
+	bool has_explicit_noncopy_constructors= false;
+	bool can_be_constexpr= false;
+
+	ust::vector</InnerReference/> inner_references;
+	Kind kind= Kind::Struct;
+
+	ust::shared_ptr_nullable_mut</ClassType/> base_class;
+	ust::vector</Parent/> parents; // Parents, include base class.
+	bool parents_list_prepared = false;
+
+	ust::vector</VirtualTableEntry/> virtual_table;
+	LLVMTypeRef virtual_table_llvm_type= LLVMTypeRef::Null;
+	LLVMValueRef virtual_table_llvm_variable= LLVMValueRef::Null; // May be null for interfaces and abstract classes.
+	LLVMValueRef polymorph_type_id_table= LLVMValueRef::Null; // Exists in polymorph classes.
+
+	GeneratedClassData generated_class_data;
+
+	// Contains only "protected" and "private" members. If ther is no entry for member - it has "public" visibility
+	ust::unordered_map</ust::string8, Synt::ClassVisibility/> members_visibility;
+}
+
+type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
+
+class Type
+{
+public:
+	type hasher= TypeHasher;
+
+public:
+	fn constructor() = default;
+	fn constructor( mut this, Type &imut other )= default;
+	op=( mut this, Type &imut other )= default;
+
+	fn conversion_constructor( FundamentalType mut fundamental_type );
+	fn conversion_constructor( ArrayType mut array_type );
+	fn conversion_constructor( TupleType mut tuple_type );
+	fn conversion_constructor( RawPointerType mut raw_pointer_type );
+	fn conversion_constructor( FunctionPointerType mut function_pointer_type );
+	fn conversion_constructor( ClassTypePtr mut class_type );
+	fn conversion_constructor( EnumTypePtr mut enum_type );
+
+	fn GetFundamentalType( imut this ) : ust::optional_ref_imut</FundamentalType /> @( ret_tags );
+	fn GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType /> @( ret_tags );
+	fn GetTupleType( imut this ) : ust::optional_ref_imut</TupleType /> @( ret_tags );
+	fn GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType /> @( ret_tags );
+	fn GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType /> @( ret_tags );
+	fn GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr /> @( ret_tags );
+	fn GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr /> @( ret_tags );
+
+	fn GetLLVMType( this ) : LLVMTypeRef;
+
+	fn IsDefaultConstructible( this ) : bool;
+	fn IsCopyConstructible( this ) : bool;
+	fn IsCopyAssignable( this ) : bool;
+	fn IsEqualityComparable( this ) : bool;
+	fn HasDestructor( this ) : bool;
+	fn CanBeConstexpr( this ) : bool;
+	fn IsAbstract( this ) : bool;
+	fn IsValidForTemplateVariableArgument( this ) : bool;
+
+	fn ReferenceTagCount( this ) : u32;
+	fn GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind;
+	fn GetSecondOrderInnerReferenceKind( this, size_type index ) : SecondOrderInnerReferenceKind;
+	fn GetReferenceIndirectionDepth( this ) : size_type;
+	fn ContainsMutableReferences( this ) : bool;
+
+	fn ReferenceIsConvertibleTo( this, Type& dst ) : bool;
+
+	// Convert type name to human-readable format.
+	fn ToString( this ) : ust::string8;
+
+	op==( Type& l, Type& r ) : bool;
+
+private:
+	auto ret_tags= ust::reference_notation::return_inner_references::param0;
+
+private:
+	ust::variant</ tup[
+		FundamentalType,
+		ust::shared_ptr_final</ArrayType/>,
+		ust::shared_ptr_final</TupleType/>,
+		ust::shared_ptr_final</RawPointerType/>,
+		ust::shared_ptr_final</FunctionPointerType/>,
+		ClassTypePtr,
+		EnumTypePtr
+	] /> something_;
+}
+
+class TypeHasher
+{
+
+public:
+	fn hash( Type& t ) : size_type;
+
+	fn hash( FundamentalType& t ) : size_type;
+	fn hash( ArrayType& t ) : size_type;
+	fn hash( TupleType& t ) : size_type;
+	fn hash( RawPointerType& t ) : size_type;
+	fn hash( FunctionType& t ) : size_type;
+	fn hash( FunctionPointerType& t ) : size_type;
+	fn hash( ClassTypePtr& t ) : size_type;
+	fn hash( EnumTypePtr& t ) : size_type;
+
+public:
+	// TODO - move it into standard library.
+	fn hash_combine( size_type x, size_type y ) : size_type;
+}
+
+//
+// Value
+//
+
+enum ValueType
+{
+	Value,
+	ReferenceMut,
+	ReferenceImut,
+}
+
+struct Variable
+{
+	enum Location
+	{
+		Pointer,
+		LLVMRegister,
+	}
+
+	Type t;
+	ValueType value_type;
+	Location location;
+	LLVMValueRef llvm_value= LLVMValueRef::Null;
+	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
+
+	ust::string8 name; // Used only for error reporting and derived variables names.
+	SrcLoc src_loc;
+
+	// May be non-null for struct or tuple member nodes.
+	ust::weak_ptr_mut</Variable/> parent;
+	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
+	ust::vector</VariableNullablePtr/> children;
+
+	/// For variables of types with references inside.
+	// Size is equal to number of reference tags of the variable type.
+	ust::vector</VariablePtr/> inner_reference_nodes;
+
+	// Mark inner reference nodes of variables using this flag.
+	// Do this in order to stop references graph search on these nodes while performing reference pollution.
+	bool is_variable_inner_reference_node= false;
+
+	// Mark all inner reference nodes with this flag.
+	bool is_inner_reference_node= false;
+
+	// If true - this is a temporary variable that should not be deleted even if it has no outgoing links.
+	bool preserve_temporary= false;
+
+	bool referenced= false;
+
+	// This struct is non-copyable.
+	fn constructor( mut this, Variable& other )= delete;
+	op=( mut this, Variable& other )= delete;
+
+	// Various methods.
+
+	fn CreatePtr( byval mut this ) : VariablePtr;
+	fn CreateChildPtr( byval mut this, VariablePtr& parent ) : VariablePtr;
+}
+
+type VariablePtr= ust::shared_ptr_mut</Variable/>;
+type VariableNullablePtr= ust::shared_ptr_nullable_mut</Variable/>;
+
+// Used to read important variable fields from VariablePtr without copying heavy reference-checking related fields.
+struct VariableLite
+{
+	Type t;
+	ValueType value_type;
+	Variable::Location location;
+	LLVMValueRef llvm_value;
+	LLVMValueRef constexpr_value;
+
+	fn constructor( mut this, Type mut in_t, ValueType in_value_type, Variable::Location in_location, LLVMValueRef in_llvm_value, LLVMValueRef in_constexpr_value )
+		( t= move(in_t), value_type= in_value_type, location= in_location, llvm_value= in_llvm_value, constexpr_value= in_constexpr_value )
+	{}
+
+	fn conversion_constructor( mut this, VariablePtr& v_ptr )
+		( value_type= zero_init, location= zero_init, llvm_value= zero_init, constexpr_value= zero_init )
+	{
+		with( &v : v_ptr.lock_imut().deref() )
+		{
+			t= v.t;
+			value_type= v.value_type;
+			location= v.location;
+			llvm_value= v.llvm_value;
+			constexpr_value= v.constexpr_value;
+		}
+	}
+
+	fn conversion_constructor( mut this, Variable& v )
+		( t= v.t, value_type= v.value_type, location= v.location, llvm_value= v.llvm_value, constexpr_value= v.constexpr_value )
+	{}
+}
+
+fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::string8;
+
+struct VariableTypeExtended
+{
+	Type t;
+	ValueType value_type;
+}
+
+struct FunctionVariable
+{
+	type Kind= Synt::Function::Kind;
+	enum ConstexprKind
+	{
+		NonConstexpr,
+		ConstexprIncomplete,  // Can be used in body of constexpr functions, but result of call can not be constexpr.
+		ConstexprComplete,
+		ConstexprAuto, // May be, or may be not constexpr. Becomes "NonConstexpr" or "ConstexprComplete" after function code building.
+	}
+
+	FunctionType t;
+	LazyLLVMFunctionPtr llvm_function;
+
+	bool is_this_call= false;
+	bool is_constructor= false;
+	bool is_conversion_constructor= false;
+	bool is_generated= false;
+	bool is_deleted= false;
+	bool no_mangle= false;
+	bool is_inherited= false;
+	Kind kind= Kind::Regular;
+	u32 virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
+
+	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;
+
+	ust::shared_ptr_final_nullable</ Synt::Function /> prototype_syntax_element;
+	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;
+
+	fn VirtuallyEquals( this, FunctionVariable& other ) : bool;
+	fn IsCoroutine( this ) : bool;
+}
+
+type LazyLLVMFunctionPtr= ust::shared_ptr_mut</LazyLLVMFunction/>;
+
+struct LazyLLVMFunction
+{
+	ust::string8 name_mangled;
+	LLVMValueRef function= LLVMValueRef::Null;
+	bool referenced= false; // HACK! Store function referenced flag here, because we need to have immutable FunctionVariable struct.
+
+	fn constructor( ust::string8 mut name ) ( name_mangled= move(name) ) {}
+
+	fn constructor( LazyLLVMFunction& other )= delete;
+	op=( mut this, LazyLLVMFunction& other )= delete;
+}
+
+// Set of functions and function templates with same name in one scope.
+struct FunctionsSet
+{
+	ust::vector</FunctionVariable/> functions;
+	ust::vector</FunctionTemplatePtr/> function_templates;
+	ust::vector</ParameterizedFunctionTemplate/> parameterized_function_templates;
+
+	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
+
+	bool has_unbuilt_constexpr_functions= false;
+
+	// Is incomplete, if there are some syntax elements in containers.
+	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
+	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> out_of_line_syntax_elements;
+	ust::vector</ ust::shared_ptr_final</ Synt::FunctionTemplate /> /> function_templates_syntax_elements;
+}
+
+type FunctionsSetPtr= ust::shared_ptr_mut</FunctionsSet/>;
+
+struct ThisMethodsSet
+{
+	VariablePtr this_;
+	FunctionsSetPtr functions_set;
+}
+
+struct ErrorValue{}
+
+type Value= ust::variant</ tup[
+	ErrorValue,
+	VariablePtr,
+	Type,
+	FunctionsSetPtr,
+	ThisMethodsSet,
+	ust::shared_ptr_imut</TypeTemplatesSet/>
+	] />;
+
+fn GetValueKindName( Value& v ) : ust::string_view8;
+
+//
+// NamesScopeValue
+//
+
+struct ClassField
+{
+	Type t;
+	bool is_reference;
+	bool is_mutable;
+	u32 index= ~0u; // for "getelementptr" instruction
+	u32 original_index= ~0u; // Index of class field in class declaration
+	bool used= false;
+	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
+
+	u8 reference_tag= 0u8; // For reference fields - mapping of class inner reference tag to reference tag.
+	ust::vector</ u8 /> inner_reference_tags; // For value fields with references inside - mapping of class inner reference tags to reference tags if this field.
+
+	// Class, where this field is defined. May be not same class in case of inheritance.
+	ClassTypePtr source_class;
+}
+
+type ClassFieldPtr = ust::shared_ptr_mut</ClassField/>;
+
+struct Enum
+{
+	NamesScopePtr names_scope; // Contains nothing, needed only for mangling.
+
+	FundamentalType underlying_type;
+
+	struct Element
+	{
+		LLVMValueRef llvm_value= LLVMValueRef::Null; // Pointer to global variable
+		LLVMValueRef constexpr_value= LLVMValueRef::Null;
+	}
+	ust::unordered_map</ ust::string8, Element /> elements;
+
+	ust::shared_ptr_final</ Synt::Enum /> syntax_element;
+
+	bool referenced= false;
+}
+
+type EnumTypePtr= ust::shared_ptr_mut</Enum/>;
+
+struct TypeAlias
+{
+	ust::optional</ Type /> t; // empty if incomplete
+	ust::shared_ptr_final</ Synt::TypeAlias /> syntax_element;
+	bool referenced= false;
+}
+
+type CoroutineKind= Synt::CoroutineType::Kind;
+
+struct CoroutineTypeDescription
+{
+	CoroutineKind kind;
+	Type return_type;
+	ValueType return_value_type;
+
+	ust::vector</InnerReferenceKind/> inner_references;
+	bool non_sync_;
+
+	FunctionType::ParamReferences return_references;
+	FunctionType::ReturnInnerReferences return_inner_references;
+
+	type hasher= CoroutineTypeDescriptionHasher;
+}
+
+struct CoroutineTypeDescriptionHasher
+{
+	fn hash(CoroutineTypeDescription& d) : size_type;
+}
+
+// Lambdas
+
+struct LambdaKey
+{
+	// Store here scope in order to distinguish lambdas in different template instantiations.
+	NamesScopePtr parent_scope;
+	// SrcLoc of lambda syntax element.
+	SrcLoc src_loc;
+
+	// We need to create distinct lambdas on each iteration of tuple-for.
+	ust::vector</u32/> tuple_for_indices;
+
+	type hasher= LambdaKeyHasher;
+}
+
+struct LambdaKeyHasher
+{
+	fn hash(LambdaKey& k) : size_type;
+}
+
+struct LambdaClassData
+{
+	TemplateArgsFinished template_args;
+}
+
+//
+// Templates
+//
+
+struct TemplateParam
+{
+	struct TypeParamData{}
+
+	struct TypeTemplateParamData{}
+
+	struct VariableParamData
+	{
+		// Type of variable param.
+		TemplateSignatureParam t;
+	}
+
+	ust::string8 name;
+	ust::variant</ tup[ TypeParamData, TypeTemplateParamData, VariableParamData ] /> kind_data;
+}
+
+class TemplateBase polymorph
+{
+	ust::vector</TemplateParam/> params;
+
+	ust::vector</ TemplateSignatureParam /> signature_params;
+
+	// Needed because template should see names scope of original file.
+	// Also needed in case of inheritance.
+	ust::weak_ptr_imut</NamesScope/> parent_names_scope;
+
+	fn constructor(
+		ust::vector</TemplateParam/> mut in_params,
+		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
+		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope )
+		(
+			params(move(in_params)),
+			parent_names_scope(move(in_parent_names_scope)),
+			signature_params(move(in_signature_params))
+		)
+	{}
+}
+
+class TypeTemplate final : TemplateBase
+{
+	ust::shared_ptr_final</Synt::TypeTemplate/> syntax_element;
+
+	size_type first_default_param;
+
+	bool used= false;
+
+	fn constructor(
+		ust::vector</TemplateParam/> mut in_params,
+		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
+		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope,
+		ust::shared_ptr_final</Synt::TypeTemplate/> mut in_syntax_element,
+		size_type in_first_default_param )
+		(
+			base( move(in_params), move(in_signature_params), move(in_parent_names_scope) ),
+			syntax_element( move(in_syntax_element) ),
+			first_default_param( in_first_default_param )
+		)
+	{}
+
+	// Convert type template name to human-readable format.
+	fn ToString( this ) : ust::string8;
+}
+
+type TypeTemplatePtr = ust::shared_ptr_mut</TypeTemplate/>;
+
+struct TypeTemplatesSet
+{
+	ust::vector</TypeTemplatePtr/> type_templates;
+
+	// Is incomplete, if there are some syntax elements in containers.
+	ust::vector</ ust::shared_ptr_final</Synt::TypeTemplate/> /> syntax_elements;
+}
+
+class FunctionTemplate final : TemplateBase
+{
+	ust::shared_ptr_final</Synt::FunctionTemplate/> syntax_element;
+	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
+
+	fn constructor(
+		ust::vector</TemplateParam/> mut in_params,
+		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
+		ust::weak_ptr_imut</NamesScope/> mut in_parent_names_scope,
+		ust::shared_ptr_final</Synt::FunctionTemplate/> mut in_syntax_element,
+		ust::shared_ptr_nullable_mut</ClassType/> mut in_class )
+		(
+			base( move(in_params), move(in_signature_params), move(in_parent_names_scope) ),
+			syntax_element( move(in_syntax_element) ),
+			class_( move(in_class) )
+		)
+	{}
+}
+
+type FunctionTemplatePtr= ust::shared_ptr_imut</FunctionTemplate/>;
+
+struct ParameterizedFunctionTemplate
+{
+	TemplateArgsFinished known_args;
+	FunctionTemplatePtr base_template;
+	NamesScopePtr instantiation_point_names_scope;
+}
+
+struct TemplateArg
+{
+	u32 index;
+
+	struct NotKnownYet{}
+	ust::variant</ tup[ NotKnownYet, Type, VariablePtr, TypeTemplatePtr ] /> something;
+}
+
+type TemplateArgFinished= ust::variant</ tup[ Type, VariablePtr, TypeTemplatePtr ] />;
+type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
+
+class TemplateSignatureParam
+{
+public:
+	struct TemplateParam
+	{
+		u32 index;
+		// See TemplateParameter::kind_data.
+		u32 kind_index;
+	}
+
+	struct Type
+	{
+		U1::Type t;
+	}
+
+	struct Variable
+	{
+		U1::Type t;
+		LLVMValueRef constexpr_value;
+
+		op==(Variable& l, Variable& r) : bool;
+	}
+
+	struct TypeTemplate
+	{
+		TypeTemplatePtr type_template;
+	}
+
+	struct Array
+	{
+		TemplateSignatureParam element_type;
+		TemplateSignatureParam element_count;
+	}
+
+	struct Tuple
+	{
+		ust::vector</TemplateSignatureParam/> element_types;
+	}
+
+	struct RawPointer
+	{
+		TemplateSignatureParam element_type;
+	}
+
+	struct Function
+	{
+		TemplateSignatureParam return_type;
+		ValueType return_value_type;
+
+		bool is_unsafe;
+		LLVMCallConvID calling_convention = LLVMCallConv::C;
+
+		struct Param
+		{
+			TemplateSignatureParam t;
+			ValueType value_type;
+		}
+		ust::vector</Param/> params;
+	}
+
+	struct Coroutine
+	{
+		CoroutineKind kind;
+		TemplateSignatureParam return_type;
+		ValueType return_value_type;
+
+		ust::vector</InnerReferenceKind/> inner_references;
+		bool non_sync_;
+
+		FunctionType::ParamReferences return_references;
+		FunctionType::ReturnInnerReferences return_inner_references;
+	}
+
+	struct SpecializedTemplate
+	{
+		ust::vector</ TemplateSignatureParam /> type_templates;
+		ust::vector</ TemplateSignatureParam /> params;
+	}
+
+	fn constructor( mut this, TemplateSignatureParam& other )= default;
+	op=( mut this, TemplateSignatureParam& other )= default;
+
+	fn conversion_constructor( TemplateParam template_param );
+	fn conversion_constructor( Type mut type_param );
+	fn conversion_constructor( Variable variable_param );
+	fn conversion_constructor( TypeTemplate type_template_param );
+	fn conversion_constructor( Array array_type_param );
+	fn conversion_constructor( Tuple tuple_type_param );
+	fn conversion_constructor( RawPointer raw_pointer_type_param );
+	fn conversion_constructor( Function function_type_param );
+	fn conversion_constructor( Coroutine coroutine_type_param );
+	fn conversion_constructor( SpecializedTemplate specialized_template_param );
+
+	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam /> @(ret_tags);
+	fn GetType(this) : ust::optional_ref_imut</ Type /> @(ret_tags);
+	fn GetVariable(this) : ust::optional_ref_imut</ Variable /> @(ret_tags);
+	fn GetTypeTemplate(this) : ust::optional_ref_imut</ TypeTemplate /> @(ret_tags);
+	fn GetArray(this) : ust::optional_ref_imut</ Array /> @(ret_tags);
+	fn GetTuple(this) : ust::optional_ref_imut</ Tuple /> @(ret_tags);
+	fn GetRawPointer(this) : ust::optional_ref_imut</ RawPointer /> @(ret_tags);
+	fn GetFunction(this) : ust::optional_ref_imut</ Function /> @(ret_tags);
+	fn GetCoroutine(this) : ust::optional_ref_imut</ Coroutine /> @(ret_tags);
+	fn GetSpecializedTemplate(this) : ust::optional_ref_imut</ SpecializedTemplate /> @(ret_tags);
+
+	op==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool;
+
+private:
+	auto ret_tags= ust::reference_notation::return_inner_references::param0;
+
+private:
+	type Container= ust::variant</ tup[
+		TemplateParam,
+		Type,
+		Variable,
+		TypeTemplate,
+		ust::shared_ptr_final</ Array />,
+		ust::shared_ptr_final</ Tuple />,
+		ust::shared_ptr_final</ RawPointer />,
+		ust::shared_ptr_final</ Function />,
+		ust::shared_ptr_final</ Coroutine />,
+		ust::shared_ptr_final</ SpecializedTemplate />
+		] />;
+
+	Container something_;
+}
+
+// Mapping of template params 0-N to signature params.
+type TemplateParamsToSignatureParamsMappingRef= ust::array_view_imut</TemplateSignatureParam/>;
+
+// Replace all template params with given signature params.
+fn MapTemplateParamsToSignatureParams(
+	TemplateParamsToSignatureParamsMappingRef mapping,
+	TemplateSignatureParam& param ) : TemplateSignatureParam;
+
+struct TemplateKey
+{
+	ust::shared_ptr_imut</ TemplateBase /> template_;
+	TemplateArgsFinished template_args;
+
+	type hasher= TemplateKeyHasher;
+
+	op==( TemplateKey& l, TemplateKey& r ) : bool;
+}
+
+struct TemplateKeyHasher
+{
+	fn hash( TemplateKey& k ) : size_type;
+}
+
+struct ParameterizedFunctionTemplateKey
+{
+	FunctionsSetPtr functions_set;
+	TemplateArgsFinished template_args;
+
+	type hasher= ParameterizedFunctionTemplateKeyHasher;
+
+	op==( ParameterizedFunctionTemplateKey& l, ParameterizedFunctionTemplateKey& r ) : bool;
+}
+
+struct ParameterizedFunctionTemplateKeyHasher
+{
+	fn hash( ParameterizedFunctionTemplateKey& k ) : size_type;
+}
+
+//
+// Other global stuff
+//
+
+struct GlobalVariable
+{
+	VariableNullablePtr variable; // empty if incomplete
+
+	ust::shared_ptr_final</ Synt::VariablesDeclaration /> syntax_element;
+	u32 variable_index;
+	bool referenced= false;
+}
+
+struct GlobalAutoVariable
+{
+	VariableNullablePtr variable; // empty if incomplete
+
+	ust::shared_ptr_final</ Synt::AutoVariableDeclaration /> syntax_element;
+	bool referenced= false;
+}
+
+// Empty vector if all static asserts are complete.
+type GlobalStaticAssertsSet= ust::vector</ ust::shared_ptr_final</ Synt::StaticAssert /> />;
+
+class NamesScopeValue
+{
+public:
+	fn constructor( mut this, NamesScopeValue &imut other ) = default;
+	op=( mut this, NamesScopeValue &imut other ) = default;
+
+	// TODO - add method for deep copy
+
+	// TODO - rework this class. It is ugly.
+
+	// Construct from value (make shared ptr in-place).
+	template</ type T />
+	fn conversion_constructor( T mut t )
+		( something_( ust::make_shared_ptr(move(t))) )
+	{}
+
+	// Use existing shared_ptr.
+	template</ type T, bool is_nullable, bool is_mutable />
+	fn conversion_constructor( ust::shared_ptr_base</T, is_nullable, is_mutable/> mut t )
+		( something_(move(t)) )
+	{}
+
+	template</type T/>
+	fn Get( imut this ) : ust::shared_ptr_nullable_mut</T/>
+	{
+		if_var( & x : something_.get</ ust::shared_ptr_mut</T/> />() )
+		{
+			return ust::shared_ptr_nullable_mut</T/>(x);
+		}
+		return ust::shared_ptr_nullable_mut</T/>();
+	}
+
+	// Compare shared pointers
+	op==( NamesScopeValue&l, NamesScopeValue& r ) : bool = default;
+
+public:
+	ust::variant</ tup[
+		NamesScopeMutPtr,
+		ust::shared_ptr_mut</Type/>,
+		ust::shared_ptr_mut</Variable/>,
+		ust::shared_ptr_mut</FunctionsSet/>,
+		ClassTypePtr,
+		ClassFieldPtr,
+		EnumTypePtr,
+		ust::shared_ptr_mut</TypeAlias/>,
+		ust::shared_ptr_mut</TypeTemplatesSet/>,
+		ust::shared_ptr_mut</TemplateArg/>,
+		ust::shared_ptr_mut</GlobalVariable/>,
+		ust::shared_ptr_mut</GlobalAutoVariable/>,
+		ust::shared_ptr_mut</GlobalStaticAssertsSet/>,
+		ust::shared_ptr_mut</Mixins/>
+	] /> something_;
+}
+
+//
+// NamesScope
+//
+
+type ErrorsContainerPtr= ust::shared_ptr_nullable_mut</ErrorsContainer/>;
+
+type NamesScopeMutPtr = ust::shared_ptr_mut </NamesScope/>;
+type NamesScopePtr= ust::shared_ptr_imut</NamesScope/>;
+
+class NamesScope
+{
+public:
+	fn constructor( ust::string8 mut name, ust::shared_ptr_nullable_imut</NamesScope/>& parent );
+
+	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue /> @(ret_tags);
+
+	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue /> @(ret_tags);
+
+	fn GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>;
+
+	fn SetErrors( mut this, ErrorsContainerPtr errors_container );
+	fn GetErrors( this ) : ErrorsContainerPtr;
+
+	// For iteration over NamesScope values
+	fn iter( this ) : auto
+	{
+		return names_map_.iter();
+	}
+
+	fn GetThisNamespaceName( this ) : ust::string8&;
+
+	auto& c_template_args_namespace_name= "_tp_ns";
+	fn IsInsideTemplate( this ) : bool;
+
+	// Get full name (with enclosing namespaces) un human-readable format.
+	fn ToString( this ) : ust::string8;
+
+	// Sometimes it's needed to identify class namespace. So, store pointer to class directly inside it's names_scope.
+	fn SetClass( mut this, ust::shared_ptr_nullable_mut</ClassType/> in_class_ );
+	fn GetClass( this ) : ust::shared_ptr_nullable_mut</ClassType/>;
+
+	fn AddAccessRightsFor( mut this, ClassTypePtr& class_type, Synt::ClassVisibility visibility );
+	fn GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisibility;
+	fn CopyAccessRightsFrom( mut this, NamesScope& src );
+
+private:
+	auto ret_tags= ust::reference_notation::return_inner_references::param0;
+
+private:
+	ust::string8 name_;
+	ust::weak_ptr_imut</NamesScope/> parent_;
+	ust::unordered_map</ ust::string8, NamesScopeValue /> names_map_;
+	ust::shared_ptr_nullable_mut</ClassType/> class_;
+	ust::unordered_map</ClassTypePtr, Synt::ClassVisibility/> access_rights_;
+	ErrorsContainerPtr errors_container_;
+}
+
+fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr;
+fn GetClosestNamedSpaceOrRoot( NamesScopePtr& names_scope ) : NamesScopePtr;
+
+} // namespace U1
