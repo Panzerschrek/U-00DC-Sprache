@@ -226,7 +226,7 @@ fn GetCodeBuilderErrors() : ust::vector</CodeBuilderError/>
 
 fn ParseNextCodeBuilderError( ust::string_view8 &mut s ) : ust::optional</CodeBuilderError/>
 {
-	SkipWhitespaceAndComments( s );
+	SkipWhitespaceAndCPPComments( s );
 
 	var ust::string_view8 start_token= "PROCESS_ERROR";
 	loop
@@ -243,7 +243,7 @@ fn ParseNextCodeBuilderError( ust::string_view8 &mut s ) : ust::optional</CodeBu
 		s.drop_front();
 	}
 
-	SkipWhitespaceAndComments( s );
+	SkipWhitespaceAndCPPComments( s );
 
 	if( s.empty() || s.front() != "("c8 )
 	{
@@ -251,15 +251,50 @@ fn ParseNextCodeBuilderError( ust::string_view8 &mut s ) : ust::optional</CodeBu
 	}
 	s.drop_front();
 
-	SkipWhitespaceAndComments( s );
+	SkipWhitespaceAndCPPComments( s );
 
-	var ust::string8 mut code;
+	auto mut code= ParseCPPIdentifier( s );
+	if( code == ust::null_optional )
+	{
+		return ust::null_optional;
+	}
+
+	SkipWhitespaceAndCPPComments( s );
+
+	if( s.empty() || s.front() != ","c8 )
+	{
+		return ust::null_optional;
+	}
+	s.drop_front();
+
+	SkipWhitespaceAndCPPComments( s );
+
+	auto mut message= ParseCPPString( s );
+	if( message.empty() )
+	{
+		return ust::null_optional;
+	}
+
+	return CodeBuilderError{ .code= code.try_take(), .message= message.try_take() };
+}
+
+// Parse C++-like identifier.
+fn ParseCPPIdentifier( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
+{
+	var ust::string8 mut res;
+
+	if( s.empty() || !IsCPPIdentifierStartChar( s.front() ) )
+	{
+		return ust::null_optional;
+	}
+	res.push_back( s.drop_and_get_front() );
+
 	while( !s.empty() )
 	{
 		var char8 c= s.front();
-		if( ( c >= "a"c8 && c <= "z"c8 ) || ( c >= "A"c8 && c <= "Z"c8 ) || ( c >= "0"c8 && c <= "9"c8 ) )
+		if( IsCPPIdentifierChar( c ) )
 		{
-			code.push_back(c);
+			res.push_back(c);
 			s.drop_front();
 		}
 		else
@@ -268,29 +303,22 @@ fn ParseNextCodeBuilderError( ust::string_view8 &mut s ) : ust::optional</CodeBu
 		}
 	}
 
-	SkipWhitespaceAndComments( s );
-
-	if( s.empty() || s.front() != ","c8 )
-	{
-		return ust::null_optional;
-	}
-	s.drop_front();
-
-	SkipWhitespaceAndComments( s );
-
-	auto mut message= ParseString( s );
-	if( message.empty() )
-	{
-		return ust::null_optional;
-	}
-
-	return CodeBuilderError{ .code= move(code), .message= message.try_take() };
+	return move(res);
 }
 
-fn ParseString( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
+fn IsCPPIdentifierStartChar( char8 c ) : bool
 {
-	SkipWhitespaceAndComments( s );
+	return ( c >= "a"c8 && c <= "z"c8 ) || ( c >= "A"c8 && c <= "Z"c8 );
+}
 
+fn IsCPPIdentifierChar( char8 c ) : bool
+{
+	return IsCPPIdentifierStartChar( c ) || ( c >= "0"c8 && c <= "9"c8 );
+}
+
+// Parse C++-like string syntax.
+fn ParseCPPString( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
+{
 	if( s.empty() || s.front() != "\""c8 )
 	{
 		return ust::null_optional;
@@ -313,27 +341,17 @@ fn ParseString( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
 			{
 				break;
 			}
-			var char8 c2= s.front();
-			s.drop_front();
-			if( c2 == "\""c8 )
+			var char8 c2= s.drop_and_get_front();
+			switch( c2 )
 			{
-				res.push_back( "\""c8 );
-			}
-			else if( c2 == "\\"c8 )
-			{
-				res.push_back( "\\"c8 );
-			}
-			else if( c2 == "t"c8 )
-			{
-				res.push_back( "\t"c8 );
-			}
-			else if( c2 == "n"c8 )
-			{
-				res.push_back( "\n"c8 );
-			}
-			else if( c2 == "r"c8 )
-			{
-				res.push_back( "\r"c8 );
+				"\""c8 -> { res.push_back( "\""c8 ); },
+				"\\"c8 -> { res.push_back( "\""c8 ); },
+				"t"c8 -> { res.push_back( "\t"c8 ); },
+				"n"c8 -> { res.push_back( "\n"c8 ); },
+				"r"c8 -> { res.push_back( "\r"c8 ); },
+				"f"c8 -> { res.push_back( "\f"c8 ); },
+				"b"c8 -> { res.push_back( "\b"c8 ); },
+				default -> { res.push_back( c2 ); },
 			}
 		}
 		else
@@ -346,7 +364,7 @@ fn ParseString( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
 	return move(res);
 }
 
-fn SkipWhitespaceAndComments( ust::string_view8 &mut s )
+fn SkipWhitespaceAndCPPComments( ust::string_view8 &mut s )
 {
 	loop
 	{
@@ -391,40 +409,29 @@ fn SkipWhitespace( ust::string_view8 &mut s )
 	}
 }
 
+// Makes Ü string literal from given sting - adds "", escapes symbols if necessary.
 fn MakeStringLiteral( ust::string_view8 s ) : ust::string8
 {
 	var ust::string8 mut res;
-	res+= "\"";
+	res.push_back( "\""c8 );
 
 	foreach( c : s )
 	{
-		if( c == "\""c8 )
+		switch( c )
 		{
-			res+= "\\\"";
-		}
-		else if( c == "\\"c8 )
-		{
-			res+= "\\\\";
-		}
-		else if( c == "\n"c8 )
-		{
-			res+= "\\n";
-		}
-		else if( c == "\t"c8 )
-		{
-			res+= "\\t";
-		}
-		else if( c == "\r"c8 )
-		{
-			res+= "\\r";
-		}
-		else
-		{
-			res.push_back(c);
+			"\""c8 -> { res+= "\\\""; },
+			"\\"c8 -> { res+= "\\\\"; },
+			"\n"c8 -> { res+= "\\n"; },
+			"\r"c8 -> { res+= "\\r"; },
+			"\t"c8 -> { res+= "\\t"; },
+			"\f"c8 -> { res+= "\\f"; },
+			"\b"c8 -> { res+= "\\b"; },
+			"\0"c8 -> { res+= "\\0"; },
+			default -> { res.push_back(c); },
 		}
 	}
 
-	res+= "\"";
+	res.push_back( "\""c8 );
 
 	return res;
 }
