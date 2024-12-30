@@ -22,19 +22,19 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 			},
 	};
 
-	auto& code_builder_errors_file= "code_builder_errors.uh";
+	auto& code_builder_error_code_file= "code_builder_error_code.uh";
 
-	var ust::string8 mut code_builder_errors_generated_file=
-		ust::concat( generated_sources_directory, "/", code_builder_errors_file );
+	var ust::string8 mut code_builder_error_code_generated_file=
+		ust::concat( generated_sources_directory, "/", code_builder_error_code_file );
 
-	var BK::CustomBuildStep mut  code_builder_errors_step
+	var BK::CustomBuildStep mut  code_builder_error_code_step
 	{
-		.output_files= ust::make_array( code_builder_errors_generated_file ),
+		.output_files= ust::make_array( code_builder_error_code_generated_file ),
 		.command=
 			BK::CustomBuildStep::GenerateFileCommand
 			{
-				.destination_path= move(code_builder_errors_generated_file),
-				.contents= CreateCodeBuilderErrorsFileContents()
+				.destination_path= move(code_builder_error_code_generated_file),
+				.contents= CreateCodeBuilderErrorCodeFileContents()
 			},
 	};
 
@@ -43,7 +43,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.target_type = BK::BuildTargetType::ObjectFile,
 		.name= lib_name,
 		.public_include_directories= ust::make_array</ust::string8/>( "imports" ),
-		.generated_private_header_files= ust::make_array</ust::string8/>( keywords_file, code_builder_errors_file ),
+		.generated_private_header_files= ust::make_array</ust::string8/>( keywords_file, code_builder_error_code_file ),
 	};
 
 	var [ ust::string_view8, 42 ] source_files
@@ -100,7 +100,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	return BK::PackageInfo
 	{
 		.build_targets= ust::make_array( move(target) ),
-		.custom_build_steps= ust::make_array( move(keywords_step), move(code_builder_errors_step) ),
+		.custom_build_steps= ust::make_array( move(keywords_step), move(code_builder_error_code_step) ),
 	};
 }
 
@@ -157,15 +157,12 @@ fn GetKeywordsList() : ust::vector</ust::string8/>
 	return out_keywords;
 }
 
-fn CreateCodeBuilderErrorsFileContents() : ust::string8
+fn CreateCodeBuilderErrorCodeFileContents() : ust::string8
 {
 	auto errors_list= GetCodeBuilderErrors();
 
 	var ust::string8 mut contents;
-	contents+= "import \"/shared_ptr.u\"\n";
 	contents+= "import \"/string.u\"\n";
-	contents+= "import \"/vector.u\"\n";
-	contents+= "import \"/CodeBuilderLib/lex_synt_lib/src_loc.uh\"\n";
 	contents+= "\n";
 	contents+= "namespace U1\n{\n\n";
 	contents+= "enum CodeBuilderErrorCode\n{\n";
@@ -194,26 +191,6 @@ fn CreateCodeBuilderErrorsFileContents() : ust::string8
 	}
 
 	contents+= "\t}\n";
-	contents+= "}\n\n";
-
-	contents+= "struct CodeBuilderError\n";
-	contents+= "{\n";
-	contents+= "\tCodeBuilderErrorCode code;\n";
-	contents+= "\tSrcLoc src_loc;\n";
-	contents+= "\tust::string8 text;\n";
-	contents+= "\tust::shared_ptr_nullable_mut</TemplateErrorsContext/> errors_context;\n";
-	contents+= "\n";
-	contents+= "\top<=>(CodeBuilderError& l, CodeBuilderError& r) : i32;\n";
-	contents+= "}\n\n";
-
-	contents+= "type ErrorsContainer= ust::vector</ CodeBuilderError />;\n\n";
-
-	contents+= "struct TemplateErrorsContext\n";
-	contents+= "{\n";
-	contents+= "\tust::shared_ptr_mut</ErrorsContainer/> errors;\n";
-	contents+= "\tSrcLoc context_declaration_src_loc; // Declaration position of context, macro.\n\n";
-	contents+= "\tust::string8 context_name; // Name of template, macro.\n";
-	contents+= "\tust::string8 args_description;\n";
 	contents+= "}\n\n";
 
 	contents+= "} // namespace U1\n";

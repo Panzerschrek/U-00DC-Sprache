@@ -1,6 +1,6 @@
 import "../../imports/mangling_scheme.uh"
 import "../lex_synt_lib/source_graph.uh"
-import "/CodeBuilderLib/code_builder_errors.uh"
+import "code_builder_errors.uh"
 import "constexpr_function_evaluator.uh"
 import "debug_info_builder.uh"
 import "function_context.uh"

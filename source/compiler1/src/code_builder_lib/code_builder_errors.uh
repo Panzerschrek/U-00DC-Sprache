@@ -1,25 +1,11 @@
 import "/shared_ptr.u"
 import "/string.u"
 import "/vector.u"
-import "/lex_synt_lib/src_loc.uh"
+import "../lex_synt_lib/src_loc.uh"
+import "/CodeBuilderLib/code_builder_error_code.uh"
 
 namespace U1
 {
-
-enum CodeBuilderErrorCode
-{
-
-@CODE_BUILDER_ERRORS_LIST@
-
-}
-
-fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::string_view8
-{
-	switch(e)
-	{
-		@ERROR_CODE_TO_STRING_LIST@
-	}
-}
 
 struct CodeBuilderError
 {

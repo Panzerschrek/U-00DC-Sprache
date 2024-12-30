@@ -149,7 +149,7 @@ else()
 		ERROR_CODE_TO_STRING_LIST
 		${ERRORS_LIST_CONTENT} )
 
-	configure_file( src/code_builder_lib/code_builder_errors.uh.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh )
+	configure_file( src/code_builder_lib/code_builder_error_code.uh.in ${CMAKE_CURRENT_BINARY_DIR}/code_builder_error_code.uh )
 
 	#
 	# CodeBuilderLib
@@ -166,7 +166,7 @@ else()
 
 	set( CODE_BUILDER_LIB_HEADERS_GENERATED
 		${CMAKE_CURRENT_BINARY_DIR}/keywords.uh
-		${CMAKE_CURRENT_BINARY_DIR}/code_builder_errors.uh
+		${CMAKE_CURRENT_BINARY_DIR}/code_builder_error_code.uh
 		)
 
 	CompileUSources( CODE_BUILDER_LIB_SOURCES CODE_BUILDER_LIB_OBJECTS )
