@@ -46,10 +46,56 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.generated_private_header_files= ust::make_array</ust::string8/>( keywords_file, code_builder_errors_file ),
 	};
 
-	target.source_files.push_back( "src/launchers_common/funcs_u.u" );
-	target.source_files.push_back( "src/lex_synt_lib/source_graph.u" );
-	target.source_files.push_back( "src/lex_synt_lib/syntax_analyzer.u" );
-	target.source_files.push_back( "src/code_builder_lib/code_builder.u" );
+	var [ ust::string_view8, 42 ] source_files
+	[
+		"code_builder_lib/cb_block_elements.u",
+		"code_builder_lib/cb_coroutines.u",
+		"code_builder_lib/cb_expressions.u",
+		"code_builder_lib/cb_global_things_build.u",
+		"code_builder_lib/cb_initializers.u",
+		"code_builder_lib/cb_lambdas.u",
+		"code_builder_lib/cb_method_gen.u",
+		"code_builder_lib/cb_mixins.u",
+		"code_builder_lib/cb_names_scope_build.u",
+		"code_builder_lib/cb_names_scope_fill.u",
+		"code_builder_lib/cb_names_scope_merge.u",
+		"code_builder_lib/cb_non_sync.u",
+		"code_builder_lib/cb_overloading_resolution.u",
+		"code_builder_lib/cb_reference_checking.u",
+		"code_builder_lib/cb_reference_notation.u",
+		"code_builder_lib/cb_resolve.u",
+		"code_builder_lib/cb_templates.u",
+		"code_builder_lib/cb_typeinfo.u",
+		"code_builder_lib/cb_types.u",
+		"code_builder_lib/cb_virtual.u",
+		"code_builder_lib/code_builder.u",
+		"code_builder_lib/constexpr_function_evaluator.u",
+		"code_builder_lib/debug_info_builder.u",
+		"code_builder_lib/error_reporting.u",
+		"code_builder_lib/function_context.u",
+		"code_builder_lib/lang_types.u",
+		"code_builder_lib/mangling_itanium_abi.u",
+		"code_builder_lib/mangling_msvc.u",
+		"code_builder_lib/mixins.u",
+		"code_builder_lib/references_graph.u",
+		"code_builder_lib/source_file_contents_hash_wrapper.u",
+		"code_builder_lib/structs_combined.u",
+		"code_builder_lib/tbaa_metadata_builder.u",
+		"launchers_common/funcs_u.u",
+		"lex_synt_lib/keywords.u",
+		"lex_synt_lib/lexical_analyzer.u",
+		"lex_synt_lib/operators.u",
+		"lex_synt_lib/program_string.u",
+		"lex_synt_lib/source_graph.u",
+		"lex_synt_lib/src_loc.u",
+		"lex_synt_lib/syntax_analyzer.u",
+		"lex_synt_lib/syntax_elements.u",
+	];
+
+	foreach( &f : source_files )
+	{
+		target.source_files.push_back( ust::concat( "src/", f ) );
+	}
 
 	return BK::PackageInfo
 	{
