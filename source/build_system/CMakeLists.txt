@@ -65,11 +65,11 @@ foreach( source ${BUILD_SYSTEM_SOURCES} )
 	list( APPEND BUILD_SYSTEM_OBJECTS ${out_object} )
 endforeach()
 
-if( MINGW )
-	add_link_options( "-municode" ) # Allow "wmain" as entry point.
-endif()
-
 add_executable( BuildSystem ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} ${BUILD_SYSTEM_SOURCES_CPP} )
+
+if( MINGW )
+	target_link_options( BuildSystem PRIVATE "-municode" ) # Allow "wmain" as entry point.
+endif()
 
 if( NOT WIN32 )
 	target_link_libraries( BuildSystem PRIVATE dl )
