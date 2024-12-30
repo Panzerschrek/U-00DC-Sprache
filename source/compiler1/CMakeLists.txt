@@ -13,6 +13,8 @@ if( TARGET BuildSystem AND ${NEXT_COMPILER_GENERATION} STREQUAL "2" )
 	add_custom_command(
 		OUTPUT ${BK_BUILD_DIR}/release/CodeBuilderLib.o
 		DEPENDS ${CODE_BUILDER_LIB_HEADERS} ${CODE_BUILDER_LIB_SOURCES}
+		DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
+		DEPENDS BuildSystem
 		COMMAND
 			BuildSystem build
 			--build-configuration release
