@@ -27,7 +27,7 @@ if( TARGET BuildSystem AND ${NEXT_COMPILER_GENERATION} GREATER_EQUAL 2 )
 		COMMAND
 			BuildSystem build
 			--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
-			--compiler-executable ${CMAKE_CURRENT_BINARY_DIR}/../compiler${CURRENT_COMPILER_GENERATION}/Compiler${CURRENT_COMPILER_GENERATION}
+			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/../build_system/imports/
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 			--project-directory ${CMAKE_CURRENT_SOURCE_DIR}
