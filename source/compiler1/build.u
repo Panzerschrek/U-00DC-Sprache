@@ -20,6 +20,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 				.destination_path= move(keywords_generated_file),
 				.contents= CreateKeywordsHeaderFileContents()
 			},
+		.comment= keywords_file,
 	};
 
 	auto& code_builder_error_code_file= "code_builder_error_code.uh";
@@ -36,6 +37,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 				.destination_path= move(code_builder_error_code_generated_file),
 				.contents= CreateCodeBuilderErrorCodeFileContents()
 			},
+		.comment= code_builder_error_code_file,
 	};
 
 	var BK::BuildTarget mut target
