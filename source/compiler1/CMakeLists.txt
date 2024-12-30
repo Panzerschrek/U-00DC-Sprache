@@ -10,15 +10,23 @@ if( TARGET BuildSystem AND ${NEXT_COMPILER_GENERATION} STREQUAL "2" )
 
 	set( BK_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR}/bk_build )
 
+	if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
+		set( BUILD_SYSTEM_BUILD_CONFIGURATION "debug" )
+	else()
+		set( BUILD_SYSTEM_BUILD_CONFIGURATION "release" )
+	endif()
+
+	set( CODE_BUILDER_LIB_OBJECT_PATH ${BK_BUILD_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURATION}/CodeBuilderLib.o )
+
 	add_custom_command(
-		OUTPUT ${BK_BUILD_DIR}/release/CodeBuilderLib.o
+		OUTPUT ${CODE_BUILDER_LIB_OBJECT_PATH}
 		DEPENDS ${CODE_BUILDER_LIB_HEADERS} ${CODE_BUILDER_LIB_SOURCES}
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/build.u
 		DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
 		DEPENDS BuildSystem
 		COMMAND
 			BuildSystem build
-			--build-configuration release
+			--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
 			--compiler-executable ${CMAKE_CURRENT_BINARY_DIR}/../compiler${CURRENT_COMPILER_GENERATION}/Compiler${CURRENT_COMPILER_GENERATION}
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/../build_system/imports/
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
@@ -29,7 +37,7 @@ if( TARGET BuildSystem AND ${NEXT_COMPILER_GENERATION} STREQUAL "2" )
 
 	add_library(
 		CodeBuilderLib${NEXT_COMPILER_GENERATION}
-			${BK_BUILD_DIR}/release/CodeBuilderLib.o
+			${CODE_BUILDER_LIB_OBJECT_PATH}
 			${CODE_BUILDER_LIB_CPP_SOURCES}
 			${CODE_BUILDER_LIB_HEADERS}
 			${CODE_BUILDER_LIB_SOURCES}
@@ -51,7 +59,6 @@ else()
 	else()
 		set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
 	endif()
-
 
 	# Build rule for "Ü" files.
 	function( CompileUSource u_source_file out_object )
