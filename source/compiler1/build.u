@@ -1,5 +1,4 @@
 import "/build_system.uh"
-import "/stdout.u"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
@@ -7,40 +6,35 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	var ust::string8 generated_sources_directory= build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( lib_name );
 
 	auto& keywords_file= "keywords.uh";
-
-	var ust::string8 mut keywords_generated_file=
-		ust::concat( generated_sources_directory, "/", keywords_file );
+	var ust::string8 mut keywords_generated_file= ust::concat( generated_sources_directory, "/", keywords_file );
 
 	var BK::CustomBuildStep mut keywords_step
 	{
 		.output_files= ust::make_array( keywords_generated_file ),
-		.command=
-			BK::CustomBuildStep::GenerateFileCommand
-			{
-				.destination_path= move(keywords_generated_file),
-				.contents= CreateKeywordsHeaderFileContents()
-			},
+		.command= BK::CustomBuildStep::GenerateFileCommand
+		{
+			.destination_path= move(keywords_generated_file),
+			.contents= CreateKeywordsHeaderFileContents()
+		},
 		.comment= keywords_file,
 	};
 
 	auto& code_builder_error_code_file= "code_builder_error_code.uh";
-
 	var ust::string8 mut code_builder_error_code_generated_file=
 		ust::concat( generated_sources_directory, "/", code_builder_error_code_file );
 
-	var BK::CustomBuildStep mut  code_builder_error_code_step
+	var BK::CustomBuildStep mut code_builder_error_code_step
 	{
 		.output_files= ust::make_array( code_builder_error_code_generated_file ),
-		.command=
-			BK::CustomBuildStep::GenerateFileCommand
-			{
-				.destination_path= move(code_builder_error_code_generated_file),
-				.contents= CreateCodeBuilderErrorCodeFileContents()
-			},
+		.command= BK::CustomBuildStep::GenerateFileCommand
+		{
+			.destination_path= move(code_builder_error_code_generated_file),
+			.contents= CreateCodeBuilderErrorCodeFileContents()
+		},
 		.comment= code_builder_error_code_file,
 	};
 
-	var BK::BuildTarget mut target
+	var BK::BuildTarget mut code_builder_lib_build_target
 	{
 		.target_type = BK::BuildTargetType::ObjectFile,
 		.name= lib_name,
@@ -96,12 +90,12 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	foreach( &f : source_files )
 	{
-		target.source_files.push_back( ust::concat( "src/", f ) );
+		code_builder_lib_build_target.source_files.push_back( ust::concat( "src/", f ) );
 	}
 
 	return BK::PackageInfo
 	{
-		.build_targets= ust::make_array( move(target) ),
+		.build_targets= ust::make_array( move(code_builder_lib_build_target) ),
 		.custom_build_steps= ust::make_array( move(keywords_step), move(code_builder_error_code_step) ),
 	};
 }
@@ -134,6 +128,7 @@ fn CreateKeywordsHeaderFileContents() : ust::string8
 
 fn GetKeywordsList() : ust::vector</ust::string8/>
 {
+	// Embed keywords list into the build script directly.
 	var ust::string_view8 keywords_list= embed</char8/>( "keywords_list.txt" );
 
 	var ust::vector</ust::string8/> mut out_keywords;
@@ -210,6 +205,7 @@ fn GetCodeBuilderErrors() : ust::vector</CodeBuilderError/>
 {
 	var ust::vector</CodeBuilderError/> mut out_errors;
 
+	// Embed errors list into the build script directly.
 	var ust::string_view8 mut file_contents= embed</char8/>( "errors_list.hpp" );
 	loop
 	{
