@@ -1,0 +1,14 @@
+import "../proc.uh"
+
+namespace BK
+{
+
+fn GetNumberOfCPUs() : u32
+{
+	return u32( get_nprocs() );
+}
+
+} // namespace BK
+
+// Function from "sys/sysinfo.h".
+fn nomangle get_nprocs() : i32;

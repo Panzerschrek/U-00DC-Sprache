@@ -1,45 +1,22 @@
-import "/stdout.u"
+import "/assert.u"
+import "/atomic.u"
 import "/string_conversions.u"
 import "../process.uh"
+import "invalid_handle.uh"
 import "wide_string.uh"
 import "windows.uh"
 
 namespace BK
 {
 
-fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> command_line ) : bool
+fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool
 {
-	var WideString exe_path_wide = UTF8ToWideString( exe_path );
+	var WideString exe_path_wide = CorrectExecutablePathAndMakeItWide( exe_path );
 
 	var WideString mut exe_path_null_terminated = exe_path_wide;
-
-	// Append exe if necessary.
-	// TODO - do we really need to do this here?
-	if(exe_path.size() < 4s || exe_path.subrange_start( exe_path.size() - 4s ) != ".exe" )
-	{
-		auto mut extension = UTF8ToWideString( ".exe" );
-		exe_path_null_terminated.append( extension );
-	}
-
 	exe_path_null_terminated.push_back( WCHAR(0) );
 
-	var WideString space = UTF8ToWideString( " " );
-	var WideString quote = UTF8ToWideString( "\"" );
-
-	var WideString mut command_line_combined;
-	command_line_combined.append( quote.iter() );
-	command_line_combined.append( exe_path_wide.iter() ); // Repeat exe path in command line - it's necessary to fill argv[0]
-	command_line_combined.append( quote.iter() );
-
-	foreach( &arg : command_line )
-	{
-		command_line_combined.append( space.iter() );
-		command_line_combined.append( quote.iter() );
-		command_line_combined.append( UTF8ToWideString( arg ).iter() );
-		command_line_combined.append( quote.iter() );
-	}
-
-	command_line_combined.push_back( WCHAR(0) );
+	var WideString mut command_line_combined= ConstructCommandLineNullTerminated( exe_path_wide, command_line );
 
 	var ü_STARTUPINFOW mut startup_info = zero_init;
 	startup_info.cb = u32( typeinfo</ü_STARTUPINFOA/>.size_of );
@@ -60,21 +37,502 @@ fn RunExecutable( ust::string_view8 exe_path, ust::array_view_imut</ust::string_
 
 	if( creation_result == 0 )
 	{
-		ust::stderr_print( ust::concat( "CreateProcessW error: ", ust::to_string8( unsafe( GetLastError() ) ), "\n" ) );
+		logger.LogError( ust::concat( "CreateProcessW error: ", ust::to_string8( unsafe( GetLastError() ) ), "\n" ) );
 		return false;
 	}
 
-	// TODO - check if waiting fails.
-	unsafe( WaitForSingleObject( process_information.hProcess, 0xFFFFFFFFu ) );
+	// Close unused handle.
+	unsafe( CloseHandle( process_information.hThread ) );
+
+	return unsafe( WaitForProcessAndCloseIt( process_information.hProcess ) ) == 0u;
+}
+
+fn CreateProcessGroup( Logger &mut logger ) : ust::box_nullable</ProcessGroupInterface/>
+{
+	auto mut process_group_opt= ProcessGroup::Create( logger );
+	if( process_group_opt.empty() )
+	{
+		return ust::box_nullable</ProcessGroupInterface/>();
+	}
+	return ust::make_box( process_group_opt.try_take() );
+}
+
+class ProcessGroup final : ProcessGroupInterface
+{
+public:
+	fn Create( Logger &mut logger ) : ust::optional</ProcessGroup/>
+	{
+		var HANDLE io_port=
+			unsafe( ::CreateIoCompletionPort(
+				GetInvalidHandle(),
+				ust::nullptr</byte8/>(),
+				ULONG_PTR(0),
+				1u ) );
+
+		if( ust::is_nullptr( io_port ) )
+		{
+			logger.LogError( "Failed to create IO completion port!" );
+			return ust::null_optional;
+		}
+
+		return unsafe( ProcessGroup( io_port ) );
+	}
+
+	fn constructor()= delete;
+
+	// constructor for internal usage
+	fn constructor( HANDLE io_port ) unsafe
+		( io_port_= io_port )
+	{
+		assert( !ust::is_nullptr( io_port_ ) );
+	}
+
+	fn destructor()
+	{
+		unsafe( ::CloseHandle( io_port_ ) );
+	}
+
+public: // ProcessGroupInterface
+	fn virtual override StartProcess(
+		mut this,
+		Logger &mut logger,
+		ProcessId process_id,
+		ust::string_view8 exe_path,
+		ust::array_view_imut</ust::string8/> command_line ) : bool
+	{
+		auto mut out_process= ust::make_box( unsafe(
+			Process
+			{
+				.id= process_id,
+				.pipe_handle= GetInvalidHandle(),
+				.process_handle= GetInvalidHandle(),
+				.overlapped= zero_init,
+				.buffer= uninitialized, // leave uninitialized, since it's costly to initialize it.
+				.is_reading= false, // Not started read request yet.
+			} ) );
+
+		// Use global variable for pipes counter - to ensure uniqueness.
+		// Use atomic increment to ensure correct work in multiple threads.
+		// Also use process id, since pipe names are global across whole system.
+		var ust::string8 pipe_name_nt=
+			ust::concat(
+				"\\\\.\\pipe\\",
+				"BuildSystem_Process_",
+				ust::to_string8( unsafe( GetCurrentProcessId() ) ),
+				"_Pipe_",
+				ust::to_string8( unsafe( ust::atomic_inc(g_pipe_counter) ) ),
+				"\0" );
+
+		var WideString mut pipe_name_w= UTF8ToWideString( pipe_name_nt );
+
+		out_process.deref().pipe_handle =
+			unsafe( ::CreateNamedPipeW(
+				pipe_name_w.data(),
+				DWORD( PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED ),
+				DWORD( PIPE_TYPE_BYTE ),
+				DWORD( PIPE_UNLIMITED_INSTANCES ),
+				0u,
+				0u,
+				u32(INFINITE),
+				ust::nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
+
+		if( out_process.deref().pipe_handle == GetInvalidHandle() )
+		{
+			logger.LogError( ust::concat( "Failed to create pipe! Error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+			return false;
+		}
+
+		if( unsafe( ::CreateIoCompletionPort(
+			out_process.deref().pipe_handle,
+			io_port_,
+			ust::ptr_to_int( out_process.get_ptr() ), // Take pointer to "Process" structure.
+			0u ) ) == ust::nullptr</byte8/>() )
+		{
+			logger.LogError( ust::concat( "Failed to connect to IO completion port! Error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+			unsafe( ::CloseHandle( out_process.deref().pipe_handle ) );
+			return false;
+		}
+
+		if( unsafe( ::ConnectNamedPipe(
+			out_process.deref().pipe_handle,
+			$<(out_process.deref().overlapped /* save raw pointer to member of "Process" structure */ ) ) ) == 0 )
+		{
+			auto err= unsafe( ::GetLastError() );
+			if( err != DWORD(ERROR_IO_PENDING) )
+			{
+				logger.LogError( ust::concat( "Failed to connect to named pipe. Error: ", ust::to_string8( err ) ) );
+				unsafe( ::CloseHandle( out_process.deref().pipe_handle ) );
+				return false;
+			}
+		}
+
+		// Open pipe for writing and duplicate handle - to pass this writing handle to the child process.
+		var HANDLE mut output_write_child= zero_init;
+		{
+			var HANDLE output_write_handle =
+				unsafe( ::CreateFileW(
+					pipe_name_w.data(),
+					DWORD( GENERIC_WRITE ),
+					0u,
+					ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+					DWORD( OPEN_EXISTING ),
+					0u,
+					ust::nullptr</byte8/>() ) );
+
+			var HANDLE current_process_handle= unsafe( ::GetCurrentProcess() );
+
+			if( unsafe( ::DuplicateHandle(
+					current_process_handle,
+					output_write_handle,
+					current_process_handle,
+					$<(output_write_child),
+					0u,
+					1, // Inherit handle.
+					DWORD(DUPLICATE_SAME_ACCESS) ) ) == 0 )
+			{
+				logger.LogError( ust::concat( "Failed to duplicate handle! Error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+				unsafe( ::CloseHandle( out_process.deref().pipe_handle ) );
+				unsafe( ::CloseHandle( output_write_handle ) );
+				return false;
+			}
+
+			unsafe( ::CloseHandle( output_write_handle ) );
+		}
+
+		// Open "NUL" as stdin for child process.
+		var ü_SECURITY_ATTRIBUTES mut security_attributes= zero_init;
+		security_attributes.nLength = DWORD( typeinfo</ü_SECURITY_ATTRIBUTES/>.size_of );
+		security_attributes.bInheritHandle = 1;
+
+		var WideString mut nul_file_name_w= UTF8ToWideString( "NUL\0" );
+
+		var HANDLE nul =
+			unsafe( ::CreateFileW(
+				nul_file_name_w.data(),
+				DWORD( GENERIC_READ ),
+				DWORD( FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE ),
+				$<(security_attributes),
+				DWORD( OPEN_EXISTING ),
+				0u,
+				ust::nullptr</byte8/>() ) );
+		if( nul == GetInvalidHandle() )
+		{
+			logger.LogError( ust::concat( "Failed to open nul! Error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
+			unsafe( ::CloseHandle( out_process.deref().pipe_handle ) );
+			unsafe( ::CloseHandle( output_write_child ) );
+			return false;
+		}
+
+		var WideString exe_path_wide = CorrectExecutablePathAndMakeItWide( exe_path );
+
+		var WideString mut exe_path_null_terminated = exe_path_wide;
+		exe_path_null_terminated.push_back( WCHAR(0) );
+
+		var WideString mut command_line_combined= ConstructCommandLineNullTerminated( exe_path_wide, command_line );
+
+		// Setup standard streams redirection for child process.
+		var ü_STARTUPINFOW mut startup_info = zero_init;
+		startup_info.cb = u32( typeinfo</ü_STARTUPINFOA/>.size_of );
+		startup_info.dwFlags = DWORD( STARTF_USESTDHANDLES );
+		startup_info.hStdInput= nul;
+		startup_info.hStdOutput= output_write_child;
+		startup_info.hStdError= output_write_child;
+
+		var ü_PROCESS_INFORMATION mut process_information = zero_init;
+
+		var BOOL creation_result = unsafe( CreateProcessW(
+			exe_path_null_terminated.data(),
+			command_line_combined.data(),
+			ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+			ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+			1, // Inherit handles.
+			0u, // Flags
+			ust::nullptr</byte8/>(), // Environment
+			ust::nullptr</WCHAR/>(), // Current directory
+			$<(startup_info),
+			$<(process_information) ) );
+
+		if( creation_result == 0 )
+		{
+			logger.LogError( ust::concat( "CreateProcessW error: ", ust::to_string8( unsafe( GetLastError() ) ), "\n" ) );
+			unsafe( ::CloseHandle( out_process.deref().pipe_handle ) );
+			unsafe( ::CloseHandle( output_write_child ) );
+			unsafe( ::CloseHandle( nul ) );
+			return false;
+		}
+
+		out_process.deref().process_handle= process_information.hProcess;
+
+		// Close unused handles.
+		unsafe( ::CloseHandle( output_write_child ) );
+		unsafe( ::CloseHandle( nul ) );
+		unsafe( ::CloseHandle(process_information.hThread ) );
+
+		runnung_processes_.push_back( move(out_process) );
+
+		return true;
+	}
+
+	fn virtual override DoWork( mut this, Logger &mut logger ) : bool
+	{
+		if( runnung_processes_.empty() )
+		{
+			// Nothing to do.
+			return true;
+		}
+
+		var DWORD mut bytes_read= 0u;
+		var ULONG_PTR mut process_int_ptr= zero_init;
+		var LPOVERLAPPED mut overlapped= zero_init;
+
+		// Wait for reading on one of process pipes is finished.
+		if ( unsafe( ::GetQueuedCompletionStatus(
+			io_port_,
+			$<(bytes_read),
+			$<(process_int_ptr),
+			$<(overlapped),
+			DWORD(INFINITE) ) ) == 0 )
+		{
+			auto err= unsafe( ::GetLastError() );
+			if( err != DWORD(ERROR_BROKEN_PIPE) )
+			{
+				logger.LogError( ust::concat( "GetQueuedCompletionStatus error: ", ust::to_string8( err ), "\n" ) );
+				return false;
+			}
+		}
+
+		// Should obtain completion key for finished operation - in our case process structure raw pointer.
+		var $(Process) process_ptr= unsafe( ust::int_to_ptr</Process/>( process_int_ptr ) );
+		if( ust::is_nullptr(process_ptr) )
+		{
+			return true;
+		}
+
+		// Find index in runnung processes vector for obtained pointer. This is necessary to ensure this pointer is valid.
+		var size_type mut index= runnung_processes_.size();
+		for( auto mut i= 0s; i < runnung_processes_.size(); ++i )
+		{
+			if( unsafe( runnung_processes_[i].get_ptr() ) == process_ptr )
+			{
+				index= i;
+				break;
+			}
+		}
+
+		if( index >= runnung_processes_.size() )
+		{
+			logger.LogError( "Failed to find process structure index!" );
+			return false;
+		}
+
+		// We can now obtain read result and schedule next read.
+		if( !ProcessReadPipe( logger, runnung_processes_[index].deref() ) )
+		{
+			return false;
+		}
+
+		if( ProcessIsDone( runnung_processes_[index].deref() ) )
+		{
+			var ProcessId id= runnung_processes_[index].deref().id;
+			if( !ProcessFinish( logger, runnung_processes_[index].deref() ) )
+			{
+				return false;
+			}
+			finished_processes_.push_back( id );
+
+			auto last_index= runnung_processes_.size() - 1s;
+			runnung_processes_.swap( index, last_index );
+			runnung_processes_.drop_back();
+		}
+
+		return true;
+	}
+
+	fn virtual override TakeFinishedProcess( mut this ) : ust::optional</ProcessId/>
+	{
+		if( !finished_processes_.empty() )
+		{
+			return finished_processes_.pop_back();
+		}
+		return ust::null_optional;
+	}
+
+	fn virtual override GetNumberOfRunningProcesses( mut this ) : size_type
+	{
+		return runnung_processes_.size();
+	}
+
+private:
+	fn ProcessReadPipe( Logger &mut logger, Process &mut process ) : bool
+	{
+		// Get result for previous read operation.
+		var DWORD mut bytes(0);
+		if ( unsafe( ::GetOverlappedResult( process.pipe_handle, $<( process.overlapped ), $<(bytes), 1 ) ) == 0 )
+		{
+			auto err= unsafe( ::GetLastError() );
+			if( err == DWORD(ERROR_BROKEN_PIPE) )
+			{
+				// Pipe was closed - we are done.
+				unsafe( ::CloseHandle( process.pipe_handle ) );
+				process.pipe_handle= GetInvalidHandle();
+				return true;
+			}
+			else
+			{
+				logger.LogError( ust::concat( "GetOverlappedResult error: ", ust::to_string8( err ), "\n" ) );
+				return false;
+			}
+		}
+
+		if( process.is_reading )
+		{
+			// Extract bytes from buffer if reading was scheduled previously (it's not the first call).
+			for( auto mut i= 0u; i < bytes; ++i )
+			{
+				process.output.push_back( char8( process.buffer[i] ) );
+			}
+		}
+
+		process.is_reading= true;
+
+		// Schedule async reading operation.
+		if( unsafe( ::ReadFile(
+			process.pipe_handle,
+			$<( process.buffer[0] ),
+			DWORD(c_buffer_size),
+			$<(bytes),
+			$<(process.overlapped ) ) ) == 0 )
+		{
+			auto err= unsafe( ::GetLastError() );
+			if( err == DWORD(ERROR_BROKEN_PIPE) )
+			{
+				// Pipe was closed - we are done.
+				unsafe( ::CloseHandle( process.pipe_handle ) );
+				process.pipe_handle= GetInvalidHandle();
+				return true;
+			}
+			else if( err == DWORD(ERROR_IO_PENDING) ) {}
+			else
+			{
+				logger.LogError( ust::concat( "ReadFile error: ", ust::to_string8( err ), "\n" ) );
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	fn ProcessIsDone( Process& process ) : bool
+	{
+		return process.pipe_handle == GetInvalidHandle();
+	}
+
+	fn ProcessFinish( Logger &mut logger, Process &mut process ) : bool
+	{
+		var DWORD exit_code= unsafe( WaitForProcessAndCloseIt( process.process_handle ) );
+		process.process_handle= GetInvalidHandle();
+
+		var bool ok = exit_code == 0u;
+
+		if( !ok )
+		{
+			logger.LogError( ust::concat( "Process exited with code ", ust::to_string8(exit_code), "." ) );
+		}
+
+		( ok ? logger.LogInfo( process.output ) : logger.LogError( process.output ) );
+		return ok;
+	}
+
+private:
+	var size_type c_buffer_size= 4096s;
+
+	struct Process
+	{
+		ProcessId id;
+		ust::string8 output;
+		HANDLE process_handle; // INVALID_HANDLE_VALUE if done
+		HANDLE pipe_handle; // INVALID_HANDLE_VALUE if done
+		ü_OVERLAPPED overlapped;
+		[ byte8, c_buffer_size ] buffer;
+		bool is_reading;
+
+		fn destructor()
+		{
+			// Normally process should be finished before. This code handles error conditions.
+			// Close pipe prior for waiting,
+			// in order to avoid deadlock when child process waits on full pipe and parent process waits for child process.
+			if( pipe_handle != GetInvalidHandle() )
+			{
+				unsafe( CloseHandle( pipe_handle ) );
+			}
+			if( process_handle != GetInvalidHandle() )
+			{
+				unsafe( WaitForProcessAndCloseIt( process_handle ) );
+			}
+		}
+	}
+
+	// Put this structure into a box, because we need stable address.
+	type ProcessPtr= ust::box</Process/>;
+
+private:
+	// Global counter for the whole process. Needed to ensure all pipe names are unique.
+	var u32 mut g_pipe_counter= 0u;
+
+private:
+	HANDLE imut io_port_;
+
+	ust::vector</ProcessPtr/> runnung_processes_;
+	ust::vector</ProcessId/> finished_processes_;
+}
+
+fn CorrectExecutablePathAndMakeItWide( ust::string_view8 exe_path ) : WideString
+{
+	var WideString mut exe_path_wide = UTF8ToWideString( exe_path );
+
+	if(exe_path.size() < 4s || exe_path.subrange_start( exe_path.size() - 4s ) != ".exe" )
+	{
+		exe_path_wide.append( UTF8ToWideString( ".exe" ).iter() );
+	}
+	return exe_path_wide;
+}
+
+fn ConstructCommandLineNullTerminated(
+	WideStringView exe_path,
+	ust::array_view_imut</ust::string8/> command_line ) : WideString
+{
+	var WideString space = UTF8ToWideString( " " );
+	var WideString quote = UTF8ToWideString( "\"" );
+
+	var WideString mut command_line_combined;
+	command_line_combined.append( quote.iter() );
+	command_line_combined.append( exe_path.iter() ); // Repeat exe path in command line - it's necessary to fill argv[0]
+	command_line_combined.append( quote.iter() );
+
+	foreach( &arg : command_line )
+	{
+		command_line_combined.append( space.iter() );
+		command_line_combined.append( quote.iter() );
+		command_line_combined.append( UTF8ToWideString( arg ).iter() );
+		command_line_combined.append( quote.iter() );
+	}
+
+	command_line_combined.push_back( WCHAR(0) );
+
+	return command_line_combined;
+}
+
+fn WaitForProcessAndCloseIt( HANDLE process_handle ) unsafe : DWORD
+{
+	// TODO - check if wait fails.
+	unsafe( WaitForSingleObject( process_handle, u32(INFINITE) ) );
 
 	var DWORD mut exit_code = 100u;
 	// TODO - check if retrieving exit code fails.
-	unsafe( GetExitCodeProcess( process_information.hProcess, $<(exit_code) ) );
+	unsafe( GetExitCodeProcess( process_handle, $<(exit_code) ) );
 
-	unsafe( CloseHandle( process_information.hProcess ) );
-	unsafe( CloseHandle( process_information.hThread ) );
-
-	return exit_code == 0u;
+	unsafe( ::CloseHandle( process_handle ) );
+	return exit_code;
 }
 
 } // namespace BK

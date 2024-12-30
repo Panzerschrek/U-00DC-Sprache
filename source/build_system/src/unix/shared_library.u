@@ -1,5 +1,6 @@
 import "../shared_library.uh"
 import "../string_utils.uh"
+import "unix.uh"
 
 namespace BK
 {
@@ -37,14 +38,3 @@ fn SharedLibrary::LoadSymbol( imut this, Logger &mut logger, ust::string_view8 s
 }
 
 } // namespace BK
-
-fn nomangle dlopen( $(char8) path_null_terminated, i32 flags ) unsafe : $(byte8);
-
-fn nomangle dlerror() unsafe : $(char8);
-
-fn nomangle dlsym( $(byte8) handle, $(char8) symbol_null_terminated ) unsafe : $(byte8);
-
-// auto constexpr RTLD_LAZY = 0x00001;
-auto constexpr RTLD_NOW	= 0x00002;
-auto constexpr RTLD_GLOBAL = 0x00100;
-auto constexpr RTLD_NODELETE = 0x01000;

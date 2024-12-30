@@ -1,6 +1,7 @@
 import "/string_conversions.u"
 import "../filesystem.uh"
 import "../path.uh"
+import "invalid_handle.uh"
 import "wide_string.uh"
 import "windows.uh"
 
@@ -202,25 +203,6 @@ fn GetCurrentDirectory() : ust::string8
 
 	res.resize( len, WCHAR( " "c8 ) );
 	return WideStringToUTF8( res );
-}
-
-// Produces INVALID_HANDLE_VALUE.
-fn GetInvalidHandle() : HANDLE
-{
-	static_assert( typeinfo</ size_type />.size_of == typeinfo</HANDLE/>.size_of );
-
-	// Make -1.
-	var size_type mut s(0);
-	--s;
-
-	var HANDLE mut handle= zero_init;
-
-	unsafe( ust::memory_copy(
-		ust::ptr_cast_to_byte8( $<(handle) ),
-		ust::ptr_cast_to_byte8( $<(s) ),
-		typeinfo</ HANDLE />.size_of ) );
-
-	return handle;
 }
 
 } // namespace BK

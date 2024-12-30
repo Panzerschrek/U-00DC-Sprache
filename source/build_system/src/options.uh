@@ -20,6 +20,7 @@ struct Options
 	bool help = false;
 	bool quiet = false;
 	bool verbose = false;
+	u32 number_of_jobs= 0u;
 	Command command = Command::Help;
 	BuildConfiguration build_configuration= BuildConfiguration::Release;
 	ust::string8 configuration_options_file;

@@ -56,7 +56,8 @@ struct BuildGraph
 fn PerformGraphBuild(
 	Logger &mut logger,
 	BuildGraph& build_graph,
-	ust::optional_ref_imut</BuildGraph/> prev_build_graph_opt ) : bool;
+	ust::optional_ref_imut</BuildGraph/> prev_build_graph_opt,
+	u32 max_number_of_parallel_jobs ) : bool;
 
 fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8;
 fn DeserializeBuildGraph( ust::string_view8 build_graph_serialized ) : ust::optional</BuildGraph/>;

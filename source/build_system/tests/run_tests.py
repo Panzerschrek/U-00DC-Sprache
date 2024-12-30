@@ -171,6 +171,11 @@ def TwoFilesExeTest():
 	RunExecutable( "two_files_exe", "two_files_exe" )
 
 
+def ManySourceFilesTest():
+	RunBuildSystem( "many_source_files" )
+	RunExecutable( "many_source_files", "many_source_files" )
+
+
 def TwoTargetsTest():
 	RunBuildSystem( "two_targets" )
 	RunExecutable( "two_targets", "target_a" )
@@ -689,7 +694,6 @@ def MissingSourceFileTest():
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not read file" ) != -1 )
 	assert( stderr.find( "this_file_does_not_exist.u" ) != -1 )
-	assert( stderr.find( "Command \"this_file_does_not_exist.u.bc\" execution failed" ) != -1 )
 
 
 def SourceFileCompilationError0Test():
@@ -697,7 +701,6 @@ def SourceFileCompilationError0Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Syntax error" ) != -1 )
-	assert( stderr.find( "Command \"main.u.bc\" execution failed" ) != -1 )
 
 
 def SourceFileCompilationError1Test():
@@ -705,7 +708,6 @@ def SourceFileCompilationError1Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Name \"Foo\" not found" ) != -1 )
-	assert( stderr.find( "Command \"main.u.bc\" execution failed" ) != -1 )
 
 
 def SourceFileCompilationError2Test():
@@ -714,7 +716,6 @@ def SourceFileCompilationError2Test():
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not read file" ) != -1 )
 	assert( stderr.find( "non_existing_imported_file.uh" ) != -1 )
-	assert( stderr.find( "Command \"main.u.bc\" execution failed" ) != -1 )
 
 
 def SourceFileCompilationError3Test():
@@ -1222,6 +1223,7 @@ def main():
 		ConfigurationOptions1Test,
 		ConfigurationOptions2Test,
 		TwoFilesExeTest,
+		ManySourceFilesTest,
 		TwoTargetsTest,
 		SourcesInDirectoriesTest,
 		ТестЮникода,

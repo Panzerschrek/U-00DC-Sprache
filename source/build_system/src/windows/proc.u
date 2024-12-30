@@ -1,0 +1,14 @@
+import "../proc.uh"
+import "windows.uh"
+
+namespace BK
+{
+
+fn GetNumberOfCPUs() : u32
+{
+	var ü_SYSTEM_INFO mut sysinfo= zero_init;
+	unsafe( ::GetSystemInfo( $<(sysinfo) ) );
+	return sysinfo.dwNumberOfProcessors;
+}
+
+} // namespace BK
