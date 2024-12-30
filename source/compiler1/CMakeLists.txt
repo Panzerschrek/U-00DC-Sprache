@@ -24,6 +24,7 @@ if( TARGET BuildSystem AND ${NEXT_COMPILER_GENERATION} STREQUAL "2" )
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 			--project-directory ${CMAKE_CURRENT_SOURCE_DIR}
 			--build-directory ${BK_BUILD_DIR}
+		USES_TERMINAL
 			)
 
 	add_library(
