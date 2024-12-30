@@ -18,5 +18,4 @@ fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::string_view8
 	}
 }
 
-
 } // namespace U1

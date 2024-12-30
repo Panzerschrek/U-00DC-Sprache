@@ -1,8 +1,8 @@
 import "/shared_ptr.u"
 import "/string.u"
 import "/vector.u"
-import "../lex_synt_lib/src_loc.uh"
 import "/CodeBuilderLib/code_builder_error_code.uh"
+import "../lex_synt_lib/src_loc.uh"
 
 namespace U1
 {
