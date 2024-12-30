@@ -118,6 +118,7 @@ Interpreter:
 
 Compiler1:
 *) Support 128-bit types in switch operator
+*) Avoid storing common compiler files (keywords list, errors list) inside compiler1 source directory
 
 QtCreator plugin:
 *) Language server features support
@@ -178,7 +179,6 @@ CPP Header converter:
 *) Dependency versions unification - if a build target depends on several versions of the same build target, change
 	versions to newest used package version. Propogate these changes down to dependencies where it is necessary.
 *) Build the build system itself using the build system (create second build copy)
-*) Build Compiler2 and (possible) Compiler1 using the build system
 *) Handle interruption signals (like Ctrl+C) and abort build properly
 *) Support overriding "rpath" for executables
 *) Centralized packages repository
