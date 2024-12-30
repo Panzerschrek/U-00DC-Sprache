@@ -76,6 +76,9 @@ fn CreateKeywordsHeaderFileContents() : ust::string8
 
 	contents+= "}\n\n";
 
+	contents+= "fn IsKeyword( ust::string_view8& str ) : bool;\n";
+	contents+= "fn KeywordToString( Keyword k ) : ust::string_view8;\n\n";
+
 	contents+= "} // namespace U1\n";
 
 	return contents;
@@ -116,7 +119,7 @@ fn CreateCodeBuilderErrorsFileContents() : ust::string8
 	contents+= "import \"/shared_ptr.u\"\n";
 	contents+= "import \"/string.u\"\n";
 	contents+= "import \"/vector.u\"\n";
-	contents+= "import \"/lex_synt_lib/src_loc.uh\"\n";
+	contents+= "import \"/CodeBuilderLib/lex_synt_lib/src_loc.uh\"\n";
 	contents+= "\n";
 	contents+= "namespace U1\n{\n\n";
 	contents+= "enum CodeBuilderErrorCode\n{\n";
@@ -139,7 +142,7 @@ fn CreateCodeBuilderErrorsFileContents() : ust::string8
 	{
 		contents+= "\tCodeBuilderErrorCode::";
 		contents+= error.code;
-		contents+= "_ -> { return ";
+		contents+= " -> { return ";
 		contents+= MakeStringLiteral( error.message );
 		contents+= "; },\n";
 	}
