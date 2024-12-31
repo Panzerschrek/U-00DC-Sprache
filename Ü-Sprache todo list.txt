@@ -32,8 +32,9 @@ General:
 	name inside it
 *) Allow default constructors for interfaces
 *) Allow zero-sized fields for interfaces (to create inner reference tags, for example)
-*) Add a possibility to provide an arbitrary name for a "nomangle" function declaaration (but without body)
-*) Add possibility to declare but not define global variable - to access global C variables
+*) Add a possibility to provide an arbitrary name for a "nomangle" function declaration (but without body)
+*) Add a possibility to declare but not define global variable - to access global C variables
+*) Add a possibility to call external C functions with variadic number of arguments
 
 References:
 *) Support second order inner references for coroutine types
@@ -156,6 +157,8 @@ CPP Header converter:
 *) Support negative constants in defines
 *) Add more satisfying defines conversion - where defined value is a constant expression
 *) Handle some subset of C++ headers
+*) Simplify common use case with "typedef struct" - use typedef name directly instead of creating an anonymous struct
+	and type alias for it
 
 Ü Build system:
 *) Support compiling dependency packages for host system (if it's needed)
@@ -163,8 +166,8 @@ CPP Header converter:
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
 *) Fix possible global mutable variables and type id tables duplication because of private linking of a library into
 	more than one other build targets, which end up in the same result executable or shared library
-*) Add possibility to mark library build target as "force public" and thus make it public dependency even for build
-	targets which depends on it privately. This should ensure exactly one copy of this library is linked into result
+*) Add possibility to mark a library build target as "force public" and thus make it public dependency even for build
+	targets which depends on it privately. This should ensure exactly one version of this library is linked into result
 	executable or shared library.
 *) Prevent at least some name conflicts in imports (where multiple files exist for the given import path)
 *) Clean command - to delete build files
@@ -175,9 +178,10 @@ CPP Header converter:
 *) Support dependency files for custom build steps
 *) Ensure output files of custom build steps are located within package build directory or at least within root build
 	directory
+*) Support non-absolute program paths for custom build steps - where these programs may be resolved via "$PATH"
 *) Try to detect dependency loops involving custom build steps before executing the build
 *) Dependency versions unification - if a build target depends on several versions of the same build target, change
-	versions to newest used package version. Propogate these changes down to dependencies where it is necessary.
+	versions to newest used package version. Propagate these changes down to dependencies where it is necessary.
 *) Build the build system itself using the build system (create second build copy)
 *) Handle interruption signals (like Ctrl+C) and abort build properly
 *) Support overriding "rpath" for executables
@@ -188,3 +192,4 @@ Documentation:
 *) Other languages (not only russian and english)
 *) Describe more language details
 *) Describe undefined behavior
+*) Describe build system
