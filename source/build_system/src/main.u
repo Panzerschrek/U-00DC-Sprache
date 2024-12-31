@@ -31,18 +31,18 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	var Options& options= options_opt.try_deref();
 
+	if( options.command == Options::Command::Help || options.help )
+	{
+		ust::stdout_print( GetHelpMessage() );
+		return 0;
+	}
+
 	var Logger mut logger(
 		( options.verbose
 			? Logger::Level::Verbose
 			: ( options.quiet ? Logger::Level::Quiet : Logger::Level::Normal ) ) );
 
 	logger.LogInfo( "Bürokratie - the Ü build system!" );
-
-	if( options.command == Options::Command::Help || options.help )
-	{
-		ust::stdout_print( GetHelpMessage() );
-		return 0;
-	}
 
 	var TargetTriple mut target_triple;
 	if( !options.target_triple.empty() )
