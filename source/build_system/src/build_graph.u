@@ -32,40 +32,7 @@ fn PerformGraphBuild(
 	if_var( &prev_build_graph : prev_build_graph_opt )
 	{
 		// Has previous graph state. Determine nodes to rebuild based on file modification times.
-
-		// Collect and deduplicate all files.
-		var ust::unordered_map</ ust::string8, ust::optional</FileModificationTime/> /> mut files_with_modification_time;
-
-		foreach( &node : build_graph.nodes )
-		{
-			foreach( &file : node.input_files )
-			{
-				files_with_modification_time.insert( file, ust::null_optional );
-			}
-			foreach( &file : node.output_files )
-			{
-				files_with_modification_time.insert( file, ust::null_optional );
-			}
-		}
-
-		foreach( &dep_file_opt : nodes_dep_files )
-		{
-			if_var( &dep_file : dep_file_opt )
-			{
-				files_with_modification_time.insert( dep_file.destination, ust::null_optional );
-				foreach( &dependency : dep_file.dependencies )
-				{
-					files_with_modification_time.insert( dependency, ust::null_optional );
-				}
-			}
-		}
-
-		// Get modification times for all files.
-		foreach( &mut map_value : files_with_modification_time )
-		{
-			var ust::optional</FileModificationTime/> modification_time = GetFileModificationTime( map_value.key() );
-			map_value.value() = modification_time;
-		}
+		var FilesModificationTime files_with_modification_time = CollectFilesModificationTime( build_graph, nodes_dep_files );
 
 		// Mark nodes to rebuild.
 		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i ) label nodes_loop
@@ -515,6 +482,51 @@ fn PerformGraphBuild(
 
 	// Succcessfuly performed the build.
 	return true;
+}
+
+type FilesModificationTime= ust::unordered_map</ ust::string8, ust::optional</FileModificationTime/> />;
+
+fn CollectFilesModificationTime(
+	BuildGraph& build_graph,
+	ust::array_view_imut</ust::optional</MakeDepFile/>/> nodes_dep_files ) : FilesModificationTime
+{
+	assert( build_graph.nodes.size() == nodes_dep_files.size() );
+
+	// Collect and deduplicate all files.
+	var FilesModificationTime mut files_with_modification_time;
+
+	foreach( &node : build_graph.nodes )
+	{
+		foreach( &file : node.input_files )
+		{
+			files_with_modification_time.insert( file, ust::null_optional );
+		}
+		foreach( &file : node.output_files )
+		{
+			files_with_modification_time.insert( file, ust::null_optional );
+		}
+	}
+
+	foreach( &dep_file_opt : nodes_dep_files )
+	{
+		if_var( &dep_file : dep_file_opt )
+		{
+			files_with_modification_time.insert( dep_file.destination, ust::null_optional );
+			foreach( &dependency : dep_file.dependencies )
+			{
+				files_with_modification_time.insert( dependency, ust::null_optional );
+			}
+		}
+	}
+
+	// Get modification times for all files.
+	foreach( &mut map_value : files_with_modification_time )
+	{
+		var ust::optional</FileModificationTime/> modification_time = GetFileModificationTime( map_value.key() );
+		map_value.value() = modification_time;
+	}
+
+	return files_with_modification_time;
 }
 
 fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : ust::optional</MakeDepFile/>
