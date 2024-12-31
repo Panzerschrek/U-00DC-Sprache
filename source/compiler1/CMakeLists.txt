@@ -272,7 +272,6 @@ if( U_BUILD_PY_TESTS )
 		PyTestsLib${NEXT_COMPILER_GENERATION}
 			PRIVATE
 				CodeBuilderLib${NEXT_COMPILER_GENERATION}
-				CodeBuilderLibCommon
 				${PYTHON_LIBRARIES}
 			)
 

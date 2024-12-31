@@ -74,7 +74,7 @@ if( U_BUILD_PY_TESTS )
 	message( STATUS "Build py_tests" )
 
 	add_library( PyTestsLib SHARED py_tests_lib/py_tests_lib.cpp )
-	target_link_libraries( PyTestsLib CodeBuilderLib ${PYTHON_LIBRARIES} )
+	target_link_libraries( PyTestsLib PRIVATE CodeBuilderLib ${PYTHON_LIBRARIES} )
 	target_include_directories( PyTestsLib PRIVATE ${PYTHON_INCLUDE_DIRS} )
 
 	# Set proper name for result dynamic library.
