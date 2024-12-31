@@ -148,39 +148,7 @@ fn PerformGraphBuild(
 		// Mark also nodes for rebuild if their dependent nodes are needed to be rebuilt.
 		{
 			// Create a map for graph traversal speed-up.
-			var ust::unordered_map</ust::string8, ust::vector</size_type/>/> mut input_file_to_node_id_map;
-			for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
-			{
-				var BuildGraph::Node& node= build_graph.nodes[i];
-				var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
-
-				foreach( &input_file : node.input_files )
-				{
-					if( input_file_to_node_id_map.exists( input_file ) )
-					{
-						input_file_to_node_id_map[input_file].push_back(i);
-					}
-					else
-					{
-						input_file_to_node_id_map.insert( input_file, ust::make_array(i) );
-					}
-				}
-
-				if_var( &dep_file : dep_file_opt )
-				{
-					foreach( &dependency : dep_file.dependencies )
-					{
-						if( input_file_to_node_id_map.exists( dependency ) )
-						{
-							input_file_to_node_id_map[dependency].push_back(i);
-						}
-						else
-						{
-							input_file_to_node_id_map.insert( dependency, ust::make_array(i) );
-						}
-					}
-				}
-			}
+			var FileToNodesMap input_file_to_node_id_map= BuildInputFileToNodeIndexMap( build_graph, nodes_dep_files );
 
 			// Push initial nodes to rebuild to stack.
 			var ust::vector</size_type/> mut stack;
@@ -251,36 +219,7 @@ fn PerformGraphBuild(
 	// Perform rebuild.
 	{
 		// Create a map for graph traversal speed-up.
-		var ust::unordered_map</ust::string8, ust::vector</size_type/>/> mut output_file_to_node_id_map;
-		for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
-		{
-			var BuildGraph::Node& node= build_graph.nodes[i];
-			var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
-
-			foreach( &output_file : node.output_files )
-			{
-				if( output_file_to_node_id_map.exists( output_file ) )
-				{
-					output_file_to_node_id_map[output_file].push_back(i);
-				}
-				else
-				{
-					output_file_to_node_id_map.insert( output_file, ust::make_array(i) );
-				}
-			}
-
-			if_var( &dep_file : dep_file_opt )
-			{
-				if( output_file_to_node_id_map.exists( dep_file.destination ) )
-				{
-					output_file_to_node_id_map[dep_file.destination].push_back(i);
-				}
-				else
-				{
-					output_file_to_node_id_map.insert( dep_file.destination, ust::make_array(i) );
-				}
-			}
-		}
+		var FileToNodesMap output_file_to_node_id_map= BuildOutputFileToNodeIndexMap( build_graph, nodes_dep_files );
 
 		scoped_array BuildGraphNodeState mut nodes_state[ build_graph.nodes.size() ]( BuildGraphNodeState::Ready );
 		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
@@ -527,6 +466,91 @@ fn CollectFilesModificationTime(
 	}
 
 	return files_with_modification_time;
+}
+
+type FileToNodesMap= ust::unordered_map</ust::string8, ust::vector</size_type/>/>;
+
+fn BuildInputFileToNodeIndexMap(
+	BuildGraph& build_graph,
+	ust::array_view_imut</ust::optional</MakeDepFile/>/> nodes_dep_files ) : FileToNodesMap
+{
+	assert( build_graph.nodes.size() == nodes_dep_files.size() );
+
+	var FileToNodesMap mut input_file_to_node_id_map;
+	for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
+	{
+		var BuildGraph::Node& node= build_graph.nodes[i];
+		var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+
+		foreach( &input_file : node.input_files )
+		{
+			if( input_file_to_node_id_map.exists( input_file ) )
+			{
+				input_file_to_node_id_map[input_file].push_back(i);
+			}
+			else
+			{
+				input_file_to_node_id_map.insert( input_file, ust::make_array(i) );
+			}
+		}
+
+		if_var( &dep_file : dep_file_opt )
+		{
+			foreach( &dependency : dep_file.dependencies )
+			{
+				if( input_file_to_node_id_map.exists( dependency ) )
+				{
+					input_file_to_node_id_map[dependency].push_back(i);
+				}
+				else
+				{
+					input_file_to_node_id_map.insert( dependency, ust::make_array(i) );
+				}
+			}
+		}
+	}
+
+	return input_file_to_node_id_map;
+}
+
+fn BuildOutputFileToNodeIndexMap(
+	BuildGraph& build_graph,
+	ust::array_view_imut</ust::optional</MakeDepFile/>/> nodes_dep_files ) : FileToNodesMap
+{
+	assert( build_graph.nodes.size() == nodes_dep_files.size() );
+
+	var FileToNodesMap mut output_file_to_node_id_map;
+	for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
+	{
+		var BuildGraph::Node& node= build_graph.nodes[i];
+		var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+
+		foreach( &output_file : node.output_files )
+		{
+			if( output_file_to_node_id_map.exists( output_file ) )
+			{
+				output_file_to_node_id_map[output_file].push_back(i);
+			}
+			else
+			{
+				output_file_to_node_id_map.insert( output_file, ust::make_array(i) );
+			}
+		}
+
+		if_var( &dep_file : dep_file_opt )
+		{
+			if( output_file_to_node_id_map.exists( dep_file.destination ) )
+			{
+				output_file_to_node_id_map[dep_file.destination].push_back(i);
+			}
+			else
+			{
+				output_file_to_node_id_map.insert( dep_file.destination, ust::make_array(i) );
+			}
+		}
+	}
+
+	return output_file_to_node_id_map;
 }
 
 fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : ust::optional</MakeDepFile/>
