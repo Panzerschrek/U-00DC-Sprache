@@ -344,10 +344,8 @@ fn nomangle main() : i32
 			i= i32( gen.Next() - 16384u );
 		}
 
-		var (fn( i32 l, i32 r ) : bool ) comp= CompareAbs;
-
-		ust::sort( IntRange(arr), comp );
-		halt if( !IsSorted( arr, comp ) );
+		ust::sort( IntRange(arr), CompareAbs );
+		halt if( !IsSorted( arr, CompareAbs ) );
 	}
 	{ // Sort by key, using custom key provider in form of function pointer.
 		auto num= 113;

@@ -257,12 +257,10 @@ fn NumberFunc16( char8 c ) : u64
 	}
 }
 
-type NumberParseFunc= (fn (char8 c) : u64);
-
 fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
 {
 	var u64 mut base_(10);
-	var NumberParseFunc mut number_func= NumberFunc10;
+	auto mut number_func= NumberFunc10;
 
 	if( it.size() >= 3s && it.front() == "0"c8 )
 	{
