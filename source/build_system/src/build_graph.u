@@ -222,16 +222,12 @@ fn PerformGraphBuild(
 		var FileToNodesMap output_file_to_node_id_map= BuildOutputFileToNodeIndexMap( build_graph, nodes_dep_files );
 
 		scoped_array BuildGraphNodeState mut nodes_state[ build_graph.nodes.size() ]( BuildGraphNodeState::Ready );
+		var size_type mut num_nodes_to_rebuild= 0s;
 		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
 		{
-			nodes_state[i] = ( nodes_to_rebuild[i] ? BuildGraphNodeState::RebuildRequired : BuildGraphNodeState::Ready );
-		}
-
-		var size_type mut num_nodes_to_rebuild= 0s;
-		foreach( need_to_rebuild : nodes_to_rebuild )
-		{
-			if( need_to_rebuild )
+			if( nodes_to_rebuild[i] )
 			{
+				nodes_state[i] = BuildGraphNodeState::RebuildRequired;
 				++num_nodes_to_rebuild;
 			}
 		}
