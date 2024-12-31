@@ -108,6 +108,16 @@ fn PerformGraphBuild(
 				}
 			}
 
+			if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
+			{
+				if( files_with_modification_time[node.program].empty() )
+				{
+					logger.LogVerbose( ust::concat( "No program file \"", node.program, "\" for command \"", node.comment, "\" - mark for rebuild." ) );
+					need_to_rebuild= true;
+					continue label nodes_loop;
+				}
+			}
+
 			// At this point we have all files needed present. Compare their timesmaps.
 
 			var FileModificationTime mut min_output_modification_time(0);
@@ -123,6 +133,11 @@ fn PerformGraphBuild(
 			foreach( &input_file : node.input_files )
 			{
 				max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[input_file].try_deref() );
+			}
+
+			if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
+			{
+				max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[node.program].try_deref() );
 			}
 
 			if_var( &dep_file : dep_file_opt )
@@ -270,6 +285,16 @@ fn PerformGraphBuild(
 						foreach( &input_file : node.input_files )
 						{
 							if_var( &input_nodes : output_file_to_node_id_map.find( input_file ) )
+							{
+								foreach( input_node : input_nodes )
+								{
+									can_start_rebuild &= nodes_state[input_node] == BuildGraphNodeState::Ready;
+								}
+							}
+						}
+						if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
+						{
+							if_var( &input_nodes : output_file_to_node_id_map.find( node.program ) )
 							{
 								foreach( input_node : input_nodes )
 								{
@@ -438,6 +463,10 @@ fn CollectFilesModificationTime(
 		{
 			files_with_modification_time.insert( file, ust::null_optional );
 		}
+		if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
+		{
+			files_with_modification_time.insert( node.program, ust::null_optional );
+		}
 	}
 
 	foreach( &dep_file_opt : nodes_dep_files )
@@ -485,6 +514,18 @@ fn BuildInputFileToNodeIndexMap(
 			else
 			{
 				input_file_to_node_id_map.insert( input_file, ust::make_array(i) );
+			}
+		}
+
+		if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
+		{
+			if( input_file_to_node_id_map.exists( node.program ) )
+			{
+				input_file_to_node_id_map[node.program].push_back(i);
+			}
+			else
+			{
+				input_file_to_node_id_map.insert( node.program, ust::make_array(i) );
 			}
 		}
 
@@ -568,6 +609,11 @@ fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : 
 		logger.LogError( ust::concat( "Failed to parse dep file \"", dep_file_path, "\"" ) );
 	}
 	return dep_file_opt;
+}
+
+fn IsSpecialBuildCommand( ust::string_view8 command_name ) : bool
+{
+	return command_name.size() >= 2s && command_name[0s] == "?"c8 && command_name[1s] == "?"c8;
 }
 
 enum BuildGraphNodeState

@@ -16,7 +16,6 @@ struct BuildGraph
 	struct Node
 	{
 		// Program to run.
-		// Caution! If this program is generated during the build or may be changed in some another way, it should be listed in input files!
 		// May contain special build command name instead of executable path. Such commands are processed internally.
 		ust::string8 program;
 

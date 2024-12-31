@@ -1212,9 +1212,6 @@ fn CreateCustomBuildStepBuildGraphNodes( CustomBuildStep& custom_build_step, Bui
 	{
 		node.program= exe_command.exe_path;
 		node.command_line= exe_command.command_line;
-
-		// Executable may be changed by external code or during the build. So, add it into set of input files.
-		node.input_files.push_back( exe_command.exe_path );
 	}
 	else if_var( &copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
 	{
