@@ -4,8 +4,6 @@ import "/string_conversions.u"
 import "/unordered_map.u"
 import "build_graph.uh"
 import "filesystem.uh"
-import "json/parsing.uh"
-import "json/serialization.uh"
 import "make_dep_file.uh"
 import "path.uh"
 import "process.uh"
@@ -32,40 +30,7 @@ fn PerformGraphBuild(
 	if_var( &prev_build_graph : prev_build_graph_opt )
 	{
 		// Has previous graph state. Determine nodes to rebuild based on file modification times.
-
-		// Collect and deduplicate all files.
-		var ust::unordered_map</ ust::string8, ust::optional</FileModificationTime/> /> mut files_with_modification_time;
-
-		foreach( &node : build_graph.nodes )
-		{
-			foreach( &file : node.input_files )
-			{
-				files_with_modification_time.insert( file, ust::null_optional );
-			}
-			foreach( &file : node.output_files )
-			{
-				files_with_modification_time.insert( file, ust::null_optional );
-			}
-		}
-
-		foreach( &dep_file_opt : nodes_dep_files )
-		{
-			if_var( &dep_file : dep_file_opt )
-			{
-				files_with_modification_time.insert( dep_file.destination, ust::null_optional );
-				foreach( &dependency : dep_file.dependencies )
-				{
-					files_with_modification_time.insert( dependency, ust::null_optional );
-				}
-			}
-		}
-
-		// Get modification times for all files.
-		foreach( &mut map_value : files_with_modification_time )
-		{
-			var ust::optional</FileModificationTime/> modification_time = GetFileModificationTime( map_value.key() );
-			map_value.value() = modification_time;
-		}
+		var FilesModificationTime files_with_modification_time = CollectFilesModificationTime( build_graph, nodes_dep_files );
 
 		// Mark nodes to rebuild.
 		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i ) label nodes_loop
@@ -143,6 +108,16 @@ fn PerformGraphBuild(
 				}
 			}
 
+			if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
+			{
+				if( files_with_modification_time[node.program].empty() )
+				{
+					logger.LogVerbose( ust::concat( "No program file \"", node.program, "\" for command \"", node.comment, "\" - mark for rebuild." ) );
+					need_to_rebuild= true;
+					continue label nodes_loop;
+				}
+			}
+
 			// At this point we have all files needed present. Compare their timesmaps.
 
 			var FileModificationTime mut min_output_modification_time(0);
@@ -158,6 +133,11 @@ fn PerformGraphBuild(
 			foreach( &input_file : node.input_files )
 			{
 				max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[input_file].try_deref() );
+			}
+
+			if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
+			{
+				max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[node.program].try_deref() );
 			}
 
 			if_var( &dep_file : dep_file_opt )
@@ -181,39 +161,7 @@ fn PerformGraphBuild(
 		// Mark also nodes for rebuild if their dependent nodes are needed to be rebuilt.
 		{
 			// Create a map for graph traversal speed-up.
-			var ust::unordered_map</ust::string8, ust::vector</size_type/>/> mut input_file_to_node_id_map;
-			for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
-			{
-				var BuildGraph::Node& node= build_graph.nodes[i];
-				var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
-
-				foreach( &input_file : node.input_files )
-				{
-					if( input_file_to_node_id_map.exists( input_file ) )
-					{
-						input_file_to_node_id_map[input_file].push_back(i);
-					}
-					else
-					{
-						input_file_to_node_id_map.insert( input_file, ust::make_array(i) );
-					}
-				}
-
-				if_var( &dep_file : dep_file_opt )
-				{
-					foreach( &dependency : dep_file.dependencies )
-					{
-						if( input_file_to_node_id_map.exists( dependency ) )
-						{
-							input_file_to_node_id_map[dependency].push_back(i);
-						}
-						else
-						{
-							input_file_to_node_id_map.insert( dependency, ust::make_array(i) );
-						}
-					}
-				}
-			}
+			var FileToNodesMap input_file_to_node_id_map= BuildInputFileToNodeIndexMap( build_graph, nodes_dep_files );
 
 			// Push initial nodes to rebuild to stack.
 			var ust::vector</size_type/> mut stack;
@@ -284,48 +232,15 @@ fn PerformGraphBuild(
 	// Perform rebuild.
 	{
 		// Create a map for graph traversal speed-up.
-		var ust::unordered_map</ust::string8, ust::vector</size_type/>/> mut output_file_to_node_id_map;
-		for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
-		{
-			var BuildGraph::Node& node= build_graph.nodes[i];
-			var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
-
-			foreach( &output_file : node.output_files )
-			{
-				if( output_file_to_node_id_map.exists( output_file ) )
-				{
-					output_file_to_node_id_map[output_file].push_back(i);
-				}
-				else
-				{
-					output_file_to_node_id_map.insert( output_file, ust::make_array(i) );
-				}
-			}
-
-			if_var( &dep_file : dep_file_opt )
-			{
-				if( output_file_to_node_id_map.exists( dep_file.destination ) )
-				{
-					output_file_to_node_id_map[dep_file.destination].push_back(i);
-				}
-				else
-				{
-					output_file_to_node_id_map.insert( dep_file.destination, ust::make_array(i) );
-				}
-			}
-		}
+		var FileToNodesMap output_file_to_node_id_map= BuildOutputFileToNodeIndexMap( build_graph, nodes_dep_files );
 
 		scoped_array BuildGraphNodeState mut nodes_state[ build_graph.nodes.size() ]( BuildGraphNodeState::Ready );
+		var size_type mut num_nodes_to_rebuild= 0s;
 		for( auto mut i= 0s; i < build_graph.nodes.size(); ++i )
 		{
-			nodes_state[i] = ( nodes_to_rebuild[i] ? BuildGraphNodeState::RebuildRequired : BuildGraphNodeState::Ready );
-		}
-
-		var size_type mut num_nodes_to_rebuild= 0s;
-		foreach( need_to_rebuild : nodes_to_rebuild )
-		{
-			if( need_to_rebuild )
+			if( nodes_to_rebuild[i] )
 			{
+				nodes_state[i] = BuildGraphNodeState::RebuildRequired;
 				++num_nodes_to_rebuild;
 			}
 		}
@@ -370,6 +285,16 @@ fn PerformGraphBuild(
 						foreach( &input_file : node.input_files )
 						{
 							if_var( &input_nodes : output_file_to_node_id_map.find( input_file ) )
+							{
+								foreach( input_node : input_nodes )
+								{
+									can_start_rebuild &= nodes_state[input_node] == BuildGraphNodeState::Ready;
+								}
+							}
+						}
+						if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
+						{
+							if_var( &input_nodes : output_file_to_node_id_map.find( node.program ) )
 							{
 								foreach( input_node : input_nodes )
 								{
@@ -517,6 +442,152 @@ fn PerformGraphBuild(
 	return true;
 }
 
+type FilesModificationTime= ust::unordered_map</ ust::string8, ust::optional</FileModificationTime/> />;
+
+fn CollectFilesModificationTime(
+	BuildGraph& build_graph,
+	ust::array_view_imut</ust::optional</MakeDepFile/>/> nodes_dep_files ) : FilesModificationTime
+{
+	assert( build_graph.nodes.size() == nodes_dep_files.size() );
+
+	// Collect and deduplicate all files.
+	var FilesModificationTime mut files_with_modification_time;
+
+	foreach( &node : build_graph.nodes )
+	{
+		foreach( &file : node.input_files )
+		{
+			files_with_modification_time.insert( file, ust::null_optional );
+		}
+		foreach( &file : node.output_files )
+		{
+			files_with_modification_time.insert( file, ust::null_optional );
+		}
+		if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
+		{
+			files_with_modification_time.insert( node.program, ust::null_optional );
+		}
+	}
+
+	foreach( &dep_file_opt : nodes_dep_files )
+	{
+		if_var( &dep_file : dep_file_opt )
+		{
+			files_with_modification_time.insert( dep_file.destination, ust::null_optional );
+			foreach( &dependency : dep_file.dependencies )
+			{
+				files_with_modification_time.insert( dependency, ust::null_optional );
+			}
+		}
+	}
+
+	// Get modification times for all files.
+	foreach( &mut map_value : files_with_modification_time )
+	{
+		var ust::optional</FileModificationTime/> modification_time = GetFileModificationTime( map_value.key() );
+		map_value.value() = modification_time;
+	}
+
+	return files_with_modification_time;
+}
+
+type FileToNodesMap= ust::unordered_map</ust::string8, ust::vector</size_type/>/>;
+
+fn BuildInputFileToNodeIndexMap(
+	BuildGraph& build_graph,
+	ust::array_view_imut</ust::optional</MakeDepFile/>/> nodes_dep_files ) : FileToNodesMap
+{
+	assert( build_graph.nodes.size() == nodes_dep_files.size() );
+
+	var FileToNodesMap mut input_file_to_node_id_map;
+	for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
+	{
+		var BuildGraph::Node& node= build_graph.nodes[i];
+		var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+
+		foreach( &input_file : node.input_files )
+		{
+			if( input_file_to_node_id_map.exists( input_file ) )
+			{
+				input_file_to_node_id_map[input_file].push_back(i);
+			}
+			else
+			{
+				input_file_to_node_id_map.insert( input_file, ust::make_array(i) );
+			}
+		}
+
+		if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
+		{
+			if( input_file_to_node_id_map.exists( node.program ) )
+			{
+				input_file_to_node_id_map[node.program].push_back(i);
+			}
+			else
+			{
+				input_file_to_node_id_map.insert( node.program, ust::make_array(i) );
+			}
+		}
+
+		if_var( &dep_file : dep_file_opt )
+		{
+			foreach( &dependency : dep_file.dependencies )
+			{
+				if( input_file_to_node_id_map.exists( dependency ) )
+				{
+					input_file_to_node_id_map[dependency].push_back(i);
+				}
+				else
+				{
+					input_file_to_node_id_map.insert( dependency, ust::make_array(i) );
+				}
+			}
+		}
+	}
+
+	return input_file_to_node_id_map;
+}
+
+fn BuildOutputFileToNodeIndexMap(
+	BuildGraph& build_graph,
+	ust::array_view_imut</ust::optional</MakeDepFile/>/> nodes_dep_files ) : FileToNodesMap
+{
+	assert( build_graph.nodes.size() == nodes_dep_files.size() );
+
+	var FileToNodesMap mut output_file_to_node_id_map;
+	for( auto mut i = 0s; i < build_graph.nodes.size(); ++i )
+	{
+		var BuildGraph::Node& node= build_graph.nodes[i];
+		var ust::optional</MakeDepFile/>& dep_file_opt= nodes_dep_files[i];
+
+		foreach( &output_file : node.output_files )
+		{
+			if( output_file_to_node_id_map.exists( output_file ) )
+			{
+				output_file_to_node_id_map[output_file].push_back(i);
+			}
+			else
+			{
+				output_file_to_node_id_map.insert( output_file, ust::make_array(i) );
+			}
+		}
+
+		if_var( &dep_file : dep_file_opt )
+		{
+			if( output_file_to_node_id_map.exists( dep_file.destination ) )
+			{
+				output_file_to_node_id_map[dep_file.destination].push_back(i);
+			}
+			else
+			{
+				output_file_to_node_id_map.insert( dep_file.destination, ust::make_array(i) );
+			}
+		}
+	}
+
+	return output_file_to_node_id_map;
+}
+
 fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : ust::optional</MakeDepFile/>
 {
 	if( dep_file_path.empty() )
@@ -540,216 +611,16 @@ fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : 
 	return dep_file_opt;
 }
 
+fn IsSpecialBuildCommand( ust::string_view8 command_name ) : bool
+{
+	return command_name.size() >= 2s && command_name[0s] == "?"c8 && command_name[1s] == "?"c8;
+}
+
 enum BuildGraphNodeState
 {
 	Ready,
 	RebuildRequired,
 	RebuildInProgress,
-}
-
-fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8
-{
-	// TODO - automate this (somehow).
-
-	var JsonValue::Object mut build_graph_object;
-
-	{
-		var JsonValue::Array mut nodes_array;
-		foreach( &node : build_graph.nodes )
-		{
-			var JsonValue::Object mut node_value;
-
-			node_value.insert( "program", node.program );
-
-			{
-				var JsonValue::Array mut command_line_array;
-				foreach( &command_line_argument : node.command_line )
-				{
-					command_line_array.push_back( command_line_argument );
-				}
-				node_value.insert( "command_line", move(command_line_array) );
-			}
-
-			node_value.insert( "comment", node.comment );
-
-			node_value.insert( "dep_file", node.dep_file );
-
-			{
-				var JsonValue::Array mut input_files_array;
-				foreach( &input_file : node.input_files )
-				{
-					input_files_array.push_back( input_file );
-				}
-				node_value.insert( "input_files", move(input_files_array) );
-			}
-
-			{
-				var JsonValue::Array mut output_files_array;
-				foreach( &output_file : node.output_files )
-				{
-					output_files_array.push_back( output_file );
-				}
-				node_value.insert( "output_files", move(output_files_array) );
-			}
-
-			nodes_array.push_back( move(node_value) );
-		}
-
-		build_graph_object.insert( "nodes", move(nodes_array) );
-	}
-
-	// TODO - compress result string somohow.
-	// It should contain a lot of duplicated paths or at least path prefixes.
-	// Compresion is needed to speed-up writing build graph state on disk.
-	return SerializeJsonValuePretty( move(build_graph_object) );
-}
-
-fn DeserializeBuildGraph(  ust::string_view8 build_graph_serialized ) : ust::optional</BuildGraph/>
-{
-	// TODO - automate this (somehow).
-
-	var ust::optional</JsonValue/> json_parsed_opt= ParseJson( build_graph_serialized );
-	if( json_parsed_opt.empty() )
-	{
-		return ust::null_optional;
-	}
-
-	var JsonValue& json_parsed= json_parsed_opt.try_deref();
-
-	var BuildGraph mut build_graph;
-
-	if_var( &build_graph_object : json_parsed.AsObject() )
-	{
-		if_var( &nodes : build_graph_object.find( "nodes" ) )
-		{
-			if_var( &nodes_array : nodes.AsArray() )
-			{
-				foreach( &node_json : nodes_array )
-				{
-					if_var( &node_object : node_json.AsObject() )
-					{
-						var BuildGraph::Node mut out_node;
-
-						if_var( &program : node_object.find( "program" ) )
-						{
-							if_var( &program_string : program.AsString() )
-							{
-								out_node.program= program_string;
-							}
-							else
-							{
-								return ust::null_optional;
-							}
-						}
-
-						if_var( &command_line : node_object.find( "command_line" ) )
-						{
-							auto mut command_line_opt= DeserializeStringList( command_line );
-							if( command_line_opt.empty() )
-							{
-								return ust::null_optional;
-							}
-							out_node.command_line= command_line_opt.try_take();
-						}
-
-						if_var( &comment : node_object.find( "comment" ) )
-						{
-							if_var( &comment_string : comment.AsString() )
-							{
-								out_node.comment= comment_string;
-							}
-							else
-							{
-								return ust::null_optional;
-							}
-						}
-
-						if_var( &dep_file : node_object.find( "dep_file" ) )
-						{
-							if_var( &dep_file_string : dep_file.AsString() )
-							{
-								out_node.dep_file= dep_file_string;
-							}
-							else
-							{
-								return ust::null_optional;
-							}
-						}
-
-						if_var( &input_files : node_object.find( "input_files" ) )
-						{
-							auto mut input_files_opt= DeserializeStringList( input_files );
-							if( input_files_opt.empty() )
-							{
-								return ust::null_optional;
-							}
-							out_node.input_files= input_files_opt.try_take();
-						}
-
-						if_var( &output_files : node_object.find( "output_files" ) )
-						{
-							auto mut output_files_opt= DeserializeStringList( output_files );
-							if( output_files_opt.empty() )
-							{
-								return ust::null_optional;
-							}
-							out_node.output_files= output_files_opt.try_take();
-						}
-
-						build_graph.nodes.push_back( move(out_node) );
-					}
-					else
-					{
-						// Node isn't object.
-						return ust::null_optional;
-					}
-				} // for nodes array.
-			}
-			else
-			{
-				// Nodes isn't array.
-				return ust::null_optional;
-			}
-		}
-		else
-		{
-			// No nodes.
-			return ust::null_optional;
-		}
-	}
-	else
-	{
-		// Not an object.
-		return ust::null_optional;
-	}
-
-	return move(build_graph);
-}
-
-fn DeserializeStringList( JsonValue& value ) : ust::optional</ ust::vector</ ust::string8 /> />
-{
-	if_var( &value_array : value.AsArray() )
-	{
-		var ust::vector</ ust::string8 /> mut res;
-
-		foreach( &array_element : value_array )
-		{
-			if_var( &string : array_element.AsString() )
-			{
-				res.push_back( string );
-			}
-			else
-			{
-				return ust::null_optional;
-			}
-		}
-
-		return move(res);
-	}
-	else
-	{
-		return ust::null_optional;
-	}
 }
 
 } // namespace BK

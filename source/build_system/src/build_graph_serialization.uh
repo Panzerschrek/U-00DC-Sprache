@@ -1,0 +1,10 @@
+import "build_graph.uh"
+
+
+namespace BK
+{
+
+fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8;
+fn DeserializeBuildGraph( ust::string_view8 build_graph_serialized ) : ust::optional</BuildGraph/>;
+
+} // namespace BK

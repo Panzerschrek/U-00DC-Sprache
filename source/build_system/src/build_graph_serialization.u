@@ -1,0 +1,213 @@
+import "build_graph_serialization.uh"
+import "json/parsing.uh"
+import "json/serialization.uh"
+
+namespace BK
+{
+
+fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8
+{
+	// TODO - automate this (somehow).
+
+	var JsonValue::Object mut build_graph_object;
+
+	{
+		var JsonValue::Array mut nodes_array;
+		foreach( &node : build_graph.nodes )
+		{
+			var JsonValue::Object mut node_value;
+
+			node_value.insert( "program", node.program );
+
+			{
+				var JsonValue::Array mut command_line_array;
+				foreach( &command_line_argument : node.command_line )
+				{
+					command_line_array.push_back( command_line_argument );
+				}
+				node_value.insert( "command_line", move(command_line_array) );
+			}
+
+			node_value.insert( "comment", node.comment );
+
+			node_value.insert( "dep_file", node.dep_file );
+
+			{
+				var JsonValue::Array mut input_files_array;
+				foreach( &input_file : node.input_files )
+				{
+					input_files_array.push_back( input_file );
+				}
+				node_value.insert( "input_files", move(input_files_array) );
+			}
+
+			{
+				var JsonValue::Array mut output_files_array;
+				foreach( &output_file : node.output_files )
+				{
+					output_files_array.push_back( output_file );
+				}
+				node_value.insert( "output_files", move(output_files_array) );
+			}
+
+			nodes_array.push_back( move(node_value) );
+		}
+
+		build_graph_object.insert( "nodes", move(nodes_array) );
+	}
+
+	// TODO - compress result string somohow.
+	// It should contain a lot of duplicated paths or at least path prefixes.
+	// Compresion is needed to speed-up writing build graph state on disk.
+	return SerializeJsonValuePretty( move(build_graph_object) );
+}
+
+fn DeserializeBuildGraph(  ust::string_view8 build_graph_serialized ) : ust::optional</BuildGraph/>
+{
+	// TODO - automate this (somehow).
+
+	var ust::optional</JsonValue/> json_parsed_opt= ParseJson( build_graph_serialized );
+	if( json_parsed_opt.empty() )
+	{
+		return ust::null_optional;
+	}
+
+	var JsonValue& json_parsed= json_parsed_opt.try_deref();
+
+	var BuildGraph mut build_graph;
+
+	if_var( &build_graph_object : json_parsed.AsObject() )
+	{
+		if_var( &nodes : build_graph_object.find( "nodes" ) )
+		{
+			if_var( &nodes_array : nodes.AsArray() )
+			{
+				foreach( &node_json : nodes_array )
+				{
+					if_var( &node_object : node_json.AsObject() )
+					{
+						var BuildGraph::Node mut out_node;
+
+						if_var( &program : node_object.find( "program" ) )
+						{
+							if_var( &program_string : program.AsString() )
+							{
+								out_node.program= program_string;
+							}
+							else
+							{
+								return ust::null_optional;
+							}
+						}
+
+						if_var( &command_line : node_object.find( "command_line" ) )
+						{
+							auto mut command_line_opt= DeserializeStringList( command_line );
+							if( command_line_opt.empty() )
+							{
+								return ust::null_optional;
+							}
+							out_node.command_line= command_line_opt.try_take();
+						}
+
+						if_var( &comment : node_object.find( "comment" ) )
+						{
+							if_var( &comment_string : comment.AsString() )
+							{
+								out_node.comment= comment_string;
+							}
+							else
+							{
+								return ust::null_optional;
+							}
+						}
+
+						if_var( &dep_file : node_object.find( "dep_file" ) )
+						{
+							if_var( &dep_file_string : dep_file.AsString() )
+							{
+								out_node.dep_file= dep_file_string;
+							}
+							else
+							{
+								return ust::null_optional;
+							}
+						}
+
+						if_var( &input_files : node_object.find( "input_files" ) )
+						{
+							auto mut input_files_opt= DeserializeStringList( input_files );
+							if( input_files_opt.empty() )
+							{
+								return ust::null_optional;
+							}
+							out_node.input_files= input_files_opt.try_take();
+						}
+
+						if_var( &output_files : node_object.find( "output_files" ) )
+						{
+							auto mut output_files_opt= DeserializeStringList( output_files );
+							if( output_files_opt.empty() )
+							{
+								return ust::null_optional;
+							}
+							out_node.output_files= output_files_opt.try_take();
+						}
+
+						build_graph.nodes.push_back( move(out_node) );
+					}
+					else
+					{
+						// Node isn't object.
+						return ust::null_optional;
+					}
+				} // for nodes array.
+			}
+			else
+			{
+				// Nodes isn't array.
+				return ust::null_optional;
+			}
+		}
+		else
+		{
+			// No nodes.
+			return ust::null_optional;
+		}
+	}
+	else
+	{
+		// Not an object.
+		return ust::null_optional;
+	}
+
+	return move(build_graph);
+}
+
+fn DeserializeStringList( JsonValue& value ) : ust::optional</ ust::vector</ ust::string8 /> />
+{
+	if_var( &value_array : value.AsArray() )
+	{
+		var ust::vector</ ust::string8 /> mut res;
+
+		foreach( &array_element : value_array )
+		{
+			if_var( &string : array_element.AsString() )
+			{
+				res.push_back( string );
+			}
+			else
+			{
+				return ust::null_optional;
+			}
+		}
+
+		return move(res);
+	}
+	else
+	{
+		return ust::null_optional;
+	}
+}
+
+} // namespace BK
