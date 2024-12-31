@@ -1822,7 +1822,8 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( this, NamesScopePtr& names_scope 
 					}
 
 					if( !function.llvm_function.lock_imut().deref().referenced &&
-						!function.no_mangle &&
+						// Enable unreferenced "nomangle" functions, but only with body.
+						!( function.no_mangle && !function.body_syntax_element.empty() && !function.body_syntax_element.try_deref().block.empty() ) &&
 						function.virtual_table_index == ~0u &&
 						IsSrcLocFromMainFile( body_src_loc ) &&
 						IsSrcLocFromMainFile( prototye_src_loc ) )

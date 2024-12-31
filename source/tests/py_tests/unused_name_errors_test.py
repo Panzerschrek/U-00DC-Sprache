@@ -1297,6 +1297,16 @@ def UnusedFunction_Test15():
 	assert( HasError( errors_list, "UnusedName", 10 ) )
 
 
+def UnusedFunction_Test16():
+	c_program_text= """
+		// Declaring a "nomangle" prototype has no sense.
+		fn nomangle SomeExternalFunction();
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnusedName", 3 ) )
+
+
 def UnusedTypeTemplate_Test0():
 	c_program_text= """
 		template</type T/> type Vec3= [ T, 3 ];

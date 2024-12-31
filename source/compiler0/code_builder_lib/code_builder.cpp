@@ -910,7 +910,8 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 				for( const FunctionVariable& function : functions_set->functions )
 				{
 					if( !function.referenced &&
-						!function.no_mangle &&
+						// Enable unreferenced "nomangle" functions, but only with body.
+						!( function.no_mangle && function.syntax_element != nullptr && function.syntax_element->block != nullptr ) &&
 						function.virtual_table_index == ~0u &&
 						IsSrcLocFromMainFile( function.body_src_loc ) &&
 						IsSrcLocFromMainFile( function.prototype_src_loc ) )
