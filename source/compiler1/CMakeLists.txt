@@ -88,11 +88,13 @@ else()
 					${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
+					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/imports/::CodeBuilderLib
 					--include-dir ${CMAKE_CURRENT_BINARY_DIR}/::CodeBuilderLib
 					# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 					# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
 					--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/src
 					--source-dir ${CMAKE_CURRENT_BINARY_DIR}/
+					--prevent-imports-outside-given-directories
 				${DEPFILE_OPTION}
 				WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.bc:", but launches custom command in current binary directory
 				COMMENT "Building ${current_subdir}/${u_source_file_relative}.bc"
@@ -112,11 +114,13 @@ else()
 					--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
+					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/imports/::CodeBuilderLib
 					--include-dir ${CMAKE_CURRENT_BINARY_DIR}/::CodeBuilderLib
 					# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 					# DO NOT list here the directory "imports", since it contains declarations of publically-available symbols.
 					--source-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
 					--source-dir ${CMAKE_CURRENT_BINARY_DIR}/
+					--prevent-imports-outside-given-directories
 				${DEPFILE_OPTION}
 				WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
 				COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"
