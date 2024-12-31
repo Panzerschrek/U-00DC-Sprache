@@ -15,6 +15,7 @@ struct Options
 	{
 		Help,
 		Build,
+		Init,
 	}
 
 	bool help = false;

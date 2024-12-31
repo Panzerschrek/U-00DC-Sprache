@@ -20,6 +20,7 @@ auto constexpr g_help_message=
 	"\n" +
 	"COMMANDS:\n" +
 	"  build                              - perform the build\n" +
+	"  init                               - initialize a stub project\n" +
 	"  help                               - show this message\n" +
 	"\n" +
 	"OPTIONS:\n" +
@@ -63,6 +64,10 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 	else if( command == "build" )
 	{
 		res.command= Options::Command::Build;
+	}
+	else if( command == "init" )
+	{
+		res.command= Options::Command::Init;
 	}
 	else
 	{

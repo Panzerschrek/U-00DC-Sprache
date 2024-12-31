@@ -6,6 +6,7 @@ import "build_system_paths.uh"
 import "configuration_options.uh"
 import "entry.uh"
 import "filesystem.uh"
+import "init_command.uh"
 import "make_dep_file.uh"
 import "options.uh"
 import "package_transformation.uh"
@@ -43,6 +44,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			: ( options.quiet ? Logger::Level::Quiet : Logger::Level::Normal ) ) );
 
 	logger.LogInfo( "Bürokratie - the Ü build system!" );
+
+	if( options.command == Options::Command::Init )
+	{
+		auto project_directory= NormalizePath( MakePathAbsolute( options.root_package_directory ) );
+		return ( InitProjectStub( logger, project_directory ) ? 0 : 1 );
+	}
 
 	var TargetTriple mut target_triple;
 	if( !options.target_triple.empty() )
