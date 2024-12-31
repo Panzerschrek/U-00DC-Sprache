@@ -1,7 +1,7 @@
 import "/sort.u"
 import "/string_conversions.u"
 import "/stdout.u"
-import "build_graph.uh"
+import "build_graph_serialization.uh"
 import "build_system_paths.uh"
 import "configuration_options.uh"
 import "entry.uh"
