@@ -2,6 +2,8 @@
 
 WORK IN PROGRESS!
 
+Many options and APIs aren't stabilized yet!
+
 
 ### About the build system
 
@@ -15,31 +17,20 @@ The build system compiles the build script file using Ü compiler into a shared 
 
 ### Usage
 
-Run the build system executable with _build_ command inside a directory, containing _build.u_ file.
-This file should define a function named _GetPackageInfo_ returning a struct with package description (build targets, their sources, etc.).
+Run the build system executable with _init_ command.
+This will create a stub project, including file _build.u_.
+This initialization step is needed only once and is optional - the build script file may be written manually instead.
 
-An example of a build file:
-```
-import "/build_system.uh" // This file contains definitions of the build system types.
-
-fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
-{
-	// The build system interface may be used for obtaining current build properties.
-	// Also it provides various helper functions.
-	ust::ignore_unused( build_system_interface );
-
-	// Create an executable target with single source file.
-	ar BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable };
-	target.source_files.push_back( "main.u" );
-	target.name= "hello_world";
-	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
-}
-
-```
+After a project is initialized in may be built.
+To build a project run the build system executable within a directory contained such _build.u_ file.
 
 By default the build system creates a directory named _build_ in the project directory, where all build results and intermediate files are placed.
+But this may be changed via ``--build-directory`` command line option.
+Also it's possible to choose project directory other than current via ``--project-directory`` option.
 
-For more info, run the build system executable using ``--help`` option.
+Build configuration may be specified via ``--build-configuration`` option, supported configurations are _release_ and _debug_.
+Target triple may be specified with ``--target-triple`` option.
+For more info, run the build system executable using ``--help`` option or ``help`` command.
 
 
 ### Features
@@ -65,7 +56,7 @@ For now following features are implemented:
 
 ### Caveats
 
-Since build scripts are normal Ü programs it's possible to trigger crash by using `halt` or by messing with unsafe code.
+Since build scripts are normal Ü programs, it's possible to trigger a crash by using `halt` or by messing with unsafe code.
 Since build script code is running inside the build system process, the whole process is terminated if an error in one of build script occurs.
 
 
