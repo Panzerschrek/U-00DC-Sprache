@@ -29,8 +29,10 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/IPO.h>
+#include <llvm/Transforms/IPO/ConstantMerge.h>
 #include <llvm/Transforms/IPO/GlobalDCE.h>
 #include <llvm/Transforms/IPO/Internalize.h>
+#include <llvm/Transforms/IPO/MergeFunctions.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../code_builder_lib_common/async_calls_inlining.hpp"
@@ -870,35 +872,47 @@ int Main( int argc, const char* argv[] )
 			cg_analysis_manager,
 			module_analysis_manager);
 
-		auto internalize_callback=
-				[](llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel )
+		auto add_start_passes_callback=
+				[](llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel o )
 				{
 					// Internalize (if needed).
 					if( Options::internalize )
 						module_pass_manager.addPass( llvm::InternalizePass( MustPreserveGlobalValue ) );
+
+					if( o.isOptimizingForSpeed() || o.isOptimizingForSize() )
+					{
+						// Run manually constant merge pass and then function merge pass.
+						// Do this in order to deduplicate code, which may be duplicated in case of LTO linking.
+						// Constants merge as first pass is necessary before functions merging,
+						// since function merging checks functions equality and
+						// functions accessing different constants with same value are considered to be different.
+						module_pass_manager.addPass( llvm::ConstantMergePass() );
+						module_pass_manager.addPass( llvm::MergeFunctionsPass() );
+					}
 				};
 
 		// Create the pass manager.
 		llvm::ModulePassManager module_pass_manager;
 		if( optimization_level == llvm::OptimizationLevel::O0 )
 		{
-			pass_builder.registerPipelineStartEPCallback( internalize_callback );
+			pass_builder.registerPipelineStartEPCallback( add_start_passes_callback );
 			module_pass_manager= pass_builder.buildO0DefaultPipeline( optimization_level );
 		}
 		else if( Options::lto_mode == Options::LTOMode::PreLink )
 		{
-			pass_builder.registerPipelineStartEPCallback( internalize_callback );
+			pass_builder.registerPipelineStartEPCallback( add_start_passes_callback );
+
 			module_pass_manager= pass_builder.buildLTOPreLinkDefaultPipeline( optimization_level );
 		}
 		else if( Options::lto_mode == Options::LTOMode::Link )
 		{
 			// LTO pipeline uses different callbacks at start.
-			pass_builder.registerFullLinkTimeOptimizationEarlyEPCallback( internalize_callback );
+			pass_builder.registerFullLinkTimeOptimizationEarlyEPCallback( add_start_passes_callback );
 			module_pass_manager= pass_builder.buildLTODefaultPipeline( optimization_level, nullptr );
 		}
 		else
 		{
-			pass_builder.registerPipelineStartEPCallback( internalize_callback );
+			pass_builder.registerPipelineStartEPCallback( add_start_passes_callback );
 			module_pass_manager= pass_builder.buildPerModuleDefaultPipeline( optimization_level );
 		}
 
