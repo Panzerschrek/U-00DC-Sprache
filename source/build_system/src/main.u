@@ -51,6 +51,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return ( InitProjectStub( logger, project_directory ) ? 0 : 1 );
 	}
 
+	var TargetTriple host_target_triple= GetHostTargetTriple();
+
 	var TargetTriple mut target_triple;
 	if( !options.target_triple.empty() )
 	{
@@ -64,7 +66,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 	else
 	{
-		target_triple= GetHostTargetTriple();
+		target_triple= host_target_triple;
 	}
 
 	var ConfigurationOptions mut configuration_options;
@@ -138,21 +140,24 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	var BuildSystemInterfaceImplementation mut bsi(
 		move(logger),
 		options.build_configuration,
-		move(target_triple),
+		TargetTriple(),
 		move(configuration_options),
 		move(build_system_paths),
 		move(root_package_build_directory) );
 
-	var ust::unordered_map</PackageAbsoluteName, PackageInfo/> mut packages_map;
+	var ust::unordered_map</PackageAbsoluteName, PackageInfo/> mut target_packages_map, mut host_packages_map;
 
-	var ust::vector</PackageAbsoluteName/> mut packages_queue;
+	var ust::vector</PackageAbsoluteName/> mut target_packages_queue, mut host_packages_queue;
 	// Push root package.
-	packages_queue.push_back( PackageAbsoluteName{ .name_base= PackageAbsoluteName::RootPackage{}, .path= "" } );
+	target_packages_queue.push_back( PackageAbsoluteName{ .name_base= PackageAbsoluteName::RootPackage{}, .path= "" } );
 
-	for( auto mut i= 0s; i < packages_queue.size(); ++i ) // Use index-based iterations, because this list is populated within the loop.
+	// Process target packages queue.
+	bsi.target_triple_= target_triple;
+	// Use index-based iterations, because this list is populated within the loop.
+	for( auto mut i= 0s; i < target_packages_queue.size(); ++i )
 	{
-		var PackageAbsoluteName package_name= packages_queue[i];
-		if( packages_map.exists( package_name ) )
+		var PackageAbsoluteName package_name= target_packages_queue[i];
+		if( target_packages_map.exists( package_name ) )
 		{
 			continue; // Already loaded this package.
 		}
@@ -209,19 +214,103 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 				bsi.logger_.LogError( ust::concat( "Failed to find package dependency within package \"", package_name.path, "\"!" ) );
 				return -1;
 			}
-			packages_queue.push_back( dependency_package_absolute_name.try_take() );
+			switch( dependency.required_system )
+			{
+				PackageDependency::RequiredSystem::Target ->
+				{
+					target_packages_queue.push_back( dependency_package_absolute_name.try_take() );
+				},
+				PackageDependency::RequiredSystem::Host ->
+				{
+					host_packages_queue.push_back( dependency_package_absolute_name.try_take() );
+				},
+				PackageDependency::RequiredSystem::Both ->
+				{
+					target_packages_queue.push_back( dependency_package_absolute_name.try_deref() );
+					host_packages_queue.push_back( dependency_package_absolute_name.try_take() );
+				},
+			}
 		}
 
-		packages_map.insert( package_name, package_info_opt.try_take() );
+		target_packages_map.insert( package_name, package_info_opt.try_take() );
+	}
+
+	// Process host packages queue.
+	bsi.target_triple_= host_target_triple;
+	// Use index-based iterations, because this list is populated within the loop.
+	for( auto mut i= 0s; i < host_packages_queue.size(); ++i )
+	{
+		var PackageAbsoluteName package_name= host_packages_queue[i];
+		if( host_packages_map.exists( package_name ) )
+		{
+			continue; // Already loaded this package.
+		}
+		// Tweak build system interface for current package.
+		bsi.SetCurrentPackageName( package_name );
+
+		// TODO - customize it based on package name?
+		auto constexpr entry_func_name = "GetPackageInfoImpl";
+
+		auto shared_library_opt = BuildAndLoadPackageBuildScript(
+			bsi.logger_,
+			bsi.build_system_paths_,
+			GetPackageSourceDirectory( bsi.build_system_paths_, package_name ),
+			// Output build script into base build directory, ignoring build configuration and target triple.
+			// Doing so we allow reusing build script for different configuration and target systems.
+			GetPackageBuildDirectory( root_package_build_directory_base, package_name ),
+			entry_func_name );
+		if( shared_library_opt.empty() )
+		{
+			bsi.logger_.LogError( "Failed to load/build the build script shared library." );
+			return -1;
+		}
+
+		auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
+		// A hacky way to cast byte8 pointer to a function pointer.
+		var GetPackageInfoFunctionType mut func_ptr= zero_init;
+		unsafe( ust::memory_copy(
+			ust::ptr_cast_to_byte8( $<(func_ptr) ),
+			ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
+			typeinfo</ typeof(func_ptr) />.size_of ) );
+
+		if( ust::is_nullptr(func_ptr) )
+		{
+			bsi.logger_.LogError( "Failed to load function " + entry_func_name );
+			return -1;
+		}
+
+		// Obtain package info by calling a shared library function.
+		var ust::optional</PackageInfo/> mut package_info_opt= func_ptr( bsi );
+		if( package_info_opt.empty() )
+		{
+			bsi.logger_.LogError( ust::concat( "Failed to get package info for package \"", package_name.path, "\"- build script returned empty optional." ) );
+			return -1;
+		}
+
+		// Add dependencies to the queue.
+		foreach( &dependency : package_info_opt.try_deref().package_dependencies )
+		{
+			auto mut dependency_package_absolute_name=
+				ResolvePackageAbsoluteName( bsi.logger_, package_name, dependency.name );
+			if( dependency_package_absolute_name.empty() )
+			{
+				bsi.logger_.LogError( ust::concat( "Failed to find package dependency within package \"", package_name.path, "\"!" ) );
+				return -1;
+			}
+			// All dependencies of host packages are host packages.
+			host_packages_queue.push_back( dependency_package_absolute_name.try_take() );
+		}
+
+		host_packages_map.insert( package_name, package_info_opt.try_take() );
 	}
 
 	// Transform packages loaded.
-	var WorkspaceInfo mut workspace;
+	var WorkspaceInfo mut target_workspace, mut host_workspace;
 	{
 		// Collect and sort a list of pacakge names,
 		// then iterate in this sorted order - to avoid processing packages in non-deterministic hashtable order.
 		var ust::vector</PackageAbsoluteName/> mut package_names;
-		foreach( &pair : packages_map )
+		foreach( &pair : target_packages_map )
 		{
 			package_names.push_back( pair.key() );
 		}
@@ -230,7 +319,31 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		var bool mut has_package_transformation_errors= false;
 		foreach( &package_name : package_names )
 		{
-			if( !TransformAndValidatePackageInfo( bsi.logger_, packages_map[ package_name ], package_name, workspace ) )
+			if( !TransformAndValidatePackageInfo( bsi.logger_, target_packages_map[ package_name ], package_name, target_workspace ) )
+			{
+				bsi.logger_.LogError( ust::concat( "Package \"", package_name.path, "\" is invald." ) );
+				has_package_transformation_errors= true;
+			}
+		}
+		if( has_package_transformation_errors )
+		{
+			return -1;
+		}
+	}
+	{
+		// Collect and sort a list of pacakge names,
+		// then iterate in this sorted order - to avoid processing packages in non-deterministic hashtable order.
+		var ust::vector</PackageAbsoluteName/> mut package_names;
+		foreach( &pair : host_packages_map )
+		{
+			package_names.push_back( pair.key() );
+		}
+		ust::sort( package_names );
+
+		var bool mut has_package_transformation_errors= false;
+		foreach( &package_name : package_names )
+		{
+			if( !TransformAndValidatePackageInfo( bsi.logger_, host_packages_map[ package_name ], package_name, host_workspace ) )
 			{
 				bsi.logger_.LogError( ust::concat( "Package \"", package_name.path, "\" is invald." ) );
 				has_package_transformation_errors= true;
@@ -242,14 +355,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		}
 	}
 
-	if( !ProcessWorkspaceDependenciesGraph( bsi.logger_, workspace, bsi.root_package_build_directory_ ) )
+	if( !ProcessWorkspaceDependenciesGraph( bsi.logger_, target_workspace, bsi.root_package_build_directory_ ) )
 	{
 		bsi.logger_.LogError( "Project dependencies aren't valid!" );
 		return -1;
 	}
 
 	// Create directories for generated sources, if necessary.
-	foreach( &target_pair : cast_imut(workspace).build_targets )
+	foreach( &target_pair : cast_imut(target_workspace).build_targets )
 	{
 		auto& build_target_name= target_pair.key();
 		auto& build_target= target_pair.value();
@@ -286,8 +399,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		bsi.build_system_paths_,
 		bsi.root_package_build_directory_,
 		bsi.build_configuration_,
-		bsi.target_triple_,
-		workspace,
+		target_triple,
+		target_workspace,
 		build_graph );
 
 	var i32 mut main_result= 0;
@@ -1386,7 +1499,7 @@ public: // Provide direct access for some fields where it's safe to use them dir
 	Logger logger_;
 
 	BuildConfiguration imut build_configuration_;
-	TargetTriple imut target_triple_;
+	TargetTriple target_triple_; // May be changed because of target/host system switching.
 	BuildSystemPaths imut build_system_paths_;
 	ust::string8 imut root_package_build_directory_;
 
