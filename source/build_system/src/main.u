@@ -359,7 +359,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		bsi.build_system_paths_,
 		host_packages_root_build_directory,
 		bsi.build_configuration_,
-		target_triple,
+		host_target_triple,
 		host_workspace,
 		build_graph );
 
