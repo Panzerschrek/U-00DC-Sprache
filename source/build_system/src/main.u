@@ -350,6 +350,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	CreateWorkspaceBuildGraphNodes(
 		bsi.build_system_paths_,
 		root_package_build_directory,
+		host_packages_root_build_directory,
 		bsi.build_configuration_,
 		target_triple,
 		target_workspace,
@@ -357,6 +358,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	CreateWorkspaceBuildGraphNodes(
 		bsi.build_system_paths_,
+		host_packages_root_build_directory,
 		host_packages_root_build_directory,
 		bsi.build_configuration_,
 		host_target_triple,
@@ -725,6 +727,7 @@ fn CreateWorkspaceBuildDirectories(
 fn CreateWorkspaceBuildGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 root_package_build_directory,
+	ust::string_view8 host_packages_root_build_directory,
 	BuildConfiguration build_configuration,
 	TargetTriple& target_triple,
 	WorkspaceInfo& workspace,
@@ -754,7 +757,7 @@ fn CreateWorkspaceBuildGraphNodes(
 	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
 	foreach( &custom_build_step : workspace.custom_build_steps )
 	{
-		CreateCustomBuildStepBuildGraphNodes( custom_build_step, build_graph );
+		CreateCustomBuildStepBuildGraphNodes( host_packages_root_build_directory, custom_build_step, build_graph );
 	}
 }
 
@@ -1356,7 +1359,10 @@ fn ExtractDependenciesIncludeDirectories(
 
 auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
 
-fn CreateCustomBuildStepBuildGraphNodes( CustomBuildStep& custom_build_step, BuildGraph &mut build_graph )
+fn CreateCustomBuildStepBuildGraphNodes(
+	ust::string_view8 host_packages_root_build_directory,
+	WorkspaceInfo::CustomBuildStep& custom_build_step,
+	BuildGraph &mut build_graph )
 {
 	// Paths should be already normalized.
 	var BuildGraph::Node mut node
@@ -1371,6 +1377,15 @@ fn CreateCustomBuildStepBuildGraphNodes( CustomBuildStep& custom_build_step, Bui
 	{
 		node.program= exe_command.exe_path;
 		node.command_line= exe_command.command_line;
+	}
+	else if_var( &host_build_target_exe_command : custom_build_step.command.get</ WorkspaceInfo::CustomBuildStep::HostBuildTargetExeCommand />() )
+	{
+		node.program=
+			ust::concat(
+				GetPackageBuildDirectory( host_packages_root_build_directory, host_build_target_exe_command.name.package_name ),
+				"/",
+				host_build_target_exe_command.name.name );
+		node.command_line= host_build_target_exe_command.command_line;
 	}
 	else if_var( &copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
 	{

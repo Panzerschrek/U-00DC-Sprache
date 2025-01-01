@@ -119,6 +119,28 @@ struct WorkspaceInfo
 		ust::vector</ust::string8/> all_external_libraries_to_link;
 	}
 
+	struct CustomBuildStep
+	{
+		struct HostBuildTargetExeCommand
+		{
+			BuildTargetAbsoluteName name;
+			ust::vector</ust::string8/> command_line;
+		}
+
+		// List is deduplicated and normalized.
+		ust::vector</ust::string8/> input_files;
+		// List is deduplicated and normalized.
+		ust::vector</ust::string8/> output_files;
+
+		ust::variant</ tup[
+			BK::CustomBuildStep::ExeCommand,
+			HostBuildTargetExeCommand,
+			BK::CustomBuildStep::CopyCommand,
+			BK::CustomBuildStep::GenerateFileCommand ] /> command;
+
+		ust::string8 comment;
+	}
+
 	ust::unordered_map</BuildTargetAbsoluteName, BuildTarget/> build_targets;
 
 	// Same as PackageInfo::custom_build_steps, but with normalization - file lists are deduplicated, paths are normalized.

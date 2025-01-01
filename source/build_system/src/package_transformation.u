@@ -291,9 +291,14 @@ fn TransformAndValidatePackageInfo(
 		workspace.build_targets.insert( target_absolute_name, move( out_build_target ) );
 	}
 
-	foreach( mut custom_build_step : package_info.custom_build_steps )
+	foreach( &custom_build_step : package_info.custom_build_steps )
 	{
-		foreach( &mut in_file : custom_build_step.input_files )
+		var WorkspaceInfo::CustomBuildStep mut out_custom_build_step
+		{
+			.comment= custom_build_step.comment,
+		};
+
+		foreach( &in_file : custom_build_step.input_files )
 		{
 			if( !IsAbsolutePath( in_file ) )
 			{
@@ -302,11 +307,13 @@ fn TransformAndValidatePackageInfo(
 			}
 			else
 			{
-				in_file= NormalizePath( in_file );
+				out_custom_build_step.input_files.push_back( NormalizePath( in_file ) );
 			}
 		}
 
-		foreach( &mut out_file : custom_build_step.output_files )
+		NormalizeList( out_custom_build_step.input_files );
+
+		foreach( &out_file : custom_build_step.output_files )
 		{
 			if( !IsAbsolutePath( out_file ) )
 			{
@@ -315,14 +322,13 @@ fn TransformAndValidatePackageInfo(
 			}
 			else
 			{
-				out_file= NormalizePath( out_file );
+				out_custom_build_step.output_files.push_back( NormalizePath( out_file ) );
 			}
 		}
 
-		NormalizeList( custom_build_step.input_files );
-		NormalizeList( custom_build_step.output_files );
+		NormalizeList( out_custom_build_step.output_files );
 
-		if_var( &mut exe_command : custom_build_step.command.get</CustomBuildStep::ExeCommand/>() )
+		if_var( mut exe_command : custom_build_step.command.get</CustomBuildStep::ExeCommand/>() )
 		{
 			if( !IsAbsolutePath( exe_command.exe_path ) )
 			{
@@ -333,8 +339,28 @@ fn TransformAndValidatePackageInfo(
 			{
 				exe_command.exe_path= NormalizePath( exe_command.exe_path );
 			}
+			out_custom_build_step.command= move(exe_command);
 		}
-		if_var( &mut copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
+		else if_var( &host_build_target_exe_command : custom_build_step.command.get</CustomBuildStep::HostBuildTargetExeCommand/>() )
+		{
+			var WorkspaceInfo::CustomBuildStep::HostBuildTargetExeCommand mut out_host_build_target_exe_command
+			{
+				.command_line= host_build_target_exe_command.command_line,
+			};
+
+			auto mut build_target_name_absolute_opt= TransformDependencyName( logger, package_absolute_name, host_build_target_exe_command.name );
+			if( build_target_name_absolute_opt.empty() )
+			{
+				ok= false;
+			}
+			else
+			{
+				out_host_build_target_exe_command.name= build_target_name_absolute_opt.try_take();
+			}
+
+			out_custom_build_step.command= move(out_host_build_target_exe_command);
+		}
+		else if_var( mut copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
 		{
 			if( !IsAbsolutePath( copy_command.destination_path ) )
 			{
@@ -344,7 +370,7 @@ fn TransformAndValidatePackageInfo(
 			else
 			{
 				copy_command.destination_path= NormalizePath( copy_command.destination_path );
-				if( !IsInFilesList( custom_build_step.output_files, copy_command.destination_path ) )
+				if( !IsInFilesList( out_custom_build_step.output_files, copy_command.destination_path ) )
 				{
 					logger.LogError( ust::concat( "Error, copy command destination file \"", copy_command.destination_path, "\" is not listed in output files!" ) );
 					ok= false;
@@ -359,7 +385,7 @@ fn TransformAndValidatePackageInfo(
 			else
 			{
 				copy_command.source_path= NormalizePath( copy_command.source_path );
-				if( !IsInFilesList( custom_build_step.input_files, copy_command.source_path ) )
+				if( !IsInFilesList( out_custom_build_step.input_files, copy_command.source_path ) )
 				{
 					logger.LogError( ust::concat( "Error, copy command source file \"", copy_command.source_path, "\" is not listed in input files!" ) );
 					ok= false;
@@ -371,8 +397,9 @@ fn TransformAndValidatePackageInfo(
 				logger.LogError( ust::concat( "Error, custom build step copy source and destination are same path \"", copy_command.source_path, "\"!" ) );
 				ok= false;
 			}
+			out_custom_build_step.command= move(copy_command);
 		}
-		if_var( &mut generate_command : custom_build_step.command.get</ CustomBuildStep::GenerateFileCommand />() )
+		else if_var( mut generate_command : custom_build_step.command.get</ CustomBuildStep::GenerateFileCommand />() )
 		{
 			if( !IsAbsolutePath( generate_command.destination_path ) )
 			{
@@ -382,15 +409,20 @@ fn TransformAndValidatePackageInfo(
 			else
 			{
 				generate_command.destination_path= NormalizePath( generate_command.destination_path );
-				if( !IsInFilesList( custom_build_step.output_files, generate_command.destination_path ) )
+				if( !IsInFilesList( out_custom_build_step.output_files, generate_command.destination_path ) )
 				{
 					logger.LogError( ust::concat( "Error, generate command destination file \"", generate_command.destination_path, "\" is not listed in output files!" ) );
 					ok= false;
 				}
 			}
+			out_custom_build_step.command= move(generate_command);
+		}
+		else
+		{
+			halt; // Unhandled kind.
 		}
 
-		workspace.custom_build_steps.push_back( move(custom_build_step) );
+		workspace.custom_build_steps.push_back( move(out_custom_build_step) );
 	}
 
 	// TODO - check custom build steps outputs are located within package build directory.
@@ -605,10 +637,10 @@ fn ProcessWorkspaceDependenciesGraph(
 	// TODO - detect dependency loops.
 	for( auto mut i= 0s; i < workspace.custom_build_steps.size(); ++i )
 	{
-		var CustomBuildStep& step_i= workspace.custom_build_steps[i];
+		var WorkspaceInfo::CustomBuildStep& step_i= workspace.custom_build_steps[i];
 		for( auto mut j= i + 1s; j < workspace.custom_build_steps.size(); ++j )
 		{
-			var CustomBuildStep& step_j= cast_imut(workspace).custom_build_steps[j];
+			var WorkspaceInfo::CustomBuildStep& step_j= cast_imut(workspace).custom_build_steps[j];
 
 			foreach( &output_file_i : step_i.output_files )
 			{
