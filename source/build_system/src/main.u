@@ -240,8 +240,9 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 			ObtainPackageInfo(
 				bsi,
 				package_name,
-				// For now avoid sharing build scripts for host packages across build configurations - it's too complicated.
-				host_packages_root_build_directory );
+				// Use same base path for build scripts of host and target system packages.
+				// Doing so we allow reusing build scripts for packages which are compiled both for host and target systems.
+				root_package_build_directory_base );
 
 		if( package_info_opt.empty() )
 		{
