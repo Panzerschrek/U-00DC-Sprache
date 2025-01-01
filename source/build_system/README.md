@@ -52,6 +52,7 @@ For now following features are implemented:
 * Limited (for now) cross-compilation support - using `--sysroot` option
 * Packages - as subpackages within directories of another packages or as global versioned packages
 * Generated sources and headers
+* Host package dependencies - for building build tools
 
 
 ### Caveats
