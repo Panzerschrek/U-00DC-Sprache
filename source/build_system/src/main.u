@@ -66,6 +66,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 	else
 	{
+		// By default build for the host target triple.
 		target_triple= host_target_triple;
 	}
 
@@ -139,6 +140,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	// Build host packages within directory of target system/build configuration.
 	// Technically it may be possible to share host packages build across different target systems, but for now don't do this to avoid possible mistakes.
+	//
+	// Also we create this directory and perform proper building of host system worspace,
+	// even if host target triple is equal to target triple of the target system.
+	// There are some reasons to do this.
+	// First, it's necessary in order to prevent possible mistakes in packages wrongly assuming host=target.
+	// We prevent writing such packages by forcing target/host workspaces separation.
+	// Second, compilation options may be incompatible - we may want to build for targets with SSE4 (for example),
+	// on a host with no SSE4 support. In such case we need two separate build trees with two different set of compilation options.
 	var ust::string8 host_packages_root_build_directory = ust::concat( root_package_build_directory, "/", "host" );
 
 	var BuildSystemInterfaceImplementation mut bsi(
@@ -150,6 +159,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	var PackagesMap mut target_packages_map, mut host_packages_map;
 
 	var ust::vector</PackageAbsoluteName/> mut target_packages_queue, mut host_packages_queue;
+
 	// Push root package.
 	target_packages_queue.push_back( PackageAbsoluteName{ .name_base= PackageAbsoluteName::RootPackage{}, .path= "" } );
 
@@ -676,7 +686,7 @@ fn CreateWorkspace(
 	PackagesMap& packages_map,
 	ust::string_view8 root_package_build_directory ) : ust::optional</WorkspaceInfo/>
 {
-	// Collect and sort a list of pacakge names,
+	// Collect and sort a list of package names,
 	// then iterate in this sorted order - to avoid processing packages in non-deterministic hashtable order.
 	var ust::vector</PackageAbsoluteName/> mut package_names;
 	foreach( &pair : packages_map )
