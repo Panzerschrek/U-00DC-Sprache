@@ -724,7 +724,7 @@ int Main( int argc, const char* argv[] )
 				const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped= llvm::MemoryBuffer::getFile( input_file );
 				if( !file_mapped || *file_mapped == nullptr )
 				{
-					std::cerr << "Can't load file \"" << input_file << "\\" << std::endl;
+					std::cerr << "Can't load file \"" << input_file << "\"" << std::endl;
 					have_some_errors= true;
 					continue;
 				}
