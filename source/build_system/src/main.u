@@ -178,42 +178,16 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		// Tweak build system interface for current package.
 		bsi.SetCurrentPackageName( package_name );
 
-		// TODO - customize it based on package name?
-		auto constexpr entry_func_name = "GetPackageInfoImpl";
+		var ust::optional</PackageInfo/> mut package_info_opt=
+			ObtainPackageInfo(
+				bsi,
+				package_name,
+				// Output build script into base build directory, ignoring build configuration and target triple.
+				// Doing so we allow reusing build script for different configuration and target systems.
+				root_package_build_directory_base );
 
-		auto shared_library_opt = BuildAndLoadPackageBuildScript(
-			bsi.logger_,
-			bsi.build_system_paths_,
-			GetPackageSourceDirectory( bsi.build_system_paths_, package_name ),
-			// Output build script into base build directory, ignoring build configuration and target triple.
-			// Doing so we allow reusing build script for different configuration and target systems.
-			GetPackageBuildDirectory( root_package_build_directory_base, package_name ),
-			entry_func_name );
-		if( shared_library_opt.empty() )
-		{
-			bsi.logger_.LogError( "Failed to load/build the build script shared library." );
-			return -1;
-		}
-
-		auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
-		// A hacky way to cast byte8 pointer to a function pointer.
-		var GetPackageInfoFunctionType mut func_ptr= zero_init;
-		unsafe( ust::memory_copy(
-			ust::ptr_cast_to_byte8( $<(func_ptr) ),
-			ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
-			typeinfo</ typeof(func_ptr) />.size_of ) );
-
-		if( ust::is_nullptr(func_ptr) )
-		{
-			bsi.logger_.LogError( "Failed to load function " + entry_func_name );
-			return -1;
-		}
-
-		// Obtain package info by calling a shared library function.
-		var ust::optional</PackageInfo/> mut package_info_opt= func_ptr( bsi );
 		if( package_info_opt.empty() )
 		{
-			bsi.logger_.LogError( ust::concat( "Failed to get package info for package \"", package_name.path, "\"- build script returned empty optional." ) );
 			return -1;
 		}
 
@@ -262,41 +236,15 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		// Tweak build system interface for current package.
 		bsi.SetCurrentPackageName( package_name );
 
-		// TODO - customize it based on package name?
-		auto constexpr entry_func_name = "GetPackageInfoImpl";
+		var ust::optional</PackageInfo/> mut package_info_opt=
+			ObtainPackageInfo(
+				bsi,
+				package_name,
+				// For now avoid sharing build scripts for host packages across build configurations - it's too complicated.
+				host_packages_root_build_directory );
 
-		auto shared_library_opt = BuildAndLoadPackageBuildScript(
-			bsi.logger_,
-			bsi.build_system_paths_,
-			GetPackageSourceDirectory( bsi.build_system_paths_, package_name ),
-			// For now avoid sharing build scripts for host packages across build configurations - it's too complicated.
-			GetPackageBuildDirectory( host_packages_root_build_directory, package_name ),
-			entry_func_name );
-		if( shared_library_opt.empty() )
-		{
-			bsi.logger_.LogError( "Failed to load/build the build script shared library." );
-			return -1;
-		}
-
-		auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
-		// A hacky way to cast byte8 pointer to a function pointer.
-		var GetPackageInfoFunctionType mut func_ptr= zero_init;
-		unsafe( ust::memory_copy(
-			ust::ptr_cast_to_byte8( $<(func_ptr) ),
-			ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
-			typeinfo</ typeof(func_ptr) />.size_of ) );
-
-		if( ust::is_nullptr(func_ptr) )
-		{
-			bsi.logger_.LogError( "Failed to load function " + entry_func_name );
-			return -1;
-		}
-
-		// Obtain package info by calling a shared library function.
-		var ust::optional</PackageInfo/> mut package_info_opt= func_ptr( bsi );
 		if( package_info_opt.empty() )
 		{
-			bsi.logger_.LogError( ust::concat( "Failed to get package info for package \"", package_name.path, "\"- build script returned empty optional." ) );
 			return -1;
 		}
 
@@ -419,6 +367,50 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 
 	return main_result;
+}
+
+fn ObtainPackageInfo(
+	BuildSystemInterfaceImplementation &mut bsi,
+	PackageAbsoluteName& package_name,
+	ust::string_view8 packages_build_directory ) : ust::optional</PackageInfo/>
+{
+	// TODO - customize it based on package name?
+	auto constexpr entry_func_name = "GetPackageInfoImpl";
+
+	auto shared_library_opt = BuildAndLoadPackageBuildScript(
+		bsi.logger_,
+		bsi.build_system_paths_,
+		GetPackageSourceDirectory( bsi.build_system_paths_, package_name ),
+		GetPackageBuildDirectory( packages_build_directory, package_name ),
+		entry_func_name );
+	if( shared_library_opt.empty() )
+	{
+		bsi.logger_.LogError( "Failed to load/build the build script shared library." );
+		return ust::null_optional;
+	}
+
+	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
+	// A hacky way to cast byte8 pointer to a function pointer.
+	var GetPackageInfoFunctionType mut func_ptr= zero_init;
+	unsafe( ust::memory_copy(
+		ust::ptr_cast_to_byte8( $<(func_ptr) ),
+		ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
+		typeinfo</ typeof(func_ptr) />.size_of ) );
+
+	if( ust::is_nullptr(func_ptr) )
+	{
+		bsi.logger_.LogError( "Failed to load function " + entry_func_name );
+		return ust::null_optional;
+	}
+
+	// Obtain package info by calling a shared library function.
+	var ust::optional</PackageInfo/> mut package_info_opt= func_ptr( bsi );
+	if( package_info_opt.empty() )
+	{
+		bsi.logger_.LogError( ust::concat( "Failed to get package info for package \"", package_name.path, "\"- build script returned empty optional." ) );
+		return ust::null_optional;
+	}
+	return package_info_opt;
 }
 
 fn BuildAndLoadPackageBuildScript(
