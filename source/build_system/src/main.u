@@ -145,7 +145,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		move(build_system_paths),
 		move(root_package_build_directory) );
 
-	var ust::unordered_map</PackageAbsoluteName, PackageInfo/> mut target_packages_map, mut host_packages_map;
+	var PackagesMap mut target_packages_map, mut host_packages_map;
 
 	var ust::vector</PackageAbsoluteName/> mut target_packages_queue, mut host_packages_queue;
 	// Push root package.
@@ -304,62 +304,12 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		host_packages_map.insert( package_name, package_info_opt.try_take() );
 	}
 
-	// Transform packages loaded.
-	var WorkspaceInfo mut target_workspace, mut host_workspace;
+	auto target_workspace_opt= CreateWorkspace( bsi.logger_, target_packages_map, bsi.root_package_build_directory_ );
+	if( target_workspace_opt.empty() )
 	{
-		// Collect and sort a list of pacakge names,
-		// then iterate in this sorted order - to avoid processing packages in non-deterministic hashtable order.
-		var ust::vector</PackageAbsoluteName/> mut package_names;
-		foreach( &pair : target_packages_map )
-		{
-			package_names.push_back( pair.key() );
-		}
-		ust::sort( package_names );
-
-		var bool mut has_package_transformation_errors= false;
-		foreach( &package_name : package_names )
-		{
-			if( !TransformAndValidatePackageInfo( bsi.logger_, target_packages_map[ package_name ], package_name, target_workspace ) )
-			{
-				bsi.logger_.LogError( ust::concat( "Package \"", package_name.path, "\" is invald." ) );
-				has_package_transformation_errors= true;
-			}
-		}
-		if( has_package_transformation_errors )
-		{
-			return -1;
-		}
-	}
-	{
-		// Collect and sort a list of pacakge names,
-		// then iterate in this sorted order - to avoid processing packages in non-deterministic hashtable order.
-		var ust::vector</PackageAbsoluteName/> mut package_names;
-		foreach( &pair : host_packages_map )
-		{
-			package_names.push_back( pair.key() );
-		}
-		ust::sort( package_names );
-
-		var bool mut has_package_transformation_errors= false;
-		foreach( &package_name : package_names )
-		{
-			if( !TransformAndValidatePackageInfo( bsi.logger_, host_packages_map[ package_name ], package_name, host_workspace ) )
-			{
-				bsi.logger_.LogError( ust::concat( "Package \"", package_name.path, "\" is invald." ) );
-				has_package_transformation_errors= true;
-			}
-		}
-		if( has_package_transformation_errors )
-		{
-			return -1;
-		}
-	}
-
-	if( !ProcessWorkspaceDependenciesGraph( bsi.logger_, target_workspace, bsi.root_package_build_directory_ ) )
-	{
-		bsi.logger_.LogError( "Project dependencies aren't valid!" );
 		return -1;
 	}
+	var WorkspaceInfo& target_workspace= target_workspace_opt.try_deref();
 
 	// Create directories for generated sources, if necessary.
 	foreach( &target_pair : cast_imut(target_workspace).build_targets )
@@ -696,6 +646,49 @@ fn GetNativeSharedLibraryExtension() : ust::string_view8
 fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 {
 	return ust::concat( path, ".d" );
+}
+
+type PackagesMap= ust::unordered_map</PackageAbsoluteName, PackageInfo/>;
+
+// Returns empty optional on error.
+fn CreateWorkspace(
+	Logger &mut logger,
+	PackagesMap& packages_map,
+	ust::string_view8 root_package_build_directory ) : ust::optional</WorkspaceInfo/>
+{
+	// Collect and sort a list of pacakge names,
+	// then iterate in this sorted order - to avoid processing packages in non-deterministic hashtable order.
+	var ust::vector</PackageAbsoluteName/> mut package_names;
+	foreach( &pair : packages_map )
+	{
+		package_names.push_back( pair.key() );
+	}
+	ust::sort( package_names );
+
+	var WorkspaceInfo mut workspace;
+
+	var bool mut has_package_transformation_errors= false;
+	foreach( &package_name : package_names )
+	{
+		if( !TransformAndValidatePackageInfo( logger, packages_map[ package_name ], package_name, workspace ) )
+		{
+			logger.LogError( ust::concat( "Package \"", package_name.path, "\" is invald." ) );
+			has_package_transformation_errors= true;
+		}
+	}
+
+	if( has_package_transformation_errors )
+	{
+		return ust::null_optional;
+	}
+
+	if( !ProcessWorkspaceDependenciesGraph( logger, workspace, root_package_build_directory ) )
+	{
+		logger.LogError( "Project dependencies aren't valid!" );
+		return ust::null_optional;
+	}
+
+	return move(workspace);
 }
 
 fn CreateWorkspaceBuildGraphNodes(
