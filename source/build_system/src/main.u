@@ -314,7 +314,15 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 	var WorkspaceInfo& target_workspace= target_workspace_opt.try_deref();
 
-	if( !CreateWorkspaceBuildDirectories( bsi.logger_, target_workspace, root_package_build_directory ) )
+	auto host_workspace_opt= CreateWorkspace( bsi.logger_, host_packages_map, host_packages_root_build_directory );
+	if( host_workspace_opt.empty() )
+	{
+		return -1;
+	}
+	var WorkspaceInfo& host_workspace= host_workspace_opt.try_deref();
+
+	if( !CreateWorkspaceBuildDirectories( bsi.logger_, target_workspace, root_package_build_directory ) ||
+		!CreateWorkspaceBuildDirectories( bsi.logger_, host_workspace, host_packages_root_build_directory ) )
 	{
 		return -1;
 	}
@@ -345,6 +353,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		bsi.build_configuration_,
 		target_triple,
 		target_workspace,
+		build_graph );
+
+	CreateWorkspaceBuildGraphNodes(
+		bsi.build_system_paths_,
+		host_packages_root_build_directory,
+		bsi.build_configuration_,
+		target_triple,
+		host_workspace,
 		build_graph );
 
 	var i32 mut main_result= 0;
