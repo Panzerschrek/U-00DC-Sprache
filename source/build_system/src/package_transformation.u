@@ -743,6 +743,44 @@ fn ProcessWorkspaceDependenciesGraph(
 	return ok;
 }
 
+fn CheckHostSystemBuildTargetsArePresent(
+	Logger &mut logger,
+	WorkspaceInfo& workspace,
+	WorkspaceInfo& host_workspace ) : bool
+{
+	var bool mut ok= true;
+
+	foreach( &custom_build_step : workspace.custom_build_steps )
+	{
+		if_var( &host_build_target_exe_command : custom_build_step.command.get</WorkspaceInfo::CustomBuildStep::HostBuildTargetExeCommand/>() )
+		{
+			auto build_target_opt= host_workspace.build_targets.find( host_build_target_exe_command.name );
+			if( build_target_opt.empty() )
+			{
+				logger.LogError( ust::concat(
+					"Host build target \"",
+					BuildTargetAbsoluteNameToPrintableString( host_build_target_exe_command.name ),
+					"\" used in custom build step \"",
+					custom_build_step.comment,
+					"\" not found!" ) );
+				ok= false;
+			}
+			else if( build_target_opt.try_deref().target_type != BuildTargetType::Executable )
+			{
+				logger.LogError( ust::concat(
+					"Host build target \"",
+					BuildTargetAbsoluteNameToPrintableString( host_build_target_exe_command.name ),
+					"\" used in custom build step \"",
+					custom_build_step.comment,
+					"\" is not executable!" ) );
+				ok= false;
+			}
+		}
+	}
+
+	return ok;
+}
+
 fn ResolvePackageAbsoluteName(
 	Logger &mut logger,
 	PackageAbsoluteName& parent_package_absolute_name,

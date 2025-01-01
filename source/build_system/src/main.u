@@ -321,6 +321,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 	var WorkspaceInfo& host_workspace= host_workspace_opt.try_deref();
 
+	// Check if build target names used in custom build steps of target workspace are present in host workspace.
+	// Perform the same check for host workspace too.
+	if( !CheckHostSystemBuildTargetsArePresent( bsi.logger_, target_workspace, host_workspace ) ||
+		!CheckHostSystemBuildTargetsArePresent( bsi.logger_, host_workspace, host_workspace ) )
+	{
+		return -1;
+	}
+
 	if( !CreateWorkspaceBuildDirectories( bsi.logger_, target_workspace, root_package_build_directory ) ||
 		!CreateWorkspaceBuildDirectories( bsi.logger_, host_workspace, host_packages_root_build_directory ) )
 	{
@@ -1380,6 +1388,7 @@ fn CreateCustomBuildStepBuildGraphNodes(
 	}
 	else if_var( &host_build_target_exe_command : custom_build_step.command.get</ WorkspaceInfo::CustomBuildStep::HostBuildTargetExeCommand />() )
 	{
+		// Existence of the corresponding build target in the host workspace should be checked previously.
 		node.program=
 			ust::concat(
 				GetPackageBuildDirectory( host_packages_root_build_directory, host_build_target_exe_command.name.package_name ),
