@@ -2,16 +2,42 @@ import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
-	ust::ignore_unused( build_system_interface );
+	var BK::PackageName sub_package{ .path= "sub_package" };
 
-	var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable };
-	target.source_files.push_back( "exe/main.u" );
-	target.name= "exe";
+	auto& target_name= "exe";
+
+	auto& generated_file_name= "test.uh";
+
+	var ust::string8 generated_file_full_path= ust::concat(
+		build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( target_name ),
+		"/",
+		generated_file_name );
+
+	var BK::CustomBuildStep mut custom_build_step
+	{
+		// Execute here an executable of a host-dependent package.
+		.command= BK::CustomBuildStep::HostBuildTargetExeCommand
+		{
+			.name= BK::DependencyName{ .package_name= sub_package, .name= "helper_tool" },
+			.command_line= ust::make_array( generated_file_full_path ),
+		},
+		.output_files= ust::make_array( generated_file_full_path ),
+		.comment= generated_file_name,
+	};
+
+	var BK::BuildTarget mut target
+	{
+		.target_type = BK::BuildTargetType::Executable,
+		.name= target_name,
+		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
+		.generated_private_header_files= ust::make_array</ust::string8/>( generated_file_name ),
+	};
 
 	return BK::PackageInfo
 	{
 		.build_targets= ust::make_array( move(target) ),
-		.package_dependencies= ust::make_array(
-			BK::PackageDependency( BK::PackageName{ .path= "sub_package" }, BK::PackageDependency::RequiredSystem::Host ) )
+		.custom_build_steps= ust::make_array( move(custom_build_step) ),
+		// Require host dependency, since we running this executable.
+		.package_dependencies= ust::make_array( BK::PackageDependency(sub_package, BK::PackageDependency::RequiredSystem::Host ) ),
 	};
 }
