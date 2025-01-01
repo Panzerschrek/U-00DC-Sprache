@@ -1,0 +1,37 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	var BK::BuildTarget mut lib_target
+	{
+		.name= "lib",
+		.target_type = BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ust::string8/>( "lib/src/lib.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "lib/imports" ),
+	};
+
+	auto libs_dir = build_system_interface.GetConfigurationOption( "tests_libs_directory" );
+
+	var ust::string_view8 mut library_name;
+	var BK::TargetTriple target_triple = build_system_interface.GetTargetTriple();
+	if( target_triple.operating_system == "windows" && target_triple.environment == "msvc" )
+	{
+		library_name = "BuildSystemTestsStaticLibrary.lib";
+	}
+	else
+	{
+		library_name = "libBuildSystemTestsStaticLibrary.a";
+	}
+
+	var BK::BuildTarget mut gen_tool_target
+	{
+		.name= "gen_tool",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "gen_tool/main.u" ),
+		.external_libraries= ust::make_array( ust::concat( libs_dir.try_deref(), "/", library_name ) ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(lib_target), move(gen_tool_target) ) };
+}

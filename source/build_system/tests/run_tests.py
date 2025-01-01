@@ -610,6 +610,12 @@ def HostDependentPackage0Test():
 	RunExecutable( test_dir, "exe" )
 
 
+def HostDependentPackage1Test():
+	test_dir= "host_dependent_package1"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1290,6 +1296,7 @@ def main():
 		GeneratedSources4Test,
 		GeneratedSources5Test,
 		HostDependentPackage0Test,
+		HostDependentPackage1Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,

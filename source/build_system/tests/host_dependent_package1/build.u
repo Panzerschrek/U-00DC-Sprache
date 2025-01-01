@@ -1,0 +1,45 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	var BK::PackageName sub_package{ .path= "sub_package" };
+
+	auto& target_name= "exe";
+
+	auto& generated_file_name= "generated_private_header.uh";
+
+	var ust::string8 generated_file_full_path= ust::concat(
+		build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( target_name ),
+		"/",
+		generated_file_name );
+
+	var BK::CustomBuildStep mut custom_build_step
+	{
+		// Execute here an executable of the host-dependent package.
+		.command= BK::CustomBuildStep::HostBuildTargetExeCommand
+		{
+			.name= BK::DependencyName{ .package_name= sub_package, .name= "gen_tool" },
+			.command_line= ust::make_array( generated_file_full_path ),
+		},
+		.output_files= ust::make_array( generated_file_full_path ),
+		.comment= generated_file_name,
+	};
+
+	var BK::BuildTarget mut target
+	{
+		.name= target_name,
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ust::string8/>( "exe/main.u" ),
+		// Depend on a library from the subpackage, which is both host and target system dependency.
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= "lib", .package_name= sub_package } ),
+		.generated_private_header_files= ust::make_array</ust::string8/>( generated_file_name ),
+	};
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(target) ),
+		.custom_build_steps= ust::make_array( move(custom_build_step) ),
+		// Depend on a package both for target and host systems.
+		.package_dependencies= ust::make_array( BK::PackageDependency( sub_package, BK::PackageDependency::RequiredSystem::Both ) )
+	};
+}
