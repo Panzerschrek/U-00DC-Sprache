@@ -282,34 +282,13 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// Construct the build graph for the whole project.
 	var BuildGraph mut build_graph;
 
-	{
-		// Collect and sort a list of build target names,
-		// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
-		var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
-		foreach( &build_target_pair : workspace.build_targets )
-		{
-			build_target_names.push_back( build_target_pair.key() );
-		}
-		ust::sort( build_target_names );
-
-		foreach( &build_target_name : build_target_names )
-		{
-			CreatePackageTargetBuildGraphNodes(
-				bsi.build_system_paths_,
-				bsi.root_package_build_directory_,
-				bsi.build_configuration_,
-				bsi.target_triple_,
-				workspace,
-				build_target_name,
-				build_graph );
-		}
-	}
-
-	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
-	foreach( &custom_build_step : workspace.custom_build_steps )
-	{
-		CreateCustomBuildStepBuildGraphNodes( custom_build_step, build_graph );
-	}
+	CreateWorkspaceBuildGraphNodes(
+		bsi.build_system_paths_,
+		bsi.root_package_build_directory_,
+		bsi.build_configuration_,
+		bsi.target_triple_,
+		workspace,
+		build_graph );
 
 	var i32 mut main_result= 0;
 
@@ -604,6 +583,42 @@ fn GetNativeSharedLibraryExtension() : ust::string_view8
 fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 {
 	return ust::concat( path, ".d" );
+}
+
+fn CreateWorkspaceBuildGraphNodes(
+	BuildSystemPaths& build_system_paths,
+	ust::string_view8 root_package_build_directory,
+	BuildConfiguration build_configuration,
+	TargetTriple& target_triple,
+	WorkspaceInfo& workspace,
+	BuildGraph &mut build_graph )
+{
+	// Collect and sort a list of build target names,
+	// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
+	var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
+	foreach( &build_target_pair : workspace.build_targets )
+	{
+		build_target_names.push_back( build_target_pair.key() );
+	}
+	ust::sort( build_target_names );
+
+	foreach( &build_target_name : build_target_names )
+	{
+		CreatePackageTargetBuildGraphNodes(
+			build_system_paths,
+			root_package_build_directory,
+			build_configuration,
+			target_triple,
+			workspace,
+			build_target_name,
+			build_graph );
+	}
+
+	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
+	foreach( &custom_build_step : workspace.custom_build_steps )
+	{
+		CreateCustomBuildStepBuildGraphNodes( custom_build_step, build_graph );
+	}
 }
 
 fn CreatePackageTargetBuildGraphNodes(
