@@ -148,7 +148,11 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// We prevent writing such packages by forcing target/host workspaces separation.
 	// Second, compilation options may be incompatible - we may want to build for targets with SSE4 (for example),
 	// on a host with no SSE4 support. In such case we need two separate build trees with two different set of compilation options.
-	var ust::string8 host_packages_root_build_directory = ust::concat( root_package_build_directory, "/", "host" );
+	var ust::string8 host_packages_root_build_directory =
+		ust::concat(
+			root_package_build_directory,
+			"/",
+			"host.build" /* use name with dots in order to avoid name conflicts */ );
 
 	var BuildSystemInterfaceImplementation mut bsi(
 		move(logger),
