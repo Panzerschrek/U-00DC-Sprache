@@ -1401,11 +1401,11 @@ fn CreateCustomBuildStepBuildGraphNodes(
 	{
 		// Existence of the corresponding build target in the host workspace should be checked previously.
 		node.program=
-			ust::concat(
+			NormalizePath( ust::concat(
 				GetPackageBuildDirectory( host_packages_root_build_directory, host_build_target_exe_command.name.package_name ),
 				"/",
 				host_build_target_exe_command.name.name,
-				( host_target_triple.operating_system == "windows" ? ust::string_view8(".exe") : ust::string_view8() ) );
+				( host_target_triple.operating_system == "windows" ? ust::string_view8(".exe") : ust::string_view8() ) ) );
 		node.command_line= host_build_target_exe_command.command_line;
 	}
 	else if_var( &copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
