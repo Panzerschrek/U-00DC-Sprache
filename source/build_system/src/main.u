@@ -318,23 +318,33 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// Construct the build graph for the whole project.
 	var BuildGraph mut build_graph;
 
-	CreateWorkspaceBuildGraphNodes(
+	CreateWorkspaceBuildTargetsGraphNodes(
 		bsi.build_system_paths_,
 		root_package_build_directory,
-		host_packages_root_build_directory,
 		bsi.build_configuration_,
 		target_triple,
 		target_workspace,
 		build_graph );
 
-	CreateWorkspaceBuildGraphNodes(
+	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
+	foreach( &custom_build_step : target_workspace.custom_build_steps )
+	{
+		CreateCustomBuildStepBuildGraphNodes( host_target_triple, host_packages_root_build_directory, custom_build_step, build_graph );
+	}
+
+	CreateWorkspaceBuildTargetsGraphNodes(
 		bsi.build_system_paths_,
-		host_packages_root_build_directory,
 		host_packages_root_build_directory,
 		bsi.build_configuration_,
 		host_target_triple,
 		host_workspace,
 		build_graph );
+
+	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
+	foreach( &custom_build_step : host_workspace.custom_build_steps )
+	{
+		CreateCustomBuildStepBuildGraphNodes( host_target_triple, host_packages_root_build_directory, custom_build_step, build_graph );
+	}
 
 	var i32 mut main_result= 0;
 
@@ -739,10 +749,9 @@ fn CreateWorkspaceBuildDirectories(
 	return true;
 }
 
-fn CreateWorkspaceBuildGraphNodes(
+fn CreateWorkspaceBuildTargetsGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 root_package_build_directory,
-	ust::string_view8 host_packages_root_build_directory,
 	BuildConfiguration build_configuration,
 	TargetTriple& target_triple,
 	WorkspaceInfo& workspace,
@@ -767,12 +776,6 @@ fn CreateWorkspaceBuildGraphNodes(
 			workspace,
 			build_target_name,
 			build_graph );
-	}
-
-	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
-	foreach( &custom_build_step : workspace.custom_build_steps )
-	{
-		CreateCustomBuildStepBuildGraphNodes( host_packages_root_build_directory, custom_build_step, build_graph );
 	}
 }
 
@@ -1375,6 +1378,7 @@ fn ExtractDependenciesIncludeDirectories(
 auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
 
 fn CreateCustomBuildStepBuildGraphNodes(
+	TargetTriple& host_target_triple,
 	ust::string_view8 host_packages_root_build_directory,
 	WorkspaceInfo::CustomBuildStep& custom_build_step,
 	BuildGraph &mut build_graph )
@@ -1400,7 +1404,8 @@ fn CreateCustomBuildStepBuildGraphNodes(
 			ust::concat(
 				GetPackageBuildDirectory( host_packages_root_build_directory, host_build_target_exe_command.name.package_name ),
 				"/",
-				host_build_target_exe_command.name.name );
+				host_build_target_exe_command.name.name,
+				( host_target_triple.operating_system == "windows" ? ust::string_view8(".exe") : ust::string_view8() ) );
 		node.command_line= host_build_target_exe_command.command_line;
 	}
 	else if_var( &copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
