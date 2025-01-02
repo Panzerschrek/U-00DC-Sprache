@@ -887,7 +887,14 @@ int Main( int argc, const char* argv[] )
 						// since function merging checks functions equality and
 						// functions accessing different constants with same value are considered to be different.
 						module_pass_manager.addPass( llvm::ConstantMergePass() );
-						module_pass_manager.addPass( llvm::MergeFunctionsPass() );
+
+						if( LLVM_VERSION_MAJOR >= 17 )
+						{
+							// See https://reviews.llvm.org/D144682.
+							// This bug (seems to be) fixed in LLVM 17.
+							// TODO - update LLVM to a newer version without this bug.
+							module_pass_manager.addPass( llvm::MergeFunctionsPass() );
+						}
 					}
 				};
 
