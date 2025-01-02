@@ -7,6 +7,7 @@
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wmismatched-tags"
 #endif // __GNUC__
 
 #ifdef _MSC_VER
