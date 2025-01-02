@@ -51,6 +51,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		return ( InitProjectStub( logger, project_directory ) ? 0 : 1 );
 	}
 
+	var TargetTriple host_target_triple= GetHostTargetTriple();
+
 	var TargetTriple mut target_triple;
 	if( !options.target_triple.empty() )
 	{
@@ -64,7 +66,8 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 	else
 	{
-		target_triple= GetHostTargetTriple();
+		// By default build for the host target triple.
+		target_triple= host_target_triple;
 	}
 
 	var ConfigurationOptions mut configuration_options;
@@ -135,24 +138,43 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 
 	logger.LogVerbose( ust::concat( "Build project in \"", build_system_paths.root_package_source_directory, "\" using build directory \"", root_package_build_directory, "\"" ) );
 
+	// Build host packages within directory of target system/build configuration.
+	// Technically it may be possible to share host packages build across different target systems, but for now don't do this to avoid possible mistakes.
+	//
+	// Also we create this directory and perform proper building of host system worspace,
+	// even if host target triple is equal to target triple of the target system.
+	// There are some reasons to do this.
+	// First, it's necessary in order to prevent possible mistakes in packages wrongly assuming host=target.
+	// We prevent writing such packages by forcing target/host workspaces separation.
+	// Second, compilation options may be incompatible - we may want to build for targets with SSE4 (for example),
+	// on a host with no SSE4 support. In such case we need two separate build trees with two different set of compilation options.
+	var ust::string8 host_packages_root_build_directory =
+		ust::concat(
+			root_package_build_directory,
+			"/",
+			"host.build" /* use name with dots in order to avoid name conflicts */ );
+
 	var BuildSystemInterfaceImplementation mut bsi(
 		move(logger),
 		options.build_configuration,
-		move(target_triple),
 		move(configuration_options),
-		move(build_system_paths),
-		move(root_package_build_directory) );
+		move(build_system_paths) );
 
-	var ust::unordered_map</PackageAbsoluteName, PackageInfo/> mut packages_map;
+	var PackagesMap mut target_packages_map, mut host_packages_map;
 
-	var ust::vector</PackageAbsoluteName/> mut packages_queue;
+	var ust::vector</PackageAbsoluteName/> mut target_packages_queue, mut host_packages_queue;
+
 	// Push root package.
-	packages_queue.push_back( PackageAbsoluteName{ .name_base= PackageAbsoluteName::RootPackage{}, .path= "" } );
+	target_packages_queue.push_back( PackageAbsoluteName{ .name_base= PackageAbsoluteName::RootPackage{}, .path= "" } );
 
-	for( auto mut i= 0s; i < packages_queue.size(); ++i ) // Use index-based iterations, because this list is populated within the loop.
+	// Process target packages queue.
+	bsi.SetTargetTriple( target_triple );
+	bsi.SetRootPackageBuildDirectory( root_package_build_directory );
+	// Use index-based iterations, because this list is populated within the loop.
+	for( auto mut i= 0s; i < target_packages_queue.size(); ++i )
 	{
-		var PackageAbsoluteName package_name= packages_queue[i];
-		if( packages_map.exists( package_name ) )
+		var PackageAbsoluteName package_name= target_packages_queue[i];
+		if( target_packages_map.exists( package_name ) )
 		{
 			continue; // Already loaded this package.
 		}
@@ -160,42 +182,16 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		// Tweak build system interface for current package.
 		bsi.SetCurrentPackageName( package_name );
 
-		// TODO - customize it based on package name?
-		auto constexpr entry_func_name = "GetPackageInfoImpl";
+		var ust::optional</PackageInfo/> mut package_info_opt=
+			ObtainPackageInfo(
+				bsi,
+				package_name,
+				// Output build script into base build directory, ignoring build configuration and target triple.
+				// Doing so we allow reusing build script for different configuration and target systems.
+				root_package_build_directory_base );
 
-		auto shared_library_opt = BuildAndLoadPackageBuildScript(
-			bsi.logger_,
-			bsi.build_system_paths_,
-			GetPackageSourceDirectory( bsi.build_system_paths_, package_name ),
-			// Output build script into base build directory, ignoring build configuration and target triple.
-			// Doing so we allow reusing build script for different configuration and target systems.
-			GetPackageBuildDirectory( root_package_build_directory_base, package_name ),
-			entry_func_name );
-		if( shared_library_opt.empty() )
-		{
-			bsi.logger_.LogError( "Failed to load/build the build script shared library." );
-			return -1;
-		}
-
-		auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
-		// A hacky way to cast byte8 pointer to a function pointer.
-		var GetPackageInfoFunctionType mut func_ptr= zero_init;
-		unsafe( ust::memory_copy(
-			ust::ptr_cast_to_byte8( $<(func_ptr) ),
-			ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
-			typeinfo</ typeof(func_ptr) />.size_of ) );
-
-		if( ust::is_nullptr(func_ptr) )
-		{
-			bsi.logger_.LogError( "Failed to load function " + entry_func_name );
-			return -1;
-		}
-
-		// Obtain package info by calling a shared library function.
-		var ust::optional</PackageInfo/> mut package_info_opt= func_ptr( bsi );
 		if( package_info_opt.empty() )
 		{
-			bsi.logger_.LogError( ust::concat( "Failed to get package info for package \"", package_name.path, "\"- build script returned empty optional." ) );
 			return -1;
 		}
 
@@ -209,60 +205,100 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 				bsi.logger_.LogError( ust::concat( "Failed to find package dependency within package \"", package_name.path, "\"!" ) );
 				return -1;
 			}
-			packages_queue.push_back( dependency_package_absolute_name.try_take() );
-		}
-
-		packages_map.insert( package_name, package_info_opt.try_take() );
-	}
-
-	// Transform packages loaded.
-	var WorkspaceInfo mut workspace;
-	{
-		// Collect and sort a list of pacakge names,
-		// then iterate in this sorted order - to avoid processing packages in non-deterministic hashtable order.
-		var ust::vector</PackageAbsoluteName/> mut package_names;
-		foreach( &pair : packages_map )
-		{
-			package_names.push_back( pair.key() );
-		}
-		ust::sort( package_names );
-
-		var bool mut has_package_transformation_errors= false;
-		foreach( &package_name : package_names )
-		{
-			if( !TransformAndValidatePackageInfo( bsi.logger_, packages_map[ package_name ], package_name, workspace ) )
+			switch( dependency.required_system )
 			{
-				bsi.logger_.LogError( ust::concat( "Package \"", package_name.path, "\" is invald." ) );
-				has_package_transformation_errors= true;
+				PackageDependency::RequiredSystem::Target ->
+				{
+					target_packages_queue.push_back( dependency_package_absolute_name.try_take() );
+				},
+				PackageDependency::RequiredSystem::Host ->
+				{
+					host_packages_queue.push_back( dependency_package_absolute_name.try_take() );
+				},
+				PackageDependency::RequiredSystem::Both ->
+				{
+					target_packages_queue.push_back( dependency_package_absolute_name.try_deref() );
+					host_packages_queue.push_back( dependency_package_absolute_name.try_take() );
+				},
 			}
 		}
-		if( has_package_transformation_errors )
+
+		target_packages_map.insert( package_name, package_info_opt.try_take() );
+	}
+
+	// Process host packages queue.
+	bsi.SetTargetTriple( host_target_triple );
+	bsi.SetRootPackageBuildDirectory( host_packages_root_build_directory );
+	// Use index-based iterations, because this list is populated within the loop.
+	for( auto mut i= 0s; i < host_packages_queue.size(); ++i )
+	{
+		var PackageAbsoluteName package_name= host_packages_queue[i];
+		if( host_packages_map.exists( package_name ) )
+		{
+			continue; // Already loaded this package.
+		}
+		// Tweak build system interface for current package.
+		bsi.SetCurrentPackageName( package_name );
+
+		var ust::optional</PackageInfo/> mut package_info_opt=
+			ObtainPackageInfo(
+				bsi,
+				package_name,
+				// Use same base path for build scripts of host and target system packages.
+				// Doing so we allow reusing build scripts for packages which are compiled both for host and target systems.
+				root_package_build_directory_base );
+
+		if( package_info_opt.empty() )
 		{
 			return -1;
 		}
+
+		// Add dependencies to the queue.
+		foreach( &dependency : package_info_opt.try_deref().package_dependencies )
+		{
+			auto mut dependency_package_absolute_name=
+				ResolvePackageAbsoluteName( bsi.logger_, package_name, dependency.name );
+			if( dependency_package_absolute_name.empty() )
+			{
+				bsi.logger_.LogError( ust::concat( "Failed to find package dependency within package \"", package_name.path, "\"!" ) );
+				return -1;
+			}
+			// All dependencies of host packages are host packages.
+			host_packages_queue.push_back( dependency_package_absolute_name.try_take() );
+		}
+
+		host_packages_map.insert( package_name, package_info_opt.try_take() );
 	}
 
-	if( !ProcessWorkspaceDependenciesGraph( bsi.logger_, workspace, bsi.root_package_build_directory_ ) )
+	auto target_workspace_opt= CreateWorkspace( bsi.logger_, target_packages_map, root_package_build_directory );
+	if( target_workspace_opt.empty() )
 	{
-		bsi.logger_.LogError( "Project dependencies aren't valid!" );
+		return -1;
+	}
+	var WorkspaceInfo& target_workspace= target_workspace_opt.try_deref();
+
+	auto host_workspace_opt= CreateWorkspace( bsi.logger_, host_packages_map, host_packages_root_build_directory );
+	if( host_workspace_opt.empty() )
+	{
+		return -1;
+	}
+	var WorkspaceInfo& host_workspace= host_workspace_opt.try_deref();
+
+	// Check if build target names used in custom build steps of target workspace are present in host workspace.
+	// Perform the same check for host workspace too.
+	if( !CheckHostSystemBuildTargetsArePresent( bsi.logger_, target_workspace, host_workspace ) ||
+		!CheckHostSystemBuildTargetsArePresent( bsi.logger_, host_workspace, host_workspace ) )
+	{
 		return -1;
 	}
 
-	// Create directories for generated sources, if necessary.
-	foreach( &target_pair : cast_imut(workspace).build_targets )
+	if( !CreateWorkspaceBuildDirectories( bsi.logger_, target_workspace, root_package_build_directory ) ||
+		!CreateWorkspaceBuildDirectories( bsi.logger_, host_workspace, host_packages_root_build_directory ) )
 	{
-		auto& build_target_name= target_pair.key();
-		auto& build_target= target_pair.value();
-		if( !build_target.generated_source_files.empty() || !build_target.generated_private_header_files.empty() )
-		{
-			if( !EnsureDirectoryExists( bsi.logger_, GetBuildTargetGeneratedSourcesDirectory( bsi.root_package_build_directory_, build_target_name ) ) )
-			{
-				return -1;
-			}
-		}
+		return -1;
 	}
 
-	var ust::string8 build_graph_state_file_path= bsi.root_package_build_directory_ + "/build_graph.json";
+	var ust::string8 build_graph_state_file_path= root_package_build_directory + "/build_graph.json";
 
 	// Load previous build graph state.
 	var ust::optional</BuildGraph/> mut prev_build_graph;
@@ -282,33 +318,32 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// Construct the build graph for the whole project.
 	var BuildGraph mut build_graph;
 
-	{
-		// Collect and sort a list of build target names,
-		// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
-		var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
-		foreach( &build_target_pair : workspace.build_targets )
-		{
-			build_target_names.push_back( build_target_pair.key() );
-		}
-		ust::sort( build_target_names );
-
-		foreach( &build_target_name : build_target_names )
-		{
-			CreatePackageTargetBuildGraphNodes(
-				bsi.build_system_paths_,
-				bsi.root_package_build_directory_,
-				bsi.build_configuration_,
-				bsi.target_triple_,
-				workspace,
-				build_target_name,
-				build_graph );
-		}
-	}
+	CreateWorkspaceBuildTargetsGraphNodes(
+		bsi.build_system_paths_,
+		root_package_build_directory,
+		bsi.build_configuration_,
+		target_triple,
+		target_workspace,
+		build_graph );
 
 	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
-	foreach( &custom_build_step : workspace.custom_build_steps )
+	foreach( &custom_build_step : target_workspace.custom_build_steps )
 	{
-		CreateCustomBuildStepBuildGraphNodes( custom_build_step, build_graph );
+		CreateCustomBuildStepBuildGraphNodes( host_target_triple, host_packages_root_build_directory, custom_build_step, build_graph );
+	}
+
+	CreateWorkspaceBuildTargetsGraphNodes(
+		bsi.build_system_paths_,
+		host_packages_root_build_directory,
+		bsi.build_configuration_,
+		host_target_triple,
+		host_workspace,
+		build_graph );
+
+	// Custom build steps list should have stable order, since it's populated previously in packages stable order.
+	foreach( &custom_build_step : host_workspace.custom_build_steps )
+	{
+		CreateCustomBuildStepBuildGraphNodes( host_target_triple, host_packages_root_build_directory, custom_build_step, build_graph );
 	}
 
 	var i32 mut main_result= 0;
@@ -347,6 +382,50 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	}
 
 	return main_result;
+}
+
+fn ObtainPackageInfo(
+	BuildSystemInterfaceImplementation &mut bsi,
+	PackageAbsoluteName& package_name,
+	ust::string_view8 packages_build_directory ) : ust::optional</PackageInfo/>
+{
+	// TODO - customize it based on package name?
+	auto constexpr entry_func_name = "GetPackageInfoImpl";
+
+	auto shared_library_opt = BuildAndLoadPackageBuildScript(
+		bsi.logger_,
+		bsi.build_system_paths_,
+		GetPackageSourceDirectory( bsi.build_system_paths_, package_name ),
+		GetPackageBuildDirectory( packages_build_directory, package_name ),
+		entry_func_name );
+	if( shared_library_opt.empty() )
+	{
+		bsi.logger_.LogError( "Failed to load/build the build script shared library." );
+		return ust::null_optional;
+	}
+
+	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
+	// A hacky way to cast byte8 pointer to a function pointer.
+	var GetPackageInfoFunctionType mut func_ptr= zero_init;
+	unsafe( ust::memory_copy(
+		ust::ptr_cast_to_byte8( $<(func_ptr) ),
+		ust::ptr_cast_to_byte8( $<(func_raw_ptr) ),
+		typeinfo</ typeof(func_ptr) />.size_of ) );
+
+	if( ust::is_nullptr(func_ptr) )
+	{
+		bsi.logger_.LogError( "Failed to load function " + entry_func_name );
+		return ust::null_optional;
+	}
+
+	// Obtain package info by calling a shared library function.
+	var ust::optional</PackageInfo/> mut package_info_opt= func_ptr( bsi );
+	if( package_info_opt.empty() )
+	{
+		bsi.logger_.LogError( ust::concat( "Failed to get package info for package \"", package_name.path, "\"- build script returned empty optional." ) );
+		return ust::null_optional;
+	}
+	return package_info_opt;
 }
 
 fn BuildAndLoadPackageBuildScript(
@@ -604,6 +683,100 @@ fn GetNativeSharedLibraryExtension() : ust::string_view8
 fn GetDependencyFilePath( ust::string_view8 path ) : ust::string8
 {
 	return ust::concat( path, ".d" );
+}
+
+type PackagesMap= ust::unordered_map</PackageAbsoluteName, PackageInfo/>;
+
+// Returns empty optional on error.
+fn CreateWorkspace(
+	Logger &mut logger,
+	PackagesMap& packages_map,
+	ust::string_view8 root_package_build_directory ) : ust::optional</WorkspaceInfo/>
+{
+	// Collect and sort a list of package names,
+	// then iterate in this sorted order - to avoid processing packages in non-deterministic hashtable order.
+	var ust::vector</PackageAbsoluteName/> mut package_names;
+	foreach( &pair : packages_map )
+	{
+		package_names.push_back( pair.key() );
+	}
+	ust::sort( package_names );
+
+	var WorkspaceInfo mut workspace;
+
+	var bool mut has_package_transformation_errors= false;
+	foreach( &package_name : package_names )
+	{
+		if( !TransformAndValidatePackageInfo( logger, packages_map[ package_name ], package_name, workspace ) )
+		{
+			logger.LogError( ust::concat( "Package \"", package_name.path, "\" is invald." ) );
+			has_package_transformation_errors= true;
+		}
+	}
+
+	if( has_package_transformation_errors )
+	{
+		return ust::null_optional;
+	}
+
+	if( !ProcessWorkspaceDependenciesGraph( logger, workspace, root_package_build_directory ) )
+	{
+		logger.LogError( "Project dependencies aren't valid!" );
+		return ust::null_optional;
+	}
+
+	return move(workspace);
+}
+
+// returns true on success.
+fn CreateWorkspaceBuildDirectories(
+	Logger &mut logger, WorkspaceInfo& workspace, ust::string_view8 root_package_build_directory ) : bool
+{
+	// Create directories for generated sources, if necessary.
+	foreach( &target_pair : workspace.build_targets )
+	{
+		auto& build_target_name= target_pair.key();
+		auto& build_target= target_pair.value();
+		if( !build_target.generated_source_files.empty() || !build_target.generated_private_header_files.empty() )
+		{
+			if( !EnsureDirectoryExists( logger, GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, build_target_name ) ) )
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+fn CreateWorkspaceBuildTargetsGraphNodes(
+	BuildSystemPaths& build_system_paths,
+	ust::string_view8 root_package_build_directory,
+	BuildConfiguration build_configuration,
+	TargetTriple& target_triple,
+	WorkspaceInfo& workspace,
+	BuildGraph &mut build_graph )
+{
+	// Collect and sort a list of build target names,
+	// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
+	var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
+	foreach( &build_target_pair : workspace.build_targets )
+	{
+		build_target_names.push_back( build_target_pair.key() );
+	}
+	ust::sort( build_target_names );
+
+	foreach( &build_target_name : build_target_names )
+	{
+		CreatePackageTargetBuildGraphNodes(
+			build_system_paths,
+			root_package_build_directory,
+			build_configuration,
+			target_triple,
+			workspace,
+			build_target_name,
+			build_graph );
+	}
 }
 
 fn CreatePackageTargetBuildGraphNodes(
@@ -1204,7 +1377,11 @@ fn ExtractDependenciesIncludeDirectories(
 
 auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
 
-fn CreateCustomBuildStepBuildGraphNodes( CustomBuildStep& custom_build_step, BuildGraph &mut build_graph )
+fn CreateCustomBuildStepBuildGraphNodes(
+	TargetTriple& host_target_triple,
+	ust::string_view8 host_packages_root_build_directory,
+	WorkspaceInfo::CustomBuildStep& custom_build_step,
+	BuildGraph &mut build_graph )
 {
 	// Paths should be already normalized.
 	var BuildGraph::Node mut node
@@ -1219,6 +1396,17 @@ fn CreateCustomBuildStepBuildGraphNodes( CustomBuildStep& custom_build_step, Bui
 	{
 		node.program= exe_command.exe_path;
 		node.command_line= exe_command.command_line;
+	}
+	else if_var( &host_build_target_exe_command : custom_build_step.command.get</ WorkspaceInfo::CustomBuildStep::HostBuildTargetExeCommand />() )
+	{
+		// Existence of the corresponding build target in the host workspace should be checked previously.
+		node.program=
+			NormalizePath( ust::concat(
+				GetPackageBuildDirectory( host_packages_root_build_directory, host_build_target_exe_command.name.package_name ),
+				"/",
+				host_build_target_exe_command.name.name,
+				( host_target_triple.operating_system == "windows" ? ust::string_view8(".exe") : ust::string_view8() ) ) );
+		node.command_line= host_build_target_exe_command.command_line;
 	}
 	else if_var( &copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
 	{
@@ -1287,19 +1475,25 @@ public:
 	fn constructor(
 		Logger mut logger,
 		BuildConfiguration build_configuration,
-		TargetTriple mut target_triple,
 		ConfigurationOptions mut configuration_options,
-		BuildSystemPaths mut build_system_paths,
-		ust::string8 mut root_package_build_directory )
+		BuildSystemPaths mut build_system_paths )
 			(
 				logger_= move(logger),
 				build_configuration_= build_configuration,
-				target_triple_= move(target_triple),
 				configuration_options_= move(configuration_options),
 				build_system_paths_= move(build_system_paths),
-				root_package_build_directory_= move(root_package_build_directory),
 			)
 	{}
+
+	fn SetTargetTriple( mut this, TargetTriple mut target_triple )
+	{
+		target_triple_= move(target_triple);
+	}
+
+	fn SetRootPackageBuildDirectory( mut this, ust::string8 mut root_package_build_directory )
+	{
+		root_package_build_directory_= move(root_package_build_directory);
+	}
 
 	fn SetCurrentPackageName( mut this, PackageAbsoluteName mut name )
 	{
@@ -1371,12 +1565,14 @@ public: // Provide direct access for some fields where it's safe to use them dir
 	Logger logger_;
 
 	BuildConfiguration imut build_configuration_;
-	TargetTriple imut target_triple_;
 	BuildSystemPaths imut build_system_paths_;
-	ust::string8 imut root_package_build_directory_;
 
 private:
 	ConfigurationOptions imut configuration_options_;
+
+	TargetTriple target_triple_; // May be changed because of target/host system switching.
+	ust::string8 root_package_build_directory_; // May be changed because of target/host system switching.
+
 	PackageAbsoluteName current_package_name_;
 }
 

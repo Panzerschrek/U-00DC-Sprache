@@ -1,0 +1,32 @@
+import "/memory.u"
+import "/stdout.u"
+
+fn nomangle main( i32 argc, $($(char8)) argv ) : i32
+{
+	if( argc < 2 )
+	{
+		ust::stderr_print( "At least one argument required!\n" );
+		return -1;
+	}
+
+	var $(char8) file_name_nt= unsafe( $>( argv + 1s ) );
+
+	auto& contents= "fn Bar() : i32 { return 123321; }";
+
+	auto ok=
+		unsafe( CreateFileWithContents(
+			file_name_nt,
+			ust::ptr_cast_to_byte8( $<( cast_mut( contents[0] ) ) ),
+			typeinfo</typeof(contents)/>.size_of ) );
+
+	if( !ok )
+	{
+		ust::stderr_print( "Failed to write file!\n" );
+		return -1;
+	}
+
+	return 0;
+}
+
+fn nomangle CreateFileWithContents(
+	$(char8) name_null_terminated, $(byte8) contents, size_type contents_size ) unsafe : bool;

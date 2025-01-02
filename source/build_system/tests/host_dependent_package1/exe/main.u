@@ -1,0 +1,10 @@
+import "/lib/lib.uh"
+import "/exe/generated_private_header.uh"
+
+fn nomangle main() : i32
+{
+	halt if( LibFunc( 17 ) != 17 * 17 + 9 * 17 );
+	halt if( LibFunc( -5 ) != 5 * 5 - 9 * 5 );
+	halt if( Bar() != 123321 );
+	return 0;
+}

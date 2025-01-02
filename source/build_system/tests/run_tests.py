@@ -604,6 +604,18 @@ def GeneratedSources5Test():
 	RunExecutable( test_dir, "generated_sources5" )
 
 
+def HostDependentPackage0Test():
+	test_dir= "host_dependent_package0"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+
+
+def HostDependentPackage1Test():
+	test_dir= "host_dependent_package1"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1166,6 +1178,20 @@ def MissingCustomBuildStepForGeneratedFile2Test():
 	assert( stderr.find( "No custom build step found for generated public header file \"some.uh\" of build target \"lib\"!" ) != -1 )
 
 
+def HostBuildTargetCommandError0Test():
+	res = RunBuildSystemWithErrors( "host_build_target_command_error0" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Host build target \"sub_package/helper_tool\" used in custom build step \"test.uh\" is not executable!" ) != -1 )
+
+
+def HostBuildTargetCommandError1Test():
+	res = RunBuildSystemWithErrors( "host_build_target_command_error1" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Host build target \"sub_package/helper_tool\" used in custom build step \"test.uh\" not found!" ) != -1 )
+
+
 #
 # End tests list
 #
@@ -1283,6 +1309,8 @@ def main():
 		GeneratedSources3Test,
 		GeneratedSources4Test,
 		GeneratedSources5Test,
+		HostDependentPackage0Test,
+		HostDependentPackage1Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
@@ -1358,6 +1386,8 @@ def main():
 		MissingCustomBuildStepForGeneratedFile0Test,
 		MissingCustomBuildStepForGeneratedFile1Test,
 		MissingCustomBuildStepForGeneratedFile2Test,
+		HostBuildTargetCommandError0Test,
+		HostBuildTargetCommandError1Test,
 		]
 
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )

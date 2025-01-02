@@ -119,6 +119,28 @@ struct WorkspaceInfo
 		ust::vector</ust::string8/> all_external_libraries_to_link;
 	}
 
+	struct CustomBuildStep
+	{
+		struct HostBuildTargetExeCommand
+		{
+			BuildTargetAbsoluteName name;
+			ust::vector</ust::string8/> command_line;
+		}
+
+		// List is deduplicated and normalized.
+		ust::vector</ust::string8/> input_files;
+		// List is deduplicated and normalized.
+		ust::vector</ust::string8/> output_files;
+
+		ust::variant</ tup[
+			BK::CustomBuildStep::ExeCommand,
+			HostBuildTargetExeCommand,
+			BK::CustomBuildStep::CopyCommand,
+			BK::CustomBuildStep::GenerateFileCommand ] /> command;
+
+		ust::string8 comment;
+	}
+
 	ust::unordered_map</BuildTargetAbsoluteName, BuildTarget/> build_targets;
 
 	// Same as PackageInfo::custom_build_steps, but with normalization - file lists are deduplicated, paths are normalized.
@@ -138,6 +160,13 @@ fn TransformAndValidatePackageInfo(
 // Returns false on error.
 fn ProcessWorkspaceDependenciesGraph(
 	Logger &mut logger, WorkspaceInfo &mut workspace, ust::string_view8 root_package_build_directory ) : bool;
+
+// Checks if dependencies on host worspace build targets are correct.
+// Returns true on success.
+fn CheckHostSystemBuildTargetsArePresent(
+	Logger &mut logger,
+	WorkspaceInfo& workspace,
+	WorkspaceInfo& host_workspace ) : bool;
 
 // Given current package name and package name within it calculate result package absolute name.
 // Returns empty optional if can't do this.
