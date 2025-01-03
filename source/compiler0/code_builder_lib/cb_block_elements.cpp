@@ -1884,7 +1884,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_promise ),
 			{
 				coro_handle,
-				llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlignment( promise_llvm_type ) ) ),
+				llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getPrefTypeAlign( promise_llvm_type ).value() ) ),
 				llvm::ConstantInt::getFalse( llvm_context_ ),
 			},
 			"promise" );

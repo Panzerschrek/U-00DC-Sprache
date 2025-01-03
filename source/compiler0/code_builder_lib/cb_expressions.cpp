@@ -2576,7 +2576,7 @@ Value CodeBuilder::ConcatenateCharArrays(
 
 		if( l_var->llvm_value != nullptr && r_var->llvm_value != nullptr )
 		{
-			const auto alignment= data_layout_.getABITypeAlignment( l_array_type->element_type.GetLLVMType() ); // TODO - is this right alignment?
+			const auto alignment= data_layout_.getPrefTypeAlign( l_array_type->element_type.GetLLVMType() );
 
 			const auto size_l= llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32_, llvm::APInt( 32, data_layout_.getTypeAllocSize( l_array_type->llvm_type ) ) );
 			const auto size_r= llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32_, llvm::APInt( 32, data_layout_.getTypeAllocSize( r_array_type->llvm_type ) ) );
