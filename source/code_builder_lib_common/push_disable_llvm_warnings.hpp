@@ -7,6 +7,11 @@
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+
+#if __GNUC__ >= 8
+	#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
 #endif // __GNUC__
 
 #ifdef _MSC_VER
