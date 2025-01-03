@@ -6,9 +6,9 @@
 #include <llvm/Linker/Linker.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/CommandLine.h>
-#include <llvm/Support/Host.h>
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/SubtargetFeature.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
