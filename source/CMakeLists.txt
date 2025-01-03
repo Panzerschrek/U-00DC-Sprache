@@ -98,8 +98,8 @@ elseif( DEFINED LLVM_LIB_DIR )
 
 	include_directories( ${LLVM_INCLUDE_DIRS} )
 
-	set( CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER ${LLVM_LIB_DIR}/clang/${LLVM_VERSION}/include/ )
-	set( CLANG_BUILTIN_HEADERS_INSTALL_DESTINATION lib/clang/${LLVM_VERSION}/include/ )
+	set( CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER ${LLVM_LIB_DIR}/clang/17/include/ )
+	set( CLANG_BUILTIN_HEADERS_INSTALL_DESTINATION lib/clang/17/include/ )
 
 else()
 	message( FATAL_ERROR "llvm not found. Define LLVM_SRC_DIR for building llvm from sources, or define LLVM_LIB_DIR for installed llvm." )
