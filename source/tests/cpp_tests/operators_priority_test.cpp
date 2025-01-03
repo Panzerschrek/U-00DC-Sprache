@@ -402,6 +402,12 @@ U_TEST( OperatorsPriorityTest10 )
 		}
 	)";
 
+	// Ignore this warning, becuase we need to use C++ bitwise operator to check the same operator in Ü.
+	#ifdef __clang__
+		#pragma GCC diagnostic push
+		#pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
+	#endif
+
 	const auto expected=
 	[]( const std::vector<float>& args ) -> float
 	{
@@ -409,6 +415,10 @@ U_TEST( OperatorsPriorityTest10 )
 		if( ( args[0] > 0.0f ) & ( args[0] > args[1] + args[2] ) ) return 1.0f;
 		return 0.0f;
 	};
+
+	#ifdef __clang__
+		#pragma GCC diagnostic pop
+	#endif
 
 	const std::vector< std::vector<float> > args
 	{
@@ -432,6 +442,12 @@ U_TEST( OperatorsPriorityTest11 )
 		}
 	)";
 
+	// Ignore this warning, becuase we need to use C++ bitwise operator to check the same operator in Ü.
+	#ifdef __clang__
+		#pragma GCC diagnostic push
+		#pragma GCC diagnostic ignored "-Wbitwise-instead-of-logical"
+	#endif
+
 	const auto expected=
 	[]( const std::vector<float>& args ) -> float
 	{
@@ -439,6 +455,10 @@ U_TEST( OperatorsPriorityTest11 )
 		if( ( args[0] > 0.0f ) & ( args[0] * args[1] > args[2] ) ) return 1.0f;
 		return 0.0f;
 	};
+
+	#ifdef __clang__
+		#pragma GCC diagnostic pop
+	#endif
 
 	const std::vector< std::vector<float> > args
 	{
