@@ -125,7 +125,7 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 	if( const auto fundamental_type= variable.type.GetFundamentalType() )
 	{
 		if( fundamental_type->fundamental_type == U_FundamentalType::bool_ )
-			return variable.constexpr_value->getUniqueInteger().isNullValue() ? "false" : "true";
+			return variable.constexpr_value->getUniqueInteger().isZero() ? "false" : "true";
 		else if( IsFloatingPoint( fundamental_type->fundamental_type ) )
 		{
 			if( const auto constant_fp= llvm::dyn_cast<llvm::ConstantFP>( variable.constexpr_value ) )
