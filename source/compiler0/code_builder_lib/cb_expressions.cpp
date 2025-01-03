@@ -4227,7 +4227,7 @@ Value CodeBuilder::DoCallFunction(
 
 	for( const auto& nodes : second_order_reference_nodes )
 	{
-		for( const VariablePtr node : nodes )
+		for( const VariablePtr& node : nodes )
 		{
 			if( node != nullptr )
 				function_context.variables_state.MoveNode( node );
