@@ -325,7 +325,7 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 		virtual_table_struct_fields.push_back( unsafe( LLVMPointerType( polymorph_type_id_table_element_type_, 0u ) ) );  // type_id field
 	}
 
-	auto mut own_functions_count= 0u;
+	auto mut own_functions_count= 0u64;
 	foreach( &entry : class_type.virtual_table )
 	{
 		if( entry.parent_virtual_table_index == ~0u )
@@ -336,7 +336,7 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 
 	unsafe
 	{
-		auto own_virtual_functions_table_type= LLVMArrayType( virtual_function_pointer_type_, own_functions_count );
+		auto own_virtual_functions_table_type= LLVMArrayType2( virtual_function_pointer_type_, own_functions_count );
 
 		virtual_table_struct_fields.push_back( own_virtual_functions_table_type );
 
@@ -396,9 +396,9 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 	unsafe
 	{
 		initializers.push_back( LLVMConstNull( polymorph_type_id_table_element_type_ ) );
-		var LLVMValueRef initializer= LLVMConstArray( polymorph_type_id_table_element_type_, initializers.data(), u32(initializers.size()) );
+		var LLVMValueRef initializer= LLVMConstArray2( polymorph_type_id_table_element_type_, initializers.data(), u64(initializers.size()) );
 
-		var LLVMTypeRef type_id_table_type= LLVMArrayType( polymorph_type_id_table_element_type_, u32(initializers.size()) );
+		var LLVMTypeRef type_id_table_type= LLVMArrayType2( polymorph_type_id_table_element_type_, u64(initializers.size()) );
 
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, type_id_table_type, name_mangled_null_terminated.front() );
 		LLVMSetInitializer( global_value, initializer );
@@ -504,7 +504,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, C
 			function_pointers_initializer_values.push_back( func );
 		}
 
-		initializer_values.push_back( LLVMConstArray( fn_type_ptr, function_pointers_initializer_values.data(), u32(function_pointers_initializer_values.size()) ) );
+		initializer_values.push_back( LLVMConstArray2( fn_type_ptr, function_pointers_initializer_values.data(), u64(function_pointers_initializer_values.size()) ) );
 
 		return LLVMConstNamedStruct( ancestor_class.virtual_table_llvm_type, initializer_values.data(), u32(initializer_values.size()) );
 	}

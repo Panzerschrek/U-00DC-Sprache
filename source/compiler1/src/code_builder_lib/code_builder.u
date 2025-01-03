@@ -91,7 +91,7 @@ fn CodeBuilder::constructor(
 			{
 				.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
 				.element_count(2),
-				.llvm_type= unsafe( LLVMArrayType( fundamental_llvm_types_.char8_, 2u ) ),
+				.llvm_type= unsafe( LLVMArrayType2( fundamental_llvm_types_.char8_, 2u64 ) ),
 			},
 		// A pair of reference param descriptions. First - destination, second - source.
 		reference_notation_pollution_element_type_=
@@ -99,7 +99,7 @@ fn CodeBuilder::constructor(
 			{
 				.element_type= reference_notation_param_reference_description_type_,
 				.element_count(2),
-				.llvm_type= unsafe( LLVMArrayType( LLVMArrayType( fundamental_llvm_types_.char8_, 2u ), 2u ) ),
+				.llvm_type= unsafe( LLVMArrayType2( LLVMArrayType2( fundamental_llvm_types_.char8_, 2u64 ), 2u64 ) ),
 			},
 		virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::True ), 0u )),
 		polymorph_type_id_table_element_type_= unsafe( LLVMStructCreateNamed( llvm_context_, "__U_polymorph_type_id_table_element\0"[0] ) ),
@@ -2997,7 +2997,7 @@ fn CodeBuilder::WrapRawScalarConstant( LLVMValueRef constant, LLVMTypeRef dst_ty
 	{
 		var LLVMTypeRef element_type= unsafe( LLVMGetElementType( dst_type ) );
 		var [ LLVMValueRef, 1 ] mut i[ WrapRawScalarConstant( constant, element_type ) ];
-		return unsafe( LLVMConstArray( element_type, $<(i[0]), 1u ) );
+		return unsafe( LLVMConstArray2( element_type, $<(i[0]), 1u64 ) );
 	}
 
 	return constant;
@@ -3027,7 +3027,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 		auto constant_type_kind= LLVMGetTypeKind( constant_type );
 		if( constant_type_kind == LLVMTypeKind::Array )
 		{
-			auto length= LLVMGetArrayLength( constant_type );
+			var u32 length( LLVMGetArrayLength2( constant_type ) );
 			for( auto mut i= 0u; i < length; ++i )
 			{
 				var [ LLVMValueRef, 2 ] mut indexes

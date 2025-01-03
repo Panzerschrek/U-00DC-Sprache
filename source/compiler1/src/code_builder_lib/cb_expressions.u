@@ -865,7 +865,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				{
 					.element_type= FundamentalType( element_type, element_llvm_type ),
 					.element_count= array_size,
-					.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( array_size ) ) ),
+					.llvm_type= unsafe( LLVMArrayType2( element_llvm_type, array_size ) ),
 				},
 			.location= Variable::Location::Pointer,
 			.value_type= ValueType::ReferenceImut,
@@ -3798,7 +3798,7 @@ fn CodeBuilder::ConcatenateCharArrays(
 		.element_count= l_array_type.element_count + r_array_type.element_count,
 		.element_type= l_array_type.element_type,
 	};
-	result_array_type.llvm_type= unsafe( LLVMArrayType( result_array_type.element_type.GetLLVMType(), u32(result_array_type.element_count) ) );
+	result_array_type.llvm_type= unsafe( LLVMArrayType2( result_array_type.element_type.GetLLVMType(), result_array_type.element_count ) );
 
 	var Variable mut result
 	{
@@ -3855,7 +3855,7 @@ fn CodeBuilder::ConcatenateCharArrays(
 			constants[size_type(i) + size_type(l_array_type.element_count)]= unsafe( LLVMGetAggregateElement( r_var.constexpr_value, i ) );
 		}
 
-		result.constexpr_value= unsafe( LLVMConstArray( result_array_type.element_type.GetLLVMType(), constants.data(), u32(constants.size()) ) );
+		result.constexpr_value= unsafe( LLVMConstArray2( result_array_type.element_type.GetLLVMType(), constants.data(), u64(constants.size()) ) );
 	}
 
 	var VariablePtr result_ptr= move(result).CreatePtr();

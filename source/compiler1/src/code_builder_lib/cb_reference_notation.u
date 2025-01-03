@@ -283,9 +283,9 @@ fn CodeBuilder::GetReturnReferencesConstant( this, FunctionType::ParamReferences
 			{
 				.element_type= reference_notation_param_reference_description_type_,
 				.element_count= u64( constant_initializers.size() ),
-				.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( constant_initializers.size() ) ) ),
+				.llvm_type= unsafe( LLVMArrayType2( element_llvm_type, u64( constant_initializers.size() ) ) ),
 			} ),
-		unsafe( LLVMConstArray( element_llvm_type, constant_initializers.data(), u32(constant_initializers.size()) ) ) );
+		unsafe( LLVMConstArray2( element_llvm_type, constant_initializers.data(), u64(constant_initializers.size()) ) ) );
 }
 
 fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInnerReferences& return_inner_references ) : ReferenceNotationConstant
@@ -322,7 +322,7 @@ fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPo
 			GetParamReferenceConstant( pollution.dst ),
 			GetParamReferenceConstant( pollution.src ),
 		];
-		constant_initializers[i]= unsafe( LLVMConstArray( pair_element_llvm_type, $<(initializer[0]), 2u ) );
+		constant_initializers[i]= unsafe( LLVMConstArray2( pair_element_llvm_type, $<(initializer[0]), 2u64 ) );
 	}
 
 	var LLVMTypeRef element_llvm_type= reference_notation_pollution_element_type_.GetLLVMType();
@@ -333,9 +333,9 @@ fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPo
 			{
 				.element_type= reference_notation_pollution_element_type_,
 				.element_count= u64( constant_initializers.size() ),
-				.llvm_type= unsafe( LLVMArrayType( element_llvm_type, u32( constant_initializers.size() ) ) ),
+				.llvm_type= unsafe( LLVMArrayType2( element_llvm_type, u64( constant_initializers.size() ) ) ),
 			} ),
-		unsafe( LLVMConstArray( element_llvm_type, constant_initializers.data(), u32(constant_initializers.size()) ) ) );
+		unsafe( LLVMConstArray2( element_llvm_type, constant_initializers.data(), u64(constant_initializers.size()) ) ) );
 }
 
 fn CodeBuilder::GetParamReferenceConstant( this, FunctionType::ParamReference& param_reference ) : LLVMValueRef
