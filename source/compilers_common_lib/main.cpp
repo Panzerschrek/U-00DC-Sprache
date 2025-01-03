@@ -547,9 +547,7 @@ int Main( int argc, const char* argv[] )
 		llvm::initializeScalarOpts(registry);
 		llvm::initializeVectorization(registry);
 		llvm::initializeInstCombine(registry);
-		llvm::initializeAggressiveInstCombine(registry);
 		llvm::initializeIPO(registry);
-		llvm::initializeInstrumentation(registry);
 		llvm::initializeAnalysis(registry);
 		llvm::initializeCodeGen(registry);
 		llvm::initializeTarget(registry);
@@ -619,7 +617,6 @@ int Main( int argc, const char* argv[] )
 		: Options::mangling_scheme;
 
 	llvm::LLVMContext llvm_context;
-	llvm_context.setOpaquePointers(true);
 
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
