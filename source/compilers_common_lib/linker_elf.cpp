@@ -8,6 +8,8 @@
 
 #include "linker.hpp"
 
+LLD_HAS_DRIVER(elf)
+
 namespace U
 {
 
