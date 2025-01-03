@@ -71,7 +71,7 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 	uint64_t current_offset= 0u;
 	for( llvm::Type* type : fields_llvm_types )
 	{
-		const uint64_t alignment= data_layout.getPrefTypeAlign( type ).value();
+		const uint64_t alignment= data_layout.getABITypeAlign( type ).value();
 		const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
 		current_offset+= padding + data_layout.getTypeAllocSize( type );
 	}
@@ -83,7 +83,7 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 		uint64_t best_field_padding= ~0u;
 		for( auto it= fields.begin(); it != fields.end(); ++it )
 		{
-			const uint64_t alignment= data_layout.getPrefTypeAlign( best_field_it->second->is_reference ? it->second->type.GetLLVMType()->getPointerTo() : it->second->type.GetLLVMType() ).value();
+			const uint64_t alignment= data_layout.getABITypeAlign( best_field_it->second->is_reference ? it->second->type.GetLLVMType()->getPointerTo() : it->second->type.GetLLVMType() ).value();
 			U_ASSERT( alignment != 0u );
 
 			const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;

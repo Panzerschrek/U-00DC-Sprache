@@ -1053,7 +1053,7 @@ void CodeBuilder::CopyBytes(
 	else
 	{
 		// Create memcpy for aggregate types.
-		const auto alignment= data_layout_.getPrefTypeAlign( llvm_type );
+		const auto alignment= data_layout_.getABITypeAlign( llvm_type );
 		function_context.llvm_ir_builder.CreateMemCpy(
 			dst, llvm::MaybeAlign(alignment),
 			src, llvm::MaybeAlign(alignment),

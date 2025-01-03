@@ -512,8 +512,8 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 			const auto llvm_type= v.data.source_variable->type.GetLLVMType();
 			v.alignment=
 				v.capture_by_reference
-					? data_layout_.getPrefTypeAlign( llvm_type->getPointerTo() ).value()
-					: data_layout_.getPrefTypeAlign( llvm_type ).value();
+					? data_layout_.getABITypeAlign( llvm_type->getPointerTo() ).value()
+					: data_layout_.getABITypeAlign( llvm_type ).value();
 
 			captured_variables.push_back( std::move(v) );
 		};
