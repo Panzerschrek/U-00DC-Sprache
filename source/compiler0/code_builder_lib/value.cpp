@@ -1,3 +1,7 @@
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/SmallString.h>
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "class.hpp"
 #include "template_signature_param.hpp"
