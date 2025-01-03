@@ -2188,7 +2188,7 @@ llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function
 		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateReferenceAccessTag( type ) );
 
 	// References are never null, so, mark result of reference load with "nonnull" metadata.
-	result->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
+	result->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, {} ) );
 
 	return result;
 }

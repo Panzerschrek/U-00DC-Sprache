@@ -1166,7 +1166,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( load_instr->getParent() == function_context.llvm_ir_builder.GetInsertBlock() )
 			{
 				if( !load_instr->hasMetadata( llvm::LLVMContext::MD_nonnull ) )
-					load_instr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
+					load_instr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, {} ) );
 			}
 		}
 		// For "call" instructions use return value attribute "nonnull".
