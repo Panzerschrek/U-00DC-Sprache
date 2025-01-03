@@ -1,12 +1,12 @@
 #include <iostream>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/ADT/Triple.h>
 #include <llvm/Bitcode/BitcodeReader.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_os_ostream.h>
+#include <llvm/TargetParser/Triple.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "ustlib.hpp"
