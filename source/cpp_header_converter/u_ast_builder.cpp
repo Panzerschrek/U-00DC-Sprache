@@ -510,8 +510,15 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type, type_names_map ) );
 
 	const clang::Type* return_type_desugared= return_type;
-	while( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(return_type_desugared) )
-		return_type_desugared= typedef_type->desugar().getTypePtr();
+	while(true)
+	{
+		if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(return_type_desugared) )
+			return_type_desugared= typedef_type->desugar().getTypePtr();
+		else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>(return_type_desugared) )
+			return_type_desugared= elaborated_type->desugar().getTypePtr();
+		else
+			break;
+	}
 
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(return_type_desugared) )
 	{
