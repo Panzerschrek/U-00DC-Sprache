@@ -23,7 +23,9 @@ DebugInfoBuilder::DebugInfoBuilder(
 	for( const auto& node : source_graph.nodes_storage )
 		source_file_entries_.push_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
 
-	const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_lo_user + 0xDC /* code of "Ü" letter */;
+	// HACK! Add a workaround for wrong assert in LLVM code in Dwarf.h:406. TODO - remove this after this place in the LLVM library will be fixed.
+	// const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_lo_user + 0xDC /* code of "Ü" letter */;
+	const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_C;
 
 	builder_= std::make_unique<llvm::DIBuilder>( llvm_module );
 
