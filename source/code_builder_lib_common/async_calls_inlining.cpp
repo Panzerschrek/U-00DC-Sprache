@@ -42,8 +42,8 @@ llvm::Value* GetCallee( llvm::CallInst& call_instruction )
 // This function may still return "false" is some indirect recursive call and recursive call via other function exist.
 bool FunctionIsDirectlyRecursive( llvm::Function& function )
 {
-	for( llvm::BasicBlock& basic_block : function.getBasicBlockList() )
-		for( llvm::Instruction& instruction : basic_block.getInstList() )
+	for( llvm::BasicBlock& basic_block : function )
+		for( llvm::Instruction& instruction : basic_block )
 			if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &instruction ) )
 				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
 					if( callee_function == &function )
@@ -54,14 +54,14 @@ bool FunctionIsDirectlyRecursive( llvm::Function& function )
 
 void ExtractAllACoroutineFunctionCalls( llvm::Function& function, llvm::SmallVectorImpl<llvm::CallInst*>& out )
 {
-	for( llvm::BasicBlock& basic_block : function.getBasicBlockList() )
+	for( llvm::BasicBlock& basic_block : function )
 	{
-		for( llvm::Instruction& instruction : basic_block.getInstList() )
+		for( llvm::Instruction& instruction : basic_block )
 		{
 			if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( &instruction ) )
 				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
 					if( callee_function->hasFnAttribute( llvm::Attribute::PresplitCoroutine ) &&
-						!callee_function->getBasicBlockList().empty() )
+						!callee_function->empty() )
 						out.push_back( call_instruction );
 		}
 	}
@@ -253,7 +253,7 @@ llvm::BasicBlock* GetAwaitLoopBlock( llvm::LoadInst& coro_handle_load )
 			llvm::BasicBlock* const bb= instruction->getParent();
 
 			bool has_coro_resume= false;
-			for( const llvm::Instruction& instruction : bb->getInstList() )
+			for( const llvm::Instruction& instruction : *bb )
 			{
 				if( instruction.getMetadata("u_await_resume") != nullptr )
 				{
@@ -420,7 +420,7 @@ std::optional<CoroutineFunctionInfo> CollectCoroutineFunctionInfo( llvm::Functio
 {
 	CoroutineFunctionInfo result;
 	llvm::BasicBlock* prepare_block= nullptr;
-	for( llvm::BasicBlock& basic_block : function.getBasicBlockList() )
+	for( llvm::BasicBlock& basic_block : function )
 	{
 		const auto instructions_it= basic_block.begin();
 		const auto instructions_end= basic_block.end();

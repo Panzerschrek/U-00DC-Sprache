@@ -171,7 +171,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		ReportError( "executing incomplete function \"" + std::string(llvm_function.getName()) + "\"" );
 		return llvm::GenericValue();
 	}
-	if( llvm_function.getBasicBlockList().empty() )
+	if( llvm_function.empty() )
 	{
 		ReportError( "executing function \"" + std::string(llvm_function.getName()) + "\" with no body" );
 		return llvm::GenericValue();
@@ -182,7 +182,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
-	const auto& bb= llvm_function.getBasicBlockList().front();
+	const llvm::BasicBlock& bb= llvm_function.front();
 	if( bb.empty() )
 	{
 		ReportError( "executing function \"" + std::string(llvm_function.getName()) + "\" with empty body" );

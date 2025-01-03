@@ -762,7 +762,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 	// False branch.
 	if( false_basic_block->hasNPredecessorsOrMore(1) )
 	{
-		function_context.function->getBasicBlockList().push_back( false_basic_block );
+		false_basic_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
 		function_context.llvm_ir_builder.CreateRet( llvm::ConstantInt::getFalse( llvm_context_ ) );
 	}
@@ -965,7 +965,7 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 
 		function_context.llvm_ir_builder.CreateCondBr( eq, next_bb, false_basic_block );
 
-		function_context.function->getBasicBlockList().push_back( next_bb );
+		next_bb->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( next_bb );
 	}
 	else if( const auto array_type= type.GetArrayType() )
@@ -1029,7 +1029,7 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 
 		function_context.llvm_ir_builder.CreateCondBr( eq, next_bb, false_basic_block );
 
-		function_context.function->getBasicBlockList().push_back( next_bb );
+		next_bb->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( next_bb );
 	}
 	else U_ASSERT(false);

@@ -347,12 +347,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
 			function_context.llvm_ir_builder.CreateCondBr( condition, halt_block, block_after_if );
 
-			function_context.function->getBasicBlockList().push_back( halt_block );
+			halt_block->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( halt_block );
 			function_context.llvm_ir_builder.CreateCall( halt_func_ );
 			function_context.llvm_ir_builder.CreateUnreachable(); // terminate block.
 
-			function_context.function->getBasicBlockList().push_back( block_after_if );
+			block_after_if->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
 
@@ -1003,7 +1003,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( !function_context.is_functionless_context )
 			{
 				U_ASSERT( branches_basic_blocks[i] != nullptr );
-				function_context.function->getBasicBlockList().push_back( branches_basic_blocks[i] );
+				branches_basic_blocks[i]->insertInto( function_context.function );
 				function_context.llvm_ir_builder.SetInsertPoint( branches_basic_blocks[i] );
 			}
 
@@ -1071,7 +1071,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( !function_context.is_functionless_context )
 	{
 		U_ASSERT( result_block != nullptr );
-		function_context.function->getBasicBlockList().push_back( result_block );
+		result_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( result_block );
 
 		if( result->value_type != ValueType::Value )
@@ -2480,12 +2480,12 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				function_context.llvm_ir_builder.CreateBr( end_basic_block );
 
 				// False branch.
-				function_context.function->getBasicBlockList().push_back( false_basic_block );
+				false_basic_block->insertInto( function_context.function );
 				function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
 				function_context.llvm_ir_builder.CreateBr( end_basic_block );
 
 				// End basic block.
-				function_context.function->getBasicBlockList().push_back( end_basic_block );
+				end_basic_block->insertInto( function_context.function );
 				function_context.llvm_ir_builder.SetInsertPoint( end_basic_block );
 
 				const auto phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2 );
@@ -3385,7 +3385,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 			function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, block_after_operator, r_part_block );
 		else U_ASSERT(false);
 
-		function_context.function->getBasicBlockList().push_back( r_part_block );
+		r_part_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( r_part_block );
 	}
 
@@ -3428,7 +3428,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 		U_ASSERT( block_after_operator != nullptr );
 		function_context.llvm_ir_builder.CreateBr( block_after_operator );
-		function_context.function->getBasicBlockList().push_back( block_after_operator );
+		block_after_operator->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( block_after_operator );
 
 		llvm::PHINode* const phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2u );

@@ -680,7 +680,7 @@ void CodeBuilder::GenerateLoop(
 	llvm::BasicBlock* const block_after_loop= llvm::BasicBlock::Create( llvm_context_ );
 
 	function_context.llvm_ir_builder.CreateBr( loop_block );
-	function_context.function->getBasicBlockList().push_back( loop_block );
+	loop_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
 	llvm::PHINode* const counter_value= function_context.llvm_ir_builder.CreatePHI( size_type_llvm, 2u );
@@ -694,7 +694,7 @@ void CodeBuilder::GenerateLoop(
 	counter_value->addIncoming( zero_value, block_before_loop );
 	counter_value->addIncoming( counter_value_plus_one, function_context.llvm_ir_builder.GetInsertBlock() );
 
-	function_context.function->getBasicBlockList().push_back( block_after_loop );
+	block_after_loop->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
 }
 
@@ -745,7 +745,7 @@ void CodeBuilder::CallDestructorsImpl(
 			function_context.llvm_ir_builder.CreateCondBr( alloca_info.is_stack_allocation, stack_allocation_block, heap_allocation_block );
 
 			// Stack allocation block.
-			function_context.function->getBasicBlockList().push_back( stack_allocation_block );
+			stack_allocation_block->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( stack_allocation_block );
 			function_context.llvm_ir_builder.CreateCall(
 				llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::stackrestore ),
@@ -753,13 +753,13 @@ void CodeBuilder::CallDestructorsImpl(
 			function_context.llvm_ir_builder.CreateBr( end_block );
 
 			// Heap allocation block.
-			function_context.function->getBasicBlockList().push_back( heap_allocation_block );
+			heap_allocation_block->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( heap_allocation_block );
 			function_context.llvm_ir_builder.CreateCall( free_func_, { alloca_info.ptr_for_free } );
 			function_context.llvm_ir_builder.CreateBr( end_block );
 
 			// End block.
-			function_context.function->getBasicBlockList().push_back( end_block );
+			end_block->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( end_block );
 		}
 	}
@@ -2050,8 +2050,8 @@ void CodeBuilder::BuildFuncCode(
 	{
 		// Fill destructors block.
 		U_ASSERT( function_context.destructor_end_block != nullptr );
+		function_context.destructor_end_block->insertInto( llvm_function );
 		function_context.llvm_ir_builder.SetInsertPoint( function_context.destructor_end_block );
-		llvm_function->getBasicBlockList().push_back( function_context.destructor_end_block );
 
 		CallMembersDestructors( function_context, function_names.GetErrors(), block.end_src_loc );
 		function_context.llvm_ir_builder.CreateRetVoid();
@@ -2650,7 +2650,7 @@ CodeBuilder::FunctionContextState CodeBuilder::SaveFunctionContextState( Functio
 {
 	FunctionContextState result;
 	result.variables_state= function_context.variables_state;
-	result.block_count= function_context.function->getBasicBlockList().size();
+	result.block_count= function_context.function->size();
 	return result;
 }
 
@@ -2659,7 +2659,7 @@ void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context
 	function_context.variables_state= state.variables_state;
 
 	// Make sure no new basic blocks were added.
-	U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
+	U_ASSERT( function_context.function->size() == state.block_count );
 	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
 }
 
