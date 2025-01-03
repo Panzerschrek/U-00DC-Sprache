@@ -73,8 +73,8 @@ if( DEFINED LLVM_SRC_DIR )
 	endforeach()
 
 	# Hack! Can't get LLVM version from sources, so, hardcode it.
-	set( CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER ${CMAKE_BINARY_DIR}/llvm/lib/clang/15.0.7/include/ )
-	set( CLANG_BUILTIN_HEADERS_INSTALL_DESTINATION lib/clang/15.0.7/include/ )
+	set( CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER ${CMAKE_BINARY_DIR}/llvm/lib/clang/17/include/ )
+	set( CLANG_BUILTIN_HEADERS_INSTALL_DESTINATION lib/clang/17/include/ )
 
 elseif( DEFINED LLVM_LIB_DIR )
 	message( STATUS "Use binary LLVM package" )
