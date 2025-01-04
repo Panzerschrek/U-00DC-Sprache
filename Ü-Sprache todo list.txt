@@ -8,6 +8,8 @@ General:
 *) More float types ( 16 bit, 128 bit )
 *) More integer types ( 256 bit, 512 bit )
 *) Constructor initializer for constexpr structs
+*) Allow using blocks in expression context - to have possibility to return, break from a loop, continue, use "with"
+	statement, etc
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) More advanced macros - more context, elements, stringification, string manipulations
 *) Simpler syntax for char-types literals (like 'q' in C++)
@@ -62,6 +64,7 @@ Standart library:
 *) More algorithms
 *) More iterator class methods - like "enumerate" and others
 *) Vector drain iterator
+*) Functions for conversion of floating-point numbers into string
 *) Reverse iterators for random_access_range, unordered_map, etc.
 *) shared_ptr - store single pointer for non-polymorph types
 *) Time library - get time functions, timers
@@ -85,6 +88,7 @@ Standart library:
 
 Compiler:
 *) Fix possible overflows in numeric literals
+*) Ensure floating-point numbers parsing produces correct result
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
 *) Fix possible overflows in SrcLoc and/or try to optimize its size (use only 4 bytes)
@@ -98,7 +102,7 @@ Compiler:
 *) Add possibility to execute internal LLD directly, bypassing compiler logic itself
 *) Add possibility to execute an external linker (ld, ld.gold, ld.lld, link.exe, etc.)
 *) More options for internal linker
-*) More internal linkers spupport - MinGW, MachO, wasm
+*) More internal linkers spupport - MachO, wasm
 *) Faster calling convention for non-cross-language functions.
 *) Fix possible UB in float->int conversion.
 *) Virtual call for final function optimization
