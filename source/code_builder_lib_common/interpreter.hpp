@@ -17,7 +17,7 @@ namespace U
 struct InterpreterOptions
 {
 	// Default limits intended to be used in constexpr evaluator.
-	size_t max_call_stack_depth= 1024;
+	size_t max_call_stack_depth= 512;
 	uint64_t max_instructions_executed= uint64_t(1) << 24;
 };
 

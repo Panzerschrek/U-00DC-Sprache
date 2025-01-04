@@ -16,7 +16,7 @@ Documentation is available here: [russian](https://panzerschrek.github.io/U-00DC
 ### How to build
 
 #### Option 0 - build with LLVM sources.
-* Download LLVM sources [here](https://github.com/llvm/llvm-project/releases/) (llvm 15.0.7 used in this project).
+* Download LLVM sources [here](https://github.com/llvm/llvm-project/releases/) (llvm 17.0.6 used in this project).
 * Run cmake for *source/CMakeLists.txt* and generate project for your favorite IDE or build system. You must set LLVM_SRC_DIR in cmake arguments.
 * In order to speed-up the build you may disable building of unnecessary targets via LLVM_TARGETS_TO_BUILD cmake variable. For example set it to *X86* only.
 * It is recommended to disable LLVM tests and benchmarks. See LLVM documentation for more information.

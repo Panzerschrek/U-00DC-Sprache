@@ -1,5 +1,5 @@
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/Support/Host.h>
+#include <llvm/TargetParser/Host.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/vfs.hpp"

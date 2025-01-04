@@ -318,7 +318,7 @@ fn nomangle LLVMIntPtrTypeInContext(LLVMContextRef C, LLVMTargetDataRef TD) unsa
 
 fn nomangle LLVMGetIntTypeWidth(LLVMTypeRef IntegerTy) unsafe : u32;
 
-fn nomangle LLVMArrayType(LLVMTypeRef ElementType, u32 ElementCount) unsafe : LLVMTypeRef;
+fn nomangle LLVMArrayType2(LLVMTypeRef ElementType, u64 ElementCount) unsafe : LLVMTypeRef;
 
 fn nomangle LLVMFunctionType(
 	LLVMTypeRef ReturnType,
@@ -336,7 +336,7 @@ fn nomangle LLVMIsOpaqueStruct(LLVMTypeRef StructTy) unsafe : LLVMBool;
 fn nomangle LLVMStructGetTypeAtIndex(LLVMTypeRef StructTy, u32 i) unsafe : LLVMTypeRef;
 fn nomangle LLVMCountStructElementTypes(LLVMTypeRef StructTy) unsafe: u32;
 
-fn nomangle LLVMGetArrayLength(LLVMTypeRef ArrayTy) unsafe : u32;
+fn nomangle LLVMGetArrayLength2(LLVMTypeRef ArrayTy) unsafe : u64;
 
 fn nomangle LLVMGetElementType(LLVMTypeRef Ty) unsafe : LLVMTypeRef;
 
@@ -440,7 +440,7 @@ fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe :
 fn nomangle LLVMConstReal(LLVMTypeRef RealTy, f64 N) unsafe : LLVMValueRef;
 fn nomangle LLVMGetUndef(LLVMTypeRef Ty) unsafe : LLVMValueRef;
 fn nomangle LLVMConstNull(LLVMTypeRef Ty) unsafe : LLVMValueRef; /* all zeroes */
-fn nomangle LLVMConstArray(LLVMTypeRef ElementTy, $(LLVMValueRef) ConstantVals, u32 Length)  unsafe : LLVMValueRef;
+fn nomangle LLVMConstArray2(LLVMTypeRef ElementTy, $(LLVMValueRef) ConstantVals, u64 Length)  unsafe : LLVMValueRef;
 fn nomangle LLVMConstStructInContext(LLVMContextRef C, $(LLVMValueRef) ConstantVals, u32 Count, LLVMBool Packed) unsafe : LLVMValueRef;
 fn nomangle LLVMConstNamedStruct(LLVMTypeRef StructTy, $(LLVMValueRef) ConstantVals, u32 Count) unsafe : LLVMValueRef;
 fn nomangle LLVMConstStringInContext(LLVMContextRef C, $(char8) Str, u32 Length, LLVMBool DontNullTerminate) unsafe : LLVMValueRef;

@@ -171,7 +171,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		ReportError( "executing incomplete function \"" + std::string(llvm_function.getName()) + "\"" );
 		return llvm::GenericValue();
 	}
-	if( llvm_function.getBasicBlockList().empty() )
+	if( llvm_function.empty() )
 	{
 		ReportError( "executing function \"" + std::string(llvm_function.getName()) + "\" with no body" );
 		return llvm::GenericValue();
@@ -182,7 +182,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
-	const auto& bb= llvm_function.getBasicBlockList().front();
+	const llvm::BasicBlock& bb= llvm_function.front();
 	if( bb.empty() )
 	{
 		ReportError( "executing function \"" + std::string(llvm_function.getName()) + "\" with empty body" );
@@ -732,7 +732,7 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 		for (uint32_t i= 0; i < num_elements; ++i)
 			val.AggregateVal[i]=
 				DoLoad(
-					ptr + struct_layout->getElementOffset(i),
+					ptr + size_t( struct_layout->getElementOffset(i) ),
 					struct_type->getElementType(i));
 
 	}
@@ -795,7 +795,7 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 		U_ASSERT( val.AggregateVal.size() == num_elements );
 		for (uint32_t i= 0; i < num_elements; ++i)
 			DoStore(
-				ptr + struct_layout->getElementOffset(i),
+				ptr + size_t( struct_layout->getElementOffset(i) ),
 				val.AggregateVal[i],
 				struct_type->getElementType(i));
 

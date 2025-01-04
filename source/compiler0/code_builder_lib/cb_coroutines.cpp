@@ -291,7 +291,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.CreateBr( coro_prepare_block );
 
 	// Prepare block.
-	function_context.function->getBasicBlockList().push_back( coro_prepare_block );
+	coro_prepare_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( coro_prepare_block );
 
 	U_ASSERT( function_context.s_ret == nullptr );
@@ -318,7 +318,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.CreateCondBr( coro_need_to_alloc, block_need_to_alloc, block_coro_begin );
 
 	// Need to alloc block.
-	function_context.function->getBasicBlockList().push_back( block_need_to_alloc );
+	block_need_to_alloc->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( block_need_to_alloc );
 
 	llvm::CallInst* const coro_frame_size= function_context.llvm_ir_builder.CreateCall(
@@ -333,7 +333,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.CreateBr( block_coro_begin );
 
 	// Coro begin block.
-	function_context.function->getBasicBlockList().push_back( block_coro_begin );
+	block_coro_begin->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( block_coro_begin );
 
 	llvm::PHINode* const coro_frame_memory= function_context.llvm_ir_builder.CreatePHI( pointer_type, 2, "coro_frame_memory" );
@@ -354,7 +354,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 
 	// Cleanup block.
 	function_context.coro_cleanup_bb= llvm::BasicBlock::Create( llvm_context_, "coro_cleanup" );
-	function_context.function->getBasicBlockList().push_back( function_context.coro_cleanup_bb );
+	function_context.coro_cleanup_bb->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( function_context.coro_cleanup_bb );
 
 	llvm::CallInst* const mem_for_free= function_context.llvm_ir_builder.CreateCall(
@@ -373,14 +373,14 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.CreateCondBr( need_to_free, block_need_to_free, function_context.coro_suspend_bb );
 
 	// Need to free block.
-	function_context.function->getBasicBlockList().push_back( block_need_to_free );
+	block_need_to_free->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( block_need_to_free );
 	llvm::CallInst* free_call= function_context.llvm_ir_builder.CreateCall( free_func_, { mem_for_free } );
 	free_call->setMetadata( llvm::StringRef( "u_coro_block" ), llvm::MDNode::get( llvm_context_, {} ) );
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_suspend_bb );
 
 	// Suspend block.
-	function_context.function->getBasicBlockList().push_back( function_context.coro_suspend_bb );
+	function_context.coro_suspend_bb->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( function_context.coro_suspend_bb );
 
 	llvm::CallInst* const end_call= function_context.llvm_ir_builder.CreateCall(
@@ -392,7 +392,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 
 	// End suspention point.
 	function_context.coro_final_suspend_bb= llvm::BasicBlock::Create( llvm_context_, "coro_suspend_final" );
-	function_context.function->getBasicBlockList().push_back( function_context.coro_final_suspend_bb );
+	function_context.coro_final_suspend_bb->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( function_context.coro_final_suspend_bb );
 
 	llvm::CallInst* const final_suspend_value= function_context.llvm_ir_builder.CreateCall(
@@ -409,13 +409,13 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 
 	// Final suspend unreachable block.
 	// It's undefined behaviour to resume coroutine in final suspention state. So, just add unreachable instruction here.
-	function_context.function->getBasicBlockList().push_back( unreachable_block );
+	unreachable_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( unreachable_block );
 	llvm::UnreachableInst* unreachable_instruction= function_context.llvm_ir_builder.CreateUnreachable();
 	unreachable_instruction->setMetadata( llvm::StringRef( "u_coro_block" ), llvm::MDNode::get( llvm_context_, {} ) );
 
 	// Block for further function code.
-	function_context.function->getBasicBlockList().push_back( func_code_block );
+	func_code_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( func_code_block );
 }
 
@@ -745,7 +745,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& functio
 		function_context.llvm_ir_builder.CreateCondBr( done, already_done_block, loop_block );
 
 		// Already done block.
-		function_context.function->getBasicBlockList().push_back( already_done_block );
+		already_done_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( already_done_block );
 		// Halt if coroutine is already finished. There is no other way to create a fallback in such case.
 		// Normally this should not happen - in most case "await" operator should be used directly for async function call result.
@@ -753,7 +753,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& functio
 		function_context.llvm_ir_builder.CreateUnreachable();
 
 		// Loop block.
-		function_context.function->getBasicBlockList().push_back( loop_block );
+		loop_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
 		llvm::CallInst* const resume_call= function_context.llvm_ir_builder.CreateCall(
@@ -770,7 +770,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& functio
 		function_context.llvm_ir_builder.CreateCondBr( done_after_resume, done_block, not_done_block );
 
 		// Not done block.
-		function_context.function->getBasicBlockList().push_back( not_done_block );
+		not_done_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( not_done_block );
 
 		// TODO - perform context save independent on suspend?
@@ -778,7 +778,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& functio
 		function_context.llvm_ir_builder.CreateBr( loop_block ); // Continue to check if the coroutine is done.
 
 		// Done block.
-		function_context.function->getBasicBlockList().push_back( done_block );
+		done_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( done_block );
 
 		llvm::Type* const promise_llvm_type=
@@ -791,7 +791,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& functio
 				llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_promise ),
 				{
 					coro_handle,
-					llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlignment( promise_llvm_type ) ) ),
+					llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlign( promise_llvm_type ).value() ) ),
 					llvm::ConstantInt::getFalse( llvm_context_ ),
 				},
 				"await_promise" );
@@ -876,7 +876,7 @@ void CodeBuilder::CoroutineSuspend( NamesScope& names_scope, FunctionContext& fu
 	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), next_block );
 	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 1u, false ), destroy_block );
 
-	function_context.function->getBasicBlockList().push_back( destroy_block );
+	destroy_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( destroy_block );
 	{
 		ReferencesGraph references_graph= function_context.variables_state;
@@ -885,7 +885,7 @@ void CodeBuilder::CoroutineSuspend( NamesScope& names_scope, FunctionContext& fu
 	}
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_cleanup_bb );
 
-	function_context.function->getBasicBlockList().push_back( next_block );
+	next_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( next_block );
 }
 

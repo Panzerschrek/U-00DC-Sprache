@@ -144,8 +144,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	{
 		llvm::Type* const llvm_type= type.GetLLVMType();
 		// see llvm/lib/IR/DataLayout.cpp:40
-		add_size_field( "size_of" , data_layout_.getTypeAllocSize   ( llvm_type ) );
-		add_size_field( "align_of", data_layout_.getABITypeAlignment( llvm_type ) );
+		add_size_field( "size_of" , data_layout_.getTypeAllocSize( llvm_type ) );
+		add_size_field( "align_of", data_layout_.getABITypeAlign( llvm_type ).value() );
 	}
 
 	add_size_field( "reference_tag_count", type.ReferenceTagCount() );

@@ -23,7 +23,9 @@ DebugInfoBuilder::DebugInfoBuilder(
 	for( const auto& node : source_graph.nodes_storage )
 		source_file_entries_.push_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
 
-	const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_lo_user + 0xDC /* code of "Ü" letter */;
+	// HACK! Add a workaround for wrong assert in LLVM code in Dwarf.h:406. TODO - remove this after this place in the LLVM library will be fixed.
+	// const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_lo_user + 0xDC /* code of "Ü" letter */;
+	const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_C;
 
 	builder_= std::make_unique<llvm::DIBuilder>( llvm_module );
 
@@ -210,7 +212,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const FundamentalType& type )
 			GetRootDIFile(),
 			0u,
 			data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
-			8u * uint32_t(data_layout_.getABITypeAlignment( type.llvm_type )),
+			8u * uint32_t( data_layout_.getABITypeAlign( type.llvm_type ).value() ),
 			llvm::DINode::DIFlags(),
 			nullptr,
 			builder_->getOrCreateArray({}).get() );
@@ -241,7 +243,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ArrayType& type )
 	U_ASSERT(builder_ != nullptr);
 
 	const uint32_t alignment=
-		type.llvm_type->isSized() ? uint32_t(data_layout_.getABITypeAlignment( type.llvm_type )) : 0u;
+		type.llvm_type->isSized() ? uint32_t( data_layout_.getABITypeAlign( type.llvm_type ).value() ) : 0u;
 	const uint64_t size=
 		type.llvm_type->isSized() ? data_layout_.getTypeAllocSizeInBits( type.llvm_type ) : uint64_t(0);
 
@@ -283,7 +285,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const TupleType& type )
 				di_file,
 				0u, // TODO - src_loc
 				data_layout_.getTypeAllocSizeInBits( element_type.GetLLVMType() ),
-				uint32_t(8u * data_layout_.getABITypeAlignment( element_type.GetLLVMType() )),
+				uint32_t( 8u * data_layout_.getABITypeAlign( element_type.GetLLVMType() ).value() ),
 				struct_layout.getElementOffsetInBits( uint32_t(element_index) ),
 				llvm::DINode::DIFlags(),
 				CreateDIType( element_type ) );
@@ -297,7 +299,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const TupleType& type )
 		di_file,
 		0u, // TODO - src_loc
 		data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
-		uint32_t(8u * data_layout_.getABITypeAlignment( type.llvm_type )),
+		uint32_t( 8u * data_layout_.getABITypeAlign( type.llvm_type ).value() ),
 		llvm::DINode::DIFlags(),
 		nullptr,
 		builder_->getOrCreateArray(elements).get() );
@@ -389,7 +391,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 			di_file,
 			0u, // TODO - src_loc
 			data_layout_.getTypeAllocSizeInBits( type->underlying_type.llvm_type ),
-			uint32_t(data_layout_.getABITypeAlignment( type->underlying_type.llvm_type )),
+			uint32_t( data_layout_.getABITypeAlign( type->underlying_type.llvm_type ).value() ),
 			builder_->getOrCreateArray(elements),
 			CreateDIType( type->underlying_type ) );
 
@@ -460,7 +462,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 					builder_->createPointerType(
 						field_type_di,
 						data_layout_.getTypeAllocSizeInBits(field_type_llvm),
-						uint32_t(8u * data_layout_.getABITypeAlignment(field_type_llvm)) );
+						uint32_t( 8u * data_layout_.getABITypeAlign(field_type_llvm).value() ) );
 			}
 
 			// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
@@ -471,7 +473,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 					di_file,
 					0u, // TODO - src_loc
 					data_layout_.getTypeAllocSizeInBits( field_type_llvm ),
-					uint32_t(8u * data_layout_.getABITypeAlignment( field_type_llvm )),
+					uint32_t( 8u * data_layout_.getABITypeAlign( field_type_llvm ).value() ),
 					struct_layout.getElementOffsetInBits(class_field->index),
 					llvm::DINode::DIFlags(),
 					field_type_di );
@@ -491,7 +493,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 					di_file,
 					0u, // TODO - src_loc
 					data_layout_.getTypeAllocSizeInBits( parent_type_llvm ),
-					uint32_t(8u * data_layout_.getABITypeAlignment( parent_type_llvm )),
+					uint32_t( 8u * data_layout_.getABITypeAlign( parent_type_llvm ).value() ),
 					struct_layout.getElementOffsetInBits( parent.field_number ),
 					llvm::DINode::DIFlags(),
 					parent_type_di );
@@ -499,7 +501,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 		}
 
 		size_in_bits= data_layout_.getTypeAllocSizeInBits( the_class.llvm_type );
-		alignment_in_bits= uint32_t( 8u * data_layout_.getABITypeAlignment( the_class.llvm_type ) );
+		alignment_in_bits= uint32_t( 8u * data_layout_.getABITypeAlign( the_class.llvm_type ).value() );
 	}
 	else
 	{

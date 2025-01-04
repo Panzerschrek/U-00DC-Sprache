@@ -248,7 +248,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		if( is_constant )
 		{
 			halt if( elements_constants.size() != size_type(array_type.element_count) ); // TODO - replace with assert
-			return unsafe( LLVMConstArray( array_type.element_type.GetLLVMType(), elements_constants.data(), u32(elements_constants.size()) ) );
+			return unsafe( LLVMConstArray2( array_type.element_type.GetLLVMType(), elements_constants.data(), u64(elements_constants.size()) ) );
 		}
 		return LLVMValueRef::Null;
 	}
@@ -761,7 +761,7 @@ fn CodeBuilder::ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		if( constant_initializer != LLVMValueRef::Null )
 		{
 			scoped_array LLVMValueRef mut initializers[ size_type(array_type.element_count) ]( constant_initializer );
-			return unsafe( LLVMConstArray( array_type.element_type.GetLLVMType(), initializers.data(), u32(initializers.size()) ) );
+			return unsafe( LLVMConstArray2( array_type.element_type.GetLLVMType(), initializers.data(), u64(initializers.size()) ) );
 		}
 		return LLVMValueRef::Null;
 	}

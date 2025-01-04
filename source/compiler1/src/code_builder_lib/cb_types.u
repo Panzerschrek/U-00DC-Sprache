@@ -89,7 +89,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 
 	return ArrayType
 	{
-		.llvm_type= unsafe( LLVMArrayType( element_type.GetLLVMType(), u32(element_count) ) ),
+		.llvm_type= unsafe( LLVMArrayType2( element_type.GetLLVMType(), element_count ) ),
 		.element_type= move(element_type),
 		.element_count= element_count,
 	};
@@ -434,7 +434,7 @@ fn CodeBuilder::GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
 			t= unsafe( LLVMStructGetTypeAtIndex( t, 0u ) );
 			continue;
 		}
-		if( t_kind == LLVMTypeKind::Array && unsafe( LLVMGetArrayLength( t ) ) == 1u )
+		if( t_kind == LLVMTypeKind::Array && unsafe( LLVMGetArrayLength2( t ) ) == 1u64 )
 		{
 			t= unsafe( LLVMGetElementType( t ) );
 			continue;

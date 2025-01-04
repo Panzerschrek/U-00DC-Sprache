@@ -27,7 +27,7 @@ std::optional<DocumentPosition> JsonToDocumentPosition( const Json::Value& value
 	{
 		const auto line= obj->getInteger( "line" );
 		const auto column= obj->getInteger( "character" );
-		if( line != llvm::None && column != llvm::None )
+		if( line != std::nullopt && column != std::nullopt )
 			return DocumentPosition{ uint32_t(*line) + 1, uint32_t(*column) };
 	}
 	return std::nullopt;
@@ -58,7 +58,7 @@ std::optional<PositionInDocument> JsonToPositionInDocument( const Json::Object& 
 		return std::nullopt;
 
 	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
+	if( uri == std::nullopt )
 		return std::nullopt;
 
 	std::optional<Uri> uri_parsed= Uri::Parse( *uri );
@@ -99,7 +99,7 @@ RequestParams ParseTextDocumentSymbol( const Json::Value& params )
 		return InvalidParams{ "No textDocument!" };
 
 	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
+	if( uri == std::nullopt )
 		return InvalidParams{ "No uri!" };
 
 	auto uri_parsed= Uri::Parse( *uri );
@@ -181,7 +181,7 @@ RequestParams ParseTextDocumentRename( const Json::Value& params )
 		return InvalidParams{ "Not an object!" };
 
 	const auto new_name= obj->getString( "newName" );
-	if( new_name == llvm::None )
+	if( new_name == std::nullopt )
 		return InvalidParams{ "No newName" };
 
 	auto position_in_document= JsonToPositionInDocument( *obj );
@@ -237,7 +237,7 @@ Notification ParseTextDocumentDidOpen( const Json::Value& params )
 		return InvalidParams{ "No textDocument!" };
 
 	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
+	if( uri == std::nullopt )
 		return InvalidParams{ "No uri!" };
 
 	auto uri_parsed= Uri::Parse( *uri );
@@ -245,7 +245,7 @@ Notification ParseTextDocumentDidOpen( const Json::Value& params )
 		return InvalidParams{ "Invalid uri!" };
 
 	const auto text= text_document->getString( "text" );
-	if( text == llvm::None )
+	if( text == std::nullopt )
 		return InvalidParams{ "No text!" };
 
 	return Notifications::TextDocumentDidOpen{ std::move( *uri_parsed ), text->str() };
@@ -262,7 +262,7 @@ Notification ParseTextDocumentDidClose( const Json::Value& params )
 		return InvalidParams{ "No textDocument!" };
 
 	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
+	if( uri == std::nullopt )
 		return InvalidParams{ "No uri!" };
 
 	auto uri_parsed= Uri::Parse( *uri );
@@ -283,7 +283,7 @@ Notification ParseTextDocumentDidChange( const Json::Value& params )
 		return InvalidParams{ "No textDocument!" };
 
 	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
+	if( uri == std::nullopt )
 		return InvalidParams{ "No uri!" };
 
 	const auto uri_parsed= Uri::Parse( *uri );
@@ -341,7 +341,7 @@ Notification ParseTextDocumentWillSave( const Json::Value& params )
 		return InvalidParams{ "No textDocument!" };
 
 	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
+	if( uri == std::nullopt )
 		return InvalidParams{ "No uri!" };
 
 	auto uri_parsed= Uri::Parse( *uri );
@@ -364,7 +364,7 @@ Notification ParseTextDocumentDidSave( const Json::Value& params )
 		return InvalidParams{ "No textDocument!" };
 
 	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
+	if( uri == std::nullopt )
 		return InvalidParams{ "No uri!" };
 
 	auto uri_parsed= Uri::Parse( *uri );

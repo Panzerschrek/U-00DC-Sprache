@@ -2,12 +2,13 @@
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <lld/Common/Driver.h>
-#include <llvm/ADT/Triple.h>
 #include <llvm/CodeGen/CommandFlags.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "linker.hpp"
+
+LLD_HAS_DRIVER(elf)
 
 namespace U
 {

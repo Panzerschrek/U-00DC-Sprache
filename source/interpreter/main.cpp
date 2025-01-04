@@ -4,12 +4,12 @@
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
 #include <llvm/Linker/Linker.h>
-#include <llvm/MC/SubtargetFeature.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/CommandLine.h>
-#include <llvm/Support/Host.h>
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/TargetSelect.h>
+#include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/SubtargetFeature.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../sprache_version/sprache_version.hpp"
@@ -284,7 +284,7 @@ int Main( int argc, const char* argv[] )
 				features_str,
 				target_options,
 				llvm::Reloc::PIC_,
-				llvm::Optional<llvm::CodeModel::Model>(),
+				std::optional<llvm::CodeModel::Model>(),
 				llvm::CodeGenOpt::None ) );
 
 		if( target_machine == nullptr )

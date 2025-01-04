@@ -14,13 +14,11 @@
 #include <llvm/IR/PassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
-#include <llvm/MC/SubtargetFeature.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/CodeGen.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/FileSystem.h>
-#include <llvm/Support/Host.h>
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_os_ostream.h>
@@ -28,6 +26,8 @@
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
+#include <llvm/TargetParser/Host.h>
+#include <llvm/TargetParser/SubtargetFeature.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/ConstantMerge.h>
 #include <llvm/Transforms/IPO/GlobalDCE.h>
@@ -547,9 +547,7 @@ int Main( int argc, const char* argv[] )
 		llvm::initializeScalarOpts(registry);
 		llvm::initializeVectorization(registry);
 		llvm::initializeInstCombine(registry);
-		llvm::initializeAggressiveInstCombine(registry);
 		llvm::initializeIPO(registry);
-		llvm::initializeInstrumentation(registry);
 		llvm::initializeAnalysis(registry);
 		llvm::initializeCodeGen(registry);
 		llvm::initializeTarget(registry);
@@ -619,7 +617,6 @@ int Main( int argc, const char* argv[] )
 		: Options::mangling_scheme;
 
 	llvm::LLVMContext llvm_context;
-	llvm_context.setOpaquePointers(true);
 
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
@@ -887,14 +884,7 @@ int Main( int argc, const char* argv[] )
 						// since function merging checks functions equality and
 						// functions accessing different constants with same value are considered to be different.
 						module_pass_manager.addPass( llvm::ConstantMergePass() );
-
-						if( LLVM_VERSION_MAJOR >= 17 )
-						{
-							// See https://reviews.llvm.org/D144682.
-							// This bug (seems to be) fixed in LLVM 17.
-							// TODO - update LLVM to a newer version without this bug.
-							module_pass_manager.addPass( llvm::MergeFunctionsPass() );
-						}
+						module_pass_manager.addPass( llvm::MergeFunctionsPass() );
 					}
 				};
 

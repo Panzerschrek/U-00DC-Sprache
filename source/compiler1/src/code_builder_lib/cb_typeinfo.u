@@ -108,7 +108,7 @@ import "code_builder.uh"
 			.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
 			.element_count= u64(element_name.size()),
 		};
-		array_type.llvm_type= unsafe( LLVMArrayType( array_type.element_type.GetLLVMType(), u32(array_type.element_count) ) );
+		array_type.llvm_type= unsafe( LLVMArrayType2( array_type.element_type.GetLLVMType(), u64(array_type.element_count) ) );
 
 		var ClassField mut class_field
 		{

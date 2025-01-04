@@ -67,13 +67,11 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 
 	fields_llvm_types.resize( field_index ); // Remove all fields ( parent classes and virtual table pointers are not in fields list ).
 
-	// "getABITypeAlignment" "getTypeAllocSize" functions used, as in llvm/lib/IR/DataLayout.cpp:40.
-
 	// Calculate start offset, include parents fields, virtual table pointer.
 	uint64_t current_offset= 0u;
 	for( llvm::Type* type : fields_llvm_types )
 	{
-		const uint64_t alignment= data_layout.getABITypeAlignment( type );
+		const uint64_t alignment= data_layout.getABITypeAlign( type ).value();
 		const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
 		current_offset+= padding + data_layout.getTypeAllocSize( type );
 	}
@@ -85,7 +83,7 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 		uint64_t best_field_padding= ~0u;
 		for( auto it= fields.begin(); it != fields.end(); ++it )
 		{
-			const uint64_t alignment= data_layout.getABITypeAlignment( best_field_it->second->is_reference ? it->second->type.GetLLVMType()->getPointerTo() : it->second->type.GetLLVMType() );
+			const uint64_t alignment= data_layout.getABITypeAlign( best_field_it->second->is_reference ? it->second->type.GetLLVMType()->getPointerTo() : it->second->type.GetLLVMType() ).value();
 			U_ASSERT( alignment != 0u );
 
 			const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;

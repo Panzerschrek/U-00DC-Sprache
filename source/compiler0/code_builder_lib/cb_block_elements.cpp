@@ -163,7 +163,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( !block_build_info.has_terminal_instruction_inside )
 		{
-			function_context.function->getBasicBlockList().push_back( break_block );
+			break_block->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( break_block );
 		}
 		else
@@ -596,7 +596,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.CreateCondBr( less_than_limit, stack_allocation_block, heap_allocation_block );
 
 		// Stack allocation block.
-		function_context.function->getBasicBlockList().push_back( stack_allocation_block );
+		stack_allocation_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( stack_allocation_block );
 		llvm::Value* const stacksave_result=
 			function_context.llvm_ir_builder.CreateCall(
@@ -608,14 +608,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.CreateBr( end_block );
 
 		// Heap allocation block.
-		function_context.function->getBasicBlockList().push_back( heap_allocation_block );
+		heap_allocation_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( heap_allocation_block );
 		llvm::Value* const heap_allocation=
 			function_context.llvm_ir_builder.CreateCall( malloc_func_, { memory_size }, "alloca_heap" );
 		function_context.llvm_ir_builder.CreateBr( end_block );
 
 		// End block.
-		function_context.function->getBasicBlockList().push_back( end_block );
+		end_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( end_block );
 
 		alloca_result= function_context.llvm_ir_builder.CreatePHI( ptr_llvm_type, 2, "alloca_res" );
@@ -1142,7 +1142,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( !continue_branches_is_empty )
 			{
-				function_context.function->getBasicBlockList().push_back( next_basic_block );
+				next_basic_block->insertInto( function_context.function );
 				function_context.llvm_ir_builder.SetInsertPoint( next_basic_block );
 
 				if( is_last_iteration )
@@ -1156,7 +1156,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				if( !break_variables_states.empty() )
 				{
-					function_context.function->getBasicBlockList().push_back( finish_basic_block );
+					finish_basic_block->insertInto( function_context.function );
 					function_context.llvm_ir_builder.SetInsertPoint( finish_basic_block );
 				}
 				else
@@ -1215,7 +1215,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
 	// Test block.
-	function_context.function->getBasicBlockList().push_back( test_block );
+	test_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
 	if( std::holds_alternative<Synt::EmptyVariant>( c_style_for_operator.loop_condition ) )
@@ -1248,7 +1248,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Loop block code.
 	AddLoopFrame( names_scope, function_context, block_after_loop, loop_iteration_block, c_style_for_operator.label );
 
-	function_context.function->getBasicBlockList().push_back( loop_block );
+	loop_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
 	const BlockBuildInfo loop_body_block_info= BuildBlock( loop_names_scope, function_context, c_style_for_operator.block );
@@ -1276,7 +1276,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.loops_stack.pop_back();
 
 	// Loop iteration block
-	function_context.function->getBasicBlockList().push_back( loop_iteration_block );
+	loop_iteration_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_iteration_block );
 
 	c_style_for_operator.iteration_part_elements.Iter(
@@ -1298,7 +1298,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names_scope.GetErrors(), c_style_for_operator.block.end_src_loc );
 
 	// Block after loop.
-	function_context.function->getBasicBlockList().push_back( block_after_loop );
+	block_after_loop->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
 
 	CallDestructors( loop_variables_storage, loop_names_scope, function_context, c_style_for_operator.src_loc );
@@ -1321,7 +1321,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
 	// Test block code.
-	function_context.function->getBasicBlockList().push_back( test_block );
+	test_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( test_block );
 
 	{
@@ -1349,7 +1349,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	AddLoopFrame( names_scope, function_context, block_after_while, test_block, while_operator.label );
 
-	function_context.function->getBasicBlockList().push_back( while_block );
+	while_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
 
 	const BlockBuildInfo loop_body_block_info= BuildBlock( names_scope, function_context, while_operator.block );
@@ -1360,7 +1360,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	// Block after while code.
-	function_context.function->getBasicBlockList().push_back( block_after_while );
+	block_after_while->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( block_after_while );
 
 	// Disallow outer variables state change in "continue" branches.
@@ -1396,7 +1396,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	AddLoopFrame( names_scope, function_context, block_after_loop, loop_block, loop_operator.label );
 
-	function_context.function->getBasicBlockList().push_back( loop_block );
+	loop_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
 	const BlockBuildInfo loop_body_block_info= BuildBlock( names_scope, function_context, loop_operator.block );
@@ -1428,7 +1428,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( !block_build_info.has_terminal_instruction_inside )
 	{
 		// Block after loop code.
-		function_context.function->getBasicBlockList().push_back( block_after_loop );
+		block_after_loop->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
 	}
 	else
@@ -1684,7 +1684,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	// If block.
-	function_context.function->getBasicBlockList().push_back( if_block );
+	if_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( if_block );
 	const BlockBuildInfo if_block_build_info= BuildBlock( names_scope, function_context, if_operator.block );
 
@@ -1704,7 +1704,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		block_build_info.has_terminal_instruction_inside= false;
 
-		function_context.function->getBasicBlockList().push_back( alternative_block );
+		alternative_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 	}
 	else
@@ -1718,7 +1718,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		// Else block.
-		function_context.function->getBasicBlockList().push_back( alternative_block );
+		alternative_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
 		function_context.variables_state= std::move( variables_state_before_branching );
@@ -1735,7 +1735,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( !block_build_info.has_terminal_instruction_inside )
 		{
-			function_context.function->getBasicBlockList().push_back( block_after_if );
+			block_after_if->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
 		else
@@ -1844,7 +1844,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.CreateCondBr( done, alternative_block, not_done_block );
 
 	// Not done block.
-	function_context.function->getBasicBlockList().push_back( not_done_block );
+	not_done_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( not_done_block );
 
 	function_context.llvm_ir_builder.CreateCall(
@@ -1869,7 +1869,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	// Not done after resume block.
-	function_context.function->getBasicBlockList().push_back( not_done_after_resume_block );
+	not_done_after_resume_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( not_done_after_resume_block );
 
 	EnsureTypeComplete( coroutine_type_description->return_type );
@@ -1884,7 +1884,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_promise ),
 			{
 				coro_handle,
-				llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlignment( promise_llvm_type ) ) ),
+				llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlign( promise_llvm_type ).value() ) ),
 				llvm::ConstantInt::getFalse( llvm_context_ ),
 			},
 			"promise" );
@@ -2061,7 +2061,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		block_build_info.has_terminal_instruction_inside= false;
 
-		function_context.function->getBasicBlockList().push_back( alternative_block );
+		alternative_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
 		// Destroy temporarie in coroutine expression.
@@ -2082,7 +2082,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		// Else block.
-		function_context.function->getBasicBlockList().push_back( alternative_block );
+		alternative_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
 		function_context.variables_state= std::move( variables_state_before_branching );
@@ -2103,7 +2103,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( !block_build_info.has_terminal_instruction_inside )
 		{
-			function_context.function->getBasicBlockList().push_back( block_after_if );
+			block_after_if->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
 		else
@@ -2497,7 +2497,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.CreateCondBr( value_equals, case_handle_block, next_case_block );
 
 		// Case handle block
-		function_context.function->getBasicBlockList().push_back( case_handle_block );
+		case_handle_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( case_handle_block );
 
 		function_context.variables_state= variables_state_before_branching;
@@ -2511,7 +2511,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		// Next case block
-		function_context.function->getBasicBlockList().push_back( next_case_block );
+		next_case_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( next_case_block );
 	}
 
@@ -2526,7 +2526,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			next_case_block->eraseFromParent();
 		}
 
-		function_context.function->getBasicBlockList().push_back( default_branch );
+		default_branch->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( default_branch );
 
 		function_context.variables_state= variables_state_before_branching;
@@ -2563,7 +2563,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Hack - preserve LLVM basic blocks structure in case of impossible jump to block after swith.
 		if( block_after_switch->hasNPredecessorsOrMore(1) )
 		{
-			function_context.function->getBasicBlockList().push_back( block_after_switch );
+			block_after_switch->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_switch );
 			function_context.llvm_ir_builder.CreateUnreachable();
 		}
@@ -2572,7 +2572,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 	else
 	{
-		function_context.function->getBasicBlockList().push_back( block_after_switch );
+		block_after_switch->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( block_after_switch );
 		function_context.variables_state= MergeVariablesStateAfterIf( breances_states_after_case, names_scope.GetErrors(), switch_operator.end_src_loc );
 	}
@@ -2905,14 +2905,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, true_block, false_block );
 
 	// True branch
-	function_context.function->getBasicBlockList().push_back( true_block );
+	true_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( true_block );
 
 	function_context.llvm_ir_builder.CreateCall( halt_func_ );
 	function_context.llvm_ir_builder.CreateUnreachable();
 
 	// False branch
-	function_context.function->getBasicBlockList().push_back( false_block );
+	false_block->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( false_block );
 
 	return block_info;

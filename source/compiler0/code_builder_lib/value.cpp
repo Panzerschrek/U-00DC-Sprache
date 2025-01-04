@@ -1,3 +1,7 @@
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/SmallString.h>
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "class.hpp"
 #include "template_signature_param.hpp"
@@ -125,7 +129,7 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 	if( const auto fundamental_type= variable.type.GetFundamentalType() )
 	{
 		if( fundamental_type->fundamental_type == U_FundamentalType::bool_ )
-			return variable.constexpr_value->getUniqueInteger().isNullValue() ? "false" : "true";
+			return variable.constexpr_value->getUniqueInteger().isZero() ? "false" : "true";
 		else if( IsFloatingPoint( fundamental_type->fundamental_type ) )
 		{
 			if( const auto constant_fp= llvm::dyn_cast<llvm::ConstantFP>( variable.constexpr_value ) )

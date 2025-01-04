@@ -1,5 +1,5 @@
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/ADT/Triple.h>
+#include <llvm/TargetParser/Triple.h>
 #include <llvm/IR/Module.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
