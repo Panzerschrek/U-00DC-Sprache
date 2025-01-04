@@ -87,6 +87,7 @@ type ü__ssize_t = ssize_type;
 type ü__syscall_slong_t = i64;
 type ü__time_t = i64;
 
+auto constexpr ENOENT = 2;
 auto constexpr EEXIST = 17;
 auto constexpr ERANGE = 34;
 

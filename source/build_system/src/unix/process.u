@@ -112,7 +112,15 @@ public:
 
 		if( spawn_res != 0 )
 		{
-			logger.LogError( ust::concat( "posix_spawn error: ", ust::to_string8( BKGetErrno() ) ) );
+			auto error_code= BKGetErrno();
+			if( error_code == ENOENT )
+			{
+				logger.LogError( ust::concat( "Failed to spawn a process, executable \"", exe_path, "\" not found!" ) );
+			}
+			else
+			{
+				logger.LogError( ust::concat( "posix_spawn error: ", ust::to_string8( error_code ) ) );
+			}
 			unsafe( ::posix_spawnattr_destroy( $<(spawn_attributes) ) );
 			unsafe( ::posix_spawn_file_actions_destroy( $<(file_actions) ) );
 			unsafe( ::close( pipe_read_end ) );
