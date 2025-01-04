@@ -732,7 +732,7 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 		for (uint32_t i= 0; i < num_elements; ++i)
 			val.AggregateVal[i]=
 				DoLoad(
-					ptr + struct_layout->getElementOffset(i),
+					ptr + size_t( struct_layout->getElementOffset(i) ),
 					struct_type->getElementType(i));
 
 	}
@@ -795,7 +795,7 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 		U_ASSERT( val.AggregateVal.size() == num_elements );
 		for (uint32_t i= 0; i < num_elements; ++i)
 			DoStore(
-				ptr + struct_layout->getElementOffset(i),
+				ptr + size_t( struct_layout->getElementOffset(i) ),
 				val.AggregateVal[i],
 				struct_type->getElementType(i));
 
