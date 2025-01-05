@@ -367,8 +367,9 @@ def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
 	# Load result shared library.
 	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
 	if platform.system() == "Windows":
-		# Hack to allow loading "b.dll" while loading "a.dll"
-		os.environ["PATH"] = os.environ[ "PATH" ] + ";" + os.path.join( g_tests_build_root_path, test_dir, "release" )
+		# HACK! Load "b" first in order for it to be found while loading "a".
+		# This is necessary since Windows dll's have no "rpath=$ORIGIN".
+		b_library= ctypes.CDLL( os.path.join( g_tests_build_root_path, test_dir, "release", "b.dll" ) )
 		library_file_path+= ".dll"
 	else:
 		library_file_path+= ".so"
