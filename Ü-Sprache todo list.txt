@@ -37,6 +37,9 @@ General:
 *) Add a possibility to provide an arbitrary name for a "nomangle" function declaration (but without body)
 *) Add a possibility to declare but not define global variable - to access global C variables
 *) Add a possibility to call external C functions with variadic number of arguments
+*) Generate order compare operators (<=>) where it can be done easily (for arrays, tuples, structs with single field).
+	Support operator <=> generation for ustlib types (if can do so).
+*) Alias for a namespace
 
 References:
 *) Support second order inner references for coroutine types
@@ -56,7 +59,7 @@ Lambdas:
 *) Template lambdas
 
 Standart library:
-*) Improve/fix unordered_map
+*) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method
 *) Support types with references inside in some containers (variant, result, unordered_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
 *) switch-like macro for variant
@@ -95,6 +98,7 @@ Compiler:
 *) Speed-up references graph code
 *) Avoid recursion in VariantLinkedList destructor - it causes stack overflow for long lists
 *) Find a way to detect recursive mixins in blocks, type names, expressions
+*) Print full mixin text on error within mixin
 *) Imporve TBAA - use struct path-based TBAA.
 *) Pass/return by-value composite values containing more than one scalar inside.
 	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,
@@ -129,6 +133,7 @@ QtCreator plugin:
 *) Language server features support
 
 Language server:
+*) Expand macros even if matching fails - in order for code completion to work while writing code using a macro
 *) Fix crashes occuring sometimes during editing (possible because of broken code)
 *) Fix possible crashes due to accessing source graph instance stored withing CodeBuilder class instance while
 	performing completion or signature help. It's wrong, since new syntax elements are constructed for completion or
@@ -151,6 +156,7 @@ Language server:
 *) Links between errors for template/macro errors
 *) More unit-tests
 *) Create TargetMachine to obtain proper data layout
+*) Support interaction with build system - obtain list of source files and their compilation options from it
 
 CPP Header converter:
 *) White list of converted symbols
@@ -174,7 +180,7 @@ CPP Header converter:
 	executable or shared library.
 *) Prevent at least some name conflicts in imports (where multiple files exist for the given import path)
 *) Clean command - to delete build files
-*) Command line option for building only specified build targets
+*) Command line option for building only specified build targets (at least for the root package)
 *) A command to build a single-file program with no dependencies
 *) Support specifying working directory for custom build steps
 *) Support dependency files for custom build steps
@@ -184,7 +190,15 @@ CPP Header converter:
 *) Try to detect dependency loops involving custom build steps before executing the build
 *) Dependency versions unification - if a build target depends on several versions of the same build target, change
 	versions to newest used package version. Propagate these changes down to dependencies where it is necessary.
+*) Save build graph atomically
+*) Rebuild build script shared library if compiler executable is changed
+*) Granular build graph nodes saving - in order to ensure no build artifacts are reused if command line is changed
 *) Build the build system itself using the build system (create second build copy)
+*) Speed-up build scripts compilation/loading and package information obtaining by running this in parallel for many
+	packages (if possible)
+*) Support build targets without sources and (maybe) dependencies
+*) Allow to specify diretories for build targets sources - with all files within given directory considered to be
+	source files
 *) Handle interruption signals (like Ctrl+C) and abort build properly
 *) Support overriding "rpath" for executables
 *) Centralized packages repository
