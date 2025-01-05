@@ -16,6 +16,9 @@ del llvm-17.0.6.src.tar
 del cmake-17.0.6.src.tar.xz
 del cmake-17.0.6.src.tar
 
+# LLVM includes its cmake modules using path like "../cmake/Modules/CMakePolicy.cmake". So, reaname this directory.
+Rename-Item -path "cmake-17.0.6.src" -NewName "cmake"
+
 # Messy stuff. Call vcvarsall.bat, extract all environment variable prepared in this call and redefine them in context of this powershell script.
 cmd /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat`" amd64 && set > %temp%\vcvars.txt"
 Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
@@ -26,7 +29,7 @@ Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
 
 # Perform cmake preparation
 mkdir build_dir
-cmake -S source -B build_dir  -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MODULE_PATH="$curDir/cmake-17.0.6.src/Modules/" -DLLVM_SRC_DIR="$curDir/llvm-17.0.6.src/" -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_NATIVE_ARCH="X86" -DLLVM_BUILD_BENCHMARKS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_BUILD_DOCS=OFF -DLLVM_BUILD_EXAMPLES=OFF -DLLVM_BUILD_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF -DU_BUILD_COMPILER2=ON -DU_BUILD_COMPILER3=OFF -DU_BUILD_PY_TESTS=OFF -DU_BUILD_UNICODE_FILE_NAMES_TEST=OFF
+cmake -S source -B build_dir  -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MODULE_PATH="$curDir/cmake/Modules/" -DLLVM_SRC_DIR="$curDir/llvm-17.0.6.src/" -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_NATIVE_ARCH="X86" -DLLVM_BUILD_BENCHMARKS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_BUILD_DOCS=OFF -DLLVM_BUILD_EXAMPLES=OFF -DLLVM_BUILD_TESTS=OFF -DLLVM_INCLUDE_TESTS=OFF -DU_BUILD_COMPILER2=ON -DU_BUILD_COMPILER3=OFF -DU_BUILD_PY_TESTS=OFF -DU_BUILD_UNICODE_FILE_NAMES_TEST=OFF
 
 # Since there is not enought space on Github hosted action runners, run builds one by one and than delete some huge files
 
