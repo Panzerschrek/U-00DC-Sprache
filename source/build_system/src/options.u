@@ -38,7 +38,8 @@ auto constexpr g_help_message=
 	"  --ustlib-path <path>                   - custom path to the ustlib directory\n" +
 	"  --build-system-imports-path <path>     - custom path to the build system imports directory\n" +
 	"  --packages-repository-directory <path> - provide path to packages repository directory\n" +
-	"  --sysroot <path>                       - provide sysroot directory for the compiler (in order to find system libraries for linking)\n"
+	"  --sysroot <path>                       - provide sysroot directory for the compiler (in order to find system libraries for linking)\n" +
+	"  --host-sysroot <path>                  - provide sysroot directory for the compiler while compiling for host target triple (in order to find system libraries for linking)\n"
 	;
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
@@ -215,6 +216,16 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 				return ust::null_optional;
 			}
 			res.sysroot= args[i + 1s];
+			i+= 2s;
+		}
+		else if( args[i] == "--host-sysroot" )
+		{
+			if( i + 1s >= args.size() )
+			{
+				ust::stderr_print( "Error, missing an argument after \"--host-sysroot\".\n" );
+				return ust::null_optional;
+			}
+			res.host_sysroot= args[i + 1s];
 			i+= 2s;
 		}
 		else

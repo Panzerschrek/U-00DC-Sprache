@@ -40,6 +40,8 @@ def RunBuildSystemWithExplicitConfiguration( project_subdirectory, configuration
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
 		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
 
 	# Run the build.
 	subprocess.check_call( build_system_args )
@@ -69,6 +71,8 @@ def RunBuildSystemWithErrors( project_subdirectory ):
 
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
 		build_system_args.append( g_sysroot )
 
 	# Run the build.

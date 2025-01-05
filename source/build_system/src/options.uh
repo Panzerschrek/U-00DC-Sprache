@@ -33,6 +33,7 @@ struct Options
 	ust::string8 build_system_imports_path;
 	ust::string8 packages_repository_directory;
 	ust::string8 sysroot;
+	ust::string8 host_sysroot;
 }
 
 fn StringToBuildConfiguration( ust::string_view8 s ) : ust::optional</BuildConfiguration/>;
