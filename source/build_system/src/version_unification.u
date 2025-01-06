@@ -1,4 +1,5 @@
 import "/sort.u"
+import "/unordered_set.u"
 import "version_unification.uh"
 
 namespace BK
@@ -47,10 +48,11 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 	// TODO - repeat this loop multiple times, since version unification may introduce new dependencies or remove old one.
 	foreach( &build_target_name : global_packages_build_targets )
 	{
-		ust::ignore_unused( build_target_name );
-
 		// Build a helper index containing backward edges in dependency graph to simplify later processing.
-		var WorkspaceBuildTargetsUsers build_targets_users= BuildWorkspaceBuildTargetsUsers( workspace );
+		var WorkspaceBuildTargetsUsers workspace_build_targets_users= BuildWorkspaceBuildTargetsUsers( workspace );
+
+		var BuildTargetUsersSet build_target_users=
+			BuildBuildTargetUsersSet( workspace_build_targets_users, build_target_name );
 	}
 
 	return true;
@@ -137,6 +139,50 @@ fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildT
 	// TODO - sort lists of users?
 
 	return move(result);
+}
+
+type BuildTargetUsersSet= ust::unordered_set</BuildTargetAbsoluteName/>;
+
+// Build set of all build targets which depend on given build target as public or private dependency or as transitive public depenency.
+fn BuildBuildTargetUsersSet(
+	WorkspaceBuildTargetsUsers& build_target_users,
+	BuildTargetAbsoluteName& build_target_name ) : BuildTargetUsersSet
+{
+	var BuildTargetUsersSet mut result;
+
+	var BuildTargetUsers& users= build_target_users[ build_target_name ];
+	foreach( &public_user : users.public_users )
+	{
+		BuildBuildTargetUsersSet_r( build_target_users, public_user, result );
+	}
+	foreach( &private_user : users.private_users )
+	{
+		result.insert( private_user );
+	}
+
+	return result;
+}
+
+fn BuildBuildTargetUsersSet_r(
+	WorkspaceBuildTargetsUsers& build_target_users,
+	BuildTargetAbsoluteName& user_library,
+	BuildTargetUsersSet &mut out_set )
+{
+	if( out_set.exists( user_library ) )
+	{
+		return;
+	}
+	out_set.insert( user_library );
+
+	var BuildTargetUsers& users= build_target_users[ user_library ];
+	foreach( &public_user : users.public_users )
+	{
+		BuildBuildTargetUsersSet_r( build_target_users, public_user, out_set );
+	}
+	foreach( &private_user : users.private_users )
+	{
+		out_set.insert( private_user );
+	}
 }
 
 } // namespace BK
