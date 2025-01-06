@@ -5,6 +5,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	// This package has an executable and two libraries.
 	// The executable depends on both libraries.
 	// Each library depend on its own version of a build target from the global package "two_returner".
+	// In the end result dependency of "lib_a" on "two_returner 0.1" should be replaced with "two_returner 0.2".
 
 	ust::ignore_unused( build_system_interface );
 
