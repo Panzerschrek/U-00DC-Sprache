@@ -16,6 +16,7 @@ import "proc.uh"
 import "shared_library.uh"
 import "string_utils.uh"
 import "target_triple.uh"
+import "version_unification.uh"
 
 namespace BK
 {
@@ -727,6 +728,7 @@ fn CreateWorkspace(
 
 	if( !CheckWorkspaceDependencyGraphIsValid( logger, workspace ) ||
 		!CheckWorkspaceCustomBuildStepsAreValid( logger, workspace, root_package_build_directory ) ||
+		!UnifyDependenciesOnGlobalVersionedPackages( logger, workspace ) ||
 		!RetrieveAndCheckWorkspaceTransitiveDependencies( logger, workspace ) )
 	{
 		logger.LogError( "Project dependencies aren't valid!" );

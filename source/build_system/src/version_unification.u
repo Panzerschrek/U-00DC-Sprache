@@ -1,0 +1,72 @@
+import "/sort.u"
+import "version_unification.uh"
+
+namespace BK
+{
+
+fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool
+{
+	// Collect list of build targets of global versioned packages first.
+	var ust::vector</GlobalPackageBuildTargetName/> mut global_packages_build_targets;
+
+	foreach( &pair : workspace.build_targets )
+	{
+		var BuildTargetAbsoluteName& build_target_name= pair.key();
+		// TODO - ignore executable build targets?
+		if_var( &global_versioned_package_name : build_target_name.package_name.name_base.get</GlobalVersionedPackageName/>() )
+		{
+			global_packages_build_targets.push_back(
+				GlobalPackageBuildTargetName
+				{
+					.package_name= global_versioned_package_name.name,
+					.subpackage_path= build_target_name.package_name.path,
+					.build_target_name= build_target_name.name,
+				} );
+		}
+	}
+
+	// Sort and deduplicate list of build targets dependencies on which should be unified.
+	// Sorting is necessary in order to process build targets in some stable order.
+	// Deduplication is necessary since we may have build targets from different package versions.
+	ust::sort( global_packages_build_targets );
+	global_packages_build_targets.remove_adjacent_duplicates();
+
+	foreach( &build_target_name : global_packages_build_targets )
+	{
+		logger.LogVerbose( ust::concat(
+			"Consider build target \"",
+			build_target_name.build_target_name,
+			"\" of a global package \"",
+			build_target_name.package_name,
+			"::",
+			build_target_name.subpackage_path,
+			"\" for unification." ) );
+	}
+
+	return true;
+}
+
+// Do not store here version.
+struct GlobalPackageBuildTargetName
+{
+	ust::string8 package_name;
+	ust::string8 subpackage_path;
+	ust::string8 build_target_name;
+
+	op<=>( GlobalPackageBuildTargetName& l, GlobalPackageBuildTargetName& r ) : i32
+	{
+		auto package_name_comp= l.package_name <=> r.package_name;
+		if( package_name_comp != 0 )
+		{
+			return package_name_comp;
+		}
+		auto subpackage_path_comp= l.subpackage_path <=> r.subpackage_path;
+		if( subpackage_path_comp != 0 )
+		{
+			return subpackage_path_comp;
+		}
+		return l.build_target_name <=> r.build_target_name;
+	}
+}
+
+} // namespace BK

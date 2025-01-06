@@ -1,0 +1,13 @@
+import "package_transformation.uh"
+
+namespace BK
+{
+
+// Tweak dependencies on build targets of global versioned pacakges,
+// to ensure no build target has dependencies (including transitive)
+// on several build targets which are build targets of several versions of the same global package.
+// Returns true if can do so.
+// WARNING! Build target existence should be ensured first.
+fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool;
+
+} // namespace BK
