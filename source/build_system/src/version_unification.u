@@ -87,6 +87,8 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 				ust::to_string8(max_version.patch),
 				".",
 				ust::to_string8(max_version.tweak) ) );
+
+			SetBuildTargetDependencyVersion( workspace, pair.value(), build_target_name, max_version );
 		}
 	}
 
@@ -375,6 +377,30 @@ fn GetMaxBuildTargetDependencyVersion(
 	}
 
 	return result;
+}
+
+fn SetBuildTargetDependencyVersion(
+	WorkspaceInfo &mut workspace,
+	GraphConnectedComponentBuildTargets& build_targets,
+	GlobalPackageBuildTargetName& global_package_build_target,
+	SemanticVersion& version )
+{
+	foreach( &build_taget_name : build_targets )
+	{
+		var WorkspaceInfo::BuildTarget &mut build_target= workspace.build_targets[ build_taget_name ];
+		foreach( &mut dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
+		{
+			if_var( &mut global_versioned_package_name : dependency.package_name.name_base.get</GlobalVersionedPackageName/>() )
+			{
+				if( global_versioned_package_name.name == global_package_build_target.package_name &&
+					dependency.package_name.path == global_package_build_target.subpackage_path &&
+					dependency.name == global_package_build_target.build_target_name )
+				{
+					global_versioned_package_name.version= version;
+				}
+			}
+		}
+	}
 }
 
 } // namespace BK
