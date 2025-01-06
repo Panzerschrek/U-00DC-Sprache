@@ -75,6 +75,18 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 			{
 				logger.LogVerbose( ust::concat( "\t", component_build_target.name ) );
 			}
+
+			var SemanticVersion max_version=
+				GetMaxBuildTargetDependencyVersion( workspace, pair.value(), build_target_name );
+			logger.LogVerbose( ust::concat(
+				"Component max version is ",
+				ust::to_string8(max_version.major),
+				".",
+				ust::to_string8(max_version.minor),
+				".",
+				ust::to_string8(max_version.patch),
+				".",
+				ust::to_string8(max_version.tweak) ) );
 		}
 	}
 
@@ -223,9 +235,10 @@ fn BuildBuildTargetUsersSet_r(
 }
 
 type GraphComponentIndex= u32;
+type GraphConnectedComponentBuildTargets= ust::vector</BuildTargetAbsoluteName/>;
 
 // Each element is a connected component. Each component is a list of build targets.
-type BuildTargetsInConnectedComponents= ust::unordered_map</ GraphComponentIndex, ust::vector</BuildTargetAbsoluteName/> />;
+type BuildTargetsInConnectedComponents= ust::unordered_map</ GraphComponentIndex, GraphConnectedComponentBuildTargets />;
 
 fn FindBuildTargetUsersGraphConnectedComponents(
 	WorkspaceInfo& workspace,
@@ -332,6 +345,36 @@ fn FindBuildTargetUsersGraphConnectedComponents(
 	}
 
 	return build_targets_by_components;
+}
+
+fn GetMaxBuildTargetDependencyVersion(
+	WorkspaceInfo& workspace,
+	GraphConnectedComponentBuildTargets& build_targets,
+	GlobalPackageBuildTargetName& global_package_build_target ) : SemanticVersion
+{
+	var SemanticVersion mut result(0u, 0u);
+
+	foreach( &build_taget_name : build_targets )
+	{
+		var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ build_taget_name ];
+		foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
+		{
+			if_var( &global_versioned_package_name : dependency.package_name.name_base.get</GlobalVersionedPackageName/>() )
+			{
+				if( global_versioned_package_name.name == global_package_build_target.package_name &&
+					dependency.package_name.path == global_package_build_target.subpackage_path &&
+					dependency.name == global_package_build_target.build_target_name )
+				{
+					if( global_versioned_package_name.version > result )
+					{
+						result= global_versioned_package_name.version;
+					}
+				}
+			}
+		}
+	}
+
+	return result;
 }
 
 } // namespace BK
