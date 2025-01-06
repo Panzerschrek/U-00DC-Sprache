@@ -43,6 +43,16 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 			"\" for unification." ) );
 	}
 
+	// Unify versions for each build target where it's necessary.
+	// TODO - repeat this loop multiple times, since version unification may introduce new dependencies or remove old one.
+	foreach( &build_target_name : global_packages_build_targets )
+	{
+		ust::ignore_unused( build_target_name );
+
+		// Build a helper index containing backward edges in dependency graph to simplify later processing.
+		var WorkspaceBuildTargetsUsers build_targets_users= BuildWorkspaceBuildTargetsUsers( workspace );
+	}
+
 	return true;
 }
 
@@ -67,6 +77,66 @@ struct GlobalPackageBuildTargetName
 		}
 		return l.build_target_name <=> r.build_target_name;
 	}
+}
+
+// A helper structure - store for a build target names of build targets which they use.
+struct BuildTargetUsers
+{
+	// Build targets which use this build target as direct public dependency.
+	ust::vector</BuildTargetAbsoluteName/> public_users;
+	// Build targets which use this build target as direct private dependency.
+	ust::vector</BuildTargetAbsoluteName/> private_users;
+}
+
+type WorkspaceBuildTargetsUsers= ust::unordered_map</BuildTargetAbsoluteName, BuildTargetUsers/>;
+
+fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildTargetsUsers
+{
+	var WorkspaceBuildTargetsUsers mut result;
+
+	foreach( &pair : workspace.build_targets )
+	{
+		var BuildTargetAbsoluteName& build_target_full_name= pair.key();
+		var WorkspaceInfo::BuildTarget& build_target= pair.value();
+
+		foreach( &public_dependency_name : build_target.public_dependencies )
+		{
+			if( !result.exists( public_dependency_name ) )
+			{
+				result.insert( public_dependency_name, BuildTargetUsers{} );
+			}
+			result[ public_dependency_name ].public_users.push_back( build_target_full_name );
+		}
+
+		foreach( &private_dependency_name : build_target.private_dependencies )
+		{
+			// For private dependencies check if they aren't already lusted in public dependencies and if so - ignore them.
+			var bool mut exists_in_public_dependencies= false;
+			foreach( &public_dependency_name : build_target.public_dependencies )
+			{
+				if( private_dependency_name == public_dependency_name )
+				{
+					exists_in_public_dependencies= true;
+					break;
+				}
+			}
+
+			if( exists_in_public_dependencies )
+			{
+				continue;
+			}
+
+			if( !result.exists( private_dependency_name ) )
+			{
+				result.insert( private_dependency_name, BuildTargetUsers{} );
+			}
+			result[ private_dependency_name ].private_users.push_back( build_target_full_name );
+		}
+	}
+
+	// TODO - sort lists of users?
+
+	return move(result);
 }
 
 } // namespace BK
