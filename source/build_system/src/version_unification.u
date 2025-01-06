@@ -119,6 +119,12 @@ fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildT
 {
 	var WorkspaceBuildTargetsUsers mut result;
 
+	// Create hash-map entries first.
+	foreach( &pair : workspace.build_targets )
+	{
+		result.insert( pair.key(), BuildTargetUsers{} );
+	}
+
 	foreach( &pair : workspace.build_targets )
 	{
 		var BuildTargetAbsoluteName& build_target_full_name= pair.key();
@@ -126,10 +132,6 @@ fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildT
 
 		foreach( &public_dependency_name : build_target.public_dependencies )
 		{
-			if( !result.exists( public_dependency_name ) )
-			{
-				result.insert( public_dependency_name, BuildTargetUsers{} );
-			}
 			result[ public_dependency_name ].public_users.push_back( build_target_full_name );
 		}
 
@@ -151,10 +153,6 @@ fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildT
 				continue;
 			}
 
-			if( !result.exists( private_dependency_name ) )
-			{
-				result.insert( private_dependency_name, BuildTargetUsers{} );
-			}
 			result[ private_dependency_name ].private_users.push_back( build_target_full_name );
 		}
 	}
@@ -212,6 +210,7 @@ fn BuildBuildTargetUsersSet_r(
 	out_set.insert( user_library );
 
 	var BuildTargetUsers& users= build_target_users[ user_library ];
+
 	foreach( &public_user : users.public_users )
 	{
 		BuildBuildTargetUsersSet_r( build_target_users, public_user, out_set );
@@ -282,21 +281,19 @@ fn FindBuildTargetUsersGraphConnectedComponents(
 		// Process graph upwards.
 		ust::ignore_unused(build_target_users_set);
 
-		if_var( & users : workspace_build_targets_users.find( name_with_index[0] ) )
+		var BuildTargetUsers& users= workspace_build_targets_users[ name_with_index[0] ];
+		foreach( &public_user : users.public_users )
 		{
-			foreach( &public_user : users.public_users )
+			if( build_target_users_set.exists( public_user ) )
 			{
-				if( build_target_users_set.exists( public_user ) )
-				{
-					search_stack.push_back( ust::make_tuple( public_user, name_with_index[1] ) );
-				}
+				search_stack.push_back( ust::make_tuple( public_user, name_with_index[1] ) );
 			}
-			foreach( &private_user : users.private_users )
+		}
+		foreach( &private_user : users.private_users )
+		{
+			if( build_target_users_set.exists( private_user ) )
 			{
-				if( build_target_users_set.exists( private_user ) )
-				{
-					search_stack.push_back( ust::make_tuple( private_user, name_with_index[1] ) );
-				}
+				search_stack.push_back( ust::make_tuple( private_user, name_with_index[1] ) );
 			}
 		}
 
