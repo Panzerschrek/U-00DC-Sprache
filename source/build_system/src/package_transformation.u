@@ -537,116 +537,12 @@ fn CheckWorkspaceDependencyGraphIsValid( Logger &mut logger, WorkspaceInfo& work
 	return ok;
 }
 
-fn ProcessWorkspaceDependenciesGraph(
-	Logger &mut logger, WorkspaceInfo &mut workspace, ust::string_view8 root_package_build_directory ) : bool
+fn CheckWorkspaceCustomBuildStepsAreValid(
+	Logger &mut logger, WorkspaceInfo& workspace, ust::string_view8 root_package_build_directory ) : bool
 {
 	var bool mut ok= true;
 
-	// Check for dependency graph validity.
-	foreach( &pair : cast_imut(workspace).build_targets )
-	{
-		ok&= DependencyGraphIsValid( logger, workspace, pair.key() );
-	}
-
-	if( !ok )
-	{
-		// Stop here, if we have errors.
-		// Avoid performing dependency graph analysis steps if dependency graph isn't valid.
-		return false;
-	}
-
-	// Collect build target names in order to have possibility to iterate and change build targets map elements.
-	var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
-	foreach( &pair : workspace.build_targets )
-	{
-		build_target_names.push_back( pair.key() );
-	}
-
-	// Perform public dependencies retrieval.
-	foreach( &build_target_name : build_target_names )
-	{
-		auto mut dependencies = GetAllTargetPublicDependencies( workspace, build_target_name );
-		workspace.build_targets[build_target_name].public_dependencies_including_transitive= move(dependencies);
-	}
-
-	// Perform private dependencies retrieval.
-	foreach( &build_target_name : build_target_names )
-	{
-		auto dependencies = GetAllTargetPrivateAndTheirTransitivePublicDependencies( workspace, build_target_name );
-
-		auto &mut out_build_target= workspace.build_targets[ build_target_name ];
-
-		// Remove private dependencies which are also public dependencies.
-
-		auto& public_dependencies= out_build_target.public_dependencies_including_transitive;
-		auto is_not_in_public_dependencies=
-			lambda[&]( BuildTargetAbsoluteName& target_name ) : bool
-			{
-				foreach( &dependency : public_dependencies )
-				{
-					if( target_name == dependency )
-					{
-						return false;
-					}
-				}
-				return true;
-			};
-
-		out_build_target.private_dependencies_including_transitive_public_dependencies.append(
-			dependencies.iter().filter( is_not_in_public_dependencies ) );
-	}
-
-	// Perform shared libraries to link retrieval.
-	foreach( &build_target_name : build_target_names )
-	{
-		auto mut dependencies= GetAllTargetSharedLibraryDependenciesToLink( workspace, build_target_name );
-		workspace.build_targets[ build_target_name ].shared_library_dependencies_to_link= move(dependencies);
-	}
-
-	// Perform external libraries to link retrieval.
-	foreach( &build_target_name : build_target_names )
-	{
-		auto mut libraries= GetAllTargetExternalLibrariesToLink( workspace, build_target_name );
-		workspace.build_targets[ build_target_name ].all_external_libraries_to_link= move(libraries);
-	}
-
-	// Check dependency name conflicts.
-	foreach( &pair : cast_imut(workspace).build_targets )
-	{
-		var BuildTargetAbsoluteName& build_target_name= pair.key();
-		var WorkspaceInfo::BuildTarget& build_target= pair.value();
-
-		auto all_deps=
-			build_target.public_dependencies_including_transitive.iter().chain(
-				build_target.private_dependencies_including_transitive_public_dependencies.iter() );
-
-		foreach( &dep_a : all_deps )
-		{
-			foreach( &dep_b : all_deps )
-			{
-				if( dep_a.name == dep_b.name && dep_a.package_name < dep_b.package_name )
-				{
-					// Forbid having multiple dependnecies, including public and private and their transitive dependencies,
-					// if they have identical name but come from different packages.
-					// It's needed, since imports are prefixed just by dependency name without package name.
-					logger.LogError(
-						ust::concat(
-							"Build target \"",
-							BuildTargetAbsoluteNameToPrintableString( build_target_name ),
-							"\" has dependencies with identical name \"",
-							BuildTargetAbsoluteNameToPrintableString( dep_a ),
-							"\" and \"",
-							BuildTargetAbsoluteNameToPrintableString( dep_b ),
-							"\"!" ) );
-					ok= false;
-				}
-			}
-		}
-	}
-
-	// Check custom build steps.
-	// For now only check if no two steps produce same files.
-	// TODO - detect dependency loops.
+	// Check custom build steps if no two steps produce the same file.
 	for( auto mut i= 0s; i < workspace.custom_build_steps.size(); ++i )
 	{
 		var WorkspaceInfo::CustomBuildStep& step_i= workspace.custom_build_steps[i];
@@ -746,6 +642,104 @@ fn ProcessWorkspaceDependenciesGraph(
 						"\" of build target \"",
 						BuildTargetAbsoluteNameToPrintableString( target_name ),
 						"\"!" ) );
+					ok= false;
+				}
+			}
+		}
+	}
+
+	// TODO - detect at least some dependency loops involving custom build steps.
+
+	return ok;
+}
+
+fn RetrieveAndCheckWorkspaceTransitiveDependencies( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool
+{
+	// Collect build target names in order to have possibility to iterate and change build targets map elements.
+	var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
+	foreach( &pair : workspace.build_targets )
+	{
+		build_target_names.push_back( pair.key() );
+	}
+
+	// Perform public dependencies retrieval.
+	foreach( &build_target_name : build_target_names )
+	{
+		auto mut dependencies = GetAllTargetPublicDependencies( workspace, build_target_name );
+		workspace.build_targets[build_target_name].public_dependencies_including_transitive= move(dependencies);
+	}
+
+	// Perform private dependencies retrieval.
+	foreach( &build_target_name : build_target_names )
+	{
+		auto dependencies = GetAllTargetPrivateAndTheirTransitivePublicDependencies( workspace, build_target_name );
+
+		auto &mut out_build_target= workspace.build_targets[ build_target_name ];
+
+		// Remove private dependencies which are also public dependencies.
+
+		auto& public_dependencies= out_build_target.public_dependencies_including_transitive;
+		auto is_not_in_public_dependencies=
+			lambda[&]( BuildTargetAbsoluteName& target_name ) : bool
+			{
+				foreach( &dependency : public_dependencies )
+				{
+					if( target_name == dependency )
+					{
+						return false;
+					}
+				}
+				return true;
+			};
+
+		out_build_target.private_dependencies_including_transitive_public_dependencies.append(
+			dependencies.iter().filter( is_not_in_public_dependencies ) );
+	}
+
+	// Perform shared libraries to link retrieval.
+	foreach( &build_target_name : build_target_names )
+	{
+		auto mut dependencies= GetAllTargetSharedLibraryDependenciesToLink( workspace, build_target_name );
+		workspace.build_targets[ build_target_name ].shared_library_dependencies_to_link= move(dependencies);
+	}
+
+	// Perform external libraries to link retrieval.
+	foreach( &build_target_name : build_target_names )
+	{
+		auto mut libraries= GetAllTargetExternalLibrariesToLink( workspace, build_target_name );
+		workspace.build_targets[ build_target_name ].all_external_libraries_to_link= move(libraries);
+	}
+
+	// Check dependency name conflicts.
+	var bool mut ok= true;
+
+	foreach( &pair : cast_imut(workspace).build_targets )
+	{
+		var BuildTargetAbsoluteName& build_target_name= pair.key();
+		var WorkspaceInfo::BuildTarget& build_target= pair.value();
+
+		auto all_deps=
+			build_target.public_dependencies_including_transitive.iter().chain(
+				build_target.private_dependencies_including_transitive_public_dependencies.iter() );
+
+		foreach( &dep_a : all_deps )
+		{
+			foreach( &dep_b : all_deps )
+			{
+				if( dep_a.name == dep_b.name && dep_a.package_name < dep_b.package_name )
+				{
+					// Forbid having multiple dependnecies, including public and private and their transitive dependencies,
+					// if they have identical name but come from different packages.
+					// It's needed, since imports are prefixed just by dependency name without package name.
+					logger.LogError(
+						ust::concat(
+							"Build target \"",
+							BuildTargetAbsoluteNameToPrintableString( build_target_name ),
+							"\" has dependencies with identical name \"",
+							BuildTargetAbsoluteNameToPrintableString( dep_a ),
+							"\" and \"",
+							BuildTargetAbsoluteNameToPrintableString( dep_b ),
+							"\"!" ) );
 					ok= false;
 				}
 			}

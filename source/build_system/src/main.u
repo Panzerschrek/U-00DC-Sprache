@@ -726,7 +726,8 @@ fn CreateWorkspace(
 	}
 
 	if( !CheckWorkspaceDependencyGraphIsValid( logger, workspace ) ||
-		!ProcessWorkspaceDependenciesGraph( logger, workspace, root_package_build_directory ) )
+		!CheckWorkspaceCustomBuildStepsAreValid( logger, workspace, root_package_build_directory ) ||
+		!RetrieveAndCheckWorkspaceTransitiveDependencies( logger, workspace ) )
 	{
 		logger.LogError( "Project dependencies aren't valid!" );
 		return ust::null_optional;
