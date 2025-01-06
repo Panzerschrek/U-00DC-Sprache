@@ -1,0 +1,9 @@
+import "/lib_a/lib_a.uh"
+import "/lib_b/lib_b.uh"
+
+fn nomangle main() : i32
+{
+	halt if( LibAFunc() != 123u );
+	halt if( LibBFunc() != 456u );
+	return 0;
+}

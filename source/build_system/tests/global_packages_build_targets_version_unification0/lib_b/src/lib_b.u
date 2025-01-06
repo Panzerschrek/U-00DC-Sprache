@@ -1,0 +1,6 @@
+import "/lib_b/lib_b.uh"
+
+fn LibBFunc() : u32
+{
+	return 456u;
+}

@@ -1,0 +1,6 @@
+import "/lib_a/lib_a.uh"
+
+fn LibAFunc() : u32
+{
+	return 123u;
+}
