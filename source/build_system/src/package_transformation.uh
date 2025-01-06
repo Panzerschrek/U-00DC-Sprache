@@ -155,6 +155,9 @@ fn TransformAndValidatePackageInfo(
 	PackageAbsoluteName& package_absolute_name,
 	WorkspaceInfo &mut workspace_info ) : bool;
 
+// Returns true if dependency graph is valid.
+fn CheckWorkspaceDependencyGraphIsValid( Logger &mut logger, WorkspaceInfo& workspace) : bool;
+
 // Checks if dependencies are correct (there is no loops, missing dependencies, incorrect dependencies).
 // Also it populates various lists of transitive dependencies.
 // Returns false on error.
