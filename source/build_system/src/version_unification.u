@@ -1,4 +1,5 @@
 import "/sort.u"
+import "/string_conversions.u"
 import "/unordered_set.u"
 import "version_unification.uh"
 
@@ -58,6 +59,22 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 		foreach( &user : build_target_users )
 		{
 			logger.LogVerbose( ust::concat( "\t", user.name ) );
+		}
+
+		var BuildTargetsInConnectedComponents connectded_components=
+			FindBuildTargetUsersGraphConnectedComponents(
+				workspace,
+				workspace_build_targets_users,
+				build_target_users,
+				build_target_name );
+
+		foreach( &pair : connectded_components )
+		{
+			logger.LogVerbose( ust::concat( "Component ", ust::to_string8( pair.key() ) ) );
+			foreach( &component_build_target : pair.value() )
+			{
+				logger.LogVerbose( ust::concat( "\t", component_build_target.name ) );
+			}
 		}
 	}
 
@@ -204,6 +221,120 @@ fn BuildBuildTargetUsersSet_r(
 		// Insert this private user, but don't go further - for users of this private user given build target is hidden.
 		out_set.insert( private_user );
 	}
+}
+
+type GraphComponentIndex= u32;
+
+// Each element is a connected component. Each component is a list of build targets.
+type BuildTargetsInConnectedComponents= ust::unordered_map</ GraphComponentIndex, ust::vector</BuildTargetAbsoluteName/> />;
+
+fn FindBuildTargetUsersGraphConnectedComponents(
+	WorkspaceInfo& workspace,
+	WorkspaceBuildTargetsUsers& workspace_build_targets_users,
+	BuildTargetUsersSet& build_target_users_set,
+	GlobalPackageBuildTargetName& build_target_name ) : BuildTargetsInConnectedComponents
+{
+	var ust::unordered_map</BuildTargetAbsoluteName, GraphComponentIndex/> mut component_index_map;
+
+	var ust::vector</ tup[ BuildTargetAbsoluteName, GraphComponentIndex ] /> mut search_stack;
+
+	// Evaluate search root nodes.
+	{
+		var GraphComponentIndex mut root_component_index= 0u;
+		// Search for all build targets with same package name/path/target name and possible different versions.
+		foreach( &pair : workspace_build_targets_users )
+		{
+			var BuildTargetAbsoluteName& n= pair.key();
+			if_var( &global_versioned_package_name : n.package_name.name_base.get</GlobalVersionedPackageName/>() )
+			{
+				if( global_versioned_package_name.name == build_target_name.package_name &&
+					n.package_name.path == build_target_name.subpackage_path &&
+					n.name == build_target_name.build_target_name )
+				{
+					var BuildTargetUsers& users= pair.value();
+					foreach( &public_user : users.public_users )
+					{
+						search_stack.push_back( ust::make_tuple( public_user, root_component_index ) );
+						++root_component_index;
+					}
+					foreach( &private_user : users.private_users )
+					{
+						search_stack.push_back( ust::make_tuple( private_user, root_component_index ) );
+						++root_component_index;
+					}
+
+				}
+			}
+		}
+	}
+
+	// Perform depth-first search.
+	while( !search_stack.empty() )
+	{
+		var tup[ BuildTargetAbsoluteName, GraphComponentIndex ] name_with_index= search_stack.pop_back();
+		if( component_index_map.exists( name_with_index[0] ) )
+		{
+			continue; // Already visited this node.
+		}
+
+		component_index_map.insert( name_with_index[0], name_with_index[1] );
+
+		// Process graph upwards.
+		ust::ignore_unused(build_target_users_set);
+
+		if_var( & users : workspace_build_targets_users.find( name_with_index[0] ) )
+		{
+			foreach( &public_user : users.public_users )
+			{
+				if( build_target_users_set.exists( public_user ) )
+				{
+					search_stack.push_back( ust::make_tuple( public_user, name_with_index[1] ) );
+				}
+			}
+			foreach( &private_user : users.private_users )
+			{
+				if( build_target_users_set.exists( private_user ) )
+				{
+					search_stack.push_back( ust::make_tuple( private_user, name_with_index[1] ) );
+				}
+			}
+		}
+
+		// Process graph downwards.
+		var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ name_with_index[0] ];
+		foreach( &public_dependency : build_target.public_dependencies )
+		{
+			if( build_target_users_set.exists( public_dependency ) )
+			{
+				search_stack.push_back( ust::make_tuple( public_dependency, name_with_index[1] ) );
+			}
+		}
+		foreach( &private_dependency : build_target.private_dependencies )
+		{
+			if( build_target_users_set.exists( private_dependency ) )
+			{
+				search_stack.push_back( ust::make_tuple( private_dependency, name_with_index[1] ) );
+			}
+		}
+	}
+
+	var BuildTargetsInConnectedComponents mut build_targets_by_components;
+
+	foreach( &pair : cast_imut(component_index_map) )
+	{
+		var BuildTargetAbsoluteName& built_target_name= pair.key();
+		var GraphComponentIndex component_index= pair.value();
+		if( !build_targets_by_components.exists( component_index ) )
+		{
+			build_targets_by_components.insert( component_index, ust::make_array( built_target_name ) );
+		}
+		else
+		{
+			build_targets_by_components[component_index].push_back( built_target_name );
+		}
+	}
+
+	return build_targets_by_components;
 }
 
 } // namespace BK
