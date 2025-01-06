@@ -53,6 +53,12 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 
 		var BuildTargetUsersSet build_target_users=
 			BuildBuildTargetUsersSet( workspace_build_targets_users, build_target_name );
+
+		logger.LogVerbose( ust::concat( "Users of \"", build_target_name.build_target_name, "\" are: " ) );
+		foreach( &user : build_target_users )
+		{
+			logger.LogVerbose( ust::concat( "\t", user.name ) );
+		}
 	}
 
 	return true;
@@ -146,18 +152,32 @@ type BuildTargetUsersSet= ust::unordered_set</BuildTargetAbsoluteName/>;
 // Build set of all build targets which depend on given build target as public or private dependency or as transitive public depenency.
 fn BuildBuildTargetUsersSet(
 	WorkspaceBuildTargetsUsers& build_target_users,
-	BuildTargetAbsoluteName& build_target_name ) : BuildTargetUsersSet
+	GlobalPackageBuildTargetName& build_target_name ) : BuildTargetUsersSet
 {
 	var BuildTargetUsersSet mut result;
 
-	var BuildTargetUsers& users= build_target_users[ build_target_name ];
-	foreach( &public_user : users.public_users )
+	// Search for all build targets with same package name/path/target name and possible different versions.
+	foreach( &pair : build_target_users )
 	{
-		BuildBuildTargetUsersSet_r( build_target_users, public_user, result );
-	}
-	foreach( &private_user : users.private_users )
-	{
-		result.insert( private_user );
+		var BuildTargetAbsoluteName& n= pair.key();
+		if_var( &global_versioned_package_name : n.package_name.name_base.get</GlobalVersionedPackageName/>() )
+		{
+			if( global_versioned_package_name.name == build_target_name.package_name &&
+				n.package_name.path == build_target_name.subpackage_path &&
+				n.name == build_target_name.build_target_name )
+			{
+				var BuildTargetUsers& users= pair.value();
+				foreach( &public_user : users.public_users )
+				{
+					BuildBuildTargetUsersSet_r( build_target_users, public_user, result );
+				}
+				foreach( &private_user : users.private_users )
+				{
+					// Insert this private user, but don't go further - for users of this private user given build target is hidden.
+					result.insert( private_user );
+				}
+			}
+		}
 	}
 
 	return result;
@@ -181,6 +201,7 @@ fn BuildBuildTargetUsersSet_r(
 	}
 	foreach( &private_user : users.private_users )
 	{
+		// Insert this private user, but don't go further - for users of this private user given build target is hidden.
 		out_set.insert( private_user );
 	}
 }
