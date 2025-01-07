@@ -188,8 +188,6 @@ CPP Header converter:
 	directory
 *) Support non-absolute program paths for custom build steps - where these programs may be resolved via "$PATH"
 *) Try to detect dependency loops involving custom build steps before executing the build
-*) Dependency versions unification - if a build target depends on several versions of the same build target, change
-	versions to newest used package version. Propagate these changes down to dependencies where it is necessary.
 *) Save build graph atomically
 *) Rebuild build script shared library if compiler executable is changed
 *) Granular build graph nodes saving - in order to ensure no build artifacts are reused if command line is changed
@@ -200,6 +198,11 @@ CPP Header converter:
 *) Allow to specify diretories for build targets sources - with all files within given directory considered to be
 	source files
 *) Handle interruption signals (like Ctrl+C) and abort build properly
+*) Dependency versions unification improvements - make it faster (reduce algorithms complexity)
+*) Dependency versions unification improvements - try to find a better strategy of unification, not just one-by-one
+	unification of all build targets of global versioned packages arranged in alphabetical order
+*) Add an option to force-override dependencies on a given global package with dependencies on specific version of this
+	package
 *) Support overriding "rpath" for executables
 *) Centralized packages repository
 
