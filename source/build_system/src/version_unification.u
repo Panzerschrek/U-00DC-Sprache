@@ -52,11 +52,11 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 		// Build a helper index containing backward edges in dependency graph to simplify later processing.
 		var WorkspaceBuildTargetsUsers workspace_build_targets_users= BuildWorkspaceBuildTargetsUsers( workspace );
 
-		var BuildTargetUsersSet build_target_users=
+		var BuildTargetUsersSet build_target_public_users=
 			BuildBuildTargetUsersSet( workspace_build_targets_users, build_target_name );
 
-		logger.LogVerbose( ust::concat( "Users of \"", build_target_name.build_target_name, "\" are: " ) );
-		foreach( &user : build_target_users )
+		logger.LogVerbose( ust::concat( "Public users of \"", build_target_name.build_target_name, "\" are: " ) );
+		foreach( &user : build_target_public_users )
 		{
 			logger.LogVerbose( ust::concat( "\t", user.name ) );
 		}
@@ -65,7 +65,7 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 			FindBuildTargetUsersGraphConnectedComponents(
 				workspace,
 				workspace_build_targets_users,
-				build_target_users,
+				build_target_public_users,
 				build_target_name );
 
 		foreach( &pair : connectded_components )
@@ -178,7 +178,7 @@ fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildT
 
 type BuildTargetUsersSet= ust::unordered_set</BuildTargetAbsoluteName/>;
 
-// Build set of all build targets which depend on given build target as public or private dependency or as transitive public depenency.
+// Build set of all build targets which depend on given build target as public dependency or as transitive public depenency.
 fn BuildBuildTargetUsersSet(
 	WorkspaceBuildTargetsUsers& build_target_users,
 	GlobalPackageBuildTargetName& build_target_name ) : BuildTargetUsersSet
@@ -195,15 +195,9 @@ fn BuildBuildTargetUsersSet(
 				n.package_name.path == build_target_name.subpackage_path &&
 				n.name == build_target_name.build_target_name )
 			{
-				var BuildTargetUsers& users= pair.value();
-				foreach( &public_user : users.public_users )
+				foreach( &public_user : build_target_users[n].public_users )
 				{
 					BuildBuildTargetUsersSet_r( build_target_users, public_user, result );
-				}
-				foreach( &private_user : users.private_users )
-				{
-					// Insert this private user, but don't go further - for users of this private user given build target is hidden.
-					result.insert( private_user );
 				}
 			}
 		}
@@ -223,16 +217,9 @@ fn BuildBuildTargetUsersSet_r(
 	}
 	out_set.insert( user_library );
 
-	var BuildTargetUsers& users= build_target_users[ user_library ];
-
-	foreach( &public_user : users.public_users )
+	foreach( &public_user : build_target_users[ user_library ].public_users )
 	{
 		BuildBuildTargetUsersSet_r( build_target_users, public_user, out_set );
-	}
-	foreach( &private_user : users.private_users )
-	{
-		// Insert this private user, but don't go further - for users of this private user given build target is hidden.
-		out_set.insert( private_user );
 	}
 }
 
@@ -245,7 +232,7 @@ type BuildTargetsInConnectedComponents= ust::unordered_map</ GraphComponentIndex
 fn FindBuildTargetUsersGraphConnectedComponents(
 	WorkspaceInfo& workspace,
 	WorkspaceBuildTargetsUsers& workspace_build_targets_users,
-	BuildTargetUsersSet& build_target_users_set,
+	BuildTargetUsersSet& build_target_public_users_set,
 	GlobalPackageBuildTargetName& build_target_name ) : BuildTargetsInConnectedComponents
 {
 	var ust::unordered_map</BuildTargetAbsoluteName, GraphComponentIndex/> mut component_index_map;
@@ -276,7 +263,6 @@ fn FindBuildTargetUsersGraphConnectedComponents(
 						search_stack.push_back( ust::make_tuple( private_user, root_component_index ) );
 						++root_component_index;
 					}
-
 				}
 			}
 		}
@@ -293,37 +279,32 @@ fn FindBuildTargetUsersGraphConnectedComponents(
 
 		component_index_map.insert( name_with_index[0], name_with_index[1] );
 
-		// Process graph upwards.
-		ust::ignore_unused(build_target_users_set);
-
-		var BuildTargetUsers& users= workspace_build_targets_users[ name_with_index[0] ];
-		foreach( &public_user : users.public_users )
+		// Process graph upwards, but only if current build target is a public user (direct or indirect) of the given build target.
+		if( build_target_public_users_set.exists( name_with_index[0] ) )
 		{
-			if( build_target_users_set.exists( public_user ) )
+			var BuildTargetUsers& users= workspace_build_targets_users[ name_with_index[0] ];
+			foreach( &public_user : users.public_users )
 			{
 				search_stack.push_back( ust::make_tuple( public_user, name_with_index[1] ) );
 			}
-		}
-		foreach( &private_user : users.private_users )
-		{
-			if( build_target_users_set.exists( private_user ) )
+			foreach( &private_user : users.private_users )
 			{
 				search_stack.push_back( ust::make_tuple( private_user, name_with_index[1] ) );
 			}
 		}
 
-		// Process graph downwards.
+		// Process graph downwards, but only for build targets which are public users (direct or indirect) of the given build target.
 		var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ name_with_index[0] ];
 		foreach( &public_dependency : build_target.public_dependencies )
 		{
-			if( build_target_users_set.exists( public_dependency ) )
+			if( build_target_public_users_set.exists( public_dependency ) )
 			{
 				search_stack.push_back( ust::make_tuple( public_dependency, name_with_index[1] ) );
 			}
 		}
 		foreach( &private_dependency : build_target.private_dependencies )
 		{
-			if( build_target_users_set.exists( private_dependency ) )
+			if( build_target_public_users_set.exists( private_dependency ) )
 			{
 				search_stack.push_back( ust::make_tuple( private_dependency, name_with_index[1] ) );
 			}
