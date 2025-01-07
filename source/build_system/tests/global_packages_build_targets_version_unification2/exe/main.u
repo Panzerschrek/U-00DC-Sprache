@@ -1,0 +1,7 @@
+import "/two_returner/two_returner.uh"
+
+fn nomangle main() : i32
+{
+	halt if( GetTwo() != 3 ); // Should get version 0.2 - with wrong version of "GetTwo" function.
+	return 0;
+}
