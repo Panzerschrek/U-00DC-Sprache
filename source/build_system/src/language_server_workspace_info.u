@@ -1,0 +1,25 @@
+import "filesystem.uh"
+import "json/serialization.uh"
+import "language_server_workspace_info.uh"
+
+namespace BK
+{
+
+fn WriteLanguageServerWorkspaceInfoFile(
+	Logger &mut logger,
+	WorkspaceInfo& target_workspace,
+	WorkspaceInfo& host_workspace,
+	ust::string_view8 build_recectory ) : bool
+{
+	// TODO - use them.
+	ust::ignore_unused( target_workspace );
+	ust::ignore_unused( host_workspace );
+
+	var JsonValue::Object mut json_root;
+
+	var ust::string8 file_path= ust::concat( build_recectory, "/language_server_workspace_info.json" );
+
+	return WriteFile( logger, file_path, SerializeJsonValue( move(json_root) ) );
+}
+
+} // namespace BK

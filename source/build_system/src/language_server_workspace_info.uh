@@ -1,0 +1,14 @@
+import "package_transformation.uh"
+
+namespace BK
+{
+
+// Write a file with workspace inforation needed for Ü language server.
+// Returns true on success.
+fn WriteLanguageServerWorkspaceInfoFile(
+	Logger &mut logger,
+	WorkspaceInfo& target_workspace,
+	WorkspaceInfo& host_workspace,
+	ust::string_view8 build_recectory ) : bool;
+
+} // namespace BK

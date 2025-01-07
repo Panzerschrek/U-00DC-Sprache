@@ -7,6 +7,7 @@ import "configuration_options.uh"
 import "entry.uh"
 import "filesystem.uh"
 import "init_command.uh"
+import "language_server_workspace_info.uh"
 import "make_dep_file.uh"
 import "options.uh"
 import "package_transformation.uh"
@@ -299,6 +300,14 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	{
 		return -1;
 	}
+
+	// Write a helper file to be used by Ü language server.
+	// Do not fail the build if failed to write it.
+	WriteLanguageServerWorkspaceInfoFile(
+		bsi.logger_,
+		target_workspace,
+		host_workspace,
+		root_package_build_directory );
 
 	var ust::string8 build_graph_state_file_path= root_package_build_directory + "/build_graph.json";
 
