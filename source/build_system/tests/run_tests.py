@@ -627,6 +627,12 @@ def GlobalPackagesBuildTargetsVersionUnification0Test():
 	RunExecutable( test_dir, "unification_test" )
 
 
+def GlobalPackagesBuildTargetsVersionUnification1Test():
+	test_dir= "global_packages_build_targets_version_unification1"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "unification_test" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1323,6 +1329,7 @@ def main():
 		HostDependentPackage0Test,
 		HostDependentPackage1Test,
 		GlobalPackagesBuildTargetsVersionUnification0Test,
+		GlobalPackagesBuildTargetsVersionUnification1Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
