@@ -51,6 +51,7 @@ For now following features are implemented:
 * Target triple specifying
 * Limited (for now) cross-compilation support - using `--sysroot` option
 * Packages - as subpackages within directories of another packages or as global versioned packages
+* Unification of common dependencies on build targets of global versioned packages (where it's necessary) - to ensure no build target depends directly or indirectly on more than one version of some another build target.
 * Generated sources and headers
 * Host package dependencies - for building build tools
 

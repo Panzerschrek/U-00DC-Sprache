@@ -203,6 +203,9 @@ CPP Header converter:
 	unification of all build targets of global versioned packages arranged in alphabetical order
 *) Add an option to force-override dependencies on a given global package with dependencies on specific version of this
 	package
+*) Remove from workspace build targets which aren't used directly or indirectly by build targets of the root package -
+	to avoid building unused build targets of dependencies and unified-out build targets (where they were replaced with
+	a newer version).
 *) Support overriding "rpath" for executables
 *) Centralized packages repository
 
