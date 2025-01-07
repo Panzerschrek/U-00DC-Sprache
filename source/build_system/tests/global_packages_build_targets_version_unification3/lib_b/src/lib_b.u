@@ -1,0 +1,10 @@
+import "/lib_b/lib_b.uh"
+import "/multiplier/multiplier.uh"
+import "/two_returner/two_returner.uh"
+
+fn LibBFunc() : u32
+{
+	halt if( MultiplyInts( 6, 17 ) != 6 * 17 ); // Should get version 0.4 - with correct function name spelling.
+	halt if( GetTwo() != 3 ); // Should get version 0.2 - with wrong version of "GetTwo" function.
+	return 456u;
+}

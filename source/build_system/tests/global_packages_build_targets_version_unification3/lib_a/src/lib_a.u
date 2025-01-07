@@ -1,0 +1,10 @@
+import "/lib_a/lib_a.uh"
+import "/multiplier/multiplier.uh"
+import "/two_returner/two_returner.uh"
+
+fn LibAFunc() : u32
+{
+	halt if( MultiplyInts( 87, -25 ) != 87 * -25 ); // Should get version 0.4 - with correct function name spelling.
+	halt if( GetTwo() != 3 ); // Should get version 0.2 - with wrong version of "GetTwo" function.
+	return 123u;
+}
