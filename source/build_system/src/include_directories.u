@@ -1,0 +1,69 @@
+import "include_directories.uh"
+import "path.uh"
+
+namespace BK
+{
+
+fn ExtractBuildTargetIncludeDirectories(
+	WorkspaceInfo& workspace,
+	BuildSystemPaths& paths,
+	BuildTargetAbsoluteName& build_target_name,
+	WorkspaceInfo::BuildTarget& build_target ) : ust::vector</ust::string8/>
+{
+	var ust::vector</ust::string8/> mut include_directories_prefixed;
+
+	// Own include directories.
+	ExtractDependenciesIncludeDirectories(
+		workspace,
+		paths,
+		ust::single_element_array_view( build_target_name ),
+		include_directories_prefixed );
+
+	// Include directories of all public dependencies.
+	ExtractDependenciesIncludeDirectories(
+		workspace,
+		paths,
+		build_target.public_dependencies_including_transitive,
+		include_directories_prefixed );
+
+	// Include directories of private dependencies.
+	ExtractDependenciesIncludeDirectories(
+		workspace,
+		paths,
+		build_target.private_dependencies_including_transitive_public_dependencies,
+		include_directories_prefixed );
+
+	return include_directories_prefixed;
+}
+
+fn ExtractDependenciesIncludeDirectories(
+	WorkspaceInfo& workspace,
+	BuildSystemPaths& paths,
+	ust::array_view_imut</BuildTargetAbsoluteName/> dependencies,
+	ust::vector</ust::string8/> &mut include_directories_prefixed )
+{
+	foreach( &build_target_name : dependencies )
+	{
+		foreach( &public_include_directory : workspace.build_targets[ build_target_name ].public_include_directories )
+		{
+			// Prefix this directory with target name.
+			// So, using
+			//    import "some_target/some_file.uh"
+			// will work.
+			// Package path isn't used here, so,
+			// it should be ensured prior to this code that a build target has dependencies with unique names.
+
+			var ust::string8 mut path= GetPackageSourceDirectory( paths, build_target_name.package_name );
+			path+= "/";
+			path+= public_include_directory;
+			path= NormalizePath( path );
+
+			path+= g_include_dir_prefix_separator;
+			path+= build_target_name.name;
+
+			include_directories_prefixed.push_back( move(path) );
+		}
+	}
+}
+
+} // namespace BK

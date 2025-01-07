@@ -1,4 +1,5 @@
 import "filesystem.uh"
+import "include_directories.uh"
 import "json/serialization.uh"
 import "language_server_workspace_info.uh"
 import "path.uh"
@@ -42,9 +43,21 @@ fn WriteLanguageServerWorkspaceInfoFile(
 			file_group_json.insert( "directories", move(directories_json) );
 		}
 
-		// TODO - write include directories.
-
 		// TODO - write generated files.
+
+		auto includes=
+			ExtractBuildTargetIncludeDirectories( target_workspace, build_system_paths, build_target_name, build_target );
+		if( !includes.empty() )
+		{
+			var JsonValue::Array mut includes_json;
+			foreach( &inc : includes )
+			{
+				includes_json.push_back( inc );
+			}
+			file_group_json.insert( "includes", move(includes_json) );
+		}
+
+		// TODO - write generated includes.
 
 		json_root.push_back( move(file_group_json) );
 	}

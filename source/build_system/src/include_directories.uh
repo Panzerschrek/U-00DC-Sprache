@@ -1,0 +1,17 @@
+import "build_system_paths.uh"
+import "package_transformation.uh"
+
+namespace BK
+{
+
+// Returns include directories of this build target and its dependencies (including transitive).
+// Doesn't count generated header directories.
+fn ExtractBuildTargetIncludeDirectories(
+	WorkspaceInfo& workspace,
+	BuildSystemPaths& paths,
+	BuildTargetAbsoluteName& build_target_name,
+	WorkspaceInfo::BuildTarget& build_target ) : ust::vector</ust::string8/>;
+
+auto& constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
+
+} // namespace BK
