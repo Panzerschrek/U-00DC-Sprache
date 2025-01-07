@@ -13,8 +13,12 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 
 	foreach( &pair : workspace.build_targets )
 	{
+		if( pair.value().target_type== BuildTargetType::Executable )
+		{
+			continue; // Executables can't (for now) have dependencies, so, no unification for them is needed.
+		}
+
 		var BuildTargetAbsoluteName& build_target_name= pair.key();
-		// TODO - ignore executable build targets?
 		if_var( &global_versioned_package_name : build_target_name.package_name.name_base.get</GlobalVersionedPackageName/>() )
 		{
 			global_packages_build_targets.push_back(
