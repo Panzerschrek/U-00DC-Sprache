@@ -46,49 +46,77 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 	}
 
 	// Unify versions for each build target where it's necessary.
-	// TODO - repeat this loop multiple times, since version unification may introduce new dependencies or remove old one.
-	foreach( &build_target_name : global_packages_build_targets )
+	// Repeat the whole unification process until no new changes can be done.
+	// This is necessary since version unification for one build target may affect dependency graph of other build targets.
+	for( var u32 mut num_full_iterations= 0u; ; ++num_full_iterations )
 	{
-		// Build a helper index containing backward edges in dependency graph to simplify later processing.
-		var WorkspaceBuildTargetsUsers workspace_build_targets_users= BuildWorkspaceBuildTargetsUsers( workspace );
+		var u32 mut num_dependencies_changed_in_this_iteration= 0u;
 
-		var BuildTargetUsersSet build_target_public_users=
-			BuildBuildTargetUsersSet( workspace_build_targets_users, build_target_name );
-
-		logger.LogVerbose( ust::concat( "Public users of \"", build_target_name.build_target_name, "\" are: " ) );
-		foreach( &user : build_target_public_users )
+		foreach( &build_target_name : global_packages_build_targets )
 		{
-			logger.LogVerbose( ust::concat( "\t", user.name ) );
-		}
+			// Build a helper index containing backward edges in dependency graph to simplify later processing.
+			var WorkspaceBuildTargetsUsers workspace_build_targets_users= BuildWorkspaceBuildTargetsUsers( workspace );
 
-		var BuildTargetsInConnectedComponents connectded_components=
-			FindBuildTargetUsersGraphConnectedComponents(
-				workspace,
-				workspace_build_targets_users,
-				build_target_public_users,
-				build_target_name );
+			var BuildTargetUsersSet build_target_public_users=
+				BuildBuildTargetUsersSet( workspace_build_targets_users, build_target_name );
 
-		foreach( &pair : connectded_components )
-		{
-			logger.LogVerbose( ust::concat( "Component ", ust::to_string8( pair.key() ) ) );
-			foreach( &component_build_target : pair.value() )
+			logger.LogVerbose( ust::concat( "Public users of \"", build_target_name.build_target_name, "\" are: " ) );
+			foreach( &user : build_target_public_users )
 			{
-				logger.LogVerbose( ust::concat( "\t", component_build_target.name ) );
+				logger.LogVerbose( ust::concat( "\t", user.name ) );
 			}
 
-			var SemanticVersion max_version=
-				GetMaxBuildTargetDependencyVersion( workspace, pair.value(), build_target_name );
-			logger.LogVerbose( ust::concat(
-				"Component max version is ",
-				ust::to_string8(max_version.major),
-				".",
-				ust::to_string8(max_version.minor),
-				".",
-				ust::to_string8(max_version.patch),
-				".",
-				ust::to_string8(max_version.tweak) ) );
+			var BuildTargetsInConnectedComponents connectded_components=
+				FindBuildTargetUsersGraphConnectedComponents(
+					workspace,
+					workspace_build_targets_users,
+					build_target_public_users,
+					build_target_name );
 
-			SetBuildTargetDependencyVersion( workspace, pair.value(), build_target_name, max_version );
+			foreach( &pair : connectded_components )
+			{
+				logger.LogVerbose( ust::concat( "Component ", ust::to_string8( pair.key() ) ) );
+				foreach( &component_build_target : pair.value() )
+				{
+					logger.LogVerbose( ust::concat( "\t", component_build_target.name ) );
+				}
+
+				var SemanticVersion max_version=
+					GetMaxBuildTargetDependencyVersion( workspace, pair.value(), build_target_name );
+				logger.LogVerbose( ust::concat(
+					"Component max version is ",
+					ust::to_string8(max_version.major),
+					".",
+					ust::to_string8(max_version.minor),
+					".",
+					ust::to_string8(max_version.patch),
+					".",
+					ust::to_string8(max_version.tweak) ) );
+
+				num_dependencies_changed_in_this_iteration+=
+					SetBuildTargetDependencyVersion( workspace, pair.value(), build_target_name, max_version );
+			}
+		}
+
+		if( num_dependencies_changed_in_this_iteration == 0u )
+		{
+			// Nothing to unify left.
+			logger.LogVerbose( ust::concat(
+				"Workspace global versioned packages version unification finished in ",
+				ust::to_string8( num_full_iterations + 1u ),
+				" steps." ) );
+			break;
+		}
+
+		// Limit number of iterations - to prevent infinite loops (which should actually not happen).
+		var u32 constexpr full_iterations_limit= 128u;
+		if( num_full_iterations >= full_iterations_limit )
+		{
+			logger.LogError( ust::concat(
+				"Error, global versioned packages version unification limit ",
+				ust::to_string8( full_iterations_limit ),
+				" reached!" ) );
+			return false;
 		}
 	}
 
@@ -375,12 +403,14 @@ fn GetMaxBuildTargetDependencyVersion(
 	return result;
 }
 
+// Returns number of build targets with changed dependency version.
 fn SetBuildTargetDependencyVersion(
 	WorkspaceInfo &mut workspace,
 	GraphConnectedComponentBuildTargets& build_targets,
 	GlobalPackageBuildTargetName& global_package_build_target,
-	SemanticVersion& version )
+	SemanticVersion& version ) : u32
 {
+	var u32 mut num_changed= 0u;
 	foreach( &build_taget_name : build_targets )
 	{
 		var WorkspaceInfo::BuildTarget &mut build_target= workspace.build_targets[ build_taget_name ];
@@ -392,11 +422,16 @@ fn SetBuildTargetDependencyVersion(
 					dependency.package_name.path == global_package_build_target.subpackage_path &&
 					dependency.name == global_package_build_target.build_target_name )
 				{
-					global_versioned_package_name.version= version;
+					if( global_versioned_package_name.version != version )
+					{
+						global_versioned_package_name.version= version;
+						++num_changed;
+					}
 				}
 			}
 		}
 	}
+	return num_changed;
 }
 
 } // namespace BK
