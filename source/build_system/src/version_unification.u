@@ -31,7 +31,7 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 		}
 	}
 
-	// Sort and deduplicate list of build targets dependencies on which should be unified.
+	// Sort and deduplicate list of build targets, dependencies on which should be unified.
 	// Sorting is necessary in order to process build targets in some stable order.
 	// Deduplication is necessary since we may have build targets from different package versions.
 	ust::sort( global_packages_build_targets );
@@ -87,6 +87,7 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 
 				var SemanticVersion max_version=
 					GetMaxBuildTargetDependencyVersion( workspace, pair.value(), build_target_name );
+
 				logger.LogVerbose( ust::concat(
 					"Component max version is ",
 					ust::to_string8(max_version.major),
@@ -142,7 +143,8 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 	return CheckWorkspaceDependencyGraphIsValid( logger, workspace );
 }
 
-// Do not store here version.
+// Build target name of a global package WITHOUT version.
+// For some unification algorithms this version should be ignored.
 struct GlobalPackageBuildTargetName
 {
 	ust::string8 package_name;
@@ -254,17 +256,15 @@ fn BuildBuildTargetUsersSet(
 }
 
 fn BuildBuildTargetUsersSet_r(
-	WorkspaceBuildTargetsUsers& build_target_users,
-	BuildTargetAbsoluteName& user_library,
-	BuildTargetUsersSet &mut out_set )
+	WorkspaceBuildTargetsUsers& build_target_users, BuildTargetAbsoluteName& user, BuildTargetUsersSet &mut out_set )
 {
-	if( out_set.exists( user_library ) )
+	if( out_set.exists( user ) )
 	{
 		return;
 	}
-	out_set.insert( user_library );
+	out_set.insert( user );
 
-	foreach( &public_user : build_target_users[ user_library ].public_users )
+	foreach( &public_user : build_target_users[ user ].public_users )
 	{
 		BuildBuildTargetUsersSet_r( build_target_users, public_user, out_set );
 	}
@@ -276,6 +276,8 @@ type GraphConnectedComponentBuildTargets= ust::vector</BuildTargetAbsoluteName/>
 // Each element is a connected component. Each component is a list of build targets.
 type BuildTargetsInConnectedComponents= ust::unordered_map</ GraphComponentIndex, GraphConnectedComponentBuildTargets />;
 
+// For given build target find connected components of dependency graph of the workspace,
+// where each component should share given build target as common public or private dependency.
 fn FindBuildTargetUsersGraphConnectedComponents(
 	WorkspaceInfo& workspace,
 	WorkspaceBuildTargetsUsers& workspace_build_targets_users,
@@ -321,7 +323,7 @@ fn FindBuildTargetUsersGraphConnectedComponents(
 		var tup[ BuildTargetAbsoluteName, GraphComponentIndex ] name_with_index= search_stack.pop_back();
 		if( component_index_map.exists( name_with_index[0] ) )
 		{
-			continue; // Already visited this node.
+			continue; // Already visited this build target.
 		}
 
 		component_index_map.insert( name_with_index[0], name_with_index[1] );
@@ -415,6 +417,7 @@ fn SetBuildTargetDependencyVersion(
 	SemanticVersion& version ) : u32
 {
 	var u32 mut num_changed= 0u;
+
 	foreach( &build_taget_name : build_targets )
 	{
 		var WorkspaceInfo::BuildTarget &mut build_target= workspace.build_targets[ build_taget_name ];
@@ -435,6 +438,7 @@ fn SetBuildTargetDependencyVersion(
 			}
 		}
 	}
+
 	return num_changed;
 }
 
