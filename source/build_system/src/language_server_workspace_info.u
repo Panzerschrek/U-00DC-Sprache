@@ -1,25 +1,57 @@
 import "filesystem.uh"
 import "json/serialization.uh"
 import "language_server_workspace_info.uh"
+import "path.uh"
 
 namespace BK
 {
 
 fn WriteLanguageServerWorkspaceInfoFile(
 	Logger &mut logger,
+	BuildSystemPaths& build_system_paths,
 	WorkspaceInfo& target_workspace,
 	WorkspaceInfo& host_workspace,
 	ust::string_view8 build_recectory ) : bool
 {
 	// TODO - use them.
-	ust::ignore_unused( target_workspace );
 	ust::ignore_unused( host_workspace );
 
-	var JsonValue::Object mut json_root;
+	var JsonValue::Array mut json_root;
+
+	foreach( &pair : target_workspace.build_targets )
+	{
+		var BuildTargetAbsoluteName& build_target_name= pair.key();
+		var WorkspaceInfo::BuildTarget& build_target= pair.value();
+
+		var ust::string8 package_source_directory=
+			GetPackageSourceDirectory( build_system_paths, build_target_name.package_name );
+
+		var JsonValue::Object mut file_group_json;
+
+		// List sources directory and public include directories.
+		// Doing so we ensure that each file within these directories will be treatet properly (with includes specified).
+		{
+			var JsonValue::Array mut directories_json;
+
+			directories_json.push_back( NormalizePath( ust::concat( package_source_directory, "/", build_target.sources_directory ) ) );
+
+			foreach( &directory : build_target.public_include_directories )
+			{
+				directories_json.push_back( NormalizePath( ust::concat( package_source_directory, "/", directory ) ) );
+			}
+			file_group_json.insert( "directories", move(directories_json) );
+		}
+
+		// TODO - write include directories.
+
+		// TODO - write generated files.
+
+		json_root.push_back( move(file_group_json) );
+	}
 
 	var ust::string8 file_path= ust::concat( build_recectory, "/language_server_workspace_info.json" );
 
-	return WriteFile( logger, file_path, SerializeJsonValue( move(json_root) ) );
+	return WriteFile( logger, file_path, SerializeJsonValuePretty( move(json_root) ) );
 }
 
 } // namespace BK

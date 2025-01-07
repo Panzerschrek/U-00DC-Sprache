@@ -305,6 +305,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	// Do not fail the build if failed to write it.
 	WriteLanguageServerWorkspaceInfoFile(
 		bsi.logger_,
+		bsi.build_system_paths_,
 		target_workspace,
 		host_workspace,
 		root_package_build_directory );

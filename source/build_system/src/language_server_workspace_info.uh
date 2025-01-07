@@ -1,3 +1,4 @@
+import "build_system_paths.uh"
 import "package_transformation.uh"
 
 namespace BK
@@ -7,6 +8,7 @@ namespace BK
 // Returns true on success.
 fn WriteLanguageServerWorkspaceInfoFile(
 	Logger &mut logger,
+	BuildSystemPaths& build_system_paths,
 	WorkspaceInfo& target_workspace,
 	WorkspaceInfo& host_workspace,
 	ust::string_view8 build_recectory ) : bool;
