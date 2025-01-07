@@ -106,7 +106,8 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 		build_target.private_dependencies.remove_adjacent_duplicates();
 	}
 
-	return true;
+	// Check dependency graph validity again - ensure no new dependency loops were created.
+	return CheckWorkspaceDependencyGraphIsValid( logger, workspace );
 }
 
 // Do not store here version.

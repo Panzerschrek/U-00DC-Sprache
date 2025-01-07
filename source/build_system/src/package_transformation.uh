@@ -155,7 +155,7 @@ fn TransformAndValidatePackageInfo(
 	PackageAbsoluteName& package_absolute_name,
 	WorkspaceInfo &mut workspace_info ) : bool;
 
-// Returns true if dependency graph is valid.
+// Returns true if dependency graph is valid - all dependencies are present and there are no circular dependencies.
 fn CheckWorkspaceDependencyGraphIsValid( Logger &mut logger, WorkspaceInfo& workspace ) : bool;
 
 // Returns true if there are no errors in custom build steps.

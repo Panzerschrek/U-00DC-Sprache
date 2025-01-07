@@ -1014,7 +1014,7 @@ fn IsInFilesList( ust::array_view_imut</ust::string8/> files, ust::string_view8 
 	return false;
 }
 
-// Returns true if dependency graph is valid.
+// Returns true if dependency graph is valid - all dependencies are present, there are no circular dependencies, etc.
 fn DependencyGraphIsValid(
 	Logger &mut logger, WorkspaceInfo& workspace, BuildTargetAbsoluteName& build_target_name ) : bool
 {
