@@ -31,11 +31,14 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 		}
 	}
 
-	// Sort and deduplicate list of build targets, dependencies on which should be unified.
-	// Sorting is necessary in order to process build targets in some stable order.
-	// Deduplication is necessary since we may have build targets from different package versions.
-	ust::sort( global_packages_build_targets );
-	global_packages_build_targets.remove_adjacent_duplicates();
+	// Leave only single entries for elements which are listed more than once.
+	// Doing so we perform versions unification only where it's needed - for build targets with more than one version.
+	PreserveInListOnlyElementsWithMoreThanOneOccurrences( global_packages_build_targets );
+
+	if( global_packages_build_targets.empty() )
+	{
+		return true; // Nothing to unify.
+	}
 
 	foreach( &build_target_name : global_packages_build_targets )
 	{
@@ -440,6 +443,36 @@ fn SetBuildTargetDependencyVersion(
 	}
 
 	return num_changed;
+}
+
+// Ensures only elements with frequency >= 2 are preserved.
+template</type T/>
+fn PreserveInListOnlyElementsWithMoreThanOneOccurrences( ust::vector</T/> &mut v )
+{
+	// By sorting we ensure that all equal elements are adjacent.
+	ust::sort( v );
+
+	var ust::vector</T/> mut res;
+
+	for( auto mut i= 0s; i < v.size();  )
+	{
+		var T& el= v[i];
+		var size_type mut j= i + 1s;
+		while( j < v.size() && cast_imut(v)[j] == el )
+		{
+			++j; // Skip equal elements.
+		}
+
+		var size_type num_equal_elements= j - i;
+
+		if( num_equal_elements > 1s )
+		{
+			res.push_back(el);
+		}
+		i= j;
+	}
+
+	v= move(res);
 }
 
 } // namespace BK
