@@ -1,0 +1,478 @@
+import "/sort.u"
+import "/string_conversions.u"
+import "/unordered_set.u"
+import "version_unification.uh"
+
+namespace BK
+{
+
+fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool
+{
+	// Collect list of build targets of global versioned packages first.
+	var ust::vector</GlobalPackageBuildTargetName/> mut global_packages_build_targets;
+
+	foreach( &pair : workspace.build_targets )
+	{
+		if( pair.value().target_type== BuildTargetType::Executable )
+		{
+			continue; // Executables can't (for now) have dependencies, so, no unification for them is needed.
+		}
+
+		var BuildTargetAbsoluteName& build_target_name= pair.key();
+		if_var( &global_versioned_package_name : build_target_name.package_name.name_base.get</GlobalVersionedPackageName/>() )
+		{
+			global_packages_build_targets.push_back(
+				GlobalPackageBuildTargetName
+				{
+					.package_name= global_versioned_package_name.name,
+					.subpackage_path= build_target_name.package_name.path,
+					.build_target_name= build_target_name.name,
+				} );
+		}
+	}
+
+	// Leave only single entries for elements which are listed more than once.
+	// Doing so we perform versions unification only where it's needed - for build targets with more than one version.
+	PreserveInListOnlyElementsWithMoreThanOneOccurrences( global_packages_build_targets );
+
+	if( global_packages_build_targets.empty() )
+	{
+		return true; // Nothing to unify.
+	}
+
+	foreach( &build_target_name : global_packages_build_targets )
+	{
+		logger.LogVerbose( ust::concat(
+			"Consider build target \"",
+			build_target_name.build_target_name,
+			"\" of a global package \"",
+			build_target_name.package_name,
+			"::",
+			build_target_name.subpackage_path,
+			"\" for unification." ) );
+	}
+
+	// Unify versions for each build target where it's necessary.
+	// Repeat the whole unification process until no new changes can be done.
+	// This is necessary since version unification for one build target may affect dependency graph of other build targets.
+	for( var u32 mut num_full_iterations= 0u; ; ++num_full_iterations )
+	{
+		var u32 mut num_dependencies_changed_in_this_iteration= 0u;
+
+		foreach( &build_target_name : global_packages_build_targets )
+		{
+			// Build a helper index containing backward edges in dependency graph to simplify later processing.
+			var WorkspaceBuildTargetsUsers workspace_build_targets_users= BuildWorkspaceBuildTargetsUsers( workspace );
+
+			var BuildTargetUsersSet build_target_public_users=
+				BuildBuildTargetUsersSet( workspace_build_targets_users, build_target_name );
+
+			logger.LogVerbose( ust::concat( "Public users of \"", build_target_name.build_target_name, "\" are: " ) );
+			foreach( &user : build_target_public_users )
+			{
+				logger.LogVerbose( ust::concat( "\t", user.name ) );
+			}
+
+			var BuildTargetsInConnectedComponents connectded_components=
+				FindBuildTargetUsersGraphConnectedComponents(
+					workspace,
+					workspace_build_targets_users,
+					build_target_public_users,
+					build_target_name );
+
+			foreach( &pair : connectded_components )
+			{
+				logger.LogVerbose( ust::concat( "Component ", ust::to_string8( pair.key() ) ) );
+				foreach( &component_build_target : pair.value() )
+				{
+					logger.LogVerbose( ust::concat( "\t", component_build_target.name ) );
+				}
+
+				var SemanticVersion max_version=
+					GetMaxBuildTargetDependencyVersion( workspace, pair.value(), build_target_name );
+
+				logger.LogVerbose( ust::concat(
+					"Component max version is ",
+					ust::to_string8(max_version.major),
+					".",
+					ust::to_string8(max_version.minor),
+					".",
+					ust::to_string8(max_version.patch),
+					".",
+					ust::to_string8(max_version.tweak) ) );
+
+				num_dependencies_changed_in_this_iteration+=
+					SetBuildTargetDependencyVersion( workspace, pair.value(), build_target_name, max_version );
+			}
+		}
+
+		if( num_dependencies_changed_in_this_iteration == 0u )
+		{
+			// Nothing to unify left.
+			logger.LogVerbose( ust::concat(
+				"Workspace global versioned packages version unification finished in ",
+				ust::to_string8( num_full_iterations + 1u ),
+				" steps." ) );
+			break;
+		}
+
+		// Limit number of iterations - to prevent infinite loops (which should actually not happen).
+		var u32 constexpr full_iterations_limit= 128u;
+		if( num_full_iterations >= full_iterations_limit )
+		{
+			logger.LogError( ust::concat(
+				"Error, global versioned packages version unification limit ",
+				ust::to_string8( full_iterations_limit ),
+				" reached!" ) );
+			return false;
+		}
+	}
+
+	// After version unification duplicate dependencies are possible,
+	// like dependencies on lib_x:0.1 and lib_x:0.2 are replaced with lib_x:0.2 and lib_x:0.2.
+	// So, sort lists of dependencies again and remove duplicates.
+	foreach( &pair : workspace.build_targets )
+	{
+		var WorkspaceInfo::BuildTarget &mut build_target= pair.value();
+
+		ust::sort( build_target.public_dependencies );
+		build_target.public_dependencies.remove_adjacent_duplicates();
+
+		ust::sort( build_target.private_dependencies );
+		build_target.private_dependencies.remove_adjacent_duplicates();
+	}
+
+	// Check dependency graph validity again - ensure no new dependency loops were created.
+	return CheckWorkspaceDependencyGraphIsValid( logger, workspace );
+}
+
+// Build target name of a global package WITHOUT version.
+// For some unification algorithms this version should be ignored.
+struct GlobalPackageBuildTargetName
+{
+	ust::string8 package_name;
+	ust::string8 subpackage_path;
+	ust::string8 build_target_name;
+
+	op<=>( GlobalPackageBuildTargetName& l, GlobalPackageBuildTargetName& r ) : i32
+	{
+		auto package_name_comp= l.package_name <=> r.package_name;
+		if( package_name_comp != 0 )
+		{
+			return package_name_comp;
+		}
+		auto subpackage_path_comp= l.subpackage_path <=> r.subpackage_path;
+		if( subpackage_path_comp != 0 )
+		{
+			return subpackage_path_comp;
+		}
+		return l.build_target_name <=> r.build_target_name;
+	}
+}
+
+// A helper structure - store for a build target names of build targets which they use.
+struct BuildTargetUsers
+{
+	// Build targets which use this build target as direct public dependency.
+	ust::vector</BuildTargetAbsoluteName/> public_users;
+	// Build targets which use this build target as direct private dependency.
+	ust::vector</BuildTargetAbsoluteName/> private_users;
+}
+
+type WorkspaceBuildTargetsUsers= ust::unordered_map</BuildTargetAbsoluteName, BuildTargetUsers/>;
+
+fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildTargetsUsers
+{
+	var WorkspaceBuildTargetsUsers mut result;
+
+	// Create hash-map entries first.
+	foreach( &pair : workspace.build_targets )
+	{
+		result.insert( pair.key(), BuildTargetUsers{} );
+	}
+
+	foreach( &pair : workspace.build_targets )
+	{
+		var BuildTargetAbsoluteName& build_target_full_name= pair.key();
+		var WorkspaceInfo::BuildTarget& build_target= pair.value();
+
+		foreach( &public_dependency_name : build_target.public_dependencies )
+		{
+			result[ public_dependency_name ].public_users.push_back( build_target_full_name );
+		}
+
+		foreach( &private_dependency_name : build_target.private_dependencies )
+		{
+			// For private dependencies check if they aren't already lusted in public dependencies and if so - ignore them.
+			var bool mut exists_in_public_dependencies= false;
+			foreach( &public_dependency_name : build_target.public_dependencies )
+			{
+				if( private_dependency_name == public_dependency_name )
+				{
+					exists_in_public_dependencies= true;
+					break;
+				}
+			}
+
+			if( exists_in_public_dependencies )
+			{
+				continue;
+			}
+
+			result[ private_dependency_name ].private_users.push_back( build_target_full_name );
+		}
+	}
+
+	// TODO - sort lists of users?
+
+	return move(result);
+}
+
+type BuildTargetUsersSet= ust::unordered_set</BuildTargetAbsoluteName/>;
+
+// Build set of all build targets which depend on given build target as public dependency or as transitive public depenency.
+fn BuildBuildTargetUsersSet(
+	WorkspaceBuildTargetsUsers& build_target_users,
+	GlobalPackageBuildTargetName& build_target_name ) : BuildTargetUsersSet
+{
+	var BuildTargetUsersSet mut result;
+
+	// Search for all build targets with same package name/path/target name and possible different versions.
+	foreach( &pair : build_target_users )
+	{
+		var BuildTargetAbsoluteName& n= pair.key();
+		if_var( &global_versioned_package_name : n.package_name.name_base.get</GlobalVersionedPackageName/>() )
+		{
+			if( global_versioned_package_name.name == build_target_name.package_name &&
+				n.package_name.path == build_target_name.subpackage_path &&
+				n.name == build_target_name.build_target_name )
+			{
+				foreach( &public_user : build_target_users[n].public_users )
+				{
+					BuildBuildTargetUsersSet_r( build_target_users, public_user, result );
+				}
+			}
+		}
+	}
+
+	return result;
+}
+
+fn BuildBuildTargetUsersSet_r(
+	WorkspaceBuildTargetsUsers& build_target_users, BuildTargetAbsoluteName& user, BuildTargetUsersSet &mut out_set )
+{
+	if( out_set.exists( user ) )
+	{
+		return;
+	}
+	out_set.insert( user );
+
+	foreach( &public_user : build_target_users[ user ].public_users )
+	{
+		BuildBuildTargetUsersSet_r( build_target_users, public_user, out_set );
+	}
+}
+
+type GraphComponentIndex= u32;
+type GraphConnectedComponentBuildTargets= ust::vector</BuildTargetAbsoluteName/>;
+
+// Each element is a connected component. Each component is a list of build targets.
+type BuildTargetsInConnectedComponents= ust::unordered_map</ GraphComponentIndex, GraphConnectedComponentBuildTargets />;
+
+// For given build target find connected components of dependency graph of the workspace,
+// where each component should share given build target as common public or private dependency.
+fn FindBuildTargetUsersGraphConnectedComponents(
+	WorkspaceInfo& workspace,
+	WorkspaceBuildTargetsUsers& workspace_build_targets_users,
+	BuildTargetUsersSet& build_target_public_users_set,
+	GlobalPackageBuildTargetName& build_target_name ) : BuildTargetsInConnectedComponents
+{
+	var ust::unordered_map</BuildTargetAbsoluteName, GraphComponentIndex/> mut component_index_map;
+
+	var ust::vector</ tup[ BuildTargetAbsoluteName, GraphComponentIndex ] /> mut search_stack;
+
+	// Evaluate search root nodes.
+	{
+		var GraphComponentIndex mut root_component_index= 0u;
+		// Search for all build targets with same package name/path/target name and possible different versions.
+		foreach( &pair : workspace_build_targets_users )
+		{
+			var BuildTargetAbsoluteName& n= pair.key();
+			if_var( &global_versioned_package_name : n.package_name.name_base.get</GlobalVersionedPackageName/>() )
+			{
+				if( global_versioned_package_name.name == build_target_name.package_name &&
+					n.package_name.path == build_target_name.subpackage_path &&
+					n.name == build_target_name.build_target_name )
+				{
+					var BuildTargetUsers& users= pair.value();
+					foreach( &public_user : users.public_users )
+					{
+						search_stack.push_back( ust::make_tuple( public_user, root_component_index ) );
+						++root_component_index;
+					}
+					foreach( &private_user : users.private_users )
+					{
+						search_stack.push_back( ust::make_tuple( private_user, root_component_index ) );
+						++root_component_index;
+					}
+				}
+			}
+		}
+	}
+
+	// Perform depth-first search.
+	while( !search_stack.empty() )
+	{
+		var tup[ BuildTargetAbsoluteName, GraphComponentIndex ] name_with_index= search_stack.pop_back();
+		if( component_index_map.exists( name_with_index[0] ) )
+		{
+			continue; // Already visited this build target.
+		}
+
+		component_index_map.insert( name_with_index[0], name_with_index[1] );
+
+		// Process graph upwards, but only if current build target is a public user (direct or indirect) of the given build target.
+		if( build_target_public_users_set.exists( name_with_index[0] ) )
+		{
+			var BuildTargetUsers& users= workspace_build_targets_users[ name_with_index[0] ];
+			foreach( &public_user : users.public_users )
+			{
+				search_stack.push_back( ust::make_tuple( public_user, name_with_index[1] ) );
+			}
+			foreach( &private_user : users.private_users )
+			{
+				search_stack.push_back( ust::make_tuple( private_user, name_with_index[1] ) );
+			}
+		}
+
+		// Process graph downwards, but only for build targets which are public users (direct or indirect) of the given build target.
+		var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ name_with_index[0] ];
+		foreach( &public_dependency : build_target.public_dependencies )
+		{
+			if( build_target_public_users_set.exists( public_dependency ) )
+			{
+				search_stack.push_back( ust::make_tuple( public_dependency, name_with_index[1] ) );
+			}
+		}
+		foreach( &private_dependency : build_target.private_dependencies )
+		{
+			if( build_target_public_users_set.exists( private_dependency ) )
+			{
+				search_stack.push_back( ust::make_tuple( private_dependency, name_with_index[1] ) );
+			}
+		}
+	}
+
+	var BuildTargetsInConnectedComponents mut build_targets_by_components;
+
+	foreach( &pair : cast_imut(component_index_map) )
+	{
+		var BuildTargetAbsoluteName& built_target_name= pair.key();
+		var GraphComponentIndex component_index= pair.value();
+		if( !build_targets_by_components.exists( component_index ) )
+		{
+			build_targets_by_components.insert( component_index, ust::make_array( built_target_name ) );
+		}
+		else
+		{
+			build_targets_by_components[component_index].push_back( built_target_name );
+		}
+	}
+
+	return build_targets_by_components;
+}
+
+fn GetMaxBuildTargetDependencyVersion(
+	WorkspaceInfo& workspace,
+	GraphConnectedComponentBuildTargets& build_targets,
+	GlobalPackageBuildTargetName& global_package_build_target ) : SemanticVersion
+{
+	var SemanticVersion mut result(0u, 0u);
+
+	foreach( &build_taget_name : build_targets )
+	{
+		var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ build_taget_name ];
+		foreach( &dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
+		{
+			if_var( &global_versioned_package_name : dependency.package_name.name_base.get</GlobalVersionedPackageName/>() )
+			{
+				if( global_versioned_package_name.name == global_package_build_target.package_name &&
+					dependency.package_name.path == global_package_build_target.subpackage_path &&
+					dependency.name == global_package_build_target.build_target_name )
+				{
+					if( global_versioned_package_name.version > result )
+					{
+						result= global_versioned_package_name.version;
+					}
+				}
+			}
+		}
+	}
+
+	return result;
+}
+
+// Returns number of build targets with changed dependency version.
+fn SetBuildTargetDependencyVersion(
+	WorkspaceInfo &mut workspace,
+	GraphConnectedComponentBuildTargets& build_targets,
+	GlobalPackageBuildTargetName& global_package_build_target,
+	SemanticVersion& version ) : u32
+{
+	var u32 mut num_changed= 0u;
+
+	foreach( &build_taget_name : build_targets )
+	{
+		var WorkspaceInfo::BuildTarget &mut build_target= workspace.build_targets[ build_taget_name ];
+		foreach( &mut dependency : build_target.public_dependencies.iter().chain( build_target.private_dependencies.iter() ) )
+		{
+			if_var( &mut global_versioned_package_name : dependency.package_name.name_base.get</GlobalVersionedPackageName/>() )
+			{
+				if( global_versioned_package_name.name == global_package_build_target.package_name &&
+					dependency.package_name.path == global_package_build_target.subpackage_path &&
+					dependency.name == global_package_build_target.build_target_name )
+				{
+					if( global_versioned_package_name.version != version )
+					{
+						global_versioned_package_name.version= version;
+						++num_changed;
+					}
+				}
+			}
+		}
+	}
+
+	return num_changed;
+}
+
+// Ensures only elements with frequency >= 2 are preserved.
+template</type T/>
+fn PreserveInListOnlyElementsWithMoreThanOneOccurrences( ust::vector</T/> &mut v )
+{
+	// By sorting we ensure that all equal elements are adjacent.
+	ust::sort( v );
+
+	var ust::vector</T/> mut res;
+
+	for( auto mut i= 0s; i < v.size();  )
+	{
+		var T& el= v[i];
+		var size_type mut j= i + 1s;
+		while( j < v.size() && cast_imut(v)[j] == el )
+		{
+			++j; // Skip equal elements.
+		}
+
+		var size_type num_equal_elements= j - i;
+
+		if( num_equal_elements > 1s )
+		{
+			res.push_back(el);
+		}
+		i= j;
+	}
+
+	v= move(res);
+}
+
+} // namespace BK

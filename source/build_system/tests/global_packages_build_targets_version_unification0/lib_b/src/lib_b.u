@@ -1,0 +1,8 @@
+import "/lib_b/lib_b.uh"
+import "/two_returner/two_returner.uh"
+
+fn LibBFunc() : u32
+{
+	halt if( GetTwo() != 3 ); // Should get version 0.2 - with wrong version of "GetTwo" function.
+	return 456u;
+}

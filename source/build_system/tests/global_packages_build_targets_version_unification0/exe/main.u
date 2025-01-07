@@ -1,0 +1,11 @@
+import "/lib_a/lib_a.uh"
+import "/lib_b/lib_b.uh"
+import "/two_returner/two_returner.uh"
+
+fn nomangle main() : i32
+{
+	halt if( LibAFunc() != 123u );
+	halt if( LibBFunc() != 456u );
+	halt if( GetTwo() != 3 ); // Should get version 0.2 - with wrong version of "GetTwo" function.
+	return 0;
+}

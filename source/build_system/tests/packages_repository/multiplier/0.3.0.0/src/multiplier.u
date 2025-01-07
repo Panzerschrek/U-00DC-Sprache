@@ -1,0 +1,6 @@
+import "/multiplier/multiplier.uh"
+
+fn MutlipyInts( i32 x, i32 y ) : i32
+{
+	return x * y;
+}

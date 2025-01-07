@@ -1,0 +1,8 @@
+import "/lib_a/lib_a.uh"
+import "/two_returner/two_returner.uh"
+
+fn LibAFunc() : u32
+{
+	halt if( GetTwo() != 2 ); // Should get version 0.1 - with correct version of "GetTwo" function.
+	return 123u;
+}

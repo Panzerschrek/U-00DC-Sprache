@@ -621,6 +621,36 @@ def HostDependentPackage1Test():
 	RunExecutable( test_dir, "exe" )
 
 
+def GlobalPackagesBuildTargetsVersionUnification0Test():
+	test_dir= "global_packages_build_targets_version_unification0"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "unification_test" )
+
+
+def GlobalPackagesBuildTargetsVersionUnification1Test():
+	test_dir= "global_packages_build_targets_version_unification1"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "unification_test" )
+
+
+def GlobalPackagesBuildTargetsVersionUnification2Test():
+	test_dir= "global_packages_build_targets_version_unification2"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "unification_test" )
+
+
+def GlobalPackagesBuildTargetsVersionUnification3Test():
+	test_dir= "global_packages_build_targets_version_unification3"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "unification_test" )
+
+
+def GlobalPackagesBuildTargetsVersionUnification4Test():
+	test_dir= "global_packages_build_targets_version_unification4"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "unification_test" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1316,6 +1346,11 @@ def main():
 		GeneratedSources5Test,
 		HostDependentPackage0Test,
 		HostDependentPackage1Test,
+		GlobalPackagesBuildTargetsVersionUnification0Test,
+		GlobalPackagesBuildTargetsVersionUnification1Test,
+		GlobalPackagesBuildTargetsVersionUnification2Test,
+		GlobalPackagesBuildTargetsVersionUnification3Test,
+		GlobalPackagesBuildTargetsVersionUnification4Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
