@@ -92,6 +92,20 @@ fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo
 		}
 	}
 
+	// After version unification duplicate dependencies are possible,
+	// like dependencies on lib_x:0.1 and lib_x:0.2 are replaced with lib_x:0.2 and lib_x:0.2.
+	// So, sort lists of dependencies again and remove duplicates.
+	foreach( &pair : workspace.build_targets )
+	{
+		var WorkspaceInfo::BuildTarget &mut build_target= pair.value();
+
+		ust::sort( build_target.public_dependencies );
+		build_target.public_dependencies.remove_adjacent_duplicates();
+
+		ust::sort( build_target.private_dependencies );
+		build_target.private_dependencies.remove_adjacent_duplicates();
+	}
+
 	return true;
 }
 
