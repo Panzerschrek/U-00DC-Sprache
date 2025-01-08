@@ -43,10 +43,21 @@ fn WriteLanguageServerWorkspaceInfoFile(
 			file_group_json.insert( "directories", move(directories_json) );
 		}
 
-		// TODO - write generated files.
+		// TODO - add directories of generated files.
 
-		auto includes=
+		auto mut includes=
 			ExtractBuildTargetIncludeDirectories( target_workspace, build_system_paths, build_target_name, build_target );
+
+		if( !build_target.source_files.empty() )
+		{
+			// Add also sources directory to list of includes.
+			includes.push_back(
+				ust::concat(
+					NormalizePath( ust::concat( package_source_directory, "/", build_target.sources_directory ) ),
+					g_include_dir_prefix_separator,
+					build_target_name.name ) );
+		}
+
 		if( !includes.empty() )
 		{
 			var JsonValue::Array mut includes_json;
@@ -57,7 +68,7 @@ fn WriteLanguageServerWorkspaceInfoFile(
 			file_group_json.insert( "includes", move(includes_json) );
 		}
 
-		// TODO - write generated includes.
+		// TODO - write directories of generated includes.
 
 		json_root.push_back( move(file_group_json) );
 	}
