@@ -79,7 +79,7 @@ VFSManager::VFSManager( Logger& log )
 {
 	for( const auto& build_dir : Options::build_dir )
 	{
-		auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log, build_dir );
+		const auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log, build_dir );
 		if( file_contents_opt != std::nullopt )
 		{
 			log() << "Found a project description file" << std::endl;
@@ -103,13 +103,17 @@ IVfsSharedPtr VFSManager::GetVFSForDocument( const Uri& uri )
 	llvm::ArrayRef<std::string> workspace_includes;
 	if( const auto file_path= uri.AsFilePath() )
 	{
+		// First perform search of already loaded workspace directories.
 		if( const WorkspaceDirectoriesGroup* const directories_group= FindDirectoriesGroupForFile( *file_path ) )
-		{
 			workspace_includes= directories_group->includes;
-			goto end_workspace_includes_search;
+		else
+		{
+			// If search fails - try to load workspace info for given file and perform search again.
+			TryLoadDirectoriesGroupForFile( *file_path );
+			if( const WorkspaceDirectoriesGroup* const directories_group= FindDirectoriesGroupForFile( *file_path ) )
+				workspace_includes= directories_group->includes;
 		}
 	}
-	end_workspace_includes_search:
 
 	IncludesList includes;
 	includes= Options::include_dir; // Append includes from options first.
@@ -153,6 +157,42 @@ const WorkspaceDirectoriesGroup* VFSManager::FindDirectoriesGroupForFile( const 
 	}
 
 	return nullptr;
+}
+
+void VFSManager::TryLoadDirectoriesGroupForFile( const std::string& file_path )
+{
+	// Iterate over parent directories and search for default build directory with name "build".
+
+	auto it= llvm::sys::path::begin(file_path), it_end= llvm::sys::path::end(file_path);
+	if( it == it_end )
+		return;
+
+	std::string directory_path;
+	for( auto it= llvm::sys::path::begin(file_path), it_end= llvm::sys::path::end(file_path); std::next(it) != it_end; ++it)
+	{
+		directory_path+= *it;
+		if( directory_path.empty() || directory_path.back() != '/' )
+			directory_path+= "/";
+
+		const std::string default_build_directory_path= directory_path + "build";
+
+		const auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log_, default_build_directory_path );
+		if( file_contents_opt != std::nullopt )
+		{
+			log_() << "Found a project workspace info in build directory \"" << default_build_directory_path << "\"." << std::endl;
+			auto file_parsed= ParseWorkspaceInfoFile( log_, *file_contents_opt );
+			if( file_parsed != std::nullopt )
+			{
+				log_() << "Successfully parsed a project description file." << std::endl;
+				workspace_directories_groups_.emplace( default_build_directory_path, std::move(*file_parsed) );
+				return;
+			}
+			else
+			{
+				log_() << "Failed to parse a project description file." << std::endl;
+			}
+		}
+	}
 }
 
 } // namespace LangServer

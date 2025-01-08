@@ -22,6 +22,7 @@ public:
 
 private:
 	const WorkspaceDirectoriesGroup* FindDirectoriesGroupForFile( const std::string& file_path ) const;
+	void TryLoadDirectoriesGroupForFile( const std::string& file_path );
 
 private:
 	using WorkspaceDirectoriesGroupsByBuildDirectory= std::unordered_map<std::string, WorkspaceDirectoriesGroups>;
