@@ -12,14 +12,14 @@ fn WriteLanguageServerWorkspaceInfoFile(
 	BuildSystemPaths& build_system_paths,
 	WorkspaceInfo& target_workspace,
 	WorkspaceInfo& host_workspace,
-	ust::string_view8 build_recectory ) : bool
+	ust::string_view8 build_directory ) : bool
 {
 	var JsonValue::Array mut json_root;
 
-	PopulateWorkspaceDirectoryGroups( build_system_paths, target_workspace, build_recectory, json_root );
-	PopulateWorkspaceDirectoryGroups( build_system_paths, host_workspace, build_recectory, json_root );
+	PopulateWorkspaceDirectoryGroups( build_system_paths, target_workspace, json_root );
+	PopulateWorkspaceDirectoryGroups( build_system_paths, host_workspace, json_root );
 
-	var ust::string8 file_path= ust::concat( build_recectory, "/language_server_workspace_info.json" );
+	var ust::string8 file_path= ust::concat( build_directory, "/language_server_workspace_info.json" );
 
 	return WriteFile( logger, file_path, SerializeJsonValuePretty( move(json_root) ) );
 }
@@ -27,7 +27,6 @@ fn WriteLanguageServerWorkspaceInfoFile(
 fn PopulateWorkspaceDirectoryGroups(
 	BuildSystemPaths& build_system_paths,
 	WorkspaceInfo& workspace,
-	ust::string_view8 build_recectory,
 	JsonValue::Array &mut json_root )
 {
 	foreach( &pair : workspace.build_targets )

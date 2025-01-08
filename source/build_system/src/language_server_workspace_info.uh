@@ -11,6 +11,6 @@ fn WriteLanguageServerWorkspaceInfoFile(
 	BuildSystemPaths& build_system_paths,
 	WorkspaceInfo& target_workspace,
 	WorkspaceInfo& host_workspace,
-	ust::string_view8 build_recectory ) : bool;
+	ust::string_view8 build_directory ) : bool;
 
 } // namespace BK
