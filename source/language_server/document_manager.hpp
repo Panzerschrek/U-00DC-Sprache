@@ -1,4 +1,5 @@
 #pragma once
+#include "build_system_integration.hpp"
 #include "document.hpp"
 
 namespace U
@@ -105,6 +106,8 @@ private:
 	Logger& log_;
 	const IVfsSharedPtr base_vfs_; // Thread-safe.
 	const DocumentBuildOptions build_options_;
+
+	std::vector<WorkspaceDirectoriesGroups> workspace_directories_groups_;
 
 	// Store documents in a shared_ptr to allow "DocumentManagerVfs" accessing them via copy of this shared_ptr.
 	const std::shared_ptr<DocumentsContainer> documents_container_;

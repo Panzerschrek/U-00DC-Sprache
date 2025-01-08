@@ -3,7 +3,6 @@
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/vfs.hpp"
-#include "build_system_integration.hpp"
 #include "document_position_utils.hpp"
 #include "options.hpp"
 #include "data_layout_stub.hpp"
@@ -97,6 +96,32 @@ DocumentBuildOptions CreateBuildOptions( Logger& log )
 	return build_options;
 }
 
+std::vector<WorkspaceDirectoriesGroups> LoadWorkspaceDirectoriesGroups( Logger& log )
+{
+	std::vector<WorkspaceDirectoriesGroups> result;
+
+	for( const auto& build_dir : Options::build_dir )
+	{
+		auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log, build_dir );
+		if( file_contents_opt != std::nullopt )
+		{
+			log() << "Found a project description file" << std::endl;
+			auto file_parsed= ParseWorkspaceInfoFile( log, *file_contents_opt );
+			if( file_parsed != std::nullopt )
+			{
+				log() << "Successfully parsed a project description file" << std::endl;
+				result.push_back( std::move(*file_parsed) );
+			}
+			else
+			{
+				log() << "Failed to parse a project description file" << std::endl;
+			}
+		}
+	}
+
+	return result;
+}
+
 } // namespace
 
 DocumentManager::DocumentManagerVfs::DocumentManagerVfs(
@@ -158,18 +183,9 @@ DocumentManager::DocumentManager( Logger& log )
 	// TODO - use individual VFS for different files.
 	// TODO - create different build options for different files.
 	, build_options_( CreateBuildOptions(log_) )
+	, workspace_directories_groups_( LoadWorkspaceDirectoriesGroups( log ) )
 	, documents_container_( std::make_shared<DocumentsContainer>() )
-{
-	for( const auto& build_dir : Options::build_dir )
-	{
-		auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log_, build_dir );
-		if( file_contents_opt != std::nullopt )
-		{
-			log_() << "Found a project description file" << std::endl;
-			ParseWorkspaceInfoFile( log, *file_contents_opt );
-		}
-	}
-}
+{}
 
 Document* DocumentManager::Open( const Uri& uri, std::string text )
 {
