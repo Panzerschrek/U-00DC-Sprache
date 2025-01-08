@@ -54,32 +54,6 @@ private:
 	const std::unique_ptr<IVfs> base_;
 };
 
-std::vector<WorkspaceDirectoriesGroups> LoadWorkspaceDirectoriesGroups( Logger& log )
-{
-	std::vector<WorkspaceDirectoriesGroups> result;
-
-	for( const auto& build_dir : Options::build_dir )
-	{
-		auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log, build_dir );
-		if( file_contents_opt != std::nullopt )
-		{
-			log() << "Found a project description file" << std::endl;
-			auto file_parsed= ParseWorkspaceInfoFile( log, *file_contents_opt );
-			if( file_parsed != std::nullopt )
-			{
-				log() << "Successfully parsed a project description file" << std::endl;
-				result.push_back( std::move(*file_parsed) );
-			}
-			else
-			{
-				log() << "Failed to parse a project description file" << std::endl;
-			}
-		}
-	}
-
-	return result;
-}
-
 bool IsPathWithinGivenDirectory( const llvm::StringRef path, const llvm::StringRef directory_path )
 {
 	auto given_path_it= llvm::sys::path::begin(path);
@@ -98,13 +72,29 @@ bool IsPathWithinGivenDirectory( const llvm::StringRef path, const llvm::StringR
 	return directory_path_it == directory_path_it_end;
 }
 
-
 } // namespace
 
 VFSManager::VFSManager( Logger& log )
 	: log_(log)
-	, workspace_directories_groups_( LoadWorkspaceDirectoriesGroups( log_ ) )
 {
+	for( const auto& build_dir : Options::build_dir )
+	{
+		auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log, build_dir );
+		if( file_contents_opt != std::nullopt )
+		{
+			log() << "Found a project description file" << std::endl;
+			auto file_parsed= ParseWorkspaceInfoFile( log, *file_contents_opt );
+			if( file_parsed != std::nullopt )
+			{
+				log() << "Successfully parsed a project description file" << std::endl;
+				workspace_directories_groups_.emplace( build_dir, std::move(*file_parsed) );
+			}
+			else
+			{
+				log() << "Failed to parse a project description file" << std::endl;
+			}
+		}
+	}
 }
 
 IVfsSharedPtr VFSManager::GetVFSForDocument( const Uri& uri )
@@ -113,9 +103,9 @@ IVfsSharedPtr VFSManager::GetVFSForDocument( const Uri& uri )
 	llvm::ArrayRef<std::string> workspace_includes;
 	if( const auto file_path= uri.AsFilePath() )
 	{
-		for( const WorkspaceDirectoriesGroups& groups : workspace_directories_groups_ )
+		for( const auto& groups_of_a_build_directory : workspace_directories_groups_ )
 		{
-			for( const WorkspaceDirectoriesGroup& group : groups )
+			for( const WorkspaceDirectoriesGroup& group : groups_of_a_build_directory.second )
 			{
 				for( const std::string& directory_path : group.directories )
 				{

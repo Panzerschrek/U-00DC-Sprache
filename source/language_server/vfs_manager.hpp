@@ -21,11 +21,13 @@ public:
 	IVfsSharedPtr GetVFSForDocument( const Uri& uri );
 
 private:
+	using WorkspaceDirectoriesGroupsByBuildDirectory= std::unordered_map<std::string, WorkspaceDirectoriesGroups>;
 	using IncludesList= std::vector<std::string>;
 
 private:
 	Logger& log_;
-	const std::vector<WorkspaceDirectoriesGroups> workspace_directories_groups_;
+
+	WorkspaceDirectoriesGroupsByBuildDirectory workspace_directories_groups_;
 
 	// TODO - use unordered_map
 	std::map<IncludesList, IVfsSharedPtr> vfs_cache_;
