@@ -3,6 +3,7 @@
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/vfs.hpp"
+#include "build_system_integration.hpp"
 #include "document_position_utils.hpp"
 #include "options.hpp"
 #include "data_layout_stub.hpp"
@@ -161,7 +162,14 @@ DocumentManager::DocumentManager( Logger& log )
 	, vfs_( *this )
 	// TODO - create different build options for different files.
 	, build_options_( CreateBuildOptions(log_) )
-{}
+{
+	for( const auto& build_dir : Options::build_dir )
+	{
+		auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log_, build_dir );
+		if( file_contents_opt != std::nullopt )
+			log_() << "Found a project description file" << std::endl;
+	}
+}
 
 Document* DocumentManager::Open( const Uri& uri, std::string text )
 {
