@@ -1,5 +1,6 @@
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/Path.h>
+#include <llvm/Support/FileSystem.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../compilers_support_lib/vfs.hpp"
@@ -175,6 +176,9 @@ void VFSManager::TryLoadDirectoriesGroupForFile( const std::string& file_path )
 			directory_path+= "/";
 
 		const std::string default_build_directory_path= directory_path + "build";
+
+		if( !llvm::sys::fs::is_directory(default_build_directory_path) )
+			continue; // Doesn't exist or not a directory.
 
 		const auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log_, default_build_directory_path );
 		if( file_contents_opt != std::nullopt )
