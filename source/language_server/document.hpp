@@ -33,14 +33,14 @@ public:
 		IVfs::Path path,
 		DocumentBuildOptions build_options,
 		// Shouldn't be thread-safe. Used only synchroniously to load source graph.
-		IVfs& vfs,
+		IVfsSharedPtr vfs,
 		// Must be thread-safe. Used for embedding files.
 		IVfsSharedPtr code_builder_vfs,
 		Logger& log );
 
 public: // Document text stuff.
-	void UpdateText( const DocumentRange& range, std::string_view new_text );
 	void SetText( std::string text );
+	void UpdateText( const DocumentRange& range, std::string_view new_text );
 
 	const std::string& GetCurrentText() const;
 
@@ -124,7 +124,7 @@ private:
 private:
 	const IVfs::Path path_;
 	const DocumentBuildOptions build_options_;
-	IVfs& vfs_;
+	const IVfsSharedPtr vfs_;
 	const IVfsSharedPtr code_builder_vfs_; // Must be thread-safe.
 	Logger& log_;
 

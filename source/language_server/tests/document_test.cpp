@@ -118,7 +118,7 @@ U_TEST( DocumentSetText_Test0 )
 	const auto vfs= std::make_shared<TestVfs>(documents);
 
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	U_TEST_ASSERT( document.GetCurrentText() == "" );
@@ -147,7 +147,7 @@ U_TEST( DocumentUpdateText_Test0 )
 	const auto vfs= std::make_shared<TestVfs>(documents);
 
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "auto x= 0;\nauto y= x;" );
@@ -191,7 +191,7 @@ U_TEST( DocumentRebuild_Test0 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	U_TEST_ASSERT( document.RebuildFinished() == false );
@@ -208,7 +208,7 @@ U_TEST( DocumentRebuild_Test1 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "auto x= 0;" );
@@ -236,7 +236,7 @@ U_TEST( DocumentRebuild_Test2 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "auto x= 0;" );
@@ -261,7 +261,7 @@ U_TEST( DocumentCompletion_Test0 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "auto xyz= 0;\nauto qwerty= 0;\nvar i33 xrt= 0;" );
@@ -294,7 +294,7 @@ U_TEST( DocumentCompletion_Test1 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Completion with search inside the word.
@@ -317,7 +317,7 @@ U_TEST( DocumentCompletion_Test2 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Completion is case-insensetive.
@@ -339,7 +339,7 @@ U_TEST( DocumentCompletion_Test3 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Completion returns nothing.
@@ -361,7 +361,7 @@ U_TEST( DocumentCompletion_Test4 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( " auto var3= 0; namespace NN{ auto var4= 0; } auto var5= 0;" );
@@ -397,7 +397,7 @@ U_TEST( DocumentCompletion_Test5 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "struct S{ i32 field; fn Foo(); } fn S::Foo(){}" );
@@ -419,7 +419,7 @@ U_TEST( DocumentCompletion_Test6 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( " struct S{ type GHMQ= i32; fn Foo(); i32 lol; }" );
@@ -477,7 +477,7 @@ U_TEST( DocumentCompletion_Test7 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( " namespace Abc{ auto x= 0; type Tt= f32; fn Qwerty(); enum EE{A, B, C} var i32 el= 0; }" );
@@ -510,7 +510,7 @@ U_TEST( DocumentCompletion_Test8 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( " struct S{ i32 field0; i32 field1; i32 other_field; f32 rr; type ll= bool; fn some_func(); type typef= i32; type ftype= i32; struct Inner_f{} } var S s= zero_init;" );
@@ -543,7 +543,7 @@ U_TEST( DocumentCompletion_Test9 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( " struct S{ op++(S &mut s); op()(this); op-(S& s) : S; } var S s= zero_init;" );
@@ -565,7 +565,7 @@ U_TEST( DocumentCompletion_Test10 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Completion inside function. Later defined variables and variables in outer scope are not visible.
@@ -605,7 +605,7 @@ U_TEST( DocumentCompletion_Test11 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "namespace NN{  } type CustomType= i32; fn Foo();" );
@@ -651,7 +651,7 @@ U_TEST( DocumentCompletion_Test12 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Completion inside function inside struct inside struct inside a couple of namespaces.
@@ -699,7 +699,7 @@ U_TEST( DocumentCompletion_Test13 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "fn foo(i32 mut qwerty){  }" );
@@ -720,7 +720,7 @@ U_TEST( DocumentCompletion_Test14 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( " struct S{ i32 a; i32 b; i32 wtf; fn Foo(); type T= i32; }" );
@@ -741,7 +741,7 @@ U_TEST( DocumentCompletion_Test15 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "struct S{  i32 field0; i32 field1; i32 other_field; i32 lol; }" );
@@ -762,7 +762,7 @@ U_TEST( DocumentCompletion_Test16 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Complete in complex function name.
@@ -818,7 +818,7 @@ U_TEST( DocumentCompletion_Test17 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "fn foo(){ auto mut lol= Some::A; } enum Some{ A, B, C } " );
@@ -839,7 +839,7 @@ U_TEST( DocumentCompletion_Test18 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "" );
@@ -860,7 +860,7 @@ U_TEST( DocumentCompletion_Test19 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "template</ type Qwerty /> struct Box{ }" );
@@ -881,7 +881,7 @@ U_TEST( DocumentCompletion_Test20 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "" );
@@ -902,7 +902,7 @@ U_TEST( DocumentCompletion_Test21 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "template</ type Qwerty /> struct Box {}" );
@@ -923,7 +923,7 @@ U_TEST( DocumentCompletion_Test22 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "" );
@@ -944,7 +944,7 @@ U_TEST( DocumentCompletion_Test23 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "template</ type T, T value_arg /> struct Box</ value_arg /> {}" );
@@ -968,7 +968,7 @@ U_TEST( DocumentCompletion_Test24 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "template</ type T, size_type S /> fn foo( [ T, S ]& arr_arg ) {} " );
@@ -993,7 +993,7 @@ U_TEST( DocumentCompletion_Test25 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "fn Foo() { var i32 external_variable= 0; auto f = lambda[&](){  }; }" );
@@ -1015,7 +1015,7 @@ U_TEST( DocumentCompletion_Test26 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "fn Foo() { var i32 external_variable= 0; auto f = lambda[](){}; }" );
@@ -1037,7 +1037,7 @@ U_TEST( DocumentCompletion_Test27 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "fn Foo() { var i32 external_variable= 0; auto f = lambda[](){}; }" );
@@ -1059,7 +1059,7 @@ U_TEST( DocumentCompletion_Test28 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "struct S{ i32 some; } fn Foo(){  }" );
@@ -1081,7 +1081,7 @@ U_TEST( DocumentCompletion_Test29 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "struct Some{} fn Foo(){  }" );
@@ -1103,7 +1103,7 @@ U_TEST( DocumentCompletion_Test30 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "struct S{ i32 some; } fn Foo(){  }" );
@@ -1125,7 +1125,7 @@ U_TEST( DocumentCompletion_Test31 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "static_assert(true); fn Foo(){  }" );
@@ -1147,7 +1147,7 @@ U_TEST( DocumentCompletion_Test32 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "mixin(\"\"); fn Foo(){  }" );
@@ -1169,7 +1169,7 @@ U_TEST( DocumentCompletion_Test33 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "auto spaced_string= \"   \"; mixin( \" \" );" );
@@ -1191,7 +1191,7 @@ U_TEST( DocumentCompletion_Test34 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "template</type T/> struct S{ fn Foo(this); } fn Bar( S</i32/> s ) {  } " );
@@ -1212,7 +1212,7 @@ U_TEST( DocumentSignatureHelp_Test0 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "fn bar(){} fn foo();" );
@@ -1233,7 +1233,7 @@ U_TEST( DocumentSignatureHelp_Test1 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "fn bar(){} fn foo( i32 x ); fn foo( f32 y, bool z ) : f64; fn foo( [ i32, 2 ] &mut a, tup[ f32, void ] t ) unsafe : i32 &mut;" );
@@ -1254,7 +1254,7 @@ U_TEST( DocumentSignatureHelp_Test2 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Only last component of the function name is used.
@@ -1275,7 +1275,7 @@ U_TEST( DocumentSignatureHelp_Test3 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Type names as they are writen are used - without unwrapping type aliases and calculating variable values.
@@ -1296,7 +1296,7 @@ U_TEST( DocumentSignatureHelp_Test4 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should properly suggest signature of method call.
@@ -1317,7 +1317,7 @@ U_TEST( DocumentSignatureHelp_Test5 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should properly suggest signature of method call.
@@ -1338,7 +1338,7 @@ U_TEST( DocumentSignatureHelp_Test6 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should properly suggest signature of method call.
@@ -1359,7 +1359,7 @@ U_TEST( DocumentSignatureHelp_Test7 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should properly suggest signature of static method call.
@@ -1380,7 +1380,7 @@ U_TEST( DocumentSignatureHelp_Test8 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should properly suggest call to generated constructor.
@@ -1401,7 +1401,7 @@ U_TEST( DocumentSignatureHelp_Test9 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should properly suggest call to generated destructor.
@@ -1422,7 +1422,7 @@ U_TEST( DocumentSignatureHelp_Test10 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should provide signature help for temp variable construction.
@@ -1443,7 +1443,7 @@ U_TEST( DocumentSignatureHelp_Test11 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should provide signature help for function pointer call.
@@ -1464,7 +1464,7 @@ U_TEST( DocumentSignatureHelp_Test12 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should properly suggest call to overloaded operator ().
@@ -1485,7 +1485,7 @@ U_TEST( DocumentSignatureHelp_Test13 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should provide signature help for variable construction.
@@ -1506,7 +1506,7 @@ U_TEST( DocumentSignatureHelp_Test14 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should provide signature help for ",", that is part of call operator.
@@ -1527,7 +1527,7 @@ U_TEST( DocumentSignatureHelp_Test15 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should provide signature help for"," in variable construction.
@@ -1548,7 +1548,7 @@ U_TEST( DocumentSignatureHelp_Test16 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should provide signature help for ")" and return outer function.
@@ -1569,7 +1569,7 @@ U_TEST( DocumentSignatureHelp_Test17 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should provide no signature help for ")" that terminates call operator.
@@ -1590,7 +1590,7 @@ U_TEST( DocumentSignatureHelp_Test18 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should suggest template function.
@@ -1611,7 +1611,7 @@ U_TEST( DocumentSignatureHelp_Test19 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	// Should suggest template function with explicit args.
@@ -1632,11 +1632,11 @@ U_TEST( Document_GetFileForImportPoint_Test0 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	const IVfs::Path imported_path= "/some.u";
-	Document imported_document(  path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[ imported_path ]= &imported_document;
 
 	document.SetText( "import \"some.u\" " );
@@ -1653,11 +1653,11 @@ U_TEST( Document_GetFileForImportPoint_Test1 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	const IVfs::Path imported_path= "/some_global.u";
-	Document imported_document( imported_path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document imported_document( imported_path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[ imported_path ]= &imported_document;
 
 	document.SetText( "import \"/some_global.u\" " );
@@ -1676,7 +1676,7 @@ U_TEST( Document_GetFileForImportPoint_Test2 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	document.SetText( "auto this_is_not_import= 0;" );
@@ -1694,11 +1694,11 @@ U_TEST( Document_GetFileForImportPoint_Test3 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	const IVfs::Path imported_path= "/some.u";
-	Document imported_document(  path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[ imported_path ]= &imported_document;
 
 	document.SetText( "import \"some.u\"         " );
@@ -1717,11 +1717,11 @@ U_TEST( Document_GetFileForImportPoint_Test4 )
 	DocumentsContainer documents;
 	const auto vfs= std::make_shared<TestVfs>(documents);
 	const IVfs::Path path= "/test.u";
-	Document document( path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[path]= &document;
 
 	const IVfs::Path imported_path= "/file with spaces.u";
-	Document imported_document(  path, GetTestDocumentBuildOptions(), *vfs, vfs, g_tests_logger );
+	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
 	documents[ imported_path ]= &imported_document;
 
 	// Should properly handle whitespaces in import line and in import string.
