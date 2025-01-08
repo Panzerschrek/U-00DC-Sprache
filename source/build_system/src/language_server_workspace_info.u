@@ -14,12 +14,23 @@ fn WriteLanguageServerWorkspaceInfoFile(
 	WorkspaceInfo& host_workspace,
 	ust::string_view8 build_recectory ) : bool
 {
-	// TODO - use them.
-	ust::ignore_unused( host_workspace );
-
 	var JsonValue::Array mut json_root;
 
-	foreach( &pair : target_workspace.build_targets )
+	PopulateWorkspaceDirectoryGroups( build_system_paths, target_workspace, build_recectory, json_root );
+	PopulateWorkspaceDirectoryGroups( build_system_paths, host_workspace, build_recectory, json_root );
+
+	var ust::string8 file_path= ust::concat( build_recectory, "/language_server_workspace_info.json" );
+
+	return WriteFile( logger, file_path, SerializeJsonValuePretty( move(json_root) ) );
+}
+
+fn PopulateWorkspaceDirectoryGroups(
+	BuildSystemPaths& build_system_paths,
+	WorkspaceInfo& workspace,
+	ust::string_view8 build_recectory,
+	JsonValue::Array &mut json_root )
+{
+	foreach( &pair : workspace.build_targets )
 	{
 		var BuildTargetAbsoluteName& build_target_name= pair.key();
 		var WorkspaceInfo::BuildTarget& build_target= pair.value();
@@ -46,7 +57,7 @@ fn WriteLanguageServerWorkspaceInfoFile(
 		// TODO - add directories of generated files.
 
 		auto mut includes=
-			ExtractBuildTargetIncludeDirectories( target_workspace, build_system_paths, build_target_name, build_target );
+			ExtractBuildTargetIncludeDirectories( workspace, build_system_paths, build_target_name, build_target );
 
 		if( !build_target.source_files.empty() )
 		{
@@ -74,10 +85,6 @@ fn WriteLanguageServerWorkspaceInfoFile(
 
 		json_root.push_back( move(file_group_json) );
 	}
-
-	var ust::string8 file_path= ust::concat( build_recectory, "/language_server_workspace_info.json" );
-
-	return WriteFile( logger, file_path, SerializeJsonValuePretty( move(json_root) ) );
 }
 
 } // namespace BK
