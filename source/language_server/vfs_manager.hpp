@@ -22,8 +22,6 @@ public:
 
 private:
 	Logger& log_;
-	const IVfsSharedPtr base_vfs_; // Thread-safe.
-
 	const std::vector<WorkspaceDirectoriesGroups> workspace_directories_groups_;
 };
 
