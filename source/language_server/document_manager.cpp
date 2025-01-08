@@ -2,7 +2,6 @@
 #include <llvm/TargetParser/Host.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../compilers_support_lib/prelude.hpp"
-#include "../compilers_support_lib/vfs.hpp"
 #include "document_position_utils.hpp"
 #include "options.hpp"
 #include "data_layout_stub.hpp"
@@ -16,46 +15,6 @@ namespace LangServer
 
 namespace
 {
-
-// A wrapper which prevents unsynchronized VFS access.
-// All methods are thread-safe.
-class ThreadSafeVfsWrapper final : public IVfs
-{
-public:
-	explicit ThreadSafeVfsWrapper( std::unique_ptr<IVfs> base )
-		: base_( std::move(base) )
-	{}
-
-public:
-	std::optional<FileContent> LoadFileContent( const Path& full_file_path ) override
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		return base_->LoadFileContent( full_file_path );
-	}
-
-	Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		return base_->GetFullFilePath( file_path, full_parent_file_path );
-	}
-
-	bool IsImportingFileAllowed( const Path& full_file_path ) override
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		return base_->IsImportingFileAllowed( full_file_path );
-	}
-
-	bool IsFileFromSourcesDirectory( const Path& full_file_path ) override
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		return base_->IsFileFromSourcesDirectory( full_file_path );
-	}
-
-private:
-	std::mutex mutex_;
-	const std::unique_ptr<IVfs> base_;
-};
-
 
 DocumentBuildOptions CreateBuildOptions( Logger& log )
 {
@@ -94,32 +53,6 @@ DocumentBuildOptions CreateBuildOptions( Logger& log )
 			compiler_generation );
 
 	return build_options;
-}
-
-std::vector<WorkspaceDirectoriesGroups> LoadWorkspaceDirectoriesGroups( Logger& log )
-{
-	std::vector<WorkspaceDirectoriesGroups> result;
-
-	for( const auto& build_dir : Options::build_dir )
-	{
-		auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log, build_dir );
-		if( file_contents_opt != std::nullopt )
-		{
-			log() << "Found a project description file" << std::endl;
-			auto file_parsed= ParseWorkspaceInfoFile( log, *file_contents_opt );
-			if( file_parsed != std::nullopt )
-			{
-				log() << "Successfully parsed a project description file" << std::endl;
-				result.push_back( std::move(*file_parsed) );
-			}
-			else
-			{
-				log() << "Failed to parse a project description file" << std::endl;
-			}
-		}
-	}
-
-	return result;
 }
 
 } // namespace
@@ -175,15 +108,9 @@ IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& fil
 
 DocumentManager::DocumentManager( Logger& log )
 	: log_(log)
-	// Base vfs is used also in background threads to load embedded files. So, make it thread-safe.
-	, base_vfs_(
-		std::make_unique<ThreadSafeVfsWrapper>(
-			// Tolerate missing directories in language server. It's not that bad if a directory is missing.
-			CreateVfsOverSystemFS( Options::include_dir, {}, false, true /* tolerate_errors */ ) ) )
-	// TODO - use individual VFS for different files.
 	// TODO - create different build options for different files.
 	, build_options_( CreateBuildOptions(log_) )
-	, workspace_directories_groups_( LoadWorkspaceDirectoriesGroups( log ) )
+	, vfs_manager_(log)
 	, documents_container_( std::make_shared<DocumentsContainer>() )
 {}
 
@@ -198,7 +125,7 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 
 	documents_container_->unmanaged_files.erase( uri ); // Now we manage this file.
 
-	auto base_vfs= base_vfs_; // TODO - create tweaked base vfs for each document.
+	auto base_vfs= vfs_manager_.GetVFSForDocument( uri );
 
 	// First add docuemnt into a map.
 	const auto it_bool_pair=
@@ -213,7 +140,7 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 					// This isn't ideal, because no managed files can be loaded in such cases.
 					// There is also no caching.
 					// But it is good enough, because eliminates complicated synchronization issues.
-					base_vfs,
+					std::move(base_vfs),
 					log_ ) ) );
 
 	Document& document= it_bool_pair.first->second;
