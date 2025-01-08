@@ -68,8 +68,6 @@ fn PopulateWorkspaceDirectoryGroups(
 					build_target_name.name ) );
 		}
 
-		includes.push_back( build_system_paths.ustlib_path );
-
 		if( !includes.empty() )
 		{
 			var JsonValue::Array mut includes_json;
