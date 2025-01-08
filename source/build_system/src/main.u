@@ -308,8 +308,9 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		bsi.logger_,
 		bsi.build_system_paths_,
 		target_workspace,
+		root_package_build_directory,
 		host_workspace,
-		root_package_build_directory );
+		host_packages_root_build_directory );
 
 	var ust::string8 build_graph_state_file_path= root_package_build_directory + "/build_graph.json";
 
