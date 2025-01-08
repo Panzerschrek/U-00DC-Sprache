@@ -132,19 +132,27 @@ IVfsSharedPtr VFSManager::GetVFSForDocument( const Uri& uri )
 	}
 	end_workspace_includes_search:
 
-	std::vector<std::string> include_dirs;
-	include_dirs= Options::include_dir; // Append includes from options first.
+	IncludesList includes;
+	includes= Options::include_dir; // Append includes from options first.
 
 	// TODO add ustlib path.
 	// TODO - add build system include directories.
 
 	// Append includes from workspace (if found).
-	include_dirs.insert( include_dirs.end(), workspace_includes.begin(), workspace_includes.end() );
+	includes.insert( includes.end(), workspace_includes.begin(), workspace_includes.end() );
 
-	// TODO - cache results.
-	return std::make_unique<ThreadSafeVfsWrapper>(
-		// Tolerate missing directories in language server. It's not that bad if a directory is missing.
-		CreateVfsOverSystemFS( include_dirs, {}, false, true /* tolerate_errors */ ) );
+	if( const auto it= vfs_cache_.find( includes ); it != vfs_cache_.end() )
+		return it->second;
+
+	log_() << "Create new VFS instance for document \"" << uri.ToString() << std::endl;
+
+	auto vfs=
+		std::make_shared<ThreadSafeVfsWrapper>(
+			// Tolerate missing directories in language server. It's not that bad if a directory is missing.
+			CreateVfsOverSystemFS( includes, {}, false, true /* tolerate_errors */ ) );
+
+	vfs_cache_.emplace( std::move(includes), vfs );
+	return vfs;
 }
 
 } // namespace LangServer
