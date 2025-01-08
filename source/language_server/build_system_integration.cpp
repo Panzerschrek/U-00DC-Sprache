@@ -4,6 +4,7 @@
 #include <llvm/Support/Path.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "json.hpp"
 #include "build_system_integration.hpp"
 
 namespace U
@@ -79,6 +80,56 @@ std::optional<std::string> TryLoadWorkspaceInfoFileFromBuildDirectory(
 	}
 
 	return std::nullopt;
+}
+
+std::optional<WorkspaceDirectoriesGroups> ParseWorkspaceInfoFile(
+	Logger& log, const llvm::StringRef file_contents )
+{
+	llvm::Expected<llvm::json::Value> parse_result= llvm::json::parse( file_contents );
+	if( !parse_result )
+	{
+		log() << "Failed to parse workspace info file as JSON!" << std::endl;
+		return std::nullopt;
+	}
+
+	const Json::Array* const arr= parse_result->getAsArray();
+	if( arr == nullptr )
+	{
+		log() << "JSON is not an array" << std::endl;
+		return std::nullopt;
+	}
+
+	WorkspaceDirectoriesGroups directories_groups;
+
+	for( const Json::Value& directories_group_json : *arr )
+	{
+		const Json::Object* const obj= directories_group_json.getAsObject();
+		if( obj == nullptr )
+		{
+			log() << "JSON is not an object" << std::endl;
+			continue;
+		}
+
+		WorkspaceDirectoriesGroup directories_group;
+
+		if( const auto directories_json= obj->getArray( "directories" ) )
+		{
+			for( const Json::Value& directory_json : *directories_json )
+				if( const auto s= directory_json.getAsString() )
+					directories_group.directories.push_back( s->str() );
+		}
+
+		if( const auto includes_json= obj->getArray( "includes" ) )
+		{
+			for( const Json::Value& include_json : *includes_json )
+				if( const auto s= include_json.getAsString() )
+					directories_group.includes.push_back( s->str() );
+		}
+
+		directories_groups.push_back( std::move(directories_group) );
+	}
+
+	return directories_groups;
 }
 
 } // namespace LangServer

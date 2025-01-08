@@ -167,7 +167,10 @@ DocumentManager::DocumentManager( Logger& log )
 	{
 		auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log_, build_dir );
 		if( file_contents_opt != std::nullopt )
+		{
 			log_() << "Found a project description file" << std::endl;
+			ParseWorkspaceInfoFile( log, *file_contents_opt );
+		}
 	}
 }
 
