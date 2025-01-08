@@ -57,17 +57,6 @@ private:
 	const std::unique_ptr<IVfs> base_;
 };
 
-std::unique_ptr<IVfs> CreateBaseVfs( Logger& log )
-{
-	auto vfs_with_includes= CreateVfsOverSystemFS( Options::include_dir );
-	if( vfs_with_includes != nullptr )
-		return vfs_with_includes;
-
-	log() << "Failed to create VFS." << std::endl;
-
-	// Something went wrong. Create fallback.
-	return CreateVfsOverSystemFS( {} );
-}
 
 DocumentBuildOptions CreateBuildOptions( Logger& log )
 {
@@ -162,7 +151,10 @@ IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& fil
 DocumentManager::DocumentManager( Logger& log )
 	: log_(log)
 	// Base vfs is used also in background threads to load embedded files. So, make it thread-safe.
-	, base_vfs_( std::make_unique<ThreadSafeVfsWrapper>( CreateBaseVfs( log ) ) )
+	, base_vfs_(
+		std::make_unique<ThreadSafeVfsWrapper>(
+			// Tolerate missing directories in language server. It's not that bad if a directory is missing.
+			CreateVfsOverSystemFS( Options::include_dir, {}, false, true /* tolerate_errors */ ) ) )
 	// TODO - use individual VFS for different files.
 	// TODO - create different build options for different files.
 	, build_options_( CreateBuildOptions(log_) )

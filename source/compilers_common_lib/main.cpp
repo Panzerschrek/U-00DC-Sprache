@@ -630,7 +630,8 @@ int Main( int argc, const char* argv[] )
 			CreateVfsOverSystemFS(
 				Options::include_dir,
 				Options::source_dir,
-				Options::prevent_imports_outside_given_directories );
+				Options::prevent_imports_outside_given_directories,
+				false /* tolerate_errors */ );
 		if( vfs == nullptr )
 			return 1u;
 
