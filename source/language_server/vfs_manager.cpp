@@ -103,21 +103,10 @@ IVfsSharedPtr VFSManager::GetVFSForDocument( const Uri& uri )
 	llvm::ArrayRef<std::string> workspace_includes;
 	if( const auto file_path= uri.AsFilePath() )
 	{
-		for( const auto& groups_of_a_build_directory : workspace_directories_groups_ )
+		if( const WorkspaceDirectoriesGroup* const directories_group= FindDirectoriesGroupForFile( *file_path ) )
 		{
-			for( const WorkspaceDirectoriesGroup& group : groups_of_a_build_directory.second )
-			{
-				for( const std::string& directory_path : group.directories )
-				{
-					if( IsPathWithinGivenDirectory( *file_path, directory_path ) )
-					{
-						log_() << "Found directory \"" << directory_path << "\" for document \""
-							<< *file_path << "\"." << std::endl;
-						workspace_includes= group.includes;
-						goto end_workspace_includes_search;
-					}
-				}
-			}
+			workspace_includes= directories_group->includes;
+			goto end_workspace_includes_search;
 		}
 	}
 	end_workspace_includes_search:
@@ -143,6 +132,27 @@ IVfsSharedPtr VFSManager::GetVFSForDocument( const Uri& uri )
 
 	vfs_cache_.emplace( std::move(includes), vfs );
 	return vfs;
+}
+
+const WorkspaceDirectoriesGroup* VFSManager::FindDirectoriesGroupForFile( const std::string& file_path ) const
+{
+	for( const auto& groups_of_a_build_directory : workspace_directories_groups_ )
+	{
+		for( const WorkspaceDirectoriesGroup& group : groups_of_a_build_directory.second )
+		{
+			for( const std::string& directory_path : group.directories )
+			{
+				if( IsPathWithinGivenDirectory( file_path, directory_path ) )
+				{
+					log_() << "Found directory \"" << directory_path << "\" for document \""
+						<< file_path << "\"." << std::endl;
+					return &group;
+				}
+			}
+		}
+	}
+
+	return nullptr;
 }
 
 } // namespace LangServer

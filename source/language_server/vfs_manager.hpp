@@ -21,6 +21,9 @@ public:
 	IVfsSharedPtr GetVFSForDocument( const Uri& uri );
 
 private:
+	const WorkspaceDirectoriesGroup* FindDirectoriesGroupForFile( const std::string& file_path ) const;
+
+private:
 	using WorkspaceDirectoriesGroupsByBuildDirectory= std::unordered_map<std::string, WorkspaceDirectoriesGroups>;
 	using IncludesList= std::vector<std::string>;
 
