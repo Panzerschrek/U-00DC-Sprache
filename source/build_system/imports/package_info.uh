@@ -1,0 +1,203 @@
+import "/variant.u"
+import "/vector.u"
+import "types.uh"
+
+namespace BK
+{
+
+// Information obtained for a package.
+struct PackageInfo
+{
+	// Build targets of a package. Order is irrelevant.
+	ust::vector</BuildTarget/> build_targets;
+
+	// Custom build steps.
+	ust::vector</CustomBuildStep/> custom_build_steps;
+
+	// Dependencies of this package.
+	ust::vector</PackageDependency/> package_dependencies;
+}
+
+struct BuildTarget
+{
+	// Type of the build target. This should be specified explicitly.
+	BuildTargetType target_type;
+
+	// Name of a build target.
+	// Empty names, names with some special characters and path separators aren't allowed.
+	ust::string8 name;
+
+	// List of source files of this build target. Order is irrelevant.
+	// Containts paths relative to the package source directory (where the build script is located).
+	// Paths with "." and ".." aren't allowed.
+	// Duplicates aren't allowed.
+	ust::vector</ust::string8/> source_files;
+
+	// List of generated source files of this build target. Order is irrelevant.
+	// Contains paths relative to the generated sources directory of this build target.
+	// Paths with "." and ".." aren't allowed.
+	// Duplicates aren't allowed.
+	// For each generated source file there should be a custom build step which generates it.
+	ust::vector</ust::string8/> generated_source_files;
+
+	// List of generated private header files of this build target. Order is irrelevant.
+	// Contains paths relative to the generated sources directory of this build target.
+	// Paths with "." and ".." aren't allowed.
+	// Duplicates aren't allowed.
+	// For each generated private header file there should be a custom build step which generates it.
+	// Specifying generated headers is necessary
+	// in order to perform their generation before compiling source files which use them.
+	ust::vector</ust::string8/> generated_private_header_files;
+
+	// List of generated public header files of this build target. Order is irrelevant.
+	// Contains paths relative to the generated public headers directory of this build target.
+	// Paths with "." and ".." aren't allowed.
+	// Duplicates aren't allowed.
+	// For each generated public header file there should be a custom build step which generates it.
+	// Specifying generated headers is necessary
+	// in order to perform their generation before compiling source files which use them.
+	ust::vector</ust::string8/> generated_public_header_files;
+
+	// Publuc include directories of this build target.
+	// They are used in this target and in all build targets dependent on it.
+	// Imports like
+	//    import "some_target/some_file.uh"
+	// will lead to these directories - some_file.uh will be searched within them.
+	// Paths with "." and ".." aren't allowed.
+	// Duplicates aren't allowed.
+	ust::vector</ust::string8/> public_include_directories;
+
+	// List of dependencies, which should be also dependencies of other build targets dependent on this build target.
+	ust::vector</ DependencyName /> public_dependencies;
+
+	// List of dependencies of this build target, which are used internally.
+	ust::vector</ DependencyName /> private_dependencies;
+
+	// Contains names or paths of external libraries to link, like system libraries or libraries built outside Ü built system.
+	ust::vector</ust::string8/> external_libraries;
+}
+
+enum BuildTargetType
+{
+	// Normal executable, which can be launched.
+	Executable,
+	// Ü library, which can be used by other targets.
+	Library,
+	// Native shared library, ".so" or ".dll".
+	SharedLibrary,
+	// Object file, which may be used by a native linker to link result binary file.
+	ObjectFile,
+}
+
+struct DependencyName
+{
+	// A package where dependency is located.
+	PackageName package_name;
+	// Name of dependency. Should be a name of a build target within package specified.
+	ust::string8 name;
+}
+
+// Package name - used for package dependencies and target names.
+struct PackageName
+{
+	// Marker of case where this is name relative to current package.
+	struct CurrentPackage{}
+
+	// Base of package name (where to search it).
+	ust::variant</ tup[ CurrentPackage, GlobalVersionedPackageName ] /> name_base;
+	// Path starting from base.
+	ust::string8 path;
+}
+
+// A package from global packages directory/centralized repository, with version specified.
+struct GlobalVersionedPackageName
+{
+	ust::string8 name;
+	SemanticVersion version;
+
+	op<=>( GlobalVersionedPackageName& l, GlobalVersionedPackageName& r ) : i32
+	{
+		if( l.name != r.name ) { return l.name <=> r.name; }
+		return l.version <=> r.version;
+	}
+}
+
+// Custom build step - for producing a file (or several files), possibly based on another files.
+struct CustomBuildStep
+{
+	// An external executable to run.
+	struct ExeCommand
+	{
+		// Path to the executable.
+		ust::string8 exe_path;
+		// Command line arguments.
+		ust::vector</ust::string8/> command_line;
+	}
+
+	// Run a build target executable, built for the host system.
+	struct HostBuildTargetExeCommand
+	{
+		// Name of executable build target (including package name).
+		DependencyName name;
+		// Command line arguments.
+		ust::vector</ust::string8/> command_line;
+	}
+
+	// Copy file from one place to another.
+	struct CopyCommand
+	{
+		ust::string8 destination_path;
+		ust::string8 source_path;
+	}
+
+	// Generate file with contents specified.
+	// This command is designed to generate relative small files,
+	// if result file contents is too big, prefer using external command instead.
+	struct GenerateFileCommand
+	{
+		ust::string8 destination_path;
+		// TODO - support here binary contents.
+		ust::string8 contents;
+	}
+
+	// List of full paths to input files.
+	ust::vector</ust::string8/> input_files;
+	// List of full paths to output files.
+	ust::vector</ust::string8/> output_files;
+
+	// What to execute.
+	ust::variant</ tup[ ExeCommand, HostBuildTargetExeCommand, CopyCommand, GenerateFileCommand ] /> command;
+
+	// What to display during the build.
+	ust::string8 comment;
+
+	// TODO - support dep-files.
+}
+
+// Dependency description for a package.
+struct PackageDependency
+{
+	enum RequiredSystem
+	{
+		Target,
+		Host,
+		Both,
+	}
+
+	// Which package to depend on.
+	PackageName name;
+	// How to depend on this package.
+	RequiredSystem required_system;
+
+	// Construct from package name - with required system equal to target.
+	fn conversion_constructor( PackageName mut in_name )
+		( name= move(in_name), required_system= RequiredSystem::Target )
+	{}
+
+	// Construct with both params.
+	fn constructor( PackageName mut in_name, RequiredSystem in_required_system )
+		( name= move(in_name), required_system= in_required_system )
+	{}
+}
+
+} // namespace BK

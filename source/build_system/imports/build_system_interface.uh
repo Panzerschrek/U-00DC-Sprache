@@ -1,0 +1,44 @@
+import "types.uh"
+
+namespace BK
+{
+
+// A class which provides necessary information for "GetPackageInfo" function and also contains some helper functions.
+// Use inheritance to avoid exposing build system internals to the build script.
+//
+// Also it helps to import necessary build functions into the build script shared library.
+// Otherwise it would be necessary to mark each exported from the build system executable function as "dllexport" or "visibility(default)".
+// Making all functions virtual and thus forcing call via the virtual table solves this problem.
+class BuildSystemInterface interface
+{
+	fn virtual pure GetBuildConfiguration(this) : BuildConfiguration;
+	fn virtual pure GetTargetTriple(this) : TargetTriple;
+
+	fn virtual pure LogVerbose( mut this, ust::string_view8 message );
+	fn virtual pure LogInfo( mut this, ust::string_view8 message );
+	fn virtual pure LogError( mut this, ust::string_view8 message );
+
+	// Get path to executable file of the currently-used Ü compiler.
+	fn virtual pure GetCompilerExecutablePath( this ) : ust::string8;
+
+	// Get value for given configuration option.
+	// Options are specified via a configuration file provided as build system command line option.
+	// Returns empty ust::optional if option with given name wasn't specified.
+	// Both option names and values are case-sensetive.
+	// Non-string options are not supported.
+	fn virtual pure GetConfigurationOption( this, ust::string_view8 name ) : ust::optional</ust::string8/>;
+
+	// Get absolute path to the root source directory of current package.
+	fn virtual pure GetCurrentPackageSourceDirectory( this ) : ust::string8;
+
+	// Get absolute path to the build directory of current package for current target triple and build configuration.
+	fn virtual pure GetCurrentPackageBuildDirectory( this ) : ust::string8;
+
+	// Get absolute path to the generated sources directory for a build target of current package.
+	fn virtual pure GetCurrentPackageBuildTargetGeneratedSourcesDirectory( this, ust::string_view8 build_target_name ) : ust::string8;
+
+	// Get absolute path to the generated public headers directory for a build target of current package.
+	fn virtual pure GetCurrentPackageBuildTargetGeneratedPublicHeadersDirectory( this, ust::string_view8 build_target_name ) : ust::string8;
+}
+
+} // namespace BK

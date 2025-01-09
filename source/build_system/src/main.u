@@ -423,6 +423,10 @@ fn ObtainPackageInfo(
 	}
 
 	auto mut func_raw_ptr= shared_library_opt.try_deref().LoadSymbol( bsi.logger_, entry_func_name );
+
+	// This must match what build sctipt file wrapper produces!
+	type GetPackageInfoFunctionType = fn( BuildSystemInterface &mut build_system_interface ) : ust::optional</PackageInfo/>;
+
 	// A hacky way to cast byte8 pointer to a function pointer.
 	var GetPackageInfoFunctionType mut func_ptr= zero_init;
 	unsafe( ust::memory_copy(

@@ -1,0 +1,57 @@
+import "/string.u"
+
+namespace BK
+{
+
+enum BuildConfiguration
+{
+	Debug,
+	Release,
+}
+
+struct TargetTriple
+{
+	// Components are all lowercase strings.
+	ust::string8 architecture;
+	ust::string8 vendor;
+	ust::string8 operating_system;
+	ust::string8 environment;
+}
+
+struct SemanticVersion
+{
+	u32 major;
+	u32 minor;
+	u32 patch;
+	u32 tweak;
+
+	// Construct zero version.
+	fn constructor()
+		( major= 0u, minor= 0u, patch= 0u, tweak= 0u )
+	{}
+
+	// Major and minor numbers must be specified. Other are zero by default.
+
+	fn constructor( u32 in_major, u32 in_minor )
+		( major= in_major, minor= in_minor, patch= 0u, tweak= 0u )
+	{}
+
+	fn constructor( u32 in_major, u32 in_minor, u32 in_patch )
+		( major= in_major, minor= in_minor, patch= in_patch, tweak= 0u )
+	{}
+
+	fn constructor( u32 in_major, u32 in_minor, u32 in_patch, u32 in_tweak )
+		( major= in_major, minor= in_minor, patch= in_patch, tweak= in_tweak )
+	{}
+
+	// Order compate for semantic version.
+	op<=>( SemanticVersion& l, SemanticVersion& r ) : i32
+	{
+		if( l.major != r.major ) { return l.major <=> r.major; }
+		if( l.minor != r.minor ) { return l.minor <=> r.minor; }
+		if( l.tweak != r.tweak ) { return l.tweak <=> r.tweak; }
+		return l.patch <=> r.patch;
+	}
+}
+
+} // namespace BK
