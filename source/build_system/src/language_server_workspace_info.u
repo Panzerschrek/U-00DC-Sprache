@@ -75,10 +75,23 @@ fn PopulateWorkspaceDirectoryGroups(
 			file_group_json.insert( "directories", move(directories_json) );
 		}
 
-		// TODO - add generated public includes of dependencies.
-
 		auto mut includes=
 			ExtractBuildTargetIncludeDirectories( workspace, build_system_paths, build_target_name, build_target );
+
+		// Get generated public headers of all dependencies of this build target.
+		foreach( &dependent_build_target_name :
+			build_target.public_dependencies_including_transitive.iter()
+			.chain( (build_target.private_dependencies_including_transitive_public_dependencies.iter() ) ) )
+		{
+			if( !workspace.build_targets[ dependent_build_target_name ].generated_public_header_files.empty() )
+			{
+				includes.push_back(
+					ust::concat(
+						GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, dependent_build_target_name ),
+						g_include_dir_prefix_separator,
+						dependent_build_target_name.name ) );
+			}
+		}
 
 		if( !build_target.source_files.empty() )
 		{
