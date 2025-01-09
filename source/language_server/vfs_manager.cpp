@@ -1,4 +1,5 @@
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/StringExtras.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/FileSystem.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
@@ -55,6 +56,38 @@ private:
 	const std::unique_ptr<IVfs> base_;
 };
 
+bool PathComponentsAreEqual( const llvm::StringRef l, const llvm::StringRef r )
+{
+#ifdef WIN32
+	// Handle Windows paths with forward/back-slash mess and case insensitivity.
+
+	if( l.size() != r.size() )
+		return false;
+
+	for( size_t i= 0; i < l.size(); ++i )
+	{
+		const char c_l= l[i];
+		const char c_r= r[i];
+		if( c_l == c_r )
+			continue; // Same char - fine.
+
+		if( ( c_l == '/' || c_l == '\\' ) && ( c_r == '/' || c_r == '\\' ) )
+			continue; // Both separators - fine.
+
+		if( llvm::toLower( c_l ) == llvm::toLower( c_r ) )
+			continue; // ASCII lowercase values are equal - fine. TODO - handle non-ascii letters.
+
+		return false; // Different chars.
+	}
+
+	return true;
+
+#else
+	// Non-Windows paths - just compare them.
+	return l == r;
+#endif
+}
+
 bool IsPathWithinGivenDirectory( const llvm::StringRef path, const llvm::StringRef directory_path )
 {
 	auto given_path_it= llvm::sys::path::begin(path);
@@ -64,7 +97,7 @@ bool IsPathWithinGivenDirectory( const llvm::StringRef path, const llvm::StringR
 	const auto directory_path_it_end= llvm::sys::path::end(directory_path);
 	while( directory_path_it != directory_path_it_end && given_path_it != given_path_it_end )
 	{
-		if( *given_path_it != *directory_path_it )
+		if( !PathComponentsAreEqual( *given_path_it, *directory_path_it ) )
 			break;
 		++given_path_it;
 		++directory_path_it;
