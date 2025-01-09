@@ -159,6 +159,10 @@ IVfsSharedPtr VFSManager::GetVFSForDocument( const Uri& uri )
 	// Append includes from workspace (if found).
 	includes.insert( includes.end(), workspace_includes.begin(), workspace_includes.end() );
 
+	// Normalize list of includes. Assume order actually doesn't matter.
+	std::sort( includes.begin(), includes.end() );
+	includes.erase( std::unique( includes.begin(), includes.end() ), includes.end() );
+
 	if( const auto it= vfs_cache_.find( includes ); it != vfs_cache_.end() )
 		return it->second;
 
