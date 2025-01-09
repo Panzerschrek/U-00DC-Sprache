@@ -139,11 +139,11 @@ Language server:
 	performing completion or signature help. It's wrong, since new syntax elements are constructed for completion or
 	signature help and accessing source graph based on source location from new syntax elements is incorrect.
 *) Reduce memory usage - avoid building unnecessary code, clear unused internal data structures, make mangled names shorter, etc.
-*) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
+*) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened
+	documents. Maybe obtain list of workspace files from build system and scan them.
 *) Go to definition - pick definition of function, defined in other document (that is not imported directly)
 *) Declarations search
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
-*) A way to provide configuration (import directories, other compilation options)
 *) SignatureHelp - filter suggested functions based on already provided arguments
 *) SignatureHelp - return ranges of arguments and active range
 *) Improve "go to definition" for templates - fix some cases where templates processing doesn't work
@@ -156,7 +156,12 @@ Language server:
 *) Links between errors for template/macro errors
 *) More unit-tests
 *) Create TargetMachine to obtain proper data layout
-*) Support interaction with build system - obtain list of source files and their compilation options from it
+*) Support different compilation options (target triple, optimization level, debug flag, etc.) for different documents -
+	obtain this information from the build system
+*) Detect changes in workspace info files and reload them properly
+*) If necessary run build system executable in some temp directory to obtain workspace information
+*) Hardcode paths to includes like "ustlib" and includes of the build system, using path relative to the language server
+	executable (assuming default installation)
 
 CPP Header converter:
 *) White list of converted symbols
