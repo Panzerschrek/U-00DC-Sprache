@@ -4,7 +4,7 @@ import "package_transformation.uh"
 namespace BK
 {
 
-// Write a file with workspace inforation needed for Ü language server.
+// Write a file with workspace information needed for Ü language server.
 // Returns true on success.
 fn WriteLanguageServerWorkspaceInfoFile(
 	Logger &mut logger,

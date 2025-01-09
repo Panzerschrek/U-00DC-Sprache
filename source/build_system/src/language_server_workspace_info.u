@@ -4,6 +4,10 @@ import "json/serialization.uh"
 import "language_server_workspace_info.uh"
 import "path.uh"
 
+//
+// If code in this file is changed, corresponding code in the Language Server should be changed too!
+//
+
 namespace BK
 {
 
@@ -110,20 +114,12 @@ fn PopulateWorkspaceDirectoryGroups(
 		}
 		if( !generated_public_headers_dir.empty() )
 		{
-			// Add also generated publicheaders directory to list of includes.
+			// Add also generated publi cheaders directory to list of includes.
 			includes.push_back(
 				ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, build_target_name.name ) );
 		}
 
-		if( !includes.empty() )
-		{
-			var JsonValue::Array mut includes_json;
-			foreach( &inc : includes )
-			{
-				includes_json.push_back( inc );
-			}
-			file_group_json.insert( "includes", move(includes_json) );
-		}
+		file_group_json.insert( "includes", includes.iter().collect</ JsonValue::Array />() );
 
 		json_root.push_back( move(file_group_json) );
 	}

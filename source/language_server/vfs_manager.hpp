@@ -22,6 +22,8 @@ public:
 
 private:
 	const WorkspaceDirectoriesGroup* FindDirectoriesGroupForFile( const std::string& file_path ) const;
+
+	// Search for a default build directory for given file and try loading worksapce info file from such a directory.
 	void TryLoadDirectoriesGroupForFile( const std::string& file_path );
 
 private:

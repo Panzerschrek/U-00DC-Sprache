@@ -60,7 +60,7 @@ DocumentBuildOptions CreateBuildOptions( Logger& log )
 DocumentManager::DocumentManagerVfs::DocumentManagerVfs(
 	Logger& log,
 	IVfsSharedPtr base_vfs,
-	std::shared_ptr<DocumentsContainer> documents_container )
+	DocumentsContainerPtr documents_container )
 	: log_( log )
 	, base_vfs_( std::move(base_vfs) )
 	, documents_container_( std::move(documents_container) )

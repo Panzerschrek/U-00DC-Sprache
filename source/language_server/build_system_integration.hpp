@@ -1,6 +1,5 @@
 #pragma once
 #include <optional>
-#include <string>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/Twine.h>
@@ -18,7 +17,9 @@ std::optional<std::string> TryLoadWorkspaceInfoFileFromBuildDirectory( Logger& l
 
 struct WorkspaceDirectoriesGroup
 {
+	// List of directories with source/header files.
 	std::vector<std::string> directories;
+	// List of includes applied to files within directories listed above.
 	std::vector<std::string> includes;
 };
 

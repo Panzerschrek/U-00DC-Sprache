@@ -7,6 +7,10 @@
 #include "json.hpp"
 #include "build_system_integration.hpp"
 
+//
+// If code in this file is changed, corresponding code in the Language Server should be changed too!
+//
+
 namespace U
 {
 

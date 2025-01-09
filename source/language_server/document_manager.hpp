@@ -65,6 +65,9 @@ private:
 		std::map<Uri, std::optional<UnmanagedFile>> unmanaged_files;
 	};
 
+	// Store documents in a shared_ptr to allow "DocumentManagerVfs" accessing them via copy of this shared_ptr.
+	using DocumentsContainerPtr= std::shared_ptr<DocumentsContainer>;
+
 	// VFS wrapper, that allows to read managed documents and also caches unmanaged files reads.
 	// Use this to load source graph for documents.
 	// It is not so efficient, because full lexical and synax analysis for all imports is performed for a document.
@@ -76,7 +79,7 @@ private:
 		DocumentManagerVfs(
 			Logger& log,
 			IVfsSharedPtr base_vfs,
-			std::shared_ptr<DocumentsContainer> documents_container );
+			DocumentsContainerPtr documents_container );
 
 		std::optional<IVfs::FileContent> LoadFileContent( const Path& full_file_path ) override;
 
@@ -98,8 +101,8 @@ private:
 
 	private:
 		Logger& log_;
-		const IVfsSharedPtr base_vfs_; // Thread-safe.
-		const std::shared_ptr<DocumentsContainer> documents_container_;
+		const IVfsSharedPtr base_vfs_;
+		const DocumentsContainerPtr documents_container_;
 	};
 
 private:
@@ -108,8 +111,7 @@ private:
 
 	VFSManager vfs_manager_;
 
-	// Store documents in a shared_ptr to allow "DocumentManagerVfs" accessing them via copy of this shared_ptr.
-	const std::shared_ptr<DocumentsContainer> documents_container_;
+	const DocumentsContainerPtr documents_container_;
 
 	DiagnosticsBySourceDocument all_diagnostics_;
 	bool diagnostics_updated_= true;

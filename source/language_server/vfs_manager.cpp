@@ -1,7 +1,7 @@
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/StringExtras.h>
-#include <llvm/Support/Path.h>
 #include <llvm/Support/FileSystem.h>
+#include <llvm/Support/Path.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../compilers_support_lib/vfs.hpp"
@@ -111,6 +111,7 @@ bool IsPathWithinGivenDirectory( const llvm::StringRef path, const llvm::StringR
 VFSManager::VFSManager( Logger& log )
 	: log_(log)
 {
+	// Load workspace info files from build directories provided via command line options.
 	for( const auto& build_dir : Options::build_dir )
 	{
 		const auto file_contents_opt= TryLoadWorkspaceInfoFileFromBuildDirectory( log, build_dir );
