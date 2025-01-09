@@ -254,6 +254,9 @@ class BuildSystemInterface interface
 	fn virtual pure LogInfo( mut this, ust::string_view8 message );
 	fn virtual pure LogError( mut this, ust::string_view8 message );
 
+	// Get path to executable file of the currently-used Ü compiler.
+	fn virtual pure GetCompilerExecutablePath( this ) : ust::string8;
+
 	// Get value for given configuration option.
 	// Options are specified via a configuration file provided as build system command line option.
 	// Returns empty ust::optional if option with given name wasn't specified.

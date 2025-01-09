@@ -1496,6 +1496,11 @@ public: // BuildSystemInterface
 		logger_.LogError( message );
 	}
 
+	fn virtual final GetCompilerExecutablePath( this ) : ust::string8
+	{
+		return build_system_paths_.compiler_executable_path;
+	}
+
 	fn virtual final GetConfigurationOption( this, ust::string_view8 name ) : ust::optional</ust::string8/>
 	{
 		if_var( &option_value : configuration_options_.find(name) )
