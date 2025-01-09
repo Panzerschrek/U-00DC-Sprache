@@ -125,7 +125,7 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 
 	documents_container_->unmanaged_files.erase( uri ); // Now we manage this file.
 
-	auto base_vfs= vfs_manager_.GetVFSForDocument( uri );
+	const auto base_vfs= vfs_manager_.GetVFSForDocument( uri );
 
 	// First add docuemnt into a map.
 	const auto it_bool_pair=
@@ -140,7 +140,7 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 					// This isn't ideal, because no managed files can be loaded in such cases.
 					// There is also no caching.
 					// But it is good enough, because eliminates complicated synchronization issues.
-					std::move(base_vfs),
+					base_vfs,
 					log_ ) ) );
 
 	Document& document= it_bool_pair.first->second;
