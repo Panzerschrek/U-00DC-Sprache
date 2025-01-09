@@ -1,0 +1,128 @@
+import "filesystem.uh"
+import "include_directories.uh"
+import "json/serialization.uh"
+import "language_server_workspace_info.uh"
+import "path.uh"
+
+//
+// If code in this file is changed, corresponding code in the Language Server should be changed too!
+//
+
+namespace BK
+{
+
+fn WriteLanguageServerWorkspaceInfoFile(
+	Logger &mut logger,
+	BuildSystemPaths& build_system_paths,
+	WorkspaceInfo& target_workspace,
+	ust::string_view8 root_package_build_directory,
+	WorkspaceInfo& host_workspace,
+	ust::string_view8 host_packages_root_build_directory ) : bool
+{
+	var JsonValue::Array mut json_root;
+
+	PopulateWorkspaceDirectoryGroups( build_system_paths, target_workspace, root_package_build_directory, json_root );
+	PopulateWorkspaceDirectoryGroups( build_system_paths, host_workspace, host_packages_root_build_directory, json_root );
+
+	var ust::string8 file_path= ust::concat( root_package_build_directory, "/language_server_workspace_info.json" );
+
+	return WriteFile( logger, file_path, SerializeJsonValuePretty( move(json_root) ) );
+}
+
+fn PopulateWorkspaceDirectoryGroups(
+	BuildSystemPaths& build_system_paths,
+	WorkspaceInfo& workspace,
+	ust::string_view8 root_package_build_directory,
+	JsonValue::Array &mut json_root )
+{
+	foreach( &pair : workspace.build_targets )
+	{
+		var BuildTargetAbsoluteName& build_target_name= pair.key();
+		var WorkspaceInfo::BuildTarget& build_target= pair.value();
+
+		var ust::string8 package_source_directory=
+			GetPackageSourceDirectory( build_system_paths, build_target_name.package_name );
+
+		var JsonValue::Object mut file_group_json;
+
+		var ust::string8 generated_sources_dir=
+			( ( build_target.generated_source_files.empty() && build_target.generated_private_header_files.empty() )
+				? ust::string8()
+				: GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, build_target_name ) );
+
+		var ust::string8 generated_public_headers_dir=
+			( ( build_target.generated_public_header_files.empty() )
+				? ust::string8()
+				: GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, build_target_name ) );
+
+		// List sources directory and public include directories.
+		// Doing so we ensure that each file within these directories will be treatet properly (with includes specified).
+		{
+			var JsonValue::Array mut directories_json;
+
+			directories_json.push_back( NormalizePath( ust::concat( package_source_directory, "/", build_target.sources_directory ) ) );
+
+			if( !generated_sources_dir.empty() )
+			{
+				directories_json.push_back( generated_sources_dir );
+			}
+
+			if( !generated_public_headers_dir.empty() )
+			{
+				directories_json.push_back( generated_public_headers_dir );
+			}
+
+			foreach( &directory : build_target.public_include_directories )
+			{
+				directories_json.push_back( NormalizePath( ust::concat( package_source_directory, "/", directory ) ) );
+			}
+			file_group_json.insert( "directories", move(directories_json) );
+		}
+
+		auto mut includes=
+			ExtractBuildTargetIncludeDirectories( workspace, build_system_paths, build_target_name, build_target );
+
+		// Get generated public headers of all dependencies of this build target.
+		foreach( &dependent_build_target_name :
+			build_target.public_dependencies_including_transitive.iter()
+			.chain( (build_target.private_dependencies_including_transitive_public_dependencies.iter() ) ) )
+		{
+			if( !workspace.build_targets[ dependent_build_target_name ].generated_public_header_files.empty() )
+			{
+				includes.push_back(
+					ust::concat(
+						GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, dependent_build_target_name ),
+						g_include_dir_prefix_separator,
+						dependent_build_target_name.name ) );
+			}
+		}
+
+		if( !build_target.source_files.empty() )
+		{
+			// Add also sources directory to list of includes.
+			includes.push_back(
+				ust::concat(
+					NormalizePath( ust::concat( package_source_directory, "/", build_target.sources_directory ) ),
+					g_include_dir_prefix_separator,
+					build_target_name.name ) );
+		}
+		if( !generated_sources_dir.empty() )
+		{
+			// Add also generated sources/private headers directory to list of includes.
+			includes.push_back(
+				ust::concat( generated_sources_dir, g_include_dir_prefix_separator, build_target_name.name ) );
+		}
+		if( !generated_public_headers_dir.empty() )
+		{
+			// Add also generated publi cheaders directory to list of includes.
+			includes.push_back(
+				ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, build_target_name.name ) );
+		}
+
+		file_group_json.insert( "includes", includes.iter().collect</ JsonValue::Array />() );
+
+		json_root.push_back( move(file_group_json) );
+	}
+}
+
+} // namespace BK

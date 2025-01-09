@@ -151,12 +151,12 @@ Synt::MacrosByContextMap TakeMacrosFromImports( const SourceGraph& source_graph 
 Document::Document(
 	IVfs::Path path,
 	DocumentBuildOptions build_options,
-	IVfs& vfs,
+	IVfsSharedPtr vfs,
 	IVfsSharedPtr code_builder_vfs, // Must be thread-safe. Used for embedding files.
 	Logger& log )
 	: path_(std::move(path))
 	, build_options_(std::move(build_options))
-	, vfs_(vfs)
+	, vfs_(std::move(vfs))
 	, code_builder_vfs_(std::move(code_builder_vfs))
 	, log_(log)
 {
@@ -332,7 +332,7 @@ std::optional<Uri> Document::GetFileForImportPoint( const DocumentPosition& posi
 	if( str == std::nullopt )
 		return std::nullopt;
 
-	const IVfs::Path path= vfs_.GetFullFilePath( *str, path_ );
+	const IVfs::Path path= vfs_->GetFullFilePath( *str, path_ );
 	if( path.empty() )
 		return std::nullopt;
 
@@ -450,7 +450,7 @@ Symbols Document::GetSymbols()
 
 	// Backup for cases when document is not compiled yet.
 	// Since first document build may be delayed we need to provide symbols just after document was opened.
-	const SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
+	const SourceGraph source_graph= LoadSourceGraph( *vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
 
 	if( source_graph.nodes_storage.empty() )
 		return {};
@@ -798,7 +798,7 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 
 	U_ASSERT( !in_rebuild_call_ );
 	in_rebuild_call_= true;
-	SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
+	SourceGraph source_graph= LoadSourceGraph( *vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
 	in_rebuild_call_= false;
 
 	if( !source_graph.errors.empty() )

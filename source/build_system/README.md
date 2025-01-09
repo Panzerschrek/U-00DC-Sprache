@@ -54,6 +54,7 @@ For now following features are implemented:
 * Unification of common dependencies on build targets of global versioned packages (where it's necessary) - to ensure no build target depends directly or indirectly on more than one version of some another build target.
 * Generated sources and headers
 * Host package dependencies - for building build tools
+* Language server interaction (provide workspace information for language server)
 
 
 ### Caveats

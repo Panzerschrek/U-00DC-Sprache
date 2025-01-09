@@ -182,7 +182,8 @@ private:
 std::unique_ptr<IVfs> CreateVfsOverSystemFS(
 	const llvm::ArrayRef<std::string> include_dirs,
 	const llvm::ArrayRef<std::string> source_dirs,
-	const bool prevent_imports_outside_given_directories )
+	const bool prevent_imports_outside_given_directories,
+	const bool tolerate_errors )
 {
 	const char* const separator= "::";
 	const size_t separator_size= std::strlen( separator );
@@ -246,7 +247,7 @@ std::unique_ptr<IVfs> CreateVfsOverSystemFS(
 		result_include_dirs.push_back( PrefixedIncludeDir{ fs_path( llvm::StringRef(vfs_mount_path) ), std::move(dir_path) } );
 	}
 
-	if( !all_ok )
+	if( !all_ok && !tolerate_errors )
 		return nullptr;
 
 	std::vector<fs_path> source_dirs_normalized;

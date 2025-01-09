@@ -2,7 +2,6 @@
 #include <llvm/TargetParser/Host.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../compilers_support_lib/prelude.hpp"
-#include "../compilers_support_lib/vfs.hpp"
 #include "document_position_utils.hpp"
 #include "options.hpp"
 #include "data_layout_stub.hpp"
@@ -16,57 +15,6 @@ namespace LangServer
 
 namespace
 {
-
-// A wrapper which prevents unsynchronized VFS access.
-// All methods are thread-safe.
-class ThreadSafeVfsWrapper final : public IVfs
-{
-public:
-	explicit ThreadSafeVfsWrapper( std::unique_ptr<IVfs> base )
-		: base_( std::move(base) )
-	{}
-
-public:
-	std::optional<FileContent> LoadFileContent( const Path& full_file_path ) override
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		return base_->LoadFileContent( full_file_path );
-	}
-
-	Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		return base_->GetFullFilePath( file_path, full_parent_file_path );
-	}
-
-	bool IsImportingFileAllowed( const Path& full_file_path ) override
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		return base_->IsImportingFileAllowed( full_file_path );
-	}
-
-	bool IsFileFromSourcesDirectory( const Path& full_file_path ) override
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		return base_->IsFileFromSourcesDirectory( full_file_path );
-	}
-
-private:
-	std::mutex mutex_;
-	const std::unique_ptr<IVfs> base_;
-};
-
-std::unique_ptr<IVfs> CreateBaseVfs( Logger& log )
-{
-	auto vfs_with_includes= CreateVfsOverSystemFS( Options::include_dir );
-	if( vfs_with_includes != nullptr )
-		return vfs_with_includes;
-
-	log() << "Failed to create VFS." << std::endl;
-
-	// Something went wrong. Create fallback.
-	return CreateVfsOverSystemFS( {} );
-}
 
 DocumentBuildOptions CreateBuildOptions( Logger& log )
 {
@@ -109,8 +57,13 @@ DocumentBuildOptions CreateBuildOptions( Logger& log )
 
 } // namespace
 
-DocumentManager::DocumentManagerVfs::DocumentManagerVfs( DocumentManager& document_manager )
-	: document_manager_(document_manager)
+DocumentManager::DocumentManagerVfs::DocumentManagerVfs(
+	Logger& log,
+	IVfsSharedPtr base_vfs,
+	DocumentsContainerPtr documents_container )
+	: log_( log )
+	, base_vfs_( std::move(base_vfs) )
+	, documents_container_( std::move(documents_container) )
 {
 }
 
@@ -118,9 +71,9 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 {
 	const Uri file_uri= Uri::FromFilePath( full_file_path );
 
-	if( const auto it= document_manager_.documents_.find( file_uri ); it != document_manager_.documents_.end() )
+	if( const auto it= documents_container_->documents.find( file_uri ); it != documents_container_->documents.end() )
 		return it->second.GetTextForCompilation();
-	if( const auto it= document_manager_.unmanaged_files_.find( file_uri ); it != document_manager_.unmanaged_files_.end() )
+	if( const auto it= documents_container_->unmanaged_files.find( file_uri ); it != documents_container_->unmanaged_files.end() )
 	{
 		// TODO - detect changes in unmanaged files and reload them if it is necessary.
 		if( it->second == std::nullopt )
@@ -129,15 +82,15 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 	}
 
 	// Load unmanaged file.
-	document_manager_.log_() << "Load unmanaged file " << full_file_path << std::endl;
+	log_() << "Load unmanaged file " << full_file_path << std::endl;
 
-	std::optional<UnmanagedFile>& unmanaged_file= document_manager_.unmanaged_files_[file_uri];
+	std::optional<UnmanagedFile>& unmanaged_file= documents_container_->unmanaged_files[file_uri];
 
-	std::optional<IVfs::FileContent> content= document_manager_.base_vfs_->LoadFileContent( full_file_path );
+	std::optional<IVfs::FileContent> content= base_vfs_->LoadFileContent( full_file_path );
 
 	if( content == std::nullopt )
 	{
-		document_manager_.log_() << "Failed to load unmanaged file " << full_file_path << std::endl;
+		log_() << "Failed to load unmanaged file " << full_file_path << std::endl;
 		return std::nullopt;
 	}
 
@@ -150,17 +103,15 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 
 IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& file_path, const Path& full_parent_file_path )
 {
-	return document_manager_.base_vfs_->GetFullFilePath( file_path, full_parent_file_path );
+	return base_vfs_->GetFullFilePath( file_path, full_parent_file_path );
 }
 
 DocumentManager::DocumentManager( Logger& log )
 	: log_(log)
-	// Base vfs is used also in background threads to load embedded files. So, make it thread-safe.
-	, base_vfs_( std::make_unique<ThreadSafeVfsWrapper>( CreateBaseVfs( log ) ) )
-	// TODO - use individual VFS for different files.
-	, vfs_( *this )
 	// TODO - create different build options for different files.
 	, build_options_( CreateBuildOptions(log_) )
+	, vfs_manager_(log)
+	, documents_container_( std::make_shared<DocumentsContainer>() )
 {}
 
 Document* DocumentManager::Open( const Uri& uri, std::string text )
@@ -172,22 +123,24 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 		return nullptr;
 	}
 
-	unmanaged_files_.erase( uri ); // Now we manage this file.
+	documents_container_->unmanaged_files.erase( uri ); // Now we manage this file.
+
+	const auto base_vfs= vfs_manager_.GetVFSForDocument( uri );
 
 	// First add docuemnt into a map.
 	const auto it_bool_pair=
-		documents_.insert(
+		documents_container_->documents.insert(
 			std::make_pair(
 				uri,
 				Document(
 					std::move( *file_path ),
 					build_options_,
-					vfs_,
+					std::make_shared<DocumentManagerVfs>( log_, base_vfs, documents_container_ ),
 					// Pass base VFS for CodeBuilder VFS, because we require here thread-safe VFS class instance.
 					// This isn't ideal, because no managed files can be loaded in such cases.
 					// There is also no caching.
 					// But it is good enough, because eliminates complicated synchronization issues.
-					base_vfs_,
+					base_vfs,
 					log_ ) ) );
 
 	Document& document= it_bool_pair.first->second;
@@ -200,22 +153,22 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 
 Document* DocumentManager::GetDocument( const Uri& uri )
 {
-	const auto it= documents_.find( uri );
-	if( it == documents_.end() )
+	const auto it= documents_container_->documents.find( uri );
+	if( it == documents_container_->documents.end() )
 		return nullptr;
 	return &it->second;
 }
 
 void DocumentManager::Close( const Uri& uri )
 {
-	documents_.erase( uri );
+	documents_container_->documents.erase( uri );
 	all_diagnostics_.erase( uri );
 }
 
 DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool& thread_pool )
 {
 	// Check for finished async rebuilds of documents.
-	for( auto& document_pair : documents_ )
+	for( auto& document_pair : documents_container_->documents )
 	{
 		const Uri& uri= document_pair.first;
 		Document& document= document_pair.second;
@@ -226,7 +179,7 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool
 			// Notify other documents about change in order to trigger rebuilding of dependent documents.
 			if( const auto file_path= uri.AsFilePath() )
 			{
-				for( auto& other_document_pair : documents_ )
+				for( auto& other_document_pair : documents_container_->documents )
 					other_document_pair.second.OnPossibleDependentFileChanged( *file_path );
 			}
 
@@ -240,7 +193,7 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool
 	const auto current_time= DocumentClock::now();
 
 	// Start documents rebuilding (if necessary).
-	for( auto& document_pair : documents_ )
+	for( auto& document_pair : documents_container_->documents )
 	{
 		Document& document= document_pair.second;
 		if( document.RebuildRequired() )
@@ -255,7 +208,7 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool
 	// Calculate minimal time to next document rebuild.
 	// Start with reasonably great value.
 	DocumentClock::duration wait_time= std::chrono::duration_cast<DocumentClock::duration>( std::chrono::seconds(5) );
-	for( auto& document_pair : documents_ )
+	for( auto& document_pair : documents_container_->documents )
 	{
 		Document& document= document_pair.second;
 		if( document.RebuildIsRunning() )
@@ -292,8 +245,8 @@ const DiagnosticsBySourceDocument& DocumentManager::GetDiagnostics() const
 
 std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const PositionInDocument& position )
 {
-	const auto it= documents_.find( position.uri );
-	if( it == documents_.end() )
+	const auto it= documents_container_->documents.find( position.uri );
+	if( it == documents_container_->documents.end() )
 	{
 		log_() << "Can't find document" << position.uri.ToString() << std::endl;
 		return std::nullopt;
@@ -312,8 +265,8 @@ std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const Positi
 
 std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const PositionInDocument& position )
 {
-	const auto it= documents_.find( position.uri );
-	if( it == documents_.end() )
+	const auto it= documents_container_->documents.find( position.uri );
+	if( it == documents_container_->documents.end() )
 	{
 		log_() << "Can't find document" << position.uri.ToString() << std::endl;
 		return {};
@@ -324,8 +277,8 @@ std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const Positio
 
 std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionInDocument& position )
 {
-	const auto it= documents_.find( position.uri );
-	if( it == documents_.end() )
+	const auto it= documents_container_->documents.find( position.uri );
+	if( it == documents_container_->documents.end() )
 	{
 		log_() << "Can't find document" << position.uri.ToString() << std::endl;
 		return {};
@@ -343,8 +296,8 @@ std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionI
 
 Symbols DocumentManager::GetSymbols( const Uri& uri )
 {
-	const auto it= documents_.find( uri );
-	if( it == documents_.end() )
+	const auto it= documents_container_->documents.find( uri );
+	if( it == documents_container_->documents.end() )
 	{
 		log_() << "Can't find document" << uri.ToString() << std::endl;
 		return {};
@@ -355,8 +308,8 @@ Symbols DocumentManager::GetSymbols( const Uri& uri )
 
 std::vector<CompletionItem> DocumentManager::Complete( const PositionInDocument& position )
 {
-	const auto it= documents_.find( position.uri );
-	if( it == documents_.end() )
+	const auto it= documents_container_->documents.find( position.uri );
+	if( it == documents_container_->documents.end() )
 	{
 		log_() << "Can't find document" << position.uri.ToString() << std::endl;
 		return {};
@@ -367,8 +320,8 @@ std::vector<CompletionItem> DocumentManager::Complete( const PositionInDocument&
 
 std::vector<CodeBuilder::SignatureHelpItem> DocumentManager::GetSignatureHelp( const PositionInDocument& position )
 {
-	const auto it= documents_.find( position.uri );
-	if( it == documents_.end() )
+	const auto it= documents_container_->documents.find( position.uri );
+	if( it == documents_container_->documents.end() )
 	{
 		log_() << "Can't find document" << position.uri.ToString() << std::endl;
 		return {};
@@ -392,10 +345,10 @@ RangeInDocument DocumentManager::GetDocumentIdentifierRangeOrDummy( const SrcLoc
 
 std::optional<DocumentRange> DocumentManager::GetDocumentIdentifierRange( const SrcLocInDocument& document_src_loc ) const
 {
-	if( const auto it= documents_.find( document_src_loc.uri ); it != documents_.end() )
+	if( const auto it= documents_container_->documents.find( document_src_loc.uri ); it != documents_container_->documents.end() )
 		return it->second.GetIdentifierRange( document_src_loc.src_loc );
 
-	if( const auto it= unmanaged_files_.find( document_src_loc.uri ); it != unmanaged_files_.end() )
+	if( const auto it= documents_container_->unmanaged_files.find( document_src_loc.uri ); it != documents_container_->unmanaged_files.end() )
 	{
 		if( it->second != std::nullopt )
 		{

@@ -6,7 +6,9 @@ import "build_system_paths.uh"
 import "configuration_options.uh"
 import "entry.uh"
 import "filesystem.uh"
+import "include_directories.uh"
 import "init_command.uh"
+import "language_server_workspace_info.uh"
 import "make_dep_file.uh"
 import "options.uh"
 import "package_transformation.uh"
@@ -299,6 +301,16 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 	{
 		return -1;
 	}
+
+	// Write a helper file to be used by Ü language server.
+	// Do not fail the build if failed to write it.
+	WriteLanguageServerWorkspaceInfoFile(
+		bsi.logger_,
+		bsi.build_system_paths_,
+		target_workspace,
+		root_package_build_directory,
+		host_workspace,
+		host_packages_root_build_directory );
 
 	var ust::string8 build_graph_state_file_path= root_package_build_directory + "/build_graph.json";
 
@@ -813,28 +825,8 @@ fn CreatePackageTargetBuildGraphNodes(
 		GetBuildTargetBuildFilesDirectory( root_package_build_directory, target_name );
 
 	// Retrieve include directories.
-	var ust::vector</ust::string8/> mut include_directories_prefixed;
-
-	// Own include directories.
-	ExtractDependenciesIncludeDirectories(
-		workspace,
-		build_system_paths,
-		ust::single_element_array_view( target_name ),
-		include_directories_prefixed );
-
-	// Include directories of all public dependencies.
-	ExtractDependenciesIncludeDirectories(
-		workspace,
-		build_system_paths,
-		target.public_dependencies_including_transitive,
-		include_directories_prefixed );
-
-	// Include directories of private dependencies.
-	ExtractDependenciesIncludeDirectories(
-		workspace,
-		build_system_paths,
-		target.private_dependencies_including_transitive_public_dependencies,
-		include_directories_prefixed );
+	var ust::vector</ust::string8/> mut include_directories_prefixed=
+		ExtractBuildTargetIncludeDirectories( workspace, build_system_paths, target_name, target );
 
 	var ust::string8 sources_dir=
 		( target.source_files.empty()
@@ -936,9 +928,6 @@ fn CreatePackageTargetBuildGraphNodes(
 		node.command_line.push_back( "-MF" );
 		node.command_line.push_back( node.dep_file );
 
-		// Provide standard library imports.
-		node.command_line.push_back( "--include-dir" );
-		node.command_line.push_back( build_system_paths.ustlib_path );
 
 		foreach( &include_dir_prefixed : include_directories_prefixed )
 		{
@@ -1357,38 +1346,6 @@ fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::
 	compiler_flags.push_back( "--target-environment" );
 	compiler_flags.push_back( target_triple.environment );
 }
-
-fn ExtractDependenciesIncludeDirectories(
-	WorkspaceInfo& workspace,
-	BuildSystemPaths& paths,
-	ust::array_view_imut</BuildTargetAbsoluteName/> dependencies,
-	ust::vector</ust::string8/> &mut include_directories_prefixed )
-{
-	foreach( &build_target_name : dependencies )
-	{
-		foreach( &public_include_directory : workspace.build_targets[ build_target_name ].public_include_directories )
-		{
-			// Prefix this directory with target name.
-			// So, using
-			//    import "some_target/some_file.uh"
-			// will work.
-			// Package path isn't used here, so,
-			// it should be ensured prior to this code that a build target has dependencies with unique names.
-
-			var ust::string8 mut path= GetPackageSourceDirectory( paths, build_target_name.package_name );
-			path+= "/";
-			path+= public_include_directory;
-			path= NormalizePath( path );
-
-			path+= g_include_dir_prefix_separator;
-			path+= build_target_name.name;
-
-			include_directories_prefixed.push_back( move(path) );
-		}
-	}
-}
-
-auto constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
 
 fn CreateCustomBuildStepBuildGraphNodes(
 	TargetTriple& host_target_triple,

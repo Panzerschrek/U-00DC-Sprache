@@ -29,6 +29,14 @@ inline cl::opt<uint32_t> num_threads(
 	cl::Optional,
 	cl::cat(options_category) );
 
+inline cl::list<std::string> build_dir(
+	"build-dir",
+	cl::Prefix,
+	cl::desc("Add a build directory for searching a build system-created project description file."),
+	cl::value_desc("dir"),
+	cl::ZeroOrMore,
+	cl::cat(options_category));
+
 // Duplicate some compiler options.
 // TODO - avoid this and use common header instead.
 

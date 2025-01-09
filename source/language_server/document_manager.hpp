@@ -1,5 +1,6 @@
 #pragma once
 #include "document.hpp"
+#include "vfs_manager.hpp"
 
 namespace U
 {
@@ -10,7 +11,11 @@ namespace LangServer
 class DocumentManager
 {
 public:
+	// Logger should live long enough!
 	explicit DocumentManager( Logger& log );
+
+	DocumentManager( const DocumentManager& )= delete;
+	DocumentManager& operator=( const DocumentManager& )= delete;
 
 	Document* Open( const Uri& uri, std::string text );
 	Document* GetDocument( const Uri& uri );
@@ -53,6 +58,16 @@ private:
 		LineToLinearPositionIndex line_to_linear_position_index;
 	};
 
+	struct DocumentsContainer
+	{
+		// TODO - use unordered map.
+		std::map<Uri, Document> documents;
+		std::map<Uri, std::optional<UnmanagedFile>> unmanaged_files;
+	};
+
+	// Store documents in a shared_ptr to allow "DocumentManagerVfs" accessing them via copy of this shared_ptr.
+	using DocumentsContainerPtr= std::shared_ptr<DocumentsContainer>;
+
 	// VFS wrapper, that allows to read managed documents and also caches unmanaged files reads.
 	// Use this to load source graph for documents.
 	// It is not so efficient, because full lexical and synax analysis for all imports is performed for a document.
@@ -60,11 +75,14 @@ private:
 	class DocumentManagerVfs final : public IVfs
 	{
 	public:
-		explicit DocumentManagerVfs( DocumentManager& document_manager );
+		// Logger should live long enough!
+		DocumentManagerVfs(
+			Logger& log,
+			IVfsSharedPtr base_vfs,
+			DocumentsContainerPtr documents_container );
 
 		std::optional<IVfs::FileContent> LoadFileContent( const Path& full_file_path ) override;
 
-		// Empty "full_parent_file_path" means root file.
 		IVfs::Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override;
 
 		virtual bool IsImportingFileAllowed( const Path& full_file_path ) override
@@ -82,17 +100,18 @@ private:
 		}
 
 	private:
-		DocumentManager& document_manager_;
+		Logger& log_;
+		const IVfsSharedPtr base_vfs_;
+		const DocumentsContainerPtr documents_container_;
 	};
 
 private:
 	Logger& log_;
-	const IVfsSharedPtr base_vfs_; // Thread-safe.
-	DocumentManagerVfs vfs_;
 	const DocumentBuildOptions build_options_;
-	// TODO - use unordered map.
-	std::map<Uri, Document> documents_;
-	std::map<Uri, std::optional<UnmanagedFile>> unmanaged_files_;
+
+	VFSManager vfs_manager_;
+
+	const DocumentsContainerPtr documents_container_;
 
 	DiagnosticsBySourceDocument all_diagnostics_;
 	bool diagnostics_updated_= true;
