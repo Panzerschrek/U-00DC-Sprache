@@ -5,3 +5,7 @@ Contents
 
    basics
    language_contents
+   standard_library
+   compiler
+   build_system
+   language_server
