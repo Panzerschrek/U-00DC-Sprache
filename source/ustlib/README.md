@@ -45,7 +45,7 @@ Other functionality:
 * Number to string conversion utilities (string_conversions.u)
 * Thread class (thread.u)
 * Various helpers for types manipulation/type checks (type_traits.u)
-* Some useful macros for effective usage of some containers (ustlin_macros.u)
+* Some useful macros for effective usage of some containers (ustlib_macros.u)
 * Volatile memory operations support (volatile.u)
 
 
