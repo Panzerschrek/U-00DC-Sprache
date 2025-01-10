@@ -106,11 +106,11 @@ IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& fil
 	return base_vfs_->GetFullFilePath( file_path, full_parent_file_path );
 }
 
-DocumentManager::DocumentManager( Logger& log )
+DocumentManager::DocumentManager( Logger& log, std::string installation_directory )
 	: log_(log)
 	// TODO - create different build options for different files.
 	, build_options_( CreateBuildOptions(log_) )
-	, vfs_manager_(log)
+	, vfs_manager_( log, std::move(installation_directory) )
 	, documents_container_( std::make_shared<DocumentsContainer>() )
 {}
 

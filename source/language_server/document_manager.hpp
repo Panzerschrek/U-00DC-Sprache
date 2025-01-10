@@ -12,7 +12,7 @@ class DocumentManager
 {
 public:
 	// Logger should live long enough!
-	explicit DocumentManager( Logger& log );
+	DocumentManager( Logger& log, std::string installation_directory );
 
 	DocumentManager( const DocumentManager& )= delete;
 	DocumentManager& operator=( const DocumentManager& )= delete;

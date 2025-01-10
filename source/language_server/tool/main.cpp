@@ -1,11 +1,15 @@
 #include <fstream>
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/FileSystem.h>
 #include <llvm/Support/InitLLVM.h>
+#include <llvm/Support/Path.h>
 #include <llvm/Support/Signals.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../options.hpp"
 #include "../async_server.hpp"
+
+int main( const int argc, const char* argv[] );
 
 namespace U
 {
@@ -27,6 +31,13 @@ void PrintStackTraceSignalHandler(void*)
 	}
 }
 
+std::string GetInstallationDirectory( const char* const argv0 )
+{
+	const std::string executable= llvm::sys::fs::getMainExecutable( argv0, reinterpret_cast<void*>( &::main ) );
+	// Remove executable file name and "bin" directory.
+	return llvm::sys::path::parent_path( llvm::sys::path::parent_path( executable ) ).str();
+}
+
 int Main( int argc, const char* argv[] )
 {
 	const llvm::InitLLVM llvm_initializer(argc, argv);
@@ -44,9 +55,13 @@ int Main( int argc, const char* argv[] )
 
 	Logger logger( log_file );
 
+	std::string installation_directory= GetInstallationDirectory( argv[0] );
+
+	logger() << "Installation directory: " << installation_directory << std::endl;
+
 	logger() << "Start language server" << std::endl;
 
-	RunAsyncServer( logger );
+	RunAsyncServer( logger, std::move(installation_directory) );
 
 	logger() << "End language server" << std::endl;
 

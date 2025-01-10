@@ -108,8 +108,8 @@ bool IsPathWithinGivenDirectory( const llvm::StringRef path, const llvm::StringR
 
 } // namespace
 
-VFSManager::VFSManager( Logger& log )
-	: log_(log)
+VFSManager::VFSManager( Logger& log, std::string installation_directory )
+	: log_(log), installation_directory_(std::move(installation_directory))
 {
 	// Load workspace info files from build directories provided via command line options.
 	for( const auto& build_dir : Options::build_dir )
@@ -153,8 +153,9 @@ IVfsSharedPtr VFSManager::GetVFSForDocument( const Uri& uri )
 	IncludesList includes;
 	includes= Options::include_dir; // Append includes from options first.
 
-	// TODO add ustlib path.
-	// TODO - add build system include directories.
+	// Hardcode here paths to built-in includes (which should be shipped within Ü package).
+	includes.push_back( installation_directory_ + "/ustlib" );
+	includes.push_back( installation_directory_ + "/build_system/imports" );
 
 	// Append includes from workspace (if found).
 	includes.insert( includes.end(), workspace_includes.begin(), workspace_includes.end() );

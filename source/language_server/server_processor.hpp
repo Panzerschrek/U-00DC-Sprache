@@ -16,7 +16,7 @@ namespace LangServer
 class ServerProcessor
 {
 public:
-	explicit ServerProcessor( Logger& log, IJsonMessageWrite& out );
+	explicit ServerProcessor( Logger& log, IJsonMessageWrite& out, std::string installation_directory );
 
 	// Process messages from queue until it is not closed.
 	void Process( MessageQueue& message_queue );

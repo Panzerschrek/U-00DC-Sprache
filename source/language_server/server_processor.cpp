@@ -78,11 +78,11 @@ llvm::ThreadPoolStrategy CreateThreadPoolStrategy( Logger& log )
 
 } // namespace
 
-ServerProcessor::ServerProcessor( Logger& log, IJsonMessageWrite& out )
+ServerProcessor::ServerProcessor( Logger& log, IJsonMessageWrite& out, std::string installation_directory )
 	: log_(log)
 	, out_(out)
 	, thread_pool_(CreateThreadPoolStrategy(log_))
-	, document_manager_(log_)
+	, document_manager_( log_, std::move(installation_directory) )
 {
 	log_() << "Created thead pool with " << thread_pool_.getThreadCount() << " threads." << std::endl;
 }

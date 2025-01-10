@@ -10,7 +10,7 @@ namespace U
 namespace LangServer
 {
 
-void RunAsyncServer( Logger& log )
+void RunAsyncServer( Logger& log, std::string installation_directory )
 {
 	const auto transport= OpenJSONStdioTransport( log );
 	MessageQueue message_queue;
@@ -19,7 +19,7 @@ void RunAsyncServer( Logger& log )
 	std::thread processor_tread(
 		[&]
 		{
-			ServerProcessor processor( log, *transport.second );
+			ServerProcessor processor( log, *transport.second, std::move(installation_directory) );
 			log() << "Start async server processor" << std::endl;
 			processor.Process( message_queue );
 			log() << "End async server processor" << std::endl;

@@ -13,7 +13,7 @@ namespace LangServer
 class VFSManager
 {
 public:
-	explicit VFSManager( Logger& log );
+	VFSManager( Logger& log, std::string installation_directory );
 
 	// Get a VFS instance for given document.
 	// The same instance may be returned for different documents.
@@ -32,6 +32,7 @@ private:
 
 private:
 	Logger& log_;
+	const std::string installation_directory_;
 
 	WorkspaceDirectoriesGroupsByBuildDirectory workspace_directories_groups_;
 

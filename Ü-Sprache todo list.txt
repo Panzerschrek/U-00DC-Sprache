@@ -160,8 +160,6 @@ Language server:
 	obtain this information from the build system
 *) Detect changes in workspace info files and reload them properly
 *) If necessary run build system executable in some temp directory to obtain workspace information
-*) Hardcode paths to includes like "ustlib" and includes of the build system, using path relative to the language server
-	executable (assuming default installation)
 
 CPP Header converter:
 *) White list of converted symbols

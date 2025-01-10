@@ -7,7 +7,7 @@ namespace U
 namespace LangServer
 {
 
-void RunAsyncServer( Logger& log );
+void RunAsyncServer( Logger& log, std::string installation_directory );
 
 } // namespace LangServer
 
