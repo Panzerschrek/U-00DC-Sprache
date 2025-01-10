@@ -8,5 +8,6 @@ html_theme = "sphinxdoc"
 html_copy_source = False
 html_logo = "../logo-Gebrochene-Grotesk.png"
 html_favicon = "../favicon.ico"
+master_doc = "contents"
 
 lexers['u_spr'] = SpracheLexer(startinline=False)
