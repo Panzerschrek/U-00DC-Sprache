@@ -58,7 +58,7 @@ Know issues:
 
 Language server tries to find default build directory (named *build*) for each opened document and a workspace description file within it.
 Such file is produced on each build by the Ü build system.
-it does this in order to find proper include directories for an opened document.
+Language server does this in order to find proper include directories for an opened document.
 If non-default build directory is used, it may be specified via special command line option (see below).
 
 
