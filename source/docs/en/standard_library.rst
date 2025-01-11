@@ -76,7 +76,7 @@ if you want to learn more, read its sources yourself.
 ********************
 
 Some *ustlib* functions are implemented by Ü compiler itself.
-These functions are implemented in *ll* files in *src* sub directory.
+These functions are implemented in *ll* files in *src* sub-directory.
 These *ll* files are compiled during Ü Compiler compilation and embedded in it.
 So, it's strictly recommended to use *ustlib* shipped together with Ü compiler, to avoid possible mismatches in these functions.
 
