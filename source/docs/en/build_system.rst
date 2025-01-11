@@ -118,3 +118,51 @@ There are following kids of package dependencies:
 * Target system dependency - default mode, which means, a package should be built for target system and its build targets may be used as dependencies of current package build targets
 * Host system dependency - a package should be build for host system. Its executable build targets may be used as commands for custom build steps.
 * Both - combined target and host system dependency
+
+
+************************
+*Command-line interface*
+************************
+
+The build system executable supports following commands:
+
+* build - perform the build
+* init - initialize a stub project within current directory or directory specified via ``--project-directory`` option
+* help - print help message and exit
+
+There are also many options, which affect some commands.
+
+``--project-directory`` option specifies path to the root package directory.
+Default value is current directory.
+
+``--build-directory`` option is used to provide custom build directory.
+Default value is *build* subdirectory within root package directory.
+
+``--build-configuration`` option selects build configuration.
+Available configurations are ``release`` and ``debug``.
+
+``--configuration-options`` option specifies path to a JSON file with additional configuration options.
+Such file should be JSON object with string values.
+These values are available for reading by package scripts.
+
+``--target-triple`` option allows specifying target triple in form *architecture-vendor-operating_system* or *architecture-vendor-operating_system-environment*.
+Examples are *x86_64-unknown-linux-gnu* or *i686-pc-windows-msvc*.
+The build system will perform the build for target triple specified.
+
+``--sysroot`` option allows to specify path to the toolchain root directory for selected target system.
+This may be necessary for cross-compilation.
+``--host-sysroot`` may be used to specify path to the toolchain root directory used for host build targets building.
+
+``-q`` option makes the build system executable quiet - it prints only error messages.
+``-v`` option has an opposite meaning - the build system executable prints a lot of messages.
+``-v`` option has priority over ``-q``.
+
+``-j`` option specifies number of threads using for building.
+Default value is 0, which means using all available CPU cores.
+
+``--packages-repository-directory`` option provides path to the global packages directory.
+Such directory should contain subdirectories (for each package) and one or more version directory within a package directory in format *major.minor.patch.tweak*.
+This directory is used for searching for global versioned packages.
+
+Options ``--compiler-executable``, ``--ustlib-path``, ``--build-system-imports-path`` are used to override default paths for components used by the build system - Ü compiler executable, standard library, imports directory containing build system headers.
+It's not recommended to override these paths, unless it's really necessary to do so.
