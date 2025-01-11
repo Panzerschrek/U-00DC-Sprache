@@ -1,6 +1,46 @@
 Build system
 ============
 
+**********
+*Overview*
+**********
+
+The Ü project has its own build system, named *Bürokratie*.
+It simplifies building complex programs written in Ü, comparing to manual usage of Ü compiler.
+It's recommended to use it for building Ü projects.
+
+A project to build consists of one or more packages.
+There is a root package, which may depend on other packages.
+
+Each package should contain *build.u* file in its root directory.
+This file is just an Ü source file, with contents like this:
+
+.. code-block:: u_spr
+
+   import "/build_system.uh"
+
+   fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+   {
+       ust::ignore_unused( build_system_interface );
+
+       var BK::BuildTarget mut target{ .target_type = BK::BuildTargetType::Executable };
+       target.source_files.push_back( "main.u" );
+       target.name= "hello_world";
+
+       return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+   }
+
+This file should define function ``GetPackageInfo`` as shown above, which returns a structure describing this package.
+The build system compiles this file into a native shared library, loads it and calls this function to obtain information about given package.
+
+A package consists of build targets, custom build steps, package dependencies.
+Dependent packages are loaded exactly like the root package - with compilation of their *build.u* file and shared library loading.
+
+The build system is responsible for performing the build of a project.
+It executes Ü compiler for source files, links executables, executes custom build steps, etc.
+It ensures that execution order of all these actions is correct and tries to use multiple CPU cores to perform build faster.
+Also the build system performs builds incrementally - it rebuilds files only if they or their dependencies are changed.
+
 
 **********
 *Features*
