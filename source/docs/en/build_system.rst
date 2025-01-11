@@ -41,6 +41,12 @@ It executes Ü compiler for source files, links executables, executes custom bui
 It ensures that execution order of all these actions is correct and tries to use multiple CPU cores to perform build faster.
 Also the build system performs builds incrementally - it rebuilds files only if they or their dependencies are changed.
 
+Ü language itself it selected for Ü build scripts in order to simplify writing such scripts.
+It's not necessary to learn a separate language for project description files (like *make* or *cmake*) - it's only enough to know Ü.
+Also using Ü makes it easier to write complex code needed for building of some projects, which is not so nice with other languages.
+The biggest disadvantage of this approach is absence of build scripts isolation.
+One can crash the build system by using ``halt`` in his build script or by messing with ``unsafe`` code.
+
 
 **********
 *Features*
