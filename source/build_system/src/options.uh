@@ -1,5 +1,5 @@
 import "/string.u"
-import "../imports/build_system.uh"
+import "../imports/types.uh"
 
 namespace BK
 {
