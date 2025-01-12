@@ -5,7 +5,7 @@ Compiler
 
 There are several versions of Ü compiler.
 Compiler0 is written in C++.
-Compiler1 is written in Ü and compiled with Compiler1.
+Compiler1 is written in Ü and compiled with Compiler0.
 Compiler2 is Compiler1 code compiled with Compiler1.
 There is a little difference between different versions, they should generally work exactly the same.
 If it's not, it's a bug in one of compiler implementations.
@@ -28,12 +28,12 @@ Default input file type is Ü source file, default output is native object file.
 *Capabilities*
 **************
 
-Ü compiler can compile (obviously) Ü files.
+Ü compiler can compile (obviously) Ü source files.
 But it's not the only things it can do.
 
 It's possible to compile multiple sources into LLVM bitcode files and then combine them and run link-time optimization (via separate compiler invocation).
 
-Also Ü compiler can produce native executables and binary files.
+Also Ü compiler can produce native executables and shared libraries.
 But this works only if it was compiled together with internal LLD (which is usually the case).
 
 
@@ -41,11 +41,11 @@ But this works only if it was compiled together with internal LLD (which is usua
 *Command-line interface*
 ************************
 
-Input files are listed without any option.
+Input files are listed directly without any option.
 It's expected at least one input file.
 
 The type of input files is specified via ``--input-filetype`` option.
-Supported types are ``source`` (default) - for Ü files, ``bc`` - for LLVM bitcode files, ``ll`` - for LLVM assembly files.
+Supported types are ``source`` (default) - for Ü source files, ``bc`` - for LLVM bitcode files, ``ll`` - for LLVM assembly files.
 
 Output file is specified via ``-o`` option.
 Output file type is specified via ``--filetype`` option.
@@ -98,7 +98,7 @@ This affects visibility style of functions with prototypes declared in files wit
 If ``--prevent-imports-outside-given-directories`` option is specified, an error is generated if an imported or an embedded file is located outside provided include or source directories.
 
 ``--allow-unused-names`` option allows unused names - local variables, functions, class fields, etc.
-If this option is not specified, an error is generated if a symbol isn't used.
+If this option is not specified, an error is generated if a name isn't used.
 
 ``--halt-mode`` option controls behavior of language ``halt`` operator.
 ``trap`` value (default) means using ``llvm.trap`` instruction for ``halt``.
@@ -108,7 +108,7 @@ If this option is not specified, an error is generated if a symbol isn't used.
 
 ``--no-system-alloc`` option disables usage of system memory allocation functions (``malloc``/``HeapAlloc``) in compiled code.
 
-``--disable-async-calls-inlining`` option disables force-inlining of async functions.
+``--disable-async-calls-inlining`` option disables force-inlining of async function calls.
 By default async calls are inlined, which optimizes calls speed in (possible) exchange against larger binary size.
 
 ``--verify-module`` option enables correctness checks for intermediate LLVM modules produced during compilation/linking.
