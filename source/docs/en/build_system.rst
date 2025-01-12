@@ -43,7 +43,7 @@ Also the build system performs builds incrementally - it rebuilds files only if 
 
 Ü language itself it selected for Ü build scripts in order to simplify writing such scripts.
 It's not necessary to learn a separate language for project description files (like *make* or *cmake*) - it's only enough to know Ü.
-Also using Ü makes it easier to write complex code needed for building of some projects, which is not so nice with other languages.
+Also using Ü makes it easier to write complex code needed for building of some projects, which may be not so nice with usage of other languages.
 The biggest disadvantage of this approach is absence of build scripts isolation.
 One can crash the build system by using ``halt`` in his build script or by messing with ``unsafe`` code.
 
@@ -82,7 +82,7 @@ Each element of these lists contains build target name and package name, which b
 For dependencies on build targets of other packages package name should be specified - as sub-package of current package, global versioned package or sub-package of a global versioned package.
 
 Public dependencies are also dependencies of build targets which depend on current build target.
-Usually a dependency should be public if definitions from its headers are used in public header files of current build target.
+Usually a dependency should be public, if definitions from its headers are used in public header files of current build target.
 But there may be some other reasons to make a dependency public.
 If a dependency is used only internally (like its headers are imported only within source files), it should be made private.
 
@@ -104,14 +104,14 @@ It's important to mention that for dependencies on build targets of global versi
 A newer version may be used instead, if it's needed for elimination of common dependencies on build targets of different versions.
 
 
-External dependencies
----------------------
+External libraries
+------------------
 
 It's possible to specify for a build target external library dependencies - both shared and static libraries.
 They are specified via ``external_libraries`` list of the build target structure.
 Both absolute and relative paths are possible, but relative paths work only for system libraries (like *kernel32*).
 
-External dependencies are inherited - if a build target *LibA* has an external dependency on *SomeLib*, all build targets which depend on *LibA* will be linked against *SomeLib*.
+External library dependencies are inherited - if a build target *LibA* has an external dependency on *SomeLib*, all build targets which depend on *LibA* will be linked against *SomeLib*.
 
 
 Custom build steps
@@ -155,9 +155,9 @@ Package dependencies
 --------------------
 
 A package may have other dependent packages.
-Such packages may be sub-packages of current package (located within a directory), or global versioned packages (or their sub-packages).
+Such packages may be sub-packages of current package (located within a directory) or global versioned packages (or their sub-packages).
 
-If a package depends on build targets from other packages, these packages should be listed in list of dependent packages.
+If a package build targets depend on build targets from other packages, these packages should be listed in list of dependent packages.
 
 There are following kids of package dependencies:
 
@@ -189,7 +189,7 @@ Available configurations are ``release`` and ``debug``.
 
 ``--configuration-options`` option specifies path to a JSON file with additional configuration options.
 Such file should be JSON object with string values.
-These values are available for reading by package scripts.
+These values are available for reading by package build scripts.
 
 ``--target-triple`` option allows specifying target triple in form *architecture-vendor-operating_system* or *architecture-vendor-operating_system-environment*.
 Examples are *x86_64-unknown-linux-gnu* or *i686-pc-windows-msvc*.
