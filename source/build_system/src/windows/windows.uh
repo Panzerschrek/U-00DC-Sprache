@@ -37,6 +37,8 @@ fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call
 
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
 
+fn nomangle GetModuleFileNameW( HMODULE hModule, LPWSTR lpFilename, DWORD nSize ) unsafe call_conv( "system" ) : DWORD;
+
 fn nomangle GetOverlappedResult( HANDLE hFile, LPOVERLAPPED lpOverlapped, LPDWORD lpNumberOfBytesTransferred, BOOL bWait ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle GetProcAddress( HMODULE hModule, LPCSTR lpProcName ) unsafe call_conv( "system" ) : $(byte8);
@@ -211,6 +213,7 @@ type WCHAR = wchar_t;
 type WORD = u16;
 
 auto constexpr ERROR_BROKEN_PIPE = 109;
+auto constexpr ERROR_INSUFFICIENT_BUFFER = 122;
 auto constexpr ERROR_ALREADY_EXISTS = 183;
 auto constexpr ERROR_IO_PENDING = 997;
 
