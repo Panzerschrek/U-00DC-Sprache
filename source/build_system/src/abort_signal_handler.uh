@@ -1,0 +1,8 @@
+namespace BK
+{
+
+// Call it at startup.
+// It sets custom handler for "abort" - in order to handle "halt" in build scripts and print nice error message.
+fn SetupAbortSignalHandler();
+
+} // namespace BK

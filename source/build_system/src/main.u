@@ -2,6 +2,7 @@ import "/sort.u"
 import "/string_conversions.u"
 import "/stdout.u"
 import "../imports/build_system_interface.uh"
+import "abort_signal_handler.uh"
 import "build_graph_serialization.uh"
 import "build_system_paths.uh"
 import "configuration_options.uh"
@@ -27,6 +28,8 @@ namespace BK
 // Place actual "main" code inside the "BK" namespace.
 fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> args ) : i32
 {
+	SetupAbortSignalHandler();
+
 	var ust::optional</Options/> options_opt= ParseOptions( args );
 	if( options_opt.empty() )
 	{
