@@ -351,7 +351,7 @@ def ReferenceFieldAccess_Test0():
 	assert( errors_list[0].src_loc.line == 9 )
 
 
-def PassMutableReferenceTwoTimes_Tes0():
+def PassMutableReferenceTwoTimes_Test0():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		fn Bar( S& s, i32 &mut i ) {}
@@ -368,7 +368,7 @@ def PassMutableReferenceTwoTimes_Tes0():
 	assert( errors_list[0].src_loc.line == 8 )
 
 
-def PassMutableReferenceTwoTimes_Tes1():
+def PassMutableReferenceTwoTimes_Test1():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		fn Bar( S s, i32 &mut i ) {}
@@ -385,7 +385,7 @@ def PassMutableReferenceTwoTimes_Tes1():
 	assert( errors_list[0].src_loc.line == 8 )
 
 
-def PassMutableReferenceTwoTimes_Tes2():
+def PassMutableReferenceTwoTimes_Test2():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		fn Bar( S& a, S& b ) { ++a.x; ++b.x; }
@@ -402,7 +402,7 @@ def PassMutableReferenceTwoTimes_Tes2():
 	assert( errors_list[0].src_loc.line == 8 )
 
 
-def PassMutableReferenceTwoTimes_Tes3():
+def PassMutableReferenceTwoTimes_Test3():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		fn Bar( S a, S b ) { ++a.x; ++b.x; }
@@ -419,7 +419,7 @@ def PassMutableReferenceTwoTimes_Tes3():
 	assert( errors_list[0].src_loc.line == 8 )
 
 
-def PassMutableReferenceTwoTimes_Tes4():
+def PassMutableReferenceTwoTimes_Test4():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		fn Bar( S& a, S& b ) { ++a.x; ++b.x; }
@@ -436,7 +436,7 @@ def PassMutableReferenceTwoTimes_Tes4():
 	assert( errors_list[0].src_loc.line == 8 )
 
 
-def PassMutableReferenceTwoTimes_Tes5():
+def PassMutableReferenceTwoTimes_Test5():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		fn Bar( S a, S b ) { ++a.x; ++b.x; }
@@ -453,7 +453,7 @@ def PassMutableReferenceTwoTimes_Tes5():
 	assert( errors_list[0].src_loc.line == 8 )
 
 
-def PassMutableReferenceTwoTimes_Tes6():
+def PassMutableReferenceTwoTimes_Test6():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		fn Bar( S& a, S& b ) { ++a.x; ++b.x; }

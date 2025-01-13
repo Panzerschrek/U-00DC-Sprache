@@ -581,7 +581,7 @@ def MoveAssignForNonFinalPolymorphClass_Test0():
 	assert( errors_list[0].src_loc.line == 7 )
 
 
-def MoveAssignForNonFinalPolymorphClass_Tes1():
+def MoveAssignForNonFinalPolymorphClass_Test1():
 	c_program_text= """
 	class A abstract {}
 	class B final : A {}

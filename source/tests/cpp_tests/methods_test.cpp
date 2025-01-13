@@ -265,7 +265,7 @@ U_TEST(MethodTest7)
 	U_TEST_ASSERT( 84167.1 == result_value.DoubleVal );
 }
 
-U_TEST(MethodTes8)
+U_TEST(MethodTest8)
 {
 	// Prototype for method and realization inside class.
 	static const char c_program_text[]=
@@ -296,7 +296,7 @@ U_TEST(MethodTes8)
 	U_TEST_ASSERT( 84167.1 == result_value.DoubleVal );
 }
 
-U_TEST(MethodTes9)
+U_TEST(MethodTest9)
 {
 	// Prototype for method and realization outside class.
 	static const char c_program_text[]=

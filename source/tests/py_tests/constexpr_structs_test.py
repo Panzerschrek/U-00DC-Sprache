@@ -238,7 +238,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Test5():
 	assert( errors_list[0].src_loc.line == 11 )
 
 
-def InvalidTypeForConstantExpressionVariable_ForStructs_Tes6():
+def InvalidTypeForConstantExpressionVariable_ForStructs_Test6():
 	c_program_text= """
 		struct S
 		{
@@ -252,7 +252,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Tes6():
 	assert( errors_list[0].src_loc.line == 6 )
 
 
-def InvalidTypeForConstantExpressionVariable_ForStructs_Tes7():
+def InvalidTypeForConstantExpressionVariable_ForStructs_Test7():
 	c_program_text= """
 		struct S
 		{
@@ -266,7 +266,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Tes7():
 	assert( errors_list[0].src_loc.line == 6 )
 
 
-def InvalidTypeForConstantExpressionVariable_ForStructs_Tes8():
+def InvalidTypeForConstantExpressionVariable_ForStructs_Test8():
 	c_program_text= """
 		struct S
 		{
@@ -280,7 +280,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Tes8():
 	assert( errors_list[0].src_loc.line == 6 )
 
 
-def InvalidTypeForConstantExpressionVariable_ForStructs_Tes9():
+def InvalidTypeForConstantExpressionVariable_ForStructs_Test9():
 	c_program_text= """
 		struct S
 		{
@@ -292,7 +292,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Tes9():
 	tests_lib.build_program( c_program_text )
 
 
-def InvalidTypeForConstantExpressionVariable_ForStructs_Tes10():
+def InvalidTypeForConstantExpressionVariable_ForStructs_Test10():
 	c_program_text= """
 		struct S
 		{
@@ -306,7 +306,7 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Tes10():
 	tests_lib.build_program( c_program_text )
 
 
-def InvalidTypeForConstantExpressionVariable_ForStructs_Tes11():
+def InvalidTypeForConstantExpressionVariable_ForStructs_Test11():
 	c_program_text= """
 		struct S
 		{

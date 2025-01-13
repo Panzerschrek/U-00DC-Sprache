@@ -117,7 +117,7 @@ def CStyleForOperator_Test5():
 	assert( call_result == 1024.0 )
 
 
-def CStyleForOperator_Tes6():
+def CStyleForOperator_Test6():
 	# Multiple elements in iterations part
 	c_program_text= """
 		fn Fib(u32 x) : u32

@@ -812,7 +812,7 @@ def ReferenceIndirectionDepthExceeded_ForLambdas_Test3():
 	assert( HasError( errors_list, "ReferenceIndirectionDepthExceeded", 7 ) )
 
 
-def AccessingLambdaCapturedValueIsNotAllowed_Tes0():
+def AccessingLambdaCapturedValueIsNotAllowed_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -826,7 +826,7 @@ def AccessingLambdaCapturedValueIsNotAllowed_Tes0():
 	assert( HasError( errors_list, "AccessingNonpublicClassMember", 6 ) )
 
 
-def AccessingLambdaCapturedValueIsNotAllowed_Tes1():
+def AccessingLambdaCapturedValueIsNotAllowed_Test1():
 	c_program_text= """
 		fn Foo()
 		{
