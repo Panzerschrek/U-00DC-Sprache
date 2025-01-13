@@ -385,7 +385,7 @@ def ReturnAutoMove_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def ReturnAutoMove_Tes2():
+def ReturnAutoMove_Test2():
 	c_program_text= """
 		struct S
 		{
@@ -408,7 +408,7 @@ def ReturnAutoMove_Tes2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def ReturnAutoMove_Tes3():
+def ReturnAutoMove_Test3():
 	c_program_text= """
 		struct S
 		{
@@ -431,7 +431,7 @@ def ReturnAutoMove_Tes3():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def ReturnAutoMove_Tes4():
+def ReturnAutoMove_Test4():
 	c_program_text= """
 		struct S
 		{
@@ -454,7 +454,7 @@ def ReturnAutoMove_Tes4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def ReturnAutoMove_Tes5():
+def ReturnAutoMove_Test5():
 	c_program_text= """
 		struct S
 		{
@@ -469,7 +469,7 @@ def ReturnAutoMove_Tes5():
 		}
 		fn MakeT( S s ) : T
 		{
-			return s; // Auto-move in "return" and than perform implicit type conversion.
+			return s; // Auto-move in "return" and then perform implicit type conversion.
 		}
 		fn Foo()
 		{
@@ -509,7 +509,7 @@ def ReturnAutoMove_Test6():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def ReturnAutoMove_Tes7():
+def ReturnAutoMove_Test7():
 	c_program_text= """
 		struct S
 		{
