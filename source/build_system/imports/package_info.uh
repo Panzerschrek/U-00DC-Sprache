@@ -28,7 +28,7 @@ struct BuildTarget
 	ust::string8 name;
 
 	// List of source files of this build target. Order is irrelevant.
-	// Containts paths relative to the package source directory (where the build script is located).
+	// Contains paths relative to the package source directory (where the build script is located).
 	// Paths with "." and ".." aren't allowed.
 	// Duplicates aren't allowed.
 	ust::vector</ust::string8/> source_files;
