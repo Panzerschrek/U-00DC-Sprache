@@ -25,9 +25,9 @@ namespace BK
 {
 
 // Place actual "main" code inside the "BK" namespace.
-fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> args ) : i32
+fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 {
-	var ust::optional</Options/> options_opt= ParseOptions( args );
+	var ust::optional</Options/> options_opt= ParseOptions( args_excluding_first );
 	if( options_opt.empty() )
 	{
 		ust::stderr_print( "Failed to parse options.\n" );
@@ -86,7 +86,7 @@ fn Main( ust::string_view8 exe_path, ust::array_view_imut</ust::string_view8/> a
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	var ust::string8 exe_directory = MakePathAbsolute( GetParentPath( exe_path ) );
+	var ust::string8 exe_directory = MakePathAbsolute( GetParentPath( GetCurrentExecutablePath() ) );
 
 	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory, "\"" ) );
 

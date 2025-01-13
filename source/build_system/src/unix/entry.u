@@ -6,5 +6,5 @@ import "../string_utils.uh"
 fn nomangle main( i32 argc, $($(char8)) argv ) unsafe : i32
 {
 	auto args= unsafe( BK::MainArgsToStringView( argc, argv ) );
-	return BK::Main( args.front(), args.range().subrange_start(1s) );
+	return BK::Main( args.range().subrange_start(1s) );
 }
