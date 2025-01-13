@@ -696,6 +696,13 @@ def BuildScriptNullResultTest():
 	assert( stderr.find( "build script returned empty optional" ) != -1 )
 
 
+def BuildScriptHaltTest():
+	res = RunBuildSystemWithErrors( "build_script_halt" )
+	assert( res.returncode != 0 )
+	stderr = str(res.stderr)
+	assert( stderr.find( "Abort signal recieved. Halt in build script file?" ) != -1 )
+
+
 def BrokenBuildFile0Test():
 	res = RunBuildSystemWithErrors( "broken_build_file0" )
 	assert( res.returncode != 0 )
@@ -1356,6 +1363,7 @@ def main():
 		MissingPackage1Test,
 		MissingPackage2Test,
 		BuildScriptNullResultTest,
+		BuildScriptHaltTest,
 		BrokenBuildFile0Test,
 		BrokenBuildFile1Test,
 		BrokenBuildFile2Test,
