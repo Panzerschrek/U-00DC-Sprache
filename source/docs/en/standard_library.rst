@@ -1,7 +1,7 @@
 Standard library
 ================
 
-Ü has (for now) small but useful standard library, containing useful helpers and container classes.
+Ü has (for now) small but useful standard library, containing helpers and container classes.
 This standard library is named *ustlib*.
 
 This document briefly describes contents of the standard library (without details).
@@ -51,21 +51,21 @@ if you want to learn more, read its sources yourself.
 * Heap-allocated box (box.u) and its nullable version (box_nullabe.u).
   Designed to store a value indirectly, which allows creating recursive data structures.
 * Optional class that optionally stores in-place a value of specified type or no value (optional.u).
-* Optional reference, that stores a reference to value (mutable or immutable) or null (optional_ref.u).
+* Optional reference, that stores a reference to a value (mutable or immutable) or null (optional_ref.u).
 * View for continuous sequence of single type values (mutable or immutable) (random_access_range.u).
 * Result container, that stores a value of one of two provided types (result.u).
   Designed to be used as return value type for functions which may fail.
 * Single-threaded shared pointers (shared_ptr.u).
   Provide interior shared mutability.
 * Single-threaded shared pointers for immutable data (shared_ptr_final.u).
-  Allows sharing the same piece of constant data across multiple owners.
+  Allow sharing the same piece of constant data across multiple owners.
 * Multi-threaded shared pointers (shared_ptr_mt.u).
   Provide interior shared mutability with thread-safety.
 * Multi-threaded shared pointers for immutable data (shared_ptr_mt_final.u).
-  Allows sharing the same piece of constant data across multiple owners and threads.
+  Allow sharing the same piece of constant data across multiple owners and threads.
 * Strings (string.u, string_base.u) and helper utilities.
   Strings are like vectors, but support only ``char`` types as elements and allow concatenation via overloaded ``+`` operators.
-* Unordered map - has-based key-value container (unordered_map.u).
+* Unordered map - hash-based key-value container (unordered_map.u).
 * Unordered set (adapter for unordered map) (unordered_set.u)
 * Variant container, that can store in-place a value of one of specified types (variant.u).
 * Vector - growable sequential container (vector.u).

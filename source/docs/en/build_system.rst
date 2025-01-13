@@ -7,7 +7,7 @@ Build system
 
 The Ü project has its own build system, named *Bürokratie*.
 It simplifies building complex programs written in Ü, comparing to manual usage of Ü compiler.
-It's recommended to use it for building Ü projects.
+It's recommended to use it for building of Ü projects.
 
 A project to build consists of one or more packages.
 There is a root package, which may depend on other packages.
@@ -61,7 +61,7 @@ A build target is logical unit of a project.
 There are following build target types:
 
 * Executable
-* Library - a build target on which other build targets can depend on and use code from it
+* Library - a build target on which other build targets can depend and use code from it
 * Shared library - in native format, like *dll* or *so*
 * Object file - in native format
 
@@ -86,7 +86,7 @@ Usually a dependency should be public, if definitions from its headers are used 
 But there may be some other reasons to make a dependency public.
 If a dependency is used only internally (like its headers are imported only within source files), it should be made private.
 
-A build target may have zero or more public include directories - directories where public head files are located.
+A build target may have zero or more public include directories - directories where public header files are located.
 Files from these directories may be imported by dependent build targets.
 While importing a file from such directory its build target name may be used as prefix, like this:
 
@@ -157,12 +157,12 @@ Package dependencies
 A package may have other dependent packages.
 Such packages may be sub-packages of current package (located within a directory) or global versioned packages (or their sub-packages).
 
-If a package build targets depend on build targets from other packages, these packages should be listed in list of dependent packages.
+If build targets of a package depend on build targets from other packages, these packages should be listed in list of dependent packages.
 
-There are following kids of package dependencies:
+There are following kinds of package dependencies:
 
 * Target system dependency - default mode, which means, a package should be built for target system and its build targets may be used as dependencies of current package build targets
-* Host system dependency - a package should be build for host system. Its executable build targets may be used as commands for custom build steps.
+* Host system dependency - a package should be buily for host system. Its executable build targets may be used as commands for custom build steps.
 * Both - combined target and host system dependency
 
 
@@ -207,7 +207,7 @@ This may be necessary for cross-compilation.
 Default value is 0, which means using all available CPU cores.
 
 ``--packages-repository-directory`` option provides path to the global packages directory.
-Such directory should contain subdirectories (for each package) and one or more version directory within a package directory in format *major.minor.patch.tweak*.
+Such directory should contain subdirectories (for each package) and one or more version directory within a package directories in format *major.minor.patch.tweak*.
 This directory is used for searching for global versioned packages.
 
 Options ``--compiler-executable``, ``--ustlib-path``, ``--build-system-imports-path`` are used to override default paths for components used by the build system - Ü compiler executable, standard library, imports directory containing build system headers.

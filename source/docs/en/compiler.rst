@@ -15,13 +15,13 @@ If it's not, it's a bug in one of compiler implementations.
 *Usage*
 *******
 
-Basic usage is to provide one or more input file and one output file, like this:
+Basic usage is to provide one or more input files and specify output file path, like this:
 
 .. code-block:: sh
 
    Compiler source.u -o source.o
 
-Default input file type is Ü source file, default output is native object file.
+Default input file type is Ü source file, default output file type is native object file.
 
 
 **************
@@ -29,7 +29,7 @@ Default input file type is Ü source file, default output is native object file.
 **************
 
 Ü compiler can compile (obviously) Ü source files.
-But it's not the only things it can do.
+But it's not the only thing it can do.
 
 It's possible to compile multiple sources into LLVM bitcode files and then combine them and run link-time optimization (via separate compiler invocation).
 
@@ -59,7 +59,7 @@ They are similar to optimization options of compilers like *gcc* or *clang*.
 Option ``--lto-mode`` affects link-time optimization.
 ``none`` option does nothing for link-time optimization.
 ``prelink`` option is designed for compilation of individual Ü files into LLVM bitcode files.
-``link`` option is  designed for link-time optimization of multiple input LLVM bitcode files.
+``link`` option is designed for link-time optimization of multiple input LLVM bitcode files.
 
 ``--internalize`` option makes public symbols (functions, global variables) private, which allows their inlining and optimizing-out.
 It's useful together with ``--lto-mode=link``.

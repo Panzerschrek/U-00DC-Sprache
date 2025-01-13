@@ -1,3 +1,5 @@
+Welcome to the Ü programming language documentation!
+
 Contents
 ========
 .. toctree::
