@@ -191,7 +191,7 @@ fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 
 	unsafe( ::close(fd) );
 
-	return move(contents);
+	return contents;
 }
 
 fn GetCurrentDirectory() : ust::string8

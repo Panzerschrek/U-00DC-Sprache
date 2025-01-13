@@ -235,7 +235,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 		}
 	}
 
-	return move(res);
+	return res;
 }
 
 fn StringToBuildConfiguration( ust::string_view8 s ) : ust::optional</BuildConfiguration/>

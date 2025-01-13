@@ -102,7 +102,7 @@ fn ParseTargetTriple( ust::string_view8 mut target_triple_str ) : ust::optional<
 		}
 	}
 
-	return move(result);
+	return result;
 }
 
 fn ParseTargetTripleComponent( ust::string_view8 &mut target_triple_str ) : ust::optional</ust::string8/>
@@ -119,7 +119,7 @@ fn ParseTargetTripleComponent( ust::string_view8 &mut target_triple_str ) : ust:
 		res.push_back( target_triple_str.drop_and_get_front() );
 	}
 
-	return move(res);
+	return res;
 }
 
 // Returns "true" if successfully parsed.

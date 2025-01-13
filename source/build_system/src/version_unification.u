@@ -225,7 +225,7 @@ fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildT
 
 	// TODO - sort lists of users?
 
-	return move(result);
+	return result;
 }
 
 type BuildTargetUsersSet= ust::unordered_set</BuildTargetAbsoluteName/>;

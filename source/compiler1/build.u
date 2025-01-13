@@ -299,7 +299,7 @@ fn ParseCPPIdentifier( ust::string_view8 &mut s ) : ust::optional</ust::string8/
 		}
 	}
 
-	return move(res);
+	return res;
 }
 
 fn IsCPPIdentifierStartChar( char8 c ) : bool
@@ -357,7 +357,7 @@ fn ParseCPPString( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
 		}
 	}
 
-	return move(res);
+	return res;
 }
 
 fn SkipWhitespaceAndCPPComments( ust::string_view8 &mut s )

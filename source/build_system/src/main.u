@@ -752,7 +752,7 @@ fn CreateWorkspace(
 		return ust::null_optional;
 	}
 
-	return move(workspace);
+	return workspace;
 }
 
 // returns true on success.

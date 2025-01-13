@@ -181,7 +181,7 @@ fn DeserializeBuildGraph(  ust::string_view8 build_graph_serialized ) : ust::opt
 		return ust::null_optional;
 	}
 
-	return move(build_graph);
+	return build_graph;
 }
 
 fn DeserializeStringList( JsonValue& value ) : ust::optional</ ust::vector</ ust::string8 /> />
@@ -202,7 +202,7 @@ fn DeserializeStringList( JsonValue& value ) : ust::optional</ ust::vector</ ust
 			}
 		}
 
-		return move(res);
+		return res;
 	}
 	else
 	{

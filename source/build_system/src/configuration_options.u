@@ -44,7 +44,7 @@ fn LoadConfigurationOptions( Logger &mut logger, ust::string_view8 file_path ) :
 		}
 	}
 
-	return move(result);
+	return result;
 }
 
 } // namespace BK
