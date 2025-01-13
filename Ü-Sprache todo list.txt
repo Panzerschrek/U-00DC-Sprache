@@ -213,8 +213,6 @@ CPP Header converter:
 *) Centralized packages repository
 
 Documentation:
-*) Documentation for the build system
 *) Other languages (not only russian and english)
 *) Describe more language details
 *) Describe undefined behavior
-*) Describe build system
