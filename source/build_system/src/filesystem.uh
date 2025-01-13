@@ -27,4 +27,7 @@ type FileModificationTime= u64;
 // Get modification time for file. Returns empty option if can't find it (probably file doesn't exist).
 fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>;
 
+// Get absolute path to executable of current program.
+fn GetCurrentExecutablePath() : ust::string8;
+
 } // namespace BK
