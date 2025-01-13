@@ -465,11 +465,13 @@ def ReturnAutoMove_Test5():
 		struct T
 		{
 			fn conversion_constructor( S mut in_s ) ( s(move(in_s)) ) {}
+			fn constructor( mut this, T& other )= delete;
 			S s;
 		}
+		static_assert( !typeinfo</T/>.is_copy_constructible );
 		fn MakeT( S s ) : T
 		{
-			return s; // Auto-move in "return" and then perform implicit type conversion.
+			return s; // Auto-move in "return" and then perform implicit type conversion. Should not call copy constructor.
 		}
 		fn Foo()
 		{
