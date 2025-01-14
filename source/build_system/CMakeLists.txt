@@ -65,17 +65,17 @@ foreach( source ${BUILD_SYSTEM_SOURCES} )
 	list( APPEND BUILD_SYSTEM_OBJECTS ${out_object} )
 endforeach()
 
-add_executable( BuildSystem ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} ${BUILD_SYSTEM_SOURCES_CPP} )
+add_executable( BuildSystem${CURRENT_COMPILER_GENERATION} ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} ${BUILD_SYSTEM_SOURCES_CPP} )
 
 if( MINGW )
-	target_link_options( BuildSystem PRIVATE "-municode" ) # Allow "wmain" as entry point.
+	target_link_options( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE "-municode" ) # Allow "wmain" as entry point.
 endif()
 
 if( NOT WIN32 )
-	target_link_libraries( BuildSystem PRIVATE dl )
+	target_link_libraries( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE dl )
 endif()
 
-install( TARGETS BuildSystem )
+install( TARGETS BuildSystem${CURRENT_COMPILER_GENERATION} )
 
 file( GLOB BUILD_SYSTEM_IMPORTS "imports/*" )
 install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
@@ -86,10 +86,10 @@ install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
 if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 
 	# Create a couple of test libraries - to test linking against them
-	add_library( BuildSystemTestsStaticLibrary test_static_lib/test_static_lib.cpp )
-	add_library( BuildSystemTestsSharedLibrary SHARED test_shared_lib/test_shared_lib.cpp )
+	add_library( BuildSystemTestsStaticLibrary${CURRENT_COMPILER_GENERATION} test_static_lib/test_static_lib.cpp )
+	add_library( BuildSystemTestsSharedLibrary${CURRENT_COMPILER_GENERATION} SHARED test_shared_lib/test_shared_lib.cpp )
 	# Create also a test executable for using in tests as command for custom build steps
-	add_executable( BuildSystemTestFileGenerationTool test_file_generation_tool/main.cpp )
+	add_executable( BuildSystemTestFileGenerationTool${CURRENT_COMPILER_GENERATION} test_file_generation_tool/main.cpp )
 
 	# Generate a configuration options JSON file for tests.
 	set( CONFIGURATION_OPTIONS_FILE "${CMAKE_CURRENT_BINARY_DIR}/tests/tests_configuration_options.json" )
@@ -141,7 +141,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 			COMMAND ${CMAKE_COMMAND} -E env PYTHONIOENCODING=utf-8 ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_tests.py
 			--tests-path ${CMAKE_CURRENT_SOURCE_DIR}/tests/
 			--tests-build-root-path ${CMAKE_CURRENT_BINARY_DIR}/tests
-			--build-system-executable ${CMAKE_CURRENT_BINARY_DIR}/BuildSystem
+			--build-system-executable ${CMAKE_CURRENT_BINARY_DIR}/BuildSystem${CURRENT_COMPILER_GENERATION}
 			--compiler-executable $<TARGET_FILE:Compiler> # For now hardcode here Compiler0
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib
@@ -149,18 +149,18 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 			--mangling-scheme ${MANGLING_SCHEME}
 			${SYSROOT_OPTION}
 		COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE} # A hacky step to produce a marker file for this command.
-		DEPENDS BuildSystem
+		DEPENDS BuildSystem${CURRENT_COMPILER_GENERATION}
 		DEPENDS ${TESTS_FILES}
 		DEPENDS ${USTLIB_FILES} # Build scripts and sources may import "ustlib". So, make sure we re-run tests if something in ustlib changes.
-		DEPENDS BuildSystemTestsStaticLibrary
-		DEPENDS BuildSystemTestsSharedLibrary
-		DEPENDS BuildSystemTestFileGenerationTool
+		DEPENDS BuildSystemTestsStaticLibrary${CURRENT_COMPILER_GENERATION}
+		DEPENDS BuildSystemTestsSharedLibrary${CURRENT_COMPILER_GENERATION}
+		DEPENDS BuildSystemTestFileGenerationTool${CURRENT_COMPILER_GENERATION}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		)
 
 	# A custom target which is needed only to execute the custom command above.
 	add_custom_target(
-		BuildSystemTestsRun ALL
+		BuildSystemTestsRun${CURRENT_COMPILER_GENERATION} ALL
 		DEPENDS ${TIMESTAMP_FILE} # Depend on the previous custom commadntimestamp file.
 		SOURCES ${TESTS_FILES}
 		)
