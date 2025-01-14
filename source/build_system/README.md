@@ -1,10 +1,5 @@
 ## Bürokratie - the Ü build system
 
-WORK IN PROGRESS!
-
-Many options and APIs aren't stabilized yet!
-
-
 ### About the build system
 
 The Ü build system is designed to simplify Ü projects building.
