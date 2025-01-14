@@ -1,0 +1,32 @@
+import "/stdout.u"
+import "abort_signal_handler.uh"
+
+namespace BK
+{
+
+fn SetupAbortSignalHandler()
+{
+	unsafe( ::signal( SIGABRT, AbortHandler ) );
+}
+
+fn AbortHandler( i32 s )
+{
+	// We use "halt-mode=abort" for build script libraries.
+	// If we caught an abort signal, it's likely halt in a build script.
+	ust::ignore_unused(s);
+	ust::stderr_print( "Abort signal recieved. Halt in build script file?\n" );
+
+	// It seems to be fine to return in abort handler.
+}
+
+} // namespace BK
+
+// C library function.
+fn nomangle signal( i32 sig, ( fn( i32 s ) ) handler ) unsafe;
+
+// auto constexpr SIGINT = 2;
+// auto constexpr SIGILL = 4;
+auto constexpr SIGABRT = 6;
+// auto constexpr SIGFPE = 8;
+// auto constexpr SIGSEGV = 11;
+// auto constexpr SIGTERM = 15;

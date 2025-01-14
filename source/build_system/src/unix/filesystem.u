@@ -246,4 +246,32 @@ fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModifi
 	return res;
 }
 
+fn GetCurrentExecutablePath() : ust::string8
+{
+	auto mut link_path_nt= "/proc/self/exe\0";
+
+	var ust::string8 mut res;
+	res.resize( 256s, "\0"c8 );
+	for( auto mut i= 0s; i < 8s; ++i )
+	{
+		auto len = unsafe( ::readlink( $<(link_path_nt[0]), res.data(), res.size() ) );
+		if( len < ssize_type(0) )
+		{
+			return "";
+		}
+		if( size_type(len) >= res.size() )
+		{
+			// Possible truncation.
+			auto new_size= res.size() * 2s;
+			res.resize( new_size, "\0"c8 );
+			continue;
+		}
+
+		res.resize( size_type(len), " "c8 );
+		return res;
+	}
+
+	return "";
+}
+
 } // namespace BK

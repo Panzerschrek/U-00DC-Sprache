@@ -23,7 +23,7 @@ fn nomangle wmain( i32 argc, $($(WCHAR)) argv ) unsafe : i32
 		args_view_utf8.push_back( cast_imut(args_utf8)[i] );
 	}
 
-	return BK::Main( args_view_utf8.front(), args_view_utf8.range().subrange_start(1s) );
+	return BK::Main( args_view_utf8.range().subrange_start(1s) );
 }
 
 namespace BK

@@ -205,4 +205,27 @@ fn GetCurrentDirectory() : ust::string8
 	return WideStringToUTF8( res );
 }
 
+fn GetCurrentExecutablePath() : ust::string8
+{
+	var WideString mut res;
+	res.resize( 256s, WCHAR(0) );
+	for( auto mut i= 0s; i < 8s; ++i )
+	{
+		var DWORD size = unsafe( ::GetModuleFileNameW( ust::nullptr</HINSTANCE__/>(), res.data(), DWORD( res.size() ) ) );
+		if( unsafe( GetLastError() ) == DWORD(ERROR_INSUFFICIENT_BUFFER) )
+		{
+			// Not enough space - increase it.
+			auto new_size= res.size() * 2s;
+			res.resize( new_size, WCHAR(0) );
+			continue;
+		}
+
+		res.resize( size_type(size), WCHAR(0) );
+
+		break;
+	}
+
+	return WideStringToUTF8( res );
+}
+
 } // namespace BK

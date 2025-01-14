@@ -1,0 +1,8 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	halt;
+}
