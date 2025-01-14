@@ -223,7 +223,8 @@ endif()
 add_subdirectory( compiler0 )
 
 if( U_BUILD_COMPILER AND U_BUILD_BUILD_SYSTEM )
-	add_subdirectory( build_system )
+	set( CURRENT_COMPILER_GENERATION "" )
+	add_subdirectory( build_system build_system0 )
 endif()
 
 #
