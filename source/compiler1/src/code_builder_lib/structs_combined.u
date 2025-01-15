@@ -595,6 +595,10 @@ fn Type::IsNoDiscard( this ) : bool
 	{
 		return class_type.lock_imut().deref().no_discard;
 	}
+	else if_var( &enum_type : GetEnumType() )
+	{
+		return enum_type.lock_imut().deref().no_discard;
+	}
 	else if_var( &array_type : GetArrayType() )
 	{
 		return array_type.element_type.IsNoDiscard();

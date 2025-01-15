@@ -1608,6 +1608,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 	var Enum &mut enum_= lock.deref();
 	enum_.underlying_type= move(underlying_type);
 	enum_.elements= move(enum_elements);
+	enum_.no_discard= enum_declaration.no_discard;
 }
 
 fn CodeBuilder::BuildTypeAlias( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr )

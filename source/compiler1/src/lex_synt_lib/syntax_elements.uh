@@ -868,6 +868,7 @@ struct Enum
 	}
 
 	ust::vector</Element/> elements;
+	bool no_discard= false;
 }
 
 struct TemplateParam

@@ -584,6 +584,7 @@ struct Enum
 
 	ust::shared_ptr_final</ Synt::Enum /> syntax_element;
 
+	bool no_discard= false;
 	bool referenced= false;
 }
 
