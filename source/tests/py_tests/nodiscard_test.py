@@ -97,6 +97,26 @@ def NodiscardTypinfoField_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def NodiscardTypinfoField_Test1():
+	c_program_text= """
+		struct NodiscardStruct nodiscard {}
+		static_assert( typeinfo</ NodiscardStruct />.is_nodiscard );
+
+		// Having a field of a "nodiscard" type doesn't make this struct "nodiscard".
+		struct SomeStruct { NodiscardStruct f; }
+		static_assert( !typeinfo</ SomeStruct />.is_nodiscard );
+
+		// Having value/reference of a "nodiscard" type doesn't make this class "nodiscard".
+		class SomeClass
+		{
+			NodiscardStruct f0;
+			NodiscardStruct& f1;
+		}
+		static_assert( !typeinfo</ SomeClass />.is_nodiscard );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def DiscardingValueOfNodiscardType_Test0():
 	c_program_text= """
 		struct SomeStruct nodiscard {}
