@@ -1099,7 +1099,7 @@ private:
 	fn CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope );
 	fn CheckForUnusedGlobalNamesImpl( this, NamesScopePtr& names_scope );
 	fn CheckForUnusedLocalNames( this, NamesScopePtr& names_scope );
-	fn VariableExistanceMayHaveSideEffects( Type& variable_type ) : bool;
+	fn VariableExistenceMayHaveSideEffects( Type& variable_type ) : bool;
 
 	fn CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc );
 	fn CallDestructorsForTopVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );

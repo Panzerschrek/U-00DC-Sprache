@@ -1293,7 +1293,7 @@ fn CodeBuilder::BuildFuncCode(
 				.llvm_value= variable.llvm_value,
 				.name= in_param.name,
 				.src_loc= in_param.src_loc,
-				.referenced= type_param.value_type == ValueType::Value && VariableExistanceMayHaveSideEffects(type_param.t)
+				.referenced= type_param.value_type == ValueType::Value && VariableExistenceMayHaveSideEffects(type_param.t)
 			};
 
 			var VariablePtr variable_ptr= move(variable).CreatePtr();
@@ -1998,7 +1998,7 @@ fn CodeBuilder::CheckForUnusedLocalNames( this, NamesScopePtr& names_scope )
 	}
 }
 
-fn CodeBuilder::VariableExistanceMayHaveSideEffects( Type& variable_type ) : bool
+fn CodeBuilder::VariableExistenceMayHaveSideEffects( Type& variable_type ) : bool
 {
 	// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
 	// For example, "ust::string8" has non-trivial destructor, but it just frees memory.
