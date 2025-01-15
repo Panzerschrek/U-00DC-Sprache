@@ -737,7 +737,7 @@ def BrokenBuildFile3Test():
 	res = RunBuildSystemWithErrors( "broken_build_file3" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Can not read file" ) != -1 )
+	assert( stderr.find( "Can not read file" ) != -1 or stderr.find( "can not read file" ) != -1 )
 	assert( stderr.find( "non_existing_file_imported_in_build_file.uh" ) != -1 )
 	assert( stderr.find( "Compiler execution failed" ) != -1 )
 
@@ -746,7 +746,7 @@ def MissingSourceFileTest():
 	res = RunBuildSystemWithErrors( "missing_source_file" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Can not read file" ) != -1 )
+	assert( stderr.find( "Can not read file" ) != -1 or stderr.find( "can not read file" ) != -1 )
 	assert( stderr.find( "this_file_does_not_exist.u" ) != -1 )
 
 
@@ -768,7 +768,7 @@ def SourceFileCompilationError2Test():
 	res = RunBuildSystemWithErrors( "source_file_compilation_error2" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Can not read file" ) != -1 )
+	assert( stderr.find( "Can not read file" ) != -1 or stderr.find( "can not read file" ) != -1 )
 	assert( stderr.find( "non_existing_imported_file.uh" ) != -1 )
 
 
