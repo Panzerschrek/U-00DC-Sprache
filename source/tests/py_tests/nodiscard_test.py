@@ -60,6 +60,16 @@ def NodiscardClassDeclaration_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def NodiscardClassDeclaration_Test6():
+	c_program_text= """
+		template</type T/>
+		struct SomeStruct nodiscard
+		{ T t; }
+		static_assert( typeinfo</SomeStruct</i32/>/>.is_nodiscard );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def NodiscardTypinfoField_Test0():
 	c_program_text= """
 		// Fundamental types aren't "nodiscard".

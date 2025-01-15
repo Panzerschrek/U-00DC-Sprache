@@ -3641,6 +3641,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		}
 		class_.non_sync_tag= TryParseNonSyncTag();
 		class_.keep_fields_order= ParseClassOrderedFlag();
+		class_.no_discard= ParseClassNoDiscardFlag();
 
 		class_.class_elements= ParseClassBody();
 

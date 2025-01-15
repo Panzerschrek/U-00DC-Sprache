@@ -4084,6 +4084,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			}
 			NonSyncTag non_sync_tag= TryParseNonSyncTag();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
+			const bool no_discard= TryParseClassNoDiscard();
 
 			Class class_= ParseClassBody();
 			class_.src_loc= template_thing_src_loc;
@@ -4091,6 +4092,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			class_.kind_attribute= class_kind_attribute;
 			class_.non_sync_tag= std::move(non_sync_tag);
 			class_.keep_fields_order= keep_fields_order;
+			class_.no_discard= no_discard;
 			class_.parents= std::move(class_parents_list);
 			class_template.something= std::make_unique<Class>(std::move(class_));
 			return std::move(class_template);
