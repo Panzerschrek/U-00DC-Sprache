@@ -266,3 +266,14 @@ def DiscardingValueOfNodiscardType_Test10():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 6 ) )
+
+
+def DiscardingValueOfNodiscardType_Test11():
+	c_program_text= """
+		struct SomeStruct nodiscard {}
+		fn Foo( SomeStruct mut s )
+		{
+			take(s); // Fine - it's fine to take values of nodiscard types with following destruction. It may be useful for in-place default value construction.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
