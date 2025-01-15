@@ -95,7 +95,7 @@ fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr
 	foreach( &static_assert_ : global_static_asserts_set )
 	{
 		var BlockElementBuildInfo info= BuildBlockElementImpl( names_scope_ptr, function_context, static_assert_.deref() );
-		ust::ignore_unused( info );
+		ust::ignore_unused( info ); // Static assert can't be terminal instruction.
 	}
 
 	global_static_asserts_set.clear();
