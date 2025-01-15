@@ -251,6 +251,7 @@ private:
 	std::vector<ComplexName> TryParseClassParentsList();
 	NonSyncTag TryParseNonSyncTag();
 	bool TryParseClassFieldsOrdered();
+	bool TryParseClassNoDiscard();
 
 	TypeAlias ParseTypeAlias();
 	TypeAlias ParseTypeAliasBody();
@@ -3229,6 +3230,16 @@ bool SyntaxAnalyzer::TryParseClassFieldsOrdered()
 	return false;
 }
 
+bool SyntaxAnalyzer::TryParseClassNoDiscard()
+{
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::nodiscard_ )
+	{
+		NextLexem();
+		return true;
+	}
+	return false;
+}
+
 TypeAlias SyntaxAnalyzer::ParseTypeAlias()
 {
 	U_ASSERT( it_->text == Keywords::type_ );
@@ -3674,6 +3685,7 @@ Class SyntaxAnalyzer::ParseClass()
 	}
 	NonSyncTag non_sync_tag= TryParseNonSyncTag();
 	const bool keep_fields_order= TryParseClassFieldsOrdered();
+	const bool no_discard= TryParseClassNoDiscard();
 
 	Class result= ParseClassBody();
 	result.src_loc= class_src_loc;
@@ -3681,6 +3693,7 @@ Class SyntaxAnalyzer::ParseClass()
 	result.kind_attribute= class_kind_attribute;
 	result.non_sync_tag= std::move(non_sync_tag);
 	result.keep_fields_order= keep_fields_order;
+	result.no_discard= no_discard;
 	result.parents= std::move(parents_list);
 
 	return result;

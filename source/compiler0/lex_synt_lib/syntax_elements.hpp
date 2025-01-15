@@ -1312,6 +1312,7 @@ struct Class
 	NonSyncTag non_sync_tag;
 	ClassKindAttribute kind_attribute = ClassKindAttribute::Struct;
 	bool keep_fields_order= false;
+	bool no_discard= false;
 };
 
 struct ClassField
