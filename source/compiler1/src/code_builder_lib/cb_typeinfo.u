@@ -304,6 +304,8 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 	ADD_BOOL_FIELD( "is_copy_assignable"      , t.IsCopyAssignable()       )
 	ADD_BOOL_FIELD( "is_equality_comparable"  , t.IsEqualityComparable()   )
 
+	ADD_BOOL_FIELD( "is_nodiscard", t.IsNoDiscard() )
+
 	if_var( &fundamental_type : t.GetFundamentalType() )
 	{
 		ADD_BOOL_FIELD( "is_integer"         , IsInteger        ( fundamental_type.fundamental_type ) )

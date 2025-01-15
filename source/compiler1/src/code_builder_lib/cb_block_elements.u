@@ -1188,13 +1188,23 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 
 			if_var( &variable_ptr : value.get</VariablePtr/>() )
 			{
-				if( SingleExpressionIsUseless( expression ) )
+				with( & variable : variable_ptr.lock_imut().deref() )
 				{
-					with( & variable : variable_ptr.lock_imut().deref() )
+					if( SingleExpressionIsUseless( expression ) )
 					{
 						if( !( variable.t == self.void_type_ && variable.value_type == ValueType::Value ) )
 						{
 							REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
+						}
+					}
+					if( variable.t.IsNoDiscard() )
+					{
+						// Prevent discarding values of "nodiscard" types.
+						// Make exception for "move" operator, since it may be used for early destruction of a variable.
+						// Make exception for "take" operator, since it may be used for in-place default value construction.
+						if( !( expression.has</Synt::MoveOperator/>() || expression.has</ ust::box</Synt::TakeOperator/> />() ) )
+						{
+							REPORT_ERROR( DiscardingValueOfNodiscardType, names_scope, Synt::GetSrcLoc( expression ), variable.t )
 						}
 					}
 				}

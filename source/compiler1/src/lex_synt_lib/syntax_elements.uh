@@ -852,6 +852,7 @@ struct Class
 	ClassElements class_elements;
 	NonSyncTag non_sync_tag;
 	bool keep_fields_order= false;
+	bool no_discard= false;
 }
 
 struct Enum
