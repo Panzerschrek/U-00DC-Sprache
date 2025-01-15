@@ -2,26 +2,27 @@ import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
-	auto libs_dir = build_system_interface.GetConfigurationOption( "tests_libs_directory" );
+	var ust::string8 libs_dir = build_system_interface.GetConfigurationOption( "tests_libs_directory" ).try_deref();
+	var ust::string8 libs_postfix= build_system_interface.GetConfigurationOption( "tests_libs_postfix" ).try_deref();
 
-	var ust::string_view8 mut library_name;
+	var ust::string8 mut library_name;
 	var BK::TargetTriple target_triple = build_system_interface.GetTargetTriple();
 	if( target_triple.operating_system == "windows" )
 	{
 		if( target_triple.environment == "msvc" )
 		{
-			library_name = "BuildSystemTestsSharedLibrary.lib"; // Interface static library for shared library.
+			library_name = ust::concat( "BuildSystemTestsSharedLibrary", libs_postfix, ".lib" ); // Interface static library for shared library.
 		}
 		else
 		{
-			library_name = "libBuildSystemTestsSharedLibrary.dll.a"; // Interface static library for shared library - MinGW version.
+			library_name = ust::concat( "libBuildSystemTestsSharedLibrary", libs_postfix, ".dll.a" ); // Interface static library for shared library - MinGW version.
 		}
 	}
 	else
 	{
-		library_name = "libBuildSystemTestsSharedLibrary.so";
+		library_name = ust::concat( "libBuildSystemTestsSharedLibrary", libs_postfix, ".so" );
 	}
-	var ust::string8 library = libs_dir.try_deref() + "/" + library_name;
+	var ust::string8 library = ust::concat( libs_dir, "/", library_name );
 
 	var BK::BuildTarget mut exe
 	{

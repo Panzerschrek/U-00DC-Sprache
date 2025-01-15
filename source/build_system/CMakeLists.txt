@@ -93,7 +93,12 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 
 	# Generate a configuration options JSON file for tests.
 	set( CONFIGURATION_OPTIONS_FILE "${CMAKE_CURRENT_BINARY_DIR}/tests/tests_configuration_options.json" )
-	set( CONFIGURATION_OPTIONS_FILE_CONTENTS "{\n\t\"tests_libs_directory\" : \"${CMAKE_CURRENT_BINARY_DIR}\"\n}\n" )
+
+	set( CONFIGURATION_OPTIONS_FILE_CONTENTS
+		"{\n\t\"tests_libs_directory\" : \"${CMAKE_CURRENT_BINARY_DIR}\",\n\
+	\"tests_libs_postfix\" : \"${CURRENT_COMPILER_GENERATION}\",\n\
+	\"test_file_generation_tool\" : \"${CMAKE_CURRENT_BINARY_DIR}/BuildSystemTestFileGenerationTool${CURRENT_COMPILER_GENERATION}\"\n}\n" )
+
 	file( GENERATE OUTPUT ${CONFIGURATION_OPTIONS_FILE} CONTENT ${CONFIGURATION_OPTIONS_FILE_CONTENTS} )
 
 	# Run tests for build system.
