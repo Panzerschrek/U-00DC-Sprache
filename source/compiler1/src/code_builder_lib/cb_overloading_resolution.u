@@ -8,7 +8,7 @@ namespace U1
 {
 
 // "Class" of function argument in terms of overloading.
-enum ArgOverloadingClass
+enum ArgOverloadingClass nodiscard
 {
 	// Value-args (both mutable and immutable), immutable references.
 	ImmutableReference,
@@ -21,7 +21,7 @@ fn GetArgOverloadingClass( VariableTypeExtended& arg ) : ArgOverloadingClass
 	return ( arg.value_type == ValueType::ReferenceMut ? ArgOverloadingClass::MutalbeReference : ArgOverloadingClass::ImmutableReference );
 }
 
-enum ConversionsCompareResult
+enum ConversionsCompareResult nodiscard
 {
 	Same,
 	LeftIsBetter,
