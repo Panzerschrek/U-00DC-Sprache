@@ -70,6 +70,23 @@ def NodiscardClassDeclaration_Test6():
 	tests_lib.build_program( c_program_text )
 
 
+def NodiscardEnumDeclaration_Test0():
+	c_program_text= """
+		enum E nodiscard { A, B, C }
+		static_assert( typeinfo</E/>.is_nodiscard );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NodiscardEnumDeclaration_Test1():
+	c_program_text= """
+		enum E : u32 nodiscard { A, B, C }
+		static_assert( typeinfo</E/>.is_nodiscard );
+		static_assert( typeinfo</E/>.size_of == typeinfo</u32/>.size_of );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def NodiscardTypinfoField_Test0():
 	c_program_text= """
 		// Fundamental types aren't "nodiscard".
@@ -93,16 +110,26 @@ def NodiscardTypinfoField_Test0():
 		static_assert( typeinfo</ NodiscardStruct />.is_nodiscard );
 		static_assert( typeinfo</ NodescardClass />.is_nodiscard );
 
+		// Enums declared with "nodiscard" are "nodiscard".
+		static_assert( !typeinfo</ SomeEnum />.is_nodiscard );
+		static_assert( typeinfo</ NoDiscardEnum />.is_nodiscard );
+
 		// Composites over "nodiscard" classes are nodiscard.
 		static_assert( !typeinfo</ [ SomeStruct, 4 ] />.is_nodiscard );
 		static_assert( !typeinfo</ tup[ bool, SomeClass, i32 ] />.is_nodiscard );
 		static_assert( typeinfo</ tup[ NodiscardStruct, SomeStruct ] />.is_nodiscard );
 		static_assert( typeinfo</ [ NodescardClass, 0 ] />.is_nodiscard );
+		// Composites over "nodiscard" enums are nodiscard.
+		static_assert( !typeinfo</ tup[ bool, SomeEnum, i32 ] />.is_nodiscard );
+		static_assert( typeinfo</ [ NoDiscardEnum, 4 ] />.is_nodiscard );
 
 		struct SomeStruct{}
 		class SomeClass{}
 		struct NodiscardStruct nodiscard {}
 		class NodescardClass nodiscard {}
+
+		enum SomeEnum{ A, B, C }
+		enum NoDiscardEnum nodiscard { One, Two, Three, Four }
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -112,8 +139,11 @@ def NodiscardTypinfoField_Test1():
 		struct NodiscardStruct nodiscard {}
 		static_assert( typeinfo</ NodiscardStruct />.is_nodiscard );
 
+		enum NoDiscardEnum nodiscard { One, Two, Three, Four }
+		static_assert( typeinfo</ NoDiscardEnum />.is_nodiscard );
+
 		// Having a field of a "nodiscard" type doesn't make this struct "nodiscard".
-		struct SomeStruct { NodiscardStruct f; }
+		struct SomeStruct { NodiscardStruct f; NoDiscardEnum n; }
 		static_assert( !typeinfo</ SomeStruct />.is_nodiscard );
 
 		// Having value/reference of a "nodiscard" type doesn't make this class "nodiscard".
@@ -121,6 +151,7 @@ def NodiscardTypinfoField_Test1():
 		{
 			NodiscardStruct f0;
 			NodiscardStruct& f1;
+			NoDiscardEnum n0;
 		}
 		static_assert( !typeinfo</ SomeClass />.is_nodiscard );
 	"""
@@ -287,3 +318,31 @@ def DiscardingValueOfNodiscardType_Test11():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def DiscardingValueOfNodiscardType_Test12():
+	c_program_text= """
+		enum SomeEnum nodiscard { A, B, C }
+		fn Bar() : SomeEnum;
+		fn Foo()
+		{
+			Bar(); // Discard result of function call of "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 6 ) )
+
+
+def DiscardingValueOfNodiscardType_Test13():
+	c_program_text= """
+		enum SomeEnum nodiscard { A, B, C }
+		fn Bar() : SomeEnum &;
+		fn Foo()
+		{
+			Bar(); // Discard reference result of function call of "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 6 ) )

@@ -251,7 +251,7 @@ private:
 	std::vector<ComplexName> TryParseClassParentsList();
 	NonSyncTag TryParseNonSyncTag();
 	bool TryParseClassFieldsOrdered();
-	bool TryParseClassNoDiscard();
+	bool TryParseNoDiscard();
 
 	TypeAlias ParseTypeAlias();
 	TypeAlias ParseTypeAliasBody();
@@ -2831,6 +2831,8 @@ Enum SyntaxAnalyzer::ParseEnum()
 		result.underlying_type_name= ParseComplexName();
 	}
 
+	result.no_discard= TryParseNoDiscard();
+
 	ExpectLexem( Lexem::Type::BraceLeft );
 
 	while( NotEndOfFile() )
@@ -3230,7 +3232,7 @@ bool SyntaxAnalyzer::TryParseClassFieldsOrdered()
 	return false;
 }
 
-bool SyntaxAnalyzer::TryParseClassNoDiscard()
+bool SyntaxAnalyzer::TryParseNoDiscard()
 {
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::nodiscard_ )
 	{
@@ -3685,7 +3687,7 @@ Class SyntaxAnalyzer::ParseClass()
 	}
 	NonSyncTag non_sync_tag= TryParseNonSyncTag();
 	const bool keep_fields_order= TryParseClassFieldsOrdered();
-	const bool no_discard= TryParseClassNoDiscard();
+	const bool no_discard= TryParseNoDiscard();
 
 	Class result= ParseClassBody();
 	result.src_loc= class_src_loc;
@@ -4084,7 +4086,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			}
 			NonSyncTag non_sync_tag= TryParseNonSyncTag();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
-			const bool no_discard= TryParseClassNoDiscard();
+			const bool no_discard= TryParseNoDiscard();
 
 			Class class_= ParseClassBody();
 			class_.src_loc= template_thing_src_loc;

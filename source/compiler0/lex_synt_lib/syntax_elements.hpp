@@ -1298,6 +1298,7 @@ struct Enum
 	std::string name;
 	std::optional<ComplexName> underlying_type_name;
 	std::vector<Member> members;
+	bool no_discard= false;
 };
 
 struct Class

@@ -353,6 +353,8 @@ bool Type::IsNoDiscard() const
 {
 	if( const auto class_type= GetClassType() )
 		return class_type->no_discard;
+	else if( const auto enum_type= GetEnumType() )
+		return enum_type->no_discard;
 	else if( const auto array_type= GetArrayType() )
 		return array_type->element_type.IsNoDiscard();
 	else if( const auto tuple_type= GetTupleType() )

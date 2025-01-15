@@ -1254,6 +1254,8 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	const Synt::Enum& enum_decl= *enum_->syntax_element;
 	NamesScope& names_scope= *enum_->members.GetParent();
 
+	enum_->no_discard= enum_decl.no_discard;
+
 	// Default underlying type is mostyl u8, but can be large for enums with a lot of values.
 	if( enum_decl.members.size() <= (1 << 8) )
 		enum_->underlying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
