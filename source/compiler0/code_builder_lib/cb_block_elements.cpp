@@ -2594,6 +2594,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( SingleExpressionIsUseless( single_expression_operator.expression ) &&
 			!( variable_ptr->type == void_type_ && variable_ptr->value_type == ValueType::Value ) )
 			REPORT_ERROR( UselessExpressionRoot, names_scope.GetErrors(), Synt::GetSrcLoc( single_expression_operator.expression ) );
+
+		if( variable_ptr->type.IsNoDiscard() )
+			REPORT_ERROR( DiscardingValueOfNodiscardType, names_scope.GetErrors(), Synt::GetSrcLoc( single_expression_operator.expression ), variable_ptr->type );
 	}
 	else if(
 		value.GetFunctionsSet() != nullptr ||

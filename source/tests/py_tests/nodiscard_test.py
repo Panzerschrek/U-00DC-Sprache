@@ -95,3 +95,86 @@ def NodiscardTypinfoField_Test0():
 		class NodescardClass nodiscard {}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def DiscardingValueOfNodiscardType_Test0():
+	c_program_text= """
+		struct SomeStruct nodiscard {}
+		fn Bar() : SomeStruct;
+		fn Foo()
+		{
+			Bar(); // Discard result of function call of "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 6 ) )
+
+
+def DiscardingValueOfNodiscardType_Test1():
+	c_program_text= """
+		struct SomeStruct nodiscard {}
+		fn Bar() : SomeStruct &;
+		fn Foo()
+		{
+			Bar(); // Discard reference result of function call of "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 6 ) )
+
+
+def DiscardingValueOfNodiscardType_Test2():
+	c_program_text= """
+		struct SomeStruct nodiscard {}
+		fn Bar() : SomeStruct &mut;
+		fn Foo()
+		{
+			Bar(); // Discard mutable reference result of function call of "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 6 ) )
+
+
+def DiscardingValueOfNodiscardType_Test3():
+	c_program_text= """
+		struct SomeStruct nodiscard {}
+		fn Bar() : tup[ bool, SomeStruct, i32 ];
+		fn Foo()
+		{
+			Bar(); // Discard result of function call of "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 6 ) )
+
+
+def DiscardingValueOfNodiscardType_Test4():
+	c_program_text= """
+		class SomeClass nodiscard {}
+		fn Bar() : [ SomeClass, 4 ] &;
+		fn Foo()
+		{
+			Bar(); // Discard rererence result of function call of "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 6 ) )
+
+
+def DiscardingValueOfNodiscardType_Test5():
+	c_program_text= """
+		struct SomeStruct nodiscard {}
+		fn Foo()
+		{
+			SomeStruct(); // Discard result of temporary variable construction of "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 5 ) )

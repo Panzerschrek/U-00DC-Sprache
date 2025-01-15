@@ -219,6 +219,9 @@ PROCESS_ERROR( VirtualMismatch, "\"virtual\" specifiers mismatch for function \"
 PROCESS_ERROR( NoMangleForNonglobalFunction, "\"nomangle\" for non-global function \"{0}\"." )
 PROCESS_ERROR( NoMangleMismatch, "\"nomangle\" specifiers mismatch for function \"{0}\"." )
 
+// Nodiscard
+PROCESS_ERROR( DiscardingValueOfNodiscardType, "Discarding a value of \"nodiscard\" type \"{0}\"." )
+
 // Calling conventions
 PROCESS_ERROR( UnknownCallingConvention, "Unknown calling convention \"{0}\"." )
 PROCESS_ERROR( NonDefaultCallingConventionForClassMethod, "Only default calling convention allowed for this method." )
