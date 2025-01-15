@@ -469,6 +469,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		}
 	}
 
+	the_class.no_discard= class_declaration.no_discard;
+
 	// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
 	if( class_declaration.kind_attribute == Synt::ClassKindAttribute::Polymorph ||
 		class_declaration.kind_attribute == Synt::ClassKindAttribute::Interface ||

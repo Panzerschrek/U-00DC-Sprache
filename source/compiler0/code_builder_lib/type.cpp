@@ -349,6 +349,25 @@ bool Type::IsValidForTemplateVariableArgument() const
 	return false;
 }
 
+bool Type::IsNoDiscard() const
+{
+	if( const auto class_type= GetClassType() )
+		return class_type->no_discard;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->element_type.IsNoDiscard();
+	else if( const auto tuple_type= GetTupleType() )
+	{
+		for( const Type& element : tuple_type->element_types )
+			if( element.IsNoDiscard() )
+				return true;
+		return false;
+	}
+
+	// Other type kinds aren't "nodiscard".
+
+	return false;
+}
+
 size_t Type::ReferenceTagCount() const
 {
 	if( const auto class_type= GetClassType() )

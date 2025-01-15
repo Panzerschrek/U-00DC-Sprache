@@ -173,6 +173,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	add_bool_field( "is_copy_assignable"      , type.IsCopyAssignable()       );
 	add_bool_field( "is_equality_comparable"  , type.IsEqualityComparable()   );
 
+	add_bool_field( "is_nodiscard", type.IsNoDiscard() );
+
 	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
 	{
 		add_bool_field( "is_integer"         , IsInteger        ( fundamental_type->fundamental_type ) );
