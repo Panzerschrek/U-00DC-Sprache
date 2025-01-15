@@ -50,6 +50,7 @@ class SpracheLexer(RegexLexer):
 			(r'abstract(?![a-zA-Z_0-9])', token.Keyword),
 			(r'non_sync(?![a-zA-Z_0-9])', token.Keyword),
 			(r'ordered(?![a-zA-Z_0-9])', token.Keyword),
+			(r'nodiscard(?![a-zA-Z_0-9])', token.Keyword),
 			(r'nomangle(?![a-zA-Z_0-9])', token.Keyword),
 			(r'call_conv(?![a-zA-Z_0-9])', token.Keyword),
 			(r'virtual(?![a-zA-Z_0-9])', token.Keyword),
