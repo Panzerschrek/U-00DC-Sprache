@@ -35,7 +35,7 @@ public:
 		CodeBuilderOptions& options,
 		IVfsSharedPtr vfs );
 
-	struct BuildResult
+	struct BuildResult nodiscard
 	{
 		ust::vector</CodeBuilderError/> errors;
 		LLVMModuleRef llvm_module;
@@ -369,7 +369,7 @@ private:
 		ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext /> reference_notation_deduction_context,
 		ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context );
 
-	struct BlockElementBuildInfo
+	struct BlockElementBuildInfo nodiscard
 	{
 		bool has_terminal_instruction_inside= false;
 	}

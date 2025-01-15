@@ -2693,7 +2693,8 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	// Variables declaration part.
 	variant_visit( &element : c_style_for_operator.variable_declaration_part )
 	{
-		BuildBlockElementImpl( names_scope, function_context, element );
+		var BlockElementBuildInfo info= BuildBlockElementImpl( names_scope, function_context, element );
+		ust::ignore_unused(info); // Terminal instructions aren't possible in variables declarations.
 	}
 
 	auto references_graph_before_loop= function_context.references_graph;
@@ -2789,7 +2790,8 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	{
 		variant_visit( &el : element )
 		{
-			BuildBlockElementImpl( names_scope, function_context, el );
+			var BlockElementBuildInfo info= BuildBlockElementImpl( names_scope, function_context, el );
+			ust::ignore_unused( info ); // Terminal instructions aren't possible in iteration part operators.
 		}
 	}
 
