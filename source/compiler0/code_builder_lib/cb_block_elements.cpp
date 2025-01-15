@@ -2595,7 +2595,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			!( variable_ptr->type == void_type_ && variable_ptr->value_type == ValueType::Value ) )
 			REPORT_ERROR( UselessExpressionRoot, names_scope.GetErrors(), Synt::GetSrcLoc( single_expression_operator.expression ) );
 
-		if( variable_ptr->type.IsNoDiscard() )
+		// Prevent discarding values of "nodiscard" types.
+		// Make exception for "move" operator, since it may be used for early destruction of a variable.
+		if( variable_ptr->type.IsNoDiscard() && !std::holds_alternative<Synt::MoveOperator>( single_expression_operator.expression ) )
 			REPORT_ERROR( DiscardingValueOfNodiscardType, names_scope.GetErrors(), Synt::GetSrcLoc( single_expression_operator.expression ), variable_ptr->type );
 	}
 	else if(

@@ -178,3 +178,14 @@ def DiscardingValueOfNodiscardType_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 5 ) )
+
+
+def DiscardingValueOfNodiscardType_Test6():
+	c_program_text= """
+		struct SomeStruct nodiscard {}
+		fn Foo( SomeStruct mut s )
+		{
+			move(s); // Fine - it's fine to move values of nodiscard types with following destruction.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
