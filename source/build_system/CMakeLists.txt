@@ -147,7 +147,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 			--tests-path ${CMAKE_CURRENT_SOURCE_DIR}/tests/
 			--tests-build-root-path ${CMAKE_CURRENT_BINARY_DIR}/tests
 			--build-system-executable ${CMAKE_CURRENT_BINARY_DIR}/BuildSystem${CURRENT_COMPILER_GENERATION}
-			--compiler-executable $<TARGET_FILE:Compiler> # For now hardcode here Compiler0
+			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib
 			--configuration-options ${CONFIGURATION_OPTIONS_FILE}
