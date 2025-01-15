@@ -4128,8 +4128,7 @@ fn CodeBuilder::DoCallFunction(
 		return ErrorValue();
 	}
 
-	// TODO - maybe forbid calling functions with incomplete type for returned reference?
-	if( function_type.return_value_type == ValueType::Value && !EnsureTypeComplete( function_type.return_type ) )
+	if( !EnsureTypeComplete( function_type.return_type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, function_type.return_type )
 		return ErrorValue();
