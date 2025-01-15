@@ -321,3 +321,27 @@ typedef MyVoid *MyVoidPtr; // Should translate it as $(byte8)
 
 // Should translate "MyVoid" for return value as proper "Ü void".
 MyVoid VoidPtrTypedefParamFunc(MyVoidPtr p);
+
+#ifdef __cplusplus
+	#if __cplusplus >= 201703L // Equal or newer then C++17
+		#define MY_NODISCARD [[ nodiscard ]]
+	#else
+		#define MY_NODISCARD
+	#endif
+#else
+	#if __STDC_VERSION__ > 201710L // Newer then C17
+		#define MY_NODISCARD [[ nodiscard ]]
+	#else
+		#define MY_NODISCARD
+	#endif
+#endif
+
+struct MY_NODISCARD SomeNoDiscardStruct
+{
+	int contents;
+};
+
+enum MY_NODISCARD SomeNoDiscardEnum
+{
+	NoDiscardA, NoDiscardB, NoDiscardC,
+};

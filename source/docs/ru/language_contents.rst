@@ -33,6 +33,7 @@
    typeinfo
    same_type
    unsafe
+   nodiscard
    non_sync_tag
    macros
    modules

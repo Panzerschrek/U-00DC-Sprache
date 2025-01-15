@@ -345,7 +345,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( variable_reference->value_type == ValueType::ReferenceMut )
 			variable_reference->constexpr_value= nullptr;
 
-		const bool force_referenced= variable_declaration.reference_modifier == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
+		const bool force_referenced= variable_declaration.reference_modifier == ReferenceModifier::None && VariableExistenceMayHaveSideEffects(variable_reference->type);
 
 		const NamesScopeValue* const inserted_value=
 			names_scope.AddName( variable_declaration.name, NamesScopeValue( variable_reference, variable_declaration.src_loc, force_referenced ) );
@@ -514,7 +514,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( variable_reference->value_type != ValueType::ReferenceImut )
 		variable_reference->constexpr_value= nullptr;
 
-	const bool force_referenced= auto_variable_declaration.reference_modifier == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
+	const bool force_referenced= auto_variable_declaration.reference_modifier == ReferenceModifier::None && VariableExistenceMayHaveSideEffects(variable_reference->type);
 
 	const NamesScopeValue* const inserted_value=
 		names_scope.AddName( auto_variable_declaration.name, NamesScopeValue( variable_reference, auto_variable_declaration.src_loc, force_referenced ) );
@@ -1085,7 +1085,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
 
-			const bool force_referenced= range_for_operator.reference_modifier == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
+			const bool force_referenced= range_for_operator.reference_modifier == ReferenceModifier::None && VariableExistenceMayHaveSideEffects(variable_reference->type);
 
 			loop_names.AddName( range_for_operator.loop_variable_name, NamesScopeValue( variable_reference, range_for_operator.src_loc, force_referenced ) );
 
@@ -1628,7 +1628,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), with_operator.src_loc );
 	variables_storage.RegisterVariable( variable_reference );
 
-	const bool force_referenced= with_operator.reference_modifier == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
+	const bool force_referenced= with_operator.reference_modifier == ReferenceModifier::None && VariableExistenceMayHaveSideEffects(variable_reference->type);
 
 	// Create separate namespace for variable. Redefinition here is not possible.
 	NamesScope variable_names_scope( "", &names_scope );
@@ -2030,7 +2030,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		coro_result_variables_storage.RegisterVariable( variable_reference );
 
-		const bool force_referenced= is_variable && VariableExistanceMayHaveSideEffects(variable_reference->type);
+		const bool force_referenced= is_variable && VariableExistenceMayHaveSideEffects(variable_reference->type);
 
 		NamesScope variable_names_scope( "", &names_scope );
 		variable_names_scope.AddName( if_coro_advance.variable_name, NamesScopeValue( variable_reference, if_coro_advance.src_loc, force_referenced ) );
@@ -2594,6 +2594,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( SingleExpressionIsUseless( single_expression_operator.expression ) &&
 			!( variable_ptr->type == void_type_ && variable_ptr->value_type == ValueType::Value ) )
 			REPORT_ERROR( UselessExpressionRoot, names_scope.GetErrors(), Synt::GetSrcLoc( single_expression_operator.expression ) );
+
+		// Prevent discarding values of "nodiscard" types.
+		// Make exception for "move" operator, since it may be used for early destruction of a variable.
+		// Make exception for "take" operator, since it may be used for in-place default value construction.
+		if( variable_ptr->type.IsNoDiscard() &&
+			!(  std::holds_alternative<Synt::MoveOperator>( single_expression_operator.expression ) ||
+				std::holds_alternative<std::unique_ptr<const Synt::TakeOperator>>( single_expression_operator.expression ) ) )
+			REPORT_ERROR( DiscardingValueOfNodiscardType, names_scope.GetErrors(), Synt::GetSrcLoc( single_expression_operator.expression ), variable_ptr->type );
 	}
 	else if(
 		value.GetFunctionsSet() != nullptr ||

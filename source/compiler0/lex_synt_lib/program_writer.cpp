@@ -707,6 +707,9 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 	if( class_.keep_fields_order )
 		stream << " " << Keyword( Keywords::ordered_ );
 
+	if( class_.no_discard )
+		stream << " " << Keyword( Keywords::nodiscard_ );
+
 	stream << "\n{\n";
 	ElementWrite( class_.elements, stream );
 	stream << "}\n";
@@ -805,6 +808,9 @@ void ElementWrite( const Enum& enum_, std::ostream& stream )
 		stream << " : ";
 		ElementWrite( *enum_.underlying_type_name, stream );
 	}
+
+	if( enum_.no_discard )
+		stream << " " << Keyword( Keywords::nodiscard_ );
 
 	stream << "\n{\n";
 	for( const Enum::Member& enum_member : enum_.members )

@@ -469,6 +469,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		}
 	}
 
+	the_class.no_discard= class_declaration.no_discard;
+
 	// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
 	if( class_declaration.kind_attribute == Synt::ClassKindAttribute::Polymorph ||
 		class_declaration.kind_attribute == Synt::ClassKindAttribute::Interface ||
@@ -1251,6 +1253,8 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 
 	const Synt::Enum& enum_decl= *enum_->syntax_element;
 	NamesScope& names_scope= *enum_->members.GetParent();
+
+	enum_->no_discard= enum_decl.no_discard;
 
 	// Default underlying type is mostyl u8, but can be large for enums with a lot of values.
 	if( enum_decl.members.size() <= (1 << 8) )

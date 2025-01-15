@@ -72,6 +72,7 @@ def main():
 		"multiple_inner_reference_tags_for_structs_test",
 		"multiple_inner_reference_tags_test",
 		"names_in_error_messages_test",
+		"nodiscard_test",
 		"nomangle_test",
 		"non_sync_tag_errors_test",
 		"non_sync_tag_test",

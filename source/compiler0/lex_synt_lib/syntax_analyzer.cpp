@@ -251,6 +251,7 @@ private:
 	std::vector<ComplexName> TryParseClassParentsList();
 	NonSyncTag TryParseNonSyncTag();
 	bool TryParseClassFieldsOrdered();
+	bool TryParseNoDiscard();
 
 	TypeAlias ParseTypeAlias();
 	TypeAlias ParseTypeAliasBody();
@@ -2830,6 +2831,8 @@ Enum SyntaxAnalyzer::ParseEnum()
 		result.underlying_type_name= ParseComplexName();
 	}
 
+	result.no_discard= TryParseNoDiscard();
+
 	ExpectLexem( Lexem::Type::BraceLeft );
 
 	while( NotEndOfFile() )
@@ -3222,6 +3225,16 @@ NonSyncTag SyntaxAnalyzer::TryParseNonSyncTag()
 bool SyntaxAnalyzer::TryParseClassFieldsOrdered()
 {
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::ordered_ )
+	{
+		NextLexem();
+		return true;
+	}
+	return false;
+}
+
+bool SyntaxAnalyzer::TryParseNoDiscard()
+{
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::nodiscard_ )
 	{
 		NextLexem();
 		return true;
@@ -3674,6 +3687,7 @@ Class SyntaxAnalyzer::ParseClass()
 	}
 	NonSyncTag non_sync_tag= TryParseNonSyncTag();
 	const bool keep_fields_order= TryParseClassFieldsOrdered();
+	const bool no_discard= TryParseNoDiscard();
 
 	Class result= ParseClassBody();
 	result.src_loc= class_src_loc;
@@ -3681,6 +3695,7 @@ Class SyntaxAnalyzer::ParseClass()
 	result.kind_attribute= class_kind_attribute;
 	result.non_sync_tag= std::move(non_sync_tag);
 	result.keep_fields_order= keep_fields_order;
+	result.no_discard= no_discard;
 	result.parents= std::move(parents_list);
 
 	return result;
@@ -4071,6 +4086,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			}
 			NonSyncTag non_sync_tag= TryParseNonSyncTag();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
+			const bool no_discard= TryParseNoDiscard();
 
 			Class class_= ParseClassBody();
 			class_.src_loc= template_thing_src_loc;
@@ -4078,6 +4094,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			class_.kind_attribute= class_kind_attribute;
 			class_.non_sync_tag= std::move(non_sync_tag);
 			class_.keep_fields_order= keep_fields_order;
+			class_.no_discard= no_discard;
 			class_.parents= std::move(class_parents_list);
 			class_template.something= std::make_unique<Class>(std::move(class_));
 			return std::move(class_template);

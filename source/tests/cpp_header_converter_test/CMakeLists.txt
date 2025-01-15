@@ -15,7 +15,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_test.h CppHeaderConverter
 		COMMAND
 			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_converted.u
-			${CMAKE_CURRENT_SOURCE_DIR}/c_test.h -- -std=c11 )
+			${CMAKE_CURRENT_SOURCE_DIR}/c_test.h -- -std=c2x )
 
 	add_custom_command(
 		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpp_header_converter_test.o

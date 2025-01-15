@@ -87,6 +87,7 @@ public:
 	bool is_copy_assignable= false;
 	bool is_equality_comparable= false;
 	bool can_be_constexpr= false;
+	bool no_discard= false;
 
 	llvm::StructType* llvm_type= nullptr;
 

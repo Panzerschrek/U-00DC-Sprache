@@ -74,6 +74,10 @@ fn nomangle main() : i32
 		var ust::result</NonComparableStruct, SomeErrorEnum /> r0( NonComparableStruct() ), r1( SomeErrorEnumLLCompleteDiaster );
 		auto eq = r0 == r1; //##expect_error OperationNotSupportedForThisType
 	}
+	{
+		// Discarding value of "nodiscard" type here.
+		RetErr( SomeErrorEnum::NotOk ); //##expect_error DiscardingValueOfNodiscardType
+	}
 
 	return 0;
 }

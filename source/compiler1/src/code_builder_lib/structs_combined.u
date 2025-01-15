@@ -589,6 +589,29 @@ fn Type::IsValidForTemplateVariableArgument( this ) : bool
 	return false;
 }
 
+fn Type::IsNoDiscard( this ) : bool
+{
+	if_var( &class_type : GetClassType() )
+	{
+		return class_type.lock_imut().deref().no_discard;
+	}
+	else if_var( &enum_type : GetEnumType() )
+	{
+		return enum_type.lock_imut().deref().no_discard;
+	}
+	else if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.IsNoDiscard();
+	}
+	else if_var( &tuple_type : GetTupleType() )
+	{
+		return tuple_type.element_types.iter().any( IsNoDiscard );
+	}
+
+	// Other type kinds aren't "nodiscard".
+	return false;
+}
+
 fn Type::ReferenceTagCount( this ) : u32
 {
 	if_var( &array_type : GetArrayType() )

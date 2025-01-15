@@ -13,11 +13,12 @@ General:
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) More advanced macros - more context, elements, stringification, string manipulations
 *) Simpler syntax for char-types literals (like 'q' in C++)
+*) "nodiscard" for functions
+*) Consider making "nodiscard" flag presence configurable - based on a constant expression
 *) switch-style operator for expression context
 *) thread-local variables
 *) A way to construct temporary variable with sequence initializer or other initializer kinds,
 	(in expression context)
-*) "nodiscard" for types and/or functions
 *) Function to function pointer assignment with multiple possible functions
 *) Provide calling convention in typeinfo for function types
 *) Calling convention as arbitrary constant expression (possibility to generate it in compilation time)

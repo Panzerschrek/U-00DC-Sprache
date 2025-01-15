@@ -1298,6 +1298,7 @@ struct Enum
 	std::string name;
 	std::optional<ComplexName> underlying_type_name;
 	std::vector<Member> members;
+	bool no_discard= false;
 };
 
 struct Class
@@ -1312,6 +1313,7 @@ struct Class
 	NonSyncTag non_sync_tag;
 	ClassKindAttribute kind_attribute = ClassKindAttribute::Struct;
 	bool keep_fields_order= false;
+	bool no_discard= false;
 };
 
 struct ClassField

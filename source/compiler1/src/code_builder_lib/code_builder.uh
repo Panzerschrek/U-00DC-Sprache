@@ -35,7 +35,7 @@ public:
 		CodeBuilderOptions& options,
 		IVfsSharedPtr vfs );
 
-	struct BuildResult
+	struct BuildResult nodiscard
 	{
 		ust::vector</CodeBuilderError/> errors;
 		LLVMModuleRef llvm_module;
@@ -369,7 +369,7 @@ private:
 		ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext /> reference_notation_deduction_context,
 		ust::shared_ptr_nullable_mut</ LambdaPreprocessingContext /> lambda_preprocessing_context );
 
-	struct BlockElementBuildInfo
+	struct BlockElementBuildInfo nodiscard
 	{
 		bool has_terminal_instruction_inside= false;
 	}
@@ -1099,7 +1099,7 @@ private:
 	fn CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope );
 	fn CheckForUnusedGlobalNamesImpl( this, NamesScopePtr& names_scope );
 	fn CheckForUnusedLocalNames( this, NamesScopePtr& names_scope );
-	fn VariableExistanceMayHaveSideEffects( Type& variable_type ) : bool;
+	fn VariableExistenceMayHaveSideEffects( Type& variable_type ) : bool;
 
 	fn CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc );
 	fn CallDestructorsForTopVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );

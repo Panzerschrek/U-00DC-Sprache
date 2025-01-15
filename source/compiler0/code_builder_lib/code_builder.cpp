@@ -1036,7 +1036,7 @@ void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
 		} );
 }
 
-bool CodeBuilder::VariableExistanceMayHaveSideEffects( const Type& variable_type )
+bool CodeBuilder::VariableExistenceMayHaveSideEffects( const Type& variable_type )
 {
 	// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
 	// For example, "ust::string8" has non-trivial destructor, but it just frees memory.
@@ -1743,7 +1743,7 @@ void CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
-			const bool force_referenced= param.value_type == ValueType::Value && VariableExistanceMayHaveSideEffects(variable_reference->type);
+			const bool force_referenced= param.value_type == ValueType::Value && VariableExistenceMayHaveSideEffects(variable_reference->type);
 
 			const NamesScopeValue* const inserted_arg=
 				function_names.AddName( arg_name, NamesScopeValue( variable_reference, declaration_arg.src_loc, force_referenced ) );

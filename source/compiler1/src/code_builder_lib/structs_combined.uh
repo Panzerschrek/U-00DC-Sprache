@@ -252,6 +252,7 @@ struct ClassType
 	bool is_equality_comparable= false;
 	bool has_explicit_noncopy_constructors= false;
 	bool can_be_constexpr= false;
+	bool no_discard= false;
 
 	ust::vector</InnerReference/> inner_references;
 	Kind kind= Kind::Struct;
@@ -309,6 +310,7 @@ public:
 	fn CanBeConstexpr( this ) : bool;
 	fn IsAbstract( this ) : bool;
 	fn IsValidForTemplateVariableArgument( this ) : bool;
+	fn IsNoDiscard( this ) : bool;
 
 	fn ReferenceTagCount( this ) : u32;
 	fn GetInnerReferenceKind( this, size_type index ) : InnerReferenceKind;
@@ -582,6 +584,7 @@ struct Enum
 
 	ust::shared_ptr_final</ Synt::Enum /> syntax_element;
 
+	bool no_discard= false;
 	bool referenced= false;
 }
 

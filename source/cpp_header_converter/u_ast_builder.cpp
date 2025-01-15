@@ -857,6 +857,9 @@ void CppAstConsumer::EmitRecord(
 
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
+		if( record_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
+			class_.no_discard= true;
+
 		if( record_declaration.isCompleteDefinition() )
 		{
 			bool has_bitfields= false;
@@ -924,6 +927,9 @@ void CppAstConsumer::EmitRecord(
 		Synt::Class class_(g_dummy_src_loc);
 		class_.name= name;
 		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+
+		if( record_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
+			class_.no_discard= true;
 
 		if( record_declaration.isCompleteDefinition() )
 			class_.elements= MakeOpaqueRecordElements( record_declaration, "union" );
@@ -1135,6 +1141,9 @@ void CppAstConsumer::EmitEnum(
 		Synt::Enum enum_( g_dummy_src_loc );
 		enum_.name= name;
 
+		if( enum_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
+			enum_.no_discard= true;
+
 		Synt::TypeName type_name= TranslateType( *enum_declaration.getIntegerType().getTypePtr(), type_names_map );
 		if( const auto named_type_name= std::get_if<Synt::NameLookup>( &type_name ) )
 			enum_.underlying_type_name= std::move(*named_type_name);
@@ -1155,6 +1164,9 @@ void CppAstConsumer::EmitEnum(
 
 		Synt::Class enum_class_( g_dummy_src_loc );
 		enum_class_.name= name;
+
+		if( enum_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
+			enum_class_.no_discard= true;
 
 		Synt::ClassElementsList::Builder class_elements;
 

@@ -49,7 +49,7 @@ namespace ust
 {
 
 template</type OkT, type ErrorT/>
-class result
+class result nodiscard
 {
 public:
 	static_assert( !same_type</OkT, ErrorT/>, "Result and error types must be distinct!" );

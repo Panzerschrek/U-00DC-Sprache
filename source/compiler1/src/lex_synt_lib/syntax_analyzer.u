@@ -223,6 +223,7 @@ private:
 	fn ParseClassParentsList( mut this ) : ust::vector</ComplexName/>;
 	fn TryParseNonSyncTag( mut this ) : NonSyncTag;
 	fn ParseClassOrderedFlag( mut this ) : bool;
+	fn ParseNoDiscardFlag( mut this ) : bool;
 	fn ParseClassBody( mut this ) : ClassElements;
 	fn ParseClassBodyElementsToClassEnd( mut this ) : ClassElements;
 	fn ParseClassBodyElementsToFileEnd( mut this ) : ClassElements;
@@ -3126,6 +3127,7 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 	}
 	class_.non_sync_tag= TryParseNonSyncTag();
 	class_.keep_fields_order= ParseClassOrderedFlag();
+	class_.no_discard= ParseNoDiscardFlag();
 
 	class_.class_elements= ParseClassBody();
 
@@ -3385,6 +3387,17 @@ fn SyntaxAnalyzer::ParseClassOrderedFlag( mut this ) : bool
 	return false;
 }
 
+fn SyntaxAnalyzer::ParseNoDiscardFlag( mut this ) : bool
+{
+	if( IsKeyword( it_.front(), Keyword::nodiscard_ ) )
+	{
+		NextLexem();
+		return true;
+	}
+
+	return false;
+}
+
 fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
 {
 	if( !IsKeyword( it_.front(), Keyword::enum_ ) )
@@ -3410,6 +3423,8 @@ fn SyntaxAnalyzer::ParseEnum( mut this ) : Enum
 		NextLexem();
 		enum_.underlying_type= ParseComplexName();
 	}
+
+	enum_.no_discard= ParseNoDiscardFlag();
 
 	ExpectLexem( Lexem::Type::BraceLeft );
 
@@ -3628,6 +3643,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		}
 		class_.non_sync_tag= TryParseNonSyncTag();
 		class_.keep_fields_order= ParseClassOrderedFlag();
+		class_.no_discard= ParseNoDiscardFlag();
 
 		class_.class_elements= ParseClassBody();
 

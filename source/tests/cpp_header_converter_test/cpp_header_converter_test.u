@@ -262,5 +262,9 @@ fn nomangle main() : i32
 		var MyVoid val2= $>(p2);
 	}
 
+	// Should retrieve "nodiscard" for some types.
+	static_assert( typeinfo</SomeNoDiscardStruct/>.is_nodiscard );
+	static_assert( typeinfo</SomeNoDiscardEnum/>.is_nodiscard );
+
 	return 0;
 }

@@ -195,7 +195,7 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 			.location= Variable::Location::Pointer,
 			.name= variable_declaration.name,
 			.src_loc= variable_declaration.src_loc,
-			.referenced= variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(t)
+			.referenced= variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistenceMayHaveSideEffects(t)
 		}.CreatePtr();
 
 	// Do not forget to remove node in case of error-return!!!
@@ -399,7 +399,7 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 			.constexpr_value= ( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ),
 			.name= auto_variable_declaration.name,
 			.src_loc= auto_variable_declaration.src_loc,
-			.referenced= auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
+			.referenced= auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistenceMayHaveSideEffects(expr.t)
 		}.CreatePtr();
 
 	// Do not forget to remove node in case of errror-return!!!
@@ -1188,14 +1188,23 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 
 			if_var( &variable_ptr : value.get</VariablePtr/>() )
 			{
-				if( SingleExpressionIsUseless( expression ) )
+				with( & variable : variable_ptr.lock_imut().deref() )
 				{
-					with( & variable : variable_ptr.lock_imut().deref() )
+					if( SingleExpressionIsUseless( expression ) )
 					{
 						if( !( variable.t == self.void_type_ && variable.value_type == ValueType::Value ) )
 						{
 							REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
 						}
+					}
+
+					// Prevent discarding values of "nodiscard" types.
+					// Make exception for "move" operator, since it may be used for early destruction of a variable.
+					// Make exception for "take" operator, since it may be used for in-place default value construction.
+					if( variable.t.IsNoDiscard() &&
+						!( expression.has</Synt::MoveOperator/>() || expression.has</ ust::box</Synt::TakeOperator/> />() ))
+					{
+						REPORT_ERROR( DiscardingValueOfNodiscardType, names_scope, Synt::GetSrcLoc( expression ), variable.t )
 					}
 				}
 			}
@@ -1485,7 +1494,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 					.src_loc= if_coro_advance_operator.src_loc,
 					.referenced=
 						( result_value_type == ValueType::Value || if_coro_advance_operator.reference_modifier == Synt::ReferenceModifier::None ) &&
-						VariableExistanceMayHaveSideEffects(result_type)
+						VariableExistenceMayHaveSideEffects(result_type)
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( variable_reference );
@@ -2479,7 +2488,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 								: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
 							.name= range_for_operator.loop_variable_name,
 							.src_loc= range_for_operator.src_loc,
-							.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_type)
+							.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistenceMayHaveSideEffects(variable_type)
 						}.CreatePtr();
 
 					// Do not forget to remove node in case of error-return!!!
@@ -2683,7 +2692,8 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	// Variables declaration part.
 	variant_visit( &element : c_style_for_operator.variable_declaration_part )
 	{
-		BuildBlockElementImpl( names_scope, function_context, element );
+		var BlockElementBuildInfo info= BuildBlockElementImpl( names_scope, function_context, element );
+		ust::ignore_unused(info); // Terminal instructions aren't possible in variables declarations.
 	}
 
 	auto references_graph_before_loop= function_context.references_graph;
@@ -2779,7 +2789,8 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 	{
 		variant_visit( &el : element )
 		{
-			BuildBlockElementImpl( names_scope, function_context, el );
+			var BlockElementBuildInfo info= BuildBlockElementImpl( names_scope, function_context, el );
+			ust::ignore_unused( info ); // Terminal instructions aren't possible in iteration part operators.
 		}
 	}
 
@@ -2878,7 +2889,7 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 			.constexpr_value= ( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ), // Constexpr is preserved for move/copy.
 			.name= with_operator.variable_name,
 			.src_loc= with_operator.src_loc,
-			.referenced= with_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
+			.referenced= with_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistenceMayHaveSideEffects(expr.t)
 		}.CreatePtr();
 
 	// Do not forget to remove node in case of error-return!!!

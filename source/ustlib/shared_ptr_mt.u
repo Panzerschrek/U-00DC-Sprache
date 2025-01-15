@@ -458,7 +458,7 @@ struct counter
 }
 
 template</ type T />
-class lock_mut
+class lock_mut nodiscard
 {
 public:
 	fn constructor( mut this, $(T) v, $(counter) c ) unsafe
@@ -488,7 +488,7 @@ private:
 }
 
 template</ type T />
-class lock_imut
+class lock_imut nodiscard
 {
 public:
 	fn constructor( mut this, $(T) v, $(counter) c)  unsafe

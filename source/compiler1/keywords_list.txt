@@ -26,6 +26,7 @@ interface
 abstract
 non_sync
 ordered
+nodiscard
 nomangle
 call_conv
 virtual
