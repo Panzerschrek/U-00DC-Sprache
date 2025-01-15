@@ -6,7 +6,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	var ust::string8 mut in_file= "some_file.txt";
 	auto mut out_file= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "some_file_multiplied.txt" );
 
-	auto mut program= ust::concat( build_system_interface.GetConfigurationOption( "tests_libs_directory" ).try_deref(), "/", "BuildSystemTestFileGenerationTool" );
+	auto mut program= build_system_interface.GetConfigurationOption( "test_file_generation_tool" ).try_deref();
 
 	var BK::CustomBuildStep mut step
 	{

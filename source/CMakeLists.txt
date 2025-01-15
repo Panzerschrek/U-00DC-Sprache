@@ -223,7 +223,8 @@ endif()
 add_subdirectory( compiler0 )
 
 if( U_BUILD_COMPILER AND U_BUILD_BUILD_SYSTEM )
-	add_subdirectory( build_system )
+	set( CURRENT_COMPILER_GENERATION "" )
+	add_subdirectory( build_system build_system0 )
 endif()
 
 #
@@ -235,11 +236,21 @@ if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
 	set( NEXT_COMPILER_GENERATION "1" )
 	add_subdirectory( compiler1 )
 
+	set( CURRENT_COMPILER_GENERATION "1" )
+	if( U_BUILD_BUILD_SYSTEM )
+		add_subdirectory( build_system build_system1 ) # Build build system with compiler1.
+	endif()
+
 	if( U_BUILD_COMPILER2 )
 
 		set( CURRENT_COMPILER_GENERATION "1" )
 		set( NEXT_COMPILER_GENERATION "2" )
 		add_subdirectory( compiler1 compiler2 )
+
+		set( CURRENT_COMPILER_GENERATION "2" )
+		if( U_BUILD_BUILD_SYSTEM )
+			add_subdirectory( build_system build_system2 ) # Build build system with compiler2.
+		endif()
 
 		if( U_BUILD_COMPILER3 )
 
