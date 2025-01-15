@@ -209,3 +209,60 @@ def DiscardingValueOfNodiscardType_Test6():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def DiscardingValueOfNodiscardType_Test7():
+	c_program_text= """
+		class SomeStruct nodiscard {}
+		fn Foo( [ SomeStruct, 16 ]& arr )
+		{
+			arr[3]; // Discard rererence result of operator [] for "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 5 ) )
+
+
+def DiscardingValueOfNodiscardType_Test8():
+	c_program_text= """
+		class SomeStruct nodiscard {}
+		class C
+		{
+			op[]( this, i32 x ) : SomeStruct;
+		}
+		fn Foo( C& c )
+		{
+			c[ 42 ]; // Discard result of overloaded operator [] call of "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 9 ) )
+
+
+def DiscardingValueOfNodiscardType_Test9():
+	c_program_text= """
+		class SomeStruct nodiscard {}
+		fn Foo( SomeStruct& s )
+		{
+			s; // Even accessing a variable of a "nodiscard" type without doing anything with it is an error.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 5 ) )
+
+
+def DiscardingValueOfNodiscardType_Test10():
+	c_program_text= """
+		struct SomeStruct nodiscard {}
+		fn async Bar() : SomeStruct;
+		fn async Foo()
+		{
+			Bar().await; // Discard result of async function call of "nodiscard" type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 6 ) )
