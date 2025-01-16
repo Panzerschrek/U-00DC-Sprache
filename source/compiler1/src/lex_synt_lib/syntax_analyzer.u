@@ -291,11 +291,13 @@ private:
 
 		// Append expansion point line/column in order to make macro unique identifiers unique in different macto expansions.
 		// Use only line/column and not use file index/macro expansion index, bacause we need to produce same result for file imported in different files.
-		var ust::string8 mut macro_unique_identifiers_base_name= macro_unique_identifiers_base_name_;
-		macro_unique_identifiers_base_name+= "_l";
-		macro_unique_identifiers_base_name+= ust::to_string8( expansion_src_loc.GetLine() );
-		macro_unique_identifiers_base_name+= "_c";
-		macro_unique_identifiers_base_name+= ust::to_string8( expansion_src_loc.GetColumn() );
+		var ust::string8 mut macro_unique_identifiers_base_name=
+			ust::concat(
+				macro_unique_identifiers_base_name_,
+				"_l",
+				ust::to_string8( expansion_src_loc.GetLine() ),
+				"_c",
+				ust::to_string8( expansion_src_loc.GetColumn() ) );
 
 		var Lexems lexems_expanded= ExpandMacroImpl( macro, macro_unique_identifiers_base_name );
 
@@ -4065,7 +4067,7 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro, ust::string8& macro_
 
 	var UniqueMacroIdentifiersMap mut unique_macro_indentifiers_map;
 
-	auto mut lexems=
+	var Lexems mut lexems=
 		ExpandMacroBlock(
 			macro.result_template_elements,
 			macro_variables_maps_stack,
@@ -4073,24 +4075,21 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro, ust::string8& macro_
 			macro_unique_identifiers_base_name,
 			expansion_src_loc );
 
-	var Lexem end_of_file_lexem{ .lexem_type= Lexem::Type::EndOfFile };
-	lexems.push_back( end_of_file_lexem );
-	lexems.push_back( end_of_file_lexem );
+	lexems.push_back( 2s, Lexem{ .lexem_type= Lexem::Type::EndOfFile } );
 
 	var u32 mut macro_expansion_index= ~0u;
+	with( mut lock : macro_expansion_contexts_.lock_mut() )
 	{
-		var MacroExpansionContext mut macro_expansion_context
-		{
-			.macro_name= macro.name,
-			.macro_declaration_src_loc= macro.src_loc,
-			.src_loc= expansion_src_loc,
-		};
-
-		auto mut lock= macro_expansion_contexts_.lock_mut();
 		var MacroExpansionContexts &mut macro_expansion_contexts= lock.deref();
 
 		macro_expansion_index= u32(macro_expansion_contexts.size());
-		macro_expansion_contexts.push_back( move(macro_expansion_context) );
+		macro_expansion_contexts.push_back(
+			MacroExpansionContext
+			{
+				.macro_name= macro.name,
+				.macro_declaration_src_loc= macro.src_loc,
+				.src_loc= expansion_src_loc,
+			} );
 	}
 
 	foreach( &mut lexem : lexems )
