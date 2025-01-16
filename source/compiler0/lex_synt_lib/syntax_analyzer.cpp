@@ -277,9 +277,7 @@ private:
 	template<typename ParseFnResult>
 	ParseFnResult ExpandMacro( const Macro& macro, ParseFnResult (SyntaxAnalyzer::*parse_fn)() );
 
-	std::optional<MacroVariablesMap> MatchMacroBlock(
-		const Macro::MatchElements& match_elements,
-		const std::string& macro_name );
+	MacroVariablesMap MatchMacroBlock( const Macro::MatchElements& match_elements, const std::string& macro_name );
 
 	Lexems DoExpandMacro(
 		const MacroNamesMap& parsed_elements,
@@ -4193,12 +4191,10 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 		return ParseFnResult();
 	}
 
-	auto elements_map= MatchMacroBlock( macro.match_template_elements, macro.name );
-	if( !elements_map.has_value() )
-		return ParseFnResult();
+	const SyntaxAnalyzer::MacroVariablesMap elements_map= MatchMacroBlock( macro.match_template_elements, macro.name );
 
 	MacroNamesMap names_map;
-	names_map.names= &*elements_map;
+	names_map.names= &elements_map;
 
 	ProgramStringMap<std::string> unique_macro_identifier_map;
 
@@ -4243,9 +4239,8 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	return std::move(element);
 }
 
-std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock(
-	const Macro::MatchElements& match_elements,
-	const std::string& macro_name )
+SyntaxAnalyzer::MacroVariablesMap SyntaxAnalyzer::MatchMacroBlock(
+	const Macro::MatchElements& match_elements, const std::string& macro_name )
 {
 	MacroVariablesMap out_elements;
 
@@ -4275,7 +4270,7 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 			else
 			{
 				push_macro_error();
-				return std::nullopt;
+				return out_elements;
 			}
 			break;
 
@@ -4285,7 +4280,7 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 			else
 			{
 				push_macro_error();
-				return std::nullopt;
+				return out_elements;
 			}
 			break;
 
@@ -4299,7 +4294,7 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 				if( std::holds_alternative<EmptyVariant>( expression ) )
 				{
 					push_macro_error();
-					return std::nullopt;
+					return out_elements;
 				}
 			}
 			break;
@@ -4331,11 +4326,7 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 
 				if( has_value )
 				{
-					auto optional_elements= MatchMacroBlock( match_element.sub_elements, macro_name );
-					if( optional_elements.has_value() )
-						element.sub_elements.push_back( std::move(*optional_elements) );
-					else
-						return std::nullopt;
+					element.sub_elements.push_back( MatchMacroBlock( match_element.sub_elements, macro_name ) );
 				}
 			}
 			break;
@@ -4350,11 +4341,7 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 						if( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text )
 							break;
 
-						auto repeated_elements= MatchMacroBlock( match_element.sub_elements, macro_name );
-						if( repeated_elements.has_value() )
-							element.sub_elements.push_back( std::move(*repeated_elements) );
-						else
-							return std::nullopt;
+						element.sub_elements.push_back( MatchMacroBlock( match_element.sub_elements, macro_name ));
 
 						// Process separator.
 						if( match_element.lexem.type != Lexem::Type::EndOfFile )
@@ -4366,7 +4353,7 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 								{
 									// Disable end lexem after separator.
 									push_macro_error();
-									return std::nullopt;
+									return out_elements;
 								}
 							}
 							else
@@ -4383,11 +4370,7 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 						if( !( it_->type == check_lexem.type && it_->text == check_lexem.text ) )
 							break;
 
-						auto repeated_elements= MatchMacroBlock( match_element.sub_elements, macro_name );
-						if( repeated_elements.has_value() )
-							element.sub_elements.push_back( std::move(*repeated_elements) );
-						else
-							return std::nullopt;
+						element.sub_elements.push_back( MatchMacroBlock( match_element.sub_elements, macro_name ) );
 
 						// Process separator.
 						if( match_element.lexem.type != Lexem::Type::EndOfFile )
@@ -4399,7 +4382,7 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 								{
 									// After separator must be start lexem of block.
 									push_macro_error();
-									return std::nullopt;
+									return out_elements;
 								}
 							}
 							else
