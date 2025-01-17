@@ -1831,8 +1831,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( prev_function->getFunctionType() != function_llvm_type )
 		{
-			// TODO - use other error code.
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), external_function_access.src_loc, "old function type", type );
+			REPORT_ERROR( ExternalFunctionSignatureMismatch, names_scope.GetErrors(), external_function_access.src_loc );
 			return ErrorValue();
 		}
 		function= prev_function;

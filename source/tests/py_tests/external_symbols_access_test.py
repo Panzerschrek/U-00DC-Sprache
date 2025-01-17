@@ -63,3 +63,55 @@ def AccessingExternalFunctionOutsideUnsafeBlock_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "AccessingExternalFunctionOutsideUnsafeBlock", 4 ) )
+
+
+def ExternalFunctionSignatureMismatch_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f0= unsafe( import fn</ fn() />( "some_func" ) );
+			auto f1= unsafe( import fn</ fn() : f32 />( "some_func" ) ); // Error - using different signature for the same function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExternalFunctionSignatureMismatch", 5 ) )
+
+
+def ExternalFunctionSignatureMismatch_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f0= unsafe( import fn</ fn( f32 x ) />( "some_func" ) );
+			auto f1= unsafe( import fn</ fn( i32 x ) />( "some_func" ) ); // Error - using different signature for the same function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExternalFunctionSignatureMismatch", 5 ) )
+
+
+def ExternalFunctionSignatureMismatch_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f0= unsafe( import fn</ fn( u64 a, u64 b ) />( "some_func" ) );
+			auto f1= unsafe( import fn</ fn( u64 a ) />( "some_func" ) ); // Error - using different signature for the same function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExternalFunctionSignatureMismatch", 5 ) )
+
+
+def ExternalFunctionSignatureMismatch_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f0= unsafe( import fn</ fn( size_type  s ) />( "some_func" ) );
+			auto f1= unsafe( import fn</ fn( size_type& s ) />( "some_func" ) ); // Error - using different signature for the same function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExternalFunctionSignatureMismatch", 5 ) )
