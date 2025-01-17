@@ -253,6 +253,16 @@ void FindImpl( const Synt::Embed& embed )
 	FindImpl( embed.expression );
 }
 
+void FindImpl( const Synt::ExternalFunctionAccess& external_function_access )
+{
+	FindImpl( external_function_access.type );
+}
+
+void FindImpl( const Synt::ExternalVariableAccess& external_variable_access )
+{
+	FindImpl( external_variable_access.type );
+}
+
 void FindImpl( const Synt::TypeInfo& type_info )
 {
 	FindImpl( type_info.type );
