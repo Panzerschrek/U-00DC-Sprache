@@ -885,11 +885,61 @@ fn CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext &mut function_context,
 	Synt::ExternalFunctionAccess& external_function_access ) : Value
 {
-	// TODO
-	ust::ignore_unused(names_scope);
-	ust::ignore_unused(function_context);
-	ust::ignore_unused(external_function_access);
-	return ErrorValue();
+	if( function_context.llvm_function == global_llvm_function_ )
+	{
+		REPORT_ERROR( AccessingExternalFunctionInGlobalContext, names_scope, external_function_access.src_loc )
+		return ErrorValue();
+	}
+	// Require unsafe block, since it's easy to mess with signatures of external functions.
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( AccessingExternalFunctionOutsideUnsafeBlock, names_scope, external_function_access.src_loc )
+		return ErrorValue();
+	}
+
+	var Type t= PrepareType( names_scope, function_context, external_function_access.t );
+	auto function_pointer_type= t.GetFunctionPointerType();
+	if( function_pointer_type.empty() )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, external_function_access.src_loc, "any function type", t )
+		return ErrorValue();
+	}
+
+	var ust::string8 name_nt= external_function_access.name + "\0";
+
+	var LLVMTypeRef function_llvm_type= GetLLVMFunctionType( function_pointer_type.try_deref().function_type );
+
+	var LLVMValueRef mut function= LLVMValueRef::Null;
+
+	var LLVMValueRef prev_function= unsafe( LLVMGetNamedFunction( module_, name_nt.front() ) );
+	if( prev_function != LLVMValueRef::Null )
+	{
+		if( unsafe( U1_GetFunctionType( prev_function ) ) != function_llvm_type )
+		{
+			REPORT_ERROR( ExternalFunctionSignatureMismatch, names_scope, external_function_access.src_loc )
+			return ErrorValue();
+		}
+		function= prev_function;
+	}
+	else
+	{
+		function= unsafe( LLVMAddFunction( module_, name_nt.front(), function_llvm_type ) );
+	}
+
+	// Return value of function pointer type.
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= t,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::LLVMRegister,
+			.llvm_value= function,
+			.name= "external function " + external_function_access.name,
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCodeImpl(
