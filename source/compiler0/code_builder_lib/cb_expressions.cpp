@@ -1804,8 +1804,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::ExternalFunctionAccess& external_function_access )
 {
-	// TODO - prevent usage in global context.
-	// TODO - prevent usage in safe code.
+	if( function_context.function == global_function_context_->function )
+	{
+		REPORT_ERROR( AccessingExternalFunctionInGlobalContext, names_scope.GetErrors(), external_function_access.src_loc );
+		return ErrorValue();
+	}
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( AccessingExternalFunctionOutsideUnsafeBlock, names_scope.GetErrors(), external_function_access.src_loc );
+		return ErrorValue();
+	}
 
 	const Type type= PrepareType( external_function_access.type, names_scope, function_context );
 	const FunctionPointerType* const function_pointer_type= type.GetFunctionPointerType();

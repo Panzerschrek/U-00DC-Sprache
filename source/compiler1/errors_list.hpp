@@ -275,3 +275,8 @@ PROCESS_ERROR( MixinInvalidUTF8, "Given mixin string isn't valid UTF-8 sequence.
 // Embed
 PROCESS_ERROR( EmbedFileNotFound, "Can't open file \"{0}\" for embedding." )
 PROCESS_ERROR( EmbeddingThisFileIsNotAllowed, "It's not allowed to embed file \"{0}\"." )
+
+// External symbols.
+PROCESS_ERROR( AccessingExternalFunctionInGlobalContext, "Accessing external function in global context - it's not allowed." )
+PROCESS_ERROR( AccessingExternalFunctionOutsideUnsafeBlock, "Accessing external function outside unsafe block or unsafe expression." )
+PROCESS_ERROR( ExternalFunctionSignatureMismatch, "External function signature doesn't match its previous usage." )

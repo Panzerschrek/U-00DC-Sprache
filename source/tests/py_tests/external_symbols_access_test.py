@@ -5,7 +5,7 @@ def ExternalFunctionAccessOperator_Test0():
 	c_program_text= """
 		fn Foo()
 		{
-			auto f= import fn</ fn() />( "some_func" );
+			auto f= unsafe( import fn</ fn() />( "some_func" ) );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -15,7 +15,7 @@ def ExternalFunctionAccessOperator_Test1():
 	c_program_text= """
 		fn Foo()
 		{
-			auto f= import fn</ fn( f32 x, i32 y ) : i32 & />( "__Starship_Flight_7_failed" );
+			auto f= unsafe( import fn</ fn( f32 x, i32 y ) : i32 & />( "__Starship_Flight_7_failed" ) );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -26,7 +26,40 @@ def ExternalFunctionAccessOperator_Test2():
 		fn Foo()
 		{
 			type MyFuncType= fn( $(byte8) ptr, size_type size ) : ssize_type;
-			auto f= import fn</ MyFuncType />( "read_something" );
+			auto f= unsafe( import fn</ MyFuncType />( "read_something" ) );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AccessingExternalFunctionInGlobalContext_Test0():
+	c_program_text= """
+		auto f= import fn</ fn() />( "some_func" );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingExternalFunctionInGlobalContext", 2 ) )
+
+
+def AccessingExternalFunctionInGlobalContext_Test1():
+	c_program_text= """
+		struct S
+		{
+			(fn()) ptr= import fn</ fn() />( "some_func" );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingExternalFunctionInGlobalContext", 4 ) )
+
+
+def AccessingExternalFunctionOutsideUnsafeBlock_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= import fn</ fn() />( "some_func" );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingExternalFunctionOutsideUnsafeBlock", 4 ) )
