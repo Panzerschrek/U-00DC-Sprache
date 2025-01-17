@@ -149,6 +149,20 @@ struct Embed
 	Expression expression;
 }
 
+struct ExternalFunctionAccess
+{
+	SrcLoc src_loc;
+	TypeName t;
+	ust::string8 name;
+}
+
+struct ExternalVariableAccess
+{
+	SrcLoc src_loc;
+	TypeName t;
+	ust::string8 name;
+}
+
 struct SafeExpression
 {
 	SrcLoc src_loc;
@@ -292,6 +306,8 @@ type Expression= ust::variant</ tup[
 	ust::box</CastImut/>,
 	ust::box</CastMut/>,
 	ust::box</Embed/>,
+	ust::box</ExternalFunctionAccess/>,
+	ust::box</ExternalVariableAccess/>,
 	ust::box</SafeExpression/>,
 	ust::box</UnsafeExpression/>,
 	MoveOperator,

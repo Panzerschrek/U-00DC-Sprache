@@ -879,6 +879,32 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	return result_ptr;
 }
 
+fn CodeBuilder::BuildExpressionCodeImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::ExternalFunctionAccess& external_function_access ) : Value
+{
+	// TODO
+	ust::ignore_unused(names_scope);
+	ust::ignore_unused(function_context);
+	ust::ignore_unused(external_function_access);
+	return ErrorValue();
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::ExternalVariableAccess& external_variable_access ) : Value
+{
+	// TODO
+	ust::ignore_unused(names_scope);
+	ust::ignore_unused(function_context);
+	ust::ignore_unused(external_variable_access);
+	return ErrorValue();
+}
+
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
 {
 	auto prev_unsafe= function_context.is_in_unsafe_block;
