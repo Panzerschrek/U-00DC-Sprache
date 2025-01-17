@@ -1,7 +1,7 @@
 namespace BK
 {
 
-// A function whict returns "errno" C variable.
+// A function which returns value of the "errno" C variable.
 fn GetErrno() : i32;
 
 } // namespace BK

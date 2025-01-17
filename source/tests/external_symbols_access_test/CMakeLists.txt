@@ -1,4 +1,3 @@
-# Compile simple program on "Ü-Sprache", link it together with C++ program.
 set( EXTERNAL_SYMBOLS_ACCESS_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/external_symbols.u )
 CompileUSources( "${EXTERNAL_SYMBOLS_ACCESS_SOURCES}" EXTERNAL_SYMBOLS_ACCESS_OBJECTS )
 

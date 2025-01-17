@@ -1809,6 +1809,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( AccessingExternalFunctionInGlobalContext, names_scope.GetErrors(), external_function_access.src_loc );
 		return ErrorValue();
 	}
+	// Require unsafe block, since it's easy to mess with signatures of external functions.
 	if( !function_context.is_in_unsafe_block )
 	{
 		REPORT_ERROR( AccessingExternalFunctionOutsideUnsafeBlock, names_scope.GetErrors(), external_function_access.src_loc );
