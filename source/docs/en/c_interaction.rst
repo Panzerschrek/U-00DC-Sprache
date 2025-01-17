@@ -112,7 +112,6 @@ It consists of keywords ``import`` and ``fn``, function type in ``<//>`` and fun
 This operator returns a function pointer for the requested function.
 
 .. code-block:: u_spr
-  :caption: Ü код
 
    fn Foo()
    {
@@ -139,7 +138,6 @@ It consists of keywords ``import`` and ``var``, variable type in ``<//>`` and va
 This operator returns a mutable reference for the requested global variable.
 
 .. code-block:: u_spr
-  :caption: Ü код
 
    fn Foo()
    {

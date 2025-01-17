@@ -1245,9 +1245,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 				NextLexem();
 				auto external_function_access= std::make_unique<ExternalFunctionAccess>( src_loc );
 
-				ExpectLexem( Lexem::Type::TemplateBracketLeft );
-				external_function_access->type= ParseTypeName();
-				ExpectLexem( Lexem::Type::TemplateBracketRight );
+				external_function_access->type= ParseTypeNameInTemplateBrackets();
 
 				ExpectLexem( Lexem::Type::BracketLeft );
 
@@ -1268,9 +1266,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 				NextLexem();
 				auto external_variable_access= std::make_unique<ExternalVariableAccess>( src_loc );
 
-				ExpectLexem( Lexem::Type::TemplateBracketLeft );
-				external_variable_access->type= ParseTypeName();
-				ExpectLexem( Lexem::Type::TemplateBracketRight );
+				external_variable_access->type= ParseTypeNameInTemplateBrackets();
 
 				ExpectLexem( Lexem::Type::BracketLeft );
 
