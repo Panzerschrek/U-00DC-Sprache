@@ -1863,11 +1863,54 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::ExternalVariableAccess& external_variable_access )
 {
-	// TODO
-	U_UNUSED(names_scope);
-	U_UNUSED(function_context);
-	U_UNUSED(external_variable_access);
-	return ErrorValue();
+	// TODO - use other error codes.
+	if( function_context.function == global_function_context_->function )
+	{
+		REPORT_ERROR( AccessingExternalFunctionInGlobalContext, names_scope.GetErrors(), external_variable_access.src_loc );
+		return ErrorValue();
+	}
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( AccessingExternalFunctionOutsideUnsafeBlock, names_scope.GetErrors(), external_variable_access.src_loc );
+		return ErrorValue();
+	}
+
+	const Type type= PrepareType( external_variable_access.type, names_scope, function_context );
+
+	llvm::GlobalVariable* variable= nullptr;
+	if( llvm::GlobalVariable* const prev_variable= module_->getGlobalVariable( external_variable_access.name ) )
+	{
+		if( type.GetLLVMType() != prev_variable->getType() )
+		{
+			// TODO - use other error code.
+			REPORT_ERROR( ExternalFunctionSignatureMismatch, names_scope.GetErrors(), external_variable_access.src_loc );
+			return ErrorValue();
+		}
+		variable= prev_variable;
+	}
+	else
+	{
+		variable= new llvm::GlobalVariable(
+			*module_,
+			type.GetLLVMType(),
+			false, // Assuming all external variables aren't constant.
+			llvm::GlobalValue::ExternalLinkage,
+			nullptr, // No initializer for a declaration
+			external_variable_access.name );
+	}
+
+	// Return mutable reference of specified type.
+	const auto result= Variable::Create(
+		type,
+		ValueType::ReferenceMut,
+		Variable::Location::Pointer,
+		"external variable " + external_variable_access.name,
+		variable,
+		nullptr /* do not produce constexpr value */ );
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(

@@ -121,7 +121,11 @@ def ExternalVariableAccessOperator_Test0():
 	c_program_text= """
 		fn Foo()
 		{
-			var i32 &mut x= unsafe( import var</ i32 />( "some_var" ) );
+			unsafe
+			{
+				var i32 &mut x= import var</ i32 />( "some_var" );
+				x= x * 3 + 1;
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -131,7 +135,11 @@ def ExternalVariableAccessOperator_Test1():
 	c_program_text= """
 		fn Foo()
 		{
-			var $(u64) &mut addr= unsafe( import var</ $(u64) />( "__  some_ptr_var" ) );
+			unsafe
+			{
+				var $(u64) &mut addr= import var</ $(u64) />( "__  some_ptr_var" );
+				++addr;
+			}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
