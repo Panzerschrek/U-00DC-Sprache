@@ -115,3 +115,23 @@ def ExternalFunctionSignatureMismatch_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ExternalFunctionSignatureMismatch", 5 ) )
+
+
+def ExternalVariableAccessOperator_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 &mut x= unsafe( import var</ i32 />( "some_var" ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ExternalVariableAccessOperator_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(u64) &mut addr= unsafe( import var</ $(u64) />( "__  some_ptr_var" ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )

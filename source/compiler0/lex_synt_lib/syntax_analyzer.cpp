@@ -1237,31 +1237,57 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		}
 		if( it_->text == Keywords::import_ )
 		{
-			auto external_function_access= std::make_unique<ExternalFunctionAccess>( it_->src_loc );
+			const SrcLoc src_loc= it_->src_loc;
 			NextLexem();
 
-			if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ ) )
-				PushErrorMessage();
-			else
-				NextLexem();
-
-			ExpectLexem( Lexem::Type::TemplateBracketLeft );
-			external_function_access->type= ParseTypeName();
-			ExpectLexem( Lexem::Type::TemplateBracketRight );
-
-			ExpectLexem( Lexem::Type::BracketLeft );
-
-			if( it_->type != Lexem::Type::String )
-				PushErrorMessage();
-			else
+			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 			{
-				external_function_access->name= it_->text;
 				NextLexem();
+				auto external_function_access= std::make_unique<ExternalFunctionAccess>( src_loc );
+
+				ExpectLexem( Lexem::Type::TemplateBracketLeft );
+				external_function_access->type= ParseTypeName();
+				ExpectLexem( Lexem::Type::TemplateBracketRight );
+
+				ExpectLexem( Lexem::Type::BracketLeft );
+
+				if( it_->type != Lexem::Type::String )
+					PushErrorMessage();
+				else
+				{
+					external_function_access->name= it_->text;
+					NextLexem();
+				}
+
+				ExpectLexem( Lexem::Type::BracketRight );
+
+				return std::move(external_function_access);
 			}
+			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
+			{
+				NextLexem();
+				auto external_variable_access= std::make_unique<ExternalVariableAccess>( src_loc );
 
-			ExpectLexem( Lexem::Type::BracketRight );
+				ExpectLexem( Lexem::Type::TemplateBracketLeft );
+				external_variable_access->type= ParseTypeName();
+				ExpectLexem( Lexem::Type::TemplateBracketRight );
 
-			return std::move(external_function_access);
+				ExpectLexem( Lexem::Type::BracketLeft );
+
+				if( it_->type != Lexem::Type::String )
+					PushErrorMessage();
+				else
+				{
+					external_variable_access->name= it_->text;
+					NextLexem();
+				}
+
+				ExpectLexem( Lexem::Type::BracketRight );
+
+				return std::move(external_variable_access);
+			}
+			else
+				PushErrorMessage();
 		}
 		if( it_->text == Keywords::typeinfo_ )
 		{

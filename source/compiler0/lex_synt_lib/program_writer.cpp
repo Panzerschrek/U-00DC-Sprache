@@ -450,6 +450,18 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			WriteStringEscaped( external_function_access->name, stream );
 			stream << " )";
 		}
+		void operator()( const std::unique_ptr<const ExternalVariableAccess>& external_variable_access ) const
+		{
+			stream << Keyword( Keywords::import_ ) << " " << Keyword( Keywords::var_ );
+
+			stream << "</";
+			ElementWrite( external_variable_access->type, stream );
+			stream << "/>";
+
+			stream << "( ";
+			WriteStringEscaped( external_variable_access->name, stream );
+			stream << " )";
+		}
 		void operator()( const std::unique_ptr<const TypeInfo>& typeinfo_ ) const
 		{
 			stream << "</ ";

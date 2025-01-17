@@ -69,6 +69,7 @@ bool SingleExpressionIsUselessImpl( const Synt::CastRef& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::CastRefUnsafe& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::Embed& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::ExternalFunctionAccess& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::ExternalVariableAccess& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::TypeInfo& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::SameType& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::NonSyncExpression& ) { return true; }

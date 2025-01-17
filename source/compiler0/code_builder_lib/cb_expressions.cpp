@@ -1861,6 +1861,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::ExternalVariableAccess& external_variable_access )
+{
+	// TODO
+	U_UNUSED(names_scope);
+	U_UNUSED(function_context);
+	U_UNUSED(external_variable_access);
+	return ErrorValue();
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::TypeInfo& typeinfo )
 {
 	const Type type= PrepareType( typeinfo.type, names_scope, function_context );
