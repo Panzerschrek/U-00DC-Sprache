@@ -279,7 +279,7 @@ PROCESS_ERROR( EmbeddingThisFileIsNotAllowed, "It's not allowed to embed file \"
 // External symbols.
 PROCESS_ERROR( AccessingExternalFunctionInGlobalContext, "Accessing external function in global context - it's not allowed." )
 PROCESS_ERROR( AccessingExternalFunctionOutsideUnsafeBlock, "Accessing external function outside unsafe block or unsafe expression." )
-PROCESS_ERROR( ExternalFunctionSignatureMismatch, "External function signature doesn't match its previous usage." )
+PROCESS_ERROR( ExternalFunctionTypeMismatch, "External function type doesn't match its previous usage." )
 PROCESS_ERROR( AccessingExternalVariableInGlobalContext, "Accessing external variable in global context - it's not allowed." )
 PROCESS_ERROR( AccessingExternalVariableOutsideUnsafeBlock, "Accessing external variable outside unsafe block or unsafe expression." )
 PROCESS_ERROR( ExternalVariableTypeMismatch, "External variable type doesn't match its previous usage." )

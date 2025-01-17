@@ -89,7 +89,7 @@ def AccessingExternalFunctionOutsideUnsafeBlock_Test0():
 	assert( HasError( errors_list, "AccessingExternalFunctionOutsideUnsafeBlock", 4 ) )
 
 
-def ExternalFunctionSignatureMismatch_Test0():
+def ExternalFunctionTypeMismatch_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -99,10 +99,10 @@ def ExternalFunctionSignatureMismatch_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExternalFunctionSignatureMismatch", 5 ) )
+	assert( HasError( errors_list, "ExternalFunctionTypeMismatch", 5 ) )
 
 
-def ExternalFunctionSignatureMismatch_Test1():
+def ExternalFunctionTypeMismatch_Test1():
 	c_program_text= """
 		fn Foo()
 		{
@@ -112,10 +112,10 @@ def ExternalFunctionSignatureMismatch_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExternalFunctionSignatureMismatch", 5 ) )
+	assert( HasError( errors_list, "ExternalFunctionTypeMismatch", 5 ) )
 
 
-def ExternalFunctionSignatureMismatch_Test2():
+def ExternalFunctionTypeMismatch_Test2():
 	c_program_text= """
 		fn Foo()
 		{
@@ -125,10 +125,10 @@ def ExternalFunctionSignatureMismatch_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExternalFunctionSignatureMismatch", 5 ) )
+	assert( HasError( errors_list, "ExternalFunctionTypeMismatch", 5 ) )
 
 
-def ExternalFunctionSignatureMismatch_Test3():
+def ExternalFunctionTypeMismatch_Test3():
 	c_program_text= """
 		fn Foo()
 		{
@@ -138,7 +138,7 @@ def ExternalFunctionSignatureMismatch_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExternalFunctionSignatureMismatch", 5 ) )
+	assert( HasError( errors_list, "ExternalFunctionTypeMismatch", 5 ) )
 
 
 def ExternalVariableAccessOperator_Test0():

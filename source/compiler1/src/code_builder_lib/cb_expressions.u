@@ -916,7 +916,7 @@ fn CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( unsafe( U1_GetFunctionType( prev_function ) ) != function_llvm_type )
 		{
-			REPORT_ERROR( ExternalFunctionSignatureMismatch, names_scope, external_function_access.src_loc )
+			REPORT_ERROR( ExternalFunctionTypeMismatch, names_scope, external_function_access.src_loc )
 			return ErrorValue();
 		}
 		function= prev_function;

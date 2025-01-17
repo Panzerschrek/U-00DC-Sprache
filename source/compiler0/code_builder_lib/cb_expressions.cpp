@@ -1832,7 +1832,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( prev_function->getFunctionType() != function_llvm_type )
 		{
-			REPORT_ERROR( ExternalFunctionSignatureMismatch, names_scope.GetErrors(), external_function_access.src_loc );
+			REPORT_ERROR( ExternalFunctionTypeMismatch, names_scope.GetErrors(), external_function_access.src_loc );
 			return ErrorValue();
 		}
 		function= prev_function;
