@@ -32,6 +32,30 @@ def ExternalFunctionAccessOperator_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def ExternalFunctionAccessOperator_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			// Call result of the external function access operator directly.
+			var u32 res= unsafe( import fn</ fn( i32 x ) : u32 />( "~~Get@Abs~~" ) )( 77 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypesMismatch_InExternalFunctionAccess_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Error - given type is not function type.
+			auto x= unsafe( import fn</ i32 />( "some_func" ) );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "TypesMismatch", 5 ) )
+
+
 def AccessingExternalFunctionInGlobalContext_Test0():
 	c_program_text= """
 		auto f= import fn</ fn() />( "some_func" );

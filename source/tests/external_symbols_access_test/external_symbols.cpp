@@ -18,3 +18,12 @@ extern "C" uint64_t GetGeneratorValue()
 {
 	return generator;
 }
+
+using RetInt= int(*)();
+
+static int Get42()
+{
+	return 42;
+}
+
+extern const RetInt __get_42_fn= Get42;

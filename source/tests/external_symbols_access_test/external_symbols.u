@@ -28,6 +28,13 @@ fn nomangle main() : i32
 		halt if( import var</ u64 />( "generator" ) != 3u64 * 77u64 );
 		halt if( GetGeneratorValue() != 3u64 * 77u64 );
 	}
+	unsafe
+	{
+		// Access an external variable of function pounter type.
+		// This is different from accessing an external function.
+		auto f= import var</ fn() : i32 />( "__get_42_fn" );
+		halt if( f() != 42 );
+	}
 
 	return 0;
 }

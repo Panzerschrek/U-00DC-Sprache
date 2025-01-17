@@ -635,3 +635,33 @@ def UselessExpressionRoot_Test50():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
+
+
+def UselessExpressionRoot_Test51():
+	c_program_text= """
+		fn Foo()
+		{
+			unsafe
+			{
+				import fn</ fn() />( "SomeFunc" ); // Result of external function access operator is unused.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UselessExpressionRoot", 6 ) )
+
+
+def UselessExpressionRoot_Test52():
+	c_program_text= """
+		fn Foo()
+		{
+			unsafe
+			{
+				import var</ char32  />( "some_var" ); // Result of external variable access operator is unused.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UselessExpressionRoot", 6 ) )
