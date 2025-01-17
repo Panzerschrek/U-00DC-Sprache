@@ -1863,15 +1863,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::ExternalVariableAccess& external_variable_access )
 {
-	// TODO - use other error codes.
 	if( function_context.function == global_function_context_->function )
 	{
-		REPORT_ERROR( AccessingExternalFunctionInGlobalContext, names_scope.GetErrors(), external_variable_access.src_loc );
+		REPORT_ERROR( AccessingExternalVariableInGlobalContext, names_scope.GetErrors(), external_variable_access.src_loc );
 		return ErrorValue();
 	}
+	// Require unsafe block, since it's global mutable variable.
 	if( !function_context.is_in_unsafe_block )
 	{
-		REPORT_ERROR( AccessingExternalFunctionOutsideUnsafeBlock, names_scope.GetErrors(), external_variable_access.src_loc );
+		REPORT_ERROR( AccessingExternalVariableOutsideUnsafeBlock, names_scope.GetErrors(), external_variable_access.src_loc );
 		return ErrorValue();
 	}
 
@@ -1880,16 +1880,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	llvm::GlobalVariable* variable= nullptr;
 	if( llvm::GlobalVariable* const prev_variable= module_->getGlobalVariable( external_variable_access.name ) )
 	{
-		if( type.GetLLVMType() != prev_variable->getType() )
+		if( type.GetLLVMType() != prev_variable->getValueType() )
 		{
-			// TODO - use other error code.
-			REPORT_ERROR( ExternalFunctionSignatureMismatch, names_scope.GetErrors(), external_variable_access.src_loc );
+			REPORT_ERROR( ExternalVariableTypeMismatch, names_scope.GetErrors(), external_variable_access.src_loc );
 			return ErrorValue();
 		}
 		variable= prev_variable;
 	}
 	else
-	{
 		variable= new llvm::GlobalVariable(
 			*module_,
 			type.GetLLVMType(),
@@ -1897,7 +1895,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			llvm::GlobalValue::ExternalLinkage,
 			nullptr, // No initializer for a declaration
 			external_variable_access.name );
-	}
 
 	// Return mutable reference of specified type.
 	const auto result= Variable::Create(

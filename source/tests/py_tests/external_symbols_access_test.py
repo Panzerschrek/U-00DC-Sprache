@@ -143,3 +143,75 @@ def ExternalVariableAccessOperator_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AccessingExternalVariableInGlobalContext_Test0():
+	c_program_text= """
+		auto c= import var</ char8 />( "some_var" );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingExternalVariableInGlobalContext", 2 ) )
+
+
+def AccessingExternalVariableInGlobalContext_Test1():
+	c_program_text= """
+		struct S
+		{
+			[ i32, 16 ] arr = import var</ [ i32, 16 ] />( "   var   " );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingExternalVariableInGlobalContext", 4 ) )
+
+
+def AccessingExternalVariableOutsideUnsafeBlock_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= import var</ u16 />( "_X_X_X_" );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingExternalVariableOutsideUnsafeBlock", 4 ) )
+
+
+def ExternalVariableTypeMismatch_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto a= unsafe( import var</ f32 />( "some_func" ) );
+			auto b= unsafe( import var</ i32 />( "some_func" ) ); // Error - using different type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExternalVariableTypeMismatch", 5 ) )
+
+
+def ExternalVariableTypeMismatch_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			auto a= unsafe( import var</ size_type />( "some_var" ) );
+			auto b= unsafe( import var</ $(size_type) />( "some_var" ) ); // Error - using different type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExternalVariableTypeMismatch", 5 ) )
+
+
+def ExternalVariableTypeMismatch_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto a= unsafe( import var</ u16 />( "some_var" ) );
+			auto b= unsafe( import var</ u32 />( "some_var" ) ); // Error - using different type.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExternalVariableTypeMismatch", 5 ) )
