@@ -1804,12 +1804,51 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::ExternalFunctionAccess& external_function_access )
 {
-	// TODO
-	U_UNUSED(names_scope);
-	U_UNUSED(function_context);
-	U_UNUSED(external_function_access);
+	// TODO - prevent usage in global context.
+	// TODO - prevent usage in safe code.
 
-	return ErrorValue();
+	const Type type= PrepareType( external_function_access.type, names_scope, function_context );
+	const FunctionPointerType* const function_pointer_type= type.GetFunctionPointerType();
+
+	if( function_pointer_type == nullptr )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), external_function_access.src_loc, "any function type", type );
+		return ErrorValue();
+	}
+
+	llvm::FunctionType* const function_llvm_type= GetLLVMFunctionType( function_pointer_type->function_type );
+
+	llvm::Function* function= nullptr;
+	if( const auto prev_function= module_->getFunction( external_function_access.name ) )
+	{
+		if( prev_function->getFunctionType() != function_llvm_type )
+		{
+			// TODO - use other error code.
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), external_function_access.src_loc, "old function type", type );
+			return ErrorValue();
+		}
+		function= prev_function;
+	}
+	else
+		function=
+			llvm::Function::Create(
+				function_llvm_type,
+				llvm::GlobalValue::ExternalLinkage,
+				external_function_access.name,
+				*module_ );
+
+	// Return value of function pointer type.
+	const auto result= Variable::Create(
+		type,
+		ValueType::Value,
+		Variable::Location::LLVMRegister,
+		"external function " + external_function_access.name,
+		function,
+		nullptr /* do not produce constexpr value */ );
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
