@@ -948,11 +948,53 @@ fn CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext &mut function_context,
 	Synt::ExternalVariableAccess& external_variable_access ) : Value
 {
-	// TODO
-	ust::ignore_unused(names_scope);
-	ust::ignore_unused(function_context);
-	ust::ignore_unused(external_variable_access);
-	return ErrorValue();
+	if( function_context.llvm_function == global_llvm_function_ )
+	{
+		REPORT_ERROR( AccessingExternalVariableInGlobalContext, names_scope, external_variable_access.src_loc )
+		return ErrorValue();
+	}
+	// Require unsafe block, since it's global mutable variable.
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( AccessingExternalVariableOutsideUnsafeBlock, names_scope, external_variable_access.src_loc )
+		return ErrorValue();
+	}
+
+	var Type t= PrepareType( names_scope, function_context, external_variable_access.t );
+
+	var ust::string8 name_nt= external_variable_access.name + "\0";
+
+	var LLVMValueRef mut variable= LLVMValueRef::Null;
+
+	var LLVMValueRef prev_variable= unsafe( LLVMGetNamedGlobal( module_, name_nt.front() ) );
+	if( prev_variable != LLVMValueRef::Null )
+	{
+		if( t.GetLLVMType() != unsafe( LLVMGlobalGetValueType( prev_variable ) ) )
+		{
+			REPORT_ERROR( ExternalVariableTypeMismatch, names_scope, external_variable_access.src_loc )
+			return ErrorValue();
+		}
+		variable= prev_variable;
+	}
+	else
+	{
+		variable= unsafe( LLVMAddGlobal( module_, t.GetLLVMType(), name_nt.front() ) );
+	}
+
+	// Return mutable reference of specified type.
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= t,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
+			.llvm_value= variable,
+			.name= "external variable " + external_variable_access.name,
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
