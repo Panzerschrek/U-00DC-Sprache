@@ -1235,6 +1235,34 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(embed);
 		}
+		if( it_->text == Keywords::import_ )
+		{
+			auto external_function_access= std::make_unique<ExternalFunctionAccess>( it_->src_loc );
+			NextLexem();
+
+			if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ ) )
+				PushErrorMessage();
+			else
+				NextLexem();
+
+			ExpectLexem( Lexem::Type::TemplateBracketLeft );
+			external_function_access->type= ParseTypeName();
+			ExpectLexem( Lexem::Type::TemplateBracketRight );
+
+			ExpectLexem( Lexem::Type::BracketLeft );
+
+			if( it_->type != Lexem::Type::String )
+				PushErrorMessage();
+			else
+			{
+				external_function_access->name= it_->text;
+				NextLexem();
+			}
+
+			ExpectLexem( Lexem::Type::BracketRight );
+
+			return std::move(external_function_access);
+		}
 		if( it_->text == Keywords::typeinfo_ )
 		{
 			auto typeinfo_= std::make_unique<TypeInfo>(it_->src_loc );

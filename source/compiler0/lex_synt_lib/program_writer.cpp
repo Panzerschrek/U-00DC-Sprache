@@ -432,6 +432,16 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( embed->expression, stream );
 			stream << " )";
 		}
+		void operator()( const std::unique_ptr<const ExternalFunctionAccess>& external_function_access ) const
+		{
+			stream << Keyword( Keywords::import_ ) << " " << Keyword( Keywords::fn_ );
+
+			stream << "</";
+			ElementWrite( external_function_access->type, stream );
+			stream << "/>";
+
+			stream << "( " << external_function_access->name << " )";
+		}
 		void operator()( const std::unique_ptr<const TypeInfo>& typeinfo_ ) const
 		{
 			stream << "</ ";
