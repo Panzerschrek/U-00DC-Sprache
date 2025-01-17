@@ -57,7 +57,7 @@ fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
 		return true;
 	}
 
-	var i32 errno = BKGetErrno();
+	var i32 errno = GetErrno();
 	if( errno == EEXIST )
 	{
 		// If given path already exists, check if it's a directory and not a file, symlink or something else.
@@ -75,7 +75,7 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 	var i32 fd = unsafe( ::open( path_null_terminated.data(), O_WRONLY | O_CREAT | O_TRUNC, 0o755u ) );
 	if( fd == -1 )
 	{
-		logger.LogError( ust::concat( "Failed to open file \"", path, "\" for writing, error: ", ust::to_string8( BKGetErrno() ) ) );
+		logger.LogError( ust::concat( "Failed to open file \"", path, "\" for writing, error: ", ust::to_string8( GetErrno() ) ) );
 		return false;
 	}
 
@@ -90,7 +90,7 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 		if( write_res < ssize_type(0) )
 		{
 			// Write failed.
-			logger.LogError( ust::concat( "Failed to write to file \"", path, "\", error: ", ust::to_string8( BKGetErrno() ) ) );
+			logger.LogError( ust::concat( "Failed to write to file \"", path, "\", error: ", ust::to_string8( GetErrno() ) ) );
 			unsafe( ::close(fd) );
 			return false;
 		}
@@ -111,7 +111,7 @@ fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string
 	var i32 fd_source = unsafe( ::open( source_path_null_terminated.data(), O_RDONLY, 0u ) );
 	if( fd_source == -1 )
 	{
-		logger.LogError( ust::concat( "Failed to open file \"", source_path, "\" for reading, error: ", ust::to_string8( BKGetErrno() ) ) );
+		logger.LogError( ust::concat( "Failed to open file \"", source_path, "\" for reading, error: ", ust::to_string8( GetErrno() ) ) );
 		return false;
 	}
 
@@ -129,7 +129,7 @@ fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string
 	var i32 fd_destination = unsafe( ::open( destination_path_null_terminated.data(), O_WRONLY | O_CREAT | O_TRUNC, 0o755u ) );
 	if( fd_destination == -1 )
 	{
-		logger.LogError( ust::concat( "Failed to open file \"", destination_path, "\" for writing, error: ", ust::to_string8( BKGetErrno() ) ) );
+		logger.LogError( ust::concat( "Failed to open file \"", destination_path, "\" for writing, error: ", ust::to_string8( GetErrno() ) ) );
 		unsafe( ::close( fd_source ) );
 		return false;
 	}
@@ -139,7 +139,7 @@ fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string
 		var ssize_type bytes_sent= unsafe( ::sendfile( fd_destination, fd_source, $<(offset), size_t( off_t(source_file_size) - offset ) ) );
 		if( bytes_sent <= ssize_type(0) )
 		{
-			logger.LogError( ust::concat( "sendfile failed for destination \"", destination_path, "\" and source \"", source_path, "\", error: ", ust::to_string8( BKGetErrno() ) ) );
+			logger.LogError( ust::concat( "sendfile failed for destination \"", destination_path, "\" and source \"", source_path, "\", error: ", ust::to_string8( GetErrno() ) ) );
 			unsafe( ::close( fd_source ) );
 			unsafe( ::close( fd_destination ) );
 			return false;
@@ -203,7 +203,7 @@ fn GetCurrentDirectory() : ust::string8
 		auto call_res = unsafe( ::getcwd( res.data(), res.size() ) );
 		if( ust::is_nullptr(call_res) )
 		{
-			if( BKGetErrno() == ERANGE )
+			if( GetErrno() == ERANGE )
 			{
 				// Not enough space - double it and call the function again.
 				auto new_size= res.size() * 2s;
