@@ -14,6 +14,22 @@ fn nomangle main() : i32
 		halt if( f( 786u64, 66u64 ) != 786u64 - 66u64 );
 		halt if( f( 123u64, 456u64 ) != 123u64 - 456u64 );
 	}
+	unsafe
+	{
+		// Access external variable, using name impossible in Ü.
+		var f32 &mut c= import var</ f32 />( "__cpp_global_constant" );
+		halt if( c != 2.375f );
+	}
+	unsafe
+	{
+		// Access external variable, using name which is Ü keyword.
+		halt if( import var</ u64 />( "generator" ) != 77u64 );
+		import var</ u64 />( "generator" ) *= 3u64;
+		halt if( import var</ u64 />( "generator" ) != 3u64 * 77u64 );
+		halt if( GetGeneratorValue() != 3u64 * 77u64 );
+	}
 
 	return 0;
 }
+
+fn nomangle GetGeneratorValue() unsafe : u64;
