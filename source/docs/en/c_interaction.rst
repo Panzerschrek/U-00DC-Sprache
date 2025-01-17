@@ -102,6 +102,61 @@ In the example below both structs will have identical layout.
        bool z;
    };
 
+
+********************
+*External functions*
+********************
+
+Ü has a special operator designed for accessing external functions (defined outside Ü code).
+It consists of keywords ``import`` and ``fn``, function type in ``<//>`` and function name as string in ``()``.
+This operator returns a function pointer for the requested function.
+
+.. code-block:: u_spr
+  :caption: Ü код
+
+   fn Foo()
+   {
+       unsafe
+       {
+           auto f= import fn</ fn() : i32 />( "_some_external_function" ); // Obtain a pointer for specified function
+           var i32 x= f(); // Call it
+       }
+   }
+
+It's allowed to use this operator only in ``unsafe`` blocks and expressions.
+It's necessary, since a programmer should ensure that the type specified is compatible with the type of the function defined externally and that there is no name conflicts with functions written in Ü.
+
+This operator is intended to be used in cases, where it's not possible to write a prototype for some external function.
+This may be the case, if the name of such function isn't correct Ü name, like it starts with ``_``, contains forbidden symbols or is an Ü keyword.
+
+
+***************************
+*External global variables*
+***************************
+
+Ü has a special operator designed for accessing external global variables (defined outside Ü code).
+It consists of keywords ``import`` and ``var``, variable type in ``<//>`` and variable name as string in ``()``.
+This operator returns a mutable reference for the requested global variable.
+
+.. code-block:: u_spr
+  :caption: Ü код
+
+   fn Foo()
+   {
+       unsafe
+       {
+           var i32 &mut x= import var</ i32 />( "__some_var" ); // Obtain a reference to required variable
+           ++x; // Can modify this variable
+       }
+   }
+
+This operator is necessary for accessing external global variables (defined outside Ü code), because there are no other ways in the language to do this.
+A returned reference is always mutable, if an external variable is defined as constant, changing it via this mutable reference isn't allowed.
+Thread-local variables aren't supported.
+One need to use this operator with caution.
+It's allowed only within ``unsafe`` blocks and expressions.
+
+
 ****************************************
 *C interaction limitations and warnings*
 ****************************************
