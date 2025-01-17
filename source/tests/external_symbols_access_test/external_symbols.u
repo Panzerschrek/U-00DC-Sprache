@@ -1,0 +1,19 @@
+fn nomangle main() : i32
+{
+	{
+		// access an external function with name starting with "_" - which isn't possible to use for a usual function protorype in Ü.
+		auto f= unsafe( import fn</ fn( i32 x ) : i32 />( "__some_cpp_function" ) );
+
+		halt if( f(7) != 49 );
+		halt if( f(-31) != 961 );
+	}
+	{
+		// access an external function with name, which is Ü keyword.
+		auto f= unsafe( import fn</ fn( u64 x, u64 y ) : u64 />( "if_coro_advance" ) );
+
+		halt if( f( 786u64, 66u64 ) != 786u64 - 66u64 );
+		halt if( f( 123u64, 456u64 ) != 123u64 - 456u64 );
+	}
+
+	return 0;
+}
