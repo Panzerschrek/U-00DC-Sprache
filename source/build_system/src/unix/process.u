@@ -3,7 +3,6 @@ import "/scoped_array.u"
 import "/string_conversions.u"
 import "/vector.u"
 import "../process.uh"
-import "environ.uh"
 import "errno.uh"
 import "unix.uh"
 
@@ -108,7 +107,7 @@ public:
 				$<(file_actions),
 				$<(spawn_attributes),
 				argv_vec.data(),
-				BKGetEnvironment() ) );
+				GetEnvironment() ) );
 
 		if( spawn_res != 0 )
 		{
@@ -351,6 +350,14 @@ public: // ProcessGroupInterface
 private:
 	ust::vector</Process/> running_processes_;
 	ust::vector</ProcessId/> finished_processes_;
+}
+
+// Returns value of external variable, declared in C code like this:
+//   extern char** environ;
+// It should be null-terminated list of null-terminated strings in format "name=value".
+fn GetEnvironment() unsafe : $($(char8))
+{
+	return unsafe( import var</ $($(char8)) />( "environ" ) );
 }
 
 } // namespace BK

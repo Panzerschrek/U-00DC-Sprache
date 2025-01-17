@@ -1,3 +1,0 @@
-// Returns "environ" global variable contents.
-// Implemented in C++, because Ü doesn't support external global variables.
-fn nomangle BKGetEnvironment() : $($(char8));
