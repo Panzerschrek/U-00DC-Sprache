@@ -48,16 +48,12 @@ if( WIN32 )
 
 	file( GLOB BUILD_SYSTEM_HEADERS_WINDOWS "src/windows/*.uh" )
 	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_WINDOWS} )
-
-	file( GLOB BUILD_SYSTEM_SOURCES_CPP "src/windows/*.cpp" )
 else()
 	file( GLOB BUILD_SYSTEM_SOURCES_UNIX "src/unix/*.u" )
 	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_UNIX} )
 
 	file( GLOB BUILD_SYSTEM_HEADERS_UNIX "src/unix/*.uh" )
 	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_UNIX} )
-
-	file( GLOB BUILD_SYSTEM_SOURCES_CPP "src/unix/*.cpp" )
 endif()
 
 foreach( source ${BUILD_SYSTEM_SOURCES} )
@@ -65,7 +61,10 @@ foreach( source ${BUILD_SYSTEM_SOURCES} )
 	list( APPEND BUILD_SYSTEM_OBJECTS ${out_object} )
 endforeach()
 
-add_executable( BuildSystem${CURRENT_COMPILER_GENERATION} ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} ${BUILD_SYSTEM_SOURCES_CPP} )
+add_executable( BuildSystem${CURRENT_COMPILER_GENERATION} ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} )
+# Since we have no C or C++ sources, set linker language to C, in order to execute a C linker for linking the build system executable.
+# C++ is unnecessary here - we don't want to link against C++ standard libraries.
+set_target_properties( BuildSystem${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
 
 if( MINGW )
 	target_link_options( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE "-municode" ) # Allow "wmain" as entry point.
