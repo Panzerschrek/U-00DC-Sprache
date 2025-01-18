@@ -1,29 +1,77 @@
 import "/build_system.uh"
 
-fn nomangle GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) : BK::PackageInfo
 {
-	ust::ignore_unused( build_system_interface );
-
 	var BK::BuildTarget mut target
 	{
-		//.name= "BuildSystem1",
-		.target_type= BK::BuildTargetType::Executable,
+		.name= "BuildSystem1",
+		.target_type= BK::BuildTargetType::Executable
 	};
 
-	var [ ust::string_view8, 4 ] sources
+	var [ ust::string_view8, 20 ] sources
 	[
 		"abort_signal_handler.u",
 		"build_graph.u",
 		"build_graph_serialization.u",
 		"build_system_paths.u",
+		"configuration_options.u",
+		"json/parsing.u",
+		"json/serialization.u",
+		"json/value.u",
+		"include_directories.u",
+		"init_command.u",
+		"language_server_workspace_info.u",
+		"logger.u",
+		"main.u",
+		"make_dep_file.u",
+		"options.u",
+		"package_transformation.u",
+		"path.u",
+		"string_utils.u",
+		"target_triple.u",
+		"version_unification.u",
 	];
 
 	foreach( &s : sources )
 	{
 		target.source_files.push_back( ust::concat( "src/", s ) );
 	}
+	target.source_files.push_back( "dummy.u" );
 
-	build_system_interface.LogInfo( "Entered the script" );
+	if( build_system_interface.GetTargetTriple().operating_system == "windows" )
+	{
+		var [ ust::string_view8, 6 ] sources_windows
+		[
+			"entry.u",
+			"filesystem.u",
+			"proc.u",
+			"process.u",
+			"shared_library.u",
+			"wide_string.u",
+		];
+
+		foreach( &s : sources_windows )
+		{
+			target.source_files.push_back( ust::concat( "src/windows/", s ) );
+		}
+	}
+	else
+	{
+		var [ ust::string_view8, 6 ] sources_unix
+		[
+			"entry.u",
+			"errno.u",
+			"filesystem.u",
+			"proc.u",
+			"process.u",
+			"shared_library.u",
+		];
+
+		foreach( &s : sources_unix )
+		{
+			target.source_files.push_back( ust::concat( "src/unix/", s ) );
+		}
+	}
 
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
 }
