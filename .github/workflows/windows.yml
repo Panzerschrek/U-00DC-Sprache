@@ -9,7 +9,7 @@ jobs:
     - uses: actions/checkout@v1
     - name: build project
       run: ./ci/build_release_windows.ps1
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: compiler_windows
         path: install/

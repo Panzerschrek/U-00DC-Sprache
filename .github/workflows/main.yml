@@ -11,7 +11,7 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install ninja-build python3-sphinx sphinx-doc sphinx-common python3-stemmer
         ./ci/build_release_llvm_bin.sh
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: compiler_gnu_linux
         path: install/

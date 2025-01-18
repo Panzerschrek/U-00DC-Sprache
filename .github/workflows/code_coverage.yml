@@ -11,7 +11,7 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install ninja-build lcov
         ./ci/calculate_code_coverage.sh
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: code_coverage_report
         path: code_coverage_report/
