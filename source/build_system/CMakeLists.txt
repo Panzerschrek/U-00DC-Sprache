@@ -1,5 +1,47 @@
 message( STATUS "Build build system" )
 
+file( GLOB BUILD_SYSTEM_HEADERS "src/*.uh" "src/json/*.uh" "imports/*.uh" )
+file( GLOB BUILD_SYSTEM_SOURCES "src/*.u" "src/json/*.u" )
+
+if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
+
+	set( BUILD_SCRIPT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/build.u )
+
+	set( BK_BUILD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/bk_build )
+
+	if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
+		set( BUILD_SYSTEM_BUILD_CONFIGURATION "debug" )
+	else()
+		set( BUILD_SYSTEM_BUILD_CONFIGURATION "release" )
+	endif()
+
+	set( BUILD_SYSTEM_OUT_FILE ${BK_BUILD_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURATION}/BuildSystem )
+
+	add_custom_command(
+		OUTPUT ${BUILD_SYSTEM_OUT_FILE}
+		DEPENDS ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_SOURCES}
+		DEPENDS ${BUILD_SCRIPT_FILE}
+		DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
+		DEPENDS BuildSystem
+		COMMAND
+			BuildSystem build
+			-v
+			--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
+			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
+			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports/
+			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
+			--project-directory ${CMAKE_CURRENT_SOURCE_DIR}
+			--build-directory ${BK_BUILD_DIR}
+		USES_TERMINAL
+			)
+
+	add_custom_target(
+		QQBuildSystem${CURRENT_COMPILER_GENERATION} ALL
+		DEPENDS ${BUILD_SYSTEM_OUT_FILE}
+		SOURCES ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SCRIPT_FILE}
+		)
+endif()
+
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
 else()
@@ -38,9 +80,6 @@ function( CompileUSource u_source_file out_object )
 	set( ${out_object} ${u_source_file_relative}.o PARENT_SCOPE )
 
 endfunction()
-
-file( GLOB BUILD_SYSTEM_HEADERS "src/*.uh" "src/json/*.uh" "imports/*.uh" )
-file( GLOB BUILD_SYSTEM_SOURCES "src/*.u" "src/json/*.u" )
 
 if( WIN32 )
 	file( GLOB BUILD_SYSTEM_SOURCES_WINDOWS "src/windows/*.u" )
