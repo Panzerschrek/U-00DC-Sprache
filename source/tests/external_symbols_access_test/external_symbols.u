@@ -1,0 +1,42 @@
+fn nomangle main() : i32
+{
+	{
+		// Access an external function with name starting with "_" - which isn't possible to use for a usual function prototype in Ü.
+		auto f= unsafe( import fn</ fn( i32 x ) : i32 />( "__some_cpp_function" ) );
+
+		halt if( f(7) != 49 );
+		halt if( f(-31) != 961 );
+	}
+	{
+		// Access an external function with name, which is Ü keyword.
+		auto f= unsafe( import fn</ fn( u64 x, u64 y ) : u64 />( "if_coro_advance" ) );
+
+		halt if( f( 786u64, 66u64 ) != 786u64 - 66u64 );
+		halt if( f( 123u64, 456u64 ) != 123u64 - 456u64 );
+	}
+	unsafe
+	{
+		// Access external variable, using name impossible in Ü.
+		var f32 &mut c= import var</ f32 />( "__cpp_global_constant" );
+		halt if( c != 2.375f );
+	}
+	unsafe
+	{
+		// Access external variable, using name which is Ü keyword.
+		halt if( import var</ u64 />( "generator" ) != 77u64 );
+		import var</ u64 />( "generator" ) *= 3u64;
+		halt if( import var</ u64 />( "generator" ) != 3u64 * 77u64 );
+		halt if( GetGeneratorValue() != 3u64 * 77u64 );
+	}
+	unsafe
+	{
+		// Access an external variable of function pounter type.
+		// This is different from accessing an external function.
+		auto f= import var</ fn() : i32 />( "__get_42_fn" );
+		halt if( f() != 42 );
+	}
+
+	return 0;
+}
+
+fn nomangle GetGeneratorValue() unsafe : u64;

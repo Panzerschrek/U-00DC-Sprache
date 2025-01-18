@@ -54,6 +54,67 @@ void ElementWrite( const ClassElementsList& class_elements, std::ostream& stream
 void ElementWrite( const ProgramElementsList& elements, std::ostream& stream );
 // Prototypes end
 
+void WriteStringEscaped( const std::string_view s, std::ostream& stream )
+{
+	std::string escaped;
+	for( const char c : s )
+	{
+		switch(c)
+		{
+		case '\"':
+			escaped.push_back( '\\' );
+			escaped.push_back( '\"' );
+			break;
+		case '\\':
+			escaped.push_back( '\\' );
+			escaped.push_back( '\\' );
+			break;
+		case '\b':
+			escaped.push_back( '\\' );
+			escaped.push_back( 'b' );
+			break;
+		case '\f':
+			escaped.push_back( '\\' );
+			escaped.push_back( 'f' );
+			break;
+		case '\n':
+			escaped.push_back( '\\' );
+			escaped.push_back( 'n' );
+			break;
+		case '\r':
+			escaped.push_back( '\\' );
+			escaped.push_back( 'r' );
+			break;
+		case '\t':
+			escaped.push_back( '\\' );
+			escaped.push_back( 't' );
+			break;
+		case '\0':
+			escaped.push_back( '\\' );
+			escaped.push_back( '0' );
+			break;
+		default:
+			if( sprache_char(c) < 32 )
+			{
+				escaped.push_back('\\');
+				escaped.push_back('u');
+				for( uint32_t i= 0u; i < 4u; ++i )
+				{
+					const sprache_char val= ( sprache_char(c) >> ((3u-i) * 4u ) ) & 15u;
+					if( val < 10u )
+						escaped.push_back( char( '0' + int(val) ) );
+					else
+						escaped.push_back( char( 'a' + int(val-10u) ) );
+				}
+			}
+			else
+				escaped.push_back(c);
+			break;
+		};
+	}
+	stream << "\"" << escaped << "\"";
+}
+
 class UniversalVisitor
 {
 public:
@@ -307,63 +368,8 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const std::unique_ptr<const StringLiteral>& string_literal ) const
 		{
-			std::string escaped;
-			for( const char c : string_literal->value )
-			{
-				switch(c)
-				{
-				case '\"':
-					escaped.push_back( '\\' );
-					escaped.push_back( '\"' );
-					break;
-				case '\\':
-					escaped.push_back( '\\' );
-					escaped.push_back( '\\' );
-					break;
-				case '\b':
-					escaped.push_back( '\\' );
-					escaped.push_back( 'b' );
-					break;
-				case '\f':
-					escaped.push_back( '\\' );
-					escaped.push_back( 'f' );
-					break;
-				case '\n':
-					escaped.push_back( '\\' );
-					escaped.push_back( 'n' );
-					break;
-				case '\r':
-					escaped.push_back( '\\' );
-					escaped.push_back( 'r' );
-					break;
-				case '\t':
-					escaped.push_back( '\\' );
-					escaped.push_back( 't' );
-					break;
-				case '\0':
-					escaped.push_back( '\\' );
-					escaped.push_back( '0' );
-					break;
-				default:
-					if( sprache_char(c) < 32 )
-					{
-						escaped.push_back('\\');
-						escaped.push_back('u');
-						for( uint32_t i= 0u; i < 4u; ++i )
-						{
-							const sprache_char val= ( sprache_char(c) >> ((3u-i) * 4u ) ) & 15u;
-							if( val < 10u )
-								escaped.push_back( char( '0' + int(val) ) );
-							else
-								escaped.push_back( char( 'a' + int(val-10u) ) );
-						}
-					}
-					else
-						escaped.push_back(c);
-					break;
-				};
-			}
-			stream << "\"" << escaped << "\"" << string_literal->type_suffix;
+			WriteStringEscaped( string_literal->value, stream );
+			stream << string_literal->type_suffix;
 		}
 		void operator()( const BooleanConstant& boolean_constant ) const
 		{
@@ -430,6 +436,30 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 
 			stream << "( ";
 			ElementWrite( embed->expression, stream );
+			stream << " )";
+		}
+		void operator()( const std::unique_ptr<const ExternalFunctionAccess>& external_function_access ) const
+		{
+			stream << Keyword( Keywords::import_ ) << " " << Keyword( Keywords::fn_ );
+
+			stream << "</";
+			ElementWrite( external_function_access->type, stream );
+			stream << "/>";
+
+			stream << "( ";
+			WriteStringEscaped( external_function_access->name, stream );
+			stream << " )";
+		}
+		void operator()( const std::unique_ptr<const ExternalVariableAccess>& external_variable_access ) const
+		{
+			stream << Keyword( Keywords::import_ ) << " " << Keyword( Keywords::var_ );
+
+			stream << "</";
+			ElementWrite( external_variable_access->type, stream );
+			stream << "/>";
+
+			stream << "( ";
+			WriteStringEscaped( external_variable_access->name, stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const TypeInfo>& typeinfo_ ) const

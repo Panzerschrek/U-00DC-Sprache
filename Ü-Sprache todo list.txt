@@ -16,7 +16,7 @@ General:
 *) "nodiscard" for functions
 *) Consider making "nodiscard" flag presence configurable - based on a constant expression
 *) switch-style operator for expression context
-*) thread-local variables
+*) thread-local variables, including accessing external thread-local variables
 *) A way to construct temporary variable with sequence initializer or other initializer kinds,
 	(in expression context)
 *) Function to function pointer assignment with multiple possible functions
@@ -35,8 +35,6 @@ General:
 	name inside it
 *) Allow default constructors for interfaces
 *) Allow zero-sized fields for interfaces (to create inner reference tags, for example)
-*) Add a possibility to provide an arbitrary name for a "nomangle" function declaration (but without body)
-*) Add a possibility to declare but not define global variable - to access global C variables
 *) Add a possibility to call external C functions with variadic number of arguments
 *) Generate order compare operators (<=>) where it can be done easily (for arrays, tuples, structs with single field).
 	Support operator <=> generation for ustlib types (if can do so).

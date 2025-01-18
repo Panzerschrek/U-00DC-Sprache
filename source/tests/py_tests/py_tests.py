@@ -45,6 +45,7 @@ def main():
 		"constexpr_structs_test",
 		"enable_if_test",
 		"equality_operators_generation_test",
+		"external_symbols_access_test",
 		"fields_sort_test",
 		"function_pointers_errors_test",
 		"function_pointers_test",

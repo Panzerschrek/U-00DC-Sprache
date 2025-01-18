@@ -1235,6 +1235,56 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(embed);
 		}
+		if( it_->text == Keywords::import_ )
+		{
+			const SrcLoc src_loc= it_->src_loc;
+			NextLexem();
+
+			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
+			{
+				NextLexem();
+				auto external_function_access= std::make_unique<ExternalFunctionAccess>( src_loc );
+
+				external_function_access->type= ParseTypeNameInTemplateBrackets();
+
+				ExpectLexem( Lexem::Type::BracketLeft );
+
+				if( it_->type != Lexem::Type::String )
+					PushErrorMessage();
+				else
+				{
+					external_function_access->name= it_->text;
+					NextLexem();
+				}
+
+				ExpectLexem( Lexem::Type::BracketRight );
+
+				return std::move(external_function_access);
+			}
+			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
+			{
+				NextLexem();
+				auto external_variable_access= std::make_unique<ExternalVariableAccess>( src_loc );
+
+				external_variable_access->type= ParseTypeNameInTemplateBrackets();
+
+				ExpectLexem( Lexem::Type::BracketLeft );
+
+				if( it_->type != Lexem::Type::String )
+					PushErrorMessage();
+				else
+				{
+					external_variable_access->name= it_->text;
+					NextLexem();
+				}
+
+				ExpectLexem( Lexem::Type::BracketRight );
+
+				return std::move(external_variable_access);
+			}
+			else
+				PushErrorMessage();
+		}
 		if( it_->text == Keywords::typeinfo_ )
 		{
 			auto typeinfo_= std::make_unique<TypeInfo>(it_->src_loc );

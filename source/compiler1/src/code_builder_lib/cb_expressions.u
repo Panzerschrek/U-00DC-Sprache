@@ -879,6 +879,124 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	return result_ptr;
 }
 
+fn CodeBuilder::BuildExpressionCodeImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::ExternalFunctionAccess& external_function_access ) : Value
+{
+	if( function_context.llvm_function == global_llvm_function_ )
+	{
+		REPORT_ERROR( AccessingExternalFunctionInGlobalContext, names_scope, external_function_access.src_loc )
+		return ErrorValue();
+	}
+	// Require unsafe block, since it's easy to mess with signatures of external functions.
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( AccessingExternalFunctionOutsideUnsafeBlock, names_scope, external_function_access.src_loc )
+		return ErrorValue();
+	}
+
+	var Type t= PrepareType( names_scope, function_context, external_function_access.t );
+	auto function_pointer_type= t.GetFunctionPointerType();
+	if( function_pointer_type.empty() )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, external_function_access.src_loc, "any function type", t )
+		return ErrorValue();
+	}
+
+	var ust::string8 name_nt= external_function_access.name + "\0";
+
+	var LLVMTypeRef function_llvm_type= GetLLVMFunctionType( function_pointer_type.try_deref().function_type );
+
+	var LLVMValueRef mut function= LLVMValueRef::Null;
+
+	var LLVMValueRef prev_function= unsafe( LLVMGetNamedFunction( module_, name_nt.front() ) );
+	if( prev_function != LLVMValueRef::Null )
+	{
+		if( unsafe( U1_GetFunctionType( prev_function ) ) != function_llvm_type )
+		{
+			REPORT_ERROR( ExternalFunctionTypeMismatch, names_scope, external_function_access.src_loc )
+			return ErrorValue();
+		}
+		function= prev_function;
+	}
+	else
+	{
+		function= unsafe( LLVMAddFunction( module_, name_nt.front(), function_llvm_type ) );
+	}
+
+	// Return value of function pointer type.
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= t,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::LLVMRegister,
+			.llvm_value= function,
+			.name= "external function " + external_function_access.name,
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	Synt::ExternalVariableAccess& external_variable_access ) : Value
+{
+	if( function_context.llvm_function == global_llvm_function_ )
+	{
+		REPORT_ERROR( AccessingExternalVariableInGlobalContext, names_scope, external_variable_access.src_loc )
+		return ErrorValue();
+	}
+	// Require unsafe block, since it's global mutable variable.
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( AccessingExternalVariableOutsideUnsafeBlock, names_scope, external_variable_access.src_loc )
+		return ErrorValue();
+	}
+
+	var Type t= PrepareType( names_scope, function_context, external_variable_access.t );
+
+	var ust::string8 name_nt= external_variable_access.name + "\0";
+
+	var LLVMValueRef mut variable= LLVMValueRef::Null;
+
+	var LLVMValueRef prev_variable= unsafe( LLVMGetNamedGlobal( module_, name_nt.front() ) );
+	if( prev_variable != LLVMValueRef::Null )
+	{
+		if( t.GetLLVMType() != unsafe( LLVMGlobalGetValueType( prev_variable ) ) )
+		{
+			REPORT_ERROR( ExternalVariableTypeMismatch, names_scope, external_variable_access.src_loc )
+			return ErrorValue();
+		}
+		variable= prev_variable;
+	}
+	else
+	{
+		variable= unsafe( LLVMAddGlobal( module_, t.GetLLVMType(), name_nt.front() ) );
+	}
+
+	// Return mutable reference of specified type.
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= t,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
+			.llvm_value= variable,
+			.name= "external variable " + external_variable_access.name,
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
 {
 	auto prev_unsafe= function_context.is_in_unsafe_block;

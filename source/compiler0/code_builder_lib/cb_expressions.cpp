@@ -1802,6 +1802,118 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::ExternalFunctionAccess& external_function_access )
+{
+	if( function_context.function == global_function_context_->function )
+	{
+		REPORT_ERROR( AccessingExternalFunctionInGlobalContext, names_scope.GetErrors(), external_function_access.src_loc );
+		return ErrorValue();
+	}
+	// Require unsafe block, since it's easy to mess with signatures of external functions.
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( AccessingExternalFunctionOutsideUnsafeBlock, names_scope.GetErrors(), external_function_access.src_loc );
+		return ErrorValue();
+	}
+
+	const Type type= PrepareType( external_function_access.type, names_scope, function_context );
+	const FunctionPointerType* const function_pointer_type= type.GetFunctionPointerType();
+
+	if( function_pointer_type == nullptr )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), external_function_access.src_loc, "any function type", type );
+		return ErrorValue();
+	}
+
+	llvm::FunctionType* const function_llvm_type= GetLLVMFunctionType( function_pointer_type->function_type );
+
+	llvm::Function* function= nullptr;
+	if( const auto prev_function= module_->getFunction( external_function_access.name ) )
+	{
+		if( prev_function->getFunctionType() != function_llvm_type )
+		{
+			REPORT_ERROR( ExternalFunctionTypeMismatch, names_scope.GetErrors(), external_function_access.src_loc );
+			return ErrorValue();
+		}
+		function= prev_function;
+	}
+	else
+		function=
+			llvm::Function::Create(
+				function_llvm_type,
+				llvm::GlobalValue::ExternalLinkage,
+				external_function_access.name,
+				*module_ );
+
+	// Return value of function pointer type.
+	const auto result= Variable::Create(
+		type,
+		ValueType::Value,
+		Variable::Location::LLVMRegister,
+		"external function " + external_function_access.name,
+		function,
+		nullptr /* do not produce constexpr value */ );
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+	return result;
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::ExternalVariableAccess& external_variable_access )
+{
+	if( function_context.function == global_function_context_->function )
+	{
+		REPORT_ERROR( AccessingExternalVariableInGlobalContext, names_scope.GetErrors(), external_variable_access.src_loc );
+		return ErrorValue();
+	}
+	// Require unsafe block, since it's global mutable variable.
+	if( !function_context.is_in_unsafe_block )
+	{
+		REPORT_ERROR( AccessingExternalVariableOutsideUnsafeBlock, names_scope.GetErrors(), external_variable_access.src_loc );
+		return ErrorValue();
+	}
+
+	const Type type= PrepareType( external_variable_access.type, names_scope, function_context );
+
+	llvm::GlobalVariable* variable= nullptr;
+	if( llvm::GlobalVariable* const prev_variable= module_->getGlobalVariable( external_variable_access.name ) )
+	{
+		if( type.GetLLVMType() != prev_variable->getValueType() )
+		{
+			REPORT_ERROR( ExternalVariableTypeMismatch, names_scope.GetErrors(), external_variable_access.src_loc );
+			return ErrorValue();
+		}
+		variable= prev_variable;
+	}
+	else
+		variable= new llvm::GlobalVariable(
+			*module_,
+			type.GetLLVMType(),
+			false, // Assuming all external variables aren't constant.
+			llvm::GlobalValue::ExternalLinkage,
+			nullptr, // No initializer for a declaration
+			external_variable_access.name );
+
+	// Return mutable reference of specified type.
+	const auto result= Variable::Create(
+		type,
+		ValueType::ReferenceMut,
+		Variable::Location::Pointer,
+		"external variable " + external_variable_access.name,
+		variable,
+		nullptr /* do not produce constexpr value */ );
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+	return result;
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::TypeInfo& typeinfo )
 {
 	const Type type= PrepareType( typeinfo.type, names_scope, function_context );

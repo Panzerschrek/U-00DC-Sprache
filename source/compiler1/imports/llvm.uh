@@ -390,6 +390,7 @@ fn nomangle LLVMGetNamedGlobal(LLVMModuleRef M, NullTerminatedString& Name) unsa
 fn nomangle LLVMAddGlobal(LLVMModuleRef M, LLVMTypeRef Ty, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMSetInitializer(LLVMValueRef GlobalVar, LLVMValueRef ConstantVal) unsafe : LLVMValueRef;
 fn nomangle LLVMSetGlobalConstant(LLVMValueRef GlobalVar, LLVMBool IsConstant) unsafe;
+fn nomangle LLVMGlobalGetValueType(LLVMValueRef Global) unsafe : LLVMTypeRef;
 
 // Function
 

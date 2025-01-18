@@ -81,6 +81,8 @@ struct CastImut;
 struct CastRef;
 struct CastRefUnsafe;
 struct Embed;
+struct ExternalFunctionAccess;
+struct ExternalVariableAccess;
 
 // Initializers
 struct ZeroInitializer;
@@ -205,6 +207,8 @@ using Expression= std::variant<
 	std::unique_ptr<const CastRef>,
 	std::unique_ptr<const CastRefUnsafe>,
 	std::unique_ptr<const Embed>,
+	std::unique_ptr<const ExternalFunctionAccess>,
+	std::unique_ptr<const ExternalVariableAccess>,
 	// Type name in expression context.
 	RootNamespaceNameLookup,
 	RootNamespaceNameLookupCompletion,
@@ -797,6 +801,26 @@ struct Embed
 	SrcLoc src_loc;
 	std::optional<ComplexName> element_type;
 	Expression expression;
+};
+
+struct ExternalFunctionAccess
+{
+	explicit ExternalFunctionAccess( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	TypeName type;
+	std::string name;
+};
+
+struct ExternalVariableAccess
+{
+	explicit ExternalVariableAccess( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	TypeName type;
+	std::string name;
 };
 
 struct ZeroInitializer

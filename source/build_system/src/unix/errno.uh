@@ -1,2 +1,7 @@
-// A function implemented in C++ to access errno.
-fn nomangle BKGetErrno() : i32;
+namespace BK
+{
+
+// A function which returns value of the "errno" C variable.
+fn GetErrno() : i32;
+
+} // namespace BK
