@@ -15,10 +15,13 @@ if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 		set( BUILD_SYSTEM_BUILD_CONFIGURATION "release" )
 	endif()
 
-	set( BUILD_SYSTEM_OUT_FILE ${BK_BUILD_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURATION}/BuildSystem )
+	set( BUILD_SYSTEM_EXECUTABLE_FILE ${BK_BUILD_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURATION}/BuildSystem1 )
+	if( WIN32 )
+		set( BUILD_SYSTEM_EXECUTABLE_FILE "${BUILD_SYSTEM_EXECUTABLE_FILE}.exe" )
+	endif()
 
 	add_custom_command(
-		OUTPUT ${BUILD_SYSTEM_OUT_FILE}
+		OUTPUT ${BUILD_SYSTEM_EXECUTABLE_FILE}
 		DEPENDS ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_SOURCES}
 		DEPENDS ${BUILD_SCRIPT_FILE}
 		DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
@@ -35,84 +38,92 @@ if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 			)
 
 	add_custom_target(
-		QQBuildSystem${CURRENT_COMPILER_GENERATION} ALL
-		DEPENDS ${BUILD_SYSTEM_OUT_FILE}
+		BuildSystem${CURRENT_COMPILER_GENERATION} ALL
+		DEPENDS ${BUILD_SYSTEM_EXECUTABLE_FILE}
 		SOURCES ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SCRIPT_FILE}
 		)
-endif()
 
-if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
-	set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
+	install( FILES ${BUILD_SYSTEM_EXECUTABLE_FILE} DESTINATION "bin" )
+
 else()
-	set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
-endif()
 
-# Build rule for "Ü" files.
-function( CompileUSource u_source_file out_object )
-	file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
-	file( RELATIVE_PATH u_source_file_relative ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
-
-	if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
-		set( DEPFILE_OPTION DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d )
+	if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
+		set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
 	else()
-		set( DEPFILE_OPTION "" )
+		set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
 	endif()
 
-	add_custom_command(
-		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o
-		DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
-		COMMAND
-			Compiler${CURRENT_COMPILER_GENERATION}
-			${u_source_file}
-			-o ${current_subdir}/${u_source_file_relative}.o
-			-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
-			--verify-module
-			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
-			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
-			# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
-			--source-dir ${CMAKE_CURRENT_SOURCE_DIR}
-			--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
-		${DEPFILE_OPTION}
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "build_system/main.u.o:", but launches custom command in current binary directory
-		COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"
-		)
-	set( ${out_object} ${u_source_file_relative}.o PARENT_SCOPE )
+	# Build rule for "Ü" files.
+	function( CompileUSource u_source_file out_object )
+		file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
+		file( RELATIVE_PATH u_source_file_relative ${CMAKE_CURRENT_SOURCE_DIR} ${u_source_file} )
 
-endfunction()
+		if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
+			set( DEPFILE_OPTION DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d )
+		else()
+			set( DEPFILE_OPTION "" )
+		endif()
 
-if( WIN32 )
-	file( GLOB BUILD_SYSTEM_SOURCES_WINDOWS "src/windows/*.u" )
-	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_WINDOWS} )
+		add_custom_command(
+			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.o
+			DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
+			COMMAND
+				Compiler${CURRENT_COMPILER_GENERATION}
+				${u_source_file}
+				-o ${current_subdir}/${u_source_file_relative}.o
+				-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
+				--verify-module
+				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
+				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
+				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
+				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}
+				--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
+			${DEPFILE_OPTION}
+			WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "build_system/main.u.o:", but launches custom command in current binary directory
+			COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"
+			)
+		set( ${out_object} ${u_source_file_relative}.o PARENT_SCOPE )
 
-	file( GLOB BUILD_SYSTEM_HEADERS_WINDOWS "src/windows/*.uh" )
-	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_WINDOWS} )
-else()
-	file( GLOB BUILD_SYSTEM_SOURCES_UNIX "src/unix/*.u" )
-	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_UNIX} )
+	endfunction()
 
-	file( GLOB BUILD_SYSTEM_HEADERS_UNIX "src/unix/*.uh" )
-	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_UNIX} )
+	if( WIN32 )
+		file( GLOB BUILD_SYSTEM_SOURCES_WINDOWS "src/windows/*.u" )
+		set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_WINDOWS} )
+
+		file( GLOB BUILD_SYSTEM_HEADERS_WINDOWS "src/windows/*.uh" )
+		set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_WINDOWS} )
+	else()
+		file( GLOB BUILD_SYSTEM_SOURCES_UNIX "src/unix/*.u" )
+		set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_UNIX} )
+
+		file( GLOB BUILD_SYSTEM_HEADERS_UNIX "src/unix/*.uh" )
+		set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_UNIX} )
+	endif()
+
+	foreach( source ${BUILD_SYSTEM_SOURCES} )
+		CompileUSource( ${source} out_object )
+		list( APPEND BUILD_SYSTEM_OBJECTS ${out_object} )
+	endforeach()
+
+	add_executable( BuildSystem${CURRENT_COMPILER_GENERATION} ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} )
+	# Since we have no C or C++ sources, set linker language to C, in order to execute a C linker for linking the build system executable.
+	# C++ is unnecessary here - we don't want to link against C++ standard libraries.
+	set_target_properties( BuildSystem${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
+
+	if( MINGW )
+		target_link_options( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE "-municode" ) # Allow "wmain" as entry point.
+	endif()
+
+	if( NOT WIN32 )
+		target_link_libraries( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE dl )
+	endif()
+
+	install( TARGETS BuildSystem${CURRENT_COMPILER_GENERATION} )
+
+	set( BUILD_SYSTEM_EXECUTABLE_FILE ${CMAKE_CURRENT_BINARY_DIR}/BuildSystem${CURRENT_COMPILER_GENERATION} )
+
 endif()
 
-foreach( source ${BUILD_SYSTEM_SOURCES} )
-	CompileUSource( ${source} out_object )
-	list( APPEND BUILD_SYSTEM_OBJECTS ${out_object} )
-endforeach()
-
-add_executable( BuildSystem${CURRENT_COMPILER_GENERATION} ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} )
-# Since we have no C or C++ sources, set linker language to C, in order to execute a C linker for linking the build system executable.
-# C++ is unnecessary here - we don't want to link against C++ standard libraries.
-set_target_properties( BuildSystem${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
-
-if( MINGW )
-	target_link_options( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE "-municode" ) # Allow "wmain" as entry point.
-endif()
-
-if( NOT WIN32 )
-	target_link_libraries( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE dl )
-endif()
-
-install( TARGETS BuildSystem${CURRENT_COMPILER_GENERATION} )
 
 file( GLOB BUILD_SYSTEM_IMPORTS "imports/*" )
 install( FILES ${BUILD_SYSTEM_IMPORTS} DESTINATION "build_system/imports" )
@@ -183,7 +194,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 			COMMAND ${CMAKE_COMMAND} -E env PYTHONIOENCODING=utf-8 ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/run_tests.py
 			--tests-path ${CMAKE_CURRENT_SOURCE_DIR}/tests/
 			--tests-build-root-path ${CMAKE_CURRENT_BINARY_DIR}/tests
-			--build-system-executable ${CMAKE_CURRENT_BINARY_DIR}/BuildSystem${CURRENT_COMPILER_GENERATION}
+			--build-system-executable ${BUILD_SYSTEM_EXECUTABLE_FILE}
 			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib
