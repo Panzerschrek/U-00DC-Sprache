@@ -71,6 +71,9 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 		{
 			target.source_files.push_back( ust::concat( "src/unix/", s ) );
 		}
+
+		// Require "libdl.so" to call "dlopen" and "dlsym".
+		target.external_libraries.push_back( "-ldl" );
 	}
 
 	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
