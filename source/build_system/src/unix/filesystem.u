@@ -3,7 +3,6 @@ import "../filesystem.uh"
 import "../path.uh"
 import "errno.uh"
 import "unix.uh"
-import "stat.uh"
 
 
 namespace BK
@@ -61,7 +60,13 @@ fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
 	if( errno == EEXIST )
 	{
 		// If given path already exists, check if it's a directory and not a file, symlink or something else.
-		return unsafe( BKIsDirectory(path_null_terminated.data() ) );
+
+		var stat_ mut s= zero_init;
+		auto res= unsafe( ::lstat( path_null_terminated.data(), $<(s) ) );
+		if( res == 0 && (s.st_mode & u32(S_IFMT)) == u32(S_IFDIR) )
+		{
+			return true;
+		}
 	}
 
 	return false;
@@ -115,13 +120,14 @@ fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string
 		return false;
 	}
 
-	var i64 source_file_size= unsafe( BKGetFileSize( fd_source ) );
-	if( source_file_size < 0i64 )
+	auto source_file_size_opt= unsafe( GetFileSize( fd_source ) );
+	if( source_file_size_opt.empty() )
 	{
 		logger.LogError( ust::concat( "Failed to get file size for \"", source_path, "\"." ) );
 		unsafe( ::close(fd_source) );
 		return false;
 	}
+	var u64 source_file_size= source_file_size_opt.try_deref();
 
 	var ust::string8 mut destination_path_null_terminated = destination_path;
 	destination_path_null_terminated+= "\0";
@@ -162,14 +168,14 @@ fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 		return ust::null_optional;
 	}
 
-	var i64 size = unsafe( BKGetFileSize( fd ) );
-	if( size < 0i64 )
+	auto size_opt= unsafe( GetFileSize( fd ) );
+	if( size_opt.empty() )
 	{
 		unsafe( ::close(fd) );
 		return ust::null_optional;
 	}
 
-	var ust::string8 mut contents( size_type(size), "\0"c8 );
+	var ust::string8 mut contents( size_type( size_opt.try_deref() ), "\0"c8 );
 
 	// Perform reading in loop in order to handle cases where less than needed bytes were read.
 	for( auto mut offset = 0s; offset < contents.size(); )
@@ -236,14 +242,15 @@ fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModifi
 	var ust::string8 mut path_null_terminated = path;
 	path_null_terminated+= "\0";
 
-	var u64 res= unsafe( BKGetFileModificationTimeImpl( path_null_terminated.data() ) );
-
-	if( res == 0u64 )
+	var stat_ mut s= zero_init;
+	auto res= unsafe( ::lstat( path_null_terminated.data(), $<(s) ) );
+	if( res != 0 )
 	{
 		return ust::null_optional;
 	}
 
-	return res;
+	// Return nanoseconds.
+	return u64( s.st_mtim.tv_sec ) * 1000000000u64 + u64( s.st_mtim.tv_nsec );
 }
 
 fn GetCurrentExecutablePath() : ust::string8
@@ -272,6 +279,18 @@ fn GetCurrentExecutablePath() : ust::string8
 	}
 
 	return "";
+}
+
+fn GetFileSize( i32 fd ) unsafe : ust::optional</u64/>
+{
+	var stat_ mut s= zero_init;
+	auto res= unsafe( ::fstat( fd, $<(s) ) );
+	if( res != 0 )
+	{
+		return ust::null_optional;
+	}
+
+	return u64(s.st_size);
 }
 
 } // namespace BK
