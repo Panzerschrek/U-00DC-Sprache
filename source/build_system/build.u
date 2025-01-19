@@ -2,6 +2,15 @@ import "/build_system.uh"
 
 fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) : BK::PackageInfo
 {
+	// Create a separate library for build system interface headers.
+	var BK::BuildTarget mut lib_target
+	{
+		.name= "BuildSystemInterface",
+		.target_type= BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ ust::string8 />( "imports_src/dummy.u" ),
+		.public_include_directories= ust::make_array</ust::string8/>( "imports" ),
+	};
+
 	var ust::string8 mut name_suffix;
 	if_var( &mut opt : build_system_interface.GetConfigurationOption( "name_suffix" ) )
 	{
@@ -11,7 +20,8 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 	var BK::BuildTarget mut target
 	{
 		.name= "BuildSystem" + name_suffix,
-		.target_type= BK::BuildTargetType::Executable
+		.target_type= BK::BuildTargetType::Executable,
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= lib_target.name } ),
 	};
 
 	var [ ust::string_view8, 20 ] sources
@@ -42,7 +52,6 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 	{
 		target.source_files.push_back( ust::concat( "src/", s ) );
 	}
-	target.source_files.push_back( "dummy.u" );
 
 	if( build_system_interface.GetTargetTriple().operating_system == "windows" )
 	{
@@ -82,5 +91,5 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 		target.external_libraries.push_back( "-ldl" );
 	}
 
-	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(lib_target), move(target) ) };
 }
