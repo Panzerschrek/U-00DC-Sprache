@@ -195,7 +195,6 @@ CPP Header converter:
 *) Granular build graph nodes saving - in order to ensure no build artifacts are reused if command line is changed
 *) Speed-up build scripts compilation/loading and package information obtaining by running this in parallel for many
 	packages (if possible)
-*) Support build targets without sources and (maybe) dependencies, like header-only libraries
 *) Allow to specify diretories for build targets sources - with all files within given directory considered to be
 	source files
 *) Handle interruption signals (like Ctrl+C) and abort build properly
@@ -213,4 +212,5 @@ CPP Header converter:
 Documentation:
 *) Other languages (not only russian and english)
 *) Describe more language details
+*) Documentation for interpreter
 *) Describe undefined behavior

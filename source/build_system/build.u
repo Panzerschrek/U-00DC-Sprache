@@ -7,7 +7,6 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 	{
 		.name= "BuildSystemInterface",
 		.target_type= BK::BuildTargetType::Library,
-		.source_files= ust::make_array</ ust::string8 />( "imports_src/dummy.u" ),
 		.public_include_directories= ust::make_array</ust::string8/>( "imports" ),
 	};
 

@@ -78,7 +78,7 @@ cl::list<std::string> input_files(
 	cl::Positional,
 	cl::desc("<source0> [... <sourceN>]"),
 	cl::value_desc("input files"),
-	cl::OneOrMore,
+	cl::ZeroOrMore,
 	cl::cat(options_category) );
 
 enum class InputFileType{ Source, BC, LL };
@@ -805,6 +805,14 @@ int Main( int argc, const char* argv[] )
 	}
 	else
 		U_ASSERT(false);
+
+	if( result_module == nullptr )
+	{
+		// No input files. Allow this and produce empty module.
+		result_module= std::make_unique<llvm::Module>( "null", llvm_context );
+		result_module->setDataLayout( data_layout );
+		result_module->setTargetTriple( target_triple.normalize() );
+	}
 
 	if( !LinkUstLibModules( *result_module, Options::halt_mode, Options::no_system_alloc, false ) )
 		return 1;
