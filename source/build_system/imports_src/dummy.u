@@ -1,1 +1,0 @@
-// The only reason for this file to exist is to work-around a limitation in the build system - header-only libraries aren't supported yet.
