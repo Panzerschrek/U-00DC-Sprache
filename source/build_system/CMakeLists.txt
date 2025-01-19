@@ -128,7 +128,15 @@ else()
 		list( APPEND BUILD_SYSTEM_OBJECTS ${out_object} )
 	endforeach()
 
-	add_executable( BuildSystem${CURRENT_COMPILER_GENERATION} ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} src/dummy.c )
+	add_executable( BuildSystem${CURRENT_COMPILER_GENERATION} ${BUILD_SYSTEM_SOURCES} ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_OBJECTS} )
+	# Since we have no C or C++ sources, set linker language to C, in order to execute a C linker for linking the build system executable.
+	# C++ is unnecessary here - we don't want to link against C++ standard libraries.
+	set_target_properties( BuildSystem${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
+
+	if( MSVC )
+		# Specify C runtime libraries which we use. CMake doesn't do this for targets with no sources.
+		target_link_options( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE "/DEFAULTLIB:msvcrt" "/DEFAULTLIB:oldnames" )
+	endif()
 
 	if( MINGW )
 		target_link_options( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE "-municode" ) # Allow "wmain" as entry point.
