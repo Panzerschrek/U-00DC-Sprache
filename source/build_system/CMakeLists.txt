@@ -3,6 +3,20 @@ message( STATUS "Build build system" )
 file( GLOB BUILD_SYSTEM_HEADERS "src/*.uh" "src/json/*.uh" "imports/*.uh" )
 file( GLOB BUILD_SYSTEM_SOURCES "src/*.u" "src/json/*.u" )
 
+if( WIN32 )
+	file( GLOB BUILD_SYSTEM_SOURCES_WINDOWS "src/windows/*.u" )
+	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_WINDOWS} )
+
+	file( GLOB BUILD_SYSTEM_HEADERS_WINDOWS "src/windows/*.uh" )
+	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_WINDOWS} )
+else()
+	file( GLOB BUILD_SYSTEM_SOURCES_UNIX "src/unix/*.u" )
+	set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_UNIX} )
+
+	file( GLOB BUILD_SYSTEM_HEADERS_UNIX "src/unix/*.uh" )
+	set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_UNIX} )
+endif()
+
 if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 	message( STATUS "Build BuildSystem${CURRENT_COMPILER_GENERATION} using previous build system" )
 
@@ -108,20 +122,6 @@ else()
 		set( ${out_object} ${u_source_file_relative}.o PARENT_SCOPE )
 
 	endfunction()
-
-	if( WIN32 )
-		file( GLOB BUILD_SYSTEM_SOURCES_WINDOWS "src/windows/*.u" )
-		set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_WINDOWS} )
-
-		file( GLOB BUILD_SYSTEM_HEADERS_WINDOWS "src/windows/*.uh" )
-		set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_WINDOWS} )
-	else()
-		file( GLOB BUILD_SYSTEM_SOURCES_UNIX "src/unix/*.u" )
-		set( BUILD_SYSTEM_SOURCES ${BUILD_SYSTEM_SOURCES};${BUILD_SYSTEM_SOURCES_UNIX} )
-
-		file( GLOB BUILD_SYSTEM_HEADERS_UNIX "src/unix/*.uh" )
-		set( BUILD_SYSTEM_HEADERS ${BUILD_SYSTEM_HEADERS};${BUILD_SYSTEM_HEADERS_UNIX} )
-	endif()
 
 	foreach( source ${BUILD_SYSTEM_SOURCES} )
 		CompileUSource( ${source} out_object )
