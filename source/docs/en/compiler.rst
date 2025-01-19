@@ -42,7 +42,7 @@ But this works only if it was compiled together with internal LLD (which is usua
 ************************
 
 Input files are listed directly without any option.
-It's expected at least one input file.
+Zero, one or more input files may be specified.
 
 The type of input files is specified via ``--input-filetype`` option.
 Supported types are ``source`` (default) - for Ü source files, ``bc`` - for LLVM bitcode files, ``ll`` - for LLVM assembly files.
