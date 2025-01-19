@@ -655,6 +655,12 @@ def BuildTargetWithoutSources0Test():
 	RunBuildSystem( "build_target_without_sources0" )
 
 
+def BuildTargetWithoutSources1Test():
+	test_dir= "build_target_without_sources1"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1363,6 +1369,7 @@ def main():
 		GlobalPackagesBuildTargetsVersionUnification3Test,
 		GlobalPackagesBuildTargetsVersionUnification4Test,
 		BuildTargetWithoutSources0Test,
+		BuildTargetWithoutSources1Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
