@@ -313,6 +313,9 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 	if( name == "main" )
 		return true; // Always preserve "main" - default entry point of executable files.
 
+	if( name == "wmain" )
+		return true; // Preserve also "wmain" - for Windows executables using entry point with wchar_t arguments.
+
 	// TODO - use StringMap or something like that instead.
 	for( const std::string& name_for_preserve : Options::internalize_preserve )
 		if( name == name_for_preserve )
