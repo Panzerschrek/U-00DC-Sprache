@@ -808,6 +808,14 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 	WorkspaceInfo& workspace,
 	BuildGraph &mut build_graph )
 {
+	CreateUstlibBuildGraphNodes(
+		build_system_paths,
+		sysroot,
+		root_package_build_directory,
+		build_configuration,
+		target_triple,
+		build_graph );
+
 	// Collect and sort a list of build target names,
 	// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
 	var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
@@ -1183,8 +1191,22 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 	}
 
+	// Link ustlib.
+	switch( target.target_type )
+	{
+		BuildTargetType::Executable,
+		BuildTargetType::SharedLibrary ->
+		{
+			// Link ustlib only into executables and shared libraries.
+			var ust::string8 bc_file= GetCompiledUstlibPath( root_package_build_directory );
+			node.command_line.push_back( bc_file );
+			node.input_files.push_back( bc_file );
+		},
+		BuildTargetType::Library, BuildTargetType::ObjectFile  -> {},
+	}
+
+
 	// Link shared library dependencies.
-	// Libraries linking.
 	switch( target.target_type )
 	{
 		BuildTargetType::Executable,
@@ -1358,6 +1380,78 @@ struct SourceFileToCompile
 	ust::string8 source_file_full_path;
 	ust::string8 bc_file_full_path;
 	ust::string8 comment;
+}
+
+fn GetCompiledUstlibPath( ust::string_view8 root_package_build_directory ) : ust::string8
+{
+	return NormalizePath( ust::concat( root_package_build_directory, "/", "ustlib.bc" ) );
+}
+
+fn CreateUstlibBuildGraphNodes(
+	BuildSystemPaths& build_system_paths,
+	ust::string_view8 sysroot,
+	ust::string_view8 root_package_build_directory,
+	BuildConfiguration build_configuration,
+	TargetTriple& target_triple,
+	BuildGraph &mut build_graph )
+{
+	var ust::string8 out_file= GetCompiledUstlibPath( root_package_build_directory );
+
+	var BuildGraph::Node mut node
+	{
+		.program= build_system_paths.compiler_executable_path,
+		.output_files= ust::make_array( out_file ),
+		.dep_file= GetDependencyFilePath( out_file ),
+	};
+
+	node.command_line.push_back( "-o" );
+	node.command_line.push_back( out_file );
+	node.command_line.push_back( "-filetype=bc" );
+
+	var [ ust::string_view8, 1 ] sources
+	[
+		"stdout.u"
+	];
+
+	foreach( &source : sources )
+	{
+		var ust::string8 file_path= NormalizePath( ust::concat( build_system_paths.ustlib_path, "/src/", source ) );
+		node.output_files.push_back( file_path );
+		node.command_line.push_back( file_path );
+	}
+
+	// Build configuration-dependent options.
+	switch( build_configuration )
+	{
+		BuildConfiguration::Debug ->
+		{
+			// Generate debug information.
+			node.command_line.push_back( "-g" );
+			// No optimization at all - optimization makes debugging hard.
+			node.command_line.push_back( "-O0" );
+			// No LTO is used for debug builds.
+		},
+		BuildConfiguration::Release ->
+		{
+			// Run full optimization, but not by using O3 - it isn't much better than O2.
+			node.command_line.push_back( "-O2" );
+			// Also run LTO.
+			node.command_line.push_back( "--lto-mode=link" );
+		},
+	}
+
+	if( !sysroot.empty() )
+	{
+		node.command_line.push_back( "--sysroot" );
+		node.command_line.push_back( sysroot );
+	}
+
+	AddTargetTripleCompilerFlags( target_triple, node.command_line );
+
+	// Perform verification just to be sure nothing is broken.
+	node.command_line.push_back( "--verify-module" );
+
+	build_graph.nodes.push_back( move(node) );
 }
 
 fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::string8/> &mut compiler_flags )
