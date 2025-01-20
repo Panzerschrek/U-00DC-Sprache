@@ -661,6 +661,32 @@ def BuildTargetWithoutSources1Test():
 	RunExecutable( test_dir, "exe" )
 
 
+def SingleFileProgram0Test():
+	test_name_base = "single_file_program0"
+
+	build_system_args= [
+		g_build_system_executable,
+		"build_single", os.path.join( g_tests_path, test_name_base + ".u" ),
+		"-q",
+		"--build-configuration", "release",
+		"--compiler-executable", g_compiler_executable,
+		"--ustlib-path", g_ustlib_path,
+		"--build-directory", g_tests_build_root_path,
+		]
+
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
+	# Run the build.
+	subprocess.check_call( build_system_args )
+
+	# Run result program
+	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_name_base ) ], stdout= subprocess.DEVNULL )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1370,6 +1396,7 @@ def main():
 		GlobalPackagesBuildTargetsVersionUnification4Test,
 		BuildTargetWithoutSources0Test,
 		BuildTargetWithoutSources1Test,
+		SingleFileProgram0Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,

@@ -120,7 +120,6 @@ fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 
 	if( options.command == Options::Command::BuildSingle )
 	{
-
 		var bool ok =
 			BuildSingleFileProgram(
 				logger,
