@@ -120,7 +120,14 @@ fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 
 	if( options.command == Options::Command::BuildSingle )
 	{
-		return ( BuildSingleFileProgram( logger, options.single_file_to_build, build_system_paths ) ? 0 : -1 );
+		var bool ok =
+			BuildSingleFileProgram(
+				logger,
+				options.single_file_to_build,
+				build_system_paths,
+				options.build_configuration,
+				target_triple );
+		return ( ok ? 0 : -1 );
 	}
 
 	// By default use "build" directory within root package directory.
@@ -1460,7 +1467,9 @@ fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 fn BuildSingleFileProgram(
 	Logger &mut logger,
 	ust::string_view8 source_file_path,
-	BuildSystemPaths& build_system_paths ) : bool
+	BuildSystemPaths& build_system_paths,
+	BuildConfiguration build_configuration,
+	TargetTriple& target_triple ) : bool
 {
 	var ust::string8 source_file_path_absolute= MakePathAbsolute( source_file_path );
 
@@ -1482,8 +1491,21 @@ fn BuildSingleFileProgram(
 	compiler_args.push_back( "--relocation-model" );
 	compiler_args.push_back( "pic" );
 
-	// TODO - set target triple.
-	// TODO - set optimization options.
+	AddTargetTripleCompilerFlags( target_triple, compiler_args );
+
+	switch( build_configuration )
+	{
+		BuildConfiguration::Debug ->
+		{
+			compiler_args.push_back( "-O0" );
+			compiler_args.push_back( "-g" );
+		},
+		BuildConfiguration::Release ->
+		{
+			compiler_args.push_back( "-O2" );
+			compiler_args.push_back( "--internalize" );
+		},
+	}
 
 	return RunExecutable( logger, build_system_paths.compiler_executable_path, compiler_args );
 }
