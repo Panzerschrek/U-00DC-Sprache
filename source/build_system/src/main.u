@@ -118,6 +118,11 @@ fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 		.root_package_source_directory= NormalizePath( MakePathAbsolute( options.root_package_directory ) ),
 	};
 
+	if( options.command == Options::Command::BuildSingle )
+	{
+		return ( BuildSingleFileProgram( logger, options.single_file_to_build, build_system_paths ) ? 0 : -1 );
+	}
+
 	// By default use "build" directory within root package directory.
 	var ust::string8 root_package_build_directory_base =
 		( options.build_directory.empty()
@@ -1450,6 +1455,37 @@ fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 	}
 
 	return false;
+}
+
+fn BuildSingleFileProgram(
+	Logger &mut logger,
+	ust::string_view8 source_file_path,
+	BuildSystemPaths& build_system_paths ) : bool
+{
+	var ust::string8 source_file_path_absolute= MakePathAbsolute( source_file_path );
+
+	logger.LogInfo( ust::concat( "Building single source \"", source_file_path_absolute, "\"" ) );
+
+	var ust::vector</ust::string8/> mut compiler_args;
+
+	compiler_args.push_back( source_file_path_absolute );
+
+	compiler_args.push_back( "--include-dir" );
+	compiler_args.push_back( build_system_paths.ustlib_path );
+
+	// TODo - set proper output file name.
+	compiler_args.push_back( "-o" );
+	compiler_args.push_back( "out_file.exe" );
+
+	compiler_args.push_back( "-filetype=exe" );
+
+	compiler_args.push_back( "--relocation-model" );
+	compiler_args.push_back( "pic" );
+
+	// TODO - set target triple.
+	// TODO - set optimization options.
+
+	return RunExecutable( logger, build_system_paths.compiler_executable_path, compiler_args );
 }
 
 class BuildSystemInterfaceImplementation final : BuildSystemInterface

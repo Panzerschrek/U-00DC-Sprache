@@ -81,7 +81,6 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 			return ust::null_optional;
 		}
 		res.single_file_to_build= args[i];
-		ust::stdout_print( "Build single " + res.single_file_to_build );
 		++i;
 	}
 	else if( command == "init" )
