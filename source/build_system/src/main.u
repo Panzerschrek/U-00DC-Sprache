@@ -1494,8 +1494,12 @@ fn BuildSingleFileProgram(
 
 	compiler_args.push_back( source_file_path_absolute );
 
+	// The only include directory that we require is "ustlib".
 	compiler_args.push_back( "--include-dir" );
 	compiler_args.push_back( build_system_paths.ustlib_path );
+
+	// Don't bother limiting imports in single-source programs.
+	// Also don't care about source directory specifying - it's unnecessary, since we internalize all symbols anyway.
 
 	compiler_args.push_back( "-o" );
 	compiler_args.push_back( move(out_file_path) );
