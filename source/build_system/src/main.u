@@ -118,6 +118,21 @@ fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 		.root_package_source_directory= NormalizePath( MakePathAbsolute( options.root_package_directory ) ),
 	};
 
+	if( options.command == Options::Command::BuildSingle )
+	{
+		var bool ok =
+			BuildSingleFileProgram(
+				logger,
+				options.single_file_to_build,
+				build_system_paths,
+				options.sysroot,
+				// Build in specified build directory or in current directory if it's empty.
+				MakePathAbsolute( options.build_directory ),
+				options.build_configuration,
+				target_triple );
+		return ( ok ? 0 : -1 );
+	}
+
 	// By default use "build" directory within root package directory.
 	var ust::string8 root_package_build_directory_base =
 		( options.build_directory.empty()
@@ -1450,6 +1465,78 @@ fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 	}
 
 	return false;
+}
+
+fn BuildSingleFileProgram(
+	Logger &mut logger,
+	ust::string_view8 source_file_path,
+	BuildSystemPaths& build_system_paths,
+	ust::string_view8 sysroot,
+	ust::string_view8 build_directory,
+	BuildConfiguration build_configuration,
+	TargetTriple& target_triple ) : bool
+{
+	var bool target_is_windows = target_triple.operating_system == "windows";
+
+	var ust::string8 source_file_path_absolute= MakePathAbsolute( source_file_path );
+
+	var ust::string_view8 base_name= StripExtension( GetLastPathComponent( source_file_path_absolute ) );
+
+	var ust::string8 mut out_file_path= NormalizePath( ust::concat( build_directory, "/", base_name ) );
+	if( target_is_windows )
+	{
+		out_file_path+= ".exe";
+	}
+
+	logger.LogInfo( ust::concat( "Building single source \"", source_file_path_absolute, "\" into \"", out_file_path, "\"." ) );
+
+	var ust::vector</ust::string8/> mut compiler_args;
+
+	compiler_args.push_back( source_file_path_absolute );
+
+	// The only include directory that we require is "ustlib".
+	compiler_args.push_back( "--include-dir" );
+	compiler_args.push_back( build_system_paths.ustlib_path );
+
+	// Don't bother limiting imports in single-source programs.
+	// Also don't care about source directory specifying - it's unnecessary, since we internalize all symbols anyway.
+
+	compiler_args.push_back( "-o" );
+	compiler_args.push_back( move(out_file_path) );
+
+	compiler_args.push_back( "-filetype=exe" );
+
+	if( !target_is_windows )
+	{
+		compiler_args.push_back( "--relocation-model" );
+		compiler_args.push_back( "pic" );
+	}
+
+	// Internalize - make all symbols except "main" private.
+	compiler_args.push_back( "--internalize" );
+
+	AddTargetTripleCompilerFlags( target_triple, compiler_args );
+
+	switch( build_configuration )
+	{
+		BuildConfiguration::Debug ->
+		{
+			compiler_args.push_back( "-O0" );
+			compiler_args.push_back( "-g" );
+		},
+		BuildConfiguration::Release ->
+		{
+			compiler_args.push_back( "-O2" );
+		},
+	}
+
+	if( !sysroot.empty() )
+	{
+		compiler_args.push_back( "--sysroot" );
+		compiler_args.push_back( sysroot );
+	}
+
+	return RunExecutable( logger, build_system_paths.compiler_executable_path, compiler_args );
 }
 
 class BuildSystemInterfaceImplementation final : BuildSystemInterface

@@ -1,0 +1,7 @@
+import "/stdout.u"
+
+fn nomangle main() : i32
+{
+	ust::stdout_print( "Single file program 0!\n" );
+	return 0;
+}

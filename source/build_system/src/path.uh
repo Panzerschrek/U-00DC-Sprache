@@ -19,4 +19,12 @@ fn NormalizePath( ust::string_view8 path ) : ust::string8;
 fn GetParentPath( ust::string_view8 path )
 	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 );
 
+// Returns last path component - file name or directory.
+fn GetLastPathComponent( ust::string_view8 path )
+	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 );
+
+// Returns path without file extension or original path if no file extension found.
+fn StripExtension( ust::string_view8 path )
+	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 );
+
 } // namespace BK

@@ -1,44 +1,46 @@
-if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
-	set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
-else()
-	set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
-endif()
+if( TARGET BuildSystem AND TARGET lldCommon )
 
-file( GLOB EXAMPLES_SOURCES "*.u" )
-
-file( RELATIVE_PATH CURRENT_SUBDIR ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
-
-foreach( EXAMPLE_SOURCE ${EXAMPLES_SOURCES} )
-
-	file( RELATIVE_PATH EXAMPLE_SOURCE_RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${EXAMPLE_SOURCE} )
-	set( DEP_FILE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE_SOURCE_RELATIVE}.d )
-
-	if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
-		set( DEPFILE_OPTION DEPFILE ${DEP_FILE} )
+	if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
+		set( BUILD_SYSTEM_BUILD_CONFIGURATION "debug" )
 	else()
-		set( DEPFILE_OPTION "" )
+		set( BUILD_SYSTEM_BUILD_CONFIGURATION "release" )
 	endif()
 
-	add_custom_command(
-		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE_SOURCE_RELATIVE}.o
-		DEPENDS ${EXAMPLE_SOURCE} Compiler${CURRENT_COMPILER_GENERATION}
-		COMMAND
-			Compiler${CURRENT_COMPILER_GENERATION}
-			${SPRACHE_COMPILER_OPT_OPTIONS}
-			${SPRACHE_COMPILER_PIC_OPTIONS}
-			${EXAMPLE_SOURCE}
-			-o ${CURRENT_SUBDIR}/${EXAMPLE_SOURCE_RELATIVE}.o
-			-MF ${DEP_FILE}
-			--verify-module
-			--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
-		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "examples/hello_world.u.o:", but launches custom command in current binary directory
-		${DEPFILE_OPTION}
-		)
+	file( GLOB EXAMPLES_SOURCES "*.u" )
 
-	get_filename_component( EXAMPLE_SOURCE_BASE_NAME ${EXAMPLE_SOURCE_RELATIVE} NAME_WE )
-	set( EXAMPLE_EXECUTABLE ${EXAMPLE_SOURCE_BASE_NAME}${CURRENT_COMPILER_GENERATION} )
+	foreach( EXAMPLE_SOURCE ${EXAMPLES_SOURCES} )
 
-	add_executable( ${EXAMPLE_EXECUTABLE} ../tests/dummy.cpp ${EXAMPLE_SOURCE} ${EXAMPLE_SOURCE_RELATIVE}.o )
-	add_dependencies( ${EXAMPLE_EXECUTABLE} Compiler${CURRENT_COMPILER_GENERATION} )
+		file( RELATIVE_PATH EXAMPLE_SOURCE_RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${EXAMPLE_SOURCE} )
+		get_filename_component( EXAMPLE_SOURCE_BASE_NAME ${EXAMPLE_SOURCE_RELATIVE} NAME_WE )
 
-endforeach()
+		set( EXAMPLE_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/${EXAMPLE_SOURCE_BASE_NAME} )
+		if( WIN32 )
+			set( EXAMPLE_EXECUTABLE "${EXAMPLE_EXECUTABLE}.exe" )
+		endif()
+
+		# Use build system to build examples.
+		# For now don't support DEPFILE - the build system doesn't generate it for single-file builds.
+
+		add_custom_command(
+			OUTPUT ${EXAMPLE_EXECUTABLE}
+			DEPENDS ${EXAMPLE_SOURCE}
+			DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
+			DEPENDS BuildSystem
+			COMMAND
+				BuildSystem build_single ${EXAMPLE_SOURCE}
+				-q
+				--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
+				--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
+				--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
+				--build-directory ${CMAKE_CURRENT_BINARY_DIR}
+				)
+
+		add_custom_target(
+			Example_${EXAMPLE_SOURCE_BASE_NAME}${CURRENT_COMPILER_GENERATION} ALL
+			DEPENDS ${EXAMPLE_EXECUTABLE}
+			SOURCES ${EXAMPLE_SOURCE}
+			)
+
+	endforeach()
+
+endif()

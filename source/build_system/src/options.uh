@@ -15,6 +15,7 @@ struct Options
 	{
 		Help,
 		Build,
+		BuildSingle,
 		Init,
 	}
 
@@ -24,6 +25,7 @@ struct Options
 	u32 number_of_jobs= 0u;
 	Command command = Command::Help;
 	BuildConfiguration build_configuration= BuildConfiguration::Release;
+	ust::string8 single_file_to_build;
 	ust::string8 configuration_options_file;
 	ust::string8 target_triple;
 	ust::string8 compiler_executable_path;

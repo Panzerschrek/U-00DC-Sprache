@@ -128,4 +128,65 @@ fn GetParentPath( ust::string_view8 mut path )
 	return path;
 }
 
+fn GetLastPathComponent( ust::string_view8 mut path )
+	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( path.empty() )
+	{
+		return path;
+	}
+
+	// Handle trailing slash.
+	if( path.back() == "/"c8 || path.back()  == "\\"c8 )
+	{
+		path.drop_back();
+		if( path.empty() )
+		{
+			return path;
+		}
+	}
+
+	var size_type mut split_pos= path.size() - 1s;
+
+	loop
+	{
+		var char8 c= path[split_pos];
+		if( c == "/"c8 || c == "\\"c8 )
+		{
+			// Found it.
+			return path.subrange( split_pos + 1s, path.size() );
+		}
+		if( split_pos == 0s )
+		{
+			return path;
+		}
+		--split_pos;
+	}
+}
+
+fn StripExtension( ust::string_view8 path )
+	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var ust::string_view8 mut result= path;
+	while( !result.empty() )
+	{
+		var char8 c= result.back();
+		if( c == "."c8 )
+		{
+			// Successfully stripped the extension.
+			result.drop_back();
+			return result;
+		}
+		if( c == "/"c8 || c ==  "\\"c8 )
+		{
+			// Reached path separator - means this path has no file extension.
+			return path;
+		}
+		result.drop_back();
+	}
+
+	// No dot or separator found - return original path.
+	return path;
+}
+
 } // namespace BK
