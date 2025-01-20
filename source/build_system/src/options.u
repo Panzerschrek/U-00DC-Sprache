@@ -20,6 +20,7 @@ auto constexpr g_help_message=
 	"\n" +
 	"COMMANDS:\n" +
 	"  build                              - perform the build\n" +
+	"  build_single <file>                - build a simple single-file program with no dependencies\n" +
 	"  init                               - initialize a stub project\n" +
 	"  help                               - show this message\n" +
 	"\n" +
@@ -56,19 +57,37 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 
 	var Options mut res;
 
+	auto mut i= 0s;
+
 	// Command should be always at first place.
 	var ust::string_view8 command= args.front();
 	if( command == "help" || command == "--help" )
 	{
 		res.command= Options::Command::Help;
+		++i;
 	}
 	else if( command == "build" )
 	{
 		res.command= Options::Command::Build;
+		++i;
+	}
+	else if( command == "build_single" )
+	{
+		res.command= Options::Command::BuildSingle;
+		++i;
+		if( i >= args.size() )
+		{
+			ust::stderr_print( "Error, missing an argument after \"build_single\".\n" );
+			return ust::null_optional;
+		}
+		res.single_file_to_build= args[i];
+		ust::stdout_print( "Build single " + res.single_file_to_build );
+		++i;
 	}
 	else if( command == "init" )
 	{
 		res.command= Options::Command::Init;
+		++i;
 	}
 	else
 	{
@@ -77,7 +96,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 	}
 
 	// Parse options after command.
-	for( auto mut i= 1s; i < args.size(); )
+	while( i < args.size() )
 	{
 		if( args[i] == "-q" )
 		{
