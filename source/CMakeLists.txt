@@ -222,6 +222,11 @@ endif()
 
 add_subdirectory( compiler0 )
 
+if( U_BUILD_COMPILER )
+	set( CURRENT_COMPILER_GENERATION "" )
+	add_subdirectory( ustlib ustlib0 )
+endif()
+
 if( U_BUILD_COMPILER AND U_BUILD_BUILD_SYSTEM )
 	set( CURRENT_COMPILER_GENERATION "" )
 	add_subdirectory( build_system build_system0 )

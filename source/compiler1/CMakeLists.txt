@@ -223,6 +223,8 @@ else()
 			)
 	endif()
 
+	target_link_libraries( CodeBuilderLib${NEXT_COMPILER_GENERATION} ustlib${CURRENT_COMPILER_GENERATION} )
+
 endif()
 
 target_link_libraries( CodeBuilderLib${NEXT_COMPILER_GENERATION} LexSyntLibCommon CodeBuilderLibCommon )

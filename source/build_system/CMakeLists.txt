@@ -133,6 +133,9 @@ else()
 	# C++ is unnecessary here - we don't want to link against C++ standard libraries.
 	set_target_properties( BuildSystem${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
 
+	# Link against ustlib built previously.
+	target_link_libraries( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE ustlib${CURRENT_COMPILER_GENERATION} )
+
 	if( MSVC )
 		# Specify C runtime libraries which we use. CMake doesn't do this for targets with no sources.
 		target_link_options( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE "/DEFAULTLIB:msvcrt" "/DEFAULTLIB:oldnames" )

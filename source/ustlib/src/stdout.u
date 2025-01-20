@@ -1,0 +1,21 @@
+import "../imports/memory.u"
+
+// TODO - avoid using "nomangle" for these functions - it's no longer necessary.
+
+fn nomangle ust_stdout_print_impl( $(char8) start, size_type size ) unsafe
+{
+	unsafe( ::write( STDOUT_FILENO, ust::ptr_cast_to_byte8(start), size ) );
+	// TODO - halt if write fails
+}
+
+fn nomangle ust_stderr_print_impl( $(char8) start, size_type size ) unsafe
+{
+	unsafe( ::write( STDERR_FILENO, ust::ptr_cast_to_byte8(start), size ) );
+	// TODO - halt if write fails
+}
+
+// auto constexpr STDIN_FILENO = 0;
+auto constexpr STDOUT_FILENO = 1;
+auto constexpr STDERR_FILENO = 2;
+
+fn nomangle write( i32 fd, $(byte8) data, size_type s ) : ssize_type;
