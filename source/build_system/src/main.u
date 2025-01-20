@@ -1476,12 +1476,14 @@ fn BuildSingleFileProgram(
 	BuildConfiguration build_configuration,
 	TargetTriple& target_triple ) : bool
 {
+	var bool target_is_windows = target_triple.operating_system == "windows";
+
 	var ust::string8 source_file_path_absolute= MakePathAbsolute( source_file_path );
 
 	var ust::string_view8 base_name= StripExtension( GetLastPathComponent( source_file_path_absolute ) );
 
 	var ust::string8 mut out_file_path= NormalizePath( ust::concat( build_directory, "/", base_name ) );
-	if( target_triple.operating_system == "windows" )
+	if( target_is_windows )
 	{
 		out_file_path+= ".exe";
 	}
@@ -1500,8 +1502,11 @@ fn BuildSingleFileProgram(
 
 	compiler_args.push_back( "-filetype=exe" );
 
-	compiler_args.push_back( "--relocation-model" );
-	compiler_args.push_back( "pic" );
+	if( !target_is_windows )
+	{
+		compiler_args.push_back( "--relocation-model" );
+		compiler_args.push_back( "pic" );
+	}
 
 	AddTargetTripleCompilerFlags( target_triple, compiler_args );
 
