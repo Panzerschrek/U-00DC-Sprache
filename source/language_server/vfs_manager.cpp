@@ -154,7 +154,7 @@ IVfsSharedPtr VFSManager::GetVFSForDocument( const Uri& uri )
 	includes= Options::include_dir; // Append includes from options first.
 
 	// Hardcode here paths to built-in includes (which should be shipped within Ü package).
-	includes.push_back( installation_directory_ + "/ustlib" );
+	includes.push_back( installation_directory_ + "/ustlib/imports" );
 	includes.push_back( installation_directory_ + "/build_system/imports" );
 
 	// Append includes from workspace (if found).

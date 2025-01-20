@@ -1,0 +1,32 @@
+//##fail_test
+import "../imports/unordered_set.u"
+
+class NonCopyableKey
+{
+	// Class is noncopyable by default.
+	struct hasher
+	{
+		fn hash( NonCopyableKey& s ) : size_type { return 0s; }
+	}
+	op==( NonCopyableKey& a, NonCopyableKey& b ) : bool { return true; }
+}
+
+type BrokenUnorderedSet= ust::unordered_set</NonCopyableKey/>; //##expect_error TemplateContext
+
+fn nomangle main() : i32
+{
+	{ // Try to mutate set keys.
+		var ust::unordered_set</u32/> mut s;
+		s.insert( 454u );
+
+		auto i= s.iter();
+		i.first().try_deref() *= 2u; //##expect_error ExpectedReferenceValue
+	}
+	{ // Iterator has reference to set.
+		var ust::unordered_set</i32/> mut s;
+		auto i= s.iter();
+		s.insert( 5 ); //##expect_error ReferenceProtectionError
+	}
+
+	return 0;
+}

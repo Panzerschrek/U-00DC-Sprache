@@ -1,0 +1,196 @@
+//##success_test
+import "../imports/optional_ref.u"
+import "../imports/random_access_range.u"
+
+type IntRefImut= ust::optional_ref</ i32, false />;
+type IntRefMut = ust::optional_ref</ i32, true  />;
+
+fn nomangle main() : i32
+{
+	{ // Default-constructible 'optional_ref' is empty.
+		var IntRefImut ref;
+		halt if( ! ref.empty() );
+	}
+	{ // Conversion-construction from null_optional_ref
+		var IntRefImut ref= ust::null_optional_ref;
+		halt if( ! ref.empty() );
+	}
+	{ // 'optional_ref' constructible from reference.
+		auto x= 44;
+		var IntRefImut ref( x );
+		halt if( ref.empty() );
+		halt if( ref.try_deref() != 44 );
+	}
+	{ // 'optional_ref' is implicitly constructible from reference.
+		auto x= 88;
+		var IntRefImut ref = x;
+		halt if( ref.empty() );
+		halt if( ref.try_deref() != 88 );
+	}
+	{ // 'optional_ref' is implicitly constructible from mutable reference.
+		auto mut x= 67;
+		{
+			var IntRefMut ref = x;
+			halt if( ref.empty() );
+			halt if( ref.try_deref() != 67 );
+			ref.try_deref()= 1234;
+		}
+		halt if( x != 1234 );
+	}
+	{ // 'optional_ref_imut' is implicitly constructible from 'optional_ref_mut'.
+		auto mut x= 55567;
+		var IntRefMut ref_mut = x;
+		var IntRefImut ref_imut= ref_mut;
+		halt if(ref_imut.empty());
+		halt if(ref_imut.try_deref() != 55567 );
+	}
+	{ // 'optional_ref_imut' is implicitly constructible from 'optional_ref_mut'.
+		var IntRefMut ref_mut;
+		var IntRefImut ref_imut= ref_mut;
+		halt if(!ref_imut.empty());
+	}
+	{  // Mutable 'optional_ref'.
+		auto mut x= 55;
+		{
+			var IntRefMut ref( x );
+			halt if( ref.empty() );
+			ref.try_deref() = 8888;
+		}
+		halt if( x != 8888 );
+	}
+	{ // 'reset' for 'optional_ref'.
+		auto x= -56;
+		var IntRefImut mut ref( x );
+		halt if( ref.empty() );
+		ref.reset();
+		halt if( !ref.empty() );
+	}
+	{ // 'reset' for 'optional_ref' via null_optional_ref assignment.
+		auto x= -56;
+		var IntRefImut mut ref( x );
+		halt if( ref.empty() );
+		ref= ust::null_optional_ref;
+		halt if( !ref.empty() );
+	}
+	{ // 'reset' with value for 'optional_ref'.
+		var i32 x= -56, y= 88;
+		var IntRefImut mut ref( x );
+		halt if( ref.empty() );
+		ref.reset( y );
+		halt if( ref.empty() );
+		halt if( ref.try_deref() != y );
+	}
+	{ // assign 'optional_ref'.
+		var i32 x= 1234, y= 5678;
+		var IntRefImut mut ref( x );
+		halt if( ref.empty() );
+		ref= IntRefImut(y);
+		halt if( ref.empty() );
+		halt if( ref.try_deref() != y );
+	}
+	{ // assign mutable 'optional_ref' to immutable 'optional_ref'.
+		var i32 x= -8, mut y= -80;
+		var IntRefImut mut ref( x );
+		halt if( ref.empty() );
+		ref= IntRefMut(y);
+		halt if( ref.empty() );
+		halt if( ref.try_deref() != y );
+	}
+	{ // == agains null_optional_ref
+		var i32 x = 0;
+		var IntRefImut empty_ref, non_empty_ref(x);
+
+		halt if( empty_ref != ust::null_optional_ref );
+		halt if( ust::null_optional_ref != empty_ref );
+
+		halt if( non_empty_ref == ust::null_optional_ref );
+		halt if( ust::null_optional_ref == non_empty_ref );
+	}
+	{ // optional_ref for type with references inside.
+
+		var i32 mut x= 0;
+		{
+			var IntRefMut x_ref= x;
+
+			var ust::optional_ref_imut</ IntRefMut /> mut x_ref_ref;
+			halt if( !x_ref_ref.empty() );
+
+			x_ref_ref.reset( x_ref );
+			halt if( x_ref_ref.empty() );
+
+			x_ref_ref.try_deref().try_deref()= 78;
+		}
+		halt if( x != 78 );
+	}
+	{ // optional_ref for type with references inside.
+
+		var i32 x= 0;
+
+		var IntRefImut mut x_ref= x;
+		halt if( x_ref.empty() );
+
+		{
+			var ust::optional_ref_mut</ IntRefImut /> mut x_ref_ref( x_ref );
+			halt if( x_ref_ref.empty() );
+
+			x_ref_ref.try_deref().reset();
+		}
+
+		halt if( !x_ref.empty() );
+	}
+	{ // optional_ref for type with references inside.
+
+		var [ char8, 3 ] mut s= "lol";
+		{
+			var ust::array_view_mut</char8/> mut s_ref= s;
+
+			{
+				var ust::optional_ref_mut</ ust::array_view_mut</char8/> /> s_ref_ref= s_ref;
+				halt if( s_ref_ref.empty() );
+
+				s_ref_ref.try_deref().drop_front();
+
+				foreach( &mut c : s_ref_ref.try_deref() )
+				{
+					c= char8( u32(c) + (u32("A"c8) - u32("a"c8)) );
+				}
+			}
+
+			halt if( s_ref != ust::array_view_imut</char8/>( "OL" ) );
+		}
+
+		halt if( s != "lOL" );
+	}
+	{ // "try_deref" for an immutable value.
+
+		var i32 x= 78543, y= 986;
+
+		var IntRefImut r0;
+		auto& r0_ref= r0.deref_or( y ); // Should return alternative.
+		halt if( r0_ref != 986 );
+
+		var IntRefImut r1= x;
+		auto& r1_ref= r1.deref_or( y );
+		halt if( r1_ref != 78543 );
+	}
+	{ // "try_deref" for an mutable value.
+
+		var i32 mut x= 325, mut y= 8793;
+
+		{
+			var IntRefMut r0;
+			r0.deref_or( y ) *= 3; // Should modify "y" here.
+		}
+		halt if( x != 325 );
+		halt if( y != 8793 * 3 );
+
+		{
+			var IntRefMut r1= x;
+			r1.deref_or( y ) *= 5; // Should modify "x" here.
+		}
+		halt if( x != 325 * 5 );
+		halt if( y != 8793 * 3 );
+	}
+
+	return 0;
+}

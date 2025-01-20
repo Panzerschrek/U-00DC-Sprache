@@ -14,4 +14,6 @@ fn ExtractBuildTargetIncludeDirectories(
 
 auto& constexpr g_include_dir_prefix_separator= "::"; // Use the same constant as within the compiler.
 
+auto& constexpr g_ustlib_imports_subpath= "imports";
+
 } // namespace BK

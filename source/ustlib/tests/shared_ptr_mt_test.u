@@ -1,0 +1,480 @@
+//##success_test
+import "../imports/shared_ptr_mt.u"
+
+import "../imports/box.u"
+import "../imports/box_nullable.u"
+import "../imports/optional.u"
+import "../imports/optional_ref.u"
+import "../imports/random_access_range.u"
+import "../imports/unordered_map.u"
+import "../imports/vector.u"
+
+type IntPtrMut=  ust::shared_ptr_mt_mut </i32/>;
+type IntPtrImut= ust::shared_ptr_mt_imut</i32/>;
+type IntPtrNullableMut=  ust::shared_ptr_mt_nullable_mut </i32/>;
+type IntPtrNullableImut= ust::shared_ptr_mt_nullable_imut</i32/>;
+type IntPtrWeakMut = ust::weak_ptr_mt_mut </i32/>;
+type IntPtrWeakImut= ust::weak_ptr_mt_imut</i32/>;
+
+static_assert( !non_sync</IntPtrMut /> );
+static_assert( !non_sync</IntPtrImut/> );
+static_assert( !non_sync</IntPtrNullableMut /> );
+static_assert( !non_sync</IntPtrNullableImut/> );
+static_assert( !non_sync</IntPtrWeakMut /> );
+static_assert( !non_sync</IntPtrWeakImut/> );
+
+static_assert( !non_sync</ ust::box</ IntPtrMut /> /> );
+static_assert( !non_sync</ ust::box_nullable</ IntPtrMut /> /> );
+static_assert( !non_sync</ ust::optional</ IntPtrMut /> /> );
+static_assert( !non_sync</ ust::optional_ref</ IntPtrMut, true /> /> );
+static_assert( !non_sync</ ust::random_access_range</ IntPtrMut, true /> /> );
+static_assert( !non_sync</ ust::unordered_map</ i32, IntPtrMut /> /> );
+static_assert( !non_sync</ ust::vector</ IntPtrMut /> /> );
+
+struct RecursiveSharedPtr
+{
+	ust::shared_ptr_mt_nullable_imut</ RecursiveSharedPtr /> parent;
+}
+
+struct RecursiveWeakPtr
+{
+	ust::weak_ptr_mt_imut</ RecursiveWeakPtr /> parent;
+}
+
+class I0 interface {}
+class I1 interface {}
+class Impl : I0, I1 { i32 x=0; }
+
+template</type T/>
+fn IsMut( T&  mut r ) : bool
+{
+	ust::ignore_unused(r);
+	return true ;
+}
+
+template</type T/>
+fn IsMut( T& imut r ) : bool
+{
+	ust::ignore_unused(r);
+	return false;
+}
+
+template</type T/>
+fn RefEq( T& a, T& b ) :  bool
+{
+	unsafe
+	{
+		return ust::ref_to_int( a ) == ust::ref_to_int( b );
+	}
+}
+
+fn nomangle main() : i32
+{
+	//
+	// Common test with "shared_ptr"
+	//
+
+	{ // Can create empty nullable pointers.
+		var IntPtrNullableMut  empty_ptr_mut ;
+		var IntPtrNullableImut empty_ptr_imut;
+		halt if( empty_ptr_mut != empty_ptr_imut );
+		halt if( !empty_ptr_mut .empty() );
+		halt if( !empty_ptr_imut.empty() );
+	}
+	{ // Can reset empty nullable pointers.
+		var IntPtrNullableMut  mut ptr_mut (5);
+		var IntPtrNullableImut mut ptr_imut(7);
+
+		halt if(ptr_mut == ptr_imut);
+
+		{ auto mut l= ptr_mut.try_lock_mut(); halt if( l.deref() != 5 ); }
+		halt if( ptr_imut.try_lock_imut().deref() != 7 );
+
+		ptr_mut.reset ();
+		ptr_imut.reset();
+		halt if(ptr_mut != ptr_imut);
+		halt if( !ptr_mut. empty() );
+		halt if( !ptr_imut.empty() );
+	}
+	{ // Can modyfy stored value.
+		var IntPtrMut ptr(99);
+		{ auto mut l= ptr.lock_mut(); ++l.deref(); }
+		{ auto mut l= ptr.lock_mut(); halt if( l.deref() != 100 ); }
+		halt if( ptr.lock_imut().deref() != 100 );
+	}
+	{ // Can share value
+		var IntPtrMut ptr0(42);
+		auto ptr1= ptr0;
+
+		halt if(ptr0 != ptr1);
+		halt if( ptr0.lock_imut().deref() != 42 );
+		halt if( ptr1.lock_imut().deref() != 42 );
+
+		{ auto mut l= ptr0.lock_mut(); l.deref()= 66; }
+		halt if( ptr0.lock_imut().deref() != 66 );
+		halt if( ptr1.lock_imut().deref() != 66 );
+
+		{ auto mut l= ptr1.lock_mut(); --l.deref(); }
+		halt if( ptr0.lock_imut().deref() != 65 );
+		halt if( ptr1.lock_imut().deref() != 65 );
+	}
+	{ // Copy shared ptr, reset src shared ptr.
+		var IntPtrNullableMut mut ptr0(9999);
+		auto ptr1= ptr0;
+		halt if(ptr0 != ptr1);
+
+		ptr0.reset();
+
+		halt if(ptr1 == ptr0);
+		halt if( !ptr0.empty() );
+		halt if(  ptr1.empty() );
+		halt if( ptr1.try_lock_imut().deref() != 9999 );
+	}
+	{ // Copy shared ptr, destroy src shared ptr.
+		var IntPtrNullableMut mut ptr0(555);
+		auto ptr1= ptr0;
+		move(ptr0);
+
+		halt if( ptr1.empty() );
+		halt if( ptr1.try_lock_imut().deref() != 555 );
+	}
+	{ // Reset shared_ptr with new value.
+		var IntPtrMut mut ptr0(20);
+		auto ptr1= ptr0;
+
+		halt if(ptr0 != ptr1);
+		halt if( ptr0.lock_imut().deref() != 20 );
+		halt if( ptr1.lock_imut().deref() != 20 );
+
+		ptr0.reset( 37 ); // Now, ptr0 and ptr1 have different values.
+		halt if(ptr0 == ptr1);
+		halt if( ptr0.lock_imut().deref() != 37 );
+		halt if( ptr1.lock_imut().deref() != 20 );
+
+		{ auto mut l= ptr1.lock_mut(); l.deref()= 91; }
+		halt if( ptr0.lock_imut().deref() != 37 );
+		halt if( ptr1.lock_imut().deref() != 91 );
+	}
+	{ // Copy assignment operator.
+		var IntPtrNullableMut mut ptr0(56), mut ptr1;
+		halt if(  ptr0.empty() );
+		halt if( !ptr1.empty() );
+		halt if( ptr0 == ptr1 );
+		ptr1= ptr0;
+		halt if( ptr0 != ptr1 );
+		halt if( ptr0.try_lock_imut().deref() != 56 );
+		halt if( ptr1.try_lock_imut().deref() != 56 );
+		halt if( !RefEq( ptr0.try_lock_imut().deref(), ptr1.try_lock_imut().deref() ) );
+	}
+	{ // "lock_mut" and "lock_imut" return "mut" or "imut" references.
+		var IntPtrMut ptr(0);
+
+		halt if( IsMut( ptr.lock_imut().deref() ) );
+		{ auto mut l= ptr.lock_mut(); halt if( !IsMut( l.deref() ) ); }
+	}
+	{ // construct shared_ptr from weak ptr.
+		var IntPtrMut mut ptr0(11);
+		var IntPtrWeakMut ptr_weak(ptr0);
+
+		var IntPtrNullableMut mut ptr1( ptr_weak.lock() );
+
+		halt if( ptr0 != ptr1 );
+		halt if( ptr1.empty() );
+		halt if( ptr1.try_lock_imut().deref() != 11 );
+		halt if( !RefEq( ptr1.try_lock_imut().deref(), ptr0.lock_imut().deref() ) );
+	}
+	{ // Can not get shared_ptr with value for empty weak ptr.
+		var IntPtrWeakMut ptr_weak_empty;
+		auto ptr_shared= ptr_weak_empty.lock();
+		halt if( !ptr_shared.empty() );
+	}
+	{ // After source ponter reset, weak_ptr becomes empty.
+		var IntPtrNullableMut mut ptr(0);
+		var IntPtrWeakMut ptr_weak(ptr);
+
+		halt if( ptr_weak.lock().empty() );
+
+		ptr.reset();
+		halt if( !ptr_weak.lock().empty() );
+	}
+	{ // can reset weak_ptr.
+		var IntPtrMut mut ptr(85);
+		var IntPtrWeakMut mut ptr_weak(ptr);
+
+		halt if( ptr_weak.lock().empty() );
+
+		ptr_weak.reset();
+		halt if( !ptr_weak.lock().empty() );
+	}
+	{ // Non-nullable mutable pointer can be converted to nullable mutable pointer.
+		var IntPtrMut ptr0(66);
+		var IntPtrNullableMut ptr1(ptr0);
+		halt if( !RefEq( ptr1.try_lock_imut().deref(), ptr0.lock_imut().deref() ) );
+	}
+	{ // Non-nullable immutable pointer can be converted to nullable immutable pointer.
+		var IntPtrImut ptr0(22);
+		var IntPtrNullableImut ptr1(ptr0);
+		halt if( !RefEq( ptr1.try_lock_imut().deref(), ptr0.lock_imut().deref() ) );
+	}
+	{ // Mutable pointer can be converted to immutable pointer.
+		var IntPtrMut ptr0(32);
+		var IntPtrImut ptr1(ptr0);
+		halt if( !RefEq( ptr1.lock_imut().deref(), ptr0.lock_imut().deref() ) );
+	}
+	{ // Mutable nullable pointer can be converted to immutable nullable pointer.
+		var IntPtrNullableMut ptr0(94);
+		var IntPtrNullableImut ptr1(ptr0);
+		halt if( !RefEq( ptr1.try_lock_imut().deref(), ptr0.try_lock_imut().deref() ) );
+	}
+	{ // Nullable shared_ptr can be converted to non-nullable shared_ptr
+		var IntPtrNullableMut ptr0(35);
+		var IntPtrMut ptr1= ptr0.try_to_non_nullable();
+		halt if( !RefEq( ptr1.lock_imut().deref(), ptr0.try_lock_imut().deref() ) );
+	}
+	{ // Nullable shared_ptr can be converted to non-nullable shared_ptr
+		var IntPtrNullableImut ptr0(35);
+		var IntPtrImut ptr1= ptr0.try_to_non_nullable();
+		halt if( !RefEq( ptr1.lock_imut().deref(), ptr0.try_lock_imut().deref() ) );
+	}
+	//
+	// shared_ptr_mt-sepcific tests.
+	//
+	{ // Can create multiple imut locks to one shared_ptr.
+		var IntPtrMut ptr(66);
+
+		auto lock0= ptr.lock_imut();
+		auto lock1= ptr.lock_imut();
+		auto lock2= ptr.lock_imut();
+
+		halt if( !RefEq( lock0.deref(), lock1.deref() ) );
+		halt if( !RefEq( lock0.deref(), lock2.deref() ) );
+		halt if( lock2.deref() != 66 );
+	}
+	{ // Can create multiple imut locks to one stored value.
+		var IntPtrMut ptr0(92);
+		var IntPtrMut ptr1= ptr0, ptr2= ptr0;
+
+		auto lock0= ptr0.lock_imut();
+		auto lock1= ptr1.lock_imut();
+		auto lock2= ptr2.lock_imut();
+
+		halt if( !RefEq( lock0.deref(), lock1.deref() ) );
+		halt if( !RefEq( lock0.deref(), lock2.deref() ) );
+		halt if( lock1.deref() != 92 );
+	}
+
+	// Derived to base conversion.
+	{
+		{
+			var ust::shared_ptr_mt_mut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_mut</I0/> ptr1(ptr0);
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_mut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_mut</I1/> ptr1(ptr0);
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	{
+		{
+			var ust::shared_ptr_mt_imut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_imut</I0/> ptr1(ptr0);
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_imut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_imut</I1/> ptr1(ptr0);
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	{
+		{
+			var ust::shared_ptr_mt_nullable_mut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_nullable_mut</I0/> ptr1(ptr0);
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.try_lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_nullable_mut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_nullable_mut</I1/> ptr1(ptr0);
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.try_lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	{
+		{
+			var ust::shared_ptr_mt_nullable_imut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_nullable_imut</I0/> ptr1(ptr0);
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.try_lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_nullable_imut</Impl/> mut ptr0( Impl() );
+			var ust::shared_ptr_mt_nullable_imut</I1/> ptr1(ptr0);
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.try_lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	{
+		{
+			var ust::shared_ptr_mt_mut</Impl/> mut ptr0( Impl() );
+			var ust::weak_ptr_mt_mut</Impl/> ptr1(ptr0);
+			var ust::weak_ptr_mt_mut</I0/> ptr2(ptr1);
+			var ust::shared_ptr_mt_nullable_mut</I0/> ptr3(ptr2.lock());
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_mut</Impl/> mut ptr0( Impl() );
+			var ust::weak_ptr_mt_mut</Impl/> ptr1(ptr0);
+			var ust::weak_ptr_mt_mut</I1/> ptr2(ptr1);
+			var ust::shared_ptr_mt_nullable_mut</I1/> ptr3(ptr2.lock());
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	{
+		{
+			var ust::shared_ptr_mt_imut</Impl/> mut ptr0( Impl() );
+			var ust::weak_ptr_mt_imut</Impl/> ptr1(ptr0);
+			var ust::weak_ptr_mt_imut</I0/> ptr2(ptr1);
+			var ust::shared_ptr_mt_nullable_imut</I0/> ptr3(ptr2.lock());
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+		{
+			var ust::shared_ptr_mt_imut</Impl/> mut ptr0( Impl() );
+			var ust::weak_ptr_mt_imut</Impl/> ptr1(ptr0);
+			var ust::weak_ptr_mt_imut</I1/> ptr2(ptr1);
+			var ust::shared_ptr_mt_nullable_imut</I1/> ptr3(ptr2.lock());
+
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
+			move(ptr0); // Let casted ptr free shared object.
+		}
+	}
+	// Compare
+	{
+		var IntPtrImut ptr0(12345);
+		var IntPtrImut ptr1(54321);
+		var IntPtrImut ptr0_copy(ptr0);
+
+		halt if(ptr0 == ptr1);
+		halt if(ptr1 == ptr0_copy);
+		halt if(ptr0_copy != ptr0);
+	}
+	{
+		var IntPtrImut ptr0(666);
+		var IntPtrImut ptr1(ptr0);
+		var IntPtrImut ptr2(ptr1);
+		var IntPtrImut ptr3(ptr1);
+
+		halt if(ptr0 != ptr0);
+		halt if(ptr0 != ptr1);
+		halt if(ptr0 != ptr2);
+		halt if(ptr0 != ptr3);
+		halt if(ptr1 != ptr0);
+		halt if(ptr1 != ptr1);
+		halt if(ptr1 != ptr2);
+		halt if(ptr1 != ptr3);
+		halt if(ptr2 != ptr0);
+		halt if(ptr2 != ptr1);
+		halt if(ptr2 != ptr2);
+		halt if(ptr2 != ptr3);
+		halt if(ptr3 != ptr0);
+		halt if(ptr3 != ptr1);
+		halt if(ptr3 != ptr2);
+		halt if(ptr3 != ptr3);
+	}
+	{
+		// Can compare even locked as mutable pointers.
+		var IntPtrMut ptr0(789);
+		var IntPtrMut ptr1(ptr0);
+		var IntPtrMut ptr2(-678);
+
+		auto mut ptr0_lock= ptr0.lock_mut();
+		auto mut ptr2_lock= ptr2.lock_mut();
+
+		halt if(ptr0 != ptr1);
+		halt if(ptr1 != ptr0);
+		halt if(!(ptr0 == ptr1));
+		halt if(!(ptr1 == ptr0));
+
+		halt if(ptr0 == ptr2);
+		halt if(ptr2 == ptr0);
+		halt if(ptr1 == ptr2);
+		halt if(ptr2 == ptr1);
+		halt if(!(ptr0 != ptr2));
+		halt if(!(ptr2 != ptr0));
+		halt if(!(ptr1 != ptr2));
+		halt if(!(ptr2 != ptr1));
+	}
+	{
+		// Shared pointer ican be used as key in hash map.
+		var ust::unordered_map</ IntPtrNullableMut, i32 /> mut m;
+
+		var IntPtrNullableMut ptr0(33);
+		var IntPtrNullableMut ptr1(ptr0);
+		var IntPtrNullableMut ptr2(44);
+		var IntPtrNullableMut ptr3(ptr2);
+
+		m.insert( ptr0, -33 );
+		m.insert( ptr2, -44 );
+
+		halt if( m.size() != 2s );
+
+		halt if( m.find( ptr0 ).empty() );
+		halt if( m.find( ptr0 ).try_deref() != -33 );
+		halt if( m.find( ptr2 ).empty() );
+		halt if( m.find( ptr2 ).try_deref() != -44 );
+
+		halt if( m.find( ptr1 ).empty() );
+		halt if( m.find( ptr1 ).try_deref() != -33 );
+
+		m.insert( ptr3, 666 ); // Copy of pointer already exists. value will be replaced.
+		halt if( m.size() != 2s );
+		halt if( m.find( ptr3 ).empty() );
+		halt if( m.find( ptr3 ).try_deref() != 666 );
+
+		halt if( m.find( ptr2 ).empty() );
+		halt if( m.find( ptr2 ).try_deref() != 666 );
+
+		m.insert( IntPtrNullableMut(), 999 ); // change existing value, use null pointer key.
+		halt if( m.size() != 3s );
+		halt if( m.find( IntPtrNullableMut() ).empty() );
+		halt if( m.find( IntPtrNullableMut() ).try_deref() != 999 );
+	}
+	// make_shared_ptr_mt
+	{
+		var IntPtrMut  ptr0= ust::make_shared_ptr_mt( 99 );
+		var IntPtrImut ptr1= ust::make_shared_ptr_mt( 66 );
+		var IntPtrNullableMut  ptr2= ust::make_shared_ptr_mt( 85 );
+		var IntPtrNullableImut ptr3= ust::make_shared_ptr_mt( 58 );
+
+		halt if( ptr0.empty() );
+		halt if( ptr1.empty() );
+		halt if( ptr2.empty() );
+		halt if( ptr3.empty() );
+
+		halt if( ptr0.lock_imut().deref() != 99 );
+		halt if( ptr1.lock_imut().deref() != 66 );
+		halt if( ptr2.try_lock_imut().deref() != 85 );
+		halt if( ptr3.try_lock_imut().deref() != 58 );
+	}
+	return 0;
+}

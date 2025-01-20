@@ -1,0 +1,81 @@
+//##success_test
+import "../imports/memory.u"
+
+struct S{ i32 a; f32 b; }
+
+fn nomangle main() : i32
+{
+	var [ S, 3 ] arr= zero_init;
+
+	halt if( ust::ref_cmp( arr[0], arr[0] ) !=  0 );
+	halt if( ust::ref_cmp( arr[0], arr[1] ) != -1 );
+	halt if( ust::ref_cmp( arr[0], arr[2] ) != -1 );
+	halt if( ust::ref_cmp( arr[1], arr[0] ) !=  1 );
+	halt if( ust::ref_cmp( arr[1], arr[1] ) !=  0 );
+	halt if( ust::ref_cmp( arr[1], arr[2] ) != -1 );
+	halt if( ust::ref_cmp( arr[2], arr[0] ) !=  1 );
+	halt if( ust::ref_cmp( arr[2], arr[1] ) !=  1 );
+	halt if( ust::ref_cmp( arr[2], arr[2] ) !=  0 );
+
+	halt if( !ust::ref_cmp_eq( arr[0], arr[0] ) );
+	halt if(  ust::ref_cmp_eq( arr[0], arr[1] ) );
+	halt if(  ust::ref_cmp_eq( arr[0], arr[2] ) );
+	halt if(  ust::ref_cmp_eq( arr[1], arr[0] ) );
+	halt if( !ust::ref_cmp_eq( arr[1], arr[1] ) );
+	halt if(  ust::ref_cmp_eq( arr[1], arr[2] ) );
+	halt if(  ust::ref_cmp_eq( arr[2], arr[0] ) );
+	halt if(  ust::ref_cmp_eq( arr[2], arr[1] ) );
+	halt if( !ust::ref_cmp_eq( arr[2], arr[2] ) );
+
+	halt if(  ust::ref_cmp_ne( arr[0], arr[0] ) );
+	halt if( !ust::ref_cmp_ne( arr[0], arr[1] ) );
+	halt if( !ust::ref_cmp_ne( arr[0], arr[2] ) );
+	halt if( !ust::ref_cmp_ne( arr[1], arr[0] ) );
+	halt if(  ust::ref_cmp_ne( arr[1], arr[1] ) );
+	halt if( !ust::ref_cmp_ne( arr[1], arr[2] ) );
+	halt if( !ust::ref_cmp_ne( arr[2], arr[0] ) );
+	halt if( !ust::ref_cmp_ne( arr[2], arr[1] ) );
+	halt if(  ust::ref_cmp_ne( arr[2], arr[2] ) );
+
+	halt if(  ust::ref_cmp_lt( arr[0], arr[0] ) );
+	halt if( !ust::ref_cmp_lt( arr[0], arr[1] ) );
+	halt if( !ust::ref_cmp_lt( arr[0], arr[2] ) );
+	halt if(  ust::ref_cmp_lt( arr[1], arr[0] ) );
+	halt if(  ust::ref_cmp_lt( arr[1], arr[1] ) );
+	halt if( !ust::ref_cmp_lt( arr[1], arr[2] ) );
+	halt if(  ust::ref_cmp_lt( arr[2], arr[0] ) );
+	halt if(  ust::ref_cmp_lt( arr[2], arr[1] ) );
+	halt if(  ust::ref_cmp_lt( arr[2], arr[2] ) );
+
+	halt if( !ust::ref_cmp_le( arr[0], arr[0] ) );
+	halt if( !ust::ref_cmp_le( arr[0], arr[1] ) );
+	halt if( !ust::ref_cmp_le( arr[0], arr[2] ) );
+	halt if(  ust::ref_cmp_le( arr[1], arr[0] ) );
+	halt if( !ust::ref_cmp_le( arr[1], arr[1] ) );
+	halt if( !ust::ref_cmp_le( arr[1], arr[2] ) );
+	halt if(  ust::ref_cmp_le( arr[2], arr[0] ) );
+	halt if(  ust::ref_cmp_le( arr[2], arr[1] ) );
+	halt if( !ust::ref_cmp_le( arr[2], arr[2] ) );
+
+	halt if(  ust::ref_cmp_gt( arr[0], arr[0] ) );
+	halt if(  ust::ref_cmp_gt( arr[0], arr[1] ) );
+	halt if(  ust::ref_cmp_gt( arr[0], arr[2] ) );
+	halt if( !ust::ref_cmp_gt( arr[1], arr[0] ) );
+	halt if(  ust::ref_cmp_gt( arr[1], arr[1] ) );
+	halt if(  ust::ref_cmp_gt( arr[1], arr[2] ) );
+	halt if( !ust::ref_cmp_gt( arr[2], arr[0] ) );
+	halt if( !ust::ref_cmp_gt( arr[2], arr[1] ) );
+	halt if(  ust::ref_cmp_gt( arr[2], arr[2] ) );
+
+	halt if( !ust::ref_cmp_ge( arr[0], arr[0] ) );
+	halt if(  ust::ref_cmp_ge( arr[0], arr[1] ) );
+	halt if(  ust::ref_cmp_ge( arr[0], arr[2] ) );
+	halt if( !ust::ref_cmp_ge( arr[1], arr[0] ) );
+	halt if( !ust::ref_cmp_ge( arr[1], arr[1] ) );
+	halt if(  ust::ref_cmp_ge( arr[1], arr[2] ) );
+	halt if( !ust::ref_cmp_ge( arr[2], arr[0] ) );
+	halt if( !ust::ref_cmp_ge( arr[2], arr[1] ) );
+	halt if( !ust::ref_cmp_ge( arr[2], arr[2] ) );
+
+	return 0;
+}

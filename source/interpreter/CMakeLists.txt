@@ -27,8 +27,8 @@ add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DI
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/stdout_test.u --use-jit )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/custom_entry_point_test.u --entry custom_entry_point )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/custom_entry_point_test.u --entry custom_entry_point --use-jit )
-add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/includes_test.u --include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/ )
-add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/includes_test.u --include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/ --use-jit )
+add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/includes_test.u --include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports )
+add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/includes_test.u --include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports --use-jit )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/heap_allocation_test.u )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/heap_allocation_test.u --use-jit )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/prelude_test.u )
@@ -38,7 +38,7 @@ add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DI
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/prefixed_imports.u --include-dir ${TESTS_DIR}/imports_dir::fancy/path )
 
 # Run some ustlib tests. It is important, since there tests contain some intrinsics, that need to be tested.
-set( USTLIB_TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib_test )
+set( USTLIB_TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/tests )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/allocations_test.u )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/allocations_test.u --use-jit )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/atomic_test.u )

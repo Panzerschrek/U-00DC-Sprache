@@ -16,7 +16,7 @@ add_custom_command(
 		-O2
 		--verify-module
 		--filetype=ll
-		--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../../ustlib
+		--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../../ustlib/imports
 	)
 
 # Compile LL into object file.

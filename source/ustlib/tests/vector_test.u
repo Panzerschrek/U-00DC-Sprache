@@ -1,0 +1,627 @@
+//##success_test
+import "../imports/string.u"
+import "../imports/vector.u"
+
+struct A {} // Default-constructible, empty
+
+struct B // Non-default-constructible, non-empty
+{
+	i32 x;
+}
+
+struct C // Default-constructible, non-empty
+{
+	i32 x;
+	fn constructor() ( x= 666 ) {}
+}
+
+struct RMut // Have destructor with side-effects.
+{
+	$(i32) r;
+	fn constructor( this, i32& mut in_r ) ( r= $<(in_r) ) {}
+	fn destructor()
+	{
+		++ unsafe( $>(r) );
+	}
+}
+
+struct RImut
+{
+	i32 & r;
+	var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+	fn constructor( this, i32& mut in_r ) @(pollution) ( r= in_r ) {}
+}
+
+class NC // Non-copyable by-default.
+{
+}
+
+type I32Vec= ust::vector</i32/>;
+type AVec= ust::vector</A/>;
+type BVec= ust::vector</B/>;
+type CVec= ust::vector</C/>;
+type RMutVec= ust::vector</RMut/>;
+type RImutVec= ust::vector</RImut/>;
+type NCVec= ust::vector</NC/>;
+
+static_assert( typeinfo</I32Vec/>.reference_tag_count == 0s );
+static_assert( typeinfo</AVec/>.reference_tag_count == 0s );
+static_assert( typeinfo</BVec/>.reference_tag_count == 0s );
+static_assert( typeinfo</CVec/>.reference_tag_count == 0s );
+static_assert( typeinfo</RImutVec/>.reference_tag_count == 1s );
+static_assert( typeinfo</NCVec/>.reference_tag_count == 0s );
+
+template</ type T /> fn IsMutableReference( T & mut r ) : bool { ust::ignore_unused(r); return true ; }
+template</ type T /> fn IsMutableReference( T &imut r ) : bool { ust::ignore_unused(r); return false; }
+
+fn nomangle main() : i32
+{
+	{ // vector is default construtible. Default state is empty.
+		var I32Vec i;
+		var AVec a;
+		var BVec b;
+		var CVec c;
+
+		halt if( !i.empty() );
+		halt if(  i.size() != 0s );
+		halt if( !a.empty() );
+		halt if(  a.size() != 0s );
+		halt if( !b.empty() );
+		halt if(  b.size() != 0s );
+		halt if( !c.empty() );
+		halt if(  c.size() != 0s );
+	}
+	{ // "push_back"/"drop_back" changes size.
+		var I32Vec mut i;
+
+		i.push_back(5);  halt if( i.size() != 1s );
+		i.push_back(0);  halt if( i.size() != 2s );
+		i.push_back(2);  halt if( i.size() != 3s );
+		i.drop_back();   halt if( i.size() != 2s );
+		i.push_back(7);  halt if( i.size() != 3s );
+		i.push_back(8);  halt if( i.size() != 4s );
+		i.drop_back();   halt if( i.size() != 3s );
+		i.drop_back();   halt if( i.size() != 2s );
+		i.drop_back();   halt if( i.size() != 1s );
+		i.drop_back();   halt if( i.size() != 0s );
+	}
+	{ // "drop_back" calls destructor.
+		var i32 mut x= 0;
+		var RMutVec mut v;
+
+		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
+		{
+			var i32& x_ref_unsafe= $>($<(x));
+			v.push_back( RMut(x) );
+			v.drop_back();  halt if( x_ref_unsafe != 1 );
+		}
+	}
+	{ // Destructor calls destructors of elements.
+		var i32 mut x= 0;
+		{
+			var RMutVec mut v;
+			v.push_back( RMut(x) );
+		} // call R::destructor here
+		halt if( x != 1 );
+	}
+	{ // Destructor calls destructors of all elements.
+		var i32 mut a= 0, mut b= 0, mut c= 0;
+		{
+			var RMutVec mut v;
+			v.push_back( RMut(a) );
+			v.push_back( RMut(b) );
+			v.push_back( RMut(c) );
+		} // call R::destructor here for all elements.
+		halt if( a != 1 );
+		halt if( b != 1 );
+		halt if( c != 1 );
+	}
+	{ // "clear" calls destructor.
+		var i32 mut x= 0, mut y= 0;
+		var RMutVec mut v;
+
+		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
+		{
+			var i32& x_ref_unsafe= $>($<(x));
+			var i32& y_ref_unsafe= $>($<(y));
+			v.push_back( RMut(x) );
+			v.push_back( RMut(y) );
+			v.clear();
+			halt if( x_ref_unsafe != 1 );
+			halt if( y_ref_unsafe != 1 );
+		}
+	}
+	{ // "pop_back" moves value.
+		var i32 mut x= 0;
+
+		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
+		{
+			var i32& x_ref_unsafe= $>($<(x));
+
+			var RMutVec mut v;
+			v.push_back( RMut(x) );
+
+			auto r= v.pop_back();
+			halt if( x_ref_unsafe != 0 ); // Move last value out of vector, destructor not called.
+			$>($<(v)).clear();  // Use unsafe casts, because methods of vector practically unaccesible, when reference to class inner reference exists.
+			halt if( x_ref_unsafe != 0 );  // Destructor not called even after "clear".
+		}
+		halt if( x != 1 ); // Destructor called only for "r" local variable.
+	}
+	{ // "swap" does swap.
+		var I32Vec mut i;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		i.push_back(3);
+		i.push_back(4);
+		i.push_back(5);
+		i.push_back(6);
+		i.push_back(7);
+
+		i.swap( 1s, 7s );
+		halt if( i[1s] != 7 );
+		halt if( i[7s] != 1 );
+
+		i.swap( 2s, 2s ); // Does nothing, if indices are equal.
+	}
+	{ // "front" and "back"
+		var I32Vec mut i;
+
+		i.push_back(66);
+		halt if( i.front() != 66 );
+		halt if( i.back () != 66 );
+
+		i.push_back(11);
+		halt if( i.front() != 66 );
+		halt if( i.back () != 11 );
+
+		i.front()= 666; // If vector is mutable, "front" and "back" returns mutable reference.
+		i.back() = 999;
+		halt if( i.front() != 666 );
+		halt if( i.back () != 999 );
+
+		auto &r= i; // If vector is immutable, "front" and "back" returns immutable reference.
+		halt if( IsMutableReference( r.front() ) );
+		halt if( IsMutableReference( r.back () ) );
+	}
+	{ // Indexing.
+		var I32Vec mut i;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		i.push_back(3);
+		halt if( i[0s] != 0 );
+		halt if( i[1s] != 1 );
+		halt if( i[2s] != 2 );
+		halt if( i[3s] != 3 );
+
+		i[0s]= 666; // If vector is mutable, op[] returns mutable reference.
+
+		auto &r= i; // If vector is immutable, op[] returns immutable reference.
+		halt if( IsMutableReference( r[1s] ) );
+	}
+
+	{ // Vectors copying.
+		static_assert( typeinfo</ I32Vec />.is_copy_constructible );
+		static_assert( typeinfo</ I32Vec />.is_copy_assignable );
+
+		static_assert( typeinfo</ AVec />.is_copy_constructible );
+		static_assert( typeinfo</ AVec />.is_copy_assignable );
+
+		static_assert( typeinfo</ BVec />.is_copy_constructible );
+		static_assert( typeinfo</ BVec />.is_copy_assignable );
+
+		static_assert( !typeinfo</ NCVec />.is_copy_constructible );
+		static_assert( !typeinfo</ NCVec />.is_copy_assignable );
+	}
+	{ // Vector is copy-constructible if element is copy-constructible.
+		var I32Vec mut i;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+
+		var I32Vec i_copy(i);
+
+		halt if( i_copy.size() != 3s );
+		halt if( i_copy[0s] != 0 );
+		halt if( i_copy[1s] != 1 );
+		halt if( i_copy[2s] != 2 );
+	}
+	{ // Copy-assign to empty vector.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+
+		j= i;
+		halt if( j[0s] != 0 );
+		halt if( j[1s] != 1 );
+		halt if( j[2s] != 2 );
+	}
+	{ // Copy-assign empty vector.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+
+		i= j;
+		halt if( !i.empty() );
+	}
+	{ // Copy-assign, element count increase.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		j.push_back(10);
+		j.push_back(11);
+		j.push_back(12);
+		j.push_back(13);
+		j.push_back(14);
+
+		i= j;
+
+		halt if( j.size() != 5s );
+		halt if( i[0s] != 10 );
+		halt if( i[1s] != 11 );
+		halt if( i[2s] != 12 );
+		halt if( i[3s] != 13 );
+		halt if( i[4s] != 14 );
+	}
+	{ // Copy-assign, element count decrease.
+		var I32Vec mut i, mut j;
+
+		i.push_back(0);
+		i.push_back(1);
+		i.push_back(2);
+		j.push_back(10);
+		j.push_back(11);
+		j.push_back(12);
+		j.push_back(13);
+		j.push_back(14);
+
+		j= i;
+
+		halt if( j.size() != 3s );
+		halt if( j[0s] != 0 );
+		halt if( j[1s] != 1 );
+		halt if( j[2s] != 2 );
+	}
+	{ // Assignment of empty vector calls all destructors of destination vector.
+		var i32 mut x= 0;
+		var RMutVec mut v;
+
+		unsafe // Use unsafe, because mutable reference to "x" after "push_back" linked with "v" and we can not access "x".
+		{
+			var i32& x_ref_unsafe= $>($<(x));
+			v.push_back( RMut(x) );
+			v= RMutVec();
+			halt if( x_ref_unsafe != 1 );
+		}
+	}
+	{ // Fill constructor.
+		var I32Vec mut v( 50s, 22 );
+
+		halt if( v.size() != 50s );
+
+		var size_type mut i(0);
+		while( i < v.size() )
+		{
+			halt if( v[i] != 22 );
+			++i;
+		}
+	}
+	{ // Constructor with size for default-constructible elements.
+		var CVec mut v( 100s );
+
+		halt if( v.size() != 100s );
+
+		var size_type mut i(0);
+		while( i < v.size() )
+		{
+			halt if( v[i].x != 666 );
+			++i;
+		}
+	}
+	{ // Constructor from an array.
+		var [ ust::string8, 3 ] mut a[ "qw", "ert", "y" ];
+
+		var ust::vector</ust::string8/> v= move(a); // Use implicit conversion gere.
+
+		halt if( v.size() != 3s );
+		halt if( v[0s] != "qw" );
+		halt if( v[1s] != "ert" );
+		halt if( v[2s] != "y" );
+	}
+	{ // Construct from an empty array.
+		var [ i32, 0 ] a;
+		var I32Vec v(a);
+
+		halt if( !v.empty() );
+	}
+	{ // Can push back multiple values and drop multiple values.
+		var I32Vec mut v;
+
+		v.push_back( 3s, 0 );
+		v.push_back( 2s, 1 );
+
+		halt if( v.size() != 5s );
+		halt if( v[0s] != 0 );
+		halt if( v[1s] != 0 );
+		halt if( v[2s] != 0 );
+		halt if( v[3s] != 1 );
+		halt if( v[4s] != 1 );
+
+		v.drop_back( 0s );
+		halt if( v.size() != 5s );
+
+		v.drop_back( 4s );
+		halt if( v.size() != 1s );
+
+		v.drop_back( 1s );
+		halt if( v.size() != 0s );
+	}
+	{ // Can resize with new value.
+		var I32Vec mut v;
+		v.resize( 4s, 333 );
+
+		halt if( v.size() != 4s );
+		halt if( v[0s] != 333 );
+		halt if( v[1s] != 333 );
+		halt if( v[2s] != 333 );
+		halt if( v[3s] != 333 );
+
+		v.resize( 0s, 0 );
+		halt if( !v.empty() );
+	}
+	{ // Can resize with default value.
+		var CVec mut v;
+		v.resize( 365s );
+
+		halt if( v.size() != 365s );
+
+		var size_type mut i(0);
+		while( i < v.size() )
+		{
+			halt if( v[i].x != 666 );
+			++i;
+		}
+	}
+	{ // Append
+		var I32Vec mut v0, mut v1;
+		v0.push_back( 14 );
+		v0.push_back( 25 );
+		v0.push_back( 36 );
+		halt if( v0.size() != 3s );
+
+		v1.push_back( 47 );
+		v1.push_back( 58 );
+		v1.push_back( 69 );
+		v1.push_back( 710 );
+		halt if( v1.size() != 4s );
+
+		v0.append(v1);
+		halt if( v0.size() != 7s );
+		halt if( v1.size() != 0s );
+
+		halt if( v0[0s] != 14 );
+		halt if( v0[1s] != 25 );
+		halt if( v0[2s] != 36 );
+		halt if( v0[3s] != 47 );
+		halt if( v0[4s] != 58 );
+		halt if( v0[5s] != 69 );
+		halt if( v0[6s] != 710 );
+	}
+	{ // Append with iterator.
+		var I32Vec mut v0, mut v1;
+		v0.push_back( 14 );
+		v0.push_back( 25 );
+		v0.push_back( 36 );
+		halt if( v0.size() != 3s );
+
+		v1.push_back( 17 );
+		v1.push_back( 34 );
+		v1.push_back( 89 );
+		v1.push_back( 17 );
+
+		v0.append( v1.iter().skip(2s) );
+
+		halt if( v0.size() != 5s );
+		halt if( v0[0s] != 14 );
+		halt if( v0[1s] != 25 );
+		halt if( v0[2s] != 36 );
+		halt if( v0[3s] != 89 );
+		halt if( v0[4s] != 17 );
+	}
+	{ // ==
+		static_assert( typeinfo</I32Vec/>.is_equality_comparable );
+		var I32Vec mut v0, mut v1, mut v2, mut v3, mut v4, mut v5, mut v6;
+
+		v0.push_back(11);
+		v0.push_back(22);
+		v0.push_back(33);
+
+		v1.push_back(11);
+		v1.push_back(22);
+		v1.push_back(33);
+
+		v2.push_back(0);
+		v2.push_back(22);
+		v2.push_back(33);
+
+		v3.push_back(11);
+		v3.push_back(0);
+		v3.push_back(33);
+
+		v4.push_back(11);
+		v4.push_back(22);
+		v4.push_back(0);
+
+		v5.push_back(11);
+		v5.push_back(22);
+
+		halt if( v0 != v0 );
+		halt if( v1 != v1 );
+		halt if( v2 != v2 );
+		halt if( v3 != v3 );
+		halt if( v4 != v4 );
+		halt if( v5 != v5 );
+		halt if( v6 != v6 );
+
+		halt if( v0 != v1 );
+		halt if( v1 != v0 );
+
+		halt if( v0 == v2 );
+		halt if( v0 == v3 );
+		halt if( v0 == v4 );
+		halt if( v0 == v5 );
+		halt if( v0 == v6 );
+	}
+	{ // remove_adjacent_duplicates - remove single element.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("foo");
+		v.push_back("foo");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 1s );
+		halt if( v[0s] != "foo" );
+	}
+	{ // remove_adjacent_duplicates - remove nothing.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("bar");
+		v.push_back("foo");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 2s );
+		halt if( v[0s] != "bar" );
+		halt if( v[1s] != "foo" );
+	}
+	{ // remove_adjacent_duplicates - remove 3 of 4 adjacent elements.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("bar");
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("baz");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 3s );
+		halt if( v[0s] != "bar" );
+		halt if( v[1s] != "foo" );
+		halt if( v[2s] != "baz" );
+	}
+	{ // remove_adjacent_duplicates - remove 3 elements in two ranges.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("one");
+		v.push_back("two");
+		v.push_back("two");
+		v.push_back("three");
+		v.push_back("four");
+		v.push_back("four");
+		v.push_back("four");
+		v.push_back("five");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 5s );
+		halt if( v[0s] != "one" );
+		halt if( v[1s] != "two" );
+		halt if( v[2s] != "three" );
+		halt if( v[3s] != "four" );
+		halt if( v[4s] != "five" );
+	}
+	{ // remove_adjacent_duplicates - remove elements at start.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("foo");
+		v.push_back("bar");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 2s );
+		halt if( v[0s] != "foo" );
+		halt if( v[1s] != "bar" );
+	}
+	{ // remove_adjacent_duplicates - remove elements at end.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("foo");
+		v.push_back("bar");
+		v.push_back("bar");
+		v.push_back("bar");
+		v.push_back("bar");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 2s );
+		halt if( v[0s] != "foo" );
+		halt if( v[1s] != "bar" );
+	}
+	{ // remove_adjacent_duplicates - remove all except one.
+		var ust::vector</ ust::string8 /> mut v;
+		v.push_back("77");
+		v.push_back("77");
+		v.push_back("77");
+		v.push_back("77");
+		v.push_back("77");
+
+		v.remove_adjacent_duplicates();
+		halt if( v.size() != 1s );
+		halt if( v[0s] != "77" );
+	}
+	{ // vector for type with references inside
+
+		var ust::vector</ust::string_view8/> mut v;
+		v.push_back( "Matt" );
+		v.push_back( "Parker" );
+		v.push_back( "314159" );
+
+		foreach( &mut s : v ) // Create iterator here, which contains second order reference inside.
+		{
+			s.drop_back();
+		}
+
+		halt if( v[0s] != "Mat" );
+		halt if( v[1s] != "Parke" );
+		halt if( v[2s] != "31415" );
+	}
+	{ // Second order references inside vector.
+		var [ i32, 3 ] mut arr0[ 1, 2, 3 ];
+		var [ i32, 4 ] mut arr1[ 4, 5, 6, 7 ];
+
+		{
+			var [ ust::array_view_mut</ i32 />, 2 ] view_arr[ arr0, arr1 ];
+
+			var ust::array_view_imut</ ust::array_view_mut</ i32 /> /> view_for_view_arr= view_arr;
+			halt if( view_for_view_arr.size() != 2s );
+
+			var ust::vector</ ust::array_view_imut</ ust::array_view_mut</ i32 /> /> /> mut v;
+			v.push_back( view_for_view_arr );
+
+			for( auto mut i= 0s; i < v.size(); ++i )
+			{
+				foreach( &range : v[i] )
+				{
+					foreach( &mut el : range )
+					{
+						el *= -2;
+					}
+				}
+			}
+		}
+
+		halt if( arr0[0] != -2 );
+		halt if( arr0[1] != -4 );
+		halt if( arr0[2] != -6 );
+		halt if( arr1[0] != -8 );
+		halt if( arr1[1] != -10 );
+		halt if( arr1[2] != -12 );
+		halt if( arr1[3] != -14 );
+	}
+	return 0;
+}

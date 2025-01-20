@@ -1,0 +1,333 @@
+//##success_test
+import "../imports/result.u"
+import "../imports/shared_ptr.u"
+import "../imports/ustlib_macros.u"
+
+struct SomeNonSync non_sync{}
+static_assert( non_sync</SomeNonSync/> );
+static_assert( non_sync</ ust::result</ SomeNonSync, i32/> /> );
+static_assert( non_sync</ ust::result</ i32, SomeNonSync /> /> );
+
+enum SomeErrorEnum{ NotOk, CompleteDisaster }
+
+type IntRes= ust::result</ i32, SomeErrorEnum />;
+
+static_assert( !non_sync</IntRes/> );
+
+// Maximum size of result/error + value kind flag + possible padding for alignment.
+static_assert( typeinfo</IntRes/>.size_of == 8s );
+static_assert( typeinfo</ ust::result</ [f32, 16], [ u32, 15 ] /> />.size_of == 68s );
+static_assert( typeinfo</ ust::result</ [ u32, 15 ], [f32, 16] /> />.size_of == 68s );
+static_assert( typeinfo</ ust::result</ void, char8 /> />.size_of == 2s );
+
+// Result types are non-copyable.
+static_assert( !typeinfo</IntRes/>.is_copy_constructible );
+static_assert( !typeinfo</IntRes/>.is_copy_assignable );
+
+fn RetRes( i32 i ) : IntRes
+{
+	return i; // Should implicitly convert result type to result.
+}
+
+fn RetErr( SomeErrorEnum e ) : IntRes
+{
+	return e; // Should implicitly convert eror type to result.
+}
+
+fn PassResult( IntRes r )
+{
+	ust::ignore_unused(r);
+}
+
+type IntSharedPtr= ust::shared_ptr_mut</i32/>;
+
+struct DestructibleResult
+{
+	IntSharedPtr ptr;
+
+	fn constructor( IntSharedPtr mut p ) ( ptr= move(p) ) {}
+	fn destructor()
+	{
+		with( &mut lock : ptr.lock_mut() )
+		{
+			lock.deref() *= 2;
+		}
+	}
+}
+
+struct DestructibleError
+{
+	IntSharedPtr ptr;
+
+	fn constructor( IntSharedPtr mut p ) ( ptr= move(p) ) {}
+	fn destructor()
+	{
+		with( &mut lock : ptr.lock_mut() )
+		{
+			lock.deref() *= 3;
+		}
+	}
+}
+
+fn ResultUnwrapContinueTest() : ust::result</f32, SomeErrorEnum />
+{
+	result_unwrap_or_return( r : RetRes( 55 ) );
+	return f32(r);
+}
+
+fn ResultUnwrapContinueModifyTest() : ust::result</f32, SomeErrorEnum />
+{
+	result_unwrap_or_return( mut r : RetRes( 123 ) );
+	r /= 3;
+	return f32(r);
+}
+
+fn ResultUnwrapRetTest() : ust::result</f32, SomeErrorEnum />
+{
+	result_unwrap_or_return( r : RetErr( SomeErrorEnum::NotOk ) );
+	return f32(r);
+}
+
+fn nomangle main() : i32
+{
+	{ // Construct from result.
+		var IntRes res( 55 );
+		halt if( !res.is_ok() );
+		halt if( res.is_error() );
+		halt if( res.try_deref() != 55 );
+	}
+	{ // Construct from error.
+		var IntRes res( SomeErrorEnum::CompleteDisaster );
+		halt if( res.is_ok() );
+		halt if( !res.is_error() );
+		halt if( res.try_deref_error() != SomeErrorEnum::CompleteDisaster );
+	}
+	{ // Call function with Result
+		var IntRes res= RetRes( 77788 );
+		halt if( !res.is_ok() );
+		halt if( res.is_error() );
+		halt if( res.try_deref() != 77788 );
+	}
+	{ // Call function with Result
+		var IntRes res= RetErr( SomeErrorEnum::NotOk );
+		halt if( res.is_ok() );
+		halt if( !res.is_error() );
+		halt if( res.try_deref_error() != SomeErrorEnum::NotOk );
+	}
+	{ // Implicitely convert result/error into result container in function call.
+		PassResult( -333 );
+		PassResult( SomeErrorEnum::CompleteDisaster );
+	}
+	{ // Modify result.
+		var IntRes mut res( 123 );
+		halt if( !res.is_ok() );
+		halt if( res.is_error() );
+		halt if( res.try_deref() != 123 );
+		res.try_deref() += 7;
+		halt if( res.try_deref() != 130 );
+	}
+	{ // Modify error.
+		var IntRes mut res( SomeErrorEnum::NotOk );
+		halt if( res.is_ok() );
+		halt if( !res.is_error() );
+		halt if( res.try_deref_error() != SomeErrorEnum::NotOk );
+		res.try_deref_error() = SomeErrorEnum::CompleteDisaster;
+		halt if( res.try_deref_error() != SomeErrorEnum::CompleteDisaster );
+	}
+	{ // Check destruction of result.
+		var IntSharedPtr ptr( 785 );
+		{
+			var ust::result</ DestructibleResult, SomeErrorEnum /> res( DestructibleResult(ptr) );
+			halt if( !res.is_ok() );
+			halt if( res.is_error() );
+			halt if( res.try_deref().ptr.lock_imut().deref() != 785 );
+			// Destroy here DestructibleResult
+		}
+		halt if( ptr.lock_imut().deref() != 785 * 2 );
+	}
+	{ // Check destruction of error.
+		var IntSharedPtr ptr( 11 );
+		{
+			var ust::result</ i32, DestructibleError /> res( DestructibleError(ptr) );
+			halt if( res.is_ok() );
+			halt if( !res.is_error() );
+			halt if( res.try_deref_error().ptr.lock_imut().deref() != 11 );
+			// Destroy here DestructibleError
+		}
+		halt if( ptr.lock_imut().deref() != 11 * 3 );
+	}
+	{ // as_ref for immutable result.
+		var IntRes res( 876789 );
+		var ust::optional_ref_imut</i32/> res_ref= res.as_ref();
+		halt if( res_ref.empty() );
+		halt if( res_ref.try_deref() != 876789 );
+	}
+	{ // as_ref for mutable result.
+		var IntRes mut res( 6 );
+		if_var( &mut i : res.as_ref() )
+		{
+			i -= 2;
+		}
+		halt if( res.try_deref() != 4 );
+	}
+	{ // as_ref for error.
+		var IntRes res( SomeErrorEnum::NotOk );
+		var ust::optional_ref_imut</i32/> res_ref= res.as_ref();
+		halt if( !res_ref.empty() );
+	}
+	{ // as_error_ref for immutable error.
+		var IntRes res( SomeErrorEnum::CompleteDisaster );
+		var ust::optional_ref_imut</SomeErrorEnum/> err_ref= res.as_error_ref();
+		halt if( err_ref.empty() );
+		halt if( err_ref.try_deref() != SomeErrorEnum::CompleteDisaster );
+	}
+	{ // as_error_ref for mutable error.
+		var IntRes mut res( SomeErrorEnum::CompleteDisaster );
+		if_var( &mut e : res.as_error_ref() )
+		{
+			e= SomeErrorEnum::NotOk;
+		}
+		halt if( res.try_deref_error() != SomeErrorEnum::NotOk );
+	}
+	{ // as_error_ref for result.
+		var IntRes res( 42 );
+		var ust::optional_ref_imut</SomeErrorEnum/> err_ref= res.as_error_ref();
+		halt if( !err_ref.empty() );
+	}
+	{ // Take result.
+		var IntRes mut res( 9998 );
+		halt if( !res.is_ok() );
+		halt if( res.is_error() );
+		auto res_extracted= move(res).try_take();
+		halt if( res_extracted != 9998 );
+	}
+	{ // Take result - check destruction.
+		var ust::result</ DestructibleResult, SomeErrorEnum /> mut res( DestructibleResult( IntSharedPtr( 6655 ) ) );
+		halt if( !res.is_ok() );
+		halt if( res.is_error() );
+		halt if( res.try_deref().ptr.lock_imut().deref() != 6655 );
+		auto res_extracted= move(res).try_take();
+		halt if( res_extracted.ptr.lock_imut().deref() != 6655 );
+	}
+	{ // Take error.
+		var IntRes mut res( SomeErrorEnum::CompleteDisaster );
+		halt if( res.is_ok() );
+		halt if( !res.is_error() );
+		halt if( res.try_deref_error() != SomeErrorEnum::CompleteDisaster );
+		auto err_extracted= move(res).try_take_error();
+		halt if( err_extracted != SomeErrorEnum::CompleteDisaster );
+	}
+	{ // Take error - check destruction.
+		var ust::result</ f32, DestructibleError /> mut res( DestructibleError( IntSharedPtr( 9852 ) ) );
+		halt if( res.is_ok() );
+		halt if( !res.is_error() );
+		halt if( res.try_deref_error().ptr.lock_imut().deref() != 9852 );
+		auto err_extracted= move(res).try_take_error();
+		halt if( err_extracted.ptr.lock_imut().deref() != 9852 );
+	}
+	{ // Result == Result.
+		var IntRes r0( 44 );
+		var IntRes r1( 44 );
+		var IntRes r2( 55 );
+		var IntRes e0( SomeErrorEnum::NotOk );
+		var IntRes e1( SomeErrorEnum::NotOk );
+		var IntRes e2( SomeErrorEnum::CompleteDisaster );
+
+		halt if( !( r0 == r1 ) );
+		halt if( r0 != r1 );
+		halt if( !( r1 == r0 ) );
+		halt if( r1 != r0 );
+
+		halt if( r0 == r2 );
+		halt if( !( r0 != r2 ) );
+		halt if( r2 == r0 );
+		halt if( !( r2 != r0 ) );
+
+		halt if( !( e0 == e1 ) );
+		halt if( e0 != e1 );
+		halt if( !( e1 == e0 ) );
+		halt if( e1 != e0 );
+
+		halt if( e0 == e2 );
+		halt if( !( e0 != e2 ) );
+		halt if( e2 == e0 );
+		halt if( !( e2 != e0 ) );
+
+		halt if( r0 == e0 );
+		halt if( e1 == r1 );
+		halt if( ! ( r1 != e2 ) );
+		halt if( ! ( e1 != r2 ) );
+	}
+	{ // Result == result, Result == error.
+		var IntRes r( 532 );
+		var IntRes e( SomeErrorEnum::NotOk );
+
+		halt if( !( r == 532 ) );
+		halt if( r != 532 );
+		halt if( !( 532 == r ) );
+		halt if( 532 != r );
+
+		halt if( r == 987 );
+		halt if( !( r != 987 ) );
+		halt if( 987 == r );
+		halt if( !( 987 != r ) );
+		halt if( r == SomeErrorEnum::NotOk );
+		halt if( !( r != SomeErrorEnum::NotOk ) );
+		halt if( SomeErrorEnum::NotOk == r );
+		halt if( !( SomeErrorEnum::NotOk != r ) );
+
+		halt if( !( e == SomeErrorEnum::NotOk ) );
+		halt if( e != SomeErrorEnum::NotOk );
+		halt if( !( SomeErrorEnum::NotOk == e ) );
+		halt if( SomeErrorEnum::NotOk != e );
+
+		halt if( e == SomeErrorEnum::CompleteDisaster );
+		halt if( !( e != SomeErrorEnum::CompleteDisaster ) );
+		halt if( SomeErrorEnum::CompleteDisaster == e );
+		halt if( !( SomeErrorEnum::CompleteDisaster != e ) );
+		halt if( e == 987 );
+		halt if( !( e != 987 ) );
+		halt if( 987 == e );
+		halt if( !( 987 != e ) );
+	}
+	{ // result_unwrap macro
+		auto r = ResultUnwrapContinueTest();
+		halt if( !r.is_ok() );
+		halt if( r.is_error() );
+		halt if( r.try_deref() != 55.0f );
+	}
+	{ // result_unwrap macro
+		auto r = ResultUnwrapContinueModifyTest();
+		halt if( !r.is_ok() );
+		halt if( r.is_error() );
+		halt if( r.try_deref() != f32(123 / 3) );
+	}
+	{ // result_unwrap macro
+		auto r = ResultUnwrapRetTest();
+		halt if( r.is_ok() );
+		halt if( !r.is_error() );
+		halt if( r.try_deref_error() != SomeErrorEnum::NotOk );
+	}
+	// result_match macro.
+	result_match( RetRes(42) )
+	{
+		Ok(r) -> { halt if( r != 42); },
+		Err(e) -> { ust::ignore_unused(e); halt; },
+	}
+	result_match( RetRes(0) )
+	{
+		Ok(mut r) -> { ++r; }, // Can declare result variable as mutable.
+		Err(e) -> { ust::ignore_unused(e); halt; },
+	}
+	result_match( RetErr(SomeErrorEnum::CompleteDisaster) )
+	{
+		Ok(r) -> { ust::ignore_unused(r); halt; },
+		Err(e) -> { halt if( e != SomeErrorEnum::CompleteDisaster ); },
+	}
+	result_match( RetErr(SomeErrorEnum::CompleteDisaster) )
+	{
+		Ok(r) -> { ust::ignore_unused(r); halt; },
+		Err(mut e) -> { e= SomeErrorEnum::NotOk; }, // Can declare error variable as mutable.
+	}
+	return 0;
+}

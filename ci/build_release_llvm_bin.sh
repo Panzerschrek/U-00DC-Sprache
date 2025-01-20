@@ -14,10 +14,10 @@ cmake --build . &&\
 \
 # Run ustlib tests
 cd .. &&\
-python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler0/Compiler  --use-position-independent-code --input-dir source/ustlib_test &&\
-python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler1/Compiler1 --use-position-independent-code --input-dir source/ustlib_test &&\
-python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler2/Compiler2 --use-position-independent-code --input-dir source/ustlib_test &&\
-python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler3/Compiler3 --use-position-independent-code --input-dir source/ustlib_test &&\
+python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler0/Compiler  --use-position-independent-code --input-dir source/ustlib/tests &&\
+python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler1/Compiler1 --use-position-independent-code --input-dir source/ustlib/tests &&\
+python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler2/Compiler2 --use-position-independent-code --input-dir source/ustlib/tests &&\
+python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler3/Compiler3 --use-position-independent-code --input-dir source/ustlib/tests &&\
 # install
 mkdir install &&\
 cmake --install build_dir --prefix install

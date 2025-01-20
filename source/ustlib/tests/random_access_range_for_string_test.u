@@ -1,0 +1,40 @@
+//##success_test
+import "../imports/string.u"
+
+fn nomangle main() : i32
+{
+	{
+		var ust::string8 str= "ratata";
+		var size_type mut iterations(0);
+		foreach( c : str ){ ust::ignore_unused(c); ++iterations; }
+		halt if( iterations != str.size() );
+	}
+	{
+		var ust::string16 mut str= "lower case!"u16;
+		foreach( & mut c : str )
+		{
+			if( c >= "a"c16 && c <= "z"c16 )
+			{
+				c = char16( i32(c) + ( i32("A"c16) - i32("a"c16) ) );
+			}
+		}
+		halt if( str != "LOWER CASE!"u16 );
+	}
+	{
+		var ust::string8 str= "DEADCODE";
+		auto r= str.range();
+		unsafe
+		{
+			halt if( r[size_type(0u)] != "D"c8 );
+			halt if( r[size_type(1u)] != "E"c8 );
+			halt if( r[size_type(2u)] != "A"c8 );
+			halt if( r[size_type(3u)] != "D"c8 );
+			halt if( r[size_type(4u)] != "C"c8 );
+			halt if( r[size_type(5u)] != "O"c8 );
+			halt if( r[size_type(6u)] != "D"c8 );
+			halt if( r[size_type(7u)] != "E"c8 );
+		}
+	}
+
+	return 0;
+}

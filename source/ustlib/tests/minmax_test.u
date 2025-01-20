@@ -1,0 +1,44 @@
+//##success_test
+import "../imports/vector.u"
+
+struct R
+{
+	i32& x;
+
+	op<=>( R& l, R& r ) : i32
+	{
+		return l.x <=> r.x;
+	}
+}
+
+fn nomangle main() : i32
+{
+	// "min" and "max" for immutable arguments.
+	halt if( ust::max( 85, 96 ) != 96 );
+	halt if( ust::max( -0.5f, -47.1f ) != -0.5f );
+	halt if( ust::min( 85u, 96u ) != 85u );
+	halt if( ust::min( -0.5, -47.1 ) != -47.1 );
+
+	// "min" and "max" for mutable arguments
+	{
+		var i64 mut a(968), mut b(654);
+		ust::max( a, b )= i64(0);
+		halt if( a != i64(0) );
+	}
+	{
+		var i64 mut a(968), mut b(654);
+		ust::min( a, b )= i64(0);
+		halt if( b != i64(0) );
+	}
+
+	{ // Should support types with references inside.
+		var i32 x= 66, y= 77;
+		var R x_ref{ .x=x }, y_ref{ .x= y };
+		var R& ref_max= ust::max( x_ref, y_ref );
+		var R& ref_min= ust::min( x_ref, y_ref );
+		halt if( ref_max.x != 77 );
+		halt if( ref_min.x != 66 );
+	}
+
+	return 0;
+}

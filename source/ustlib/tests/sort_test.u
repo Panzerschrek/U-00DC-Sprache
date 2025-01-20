@@ -1,0 +1,439 @@
+//##success_test
+import "../imports/math.u"
+import "../imports/sort.u"
+import "../imports/string.u"
+import "../imports/vector.u"
+
+type IntRange= ust::random_access_range_mut</i32/>;
+
+template</ type T, size_type S />
+fn ArrayEq( [ T, S ]& l, [ T, S ]& r ) : bool
+{
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		if( l[i] != r[i] ){ return false; }
+	}
+	return true;
+}
+
+template</ type T, size_type S />
+fn IsSorted( [ T, S ]& arr ) : bool
+{
+	for( auto mut i= 1s; i < S; ++i )
+	{
+		if( arr[i] < arr[i-1s] )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+template</ type T />
+fn IsSorted( ust::vector</T/>& vec ) : bool
+{
+	for( auto mut i= 1s; i < vec.size(); ++i )
+	{
+		if( vec[i] < vec[i-1s] )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+template</ type T, size_type S, type Compare />
+fn IsSorted( [ T, S ]& arr, Compare& comp ) : bool
+{
+	for( auto mut i= 1s; i < S; ++i )
+	{
+		if( !comp( arr[i-1s], arr[i] ) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+class RandGenerator
+{
+public:
+	fn Next( mut this ) : u32
+	{
+		state_= ( 22695477u * state_ + 1u ) & 0x7FFFFFFFu;
+		return state_ >> 16u;
+	}
+
+private:
+	u32 state_= 0u;
+}
+
+fn CompareAbs( i32 l, i32 r ) : bool
+{
+	return ust::abs(l) < ust::abs(r);
+}
+
+struct CompareGreater
+{
+	op()( this, i32 l, i32 r ) : bool
+	{
+		return l > r;
+	}
+}
+
+fn CompareStringSize( ust::string8& l, ust::string8& r ) : bool
+{
+	return l.size() < r.size();
+}
+
+fn nomangle main() : i32
+{
+	{
+		var [ i32, 1 ] mut arr[ 45254 ];
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+
+	// All combinations of 2 elements.
+	for( auto mut i0= 0; i0 < 2; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 2; ++i1 )
+		{
+			var [ i32, 2 ] mut arr[ i0, i1 ];
+			ust::sort( arr );
+			halt if( !IsSorted( arr ) );
+		}
+	}
+
+	// All combinations of 3 elements.
+	for( auto mut i0= 0; i0 < 3; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 3; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 3; ++i2 )
+			{
+				var [ i32, 3 ] mut arr[ i0, i1, i2 ];
+				ust::sort( arr );
+				halt if( !IsSorted( arr ) );
+			}
+		}
+	}
+
+	// All combinations of 4 elements.
+	for( auto mut i0= 0; i0 < 4; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 4; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 4; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 4; ++i3 )
+				{
+					var [ i32, 4 ] mut arr[ i0, i1, i2, i3 ];
+					ust::sort( arr );
+					halt if( !IsSorted( arr ) );
+				}
+			}
+		}
+	}
+
+	// All combinations of 5 elements.
+	for( auto mut i0= 0; i0 < 5; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 5; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 5; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 5; ++i3 )
+				{
+					for( auto mut i4= 0; i4 < 5; ++i4 )
+					{
+						var [ i32, 5 ] mut arr[ i0, i1, i2, i3, i4 ];
+						ust::sort( arr );
+						halt if( !IsSorted( arr ) );
+					}
+				}
+			}
+		}
+	}
+
+	// All combinations of 6 elements.
+	for( auto mut i0= 0; i0 < 6; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 6; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 6; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 6; ++i3 )
+				{
+					for( auto mut i4= 0; i4 < 6; ++i4 )
+					{
+						for( auto mut i5= 0; i5 < 6; ++i5 )
+						{
+							var [ i32, 6 ] mut arr[ i0, i1, i2, i3, i4, i5 ];
+							ust::sort( arr );
+							halt if( !IsSorted( arr ) );
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// All combinations of 7 elements.
+	for( auto mut i0= 0; i0 < 7; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 7; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 7; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 7; ++i3 )
+				{
+					for( auto mut i4= 0; i4 < 7; ++i4 )
+					{
+						for( auto mut i5= 0; i5 < 7; ++i5 )
+						{
+							for( auto mut i6= 0; i6 < 7; ++i6 )
+							{
+								var [ i32, 7 ] mut arr[ i0, i1, i2, i3, i4, i5, i6 ];
+								ust::sort( arr );
+								halt if( !IsSorted( arr ) );
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	{ // All elements are same.
+		var [ i32, 50 ] mut arr= zero_init;
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Cases, where all elements are same, except one element which is greater than others.
+		auto num= 100;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			var [ i32, num ] mut arr= zero_init;
+			arr[ u32(i) ]= 1;
+			ust::sort( arr );
+			halt if( !IsSorted( arr ) );
+		}
+	}
+	{ // Cases, where all elements are same, except one element which is less than others.
+		auto num= 100;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			var [ i32, num ] mut arr= zero_init;
+			arr[ u32(i) ]= -1;
+			ust::sort( arr );
+			halt if( !IsSorted( arr ) );
+		}
+	}
+	{ // Sort sorted array.
+		auto num= 150;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= i;
+		}
+		halt if( !IsSorted( arr ) );
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+
+	{ // Sort reverse-sorted array.
+		auto num= 133;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= num - i;
+		}
+
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Sort array with only two values - 0 or 1.
+		auto num= 107;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= i & 1;
+		}
+
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Sort sorted array with only two values - 0 or 1.
+		auto num= 120;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= i * 2 / num;
+		}
+
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Sort reverse-sorted array with only two values - 0 or 1.
+		auto num= 106;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= ( num - 1 - i ) * 2 / num;
+		}
+
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Test for complexity. Sort array of million pseudo-random numbers.
+		var ust::vector</i32/> mut vec;
+		vec.resize( size_type( 1024 * 1024 ), 0 );
+
+		var RandGenerator mut gen;
+		foreach( &mut i : vec )
+		{
+			i= i32(gen.Next());
+		}
+
+		ust::sort( vec );
+		halt if( !IsSorted( vec ) );
+	}
+	{ // Test for complexity. Sort already sorted array.
+		var ust::vector</i32/> mut vec;
+		vec.resize( 1024s * 256s, 0 );
+
+		{
+			auto mut n= 0;
+			foreach( &mut i : vec )
+			{
+				i= n;
+				++n;
+			}
+		}
+
+		ust::sort( vec );
+		halt if( !IsSorted( vec ) );
+	}
+	{ // Test for complexity. Sort reverse-sorted array.
+		var ust::vector</i32/> mut vec;
+		vec.resize( 1024s * 256s, 0 );
+
+		{
+			auto mut n= i32(vec.size());
+			foreach( &mut i : vec )
+			{
+				i= n;
+				--n;
+			}
+		}
+
+		ust::sort( vec );
+		halt if( !IsSorted( vec ) );
+	}
+	{ // Sort, using custom comparator in form of function pointer.
+		auto num= 113;
+		var[ i32, num ] mut arr= zero_init;
+
+		var RandGenerator mut gen;
+		foreach( &mut i : arr )
+		{
+			i= i32( gen.Next() - 16384u );
+		}
+
+		ust::sort( IntRange(arr), CompareAbs );
+		halt if( !IsSorted( arr, CompareAbs ) );
+	}
+	{ // Sort by key, using custom key provider in form of function pointer.
+		auto num= 113;
+		var[ i32, num ] mut arr= zero_init;
+
+		var RandGenerator mut gen;
+		foreach( &mut i : arr )
+		{
+			i= i32( gen.Next() - 16384u );
+		}
+
+		var ( fn( i32 x ) : i32 ) abs_func= ust::abs</i32/>;
+		var ( fn( i32 l, i32 r ) : bool ) comp= CompareAbs;
+
+		ust::sort_by_key( IntRange(arr), abs_func );
+		halt if( !IsSorted( arr, CompareAbs ) );
+	}
+	{ // Sort, using custom comparator in form of functional object.
+		auto num= 99;
+		var[ i32, num ] mut arr= zero_init;
+
+		var RandGenerator mut gen;
+		foreach( &mut i : arr )
+		{
+			i= i32(gen.Next());
+		}
+
+		ust::sort( IntRange(arr), CompareGreater() );
+		halt if( !IsSorted( arr, CompareGreater() ) );
+	}
+	{ // Sort, using custom comparator in form of lambda.
+		auto num= 99;
+		var[ i32, num ] mut arr= zero_init;
+
+		var RandGenerator mut gen;
+		foreach( &mut i : arr )
+		{
+			i= i32(gen.Next());
+		}
+
+		auto greater= lambda( i32 x, i32 y ) : bool { return x > y; };
+		ust::sort( IntRange(arr), greater );
+		halt if( !IsSorted( arr, greater ) );
+	}
+	{
+		var [ ust::string8, 6 ] mut arr[ "aqwsd", "", "1", "n6Y", "4R", "dawghawfaw" ];
+
+		ust::sort( ust::array_view_mut</ ust::string8 />( arr ), CompareStringSize );
+		halt if( !IsSorted( arr, CompareStringSize ) );
+	}
+	{
+		var [ ust::string8, 6 ] mut arr[ "aqwsd", "", "1", "n6Y", "4R", "dawghawfaw" ];
+
+		// The same as above, but use "sort_by_key" version of sorting algorithm.
+		ust::sort_by_key( ust::array_view_mut</ ust::string8 />( arr ), ust::string8::size );
+		halt if( !IsSorted( arr, CompareStringSize ) );
+	}
+	{ // Sort strings using default (<) comparator
+		auto num= 23s;
+		var [ ust::string8, num ]
+			 mut arr[ "4", "8", "15", "16", "23", "42", "quck", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "Bc", "Ba", "A", "Af", "L", "lolwat", "Zy", "XXX", "" ],
+			imut res[ "", "15", "16", "23", "4", "42", "8", "A", "Af", "Ba", "Bc", "L", "XXX", "Zy", "brown", "dog", "fox", "jumps", "lazy", "lolwat", "over", "quck", "the" ];
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+
+		for( auto mut i= 0s; i < num; ++i )
+		{
+			halt if( arr[i] != res[i] );
+		}
+	}
+
+	auto nan_f= ust::nan</f32/>();
+
+	{ // Sort array with "NaN" in random positions.
+		var [ f32, 8 ] mut arr[ 0.0f, -5.0f, nan_f, 1.3f, nan_f, 256.66f, -999.0f, nan_f ];
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Sort array with "NaN" at start.
+		var [ f32, 8 ] mut arr[ nan_f, nan_f, nan_f, 0.0f, -5.0f, 1.3f, 256.66f, -999.0f ];
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+	{ // Sort array with "NaN" at end.
+		var [ f32, 8 ] mut arr[ 0.0f, -5.0f, 1.3f, 256.66f, -999.0f, nan_f, nan_f, nan_f ];
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+
+	return 0;
+}

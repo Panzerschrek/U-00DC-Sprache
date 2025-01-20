@@ -1,6 +1,6 @@
-import "../../ustlib/math.u"
-import "../../ustlib/stdout.u"
-import "../../ustlib/string_conversions.u"
+import "../../ustlib/imports/math.u"
+import "../../ustlib/imports/stdout.u"
+import "../../ustlib/imports/string_conversions.u"
 
 // This executable should properly link against C standard library (with allocation and stdout functionality).
 // Also linking against libm with math functions should work.
