@@ -173,6 +173,7 @@ There are following kinds of package dependencies:
 The build system executable supports following commands:
 
 * build - perform the build
+* build_single - build a program consisting of a single specified source file and having no dependencies
 * init - initialize a stub project within current directory or directory specified via ``--project-directory`` option
 * help - print help message and exit
 
