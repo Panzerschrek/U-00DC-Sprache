@@ -183,7 +183,6 @@ CPP Header converter:
 *) Prevent at least some name conflicts in imports (where multiple files exist for the given import path)
 *) Clean command - to delete build files
 *) Command line option for building only specified build targets (at least for the root package)
-*) A command to build a single-file program with no dependencies
 *) Support specifying working directory for custom build steps
 *) Support dependency files for custom build steps
 *) Ensure output files of custom build steps are located within package build directory or at least within root build
