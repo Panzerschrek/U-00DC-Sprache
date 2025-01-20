@@ -125,6 +125,7 @@ fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 				logger,
 				options.single_file_to_build,
 				build_system_paths,
+				options.sysroot,
 				// Build in specified build directory or in current directory if it's empty.
 				MakePathAbsolute( options.build_directory ),
 				options.build_configuration,
@@ -1470,6 +1471,7 @@ fn BuildSingleFileProgram(
 	Logger &mut logger,
 	ust::string_view8 source_file_path,
 	BuildSystemPaths& build_system_paths,
+	ust::string_view8 sysroot,
 	ust::string_view8 build_directory,
 	BuildConfiguration build_configuration,
 	TargetTriple& target_triple ) : bool
@@ -1515,6 +1517,12 @@ fn BuildSingleFileProgram(
 			compiler_args.push_back( "-O2" );
 			compiler_args.push_back( "--internalize" );
 		},
+	}
+
+	if( !sysroot.empty() )
+	{
+		compiler_args.push_back( "--sysroot" );
+		compiler_args.push_back( sysroot );
 	}
 
 	return RunExecutable( logger, build_system_paths.compiler_executable_path, compiler_args );
