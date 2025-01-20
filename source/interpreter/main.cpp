@@ -370,8 +370,7 @@ int Main( int argc, const char* argv[] )
 	if( !LinkUstLibModules(
 			*result_module,
 			HaltMode::Abort,
-			false, // Enable system allocations
-			true // Disable stdout implementations - use our own stdout function
+			false // Enable system allocations
 				) )
 		return 1;
 
