@@ -1480,7 +1480,7 @@ fn BuildSingleFileProgram(
 
 	var ust::string_view8 base_name= StripExtension( GetLastPathComponent( source_file_path_absolute ) );
 
-	var ust::string8 mut out_file_path= ust::concat( build_directory, "/", base_name );
+	var ust::string8 mut out_file_path= NormalizePath( ust::concat( build_directory, "/", base_name ) );
 	if( target_triple.operating_system == "windows" )
 	{
 		out_file_path+= ".exe";
