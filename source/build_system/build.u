@@ -10,15 +10,9 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 		.public_include_directories= ust::make_array</ust::string8/>( "imports" ),
 	};
 
-	var ust::string8 mut name_suffix;
-	if_var( &mut opt : build_system_interface.GetConfigurationOption( "name_suffix" ) )
-	{
-		name_suffix= take(opt);
-	}
-
 	var BK::BuildTarget mut target
 	{
-		.name= "BuildSystem" + name_suffix,
+		.name= "BuildSystem" + build_system_interface.GetConfigurationOption( "name_suffix" ).deref_or( ust::string8() ),
 		.target_type= BK::BuildTargetType::Executable,
 		.private_dependencies= ust::make_array( BK::DependencyName{ .name= lib_target.name } ),
 	};
