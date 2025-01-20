@@ -120,11 +120,14 @@ fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 
 	if( options.command == Options::Command::BuildSingle )
 	{
+
 		var bool ok =
 			BuildSingleFileProgram(
 				logger,
 				options.single_file_to_build,
 				build_system_paths,
+				// Build in specified build directory or in current directory if it's empty.
+				MakePathAbsolute( options.build_directory ),
 				options.build_configuration,
 				target_triple );
 		return ( ok ? 0 : -1 );
@@ -1468,12 +1471,21 @@ fn BuildSingleFileProgram(
 	Logger &mut logger,
 	ust::string_view8 source_file_path,
 	BuildSystemPaths& build_system_paths,
+	ust::string_view8 build_directory,
 	BuildConfiguration build_configuration,
 	TargetTriple& target_triple ) : bool
 {
 	var ust::string8 source_file_path_absolute= MakePathAbsolute( source_file_path );
 
-	logger.LogInfo( ust::concat( "Building single source \"", source_file_path_absolute, "\"" ) );
+	var ust::string_view8 base_name= StripExtension( GetLastPathComponent( source_file_path_absolute ) );
+
+	var ust::string8 mut out_file_path= ust::concat( build_directory, "/", base_name );
+	if( target_triple.operating_system == "windows" )
+	{
+		out_file_path+= ".exe";
+	}
+
+	logger.LogInfo( ust::concat( "Building single source \"", source_file_path_absolute, "\" into \"", out_file_path, "\"." ) );
 
 	var ust::vector</ust::string8/> mut compiler_args;
 
@@ -1482,9 +1494,8 @@ fn BuildSingleFileProgram(
 	compiler_args.push_back( "--include-dir" );
 	compiler_args.push_back( build_system_paths.ustlib_path );
 
-	// TODo - set proper output file name.
 	compiler_args.push_back( "-o" );
-	compiler_args.push_back( "out_file.exe" );
+	compiler_args.push_back( move(out_file_path) );
 
 	compiler_args.push_back( "-filetype=exe" );
 
