@@ -1,0 +1,32 @@
+import "../../imports/pthread.u"
+import "../../imports/thread_impl.u"
+
+namespace ust
+{
+
+namespace thread_impl
+{
+
+fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_id
+{
+	unsafe
+	{
+		var pthread_attr_t mut attr= zero_init;
+		var pthread_t mut thread_id(0);
+
+		halt if( ::pthread_attr_init( attr ) != 0 );
+		halt if( ::pthread_create( thread_id, attr, func, arg ) != 0 );
+		halt if( ::pthread_attr_destroy( attr ) != 0 );
+
+		return thread_id;
+	}
+}
+
+fn join_and_destroy_thread( thread_id t ) unsafe
+{
+	halt if( unsafe( ::pthread_join( t, nullptr</$(byte8)/>() ) ) != 0 );
+}
+
+} // namespace thread_impl
+
+} // namespace us
