@@ -2,6 +2,8 @@
 # This file contains code for building "ustlib" into a cmake library target, which is used in the build system and compiler0.
 #
 
+file( GLOB_RECURSE USTLIB_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/imports/*.u" )
+file( GLOB_RECURSE USTLIB_TESTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/*.u" )
 file( GLOB USTLIB_SOURCES_COMMON "${CMAKE_CURRENT_SOURCE_DIR}/src/*.u" )
 file( GLOB USTLIB_SOURCES_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/*.u" )
 file( GLOB USTLIB_SOURCES_UNIX "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/*.u" )
@@ -31,7 +33,7 @@ endif()
 add_custom_command(
 	OUTPUT ${USTLIB_OBJECT}
 	DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
-	DEPENDS ${USTLIB_SOURCES}
+	DEPENDS ${USTLIB_SOURCES} ${USTLIB_HEADERS}
 	COMMAND
 		Compiler${CURRENT_COMPILER_GENERATION}
 		${USTLIB_SOURCES}
@@ -45,5 +47,20 @@ add_custom_command(
 	COMMENT "Building ${current_subdir}/ustlib.o"
 	)
 
-add_library( ustlib${CURRENT_COMPILER_GENERATION} STATIC ${USTLIB_OBJECT} ${USTLIB_SOURCES_COMMON} ${USTLIB_SOURCES_WINDOWS} ${USTLIB_SOURCES_UNIX} )
+add_library(
+	ustlib${CURRENT_COMPILER_GENERATION} STATIC
+	${USTLIB_OBJECT}
+	# List almost all files - sources (for all platforms), headers, tests.
+	${USTLIB_SOURCES_COMMON}
+	${USTLIB_SOURCES_WINDOWS}
+	${USTLIB_SOURCES_UNIX}
+	${USTLIB_HEADERS}
+	${USTLIB_TESTS}
+	)
+
 set_target_properties( ustlib${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
+
+install( FILES ${USTLIB_HEADERS} DESTINATION "ustlib/imports" )
+install( FILES ${USTLIB_SOURCES_COMMON} DESTINATION "ustlib/src" )
+install( FILES ${USTLIB_SOURCES_WINDOWS} DESTINATION "ustlib/src/windows" )
+install( FILES ${USTLIB_SOURCES_UNIX} DESTINATION "ustlib/src/unix" )

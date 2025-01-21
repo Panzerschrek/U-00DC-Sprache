@@ -30,18 +30,13 @@ endfunction()
 set( USTLIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib )
 
 file( GLOB_RECURSE USTLIB_LL_FILES "${USTLIB_DIR}/compiler_builtins/*" )
-file( GLOB_RECURSE USTLIB_HEADERS "${USTLIB_DIR}/imports/*.u" )
-file( GLOB_RECURSE USTLIB_TESTS "${USTLIB_DIR}/tests/*.u" )
 
 foreach( LL_FILE ${USTLIB_LL_FILES} )
 	CompileLLFile( ${LL_FILE} )
 	list( APPEND bc_files ${BC_FILE} )
 endforeach()
 
-
 file( GLOB COMPILERS_SUPPORT_LIB_SOURCES "*.cpp" "*.hpp" )
-add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_LL_FILES} ${USTLIB_HEADERS} ${USTLIB_TESTS} )
+add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_LL_FILES} )
 target_link_libraries( CompilersSupportLib ${LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB} )
 target_include_directories( CompilersSupportLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
-
-install( FILES ${USTLIB_HEADERS} DESTINATION "ustlib/imports" )
