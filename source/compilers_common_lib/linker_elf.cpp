@@ -173,7 +173,15 @@ bool RunLinkerELF(
 	args.push_back( input_temp_file_path.data() );
 
 	if( produce_shared_library )
+	{
 		args.push_back( "--shared" );
+
+		// Disable undefined symbols in shared libraries.
+		// By-default "ld" and compatible linkers silently assume undefined symbols will be resolved in runtime.
+		// We don't need such crappy behavior, so, prevent undefined symbols.
+		// Also, there is a place in Hell reserved for the person who decided to make such behavior default.
+		args.push_back( "--no-undefined" );
+	}
 
 	if( pic && !produce_shared_library )
 		args.push_back( "-pie" );
