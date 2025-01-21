@@ -1,3 +1,4 @@
+import "../../imports/memory.u"
 import "../../imports/pthread.u"
 import "../../imports/thread_impl.u"
 
@@ -12,19 +13,19 @@ fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : 
 	unsafe
 	{
 		var pthread_attr_t mut attr= zero_init;
-		var pthread_t mut thread_id(0);
+		var pthread_t mut id(0);
 
 		halt if( ::pthread_attr_init( attr ) != 0 );
-		halt if( ::pthread_create( thread_id, attr, func, arg ) != 0 );
+		halt if( ::pthread_create( id, attr, func, arg ) != 0 );
 		halt if( ::pthread_attr_destroy( attr ) != 0 );
 
-		return thread_id;
+		return id;
 	}
 }
 
-fn join_and_destroy_thread( thread_id t ) unsafe
+fn join_and_destroy_thread( thread_id id ) unsafe
 {
-	halt if( unsafe( ::pthread_join( t, nullptr</$(byte8)/>() ) ) != 0 );
+	halt if( unsafe( ::pthread_join( id, nullptr</$(byte8)/>() ) ) != 0 );
 }
 
 } // namespace thread_impl

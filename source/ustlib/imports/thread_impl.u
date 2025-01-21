@@ -1,8 +1,6 @@
 // This file is used internally for low-level thread manipulations.
 // Do not use types/functions from this file directly!
 
-import "memory.u"
-
 namespace ust
 {
 
