@@ -60,6 +60,10 @@ add_library(
 
 set_target_properties( ustlib${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
 
+if( NOT WIN32 )
+	target_link_libraries( ustlib${CURRENT_COMPILER_GENERATION} PRIVATE pthread )
+endif()
+
 if( CURRENT_COMPILER_GENERATION STREQUAL "" )
 	install( FILES ${USTLIB_HEADERS} DESTINATION "ustlib/imports" )
 	install( FILES ${USTLIB_SOURCES_COMMON} DESTINATION "ustlib/src" )
