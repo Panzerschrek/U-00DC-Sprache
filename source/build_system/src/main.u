@@ -1222,7 +1222,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( "--internalize-symbols-from" );
 			node.command_line.push_back( move(bc_file) );
 		},
-		BuildTargetType::Library -> { /* It's not necessary to link ustlib into a bitcode library. */ },
+		BuildTargetType::Library -> { /* It's not necessary to link bitcode libraries against ustlib. */ },
 	}
 
 	// Link shared library dependencies.
@@ -1410,6 +1410,8 @@ fn GetCompiledUstlibPath( ust::string_view8 root_package_build_directory ) : ust
 fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::string8/>
 {
 	// Hardcode all files that we need to compile. There is no other way to do this.
+	// It's not possible to use a usual build script for ustlib, since building it requires building ustlib first.
+
 	var [ ust::string_view8, 0 ] sources_common
 	[
 	];
@@ -1479,6 +1481,8 @@ fn CreateUstlibBuildGraphNodes(
 	// Forbid importing anything outside include directories and source directories.
 	node.command_line.push_back( "--prevent-imports-outside-given-directories" );
 
+	// Just compile all sources in one compile invocation.
+	// Since ustlib is usually never changes, it's easier to do this, complared to separate compilation of each source file.
 	foreach( &source : GetUstlibSourcesList( target_triple ) )
 	{
 		var ust::string8 file_path= NormalizePath( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
@@ -1503,9 +1507,9 @@ fn CreateUstlibBuildGraphNodes(
 		},
 		BuildConfiguration::Release ->
 		{
-			// Run full optimization, but not by using O3 - it isn't much better than O2.
+			// Run full optimizations, but not by using O3 - it isn't much better than O2.
 			node.command_line.push_back( "-O2" );
-			// Also prepare for LTO.
+			// Also prepare for further LTO.
 			node.command_line.push_back( "--lto-mode=prelink" );
 		},
 	}

@@ -244,6 +244,7 @@ def main():
 		g_use_position_independent_code= args.use_position_independent_code
 
 	if args.add_library is not None:
+		global g_additional_libraries_to_link
 		for library in args.add_library:
 			g_additional_libraries_to_link.append( library )
 
