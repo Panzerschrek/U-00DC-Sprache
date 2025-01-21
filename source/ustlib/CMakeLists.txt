@@ -40,8 +40,9 @@ add_custom_command(
 		-filetype=obj
 		-o ${current_subdir}/ustlib.o
 		-MF ${CMAKE_CURRENT_BINARY_DIR}/ustlib.d
-		--verify-module
+		--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
 		${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
+		--verify-module
 	${DEPFILE_OPTION}
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
 	COMMENT "Building ${current_subdir}/ustlib.o"
