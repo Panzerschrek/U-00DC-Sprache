@@ -1446,7 +1446,7 @@ fn CreateUstlibBuildGraphNodes(
 
 	foreach( &source : GetUstlibSourcesList() )
 	{
-		var ust::string8 file_path= NormalizePath( ust::concat( build_system_paths.ustlib_path, "/src/", source ) );
+		var ust::string8 file_path= NormalizePath( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
 		node.input_files.push_back( file_path );
 		node.command_line.push_back( file_path );
 	}
@@ -1629,7 +1629,7 @@ fn BuildUstlibForBuildScripts(
 
 		foreach( &source : GetUstlibSourcesList() )
 		{
-			compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/src/", source ) );
+			compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
 		}
 
 		compiler_args.push_back( "--source-dir" );
@@ -1718,7 +1718,7 @@ fn BuildSingleFileProgram(
 	// Compile also all "ustlib" sources in the same compiler invocation.
 	foreach( &source : GetUstlibSourcesList() )
 	{
-		compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/src/", source ) );
+		compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
 	}
 
 	// The only include directory that we require is "ustlib".
