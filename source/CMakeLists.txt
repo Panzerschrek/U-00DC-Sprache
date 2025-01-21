@@ -224,7 +224,7 @@ add_subdirectory( compiler0 )
 
 if( U_BUILD_COMPILER )
 	set( CURRENT_COMPILER_GENERATION "" )
-	add_subdirectory( ustlib ustlib0 )
+	add_subdirectory( ustlib ustlib0 ) # Build ustlib with compiler0
 endif()
 
 if( U_BUILD_COMPILER AND U_BUILD_BUILD_SYSTEM )
@@ -242,6 +242,7 @@ if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
 	add_subdirectory( compiler1 )
 
 	set( CURRENT_COMPILER_GENERATION "1" )
+	add_subdirectory( ustlib ustlib1 ) # Build ustlib with compiler1
 	if( U_BUILD_BUILD_SYSTEM )
 		add_subdirectory( build_system build_system1 ) # Build build system with compiler1.
 	endif()
@@ -253,6 +254,7 @@ if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
 		add_subdirectory( compiler1 compiler2 )
 
 		set( CURRENT_COMPILER_GENERATION "2" )
+		add_subdirectory( ustlib ustlib2 ) # Build ustlib with compiler2
 		if( U_BUILD_BUILD_SYSTEM )
 			add_subdirectory( build_system build_system2 ) # Build build system with compiler2.
 		endif()
