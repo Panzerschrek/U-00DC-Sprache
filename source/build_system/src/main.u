@@ -1470,7 +1470,7 @@ fn CreateUstlibBuildGraphNodes(
 		{
 			// Run full optimization, but not by using O3 - it isn't much better than O2.
 			node.command_line.push_back( "-O2" );
-			// Also run LTO.
+			// Also prepare for LTO.
 			node.command_line.push_back( "--lto-mode=prelink" );
 		},
 	}
