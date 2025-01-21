@@ -1,0 +1,22 @@
+//##success_test
+import "../imports/checked_math.u"
+
+fn nomangle main() : i32
+{
+	halt if( ust::add_overflow_check_halt( 5, 78 ) != 5 + 78 );
+	halt if( ust::add_overflow_check_halt( 896u, 654u ) != 896u + 654u );
+	halt if( ust::add_overflow_check_halt( -5i64, 784i64 ) != -5i64 + 784i64 );
+	halt if( ust::add_overflow_check_halt( 4554896u64, 45654u64 ) != 4554896u64 + 45654u64 );
+
+	halt if( ust::sub_overflow_check_halt( 5, 78 ) != 5 - 78 );
+	halt if( ust::sub_overflow_check_halt( 896u, 654u ) != 896u - 654u );
+	halt if( ust::sub_overflow_check_halt( -5i64, 784i64 ) != -5i64 - 784i64 );
+	halt if( ust::sub_overflow_check_halt( 136512u64, 985u64 ) != 136512u64 - 985u64 );
+
+	halt if( ust::mul_overflow_check_halt( 5, 78 ) != 5 * 78 );
+	halt if( ust::mul_overflow_check_halt( 896u, 654u ) != 896u * 654u );
+	halt if( ust::mul_overflow_check_halt( -5i64, 784i64 ) != -5i64 * 784i64 );
+	halt if( ust::mul_overflow_check_halt( 4554896u64, 45654u64 ) != 4554896u64 * 45654u64 );
+
+	return 0;
+}

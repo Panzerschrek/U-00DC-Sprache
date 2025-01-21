@@ -29,20 +29,14 @@ endfunction()
 
 set( USTLIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib )
 
-file( GLOB LL_FILES ${USTLIB_DIR}/src/* )
-foreach( LL_FILE ${LL_FILES} )
+file( GLOB_RECURSE USTLIB_LL_FILES "${USTLIB_DIR}/compiler_builtins/*" )
+
+foreach( LL_FILE ${USTLIB_LL_FILES} )
 	CompileLLFile( ${LL_FILE} )
 	list( APPEND bc_files ${BC_FILE} )
 endforeach()
 
-# Show in editor also ustlib and ustlib tests files
-file( GLOB_RECURSE USTLIB_SOURCES "${USTLIB_DIR}/*.u" )
-file( GLOB_RECURSE USTLIB_SOURCES_LL "${USTLIB_DIR}/src/*.ll" )
-file( GLOB_RECURSE USTLIB_TEST_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/../ustlib_test/*.u" )
-
 file( GLOB COMPILERS_SUPPORT_LIB_SOURCES "*.cpp" "*.hpp" )
-add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_SOURCES_LL} ${USTLIB_TEST_SOURCES} )
+add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_LL_FILES} )
 target_link_libraries( CompilersSupportLib ${LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB} )
 target_include_directories( CompilersSupportLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
-
-install( FILES ${USTLIB_SOURCES} DESTINATION "ustlib" )

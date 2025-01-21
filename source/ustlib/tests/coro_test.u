@@ -1,0 +1,52 @@
+//##success_test
+import "../imports/coro.u"
+import "../imports/helpers.u"
+
+fn generator EmptyGen() : i32
+{
+}
+
+fn generator SingleValueGen() : i32
+{
+	yield 44;
+}
+
+fn generator MultipleValuesGen(u32 max) : u32
+{
+	for( auto mut i= 0u; i < max; ++i )
+	{
+		yield i;
+	}
+}
+
+fn nomangle main() : i32
+{
+	{
+		auto mut g= EmptyGen();
+		halt if( ust::coro_done( g ) );
+		if_coro_advance( x : g ) { ust::ignore_unused(x); halt; }
+		halt if( !ust::coro_done( g ) );
+	}
+	{
+		auto mut g= SingleValueGen();
+		halt if( ust::coro_done( g ) );
+		if_coro_advance( x : g ) { halt if( x != 44 ); }
+		halt if( ust::coro_done( g ) );
+		if_coro_advance( x : g ) { ust::ignore_unused(x); halt; }
+		halt if( !ust::coro_done( g ) );
+	}
+	{
+		auto mut g= MultipleValuesGen(17u);
+		auto mut advanced= 0u;
+		while( !ust::coro_done(g) )
+		{
+			if_coro_advance( x : g )
+			{
+				halt if( x != advanced );
+				++advanced;
+			}
+		}
+		halt if( advanced != 17u );
+	}
+	return 0;
+}

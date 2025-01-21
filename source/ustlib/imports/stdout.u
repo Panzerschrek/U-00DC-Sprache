@@ -1,0 +1,12 @@
+import "random_access_range.u"
+
+namespace ust
+{
+
+// Print string into stdout.
+fn stdout_print( array_view_imut</char8/> str );
+
+// Print string into stderr.
+fn stderr_print( array_view_imut</char8/> str );
+
+} // namespace ust

@@ -1,0 +1,24 @@
+import "../../imports/stdout.u"
+
+namespace ust
+{
+
+fn stdout_print( array_view_imut</char8/> str )
+{
+	unsafe( ::write( STDOUT_FILENO, ust::ptr_cast_to_byte8(str.data()), str.size() ) );
+	// TODO - halt if write fails
+}
+
+fn stderr_print( array_view_imut</char8/> str )
+{
+	unsafe( ::write( STDERR_FILENO, ust::ptr_cast_to_byte8(str.data()), str.size() ) );
+	// TODO - halt if write fails
+}
+
+} // namespace ust
+
+// auto constexpr STDIN_FILENO = 0;
+auto constexpr STDOUT_FILENO = 1;
+auto constexpr STDERR_FILENO = 2;
+
+fn nomangle write( i32 fd, $(byte8) data, size_type s ) : ssize_type;

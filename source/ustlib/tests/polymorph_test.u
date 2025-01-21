@@ -1,0 +1,151 @@
+//##success_test
+import "../imports/polymorph.u"
+
+struct S{}
+
+class I0 interface {}
+class I1 interface {}
+class A : I0, I1 { i32 x= 0; }
+class B : A { i32 y= 0; }
+
+class C : I0, I1 {}
+
+template</type A, type B />
+fn RefEq( A& a, B& b ) : bool
+{
+	unsafe
+	{
+		return ust::ref_to_int( a ) == ust::ref_to_int( b );
+	}
+}
+
+fn nomangle main() : i32
+{
+	unsafe
+	{
+		var i32 x= 0;
+		var byte8 &ref= cast_ref_unsafe</byte8/>(x);
+		halt if( !RefEq( ust::polymorph_restore_original_ref( ref ), x ) );
+	}
+	unsafe
+	{
+		var S s;
+		var byte8 &ref= cast_ref_unsafe</byte8/>(s);
+		halt if( !RefEq( ust::polymorph_restore_original_ref( ref ), s ) );
+	}
+	{
+		var B b;
+		var I0& i0= b;
+		var I1& i1= b;
+		var A& a= b;
+		halt if( !RefEq( ust::polymorph_restore_original_ref( i0 ), b ) );
+		halt if( !RefEq( ust::polymorph_restore_original_ref( i1 ), b ) );
+		halt if( !RefEq( ust::polymorph_restore_original_ref( a  ), b ) );
+		halt if( !RefEq( ust::polymorph_restore_original_ref( b  ), b ) );
+	}
+	{ // Compare type_id for same object
+		var B b;
+		var I0& i0= b;
+		var I1& i1= b;
+		var A& a= b;
+		halt if( !ust::polymorph_is_same_type( b , i0 ) );
+		halt if( !ust::polymorph_is_same_type( b , i1 ) );
+		halt if( !ust::polymorph_is_same_type( b , a  ) );
+		halt if( !ust::polymorph_is_same_type( b , b  ) );
+		halt if( !ust::polymorph_is_same_type( a , i0 ) );
+		halt if( !ust::polymorph_is_same_type( a , i1 ) );
+		halt if( !ust::polymorph_is_same_type( a , a  ) );
+		halt if( !ust::polymorph_is_same_type( a , b  ) );
+		halt if( !ust::polymorph_is_same_type( i0, i0 ) );
+		halt if( !ust::polymorph_is_same_type( i0, i1 ) );
+		halt if( !ust::polymorph_is_same_type( i0, a  ) );
+		halt if( !ust::polymorph_is_same_type( i0, b  ) );
+		halt if( !ust::polymorph_is_same_type( i1, i0 ) );
+		halt if( !ust::polymorph_is_same_type( i1, i1 ) );
+		halt if( !ust::polymorph_is_same_type( i1, a  ) );
+		halt if( !ust::polymorph_is_same_type( i1, b  ) );
+	}
+	{ // Compare type_id for different objects of same type.
+		var B b_0;
+		var I0& i0_0= b_0;
+		var I1& i1_0= b_0;
+		var A& a_0= b_0;
+		var B b_1;
+		var I0& i0_1= b_1;
+		var I1& i1_1= b_1;
+		var A& a_1= b_1;
+		halt if( !ust::polymorph_is_same_type( b_0 , i0_1 ) );
+		halt if( !ust::polymorph_is_same_type( b_0 , i1_1 ) );
+		halt if( !ust::polymorph_is_same_type( b_0 , a_1  ) );
+		halt if( !ust::polymorph_is_same_type( b_0 , b_1  ) );
+		halt if( !ust::polymorph_is_same_type( a_0 , i0_1 ) );
+		halt if( !ust::polymorph_is_same_type( a_0 , i1_1 ) );
+		halt if( !ust::polymorph_is_same_type( a_0 , a_1  ) );
+		halt if( !ust::polymorph_is_same_type( a_0 , b_1  ) );
+		halt if( !ust::polymorph_is_same_type( i0_0, i0_1 ) );
+		halt if( !ust::polymorph_is_same_type( i0_0, i1_1 ) );
+		halt if( !ust::polymorph_is_same_type( i0_0, a_1  ) );
+		halt if( !ust::polymorph_is_same_type( i0_0, b_1  ) );
+		halt if( !ust::polymorph_is_same_type( i1_0, i0_1 ) );
+		halt if( !ust::polymorph_is_same_type( i1_0, i1_1 ) );
+		halt if( !ust::polymorph_is_same_type( i1_0, a_1  ) );
+		halt if( !ust::polymorph_is_same_type( i1_0, b_1  ) );
+	}
+	{ // Compare type_id for different objects of different types.
+		var B b_0;
+		var I0& i0_0= b_0;
+		var I1& i1_0= b_0;
+		var A& a_0= b_0;
+		var A a_1;
+		var I0& i0_1= a_1;
+		var I1& i1_1= a_1;
+		halt if( ust::polymorph_is_same_type( b_0 , i0_1 ) );
+		halt if( ust::polymorph_is_same_type( b_0 , i1_1 ) );
+		halt if( ust::polymorph_is_same_type( b_0 , a_1  ) );
+		halt if( ust::polymorph_is_same_type( a_0 , i0_1 ) );
+		halt if( ust::polymorph_is_same_type( a_0 , i1_1 ) );
+		halt if( ust::polymorph_is_same_type( a_0 , a_1  ) );
+		halt if( ust::polymorph_is_same_type( i0_0, i0_1 ) );
+		halt if( ust::polymorph_is_same_type( i0_0, i1_1 ) );
+		halt if( ust::polymorph_is_same_type( i0_0, a_1  ) );
+		halt if( ust::polymorph_is_same_type( i1_0, i0_1 ) );
+		halt if( ust::polymorph_is_same_type( i1_0, i1_1 ) );
+		halt if( ust::polymorph_is_same_type( i1_0, a_1  ) );
+	}
+	{ // // dynamic cast.
+		var B imut b;
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</B />(b) ).try_deref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</A />(b) ).try_deref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</I0/>(b) ).try_deref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</I1/>(b) ).try_deref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</A/>( cast_ref</B />(b) ).try_deref(), cast_ref</A/>(b) ) );
+		halt if( !RefEq( ust::polymorph_cast</A/>( cast_ref</I0/>(b) ).try_deref(), cast_ref</A/>(b) ) );
+		halt if( !RefEq( ust::polymorph_cast</A/>( cast_ref</I1/>(b) ).try_deref(), cast_ref</A/>(b) ) );
+		halt if( !RefEq( ust::polymorph_cast</I0/>( cast_ref</I1/>(b) ).try_deref(), cast_ref</I0/>(b) ) );
+		halt if( !RefEq( ust::polymorph_cast</I1/>( cast_ref</I0/>(b) ).try_deref(), cast_ref</I1/>(b) ) );
+
+		halt if( !ust::polymorph_cast</C/>( cast_ref</B />(b) ).empty() );
+		halt if( !ust::polymorph_cast</C/>( cast_ref</A />(b) ).empty() );
+		halt if( !ust::polymorph_cast</C/>( cast_ref</I0/>(b) ).empty() );
+		halt if( !ust::polymorph_cast</C/>( cast_ref</I1/>(b) ).empty() );
+
+		var C imut c;
+		halt if( !ust::polymorph_cast</B/>( c ).empty() );
+	}
+	{ // is_insance_of
+
+		var B b;
+		halt if( !ust::polymorph_is_instance_of</B/>( cast_ref</B />(b) ) );
+		halt if( !ust::polymorph_is_instance_of</B/>( cast_ref</A />(b) ) );
+		halt if( !ust::polymorph_is_instance_of</B/>( cast_ref</I0/>(b) ) );
+		halt if( !ust::polymorph_is_instance_of</B/>( cast_ref</I1/>(b) ) );
+		halt if(  ust::polymorph_is_instance_of</C/>( cast_ref</B />(b) ) );
+		halt if(  ust::polymorph_is_instance_of</C/>( cast_ref</A />(b) ) );
+		halt if(  ust::polymorph_is_instance_of</C/>( cast_ref</I0/>(b) ) );
+		halt if(  ust::polymorph_is_instance_of</C/>( cast_ref</I1/>(b) ) );
+		halt if( ust::polymorph_is_instance_of</i32/>( b ) );
+		halt if( ust::polymorph_is_instance_of</B  />( 0 ) );
+		halt if( ust::polymorph_is_instance_of</S  />( b ) );
+	}
+	return 0;
+}

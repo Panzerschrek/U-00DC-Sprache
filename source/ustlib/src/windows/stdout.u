@@ -1,0 +1,37 @@
+import "../../imports/stdout.u"
+
+namespace ust
+{
+
+// Use fwrite because native Windows GetStdHandle/WriteFile doesn't work properly in program with existing C and/or C++ stdin/stdout streams.
+
+fn stdout_print( array_view_imut</char8/> str )
+{
+	unsafe( ::fwrite(
+		ust::ptr_cast_to_byte8(str.data()),
+		1s,
+		str.size(),
+		import fn</ AcrtIobFuncType />( "__acrt_iob_func" )( STDOUT_FILENO ) ) );
+	// TODO - halt if fwrite fails
+}
+
+fn stderr_print( array_view_imut</char8/> str )
+{
+	unsafe( ::fwrite(
+		ust::ptr_cast_to_byte8(str.data()),
+		1s,
+		str.size(),
+		import fn</ AcrtIobFuncType />( "__acrt_iob_func" )( STDERR_FILENO ) ) );
+	// TODO - halt if fwrite fails
+}
+
+} // namespace ust
+
+// auto constexpr STDIN_FILENO = 0;
+auto constexpr STDOUT_FILENO = 1;
+auto constexpr STDERR_FILENO = 2;
+
+fn nomangle fwrite( $(byte8) data, size_type size, size_type count, FilePtr file_ptr ) : size_type;
+
+type AcrtIobFuncType= fn( i32 x ) : FilePtr;
+type FilePtr= $(byte8);

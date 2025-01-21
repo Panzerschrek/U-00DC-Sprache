@@ -1,0 +1,74 @@
+//##fail_test
+import "../imports/thread.u"
+import "../imports/optional_ref.u"
+import "../imports/shared_ptr.u"
+
+struct CallableObject non_sync
+{
+	op()( this )
+	{}
+}
+
+struct CallableObjectShared
+{
+	ust::shared_ptr_nullable_imut</i32/> ptr;
+	op()( this )
+	{}
+}
+
+struct CallableObjectRegular
+{
+	op()( this )
+	{}
+}
+
+struct CallableObjectMutThis
+{
+	op()( mut this )
+	{}
+}
+
+fn nomangle main() : i32
+{
+	{ // Create thread with "non_sync"-marked function-object.
+		auto thread= ust::make_thread( CallableObject() ); //##expect_error TemplateContext
+	}
+	{ // Create thread with function-object, containing non-thread-safe shared_ptr class inside.
+		auto thread= ust::make_thread( CallableObjectShared() ); //##expect_error TemplateContext
+	}
+	{
+		// Thread should be moved in "join" call.
+		auto mut thread= ust::make_thread( CallableObjectRegular() );
+		thread.join(); //##expect_error CopyConstructValueOfNoncopyableType
+	}
+	{
+		var i32 mut x= 0;
+		auto mut thread= ust::make_thread( lambda[&]() { x= 55; } );
+		// Threads holds mutable reference to a value.
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{
+		var CallableObject non_sync_callable_object;
+		// Lambda captures a non-sync object by reference, which makes this lambda also non-sync.
+		ust::make_thread( lambda[&]() { non_sync_callable_object(); } ); //##expect_error TemplateContext
+	}
+	{
+		// Can't create thread for function with "mut this" op().
+		ust::make_thread( CallableObjectMutThis() ); //##expect_error TemplateContext
+	}
+	{
+		var i32 mut x= 0;
+
+		auto f0= lambda[&]() : i32 { return x; };
+
+		// Can't create thread for function type with second order references inside.
+		auto thread= ust::make_thread( lambda[&]() : i32 { return f0(); } );  //##expect_error TemplateContext
+	}
+	{
+		var i32 x= 0;
+		// Can't create thread for function returning references inside return value.
+		auto thread= ust::make_thread( lambda[&]() : ust::optional_ref_imut</i32/> { return x; } ); //##expect_error TemplateContext
+	}
+
+	return 0;
+}

@@ -111,7 +111,7 @@ else()
 				-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 				--verify-module
 				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
-				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
+				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports
 				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}
 				--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
@@ -132,6 +132,9 @@ else()
 	# Since we have no C or C++ sources, set linker language to C, in order to execute a C linker for linking the build system executable.
 	# C++ is unnecessary here - we don't want to link against C++ standard libraries.
 	set_target_properties( BuildSystem${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
+
+	# Link against ustlib built previously.
+	target_link_libraries( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE ustlib${CURRENT_COMPILER_GENERATION} )
 
 	if( MSVC )
 		# Specify C runtime libraries which we use. CMake doesn't do this for targets with no sources.

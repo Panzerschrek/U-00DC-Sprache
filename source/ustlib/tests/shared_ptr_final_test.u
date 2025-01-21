@@ -1,0 +1,144 @@
+//##success_test
+import "../imports/shared_ptr_final.u"
+import "../imports/unordered_map.u"
+
+type IntPtr= ust::shared_ptr_final</i32/>;
+type IntPtrNullable= ust::shared_ptr_final_nullable</i32/>;
+
+static_assert( non_sync</IntPtr/> );
+static_assert( non_sync</IntPtrNullable/> );
+
+fn nomangle main() : i32
+{
+	{ // Can directly get reference to content of shared_ptr_final
+		var IntPtr ptr(52);
+		halt if( ptr.empty() );
+		halt if( ptr.deref() != 52 );
+	}
+	{ // Value is shared
+		var IntPtr ptr0(14);
+		var IntPtr ptr1(ptr0);
+		halt if(ptr0 != ptr1);
+		halt if( ptr1.deref() != 14 );
+		halt if( !ust::ref_cmp_eq( ptr0.deref(), ptr1.deref() ) );
+	}
+	{ //Can convert non-nullable to nullable
+		var IntPtr ptr0(58);
+		var IntPtrNullable ptr1(ptr0);
+		halt if(ptr0 != ptr1);
+		halt if( ptr1.try_deref() != 58 );
+		halt if( !ust::ref_cmp_eq( ptr0.deref(), ptr1.try_deref() ) );
+	}
+	{ //Can convert nullable to non-nullable
+		var IntPtrNullable ptr0(92);
+		var IntPtr ptr1= ptr0.try_to_non_nullable();
+		halt if(ptr0 != ptr1);
+		halt if( ptr1.deref() != 92 );
+		halt if( !ust::ref_cmp_eq( ptr0.try_deref(), ptr1.deref() ) );
+	}
+	{ // Can reset ptr with value.
+		var IntPtr mut ptr0(74);
+		var IntPtr ptr1= ptr0;
+		halt if(ptr0 != ptr1);
+
+		ptr0.reset( 85 );
+
+		halt if(ptr0 == ptr1);
+		halt if( ptr0.deref() != 85 );
+		halt if( ptr1.deref() != 74 );
+		halt if( ust::ref_cmp_eq( ptr0.deref(), ptr1.deref() ) );
+	}
+	{ // Can create empty nullable ptr.
+		var IntPtrNullable ptr;
+		halt if( !ptr.empty() );
+		halt if(ptr != ptr);
+	}
+	{ // Can reset nullable ptr.
+		var IntPtrNullable mut ptr(99);
+		halt if( ptr.empty() );
+		ptr.reset();
+		halt if( !ptr.empty() );
+	}
+
+	// Compare
+	{
+		var IntPtr ptr0(12345);
+		var IntPtr ptr1(54321);
+		var IntPtr ptr0_copy(ptr0);
+
+		halt if(ptr0 == ptr1);
+		halt if(ptr1 == ptr0_copy);
+		halt if(ptr0_copy != ptr0);
+	}
+	{
+		var IntPtr ptr0(666);
+		var IntPtr ptr1(ptr0);
+		var IntPtr ptr2(ptr1);
+		var IntPtr ptr3(ptr1);
+
+		halt if(ptr0 != ptr0);
+		halt if(ptr0 != ptr1);
+		halt if(ptr0 != ptr2);
+		halt if(ptr0 != ptr3);
+		halt if(ptr1 != ptr0);
+		halt if(ptr1 != ptr1);
+		halt if(ptr1 != ptr2);
+		halt if(ptr1 != ptr3);
+		halt if(ptr2 != ptr0);
+		halt if(ptr2 != ptr1);
+		halt if(ptr2 != ptr2);
+		halt if(ptr2 != ptr3);
+		halt if(ptr3 != ptr0);
+		halt if(ptr3 != ptr1);
+		halt if(ptr3 != ptr2);
+		halt if(ptr3 != ptr3);
+	}
+	{ // Shared pointer can be used as key in hash map.
+		var ust::unordered_map</ IntPtrNullable, i32 /> mut m;
+
+		var IntPtrNullable ptr0(33);
+		var IntPtrNullable ptr1(ptr0);
+		var IntPtrNullable ptr2(44);
+		var IntPtrNullable ptr3(ptr2);
+
+		m.insert( ptr0, -33 );
+		m.insert( ptr2, -44 );
+
+		halt if( m.size() != 2s );
+
+		halt if( m.find( ptr0 ).empty() );
+		halt if( m.find( ptr0 ).try_deref() != -33 );
+		halt if( m.find( ptr2 ).empty() );
+		halt if( m.find( ptr2 ).try_deref() != -44 );
+
+		halt if( m.find( ptr1 ).empty() );
+		halt if( m.find( ptr1 ).try_deref() != -33 );
+
+		m.insert( ptr3, 666 ); // Copy of pointer already exists. value will be replaced.
+		halt if( m.size() != 2s );
+		halt if( m.find( ptr3 ).empty() );
+		halt if( m.find( ptr3 ).try_deref() != 666 );
+
+		halt if( m.find( ptr2 ).empty() );
+		halt if( m.find( ptr2 ).try_deref() != 666 );
+
+		m.insert( IntPtrNullable(), 99 ); // null pointer as key.
+		halt if( m.size() != 3s );
+		halt if( m.find( IntPtrNullable() ).empty() );
+		halt if( m.find( IntPtrNullable() ).try_deref() != 99 );
+
+		m.insert( IntPtrNullable(), 999 ); // change existing value, use null pointer key.
+		halt if( m.size() != 3s );
+		halt if( m.find( IntPtrNullable() ).empty() );
+		halt if( m.find( IntPtrNullable() ).try_deref() != 999 );
+	}
+	// make_shared_ptr_final
+	{
+		var IntPtr ptr0= ust::make_shared_ptr_final( 675 );
+		var IntPtrNullable ptr1= ust::make_shared_ptr_final( 951 );
+		halt if( ptr0.deref() != 675 );
+		halt if( ptr1.try_deref() != 951 );
+	}
+
+	return 0;
+}

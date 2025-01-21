@@ -176,6 +176,16 @@ fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 			"/",
 			"host.build" /* use name with dots in order to avoid name conflicts */ );
 
+	// Compile "ustlib" used in build scripts. Do it before compiling any of them.
+	// Perform the build in the root build directory,
+	// since the only possible configuration and target triple is confuguration and triple of this build system executable.
+	if( !BuildUstlibForBuildScripts(
+		logger, build_system_paths, options.host_sysroot, root_package_build_directory_base ) )
+	{
+		logger.LogError( "Failed to build \"ustlib\" for build scripts." );
+		return -1;
+	}
+
 	var BuildSystemInterfaceImplementation mut bsi(
 		move(logger),
 		options.build_configuration,
@@ -435,6 +445,7 @@ fn ObtainPackageInfo(
 		host_sysroot,
 		GetPackageSourceDirectory( bsi.build_system_paths_, package_name ),
 		GetPackageBuildDirectory( packages_build_directory, package_name ),
+		GetCompiledForBuildScriptsUstlibPath( packages_build_directory ),
 		entry_func_name );
 	if( shared_library_opt.empty() )
 	{
@@ -476,6 +487,7 @@ fn BuildAndLoadPackageBuildScript(
 	ust::string_view8 host_sysroot,
 	ust::string_view8 package_source_directory,
 	ust::string_view8 package_build_directory,
+	ust::string_view8 ustlib_compiled_for_build_scripts_path,
 	ust::string_view8 entry_func_name ) : ust::optional</SharedLibrary/>
 {
 	// TODO - select more catchy name for root build script file.
@@ -549,7 +561,6 @@ fn BuildAndLoadPackageBuildScript(
 			}
 		}
 
-
 		var ust::vector</ust::string8/> mut compiler_args;
 
 		// Use host sysroot for building build script shared library for host system.
@@ -564,7 +575,7 @@ fn BuildAndLoadPackageBuildScript(
 		compiler_args.push_back( package_source_directory );
 		// Provide standard library imports.
 		compiler_args.push_back( "--include-dir" );
-		compiler_args.push_back( build_system_paths.ustlib_path );
+		compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_imports_subpath ) );
 		// Provide path to declarations of the build system interface.
 		compiler_args.push_back( "--include-dir" );
 		compiler_args.push_back( build_system_paths.build_system_imports_path );
@@ -573,6 +584,9 @@ fn BuildAndLoadPackageBuildScript(
 		compiler_args.push_back( build_script_wrapper_header_file_directory );
 
 		compiler_args.push_back( build_script_wrapper_file_path );  // The file to buld.
+
+		// Link against "ustlib" previously built into an object file.
+		compiler_args.push_back( ust::concat( "-Wl,", ustlib_compiled_for_build_scripts_path ) );
 
 		// Output.
 		compiler_args.push_back( "-o" );
@@ -808,6 +822,18 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 	WorkspaceInfo& workspace,
 	BuildGraph &mut build_graph )
 {
+	if( !workspace.build_targets.empty() )
+	{
+		// Build "ustlib" only if we have some build targets.
+		CreateUstlibBuildGraphNodes(
+			build_system_paths,
+			sysroot,
+			root_package_build_directory,
+			build_configuration,
+			target_triple,
+			build_graph );
+	}
+
 	// Collect and sort a list of build target names,
 	// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
 	var ust::vector</BuildTargetAbsoluteName/> mut build_target_names;
@@ -1183,8 +1209,23 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 	}
 
+	// Link ustlib.
+	switch( target.target_type )
+	{
+		BuildTargetType::Executable, BuildTargetType::SharedLibrary, BuildTargetType::ObjectFile ->
+		{
+			// Link ustlib into build targets with binary code.
+			var ust::string8 mut bc_file= GetCompiledUstlibPath( root_package_build_directory );
+			node.command_line.push_back( bc_file );
+			node.input_files.push_back( bc_file );
+			// Internalize all symbols from ustlib.
+			node.command_line.push_back( "--internalize-symbols-from" );
+			node.command_line.push_back( move(bc_file) );
+		},
+		BuildTargetType::Library -> { /* It's not necessary to link bitcode libraries against ustlib. */ },
+	}
+
 	// Link shared library dependencies.
-	// Libraries linking.
 	switch( target.target_type )
 	{
 		BuildTargetType::Executable,
@@ -1360,6 +1401,133 @@ struct SourceFileToCompile
 	ust::string8 comment;
 }
 
+fn GetCompiledUstlibPath( ust::string_view8 root_package_build_directory ) : ust::string8
+{
+	return NormalizePath( ust::concat( root_package_build_directory, "/", "ustlib.bc" ) );
+}
+
+// Returns list of relative paths.
+fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::string8/>
+{
+	// Hardcode all files that we need to compile. There is no other way to do this.
+	// It's not possible to use a usual build script for ustlib, since building it requires building ustlib first.
+
+	var [ ust::string_view8, 0 ] sources_common
+	[
+	];
+
+	var [ ust::string_view8, 1 ] sources_windows
+	[
+		"windows/stdout.u",
+	];
+
+	var [ ust::string_view8, 1 ] sources_unix
+	[
+		"unix/stdout.u",
+	];
+
+	var ust::vector</ust::string8/> mut res;
+	foreach( &s : sources_common )
+	{
+		res.push_back(s);
+	}
+
+	if( target_triple.operating_system == "windows" )
+	{
+		foreach( &s : sources_windows )
+		{
+			res.push_back(s);
+		}
+	}
+	else
+	{
+		foreach( &s : sources_unix )
+		{
+			res.push_back(s);
+		}
+	}
+
+	return res;
+}
+
+fn CreateUstlibBuildGraphNodes(
+	BuildSystemPaths& build_system_paths,
+	ust::string_view8 sysroot,
+	ust::string_view8 root_package_build_directory,
+	BuildConfiguration build_configuration,
+	TargetTriple& target_triple,
+	BuildGraph &mut build_graph )
+{
+	var ust::string8 out_file= GetCompiledUstlibPath( root_package_build_directory );
+
+	var BuildGraph::Node mut node
+	{
+		.program= build_system_paths.compiler_executable_path,
+		.output_files= ust::make_array( out_file ),
+		.dep_file= GetDependencyFilePath( out_file ),
+		.comment= "ustlib",
+	};
+
+	node.command_line.push_back( "-o" );
+	node.command_line.push_back( out_file );
+	node.command_line.push_back( "-filetype=bc" );
+
+	node.command_line.push_back( "-MF" );
+	node.command_line.push_back( node.dep_file );
+
+	node.command_line.push_back( "--source-dir" );
+	node.command_line.push_back( build_system_paths.ustlib_path );
+
+	// Forbid importing anything outside include directories and source directories.
+	node.command_line.push_back( "--prevent-imports-outside-given-directories" );
+
+	// Just compile all sources in one compile invocation.
+	// Since ustlib is usually never changes, it's easier to do this, complared to separate compilation of each source file.
+	foreach( &source : GetUstlibSourcesList( target_triple ) )
+	{
+		var ust::string8 file_path= NormalizePath( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
+		node.input_files.push_back( file_path );
+		node.command_line.push_back( file_path );
+	}
+
+	// TODO - disable "pic" by default for windows target.
+	node.command_line.push_back( "--relocation-model" );
+	node.command_line.push_back( "pic" );
+
+	// Build configuration-dependent options.
+	switch( build_configuration )
+	{
+		BuildConfiguration::Debug ->
+		{
+			// Generate debug information.
+			node.command_line.push_back( "-g" );
+			// No optimization at all - optimization makes debugging hard.
+			node.command_line.push_back( "-O0" );
+			// No LTO is used for debug builds.
+		},
+		BuildConfiguration::Release ->
+		{
+			// Run full optimizations, but not by using O3 - it isn't much better than O2.
+			node.command_line.push_back( "-O2" );
+			// Also prepare for further LTO.
+			node.command_line.push_back( "--lto-mode=prelink" );
+		},
+	}
+
+	if( !sysroot.empty() )
+	{
+		node.command_line.push_back( "--sysroot" );
+		node.command_line.push_back( sysroot );
+	}
+
+	AddTargetTripleCompilerFlags( target_triple, node.command_line );
+
+	// Perform verification just to be sure nothing is broken.
+	node.command_line.push_back( "--verify-module" );
+
+	build_graph.nodes.push_back( move(node) );
+}
+
 fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::string8/> &mut compiler_flags )
 {
 	compiler_flags.push_back( "--target-arch" );
@@ -1467,6 +1635,98 @@ fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 	return false;
 }
 
+fn GetCompiledForBuildScriptsUstlibPath( ust::string_view8 build_directory_base ) : ust::string8
+{
+	return NormalizePath( ust::concat( build_directory_base, "/", "ustlib.o" ) );
+}
+
+fn BuildUstlibForBuildScripts(
+	Logger &mut logger,
+	BuildSystemPaths& build_system_paths,
+	ust::string_view8 host_sysroot,
+	ust::string_view8 build_directory_base ) : bool
+{
+	var ust::string8 out_file_path= GetCompiledForBuildScriptsUstlibPath( build_directory_base );
+	var ust::string8 out_dep_file_path = GetDependencyFilePath( out_file_path );
+
+	if( CheckRebuildIsNeededBasedOnDepFile( logger, out_dep_file_path ) )
+	{
+		logger.LogVerbose( ust::concat( "Building \"", out_file_path, "\"." ) );
+
+		var ust::vector</ust::string8/> mut compiler_args;
+
+		compiler_args.push_back( "-o" );
+		compiler_args.push_back( out_file_path );
+
+		compiler_args.push_back( "-MF" );
+		compiler_args.push_back( out_dep_file_path );
+
+		// Build into an object file, to simplify building of build script shared libraries.
+		// Such an object file may be simply linked by internal LLD.
+		// It's suboptimal, since no inlining can be performed, but still fine for build scripts, where a lot of performance isn't necessary.
+		compiler_args.push_back( "-filetype=obj" );
+
+		foreach( &source : GetUstlibSourcesList( GetHostTargetTriple() ) )
+		{
+			compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
+		}
+
+		compiler_args.push_back( "--source-dir" );
+		compiler_args.push_back( build_system_paths.ustlib_path );
+
+		// Forbid importing anything outside include directories and source directories.
+		compiler_args.push_back( "--prevent-imports-outside-given-directories" );
+
+		// Use "abort-based" halt mode - in order to handle halts in build scripts gracefully.
+		// It's fine if this mode differs from halt mode in build system executable.
+		compiler_args.push_back( "--halt-mode=abort" );
+
+		// Use optimization level which was used to compile the build system executable.
+		compiler_args.push_back( ust::concat( "-O", ust::single_element_array_view( compiler::options::optimization_level ) ) );
+
+		// If the build system executable was compiled with debug information - generate it for ustlib for build scripts too.
+		if( compiler::options::generate_debug_info )
+		{
+			compiler_args.push_back( "-g" );
+		}
+
+		// Use the same target parameters for compilation of ustlib for build scripts as for the build system executable.
+		compiler_args.push_back( "--target-arch" );
+		compiler_args.push_back( compiler::target::arch );
+
+		compiler_args.push_back( "--target-vendor" );
+		compiler_args.push_back( compiler::target::vendor );
+
+		compiler_args.push_back( "--target-os" );
+		compiler_args.push_back( compiler::target::os );
+
+		compiler_args.push_back( "--target-environment" );
+		compiler_args.push_back( compiler::target::environment );
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			// It seems that position-independent code is always enabled on systems except Windows.
+			// So, use this option for building the shared library.
+			compiler_args.push_back( "--relocation-model" );
+			compiler_args.push_back( "pic" );
+		}
+
+		// Use host sysroot for building ustlib for build scripts.
+		if( !host_sysroot.empty() )
+		{
+			compiler_args.push_back( "--sysroot" );
+			compiler_args.push_back( host_sysroot );
+		}
+
+		return RunExecutable( logger, build_system_paths.compiler_executable_path, compiler_args );
+	}
+	else
+	{
+		logger.LogVerbose( ust::concat( "Skip building \"", out_file_path,  "\"." ) );
+		return true;
+	}
+}
+
 fn BuildSingleFileProgram(
 	Logger &mut logger,
 	ust::string_view8 source_file_path,
@@ -1494,9 +1754,15 @@ fn BuildSingleFileProgram(
 
 	compiler_args.push_back( source_file_path_absolute );
 
+	// Compile also all "ustlib" sources in the same compiler invocation.
+	foreach( &source : GetUstlibSourcesList( target_triple ) )
+	{
+		compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
+	}
+
 	// The only include directory that we require is "ustlib".
 	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( build_system_paths.ustlib_path );
+	compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_imports_subpath ) );
 
 	// Don't bother limiting imports in single-source programs.
 	// Also don't care about source directory specifying - it's unnecessary, since we internalize all symbols anyway.

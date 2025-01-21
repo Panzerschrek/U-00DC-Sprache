@@ -32,6 +32,6 @@ cmake --build . -- -j 1 &&\
 \
 # Run ustlib tests
 cd .. &&\
-python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler0/Compiler  --use-position-independent-code --input-dir source/ustlib_test &&\
-python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler1/Compiler1 --use-position-independent-code --input-dir source/ustlib_test &&\
-python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler2/Compiler2 --use-position-independent-code --input-dir source/ustlib_test
+python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler0/Compiler  --add-library=build_dir/ustlib0/libustlib.a  --add-library=-lpthread --use-position-independent-code --input-dir source/ustlib/tests &&\
+python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler1/Compiler1 --add-library=build_dir/ustlib1/libustlib1.a --add-library=-lpthread --use-position-independent-code --input-dir source/ustlib/tests &&\
+python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler2/Compiler2 --add-library=build_dir/ustlib2/libustlib2.a --add-library=-lpthread --use-position-independent-code --input-dir source/ustlib/tests

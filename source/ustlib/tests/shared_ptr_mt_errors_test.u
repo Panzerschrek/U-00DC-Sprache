@@ -1,0 +1,85 @@
+//##fail_test
+import "../imports/shared_ptr_mt.u"
+
+type IntPtrMut=  ust::shared_ptr_mt_mut </i32/>;
+type IntPtrImut= ust::shared_ptr_mt_imut</i32/>;
+type IntPtrNullableMut=  ust::shared_ptr_mt_nullable_mut </i32/>;
+type IntPtrNullableImut= ust::shared_ptr_mt_nullable_imut</i32/>;
+type IntPtrWeakMut = ust::weak_ptr_mt_mut </i32/>;
+type IntPtrWeakImut= ust::weak_ptr_mt_imut</i32/>;
+
+struct S{ i32& r; }
+
+// Shared pointers disabled for types with references.
+type SPtrInvalid= ust::shared_ptr_mt_mut</S/>; //##expect_error TemplateContext
+
+struct NonSyncStruct non_sync {}
+// Multithreaded shared pointers disabled for non_sync types.
+type InvalidNonSyncStructPtr= ust::shared_ptr_mt_mut</NonSyncStruct/>; //##expect_error TemplateContext
+
+fn nomangle main() : i32
+{
+	//
+	// Common test with "shared_ptr"
+	//
+
+	{ // For non-nullable pointers expected initializer.
+		var IntPtrMut  ptr_mut ; //##expect_error ExpectedInitializer
+		var IntPtrImut ptr_imut; //##expect_error ExpectedInitializer
+	}
+	{ // Non-nullable pointers have no "reset to zero" methods.
+		var IntPtrMut  mut ptr_mut (0);
+		var IntPtrImut mut ptr_imut(0);
+		ptr_mut .reset(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_imut.reset(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Imut pointers have no "lock_mut" methods.
+		var IntPtrImut ptr(0);
+		var IntPtrNullableImut ptr_nullable(0);
+
+		ptr.lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_nullable.try_lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Nullable pointers have no "lock" methods (only "try_lock" methods).
+		var IntPtrNullableMut ptr_mut(0);
+		var IntPtrNullableImut ptr_imut(0);
+
+		ptr_mut.lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_imut.lock_imut(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Non-nullable pointers have no "try_lock" methods (only "lock" methods).
+		var IntPtrMut ptr_mut(0);
+		var IntPtrImut ptr_imut(0);
+
+		ptr_mut.try_lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_imut.try_lock_imut(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Reference can not outlive lock.
+		var IntPtrMut mut ptr_mut(0);
+		auto mut lock= ptr_mut.lock_imut();
+		auto &ref= lock.deref();
+		move(lock); //##expect_error MovedVariableHasReferences
+	}
+	{ // Reference can not outlive lock.
+		var IntPtrImut ptr_imut(0);
+		auto &imut ref= ptr_imut.lock_imut().deref(); //##expect_error DestroyedVariableStillHasReferences
+	}
+	{ // Weak pointers have no lock_mut/lock_imut methods.
+		var IntPtrWeakMut  weak_ptr_mut ;
+		var IntPtrWeakImut weak_ptr_imut;
+		weak_ptr_mut .lock_mut (); //##expect_error NameNotFound
+		weak_ptr_mut .lock_imut(); //##expect_error NameNotFound
+		weak_ptr_imut.lock_mut (); //##expect_error NameNotFound
+		weak_ptr_imut.lock_imut(); //##expect_error NameNotFound
+		weak_ptr_mut .try_lock_mut (); //##expect_error NameNotFound
+		weak_ptr_mut .try_lock_imut(); //##expect_error NameNotFound
+		weak_ptr_imut.try_lock_mut (); //##expect_error NameNotFound
+		weak_ptr_imut.try_lock_imut(); //##expect_error NameNotFound
+	}
+
+	//
+	// shared_ptr_mt-sepcific tests.
+	//
+
+	return 0;
+}

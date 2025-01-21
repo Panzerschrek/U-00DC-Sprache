@@ -1,0 +1,30 @@
+//##fail_test
+import "../imports/shared_ptr_mt_final.u"
+
+type IntPtr= ust::shared_ptr_mt_final</i32/>;
+type IntPtrNullable= ust::shared_ptr_mt_final_nullable</i32/>;
+
+struct S{ i32& r; }
+
+// Shared pointers disabled for types with references.
+type SPtrInvalid= ust::shared_ptr_mt_final</S/>; //##expect_error TemplateContext
+
+struct NonSyncStruct non_sync {}
+// Multithreaded shared pointers disabled for non_sync types.
+type InvalidNonSyncStructPtr= ust::shared_ptr_mt_final</NonSyncStruct/>; //##expect_error TemplateContext
+
+fn nomangle main() : i32
+{
+	{ // For non-nullable pointers expected initializer.
+		var IntPtr ptr; //##expect_error ExpectedInitializer
+	}
+	{ // Non-nullable pointers have no "reset to zero" methods.
+		var IntPtr mut ptr(0);
+		ptr.reset(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Can not modify value
+		var IntPtr mut ptr(0);
+		++ptr.deref(); //##expect_error ExpectedReferenceValue
+	}
+	return 0;
+}

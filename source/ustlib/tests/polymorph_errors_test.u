@@ -1,0 +1,41 @@
+//##fail_test
+import "../imports/polymorph.u"
+
+class NonPolymorphA{}
+class NonPolymorphB{}
+
+class SomePolymorphClass polymorph{}
+
+class DerivedClassWithReference : SomePolymorphClass { fn constructor(); i32& x; }
+class DerivedClassWithMutableReference : DerivedClassWithReference { fn constructor(); i32 &mut x; }
+
+fn main()
+{
+	{ // Polymorph cast is only for classes.
+		var u32 x(0);
+		ust::polymorph_cast</i32/>(x); //##expect_error TemplateContext
+	}
+	{ // Polymorph cast is only for polymorph classes.
+		var NonPolymorphA a;
+		ust::polymorph_cast</NonPolymorphB/>(a); //##expect_error TemplateContext
+	}
+	{ // Polymorph cast is only for polymorph classes.
+		var NonPolymorphA a;
+		ust::polymorph_cast</SomePolymorphClass/>(a); //##expect_error TemplateContext
+	}
+	{ // Polymorph cast is only for polymorph classes.
+		var SomePolymorphClass some_polymorph_class;
+		ust::polymorph_cast</NonPolymorphA/>(some_polymorph_class); //##expect_error TemplateContext
+	}
+
+	{ // Polymorph cast is disabled for conversion from class with no references to class with references.
+		var DerivedClassWithReference c;
+		auto& ref= cast_ref</SomePolymorphClass/>(c);
+		ust::polymorph_cast</DerivedClassWithReference/>(ref); //##expect_error TemplateContext
+	}
+	{ // Polymorph cast is disabled for conversion from class with mutable references to class with immutable references.
+		var DerivedClassWithMutableReference c;
+		auto& ref= cast_ref</DerivedClassWithReference/>(c);
+		ust::polymorph_cast</DerivedClassWithMutableReference/>(ref); //##expect_error TemplateContext
+	}
+}

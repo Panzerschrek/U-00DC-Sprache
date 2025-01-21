@@ -1,0 +1,66 @@
+//##fail_test
+import "../imports/scoped_array.u"
+import "../imports/string.u"
+
+struct RM
+{
+	i32& mut x;
+}
+
+fn nomangle main() : i32
+{
+	{ // "array_over_external_memory" constructor is unsafe.
+		alloca i32 mem[16s];
+		var ust::array_over_external_memory</i32/> arr( mem, 16s, 0 ); //##expect_error UnsafeFunctionCallOutsideUnsafeBlock
+	}
+	{ // "array_over_external_memory" constructor requiers an argument for non-default-constructible type.
+		alloca i32 mem[16s];
+		auto arr= unsafe( ust::array_over_external_memory</i32/>( mem, 16s ) ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // "array_over_external_memory" constructor requiers an argument of compatible type for non-default-constructible type.
+		alloca i32 mem[16s];
+		auto arr= unsafe( ust::array_over_external_memory</i32/>( mem, 16s, 33.3f ) ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // "array_over_external_memory" preserves mutability - it doesn't allow to modify its elements if it isn't mutable.
+		alloca u64 mem[16s];
+		auto arr= unsafe( ust::array_over_external_memory</u64/>( mem, 16s, 9999u64 ) );
+		++arr[1s]; //##expect_error ExpectedReferenceValue
+	}
+	{ // "array_over_external_memory" preserves mutability - it doesn't allow to modify its elements if it isn't mutable.
+		alloca u64 mem[16s];
+		auto arr= unsafe( ust::array_over_external_memory</u64/>( mem, 16s, 9999u64 ) );
+		auto range= arr.range();
+		--arr.front(); //##expect_error ExpectedReferenceValue
+	}
+	{ // "scoped_array" macro creates an immutable range object.
+		scoped_array f64 arr[ 256s ]( 0.0 );
+		arr.drop_front(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // "scoped_array" macro creates an immutable array even if array is mutable.
+		scoped_array f64 mut arr[ 256s ]( 0.0 );
+		arr.drop_back(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // "scoped_array" requiers an argument for non-default-constructible type.
+		scoped_array i32 mem[16s]; //##expect_error MacroExpansionContext
+	}
+	{ // "scoped_array" requiers an argument of compatible type for non-default-constructible type.
+		scoped_array i32 mem[16s]( "8"c8 ); //##expect_error MacroExpansionContext
+	}
+	{ // "scoped_array" requiers "size_type" for size.
+		scoped_array i32 mem[ 25.0f ]( 1111 ); //##expect_error MacroExpansionContext
+	}
+	{ // "scoped_array" holds references inside.
+		var ust::string8 mut s= "12345";
+		scoped_array ust::string_view8 arr[10s]( s.range() );
+		// Error - "s" has a reference to it inside "arr", can't move it.
+		move(s); //##expect_error MovedVariableHasReferences
+	}
+	{ // Can't use fill constructor for types with mutable references inside.
+		var i32 mut x= 0;
+		var RM rm{ .x= x };
+
+		scoped_array RM arr[10s]( rm ); //##expect_error MacroExpansionContext
+	}
+
+	return 0;
+}

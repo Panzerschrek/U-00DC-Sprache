@@ -49,10 +49,18 @@ Other functionality:
 * Volatile memory operations support (volatile.u)
 
 
+### Components requiring building
+
+Some ustlib functionality is implemented externally - in files within *src* directory.
+Normally the build system builds necessary files from this directory during projects building.
+In case of manual compiler invocation they should be built (somehow) too, if this functionality is used.
+Some files are platform-dependent - they are located in platform-dependent subdirectories.
+
+
 ### Compiler built-ins
 
 Some ustlib functions are implemented by compiler itself.
-These functions are implemented in *ll* files in *src* subdirectory.
+These functions are implemented in *ll* files in *compiler_builtins* subdirectory.
 These *ll* files are compiled during Ü Compiler compilation and embedded in it.
 So, in order to change these implementations, you need to recompile compiler itself.
 
@@ -69,7 +77,6 @@ List of built-in functionality:
 * Halt handlers (halt_abort.ll, halt_configurable.ll, halt_trap.ll, halt_unreachable.ll)
 * Math functions (math.ll)
 * Memory helpers (memory_32.ll, memory_64.ll)
-* Stdout print implementations (stdout *ll* files)
 
 Some built-ins are implemented via C standard library functions, like malloc/free, stdout print or some math functions.
 Thus you need to link against C standard library in order to use them.

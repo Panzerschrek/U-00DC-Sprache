@@ -1,0 +1,172 @@
+//##success_test
+import "../imports/string_conversions.u"
+
+fn nomangle main() : i32
+{
+	// i8
+	halt if( ust::to_string8(0i8) != "0" );
+	halt if( ust::to_string8(1i8) != "1" );
+	halt if( ust::to_string8(7i8) != "7" );
+	halt if( ust::to_string8(15i8) != "15" );
+	halt if( ust::to_string8(34i8) != "34" );
+	halt if( ust::to_string8(105i8) != "105" );
+	halt if( ust::to_string8(127i8) != "127" );
+	halt if( ust::to_string8(-2i8) != "-2" );
+	halt if( ust::to_string8(-9i8) != "-9" );
+	halt if( ust::to_string8(-14i8) != "-14" );
+	halt if( ust::to_string8(-47i8) != "-47" );
+	halt if( ust::to_string8(-115i8) != "-115" );
+	halt if( ust::to_string8(-128i8) != "-128" );
+
+	// u8
+	halt if( ust::to_string8(0u8) != "0" );
+	halt if( ust::to_string8(1u8) != "1" );
+	halt if( ust::to_string8(5u8) != "5" );
+	halt if( ust::to_string8(13u8) != "13" );
+	halt if( ust::to_string8(78u8) != "78" );
+	halt if( ust::to_string8(127u8) != "127" );
+	halt if( ust::to_string8(128u8) != "128" );
+	halt if( ust::to_string8(129u8) != "129" );
+	halt if( ust::to_string8(254u8) != "254" );
+	halt if( ust::to_string8(255u8) != "255" );
+
+	// i16
+	halt if( ust::to_string8(0i16) != "0" );
+	halt if( ust::to_string8(1i16) != "1" );
+	halt if( ust::to_string8(7i16) != "7" );
+	halt if( ust::to_string8(15i16) != "15" );
+	halt if( ust::to_string8(34i16) != "34" );
+	halt if( ust::to_string8(651i16) != "651" );
+	halt if( ust::to_string8(1234i16) != "1234" );
+	halt if( ust::to_string8(32767i16) != "32767" );
+	halt if( ust::to_string8(-2i16) != "-2" );
+	halt if( ust::to_string8(-9i16) != "-9" );
+	halt if( ust::to_string8(-14i16) != "-14" );
+	halt if( ust::to_string8(-47i16) != "-47" );
+	halt if( ust::to_string8(-854i16) != "-854" );
+	halt if( ust::to_string8(-7654i16) != "-7654" );
+	halt if( ust::to_string8(-32768i16) != "-32768" );
+
+	// u16
+	halt if( ust::to_string8(0u16) != "0" );
+	halt if( ust::to_string8(1u16) != "1" );
+	halt if( ust::to_string8(5u16) != "5" );
+	halt if( ust::to_string8(13u16) != "13" );
+	halt if( ust::to_string8(78u16) != "78" );
+	halt if( ust::to_string8(412u16) != "412" );
+	halt if( ust::to_string8(5624u16) != "5624" );
+	halt if( ust::to_string8(32767u16) != "32767" );
+	halt if( ust::to_string8(32768u16) != "32768" );
+	halt if( ust::to_string8(65534u16) != "65534" );
+	halt if( ust::to_string8(65535u16) != "65535" );
+
+	// i32
+	halt if( ust::to_string8(0) != "0" );
+	halt if( ust::to_string8(1) != "1" );
+	halt if( ust::to_string8(7) != "7" );
+	halt if( ust::to_string8(15) != "15" );
+	halt if( ust::to_string8(34) != "34" );
+	halt if( ust::to_string8(651) != "651" );
+	halt if( ust::to_string8(1234) != "1234" );
+	halt if( ust::to_string8(2147483647) != "2147483647" );
+	halt if( ust::to_string8(-2) != "-2" );
+	halt if( ust::to_string8(-9) != "-9" );
+	halt if( ust::to_string8(-14) != "-14" );
+	halt if( ust::to_string8(-47) != "-47" );
+	halt if( ust::to_string8(-854) != "-854" );
+	halt if( ust::to_string8(-7654) != "-7654" );
+	halt if( ust::to_string8(-2147483648) != "-2147483648" );
+
+	// u32
+	halt if( ust::to_string8(0u) != "0" );
+	halt if( ust::to_string8(1u) != "1" );
+	halt if( ust::to_string8(5u) != "5" );
+	halt if( ust::to_string8(13u) != "13" );
+	halt if( ust::to_string8(78u) != "78" );
+	halt if( ust::to_string8(412u) != "412" );
+	halt if( ust::to_string8(5624u) != "5624" );
+	halt if( ust::to_string8(2147483647u) != "2147483647" );
+	halt if( ust::to_string8(2147483648u) != "2147483648" );
+	halt if( ust::to_string8(4294967295u) != "4294967295" );
+
+	// i64
+	halt if( ust::to_string8(0i64) != "0" );
+	halt if( ust::to_string8(1i64) != "1" );
+	halt if( ust::to_string8(7i64) != "7" );
+	halt if( ust::to_string8(15i64) != "15" );
+	halt if( ust::to_string8(34i64) != "34" );
+	halt if( ust::to_string8(651i64) != "651" );
+	halt if( ust::to_string8(1234i64) != "1234" );
+	halt if( ust::to_string8(2147483647i64) != "2147483647" );
+	halt if( ust::to_string8(76451872782597282i64) != "76451872782597282" );
+	halt if( ust::to_string8(9223372036854775807i64) != "9223372036854775807" );
+	halt if( ust::to_string8(-2i64) != "-2" );
+	halt if( ust::to_string8(-9i64) != "-9" );
+	halt if( ust::to_string8(-14i64) != "-14" );
+	halt if( ust::to_string8(-47i64) != "-47" );
+	halt if( ust::to_string8(-854i64) != "-854" );
+	halt if( ust::to_string8(-7654i64) != "-7654" );
+	halt if( ust::to_string8(-2147483648i64) != "-2147483648" );
+	halt if( ust::to_string8(-774612927736889278i64) != "-774612927736889278" );
+	halt if( ust::to_string8(-9223372036854775808i64) != "-9223372036854775808" );
+
+	// u64
+	halt if( ust::to_string8(0u64) != "0" );
+	halt if( ust::to_string8(1u64) != "1" );
+	halt if( ust::to_string8(5u64) != "5" );
+	halt if( ust::to_string8(13u64) != "13" );
+	halt if( ust::to_string8(78u64) != "78" );
+	halt if( ust::to_string8(412u64) != "412" );
+	halt if( ust::to_string8(5624u64) != "5624" );
+	halt if( ust::to_string8(2147483647u64) != "2147483647" );
+	halt if( ust::to_string8(2147483648u64) != "2147483648" );
+	halt if( ust::to_string8(4294967295u64) != "4294967295" );
+	halt if( ust::to_string8(123456789012345u64) != "123456789012345" );
+	halt if( ust::to_string8(1844674407370955161u64) != "1844674407370955161" );
+	halt if( ust::to_string8(18446744073709551614u64) != "18446744073709551614" );
+	halt if( ust::to_string8(18446744073709551615u64) != "18446744073709551615" );
+
+	// size_type
+	halt if( ust::to_string8(0s) != "0" );
+	halt if( ust::to_string8(1s) != "1" );
+	halt if( ust::to_string8(5s) != "5" );
+	halt if( ust::to_string8(13s) != "13" );
+	halt if( ust::to_string8(78s) != "78" );
+	halt if( ust::to_string8(412s) != "412" );
+	halt if( ust::to_string8(5624s) != "5624" );
+	halt if( ust::to_string8(2147483647s) != "2147483647" );
+	halt if( ust::to_string8(2147483648s) != "2147483648" );
+	halt if( ust::to_string8(4294967295s) != "4294967295" );
+
+	// ssize_type
+	halt if( ust::to_string8(ssize_type(0)) != "0" );
+	halt if( ust::to_string8(ssize_type(1)) != "1" );
+	halt if( ust::to_string8(ssize_type(5)) != "5" );
+	halt if( ust::to_string8(ssize_type(13)) != "13" );
+	halt if( ust::to_string8(ssize_type(78)) != "78" );
+	halt if( ust::to_string8(ssize_type(412)) != "412" );
+	halt if( ust::to_string8(ssize_type(5624)) != "5624" );
+	halt if( ust::to_string8(ssize_type(2147483647)) != "2147483647" );
+
+	// string16
+	halt if( ust::to_string16(0i8) != "0"u16 );
+	halt if( ust::to_string16(1u8) != "1"u16 );
+	halt if( ust::to_string16(-5i16) != "-5"u16 );
+	halt if( ust::to_string16(23u16) != "23"u16 );
+	halt if( ust::to_string16(635i32) != "635"u16 );
+	halt if( ust::to_string16(12545u32) != "12545"u16 );
+	halt if( ust::to_string16(-65265415858568i64) != "-65265415858568"u16 );
+	halt if( ust::to_string16(98745632100254u64) != "98745632100254"u16 );
+
+	// string32
+	halt if( ust::to_string32(0i8) != "0"u32 );
+	halt if( ust::to_string32(5u8) != "5"u32 );
+	halt if( ust::to_string32(-8i16) != "-8"u32 );
+	halt if( ust::to_string32(75u16) != "75"u32 );
+	halt if( ust::to_string32(127i32) != "127"u32 );
+	halt if( ust::to_string32(54321u32) != "54321"u32 );
+	halt if( ust::to_string32(-65265417158868i64) != "-65265417158868"u32 );
+	halt if( ust::to_string32(58745632100744u64) != "58745632100744"u32 );
+
+	return 0;
+}

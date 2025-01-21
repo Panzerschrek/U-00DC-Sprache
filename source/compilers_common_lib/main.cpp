@@ -814,7 +814,7 @@ int Main( int argc, const char* argv[] )
 		result_module->setTargetTriple( target_triple.normalize() );
 	}
 
-	if( !LinkUstLibModules( *result_module, Options::halt_mode, Options::no_system_alloc, false ) )
+	if( !LinkUstLibModules( *result_module, Options::halt_mode, Options::no_system_alloc ) )
 		return 1;
 
 	// Dump llvm code before optimization passes.

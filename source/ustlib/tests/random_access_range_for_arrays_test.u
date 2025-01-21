@@ -1,0 +1,270 @@
+//##success_test
+import "../imports/random_access_range.u"
+
+type IntRangeMut = ust::random_access_range_mut </i32/>;
+type IntRangeImut= ust::random_access_range_imut</i32/>;
+
+fn GetIntRangeSize( IntRangeImut range ) : size_type
+{
+	return range.size();
+}
+
+fn GetCharRangeSize( ust::random_access_range_imut</char8/> char_range ) : size_type
+{
+	return char_range.size();
+}
+
+fn nomangle main() : i32
+{
+	{ // Random access range is empty by-default.
+		var IntRangeImut range;
+		halt if( !range.empty() );
+	}
+	{ // Can construct imut range from imut array.
+		var [ i32, 5 ] arr= zero_init;
+		var IntRangeImut range(arr);
+		halt if( range.size() != 5s );
+	}
+	{ // Can construct imut range from mut array.
+		var [ i32, 5 ] mut arr= zero_init;
+		var IntRangeImut range(arr);
+		halt if( range.size() != 5s );
+	}
+	{ // Can implicitly convert array to range.
+		var [ i32, 16 ] arr= zero_init;
+		auto size= GetIntRangeSize( arr );
+		halt if( size != 16s );
+	}
+	{ // Can implicitly convert mut array to mut range.
+		var [ i32, 3 ] mut arr[1, 22, 333];
+		{
+			var IntRangeMut mut r= arr;
+			halt if( r.size() != 3s );
+			foreach( &mut i : r )
+			{
+				i= -i;
+			}
+		}
+		halt if(arr[0] != -1);
+		halt if(arr[1] != -22);
+		halt if(arr[2] != -333);
+	}
+	{ // Can convert mut range to imut range.
+		var [ i32, 16 ] mut arr= zero_init;
+		var IntRangeMut  range_mut (arr);
+		var IntRangeImut range_imut(range_mut);
+	}
+	{ // Can implicitly convert mut range to imut range.
+		var [ i32, 8 ] mut arr= zero_init;
+		var IntRangeMut  range_mut (arr);
+		auto size= GetIntRangeSize( range_mut );
+		halt if( size != 8s );
+	}
+	halt if( GetCharRangeSize( "wtf?" ) != 4s ); // Can implicitly convert string literal to range
+	{ // Can modify array content, using range.
+		var [ i32, 5 ] mut arr= zero_init;
+		IntRangeMut(arr).back()= 42;
+		halt if( arr[4u] != 42 );
+	}
+	{ // Subrange.
+		var [ i32, 5 ] arr= zero_init;
+		var IntRangeImut range(arr);
+		halt if( range.size() != 5s );
+		halt if( range.subrange( 1s, 5s ).size() != 4s );
+		halt if( range.subrange( 2s, 3s ).size() != 1s );
+		halt if( range.subrange( 0s, 0s ).size() != 0s );
+	}
+	{ // Can modify array content, using subrange range.
+		var [ i32, 4 ] mut arr= zero_init;
+		{
+			auto range= IntRangeMut(arr).subrange( 1s, 3s );
+			range.front()= 45;
+			range.back()= 66;
+		}
+		halt if( arr[1u] != 45 );
+		halt if( arr[2u] != 66 );
+	}
+	{
+		// "continue" should work properly.
+		var [ i32, 7 ] mut arr[ 31, -7, -8, 22, 7, 6, -4 ];
+		var i32 mut res= 0, mut iterations= 0;
+		var IntRangeImut range(arr);
+		foreach( x : range )
+		{
+			if( x < 0 ) { continue; }
+			res+= x;
+			++iterations;
+		}
+		halt if( res != 31 + 22 + 7 + 6 );
+		halt if( iterations != 4 );
+	}
+	{ // swap
+		var [ i32, 5 ] mut arr[ 0, 1, 2, 3, 4 ];
+		{
+			var IntRangeMut range( arr );
+			range.swap( 2s, 4s );
+		}
+		halt if( arr[0] != 0 );
+		halt if( arr[1] != 1 );
+		halt if( arr[2] != 4 );
+		halt if( arr[3] != 3 );
+		halt if( arr[4] != 2 );
+	}
+	{ // swap
+		var [ i32, 4 ] mut arr[ 33, 11, 55, 78 ];
+		{
+			var IntRangeMut range( arr );
+			range.swap( 0s, 3s );
+		}
+		halt if( arr[0] != 78 );
+		halt if( arr[1] != 11 );
+		halt if( arr[2] != 55 );
+		halt if( arr[3] != 33 );
+	}
+	{ // swap
+		var [ i32, 1 ] mut arr[ 654 ];
+		{
+			var IntRangeMut range( arr );
+			range.swap( 0s, 0s );
+		}
+		halt if( arr[0] != 654 );
+	}
+	{ // ==
+		var [ i32, 3 ] v0[ 11, 22, 33 ];
+		var [ i32, 3 ] v1[ 11, 22, 33 ];
+		var [ i32, 3 ] v2[ 0 , 22, 33 ];
+		var [ i32, 3 ] v3[ 11,  0, 33 ];
+		var [ i32, 3 ] v4[ 11, 22,  0 ];
+		var [ i32, 2 ] v5[ 11, 22 ];
+		var [ i32, 0 ] v6[];
+
+		static_assert( typeinfo</IntRangeImut/>.is_equality_comparable );
+		var IntRangeImut r0(v0), r1(v1), r2(v2), r3(v3), r4(v4), r5(v5), r6(v6);
+
+		halt if( r0 != r0 );
+		halt if( r1 != r1 );
+		halt if( r2 != r2 );
+		halt if( r3 != r3 );
+		halt if( r4 != r4 );
+		halt if( r5 != r5 );
+		halt if( r6 != r6 );
+
+		halt if( r0 != r1 );
+		halt if( r1 != r0 );
+
+		halt if( r0 == r2 );
+		halt if( r0 == r3 );
+		halt if( r0 == r4 );
+		halt if( r0 == r5 );
+		halt if( r0 == r6 );
+
+		// == for array and range must work too.
+		halt if( r0 != v0 );
+		halt if( r1 != v1 );
+		halt if( v0 != r1 );
+		halt if( v1 != r0 );
+
+		halt if( v4 == r6 );
+		halt if( r5 == v3 );
+	}
+
+	// Create range for single element.
+	{
+		var i32 mut x= 0;
+		{
+			var IntRangeMut range= ust::single_element_array_view( x );
+			halt if( range.size() != 1s );
+			range[0s]= 66;
+		}
+		halt if ( x != 66 );
+	}
+	{
+		var i32 x= 778;
+		var IntRangeImut range= ust::single_element_array_view( x );
+		halt if( range.size() != 1s );
+		halt if( range[0s] != 778 );
+	}
+
+	// Empty range
+	{
+		var IntRangeMut r_mut= ust::empty_range;
+		var IntRangeImut r_imut= ust::empty_range;
+		halt if( !r_mut.empty() );
+		halt if( !r_imut.empty() );
+	}
+
+	// Reverse
+	{
+		var [ i32, 4 ] mut a[ 1, 2, 3, 4 ]; // Even number of elements
+		IntRangeMut(a).reverse();
+		halt if( a != ust::make_array( 4, 3, 2, 1 ) );
+	}
+	{
+		var [ i32, 5 ] mut a[ 1, 2, 3, 4, 5 ]; // Odd number of elements
+		IntRangeMut(a).reverse();
+		halt if( a != ust::make_array( 5, 4, 3, 2, 1 ) );
+	}
+	{
+		var [ i32, 0 ] mut a[]; // Empty array
+		IntRangeMut(a).reverse();
+		halt if( a != ust::make_array</i32/>() );
+	}
+	{ // random_access_range for a type with references inside.
+		var [ ust::array_view_imut</ char8 />, 4 ] mut strings_array[ "lol", "foo", "qwerty", "123ABC!" ];
+
+		{
+			var ust::array_view_mut</ ust::array_view_imut</ char8 /> /> mut strings_array_view= strings_array;
+			strings_array_view.drop_front();
+
+			foreach( &mut view : strings_array_view )
+			{
+				view.drop_back();
+			}
+		}
+
+		halt if( strings_array[0] != "lol" ); // Remains unchanged.
+		halt if( strings_array[1] != "fo" );
+		halt if( strings_array[2] != "qwert" );
+		halt if( strings_array[3] != "123ABC" );
+	}
+	{
+		var [ [ i32, 3 ], 4 ] mut matrix[ [ 1, 2, 3 ], [ 10, 20, 30 ], [ 100, 200, 300 ], [ 1000, 2000, 3000 ] ];
+		var [ i32, 3 ] mut single_row[ 111, 222, 333 ];
+
+		{
+			var [ ust::array_view_mut</ [ i32, 3 ] />, 2 ] rows_array[ ust::array_view_mut</ [ i32, 3 ] />( matrix ), ust::single_element_array_view(single_row) ];
+			halt if( rows_array[0].size() != 4s );
+			halt if( rows_array[1].size() != 1s );
+
+			var ust::array_view_imut</ ust::array_view_mut</ [ i32, 3 ] /> /> rows_view= rows_array;
+
+			foreach( &row_group : rows_view )
+			{
+				foreach( &mut row : row_group )
+				{
+					foreach( &mut el : row )
+					{
+						el*= 3;
+					}
+				}
+			}
+		}
+		halt if( matrix[0][0] != 3 );
+		halt if( matrix[0][1] != 6 );
+		halt if( matrix[0][2] != 9 );
+		halt if( matrix[1][0] != 30 );
+		halt if( matrix[1][1] != 60 );
+		halt if( matrix[1][2] != 90 );
+		halt if( matrix[2][0] != 300 );
+		halt if( matrix[2][1] != 600 );
+		halt if( matrix[2][2] != 900 );
+		halt if( matrix[3][0] != 3000 );
+		halt if( matrix[3][1] != 6000 );
+		halt if( matrix[3][2] != 9000 );
+		halt if( single_row[0] != 333 );
+		halt if( single_row[1] != 666 );
+		halt if( single_row[2] != 999 );
+	}
+
+	return 0;
+}

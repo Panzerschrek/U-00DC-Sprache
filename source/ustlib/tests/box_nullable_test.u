@@ -1,0 +1,135 @@
+//##success_test
+import "../imports/box.u"
+import "../imports/box_nullable.u"
+
+class S
+{
+public:
+	// HACK! convert reference to pointer because we can not put struct with reference inside into container.
+	fn constructor( i32 &mut x )
+		(ptr_= $<(x) )
+	{}
+
+	fn destructor()
+	{
+		unsafe{ ++$>(ptr_); }
+	}
+
+private:
+	$(i32) ptr_;
+}
+
+struct BigStruct
+{
+	[ i32, 1024 ] one_k_ints;
+}
+
+class A polymorph{}
+class B : A{}
+
+class I0 interface {}
+class I1 interface {}
+class Impl : I0, I1 { i32 x=0; }
+class ImplDerived : Impl { i32 y= 0; }
+
+// Recursive class should be ok.
+class BoxRecursive
+{
+	i32 data;
+	ust::box_nullable</BoxRecursive/> next;
+}
+
+struct SNonSync non_sync{}
+type SNonSyncBox= ust::box_nullable</SNonSync/>; // Should be ok for types with "non_sync" tag
+static_assert( non_sync</SNonSyncBox/> );
+
+fn nomangle main() : i32
+{
+	// Box have pointer size.
+	static_assert( typeinfo</ ust::box_nullable</ BigStruct /> />.size_of == typeinfo</S/>.size_of );
+	static_assert( typeinfo</ ust::box_nullable</ BigStruct /> />.size_of == typeinfo</ $(i32) />.size_of );
+	static_assert( typeinfo</ ust::box_nullable</ BigStruct /> />.size_of == typeinfo</ $(u8) />.size_of );
+	static_assert( typeinfo</ ust::box_nullable</i32/> />.size_of == typeinfo</ ust::box</i32/> />.size_of );
+
+	{ // nullable box is default-constructible
+		var ust::box_nullable</f32/> box;
+		halt if( !box.empty() );
+	}
+	{ // box constructs with value.
+		var ust::box_nullable</ i32 /> box(42);
+		halt if( box.try_deref() != 42 );
+	}
+	{ // box calls destructor.
+		var i32 mut x= 0;
+		{
+			var ust::box_nullable</ S /> box( S(x) );
+		}
+		halt if( x != 1 );
+	}
+	{ // can change value.
+		var ust::box_nullable</ i32 /> mut box(0);
+		box.try_deref()= 666;
+		halt if( box.try_deref() != 666 );
+	}
+	{ // can reset.
+		var ust::box_nullable</ i32 /> mut box(0);
+		halt if( box.empty() );
+		box.reset();
+		halt if( !box.empty() );
+	}
+	{ // can reset with value.
+		var ust::box_nullable</ i32 /> mut box;
+		halt if( !box.empty() );
+		box.reset( 66 );
+		halt if( box.empty() );
+		halt if( box.try_deref() != 66 );
+	}
+	{ // can construct from non-nullable box
+		var ust::box</ i32 /> mut b(42);
+		var ust::box_nullable</ i32 /> b_n( move(b) );
+		halt if( b_n.try_deref() != 42 );
+	}
+	{ // can construct from non-nullable box of other type
+		var ust::box</ B /> mut b_box(B());
+		var ust::box_nullable</ A /> a_box( move(b_box) );
+	}
+	{ // can construct from nullable box of other type
+		var ust::box_nullable</ B /> mut b_box;
+		var ust::box_nullable</ A /> a_box( move(b_box) );
+	}
+	{ // can be implicitly constructed from nullable box of other type
+		var ust::box_nullable</ B /> mut a_box, mut b_box;
+		a_box= move(b_box);
+	}
+	unsafe
+	{ // box_nullable can be converted to box.
+		var ust::box_nullable</ i32 /> mut box0( 46 );
+		auto addr0= ust::ref_to_int( box0.try_deref() );
+		var ust::box</ i32 /> box1=  move(box0).try_to_non_nullable();
+		auto addr1= ust::ref_to_int( box1.deref() );
+
+		halt if( addr0 != addr1 );
+		halt if( box1.deref() != 46 );
+	}
+	{ // is convertible form other box.
+		var ust::box_nullable</ ImplDerived /> mut box0( ImplDerived() );
+		var ust::box_nullable</ I0 /> mut box1( move(box0) );
+	}
+	{ // is convertible form other box.
+		var ust::box_nullable</ ImplDerived /> mut box0( ImplDerived() );
+		var ust::box_nullable</ I1 /> mut box1( move(box0) );
+	}
+	{ // take
+		var ust::box_nullable</i32/> mut box= ust::make_box( 897 );
+		auto val= box.try_take_value();
+		halt if( !box.empty() );
+		halt if( val != 897 );
+	}
+	// make_box
+	{
+		var ust::box_nullable</i32/> box= ust::make_box( 77 );
+		halt if( box.try_deref() != 77 );
+	}
+
+	return 0;
+}

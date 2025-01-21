@@ -1,0 +1,88 @@
+//##success_test
+import "../imports/box.u"
+
+struct S
+{
+	//Convert reference to pointer and use unsafe because references forbidden in box.
+	$(i32) x;
+	fn constructor( mut this, i32 &mut in_x )
+	( x= $<(in_x) ) {}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			++ $>(x);
+		}
+	}
+}
+
+struct BigStruct
+{
+	[ i32, 1024 ] one_k_ints;
+}
+
+class A polymorph{}
+class B : A{}
+
+class I0 interface {}
+class I1 interface {}
+class Impl : I0, I1 { i32 x=0; }
+class ImplDerived : Impl { i32 y= 0; }
+
+struct SNonSync non_sync{}
+type SNonSyncBox= ust::box</SNonSync/>; // Should be ok for types with "non_sync" tag
+static_assert( non_sync</SNonSyncBox/> );
+
+fn nomangle main() : i32
+{
+	// Box have pointer size.
+	static_assert( typeinfo</ ust::box</ BigStruct /> />.size_of == typeinfo</S/>.size_of );
+	static_assert( typeinfo</ ust::box</ BigStruct /> />.size_of == typeinfo</ $(i32) />.size_of );
+	static_assert( typeinfo</ ust::box</ BigStruct /> />.size_of == typeinfo</ $(u8) />.size_of );
+
+	{ // box constructs with value.
+		var ust::box</ i32 /> box(42);
+		halt if( box.deref() != 42 );
+	}
+	{ // box calls destructor.
+		var i32 mut x= 0;
+		{
+			var ust::box</ S /> box( S(x) );
+		}
+		halt if( x != 1 );
+	}
+	{ // can change value.
+		var ust::box</ i32 /> mut box(0);
+		box.deref()= 666;
+		halt if( box.deref() != 666 );
+	}
+	{ // is convertible form other box.
+		var ust::box</ B /> mut box_b( B() );
+		var ust::box</ A /> mut box_a( move(box_b) );
+	}
+	{ // is convertible form other box.
+		var ust::box</ B /> mut box_b( B() );
+		var ust::box</ A /> mut box_a= move(box_b);
+	}
+	{ // is convertible form other box.
+		var ust::box</ ImplDerived /> mut box0( ImplDerived() );
+		var ust::box</ I0 /> mut box1( move(box0) );
+	}
+	{ // is convertible form other box.
+		var ust::box</ ImplDerived /> mut box0( ImplDerived() );
+		var ust::box</ I1 /> mut box1( move(box0) );
+	}
+	{ // take
+		auto mut box= ust::make_box( 897 );
+		auto val= move(box).take_value();
+		halt if( val != 897 );
+	}
+	// make_box
+	{
+		auto box= ust::make_box( 77 );
+		halt if( box.deref() != 77 );
+	}
+
+	return 0;
+}
