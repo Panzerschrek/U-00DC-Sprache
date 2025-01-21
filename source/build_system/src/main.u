@@ -808,13 +808,17 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 	WorkspaceInfo& workspace,
 	BuildGraph &mut build_graph )
 {
-	CreateUstlibBuildGraphNodes(
-		build_system_paths,
-		sysroot,
-		root_package_build_directory,
-		build_configuration,
-		target_triple,
-		build_graph );
+	if( !workspace.build_targets.empty() )
+	{
+		// Build "ustlib" only if we have some build targets.
+		CreateUstlibBuildGraphNodes(
+			build_system_paths,
+			sysroot,
+			root_package_build_directory,
+			build_configuration,
+			target_triple,
+			build_graph );
+	}
 
 	// Collect and sort a list of build target names,
 	// then iterate in this sorted order - to avoid generating build graph in non-deterministic hashtable order.
