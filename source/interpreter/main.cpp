@@ -34,30 +34,39 @@ std::unique_ptr<Interpreter> g_interpreter;
 namespace InterpreterFuncs
 {
 
+// This struct should match "ust::string_view8" layout!
+struct StringViewImut
+{
+	size_t ptr= 0;
+	size_t size= 0;
+};
+
 llvm::GenericValue StdOutPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::GenericValue> args )
 {
-	if( args.size() < 2 )
+	if( args.size() < 1 )
 	{
 		std::cerr << "stdout_print called with invalid number of args." << std::endl;
 		return llvm::GenericValue();
 	}
 
-	const uint64_t address= args[0].IntVal.getLimitedValue();
-	const size_t size= size_t(args[1].IntVal.getLimitedValue());
+	const uint64_t string_view_address= args[0].IntVal.getLimitedValue();
+	StringViewImut string_view;
+	g_interpreter->ReadExecutinEngineData( &string_view, string_view_address, sizeof(StringViewImut) );
+
 	constexpr auto buffer_size= 1024;
-	if( size < buffer_size )
+	if( string_view.size < buffer_size )
 	{
 		char buffer[buffer_size];
-		g_interpreter->ReadExecutinEngineData( buffer, address, size );
-		buffer[size]= '\0';
+		g_interpreter->ReadExecutinEngineData( buffer, string_view.ptr, string_view.size );
+		buffer[string_view.size]= '\0';
 		std::cout << buffer;
 	}
 	else
 	{
 		std::string buffer;
-		buffer.resize(size + 1);
-		g_interpreter->ReadExecutinEngineData( buffer.data(), address, size );
-		buffer[size]= '\0';
+		buffer.resize(string_view.size + 1);
+		g_interpreter->ReadExecutinEngineData( buffer.data(), string_view.ptr, string_view.size );
+		buffer[string_view.size]= '\0';
 		std::cout << buffer;
 	}
 
@@ -67,28 +76,30 @@ llvm::GenericValue StdOutPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::
 
 llvm::GenericValue StdErrPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::GenericValue> args )
 {
-	if( args.size() < 2 )
+	if( args.size() < 1 )
 	{
 		std::cerr << "stdout_print called with invalid number of args." << std::endl;
 		return llvm::GenericValue();
 	}
 
-	const uint64_t address= args[0].IntVal.getLimitedValue();
-	const size_t size= size_t(args[1].IntVal.getLimitedValue());
+	const uint64_t string_view_address= args[0].IntVal.getLimitedValue();
+	StringViewImut string_view;
+	g_interpreter->ReadExecutinEngineData( &string_view, string_view_address, sizeof(StringViewImut) );
+
 	constexpr auto buffer_size= 1024;
-	if( size < buffer_size )
+	if( string_view.size < buffer_size )
 	{
 		char buffer[buffer_size];
-		g_interpreter->ReadExecutinEngineData( buffer, address, size );
-		buffer[size]= '\0';
+		g_interpreter->ReadExecutinEngineData( buffer, string_view.ptr, string_view.size );
+		buffer[string_view.size]= '\0';
 		std::cerr << buffer;
 	}
 	else
 	{
 		std::string buffer;
-		buffer.resize(size + 1);
-		g_interpreter->ReadExecutinEngineData( buffer.data(), address, size );
-		buffer[size]= '\0';
+		buffer.resize(string_view.size + 1);
+		g_interpreter->ReadExecutinEngineData( buffer.data(), string_view.ptr, string_view.size );
+		buffer[string_view.size]= '\0';
 		std::cerr << buffer;
 	}
 
@@ -134,44 +145,51 @@ llvm::GenericValue Abort( llvm::FunctionType*, const llvm::ArrayRef<llvm::Generi
 namespace JitFuncs
 {
 
-void StdOutPrint( const char* const ptr, const size_t size )
+// This struct should match "ust::string_view8" layout!
+struct StringViewImut
+{
+	const char* ptr= nullptr;
+	size_t size= 0;
+};
+
+void StdOutPrint( const StringViewImut& s )
 {
 	constexpr auto buffer_size= 1024;
-	if( size < buffer_size )
+	if( s.size < buffer_size )
 	{
 		char buffer[buffer_size];
-		std::memcpy( buffer, ptr, size );
-		buffer[size]= '\0';
+		std::memcpy( buffer, s.ptr, s.size );
+		buffer[s.size]= '\0';
 		std::cout << buffer;
 	}
 	else
 	{
 		std::string buffer;
-		buffer.resize(size + 1);
-		std::memcpy( buffer.data(), ptr, size );
-		buffer[size]= '\0';
+		buffer.resize(s.size + 1);
+		std::memcpy( buffer.data(), s.ptr, s.size );
+		buffer[s.size]= '\0';
 		std::cout << buffer;
 	}
 
 	std::cout.flush();
 }
 
-void StdErrPrint( const char* const ptr, const size_t size )
+void StdErrPrint( const StringViewImut& s )
 {
 	constexpr auto buffer_size= 1024;
-	if( size < buffer_size )
+	if( s.size < buffer_size )
 	{
 		char buffer[buffer_size];
-		std::memcpy( buffer, ptr, size );
-		buffer[size]= '\0';
+		std::memcpy( buffer, s.ptr, s.size );
+		buffer[s.size]= '\0';
 		std::cerr << buffer;
 	}
 	else
 	{
 		std::string buffer;
-		buffer.resize(size + 1);
-		std::memcpy( buffer.data(), ptr, size );
-		buffer[size]= '\0';
+		buffer.resize(s.size + 1);
+		std::memcpy( buffer.data(), s.ptr, s.size );
+		buffer[s.size]= '\0';
 		std::cerr << buffer;
 	}
 
@@ -407,8 +425,12 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		engine->addGlobalMapping( "ust_stdout_print_impl", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
-		engine->addGlobalMapping( "ust_stderr_print_impl", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
+		engine->addGlobalMapping( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
+		engine->addGlobalMapping( "?stdout_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
+
+		engine->addGlobalMapping( "_ZN3ust12stderr_printENS_19random_access_rangeIcLb0EEE", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
+		engine->addGlobalMapping( "?stderr_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
+
 		// No need to add other functions here - llvm interpreter supports other required functions (memory functions, exit, abort).
 
 		using MainFunctionType= int(*)();
@@ -431,8 +453,12 @@ int Main( int argc, const char* argv[] )
 		g_interpreter= std::make_unique<Interpreter>( data_layout, options );
 
 		// Memory functions are supported internally (inside interpreter), for other needed functions register our own handlers.
-		g_interpreter->RegisterCustomFunction( "ust_stdout_print_impl", InterpreterFuncs::StdOutPrint );
-		g_interpreter->RegisterCustomFunction( "ust_stderr_print_impl", InterpreterFuncs::StdErrPrint );
+		g_interpreter->RegisterCustomFunction( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE", InterpreterFuncs::StdOutPrint );
+		g_interpreter->RegisterCustomFunction( "?stdout_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", InterpreterFuncs::StdOutPrint );
+
+		g_interpreter->RegisterCustomFunction( "_ZN3ust12stderr_printENS_19random_access_rangeIcLb0EEE", InterpreterFuncs::StdErrPrint );
+		g_interpreter->RegisterCustomFunction( "?stderr_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", InterpreterFuncs::StdErrPrint );
+
 		g_interpreter->RegisterCustomFunction( "memcmp", InterpreterFuncs::MemCmp );
 		g_interpreter->RegisterCustomFunction( "abort", InterpreterFuncs::Abort );
 
