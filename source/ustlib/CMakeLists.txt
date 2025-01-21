@@ -2,7 +2,15 @@
 # This file contains code for building "ustlib" into a cmake library target, which is used in the build system and compiler0.
 #
 
-file( GLOB_RECURSE USTLIB_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.u" )
+file( GLOB USTLIB_SOURCES_COMMON "${CMAKE_CURRENT_SOURCE_DIR}/src/*.u" )
+file( GLOB USTLIB_SOURCES_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/src/windows/*.u" )
+file( GLOB USTLIB_SOURCES_UNIX "${CMAKE_CURRENT_SOURCE_DIR}/src/unix/*.u" )
+
+if( WIN32 )
+	set( USTLIB_SOURCES ${USTLIB_SOURCES_COMMON} ${USTLIB_SOURCES_WINDOWS} )
+else()
+	set( USTLIB_SOURCES ${USTLIB_SOURCES_COMMON} ${USTLIB_SOURCES_UNIX} )
+endif()
 
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	set( SPRACHE_COMPILER_OPT_OPTIONS -O0 -g )
@@ -37,5 +45,5 @@ add_custom_command(
 	COMMENT "Building ${current_subdir}/ustlib.o"
 	)
 
-add_library( ustlib${CURRENT_COMPILER_GENERATION} STATIC ${USTLIB_OBJECT} ${USTLIB_SOURCES} )
+add_library( ustlib${CURRENT_COMPILER_GENERATION} STATIC ${USTLIB_OBJECT} ${USTLIB_SOURCES_COMMON} ${USTLIB_SOURCES_WINDOWS} ${USTLIB_SOURCES_UNIX} )
 set_target_properties( ustlib${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )

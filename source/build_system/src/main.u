@@ -1407,10 +1407,45 @@ fn GetCompiledUstlibPath( ust::string_view8 root_package_build_directory ) : ust
 }
 
 // Returns list of relative paths.
-fn GetUstlibSourcesList() : ust::vector</ust::string8/>
+fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::string8/>
 {
 	// Hardcode all files that we need to compile. There is no other way to do this.
-	return ust::make_array</ust::string8/>( "stdout.u" );
+	var [ ust::string_view8, 0 ] sources_common
+	[
+	];
+
+	var [ ust::string_view8, 1 ] sources_windows
+	[
+		"windows/stdout.u",
+	];
+
+	var [ ust::string_view8, 1 ] sources_unix
+	[
+		"unix/stdout.u",
+	];
+
+	var ust::vector</ust::string8/> mut res;
+	foreach( &s : sources_common )
+	{
+		res.push_back(s);
+	}
+
+	if( target_triple.operating_system == "windows" )
+	{
+		foreach( &s : sources_windows )
+		{
+			res.push_back(s);
+		}
+	}
+	else
+	{
+		foreach( &s : sources_unix )
+		{
+			res.push_back(s);
+		}
+	}
+
+	return res;
 }
 
 fn CreateUstlibBuildGraphNodes(
@@ -1444,7 +1479,7 @@ fn CreateUstlibBuildGraphNodes(
 	// Forbid importing anything outside include directories and source directories.
 	node.command_line.push_back( "--prevent-imports-outside-given-directories" );
 
-	foreach( &source : GetUstlibSourcesList() )
+	foreach( &source : GetUstlibSourcesList( target_triple ) )
 	{
 		var ust::string8 file_path= NormalizePath( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
 		node.input_files.push_back( file_path );
@@ -1627,7 +1662,7 @@ fn BuildUstlibForBuildScripts(
 		// It's suboptimal, since no inlining can be performed, but still fine for build scripts, where a lot of performance isn't necessary.
 		compiler_args.push_back( "-filetype=obj" );
 
-		foreach( &source : GetUstlibSourcesList() )
+		foreach( &source : GetUstlibSourcesList( GetHostTargetTriple() ) )
 		{
 			compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
 		}
@@ -1716,7 +1751,7 @@ fn BuildSingleFileProgram(
 	compiler_args.push_back( source_file_path_absolute );
 
 	// Compile also all "ustlib" sources in the same compiler invocation.
-	foreach( &source : GetUstlibSourcesList() )
+	foreach( &source : GetUstlibSourcesList( target_triple ) )
 	{
 		compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
 	}
