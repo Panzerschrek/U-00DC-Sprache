@@ -1393,6 +1393,13 @@ fn GetCompiledUstlibPath( ust::string_view8 root_package_build_directory ) : ust
 	return NormalizePath( ust::concat( root_package_build_directory, "/", "ustlib.bc" ) );
 }
 
+// Returns list of relative paths.
+fn GetUstlibSourcesList() : ust::vector</ust::string8/>
+{
+	// Hardcode all files that we need to compile. There is no other way to do this.
+	return ust::make_array</ust::string8/>( "stdout.u" );
+}
+
 fn CreateUstlibBuildGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 sysroot,
@@ -1424,12 +1431,7 @@ fn CreateUstlibBuildGraphNodes(
 	// Forbid importing anything outside include directories and source directories.
 	node.command_line.push_back( "--prevent-imports-outside-given-directories" );
 
-	var [ ust::string_view8, 1 ] sources
-	[
-		"stdout.u"
-	];
-
-	foreach( &source : sources )
+	foreach( &source : GetUstlibSourcesList() )
 	{
 		var ust::string8 file_path= NormalizePath( ust::concat( build_system_paths.ustlib_path, "/src/", source ) );
 		node.input_files.push_back( file_path );
@@ -1607,6 +1609,12 @@ fn BuildSingleFileProgram(
 	var ust::vector</ust::string8/> mut compiler_args;
 
 	compiler_args.push_back( source_file_path_absolute );
+
+	// Compile also all "ustlib" sources in the same compiler invocation.
+	foreach( &source : GetUstlibSourcesList() )
+	{
+		compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/src/", source ) );
+	}
 
 	// The only include directory that we require is "ustlib".
 	compiler_args.push_back( "--include-dir" );
