@@ -36,6 +36,7 @@ add_custom_command(
 		--verify-module
 		--internalize
 		${SYSROOT_OPTION}
+		-Wl,$<TARGET_FILE:ustlib${CURRENT_COMPILER_GENERATION}>
 	)
 
 add_custom_target(
