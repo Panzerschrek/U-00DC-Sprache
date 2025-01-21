@@ -1,18 +1,21 @@
-import "../imports/memory.u"
+import "../imports/stdout.u"
 
-// TODO - avoid using "nomangle" for these functions - it's no longer necessary.
-
-fn nomangle ust_stdout_print_impl( $(char8) start, size_type size ) unsafe
+namespace ust
 {
-	unsafe( ::write( STDOUT_FILENO, ust::ptr_cast_to_byte8(start), size ) );
+
+fn stdout_print( array_view_imut</char8/> str )
+{
+	unsafe( ::write( STDOUT_FILENO, ust::ptr_cast_to_byte8(str.data()), str.size() ) );
 	// TODO - halt if write fails
 }
 
-fn nomangle ust_stderr_print_impl( $(char8) start, size_type size ) unsafe
+fn stderr_print( array_view_imut</char8/> str )
 {
-	unsafe( ::write( STDERR_FILENO, ust::ptr_cast_to_byte8(start), size ) );
+	unsafe( ::write( STDERR_FILENO, ust::ptr_cast_to_byte8(str.data()), str.size() ) );
 	// TODO - halt if write fails
 }
+
+} // namespace ust
 
 // auto constexpr STDIN_FILENO = 0;
 auto constexpr STDOUT_FILENO = 1;
