@@ -1,0 +1,29 @@
+import "../../imports/memory.u"
+import "../../imports/helpers.u"
+import "../../imports/pthread.u"
+import "../../imports/thread_impl.u"
+
+namespace ust
+{
+
+namespace thread_impl
+{
+
+fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_id
+{
+	// TODO
+	ignore_unused(func);
+	ignore_unused(arg);
+	halt;
+}
+
+fn join_and_destroy_thread( thread_id id ) unsafe
+{
+	// TODO
+	ignore_unused(id);
+	halt;
+}
+
+} // namespace thread_impl
+
+} // namespace us

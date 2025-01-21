@@ -1434,9 +1434,10 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::strin
 	[
 	];
 
-	var [ ust::string_view8, 1 ] sources_windows
+	var [ ust::string_view8, 2 ] sources_windows
 	[
 		"windows/stdout.u",
+		"windows/thread_impl.u",
 	];
 
 	var [ ust::string_view8, 2 ] sources_unix
