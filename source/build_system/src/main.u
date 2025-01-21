@@ -1408,11 +1408,21 @@ fn CreateUstlibBuildGraphNodes(
 		.program= build_system_paths.compiler_executable_path,
 		.output_files= ust::make_array( out_file ),
 		.dep_file= GetDependencyFilePath( out_file ),
+		.comment= "ustlib",
 	};
 
 	node.command_line.push_back( "-o" );
 	node.command_line.push_back( out_file );
 	node.command_line.push_back( "-filetype=bc" );
+
+	node.command_line.push_back( "-MF" );
+	node.command_line.push_back( node.dep_file );
+
+	node.command_line.push_back( "--source-dir" );
+	node.command_line.push_back( build_system_paths.ustlib_path );
+
+	// Forbid importing anything outside include directories and source directories.
+	node.command_line.push_back( "--prevent-imports-outside-given-directories" );
 
 	var [ ust::string_view8, 1 ] sources
 	[
@@ -1422,9 +1432,13 @@ fn CreateUstlibBuildGraphNodes(
 	foreach( &source : sources )
 	{
 		var ust::string8 file_path= NormalizePath( ust::concat( build_system_paths.ustlib_path, "/src/", source ) );
-		node.output_files.push_back( file_path );
+		node.input_files.push_back( file_path );
 		node.command_line.push_back( file_path );
 	}
+
+	// TODO - disable "pic" by default for windows target.
+	node.command_line.push_back( "--relocation-model" );
+	node.command_line.push_back( "pic" );
 
 	// Build configuration-dependent options.
 	switch( build_configuration )
@@ -1442,7 +1456,7 @@ fn CreateUstlibBuildGraphNodes(
 			// Run full optimization, but not by using O3 - it isn't much better than O2.
 			node.command_line.push_back( "-O2" );
 			// Also run LTO.
-			node.command_line.push_back( "--lto-mode=link" );
+			node.command_line.push_back( "--lto-mode=prelink" );
 		},
 	}
 
