@@ -60,7 +60,9 @@ add_library(
 
 set_target_properties( ustlib${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
 
-install( FILES ${USTLIB_HEADERS} DESTINATION "ustlib/imports" )
-install( FILES ${USTLIB_SOURCES_COMMON} DESTINATION "ustlib/src" )
-install( FILES ${USTLIB_SOURCES_WINDOWS} DESTINATION "ustlib/src/windows" )
-install( FILES ${USTLIB_SOURCES_UNIX} DESTINATION "ustlib/src/unix" )
+if( CURRENT_COMPILER_GENERATION STREQUAL "" )
+	install( FILES ${USTLIB_HEADERS} DESTINATION "ustlib/imports" )
+	install( FILES ${USTLIB_SOURCES_COMMON} DESTINATION "ustlib/src" )
+	install( FILES ${USTLIB_SOURCES_WINDOWS} DESTINATION "ustlib/src/windows" )
+	install( FILES ${USTLIB_SOURCES_UNIX} DESTINATION "ustlib/src/unix" )
+endif()
