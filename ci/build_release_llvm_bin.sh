@@ -17,7 +17,7 @@ cd .. &&\
 python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler0/Compiler  --add-library=build_dir/ustlib0/libustlib.a  --add-library=-lpthread --use-position-independent-code --input-dir source/ustlib/tests &&\
 python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler1/Compiler1 --add-library=build_dir/ustlib1/libustlib1.a --add-library=-lpthread --use-position-independent-code --input-dir source/ustlib/tests &&\
 python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler2/Compiler2 --add-library=build_dir/ustlib2/libustlib2.a --add-library=-lpthread --use-position-independent-code --input-dir source/ustlib/tests &&\
-python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler3/Compiler3 --add-library=build_dir/ustlib2/libustlib2.a --add-library=-lpthread --use-position-independent-code --input-dir source/ustlib/tests &&\
+python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler3/Compiler3 --add-library=build_dir/ustlib3/libustlib3.a --add-library=-lpthread --use-position-independent-code --input-dir source/ustlib/tests &&\
 # install
 mkdir install &&\
 cmake --install build_dir --prefix install

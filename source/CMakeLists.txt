@@ -265,6 +265,9 @@ if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
 			set( NEXT_COMPILER_GENERATION "3" )
 			add_subdirectory( compiler1 compiler3 )
 
+			set( CURRENT_COMPILER_GENERATION "3" )
+			add_subdirectory( ustlib ustlib3 ) # Build ustlib with compiler3
+
 		endif()
 
 	endif()
