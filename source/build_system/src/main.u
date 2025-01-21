@@ -1742,6 +1742,14 @@ fn BuildUstlibForBuildScripts(
 			compiler_args.push_back( "pic" );
 		}
 
+		if( ust::string_view8( compiler::target::os ) != "windows" ||
+			ust::string_view8( compiler::target::environment ) == "gnu" )
+		{
+			// Put symbols into sections in order to allow removing unnecessary ones.
+			compiler_args.push_back( "--function-sections" );
+			compiler_args.push_back( "--data-sections" );
+		}
+
 		// Use host sysroot for building ustlib for build scripts.
 		if( !host_sysroot.empty() )
 		{
