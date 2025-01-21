@@ -20,6 +20,7 @@ class ParseResult:
 
 g_compiler_executable= "Compiler"
 g_use_position_independent_code= False
+g_additional_libraries_to_link= []
 
 
 def LoadFile( file_name ):
@@ -166,9 +167,12 @@ def DoSuccessTest( file_path ):
 	file_name= os.path.basename( file_path )
 	executable_file= file_name + "_temp.exe"
 
-	compiler_args= [ g_compiler_executable, file_path, "-o", executable_file, "--filetype", "exe", "--allow-unused-names", "-Wl=-lpthread" ]
+	compiler_args= [ g_compiler_executable, file_path, "-o", executable_file, "--filetype", "exe", "--allow-unused-names" ]
 	if g_use_position_independent_code :
 		compiler_args= compiler_args + [ "--relocation-model", "pic" ]
+
+	for library in g_additional_libraries_to_link:
+		compiler_args.append( "-Wl," + library )
 
 	if subprocess.call( compiler_args ) != 0:
 		print( "Compilation failed" )
@@ -227,6 +231,7 @@ def main():
 	parser.add_argument( "--input-dir", help= "input Ü test sources directory", type=str )
 	parser.add_argument( "--compiler-executable", help= "path to compiler executable", type=str )
 	parser.add_argument( "--use-position-independent-code", help= "use or not position independent code", action="store_true" )
+	parser.add_argument( "--add-library", help= "specify an additional library for linking", action= "append" )
 
 	args= parser.parse_args()
 
@@ -237,6 +242,10 @@ def main():
 	if args.use_position_independent_code is not None:
 		global g_use_position_independent_code
 		g_use_position_independent_code= args.use_position_independent_code
+
+	if args.add_library is not None:
+		for library in args.add_library:
+			g_additional_libraries_to_link.append( library )
 
 	if args.input_file is not None:
 		return RunTestForFile( args.input_file )
