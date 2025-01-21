@@ -588,6 +588,11 @@ fn BuildAndLoadPackageBuildScript(
 		// Link against "ustlib" previously built into an object file.
 		compiler_args.push_back( ust::concat( "-Wl,", ustlib_compiled_for_build_scripts_path ) );
 
+		foreach( &lib : GetUstlibSystemLibrariesToLink( GetHostTargetTriple() ) )
+		{
+			compiler_args.push_back( "-Wl," + lib );
+		}
+
 		// Output.
 		compiler_args.push_back( "-o" );
 		compiler_args.push_back( result_shared_library_path );
@@ -1225,6 +1230,19 @@ fn CreatePackageTargetBuildGraphNodes(
 		BuildTargetType::Library -> { /* It's not necessary to link bitcode libraries against ustlib. */ },
 	}
 
+	// Link against system libraries required by "ustlib".
+	switch( target.target_type )
+	{
+		BuildTargetType::Executable, BuildTargetType::SharedLibrary ->
+		{
+			foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
+			{
+				node.command_line.push_back( "-Wl," + lib );
+			}
+		},
+		BuildTargetType::Library, BuildTargetType::ObjectFile -> {},
+	}
+
 	// Link shared library dependencies.
 	switch( target.target_type )
 	{
@@ -1421,9 +1439,10 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::strin
 		"windows/stdout.u",
 	];
 
-	var [ ust::string_view8, 1 ] sources_unix
+	var [ ust::string_view8, 2 ] sources_unix
 	[
 		"unix/stdout.u",
+		"unix/thread_impl.u",
 	];
 
 	var ust::vector</ust::string8/> mut res;
@@ -1448,6 +1467,18 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::strin
 	}
 
 	return res;
+}
+
+fn GetUstlibSystemLibrariesToLink( TargetTriple& target_triple ) : ust::vector</ust::string8/>
+{
+	if( target_triple.operating_system == "windows" )
+	{
+		return ust::vector</ust::string8/>();
+	}
+	else
+	{
+		return ust::make_array</ust::string8/>( "-lpthread" );
+	}
 }
 
 fn CreateUstlibBuildGraphNodes(
@@ -1758,6 +1789,12 @@ fn BuildSingleFileProgram(
 	foreach( &source : GetUstlibSourcesList( target_triple ) )
 	{
 		compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
+	}
+
+	// Link against system libraries required by "ustlib".
+	foreach( &lib : GetUstlibSystemLibrariesToLink( target_triple ) )
+	{
+		compiler_args.push_back( "-Wl," + lib );
 	}
 
 	// The only include directory that we require is "ustlib".
