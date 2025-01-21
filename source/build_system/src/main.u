@@ -1212,10 +1212,9 @@ fn CreatePackageTargetBuildGraphNodes(
 	// Link ustlib.
 	switch( target.target_type )
 	{
-		BuildTargetType::Executable,
-		BuildTargetType::SharedLibrary ->
+		BuildTargetType::Executable, BuildTargetType::SharedLibrary, BuildTargetType::ObjectFile ->
 		{
-			// Link ustlib only into executables and shared libraries.
+			// Link ustlib into build targets with binary code.
 			var ust::string8 mut bc_file= GetCompiledUstlibPath( root_package_build_directory );
 			node.command_line.push_back( bc_file );
 			node.input_files.push_back( bc_file );
@@ -1223,7 +1222,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( "--internalize-symbols-from" );
 			node.command_line.push_back( move(bc_file) );
 		},
-		BuildTargetType::Library, BuildTargetType::ObjectFile  -> {},
+		BuildTargetType::Library -> { /* It's not necessary to link ustlib into a bitcode library. */ },
 	}
 
 	// Link shared library dependencies.
