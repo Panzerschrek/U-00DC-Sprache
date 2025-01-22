@@ -1,5 +1,5 @@
-import "../../imports/pthread.u"
 import "../../imports/rwlock_impl.u"
+import "pthread.uh"
 
 namespace ust
 {

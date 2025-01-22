@@ -1,6 +1,5 @@
 import "../../imports/memory.u"
 import "../../imports/helpers.u"
-import "../../imports/pthread.u"
 import "../../imports/thread_impl.u"
 import "windows.uh"
 

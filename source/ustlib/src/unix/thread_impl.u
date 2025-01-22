@@ -1,6 +1,6 @@
 import "../../imports/memory.u"
-import "../../imports/pthread.u"
 import "../../imports/thread_impl.u"
+import "pthread.uh"
 
 namespace ust
 {
