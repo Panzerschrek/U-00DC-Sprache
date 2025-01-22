@@ -1,3 +1,5 @@
+import "type_traits.u"
+
 namespace ust
 {
 
@@ -6,7 +8,11 @@ namespace rwlock_impl
 
 // Opaque type representing underlaying platform-dependent type.
 // It can't be moved.
-type rwlock= [ byte64, 8 ];
+type rwlock=
+	type_select</
+		type_traits_impl::string_equals( compiler::target::os, "windows" ), // TODO - avoid using internal function here.
+		$(byte8),
+		[ byte64, 8 ] />;
 
 // Init lock at given address. Halts on fail.
 fn rwlock_init( rwlock &mut l ) unsafe;

@@ -1,0 +1,46 @@
+import "../../imports/rwlock_impl.u"
+import "../../imports/memory.u"
+import "windows.uh"
+
+namespace ust
+{
+
+namespace rwlock_impl
+{
+
+static_assert( typeinfo</rwlock/>.size_of == typeinfo</ RTL_SRWLOCK />.size_of, "types mismatch!" );
+
+fn rwlock_init( rwlock &mut l ) unsafe
+{
+	unsafe( ::InitializeSRWLock( $<( cast_ref_unsafe</RTL_SRWLOCK/>(l) ) ) );
+}
+
+fn rwlock_destroy( rwlock &mut l ) unsafe
+{
+	// This lock doesn't require destruction.
+	ignore_unused(l);
+}
+
+fn rwlock_lock_shared( rwlock &mut l ) unsafe
+{
+	unsafe( ::AcquireSRWLockShared( $<( cast_ref_unsafe</RTL_SRWLOCK/>( l ) ) ) );
+}
+
+fn rwlock_unlock_shared( rwlock &mut l ) unsafe
+{
+	unsafe( ::ReleaseSRWLockShared( $<( cast_ref_unsafe</RTL_SRWLOCK/>(l) ) ) );
+}
+
+fn rwlock_lock_exclusive( rwlock &mut l ) unsafe
+{
+	unsafe( ::AcquireSRWLockExclusive( $<( cast_ref_unsafe</RTL_SRWLOCK/>(l) ) ) );
+}
+
+fn rwlock_unlock_exclusive( rwlock &mut l ) unsafe
+{
+	unsafe( ::ReleaseSRWLockExclusive( $<( cast_ref_unsafe</RTL_SRWLOCK/>(l) ) ) );
+}
+
+} // namespace rwlock_impl
+
+} // namespace ust
