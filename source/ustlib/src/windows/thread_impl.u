@@ -30,7 +30,6 @@ fn join_and_destroy_thread( thread_id id ) unsafe
 {
 	unsafe( ::WaitForSingleObject( id, DWORD(INFINITE) ) );
 	unsafe( ::CloseHandle( id ) );
-	halt;
 }
 
 } // namespace thread_impl
