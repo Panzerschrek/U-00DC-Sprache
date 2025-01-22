@@ -37,7 +37,6 @@ Other functionality:
 * Minimum/maximum functions (minmax.u)
 * Mixins-related helpers (mixin_utils.u)
 * Functions for polymorph objects manipulation (polymorph.u)
-* Pthread library prototypes (used internally) (pthread.u)
 * Reference notation helpers (reference_notation.u)
 * Helper classes and macros for scoped arrays creation (scoped_array.u)
 * Sorting routines (sort.u)
