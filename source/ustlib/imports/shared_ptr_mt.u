@@ -2,7 +2,7 @@ import "alloc.u"
 import "atomic.u"
 import "container_utils.u"
 import "polymorph.u"
-import "pthread.u"
+import "rwlock_impl.u"
 
 namespace ust
 {
@@ -43,10 +43,7 @@ public:
 			$>(counter_).use_count_total = 1u;
 			$>(counter_).use_count_strong= 1u;
 
-			var pthread_rwlockattr_t mut attr= uninitialized;
-			halt if( pthread_rwlockattr_init( attr ) != 0 );
-			halt if( pthread_rwlock_init( $>(counter_).rwlock, attr ) != 0 );
-			halt if( pthread_rwlockattr_destroy( attr ) != 0 );
+			rwlock_impl::rwlock_init( $>(counter_).rwlock );
 
 			value_= byte_ptr_cast</T/>( mem + object_offset );
 			move_into_uninitialized( $>(value_), move(value) );
@@ -136,7 +133,7 @@ public:
 			}
 			if( atomic_dec( $>(counter_).use_count_total ) == 1u )
 			{
-				halt if( pthread_rwlock_destroy( $>(counter_).rwlock ) != 0 );
+				rwlock_impl::rwlock_destroy( $>(counter_).rwlock );
 				// Free counter together with initial allocated object.
 				memory_free( ptr_cast_to_byte8( counter_ ) );
 			}
@@ -357,7 +354,7 @@ public:
 			{
 				if( atomic_dec( $>(counter_).use_count_total ) == 1u )
 				{
-					halt if( pthread_rwlock_destroy( $>(counter_).rwlock ) != 0 );
+					rwlock_impl::rwlock_destroy( $>(counter_).rwlock );
 					// Free counter together with initial allocated object.
 					memory_free( ptr_cast_to_byte8( counter_) );
 				}
@@ -454,7 +451,7 @@ struct counter
 {
 	u32 use_count_total;
 	u32 use_count_strong; // always <= use_count_total
-	pthread_rwlock_t rwlock;
+	rwlock_impl::rwlock rwlock;
 }
 
 template</ type T />
@@ -464,12 +461,12 @@ public:
 	fn constructor( mut this, $(T) v, $(counter) c ) unsafe
 		( value_(v), counter_(c) )
 	{
-		halt if( unsafe( pthread_rwlock_wrlock( $>(counter_).rwlock ) ) != 0 );
+		unsafe( rwlock_impl::rwlock_lock_exclusive( $>(counter_).rwlock ) );
 	}
 
 	fn destructor()
 	{
-		halt if( unsafe( pthread_rwlock_unlock( $>(counter_).rwlock ) ) != 0 );
+		unsafe( rwlock_impl::rwlock_unlock_exclusive( $>(counter_).rwlock ) );
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -494,12 +491,12 @@ public:
 	fn constructor( mut this, $(T) v, $(counter) c)  unsafe
 		( value_(v), counter_(c) )
 	{
-		halt if( unsafe( pthread_rwlock_rdlock( $>(counter_).rwlock ) ) != 0 );
+		unsafe( rwlock_impl::rwlock_lock_shared( $>(counter_).rwlock ) );
 	}
 
 	fn destructor()
 	{
-		halt if( unsafe( pthread_rwlock_unlock( $>(counter_).rwlock ) ) != 0 );
+		unsafe( rwlock_impl::rwlock_unlock_shared( $>(counter_).rwlock ) );
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.

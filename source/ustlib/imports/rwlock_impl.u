@@ -1,0 +1,27 @@
+namespace ust
+{
+
+namespace rwlock_impl
+{
+
+// Opaque type representing underlaying platform-dependent type.
+// It can't be moved.
+type rwlock= [ byte64, 8 ];
+
+// Init lock at given address. Halts on fail.
+fn rwlock_init( rwlock &mut l ) unsafe;
+
+// Destroy lock at given address. Halts on fail.
+fn rwlock_destroy( rwlock &mut l ) unsafe;
+
+// Lock/unlock for read-only shared access.
+fn rwlock_lock_shared( rwlock &mut l ) unsafe;
+fn rwlock_unlock_shared( rwlock &mut l ) unsafe;
+
+// Lock/unlock for read-write exclusive access.
+fn rwlock_lock_exclusive( rwlock &mut l ) unsafe;
+fn rwlock_unlock_exclusive( rwlock &mut l ) unsafe;
+
+} // namespace rwlock_impl
+
+} // namespace ust
