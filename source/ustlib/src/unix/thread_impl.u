@@ -8,6 +8,8 @@ namespace ust
 namespace thread_impl
 {
 
+static_assert( same_type</thread_id, pthread_t/>, "Types mismatch!" );
+
 fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_id
 {
 	unsafe

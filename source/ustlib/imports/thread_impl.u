@@ -1,5 +1,6 @@
 // This file is used internally for low-level thread manipulations.
 // Do not use types/functions from this file directly!
+
 import "type_traits.u"
 
 namespace ust
@@ -27,7 +28,7 @@ type thread_start_function=
 fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_id;
 
 // Input thread id should be valid and thread shouldn't be joined yet.
-fn join_and_destroy_thread( thread_id t ) unsafe;
+fn join_and_destroy_thread( thread_id id ) unsafe;
 
 } // namespace thread_impl
 
