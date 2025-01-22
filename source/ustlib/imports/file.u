@@ -6,7 +6,9 @@ namespace ust
 
 enum io_error
 {
+	permission_denied,
 	not_found,
+	other, // Some non-listed error code.
 	// TODO - add other errors
 }
 

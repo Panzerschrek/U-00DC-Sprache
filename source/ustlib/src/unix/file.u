@@ -1,4 +1,6 @@
 import "../../imports/file.u"
+import "../../imports/string.u" // TODO - remove this import, it's too heavy and unnecessary.
+import "unix.uh"
 
 namespace ust
 {
@@ -230,40 +232,74 @@ fn seekable_read_write_file::seek( mut this, u64 offset ) : file_result</void/>
 
 fn open_file_impl( file_path path ) unsafe : file_result</native_file_handle/>
 {
-	// TODO
-	ignore_unused(path);
-	halt;
+	var ust::string8 mut path_nt= concat( path, "\0" ); // TODO - use scoped array instead.
+
+	// TODO - pass other flags if necessary.
+	var i32 handle= unsafe( ::open( path_nt.data(), O_RDONLY, 0u ) );
+	if( handle == -1 )
+	{
+		return io_error::other; // TODO - translate error code properly.
+	}
+
+	return handle;
 }
 
 fn close_file_impl( native_file_handle handle ) unsafe
 {
-	// TODO
-	ignore_unused(handle);
+	unsafe( ::close( handle ) );
 	halt;
 }
 
 fn read_impl( native_file_handle handle, ust::array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
 {
-	// TODO
-	ignore_unused(handle);
-	ignore_unused(buf);
-	halt;
+	// TODO - maybe read in loop to support larget sizes?
+
+	var ssize_type read_res = unsafe( ::read( handle, buf.data(), buf.size() ) );
+
+	if( read_res < ssize_type(0) )
+	{
+		return io_error::other; // TODO - translate error code properly.
+	}
+
+	if( read_res == ssize_type(0) )
+	{
+		return 0s; // End of file reached.
+	}
+
+	// Expected number of bytes or less.
+	return size_type(read_res);
 }
 
 fn write_impl( native_file_handle handle, ust::array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
 {
-	// TODO
-	ignore_unused(handle);
-	ignore_unused(buf);
-	halt;
+	// TODO - maybe write in loop to support larget sizes?
+
+	var ssize_type write_res = unsafe( ::write( handle, buf.data(), buf.size() ) );
+
+	if( write_res < ssize_type(0) )
+	{
+		return io_error::other; // TODO - translate error code properly.
+	}
+
+	if( write_res == ssize_type(0) )
+	{
+		return 0s; // End of file reached.
+	}
+
+	// Expected number of bytes or less.
+	return size_type(write_res);
 }
 
 fn seek_impl( native_file_handle handle, u64 offset ) unsafe : file_result</void/>
 {
-	// TODO
-	ignore_unused(handle);
-	ignore_unused(offset);
-	halt;
+	var ü__off64_t seek_res= unsafe( ::lseek64( handle, ü__off64_t(offset), SEEK_SET ) );
+
+	if( seek_res == ü__off64_t(-1) )
+	{
+		return io_error::other; // TODO - translate error code properly.
+	}
+
+	return void();
 }
 
 } // namespace ust

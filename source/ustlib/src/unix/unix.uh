@@ -1,0 +1,24 @@
+// This file contains some definitions from UNIX (pparticulary Linux) headers, which are used inside "ustlib".
+// These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
+
+fn nomangle close( i32 ü__fd ) unsafe : i32;
+fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe : i32;
+fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe : ssize_t;
+fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe : ü__off64_t;
+fn nomangle write( i32 ü__fd, $(byte8) ü__buf, size_t ü__n ) unsafe : ssize_t;
+
+type size_t = size_type;
+type ssize_t = ü__ssize_t;
+type ü__mode_t = u32;
+type ü__off64_t = i64;
+type ü__ssize_t = ssize_type;
+
+auto constexpr O_RDONLY = 0;
+auto constexpr O_WRONLY = 1;
+auto constexpr O_RDWR = 2;
+auto constexpr O_CREAT = 64;
+auto constexpr O_TRUNC = 512;
+
+auto constexpr SEEK_SET = 0;
+auto constexpr SEEK_CUR = 1;
+auto constexpr SEEK_END = 2;
