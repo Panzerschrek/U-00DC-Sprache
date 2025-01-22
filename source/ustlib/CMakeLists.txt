@@ -40,7 +40,7 @@ add_custom_command(
 		-filetype=obj
 		-o ${current_subdir}/ustlib.o
 		-MF ${CMAKE_CURRENT_BINARY_DIR}/ustlib.d
-		--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
+		--data-sections --function-sections # Put symbols into sections in order to remove unused functions during linking.
 		${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 		--verify-module
 	${DEPFILE_OPTION}

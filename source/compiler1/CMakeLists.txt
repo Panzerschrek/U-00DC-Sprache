@@ -111,7 +111,7 @@ else()
 					-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 					--verify-module
 					${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
-					--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
+					--data-sections --function-sections # Put symbols into sections in order to remove unused functions during linking.
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/imports/::CodeBuilderLib
