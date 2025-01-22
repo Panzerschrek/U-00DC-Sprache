@@ -10,7 +10,7 @@ namespace rwlock_impl
 {
 
 // Opaque type representing underlaying platform-dependent type.
-// It can't be moved.
+// It can't be relocated, so, use it with caution.
 type rwlock=
 	type_select</
 		constexpr_string_equals( compiler::target::os, "windows" ),

@@ -7,7 +7,7 @@ namespace ust
 namespace rwlock_impl
 {
 
-static_assert( same_type</ rwlock, pthread_rwlock_t />, "types mismatch!" );
+static_assert( same_type</ rwlock, pthread_rwlock_t />, "Types mismatch!" );
 
 fn rwlock_init( rwlock &mut l ) unsafe
 {

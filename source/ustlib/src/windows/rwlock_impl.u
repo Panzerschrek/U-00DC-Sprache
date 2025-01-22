@@ -1,5 +1,5 @@
-import "../../imports/rwlock_impl.u"
 import "../../imports/memory.u"
+import "../../imports/rwlock_impl.u"
 import "windows.uh"
 
 namespace ust
@@ -8,7 +8,7 @@ namespace ust
 namespace rwlock_impl
 {
 
-static_assert( typeinfo</rwlock/>.size_of == typeinfo</ RTL_SRWLOCK />.size_of, "types mismatch!" );
+static_assert( typeinfo</rwlock/>.size_of == typeinfo</ RTL_SRWLOCK />.size_of, "Types mismatch!" );
 
 fn rwlock_init( rwlock &mut l ) unsafe
 {
