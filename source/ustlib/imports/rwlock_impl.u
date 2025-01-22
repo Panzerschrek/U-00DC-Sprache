@@ -10,7 +10,7 @@ namespace rwlock_impl
 // It can't be moved.
 type rwlock=
 	type_select</
-		type_traits_impl::string_equals( compiler::target::os, "windows" ), // TODO - avoid using internal function here.
+		constexpr_string_equals( compiler::target::os, "windows" ),
 		$(byte8),
 		[ byte64, 8 ] />;
 

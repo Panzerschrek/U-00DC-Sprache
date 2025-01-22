@@ -101,7 +101,7 @@ private:
 	auto c_constructor_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />();
 
 private:
-	auto is_windows= type_traits_impl::string_equals( compiler::target::os, "windows" ); // TODO - avoid using internal function here.
+	auto constexpr is_windows= constexpr_string_equals( compiler::target::os, "windows" );
 
 	fn enable_if(is_windows) thread_function( $(byte8) impl_ptr ) unsafe call_conv("system") : u32
 	{

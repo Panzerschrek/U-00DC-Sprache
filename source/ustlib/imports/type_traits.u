@@ -97,7 +97,7 @@ fn constexpr class_have_field( ListType& fields_list, [ char8, name_size ]& name
 {
 	for( &list_element : fields_list )
 	{
-		if( type_traits_impl::string_equals( list_element.name, name ) )
+		if( constexpr_string_equals( list_element.name, name ) )
 		{
 			return true;
 		}
@@ -157,7 +157,7 @@ fn constexpr class_have_method( [ char8, name_size ]& name ) : bool
 	{
 		for( &list_element : typeinfo</T/>.functions_list )
 		{
-			if( type_traits_impl::string_equals( list_element.name, name ) )
+			if( constexpr_string_equals( list_element.name, name ) )
 			{
 				// Same type of typeinfo means same type
 				if( same_type</ typeof(list_element.type), typeof(typeinfo</FnT/>) /> )
@@ -184,7 +184,7 @@ fn function_returns_value() : bool
 		for( &method : ti.functions_list )
 		{
 			// TODO - support multiple overloaded () operators.
-			if( type_traits_impl::string_equals( method.name, "()" ) )
+			if( constexpr_string_equals( method.name, "()" ) )
 			{
 				return !method.type.return_value_is_reference;
 			}
@@ -213,7 +213,7 @@ fn function_returns_immutable_reference() : bool
 		for( &method : ti.functions_list )
 		{
 			// TODO - support multiple overloaded () operators.
-			if( type_traits_impl::string_equals( method.name, "()" ) )
+			if( constexpr_string_equals( method.name, "()" ) )
 			{
 				return method.type.return_value_is_reference && !method.type.return_value_is_mutable;
 			}
@@ -242,7 +242,7 @@ fn function_returns_mutable_reference() : bool
 		for( &method : ti.functions_list )
 		{
 			// TODO - support multiple overloaded () operators.
-			if( type_traits_impl::string_equals( method.name, "()" ) )
+			if( constexpr_string_equals( method.name, "()" ) )
 			{
 				return method.type.return_value_is_reference && method.type.return_value_is_mutable;
 			}
@@ -256,11 +256,10 @@ fn function_returns_mutable_reference() : bool
 	}
 }
 
-namespace type_traits_impl
-{
-
+// Helper function for comparing constexpr strings.
+// It's necessary since using "==" operator isn't possible for strings of different sizes.
 template</ size_type size0, size_type size1 />
-fn constexpr string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+fn constexpr constexpr_string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
 {
 	if( size0 != size1 ) { return false; }
 
@@ -270,6 +269,9 @@ fn constexpr string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
 	}
 	return true;
 }
+
+namespace type_traits_impl
+{
 
 template</ type ParentCandidate, type ParentListType />
 fn constexpr has_parent( ParentListType& parents_list ) : bool
