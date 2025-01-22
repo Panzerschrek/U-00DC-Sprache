@@ -101,10 +101,17 @@ private:
 	auto c_constructor_pollution= reference_notation::pollution::param0_param1_all_inner_references</ c_reference_tag_count />();
 
 private:
-	fn thread_function( $(byte8) impl_ptr ) unsafe : $(byte8)
+	auto is_windows= type_traits_impl::string_equals( compiler::target::os, "windows" ); // TODO - avoid using internal function here.
+
+	fn enable_if(is_windows) thread_function( $(byte8) impl_ptr ) unsafe call_conv("system") : u32
 	{
 		unsafe( cast_ref_unsafe</Impl/>( $>(impl_ptr) ) ).run();
+		return 0u;
+	}
 
+	fn enable_if(!is_windows) thread_function( $(byte8) impl_ptr ) unsafe : $(byte8)
+	{
+		unsafe( cast_ref_unsafe</Impl/>( $>(impl_ptr) ) ).run();
 		return nullptr</byte8/>();
 	}
 
