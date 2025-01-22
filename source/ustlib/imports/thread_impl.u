@@ -1,0 +1,35 @@
+// This file is used internally for low-level thread manipulations.
+// Do not use types/functions from this file directly!
+
+import "type_traits.u"
+
+namespace ust
+{
+
+namespace thread_impl
+{
+
+// Thread Id has platform-dependent format.
+type thread_id=
+	type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		$(byte8),
+		size_type />;
+
+// Use sligtly-different types for thread entry functions on different platforms.
+type thread_start_function=
+	type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		fn( $(byte8) arg ) unsafe call_conv( "system" ) : u32,
+		fn( $(byte8) arg ) unsafe : $(byte8) />;
+
+// Starts a new thread with specified function and its argument.
+// Halts if can't start.
+fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_id;
+
+// Input thread id should be valid and thread shouldn't be joined yet.
+fn join_and_destroy_thread( thread_id id ) unsafe;
+
+} // namespace thread_impl
+
+} // namespace ust

@@ -1,0 +1,38 @@
+import "../../imports/helpers.u"
+import "../../imports/memory.u"
+import "../../imports/thread_impl.u"
+import "windows.uh"
+
+namespace ust
+{
+
+namespace thread_impl
+{
+
+static_assert( same_type</thread_id, HANDLE/>, "Types mismatch!" );
+
+fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_id
+{
+	var HANDLE handle=
+		unsafe( ::CreateThread(
+			ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+			SIZE_T(0), // stack size (0 for default)
+			func,
+			arg,
+			DWORD(0), // flags
+			ust::nullptr</DWORD/>() /* thread id */ ) );
+
+	halt if( ust::is_nullptr(handle) );
+
+	return handle;
+}
+
+fn join_and_destroy_thread( thread_id id ) unsafe
+{
+	unsafe( ::WaitForSingleObject( id, DWORD(INFINITE) ) );
+	unsafe( ::CloseHandle( id ) );
+}
+
+} // namespace thread_impl
+
+} // namespace us

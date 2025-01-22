@@ -40,8 +40,9 @@ add_custom_command(
 		-filetype=obj
 		-o ${current_subdir}/ustlib.o
 		-MF ${CMAKE_CURRENT_BINARY_DIR}/ustlib.d
-		--verify-module
+		--data-sections --function-sections # Put symbols into sections in order to remove unused functions during linking.
 		${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
+		--verify-module
 	${DEPFILE_OPTION}
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
 	COMMENT "Building ${current_subdir}/ustlib.o"
@@ -59,6 +60,10 @@ add_library(
 	)
 
 set_target_properties( ustlib${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
+
+if( NOT WIN32 )
+	target_link_libraries( ustlib${CURRENT_COMPILER_GENERATION} PRIVATE pthread )
+endif()
 
 if( CURRENT_COMPILER_GENERATION STREQUAL "" )
 	install( FILES ${USTLIB_HEADERS} DESTINATION "ustlib/imports" )

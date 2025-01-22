@@ -21,25 +21,13 @@ class NonCopyable
 
 static_assert( !typeinfo</NonCopyable/>.is_copy_constructible );
 
-template</ size_type size0, size_type size1 />
-fn constexpr string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
-{
-	if( size0 != size1 ) { return false; }
-
-	for( var size_type mut i(0); i < size0; ++i )
-	{
-		if( s0[i] != s1[i] ) { return false; }
-	}
-	return true;
-}
-
 template</type T/>
 fn constexpr GetNextMethodIndex() : size_type
 {
 	auto mut index= 0s;
 	for( &func : typeinfo</T/>.functions_list )
 	{
-		if( string_equals( func.name, "next" ) )
+		if( ust::constexpr_string_equals( func.name, "next" ) )
 		{
 			return index;
 		}

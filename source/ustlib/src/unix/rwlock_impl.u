@@ -1,0 +1,50 @@
+import "../../imports/rwlock_impl.u"
+import "pthread.uh"
+
+namespace ust
+{
+
+namespace rwlock_impl
+{
+
+static_assert( same_type</ rwlock, pthread_rwlock_t />, "Types mismatch!" );
+
+fn rwlock_init( rwlock &mut l ) unsafe
+{
+	unsafe
+	{
+		var pthread_rwlockattr_t mut attr= uninitialized;
+		halt if( ::pthread_rwlockattr_init( attr ) != 0 );
+		halt if( ::pthread_rwlock_init( l, attr ) != 0 );
+		halt if( ::pthread_rwlockattr_destroy( attr ) != 0 );
+	}
+}
+
+fn rwlock_destroy( rwlock &mut l ) unsafe
+{
+	halt if( unsafe( ::pthread_rwlock_destroy( l ) ) != 0 );
+}
+
+fn rwlock_lock_shared( rwlock &mut l ) unsafe
+{
+	halt if( unsafe( ::pthread_rwlock_rdlock( l ) ) != 0 );
+}
+
+fn rwlock_unlock_shared( rwlock &mut l ) unsafe
+{
+	halt if( unsafe( ::pthread_rwlock_unlock( l ) ) != 0 );
+}
+
+fn rwlock_lock_exclusive( rwlock &mut l ) unsafe
+{
+	halt if( unsafe( ::pthread_rwlock_wrlock( l ) ) != 0 );
+}
+
+fn rwlock_unlock_exclusive( rwlock &mut l ) unsafe
+{
+	halt if( unsafe( ::pthread_rwlock_unlock( l ) ) != 0 );
+}
+
+} // namespace rwlock_impl
+
+} // namespace ust

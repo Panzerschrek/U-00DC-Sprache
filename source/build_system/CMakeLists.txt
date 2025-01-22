@@ -114,7 +114,7 @@ else()
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports
 				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}
-				--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
+				--data-sections --function-sections # Put symbols into sections in order to remove unused functions during linking.
 			${DEPFILE_OPTION}
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "build_system/main.u.o:", but launches custom command in current binary directory
 			COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"

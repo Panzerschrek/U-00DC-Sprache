@@ -38,7 +38,6 @@ if you want to learn more, read its sources yourself.
 * stdout support (partial) (stdout.u).
 * Number to string conversion utilities (string_conversions.u).
 * Thread class (thread.u).
-  Based on *pthread* library.
 * Various helpers for types manipulation/type checks (type_traits.u).
 * Some useful macros for effective usage of some containers (ustlib_macros.u).
 * Volatile memory operations support (volatile.u).

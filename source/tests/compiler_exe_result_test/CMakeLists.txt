@@ -21,6 +21,12 @@ else()
 	set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
 endif()
 
+if( WIN32 )
+	set( COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK "" )
+else()
+	set( COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK -Wl,-lpthread )
+endif()
+
 set( COMPILER_EXE_RESULT_TEST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/compiler_exe_result_test.u )
 set( COMPILER_EXE_RESULT_TEST_FILE_OUT ${CMAKE_CURRENT_BINARY_DIR}/compiler_exe_result_test${CURRENT_COMPILER_GENERATION}.exe )
 add_custom_command(
@@ -37,6 +43,7 @@ add_custom_command(
 		--internalize
 		${SYSROOT_OPTION}
 		-Wl,$<TARGET_FILE:ustlib${CURRENT_COMPILER_GENERATION}>
+		${COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK}
 	)
 
 add_custom_target(
