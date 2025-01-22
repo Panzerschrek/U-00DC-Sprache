@@ -1,0 +1,124 @@
+import "random_access_range.u"
+import "result.u"
+
+namespace ust
+{
+
+enum io_error
+{
+	not_found,
+	// TODO - add other errors
+}
+
+template</type T/>
+type file_result= result</T, io_error/>;
+
+type file_path= ust::array_view_imut</char8/>;
+
+class sequential_read_file
+{
+public:
+	// Open existing file for reading.
+	fn open( file_path path ) : file_result</sequential_read_file/>;
+
+public:
+	fn destructor();
+
+public:
+	fn read( ust::array_view_mut</byte8/> buf ) : file_result</size_type/>;
+
+private:
+}
+
+class sequential_write_file
+{
+public:
+	// Open existing file for writing.
+	fn open( file_path path ) : file_result</sequential_read_file/>;
+	// Open or create file for writing.
+	fn create( file_path path ) : file_result</sequential_read_file/>;
+
+public:
+	fn destructor();
+
+public:
+	fn write( ust::array_view_imut</byte8/> buf ) : file_result</size_type/>;
+
+private:
+}
+
+class sequential_read_write_file
+{
+public:
+	// Open existing file for reading/writing.
+	fn open( file_path path ) : file_result</sequential_read_file/>;
+	// Open or create file for reading/writing.
+	fn create( file_path path ) : file_result</sequential_read_file/>;
+
+public:
+	fn destructor();
+
+public:
+	fn read( ust::array_view_mut</byte8/> buf ) : file_result</size_type/>;
+	fn write( ust::array_view_imut</byte8/> buf ) : file_result</size_type/>;
+
+private:
+}
+
+class seekable_read_file
+{
+public:
+	// Open existing file for reading.
+	fn open( file_path path ) : file_result</sequential_read_file/>;
+
+public:
+	fn destructor();
+
+public:
+	fn read( ust::array_view_mut</byte8/> buf ) : file_result</size_type/>;
+
+	fn seek( u64 offset ) : file_result</void/>;
+
+private:
+}
+
+class seekable_write_file
+{
+public:
+	// Open existing file for writing.
+	fn open( file_path path ) : file_result</sequential_read_file/>;
+	// Open or create file for writing.
+	fn create( file_path path ) : file_result</sequential_read_file/>;
+
+public:
+	fn destructor();
+
+public:
+	fn write( ust::array_view_imut</byte8/> buf ) : file_result</size_type/>;
+
+	fn seek( u64 offset ) : file_result</void/>;
+
+private:
+}
+
+class seekable_read_write_file
+{
+public:
+	// Open existing file for reading/writing.
+	fn open( file_path path ) : file_result</sequential_read_file/>;
+	// Open or create file for reading/writing.
+	fn create( file_path path ) : file_result</sequential_read_file/>;
+
+public:
+	fn destructor();
+
+public:
+	fn read( ust::array_view_mut</byte8/> buf ) : file_result</size_type/>;
+	fn write( ust::array_view_imut</byte8/> buf ) : file_result</size_type/>;
+
+	fn seek( u64 offset ) : file_result</void/>;
+
+private:
+}
+
+} // namespace ust
