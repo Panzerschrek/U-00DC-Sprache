@@ -3,4 +3,267 @@ import "../../imports/file.u"
 namespace ust
 {
 
+//
+// sequential_read_file
+//
+
+fn sequential_read_file::open( file_path path ) : file_result</sequential_read_file/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path ) );
+		return sequential_read_file(handle);
+	}
+}
+
+fn sequential_read_file::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn sequential_read_file::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn sequential_read_file::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( read_impl( handle_, buf ) );
+}
+
+//
+// sequential_write_file
+//
+
+fn sequential_write_file::open( file_path path ) : file_result</sequential_write_file/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path ) );
+		return sequential_write_file(handle);
+	}
+}
+
+fn sequential_write_file::create( file_path path ) : file_result</sequential_write_file/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path ) );
+		return sequential_write_file(handle);
+	}
+}
+
+fn sequential_write_file::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn sequential_write_file::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn sequential_write_file::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( write_impl( handle_, buf ) );
+}
+
+//
+// sequential_read_write_file
+//
+
+fn sequential_read_write_file::open( file_path path ) : file_result</sequential_read_write_file/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path ) );
+		return sequential_read_write_file(handle);
+	}
+}
+
+fn sequential_read_write_file::create( file_path path ) : file_result</sequential_read_write_file/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path ) );
+		return sequential_read_write_file(handle);
+	}
+}
+
+fn sequential_read_write_file::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn sequential_read_write_file::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn sequential_read_write_file::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( read_impl( handle_, buf ) );
+}
+
+fn sequential_read_write_file::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( write_impl( handle_, buf ) );
+}
+
+//
+// seekable_read_file
+//
+
+fn seekable_read_file::open( file_path path ) : file_result</seekable_read_file/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path ) );
+		return seekable_read_file(handle);
+	}
+}
+
+fn seekable_read_file::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn seekable_read_file::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn seekable_read_file::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( read_impl( handle_, buf ) );
+}
+
+fn seekable_read_file::seek( mut this, u64 offset ) : file_result</void/>
+{
+	return unsafe( seek_impl( handle_, offset ) );
+}
+
+//
+// seekable_write_file
+//
+
+fn seekable_write_file::open( file_path path ) : file_result</seekable_write_file/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path ) );
+		return seekable_write_file(handle);
+	}
+}
+
+fn seekable_write_file::create( file_path path ) : file_result</seekable_write_file/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path ) );
+		return seekable_write_file(handle);
+	}
+}
+
+fn seekable_write_file::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn seekable_write_file::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn seekable_write_file::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn seekable_write_file::seek( mut this, u64 offset ) : file_result</void/>
+{
+	return unsafe( seek_impl( handle_, offset ) );
+}
+
+//
+// seekable_read_write_file
+//
+
+fn seekable_read_write_file::open( file_path path ) : file_result</seekable_read_write_file/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path ) );
+		return seekable_read_write_file(handle);
+	}
+}
+
+fn seekable_read_write_file::create( file_path path ) : file_result</seekable_read_write_file/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path ) );
+		return seekable_read_write_file(handle);
+	}
+}
+
+fn seekable_read_write_file::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn seekable_read_write_file::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn seekable_read_write_file::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( read_impl( handle_, buf ) );
+}
+
+fn seekable_read_write_file::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn seekable_read_write_file::seek( mut this, u64 offset ) : file_result</void/>
+{
+	return unsafe( seek_impl( handle_, offset ) );
+}
+
+// impl functions
+
+fn open_file_impl( file_path path ) unsafe : file_result</native_file_handle/>
+{
+	// TODO
+	ignore_unused(path);
+	halt;
+}
+
+fn close_file_impl( native_file_handle handle ) unsafe
+{
+	// TODO
+	ignore_unused(handle);
+	halt;
+}
+
+fn read_impl( native_file_handle handle, ust::array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
+{
+	// TODO
+	ignore_unused(handle);
+	ignore_unused(buf);
+	halt;
+}
+
+fn write_impl( native_file_handle handle, ust::array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
+{
+	// TODO
+	ignore_unused(handle);
+	ignore_unused(buf);
+	halt;
+}
+
+fn seek_impl( native_file_handle handle, u64 offset ) unsafe : file_result</void/>
+{
+	// TODO
+	ignore_unused(handle);
+	ignore_unused(offset);
+	halt;
+}
+
 } // namespace ust
