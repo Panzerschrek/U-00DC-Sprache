@@ -2,6 +2,7 @@ import "../../imports/memory.u"
 import "../../imports/helpers.u"
 import "../../imports/pthread.u"
 import "../../imports/thread_impl.u"
+import "windows.uh"
 
 namespace ust
 {
@@ -11,16 +12,26 @@ namespace thread_impl
 
 fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_id
 {
-	// TODO
-	ignore_unused(func);
-	ignore_unused(arg);
-	halt;
+	var HANDLE handle=
+		unsafe( ::CreateThread(
+			ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+			SIZE_T(0), // stack size (o for default)
+			// HACK! Cas function returning "void" to function returning "DWORD".
+			// TODO - avoid doing this, pass function with expected signature.
+			cast_ref_unsafe</ fn( LPVOID arg0 ) unsafe call_conv( "system" ) : DWORD />(func ),
+			arg,
+			DWORD(0), // flags
+			ust::nullptr</DWORD/>() /* thread id */ ) );
+
+	halt if( ust::is_nullptr(handle) );
+
+	return handle;
 }
 
 fn join_and_destroy_thread( thread_id id ) unsafe
 {
-	// TODO
-	ignore_unused(id);
+	unsafe( ::WaitForSingleObject( id, DWORD(INFINITE) ) );
+	unsafe( ::CloseHandle( id ) );
 	halt;
 }
 

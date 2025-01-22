@@ -1,5 +1,6 @@
 // This file is used internally for low-level thread manipulations.
 // Do not use types/functions from this file directly!
+import "type_traits.u"
 
 namespace ust
 {
@@ -7,7 +8,13 @@ namespace ust
 namespace thread_impl
 {
 
-type thread_id= size_type;
+// Thread Id has platform-dependent format.
+type thread_id=
+	type_select</
+		// TODO - avoid using internal function here.
+		type_traits_impl::string_equals( compiler::target::os, "windows" ),
+		$(byte8),
+		size_type />;
 
 type thread_start_function= fn( $(byte8) arg ) unsafe : $(byte8);
 

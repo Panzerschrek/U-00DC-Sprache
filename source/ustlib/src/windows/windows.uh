@@ -1,0 +1,24 @@
+// This file contains some definitions from windows headers, which are used for implementing some functionality of "ustlib".
+// These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
+
+fn nomangle CreateThread( LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, ( fn( LPVOID arg0 ) unsafe call_conv( "system" ) : DWORD ) lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId ) unsafe call_conv( "system" ) : HANDLE;
+fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
+
+struct ü_SECURITY_ATTRIBUTES ordered
+{
+	DWORD nLength;
+	LPVOID lpSecurityDescriptor;
+	BOOL bInheritHandle;
+}
+
+type BOOL = i32;
+type DWORD = u32;
+type HANDLE = $(byte8);
+type LPDWORD = $(DWORD);
+type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
+type LPVOID = $(byte8);
+type ULONG_PTR = size_type;
+type SIZE_T = ULONG_PTR;
+
+auto constexpr INFINITE = -1;

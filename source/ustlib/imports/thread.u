@@ -79,7 +79,7 @@ private:
 	{
 		optional</Func/> func;
 		optional</ResultType/> result;
-		thread_impl::thread_id thread_id(0);
+		thread_impl::thread_id thread_id= zero_init;
 
 		fn constructor( Func mut in_func ) @(c_constructor_pollution)
 			( func(move(in_func)) )
