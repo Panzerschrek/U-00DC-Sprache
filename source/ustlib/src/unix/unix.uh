@@ -22,3 +22,7 @@ auto constexpr O_TRUNC = 512;
 auto constexpr SEEK_SET = 0;
 auto constexpr SEEK_CUR = 1;
 auto constexpr SEEK_END = 2;
+
+auto constexpr STDIN_FILENO = 0;
+auto constexpr STDOUT_FILENO = 1;
+auto constexpr STDERR_FILENO = 2;
