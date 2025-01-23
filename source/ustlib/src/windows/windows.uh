@@ -3,12 +3,36 @@
 
 fn nomangle AcquireSRWLockExclusive( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle AcquireSRWLockShared( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
+fn nomangle CreateDirectoryW( LPCWSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CreateThread( LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, ( fn( LPVOID arg0 ) unsafe call_conv( "system" ) : DWORD ) lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle InitializeSRWLock( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
+fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle ReleaseSRWLockExclusive( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle ReleaseSRWLockShared( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
+fn nomangle SetFilePointerEx( HANDLE hFile, LARGE_INTEGER liDistanceToMove, PLARGE_INTEGER lpNewFilePointer, DWORD dwMoveMethod ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
+fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
+
+struct ü_LARGE_INTEGER ordered
+{
+	[ byte64, 1 ] union_contents;
+}
+
+struct ü_OVERLAPPED ordered
+{
+	ULONG_PTR Internal;
+	ULONG_PTR InternalHigh;
+
+	struct ü_anon_record_190 ordered
+	{
+		[ byte32, 2 ] union_contents;
+	}
+	ü_anon_record_190 ü_anon_field_636;
+
+	HANDLE hEvent;
+}
 
 struct ü_RTL_SRWLOCK ordered
 {
@@ -22,16 +46,42 @@ struct ü_SECURITY_ATTRIBUTES ordered
 	BOOL bInheritHandle;
 }
 
+type wchar_t = u16;
 type BOOL = i32;
 type DWORD = u32;
 type HANDLE = $(byte8);
+type LARGE_INTEGER = ü_LARGE_INTEGER;
+type LPCVOID = $(byte8);
+type LPCWSTR = $(WCHAR);
 type LPDWORD = $(DWORD);
+type LPOVERLAPPED = $(ü_OVERLAPPED);
 type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
 type LPVOID = $(byte8);
+type LPWSTR = $(WCHAR);
+type PLARGE_INTEGER = $(LARGE_INTEGER);
 type PSRWLOCK = $(RTL_SRWLOCK);
 type PVOID = $(byte8);
 type RTL_SRWLOCK = ü_RTL_SRWLOCK;
 type SIZE_T = ULONG_PTR;
 type ULONG_PTR = size_type;
+type WCHAR = wchar_t;
+
+auto constexpr FILE_BEGIN = 0;
+auto constexpr FILE_CURRENT = 1;
+auto constexpr FILE_END = 2;
+
+auto constexpr FILE_SHARE_READ = 1;
+auto constexpr FILE_SHARE_WRITE = 2;
+auto constexpr FILE_SHARE_DELETE = 4;
+
+auto constexpr GENERIC_READ = 0x80000000u;
+auto constexpr GENERIC_WRITE = 0x40000000u;
+auto constexpr GENERIC_EXECUTE = 0x20000000u;
+auto constexpr GENERIC_ALL = 0x10000000u;
+
+auto constexpr CREATE_NEW = 1;
+auto constexpr CREATE_ALWAYS = 2;
+auto constexpr OPEN_EXISTING = 3;
+auto constexpr OPEN_ALWAYS = 4;
 
 auto constexpr INFINITE = -1;
