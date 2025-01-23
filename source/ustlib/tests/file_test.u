@@ -4,6 +4,46 @@ import "../imports/file.u"
 
 fn nomangle main() : i32
 {
+	// Try opening non-existing file for reading.
+	result_match( ust::file_readable::open( "this_file_does_not_exist" ) )
+	{
+		Ok(f) ->
+		{
+			assert( false, "Should not open non-existing file!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
+	// Try opening non-existing file for writing.
+	result_match( ust::file_writeable::open( "this_file_does_not_exist" ) )
+	{
+		Ok(f) ->
+		{
+			assert( false, "Should not open non-existing file!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
+	// Try opening non-existing file for reading and writing.
+	result_match( ust::file_readable_writeable::open( "this_file_does_not_exist" ) )
+	{
+		Ok(f) ->
+		{
+			assert( false, "Should not open non-existing file!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
+	// Open a file for reading.
 	result_match( ust::file_readable::open( "test_file0.txt" ) )
 	{
 		Ok( mut f ) ->
@@ -21,6 +61,7 @@ fn nomangle main() : i32
 		},
 	}
 
+	// Try reading more than possible.
 	result_match( ust::file_readable::open( "test_file0.txt" ) )
 	{
 		Ok( mut f ) ->
@@ -39,11 +80,11 @@ fn nomangle main() : i32
 		},
 	}
 
+	// Read with seek.
 	result_match( ust::file_readable::open( "test_file0.txt" ) )
 	{
 		Ok( mut f ) ->
 		{
-			// Read with seek.
 			{
 				var[ char8, 4 ] mut data= zero_init;
 				auto seek_res= f.seek( 1u64 );
@@ -81,6 +122,7 @@ fn nomangle main() : i32
 		},
 	}
 
+	// Writing and reading.
 	{
 		auto &constexpr file_data= "Handschuhe aus Menschenhaut";
 		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;

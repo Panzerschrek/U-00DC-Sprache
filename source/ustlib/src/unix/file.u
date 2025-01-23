@@ -138,7 +138,7 @@ fn create_directory( file_path path ) : file_result</void/>
 	if( res == -1 )
 	{
 		// TODO - handle case if directory already exists.
-		return io_error::other; // TODO - translate error code properly.
+		return translate_errno( get_errno() );
 	}
 
 	return void();
@@ -151,7 +151,7 @@ fn remove_file( file_path path ) : file_result</void/>
 	auto res= unsafe( ::unlink( path_nt.data() ) );
 	if( res == -1 )
 	{
-		return io_error::other; // TODO - translate error code properly.
+		return translate_errno( get_errno() );
 	}
 
 	return void();
@@ -164,7 +164,7 @@ fn remove_directory( file_path path ) : file_result</void/>
 	auto res= unsafe( ::rmdir( path_nt.data() ) );
 	if( res == -1 )
 	{
-		return io_error::other; // TODO - translate error code properly.
+		return translate_errno( get_errno() );
 	}
 
 	return void();
@@ -216,7 +216,7 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 	var i32 handle= unsafe( ::open( path_nt.data(), open_flags, file_mode ) );
 	if( handle == -1 )
 	{
-		return io_error::other; // TODO - translate error code properly.
+		return translate_errno( get_errno() );
 	}
 
 	return handle;
@@ -235,7 +235,7 @@ fn read_impl( native_file_handle handle, ust::array_view_mut</byte8/> buf ) unsa
 
 	if( read_res < ssize_type(0) )
 	{
-		return io_error::other; // TODO - translate error code properly.
+		return translate_errno( get_errno() );
 	}
 
 	if( read_res == ssize_type(0) )
@@ -255,7 +255,7 @@ fn write_impl( native_file_handle handle, ust::array_view_imut</byte8/> buf ) un
 
 	if( write_res < ssize_type(0) )
 	{
-		return io_error::other; // TODO - translate error code properly.
+		return translate_errno( get_errno() );
 	}
 
 	if( write_res == ssize_type(0) )
@@ -273,10 +273,33 @@ fn seek_impl( native_file_handle handle, u64 offset ) unsafe : file_result</void
 
 	if( seek_res == ü__off64_t(-1) )
 	{
-		return io_error::other; // TODO - translate error code properly.
+		return translate_errno( get_errno() );
 	}
 
 	return void();
+}
+
+fn translate_errno( i32 errno ) : io_error
+{
+	switch(errno)
+	{
+	EPERM -> { return io_error::permission_denied; },
+	ENOENT -> { return io_error::not_found; },
+	// TODO - support other codes.
+	default -> { return io_error::other; },
+	}
+}
+
+fn get_errno() : i32
+{
+	// "errno" in glibc is accessed via function "__errno_location".
+	// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
+	unsafe
+	{
+		auto f= import fn</ fn() : $(i32) /> ( "__errno_location" );
+		var $(i32) ptr= f();
+		return $>(ptr);
+	}
 }
 
 } // namespace ust
