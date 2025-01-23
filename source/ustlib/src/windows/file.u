@@ -153,13 +153,20 @@ fn create_directory( file_path path ) : file_result</void/>
 	var WideString mut path_null_terminated= UTF8ToNullTerminatedWideString( path );
 
 	var BOOL res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
-	// TODO - what if path exists but it's a file?
+
 	if( res == 1 || unsafe( GetLastError() ) == DWORD(ERROR_ALREADY_EXISTS) )
 	{
 		return void();
 	}
 
-	return io_error::other;
+	var DWORD last_error = unsafe( GetLastError() );
+	if( last_error == DWORD(ERROR_ALREADY_EXISTS) )
+	{
+		// TODO - what if path exists but it's a file?
+		return void();
+	}
+
+	return translate_error_code(  last_error );
 }
 
 fn remove_file( file_path path ) : file_result</void/>
@@ -169,7 +176,7 @@ fn remove_file( file_path path ) : file_result</void/>
 	var BOOL res= unsafe( ::DeleteFileW( path_null_terminated.data() ) );
 	if( res == 0 )
 	{
-		return io_error::other;
+		return translate_error_code( unsafe( GetLastError() ) );
 	}
 
 	return void();
@@ -182,7 +189,7 @@ fn remove_directory( file_path path ) : file_result</void/>
 	var BOOL res= unsafe( ::RemoveDirectoryW( path_null_terminated.data() ) );
 	if( res == 0 )
 	{
-		return io_error::other;
+		return translate_error_code( unsafe( GetLastError() ) );
 	}
 
 	return void();
@@ -238,7 +245,7 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 	}
 	else
 	{
-		creation_disposition= DWORD( OPEN_ALWAYS );
+		creation_disposition= DWORD( OPEN_EXISTING );
 	}
 	if( options.truncate )
 	{
@@ -255,7 +262,7 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 		nullptr</byte8/>() ) );
 	if( is_nullptr(handle) || handle == GetInvalidHandle() )
 	{
-		return io_error::other;
+		return translate_error_code( unsafe( GetLastError() ) );
 	}
 
 	return handle;
@@ -281,7 +288,7 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 
 	if( res == 0 )
 	{
-		return io_error::other;
+		return translate_error_code( unsafe( GetLastError() ) );
 	}
 
 	// Expected number of bytes or less.
@@ -303,7 +310,7 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 
 	if( res == 0 )
 	{
-		return io_error::other;
+		return translate_error_code( unsafe( GetLastError() ) );
 	}
 
 	// Expected number of bytes or less.
@@ -317,10 +324,21 @@ fn seek_impl( native_file_handle handle, u64 offset ) unsafe : file_result</void
 	var BOOL res = unsafe( ::SetFilePointerEx( handle, li_offset, nullptr</LARGE_INTEGER/>(), DWORD(FILE_BEGIN) ) );
 	if( res == 0 )
 	{
-		return io_error::other;
+		return translate_error_code( unsafe( GetLastError() ) );
 	}
 
 	return void();
+}
+
+fn translate_error_code( DWORD code ) : io_error
+{
+	switch(code)
+	{
+		DWORD(ERROR_FILE_NOT_FOUND), DWORD(ERROR_PATH_NOT_FOUND) -> { return io_error::not_found; },
+		DWORD(ERROR_ALREADY_EXISTS), DWORD(ERROR_FILE_EXISTS) -> { return io_error::already_exists; },
+		DWORD(ERROR_ACCESS_DENIED) -> { return io_error::permission_denied; },
+		default -> { return io_error::other; },
+	}
 }
 
 // Can't use string_base, since "WCHAR" is defined as integer.

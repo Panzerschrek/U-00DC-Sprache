@@ -9,7 +9,7 @@ fn nomangle main() : i32
 	{
 		Ok(f) ->
 		{
-			assert( false, "Should not open non-existing file!" );
+			assert( false, "Should not open non-existing file for reading!" );
 		},
 		Err(e) ->
 		{
@@ -22,7 +22,7 @@ fn nomangle main() : i32
 	{
 		Ok(f) ->
 		{
-			assert( false, "Should not open non-existing file!" );
+			assert( false, "Should not open non-existing file for writing!" );
 		},
 		Err(e) ->
 		{
