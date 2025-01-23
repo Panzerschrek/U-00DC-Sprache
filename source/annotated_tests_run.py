@@ -178,7 +178,11 @@ def DoSuccessTest( file_path ):
 		print( "Compilation failed" )
 		return 1
 
-	if subprocess.call( [ os.path.abspath( executable_file ) ] ) != 0:
+	# Run result executable with current directory equal to directory of the source file.
+	# Do this in order to have access to files in this directory from a test.
+	file_dir= os.path.dirname( file_path )
+
+	if subprocess.call( [ os.path.abspath( executable_file )], cwd= file_dir ) != 0:
 		print( "running failed" )
 		os.remove( executable_file )
 		return 1
