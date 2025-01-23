@@ -43,6 +43,32 @@ fn nomangle main() : i32
 		},
 	}
 
+	// Try removing non-existing file.
+	result_match( ust::remove_file( "this_file_does_not_exist" ) )
+	{
+		Ok(v) ->
+		{
+			assert( false, "Should remove non-existing file!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
+	// Try removing non-existing directory.
+	result_match( ust::remove_directory( "this_directory_does_not_exist" ) )
+	{
+		Ok(v) ->
+		{
+			assert( false, "Should remove non-existing directory!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
 	// Open a file for reading.
 	result_match( ust::file_readable::open( "test_file0.txt" ) )
 	{
@@ -166,6 +192,11 @@ fn nomangle main() : i32
 		// Remove this file.
 		auto remove_res= ust::remove_file( file_path );
 		assert( remove_res.is_ok(), "Failed to remove file!" );
+
+		// Removing second time should fail.
+		auto remove_res2= ust::remove_file( file_path );
+		assert( remove_res2.is_error(), "Removing already removed file not failed. WTF?" );
+		assert( remove_res2.try_deref_error() == ust::io_error::not_found, "Unexpected error code while removing already removed file" );
 	}
 
 	// Writing and reading using the same file.
