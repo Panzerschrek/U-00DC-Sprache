@@ -244,15 +244,16 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 		creation_disposition= DWORD( OPEN_EXISTING );
 	}
 
-	var HANDLE handle = unsafe( ::CreateFileW(
-		path_null_terminated.data(),
-		desired_access,
-		share_mode,
-		nullptr</ü_SECURITY_ATTRIBUTES/>(),
-		creation_disposition,
-		0u,
-		nullptr</byte8/>() ) );
-	if( is_nullptr(handle) || handle == get_invalid_handle() )
+	var HANDLE handle =
+		unsafe( ::CreateFileW(
+			path_null_terminated.data(),
+			desired_access,
+			share_mode,
+			nullptr</ü_SECURITY_ATTRIBUTES/>(),
+			creation_disposition,
+			0u,
+			nullptr</byte8/>() ) );
+	if( handle == get_invalid_handle() )
 	{
 		return translate_error_code( unsafe( GetLastError() ) );
 	}
