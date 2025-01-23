@@ -180,7 +180,7 @@ fn nomangle main() : i32
 			},
 			Err(e) ->
 			{
-				assert( false, "Failed to open file \"test_file_to_write.txt\"" );
+				assert( false, "Failed to open file \"" + file_path + "\"" );
 			},
 		}
 
@@ -198,7 +198,7 @@ fn nomangle main() : i32
 			},
 			Err(e) ->
 			{
-				assert( false, "Failed to open file \"test_file0.txt\"" );
+				assert( false, "Failed to open file \"" + file_path + "\"" );
 			},
 		}
 
@@ -263,7 +263,7 @@ fn nomangle main() : i32
 			},
 			Err(e) ->
 			{
-				assert( false, "Failed to open file \"test_file_to_write.txt\"" );
+				assert( false, "Failed to open file \"" + file_path + "\"" );
 			},
 		}
 
@@ -305,7 +305,7 @@ fn nomangle main() : i32
 			},
 			Err(e) ->
 			{
-				assert( false, "Failed to open file \"test_file_to_write.txt\"" );
+				assert( false, "Failed to open file \"" + file_path + "\"" );
 			},
 		}
 
@@ -323,7 +323,7 @@ fn nomangle main() : i32
 			},
 			Err(e) ->
 			{
-				assert( false, "Failed to open file \"test_file0.txt\"" );
+				assert( false, "Failed to open file \"" + file_path + "\"" );
 			},
 		}
 
