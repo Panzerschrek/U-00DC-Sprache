@@ -213,19 +213,20 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
+	// Allow sharing of files by default.
+	// TODO - allow to override this.
+	var DWORD share_mode = DWORD( FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE );
+
 	var DWORD mut desired_access= 0u;
-	var DWORD mut share_mode= 0u; // TODO - tune its usage.
 	var DWORD mut creation_disposition= 0u;
 
 	if( options.read )
 	{
 		desired_access|= DWORD( GENERIC_READ );
-		share_mode|= DWORD( FILE_SHARE_READ  );
 	}
 	if( options.write )
 	{
 		desired_access|= DWORD( GENERIC_WRITE );
-		share_mode|= DWORD( FILE_SHARE_WRITE );
 	}
 
 	if( options.create_and_truncate )
