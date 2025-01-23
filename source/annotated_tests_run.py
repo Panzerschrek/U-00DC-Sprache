@@ -182,8 +182,9 @@ def DoSuccessTest( file_path ):
 	# Do this in order to have access to files in this directory from a test.
 	file_dir= os.path.dirname( file_path )
 
-	if subprocess.call( [ os.path.abspath( executable_file )], cwd= file_dir ) != 0:
-		print( "running failed" )
+	return_code= subprocess.call( [ os.path.abspath( executable_file )], cwd= file_dir )
+	if return_code != 0:
+		print( "running failed with code " + str(return_code) )
 		os.remove( executable_file )
 		return 1
 
