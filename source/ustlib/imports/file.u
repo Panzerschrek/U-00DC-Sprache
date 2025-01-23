@@ -1,5 +1,6 @@
 import "random_access_range.u"
 import "result.u"
+import "type_traits.u"
 
 namespace ust
 {
@@ -87,7 +88,12 @@ private:
 	native_file_handle handle_;
 }
 
-type native_file_handle= i32;
+// Native file handle, in platform-specific format.
+type native_file_handle=
+	type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		$(byte8),
+		i32 />;
 
 // Create a single directory (but only if parent exists).
 // Fails if given path exists but it's not a directory.
