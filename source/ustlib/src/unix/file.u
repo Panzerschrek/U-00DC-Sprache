@@ -177,7 +177,6 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 fn close_file_impl( native_file_handle handle ) unsafe
 {
 	unsafe( ::close( handle ) );
-	halt;
 }
 
 fn read_impl( native_file_handle handle, ust::array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
