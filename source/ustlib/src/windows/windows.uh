@@ -106,3 +106,5 @@ auto constexpr OPEN_EXISTING = 3;
 auto constexpr OPEN_ALWAYS = 4;
 
 auto constexpr INFINITE = -1;
+
+var DWORD MAXDWORD = 4294967295u;

@@ -1,5 +1,5 @@
 import "../../imports/file.u"
-import "../../imports/string.u"
+import "../../imports/minmax.u"
 import "../../imports/utf.u"
 import "../../imports/vector.u"
 import "windows.uh"
@@ -272,7 +272,7 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 		unsafe( ::ReadFile(
 			handle,
 			buf.data(),
-			DWORD(buf.size()), // TODO - prevent overflow.
+			DWORD( min( buf.size(), size_type(MAXDWORD) ) ),
 			$<(bytes_read),
 			ust::nullptr</ü_OVERLAPPED/>() ) );
 
@@ -294,7 +294,7 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 		unsafe( ::WriteFile(
 			handle,
 			buf.data(),
-			DWORD(buf.size()), // TODO - prevent overflow.
+			DWORD( min( buf.size(), size_type(MAXDWORD) ) ),
 			$<(bytes_written),
 			ust::nullptr</ü_OVERLAPPED/>() ) );
 
