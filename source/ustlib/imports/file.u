@@ -84,4 +84,14 @@ private:
 
 type native_file_handle= i32;
 
+// Create a single directory (but only if parent exists).
+// Fails if given path exists but it's not a directory.
+fn create_directory( file_path path ) : file_result</void/>;
+
+// Remove file or link.
+fn remove_file( file_path path ) : file_result</void/>;
+
+// Remove an empty directory.
+fn remove_directory( file_path path ) : file_result</void/>;
+
 } // namespace ust

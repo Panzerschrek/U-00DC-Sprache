@@ -2,9 +2,12 @@
 // These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
 fn nomangle close( i32 ü__fd ) unsafe : i32;
+fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe : ü__off64_t;
+fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe : ssize_t;
-fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe : ü__off64_t;
+fn nomangle rmdir( $(char8) ü__path ) unsafe : i32;
+fn nomangle unlink( $(char8) ü__name ) unsafe : i32;
 fn nomangle write( i32 ü__fd, $(byte8) ü__buf, size_t ü__n ) unsafe : ssize_t;
 
 type size_t = size_type;

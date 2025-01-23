@@ -124,7 +124,55 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 	return unsafe( seek_impl( handle_, offset ) );
 }
 
+//
+// various functions
+//
+
+fn create_directory( file_path path ) : file_result</void/>
+{
+	var ust::string8 mut path_nt= concat( path, "\0" ); // TODO - use scoped array instead.
+
+	var u32 file_mode= 0o777u; // TODO - allow to select it.
+
+	auto res= unsafe( ::mkdir( path_nt.data(), file_mode ) );
+	if( res == -1 )
+	{
+		// TODO - handle case if directory already exists.
+		return io_error::other; // TODO - translate error code properly.
+	}
+
+	return void();
+}
+
+fn remove_file( file_path path ) : file_result</void/>
+{
+	var ust::string8 mut path_nt= concat( path, "\0" ); // TODO - use scoped array instead.
+
+	auto res= unsafe( ::unlink( path_nt.data() ) );
+	if( res == -1 )
+	{
+		return io_error::other; // TODO - translate error code properly.
+	}
+
+	return void();
+}
+
+fn remove_directory( file_path path ) : file_result</void/>
+{
+	var ust::string8 mut path_nt= concat( path, "\0" ); // TODO - use scoped array instead.
+
+	auto res= unsafe( ::rmdir( path_nt.data() ) );
+	if( res == -1 )
+	{
+		return io_error::other; // TODO - translate error code properly.
+	}
+
+	return void();
+}
+
+//
 // impl functions
+//
 
 struct open_options
 {
