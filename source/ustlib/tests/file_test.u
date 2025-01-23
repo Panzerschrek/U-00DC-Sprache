@@ -259,6 +259,78 @@ fn nomangle main() : i32
 		assert( remove_res.is_ok(), "Failed to remove file!" );
 	}
 
+	// Writing and reading of a file within a directory.
+	{
+		auto constexpr dir0= "some_dir0";
+		auto constexpr dir1= dir0 + "/" + "some_subdir1";
+		auto constexpr file_path= dir1 + "/" + "test_file_to_write.txt";
+
+		// Create directories.
+		result_match( ust::create_directory( dir0 ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+		result_match( ust::create_directory( dir1 ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+
+		auto &constexpr file_data= "Was kann das sein?\nDas gibt's doch nie!\nNun ist mir klar: das wäre wahre Anarchie!\n";
+		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+
+		// Write a file and close it.
+		result_match( ust::file_writeable::create( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Write the whole file in one call.
+				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				assert( write_res.is_ok(), "Failed to write!" );
+				assert( write_res.try_deref() == file_data_size );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"test_file_to_write.txt\"" );
+			},
+		}
+
+		// Read file. Should get expected result.
+		result_match( ust::file_readable::open( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Read the whole file in one call.
+				var[ char8, file_data_size ] mut expected_file_data= zero_init;
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				assert( read_res.try_deref() == file_data_size );
+				assert( expected_file_data == file_data, "Invalid file contents!" );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"test_file0.txt\"" );
+			},
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+
+		// Remove directories.
+		result_match( ust::remove_directory( dir1 ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to remove directory!" ) },
+		}
+		result_match( ust::remove_directory( dir0 ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to remove directory!" ) },
+		}
+	}
+
 	return 0;
 }
 
