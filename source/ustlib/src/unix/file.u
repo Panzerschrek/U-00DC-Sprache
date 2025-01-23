@@ -13,7 +13,7 @@ fn file_readable::open( file_path path ) : file_result</file_readable/>
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= false, .create= false, .truncate= false } ) );
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= false, .create= false, .truncate= false, .ensure_new= false } ) );
 		return file_readable(handle);
 	}
 }
@@ -45,7 +45,7 @@ fn file_writeable::open( file_path path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path , open_options{ .read= false, .write= true, .create= false, .truncate= false } ) );
+		result_unwrap_or_return( handle : open_file_impl( path , open_options{ .read= false, .write= true, .create= false, .truncate= false, .ensure_new= false } ) );
 		return file_writeable(handle);
 	}
 }
@@ -54,7 +54,16 @@ fn file_writeable::create( file_path path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create= true, .truncate= true } ) );
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create= true, .truncate= true, .ensure_new= false } ) );
+		return file_writeable(handle);
+	}
+}
+
+fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create= true, .truncate= true, .ensure_new= true } ) );
 		return file_writeable(handle);
 	}
 }
@@ -86,7 +95,7 @@ fn file_readable_writeable::open( file_path path ) : file_result</file_readable_
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= false, .truncate= false } ) );
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= false, .truncate= false, .ensure_new= false } ) );
 		return file_readable_writeable(handle);
 	}
 }
@@ -95,7 +104,16 @@ fn file_readable_writeable::create( file_path path ) : file_result</file_readabl
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= true, .truncate= true } ) );
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= true, .truncate= true, .ensure_new= false } ) );
+		return file_readable_writeable(handle);
+	}
+}
+
+fn file_readable_writeable::create_new( file_path path ) : file_result</file_readable_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= true, .truncate= true, .ensure_new= true } ) );
 		return file_readable_writeable(handle);
 	}
 }
@@ -180,6 +198,7 @@ struct open_options
 	bool write;
 	bool create;
 	bool truncate;
+	bool ensure_new;
 }
 
 fn open_file_impl( file_path path, open_options& options ) unsafe : file_result</native_file_handle/>
@@ -211,6 +230,10 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 	if( options.truncate )
 	{
 		open_flags|= O_TRUNC;
+	}
+	if( options.ensure_new )
+	{
+		open_flags|= O_EXCL;
 	}
 
 	var i32 handle= unsafe( ::open( path_nt.data(), open_flags, file_mode ) );
@@ -285,6 +308,7 @@ fn translate_errno( i32 errno ) : io_error
 	{
 	EPERM -> { return io_error::permission_denied; },
 	ENOENT -> { return io_error::not_found; },
+	EEXIST -> { return io_error::already_exists; },
 	// TODO - support other codes.
 	default -> { return io_error::other; },
 	}

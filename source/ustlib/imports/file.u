@@ -8,6 +8,7 @@ enum io_error
 {
 	permission_denied,
 	not_found,
+	already_exists,
 	other, // Some non-listed error code.
 	// TODO - add other errors
 }
@@ -42,8 +43,10 @@ class file_writeable
 public:
 	// Open existing file for writing.
 	fn open( file_path path ) : file_result</file_writeable/>;
-	// Open or create file for writing.
+	// Create file or open an existing file with trunction for writing.
 	fn create( file_path path ) : file_result</file_writeable/>;
+	// Creates file for writing, but only if it doesn't exist.
+	fn create_new( file_path path ) : file_result</file_writeable/>;
 
 public:
 	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.
@@ -64,8 +67,10 @@ class file_readable_writeable
 public:
 	// Open existing file for reading/writing.
 	fn open( file_path path ) : file_result</file_readable_writeable/>;
-	// Open or create file for reading/writing.
+	// Create file or open an existing file with trunction for reading/writing.
 	fn create( file_path path ) : file_result</file_readable_writeable/>;
+	// Creates file for reading/writing, but only if it doesn't exist.
+	fn create_new( file_path path ) : file_result</file_readable_writeable/>;
 
 public:
 	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.

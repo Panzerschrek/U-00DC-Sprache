@@ -55,6 +55,7 @@ auto constexpr O_RDONLY = 0;
 auto constexpr O_WRONLY = 1;
 auto constexpr O_RDWR = 2;
 auto constexpr O_CREAT = 64;
+auto constexpr O_EXCL = 128;
 auto constexpr O_TRUNC = 512;
 
 auto constexpr SEEK_SET = 0;

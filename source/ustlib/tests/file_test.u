@@ -69,6 +69,19 @@ fn nomangle main() : i32
 		},
 	}
 
+	// Try creating new file for writing. This should fail, since this file already exists.
+	result_match( ust::file_writeable::create_new( "test_file0.txt" ) )
+	{
+		Ok(f) ->
+		{
+			assert( false, "Should not open already existing file!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::already_exists, "Unexpected error code!" );
+		},
+	}
+
 	// Open a file for reading.
 	result_match( ust::file_readable::open( "test_file0.txt" ) )
 	{
@@ -329,6 +342,52 @@ fn nomangle main() : i32
 			Ok(v) -> {},
 			Err(e) -> { assert( false, "Failed to remove directory!" ) },
 		}
+	}
+
+	// Writing and reading for a newly-created file.
+	{
+		auto &constexpr file_data= "Du bist das Produkt!";
+		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+
+		auto& file_path= "new_test_file_for_write.txt";
+
+		// Write a file and close it.
+		result_match( ust::file_writeable::create_new( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Write the whole file in one call.
+				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				assert( write_res.is_ok(), "Failed to write!" );
+				assert( write_res.try_deref() == file_data_size );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Read file. Should get expected result.
+		result_match( ust::file_readable::open( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Read the whole file in one call.
+				var[ char8, file_data_size ] mut expected_file_data= zero_init;
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				assert( read_res.try_deref() == file_data_size );
+				assert( expected_file_data == file_data, "Invalid file contents!" );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
 	}
 
 	return 0;
