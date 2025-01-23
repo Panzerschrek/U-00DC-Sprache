@@ -15,7 +15,7 @@ fn file_readable::open( file_path path ) : file_result</file_readable/>
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= false, .create= false, .truncate= false, .ensure_new= false } ) );
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= false, .create_and_truncate= false,  .ensure_new= false } ) );
 		return file_readable(handle);
 	}
 }
@@ -47,7 +47,7 @@ fn file_writeable::open( file_path path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path , open_options{ .read= false, .write= true, .create= false, .truncate= false, .ensure_new= false } ) );
+		result_unwrap_or_return( handle : open_file_impl( path , open_options{ .read= false, .write= true, .create_and_truncate= false, .ensure_new= false } ) );
 		return file_writeable(handle);
 	}
 }
@@ -56,7 +56,7 @@ fn file_writeable::create( file_path path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create= true, .truncate= true, .ensure_new= false } ) );
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create_and_truncate= true, .ensure_new= false } ) );
 		return file_writeable(handle);
 	}
 }
@@ -65,7 +65,7 @@ fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create= true, .truncate= true, .ensure_new= true } ) );
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create_and_truncate= true, .ensure_new= true } ) );
 		return file_writeable(handle);
 	}
 }
@@ -97,7 +97,7 @@ fn file_readable_writeable::open( file_path path ) : file_result</file_readable_
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= false, .truncate= false, .ensure_new= false } ) );
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create_and_truncate= false, .ensure_new= false } ) );
 		return file_readable_writeable(handle);
 	}
 }
@@ -106,7 +106,7 @@ fn file_readable_writeable::create( file_path path ) : file_result</file_readabl
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= true, .truncate= true, .ensure_new= false } ) );
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create_and_truncate= true, .ensure_new= false } ) );
 		return file_readable_writeable(handle);
 	}
 }
@@ -115,7 +115,7 @@ fn file_readable_writeable::create_new( file_path path ) : file_result</file_rea
 {
 	unsafe
 	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= true, .truncate= true, .ensure_new= true } ) );
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create_and_truncate= true, .ensure_new= true } ) );
 		return file_readable_writeable(handle);
 	}
 }
@@ -150,7 +150,7 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 
 fn create_directory( file_path path ) : file_result</void/>
 {
-	var WideString mut path_null_terminated= UTF8ToNullTerminatedWideString( path );
+	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
 	var BOOL res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
 
@@ -171,7 +171,7 @@ fn create_directory( file_path path ) : file_result</void/>
 
 fn remove_file( file_path path ) : file_result</void/>
 {
-	var WideString mut path_null_terminated= UTF8ToNullTerminatedWideString( path );
+	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
 	var BOOL res= unsafe( ::DeleteFileW( path_null_terminated.data() ) );
 	if( res == 0 )
@@ -184,7 +184,7 @@ fn remove_file( file_path path ) : file_result</void/>
 
 fn remove_directory( file_path path ) : file_result</void/>
 {
-	var WideString mut path_null_terminated= UTF8ToNullTerminatedWideString( path );
+	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
 	var BOOL res= unsafe( ::RemoveDirectoryW( path_null_terminated.data() ) );
 	if( res == 0 )
@@ -203,36 +203,30 @@ struct open_options
 {
 	bool read;
 	bool write;
-	bool create;
-	bool truncate;
+	bool create_and_truncate;
 	bool ensure_new;
 }
 
 fn open_file_impl( file_path path, open_options& options ) unsafe : file_result</native_file_handle/>
 {
-	var WideString mut path_null_terminated= UTF8ToNullTerminatedWideString( path );
+	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
 	var DWORD mut desired_access= 0u;
 	var DWORD mut share_mode= 0u; // TODO - tune its usage.
 	var DWORD mut creation_disposition= 0u;
 
-	if( options.read & options.write )
-	{
-		desired_access|= DWORD( GENERIC_READ | GENERIC_WRITE );
-		share_mode|= DWORD( FILE_SHARE_READ | FILE_SHARE_WRITE );
-	}
-	else if( options.read )
+	if( options.read )
 	{
 		desired_access|= DWORD( GENERIC_READ );
 		share_mode|= DWORD( FILE_SHARE_READ  );
 	}
-	else if( options.write )
+	if( options.write )
 	{
 		desired_access|= DWORD( GENERIC_WRITE );
 		share_mode|= DWORD( FILE_SHARE_WRITE );
 	}
 
-	if( options.create )
+	if( options.create_and_truncate )
 	{
 		if( options.ensure_new )
 		{
@@ -247,10 +241,6 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 	{
 		creation_disposition= DWORD( OPEN_EXISTING );
 	}
-	if( options.truncate )
-	{
-		// TODO - use TRUNCATE_EXISTING
-	}
 
 	var HANDLE handle = unsafe( ::CreateFileW(
 		path_null_terminated.data(),
@@ -260,7 +250,7 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 		creation_disposition,
 		0u,
 		nullptr</byte8/>() ) );
-	if( is_nullptr(handle) || handle == GetInvalidHandle() )
+	if( is_nullptr(handle) || handle == get_invalid_handle() )
 	{
 		return translate_error_code( unsafe( GetLastError() ) );
 	}
@@ -282,7 +272,7 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 		unsafe( ::ReadFile(
 			handle,
 			buf.data(),
-			DWORD(buf.size()),
+			DWORD(buf.size()), // TODO - prevent overflow.
 			$<(bytes_read),
 			ust::nullptr</ü_OVERLAPPED/>() ) );
 
@@ -304,7 +294,7 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 		unsafe( ::WriteFile(
 			handle,
 			buf.data(),
-			DWORD(buf.size()),
+			DWORD(buf.size()), // TODO - prevent overflow.
 			$<(bytes_written),
 			ust::nullptr</ü_OVERLAPPED/>() ) );
 
@@ -342,11 +332,11 @@ fn translate_error_code( DWORD code ) : io_error
 }
 
 // Can't use string_base, since "WCHAR" is defined as integer.
-type WideString= vector</WCHAR/>;
+type wide_string= vector</WCHAR/>;
 
-fn UTF8ToNullTerminatedWideString( string_view8 mut v ) : WideString
+fn utf8_to_null_terminated_wide_string( string_view8 mut v ) : wide_string
 {
-	var WideString mut res;
+	var wide_string mut res;
 	while( !v.empty() )
 	{
 		var u32 code_point( utf::extract_code_point_or_null_from_string(v) );
@@ -368,7 +358,7 @@ fn UTF8ToNullTerminatedWideString( string_view8 mut v ) : WideString
 }
 
 // Produces INVALID_HANDLE_VALUE.
-fn GetInvalidHandle() : HANDLE
+fn get_invalid_handle() : HANDLE
 {
 	static_assert( typeinfo</ size_type />.size_of == typeinfo</HANDLE/>.size_of );
 
