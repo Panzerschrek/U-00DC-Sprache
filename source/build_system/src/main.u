@@ -1434,15 +1434,17 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::strin
 	[
 	];
 
-	var [ ust::string_view8, 3 ] sources_windows
+	var [ ust::string_view8, 4 ] sources_windows
 	[
+		"windows/file.u",
 		"windows/rwlock_impl.u",
 		"windows/stdout.u",
 		"windows/thread_impl.u",
 	];
 
-	var [ ust::string_view8, 3 ] sources_unix
+	var [ ust::string_view8, 4 ] sources_unix
 	[
+		"unix/file.u",
 		"unix/rwlock_impl.u",
 		"unix/stdout.u",
 		"unix/thread_impl.u",

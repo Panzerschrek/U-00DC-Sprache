@@ -1,0 +1,331 @@
+import "../../imports/file.u"
+import "../../imports/scoped_array.u"
+import "unix.uh"
+
+namespace ust
+{
+
+static_assert( same_type</native_file_handle, i32/>, "Types mismatch!" );
+
+//
+// file_readable
+//
+
+fn file_readable::open( file_path path ) : file_result</file_readable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= false, .create= false, .truncate= false, .ensure_new= false } ) );
+		return file_readable(handle);
+	}
+}
+
+fn file_readable::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn file_readable::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( read_impl( handle_, buf ) );
+}
+
+fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
+{
+	return unsafe( seek_impl( handle_, offset ) );
+}
+
+//
+// file_writeable
+//
+
+fn file_writeable::open( file_path path ) : file_result</file_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path , open_options{ .read= false, .write= true, .create= false, .truncate= false, .ensure_new= false } ) );
+		return file_writeable(handle);
+	}
+}
+
+fn file_writeable::create( file_path path ) : file_result</file_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create= true, .truncate= true, .ensure_new= false } ) );
+		return file_writeable(handle);
+	}
+}
+
+fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create= true, .truncate= true, .ensure_new= true } ) );
+		return file_writeable(handle);
+	}
+}
+
+fn file_writeable::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn file_writeable::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn file_writeable::seek( mut this, u64 offset ) : file_result</void/>
+{
+	return unsafe( seek_impl( handle_, offset ) );
+}
+
+//
+// file_readable_writeable
+//
+
+fn file_readable_writeable::open( file_path path ) : file_result</file_readable_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= false, .truncate= false, .ensure_new= false } ) );
+		return file_readable_writeable(handle);
+	}
+}
+
+fn file_readable_writeable::create( file_path path ) : file_result</file_readable_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= true, .truncate= true, .ensure_new= false } ) );
+		return file_readable_writeable(handle);
+	}
+}
+
+fn file_readable_writeable::create_new( file_path path ) : file_result</file_readable_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= true, .truncate= true, .ensure_new= true } ) );
+		return file_readable_writeable(handle);
+	}
+}
+
+fn file_readable_writeable::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn file_readable_writeable::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( read_impl( handle_, buf ) );
+}
+
+fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
+{
+	return unsafe( seek_impl( handle_, offset ) );
+}
+
+//
+// various functions
+//
+
+fn create_directory( file_path path ) : file_result</void/>
+{
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+
+	var u32 file_mode= 0o777u; // TODO - allow to select it.
+
+	auto res= unsafe( ::mkdir( path_nt.data(), file_mode ) );
+	if( res == -1 )
+	{
+		// TODO - handle case if directory already exists.
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
+fn remove_file( file_path path ) : file_result</void/>
+{
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+
+	auto res= unsafe( ::unlink( path_nt.data() ) );
+	if( res == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
+fn remove_directory( file_path path ) : file_result</void/>
+{
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+
+	auto res= unsafe( ::rmdir( path_nt.data() ) );
+	if( res == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
+//
+// impl functions
+//
+
+struct open_options
+{
+	bool read;
+	bool write;
+	bool create;
+	bool truncate;
+	bool ensure_new;
+}
+
+fn open_file_impl( file_path path, open_options& options ) unsafe : file_result</native_file_handle/>
+{
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+
+	var i32 mut open_flags= 0;
+	var u32 mut file_mode= 0u;
+
+	if( options.read & options.write )
+	{
+		open_flags|= O_RDWR;
+	}
+	else if( options.read )
+	{
+		open_flags|= O_RDONLY;
+	}
+	else if( options.write )
+	{
+		open_flags|= O_WRONLY;
+	}
+
+	if( options.create )
+	{
+		open_flags|= O_CREAT;
+		// TODO - provide permissions for newly-created files.
+		file_mode|= 0o644u;
+	}
+	if( options.truncate )
+	{
+		open_flags|= O_TRUNC;
+	}
+	if( options.ensure_new )
+	{
+		open_flags|= O_EXCL;
+	}
+
+	var i32 handle= unsafe( ::open( path_nt.data(), open_flags, file_mode ) );
+	if( handle == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return handle;
+}
+
+fn close_file_impl( native_file_handle handle ) unsafe
+{
+	unsafe( ::close( handle ) );
+}
+
+fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
+{
+	// TODO - maybe read in loop to support larger sizes?
+
+	var ssize_type read_res = unsafe( ::read( handle, buf.data(), buf.size() ) );
+
+	if( read_res < ssize_type(0) )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	if( read_res == ssize_type(0) )
+	{
+		return 0s; // End of file reached.
+	}
+
+	// Expected number of bytes or less.
+	return size_type(read_res);
+}
+
+fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
+{
+	// TODO - maybe write in loop to support larger sizes?
+
+	var ssize_type write_res = unsafe( ::write( handle, buf.data(), buf.size() ) );
+
+	if( write_res < ssize_type(0) )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	if( write_res == ssize_type(0) )
+	{
+		return 0s; // End of file reached.
+	}
+
+	// Expected number of bytes or less.
+	return size_type(write_res);
+}
+
+fn seek_impl( native_file_handle handle, u64 offset ) unsafe : file_result</void/>
+{
+	var ü__off64_t seek_res= unsafe( ::lseek64( handle, ü__off64_t(offset), SEEK_SET ) );
+
+	if( seek_res == ü__off64_t(-1) )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
+fn translate_errno( i32 errno ) : io_error
+{
+	switch(errno)
+	{
+	EPERM -> { return io_error::permission_denied; },
+	ENOENT -> { return io_error::not_found; },
+	EEXIST -> { return io_error::already_exists; },
+	// TODO - support other codes.
+	default -> { return io_error::other; },
+	}
+}
+
+fn get_errno() : i32
+{
+	// "errno" in glibc is accessed via function "__errno_location".
+	// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
+	unsafe
+	{
+		auto f= import fn</ fn() : $(i32) /> ( "__errno_location" );
+		var $(i32) ptr= f();
+		return $>(ptr);
+	}
+}
+
+} // namespace ust

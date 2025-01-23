@@ -1,4 +1,5 @@
 import "../../imports/stdout.u"
+import "unix.uh"
 
 namespace ust
 {
@@ -16,9 +17,3 @@ fn stderr_print( array_view_imut</char8/> str )
 }
 
 } // namespace ust
-
-// auto constexpr STDIN_FILENO = 0;
-auto constexpr STDOUT_FILENO = 1;
-auto constexpr STDERR_FILENO = 2;
-
-fn nomangle write( i32 fd, $(byte8) data, size_type s ) : ssize_type;

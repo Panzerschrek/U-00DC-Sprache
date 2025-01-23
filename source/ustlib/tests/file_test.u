@@ -1,0 +1,402 @@
+//##success_test
+import "../imports/assert.u"
+import "../imports/file.u"
+
+fn nomangle main() : i32
+{
+	// Try opening non-existing file for reading.
+	result_match( ust::file_readable::open( "this_file_does_not_exist" ) )
+	{
+		Ok(f) ->
+		{
+			assert( false, "Should not open non-existing file for reading!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
+	// Try opening non-existing file for writing.
+	result_match( ust::file_writeable::open( "this_file_does_not_exist" ) )
+	{
+		Ok(f) ->
+		{
+			assert( false, "Should not open non-existing file for writing!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
+	// Try opening non-existing file for reading and writing.
+	result_match( ust::file_readable_writeable::open( "this_file_does_not_exist" ) )
+	{
+		Ok(f) ->
+		{
+			assert( false, "Should not open non-existing file!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
+	// Try removing non-existing file.
+	result_match( ust::remove_file( "this_file_does_not_exist" ) )
+	{
+		Ok(v) ->
+		{
+			assert( false, "Should remove non-existing file!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
+	// Try removing non-existing directory.
+	result_match( ust::remove_directory( "this_directory_does_not_exist" ) )
+	{
+		Ok(v) ->
+		{
+			assert( false, "Should remove non-existing directory!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
+	// Try creating new file for writing. This should fail, since this file already exists.
+	result_match( ust::file_writeable::create_new( "test_file0.txt" ) )
+	{
+		Ok(f) ->
+		{
+			assert( false, "Should not open already existing file!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::already_exists, "Unexpected error code!" );
+		},
+	}
+
+	// Open a file for reading.
+	result_match( ust::file_readable::open( "test_file0.txt" ) )
+	{
+		Ok( mut f ) ->
+		{
+			// Read the whole file in one call.
+			var[ char8, 4 ] mut data= zero_init;
+			auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+			assert( read_res.is_ok(), "Failed to read!" );
+			assert( read_res.try_deref() == 4s );
+			assert( data == "some", "Invalid file contents!" );
+		},
+		Err(e) ->
+		{
+			assert( false, "Failed to open file \"test_file0.txt\"" );
+		},
+	}
+
+	// Try reading more than possible.
+	result_match( ust::file_readable::open( "test_file0.txt" ) )
+	{
+		Ok( mut f ) ->
+		{
+			// Try to read more than file size.
+			var[ char8, 9 ] mut data= zero_init;
+			auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+			assert( read_res.is_ok(), "Failed to read!" );
+			// Should get less than requested.
+			assert( read_res.try_deref() == 4s );
+			assert( data == "some\0\0\0\0\0", "Invalid file contents!" );
+		},
+		Err(e) ->
+		{
+			assert( false, "Failed to open file \"test_file0.txt\"" );
+		},
+	}
+
+	// Read with seek.
+	result_match( ust::file_readable::open( "test_file0.txt" ) )
+	{
+		Ok( mut f ) ->
+		{
+			{
+				var[ char8, 4 ] mut data= zero_init;
+				auto seek_res= f.seek( 1u64 );
+				assert( seek_res.is_ok(), "Failed to seek!" );
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				// Should read last 3 bytes.
+				assert( read_res.try_deref() == 3s );
+				assert( data == "ome\0", "Invalid file contents!" );
+			}
+			{
+				var[ char8, 4 ] mut data= zero_init;
+				auto seek_res= f.seek( 3u64 );
+				assert( seek_res.is_ok(), "Failed to seek!" );
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				// Should read last 1 byte.
+				assert( read_res.try_deref() == 1s );
+				assert( data == "e\0\0\0", "Invalid file contents!" );
+			}
+			{
+				var[ char8, 4 ] mut data= zero_init;
+				auto seek_res= f.seek( 0u64 );
+				assert( seek_res.is_ok(), "Failed to seek!" );
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				// Should read last 1 byte.
+				assert( read_res.try_deref() == 4s );
+				assert( data == "some", "Invalid file contents!" );
+			}
+		},
+		Err(e) ->
+		{
+			assert( false, "Failed to open file \"test_file0.txt\"" );
+		},
+	}
+
+	// Writing and reading.
+	{
+		auto &constexpr file_data= "Handschuhe aus Menschenhaut";
+		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+
+		auto& file_path= "test_file_to_write.txt";
+
+		// Write a file and close it.
+		result_match( ust::file_writeable::create( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Write the whole file in one call.
+				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				assert( write_res.is_ok(), "Failed to write!" );
+				assert( write_res.try_deref() == file_data_size );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Read file. Should get expected result.
+		result_match( ust::file_readable::open( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Read the whole file in one call.
+				var[ char8, file_data_size ] mut expected_file_data= zero_init;
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				assert( read_res.try_deref() == file_data_size );
+				assert( expected_file_data == file_data, "Invalid file contents!" );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+
+		// Removing second time should fail.
+		auto remove_res2= ust::remove_file( file_path );
+		assert( remove_res2.is_error(), "Removing already removed file not failed. WTF?" );
+		assert( remove_res2.try_deref_error() == ust::io_error::not_found, "Unexpected error code while removing already removed file" );
+	}
+
+	// Writing and reading using the same file.
+	{
+		auto &constexpr file_data= "Es is egal, ob die Grünen oder AfD";
+		auto &constexpr file_data_tweaked= "Es is toll, ob die Grünen oder AfD";
+		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+
+		auto& file_path= "test_file_to_read_and_write.txt";
+
+		result_match( ust::file_readable_writeable::create( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Write the whole file in one call.
+				{
+					auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+					assert( write_res.is_ok(), "Failed to write!" );
+					assert( write_res.try_deref() == file_data_size );
+				}
+
+				// Read the whole file after writing it.
+				{
+					auto seek_res= f.seek( 0u64 );
+					assert( seek_res.is_ok(), "Seek failed!" );
+					var[ char8, file_data_size ] mut expected_file_data= zero_init;
+					auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+					assert( read_res.is_ok(), "Failed to read!" );
+					assert( read_res.try_deref() == file_data_size );
+					assert( expected_file_data == file_data, "Invalid file contents!" );
+				}
+
+				{ // Write part in the middle.
+					auto seek_res= f.seek( 6u64 );
+					assert( seek_res.is_ok(), "Seek failed!" );
+					auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( "toll" ) ) );
+					assert( write_res.is_ok(), "Failed to write!" );
+					assert( write_res.try_deref() == 4s );
+				}
+
+				// Read the whole file again. Shold see changes written before.
+				{
+					auto seek_res= f.seek( 0u64 );
+					assert( seek_res.is_ok(), "Seek failed!" );
+					var[ char8, file_data_size ] mut expected_file_data= zero_init;
+					auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+					assert( read_res.is_ok(), "Failed to read!" );
+					assert( read_res.try_deref() == file_data_size );
+					assert( expected_file_data == file_data_tweaked, "Invalid file contents!" );
+				}
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+	}
+
+	// Writing and reading of a file within a directory.
+	{
+		auto constexpr dir0= "some_dir0";
+		auto constexpr dir1= dir0 + "/" + "some_subdir1";
+		auto constexpr file_path= dir1 + "/" + "test_file_to_write.txt";
+
+		// Create directories.
+		result_match( ust::create_directory( dir0 ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+		result_match( ust::create_directory( dir1 ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+
+		auto &constexpr file_data= "Was kann das sein?\nDas gibt's doch nie!\nNun ist mir klar: das wäre wahre Anarchie!\n";
+		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+
+		// Write a file and close it.
+		result_match( ust::file_writeable::create( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Write the whole file in one call.
+				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				assert( write_res.is_ok(), "Failed to write!" );
+				assert( write_res.try_deref() == file_data_size );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Read file. Should get expected result.
+		result_match( ust::file_readable::open( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Read the whole file in one call.
+				var[ char8, file_data_size ] mut expected_file_data= zero_init;
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				assert( read_res.try_deref() == file_data_size );
+				assert( expected_file_data == file_data, "Invalid file contents!" );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+
+		// Remove directories.
+		result_match( ust::remove_directory( dir1 ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to remove directory!" ) },
+		}
+		result_match( ust::remove_directory( dir0 ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to remove directory!" ) },
+		}
+	}
+
+	// Writing and reading for a newly-created file.
+	{
+		auto &constexpr file_data= "Du bist das Produkt!";
+		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+
+		auto& file_path= "new_test_file_for_write.txt";
+
+		// Write a file and close it.
+		result_match( ust::file_writeable::create_new( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Write the whole file in one call.
+				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				assert( write_res.is_ok(), "Failed to write!" );
+				assert( write_res.try_deref() == file_data_size );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Read file. Should get expected result.
+		result_match( ust::file_readable::open( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Read the whole file in one call.
+				var[ char8, file_data_size ] mut expected_file_data= zero_init;
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				assert( read_res.try_deref() == file_data_size );
+				assert( expected_file_data == file_data, "Invalid file contents!" );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+	}
+
+	return 0;
+}
+
+// It's safe to cast between ranges of chars and bytes.
+// TODO - move this into standart library.
+template</bool is_mutable/>
+fn CastRangeToBytesRange( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
+{
+	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
+}

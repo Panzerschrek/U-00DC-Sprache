@@ -1,0 +1,384 @@
+import "../../imports/file.u"
+import "../../imports/minmax.u"
+import "../../imports/utf.u"
+import "../../imports/vector.u"
+import "windows.uh"
+
+namespace ust
+{
+
+static_assert( same_type</native_file_handle, HANDLE/>, "Types mismatch!" );
+
+//
+// file_readable
+//
+
+fn file_readable::open( file_path path ) : file_result</file_readable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= false, .create_and_truncate= false,  .ensure_new= false } ) );
+		return file_readable(handle);
+	}
+}
+
+fn file_readable::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn file_readable::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( read_impl( handle_, buf ) );
+}
+
+fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
+{
+	return unsafe( seek_impl( handle_, offset ) );
+}
+
+//
+// file_writeable
+//
+
+fn file_writeable::open( file_path path ) : file_result</file_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path , open_options{ .read= false, .write= true, .create_and_truncate= false, .ensure_new= false } ) );
+		return file_writeable(handle);
+	}
+}
+
+fn file_writeable::create( file_path path ) : file_result</file_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create_and_truncate= true, .ensure_new= false } ) );
+		return file_writeable(handle);
+	}
+}
+
+fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create_and_truncate= true, .ensure_new= true } ) );
+		return file_writeable(handle);
+	}
+}
+
+fn file_writeable::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn file_writeable::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn file_writeable::seek( mut this, u64 offset ) : file_result</void/>
+{
+	return unsafe( seek_impl( handle_, offset ) );
+}
+
+//
+// file_readable_writeable
+//
+
+fn file_readable_writeable::open( file_path path ) : file_result</file_readable_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create_and_truncate= false, .ensure_new= false } ) );
+		return file_readable_writeable(handle);
+	}
+}
+
+fn file_readable_writeable::create( file_path path ) : file_result</file_readable_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create_and_truncate= true, .ensure_new= false } ) );
+		return file_readable_writeable(handle);
+	}
+}
+
+fn file_readable_writeable::create_new( file_path path ) : file_result</file_readable_writeable/>
+{
+	unsafe
+	{
+		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create_and_truncate= true, .ensure_new= true } ) );
+		return file_readable_writeable(handle);
+	}
+}
+
+fn file_readable_writeable::constructor( native_file_handle handle ) unsafe
+	( handle_= handle )
+{}
+
+fn file_readable_writeable::destructor()
+{
+	unsafe( close_file_impl( handle_ ) );
+}
+
+fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( read_impl( handle_, buf ) );
+}
+
+fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
+{
+	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
+{
+	return unsafe( seek_impl( handle_, offset ) );
+}
+
+//
+// various functions
+//
+
+fn create_directory( file_path path ) : file_result</void/>
+{
+	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
+
+	var BOOL res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
+
+	if( res == 1 || unsafe( GetLastError() ) == DWORD(ERROR_ALREADY_EXISTS) )
+	{
+		return void();
+	}
+
+	var DWORD last_error = unsafe( GetLastError() );
+	if( last_error == DWORD(ERROR_ALREADY_EXISTS) )
+	{
+		// TODO - what if path exists but it's a file?
+		return void();
+	}
+
+	return translate_error_code(  last_error );
+}
+
+fn remove_file( file_path path ) : file_result</void/>
+{
+	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
+
+	var BOOL res= unsafe( ::DeleteFileW( path_null_terminated.data() ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
+}
+
+fn remove_directory( file_path path ) : file_result</void/>
+{
+	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
+
+	var BOOL res= unsafe( ::RemoveDirectoryW( path_null_terminated.data() ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
+}
+
+//
+// impl functions
+//
+
+struct open_options
+{
+	bool read;
+	bool write;
+	bool create_and_truncate;
+	bool ensure_new;
+}
+
+fn open_file_impl( file_path path, open_options& options ) unsafe : file_result</native_file_handle/>
+{
+	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
+
+	// Allow sharing of files by default.
+	// TODO - allow to override this.
+	var DWORD share_mode = DWORD( FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE );
+
+	var DWORD mut desired_access= 0u;
+	var DWORD mut creation_disposition= 0u;
+
+	if( options.read )
+	{
+		desired_access|= DWORD( GENERIC_READ );
+	}
+	if( options.write )
+	{
+		desired_access|= DWORD( GENERIC_WRITE );
+	}
+
+	if( options.create_and_truncate )
+	{
+		if( options.ensure_new )
+		{
+			creation_disposition= DWORD( CREATE_NEW );
+		}
+		else
+		{
+			creation_disposition= DWORD( CREATE_ALWAYS );
+		}
+	}
+	else
+	{
+		creation_disposition= DWORD( OPEN_EXISTING );
+	}
+
+	var HANDLE handle =
+		unsafe( ::CreateFileW(
+			path_null_terminated.data(),
+			desired_access,
+			share_mode,
+			nullptr</ü_SECURITY_ATTRIBUTES/>(),
+			creation_disposition,
+			0u,
+			nullptr</byte8/>() ) );
+	if( handle == get_invalid_handle() )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return handle;
+}
+
+fn close_file_impl( native_file_handle handle ) unsafe
+{
+	unsafe( ::CloseHandle( handle ) );
+}
+
+fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
+{
+	// TODO - maybe read in loop to support larger sizes?
+
+	var DWORD mut bytes_read = 0u;
+	var BOOL res =
+		unsafe( ::ReadFile(
+			handle,
+			buf.data(),
+			DWORD( min( buf.size(), size_type(MAXDWORD) ) ),
+			$<(bytes_read),
+			ust::nullptr</ü_OVERLAPPED/>() ) );
+
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	// Expected number of bytes or less.
+	return size_type(bytes_read);
+}
+
+fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
+{
+	// TODO - maybe write in loop to support larger sizes?
+
+	var DWORD mut bytes_written = 0u;
+	var BOOL res =
+		unsafe( ::WriteFile(
+			handle,
+			buf.data(),
+			DWORD( min( buf.size(), size_type(MAXDWORD) ) ),
+			$<(bytes_written),
+			ust::nullptr</ü_OVERLAPPED/>() ) );
+
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	// Expected number of bytes or less.
+	return size_type(bytes_written);
+}
+
+fn seek_impl( native_file_handle handle, u64 offset ) unsafe : file_result</void/>
+{
+	var LARGE_INTEGER li_offset{ .union_contents[ byte64(offset) ] };
+
+	var BOOL res = unsafe( ::SetFilePointerEx( handle, li_offset, nullptr</LARGE_INTEGER/>(), DWORD(FILE_BEGIN) ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
+}
+
+fn translate_error_code( DWORD code ) : io_error
+{
+	switch(code)
+	{
+		DWORD(ERROR_FILE_NOT_FOUND), DWORD(ERROR_PATH_NOT_FOUND) -> { return io_error::not_found; },
+		DWORD(ERROR_ALREADY_EXISTS), DWORD(ERROR_FILE_EXISTS) -> { return io_error::already_exists; },
+		DWORD(ERROR_ACCESS_DENIED) -> { return io_error::permission_denied; },
+		default -> { return io_error::other; },
+	}
+}
+
+// Can't use string_base, since "WCHAR" is defined as integer.
+type wide_string= vector</WCHAR/>;
+
+fn utf8_to_null_terminated_wide_string( string_view8 mut v ) : wide_string
+{
+	var wide_string mut res;
+	while( !v.empty() )
+	{
+		var u32 code_point( utf::extract_code_point_or_null_from_string(v) );
+		if(code_point < u32(0xD800) || (code_point > u32(0xDFFF) && code_point < u32(0x10000)))
+		{
+			res.push_back( WCHAR( code_point ) );
+		}
+		else
+		{
+			var u32 c= u32(code_point) - 0x10000u;
+			res.push_back( WCHAR( ( c >> 10u ) + 0xD800u ) );
+			res.push_back( WCHAR( ( c & 0x3FFu ) + 0xDC00u ) );
+		}
+	}
+
+	res.push_back( WCHAR( "\0"c8 ) );
+
+	return res;
+}
+
+// Produces INVALID_HANDLE_VALUE.
+fn get_invalid_handle() : HANDLE
+{
+	static_assert( typeinfo</ size_type />.size_of == typeinfo</HANDLE/>.size_of );
+
+	// Make -1.
+	var size_type mut s(0);
+	--s;
+
+	var HANDLE mut handle= zero_init;
+
+	unsafe( memory_copy(
+		ptr_cast_to_byte8( $<(handle) ),
+		ptr_cast_to_byte8( $<(s) ),
+		typeinfo</ HANDLE />.size_of ) );
+
+	return handle;
+}
+
+
+} // namespace ust
