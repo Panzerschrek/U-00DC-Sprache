@@ -7,6 +7,8 @@ import "windows.uh"
 namespace ust
 {
 
+static_assert( same_type</native_file_handle, HANDLE/>, "Types mismatch!" );
+
 //
 // file_readable
 //

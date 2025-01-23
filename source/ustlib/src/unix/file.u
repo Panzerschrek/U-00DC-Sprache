@@ -5,6 +5,8 @@ import "unix.uh"
 namespace ust
 {
 
+static_assert( same_type</native_file_handle, i32/>, "Types mismatch!" );
+
 //
 // file_readable
 //
