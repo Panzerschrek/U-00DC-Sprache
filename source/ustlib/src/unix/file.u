@@ -1,5 +1,5 @@
 import "../../imports/file.u"
-import "../../imports/string.u" // TODO - remove this import, it's too heavy and unnecessary.
+import "../../imports/scoped_array.u"
 import "unix.uh"
 
 namespace ust
@@ -130,7 +130,7 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 
 fn create_directory( file_path path ) : file_result</void/>
 {
-	var ust::string8 mut path_nt= concat( path, "\0" ); // TODO - use scoped array instead.
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
 
 	var u32 file_mode= 0o777u; // TODO - allow to select it.
 
@@ -146,7 +146,7 @@ fn create_directory( file_path path ) : file_result</void/>
 
 fn remove_file( file_path path ) : file_result</void/>
 {
-	var ust::string8 mut path_nt= concat( path, "\0" ); // TODO - use scoped array instead.
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
 
 	auto res= unsafe( ::unlink( path_nt.data() ) );
 	if( res == -1 )
@@ -159,7 +159,7 @@ fn remove_file( file_path path ) : file_result</void/>
 
 fn remove_directory( file_path path ) : file_result</void/>
 {
-	var ust::string8 mut path_nt= concat( path, "\0" ); // TODO - use scoped array instead.
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
 
 	auto res= unsafe( ::rmdir( path_nt.data() ) );
 	if( res == -1 )
@@ -184,7 +184,7 @@ struct open_options
 
 fn open_file_impl( file_path path, open_options& options ) unsafe : file_result</native_file_handle/>
 {
-	var ust::string8 mut path_nt= concat( path, "\0" ); // TODO - use scoped array instead.
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
 
 	var i32 mut open_flags= 0;
 	var u32 mut file_mode= 0u;
