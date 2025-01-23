@@ -1,0 +1,93 @@
+//##success_test
+import "../imports/assert.u"
+import "../imports/file.u"
+
+fn nomangle main() : i32
+{
+	result_match( ust::file_readable::open( "test_file0.txt" ) )
+	{
+		Ok( mut f ) ->
+		{
+			// Read the whole file in one call.
+			var[ char8, 4 ] mut data= zero_init;
+			auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+			assert( read_res.is_ok(), "Failed to read!" );
+			assert( read_res.try_deref() == 4s );
+			assert( data == "some", "Invalid file contents!" );
+		},
+		Err(e) ->
+		{
+			assert( false, "Failed to open file \"test_file0.txt\"" );
+		},
+	}
+
+	result_match( ust::file_readable::open( "test_file0.txt" ) )
+	{
+		Ok( mut f ) ->
+		{
+			// Try to read more than file size.
+			var[ char8, 9 ] mut data= zero_init;
+			auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+			assert( read_res.is_ok(), "Failed to read!" );
+			// Should get less than requested.
+			assert( read_res.try_deref() == 4s );
+			assert( data == "some\0\0\0\0\0", "Invalid file contents!" );
+		},
+		Err(e) ->
+		{
+			assert( false, "Failed to open file \"test_file0.txt\"" );
+		},
+	}
+
+	result_match( ust::file_readable::open( "test_file0.txt" ) )
+	{
+		Ok( mut f ) ->
+		{
+			// Read with seek.
+			{
+				var[ char8, 4 ] mut data= zero_init;
+				auto seek_res= f.seek( 1u64 );
+				assert( seek_res.is_ok(), "Failed to seek!" );
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				// Should read last 3 bytes.
+				assert( read_res.try_deref() == 3s );
+				assert( data == "ome\0", "Invalid file contents!" );
+			}
+			{
+				var[ char8, 4 ] mut data= zero_init;
+				auto seek_res= f.seek( 3u64 );
+				assert( seek_res.is_ok(), "Failed to seek!" );
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				// Should read last 1 byte.
+				assert( read_res.try_deref() == 1s );
+				assert( data == "e\0\0\0", "Invalid file contents!" );
+			}
+			{
+				var[ char8, 4 ] mut data= zero_init;
+				auto seek_res= f.seek( 0u64 );
+				assert( seek_res.is_ok(), "Failed to seek!" );
+				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+				assert( read_res.is_ok(), "Failed to read!" );
+				// Should read last 1 byte.
+				assert( read_res.try_deref() == 4s );
+				assert( data == "some", "Invalid file contents!" );
+			}
+		},
+		Err(e) ->
+		{
+			assert( false, "Failed to open file \"test_file0.txt\"" );
+		},
+	}
+
+	return 0;
+}
+
+// It's safe to cast between ranges of chars and bytes.
+// TODO - move this into standart library.
+template</bool is_mutable/>
+fn CastRangeToBytesRange( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
+{
+	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
+}
