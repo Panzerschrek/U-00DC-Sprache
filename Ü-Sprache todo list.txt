@@ -58,6 +58,21 @@ Lambdas:
 *) Template lambdas
 
 Standart library:
+*) Support retrieving files metadata - size, kind, etc.
+*) Handle "already exists" cases in directories creation code
+*) Move directories-related code into a separate imported file
+*) Support opening files with appending
+*) Support retrieving modification time for files
+*) Directory iteratior
+*) Function for files copying
+*) Buffered reader/writer wrappers for files
+*) "flush" method for writeable files
+*) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
+*) Function for creation of the whole directories path
+*) Function for recursive directory removal
+*) More file error kinds
+*) Helper methods for reading/writing file contents into/from string/vector of bytes
+*) Function for system time retrieval (using clock identical to file timestamps)
 *) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method
 *) Support types with references inside in some containers (variant, result, unordered_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
@@ -70,7 +85,6 @@ Standart library:
 *) Reverse iterators for random_access_range, unordered_map, etc.
 *) shared_ptr - store single pointer for non-polymorph types
 *) Time library - get time functions, timers
-*) File library
 *) Console input/output library
 *) String formatting library
 *) Executor for async functions, possible multithreaded
@@ -166,6 +180,7 @@ CPP Header converter:
 *) Ignore some headers or split result into several files
 *) Avoid creating too large files (more than 65535 lines)
 *) Handle structs with empty contents (they should have size 1 according to C rules)
+*) Handle "wchar_t" type specially, not as regular integer
 *) Support negative constants in defines
 *) Add more satisfying defines conversion - where defined value is a constant expression
 *) Handle some subset of C++ headers
@@ -173,6 +188,7 @@ CPP Header converter:
 	and type alias for it
 
 Ü Build system:
+*) Use file/directory functions from "ustlib"
 *) Fix JSON floats serialization
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
 *) Fix possible global mutable variables and type id tables duplication because of private linking of a library into
@@ -213,3 +229,4 @@ Documentation:
 *) Describe more language details
 *) Documentation for interpreter
 *) Describe undefined behavior
+*) Document files/directories functionality of the standard library
