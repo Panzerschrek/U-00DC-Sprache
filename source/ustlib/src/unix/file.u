@@ -6,224 +6,120 @@ namespace ust
 {
 
 //
-// sequential_read_file
+// file_readable
 //
 
-fn sequential_read_file::open( file_path path ) : file_result</sequential_read_file/>
+fn file_readable::open( file_path path ) : file_result</file_readable/>
 {
 	unsafe
 	{
 		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= false, .create= false, .truncate= false } ) );
-		return sequential_read_file(handle);
+		return file_readable(handle);
 	}
 }
 
-fn sequential_read_file::constructor( native_file_handle handle ) unsafe
+fn file_readable::constructor( native_file_handle handle ) unsafe
 	( handle_= handle )
 {}
 
-fn sequential_read_file::destructor()
+fn file_readable::destructor()
 {
 	unsafe( close_file_impl( handle_ ) );
 }
 
-fn sequential_read_file::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
+fn file_readable::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
 }
 
-//
-// sequential_write_file
-//
-
-fn sequential_write_file::open( file_path path ) : file_result</sequential_write_file/>
-{
-	unsafe
-	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create= false, .truncate= false } ) );
-		return sequential_write_file(handle);
-	}
-}
-
-fn sequential_write_file::create( file_path path ) : file_result</sequential_write_file/>
-{
-	unsafe
-	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create= true, .truncate= true } ) );
-		return sequential_write_file(handle);
-	}
-}
-
-fn sequential_write_file::constructor( native_file_handle handle ) unsafe
-	( handle_= handle )
-{}
-
-fn sequential_write_file::destructor()
-{
-	unsafe( close_file_impl( handle_ ) );
-}
-
-fn sequential_write_file::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
-{
-	return unsafe( write_impl( handle_, buf ) );
-}
-
-//
-// sequential_read_write_file
-//
-
-fn sequential_read_write_file::open( file_path path ) : file_result</sequential_read_write_file/>
-{
-	unsafe
-	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= false, .truncate= false } ) );
-		return sequential_read_write_file(handle);
-	}
-}
-
-fn sequential_read_write_file::create( file_path path ) : file_result</sequential_read_write_file/>
-{
-	unsafe
-	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= true, .truncate= true } ) );
-		return sequential_read_write_file(handle);
-	}
-}
-
-fn sequential_read_write_file::constructor( native_file_handle handle ) unsafe
-	( handle_= handle )
-{}
-
-fn sequential_read_write_file::destructor()
-{
-	unsafe( close_file_impl( handle_ ) );
-}
-
-fn sequential_read_write_file::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
-{
-	return unsafe( read_impl( handle_, buf ) );
-}
-
-fn sequential_read_write_file::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
-{
-	return unsafe( write_impl( handle_, buf ) );
-}
-
-//
-// seekable_read_file
-//
-
-fn seekable_read_file::open( file_path path ) : file_result</seekable_read_file/>
-{
-	unsafe
-	{
-		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= false, .create= false, .truncate= false } ) );
-		return seekable_read_file(handle);
-	}
-}
-
-fn seekable_read_file::constructor( native_file_handle handle ) unsafe
-	( handle_= handle )
-{}
-
-fn seekable_read_file::destructor()
-{
-	unsafe( close_file_impl( handle_ ) );
-}
-
-fn seekable_read_file::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
-{
-	return unsafe( read_impl( handle_, buf ) );
-}
-
-fn seekable_read_file::seek( mut this, u64 offset ) : file_result</void/>
+fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
 }
 
 //
-// seekable_write_file
+// file_writeable
 //
 
-fn seekable_write_file::open( file_path path ) : file_result</seekable_write_file/>
+fn file_writeable::open( file_path path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
 		result_unwrap_or_return( handle : open_file_impl( path , open_options{ .read= false, .write= true, .create= false, .truncate= false } ) );
-		return seekable_write_file(handle);
+		return file_writeable(handle);
 	}
 }
 
-fn seekable_write_file::create( file_path path ) : file_result</seekable_write_file/>
+fn file_writeable::create( file_path path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
 		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create= true, .truncate= true } ) );
-		return seekable_write_file(handle);
+		return file_writeable(handle);
 	}
 }
 
-fn seekable_write_file::constructor( native_file_handle handle ) unsafe
+fn file_writeable::constructor( native_file_handle handle ) unsafe
 	( handle_= handle )
 {}
 
-fn seekable_write_file::destructor()
+fn file_writeable::destructor()
 {
 	unsafe( close_file_impl( handle_ ) );
 }
 
-fn seekable_write_file::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
+fn file_writeable::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
 }
 
-fn seekable_write_file::seek( mut this, u64 offset ) : file_result</void/>
+fn file_writeable::seek( mut this, u64 offset ) : file_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
 }
 
 //
-// seekable_read_write_file
+// file_readable_writeable
 //
 
-fn seekable_read_write_file::open( file_path path ) : file_result</seekable_read_write_file/>
+fn file_readable_writeable::open( file_path path ) : file_result</file_readable_writeable/>
 {
 	unsafe
 	{
 		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= false, .truncate= false } ) );
-		return seekable_read_write_file(handle);
+		return file_readable_writeable(handle);
 	}
 }
 
-fn seekable_read_write_file::create( file_path path ) : file_result</seekable_read_write_file/>
+fn file_readable_writeable::create( file_path path ) : file_result</file_readable_writeable/>
 {
 	unsafe
 	{
 		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= true, .write= true, .create= true, .truncate= true } ) );
-		return seekable_read_write_file(handle);
+		return file_readable_writeable(handle);
 	}
 }
 
-fn seekable_read_write_file::constructor( native_file_handle handle ) unsafe
+fn file_readable_writeable::constructor( native_file_handle handle ) unsafe
 	( handle_= handle )
 {}
 
-fn seekable_read_write_file::destructor()
+fn file_readable_writeable::destructor()
 {
 	unsafe( close_file_impl( handle_ ) );
 }
 
-fn seekable_read_write_file::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
+fn file_readable_writeable::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
 }
 
-fn seekable_read_write_file::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
+fn file_readable_writeable::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
 }
 
-fn seekable_read_write_file::seek( mut this, u64 offset ) : file_result</void/>
+fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
 }
@@ -286,7 +182,7 @@ fn close_file_impl( native_file_handle handle ) unsafe
 
 fn read_impl( native_file_handle handle, ust::array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
 {
-	// TODO - maybe read in loop to support larget sizes?
+	// TODO - maybe read in loop to support larger sizes?
 
 	var ssize_type read_res = unsafe( ::read( handle, buf.data(), buf.size() ) );
 
@@ -306,7 +202,7 @@ fn read_impl( native_file_handle handle, ust::array_view_mut</byte8/> buf ) unsa
 
 fn write_impl( native_file_handle handle, ust::array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
 {
-	// TODO - maybe write in loop to support larget sizes?
+	// TODO - maybe write in loop to support larger sizes?
 
 	var ssize_type write_res = unsafe( ::write( handle, buf.data(), buf.size() ) );
 

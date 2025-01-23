@@ -17,11 +17,11 @@ type file_result= result</T, io_error/>;
 
 type file_path= ust::array_view_imut</char8/>;
 
-class sequential_read_file
+class file_readable
 {
 public:
 	// Open existing file for reading.
-	fn open( file_path path ) : file_result</sequential_read_file/>;
+	fn open( file_path path ) : file_result</file_readable/>;
 
 public:
 	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.
@@ -30,75 +30,20 @@ public:
 public:
 	fn read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>;
 
-private:
-	native_file_handle handle_;
-}
-
-class sequential_write_file
-{
-public:
-	// Open existing file for writing.
-	fn open( file_path path ) : file_result</sequential_write_file/>;
-	// Open or create file for writing.
-	fn create( file_path path ) : file_result</sequential_write_file/>;
-
-public:
-	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.
-	fn destructor();
-
-public:
-	fn write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>;
-
-private:
-	native_file_handle handle_;
-}
-
-class sequential_read_write_file
-{
-public:
-	// Open existing file for reading/writing.
-	fn open( file_path path ) : file_result</sequential_read_write_file/>;
-	// Open or create file for reading/writing.
-	fn create( file_path path ) : file_result</sequential_read_write_file/>;
-
-public:
-	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.
-	fn destructor();
-
-public:
-	fn read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>;
-	fn write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>;
-
-private:
-	native_file_handle handle_;
-}
-
-class seekable_read_file
-{
-public:
-	// Open existing file for reading.
-	fn open( file_path path ) : file_result</seekable_read_file/>;
-
-public:
-	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.
-	fn destructor();
-
-public:
-	fn read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>;
-
+	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : file_result</void/>;
 
 private:
 	native_file_handle handle_;
 }
 
-class seekable_write_file
+class file_writeable
 {
 public:
 	// Open existing file for writing.
-	fn open( file_path path ) : file_result</seekable_write_file/>;
+	fn open( file_path path ) : file_result</file_writeable/>;
 	// Open or create file for writing.
-	fn create( file_path path ) : file_result</seekable_write_file/>;
+	fn create( file_path path ) : file_result</file_writeable/>;
 
 public:
 	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.
@@ -107,19 +52,20 @@ public:
 public:
 	fn write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>;
 
+	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : file_result</void/>;
 
 private:
 	native_file_handle handle_;
 }
 
-class seekable_read_write_file
+class file_readable_writeable
 {
 public:
 	// Open existing file for reading/writing.
-	fn open( file_path path ) : file_result</seekable_read_write_file/>;
+	fn open( file_path path ) : file_result</file_readable_writeable/>;
 	// Open or create file for reading/writing.
-	fn create( file_path path ) : file_result</seekable_read_write_file/>;
+	fn create( file_path path ) : file_result</file_readable_writeable/>;
 
 public:
 	fn constructor( native_file_handle handle ) unsafe; // constructor for internal usage.
@@ -129,6 +75,7 @@ public:
 	fn read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>;
 	fn write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>;
 
+	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : file_result</void/>;
 
 private:
