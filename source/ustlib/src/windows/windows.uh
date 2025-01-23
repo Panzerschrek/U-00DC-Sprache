@@ -7,10 +7,13 @@ fn nomangle CreateDirectoryW( LPCWSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecuri
 fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CreateThread( LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, ( fn( LPVOID arg0 ) unsafe call_conv( "system" ) : DWORD ) lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle DeleteFileW( LPCWSTR lpFileName ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
 fn nomangle InitializeSRWLock( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle ReleaseSRWLockExclusive( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle ReleaseSRWLockShared( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
+fn nomangle RemoveDirectoryW( LPCWSTR lpPathName ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle SetFilePointerEx( HANDLE hFile, LARGE_INTEGER liDistanceToMove, PLARGE_INTEGER lpNewFilePointer, DWORD dwMoveMethod ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
@@ -65,6 +68,8 @@ type RTL_SRWLOCK = ü_RTL_SRWLOCK;
 type SIZE_T = ULONG_PTR;
 type ULONG_PTR = size_type;
 type WCHAR = wchar_t;
+
+auto constexpr ERROR_ALREADY_EXISTS = 183;
 
 auto constexpr FILE_BEGIN = 0;
 auto constexpr FILE_CURRENT = 1;

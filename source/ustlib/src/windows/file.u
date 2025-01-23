@@ -145,6 +145,50 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 }
 
 //
+// various functions
+//
+
+fn create_directory( file_path path ) : file_result</void/>
+{
+	var WideString mut path_null_terminated= UTF8ToNullTerminatedWideString( path );
+
+	var BOOL res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
+	// TODO - what if path exists but it's a file?
+	if( res == 1 || unsafe( GetLastError() ) == DWORD(ERROR_ALREADY_EXISTS) )
+	{
+		return void();
+	}
+
+	return io_error::other;
+}
+
+fn remove_file( file_path path ) : file_result</void/>
+{
+	var WideString mut path_null_terminated= UTF8ToNullTerminatedWideString( path );
+
+	var BOOL res= unsafe( ::DeleteFileW( path_null_terminated.data() ) );
+	if( res == 0 )
+	{
+		return io_error::other;
+	}
+
+	return void();
+}
+
+fn remove_directory( file_path path ) : file_result</void/>
+{
+	var WideString mut path_null_terminated= UTF8ToNullTerminatedWideString( path );
+
+	var BOOL res= unsafe( ::RemoveDirectoryW( path_null_terminated.data() ) );
+	if( res == 0 )
+	{
+		return io_error::other;
+	}
+
+	return void();
+}
+
+//
 // impl functions
 //
 
