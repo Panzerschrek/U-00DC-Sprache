@@ -17,7 +17,7 @@ enum io_error
 template</type T/>
 type file_result= result</T, io_error/>;
 
-type file_path= ust::array_view_imut</char8/>;
+type file_path= array_view_imut</char8/>;
 
 class file_readable
 {
@@ -30,7 +30,7 @@ public:
 	fn destructor();
 
 public:
-	fn read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>;
+	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
 
 	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : file_result</void/>;
@@ -54,7 +54,7 @@ public:
 	fn destructor();
 
 public:
-	fn write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>;
+	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
 
 	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : file_result</void/>;
@@ -78,8 +78,8 @@ public:
 	fn destructor();
 
 public:
-	fn read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>;
-	fn write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>;
+	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
+	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
 
 	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : file_result</void/>;

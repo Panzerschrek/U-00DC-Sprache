@@ -27,7 +27,7 @@ fn file_readable::destructor()
 	unsafe( close_file_impl( handle_ ) );
 }
 
-fn file_readable::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
+fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
 }
@@ -77,7 +77,7 @@ fn file_writeable::destructor()
 	unsafe( close_file_impl( handle_ ) );
 }
 
-fn file_writeable::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
+fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
 }
@@ -127,12 +127,12 @@ fn file_readable_writeable::destructor()
 	unsafe( close_file_impl( handle_ ) );
 }
 
-fn file_readable_writeable::read( mut this, ust::array_view_mut</byte8/> buf ) : file_result</size_type/>
+fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
 }
 
-fn file_readable_writeable::write( mut this, ust::array_view_imut</byte8/> buf ) : file_result</size_type/>
+fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
 }
@@ -250,7 +250,7 @@ fn close_file_impl( native_file_handle handle ) unsafe
 	unsafe( ::close( handle ) );
 }
 
-fn read_impl( native_file_handle handle, ust::array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
+fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
 {
 	// TODO - maybe read in loop to support larger sizes?
 
@@ -270,7 +270,7 @@ fn read_impl( native_file_handle handle, ust::array_view_mut</byte8/> buf ) unsa
 	return size_type(read_res);
 }
 
-fn write_impl( native_file_handle handle, ust::array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
+fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
 {
 	// TODO - maybe write in loop to support larger sizes?
 
