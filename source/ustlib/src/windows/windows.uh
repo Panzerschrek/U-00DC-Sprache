@@ -8,6 +8,7 @@ fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShar
 fn nomangle CreateThread( LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, ( fn( LPVOID arg0 ) unsafe call_conv( "system" ) : DWORD ) lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle DeleteFileW( LPCWSTR lpFileName ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle GetFileAttributesExW( LPCWSTR lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, LPVOID lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetFileInformationByHandle( HANDLE hFile, LPBY_HANDLE_FILE_INFORMATION lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
 fn nomangle InitializeSRWLock( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
@@ -70,8 +71,25 @@ struct ü_SECURITY_ATTRIBUTES ordered
 	BOOL bInheritHandle;
 }
 
+struct ü_WIN32_FILE_ATTRIBUTE_DATA ordered
+{
+	DWORD dwFileAttributes;
+	FILETIME ftCreationTime;
+	FILETIME ftLastAccessTime;
+	FILETIME ftLastWriteTime;
+	DWORD nFileSizeHigh;
+	DWORD nFileSizeLow;
+}
+
+enum ü_GET_FILEEX_INFO_LEVELS : i32
+{
+	GetFileExInfoStandard,
+	GetFileExMaxInfoLevel,
+}
+
 type wchar_t = u16;
 type BOOL = i32;
+type GET_FILEEX_INFO_LEVELS = ü_GET_FILEEX_INFO_LEVELS;
 type DWORD = u32;
 type FILETIME = ü_FILETIME;
 type HANDLE = $(byte8);

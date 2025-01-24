@@ -165,6 +165,30 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 // various functions
 //
 
+fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
+{
+	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( path );
+
+	var ü_WIN32_FILE_ATTRIBUTE_DATA mut info= zero_init;
+
+	var BOOL res =
+		unsafe( ::GetFileAttributesExW(
+			path_null_terminated.data(),
+			GET_FILEEX_INFO_LEVELS::GetFileExInfoStandard,
+			ptr_cast_to_byte8( $<(info) ) ) );
+
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return file_metadata
+	{
+		.size= u64(info.nFileSizeLow) | (u64(info.nFileSizeHigh) << 32u),
+		.kind= file_attributes_to_file_kind( info.dwFileAttributes ),
+	};
+}
+
 fn create_directory( file_path path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
@@ -183,7 +207,7 @@ fn create_directory( file_path path ) : file_result</void/>
 		return void();
 	}
 
-	return translate_error_code(  last_error );
+	return translate_error_code( last_error );
 }
 
 fn remove_file( file_path path ) : file_result</void/>
