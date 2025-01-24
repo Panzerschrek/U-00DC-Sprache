@@ -2,7 +2,9 @@
 // These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
 fn nomangle close( i32 ü__fd ) unsafe : i32;
+fn nomangle fstat( i32 ü__fd, $(stat_) ü__buf ) unsafe : i32;
 fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe : ü__off64_t;
+fn nomangle lstat( $(char8) ü__file, $(stat_) ü__buf ) unsafe : i32;
 fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe : ssize_t;
@@ -10,11 +12,47 @@ fn nomangle rmdir( $(char8) ü__path ) unsafe : i32;
 fn nomangle unlink( $(char8) ü__name ) unsafe : i32;
 fn nomangle write( i32 ü__fd, $(byte8) ü__buf, size_t ü__n ) unsafe : ssize_t;
 
+struct timespec ordered
+{
+	ü__time_t tv_sec;
+	ü__syscall_slong_t tv_nsec;
+}
+
+// TODO - adopt this structure for 32-bit code and non-GNU/Linux systems (GNU/Hurd, OS X, FreeBSD).
+struct stat_ ordered
+{
+	ü__dev_t st_dev;
+	ü__ino_t st_ino;
+	ü__nlink_t st_nlink;
+	ü__mode_t st_mode;
+	ü__uid_t st_uid;
+	ü__gid_t st_gid;
+	i32 ü__pad0;
+	ü__dev_t st_rdev;
+	ü__off_t st_size;
+	ü__blksize_t st_blksize;
+	ü__blkcnt_t st_blocks;
+	timespec st_atim;
+	timespec st_mtim;
+	timespec st_ctim;
+	[ ü__syscall_slong_t, 3u ] ü__glibc_reserved;
+}
+
 type size_t = size_type;
 type ssize_t = ü__ssize_t;
+type ü__blkcnt_t = i64;
+type ü__blksize_t = i64;
+type ü__dev_t = u64;
+type ü__gid_t = u32;
+type ü__ino_t = u64;
 type ü__mode_t = u32;
+type ü__nlink_t = u64;
 type ü__off64_t = i64;
+type ü__off_t = i64;
 type ü__ssize_t = ssize_type;
+type ü__syscall_slong_t = i64;
+type ü__time_t = i64;
+type ü__uid_t = u32;
 
 auto constexpr EPERM = 1;
 auto constexpr ENOENT = 2;
@@ -57,6 +95,21 @@ auto constexpr O_RDWR = 2;
 auto constexpr O_CREAT = 64;
 auto constexpr O_EXCL = 128;
 auto constexpr O_TRUNC = 512;
+
+auto constexpr S_IEXEC = 64;
+auto constexpr S_IWRITE = 128;
+auto constexpr S_IREAD = 256;
+auto constexpr S_ISVTX = 512;
+auto constexpr S_ISGID = 1024;
+auto constexpr S_ISUID = 2048;
+auto constexpr S_IFIFO = 4096;
+auto constexpr S_IFCHR = 8192;
+auto constexpr S_IFDIR = 16384;
+auto constexpr S_IFREG = 32768;
+auto constexpr S_IFBLK = 24576;
+auto constexpr S_IFLNK = 40960;
+auto constexpr S_IFSOCK = 49152;
+auto constexpr S_IFMT = 61440;
 
 auto constexpr SEEK_SET = 0;
 auto constexpr SEEK_CUR = 1;
