@@ -1486,6 +1486,8 @@ def main():
 		HostBuildTargetCommandError1Test,
 		]
 
+	test_funcs= [ DebugOnlyProjectTest ]
+
 	print( "Run " + str(len(test_funcs)) + " Bürokratie tests" )
 
 	tests_passed= 0
