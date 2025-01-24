@@ -145,7 +145,7 @@ fn nomangle main() : i32
 			var [ byte8, 4 ] expected_result[ byte8("s"c8), byte8("o"c8), byte8("m"c8), byte8("e"c8) ];
 			assert( s == expected_result, "Unexpected file contents!" );
 		},
-		Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to string!" ); }
+		Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to vector</byte8/>!" ); }
 	}
 
 	// Read the whole file into string.
@@ -307,7 +307,7 @@ fn nomangle main() : i32
 	// Write file via a helper function and read it again.
 	{
 		auto &constexpr file_path= "Für Elite";
-		auto &constexpr contents= "Ich habe keinen Bock mehr auf die Ausbeuting der Welt!";
+		auto &constexpr contents= "Ich habe keinen Bock mehr auf die Ausbeutung der Welt!";
 
 		auto write_res= ust::write_string_view_to_file( file_path, contents );
 		assert( write_res.is_ok(), "Failed to write a file!" );
