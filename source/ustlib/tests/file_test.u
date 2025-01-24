@@ -4,6 +4,19 @@ import "../imports/file.u"
 
 fn nomangle main() : i32
 {
+	// Try requesting metadata for non-existing path.
+	result_match( ust::get_metadata_for_path( "this_file_does_not_exist" ) )
+	{
+		Ok(m) ->
+		{
+			assert( false, "Should not get metadata for non-existing path!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::not_found, "Unexpected error code!" );
+		},
+	}
+
 	// Try opening non-existing file for reading.
 	result_match( ust::file_readable::open( "this_file_does_not_exist" ) )
 	{
@@ -82,11 +95,34 @@ fn nomangle main() : i32
 		},
 	}
 
+	// Request metatada for an existing file.
+	result_match( ust::get_metadata_for_path( "test_file0.txt" ) )
+	{
+		Ok(m) ->
+		{
+			assert( m.kind == ust::file_kind::file, "Unexpected file kind!" );
+			assert( m.size == 4u64, "Unexpected file size!" );
+		},
+		Err(e) ->
+		{
+			assert( false, "Failed to get metadata for an existing file!" );
+		},
+	}
+
 	// Open a file for reading.
 	result_match( ust::file_readable::open( "test_file0.txt" ) )
 	{
 		Ok( mut f ) ->
 		{
+			auto metadata_res= f.get_metatada();
+			assert( metadata_res.is_ok(), "Failed to get file metadata!" );
+			assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
+			assert( metadata_res.try_deref().size == 4u64, "Unexpected file size!" );
+
+			auto size_res= f.get_size();
+			assert( size_res.is_ok(), "Failed to get file size!" );
+			assert( size_res.try_deref() == 4u64, "Unexpected file size!" );
+
 			// Read the whole file in one call.
 			var[ char8, 4 ] mut data= zero_init;
 			auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
@@ -177,10 +213,34 @@ fn nomangle main() : i32
 				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
 				assert( write_res.is_ok(), "Failed to write!" );
 				assert( write_res.try_deref() == file_data_size );
+
+				// Check result file size.
+				auto metadata_res= f.get_metatada();
+				assert( metadata_res.is_ok(), "Failed to get file metadata!" );
+				assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
+				assert( metadata_res.try_deref().size == u64(file_data_size), "Unexpected file size!" );
+
+				auto size_res= f.get_size();
+				assert( size_res.is_ok(), "Failed to get file size!" );
+				assert( size_res.try_deref() == u64(file_data_size), "Unexpected file size!" );
 			},
 			Err(e) ->
 			{
 				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Request metadata for file written previously.
+		result_match( ust::get_metadata_for_path( file_path ) )
+		{
+			Ok(m) ->
+			{
+				assert( m.kind == ust::file_kind::file, "Unexpected file kind!" );
+				assert( m.size == u64(file_data_size), "Unexpected file size!" );
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to get metadata for an existing file!" );
 			},
 		}
 
@@ -189,6 +249,16 @@ fn nomangle main() : i32
 		{
 			Ok( mut f ) ->
 			{
+				// Check result file size after reopening it for reading.
+				auto metadata_res= f.get_metatada();
+				assert( metadata_res.is_ok(), "Failed to get file metadata!" );
+				assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
+				assert( metadata_res.try_deref().size == u64(file_data_size), "Unexpected file size!" );
+
+				auto size_res= f.get_size();
+				assert( size_res.is_ok(), "Failed to get file size!" );
+				assert( size_res.try_deref() == u64(file_data_size), "Unexpected file size!" );
+
 				// Read the whole file in one call.
 				var[ char8, file_data_size ] mut expected_file_data= zero_init;
 				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
@@ -229,6 +299,19 @@ fn nomangle main() : i32
 					auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
 					assert( write_res.is_ok(), "Failed to write!" );
 					assert( write_res.try_deref() == file_data_size );
+				}
+
+				// Check result file size after writing.
+				{
+					auto metadata_res= f.get_metatada();
+					assert( metadata_res.is_ok(), "Failed to get file metadata!" );
+					assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
+					assert( metadata_res.try_deref().size == u64(file_data_size), "Unexpected file size!" );
+				}
+				{
+					auto size_res= f.get_size();
+					assert( size_res.is_ok(), "Failed to get file size!" );
+					assert( size_res.try_deref() == u64(file_data_size), "Unexpected file size!" );
 				}
 
 				// Read the whole file after writing it.
@@ -290,6 +373,18 @@ fn nomangle main() : i32
 			Err(e) -> { assert( false, "Failed to create directory!" ) },
 		}
 
+		// Request metatada for created directories.
+		result_match( ust::get_metadata_for_path( dir0 ) )
+		{
+			Ok(m) -> { assert( m.kind == ust::file_kind::directory, "Unexpected directory kind!" ); },
+			Err(e) -> { assert( false, "Failed to get metadata for an existing file!" ); },
+		}
+		result_match( ust::get_metadata_for_path( dir1 ) )
+		{
+			Ok(m) -> { assert( m.kind == ust::file_kind::directory, "Unexpected directory kind!" ); },
+			Err(e) -> { assert( false, "Failed to get metadata for an existing file!" ); },
+		}
+
 		auto &constexpr file_data= "Was kann das sein?\nDas gibt's doch nie!\nNun ist mir klar: das wäre wahre Anarchie!\n";
 		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
 
@@ -342,6 +437,18 @@ fn nomangle main() : i32
 			Ok(v) -> {},
 			Err(e) -> { assert( false, "Failed to remove directory!" ) },
 		}
+
+		// Check directories are removed.
+		result_match( ust::get_metadata_for_path( dir1 ) )
+		{
+			Ok(m) -> { assert( false, "Should not get metadata for removed directory!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+		}
+		result_match( ust::get_metadata_for_path( dir0 ) )
+		{
+			Ok(m) -> { assert( false, "Should not get metadata for removed directory!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+		}
 	}
 
 	// Writing and reading for a newly-created file.
@@ -356,6 +463,16 @@ fn nomangle main() : i32
 		{
 			Ok( mut f ) ->
 			{
+				// First file size should be zero.
+				auto metadata_res= f.get_metatada();
+				assert( metadata_res.is_ok(), "Failed to get file metadata!" );
+				assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
+				assert( metadata_res.try_deref().size == 0u64, "Unexpected file size!" );
+
+				auto size_res= f.get_size();
+				assert( size_res.is_ok(), "Failed to get file size!" );
+				assert( size_res.try_deref() == 0u64, "Unexpected file size!" );
+
 				// Write the whole file in one call.
 				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
 				assert( write_res.is_ok(), "Failed to write!" );
@@ -372,6 +489,16 @@ fn nomangle main() : i32
 		{
 			Ok( mut f ) ->
 			{
+				// File size should be expected.
+				auto metadata_res= f.get_metatada();
+				assert( metadata_res.is_ok(), "Failed to get file metadata!" );
+				assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
+				assert( metadata_res.try_deref().size == u64(file_data_size), "Unexpected file size!" );
+
+				auto size_res= f.get_size();
+				assert( size_res.is_ok(), "Failed to get file size!" );
+				assert( size_res.try_deref() == u64(file_data_size), "Unexpected file size!" );
+
 				// Read the whole file in one call.
 				var[ char8, file_data_size ] mut expected_file_data= zero_init;
 				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
@@ -388,6 +515,44 @@ fn nomangle main() : i32
 		// Remove this file.
 		auto remove_res= ust::remove_file( file_path );
 		assert( remove_res.is_ok(), "Failed to remove file!" );
+	}
+
+	// Create already created directory.
+	{
+		auto &constexpr dir_name= "some_dir_to_create";
+
+		// Create it.
+		result_match( ust::create_directory( dir_name ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+		// Create again - should NOT get error.
+		result_match( ust::create_directory( dir_name ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+
+		// Remove directory.
+		result_match( ust::remove_directory( dir_name ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to remove directory!" ) },
+		}
+		// Remove directory again. Should get an error.
+		result_match( ust::remove_directory( dir_name ) )
+		{
+			Ok(v) -> { assert( false, "Removal of non-existing directory isn't failed. WTF?" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ) },
+		}
+	}
+
+	// Create directory with name equal to already existing file. Should fail.
+	result_match( ust::create_directory( "test_file0.txt" ) )
+	{
+		Ok(v) -> { assert( false, "Creating of directory with existing path isn't failed!" ); },
+		Err(e) -> { assert( e == ust::io_error::already_exists, "Unexpected error code!" ) },
 	}
 
 	return 0;

@@ -31,6 +31,16 @@ fn file_readable::destructor()
 	unsafe( close_file_impl( handle_ ) );
 }
 
+fn file_readable::get_metatada( this ) : file_result</file_metadata/>
+{
+	return unsafe( get_metatada_impl( handle_ ) );
+}
+
+fn file_readable::get_size( this ) : file_result</u64/>
+{
+	return unsafe( get_size_impl( handle_ ) );
+}
+
 fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
@@ -70,6 +80,16 @@ fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
 		result_unwrap_or_return( handle : open_file_impl( path, open_options{ .read= false, .write= true, .create_and_truncate= true, .ensure_new= true } ) );
 		return file_writeable(handle);
 	}
+}
+
+fn file_writeable::get_metatada( this ) : file_result</file_metadata/>
+{
+	return unsafe( get_metatada_impl( handle_ ) );
+}
+
+fn file_writeable::get_size( this ) : file_result</u64/>
+{
+	return unsafe( get_size_impl( handle_ ) );
 }
 
 fn file_writeable::constructor( native_file_handle handle ) unsafe
@@ -122,6 +142,16 @@ fn file_readable_writeable::create_new( file_path path ) : file_result</file_rea
 	}
 }
 
+fn file_readable_writeable::get_metatada( this ) : file_result</file_metadata/>
+{
+	return unsafe( get_metatada_impl( handle_ ) );
+}
+
+fn file_readable_writeable::get_size( this ) : file_result</u64/>
+{
+	return unsafe( get_size_impl( handle_ ) );
+}
+
 fn file_readable_writeable::constructor( native_file_handle handle ) unsafe
 	( handle_= handle )
 {}
@@ -150,13 +180,37 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 // various functions
 //
 
+fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
+{
+	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( path );
+
+	var ü_WIN32_FILE_ATTRIBUTE_DATA mut info= zero_init;
+
+	var BOOL res =
+		unsafe( ::GetFileAttributesExW(
+			path_null_terminated.data(),
+			GET_FILEEX_INFO_LEVELS::GetFileExInfoStandard,
+			ptr_cast_to_byte8( $<(info) ) ) );
+
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return file_metadata
+	{
+		.size= u64(info.nFileSizeLow) | (u64(info.nFileSizeHigh) << 32u),
+		.kind= file_attributes_to_file_kind( info.dwFileAttributes ),
+	};
+}
+
 fn create_directory( file_path path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
 	var BOOL res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
 
-	if( res == 1 || unsafe( GetLastError() ) == DWORD(ERROR_ALREADY_EXISTS) )
+	if( res == 1 )
 	{
 		return void();
 	}
@@ -164,11 +218,23 @@ fn create_directory( file_path path ) : file_result</void/>
 	var DWORD last_error = unsafe( GetLastError() );
 	if( last_error == DWORD(ERROR_ALREADY_EXISTS) )
 	{
-		// TODO - what if path exists but it's a file?
-		return void();
+		// Path already exists. Check if it's a directory and not a file or something else.
+
+		var ü_WIN32_FILE_ATTRIBUTE_DATA mut info= zero_init;
+
+		var BOOL res =
+			unsafe( ::GetFileAttributesExW(
+				path_null_terminated.data(),
+				GET_FILEEX_INFO_LEVELS::GetFileExInfoStandard,
+				ptr_cast_to_byte8( $<(info) ) ) );
+
+		if( res == 1 && file_attributes_to_file_kind( info.dwFileAttributes ) == file_kind::directory )
+		{
+			return void();
+		}
 	}
 
-	return translate_error_code(  last_error );
+	return translate_error_code( last_error );
 }
 
 fn remove_file( file_path path ) : file_result</void/>
@@ -265,6 +331,46 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 fn close_file_impl( native_file_handle handle ) unsafe
 {
 	unsafe( ::CloseHandle( handle ) );
+}
+
+fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
+{
+	var ü_BY_HANDLE_FILE_INFORMATION mut info= zero_init;
+	var BOOL res = unsafe( ::GetFileInformationByHandle( handle, $<(info) ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return file_metadata
+	{
+		.size= u64(info.nFileSizeLow) | (u64(info.nFileSizeHigh) << 32u),
+		.kind= file_attributes_to_file_kind( info.dwFileAttributes ),
+	};
+}
+
+fn get_size_impl( native_file_handle handle ) : file_result</u64/>
+{
+	var LARGE_INTEGER mut i= zero_init;
+	var BOOL res = unsafe( ::GetFileSizeEx( handle, $<(i) ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return u64(i.union_contents[0]);
+}
+
+fn file_attributes_to_file_kind( DWORD attributes ) : file_kind
+{
+	if( ( attributes & DWORD(FILE_ATTRIBUTE_DIRECTORY) ) != 0u )
+	{
+		return file_kind::directory;
+	}
+
+	// TODO - support symlinks.
+
+	return file_kind::file;
 }
 
 fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
