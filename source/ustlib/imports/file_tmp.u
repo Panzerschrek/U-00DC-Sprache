@@ -10,11 +10,6 @@ enum io_error
 	// TODO - add other errors
 }
 
-template</type T/>
-type file_result= result</T, io_error/>;
-
-
-fn get_metatada(  ) : file_result</file_metadata/>;
-
+fn get_metatada(  ) : result</file_metadata, io_error/>;
 
 } // namespace ust

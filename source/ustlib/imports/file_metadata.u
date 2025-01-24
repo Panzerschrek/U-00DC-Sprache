@@ -3,24 +3,9 @@ import "system_time.u"
 namespace ust
 {
 
-enum file_kind
-{
-	file,
-	directory,
-	symlink,
-}
-
-// Some information about a file.
-// New fileds may be added in future, including platform-dependent.
 struct file_metadata
 {
-	u64 size;
-	file_kind kind;
 	system_time access_time;
-	system_time modification_time;
-	// TODO - add creation time
-	// TODO - add permissions
-	// TODO - add read-only flag
 }
 
 } // namespace ust
