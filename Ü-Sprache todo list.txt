@@ -71,7 +71,7 @@ Standart library:
 *) Function for symlinks resolving
 *) Function to get current directory
 *) More file error kinds
-*) Helper methods for reading/writing file contents into/from string/vector of bytes
+*) Memory-mapped files
 *) Examples for file-related functionality
 *) Function for system time retrieval (using clock identical to file timestamps)
 *) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method
