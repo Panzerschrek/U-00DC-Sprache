@@ -13,17 +13,23 @@ fn read_file_to_byte8_vector( file_path path ) : file_result</ vector</byte8/> /
 		return io_error::out_of_memory;
 	}
 
-	var vector</byte8/> mut res;
-	// TODO - use uninitialized memory.
-	res.resize( size_type(s), byte8(0u8) );
-
-	for( var size_type mut offset= 0s; offset < size_type(s); )
+	unsafe // Because of uninitialized.
 	{
-		result_unwrap_or_return( bytes_read : f.read( res.range().subrange_start( offset ) ) );
-		offset+= bytes_read;
-	}
+		var vector</byte8/> mut res;
 
-	return res;
+		// It's assumed that compiler can optimize-out filling container memory with uninitialized value.
+		// So, using such approach we prevent unnecessary filling of memory, which will be soon overwritten.
+		var byte8 filler= uninitialized;
+		res.resize( size_type(s), filler );
+
+		for( var size_type mut offset= 0s; offset < size_type(s); )
+		{
+			result_unwrap_or_return( bytes_read : f.read( res.range().subrange_start( offset ) ) );
+			offset+= bytes_read;
+		}
+
+		return res;
+	}
 }
 
 fn read_file_to_string( file_path path ) : file_result</ string8 />
@@ -36,17 +42,23 @@ fn read_file_to_string( file_path path ) : file_result</ string8 />
 		return io_error::out_of_memory;
 	}
 
-	var string8 mut res;
-	// TODO - use uninitialized memory.
-	res.resize( size_type(s), char8(0u8) );
-
-	for( var size_type mut offset= 0s; offset < size_type(s); )
+	unsafe // Because of uninitialized.
 	{
-		result_unwrap_or_return( bytes_read : f.read( cast_range_to_bytes_range( res.range().subrange_start( offset ) ) ) );
-		offset+= bytes_read;
-	}
+		var string8 mut res;
 
-	return res;
+		// It's assumed that compiler can optimize-out filling container memory with uninitialized value.
+		// So, using such approach we prevent unnecessary filling of memory, which will be soon overwritten.
+		var char8 filler= uninitialized;
+		res.resize( size_type(s), filler );
+
+		for( var size_type mut offset= 0s; offset < size_type(s); )
+		{
+			result_unwrap_or_return( bytes_read : f.read( cast_range_to_bytes_range( res.range().subrange_start( offset ) ) ) );
+			offset+= bytes_read;
+		}
+
+		return res;
+	}
 }
 
 fn write_byte8_range_to_file( file_path path, array_view_imut</byte8/> range ) : file_result</void/>
