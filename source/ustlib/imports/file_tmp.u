@@ -1,0 +1,20 @@
+import "file_metadata.u"
+import "result.u"
+
+namespace ust
+{
+
+enum io_error
+{
+	other, // Some non-listed error code.
+	// TODO - add other errors
+}
+
+template</type T/>
+type file_result= result</T, io_error/>;
+
+
+fn get_metatada(  ) : file_result</file_metadata/>;
+
+
+} // namespace ust
