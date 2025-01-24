@@ -127,6 +127,7 @@ auto constexpr ERROR_BAD_FORMAT = 11;
 auto constexpr ERROR_INVALID_DATA = 13;
 auto constexpr ERROR_FILE_EXISTS = 80;
 auto constexpr ERROR_ALREADY_EXISTS = 183;
+auto constexpr ERROR_DIRECTORY = 267;
 
 auto constexpr FILE_ATTRIBUTE_READONLY = 1;
 auto constexpr FILE_ATTRIBUTE_HIDDEN = 2;

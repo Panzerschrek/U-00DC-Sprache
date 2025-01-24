@@ -492,6 +492,44 @@ fn nomangle main() : i32
 		assert( remove_res.is_ok(), "Failed to remove file!" );
 	}
 
+	// Create already created directory.
+	{
+		auto &constexpr dir_name= "some_dir_to_create";
+
+		// Create it.
+		result_match( ust::create_directory( dir_name ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+		// Create again - should NOT get error.
+		result_match( ust::create_directory( dir_name ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+
+		// Remove directory.
+		result_match( ust::remove_directory( dir_name ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to remove directory!" ) },
+		}
+		// Remove directory again. Should get an error.
+		result_match( ust::remove_directory( dir_name ) )
+		{
+			Ok(v) -> { assert( false, "Removal of non-existing directory isn't failed. WTF?" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ) },
+		}
+	}
+
+	// Create directory with name equal to already existing file. Should fail.
+	result_match( ust::create_directory( "test_file0.txt" ) )
+	{
+		Ok(v) -> { assert( false, "Creating of directory with existing path isn't failed!" ); },
+		Err(e) -> { assert( e == ust::io_error::already_exists, "Unexpected error code!" ) },
+	}
+
 	return 0;
 }
 

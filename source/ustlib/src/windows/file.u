@@ -195,7 +195,7 @@ fn create_directory( file_path path ) : file_result</void/>
 
 	var BOOL res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
 
-	if( res == 1 || unsafe( GetLastError() ) == DWORD(ERROR_ALREADY_EXISTS) )
+	if( res == 1 )
 	{
 		return void();
 	}
@@ -203,8 +203,20 @@ fn create_directory( file_path path ) : file_result</void/>
 	var DWORD last_error = unsafe( GetLastError() );
 	if( last_error == DWORD(ERROR_ALREADY_EXISTS) )
 	{
-		// TODO - what if path exists but it's a file?
-		return void();
+		// Path already exists. Check if it's a directory and not a file or something else.
+
+		var ü_WIN32_FILE_ATTRIBUTE_DATA mut info= zero_init;
+
+		var BOOL res =
+			unsafe( ::GetFileAttributesExW(
+				path_null_terminated.data(),
+				GET_FILEEX_INFO_LEVELS::GetFileExInfoStandard,
+				ptr_cast_to_byte8( $<(info) ) ) );
+
+		if( res == 1 && file_attributes_to_file_kind( info.dwFileAttributes ) == file_kind::directory )
+		{
+			return void();
+		}
 	}
 
 	return translate_error_code( last_error );
