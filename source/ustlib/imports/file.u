@@ -11,6 +11,7 @@ enum io_error
 	permission_denied,
 	not_found,
 	already_exists,
+	out_of_memory,
 	other, // Some non-listed error code.
 	// TODO - add other errors
 }

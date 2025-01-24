@@ -1,0 +1,99 @@
+import "../imports/file_helpers.u"
+
+namespace ust
+{
+
+fn read_file_to_byte8_vector( file_path path ) : file_result</ vector</byte8/> />
+{
+	result_unwrap_or_return( mut f : file_readable::open( path ) );
+	result_unwrap_or_return( s : f.get_size() );
+
+	if( is_size_too_large_to_allocate(s) )
+	{
+		return io_error::out_of_memory;
+	}
+
+	unsafe // Because of uninitialized.
+	{
+		var vector</byte8/> mut res;
+
+		// It's assumed that compiler can optimize-out filling container memory with uninitialized value.
+		// So, using such approach we prevent unnecessary filling of memory, which will be soon overwritten.
+		var byte8 filler= uninitialized;
+		res.resize( size_type(s), filler );
+
+		for( var size_type mut offset= 0s; offset < size_type(s); )
+		{
+			result_unwrap_or_return( bytes_read : f.read( res.range().subrange_start( offset ) ) );
+			offset+= bytes_read;
+		}
+
+		return res;
+	}
+}
+
+fn read_file_to_string( file_path path ) : file_result</ string8 />
+{
+	result_unwrap_or_return( mut f : file_readable::open( path ) );
+	result_unwrap_or_return( s : f.get_size() );
+
+	if( is_size_too_large_to_allocate(s) )
+	{
+		return io_error::out_of_memory;
+	}
+
+	unsafe // Because of uninitialized.
+	{
+		var string8 mut res;
+
+		// It's assumed that compiler can optimize-out filling container memory with uninitialized value.
+		// So, using such approach we prevent unnecessary filling of memory, which will be soon overwritten.
+		var char8 filler= uninitialized;
+		res.resize( size_type(s), filler );
+
+		for( var size_type mut offset= 0s; offset < size_type(s); )
+		{
+			result_unwrap_or_return( bytes_read : f.read( cast_range_to_bytes_range( res.range().subrange_start( offset ) ) ) );
+			offset+= bytes_read;
+		}
+
+		return res;
+	}
+}
+
+fn write_byte8_range_to_file( file_path path, array_view_imut</byte8/> range ) : file_result</void/>
+{
+	result_unwrap_or_return( mut f : file_writeable::create( path ) );
+
+	for( var size_type mut offset= 0s; offset < range.size(); )
+	{
+		result_unwrap_or_return( bytes_written : f.write( range.subrange_start( offset ) ) );
+		offset+= bytes_written;
+	}
+
+	// TODO - call "flush" here to check for errors?
+
+	return void();
+}
+
+fn write_string_view_to_file( file_path path, string_view8 range ) : file_result</void/>
+{
+	return write_byte8_range_to_file( path, cast_range_to_bytes_range(range) );
+}
+
+fn is_size_too_large_to_allocate( u64 size_bytes ) : bool
+{
+	// Allow allocating only less than half of the possible address space.
+	var size_type constexpr limit= 1s << ( typeinfo</size_type/>.size_of * 8s - 1s );
+	return size_bytes >= u64(limit);
+}
+
+// It's safe to cast between ranges of chars and bytes.
+// TODO - make such conversion functions public.
+template</bool is_mutable/>
+fn cast_range_to_bytes_range( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
+{
+	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
+}
+
+} // namespace ust

@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/assert.u"
 import "../imports/file.u"
+import "../imports/file_helpers.u"
 
 fn nomangle main() : i32
 {
@@ -134,6 +135,27 @@ fn nomangle main() : i32
 		{
 			assert( false, "Failed to open file \"test_file0.txt\"" );
 		},
+	}
+
+	// Read the whole file into vector of bytes.
+	result_match( ust::read_file_to_byte8_vector( "test_file0.txt" ) )
+	{
+		Ok(s) ->
+		{
+			var [ byte8, 4 ] expected_result[ byte8("s"c8), byte8("o"c8), byte8("m"c8), byte8("e"c8) ];
+			assert( s == expected_result, "Unexpected file contents!" );
+		},
+		Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to vector</byte8/>!" ); }
+	}
+
+	// Read the whole file into string.
+	result_match( ust::read_file_to_string( "test_file0.txt" ) )
+	{
+		Ok(s) ->
+		{
+			assert( s == "some", "Unexpected file contents!" );
+		},
+		Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to string!" ); }
 	}
 
 	// Try reading more than possible.
@@ -280,6 +302,33 @@ fn nomangle main() : i32
 		auto remove_res2= ust::remove_file( file_path );
 		assert( remove_res2.is_error(), "Removing already removed file not failed. WTF?" );
 		assert( remove_res2.try_deref_error() == ust::io_error::not_found, "Unexpected error code while removing already removed file" );
+	}
+
+	// Write file via a helper function and read it again.
+	{
+		auto &constexpr file_path= "Für Elite";
+		auto &constexpr contents= "Ich habe keinen Bock mehr auf die Ausbeutung der Welt!";
+
+		auto write_res= ust::write_string_view_to_file( file_path, contents );
+		assert( write_res.is_ok(), "Failed to write a file!" );
+
+		auto metadata_res= ust::get_metadata_for_path( file_path );
+		assert( metadata_res.is_ok(), "Failed to get file metadata!" );
+		assert( metadata_res.try_deref().size == u64( typeinfo</ typeof(contents) />.size_of ), "Unexpected file size!" );
+
+		// Read the whole file back.
+		result_match( ust::read_file_to_string( file_path ) )
+		{
+			Ok(s) ->
+			{
+				assert( s == contents, "Unexpected file contents!" );
+			},
+			Err(e) -> { assert( false, "Failed to read file \"" + file_path + "\" to string!" ); }
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file \"" + file_path + "\"!" );
 	}
 
 	// Writing and reading using the same file.
