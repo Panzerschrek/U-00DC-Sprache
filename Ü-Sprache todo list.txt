@@ -58,8 +58,6 @@ Lambdas:
 *) Template lambdas
 
 Standart library:
-*) Support retrieving files metadata - size, kind, etc.
-*) Handle "already exists" cases in directories creation code
 *) Move directories-related code into a separate imported file
 *) Support opening files with appending
 *) Support retrieving modification time for files
@@ -70,8 +68,11 @@ Standart library:
 *) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
 *) Function for creation of the whole directories path
 *) Function for recursive directory removal
+*) Function for symlinks resolving
+*) Function to get current directory
 *) More file error kinds
 *) Helper methods for reading/writing file contents into/from string/vector of bytes
+*) Examples for file-related functionality
 *) Function for system time retrieval (using clock identical to file timestamps)
 *) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method
 *) Support types with references inside in some containers (variant, result, unordered_map)
