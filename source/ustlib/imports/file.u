@@ -32,6 +32,7 @@ public:
 
 public:
 	fn get_metatada( this ) : file_result</file_metadata/>;
+	fn get_size( this ) : file_result</u64/>;
 
 	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
 
@@ -58,6 +59,7 @@ public:
 
 public:
 	fn get_metatada( this ) : file_result</file_metadata/>;
+	fn get_size( this ) : file_result</u64/>;
 
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
 
@@ -84,6 +86,7 @@ public:
 
 public:
 	fn get_metatada( this ) : file_result</file_metadata/>;
+	fn get_size( this ) : file_result</u64/>;
 
 	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;

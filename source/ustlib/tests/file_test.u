@@ -119,6 +119,10 @@ fn nomangle main() : i32
 			assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
 			assert( metadata_res.try_deref().size == 4u64, "Unexpected file size!" );
 
+			auto size_res= f.get_size();
+			assert( size_res.is_ok(), "Failed to get file size!" );
+			assert( size_res.try_deref() == 4u64, "Unexpected file size!" );
+
 			// Read the whole file in one call.
 			var[ char8, 4 ] mut data= zero_init;
 			auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
@@ -215,6 +219,10 @@ fn nomangle main() : i32
 				assert( metadata_res.is_ok(), "Failed to get file metadata!" );
 				assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
 				assert( metadata_res.try_deref().size == u64(file_data_size), "Unexpected file size!" );
+
+				auto size_res= f.get_size();
+				assert( size_res.is_ok(), "Failed to get file size!" );
+				assert( size_res.try_deref() == u64(file_data_size), "Unexpected file size!" );
 			},
 			Err(e) ->
 			{
@@ -246,6 +254,10 @@ fn nomangle main() : i32
 				assert( metadata_res.is_ok(), "Failed to get file metadata!" );
 				assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
 				assert( metadata_res.try_deref().size == u64(file_data_size), "Unexpected file size!" );
+
+				auto size_res= f.get_size();
+				assert( size_res.is_ok(), "Failed to get file size!" );
+				assert( size_res.try_deref() == u64(file_data_size), "Unexpected file size!" );
 
 				// Read the whole file in one call.
 				var[ char8, file_data_size ] mut expected_file_data= zero_init;
@@ -295,6 +307,11 @@ fn nomangle main() : i32
 					assert( metadata_res.is_ok(), "Failed to get file metadata!" );
 					assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
 					assert( metadata_res.try_deref().size == u64(file_data_size), "Unexpected file size!" );
+				}
+				{
+					auto size_res= f.get_size();
+					assert( size_res.is_ok(), "Failed to get file size!" );
+					assert( size_res.try_deref() == u64(file_data_size), "Unexpected file size!" );
 				}
 
 				// Read the whole file after writing it.
@@ -452,6 +469,10 @@ fn nomangle main() : i32
 				assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
 				assert( metadata_res.try_deref().size == 0u64, "Unexpected file size!" );
 
+				auto size_res= f.get_size();
+				assert( size_res.is_ok(), "Failed to get file size!" );
+				assert( size_res.try_deref() == 0u64, "Unexpected file size!" );
+
 				// Write the whole file in one call.
 				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
 				assert( write_res.is_ok(), "Failed to write!" );
@@ -473,6 +494,10 @@ fn nomangle main() : i32
 				assert( metadata_res.is_ok(), "Failed to get file metadata!" );
 				assert( metadata_res.try_deref().kind == ust::file_kind::file, "Unexpected file kind!" );
 				assert( metadata_res.try_deref().size == u64(file_data_size), "Unexpected file size!" );
+
+				auto size_res= f.get_size();
+				assert( size_res.is_ok(), "Failed to get file size!" );
+				assert( size_res.try_deref() == u64(file_data_size), "Unexpected file size!" );
 
 				// Read the whole file in one call.
 				var[ char8, file_data_size ] mut expected_file_data= zero_init;

@@ -10,6 +10,7 @@ fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle DeleteFileW( LPCWSTR lpFileName ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetFileAttributesExW( LPCWSTR lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, LPVOID lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetFileInformationByHandle( HANDLE hFile, LPBY_HANDLE_FILE_INFORMATION lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
 fn nomangle InitializeSRWLock( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;

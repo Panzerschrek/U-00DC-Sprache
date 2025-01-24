@@ -36,6 +36,11 @@ fn file_readable::get_metatada( this ) : file_result</file_metadata/>
 	return unsafe( get_metatada_impl( handle_ ) );
 }
 
+fn file_readable::get_size( this ) : file_result</u64/>
+{
+	return unsafe( get_size_impl( handle_ ) );
+}
+
 fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
@@ -80,6 +85,11 @@ fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
 fn file_writeable::get_metatada( this ) : file_result</file_metadata/>
 {
 	return unsafe( get_metatada_impl( handle_ ) );
+}
+
+fn file_writeable::get_size( this ) : file_result</u64/>
+{
+	return unsafe( get_size_impl( handle_ ) );
 }
 
 fn file_writeable::constructor( native_file_handle handle ) unsafe
@@ -135,6 +145,11 @@ fn file_readable_writeable::create_new( file_path path ) : file_result</file_rea
 fn file_readable_writeable::get_metatada( this ) : file_result</file_metadata/>
 {
 	return unsafe( get_metatada_impl( handle_ ) );
+}
+
+fn file_readable_writeable::get_size( this ) : file_result</u64/>
+{
+	return unsafe( get_size_impl( handle_ ) );
 }
 
 fn file_readable_writeable::constructor( native_file_handle handle ) unsafe
@@ -332,6 +347,18 @@ fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
 		.size= u64(info.nFileSizeLow) | (u64(info.nFileSizeHigh) << 32u),
 		.kind= file_attributes_to_file_kind( info.dwFileAttributes ),
 	};
+}
+
+fn get_size_impl( native_file_handle handle ) : file_result</u64/>
+{
+	var LARGE_INTEGER mut i= zero_init;
+	var BOOL res = unsafe( ::GetFileSizeEx( handle, $<(i) ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return u64(i.union_contents[0]);
 }
 
 fn file_attributes_to_file_kind( DWORD attributes ) : file_kind
