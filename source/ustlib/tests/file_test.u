@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/assert.u"
 import "../imports/file.u"
+import "../imports/file_helpers.u"
 
 fn nomangle main() : i32
 {
@@ -134,6 +135,27 @@ fn nomangle main() : i32
 		{
 			assert( false, "Failed to open file \"test_file0.txt\"" );
 		},
+	}
+
+	// Read the whole file into vector of bytes.
+	result_match( ust::read_file_to_byte8_vector( "test_file0.txt" ) )
+	{
+		Ok(s) ->
+		{
+			var [ byte8, 4 ] expected_result[ byte8("s"c8), byte8("o"c8), byte8("m"c8), byte8("e"c8) ];
+			assert( s == expected_result, "Unexpected file contents!" );
+		},
+		Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to string!" ); }
+	}
+
+	// Read the whole file into string.
+	result_match( ust::read_file_to_string( "test_file0.txt" ) )
+	{
+		Ok(s) ->
+		{
+			assert( s == "some", "Unexpected file contents!" );
+		},
+		Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to string!" ); }
 	}
 
 	// Try reading more than possible.

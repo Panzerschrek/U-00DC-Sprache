@@ -3,4 +3,52 @@ import "../imports/file_helpers.u"
 namespace ust
 {
 
+fn read_file_to_byte8_vector( file_path path ) : file_result</ vector</byte8/> />
+{
+	result_unwrap_or_return( mut f : file_readable::open( path ) );
+	result_unwrap_or_return( s : f.get_size() );
+
+	// TODO - prevent reading files greater than half of address space size.
+
+	var vector</byte8/> mut res;
+	// TODO - use uninitialized memory.
+	res.resize( size_type(s), byte8(0u8) );
+
+	for( var size_type mut offset= 0s; offset < size_type(s); )
+	{
+		result_unwrap_or_return( bytes_read : f.read( res.range().subrange_start( offset ) ) );
+		offset+= bytes_read;
+	}
+
+	return res;
+}
+
+fn read_file_to_string( file_path path ) : file_result</ string8 />
+{
+	result_unwrap_or_return( mut f : file_readable::open( path ) );
+	result_unwrap_or_return( s : f.get_size() );
+
+	// TODO - prevent reading files greater than half of address space size.
+
+	var string8 mut res;
+	// TODO - use uninitialized memory.
+	res.resize( size_type(s), char8(0u8) );
+
+	for( var size_type mut offset= 0s; offset < size_type(s); )
+	{
+		result_unwrap_or_return( bytes_read : f.read( cast_range_to_bytes_range( res.range().subrange_start( offset ) ) ) );
+		offset+= bytes_read;
+	}
+
+	return res;
+}
+
+// It's safe to cast between ranges of chars and bytes.
+// TODO - make such conversion functions public.
+template</bool is_mutable/>
+fn cast_range_to_bytes_range( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
+{
+	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
+}
+
 } // namespace ust
