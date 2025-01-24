@@ -1,3 +1,4 @@
+import "file_metadata.u"
 import "random_access_range.u"
 import "result.u"
 import "type_traits.u"
@@ -30,6 +31,8 @@ public:
 	fn destructor();
 
 public:
+	fn get_metatada( this ) : file_result</file_metadata/>;
+
 	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
 
 	// May fail if file is not seekable (sequential).
@@ -54,6 +57,8 @@ public:
 	fn destructor();
 
 public:
+	fn get_metatada( this ) : file_result</file_metadata/>;
+
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
 
 	// May fail if file is not seekable (sequential).
@@ -78,6 +83,8 @@ public:
 	fn destructor();
 
 public:
+	fn get_metatada( this ) : file_result</file_metadata/>;
+
 	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
 
