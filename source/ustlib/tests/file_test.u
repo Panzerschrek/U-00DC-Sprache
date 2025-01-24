@@ -304,6 +304,33 @@ fn nomangle main() : i32
 		assert( remove_res2.try_deref_error() == ust::io_error::not_found, "Unexpected error code while removing already removed file" );
 	}
 
+	// Write file via a helper function and read it again.
+	{
+		auto &constexpr file_path= "Für Elite";
+		auto &constexpr contents= "Ich habe keinen Bock mehr auf die Ausbeuting der Welt!";
+
+		auto write_res= ust::write_string_view_to_file( file_path, contents );
+		assert( write_res.is_ok(), "Failed to write a file!" );
+
+		auto metadata_res= ust::get_metadata_for_path( file_path );
+		assert( metadata_res.is_ok(), "Failed to get file metadata!" );
+		assert( metadata_res.try_deref().size == u64( typeinfo</ typeof(contents) />.size_of ), "Unexpected file size!" );
+
+		// Read the whole file back.
+		result_match( ust::read_file_to_string( file_path ) )
+		{
+			Ok(s) ->
+			{
+				assert( s == contents, "Unexpected file contents!" );
+			},
+			Err(e) -> { assert( false, "Failed to read file \"" + file_path + "\" to string!" ); }
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file \"" + file_path + "\"!" );
+	}
+
 	// Writing and reading using the same file.
 	{
 		auto &constexpr file_data= "Es is egal, ob die Grünen oder AfD";
