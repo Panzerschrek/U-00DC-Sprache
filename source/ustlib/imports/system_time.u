@@ -6,8 +6,15 @@ namespace ust
 class system_time
 {
 public:
-	// TODO - add default constructor.
-	// TODO - add unsafe platform-specific constructor.
+	fn now() : system_time;
+
+public:
+	// Constructor from a platform-specific representation (for internal usage).
+	fn constructor( impl& in_impl ) unsafe
+		( impl_(in_impl) )
+	{}
+
+	// TODO - add default constructor?
 
 	fn constructor( mut this, system_time& other )= default;
 	op=( mut this, system_time& other )= default;
@@ -19,11 +26,12 @@ public:
 		return l.impl_ <=> r.impl_;
 	}
 
-private:
+public:
 	struct impl_unix
 	{
+		// Basically "timespec" fields.
 		i64 seconds;
-		u64 nanoseconds;
+		i64 nanoseconds;
 
 		op<=>( impl_unix& l, impl_unix& r ) : i32
 		{
