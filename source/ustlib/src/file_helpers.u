@@ -8,7 +8,10 @@ fn read_file_to_byte8_vector( file_path path ) : file_result</ vector</byte8/> /
 	result_unwrap_or_return( mut f : file_readable::open( path ) );
 	result_unwrap_or_return( s : f.get_size() );
 
-	// TODO - prevent reading files greater than half of address space size.
+	if( is_size_too_large_to_allocate(s) )
+	{
+		return io_error::out_of_memory;
+	}
 
 	var vector</byte8/> mut res;
 	// TODO - use uninitialized memory.
@@ -28,7 +31,10 @@ fn read_file_to_string( file_path path ) : file_result</ string8 />
 	result_unwrap_or_return( mut f : file_readable::open( path ) );
 	result_unwrap_or_return( s : f.get_size() );
 
-	// TODO - prevent reading files greater than half of address space size.
+	if( is_size_too_large_to_allocate(s) )
+	{
+		return io_error::out_of_memory;
+	}
 
 	var string8 mut res;
 	// TODO - use uninitialized memory.
@@ -61,6 +67,13 @@ fn write_byte8_range_to_file( file_path path, array_view_imut</byte8/> range ) :
 fn write_string_view_to_file( file_path path, string_view8 range ) : file_result</void/>
 {
 	return write_byte8_range_to_file( path, cast_range_to_bytes_range(range) );
+}
+
+fn is_size_too_large_to_allocate( u64 size_bytes ) : bool
+{
+	// Allow allocating only less than half of the possible address space.
+	var size_type constexpr limit= 1s << ( typeinfo</size_type/>.size_of * 8s - 1s );
+	return size_bytes >= u64(limit);
 }
 
 // It's safe to cast between ranges of chars and bytes.
