@@ -3,9 +3,13 @@ import "type_traits.u"
 namespace ust
 {
 
+// Time point of the system clock.
+// It's not monotonic.
+// It's used for things like file times.
 class system_time
 {
 public:
+	// Get current time.
 	fn now() : system_time;
 
 public:

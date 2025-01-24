@@ -1449,7 +1449,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::strin
 		"unix/file.u",
 		"unix/rwlock_impl.u",
 		"unix/stdout.u",
-		"windows/system_time.u",
+		"unix/system_time.u",
 		"unix/thread_impl.u",
 	];
 

@@ -20,6 +20,7 @@ struct file_metadata
 	system_time modification_time;
 	// TODO - add creation time
 	// TODO - add permissions
+	// TODO - add read-only flag
 }
 
 } // namespace ust
