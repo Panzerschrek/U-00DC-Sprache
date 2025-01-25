@@ -21,3 +21,7 @@ fn nomangle U1_IsLegalUTF8String( $(char8) start, size_type length ) unsafe : bo
 fn nomangle U1_ConstDataArray(LLVMTypeRef t, $(byte8) data, size_type data_size, size_type element_count) unsafe : LLVMValueRef;
 
 fn nomangle U1_TryToPerformReturnValueAllocationOptimization( LLVMValueRef function ) unsafe;
+
+// Replace node[0] with node[1] in one call.
+// node[0] is deleted.
+fn nomangle U1_ReplaceMetadataNodes( $( tup[ LLVMMetadataRef, LLVMMetadataRef ] ) nodes_start, size_type num_nodes ) unsafe;

@@ -1,3 +1,4 @@
+#include "../../../lex_synt_lib_common/assert.hpp"
 #include "../../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
@@ -5,8 +6,8 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/Support/ConvertUTF.h>
-#include "../../../code_builder_lib_common/return_value_optimization.hpp"
 #include "../../../code_builder_lib_common/pop_llvm_warnings.hpp"
+#include "../../../code_builder_lib_common/return_value_optimization.hpp"
 
 extern "C"
 {
@@ -78,6 +79,26 @@ void U1_TryToPerformReturnValueAllocationOptimization( const LLVMValueRef functi
 {
 	const auto function_really= llvm::dyn_cast<llvm::Function>( llvm::unwrap(function) );
 	U::TryToPerformReturnValueAllocationOptimization( *function_really );
+}
+
+void U1_ReplaceMetadataNodes( const std::pair< LLVMMetadataRef, LLVMMetadataRef >* const nodes_start, const size_t num_nodes )
+{
+	// Put nodes into tracked container, in order to avoid their invalidation.
+	std::vector< std::pair< llvm::TrackingMDNodeRef, llvm::TrackingMDNodeRef > > nodes_tracked( num_nodes );
+	for( size_t i= 0; i < num_nodes; ++i )
+	{
+		nodes_tracked[i].first.reset( llvm::dyn_cast<llvm::MDNode>( llvm::unwrap( nodes_start[i].first ) ) );
+		nodes_tracked[i].second.reset( llvm::dyn_cast<llvm::MDNode>( llvm::unwrap( nodes_start[i].second ) ) );
+	}
+
+	for( size_t i= 0; i < num_nodes; ++i )
+	{
+		llvm::MDNode* const node_to_delete= nodes_tracked[i].first;
+		llvm::MDNode* const new_node= nodes_tracked[i].second;
+		node_to_delete->replaceAllUsesWith( new_node );
+		U_ASSERT( nodes_tracked[i].first == new_node ); // Should replace tracked value.
+		llvm::MDNode::deleteTemporary( node_to_delete );
+	}
 }
 
 } // extern "C"

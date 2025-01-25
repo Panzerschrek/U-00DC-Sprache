@@ -37,7 +37,7 @@ private:
 
 	fn CreateFunctionDIType( mut this, FunctionType& t ) : LLVMMetadataRef;
 
-	fn BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_ );
+	fn BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_ ) : LLVMMetadataRef;
 
 private:
 	LLVMContextRef imut llvm_context_;

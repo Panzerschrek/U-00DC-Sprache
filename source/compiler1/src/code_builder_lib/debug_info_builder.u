@@ -69,11 +69,15 @@ fn DebugInfoBuilder::destructor()
 	// Build full debug info for classes, because at this moment all classes should be complete.
 	// Use separate list since we can't iterate over classes_di_types_ and adding new elements simultaniously.
 	// Use counter-based loop, since this container may be modified during iteration.
+	var ust::vector</ tup[ LLVMMetadataRef, LLVMMetadataRef ] /> mut metadata_to_replace;
 	for( var size_type mut i= 0s; i < classes_order_.size(); ++i )
 	{
-		auto class_type= classes_order_[i];
-		BuildClassTypeFullDebugInfo( class_type );
+		var ClassTypePtr class_type= classes_order_[i];
+		var LLVMMetadataRef temp_metadata= classes_di_types_[class_type];
+		var LLVMMetadataRef new_metadata= BuildClassTypeFullDebugInfo( class_type );
+		metadata_to_replace.push_back( ust::make_tuple( temp_metadata, new_metadata ) );
 	}
+	unsafe( U1_ReplaceMetadataNodes( metadata_to_replace.data(), metadata_to_replace.size() ) );
 
 	unsafe
 	{
@@ -554,7 +558,7 @@ fn DebugInfoBuilder::CreateFunctionDIType( mut this, FunctionType& t ) : LLVMMet
 		LLVMDIFlags(0) ) );
 }
 
-fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_ )
+fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_ ) : LLVMMetadataRef
 {
 	// Create stub first.
 	// It is important, since we need to create cache value for this class, even if it was not referenced previously,
@@ -662,11 +666,7 @@ fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_
 		LLVMMetadataRef::Null,// VTableHolder
 		ust::nullptr</char8/>(), 0s ) );
 
-	// Replace temporary forward declaration with correct node.
-	var LLVMMetadataRef &mut cache_value= classes_di_types_[ class_ ]; // Should contain class.
-	unsafe( LLVMMetadataReplaceAllUsesWith( cache_value, di_type ) );
-	// No need to delete temporary here - previous call already does this.
-	cache_value= di_type;
+	return di_type;
 }
 
 } // namespace U1
