@@ -192,7 +192,9 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 	return file_metadata
 	{
 		.size= u64(s.st_size),
-		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) )
+		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) ),
+		.access_time= unsafe( timespec_to_system_time( s.st_atim ) ),
+		.modification_time= unsafe( timespec_to_system_time( s.st_mtim ) ),
 	};
 }
 
@@ -322,7 +324,9 @@ fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
 	return file_metadata
 	{
 		.size= u64(s.st_size),
-		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) )
+		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) ),
+		.access_time= unsafe( timespec_to_system_time( s.st_atim ) ),
+		.modification_time= unsafe( timespec_to_system_time( s.st_mtim ) ),
 	};
 }
 
@@ -339,6 +343,11 @@ fn file_flags_to_file_kind( u32 flags ) : file_kind
 	}
 
 	return file_kind::file;
+}
+
+fn timespec_to_system_time( timespec& t ) unsafe : system_time
+{
+	return unsafe( system_time( system_time::impl_unix{ .seconds= t.tv_sec, .nanoseconds= t.tv_nsec } ) );
 }
 
 fn get_size_impl( native_file_handle handle ) : file_result</u64/>

@@ -1,0 +1,71 @@
+import "type_traits.u"
+
+namespace ust
+{
+
+// Time point of the system clock.
+// It's not monotonic.
+// It's used for things like file times.
+class system_time
+{
+public:
+	// Get current time.
+	fn now() : system_time;
+
+public:
+	// Constructor from a platform-specific representation (for internal usage).
+	fn constructor( impl& in_impl ) unsafe
+		( impl_(in_impl) )
+	{}
+
+	// TODO - add default constructor?
+
+	fn constructor( mut this, system_time& other )= default;
+	op=( mut this, system_time& other )= default;
+
+	op==( system_time& l, system_time& r ) : bool = default;
+
+	op<=>( system_time& l, system_time& r ) : i32
+	{
+		return l.impl_ <=> r.impl_;
+	}
+
+public:
+	struct impl_unix
+	{
+		// Basically "timespec" fields.
+		i64 seconds;
+		i64 nanoseconds;
+
+		op<=>( impl_unix& l, impl_unix& r ) : i32
+		{
+			auto s= l.seconds <=> r.seconds;
+			if( s != 0 )
+			{
+				return s;
+			}
+			return l.nanoseconds <=> r.nanoseconds;
+		}
+	}
+
+	struct impl_windows
+	{
+		u64 intervals; // each step is 10^-7 seconds, same as FILETIME.
+
+		op<=>( impl_windows& l, impl_windows& r ) : i32
+		{
+			return l.intervals <=> r.intervals;
+		}
+	}
+
+	type impl=
+		type_select</
+			constexpr_string_equals( compiler::target::os, "windows" ),
+			impl_windows,
+			impl_unix />;
+
+private:
+	impl impl_;
+}
+
+} // namespace ust

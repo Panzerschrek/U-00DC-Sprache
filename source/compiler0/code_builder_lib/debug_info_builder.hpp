@@ -63,21 +63,21 @@ private:
 	llvm::LLVMContext& llvm_context_;
 	const llvm::DataLayout data_layout_;
 
-	std::vector<llvm::DIFile*> source_file_entries_; // Entry for each file in sources graph.
+	std::vector<llvm::TypedTrackingMDRef<llvm::DIFile>> source_file_entries_; // Entry for each file in sources graph.
 
 	// Debug info builder, compile unit, types cache - unique only for current file.
 	std::unique_ptr<llvm::DIBuilder> builder_;
-	llvm::DICompileUnit* compile_unit_= nullptr;
+	llvm::TypedTrackingMDRef<llvm::DICompileUnit> compile_unit_;
 
-	llvm::DIType* stub_type_= nullptr;
+	llvm::TypedTrackingMDRef<llvm::DIType> stub_type_;
 
 	// Build debug info for classes once and put it to cache.
-	std::unordered_map<ClassPtr, llvm::DIType*> classes_di_cache_;
+	std::unordered_map<ClassPtr, llvm::TypedTrackingMDRef<llvm::DICompositeType>> classes_di_cache_;
 	// Populate this vector in order to perform full debug info building for classes properly.
 	std::vector<ClassPtr> classes_order_;
 
 	// Build debug info for enums once and put it to cache.
-	std::unordered_map<EnumPtr, llvm::DICompositeType*> enums_di_cache_;
+	std::unordered_map<EnumPtr, llvm::TypedTrackingMDRef<llvm::DICompositeType>> enums_di_cache_;
 };
 
 } // namespace U

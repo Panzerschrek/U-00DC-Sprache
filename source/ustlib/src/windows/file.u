@@ -201,6 +201,8 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 	{
 		.size= u64(info.nFileSizeLow) | (u64(info.nFileSizeHigh) << 32u),
 		.kind= file_attributes_to_file_kind( info.dwFileAttributes ),
+		.access_time= filetime_to_system_time( info.ftLastAccessTime ),
+		.modification_time= filetime_to_system_time( info.ftLastWriteTime ),
 	};
 }
 
@@ -346,6 +348,8 @@ fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
 	{
 		.size= u64(info.nFileSizeLow) | (u64(info.nFileSizeHigh) << 32u),
 		.kind= file_attributes_to_file_kind( info.dwFileAttributes ),
+		.access_time= filetime_to_system_time( info.ftLastAccessTime ),
+		.modification_time= filetime_to_system_time( info.ftLastWriteTime ),
 	};
 }
 
@@ -371,6 +375,11 @@ fn file_attributes_to_file_kind( DWORD attributes ) : file_kind
 	// TODO - support symlinks.
 
 	return file_kind::file;
+}
+
+fn filetime_to_system_time( FILETIME& t ) : system_time
+{
+	return unsafe( system_time( system_time::impl_windows{ .intervals= u64(t.dwLowDateTime) | ( u64(t.dwHighDateTime) << 32u ) } ) );
 }
 
 fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>

@@ -12,6 +12,7 @@ fn nomangle GetFileAttributesExW( LPCWSTR lpFileName, GET_FILEEX_INFO_LEVELS fIn
 fn nomangle GetFileInformationByHandle( HANDLE hFile, LPBY_HANDLE_FILE_INFORMATION lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
+fn nomangle GetSystemTimePreciseAsFileTime( LPFILETIME lpSystemTimeAsFileTime ) unsafe call_conv( "system" ) : void;
 fn nomangle InitializeSRWLock( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle ReleaseSRWLockExclusive( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
@@ -99,6 +100,7 @@ type LPBY_HANDLE_FILE_INFORMATION = $(ü_BY_HANDLE_FILE_INFORMATION);
 type LPCVOID = $(byte8);
 type LPCWSTR = $(WCHAR);
 type LPDWORD = $(DWORD);
+type LPFILETIME = $(ü_FILETIME);
 type LPOVERLAPPED = $(ü_OVERLAPPED);
 type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
 type LPVOID = $(byte8);

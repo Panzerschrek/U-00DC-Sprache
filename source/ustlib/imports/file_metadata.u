@@ -1,3 +1,5 @@
+import "system_time.u"
+
 namespace ust
 {
 
@@ -14,8 +16,10 @@ struct file_metadata
 {
 	u64 size;
 	file_kind kind;
-	// TODO - add modification time
-	// TODO - add other times
+	system_time access_time;
+	system_time modification_time;
+	// TODO - add creation time
+	// TODO - add permissions
 	// TODO - add read-only flag
 }
 

@@ -1,0 +1,14 @@
+import "../../imports/system_time.u"
+import "unix.uh"
+
+namespace ust
+{
+
+fn system_time::now() : system_time
+{
+	var timespec mut t= zero_init;
+	unsafe( ::clock_gettime( CLOCK_REALTIME, $<(t) ) );
+	return unsafe( system_time( impl_unix{ .seconds= t.tv_sec, .nanoseconds= t.tv_nsec } ) );
+}
+
+} // namespace ust
