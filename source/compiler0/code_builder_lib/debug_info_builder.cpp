@@ -21,7 +21,7 @@ DebugInfoBuilder::DebugInfoBuilder(
 		return;
 
 	for( const auto& node : source_graph.nodes_storage )
-		source_file_entries_.push_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
+		source_file_entries_.emplace_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
 
 	// HACK! Add a workaround for wrong assert in LLVM code in Dwarf.h:406. TODO - remove this after this place in the LLVM library will be fixed.
 	// const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_lo_user + 0xDC /* code of "Ü" letter */;
@@ -32,16 +32,16 @@ DebugInfoBuilder::DebugInfoBuilder(
 	std::string version_str= "U+00DC-Sprache compiler ";
 	version_str+= getFullVersion();
 
-	compile_unit_=
+	compile_unit_.reset(
 		builder_->createCompileUnit(
 			c_dwarf_language_id,
 			source_file_entries_[0],
 			version_str,
 			false, // optimized
 			"",
-			0 /* runtime version */ );
+			0 /* runtime version */ ) );
 
-	stub_type_= builder_->createBasicType( "_stub_debug_type", 8, llvm::dwarf::DW_ATE_signed );
+	stub_type_.reset( builder_->createBasicType( "_stub_debug_type", 8, llvm::dwarf::DW_ATE_signed ) );
 }
 
 DebugInfoBuilder::~DebugInfoBuilder()
@@ -526,9 +526,10 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 	// Replace temporary forward declaration with correct node.
 	const auto cache_value= classes_di_cache_.find( class_type );
 	U_ASSERT( cache_value != classes_di_cache_.end() );
-	cache_value->second->replaceAllUsesWith( result );
-	llvm::MDNode::deleteTemporary(cache_value->second);
-	cache_value->second= result;
+	llvm::DICompositeType* node_to_delete= cache_value->second;
+	node_to_delete->replaceAllUsesWith( result );
+	U_ASSERT( cache_value->second == result ); // Value inside TypedTrackingMDRef should be changed.
+	llvm::MDNode::deleteTemporary(node_to_delete);
 }
 
 } // namespace U
