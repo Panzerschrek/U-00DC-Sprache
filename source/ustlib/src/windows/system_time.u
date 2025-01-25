@@ -1,6 +1,14 @@
 import "../../imports/system_time.u"
+import "windows.uh"
 
 namespace ust
 {
+
+fn system_time::now() : system_time
+{
+	var FILETIME mut t= zero_init;
+	unsafe( ::GetSystemTimePreciseAsFileTime( $<(t) ) );
+	return unsafe( system_time( impl_windows{ .intervals= u64(t.dwLowDateTime) | ( u64(t.dwHighDateTime) << 32u ) } ) );
+}
 
 } // namespace ust
