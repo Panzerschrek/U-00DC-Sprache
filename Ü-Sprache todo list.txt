@@ -60,7 +60,6 @@ Lambdas:
 Standart library:
 *) Move directories-related code into a separate imported file
 *) Support opening files with appending
-*) Support retrieving modification time for files
 *) Directory iteratior
 *) Function for files copying
 *) Buffered reader/writer wrappers for files
@@ -69,11 +68,10 @@ Standart library:
 *) Function for creation of the whole directories path
 *) Function for recursive directory removal
 *) Function for symlinks resolving
-*) Function to get current directory
+*) Functions to get current directory and set current directory
 *) More file error kinds
 *) Memory-mapped files
 *) Examples for file-related functionality
-*) Function for system time retrieval (using clock identical to file timestamps)
 *) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method
 *) Support types with references inside in some containers (variant, result, unordered_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
@@ -85,7 +83,7 @@ Standart library:
 *) Functions for conversion of floating-point numbers into string
 *) Reverse iterators for random_access_range, unordered_map, etc.
 *) shared_ptr - store single pointer for non-polymorph types
-*) Time library - get time functions, timers
+*) Time library - request monotonic time, perform ime difference calculations, perform conversions from/to calendar time
 *) Console input/output library
 *) String formatting library
 *) Executor for async functions, possible multithreaded
