@@ -1,3 +1,4 @@
+import "hash.u"
 import "type_traits.u"
 
 namespace ust
@@ -31,6 +32,25 @@ public:
 	}
 
 public:
+	struct hasher
+	{
+		fn hash( system_time& t ) : size_type
+		{
+			return hash(t.impl_);
+		}
+
+		fn hash( impl_unix& t ) : size_type
+		{
+			// TODO - use better combine function.
+			return default_hasher::hash( t.seconds ) ^ default_hasher::hash( t.nanoseconds );
+		}
+
+		fn hash( impl_windows& t ) : size_type
+		{
+			return default_hasher::hash( t.intervals );
+		}
+	}
+
 	struct impl_unix
 	{
 		// Basically "timespec" fields.
