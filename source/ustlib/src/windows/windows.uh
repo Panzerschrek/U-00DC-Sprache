@@ -15,6 +15,7 @@ fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetSystemTimePreciseAsFileTime( LPFILETIME lpSystemTimeAsFileTime ) unsafe call_conv( "system" ) : void;
 fn nomangle InitializeSRWLock( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
+fn nomangle MoveFileExW( LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, DWORD dwFlags ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle ReleaseSRWLockExclusive( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle ReleaseSRWLockShared( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
@@ -175,5 +176,7 @@ auto constexpr OPEN_EXISTING = 3;
 auto constexpr OPEN_ALWAYS = 4;
 
 auto constexpr INFINITE = -1;
+
+auto constexpr MOVEFILE_REPLACE_EXISTING = 1;
 
 var DWORD MAXDWORD = 4294967295u;

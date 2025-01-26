@@ -280,6 +280,34 @@ fn remove_file( file_path path ) : file_result</void/>
 	return void();
 }
 
+fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	return rename_file_or_directory_impl( src_path, dst_path, true );
+}
+
+fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	return rename_file_or_directory_impl( src_path, dst_path, false );
+}
+
+fn rename_file_or_directory_impl( file_path src_path, file_path dst_path, bool replace_existing ) : file_result</void/>
+{
+	var wide_string mut src_path_null_terminated= utf8_to_null_terminated_wide_string( src_path );
+	var wide_string mut dst_path_null_terminated= utf8_to_null_terminated_wide_string( dst_path );
+
+	var BOOL res =
+		unsafe( ::MoveFileExW(
+			src_path_null_terminated.data(),
+			dst_path_null_terminated.data(),
+			DWORD( (replace_existing ? MOVEFILE_REPLACE_EXISTING : 0 ) ) ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
+}
+
 fn remove_directory( file_path path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );

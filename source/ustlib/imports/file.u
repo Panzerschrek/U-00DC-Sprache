@@ -116,6 +116,9 @@ fn create_directory( file_path path ) : file_result</void/>;
 fn copy_file( file_path src_path, file_path dst_path ) : file_result</void/>;
 fn copy_file_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>;
 
+fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_result</void/>;
+fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>;
+
 // Remove file or link.
 fn remove_file( file_path path ) : file_result</void/>;
 
