@@ -292,6 +292,17 @@ fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_res
 	return void();
 }
 
+fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	// Check if destination exists.
+	// TODO - fix this. We need to do this atomically via some another system call, which fails if destination already exists.
+	if( get_metadata_for_path( dst_path ).is_ok() )
+	{
+		return io_error::already_exists;
+	}
+	return rename_file_or_directory( src_path, dst_path );
+}
+
 fn remove_file( file_path path ) : file_result</void/>
 {
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
