@@ -54,12 +54,7 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 
 fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
 {
-	var WideString mut path_null_terminated= UTF8ToWideString( path_absolute );
-	path_null_terminated.push_back( WCHAR(0) );
-
-	var i32 res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), ust::nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
-	// TODO - what if path exists but it's a file?
-	return res == 1 || unsafe( GetLastError() ) == DWORD(ERROR_ALREADY_EXISTS);
+	return ust::create_directory( path_absolute ).is_ok();
 }
 
 fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool

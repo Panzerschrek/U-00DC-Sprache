@@ -8,7 +8,6 @@ fn nomangle dlsym( $(byte8) ü__handle, $(char8) ü__name ) unsafe : $(byte8);
 fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe : i32;
 fn nomangle fstat( i32 ü__fd, $(stat_) ü__buf ) unsafe : i32;
 fn nomangle lstat( $(char8) ü__file, $(stat_) ü__buf ) unsafe : i32;
-fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle pipe( $(i32) ü__pipedes ) unsafe : i32;
 fn nomangle posix_spawn( $(pid_t) ü__pid, $(char8) ü__path, $(posix_spawn_file_actions_t) ü__file_actions, $(posix_spawnattr_t) ü__attrp, $($(char8)) ü__argv, $($(char8)) ü__envp ) unsafe : i32;

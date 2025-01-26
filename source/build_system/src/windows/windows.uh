@@ -7,9 +7,6 @@ fn nomangle ConnectNamedPipe( HANDLE hNamedPipe, LPOVERLAPPED lpOverlapped ) uns
 
 fn nomangle CopyFileW( LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, BOOL bFailIfExists ) unsafe call_conv( "system" ) : BOOL;
 
-fn nomangle CreateDirectoryA( LPCSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : BOOL;
-fn nomangle CreateDirectoryW( LPCWSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
 

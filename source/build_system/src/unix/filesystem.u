@@ -48,29 +48,7 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 
 fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
 {
-	var ust::string8 mut path_null_terminated= path_absolute;
-	path_null_terminated+= "\0";
-
-	var i32 res= unsafe( ::mkdir( path_null_terminated.data(), 0o755u ) );
-	if( res == 0 )
-	{
-		return true;
-	}
-
-	var i32 errno = GetErrno();
-	if( errno == EEXIST )
-	{
-		// If given path already exists, check if it's a directory and not a file, symlink or something else.
-
-		var stat_ mut s= zero_init;
-		auto res= unsafe( ::lstat( path_null_terminated.data(), $<(s) ) );
-		if( res == 0 && (s.st_mode & u32(S_IFMT)) == u32(S_IFDIR) )
-		{
-			return true;
-		}
-	}
-
-	return false;
+	return ust::create_directory( path_absolute ).is_ok();
 }
 
 fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
