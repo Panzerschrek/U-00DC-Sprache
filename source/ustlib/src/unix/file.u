@@ -318,6 +318,54 @@ fn remove_directory( file_path path ) : file_result</void/>
 	return void();
 }
 
+fn get_current_directory() : string8
+{
+	var string8 mut res;
+	res.resize( 256s, "\0"c8 );
+	for( auto mut i= 0s; i < 8s; ++i )
+	{
+		auto call_res = unsafe( ::getcwd( res.data(), res.size() ) );
+		if( ust::is_nullptr(call_res) )
+		{
+			if( get_errno() == ERANGE )
+			{
+				// Not enough space - double it and call the function again.
+				var size_type new_size= res.size() * 2s;
+				res.resize( new_size, "\0"c8 );
+				continue;
+			}
+			else
+			{
+				// "getcwd" failed for some other reason.
+				break;
+			}
+		}
+
+		var size_type mut len= 0s;
+		while( len < res.size() && res[len] != "\0"c8 )
+		{
+			++len;
+		}
+
+		res.resize( len, " "c8 );
+		return res;
+	}
+
+	// Return some dummy in case of fail.
+	return string8();
+}
+
+fn set_current_directory( file_path path ) : file_result</void/>
+{
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	var i32 res= unsafe( ::chdir( path_nt.data() ) );
+	if( res == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
+	return void();
+}
+
 //
 // impl functions
 //
@@ -489,6 +537,7 @@ fn translate_errno( i32 errno ) : io_error
 	EPERM -> { return io_error::permission_denied; },
 	ENOENT -> { return io_error::not_found; },
 	EEXIST -> { return io_error::already_exists; },
+	ENOTDIR -> { return io_error::not_a_directory; },
 	// TODO - support other codes.
 	default -> { return io_error::other; },
 	}
