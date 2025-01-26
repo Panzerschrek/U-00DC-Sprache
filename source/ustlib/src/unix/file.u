@@ -224,6 +224,85 @@ fn create_directory( file_path path ) : file_result</void/>
 	return void();
 }
 
+fn copy_file( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	return copy_file_impl( src_path, dst_path, false );
+}
+
+fn copy_file_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	return copy_file_impl( src_path, dst_path, true );
+}
+
+fn copy_file_impl( file_path src_path, file_path dst_path, bool ensure_new ) : file_result</void/>
+{
+	var file_result</native_file_handle/> mut src_res=
+		unsafe( open_file_impl( src_path, open_options{ .read= true, .write= false, .create= false, .truncate= false, .ensure_new= false } ) );
+	if( src_res.is_error() )
+	{
+		return move(src_res).try_take_error();
+	}
+	var native_file_handle src_handle= move(src_res).try_take();
+
+	var file_result</native_file_handle/> mut dst_res=
+		unsafe( open_file_impl( dst_path, open_options{ .read= false, .write= true, .create= true, .truncate= true, .ensure_new= ensure_new } ) );
+	if( dst_res.is_error() )
+	{
+		unsafe( close_file_impl( src_handle ) );
+		return move(dst_res).try_take_error();
+	}
+	var native_file_handle dst_handle= move(dst_res).try_take();
+
+	var file_result</u64/> mut src_size_res= unsafe( get_size_impl( src_handle ) );
+	if( src_size_res.is_error() )
+	{
+		unsafe( close_file_impl( dst_handle ) );
+		unsafe( close_file_impl( src_handle ) );
+		return move(src_size_res).try_take_error();
+	}
+	var u64 src_size= move(src_size_res).try_take();
+
+	for( var off_t mut offset(0); offset < off_t(src_size); )
+	{
+		var ssize_type bytes_sent= unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) );
+		if( bytes_sent <= ssize_type(0) )
+		{
+			auto err= get_errno();
+			unsafe( close_file_impl( dst_handle ) );
+			unsafe( close_file_impl( src_handle ) );
+			return translate_errno( err );
+		}
+	}
+
+	unsafe( close_file_impl( dst_handle ) );
+	unsafe( close_file_impl( src_handle ) );
+	return void();
+}
+
+fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	scoped_array char8 src_path_nt[ src_path.size() + 1s ]( src_path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 dst_path_nt[ dst_path.size() + 1s ]( dst_path.iter().chain( file_path("\0").iter() ) );
+
+	var i32 res= unsafe( ::rename( src_path_nt.data(), dst_path_nt.data() ) );
+	if( res == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
+	return void();
+}
+
+fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	// Check if destination exists.
+	// TODO - fix this. We need to do this atomically via some another system call, which fails if destination already exists.
+	if( get_metadata_for_path( dst_path ).is_ok() )
+	{
+		return io_error::already_exists;
+	}
+	return rename_file_or_directory( src_path, dst_path );
+}
+
 fn remove_file( file_path path ) : file_result</void/>
 {
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
@@ -247,6 +326,54 @@ fn remove_directory( file_path path ) : file_result</void/>
 		return translate_errno( get_errno() );
 	}
 
+	return void();
+}
+
+fn get_current_directory() : string8
+{
+	var string8 mut res;
+	res.resize( 256s, "\0"c8 );
+	for( auto mut i= 0s; i < 8s; ++i )
+	{
+		auto call_res = unsafe( ::getcwd( res.data(), res.size() ) );
+		if( ust::is_nullptr(call_res) )
+		{
+			if( get_errno() == ERANGE )
+			{
+				// Not enough space - double it and call the function again.
+				var size_type new_size= res.size() * 2s;
+				res.resize( new_size, "\0"c8 );
+				continue;
+			}
+			else
+			{
+				// "getcwd" failed for some other reason.
+				break;
+			}
+		}
+
+		var size_type mut len= 0s;
+		while( len < res.size() && res[len] != "\0"c8 )
+		{
+			++len;
+		}
+
+		res.resize( len, " "c8 );
+		return res;
+	}
+
+	// Return some dummy in case of fail.
+	return string8();
+}
+
+fn set_current_directory( file_path path ) : file_result</void/>
+{
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	var i32 res= unsafe( ::chdir( path_nt.data() ) );
+	if( res == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
 	return void();
 }
 
@@ -421,6 +548,7 @@ fn translate_errno( i32 errno ) : io_error
 	EPERM -> { return io_error::permission_denied; },
 	ENOENT -> { return io_error::not_found; },
 	EEXIST -> { return io_error::already_exists; },
+	ENOTDIR -> { return io_error::not_a_directory; },
 	// TODO - support other codes.
 	default -> { return io_error::other; },
 	}

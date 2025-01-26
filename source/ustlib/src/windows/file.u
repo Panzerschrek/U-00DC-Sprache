@@ -239,6 +239,34 @@ fn create_directory( file_path path ) : file_result</void/>
 	return translate_error_code( last_error );
 }
 
+fn copy_file( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	return copy_file_impl( src_path, dst_path, false );
+}
+
+fn copy_file_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	return copy_file_impl( src_path, dst_path, true );
+}
+
+fn copy_file_impl( file_path src_path, file_path dst_path, bool fail_if_exists ) : file_result</void/>
+{
+	var wide_string mut src_path_null_terminated= utf8_to_null_terminated_wide_string( src_path );
+	var wide_string mut dst_path_null_terminated= utf8_to_null_terminated_wide_string( dst_path );
+
+	var BOOL res =
+		unsafe( ::CopyFileW(
+			src_path_null_terminated.data(),
+			dst_path_null_terminated.data(),
+			BOOL( (fail_if_exists ? 1 : 0 ) ) ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
+}
+
 fn remove_file( file_path path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
@@ -252,11 +280,78 @@ fn remove_file( file_path path ) : file_result</void/>
 	return void();
 }
 
+fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	return rename_file_or_directory_impl( src_path, dst_path, true );
+}
+
+fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	return rename_file_or_directory_impl( src_path, dst_path, false );
+}
+
+fn rename_file_or_directory_impl( file_path src_path, file_path dst_path, bool replace_existing ) : file_result</void/>
+{
+	var wide_string mut src_path_null_terminated= utf8_to_null_terminated_wide_string( src_path );
+	var wide_string mut dst_path_null_terminated= utf8_to_null_terminated_wide_string( dst_path );
+
+	var BOOL res =
+		unsafe( ::MoveFileExW(
+			src_path_null_terminated.data(),
+			dst_path_null_terminated.data(),
+			DWORD( (replace_existing ? MOVEFILE_REPLACE_EXISTING : 0 ) ) ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
+}
+
 fn remove_directory( file_path path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
 	var BOOL res= unsafe( ::RemoveDirectoryW( path_null_terminated.data() ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
+}
+
+fn get_current_directory() : string8
+{
+	var wide_string mut res;
+	for( auto mut i= 0s; i < 8s; ++i )
+	{
+		var DWORD len= unsafe( ::GetCurrentDirectoryW( DWORD(res.size()), res.data() ) );
+		if( len == 0u )
+		{
+			// Fail - return some dummy.
+			return string8();
+		}
+
+		if( len <= DWORD( res.size() ) )
+		{
+			// Filled enough data - resize down.
+			res.resize( size_type(len), WCHAR( " "c8 ) );
+			break;
+		}
+
+		// Buffer is not large enough - resize it.
+		res.resize( size_type(len), WCHAR(0) );
+	}
+
+	return wide_string_to_utf8( res );
+}
+
+fn set_current_directory( file_path path ) : file_result</void/>
+{
+	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
+
+	var BOOL res= unsafe( ::SetCurrentDirectoryW( path_null_terminated.data() ) );
 	if( res == 0 )
 	{
 		return translate_error_code( unsafe( GetLastError() ) );
@@ -444,6 +539,7 @@ fn translate_error_code( DWORD code ) : io_error
 	switch(code)
 	{
 		DWORD(ERROR_FILE_NOT_FOUND), DWORD(ERROR_PATH_NOT_FOUND) -> { return io_error::not_found; },
+		DWORD(ERROR_DIRECTORY)-> { return io_error::not_a_directory; },
 		DWORD(ERROR_ALREADY_EXISTS), DWORD(ERROR_FILE_EXISTS) -> { return io_error::already_exists; },
 		DWORD(ERROR_ACCESS_DENIED) -> { return io_error::permission_denied; },
 		default -> { return io_error::other; },
@@ -472,6 +568,28 @@ fn utf8_to_null_terminated_wide_string( string_view8 mut v ) : wide_string
 	}
 
 	res.push_back( WCHAR( "\0"c8 ) );
+
+	return res;
+}
+
+fn wide_string_to_utf8( array_view_imut</WCHAR/> mut v ) : string8
+{
+	var string8 mut res;
+	while( !v.empty() )
+	{
+		var u32 mut c( v.drop_and_get_front() );
+		if( c >= 0xD800u && c <= 0xDBFFu )
+		{
+			// Surrogate pair.
+			if( !v.empty() )
+			{
+				// TODO - check if this is correct.
+				var u32 paired_c( v.drop_and_get_front() );
+				c = ((c - 0xD800u) << 10u) + ( paired_c - 0xDC00u ) + 0x0010000u;
+			}
+		}
+		utf::push_code_point_to_string( res, char32(c) );
+	}
 
 	return res;
 }

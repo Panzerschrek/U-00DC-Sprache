@@ -61,15 +61,14 @@ Standart library:
 *) Move directories-related code into a separate imported file
 *) Support opening files with appending
 *) Directory iteratior
-*) Function for files copying
 *) Buffered reader/writer wrappers for files
 *) "flush" method for writeable files
 *) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
 *) Function for creation of the whole directories path
 *) Function for recursive directory removal
 *) Function for symlinks resolving
-*) Functions to get current directory and set current directory
 *) More file error kinds
+*) Fix "rename_file_or_directory_if_not_exists" implementation for Unix - perform operation atomically
 *) Memory-mapped files
 *) Examples for file-related functionality
 *) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method

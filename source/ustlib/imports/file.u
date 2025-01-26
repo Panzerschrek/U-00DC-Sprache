@@ -1,5 +1,5 @@
 import "file_metadata.u"
-import "random_access_range.u"
+import "string.u"
 import "result.u"
 import "type_traits.u"
 
@@ -10,6 +10,7 @@ enum io_error
 {
 	permission_denied,
 	not_found,
+	not_a_directory,
 	already_exists,
 	out_of_memory,
 	other, // Some non-listed error code.
@@ -113,10 +114,19 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>;
 // Fails if given path exists but it's not a directory.
 fn create_directory( file_path path ) : file_result</void/>;
 
+fn copy_file( file_path src_path, file_path dst_path ) : file_result</void/>;
+fn copy_file_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>;
+
+fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_result</void/>;
+fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>;
+
 // Remove file or link.
 fn remove_file( file_path path ) : file_result</void/>;
 
 // Remove an empty directory.
 fn remove_directory( file_path path ) : file_result</void/>;
+
+fn get_current_directory() : string8;
+fn set_current_directory( file_path path ) : file_result</void/>;
 
 } // namespace ust

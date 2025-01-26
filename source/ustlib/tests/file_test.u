@@ -604,6 +604,249 @@ fn nomangle main() : i32
 		Err(e) -> { assert( e == ust::io_error::already_exists, "Unexpected error code!" ) },
 	}
 
+	// file copy
+	{
+		auto &constexpr src_file_path= "test_file0.txt";
+		auto &constexpr dst_file_path= "test_file0_copy.txt";
+		auto &constexpr contents= "some";
+
+		// Perform copy.
+		result_match( ust::copy_file( src_file_path, dst_file_path ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to copy file \"" + src_file_path + "\"!" ); },
+		}
+
+		// Read copy.
+		result_match( ust::read_file_to_string( dst_file_path ) )
+		{
+			Ok(s) -> { assert( s == contents, "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"" + dst_file_path + "\" to string!" ); }
+		}
+
+		// Read original.
+		result_match( ust::read_file_to_string( src_file_path ) )
+		{
+			Ok(s) -> { assert( s == contents, "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"" + src_file_path + "\" to string!" ); }
+		}
+
+		// Perform copy again. Shouldn't fail.
+		result_match( ust::copy_file( src_file_path, dst_file_path ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to copy file \"" + src_file_path + "\"!" ); },
+		}
+
+		// Read copy again.
+		result_match( ust::read_file_to_string( dst_file_path ) )
+		{
+			Ok(s) -> { assert( s == contents, "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"" + dst_file_path + "\" to string!" ); }
+		}
+
+		// Remove copy.
+		auto remove_res= ust::remove_file( dst_file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+	}
+
+	// Copy file if not exists
+	{
+		auto &constexpr src_file_path= "test_file0.txt";
+		auto &constexpr dst_file_path= "test_file0_copy.txt";
+		auto &constexpr contents= "some";
+
+		// Perform copy.
+		result_match( ust::copy_file_if_not_exists( src_file_path, dst_file_path ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to copy file \"" + src_file_path + "\"!" ); },
+		}
+
+		// Perform copy second time. Should fail.
+		result_match( ust::copy_file_if_not_exists( src_file_path, dst_file_path ) )
+		{
+			Ok(v) -> { assert( false, "Should fail to copy file \"" + src_file_path + "\" if it exists!" ) },
+			Err(e) -> { assert( e == ust::io_error::already_exists, "Unexpected error code!" ); },
+		}
+
+		// Read copy.
+		result_match( ust::read_file_to_string( dst_file_path ) )
+		{
+			Ok(s) -> { assert( s == contents, "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"" + dst_file_path + "\" to string!" ); }
+		}
+
+		// Read original.
+		result_match( ust::read_file_to_string( src_file_path ) )
+		{
+			Ok(s) -> { assert( s == contents, "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"" + src_file_path + "\" to string!" ); }
+		}
+
+		// Remove copy.
+		auto remove_res= ust::remove_file( dst_file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+	}
+
+	// Rename file
+	{
+		auto &constexpr src_file_path= "file_for_later_rename.txt";
+		auto &constexpr dst_file_path= "file_end_name.txt";
+		auto &constexpr contents= "Stirb Langsam";
+
+		// Write a file.
+		result_match( ust::write_string_view_to_file( src_file_path, contents ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to write file \"" + src_file_path + "\"!" ); },
+		}
+
+		// Rename file.
+		result_match( ust::rename_file_or_directory( src_file_path, dst_file_path ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to rename file \"" + src_file_path + "\"!" ); },
+		}
+
+		// Read renamed file.
+		result_match( ust::read_file_to_string( dst_file_path ) )
+		{
+			Ok(s) -> { assert( s == contents, "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"" + dst_file_path + "\" to string!" ); }
+		}
+
+		// Read original. Should fail.
+		result_match( ust::read_file_to_string( src_file_path ) )
+		{
+			Ok(s) -> { assert( false, "Reading renamed file should fail!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); }
+		}
+
+		// Remove renamed file.
+		auto remove_res= ust::remove_file( dst_file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+	}
+
+	// Rename file if not exists.
+	{
+		auto &constexpr src_file_path= "file_for_later_rename.txt";
+		auto &constexpr dst_file_path= "file_end_name.txt";
+		auto &constexpr contents= "Stirb Langsam";
+
+		// Write a file.
+		result_match( ust::write_string_view_to_file( src_file_path, contents ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to write file \"" + src_file_path + "\"!" ); },
+		}
+
+		// Write something into destination.
+		result_match( ust::write_string_view_to_file( dst_file_path, "Do not care about contents" ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to write file \"" + src_file_path + "\"!" ); },
+		}
+
+		// Rename file if not exists  - should fail.
+		result_match( ust::rename_file_or_directory_if_not_exists( src_file_path, dst_file_path ) )
+		{
+			Ok(v) -> { assert( false, "Should fail to rename file \"" + src_file_path + "\" if it exists!" ) },
+			Err(e) -> { assert( e == ust::io_error::already_exists, "Unexpected error code!" ); },
+		}
+
+		// Remove both files
+		assert( ust::remove_file( dst_file_path ).is_ok(), "Failed to remove file!" );
+		assert( ust::remove_file( src_file_path ).is_ok(), "Failed to remove file!" );
+	}
+
+	// Rename directory
+	{
+		auto& constexpr src_path= "dir_initial";
+		auto& constexpr dst_path= "dir_final";
+
+		// Create directory.
+		result_match( ust::create_directory( src_path ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+
+		// Rename directory.
+		result_match( ust::rename_file_or_directory( src_path, dst_path ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to rename directory!" ) },
+		}
+
+		// Get metadata for original - should fail.
+		auto src_metatada_res= ust::get_metadata_for_path( src_path );
+		assert( src_metatada_res.is_error(), "Expected error for src directory metadata!" );
+		assert( src_metatada_res.try_deref_error() == ust::io_error::not_found, "Unexpected error code!" );
+
+		// Get metadata for final name.
+		auto dsr_metatada_res= ust::get_metadata_for_path( dst_path );
+		assert( dsr_metatada_res.is_ok(), "Failed to get metadata for directory!" );
+
+		// Remove final directory.
+		assert( ust::remove_directory( dst_path ).is_ok(), "Failed to remove directory!" );
+	}
+
+	// Get current directory.
+	{
+		var ust::string8 dir= ust::get_current_directory();
+		assert( !dir.empty(), "Current directory is empty!" );
+
+		// Read file using absolute path based on current directory.
+		result_match( ust::read_file_to_string( ust::concat( dir, "/", "test_file0.txt" ) ) )
+		{
+			Ok(s) -> { assert( s == "some", "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to string!" ); }
+		}
+	}
+
+	// Set current directory.
+	{
+		// Get current directory.
+		var ust::string8 dir_initial= ust::get_current_directory();
+		assert( !dir_initial.empty(), "Current directory is empty!" );
+
+		// Create new directory within it.
+		auto& separator= ( ust::string_view8(compiler::target::os) == "windows" ? "\\" : "/" );
+		var ust::string8 dir_new= ust::concat( dir_initial, separator, "some_dir" );
+		result_match( ust::create_directory( dir_new ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+
+		// Make newly created directory current.
+		assert( ust::set_current_directory( dir_new ).is_ok(), "Failed to set current directory!" );
+		var ust::string8 dir_new_actual= ust::get_current_directory();
+		assert( dir_new_actual == dir_new, "Unexpected current directory!" );
+
+		// Change current directory back.
+		assert( ust::set_current_directory( dir_initial ).is_ok(), "Failed to set current directory!" );
+		assert( ust::get_current_directory() == dir_initial, "Unexpected current directory!" );
+
+		// Remove directory created previously.
+		assert( ust::remove_directory( dir_new ).is_ok(), "Failed to remove directory!" );
+	}
+
+	// Set current directory - fail for non-existing directory.
+	result_match( ust::set_current_directory( "this_directory_does_not_exist" ) )
+	{
+		Ok(v) -> { assert( false, "Should not set current directory to non-existing!" ); },
+		Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ) },
+	}
+
+	// Set current directory - fail, because it's not a directory but file.
+	result_match( ust::set_current_directory( "test_file0.txt" ) )
+	{
+		Ok(v) -> { assert( false, "Should not set current directory to file path!" ); },
+		Err(e) -> { assert( e == ust::io_error::not_a_directory, "Unexpected error code!" ) },
+	}
+
 	return 0;
 }
 
