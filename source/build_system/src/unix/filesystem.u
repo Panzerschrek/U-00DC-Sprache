@@ -1,6 +1,7 @@
 // Platform-dependent filesystem-related functions.
 
 import "/file.u"
+import "/string_conversions.u"
 import "../filesystem.uh"
 import "../path.uh"
 import "unix.uh"
@@ -24,7 +25,7 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 	var ust::string8 path_absolute= MakePathAbsolute( path );
 
 	// Optimistically assume that we need to create only one directory.
-	if( EnsureSingleDirectoryExists( path_absolute ) )
+	if( ust::create_directory( path_absolute ).is_ok() )
 	{
 		return true;
 	}
@@ -36,19 +37,15 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 	{
 		path_iterative+= "/";
 		path_iterative+= component;
-		if( !EnsureSingleDirectoryExists( path_iterative ) )
+		auto create_res= ust::create_directory( path_iterative );
+		if( create_res.is_error() )
 		{
-			logger.LogInfo( ust::concat( "Failed to create directory \"", path_iterative, "\": " ) );
+			logger.LogInfo( ust::concat( "Failed to create directory \"", path_iterative, "\": ", ust::to_string8( u32(create_res.try_deref_error()) ) ) );
 			return false;
 		}
 	}
 
 	return true;
-}
-
-fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
-{
-	return ust::create_directory( path_absolute ).is_ok();
 }
 
 fn GetCurrentExecutablePath() : ust::string8
