@@ -203,18 +203,11 @@ fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 
 fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>
 {
-	var ust::string8 mut path_null_terminated = path;
-	path_null_terminated+= "\0";
-
-	var stat_ mut s= zero_init;
-	auto res= unsafe( ::lstat( path_null_terminated.data(), $<(s) ) );
-	if( res != 0 )
+	result_match( ust::get_metadata_for_path( path ) )
 	{
-		return ust::null_optional;
+		Ok(v) -> { return v.modification_time; },
+		Err(e) -> { ust::ignore_unused(e); return ust::null_optional; },
 	}
-
-	// Return nanoseconds.
-	return u64( s.st_mtim.tv_sec ) * 1000000000u64 + u64( s.st_mtim.tv_nsec );
 }
 
 fn GetCurrentExecutablePath() : ust::string8

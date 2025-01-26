@@ -28,8 +28,6 @@ fn nomangle GetCurrentProcessId() unsafe call_conv( "system" ) : DWORD;
 
 fn nomangle GetExitCodeProcess( HANDLE hProcess, LPDWORD lpExitCode ) unsafe call_conv( "system" ) : BOOL;
 
-fn nomangle GetFileAttributesExW( LPCWSTR lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, LPVOID lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
@@ -62,12 +60,6 @@ struct ü_FILETIME ordered
 {
 	DWORD dwLowDateTime;
 	DWORD dwHighDateTime;
-}
-
-enum ü_GET_FILEEX_INFO_LEVELS : i32
-{
-	GetFileExInfoStandard,
-	GetFileExMaxInfoLevel,
 }
 
 struct ü_LARGE_INTEGER ordered
@@ -183,7 +175,6 @@ type CHAR = char8;
 type DWORD = u32;
 type DWORD_PTR = ULONG_PTR;
 type FILETIME = ü_FILETIME;
-type GET_FILEEX_INFO_LEVELS = ü_GET_FILEEX_INFO_LEVELS;
 type HANDLE = $(byte8);
 type HINSTANCE = $(HINSTANCE__);
 type HMODULE = HINSTANCE;

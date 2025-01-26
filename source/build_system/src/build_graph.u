@@ -120,32 +120,30 @@ fn PerformGraphBuild(
 
 			// At this point we have all files needed present. Compare their timesmaps.
 
-			var FileModificationTime mut min_output_modification_time(0);
-			--min_output_modification_time; // Trigger underflow to maximum value.
-
-			var FileModificationTime mut max_input_modification_time(0);
+			var FileModificationTime mut min_output_modification_time= FileModificationTime::max();
+			var FileModificationTime mut max_input_modification_time= FileModificationTime::min();
 
 			foreach( &output_file : node.output_files )
 			{
-				min_output_modification_time= ust::min( min_output_modification_time, files_with_modification_time[output_file].try_deref() );
+				min_output_modification_time= ust::min( FileModificationTime(min_output_modification_time), files_with_modification_time[output_file].try_deref() );
 			}
 
 			foreach( &input_file : node.input_files )
 			{
-				max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[input_file].try_deref() );
+				max_input_modification_time= ust::max( FileModificationTime(max_input_modification_time), files_with_modification_time[input_file].try_deref() );
 			}
 
 			if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
 			{
-				max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[node.program].try_deref() );
+				max_input_modification_time= ust::max( FileModificationTime(max_input_modification_time), files_with_modification_time[node.program].try_deref() );
 			}
 
 			if_var( &dep_file : dep_file_opt )
 			{
-				min_output_modification_time= ust::min( min_output_modification_time, files_with_modification_time[dep_file.destination].try_deref() );
+				min_output_modification_time= ust::min( FileModificationTime(min_output_modification_time), files_with_modification_time[dep_file.destination].try_deref() );
 				foreach( &dependency : dep_file.dependencies )
 				{
-					max_input_modification_time= ust::max( max_input_modification_time, files_with_modification_time[dependency].try_deref() );
+					max_input_modification_time= ust::max( FileModificationTime(max_input_modification_time), files_with_modification_time[dependency].try_deref() );
 				}
 			}
 

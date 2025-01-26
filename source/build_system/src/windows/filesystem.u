@@ -158,23 +158,11 @@ fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 
 fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>
 {
-	var WideString mut path_null_terminated = UTF8ToWideString( path );
-	path_null_terminated.push_back( WCHAR(0) );
-
-	var ü_WIN32_FILE_ATTRIBUTE_DATA mut file_atributes= zero_init;
-
-	auto res =
-		unsafe( ::GetFileAttributesExW(
-			path_null_terminated.data(),
-			GET_FILEEX_INFO_LEVELS::GetFileExInfoStandard,
-			ust::ptr_cast_to_byte8( $<(file_atributes) ) ) );
-
-	if( res == 0 )
+	result_match( ust::get_metadata_for_path( path ) )
 	{
-		return ust::null_optional;
+		Ok(v) -> { return v.modification_time; },
+		Err(e) -> { ust::ignore_unused(e); return ust::null_optional; },
 	}
-
-	return (u64(file_atributes.ftLastWriteTime.dwHighDateTime) << 32u) | u64(file_atributes.ftLastWriteTime.dwLowDateTime);
 }
 
 fn GetCurrentExecutablePath() : ust::string8
