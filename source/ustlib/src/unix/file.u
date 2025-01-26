@@ -279,6 +279,19 @@ fn copy_file_impl( file_path src_path, file_path dst_path, bool ensure_new ) : f
 	return void();
 }
 
+fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	scoped_array char8 src_path_nt[ src_path.size() + 1s ]( src_path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 dst_path_nt[ dst_path.size() + 1s ]( dst_path.iter().chain( file_path("\0").iter() ) );
+
+	var i32 res= unsafe( ::rename( src_path_nt.data(), dst_path_nt.data() ) );
+	if( res == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
+	return void();
+}
+
 fn remove_file( file_path path ) : file_result</void/>
 {
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
