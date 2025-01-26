@@ -73,20 +73,16 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 
 fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool
 {
-	var WideString mut destination_path_null_terminated = UTF8ToWideString( destination_path );
-	destination_path_null_terminated.push_back( WCHAR(0) );
-
-	var WideString mut source_path_null_terminated = UTF8ToWideString( source_path );
-	source_path_null_terminated.push_back( WCHAR(0) );
-
-	auto res = unsafe( ::CopyFileW( source_path_null_terminated.data(), destination_path_null_terminated.data(), BOOL(0) ) );
-	if( res == 0 )
+	// TODO - maybe also touch file modification timestamp?
+	result_match( ust::copy_file( source_path, destination_path ) )
 	{
-		logger.LogError( ust::concat( "Failed to copy file from \"", source_path, "\" to \"", destination_path, "\", error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
-		return false;
+		Ok(v) -> { ust::ignore_unused(v); return true; },
+		Err(e) ->
+		{
+			logger.LogError( ust::concat( "Failed to copy file \"", source_path, "\" into \"", destination_path, "\", error: ", ust::to_string8( u32(e) ) ) );
+			return false;
+		},
 	}
-
-	return true;
 }
 
 fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>

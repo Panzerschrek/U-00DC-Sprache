@@ -67,51 +67,16 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 
 fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool
 {
-	var ust::string8 mut source_path_null_terminated = source_path;
-	source_path_null_terminated+= "\0";
-
-	var i32 fd_source = unsafe( ::open( source_path_null_terminated.data(), O_RDONLY, 0u ) );
-	if( fd_source == -1 )
+	// TODO - maybe also touch file modification timestamp?
+	result_match( ust::copy_file( source_path, destination_path ) )
 	{
-		logger.LogError( ust::concat( "Failed to open file \"", source_path, "\" for reading, error: ", ust::to_string8( GetErrno() ) ) );
-		return false;
-	}
-
-	auto source_file_size_opt= unsafe( GetFileSize( fd_source ) );
-	if( source_file_size_opt.empty() )
-	{
-		logger.LogError( ust::concat( "Failed to get file size for \"", source_path, "\"." ) );
-		unsafe( ::close(fd_source) );
-		return false;
-	}
-	var u64 source_file_size= source_file_size_opt.try_deref();
-
-	var ust::string8 mut destination_path_null_terminated = destination_path;
-	destination_path_null_terminated+= "\0";
-
-	var i32 fd_destination = unsafe( ::open( destination_path_null_terminated.data(), O_WRONLY | O_CREAT | O_TRUNC, 0o755u ) );
-	if( fd_destination == -1 )
-	{
-		logger.LogError( ust::concat( "Failed to open file \"", destination_path, "\" for writing, error: ", ust::to_string8( GetErrno() ) ) );
-		unsafe( ::close( fd_source ) );
-		return false;
-	}
-
-	for( var off_t mut offset(0); offset < off_t(source_file_size); )
-	{
-		var ssize_type bytes_sent= unsafe( ::sendfile( fd_destination, fd_source, $<(offset), size_t( off_t(source_file_size) - offset ) ) );
-		if( bytes_sent <= ssize_type(0) )
+		Ok(v) -> { ust::ignore_unused(v); return true; },
+		Err(e) ->
 		{
-			logger.LogError( ust::concat( "sendfile failed for destination \"", destination_path, "\" and source \"", source_path, "\", error: ", ust::to_string8( GetErrno() ) ) );
-			unsafe( ::close( fd_source ) );
-			unsafe( ::close( fd_destination ) );
+			logger.LogError( ust::concat( "Failed to copy file \"", source_path, "\" into \"", destination_path, "\", error: ", ust::to_string8( u32(e) ) ) );
 			return false;
-		}
+		},
 	}
-
-	unsafe( ::close( fd_source ) );
-	unsafe( ::close( fd_destination ) );
-	return true;
 }
 
 fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
@@ -158,18 +123,6 @@ fn GetCurrentExecutablePath() : ust::string8
 	}
 
 	return "";
-}
-
-fn GetFileSize( i32 fd ) unsafe : ust::optional</u64/>
-{
-	var stat_ mut s= zero_init;
-	auto res= unsafe( ::fstat( fd, $<(s) ) );
-	if( res != 0 )
-	{
-		return ust::null_optional;
-	}
-
-	return u64(s.st_size);
 }
 
 } // namespace BK
