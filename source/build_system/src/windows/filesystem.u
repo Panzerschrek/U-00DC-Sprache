@@ -91,44 +91,11 @@ fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string
 
 fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 {
-	var WideString mut path_null_terminated = UTF8ToWideString( path );
-	path_null_terminated.push_back( WCHAR(0) );
-
-	var HANDLE handle = unsafe( ::CreateFileW(
-		path_null_terminated.data(),
-		GENERIC_READ,
-		DWORD(FILE_SHARE_READ),
-		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
-		DWORD(OPEN_EXISTING),
-		DWORD(FILE_FLAG_SEQUENTIAL_SCAN),
-		ust::nullptr</byte8/>() ) );
-	if( ust::is_nullptr(handle) || handle == GetInvalidHandle() )
+	result_match( ust::read_file_to_string( path ) )
 	{
-		return ust::null_optional;
+		Ok(s) -> { return s; },
+		Err(e) -> { ust::ignore_unused(e); return ust::null_optional; },
 	}
-
-	var LARGE_INTEGER mut file_size= zero_init;
-
-	if( unsafe( ::GetFileSizeEx( handle, $<(file_size) ) ) == 0 )
-	{
-		unsafe( ::CloseHandle(handle) );
-		return ust::null_optional;
-	}
-
-	var ust::string8 mut res( size_type( u64( file_size.union_contents[0] ) ), "\0"c8 );
-
-	// TODO - check for errors.
-	var DWORD mut bytes_read = 0u;
-	unsafe( ::ReadFile(
-		handle,
-		ust::ptr_cast_to_byte8( res.data() ),
-		DWORD(res.size()),
-		$<(bytes_read),
-		ust::nullptr</ü_OVERLAPPED/>() ) );
-
-	unsafe( ::CloseHandle(handle) );
-
-	return move(res);
 }
 
 fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>

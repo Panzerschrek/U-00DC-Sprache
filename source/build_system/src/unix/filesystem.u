@@ -116,45 +116,11 @@ fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string
 
 fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 {
-	var ust::string8 mut path_null_terminated = path;
-	path_null_terminated+= "\0";
-
-	var i32 fd = unsafe( ::open( path_null_terminated.data(), O_RDONLY, 0u ) );
-	if( fd == -1 )
+	result_match( ust::read_file_to_string( path ) )
 	{
-		return ust::null_optional;
+		Ok(s) -> { return s; },
+		Err(e) -> { ust::ignore_unused(e); return ust::null_optional; },
 	}
-
-	auto size_opt= unsafe( GetFileSize( fd ) );
-	if( size_opt.empty() )
-	{
-		unsafe( ::close(fd) );
-		return ust::null_optional;
-	}
-
-	var ust::string8 mut contents( size_type( size_opt.try_deref() ), "\0"c8 );
-
-	// Perform reading in loop in order to handle cases where less than needed bytes were read.
-	for( auto mut offset = 0s; offset < contents.size(); )
-	{
-		var ssize_type read_res = unsafe( ::read(
-			fd,
-			ust::ptr_cast_to_byte8( contents.data() ) + offset,
-			contents.size() - offset ) );
-
-		if( read_res < ssize_type(0) )
-		{
-			// Read filed.
-			unsafe( ::close(fd) );
-			return ust::null_optional;
-		}
-
-		offset+= size_type(read_res);
-	}
-
-	unsafe( ::close(fd) );
-
-	return contents;
 }
 
 fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>
