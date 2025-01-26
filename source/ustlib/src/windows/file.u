@@ -239,6 +239,34 @@ fn create_directory( file_path path ) : file_result</void/>
 	return translate_error_code( last_error );
 }
 
+fn copy_file( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	return copy_file_impl( src_path, dst_path, false );
+}
+
+fn copy_file_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+{
+	return copy_file_impl( src_path, dst_path, true );
+}
+
+fn copy_file_impl( file_path src_path, file_path dst_path, bool fail_if_exists ) : file_result</void/>
+{
+	var wide_string mut src_path_null_terminated= utf8_to_null_terminated_wide_string( src_path );
+	var wide_string mut dst_path_null_terminated= utf8_to_null_terminated_wide_string( dst_path );
+
+	var BOOL res =
+		unsafe( ::CopyFileW(
+			src_path_null_terminated.data(),
+			dst_path_null_terminated.data(),
+			BOOL( (fail_if_exists ? 1 : 0 ) ) ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
+}
+
 fn remove_file( file_path path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );

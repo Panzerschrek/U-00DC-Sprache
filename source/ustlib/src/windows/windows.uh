@@ -3,6 +3,7 @@
 
 fn nomangle AcquireSRWLockExclusive( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle AcquireSRWLockShared( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
+fn nomangle CopyFileW( LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, BOOL bFailIfExists ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle CreateDirectoryW( LPCWSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CreateThread( LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, ( fn( LPVOID arg0 ) unsafe call_conv( "system" ) : DWORD ) lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId ) unsafe call_conv( "system" ) : HANDLE;

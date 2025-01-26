@@ -113,6 +113,9 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>;
 // Fails if given path exists but it's not a directory.
 fn create_directory( file_path path ) : file_result</void/>;
 
+fn copy_file( file_path src_path, file_path dst_path ) : file_result</void/>;
+fn copy_file_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>;
+
 // Remove file or link.
 fn remove_file( file_path path ) : file_result</void/>;
 
