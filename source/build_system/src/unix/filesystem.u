@@ -1,3 +1,4 @@
+import "/file.u"
 import "/string_conversions.u"
 import "../filesystem.uh"
 import "../path.uh"
@@ -15,7 +16,7 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
 		return path;
 	}
 
-	return ust::concat( GetCurrentDirectory(), "/", path );
+	return ust::concat( ust::get_current_directory(), "/", path );
 }
 
 fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
@@ -198,43 +199,6 @@ fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 	unsafe( ::close(fd) );
 
 	return contents;
-}
-
-fn GetCurrentDirectory() : ust::string8
-{
-	var ust::string8 mut res;
-	res.resize( 256s, "\0"c8 );
-	for( auto mut i= 0s; i < 8s; ++i )
-	{
-		auto call_res = unsafe( ::getcwd( res.data(), res.size() ) );
-		if( ust::is_nullptr(call_res) )
-		{
-			if( GetErrno() == ERANGE )
-			{
-				// Not enough space - double it and call the function again.
-				auto new_size= res.size() * 2s;
-				res.resize( new_size, "\0"c8 );
-				continue;
-			}
-			else
-			{
-				// "getcwd" failed for some other reason.
-				halt;
-			}
-		}
-
-		var size_type mut len= 0s;
-		while( len < res.size() && res[len] != "\0"c8 )
-		{
-			++len;
-		}
-
-		res.resize( len, " "c8 );
-		return res;
-	}
-
-	// Failed to retrieve current directory.
-	halt;
 }
 
 fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>

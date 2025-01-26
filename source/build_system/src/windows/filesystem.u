@@ -1,3 +1,4 @@
+import "/file.u"
 import "/string_conversions.u"
 import "../filesystem.uh"
 import "../path.uh"
@@ -17,7 +18,7 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
 		return path;
 	}
 
-	return ust::concat( GetCurrentDirectory(), "/", path );
+	return ust::concat( ust::get_current_directory(), "/", path );
 }
 
 fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
@@ -174,35 +175,6 @@ fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModifi
 	}
 
 	return (u64(file_atributes.ftLastWriteTime.dwHighDateTime) << 32u) | u64(file_atributes.ftLastWriteTime.dwLowDateTime);
-}
-
-fn GetCurrentDirectory() : ust::string8
-{
-	// Perform first call to get required size.
-	auto size_required = unsafe( ::GetCurrentDirectoryW( 0u, ust::nullptr</WCHAR/>() ) );
-	if( size_required == 0u )
-	{
-		halt;
-	}
-
-	var WideString mut res;
-	res.resize( size_type(size_required), WCHAR(0) );
-
-	// Perform second call to get actual data.
-	auto chars_written = unsafe( ::GetCurrentDirectoryW( DWORD(res.size()), res.data() ) );
-	if( chars_written == 0u )
-	{
-		halt;
-	}
-
-	var size_type mut len= 0s;
-	while( len < res.size() && res[len] != WCHAR(0) )
-	{
-		++len;
-	}
-
-	res.resize( len, WCHAR( " "c8 ) );
-	return WideStringToUTF8( res );
 }
 
 fn GetCurrentExecutablePath() : ust::string8
