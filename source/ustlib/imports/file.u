@@ -10,6 +10,7 @@ enum io_error
 {
 	permission_denied,
 	not_found,
+	not_a_directory,
 	already_exists,
 	out_of_memory,
 	other, // Some non-listed error code.
@@ -126,5 +127,6 @@ fn remove_file( file_path path ) : file_result</void/>;
 fn remove_directory( file_path path ) : file_result</void/>;
 
 fn get_current_directory() : string8;
+fn set_current_directory( file_path path ) : file_result</void/>;
 
 } // namespace ust

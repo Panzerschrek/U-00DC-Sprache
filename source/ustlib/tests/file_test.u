@@ -805,6 +805,48 @@ fn nomangle main() : i32
 		}
 	}
 
+	// Set current directory.
+	{
+		// Get current directory.
+		var ust::string8 dir_initial= ust::get_current_directory();
+		assert( !dir_initial.empty(), "Current directory is empty!" );
+
+		// Create new directory within it.
+		auto& separator= ( ust::string_view8(compiler::target::os) == "windows" ? "\\" : "/" );
+		var ust::string8 dir_new= ust::concat( dir_initial, separator, "some_dir" );
+		result_match( ust::create_directory( dir_new ) )
+		{
+			Ok(v) -> {},
+			Err(e) -> { assert( false, "Failed to create directory!" ) },
+		}
+
+		// Make newly created directory current.
+		assert( ust::set_current_directory( dir_new ).is_ok(), "Failed to set current directory!" );
+		var ust::string8 dir_new_actual= ust::get_current_directory();
+		assert( dir_new_actual == dir_new, "Unexpected current directory!" );
+
+		// Change current directory back.
+		assert( ust::set_current_directory( dir_initial ).is_ok(), "Failed to set current directory!" );
+		assert( ust::get_current_directory() == dir_initial, "Unexpected current directory!" );
+
+		// Remove directory created previously.
+		assert( ust::remove_directory( dir_new ).is_ok(), "Failed to remove directory!" );
+	}
+
+	// Set current directory - fail for non-existing directory.
+	result_match( ust::set_current_directory( "this_directory_does_not_exist" ) )
+	{
+		Ok(v) -> { assert( false, "Should not set current directory to non-existing!" ); },
+		Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ) },
+	}
+
+	// Set current directory - fail, because it's not a directory but file.
+	result_match( ust::set_current_directory( "test_file0.txt" ) )
+	{
+		Ok(v) -> { assert( false, "Should not set current directory to file path!" ); },
+		Err(e) -> { assert( e == ust::io_error::not_a_directory, "Unexpected error code!" ) },
+	}
+
 	return 0;
 }
 

@@ -347,6 +347,19 @@ fn get_current_directory() : string8
 	return wide_string_to_utf8( res );
 }
 
+fn set_current_directory( file_path path ) : file_result</void/>
+{
+	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
+
+	var BOOL res= unsafe( ::SetCurrentDirectoryW( path_null_terminated.data() ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
+}
+
 //
 // impl functions
 //
@@ -526,6 +539,7 @@ fn translate_error_code( DWORD code ) : io_error
 	switch(code)
 	{
 		DWORD(ERROR_FILE_NOT_FOUND), DWORD(ERROR_PATH_NOT_FOUND) -> { return io_error::not_found; },
+		DWORD(ERROR_DIRECTORY)-> { return io_error::not_a_directory; },
 		DWORD(ERROR_ALREADY_EXISTS), DWORD(ERROR_FILE_EXISTS) -> { return io_error::already_exists; },
 		DWORD(ERROR_ACCESS_DENIED) -> { return io_error::permission_denied; },
 		default -> { return io_error::other; },

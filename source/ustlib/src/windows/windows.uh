@@ -21,6 +21,7 @@ fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead,
 fn nomangle ReleaseSRWLockExclusive( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle ReleaseSRWLockShared( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle RemoveDirectoryW( LPCWSTR lpPathName ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle SetCurrentDirectoryW( LPCWSTR lpPathName ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle SetFilePointerEx( HANDLE hFile, LARGE_INTEGER liDistanceToMove, PLARGE_INTEGER lpNewFilePointer, DWORD dwMoveMethod ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
