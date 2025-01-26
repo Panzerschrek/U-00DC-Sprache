@@ -9,6 +9,7 @@ fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShar
 fn nomangle CreateThread( LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, ( fn( LPVOID arg0 ) unsafe call_conv( "system" ) : DWORD ) lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle DeleteFileW( LPCWSTR lpFileName ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle GetCurrentDirectoryW( DWORD nBufferLength, LPWSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetFileAttributesExW( LPCWSTR lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, LPVOID lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetFileInformationByHandle( HANDLE hFile, LPBY_HANDLE_FILE_INFORMATION lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call_conv( "system" ) : BOOL;

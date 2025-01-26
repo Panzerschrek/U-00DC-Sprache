@@ -792,6 +792,19 @@ fn nomangle main() : i32
 		assert( ust::remove_directory( dst_path ).is_ok(), "Failed to remove directory!" );
 	}
 
+	// Get current directory.
+	{
+		var ust::string8 dir= ust::get_current_directory();
+		assert( !dir.empty(), "Current directory is empty!" );
+
+		// Read file using absolute path based on current directory.
+		result_match( ust::read_file_to_string( ust::concat( dir, "/", "test_file0.txt" ) ) )
+		{
+			Ok(s) -> { assert( s == "some", "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to string!" ); }
+		}
+	}
+
 	return 0;
 }
 

@@ -1,5 +1,5 @@
 import "file_metadata.u"
-import "random_access_range.u"
+import "string.u"
 import "result.u"
 import "type_traits.u"
 
@@ -124,5 +124,7 @@ fn remove_file( file_path path ) : file_result</void/>;
 
 // Remove an empty directory.
 fn remove_directory( file_path path ) : file_result</void/>;
+
+fn get_current_directory() : string8;
 
 } // namespace ust

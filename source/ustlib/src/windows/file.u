@@ -321,6 +321,32 @@ fn remove_directory( file_path path ) : file_result</void/>
 	return void();
 }
 
+fn get_current_directory() : string8
+{
+	var wide_string mut res;
+	for( auto mut i= 0s; i < 8s; ++i )
+	{
+		var DWORD len= unsafe( ::GetCurrentDirectoryW( DWORD(res.size()), res.data() ) );
+		if( len == 0u )
+		{
+			// Fail - return some dummy.
+			return string8();
+		}
+
+		if( len <= DWORD( res.size() ) )
+		{
+			// Filled enough data - resize down.
+			res.resize( size_type(len), WCHAR( " "c8 ) );
+			break;
+		}
+
+		// Buffer is not large enough - resize it.
+		res.resize( size_type(len), WCHAR(0) );
+	}
+
+	return wide_string_to_utf8( res );
+}
+
 //
 // impl functions
 //
@@ -528,6 +554,28 @@ fn utf8_to_null_terminated_wide_string( string_view8 mut v ) : wide_string
 	}
 
 	res.push_back( WCHAR( "\0"c8 ) );
+
+	return res;
+}
+
+fn wide_string_to_utf8( array_view_imut</WCHAR/> mut v ) : string8
+{
+	var string8 mut res;
+	while( !v.empty() )
+	{
+		var u32 mut c( v.drop_and_get_front() );
+		if( c >= 0xD800u && c <= 0xDBFFu )
+		{
+			// Surrogate pair.
+			if( !v.empty() )
+			{
+				// TODO - check if this is correct.
+				var u32 paired_c( v.drop_and_get_front() );
+				c = ((c - 0xD800u) << 10u) + ( paired_c - 0xDC00u ) + 0x0010000u;
+			}
+		}
+		utf::push_code_point_to_string( res, char32(c) );
+	}
 
 	return res;
 }
