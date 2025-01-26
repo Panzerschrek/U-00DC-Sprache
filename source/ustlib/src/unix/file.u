@@ -274,6 +274,25 @@ fn copy_file_impl( file_path src_path, file_path dst_path, bool ensure_new ) : f
 		}
 	}
 
+	{ // Copy permissions from src to dst.
+		var stat_ mut s= zero_init;
+		auto stat_res= unsafe( ::fstat( src_handle, $<(s) ) );
+		if( stat_res != 0 )
+		{
+			unsafe( close_file_impl( dst_handle ) );
+			unsafe( close_file_impl( src_handle ) );
+			return translate_errno( get_errno() );
+		}
+
+		auto chmod_res= unsafe( ::fchmod( dst_handle, s.st_mode ) );
+		if( chmod_res != 0 )
+		{
+			unsafe( close_file_impl( dst_handle ) );
+			unsafe( close_file_impl( src_handle ) );
+			return translate_errno( get_errno() );
+		}
+	}
+
 	unsafe( close_file_impl( dst_handle ) );
 	unsafe( close_file_impl( src_handle ) );
 	return void();
