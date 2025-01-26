@@ -6,7 +6,6 @@ fn nomangle dlerror() unsafe : $(char8);
 fn nomangle dlopen( $(char8) ü__file, i32 ü__mode ) unsafe : $(byte8);
 fn nomangle dlsym( $(byte8) ü__handle, $(char8) ü__name ) unsafe : $(byte8);
 fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe : i32;
-fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle pipe( $(i32) ü__pipedes ) unsafe : i32;
 fn nomangle posix_spawn( $(pid_t) ü__pid, $(char8) ü__path, $(posix_spawn_file_actions_t) ü__file_actions, $(posix_spawnattr_t) ü__attrp, $($(char8)) ü__argv, $($(char8)) ü__envp ) unsafe : i32;
 fn nomangle posix_spawn_file_actions_addclose( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd ) unsafe : i32;
@@ -22,7 +21,6 @@ fn nomangle ppoll( $(pollfd) ü__fds, nfds_t ü__nfds, $(timespec) ü__timeout, 
 fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe : ssize_t;
 fn nomangle readlink( $(char8) ü__path, $(char8) ü__buf, size_t ü__len ) unsafe : ssize_t;
 fn nomangle waitpid( ü__pid_t ü__pid, $(i32) ü__stat_loc, i32 ü__options ) unsafe : ü__pid_t;
-fn nomangle write( i32 ü__fd, $(byte8) ü__buf, size_t ü__n ) unsafe : ssize_t;
 
 struct pollfd ordered
 {
@@ -73,28 +71,17 @@ struct ü__spawn_action_ ordered
 
 type mode_t = ü__mode_t;
 type nfds_t = u64;
-type off_t = ü__off_t;
 type pid_t = ü__pid_t;
 type sigset_t = ü__sigset_t;
 type size_t = size_type;
 type ssize_t = ü__ssize_t;
-type ü__blkcnt_t = i64;
-type ü__blksize_t = i64;
-type ü__dev_t = u64;
-type ü__gid_t = u32;
-type ü__ino_t = u64;
 type ü__mode_t = u32;
-type ü__nlink_t = u64;
-type ü__off_t = i64;
 type ü__pid_t = i32;
 type ü__ssize_t = ssize_type;
 type ü__syscall_slong_t = i64;
 type ü__time_t = i64;
-type ü__uid_t = u32;
 
 auto constexpr ENOENT = 2;
-auto constexpr EEXIST = 17;
-auto constexpr ERANGE = 34;
 
 auto constexpr FD_CLOEXEC = 1;
 
@@ -115,9 +102,6 @@ auto constexpr RTLD_LAZY = 1;
 auto constexpr RTLD_NOW = 2;
 auto constexpr RTLD_GLOBAL = 256;
 auto constexpr RTLD_NODELETE = 4096;
-
-auto constexpr S_IFMT = 61440;
-auto constexpr S_IFDIR = 16384;
 
 auto constexpr STDIN_FILENO = 0;
 auto constexpr STDOUT_FILENO = 1;
