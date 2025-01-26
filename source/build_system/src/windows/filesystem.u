@@ -1,4 +1,5 @@
 import "/file.u"
+import "/file_helpers.u"
 import "/string_conversions.u"
 import "../filesystem.uh"
 import "../path.uh"
@@ -59,36 +60,15 @@ fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
 
 fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
 {
-	var WideString mut path_null_terminated = UTF8ToWideString( path );
-	path_null_terminated.push_back( WCHAR(0) );
-
-	var HANDLE handle = unsafe( ::CreateFileW(
-		path_null_terminated.data(),
-		GENERIC_WRITE,
-		DWORD(FILE_SHARE_READ),
-		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
-		DWORD(CREATE_ALWAYS),
-		0u,
-		ust::nullptr</byte8/>() ) );
-	if( ust::is_nullptr(handle) || handle == GetInvalidHandle() )
+	result_match( ust::write_string_view_to_file( path, contents ) )
 	{
-		logger.LogError( ust::concat( "Failed to open file \"", path, "\" for writing, error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
-		return false;
+		Ok(v) -> { ust::ignore_unused(v); return true; },
+		Err(e) ->
+		{
+			logger.LogError( ust::concat( "Failed to write file \"", path, "\" error: ", ust::to_string8( u32(e) ) ) );
+			return false;
+		},
 	}
-
-	// TODO - check for errors.
-	// TODO - write in loop.
-	var DWORD mut bytes_written = 0u;
-	unsafe( ::WriteFile(
-		handle,
-		ust::ptr_cast_to_byte8( contents.data() ),
-		DWORD(contents.size()),
-		$<(bytes_written),
-		ust::nullptr</ü_OVERLAPPED/>() ) );
-
-	unsafe( ::CloseHandle(handle) );
-
-	return true;
 }
 
 fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool

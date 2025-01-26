@@ -1,4 +1,5 @@
 import "/file.u"
+import "/file_helpers.u"
 import "/string_conversions.u"
 import "../filesystem.uh"
 import "../path.uh"
@@ -53,38 +54,15 @@ fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
 
 fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
 {
-	var ust::string8 mut path_null_terminated = path;
-	path_null_terminated+= "\0";
-
-	var i32 fd = unsafe( ::open( path_null_terminated.data(), O_WRONLY | O_CREAT | O_TRUNC, 0o755u ) );
-	if( fd == -1 )
+	result_match( ust::write_string_view_to_file( path, contents ) )
 	{
-		logger.LogError( ust::concat( "Failed to open file \"", path, "\" for writing, error: ", ust::to_string8( GetErrno() ) ) );
-		return false;
-	}
-
-	// Perform writing in loop in order to handle cases where less than needed bytes were written.
-	for( auto mut offset = 0s; offset < contents.size(); )
-	{
-		var ssize_type write_res = unsafe( ::write(
-			fd,
-			ust::ptr_cast_to_byte8( contents.data() ) + offset,
-			contents.size() - offset ) );
-
-		if( write_res < ssize_type(0) )
+		Ok(v) -> { ust::ignore_unused(v); return true; },
+		Err(e) ->
 		{
-			// Write failed.
-			logger.LogError( ust::concat( "Failed to write to file \"", path, "\", error: ", ust::to_string8( GetErrno() ) ) );
-			unsafe( ::close(fd) );
+			logger.LogError( ust::concat( "Failed to write file \"", path, "\" error: ", ust::to_string8( u32(e) ) ) );
 			return false;
-		}
-
-		offset+= size_type(write_res);
+		},
 	}
-
-	unsafe( ::close(fd) );
-
-	return true;
 }
 
 fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool
