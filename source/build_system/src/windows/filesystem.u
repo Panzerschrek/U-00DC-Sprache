@@ -1,9 +1,8 @@
+// Platform-dependent filesystem-related functions.
+
 import "/file.u"
-import "/file_helpers.u"
-import "/string_conversions.u"
 import "../filesystem.uh"
 import "../path.uh"
-import "invalid_handle.uh"
 import "wide_string.uh"
 import "windows.uh"
 
@@ -56,51 +55,6 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
 {
 	return ust::create_directory( path_absolute ).is_ok();
-}
-
-fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
-{
-	result_match( ust::write_string_view_to_file( path, contents ) )
-	{
-		Ok(v) -> { ust::ignore_unused(v); return true; },
-		Err(e) ->
-		{
-			logger.LogError( ust::concat( "Failed to write file \"", path, "\" error: ", ust::to_string8( u32(e) ) ) );
-			return false;
-		},
-	}
-}
-
-fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool
-{
-	// TODO - maybe also touch file modification timestamp?
-	result_match( ust::copy_file( source_path, destination_path ) )
-	{
-		Ok(v) -> { ust::ignore_unused(v); return true; },
-		Err(e) ->
-		{
-			logger.LogError( ust::concat( "Failed to copy file \"", source_path, "\" into \"", destination_path, "\", error: ", ust::to_string8( u32(e) ) ) );
-			return false;
-		},
-	}
-}
-
-fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
-{
-	result_match( ust::read_file_to_string( path ) )
-	{
-		Ok(s) -> { return s; },
-		Err(e) -> { ust::ignore_unused(e); return ust::null_optional; },
-	}
-}
-
-fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>
-{
-	result_match( ust::get_metadata_for_path( path ) )
-	{
-		Ok(v) -> { return v.modification_time; },
-		Err(e) -> { ust::ignore_unused(e); return ust::null_optional; },
-	}
 }
 
 fn GetCurrentExecutablePath() : ust::string8
