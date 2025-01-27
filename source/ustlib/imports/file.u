@@ -75,6 +75,9 @@ public:
 
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
 
+	// Flush all data to the device, ensuring they are safely stored.
+	fn flush( mut this ) : file_result</void/>;
+
 	// Truncates or extends file with zeros.
 	fn resize( mut this, u64 new_size ) : file_result</void/>;
 
@@ -110,6 +113,9 @@ public:
 
 	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
+
+	// Flush all data to the device, ensuring they are safely stored.
+	fn flush( mut this ) : file_result</void/>;
 
 	// Truncates or extends file with zeros.
 	fn resize( mut this, u64 new_size ) : file_result</void/>;

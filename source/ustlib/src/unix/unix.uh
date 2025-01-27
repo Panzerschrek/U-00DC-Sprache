@@ -5,6 +5,7 @@ fn nomangle chdir( $(char8) ü__path ) unsafe : i32;
 fn nomangle fchmod( i32 ü__fd, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle clock_gettime( clockid_t ü__clock_id, $(timespec) ü__tp ) unsafe : i32;
 fn nomangle close( i32 ü__fd ) unsafe : i32;
+fn nomangle fdatasync( i32 ü__fildes ) unsafe : i32;
 fn nomangle fstat( i32 ü__fd, $(stat_) ü__buf ) unsafe : i32;
 fn nomangle ftruncate( i32 ü__fd, ü__off_t ü__length ) unsafe : i32;
 fn nomangle getcwd( $(char8) ü__buf, size_t ü__size ) unsafe : $(char8);
