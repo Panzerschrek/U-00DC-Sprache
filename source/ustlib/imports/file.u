@@ -77,6 +77,8 @@ public:
 
 	// Flush all data to the device, ensuring they are safely stored.
 	fn flush( mut this ) : file_result</void/>;
+	// Flush all, including metadata.
+	fn flush_all( mut this ) : file_result</void/>;
 
 	// Truncates or extends file with zeros.
 	fn resize( mut this, u64 new_size ) : file_result</void/>;
@@ -116,6 +118,8 @@ public:
 
 	// Flush all data to the device, ensuring they are safely stored.
 	fn flush( mut this ) : file_result</void/>;
+	// Flush all, including metadata.
+	fn flush_all( mut this ) : file_result</void/>;
 
 	// Truncates or extends file with zeros.
 	fn resize( mut this, u64 new_size ) : file_result</void/>;

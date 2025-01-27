@@ -700,10 +700,7 @@ fn nomangle main() : i32
 				assert( size_res.is_ok(), "Failed to get file size!" );
 				assert( size_res.try_deref() == u64(file_data_size), "Unexpected file size!" );
 			},
-			Err(e) ->
-			{
-				assert( false, "Failed to open file \"" + file_path + "\"" );
-			},
+			Err(e) -> { assert( false, "Failed to open file \"" + file_path + "\"" ); },
 		}
 
 
@@ -711,10 +708,42 @@ fn nomangle main() : i32
 		result_match( ust::read_file_to_string( file_path ) )
 		{
 			Ok( s ) -> { assert( s == file_data, "Invald file contents!" ); },
-			Err(e) ->
+			Err(e) -> { assert( false, "Failed to open file \"" + file_path + "\"" ); },
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+	}
+
+	// Writing and reading with flushing all.
+	{
+		auto &constexpr file_data= "Die Hoffnung stirbt zuletzt";
+		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+
+		auto& file_path= "Aber sie stirbt";
+
+		// Write a file, flush and close it.
+		result_match( ust::file_writeable::create( file_path ) )
+		{
+			Ok( mut f ) ->
 			{
-				assert( false, "Failed to open file \"" + file_path + "\"" );
+				// Write the whole file in one call.
+				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				assert( write_res.is_ok(), "Failed to write!" );
+				assert( write_res.try_deref() == file_data_size );
+
+				// Flush all.
+				assert( f.flush_all().is_ok(), "Flush failed!" );
 			},
+			Err(e) -> { assert( false, "Failed to open file \"" + file_path + "\"" ); },
+		}
+
+		// Read file. Should get expected result.
+		result_match( ust::read_file_to_string( file_path ) )
+		{
+			Ok( s ) -> { assert( s == file_data, "Invald file contents!" ); },
+			Err(e) -> { assert( false, "Failed to open file \"" + file_path + "\"" ); },
 		}
 
 		// Remove this file.

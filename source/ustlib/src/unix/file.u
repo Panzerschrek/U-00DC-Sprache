@@ -133,6 +133,11 @@ fn file_writeable::flush( mut this ) : file_result</void/>
 	return unsafe( flush_impl( handle_ ) );
 }
 
+fn file_writeable::flush_all( mut this ) : file_result</void/>
+{
+	return unsafe( flush_all_impl( handle_ ) );
+}
+
 fn file_writeable::resize( mut this, u64 new_size ) : file_result</void/>
 {
 	return unsafe( resize_impl( handle_, new_size ) );
@@ -218,6 +223,11 @@ fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : fi
 fn file_readable_writeable::flush( mut this ) : file_result</void/>
 {
 	return unsafe( flush_impl( handle_ ) );
+}
+
+fn file_readable_writeable::flush_all( mut this ) : file_result</void/>
+{
+	return unsafe( flush_all_impl( handle_ ) );
 }
 
 fn file_readable_writeable::resize( mut this, u64 new_size ) : file_result</void/>
@@ -607,6 +617,16 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 fn flush_impl( native_file_handle handle ) unsafe : file_result</void/>
 {
 	var i32 res= unsafe( ::fdatasync( handle ) );
+	if( res == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
+	return void();
+}
+
+fn flush_all_impl( native_file_handle handle ) unsafe : file_result</void/>
+{
+	var i32 res= unsafe( ::fsync( handle ) );
 	if( res == -1 )
 	{
 		return translate_errno( get_errno() );
