@@ -31,4 +31,24 @@ fn max( T & mut a, T & mut b ) : auto & mut
 	return a;
 }
 
+// A shortcut for a= min( a, b );
+template</ type T />
+fn min_assign( T &mut a, T &imut b )
+{
+	if( b < a )
+	{
+		a= b;
+	}
+}
+
+// A shortcut for a= max( a, b );
+template</ type T />
+fn max_assign( T &mut a, T &imut b )
+{
+	if( b > a )
+	{
+		a= b;
+	}
+}
+
 } // namespace ust

@@ -148,7 +148,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 		{
 			if( !in_signature_params[i].default_value.has</ Synt::EmptyVariant />() )
 			{
-				first_default_param= ust::min( first_default_param, i );
+				ust::min_assign( first_default_param, i );
 			}
 			else if( first_default_param < i )
 			{

@@ -711,7 +711,7 @@ fn Type::GetReferenceIndirectionDepth( this ) : size_type
 			foreach( &inner_reference : class_type.inner_references )
 			{
 				// For now no more than depth 2 is possible.
-				depth= ust::max( depth, 1s + ( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None ? 0s : 1s ) );
+				ust::max_assign( depth, 1s + ( inner_reference.second_order_kind == SecondOrderInnerReferenceKind::None ? 0s : 1s ) );
 			}
 			return depth;
 		}
@@ -727,7 +727,7 @@ fn Type::GetReferenceIndirectionDepth( this ) : size_type
 		auto mut depth= 0s;
 		foreach( &element_type : tuple_type.element_types )
 		{
-			depth= ust::max( depth, element_type.GetReferenceIndirectionDepth() );
+			ust::max_assign( depth, element_type.GetReferenceIndirectionDepth() );
 		}
 		return depth;
 	}

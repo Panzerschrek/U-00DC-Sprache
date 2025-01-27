@@ -415,31 +415,31 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 
 			foreach( &syntax_element : functions_set.syntax_elements )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.deref().src_loc );
+				ust::min_assign( min_src_loc, syntax_element.deref().src_loc );
 			}
 			foreach( &syntax_element : functions_set.out_of_line_syntax_elements )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.deref().src_loc );
+				ust::min_assign( min_src_loc, syntax_element.deref().src_loc );
 			}
 			foreach( &syntax_element : functions_set.function_templates_syntax_elements )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.deref().src_loc );
+				ust::min_assign( min_src_loc, syntax_element.deref().src_loc );
 			}
 
 			foreach( &function : functions_set.functions )
 			{
 				if_var( &syntax_element : function.prototype_syntax_element )
 				{
-					min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.src_loc );
+					ust::min_assign( min_src_loc, syntax_element.src_loc );
 				}
 				else if_var( &syntax_element : function.body_syntax_element )
 				{
-					min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.src_loc );
+					ust::min_assign( min_src_loc, syntax_element.src_loc );
 				}
 			}
 			foreach( &function_template_ptr : functions_set.function_templates )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), function_template_ptr.lock_imut().deref().syntax_element.deref().src_loc );
+				ust::min_assign( min_src_loc, function_template_ptr.lock_imut().deref().syntax_element.deref().src_loc );
 			}
 
 			return min_src_loc;
@@ -463,11 +463,11 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 
 			foreach( &syntax_element : type_templates_set.syntax_elements )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.deref().src_loc );
+				ust::min_assign( min_src_loc, syntax_element.deref().src_loc );
 			}
 			foreach( &type_template_ptr : type_templates_set.type_templates )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), type_template_ptr.lock_imut().deref().syntax_element.deref().src_loc );
+				ust::min_assign( min_src_loc, type_template_ptr.lock_imut().deref().syntax_element.deref().src_loc );
 			}
 
 			return min_src_loc;

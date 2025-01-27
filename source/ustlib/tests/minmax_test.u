@@ -40,5 +40,20 @@ fn nomangle main() : i32
 		halt if( ref_min.x != 66 );
 	}
 
+	{ // min_assign
+		var i32 mut x= 66;
+		ust::min_assign( x, 31 );
+		halt if( x != 31 );
+		ust::min_assign( x, 99 );
+		halt if( x != 31 );
+	}
+	{ // max_assign
+		var i32 mut x= 17;
+		ust::max_assign( x, 34 );
+		halt if( x != 34 );
+		ust::max_assign( x, 25 );
+		halt if( x != 34 );
+	}
+
 	return 0;
 }
