@@ -649,12 +649,12 @@ fn BuildAndLoadPackageBuildScript(
 			compiler_args.push_back( "pic" );
 		}
 
+		// Put symbols into sections and remove unnecessary ones.
+		compiler_args.push_back( "--function-sections" );
+		compiler_args.push_back( "--data-sections" );
 		if( ust::string_view8( compiler::target::os ) != "windows" ||
 			ust::string_view8( compiler::target::environment ) == "gnu" )
 		{
-			// Put symbols into sections and remove unnecessary ones.
-			compiler_args.push_back( "--function-sections" );
-			compiler_args.push_back( "--data-sections" );
 			compiler_args.push_back( "-Wl,--gc-sections" );
 		}
 
@@ -1393,11 +1393,11 @@ fn CreatePackageTargetBuildGraphNodes(
 				// Also run LTO.
 				node.command_line.push_back( "--lto-mode=link" );
 
+				// Put symbols into sections and remove unnecessary ones.
+				node.command_line.push_back( "--function-sections" );
+				node.command_line.push_back( "--data-sections" );
 				if( !target_is_windows || target_triple.environment == "gnu" )
 				{
-					// Put symbols into sections and remove unnecessary ones.
-					node.command_line.push_back( "--function-sections" );
-					node.command_line.push_back( "--data-sections" );
 					node.command_line.push_back( "-Wl,--gc-sections" );
 				}
 			}
@@ -1750,13 +1750,9 @@ fn BuildUstlibForBuildScripts(
 			compiler_args.push_back( "pic" );
 		}
 
-		if( ust::string_view8( compiler::target::os ) != "windows" ||
-			ust::string_view8( compiler::target::environment ) == "gnu" )
-		{
-			// Put symbols into sections in order to allow removing unnecessary ones.
-			compiler_args.push_back( "--function-sections" );
-			compiler_args.push_back( "--data-sections" );
-		}
+		// Put symbols into sections in order to allow removing unnecessary ones.
+		compiler_args.push_back( "--function-sections" );
+		compiler_args.push_back( "--data-sections" );
 
 		// Use host sysroot for building ustlib for build scripts.
 		if( !host_sysroot.empty() )
