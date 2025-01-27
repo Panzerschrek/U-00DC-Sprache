@@ -33,6 +33,11 @@ public:
 	fn destructor();
 
 public:
+	// Get handle to perform some system-specific file operations with it. Do not try to close it!
+	fn get_native_handle( this ) unsafe : native_file_handle;
+	// Take native handle and destroy this class instance. Caller is responsible for file closing.
+	fn take_native_handle( byval this ) unsafe : native_file_handle;
+
 	fn get_metatada( this ) : file_result</file_metadata/>;
 	fn get_size( this ) : file_result</u64/>;
 
@@ -60,6 +65,11 @@ public:
 	fn destructor();
 
 public:
+	// Get handle to perform some system-specific file operations with it. Do not try to close it!
+	fn get_native_handle( this ) unsafe : native_file_handle;
+	// Take native handle and destroy this class instance. Caller is responsible for file closing.
+	fn take_native_handle( byval this ) unsafe : native_file_handle;
+
 	fn get_metatada( this ) : file_result</file_metadata/>;
 	fn get_size( this ) : file_result</u64/>;
 
@@ -90,6 +100,11 @@ public:
 	fn destructor();
 
 public:
+	// Get handle to perform some system-specific file operations with it. Do not try to close it!
+	fn get_native_handle( this ) unsafe : native_file_handle;
+	// Take native handle and destroy this class instance. Caller is responsible for file closing.
+	fn take_native_handle( byval this ) unsafe : native_file_handle;
+
 	fn get_metatada( this ) : file_result</file_metadata/>;
 	fn get_size( this ) : file_result</u64/>;
 

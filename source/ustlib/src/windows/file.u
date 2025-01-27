@@ -31,6 +31,18 @@ fn file_readable::destructor()
 	unsafe( close_file_impl( handle_ ) );
 }
 
+fn file_readable::get_native_handle( this ) unsafe : native_file_handle
+{
+	return handle_;
+}
+
+fn file_readable::take_native_handle( byval mut this ) unsafe : native_file_handle
+{
+	var native_file_handle h= handle_;
+	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
+	return h;
+}
+
 fn file_readable::get_metatada( this ) : file_result</file_metadata/>
 {
 	return unsafe( get_metatada_impl( handle_ ) );
@@ -101,6 +113,18 @@ fn file_writeable::destructor()
 	unsafe( close_file_impl( handle_ ) );
 }
 
+fn file_writeable::get_native_handle( this ) unsafe : native_file_handle
+{
+	return handle_;
+}
+
+fn file_writeable::take_native_handle( byval mut this ) unsafe : native_file_handle
+{
+	var native_file_handle h= handle_;
+	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
+	return h;
+}
+
 fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
@@ -159,6 +183,18 @@ fn file_readable_writeable::constructor( native_file_handle handle ) unsafe
 fn file_readable_writeable::destructor()
 {
 	unsafe( close_file_impl( handle_ ) );
+}
+
+fn file_readable_writeable::get_native_handle( this ) unsafe : native_file_handle
+{
+	return handle_;
+}
+
+fn file_readable_writeable::take_native_handle( byval mut this ) unsafe : native_file_handle
+{
+	var native_file_handle h= handle_;
+	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
+	return h;
 }
 
 fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
