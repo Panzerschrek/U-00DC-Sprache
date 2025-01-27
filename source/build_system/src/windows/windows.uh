@@ -5,35 +5,20 @@ fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle ConnectNamedPipe( HANDLE hNamedPipe, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
 
-fn nomangle CopyFileW( LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, BOOL bFailIfExists ) unsafe call_conv( "system" ) : BOOL;
-
-fn nomangle CreateDirectoryA( LPCSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : BOOL;
-fn nomangle CreateDirectoryW( LPCWSTR lpPathName, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : BOOL;
-
-fn nomangle CreateFileA( LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
 
 fn nomangle CreateIoCompletionPort( HANDLE FileHandle, HANDLE ExistingCompletionPort, ULONG_PTR CompletionKey, DWORD NumberOfConcurrentThreads ) unsafe call_conv( "system" ) : HANDLE;
 
-fn nomangle CreateNamedPipeA( LPCSTR lpName, DWORD dwOpenMode, DWORD dwPipeMode, DWORD nMaxInstances, DWORD nOutBufferSize, DWORD nInBufferSize, DWORD nDefaultTimeOut, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CreateNamedPipeW( LPCWSTR lpName, DWORD dwOpenMode, DWORD dwPipeMode, DWORD nMaxInstances, DWORD nOutBufferSize, DWORD nInBufferSize, DWORD nDefaultTimeOut, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : HANDLE;
 
-fn nomangle CreateProcessA( LPCSTR lpApplicationName, LPSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCSTR lpCurrentDirectory, LPSTARTUPINFOA lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle CreateProcessW( LPCWSTR lpApplicationName, LPWSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCWSTR lpCurrentDirectory, LPSTARTUPINFOW lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle DuplicateHandle( HANDLE hSourceProcessHandle, HANDLE hSourceHandle, HANDLE hTargetProcessHandle, LPHANDLE lpTargetHandle, DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwOptions ) unsafe call_conv( "system" ) : BOOL;
-
-fn nomangle GetCurrentDirectoryA( DWORD nBufferLength, LPSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
-fn nomangle GetCurrentDirectoryW( DWORD nBufferLength, LPWSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
 
 fn nomangle GetCurrentProcess() unsafe call_conv( "system" ) : HANDLE;
 fn nomangle GetCurrentProcessId() unsafe call_conv( "system" ) : DWORD;
 
 fn nomangle GetExitCodeProcess( HANDLE hProcess, LPDWORD lpExitCode ) unsafe call_conv( "system" ) : BOOL;
-
-fn nomangle GetFileAttributesExW( LPCWSTR lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, LPVOID lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
-
-fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
 
@@ -47,35 +32,15 @@ fn nomangle GetQueuedCompletionStatus( HANDLE CompletionPort, LPDWORD lpNumberOf
 
 fn nomangle GetSystemInfo( LPSYSTEM_INFO lpSystemInfo ) unsafe call_conv( "system" ) : void;
 
-fn nomangle LoadLibraryA( LPCSTR lpLibFileName ) unsafe call_conv( "system" ) : HMODULE;
 fn nomangle LoadLibraryW( LPCWSTR lpLibFileName ) unsafe call_conv( "system" ) : HMODULE;
 
 fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
 
-fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
-
 struct HINSTANCE__ ordered
 {
 	i32 unused;
-}
-
-struct ü_FILETIME ordered
-{
-	DWORD dwLowDateTime;
-	DWORD dwHighDateTime;
-}
-
-enum ü_GET_FILEEX_INFO_LEVELS : i32
-{
-	GetFileExInfoStandard,
-	GetFileExMaxInfoLevel,
-}
-
-struct ü_LARGE_INTEGER ordered
-{
-	[ byte64, 1 ] union_contents;
 }
 
 struct ü_OVERLAPPED ordered
@@ -105,28 +70,6 @@ struct ü_SECURITY_ATTRIBUTES ordered
 	DWORD nLength;
 	LPVOID lpSecurityDescriptor;
 	BOOL bInheritHandle;
-}
-
-struct ü_STARTUPINFOA ordered
-{
-	DWORD cb;
-	LPSTR lpReserved;
-	LPSTR lpDesktop;
-	LPSTR lpTitle;
-	DWORD dwX;
-	DWORD dwY;
-	DWORD dwXSize;
-	DWORD dwYSize;
-	DWORD dwXCountChars;
-	DWORD dwYCountChars;
-	DWORD dwFillAttribute;
-	DWORD dwFlags;
-	WORD wShowWindow;
-	WORD cbReserved2;
-	LPBYTE lpReserved2;
-	HANDLE hStdInput;
-	HANDLE hStdOutput;
-	HANDLE hStdError;
 }
 
 struct ü_STARTUPINFOW ordered
@@ -169,28 +112,15 @@ struct ü_SYSTEM_INFO ordered
 	WORD wProcessorRevision;
 }
 
-struct ü_WIN32_FILE_ATTRIBUTE_DATA ordered
-{
-	DWORD dwFileAttributes;
-	FILETIME ftCreationTime;
-	FILETIME ftLastAccessTime;
-	FILETIME ftLastWriteTime;
-	DWORD nFileSizeHigh;
-	DWORD nFileSizeLow;
-}
-
 type wchar_t = u16;
 type BOOL = i32;
 type BYTE = u8;
 type CHAR = char8;
 type DWORD = u32;
 type DWORD_PTR = ULONG_PTR;
-type FILETIME = ü_FILETIME;
-type GET_FILEEX_INFO_LEVELS = ü_GET_FILEEX_INFO_LEVELS;
 type HANDLE = $(byte8);
 type HINSTANCE = $(HINSTANCE__);
 type HMODULE = HINSTANCE;
-type LARGE_INTEGER = ü_LARGE_INTEGER;
 type LPBYTE = $(BYTE);
 type LPCSTR = $(CHAR);
 type LPCVOID = $(byte8);
@@ -200,13 +130,11 @@ type LPHANDLE = $(HANDLE);
 type LPOVERLAPPED = $(ü_OVERLAPPED);
 type LPPROCESS_INFORMATION = $(ü_PROCESS_INFORMATION);
 type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
-type LPSTARTUPINFOA = $(ü_STARTUPINFOA);
 type LPSTARTUPINFOW = $(ü_STARTUPINFOW);
 type LPSTR = $(CHAR);
 type LPSYSTEM_INFO = $(ü_SYSTEM_INFO);
 type LPVOID = $(byte8);
 type LPWSTR = $(WCHAR);
-type PLARGE_INTEGER = $(LARGE_INTEGER);
 type PULONG_PTR = $(ULONG_PTR);
 type ULONG_PTR = size_type;
 type WCHAR = wchar_t;

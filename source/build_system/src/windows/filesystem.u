@@ -1,7 +1,9 @@
+// Platform-dependent filesystem-related functions.
+
+import "/file.u"
 import "/string_conversions.u"
 import "../filesystem.uh"
 import "../path.uh"
-import "invalid_handle.uh"
 import "wide_string.uh"
 import "windows.uh"
 
@@ -17,7 +19,7 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
 		return path;
 	}
 
-	return ust::concat( GetCurrentDirectory(), "/", path );
+	return ust::concat( ust::get_current_directory(), "/", path );
 }
 
 fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
@@ -25,7 +27,7 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 	var ust::string8 path_absolute= MakePathAbsolute( path );
 
 	// Optimistically assume that we need to create only one directory.
-	if( EnsureSingleDirectoryExists( path_absolute ) )
+	if(  ust::create_directory( path_absolute ).is_ok() )
 	{
 		return true;
 	}
@@ -41,168 +43,15 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 	{
 		path_iterative+= component;
 		path_iterative+= "/";
-		if( !EnsureSingleDirectoryExists( path_iterative ) )
+		auto create_res= ust::create_directory( path_iterative );
+		if( create_res.is_error() )
 		{
-			logger.LogInfo( ust::concat( "Failed to create directory \"", path_iterative, "\": " ) );
+			logger.LogInfo( ust::concat( "Failed to create directory \"", path_iterative, "\": ", ust::to_string8( u32(create_res.try_deref_error()) ) ) );
 			return false;
 		}
 	}
 
 	return true;
-}
-
-fn EnsureSingleDirectoryExists( ust::string_view8 path_absolute ) : bool
-{
-	var WideString mut path_null_terminated= UTF8ToWideString( path_absolute );
-	path_null_terminated.push_back( WCHAR(0) );
-
-	var i32 res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), ust::nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
-	// TODO - what if path exists but it's a file?
-	return res == 1 || unsafe( GetLastError() ) == DWORD(ERROR_ALREADY_EXISTS);
-}
-
-fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
-{
-	var WideString mut path_null_terminated = UTF8ToWideString( path );
-	path_null_terminated.push_back( WCHAR(0) );
-
-	var HANDLE handle = unsafe( ::CreateFileW(
-		path_null_terminated.data(),
-		GENERIC_WRITE,
-		DWORD(FILE_SHARE_READ),
-		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
-		DWORD(CREATE_ALWAYS),
-		0u,
-		ust::nullptr</byte8/>() ) );
-	if( ust::is_nullptr(handle) || handle == GetInvalidHandle() )
-	{
-		logger.LogError( ust::concat( "Failed to open file \"", path, "\" for writing, error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
-		return false;
-	}
-
-	// TODO - check for errors.
-	// TODO - write in loop.
-	var DWORD mut bytes_written = 0u;
-	unsafe( ::WriteFile(
-		handle,
-		ust::ptr_cast_to_byte8( contents.data() ),
-		DWORD(contents.size()),
-		$<(bytes_written),
-		ust::nullptr</ü_OVERLAPPED/>() ) );
-
-	unsafe( ::CloseHandle(handle) );
-
-	return true;
-}
-
-fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool
-{
-	var WideString mut destination_path_null_terminated = UTF8ToWideString( destination_path );
-	destination_path_null_terminated.push_back( WCHAR(0) );
-
-	var WideString mut source_path_null_terminated = UTF8ToWideString( source_path );
-	source_path_null_terminated.push_back( WCHAR(0) );
-
-	auto res = unsafe( ::CopyFileW( source_path_null_terminated.data(), destination_path_null_terminated.data(), BOOL(0) ) );
-	if( res == 0 )
-	{
-		logger.LogError( ust::concat( "Failed to copy file from \"", source_path, "\" to \"", destination_path, "\", error: ", ust::to_string8( unsafe( GetLastError() ) ) ) );
-		return false;
-	}
-
-	return true;
-}
-
-fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
-{
-	var WideString mut path_null_terminated = UTF8ToWideString( path );
-	path_null_terminated.push_back( WCHAR(0) );
-
-	var HANDLE handle = unsafe( ::CreateFileW(
-		path_null_terminated.data(),
-		GENERIC_READ,
-		DWORD(FILE_SHARE_READ),
-		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
-		DWORD(OPEN_EXISTING),
-		DWORD(FILE_FLAG_SEQUENTIAL_SCAN),
-		ust::nullptr</byte8/>() ) );
-	if( ust::is_nullptr(handle) || handle == GetInvalidHandle() )
-	{
-		return ust::null_optional;
-	}
-
-	var LARGE_INTEGER mut file_size= zero_init;
-
-	if( unsafe( ::GetFileSizeEx( handle, $<(file_size) ) ) == 0 )
-	{
-		unsafe( ::CloseHandle(handle) );
-		return ust::null_optional;
-	}
-
-	var ust::string8 mut res( size_type( u64( file_size.union_contents[0] ) ), "\0"c8 );
-
-	// TODO - check for errors.
-	var DWORD mut bytes_read = 0u;
-	unsafe( ::ReadFile(
-		handle,
-		ust::ptr_cast_to_byte8( res.data() ),
-		DWORD(res.size()),
-		$<(bytes_read),
-		ust::nullptr</ü_OVERLAPPED/>() ) );
-
-	unsafe( ::CloseHandle(handle) );
-
-	return move(res);
-}
-
-fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>
-{
-	var WideString mut path_null_terminated = UTF8ToWideString( path );
-	path_null_terminated.push_back( WCHAR(0) );
-
-	var ü_WIN32_FILE_ATTRIBUTE_DATA mut file_atributes= zero_init;
-
-	auto res =
-		unsafe( ::GetFileAttributesExW(
-			path_null_terminated.data(),
-			GET_FILEEX_INFO_LEVELS::GetFileExInfoStandard,
-			ust::ptr_cast_to_byte8( $<(file_atributes) ) ) );
-
-	if( res == 0 )
-	{
-		return ust::null_optional;
-	}
-
-	return (u64(file_atributes.ftLastWriteTime.dwHighDateTime) << 32u) | u64(file_atributes.ftLastWriteTime.dwLowDateTime);
-}
-
-fn GetCurrentDirectory() : ust::string8
-{
-	// Perform first call to get required size.
-	auto size_required = unsafe( ::GetCurrentDirectoryW( 0u, ust::nullptr</WCHAR/>() ) );
-	if( size_required == 0u )
-	{
-		halt;
-	}
-
-	var WideString mut res;
-	res.resize( size_type(size_required), WCHAR(0) );
-
-	// Perform second call to get actual data.
-	auto chars_written = unsafe( ::GetCurrentDirectoryW( DWORD(res.size()), res.data() ) );
-	if( chars_written == 0u )
-	{
-		halt;
-	}
-
-	var size_type mut len= 0s;
-	while( len < res.size() && res[len] != WCHAR(0) )
-	{
-		++len;
-	}
-
-	res.resize( len, WCHAR( " "c8 ) );
-	return WideStringToUTF8( res );
 }
 
 fn GetCurrentExecutablePath() : ust::string8

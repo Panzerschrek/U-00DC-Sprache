@@ -65,6 +65,9 @@ public:
 
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
 
+	// Truncates or extends file with zeros.
+	fn resize( mut this, u64 new_size ) : file_result</void/>;
+
 	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : file_result</void/>;
 
@@ -92,6 +95,9 @@ public:
 
 	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
+
+	// Truncates or extends file with zeros.
+	fn resize( mut this, u64 new_size ) : file_result</void/>;
 
 	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : file_result</void/>;

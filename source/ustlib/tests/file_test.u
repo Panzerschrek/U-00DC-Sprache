@@ -566,6 +566,96 @@ fn nomangle main() : i32
 		assert( remove_res.is_ok(), "Failed to remove file!" );
 	}
 
+	// Truncation.
+	{
+		auto &constexpr file_path= "truncation_test.txt";
+		auto &constexpr file_data= "Hegen sie die Absicht, uns abhängig zu machen";
+		var size_type constexpr file_data_size= typeinfo</ typeof(file_data) />.size_of;
+		var size_type extra_tail_size= 7s;
+		var size_type cut_size= 6s;
+
+		result_match( ust::file_writeable::create( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Write some contents
+				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				assert( write_res.is_ok(), "Failed to write!" );
+				assert( write_res.try_deref() == file_data_size );
+
+				// Check result file size.
+				{
+					auto size_res= f.get_size();
+					assert( size_res.is_ok(), "Failed to get file size!" );
+					assert( size_res.try_deref() == u64(file_data_size), "Unexpected file size!" );
+				}
+
+				// Increase file size.
+				auto resize_res= f.resize( u64( file_data_size + extra_tail_size ) );
+				assert( resize_res.is_ok(), "Failed to resize file" );
+
+				{ // Check file size again.
+					auto size_res= f.get_size();
+					assert( size_res.is_ok(), "Failed to get file size!" );
+					assert( size_res.try_deref() == u64(file_data_size + extra_tail_size), "Unexpected file size!" );
+				}
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Read the whole file into string.
+		result_match( ust::read_file_to_string( file_path ) )
+		{
+			Ok(s) ->
+			{
+				assert( s.size() == file_data_size + extra_tail_size, "Unexected file size!" );
+				assert( s.range().subrange_end(file_data_size) == file_data, "Invalid file contents!" );
+				// Should be filled with zeros.
+				assert( s.range().subrange_start(file_data_size) == ust::string8( 7s, "\0"c8 ), "Invalid file contents!" );
+			},
+			Err(e) -> { assert( false, "Failed to read file \"" + file_path + "\" to string!" ); }
+		}
+
+		// Open again and truncate down.
+		result_match( ust::file_writeable::open( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				// Decrease file size.
+				auto resize_res= f.resize( u64( file_data_size - cut_size ) );
+				assert( resize_res.is_ok(), "Failed to resize file" );
+
+				{ // Check file size again.
+					auto size_res= f.get_size();
+					assert( size_res.is_ok(), "Failed to get file size!" );
+					assert( size_res.try_deref() == u64(file_data_size - cut_size), "Unexpected file size!" );
+				}
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Read the whole file into string again. Should be affected by truncation.
+		result_match( ust::read_file_to_string( file_path ) )
+		{
+			Ok(s) ->
+			{
+				assert( s.size() == file_data_size - cut_size, "Unexected file size!" );
+				assert( s == ust::string_view8( file_data ).subrange_end( file_data_size - cut_size ), "Invalid file contents!" );
+			},
+			Err(e) -> { assert( false, "Failed to read file \"" + file_path + "\" to string!" ); }
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+	}
+
 	// Create already created directory.
 	{
 		auto &constexpr dir_name= "some_dir_to_create";

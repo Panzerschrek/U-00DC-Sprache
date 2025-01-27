@@ -1,3 +1,4 @@
+import "hash.u"
 import "type_traits.u"
 
 namespace ust
@@ -11,6 +12,18 @@ class system_time
 public:
 	// Get current time.
 	fn now() : system_time;
+
+	// Get minimum time - which is less than other possible timestams.
+	fn min() : system_time
+	{
+		return unsafe( system_time( impl::min() ) );
+	}
+
+	// Get maximum valid time - which is greater than other possible timestamps.
+	fn max() : system_time
+	{
+		return unsafe( system_time( impl::max() ) );
+	}
 
 public:
 	// Constructor from a platform-specific representation (for internal usage).
@@ -31,6 +44,25 @@ public:
 	}
 
 public:
+	struct hasher
+	{
+		fn hash( system_time& t ) : size_type
+		{
+			return hash(t.impl_);
+		}
+
+		fn hash( impl_unix& t ) : size_type
+		{
+			// TODO - use better combine function.
+			return default_hasher::hash( t.seconds ) ^ default_hasher::hash( t.nanoseconds );
+		}
+
+		fn hash( impl_windows& t ) : size_type
+		{
+			return default_hasher::hash( t.intervals );
+		}
+	}
+
 	struct impl_unix
 	{
 		// Basically "timespec" fields.
@@ -46,6 +78,16 @@ public:
 			}
 			return l.nanoseconds <=> r.nanoseconds;
 		}
+
+		fn min() : impl_unix
+		{
+			return impl_unix{ .seconds( 0x8000000000000000u64 ), .nanoseconds(0) };
+		}
+
+		fn max() : impl_unix
+		{
+			return impl_unix{ .seconds( 0x7FFFFFFFFFFFFFFFu64 ), .nanoseconds( 999999999u64 ) };
+		}
 	}
 
 	struct impl_windows
@@ -55,6 +97,16 @@ public:
 		op<=>( impl_windows& l, impl_windows& r ) : i32
 		{
 			return l.intervals <=> r.intervals;
+		}
+
+		fn min() : impl_windows
+		{
+			return impl_windows{ .intervals= 0u64 };
+		}
+
+		fn max() : impl_windows
+		{
+			return impl_windows{ .intervals= 0xFFFFFFFFFFFFFFFFu64 };
 		}
 	}
 

@@ -19,7 +19,7 @@ fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_vie
 	var WideString mut command_line_combined= ConstructCommandLineNullTerminated( exe_path_wide, command_line );
 
 	var ü_STARTUPINFOW mut startup_info = zero_init;
-	startup_info.cb = u32( typeinfo</ü_STARTUPINFOA/>.size_of );
+	startup_info.cb = u32( typeinfo</ü_STARTUPINFOW/>.size_of );
 
 	var ü_PROCESS_INFORMATION mut process_information = zero_init;
 
@@ -232,7 +232,7 @@ public: // ProcessGroupInterface
 
 		// Setup standard streams redirection for child process.
 		var ü_STARTUPINFOW mut startup_info = zero_init;
-		startup_info.cb = u32( typeinfo</ü_STARTUPINFOA/>.size_of );
+		startup_info.cb = u32( typeinfo</ü_STARTUPINFOW/>.size_of );
 		startup_info.dwFlags = DWORD( STARTF_USESTDHANDLES );
 		startup_info.hStdInput= nul;
 		startup_info.hStdOutput= output_write_child;
