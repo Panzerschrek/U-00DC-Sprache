@@ -3,6 +3,25 @@ import "../imports/assert.u"
 import "../imports/file.u"
 import "../imports/file_helpers.u"
 
+// Some properties of the file classes.
+static_assert( !typeinfo</ ust::file_readable />.is_copy_constructible );
+static_assert( !typeinfo</ ust::file_readable />.is_copy_assignable );
+static_assert( !typeinfo</ ust::file_readable />.is_equality_comparable );
+static_assert( !non_sync</ ust::file_readable /> );
+static_assert( !typeinfo</ ust::file_writeable />.is_copy_constructible );
+static_assert( !typeinfo</ ust::file_writeable />.is_copy_assignable );
+static_assert( !typeinfo</ ust::file_writeable />.is_equality_comparable );
+static_assert( !non_sync</ ust::file_writeable /> );
+static_assert( !typeinfo</ ust::file_readable_writeable />.is_copy_constructible );
+static_assert( !typeinfo</ ust::file_readable_writeable />.is_copy_assignable );
+static_assert( !typeinfo</ ust::file_readable_writeable />.is_equality_comparable );
+static_assert( !non_sync</ ust::file_readable_writeable /> );
+
+// We have 3 distinct types of files.
+static_assert( !same_type</ ust::file_readable, ust::file_writeable /> );
+static_assert( !same_type</ ust::file_readable, ust::file_readable_writeable /> );
+static_assert( !same_type</ ust::file_writeable, ust::file_readable_writeable /> );
+
 fn nomangle main() : i32
 {
 	// Try requesting metadata for non-existing path.
