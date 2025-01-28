@@ -1,3 +1,4 @@
+import "/enum_string_conversions.u"
 import "/CodeBuilderLib/keywords.uh"
 
 namespace U1
@@ -20,17 +21,9 @@ fn IsKeyword( ust::string_view8& str ) : bool
 
 fn KeywordToString( Keyword k ) : ust::string_view8
 {
-	for( &el : typeinfo</Keyword/>.elements_list )
-	{
-		if( el.value == u8(k) )
-		{
-			var ust::string_view8 mut res( el.name );
-			res.drop_back(); // remove '_'
-			return res;
-		}
-	}
-
-	return "";
+	var ust::string_view8 mut res= ust::enum_to_string(k);
+	res.drop_back(); // remove '_'
+	return res;
 }
 
 } // namespace U1
