@@ -452,11 +452,20 @@ fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ dir
 		return translate_error_code( unsafe( GetLastError() ) );
 	}
 
-	return wrap_raw_iterator( unsafe( directory_raw_iterator( impl_windows( handle, extract_file_name( find_data ) ) ) ) );
+	return
+		wrap_raw_iterator(
+			unsafe( directory_raw_iterator(
+				impl_windows(
+					handle,
+					directory_entry
+					{
+						.entry_name= extract_file_name( find_data ),
+						.kind= file_attributes_to_file_kind( find_data.dwFileAttributes ),
+					} ) ) ) );
 }
 
-fn directory_raw_iterator::impl_windows::constructor( $(byte8) handle, string8 first_entry ) unsafe
-	( handle_= handle, first_entry_= first_entry )
+fn directory_raw_iterator::impl_windows::constructor( $(byte8) handle, directory_entry mut first_entry ) unsafe
+	( handle_= handle, first_entry_= move(first_entry) )
 {}
 
 fn directory_raw_iterator::impl_windows::destructor()
@@ -471,10 +480,10 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 {
 	if( !first_entry_.empty() )
 	{
-		var string8 mut first_entry= take(first_entry_);
-		if( first_entry != "." && first_entry != ".." )
+		var directory_entry mut first_entry= first_entry_.try_take();
+		if( first_entry.entry_name != "." && first_entry.entry_name != ".." )
 		{
-			return file_result</directory_entry/>( directory_entry{ .entry_name= move(first_entry) } );
+			return file_result</directory_entry/>( move(first_entry) );
 		}
 	}
 	if( handle_ == get_invalid_handle() )
@@ -509,7 +518,13 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 			continue;
 		}
 
-		return file_result</directory_entry/>( directory_entry{ .entry_name= move(entry_name) } );
+		return
+			file_result</directory_entry/>(
+				directory_entry
+				{
+					.entry_name= move(entry_name),
+					.kind= file_attributes_to_file_kind( find_data.dwFileAttributes )
+				} );
 	}
 }
 

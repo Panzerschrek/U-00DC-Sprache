@@ -1051,10 +1051,12 @@ fn nomangle main() : i32
 							if( entry.entry_name == "file_test.u" )
 							{
 								this_file_found= true;
+								assert( entry.kind == ust::file_kind::file, "Unexpected entry kind, expected a file!" );
 							}
 							else if( entry.entry_name == "test_file0.txt" )
 							{
 								test_file0_txt_found= true;
+								assert( entry.kind == ust::file_kind::file, "Unexpected entry kind, expected a file!" );
 							}
 						},
 						Err(e) ->

@@ -166,6 +166,7 @@ struct directory_entry
 {
 	// Can't for now use string_view8, since "result" container isn't capable of storing types with references inside.
 	string8 entry_name;
+	file_kind kind;
 }
 
 class directory_raw_iterator
@@ -190,14 +191,14 @@ private:
 	class impl_windows
 	{
 	public:
-		fn constructor( $(byte8) handle, string8 first_entry ) unsafe;
+		fn constructor( $(byte8) handle, directory_entry first_entry ) unsafe;
 		fn destructor();
 
 		fn next( mut this ) : optional</ file_result</directory_entry/> />;
 
 	private:
 		$(byte8) handle_;
-		string8 first_entry_; // Empty if already consumed.
+		optional</directory_entry/> first_entry_;
 	}
 
 private:
