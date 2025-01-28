@@ -276,7 +276,7 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) ),
 		.access_time= unsafe( timespec_to_system_time( s.st_atim ) ),
 		.modification_time= unsafe( timespec_to_system_time( s.st_mtim ) ),
-		.permissions{ .mode= s.st_mode },
+		.permissions{ .mode= s.st_mode & file_permissions::mask },
 	};
 }
 
@@ -653,7 +653,7 @@ fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
 		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) ),
 		.access_time= unsafe( timespec_to_system_time( s.st_atim ) ),
 		.modification_time= unsafe( timespec_to_system_time( s.st_mtim ) ),
-		.permissions{ .mode= s.st_mode },
+		.permissions{ .mode= s.st_mode & file_permissions::mask },
 	};
 }
 

@@ -48,6 +48,8 @@ struct file_permissions
 	var u32 constexpr set_guid= 0o2000u;
 	var u32 constexpr sticky_bit= 0o1000u;
 
+	var u32 constexpr mask= all | set_uid | set_guid | sticky_bit;
+
 	u32 mode; // Bit mask combined of bits defined above.
 }
 
