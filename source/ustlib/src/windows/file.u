@@ -130,6 +130,16 @@ fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result
 	return unsafe( write_impl( handle_, buf ) );
 }
 
+fn file_writeable::flush( mut this ) : file_result</void/>
+{
+	return unsafe( flush_impl( handle_ ) );
+}
+
+fn file_writeable::flush_all( mut this ) : file_result</void/>
+{
+	return unsafe( flush_all_impl( handle_ ) );
+}
+
 fn file_writeable::seek( mut this, u64 offset ) : file_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
@@ -205,6 +215,16 @@ fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file
 fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn file_readable_writeable::flush( mut this ) : file_result</void/>
+{
+	return unsafe( flush_impl( handle_ ) );
+}
+
+fn file_readable_writeable::flush_all( mut this ) : file_result</void/>
+{
+	return unsafe( flush_all_impl( handle_ ) );
 }
 
 fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
@@ -555,6 +575,22 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 
 	// Expected number of bytes or less.
 	return size_type(bytes_written);
+}
+
+fn flush_impl( native_file_handle handle ) unsafe : file_result</void/>
+{
+	var i32 res= unsafe( ::FlushFileBuffers( handle ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+	return void();
+}
+
+fn flush_all_impl( native_file_handle handle ) unsafe : file_result</void/>
+{
+	// As I understand under Windows there is no difference between flushing data and metadata for a file.
+	return unsafe( flush_impl( handle ) );
 }
 
 fn seek_impl( native_file_handle handle, u64 offset ) unsafe : file_result</void/>
