@@ -1152,6 +1152,13 @@ fn nomangle main() : i32
 		Err(e) -> { assert( e == ust::io_error::not_a_directory, "Unexpected error code!" ); },
 	}
 
+	// Try iterating over empty path.
+	result_match( ust::open_directory_for_iteration( "" ) )
+	{
+		Ok( it ) -> { assert( false, "Should not open an empty path for directory iteration!" ); },
+		Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+	}
+
 	return 0;
 }
 
