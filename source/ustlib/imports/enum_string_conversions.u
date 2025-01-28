@@ -1,0 +1,21 @@
+import "random_access_range.u"
+
+namespace ust
+{
+
+// Get string representation for an enum value.
+template</type T/>
+fn enum_to_string( T t ) : array_view_imut</char8/>
+{
+	static_assert( typeinfo</T/>.is_enum );
+	for( &el : typeinfo</T/>.elements_list )
+	{
+		if( el.value == typeof( typeinfo</T/>.underlying_type )::src_type( t ) )
+		{
+			return el.name;
+		}
+	}
+	halt;
+}
+
+} // namespace ust

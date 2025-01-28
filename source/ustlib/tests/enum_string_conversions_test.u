@@ -1,0 +1,35 @@
+//##success_test
+import "../imports/enum_string_conversions.u"
+import "../imports/file.u"
+
+enum Ampel
+{
+	Rot,
+	Gelb,
+	Grün,
+}
+
+enum Gener : u32
+{
+	male,
+	female,
+	// There are only two genders.
+}
+
+fn nomangle main() : i32
+{
+	halt if( ust::enum_to_string( Ampel::Rot ) != "Rot" );
+	halt if( ust::enum_to_string( Ampel::Gelb ) != "Gelb" );
+	halt if( ust::enum_to_string( Ampel::Grün ) != "Grün" );
+
+	halt if( ust::enum_to_string( Gener::male ) != "male" );
+	halt if( ust::enum_to_string( Gener::female ) != "female" );
+
+	halt if( ust::enum_to_string( ust::io_error::permission_denied ) != "permission_denied" );
+	halt if( ust::enum_to_string( ust::io_error::not_found ) != "not_found" );
+	halt if( ust::enum_to_string( ust::io_error::not_a_directory ) != "not_a_directory" );
+	halt if( ust::enum_to_string( ust::io_error::already_exists ) != "already_exists" );
+	halt if( ust::enum_to_string( ust::io_error::out_of_memory ) != "out_of_memory" );
+
+	return 0;
+}
