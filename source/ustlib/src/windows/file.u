@@ -434,17 +434,15 @@ fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ dir
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 	path_null_terminated.pop_back(); // Remove null
-
 	// Ensure trailing path separator is present.
 	if( path_null_terminated.empty() || !(path_null_terminated.back() == WCHAR("/"c8) || path_null_terminated.back() == WCHAR("\\"c8) ) )
 	{
 		path_null_terminated.push_back( WCHAR( "\\"c8 ) );
 	}
-	// Add asterisk to search all.
-	path_null_terminated.push_back( WCHAR( "*"c8 ) );
-	path_null_terminated.push_back( WCHAR(0) );
+	path_null_terminated.push_back( WCHAR( "*"c8 ) ); // Add asterisk to search all.
+	path_null_terminated.push_back( WCHAR(0) ); // Add null again.
 
-	var ü_WIN32_FIND_DATAW mut find_data= zero_init;
+	var ü_WIN32_FIND_DATAW mut find_data= zero_init;  // TODO - avoid zeroing it for performance reasons?
 
 	var HANDLE handle= unsafe( ::FindFirstFileW( path_null_terminated.data(), $<(find_data) ) );
 	if( handle == get_invalid_handle() )
@@ -459,7 +457,7 @@ fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ dir
 					handle,
 					directory_entry
 					{
-						.name= extract_file_name( find_data ),
+						.name= extract_file_name_from_find_data( find_data ),
 						.kind= file_attributes_to_file_kind( find_data.dwFileAttributes ),
 					} ) ) ) );
 }
@@ -481,7 +479,7 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 	if( !first_entry_.empty() )
 	{
 		var directory_entry mut first_entry= first_entry_.try_take();
-		if( first_entry.name != "." && first_entry.name != ".." )
+		if( !directory_entry_should_be_ignored( first_entry.name ) )
 		{
 			return file_result</directory_entry/>( move(first_entry) );
 		}
@@ -491,7 +489,7 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 		return optional</ file_result</directory_entry/> />();
 	}
 
-	var ü_WIN32_FIND_DATAW mut find_data= zero_init;
+	var ü_WIN32_FIND_DATAW mut find_data= zero_init; // TODO - avoid zeroing it for performance reasons?
 
 	loop
 	{
@@ -500,20 +498,22 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 		{
 			var DWORD err= unsafe( GetLastError() );
 
-			// Close handle on end or on error.
+			// Close handle on end or on error, in order to prevent further iteration.
 			unsafe( ::FindClose( handle_ ) );
 			handle_= get_invalid_handle();
 
 			if( err == DWORD(ERROR_NO_MORE_FILES) )
 			{
+				// Not actually an error - return empty optional to indicate end of iteration.
 				return optional</ file_result</directory_entry/> />();
 			}
 
+			// Actual error.
 			return file_result</directory_entry/>( translate_error_code( err ) );
 		}
 
-		var string8 mut entry_name= extract_file_name( find_data );
-		if( entry_name == "." || entry_name == ".." )
+		var string8 mut entry_name= extract_file_name_from_find_data( find_data );
+		if( directory_entry_should_be_ignored(entry_name) )
 		{
 			continue;
 		}
@@ -528,7 +528,12 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 	}
 }
 
-fn extract_file_name( ü_WIN32_FIND_DATAW& find_data ) : string8
+fn directory_entry_should_be_ignored( string_view8 entry_name ) : bool
+{
+	return entry_name == "." || entry_name == "..";
+}
+
+fn extract_file_name_from_find_data( ü_WIN32_FIND_DATAW& find_data ) : string8
 {
 	var size_type mut s= 0s;
 	while( s < typeinfo</ typeof(find_data.cFileName) />.element_count )
