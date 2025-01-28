@@ -9,6 +9,9 @@ fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShar
 fn nomangle CreateThread( LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, ( fn( LPVOID arg0 ) unsafe call_conv( "system" ) : DWORD ) lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle DeleteFileW( LPCWSTR lpFileName ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle FindClose( HANDLE hFindFile ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle FindFirstFileW( LPCWSTR lpFileName, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : HANDLE;
+fn nomangle FindNextFileW( HANDLE hFindFile, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle FlushFileBuffers( HANDLE hFile ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetCurrentDirectoryW( DWORD nBufferLength, LPWSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetFileAttributesExW( LPCWSTR lpFileName, GET_FILEEX_INFO_LEVELS fInfoLevelId, LPVOID lpFileInformation ) unsafe call_conv( "system" ) : BOOL;
@@ -94,6 +97,20 @@ struct ü_WIN32_FILE_ATTRIBUTE_DATA ordered
 	DWORD nFileSizeLow;
 }
 
+struct ü_WIN32_FIND_DATAW ordered
+{
+	DWORD dwFileAttributes;
+	FILETIME ftCreationTime;
+	FILETIME ftLastAccessTime;
+	FILETIME ftLastWriteTime;
+	DWORD nFileSizeHigh;
+	DWORD nFileSizeLow;
+	DWORD dwReserved0;
+	DWORD dwReserved1;
+	[ WCHAR, 260u ] cFileName;
+	[ WCHAR, 14u ] cAlternateFileName;
+}
+
 enum ü_FILE_INFO_BY_HANDLE_CLASS : i32
 {
 	FileBasicInfo,
@@ -146,6 +163,7 @@ type LPFILETIME = $(ü_FILETIME);
 type LPOVERLAPPED = $(ü_OVERLAPPED);
 type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
 type LPVOID = $(byte8);
+type LPWIN32_FIND_DATAW = $(ü_WIN32_FIND_DATAW);
 type LPWSTR = $(WCHAR);
 type PLARGE_INTEGER = $(LARGE_INTEGER);
 type PSRWLOCK = $(RTL_SRWLOCK);
@@ -170,6 +188,7 @@ auto constexpr ERROR_BAD_ENVIRONMENT = 10;
 auto constexpr ERROR_INVALID_ACCESS = 12;
 auto constexpr ERROR_BAD_FORMAT = 11;
 auto constexpr ERROR_INVALID_DATA = 13;
+auto constexpr ERROR_NO_MORE_FILES = 18;
 auto constexpr ERROR_FILE_EXISTS = 80;
 auto constexpr ERROR_ALREADY_EXISTS = 183;
 auto constexpr ERROR_DIRECTORY = 267;

@@ -160,4 +160,48 @@ fn remove_directory( file_path path ) : file_result</void/>;
 fn get_current_directory() : string8;
 fn set_current_directory( file_path path ) : file_result</void/>;
 
+// Directory iterator
+
+struct directory_entry
+{
+	// Can't for now use string_view8, since "result" container isn't capable of storing types with references inside.
+	string8 entry_name;
+}
+
+class directory_raw_iterator
+{
+public:
+	// Open a directory for iteration.
+	fn open( file_path path ) : file_result</ iterator</ directory_raw_iterator /> />;
+
+public:
+	// Constructor for internal usage.
+	fn constructor( impl_windows mut impl ) unsafe
+		( impl_= move(impl) )
+	{}
+
+public:
+	fn next( mut this ) : optional</ file_result</directory_entry/> />
+	{
+		return impl_.next();
+	}
+
+private:
+	class impl_windows
+	{
+	public:
+		fn constructor( $(byte8) handle, string8 first_entry ) unsafe;
+		fn destructor();
+
+		fn next( mut this ) : optional</ file_result</directory_entry/> />;
+
+	private:
+		$(byte8) handle_;
+		string8 first_entry_; // Empty if already consumed.
+	}
+
+private:
+	impl_windows impl_;
+}
+
 } // namespace ust
