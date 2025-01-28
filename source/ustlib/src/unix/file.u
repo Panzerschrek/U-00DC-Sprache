@@ -801,7 +801,7 @@ fn translate_errno( i32 errno ) : io_error
 {
 	switch(errno)
 	{
-	EPERM -> { return io_error::permission_denied; },
+	EPERM, EACCES -> { return io_error::permission_denied; },
 	ENOENT -> { return io_error::not_found; },
 	EEXIST -> { return io_error::already_exists; },
 	ENOTDIR -> { return io_error::not_a_directory; },

@@ -1206,6 +1206,64 @@ fn nomangle main() : i32
 		assert( ust::remove_file( file_path ).is_ok(), "Failed to remove file \"" + file_path + "\"!" );
 	}
 
+	// Set permissions for a file using file object.
+	{
+		auto &constexpr file_path= "set_permissions_via_file_object";
+		var ust::file_permissions p{ .bits= ust::file_permissions::owner_all | ust::file_permissions::group_read | ust::file_permissions::group_execute };
+
+		result_match( ust::file_writeable::create( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				assert( f.set_permissions( p ).is_ok(), "Failed to set permissions for file \"" + file_path + "\"!" );
+			},
+			Err(e) -> { assert( false, "Failed to open file \"" + file_path + "\"" ); },
+		}
+
+		result_match( ust::get_metadata_for_path( file_path ) )
+		{
+			Ok(m) ->
+			{
+				if( ust::string_view8(compiler::target::os) != "windows" )
+				{
+					assert( m.permissions == p, "Unexpected permissions for file \"" + file_path + "\"!" );
+				}
+			},
+			Err(e) -> { assert( e == ust::io_error::not_found, "Failed to get metadata for file \"" + file_path + "\"!" ); },
+		}
+
+		assert( ust::remove_file( file_path ).is_ok(), "Failed to remove file \"" + file_path + "\"!" );
+	}
+
+	// Make file read-only.
+	{
+		auto &constexpr file_path= "read_only_file";
+		auto &constexpr contents= "Нужно построить зиккурат";
+
+		assert( ust::write_string_view_to_file( file_path, contents ).is_ok(), "Failed to write file \"" + file_path + "\"!" );
+
+		var ust::file_permissions p{ .bits= ust::file_permissions::owner_read };
+
+		assert(
+			ust::set_permissions_for_path( file_path, p ).is_ok(),
+			"Failed to set permissions for file \"" + file_path + "\"!" );
+
+		result_match( ust::get_metadata_for_path( file_path ) )
+		{
+			Ok(m) -> { assert( m.permissions == p, "Unexpected permissions for file \"" + file_path + "\"!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Failed to get metadata for file \"" + file_path + "\"!" ); },
+		}
+
+		// Try opening read-only file for writing - should fail.
+		result_match( ust::file_writeable::create( file_path ) )
+		{
+			Ok(f) -> { assert( false, "Should not be able to open a read-only file for writing!" ); },
+			Err(e) -> { assert( e == ust::io_error::permission_denied, "Unexpected error code!" ); }
+		}
+
+		assert( ust::remove_file( file_path ).is_ok(), "Failed to remove file \"" + file_path + "\"!" );
+	}
+
 	return 0;
 }
 
