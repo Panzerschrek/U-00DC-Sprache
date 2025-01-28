@@ -12,29 +12,23 @@ namespace BK
 
 fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
 {
-	result_match( ust::write_string_view_to_file( path, contents ) )
+	if_var( &e : ust::write_string_view_to_file( path, contents ).as_error_ref() )
 	{
-		Ok(v) -> { ust::ignore_unused(v); return true; },
-		Err(e) ->
-		{
-			logger.LogError( ust::concat( "Failed to write file \"", path, "\" error: ", ust::enum_to_string( e ) ) );
-			return false;
-		},
+		logger.LogError( ust::concat( "Failed to write file \"", path, "\" error: ", ust::enum_to_string( e ) ) );
+		return false;
 	}
+	return true;
 }
 
 fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool
 {
 	// TODO - maybe also touch file modification timestamp?
-	result_match( ust::copy_file( source_path, destination_path ) )
+	if_var( &e : ust::copy_file( source_path, destination_path ).as_error_ref() )
 	{
-		Ok(v) -> { ust::ignore_unused(v); return true; },
-		Err(e) ->
-		{
-			logger.LogError( ust::concat( "Failed to copy file \"", source_path, "\" into \"", destination_path, "\", error: ", ust::enum_to_string( e ) ) );
-			return false;
-		},
+		logger.LogError( ust::concat( "Failed to copy file \"", source_path, "\" into \"", destination_path, "\", error: ", ust::enum_to_string( e ) ) );
+		return false;
 	}
+	return true;
 }
 
 fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
