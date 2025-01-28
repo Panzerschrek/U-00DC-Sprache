@@ -15,14 +15,14 @@ fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : 
 {
 	var HANDLE handle=
 		unsafe( ::CreateThread(
-			ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+			nullptr</ü_SECURITY_ATTRIBUTES/>(),
 			SIZE_T(0), // stack size (0 for default)
 			func,
 			arg,
 			DWORD(0), // flags
-			ust::nullptr</DWORD/>() /* thread id */ ) );
+			nullptr</DWORD/>() /* thread id */ ) );
 
-	halt if( ust::is_nullptr(handle) );
+	halt if( is_nullptr(handle) );
 
 	return handle;
 }

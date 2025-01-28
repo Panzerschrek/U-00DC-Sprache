@@ -91,9 +91,9 @@ fn is_size_too_large_to_allocate( u64 size_bytes ) : bool
 // It's safe to cast between ranges of chars and bytes.
 // TODO - make such conversion functions public.
 template</bool is_mutable/>
-fn cast_range_to_bytes_range( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
+fn cast_range_to_bytes_range( random_access_range</char8, is_mutable/> r ) : random_access_range</byte8, is_mutable/>
 {
-	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
+	return unsafe( random_access_range</byte8, is_mutable/>( ptr_cast_to_byte8( r.data() ), r.size() ) );
 }
 
 } // namespace ust

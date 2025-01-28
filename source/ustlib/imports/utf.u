@@ -10,7 +10,7 @@ namespace utf
 
 // Push a code point into an UTF-8 sequence.
 // TODO - add a version of this function which checks for errors.
-fn push_code_point_to_string( ust::string8 &mut str, char32 code_point )
+fn push_code_point_to_string( string8 &mut str, char32 code_point )
 {
 	var u32 cc(code_point);
 	if( cc <= 0x7Fu )
@@ -55,7 +55,7 @@ fn push_code_point_to_string( ust::string8 &mut str, char32 code_point )
 
 // Push a code point into an UTF-16 sequence.
 // TODO - add a version of this function which checks for errors.
-fn push_code_point_to_string( ust::string16 &mut str, char32 code_point )
+fn push_code_point_to_string( string16 &mut str, char32 code_point )
 {
 	if(code_point < char32(0xD800) || (code_point > char32(0xDFFF) && code_point < char32(0x10000)))
 	{
@@ -70,14 +70,14 @@ fn push_code_point_to_string( ust::string16 &mut str, char32 code_point )
 }
 
 // Push a code point into an UTF-32 sequence.
-fn push_code_point_to_string( ust::string32 &mut str, char32 code_point )
+fn push_code_point_to_string( string32 &mut str, char32 code_point )
 {
 	str.push_back( code_point );
 }
 
 // Extract a code point from an UTF-8 sequence (if can) and modify input string view (remove bytes at front forming this code point).
 // If can't extract, returns null symbol. In any case given string is advanced, if it isn't empty.
-fn extract_code_point_or_null_from_string( ust::string_view8 &mut str ) : char32
+fn extract_code_point_or_null_from_string( string_view8 &mut str ) : char32
 {
 	if( str.empty() )
 	{
@@ -111,7 +111,7 @@ fn extract_code_point_or_null_from_string( ust::string_view8 &mut str ) : char32
 		if( str.size() < 2s )
 		{
 			// Not enough size - consume remaining symbols and return 0.
-			str= ust::string_view8();
+			str= string_view8();
 			return char32(0);
 		}
 
@@ -126,7 +126,7 @@ fn extract_code_point_or_null_from_string( ust::string_view8 &mut str ) : char32
 		if( str.size() < 3s )
 		{
 			// Not enough size - consume remaining symbols and return 0.
-			str= ust::string_view8();
+			str= string_view8();
 			return char32(0);
 		}
 
@@ -142,7 +142,7 @@ fn extract_code_point_or_null_from_string( ust::string_view8 &mut str ) : char32
 		if( str.size() < 4s )
 		{
 			// Not enough size - consume remaining symbols and return 0.
-			str= ust::string_view8();
+			str= string_view8();
 			return char32(0);
 		}
 
@@ -166,7 +166,7 @@ fn extract_code_point_or_null_from_string( ust::string_view8 &mut str ) : char32
 
 // Get a code point from an UTF-8 sequence (if can).
 // If can't get, returns null symbol.
-fn get_code_point_or_null_from_string( ust::string_view8 mut str ) : char32
+fn get_code_point_or_null_from_string( string_view8 mut str ) : char32
 {
 	return extract_code_point_or_null_from_string(str);
 }

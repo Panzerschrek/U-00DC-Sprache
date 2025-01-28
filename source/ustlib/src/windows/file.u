@@ -682,7 +682,7 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 			buf.data(),
 			DWORD( min( buf.size(), size_type(MAXDWORD) ) ),
 			$<(bytes_read),
-			ust::nullptr</ü_OVERLAPPED/>() ) );
+			nullptr</ü_OVERLAPPED/>() ) );
 
 	if( res == 0 )
 	{
@@ -704,7 +704,7 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 			buf.data(),
 			DWORD( min( buf.size(), size_type(MAXDWORD) ) ),
 			$<(bytes_written),
-			ust::nullptr</ü_OVERLAPPED/>() ) );
+			nullptr</ü_OVERLAPPED/>() ) );
 
 	if( res == 0 )
 	{

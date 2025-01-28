@@ -421,7 +421,7 @@ fn get_current_directory() : string8
 	for( auto mut i= 0s; i < 8s; ++i )
 	{
 		auto call_res = unsafe( ::getcwd( res.data(), res.size() ) );
-		if( ust::is_nullptr(call_res) )
+		if( is_nullptr(call_res) )
 		{
 			if( get_errno() == ERANGE )
 			{
