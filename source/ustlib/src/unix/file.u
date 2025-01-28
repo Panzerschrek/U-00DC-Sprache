@@ -493,7 +493,7 @@ fn directory_raw_iterator::impl_unix::destructor()
 
 fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ file_result</directory_entry/> />
 {
-	if( !is_nullptr( handle_ ) )
+	if( is_nullptr( handle_ ) )
 	{
 		return null_optional; // Reached the end.
 	}
@@ -548,7 +548,7 @@ fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ file_result<
 				directory_entry
 				{
 					.name= string_view8( entry.d_name ).subrange_end( s ),
-					.kind= file_flags_to_file_kind( u32( entry.d_type ) ),
+					.kind= directory_entry_type_to_file_kind( entry.d_type ),
 				} );
 	}
 }
@@ -641,6 +641,21 @@ fn file_flags_to_file_kind( u32 flags ) : file_kind
 	}
 
 	if( ( flags & u32(S_IFLNK) ) == u32(S_IFLNK) )
+	{
+		return file_kind::symlink;
+	}
+
+	return file_kind::file;
+}
+
+fn directory_entry_type_to_file_kind( u8 t ) : file_kind
+{
+	if( t == u8(DT_DIR) )
+	{
+		return file_kind::directory;
+	}
+
+	if( t == u8(DT_LNK) )
 	{
 		return file_kind::symlink;
 	}

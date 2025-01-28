@@ -64,6 +64,18 @@ struct ü__dirstream ordered
 fn constructor() : void= delete;
 }
 
+type ü_anon_enum_56 = u32;
+var ü_anon_enum_56
+	constexpr DT_UNKNOWN( 0u ),
+	constexpr DT_FIFO( 1u ),
+	constexpr DT_CHR( 2u ),
+	constexpr DT_DIR( 4u ),
+	constexpr DT_BLK( 6u ),
+	constexpr DT_REG( 8u ),
+	constexpr DT_LNK( 10u ),
+	constexpr DT_SOCK( 12u ),
+	constexpr DT_WHT( 14u );
+
 type DIR = ü__dirstream;
 type clockid_t = ü__clockid_t;
 type off_t = ü__off_t;
