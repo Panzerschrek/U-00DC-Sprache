@@ -1,5 +1,6 @@
 // Platform-dependent filesystem-related functions.
 
+import "/enum_string_conversions.u"
 import "/file.u"
 import "/string_conversions.u"
 import "../filesystem.uh"
@@ -40,7 +41,7 @@ fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 		auto create_res= ust::create_directory( path_iterative );
 		if( create_res.is_error() )
 		{
-			logger.LogInfo( ust::concat( "Failed to create directory \"", path_iterative, "\": ", ust::to_string8( u32(create_res.try_deref_error()) ) ) );
+			logger.LogInfo( ust::concat( "Failed to create directory \"", path_iterative, "\": ", ust::enum_to_string( create_res.try_deref_error() ) ) );
 			return false;
 		}
 	}
