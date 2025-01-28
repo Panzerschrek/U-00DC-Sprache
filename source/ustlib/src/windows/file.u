@@ -433,6 +433,16 @@ fn set_current_directory( file_path path ) : file_result</void/>
 fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ directory_raw_iterator /> />
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
+	path_null_terminated.pop_back(); // Remove null
+
+	// Ensure trailing path separator is present.
+	if( path_null_terminated.empty() || !(path_null_terminated.back() == WCHAR("/"c8) || path_null_terminated.back() == WCHAR("\\"c8) ) )
+	{
+		path_null_terminated.push_back( WCHAR( "\\"c8 ) );
+	}
+	// Add asterisk to search all.
+	path_null_terminated.push_back( WCHAR( "*"c8 ) );
+	path_null_terminated.push_back( WCHAR(0) );
 
 	var ü_WIN32_FIND_DATAW mut find_data= zero_init;
 
@@ -444,6 +454,10 @@ fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ dir
 
 	return wrap_raw_iterator( unsafe( directory_raw_iterator( impl_windows( handle, extract_file_name( find_data ) ) ) ) );
 }
+
+fn directory_raw_iterator::impl_windows::constructor( $(byte8) handle, string8 first_entry ) unsafe
+	( handle_= handle, first_entry_= first_entry )
+{}
 
 fn directory_raw_iterator::impl_windows::destructor()
 {

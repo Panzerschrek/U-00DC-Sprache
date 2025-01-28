@@ -1032,6 +1032,42 @@ fn nomangle main() : i32
 		Err(e) -> { assert( e == ust::io_error::not_a_directory, "Unexpected error code!" ) },
 	}
 
+	// Iterate over a directory.
+	{
+		var bool mut this_file_found= false, mut test_file0_txt_found= false;
+		result_match( ust::directory_raw_iterator::open( ust::get_current_directory() ) )
+		{
+			Ok( mut it ) ->
+			{
+				foreach( mut entry_res : move(it) )
+				{
+					result_match( move(entry_res) )
+					{
+						Ok(entry) ->
+						{
+							ust::stdout_print( ust::concat( "Entry: ", entry.entry_name, "\n" ) );
+							if( entry.entry_name == "file_test.u" )
+							{
+								this_file_found= true;
+							}
+							else if( entry.entry_name == "test_file0.txt" )
+							{
+								test_file0_txt_found= true;
+							}
+						},
+						Err(e) ->
+						{
+							assert( false, "Failed to get directory entry!" );
+						},
+					}
+				}
+			},
+			Err(e) -> { assert( false, "Failed to create directory iterator!" ); },
+		}
+		assert( this_file_found, "Directory iterator can't find \"file_test.u\"!" );
+		assert( test_file0_txt_found, "Directory iterator can't find \"test_file0.txt\"!" );
+	}
+
 	return 0;
 }
 
