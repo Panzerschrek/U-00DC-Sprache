@@ -471,7 +471,11 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 {
 	if( !first_entry_.empty() )
 	{
-		return file_result</directory_entry/>( directory_entry{ .entry_name= take(first_entry_) } );
+		var string8 mut first_entry= take(first_entry_);
+		if( first_entry != "." && first_entry != ".." )
+		{
+			return file_result</directory_entry/>( directory_entry{ .entry_name= move(first_entry) } );
+		}
 	}
 	if( handle_ == get_invalid_handle() )
 	{
@@ -480,24 +484,33 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 
 	var ü_WIN32_FIND_DATAW mut find_data= zero_init;
 
-	var BOOL res = unsafe( ::FindNextFileW( handle_, $<(find_data) ) );
-	if( res == 0 )
+	loop
 	{
-		var DWORD err= unsafe( GetLastError() );
-
-		// Close handle on end or on error.
-		unsafe( ::FindClose( handle_ ) );
-		handle_= get_invalid_handle();
-
-		if( err == DWORD(ERROR_NO_MORE_FILES) )
+		var BOOL res = unsafe( ::FindNextFileW( handle_, $<(find_data) ) );
+		if( res == 0 )
 		{
-			return optional</ file_result</directory_entry/> />();
+			var DWORD err= unsafe( GetLastError() );
+
+			// Close handle on end or on error.
+			unsafe( ::FindClose( handle_ ) );
+			handle_= get_invalid_handle();
+
+			if( err == DWORD(ERROR_NO_MORE_FILES) )
+			{
+				return optional</ file_result</directory_entry/> />();
+			}
+
+			return file_result</directory_entry/>( translate_error_code( err ) );
 		}
 
-		return file_result</directory_entry/>( translate_error_code( err ) );
-	}
+		var string8 mut entry_name= extract_file_name( find_data );
+		if( entry_name == "." || entry_name == ".." )
+		{
+			continue;
+		}
 
-	return file_result</directory_entry/>( directory_entry{ .entry_name= extract_file_name( find_data ) } );
+		return file_result</directory_entry/>( directory_entry{ .entry_name= move(entry_name) } );
+	}
 }
 
 fn extract_file_name( ü_WIN32_FIND_DATAW& find_data ) : string8

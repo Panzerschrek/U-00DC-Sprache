@@ -1046,6 +1046,8 @@ fn nomangle main() : i32
 						Ok(entry) ->
 						{
 							ust::stdout_print( ust::concat( "Entry: ", entry.entry_name, "\n" ) );
+							assert( entry.entry_name != ".", "Entry name can't be \".\"!" );
+							assert( entry.entry_name != "..", "Entry name can't be \"..\"!" );
 							if( entry.entry_name == "file_test.u" )
 							{
 								this_file_found= true;
