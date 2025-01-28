@@ -31,5 +31,29 @@ fn nomangle main() : i32
 	halt if( ust::enum_to_string( ust::io_error::already_exists ) != "already_exists" );
 	halt if( ust::enum_to_string( ust::io_error::out_of_memory ) != "out_of_memory" );
 
+	halt if( ust::string_to_enum</Ampel/>( "Rot" ) != Ampel::Rot );
+	halt if( ust::string_to_enum</Ampel/>( "Gelb" ) != Ampel::Gelb );
+	halt if( ust::string_to_enum</Ampel/>( "Grün" ) != Ampel::Grün );
+	halt if( !ust::string_to_enum</Ampel/>( "rot" ).empty() );
+	halt if( !ust::string_to_enum</Ampel/>( "Blau" ).empty() );
+	halt if( !ust::string_to_enum</Ampel/>( "" ).empty() );
+
+	halt if( ust::string_to_enum</Gener/>( "male" ) != Gener::male );
+	halt if( ust::string_to_enum</Gener/>( "female" ) != Gener::female );
+	halt if( !ust::string_to_enum</Gener/>( "Male" ).empty() );
+	halt if( !ust::string_to_enum</Gener/>( "Female" ).empty() );
+	halt if( !ust::string_to_enum</Gener/>( "MALE" ).empty() );
+	halt if( !ust::string_to_enum</Gener/>( "FEMALE" ).empty() );
+	halt if( !ust::string_to_enum</Gener/>( "helicopter" ).empty() );
+	halt if( !ust::string_to_enum</Gener/>( "" ).empty() );
+
+	halt if( ust::string_to_enum</ust::io_error/>( "permission_denied" ) != ust::io_error::permission_denied );
+	halt if( ust::string_to_enum</ust::io_error/>( "not_found" ) != ust::io_error::not_found );
+	halt if( ust::string_to_enum</ust::io_error/>( "not_a_directory" ) != ust::io_error::not_a_directory );
+	halt if( ust::string_to_enum</ust::io_error/>( "already_exists" ) != ust::io_error::already_exists );
+	halt if( ust::string_to_enum</ust::io_error/>( "out_of_memory" ) != ust::io_error::out_of_memory );
+	halt if( !ust::string_to_enum</ust::io_error/>( "there_is_no_such_error_code" ).empty() );
+	halt if( !ust::string_to_enum</ust::io_error/>( "" ).empty() );
+
 	return 0;
 }

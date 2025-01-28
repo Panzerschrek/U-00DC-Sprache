@@ -18,4 +18,22 @@ fn enum_to_string( T t ) : array_view_imut</char8/>
 	halt;
 }
 
+// Find value in given enum type for string specified. It's case-sensitive.
+// Returns empty optional if can't find such value.
+// This method has linear complexity over number of elements in enum, use it only if enum has not so many elements.
+// If speed is important, build and use some acceleration data structure instead - hashmap, binary tree, perfect hash, etc.
+template</type T/>
+fn string_to_enum( array_view_imut</char8/> s ) : optional</T/>
+{
+	static_assert( typeinfo</T/>.is_enum );
+	for( &el : typeinfo</T/>.elements_list )
+	{
+		if( el.name == s )
+		{
+			return mixin( "T::" + el.name );
+		}
+	}
+	return null_optional;
+}
+
 } // namespace ust
