@@ -22,6 +22,12 @@ static_assert( !same_type</ ust::file_readable, ust::file_writeable /> );
 static_assert( !same_type</ ust::file_readable, ust::file_readable_writeable /> );
 static_assert( !same_type</ ust::file_writeable, ust::file_readable_writeable /> );
 
+// Directory iterator properties.
+static_assert( !typeinfo</ ust::directory_raw_iterator />.is_copy_constructible );
+static_assert( !typeinfo</ ust::directory_raw_iterator />.is_copy_assignable );
+static_assert( !typeinfo</ ust::directory_raw_iterator />.is_equality_comparable );
+static_assert( !non_sync</ ust::directory_raw_iterator /> );
+
 fn nomangle main() : i32
 {
 	// Try requesting metadata for non-existing path.
