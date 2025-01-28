@@ -280,6 +280,18 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 	};
 }
 
+fn set_permissions_for_path( file_path path, file_permissions permissions ) : file_result</void/>
+{
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	auto res= unsafe( ::chmod( path_nt.data(), permissions.mode ) );
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
 fn create_directory( file_path path ) : file_result</void/>
 {
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
