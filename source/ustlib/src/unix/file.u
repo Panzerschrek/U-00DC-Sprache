@@ -463,6 +463,92 @@ fn set_current_directory( file_path path ) : file_result</void/>
 }
 
 //
+// directory_raw_iterator
+//
+
+fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ directory_raw_iterator /> />
+{
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+
+	var $(DIR) res= unsafe( ::opendir( path_nt.data() ) );
+	if( is_nullptr(res) )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return wrap_raw_iterator( unsafe( directory_raw_iterator( impl_unix( ptr_cast_to_byte8( res ) ) ) ) );
+}
+
+fn directory_raw_iterator::impl_unix::constructor( $(byte8) handle ) unsafe
+	( handle_= handle )
+{}
+
+fn directory_raw_iterator::impl_unix::destructor()
+{
+	if( !is_nullptr( handle_ ) )
+	{
+		unsafe( ::closedir( byte_ptr_cast</DIR/>( handle_ ) ) );
+	}
+}
+
+fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ file_result</directory_entry/> />
+{
+	if( is_nullptr( handle_ ) )
+	{
+		return null_optional; // Reached the end.
+	}
+
+	loop
+	{
+		set_errno(0); // Documentation says it's necessary to reset "errno" before "readdir" call.
+		var $(dirent) entry_ptr= unsafe( ::readdir( byte_ptr_cast</DIR/>( handle_ ) ) );
+		if( is_nullptr( entry_ptr ) )
+		{
+			var i32 err= get_errno();
+
+			// Close handle on end or on error, in order to avoid further iteration.
+			unsafe( ::closedir( byte_ptr_cast</DIR/>( handle_ ) ) );
+			handle_= nullptr</byte8/>();
+
+			if( err == 0 )
+			{
+				return null_optional; // Reached the end.
+			}
+			else
+			{
+				return file_result</directory_entry/>( translate_errno( err ) ); // Some error occured.
+			}
+		}
+
+		var dirent& entry= unsafe( $>(entry_ptr) );
+
+		// Skip "." and "..".
+		if( entry.d_name[0] == "."c8  && ( entry.d_name[1] == "\0"c8 || (entry.d_name[1] == "."c8 && entry.d_name[2] == "\0"c8 ) ) )
+		{
+			continue;
+		}
+
+		var size_type mut name_size= 0s;
+		while( name_size < typeinfo</ typeof( entry.d_name ) />.size_of )
+		{
+			if( entry.d_name[name_size] == "\0"c8 )
+			{
+				break;
+			}
+			++name_size;
+		}
+
+		return
+			file_result</directory_entry/>(
+				directory_entry
+				{
+					.name= string_view8( entry.d_name ).subrange_end( name_size ),
+					.kind= directory_entry_type_to_file_kind( entry.d_type ),
+				} );
+	}
+}
+
+//
 // impl functions
 //
 
@@ -550,6 +636,21 @@ fn file_flags_to_file_kind( u32 flags ) : file_kind
 	}
 
 	if( ( flags & u32(S_IFLNK) ) == u32(S_IFLNK) )
+	{
+		return file_kind::symlink;
+	}
+
+	return file_kind::file;
+}
+
+fn directory_entry_type_to_file_kind( u8 t ) : file_kind
+{
+	if( t == u8(DT_DIR) )
+	{
+		return file_kind::directory;
+	}
+
+	if( t == u8(DT_LNK) )
 	{
 		return file_kind::symlink;
 	}
@@ -671,13 +772,26 @@ fn translate_errno( i32 errno ) : io_error
 
 fn get_errno() : i32
 {
+	return unsafe( $>( get_errno_location() ) );
+}
+
+fn set_errno( i32 val )
+{
+	unsafe
+	{
+		$>( get_errno_location() )= val;
+	}
+}
+
+fn get_errno_location() : $(i32)
+{
 	// "errno" in glibc is accessed via function "__errno_location".
 	// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
 	unsafe
 	{
 		auto f= import fn</ fn() : $(i32) /> ( "__errno_location" );
 		var $(i32) ptr= f();
-		return $>(ptr);
+		return ptr;
 	}
 }
 

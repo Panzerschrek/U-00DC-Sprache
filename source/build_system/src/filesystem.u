@@ -1,5 +1,6 @@
 // Crossplatform filesystem-related functions.
 
+import "/enum_string_conversions.u"
 import "/file.u"
 import "/file_helpers.u"
 import "/string_conversions.u"
@@ -16,7 +17,7 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 		Ok(v) -> { ust::ignore_unused(v); return true; },
 		Err(e) ->
 		{
-			logger.LogError( ust::concat( "Failed to write file \"", path, "\" error: ", ust::to_string8( u32(e) ) ) );
+			logger.LogError( ust::concat( "Failed to write file \"", path, "\" error: ", ust::enum_to_string( e ) ) );
 			return false;
 		},
 	}
@@ -30,7 +31,7 @@ fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string
 		Ok(v) -> { ust::ignore_unused(v); return true; },
 		Err(e) ->
 		{
-			logger.LogError( ust::concat( "Failed to copy file \"", source_path, "\" into \"", destination_path, "\", error: ", ust::to_string8( u32(e) ) ) );
+			logger.LogError( ust::concat( "Failed to copy file \"", source_path, "\" into \"", destination_path, "\", error: ", ust::enum_to_string( e ) ) );
 			return false;
 		},
 	}

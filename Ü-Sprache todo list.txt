@@ -60,13 +60,13 @@ Lambdas:
 Standart library:
 *) Move directories-related code into a separate imported file
 *) Support opening files with appending
-*) Directory iteratior
 *) Buffered reader/writer wrappers for files
 *) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
 *) "read_all"/"write_all" methods for files - to read/write untill all data is transferred
 *) Function for creation of the whole directories path
 *) Function for recursive directory removal
 *) Function for symlinks resolving
+*) More file kinds - fifo, block device, etc.
 *) More file error kinds
 *) Fix "rename_file_or_directory_if_not_exists" implementation for Unix - perform operation atomically
 *) Memory-mapped files

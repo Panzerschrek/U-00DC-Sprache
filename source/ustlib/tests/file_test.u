@@ -22,6 +22,12 @@ static_assert( !same_type</ ust::file_readable, ust::file_writeable /> );
 static_assert( !same_type</ ust::file_readable, ust::file_readable_writeable /> );
 static_assert( !same_type</ ust::file_writeable, ust::file_readable_writeable /> );
 
+// Directory iterator properties.
+static_assert( !typeinfo</ ust::directory_raw_iterator />.is_copy_constructible );
+static_assert( !typeinfo</ ust::directory_raw_iterator />.is_copy_assignable );
+static_assert( !typeinfo</ ust::directory_raw_iterator />.is_equality_comparable );
+static_assert( !non_sync</ ust::directory_raw_iterator /> );
+
 fn nomangle main() : i32
 {
 	// Try requesting metadata for non-existing path.
@@ -1030,6 +1036,133 @@ fn nomangle main() : i32
 	{
 		Ok(v) -> { assert( false, "Should not set current directory to file path!" ); },
 		Err(e) -> { assert( e == ust::io_error::not_a_directory, "Unexpected error code!" ) },
+	}
+
+	// Iterate over current directory.
+	{
+		var bool mut this_file_found= false, mut test_file0_txt_found= false;
+		result_match( ust::open_directory_for_iteration( ust::get_current_directory() ) )
+		{
+			Ok( mut it ) ->
+			{
+				foreach( mut entry_res : move(it) )
+				{
+					result_match( move(entry_res) )
+					{
+						Ok(entry) ->
+						{
+							assert( entry.name != ".", "Entry name can't be \".\"!" );
+							assert( entry.name != "..", "Entry name can't be \"..\"!" );
+							if( entry.name == "file_test.u" )
+							{
+								this_file_found= true;
+								assert( entry.kind == ust::file_kind::file, "Unexpected entry kind, expected a file!" );
+							}
+							else if( entry.name == "test_file0.txt" )
+							{
+								test_file0_txt_found= true;
+								assert( entry.kind == ust::file_kind::file, "Unexpected entry kind, expected a file!" );
+							}
+						},
+						Err(e) ->
+						{
+							assert( false, "Failed to get directory entry!" );
+						},
+					}
+				}
+			},
+			Err(e) -> { assert( false, "Failed to create directory iterator!" ); },
+		}
+		assert( this_file_found, "Directory iterator can't find \"file_test.u\"!" );
+		assert( test_file0_txt_found, "Directory iterator can't find \"test_file0.txt\"!" );
+	}
+
+	{ // Iterate over empty directory.
+		auto& constexpr dir_name= "some_empty_dir";
+		assert( ust::create_directory( dir_name ).is_ok(), "Failed to create directory \"" + dir_name + "\"!" );
+
+		result_match( ust::open_directory_for_iteration( dir_name ) )
+		{
+			Ok( mut it ) ->
+			{
+				assert( move(it).count() == 0s, "Unexpected number of entries in the directory!" );
+			},
+			Err(e) -> { assert( false, "Failed to create directory iterator!" ); },
+		}
+		assert( ust::remove_directory( dir_name ).is_ok(), "Failed to remove directory \"" + dir_name + "\"!" );
+	}
+
+	{ // Iterate over non-empty directory.
+		auto &constexpr dir_name= "some_non_empty_dir";
+		assert( ust::create_directory( dir_name ).is_ok(), "Failed to create directory \"" + dir_name + "\"!" );
+
+		auto &constexpr subdir_name= "some_subdir";
+		auto constexpr subdir_full_name= dir_name + "/" + subdir_name;
+		assert( ust::create_directory( subdir_full_name ).is_ok(), "Failed to create directory \"" + subdir_full_name + "\"!" );
+
+		auto &constexpr file_name= "WH40k";
+		auto constexpr file_full_name= dir_name + "/" + file_name;
+		auto& constexpr file_contents= "It's better to die for the Emperor, than to live for yourself.";
+
+		assert( ust::write_string_view_to_file( file_full_name, file_contents ).is_ok(), "Failed to write file \"" + file_full_name + "\"!" );
+
+		result_match( ust::open_directory_for_iteration( dir_name ) )
+		{
+			Ok( mut it ) ->
+			{
+				var size_type mut num_entries= 0s;
+				foreach( mut entry_res : move(it) )
+				{
+					++num_entries;
+					result_match( move(entry_res) )
+					{
+						Ok(entry) ->
+						{
+							if( entry.name == subdir_name )
+							{
+								assert( entry.kind == ust::file_kind::directory, "Unexpected entry kind, expected directory!" );
+							}
+							else if( entry.name == file_name )
+							{
+								assert( entry.kind == ust::file_kind::file, "Unexpected entry kind, expected file!" );
+							}
+							else
+							{
+								assert( false, "Unexpected file \"" + entry.name + "\"!" );
+							}
+						},
+						Err(e) -> { assert( false, "Failed to get directory entry!" ); },
+					}
+				}
+				assert( num_entries == 2s, "Unexpected number of directory entries!" );
+			},
+			Err(e) -> { assert( false, "Failed to create directory iterator!" ); },
+		}
+
+		assert( ust::remove_file( file_full_name ).is_ok(), "Failed to remove file \"" + file_full_name + "\"!" );
+		assert( ust::remove_directory( subdir_full_name ).is_ok(), "Failed to remove directory \"" + subdir_full_name + "\"!" );
+		assert( ust::remove_directory( dir_name ).is_ok(), "Failed to remove directory \"" + dir_name + "\"!" );
+	}
+
+	// Try iterating over non-existing directory.
+	result_match( ust::open_directory_for_iteration( "this_directory_should_not_be_opened_for_iteration" ) )
+	{
+		Ok( it ) -> { assert( false, "Should not open non-existing directory for iteration!" ); },
+		Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+	}
+
+	// Try iterating over a file.
+	result_match( ust::open_directory_for_iteration(  "test_file0.txt" ) )
+	{
+		Ok( it ) -> { assert( false, "Should not open a file for directory iteration!" ); },
+		Err(e) -> { assert( e == ust::io_error::not_a_directory, "Unexpected error code!" ); },
+	}
+
+	// Try iterating over empty path.
+	result_match( ust::open_directory_for_iteration( "" ) )
+	{
+		Ok( it ) -> { assert( false, "Should not open an empty path for directory iteration!" ); },
+		Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
 	}
 
 	return 0;
