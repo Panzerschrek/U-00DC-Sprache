@@ -1045,14 +1045,14 @@ fn nomangle main() : i32
 					{
 						Ok(entry) ->
 						{
-							assert( entry.entry_name != ".", "Entry name can't be \".\"!" );
-							assert( entry.entry_name != "..", "Entry name can't be \"..\"!" );
-							if( entry.entry_name == "file_test.u" )
+							assert( entry.name != ".", "Entry name can't be \".\"!" );
+							assert( entry.name != "..", "Entry name can't be \"..\"!" );
+							if( entry.name == "file_test.u" )
 							{
 								this_file_found= true;
 								assert( entry.kind == ust::file_kind::file, "Unexpected entry kind, expected a file!" );
 							}
-							else if( entry.entry_name == "test_file0.txt" )
+							else if( entry.name == "test_file0.txt" )
 							{
 								test_file0_txt_found= true;
 								assert( entry.kind == ust::file_kind::file, "Unexpected entry kind, expected a file!" );
@@ -1112,17 +1112,17 @@ fn nomangle main() : i32
 					{
 						Ok(entry) ->
 						{
-							if( entry.entry_name == subdir_name )
+							if( entry.name == subdir_name )
 							{
 								assert( entry.kind == ust::file_kind::directory, "Unexpected entry kind, expected directory!" );
 							}
-							else if( entry.entry_name == file_name )
+							else if( entry.name == file_name )
 							{
 								assert( entry.kind == ust::file_kind::file, "Unexpected entry kind, expected file!" );
 							}
 							else
 							{
-								assert( false, "Unexpected file \"" + entry.entry_name + "\"!" );
+								assert( false, "Unexpected file \"" + entry.name + "\"!" );
 							}
 						},
 						Err(e) -> { assert( false, "Failed to get directory entry!" ); },

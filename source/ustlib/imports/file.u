@@ -164,9 +164,9 @@ fn set_current_directory( file_path path ) : file_result</void/>;
 
 struct directory_entry
 {
-	// Can't for now use string_view8, since "result" container isn't capable of storing types with references inside.
-	string8 entry_name;
+	string8 name;
 	file_kind kind;
+	// TODO - add a system-specific fields, which are available for a directory entry (like permissions).
 }
 
 class directory_raw_iterator

@@ -459,7 +459,7 @@ fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ dir
 					handle,
 					directory_entry
 					{
-						.entry_name= extract_file_name( find_data ),
+						.name= extract_file_name( find_data ),
 						.kind= file_attributes_to_file_kind( find_data.dwFileAttributes ),
 					} ) ) ) );
 }
@@ -481,7 +481,7 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 	if( !first_entry_.empty() )
 	{
 		var directory_entry mut first_entry= first_entry_.try_take();
-		if( first_entry.entry_name != "." && first_entry.entry_name != ".." )
+		if( first_entry.name != "." && first_entry.name != ".." )
 		{
 			return file_result</directory_entry/>( move(first_entry) );
 		}
@@ -522,7 +522,7 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 			file_result</directory_entry/>(
 				directory_entry
 				{
-					.entry_name= move(entry_name),
+					.name= move(entry_name),
 					.kind= file_attributes_to_file_kind( find_data.dwFileAttributes )
 				} );
 	}
