@@ -448,7 +448,7 @@ fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ dir
 	path_null_terminated.push_back( WCHAR( "*"c8 ) ); // Add asterisk to search all.
 	path_null_terminated.push_back( WCHAR(0) ); // Add null again.
 
-	var ü_WIN32_FIND_DATAW mut find_data= zero_init;  // TODO - avoid zeroing it for performance reasons?
+	var ü_WIN32_FIND_DATAW mut find_data= zero_init; // TODO - avoid zeroing it for performance reasons?
 
 	var HANDLE handle= unsafe( ::FindFirstFileW( path_null_terminated.data(), $<(find_data) ) );
 	if( handle == get_invalid_handle() )
@@ -551,7 +551,7 @@ fn extract_file_name_from_find_data( ü_WIN32_FIND_DATAW& find_data ) : string8
 		++s;
 	}
 
-	return wide_string_to_utf8( unsafe( array_view_imut</WCHAR/>( find_data.cFileName ) ).subrange_end(s) );
+	return wide_string_to_utf8( array_view_imut</WCHAR/>( find_data.cFileName ).subrange_end(s) );
 }
 
 //

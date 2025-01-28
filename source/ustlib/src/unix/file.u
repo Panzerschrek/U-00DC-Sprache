@@ -500,13 +500,13 @@ fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ file_result<
 
 	loop
 	{
-		set_errno(0);
+		set_errno(0); // Documentation says it's necessary to reset "errno" before "readdir" call.
 		var $(dirent) entry_ptr= unsafe( ::readdir( byte_ptr_cast</DIR/>( handle_ ) ) );
 		if( is_nullptr( entry_ptr ) )
 		{
 			var i32 err= get_errno();
 
-			// Close handle on end or on error.
+			// Close handle on end or on error, in order to avoid further iteration.
 			unsafe( ::closedir( byte_ptr_cast</DIR/>( handle_ ) ) );
 			handle_= nullptr</byte8/>();
 
@@ -520,34 +520,29 @@ fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ file_result<
 			}
 		}
 
-		var dirent &entry= unsafe( $>(entry_ptr) );
-		if( entry.d_name[0] == "."c8 )
+		var dirent& entry= unsafe( $>(entry_ptr) );
+
+		// Skip "." and "..".
+		if( entry.d_name[0] == "."c8  && ( entry.d_name[1] == "\0"c8 || (entry.d_name[1] == "."c8 && entry.d_name[2] == "\0"c8 ) ) )
 		{
-			if( entry.d_name[1] == "\0"c8 )
-			{
-				continue; // Skip ".".
-			}
-			if( entry.d_name[1] == "."c8 && entry.d_name[2] == "\0"c8 )
-			{
-				continue; // Skip "..".
-			}
+			continue;
 		}
 
-		var size_type mut s= 0s;
-		while( s < typeinfo</ typeof( entry.d_name ) />.size_of )
+		var size_type mut name_size= 0s;
+		while( name_size < typeinfo</ typeof( entry.d_name ) />.size_of )
 		{
-			if( entry.d_name[s] == "\0"c8 )
+			if( entry.d_name[name_size] == "\0"c8 )
 			{
 				break;
 			}
-			++s;
+			++name_size;
 		}
 
 		return
 			file_result</directory_entry/>(
 				directory_entry
 				{
-					.name= string_view8( entry.d_name ).subrange_end( s ),
+					.name= string_view8( entry.d_name ).subrange_end( name_size ),
 					.kind= directory_entry_type_to_file_kind( entry.d_type ),
 				} );
 	}
