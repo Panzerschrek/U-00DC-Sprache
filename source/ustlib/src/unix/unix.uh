@@ -5,6 +5,7 @@ fn nomangle chdir( $(char8) ü__path ) unsafe : i32;
 fn nomangle fchmod( i32 ü__fd, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle clock_gettime( clockid_t ü__clock_id, $(timespec) ü__tp ) unsafe : i32;
 fn nomangle close( i32 ü__fd ) unsafe : i32;
+fn nomangle closedir( $(DIR) ü__dirp ) unsafe : i32;
 fn nomangle fdatasync( i32 ü__fildes ) unsafe : i32;
 fn nomangle fstat( i32 ü__fd, $(stat_) ü__buf ) unsafe : i32;
 fn nomangle fsync( i32 ü__fd ) unsafe : i32;
@@ -14,12 +15,23 @@ fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe
 fn nomangle lstat( $(char8) ü__file, $(stat_) ü__buf ) unsafe : i32;
 fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe : i32;
 fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe : i32;
+fn nomangle opendir( $(char8) ü__name ) unsafe : $(DIR);
 fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe : ssize_t;
+fn nomangle readdir( $(DIR) ü__dirp ) unsafe : $(dirent);
 fn nomangle rename( $(char8) ü__old, $(char8) ü__new ) unsafe : i32;
 fn nomangle rmdir( $(char8) ü__path ) unsafe : i32;
 fn nomangle sendfile( i32 ü__out_fd, i32 ü__in_fd, $(off_t) ü__offset, size_t ü__count ) unsafe : ssize_t;
 fn nomangle unlink( $(char8) ü__name ) unsafe : i32;
 fn nomangle write( i32 ü__fd, $(byte8) ü__buf, size_t ü__n ) unsafe : ssize_t;
+
+struct dirent ordered
+{
+	ü__ino_t d_ino;
+	ü__off_t d_off;
+	u16 d_reclen;
+	u8 d_type;
+	[ char8, 256u ] d_name;
+}
 
 struct timespec ordered
 {
@@ -47,6 +59,12 @@ struct stat_ ordered
 	[ ü__syscall_slong_t, 3u ] ü__glibc_reserved;
 }
 
+struct ü__dirstream ordered
+{
+fn constructor() : void= delete;
+}
+
+type DIR = ü__dirstream;
 type clockid_t = ü__clockid_t;
 type off_t = ü__off_t;
 type size_t = size_type;

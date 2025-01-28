@@ -182,8 +182,8 @@ public:
 
 public:
 	// Constructor for internal usage.
-	fn constructor( impl_windows mut impl ) unsafe
-		( impl_= move(impl) )
+	fn constructor( impl mut in_impl ) unsafe
+		( impl_= move(in_impl) )
 	{}
 
 public:
@@ -193,6 +193,18 @@ public:
 	}
 
 private:
+	class impl_unix
+	{
+	public:
+		fn constructor( $(byte8) handle ) unsafe;
+		fn destructor();
+
+		fn next( mut this ) : optional</ file_result</directory_entry/> />;
+
+	private:
+		$(byte8) handle_; // DIR struct
+	}
+
 	class impl_windows
 	{
 	public:
@@ -206,8 +218,14 @@ private:
 		optional</directory_entry/> first_entry_;
 	}
 
+	type impl=
+		type_select</
+			constexpr_string_equals( compiler::target::os, "windows" ),
+			impl_windows,
+			impl_unix />;
+
 private:
-	impl_windows impl_;
+	impl impl_;
 }
 
 } // namespace ust
