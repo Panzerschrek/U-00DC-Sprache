@@ -1035,7 +1035,7 @@ fn nomangle main() : i32
 	// Iterate over current directory.
 	{
 		var bool mut this_file_found= false, mut test_file0_txt_found= false;
-		result_match( ust::directory_raw_iterator::open( ust::get_current_directory() ) )
+		result_match( ust::open_directory_for_iteration( ust::get_current_directory() ) )
 		{
 			Ok( mut it ) ->
 			{
@@ -1075,7 +1075,7 @@ fn nomangle main() : i32
 		auto& constexpr dir_name= "some_empty_dir";
 		assert( ust::create_directory( dir_name ).is_ok(), "Failed to create directory \"" + dir_name + "\"!" );
 
-		result_match( ust::directory_raw_iterator::open( dir_name ) )
+		result_match( ust::open_directory_for_iteration( dir_name ) )
 		{
 			Ok( mut it ) ->
 			{
@@ -1100,7 +1100,7 @@ fn nomangle main() : i32
 
 		assert( ust::write_string_view_to_file( file_full_name, file_contents ).is_ok(), "Failed to write file \"" + file_full_name + "\"!" );
 
-		result_match( ust::directory_raw_iterator::open( dir_name ) )
+		result_match( ust::open_directory_for_iteration( dir_name ) )
 		{
 			Ok( mut it ) ->
 			{
@@ -1139,14 +1139,14 @@ fn nomangle main() : i32
 	}
 
 	// Try iterating over non-existing directory.
-	result_match( ust::directory_raw_iterator::open( "this_directory_should_not_be_opened_for_iteration" ) )
+	result_match( ust::open_directory_for_iteration( "this_directory_should_not_be_opened_for_iteration" ) )
 	{
 		Ok( it ) -> { assert( false, "Should not open non-existing directory for iteration!" ); },
 		Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
 	}
 
 	// Try iterating over a file.
-	result_match( ust::directory_raw_iterator::open(  "test_file0.txt" ) )
+	result_match( ust::open_directory_for_iteration(  "test_file0.txt" ) )
 	{
 		Ok( it ) -> { assert( false, "Should not open a file for directory iteration!" ); },
 		Err(e) -> { assert( e == ust::io_error::not_a_directory, "Unexpected error code!" ); },

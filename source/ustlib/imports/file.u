@@ -169,10 +169,15 @@ struct directory_entry
 	// TODO - add a system-specific fields, which are available for a directory entry (like permissions).
 }
 
+fn open_directory_for_iteration( file_path path ) : file_result</ iterator</ directory_raw_iterator /> />
+{
+	return directory_raw_iterator::open( path );
+}
+
 class directory_raw_iterator
 {
 public:
-	// Open a directory for iteration.
+	// Factory method for creating iterator instance.
 	fn open( file_path path ) : file_result</ iterator</ directory_raw_iterator /> />;
 
 public:
