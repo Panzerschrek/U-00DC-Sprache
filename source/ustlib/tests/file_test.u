@@ -1171,7 +1171,7 @@ fn nomangle main() : i32
 			"нетъ",
 			ust::file_permissions
 			{
-				.mode= ust::file_permissions::owner_all | ust::file_permissions::group_all | ust::file_permissions::others_read
+				.bits= ust::file_permissions::owner_all | ust::file_permissions::group_all | ust::file_permissions::others_read
 			} ) )
 	{
 		Ok( it ) -> { assert( false, "Should not set permissions for non-existing file!" ); },
@@ -1185,7 +1185,7 @@ fn nomangle main() : i32
 
 		assert( ust::write_string_view_to_file( file_path, contents ).is_ok(), "Failed to write file \"" + file_path + "\"!" );
 
-		var ust::file_permissions p{ .mode= ust::file_permissions::owner_all | ust::file_permissions::set_uid };
+		var ust::file_permissions p{ .bits= ust::file_permissions::owner_all | ust::file_permissions::set_uid };
 
 		assert(
 			ust::set_permissions_for_path( file_path, p ).is_ok(),

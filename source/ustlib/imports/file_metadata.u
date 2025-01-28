@@ -50,7 +50,7 @@ struct file_permissions
 
 	var u32 constexpr mask= all | set_uid | set_guid | sticky_bit;
 
-	u32 mode; // Bit mask combined of bits defined above.
+	u32 bits; // Bit mask combined of bits defined above.
 }
 
 } // namespace ust
