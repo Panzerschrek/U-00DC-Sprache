@@ -744,11 +744,6 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 		return translate_errno( get_errno() );
 	}
 
-	if( read_res == ssize_type(0) )
-	{
-		return 0s; // End of file reached.
-	}
-
 	// Expected number of bytes or less.
 	return size_type(read_res);
 }
@@ -788,11 +783,6 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 	if( write_res < ssize_type(0) )
 	{
 		return translate_errno( get_errno() );
-	}
-
-	if( write_res == ssize_type(0) )
-	{
-		return 0s; // End of file reached.
 	}
 
 	// Expected number of bytes or less.
