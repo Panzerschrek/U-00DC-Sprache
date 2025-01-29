@@ -20,18 +20,7 @@ fn WideStringToUTF8( WideStringView mut v ) : ust::string8
 	var ust::string8 mut res;
 	while( !v.empty() )
 	{
-		var u32 mut c( v.drop_and_get_front() );
-		if( c >= 0xD800u && c <= 0xDBFFu )
-		{
-			// Surrogate pair.
-			if( !v.empty() )
-			{
-				// TODO - check if this is correct.
-				var u32 paired_c( v.drop_and_get_front() );
-				c = ((c - 0xD800u) << 10u) + ( paired_c - 0xDC00u ) + 0x0010000u;
-			}
-		}
-		ust::utf::push_code_point_to_string( res, char32(c) );
+		ust::utf::push_code_point_to_string( res, ust::utf::extract_code_point_or_null_from_string( v ) );
 	}
 
 	return res;
