@@ -159,7 +159,7 @@ enum ü_GET_FILEEX_INFO_LEVELS : i32
 	GetFileExMaxInfoLevel,
 }
 
-type wchar_t = u16;
+type wchar_t = char16; // Changed manually from "u16" in order to be able to use ust::string16.
 type BOOL = i32;
 type GET_FILEEX_INFO_LEVELS = ü_GET_FILEEX_INFO_LEVELS;
 type DWORD = u32;

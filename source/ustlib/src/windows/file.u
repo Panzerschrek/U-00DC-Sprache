@@ -873,25 +873,14 @@ fn translate_error_code( DWORD code ) : io_error
 	}
 }
 
-// Can't use string_base, since "WCHAR" is defined as integer.
-type wide_string= vector</WCHAR/>;
+type wide_string= string_base</WCHAR/>;
 
 fn utf8_to_null_terminated_wide_string( string_view8 mut v ) : wide_string
 {
 	var wide_string mut res;
 	while( !v.empty() )
 	{
-		var u32 code_point( utf::extract_code_point_or_null_from_string(v) );
-		if(code_point < u32(0xD800) || (code_point > u32(0xDFFF) && code_point < u32(0x10000)))
-		{
-			res.push_back( WCHAR( code_point ) );
-		}
-		else
-		{
-			var u32 c= u32(code_point) - 0x10000u;
-			res.push_back( WCHAR( ( c >> 10u ) + 0xD800u ) );
-			res.push_back( WCHAR( ( c & 0x3FFu ) + 0xDC00u ) );
-		}
+		utf::push_code_point_to_string( res, utf::extract_code_point_or_null_from_string(v) );
 	}
 
 	res.push_back( WCHAR( "\0"c8 ) );
