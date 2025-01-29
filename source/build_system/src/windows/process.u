@@ -19,16 +19,16 @@ fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_vie
 
 	var WideString mut command_line_combined= ConstructCommandLineNullTerminated( exe_path_wide, command_line );
 
-	var ü_STARTUPINFOW mut startup_info = zero_init;
-	startup_info.cb = u32( typeinfo</ü_STARTUPINFOW/>.size_of );
+	var STARTUPINFOW mut startup_info = zero_init;
+	startup_info.cb = u32( typeinfo</STARTUPINFOW/>.size_of );
 
-	var ü_PROCESS_INFORMATION mut process_information = zero_init;
+	var PROCESS_INFORMATION mut process_information = zero_init;
 
 	var BOOL creation_result = unsafe( CreateProcessW(
 		exe_path_null_terminated.data(),
 		command_line_combined.data(),
-		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
-		ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+		ust::nullptr</SECURITY_ATTRIBUTES/>(),
+		ust::nullptr</SECURITY_ATTRIBUTES/>(),
 		0, // Inherit handles.
 		0u, // Flags
 		ust::nullptr</byte8/>(), // Environment
@@ -135,7 +135,7 @@ public: // ProcessGroupInterface
 				0u,
 				0u,
 				u32(INFINITE),
-				ust::nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
+				ust::nullptr</SECURITY_ATTRIBUTES/>() ) );
 
 		if( out_process.deref().pipe_handle == GetInvalidHandle() )
 		{
@@ -175,7 +175,7 @@ public: // ProcessGroupInterface
 					pipe_name_w.data(),
 					DWORD( GENERIC_WRITE ),
 					0u,
-					ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+					ust::nullptr</SECURITY_ATTRIBUTES/>(),
 					DWORD( OPEN_EXISTING ),
 					0u,
 					ust::nullptr</byte8/>() ) );
@@ -201,8 +201,8 @@ public: // ProcessGroupInterface
 		}
 
 		// Open "NUL" as stdin for child process.
-		var ü_SECURITY_ATTRIBUTES mut security_attributes= zero_init;
-		security_attributes.nLength = DWORD( typeinfo</ü_SECURITY_ATTRIBUTES/>.size_of );
+		var SECURITY_ATTRIBUTES mut security_attributes= zero_init;
+		security_attributes.nLength = DWORD( typeinfo</SECURITY_ATTRIBUTES/>.size_of );
 		security_attributes.bInheritHandle = 1;
 
 		var WideString mut nul_file_name_w= UTF8ToWideString( "NUL\0" );
@@ -232,20 +232,20 @@ public: // ProcessGroupInterface
 		var WideString mut command_line_combined= ConstructCommandLineNullTerminated( exe_path_wide, command_line );
 
 		// Setup standard streams redirection for child process.
-		var ü_STARTUPINFOW mut startup_info = zero_init;
-		startup_info.cb = u32( typeinfo</ü_STARTUPINFOW/>.size_of );
+		var STARTUPINFOW mut startup_info = zero_init;
+		startup_info.cb = u32( typeinfo</STARTUPINFOW/>.size_of );
 		startup_info.dwFlags = DWORD( STARTF_USESTDHANDLES );
 		startup_info.hStdInput= nul;
 		startup_info.hStdOutput= output_write_child;
 		startup_info.hStdError= output_write_child;
 
-		var ü_PROCESS_INFORMATION mut process_information = zero_init;
+		var PROCESS_INFORMATION mut process_information = zero_init;
 
 		var BOOL creation_result = unsafe( CreateProcessW(
 			exe_path_null_terminated.data(),
 			command_line_combined.data(),
-			ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
-			ust::nullptr</ü_SECURITY_ATTRIBUTES/>(),
+			ust::nullptr</SECURITY_ATTRIBUTES/>(),
+			ust::nullptr</SECURITY_ATTRIBUTES/>(),
 			1, // Inherit handles.
 			0u, // Flags
 			ust::nullptr</byte8/>(), // Environment
@@ -453,7 +453,7 @@ private:
 		ust::string8 output;
 		HANDLE process_handle; // INVALID_HANDLE_VALUE if done
 		HANDLE pipe_handle; // INVALID_HANDLE_VALUE if done
-		ü_OVERLAPPED overlapped;
+		OVERLAPPED overlapped;
 		[ byte8, c_buffer_size ] buffer;
 		bool is_reading;
 
