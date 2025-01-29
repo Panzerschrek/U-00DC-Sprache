@@ -61,6 +61,11 @@ fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</s
 	return unsafe( read_impl( handle_, buf ) );
 }
 
+fn file_readable::read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( read_exact_impl( handle_, buf ) );
+}
+
 fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
@@ -233,6 +238,11 @@ fn file_readable_writeable::set_permissions( mut this, file_permissions permissi
 fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
+}
+
+fn file_readable_writeable::read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( read_exact_impl( handle_, buf ) );
 }
 
 fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
@@ -727,8 +737,6 @@ fn set_permissions_impl( native_file_handle handle, file_permissions permissions
 
 fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
 {
-	// TODO - maybe read in loop to support larger sizes?
-
 	var ssize_type read_res = unsafe( ::read( handle, buf.data(), buf.size() ) );
 
 	if( read_res < ssize_type(0) )
@@ -743,6 +751,19 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 
 	// Expected number of bytes or less.
 	return size_type(read_res);
+}
+
+fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</void/>
+{
+	for( var size_type mut offset= 0s; offset < buf.size(); )
+	{
+		// TODO - handle zero result.
+		// TODO - handle interruption.
+		result_unwrap_or_return( bytes_read : unsafe( read_impl( handle, buf ) ) );
+		offset+= bytes_read;
+	}
+
+	return void();
 }
 
 fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>

@@ -22,11 +22,8 @@ fn read_file_to_byte8_vector( file_path path ) : file_result</ vector</byte8/> /
 		var byte8 filler= uninitialized;
 		res.resize( size_type(s), filler );
 
-		for( var size_type mut offset= 0s; offset < size_type(s); )
-		{
-			result_unwrap_or_return( bytes_read : f.read( res.range().subrange_start( offset ) ) );
-			offset+= bytes_read;
-		}
+		result_unwrap_or_return( v : f.read_exact( res ) );
+		ignore_unused(v);
 
 		return res;
 	}
@@ -51,11 +48,8 @@ fn read_file_to_string( file_path path ) : file_result</ string8 />
 		var char8 filler= uninitialized;
 		res.resize( size_type(s), filler );
 
-		for( var size_type mut offset= 0s; offset < size_type(s); )
-		{
-			result_unwrap_or_return( bytes_read : f.read( cast_range_to_bytes_range( res.range().subrange_start( offset ) ) ) );
-			offset+= bytes_read;
-		}
+		result_unwrap_or_return( v : f.read_exact( cast_range_to_bytes_range( res.range() ) ) );
+		ignore_unused(v);
 
 		return res;
 	}

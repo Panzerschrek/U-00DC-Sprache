@@ -43,7 +43,11 @@ public:
 
 	fn set_permissions( mut this, file_permissions permissions ) : file_result</void/>;
 
+	// Read into given buffer. May read less than expected and it's not an error. Returns number of bytes read.
 	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
+
+	// Read to fill given buffer, calling "read" many times, if necessary.
+	fn read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>;
 
 	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : file_result</void/>;
@@ -123,7 +127,11 @@ public:
 
 	fn set_permissions( mut this, file_permissions permissions ) : file_result</void/>;
 
+	// Read into given buffer. May read less than expected and it's not an error. Returns number of bytes read.
 	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
+
+	// Read to fill given buffer, calling "read" many times, if necessary.
+	fn read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>;
 
 	// Write given buffer. May write less than expected and it's not an error. Returns number of bytes written.
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
