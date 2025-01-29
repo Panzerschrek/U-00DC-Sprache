@@ -4,26 +4,14 @@ import "wide_string.uh"
 namespace BK
 {
 
-fn UTF8ToWideString( ust::string_view8 mut v ) : WideString
+fn UTF8ToWideString( ust::string_view8 v ) : WideString
 {
-	var WideString mut res;
-	while( !v.empty() )
-	{
-		ust::utf::push_code_point_to_string( res, ust::utf::extract_code_point_or_null_from_string(v)  );
-	}
-
-	return res;
+	return ust::utf::utf8_to_utf16_string(v);
 }
 
 fn WideStringToUTF8( WideStringView mut v ) : ust::string8
 {
-	var ust::string8 mut res;
-	while( !v.empty() )
-	{
-		ust::utf::push_code_point_to_string( res, ust::utf::extract_code_point_or_null_from_string( v ) );
-	}
-
-	return res;
+	return ust::utf::utf16_to_utf8_string(v);
 }
 
 }  // namespace BK
