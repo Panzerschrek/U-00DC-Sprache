@@ -13,6 +13,8 @@ enum io_error
 	not_a_directory,
 	already_exists,
 	out_of_memory,
+	unexpected_end_of_file,
+	write_zero,
 	other, // Some non-listed error code.
 	// TODO - add other errors
 }

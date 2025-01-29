@@ -757,9 +757,12 @@ fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) uns
 {
 	for( var size_type mut offset= 0s; offset < buf.size(); )
 	{
-		// TODO - handle zero result.
 		// TODO - handle interruption.
 		result_unwrap_or_return( bytes_read : unsafe( read_impl( handle, buf ) ) );
+		if( bytes_read == 0s )
+		{
+			return io_error::unexpected_end_of_file;
+		}
 		offset+= bytes_read;
 	}
 
@@ -788,9 +791,12 @@ fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) uns
 {
 	for( var size_type mut offset= 0s; offset < buf.size(); )
 	{
-		// TODO - handle zero result.
 		// TODO - handle interruption.
 		result_unwrap_or_return( bytes_written : unsafe( write_impl( handle, buf.subrange_start( offset ) ) ) );
+		if( bytes_written == 0s )
+		{
+			return io_error::write_zero;
+		}
 		offset+= size_type(bytes_written);
 	}
 
