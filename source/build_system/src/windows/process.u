@@ -1,6 +1,7 @@
 import "/assert.u"
 import "/atomic.u"
 import "/string_conversions.u"
+import "/vector.u"
 import "../process.uh"
 import "invalid_handle.uh"
 import "wide_string.uh"
@@ -492,7 +493,7 @@ fn CorrectExecutablePathAndMakeItWide( ust::string_view8 exe_path ) : WideString
 
 	if(exe_path.size() < 4s || exe_path.subrange_start( exe_path.size() - 4s ) != ".exe" )
 	{
-		exe_path_wide.append( UTF8ToWideString( ".exe" ).iter() );
+		exe_path_wide+= ".exe"u16;
 	}
 	return exe_path_wide;
 }
@@ -501,18 +502,18 @@ fn ConstructCommandLineNullTerminated(
 	WideStringView exe_path,
 	ust::array_view_imut</ust::string8/> command_line ) : WideString
 {
-	var WideString space = UTF8ToWideString( " " );
-	var WideString quote = UTF8ToWideString( "\"" );
+	var WideStringView space =" "u16;
+	var WideStringView quote = "\""u16;
 
 	var WideString mut command_line_combined;
-	command_line_combined.append( quote.iter() );
-	command_line_combined.append( exe_path.iter() ); // Repeat exe path in command line - it's necessary to fill argv[0]
-	command_line_combined.append( quote.iter() );
+	command_line_combined+= quote;
+	command_line_combined+= exe_path; // Repeat exe path in command line - it's necessary to fill argv[0]
+	command_line_combined+= quote;
 
 	foreach( &arg : command_line )
 	{
-		command_line_combined.append( space.iter() );
-		command_line_combined.append( quote.iter() );
+		command_line_combined+= space;
+		command_line_combined+= quote;
 
 		// Escape quotes and backspashes in args. TODO - check if it's correct.
 		foreach( c : UTF8ToWideString( arg ) )
@@ -524,7 +525,7 @@ fn ConstructCommandLineNullTerminated(
 			command_line_combined.push_back( c );
 		}
 
-		command_line_combined.append( quote.iter() );
+		command_line_combined+= quote;
 	}
 
 	command_line_combined.push_back( WCHAR(0) );

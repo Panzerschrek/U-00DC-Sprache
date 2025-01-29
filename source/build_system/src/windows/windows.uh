@@ -112,7 +112,7 @@ struct ü_SYSTEM_INFO ordered
 	WORD wProcessorRevision;
 }
 
-type wchar_t = u16;
+type wchar_t = char16; // Changed manually from "u16" in order to be able to use ust::string16.
 type BOOL = i32;
 type BYTE = u8;
 type CHAR = char8;
