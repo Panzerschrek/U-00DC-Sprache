@@ -757,13 +757,25 @@ fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) uns
 {
 	for( var size_type mut offset= 0s; offset < buf.size(); )
 	{
-		// TODO - handle interruption.
-		result_unwrap_or_return( bytes_read : unsafe( read_impl( handle, buf ) ) );
-		if( bytes_read == 0s )
+		result_match( unsafe( read_impl( handle, buf ) ) )
 		{
-			return io_error::unexpected_end_of_file;
+			Ok(bytes_read) ->
+			{
+				if( bytes_read == 0s )
+				{
+					return io_error::unexpected_end_of_file;
+				}
+				offset+= bytes_read;
+			},
+			Err(e) ->
+			{
+				if( e == io_error::interrupted )
+				{
+					continue;
+				}
+				return e;
+			},
 		}
-		offset+= bytes_read;
 	}
 
 	return void();
@@ -791,13 +803,25 @@ fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) uns
 {
 	for( var size_type mut offset= 0s; offset < buf.size(); )
 	{
-		// TODO - handle interruption.
-		result_unwrap_or_return( bytes_written : unsafe( write_impl( handle, buf.subrange_start( offset ) ) ) );
-		if( bytes_written == 0s )
+		result_match( unsafe( write_impl( handle, buf.subrange_start( offset ) ) ) )
 		{
-			return io_error::write_zero;
+			Ok(bytes_written) ->
+			{
+				if( bytes_written == 0s )
+				{
+					return io_error::write_zero;
+				}
+				offset+= size_type(bytes_written);
+			},
+			Err(e) ->
+			{
+				if( e == io_error::interrupted )
+				{
+					continue;
+				}
+				return e;
+			},
 		}
-		offset+= size_type(bytes_written);
 	}
 
 	return void();
@@ -853,6 +877,7 @@ fn translate_errno( i32 errno ) : io_error
 	ENOENT -> { return io_error::not_found; },
 	EEXIST -> { return io_error::already_exists; },
 	ENOTDIR -> { return io_error::not_a_directory; },
+	EINTR -> { return io_error::interrupted; },
 	// TODO - support other codes.
 	default -> { return io_error::other; },
 	}
