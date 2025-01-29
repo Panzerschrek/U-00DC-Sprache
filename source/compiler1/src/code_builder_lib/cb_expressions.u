@@ -387,7 +387,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			}
 			else if( char_type == U_FundamentalType::char16_ )
 			{
-				var ust::string16 mut buff= ust::utf::utf8_to_utf16_string( string_literal_value );
+				var ust::string16 mut buff= ust::utf::convert_utf8_to_utf16_string( string_literal_value );
 
 				array_size= buff.size();
 
@@ -405,7 +405,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			}
 			else if( char_type == U_FundamentalType::char32_ )
 			{
-				var ust::string32 mut buff= ust::utf::utf8_to_utf32_string( string_literal_value );
+				var ust::string32 mut buff= ust::utf::convert_utf8_to_utf32_string( string_literal_value );
 
 				array_size= buff.size();
 
@@ -464,7 +464,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			}
 			else if( char_type == U_FundamentalType::char16_ )
 			{
-				var ust::string16 s= ust::utf::utf8_to_utf16_string( string_literal_value );
+				var ust::string16 s= ust::utf::convert_utf8_to_utf16_string( string_literal_value );
 				if( s.size() != 1s )
 				{
 					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
@@ -475,7 +475,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			}
 			else if( char_type == U_FundamentalType::char32_ )
 			{
-				var ust::string32 s= ust::utf::utf8_to_utf32_string( string_literal_value );
+				var ust::string32 s= ust::utf::convert_utf8_to_utf32_string( string_literal_value );
 				if( s.size() != 1s )
 				{
 					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )

@@ -207,7 +207,7 @@ fn get_code_point_or_null_from_string( string_view32 mut str ) : char32
 	return extract_code_point_or_null_from_string(str);
 }
 
-fn utf8_to_utf16_string( string_view8 mut s ) : string16
+fn convert_utf8_to_utf16_string( string_view8 mut s ) : string16
 {
 	var string16 mut res;
 	while( !s.empty() )
@@ -218,7 +218,7 @@ fn utf8_to_utf16_string( string_view8 mut s ) : string16
 	return res;
 }
 
-fn utf8_to_utf32_string( string_view8 mut s ) : string32
+fn convert_utf8_to_utf32_string( string_view8 mut s ) : string32
 {
 	var string32 mut res;
 	while( !s.empty() )
@@ -229,7 +229,7 @@ fn utf8_to_utf32_string( string_view8 mut s ) : string32
 	return res;
 }
 
-fn utf16_to_utf8_string( string_view16 mut s ) : string8
+fn convert_utf16_to_utf8_string( string_view16 mut s ) : string8
 {
 	var string8 mut res;
 	while( !s.empty() )
@@ -240,7 +240,7 @@ fn utf16_to_utf8_string( string_view16 mut s ) : string8
 	return res;
 }
 
-fn utf16_to_utf32_string( string_view16 mut s ) : string32
+fn convert_utf16_to_utf32_string( string_view16 mut s ) : string32
 {
 	var string32 mut res;
 	while( !s.empty() )
@@ -251,7 +251,7 @@ fn utf16_to_utf32_string( string_view16 mut s ) : string32
 	return res;
 }
 
-fn utf32_to_utf8_string( string_view32 mut s ) : string8
+fn convert_utf32_to_utf8_string( string_view32 mut s ) : string8
 {
 	var string8 mut res;
 	while( !s.empty() )
@@ -262,7 +262,7 @@ fn utf32_to_utf8_string( string_view32 mut s ) : string8
 	return res;
 }
 
-fn utf32_to_utf16_string( string_view32 mut s ) : string16
+fn convert_utf32_to_utf16_string( string_view32 mut s ) : string16
 {
 	var string16 mut res;
 	while( !s.empty() )
