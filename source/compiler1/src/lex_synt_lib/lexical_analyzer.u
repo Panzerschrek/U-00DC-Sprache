@@ -1,7 +1,6 @@
 import "/string_conversions.u"
 import "/utf.u"
 import "lexical_analyzer.uh"
-import "program_string.uh"
 
 namespace U1
 {
