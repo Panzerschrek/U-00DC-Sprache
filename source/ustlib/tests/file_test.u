@@ -1250,7 +1250,18 @@ fn nomangle main() : i32
 
 		result_match( ust::get_metadata_for_path( file_path ) )
 		{
-			Ok(m) -> { assert( m.permissions == p, "Unexpected permissions for file \"" + file_path + "\"!" ); },
+			Ok(m) ->
+			{
+				if( ust::string_view8( compiler::target::os ) == "windows" )
+				{
+					var u32 constexpr some_write= ust::file_permissions::owner_write | ust::file_permissions::group_write | ust::file_permissions::others_write;
+					assert( ( m.permissions.bits & some_write ) == 0u, "Unexpected permissions for file \"" + file_path + "\"!" );
+				}
+				else
+				{
+					assert( m.permissions == p, "Unexpected permissions for file \"" + file_path + "\"!" );
+				}
+			},
 			Err(e) -> { assert( e == ust::io_error::not_found, "Failed to get metadata for file \"" + file_path + "\"!" ); },
 		}
 
@@ -1260,6 +1271,11 @@ fn nomangle main() : i32
 			Ok(f) -> { assert( false, "Should not be able to open a read-only file for writing!" ); },
 			Err(e) -> { assert( e == ust::io_error::permission_denied, "Unexpected error code!" ); }
 		}
+
+		// Remove read-only flags in order to be able to remove this file.
+		assert(
+			ust::set_permissions_for_path( file_path, ust::file_permissions{ .bits= ust::file_permissions::owner_all } ).is_ok(),
+			"Failed to set permissions for file \"" + file_path + "\"!" );
 
 		assert( ust::remove_file( file_path ).is_ok(), "Failed to remove file \"" + file_path + "\"!" );
 	}
