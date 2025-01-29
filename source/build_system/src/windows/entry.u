@@ -1,3 +1,4 @@
+import "/vector.u"
 import "../entry.uh"
 import "wide_string.uh"
 

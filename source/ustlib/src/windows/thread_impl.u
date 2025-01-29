@@ -15,7 +15,7 @@ fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : 
 {
 	var HANDLE handle=
 		unsafe( ::CreateThread(
-			nullptr</ü_SECURITY_ATTRIBUTES/>(),
+			nullptr</SECURITY_ATTRIBUTES/>(),
 			SIZE_T(0), // stack size (0 for default)
 			func,
 			arg,

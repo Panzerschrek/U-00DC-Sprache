@@ -9,17 +9,7 @@ fn UTF8ToWideString( ust::string_view8 mut v ) : WideString
 	var WideString mut res;
 	while( !v.empty() )
 	{
-		var u32 code_point( ust::utf::extract_code_point_or_null_from_string(v) );
-		if(code_point < u32(0xD800) || (code_point > u32(0xDFFF) && code_point < u32(0x10000)))
-		{
-			res.push_back( WCHAR( code_point ) );
-		}
-		else
-		{
-			var u32 c= u32(code_point) - 0x10000u;
-			res.push_back( WCHAR( ( c >> 10u ) + 0xD800u ) );
-			res.push_back( WCHAR( ( c & 0x3FFu ) + 0xDC00u ) );
-		}
+		ust::utf::push_code_point_to_string( res, ust::utf::extract_code_point_or_null_from_string(v)  );
 	}
 
 	return res;

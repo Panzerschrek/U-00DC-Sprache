@@ -1,12 +1,10 @@
 import "/string.u"
-import "/vector.u"
 import "windows.uh"
 
 namespace BK
 {
 
-// Can't use string_base, since "WCHAR" is defined as integer.
-type WideString= ust::vector</WCHAR/>;
+type WideString= ust::string_base</WCHAR/>;
 type WideStringView= ust::array_view_imut</WCHAR/>;
 
 fn UTF8ToWideString( ust::string_view8 v ) : WideString;
