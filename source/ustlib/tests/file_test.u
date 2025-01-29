@@ -1195,7 +1195,11 @@ fn nomangle main() : i32
 		{
 			Ok(m) ->
 			{
-				if( ust::string_view8(compiler::target::os) != "windows" )
+				if( ust::string_view8(compiler::target::os) == "windows" )
+				{
+					assert( m.permissions == ust::file_permissions{ .bits= ust::file_permissions::all }, "Unexpected permissions for file \"" + file_path + "\"!" );
+				}
+				else
 				{
 					assert( m.permissions == p, "Unexpected permissions for file \"" + file_path + "\"!" );
 				}
@@ -1224,7 +1228,11 @@ fn nomangle main() : i32
 		{
 			Ok(m) ->
 			{
-				if( ust::string_view8(compiler::target::os) != "windows" )
+				if( ust::string_view8(compiler::target::os) == "windows" )
+				{
+					assert( m.permissions == ust::file_permissions{ .bits= ust::file_permissions::all }, "Unexpected permissions for file \"" + file_path + "\"!" );
+				}
+				else
 				{
 					assert( m.permissions == p, "Unexpected permissions for file \"" + file_path + "\"!" );
 				}
