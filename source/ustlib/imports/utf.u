@@ -27,13 +27,19 @@ fn extract_code_point_or_null_from_string( string_view8 &mut str ) : char32;
 // If can't extract, returns null symbol. In any case given string is advanced, if it isn't empty.
 fn extract_code_point_or_null_from_string( string_view16 &mut str ) : char32;
 
-// Get a code point from an UTF-8 sequence (if can).
-// If can't get, returns null symbol.
-fn get_code_point_or_null_from_string( string_view8 mut str ) : char32;
+// Same as for UTF-8 and UTF-16, but just extract one symbol.
+fn extract_code_point_or_null_from_string( string_view32 &mut str ) : char32;
 
 // Get a code point from an UTF-8 sequence (if can).
 // If can't get, returns null symbol.
-fn get_code_point_or_null_from_string( string_view16 mut str ) : char32;
+fn get_code_point_or_null_from_string( string_view8 str ) : char32;
+
+// Get a code point from an UTF-16 sequence (if can).
+// If can't get, returns null symbol.
+fn get_code_point_or_null_from_string( string_view16 str ) : char32;
+
+// Same as for UTF-8 and UTF-16, but just get one symbol.
+fn get_code_point_or_null_from_string( string_view32 str ) : char32;
 
 } // namespace utf
 

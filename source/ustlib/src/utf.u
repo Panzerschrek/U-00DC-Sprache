@@ -182,12 +182,27 @@ fn extract_code_point_or_null_from_string( string_view16 &mut str ) : char32
 	return char32(c);
 }
 
+fn extract_code_point_or_null_from_string( string_view32 &mut str ) : char32
+{
+	if( str.empty() )
+	{
+		return char32(0);
+	}
+
+	return str.drop_and_get_front();
+}
+
 fn get_code_point_or_null_from_string( string_view8 mut str ) : char32
 {
 	return extract_code_point_or_null_from_string(str);
 }
 
 fn get_code_point_or_null_from_string( string_view16 mut str ) : char32
+{
+	return extract_code_point_or_null_from_string(str);
+}
+
+fn get_code_point_or_null_from_string( string_view32 mut str ) : char32
 {
 	return extract_code_point_or_null_from_string(str);
 }
