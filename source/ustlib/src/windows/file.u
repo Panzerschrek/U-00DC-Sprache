@@ -265,7 +265,7 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 {
 	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( path );
 
-	var ü_WIN32_FILE_ATTRIBUTE_DATA mut info= zero_init;
+	var WIN32_FILE_ATTRIBUTE_DATA mut info= zero_init;
 
 	var BOOL res =
 		unsafe( ::GetFileAttributesExW(
@@ -322,7 +322,7 @@ fn create_directory( file_path path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
-	var BOOL res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), nullptr</ü_SECURITY_ATTRIBUTES/>() ) );
+	var BOOL res= unsafe( ::CreateDirectoryW( path_null_terminated.data(), nullptr</SECURITY_ATTRIBUTES/>() ) );
 
 	if( res == 1 )
 	{
@@ -334,7 +334,7 @@ fn create_directory( file_path path ) : file_result</void/>
 	{
 		// Path already exists. Check if it's a directory and not a file or something else.
 
-		var ü_WIN32_FILE_ATTRIBUTE_DATA mut info= zero_init;
+		var WIN32_FILE_ATTRIBUTE_DATA mut info= zero_init;
 
 		var BOOL res =
 			unsafe( ::GetFileAttributesExW(
@@ -494,7 +494,7 @@ fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ dir
 	path_null_terminated.push_back( WCHAR( "*"c8 ) ); // Add asterisk to search all.
 	path_null_terminated.push_back( WCHAR(0) ); // Add null again.
 
-	var ü_WIN32_FIND_DATAW mut find_data= zero_init; // TODO - avoid zeroing it for performance reasons?
+	var WIN32_FIND_DATAW mut find_data= zero_init; // TODO - avoid zeroing it for performance reasons?
 
 	var HANDLE handle= unsafe( ::FindFirstFileW( path_null_terminated.data(), $<(find_data) ) );
 	if( handle == get_invalid_handle() )
@@ -541,7 +541,7 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 		return optional</ file_result</directory_entry/> />();
 	}
 
-	var ü_WIN32_FIND_DATAW mut find_data= zero_init; // TODO - avoid zeroing it for performance reasons?
+	var WIN32_FIND_DATAW mut find_data= zero_init; // TODO - avoid zeroing it for performance reasons?
 
 	loop
 	{
@@ -585,7 +585,7 @@ fn directory_entry_should_be_ignored( string_view8 entry_name ) : bool
 	return entry_name == "." || entry_name == "..";
 }
 
-fn extract_file_name_from_find_data( ü_WIN32_FIND_DATAW& find_data ) : string8
+fn extract_file_name_from_find_data( WIN32_FIND_DATAW& find_data ) : string8
 {
 	var size_type mut s= 0s;
 	while( s < typeinfo</ typeof(find_data.cFileName) />.element_count )
@@ -653,7 +653,7 @@ fn open_file_impl( file_path path, open_options& options ) unsafe : file_result<
 			path_null_terminated.data(),
 			desired_access,
 			share_mode,
-			nullptr</ü_SECURITY_ATTRIBUTES/>(),
+			nullptr</SECURITY_ATTRIBUTES/>(),
 			creation_disposition,
 			0u,
 			nullptr</byte8/>() ) );
@@ -672,7 +672,7 @@ fn close_file_impl( native_file_handle handle ) unsafe
 
 fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
 {
-	var ü_BY_HANDLE_FILE_INFORMATION mut info= zero_init;
+	var BY_HANDLE_FILE_INFORMATION mut info= zero_init;
 	var BOOL res = unsafe( ::GetFileInformationByHandle( handle, $<(info) ) );
 	if( res == 0 )
 	{
@@ -703,13 +703,13 @@ fn get_size_impl( native_file_handle handle ) : file_result</u64/>
 
 fn set_permissions_impl( native_file_handle handle, file_permissions permissions ) : file_result</void/>
 {
-	var ü_FILE_BASIC_INFO mut info= zero_init;
+	var FILE_BASIC_INFO mut info= zero_init;
 	var BOOL get_res =
 		unsafe( ::GetFileInformationByHandleEx(
 			handle,
 			FILE_INFO_BY_HANDLE_CLASS::FileBasicInfo,
 			ptr_cast_to_byte8( $<(info) ),
-			DWORD( typeinfo</ü_FILE_BASIC_INFO/>.size_of ) ) );
+			DWORD( typeinfo</FILE_BASIC_INFO/>.size_of ) ) );
 	if( get_res == 0 )
 	{
 		return translate_error_code( unsafe( GetLastError() ) );
@@ -731,7 +731,7 @@ fn set_permissions_impl( native_file_handle handle, file_permissions permissions
 			handle,
 			FILE_INFO_BY_HANDLE_CLASS::FileBasicInfo,
 			ptr_cast_to_byte8( $<(info) ),
-			DWORD( typeinfo</ü_FILE_BASIC_INFO/>.size_of ) ) );
+			DWORD( typeinfo</FILE_BASIC_INFO/>.size_of ) ) );
 	if( set_res == 0 )
 	{
 		return translate_error_code( unsafe( GetLastError() ) );
@@ -780,7 +780,7 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 			buf.data(),
 			DWORD( min( buf.size(), size_type(MAXDWORD) ) ),
 			$<(bytes_read),
-			nullptr</ü_OVERLAPPED/>() ) );
+			nullptr</OVERLAPPED/>() ) );
 
 	if( res == 0 )
 	{
@@ -802,7 +802,7 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 			buf.data(),
 			DWORD( min( buf.size(), size_type(MAXDWORD) ) ),
 			$<(bytes_written),
-			nullptr</ü_OVERLAPPED/>() ) );
+			nullptr</OVERLAPPED/>() ) );
 
 	if( res == 0 )
 	{
@@ -831,14 +831,14 @@ fn flush_all_impl( native_file_handle handle ) unsafe : file_result</void/>
 
 fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : file_result</void/>
 {
-	var ü_FILE_END_OF_FILE_INFO mut e{ .EndOfFile{ .union_contents[ byte64(new_size) ] } };
+	var FILE_END_OF_FILE_INFO mut e{ .EndOfFile{ .union_contents[ byte64(new_size) ] } };
 
 	var BOOL res =
 		unsafe( ::SetFileInformationByHandle(
 			handle,
 			FILE_INFO_BY_HANDLE_CLASS::FileEndOfFileInfo,
 			ptr_cast_to_byte8( $<(e) ),
-			DWORD( typeinfo</ ü_FILE_END_OF_FILE_INFO />.size_of ) ) );
+			DWORD( typeinfo</ FILE_END_OF_FILE_INFO />.size_of ) ) );
 
 	if( res == 0 )
 	{
