@@ -65,15 +65,7 @@ fn write_byte8_range_to_file( file_path path, array_view_imut</byte8/> range ) :
 {
 	result_unwrap_or_return( mut f : file_writeable::create( path ) );
 
-	for( var size_type mut offset= 0s; offset < range.size(); )
-	{
-		result_unwrap_or_return( bytes_written : f.write( range.subrange_start( offset ) ) );
-		offset+= bytes_written;
-	}
-
-	// TODO - call "flush" here to check for errors?
-
-	return void();
+	return f.write_all( range );
 }
 
 fn write_string_view_to_file( file_path path, string_view8 range ) : file_result</void/>

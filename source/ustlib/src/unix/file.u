@@ -138,6 +138,11 @@ fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result
 	return unsafe( write_impl( handle_, buf ) );
 }
 
+fn file_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( write_all_impl( handle_, buf ) );
+}
+
 fn file_writeable::flush( mut this ) : file_result</void/>
 {
 	return unsafe( flush_impl( handle_ ) );
@@ -233,6 +238,11 @@ fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file
 fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn file_readable_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( write_all_impl( handle_, buf ) );
 }
 
 fn file_readable_writeable::flush( mut this ) : file_result</void/>
@@ -737,8 +747,6 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 
 fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
 {
-	// TODO - maybe write in loop to support larger sizes?
-
 	var ssize_type write_res = unsafe( ::write( handle, buf.data(), buf.size() ) );
 
 	if( write_res < ssize_type(0) )
@@ -753,6 +761,19 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 
 	// Expected number of bytes or less.
 	return size_type(write_res);
+}
+
+fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</void/>
+{
+	for( var size_type mut offset= 0s; offset < buf.size(); )
+	{
+		// TODO - handle zero result.
+		// TODO - handle interruption.
+		result_unwrap_or_return( bytes_written : unsafe( write_impl( handle, buf.subrange_start( offset ) ) ) );
+		offset+= size_type(bytes_written);
+	}
+
+	return void();
 }
 
 fn flush_impl( native_file_handle handle ) unsafe : file_result</void/>

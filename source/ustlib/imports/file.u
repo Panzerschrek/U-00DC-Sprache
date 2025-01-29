@@ -77,7 +77,11 @@ public:
 
 	fn set_permissions( mut this, file_permissions permissions ) : file_result</void/>;
 
+	// Write given buffer. May write less than expected and it's not an error. Returns number of bytes written.
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
+
+	// Writes all data, calling "write" many times, if necessary.
+	fn write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>;
 
 	// Flush all data to the device, ensuring they are safely stored.
 	fn flush( mut this ) : file_result</void/>;
@@ -120,7 +124,12 @@ public:
 	fn set_permissions( mut this, file_permissions permissions ) : file_result</void/>;
 
 	fn read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>;
+
+	// Write given buffer. May write less than expected and it's not an error. Returns number of bytes written.
 	fn write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>;
+
+	// Writes all data, calling "write" many times, if necessary.
+	fn write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>;
 
 	// Flush all data to the device, ensuring they are safely stored.
 	fn flush( mut this ) : file_result</void/>;
