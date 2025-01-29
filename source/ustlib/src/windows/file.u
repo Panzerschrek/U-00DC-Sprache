@@ -53,6 +53,11 @@ fn file_readable::get_size( this ) : file_result</u64/>
 	return unsafe( get_size_impl( handle_ ) );
 }
 
+fn file_readable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+{
+	return unsafe( set_permissions_impl( handle_, permissions ) );
+}
+
 fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
@@ -94,16 +99,6 @@ fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
 	}
 }
 
-fn file_writeable::get_metatada( this ) : file_result</file_metadata/>
-{
-	return unsafe( get_metatada_impl( handle_ ) );
-}
-
-fn file_writeable::get_size( this ) : file_result</u64/>
-{
-	return unsafe( get_size_impl( handle_ ) );
-}
-
 fn file_writeable::constructor( native_file_handle handle ) unsafe
 	( handle_= handle )
 {}
@@ -123,6 +118,21 @@ fn file_writeable::take_native_handle( byval mut this ) unsafe : native_file_han
 	var native_file_handle h= handle_;
 	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
 	return h;
+}
+
+fn file_writeable::get_metatada( this ) : file_result</file_metadata/>
+{
+	return unsafe( get_metatada_impl( handle_ ) );
+}
+
+fn file_writeable::get_size( this ) : file_result</u64/>
+{
+	return unsafe( get_size_impl( handle_ ) );
+}
+
+fn file_writeable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+{
+	return unsafe( set_permissions_impl( handle_, permissions ) );
 }
 
 fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
@@ -189,6 +199,11 @@ fn file_readable_writeable::get_metatada( this ) : file_result</file_metadata/>
 fn file_readable_writeable::get_size( this ) : file_result</u64/>
 {
 	return unsafe( get_size_impl( handle_ ) );
+}
+
+fn file_readable_writeable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+{
+	return unsafe( set_permissions_impl( handle_, permissions ) );
 }
 
 fn file_readable_writeable::constructor( native_file_handle handle ) unsafe
@@ -269,7 +284,38 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 		.kind= file_attributes_to_file_kind( info.dwFileAttributes ),
 		.access_time= filetime_to_system_time( info.ftLastAccessTime ),
 		.modification_time= filetime_to_system_time( info.ftLastWriteTime ),
+		.permissions= file_attributes_to_file_permissions( info.dwFileAttributes ),
 	};
+}
+
+fn set_permissions_for_path( file_path path, file_permissions permissions ) : file_result</void/>
+{
+	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( path );
+
+	var DWORD mut attributes = unsafe( ::GetFileAttributesW( path_null_terminated.data() ) );
+	if( attributes == 0xFFFFFFFFu )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	var bool read_only= ( permissions.bits & c_permissions_bits_write ) == 0u;
+
+	if( read_only )
+	{
+		attributes |= DWORD( FILE_ATTRIBUTE_READONLY );
+	}
+	else
+	{
+		attributes &= ~DWORD( FILE_ATTRIBUTE_READONLY );
+	}
+
+	var BOOL res = unsafe( ::SetFileAttributesW( path_null_terminated.data(), attributes ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
 }
 
 fn create_directory( file_path path ) : file_result</void/>
@@ -639,6 +685,7 @@ fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
 		.kind= file_attributes_to_file_kind( info.dwFileAttributes ),
 		.access_time= filetime_to_system_time( info.ftLastAccessTime ),
 		.modification_time= filetime_to_system_time( info.ftLastWriteTime ),
+		.permissions= file_attributes_to_file_permissions( info.dwFileAttributes ),
 	};
 }
 
@@ -652,6 +699,45 @@ fn get_size_impl( native_file_handle handle ) : file_result</u64/>
 	}
 
 	return u64(i.union_contents[0]);
+}
+
+fn set_permissions_impl( native_file_handle handle, file_permissions permissions ) : file_result</void/>
+{
+	var ü_FILE_BASIC_INFO mut info= zero_init;
+	var BOOL get_res =
+		unsafe( ::GetFileInformationByHandleEx(
+			handle,
+			FILE_INFO_BY_HANDLE_CLASS::FileBasicInfo,
+			ptr_cast_to_byte8( $<(info) ),
+			DWORD( typeinfo</ü_FILE_BASIC_INFO/>.size_of ) ) );
+	if( get_res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	var bool read_only= ( permissions.bits & c_permissions_bits_write ) == 0u;
+
+	if( read_only )
+	{
+		info.FileAttributes |= DWORD( FILE_ATTRIBUTE_READONLY );
+	}
+	else
+	{
+		info.FileAttributes &= ~DWORD( FILE_ATTRIBUTE_READONLY );
+	}
+
+	var BOOL set_res =
+		unsafe( ::SetFileInformationByHandle(
+			handle,
+			FILE_INFO_BY_HANDLE_CLASS::FileBasicInfo,
+			ptr_cast_to_byte8( $<(info) ),
+			DWORD( typeinfo</ü_FILE_BASIC_INFO/>.size_of ) ) );
+	if( set_res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
 }
 
 fn file_attributes_to_file_kind( DWORD attributes ) : file_kind
@@ -669,6 +755,18 @@ fn file_attributes_to_file_kind( DWORD attributes ) : file_kind
 fn filetime_to_system_time( FILETIME& t ) : system_time
 {
 	return unsafe( system_time( system_time::impl_windows{ .intervals= u64(t.dwLowDateTime) | ( u64(t.dwHighDateTime) << 32u ) } ) );
+}
+
+fn file_attributes_to_file_permissions( DWORD attributes ) : file_permissions
+{
+	if( ( attributes & DWORD(FILE_ATTRIBUTE_READONLY) ) != 0u )
+	{
+		return file_permissions{ .bits= file_permissions::all & (~c_permissions_bits_write) };
+	}
+	else
+	{
+		return file_permissions{ .bits= file_permissions::all };
+	}
 }
 
 fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
@@ -842,5 +940,6 @@ fn get_invalid_handle() : HANDLE
 	return handle;
 }
 
+var u32 c_permissions_bits_write= file_permissions::owner_write | file_permissions::group_write | file_permissions::others_write;
 
 } // namespace ust

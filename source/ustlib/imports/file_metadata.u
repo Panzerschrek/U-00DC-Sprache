@@ -19,8 +19,38 @@ struct file_metadata
 	system_time access_time;
 	system_time modification_time;
 	// TODO - add creation time
-	// TODO - add permissions
-	// TODO - add read-only flag
+	file_permissions permissions;
+}
+
+// File permissions in Unix-style.
+// Note that on some systems not all permissions may be actually present, so, setting them may have no effect.
+struct file_permissions
+{
+	// Constants.
+	var u32 constexpr owner_read=		0o400u;
+	var u32 constexpr owner_write=		0o200u;
+	var u32 constexpr owner_execute=	0o100u;
+	var u32 constexpr owner_all= owner_read | owner_write | owner_execute;
+
+	var u32 constexpr group_read=		0o040u;
+	var u32 constexpr group_write=		0o020u;
+	var u32 constexpr group_execute=	0o010u;
+	var u32 constexpr group_all= group_read | group_write | group_execute;
+
+	var u32 constexpr others_read=		0o004u;
+	var u32 constexpr others_write=		0o002u;
+	var u32 constexpr others_execute=	0o001u;
+	var u32 constexpr others_all= others_read | others_write | others_execute;
+
+	var u32 constexpr all= owner_all | group_all | others_all;
+
+	var u32 constexpr set_uid= 0o4000u;
+	var u32 constexpr set_guid= 0o2000u;
+	var u32 constexpr sticky_bit= 0o1000u;
+
+	var u32 constexpr mask= all | set_uid | set_guid | sticky_bit;
+
+	u32 bits; // Bit mask combined of bits defined above.
 }
 
 } // namespace ust

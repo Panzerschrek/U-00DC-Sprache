@@ -51,6 +51,11 @@ fn file_readable::get_size( this ) : file_result</u64/>
 	return unsafe( get_size_impl( handle_ ) );
 }
 
+fn file_readable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+{
+	return unsafe( set_permissions_impl( handle_, permissions ) );
+}
+
 fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
@@ -121,6 +126,11 @@ fn file_writeable::get_metatada( this ) : file_result</file_metadata/>
 fn file_writeable::get_size( this ) : file_result</u64/>
 {
 	return unsafe( get_size_impl( handle_ ) );
+}
+
+fn file_writeable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+{
+	return unsafe( set_permissions_impl( handle_, permissions ) );
 }
 
 fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
@@ -210,6 +220,11 @@ fn file_readable_writeable::get_size( this ) : file_result</u64/>
 	return unsafe( get_size_impl( handle_ ) );
 }
 
+fn file_readable_writeable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+{
+	return unsafe( set_permissions_impl( handle_, permissions ) );
+}
+
 fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
@@ -261,7 +276,20 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) ),
 		.access_time= unsafe( timespec_to_system_time( s.st_atim ) ),
 		.modification_time= unsafe( timespec_to_system_time( s.st_mtim ) ),
+		.permissions{ .bits= s.st_mode & file_permissions::mask },
 	};
+}
+
+fn set_permissions_for_path( file_path path, file_permissions permissions ) : file_result</void/>
+{
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	auto res= unsafe( ::chmod( path_nt.data(), permissions.bits ) );
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
 }
 
 fn create_directory( file_path path ) : file_result</void/>
@@ -625,6 +653,7 @@ fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
 		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) ),
 		.access_time= unsafe( timespec_to_system_time( s.st_atim ) ),
 		.modification_time= unsafe( timespec_to_system_time( s.st_mtim ) ),
+		.permissions{ .bits= s.st_mode & file_permissions::mask },
 	};
 }
 
@@ -673,6 +702,17 @@ fn get_size_impl( native_file_handle handle ) : file_result</u64/>
 	}
 
 	return u64(s.st_size);
+}
+
+fn set_permissions_impl( native_file_handle handle, file_permissions permissions ) : file_result</void/>
+{
+	auto res= unsafe( ::fchmod( handle, permissions.bits ) );
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
 }
 
 fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
@@ -761,7 +801,7 @@ fn translate_errno( i32 errno ) : io_error
 {
 	switch(errno)
 	{
-	EPERM -> { return io_error::permission_denied; },
+	EPERM, EACCES -> { return io_error::permission_denied; },
 	ENOENT -> { return io_error::not_found; },
 	EEXIST -> { return io_error::already_exists; },
 	ENOTDIR -> { return io_error::not_a_directory; },
