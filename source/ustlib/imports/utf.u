@@ -41,6 +41,14 @@ fn get_code_point_or_null_from_string( string_view16 str ) : char32;
 // Same as for UTF-8 and UTF-16, but just get one symbol.
 fn get_code_point_or_null_from_string( string_view32 str ) : char32;
 
+// Conversions for whole strings.
+fn utf8_to_utf16_string( string_view8 s ) : string16;
+fn utf8_to_utf32_string( string_view8 s ) : string32;
+fn utf16_to_utf8_string( string_view16 s ) : string8;
+fn utf16_to_utf32_string( string_view16 s ) : string32;
+fn utf32_to_utf8_string( string_view32 s ) : string8;
+fn utf32_to_utf16_string( string_view32 s ) : string16;
+
 } // namespace utf
 
 } // namespace ust
