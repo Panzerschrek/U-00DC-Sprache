@@ -138,7 +138,6 @@ Interpreter:
 
 Compiler1:
 *) Support 128-bit types in switch operator
-*) Avoid storing common compiler files (keywords list, errors list) inside compiler1 source directory
 
 QtCreator plugin:
 *) Language server features support
