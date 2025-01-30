@@ -1054,7 +1054,7 @@ fn nomangle main() : i32
 						{
 							assert( entry.name != ".", "Entry name can't be \".\"!" );
 							assert( entry.name != "..", "Entry name can't be \"..\"!" );
-							if( entry.name == "file_test.u" )
+							if( entry.name == "filesystem_test.u" )
 							{
 								this_file_found= true;
 								assert( entry.kind == ust::file_kind::file, "Unexpected entry kind, expected a file!" );
@@ -1074,7 +1074,7 @@ fn nomangle main() : i32
 			},
 			Err(e) -> { assert( false, "Failed to create directory iterator!" ); },
 		}
-		assert( this_file_found, "Directory iterator can't find \"file_test.u\"!" );
+		assert( this_file_found, "Directory iterator can't find \"filesystem_test.u\"!" );
 		assert( test_file0_txt_found, "Directory iterator can't find \"test_file0.txt\"!" );
 	}
 
