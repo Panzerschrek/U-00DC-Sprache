@@ -1,0 +1,18 @@
+//##success_test
+import "../imports/utf.u"
+
+fn nomangle main() : i32
+{
+	auto &constexpr s8= "Серп и Молот ☭ Hammer und Sichel"u8;
+	auto &constexpr s16= "Серп и Молот ☭ Hammer und Sichel"u16;
+	auto &constexpr s32= "Серп и Молот ☭ Hammer und Sichel"u32;
+
+	halt if( ust::utf::convert_utf8_to_utf16_string( s8 ) != s16 );
+	halt if( ust::utf::convert_utf8_to_utf32_string( s8 ) != s32 );
+	halt if( ust::utf::convert_utf16_to_utf8_string( s16 ) != s8 );
+	halt if( ust::utf::convert_utf16_to_utf32_string( s16 ) != s32 );
+	halt if( ust::utf::convert_utf32_to_utf8_string( s32 ) != s8 );
+	halt if( ust::utf::convert_utf32_to_utf16_string( s32 ) != s16 );
+
+	return 0;
+}

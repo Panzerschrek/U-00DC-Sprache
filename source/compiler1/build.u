@@ -42,7 +42,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.generated_private_header_files= ust::make_array</ust::string8/>( keywords_file, code_builder_error_code_file ),
 	};
 
-	var [ ust::string_view8, 42 ] source_files
+	var [ ust::string_view8, 41 ] source_files
 	[
 		"code_builder_lib/cb_block_elements.u",
 		"code_builder_lib/cb_coroutines.u",
@@ -81,7 +81,6 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		"lex_synt_lib/keywords.u",
 		"lex_synt_lib/lexical_analyzer.u",
 		"lex_synt_lib/operators.u",
-		"lex_synt_lib/program_string.u",
 		"lex_synt_lib/source_graph.u",
 		"lex_synt_lib/src_loc.u",
 		"lex_synt_lib/syntax_analyzer.u",

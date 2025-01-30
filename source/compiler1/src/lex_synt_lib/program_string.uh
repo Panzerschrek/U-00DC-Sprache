@@ -1,9 +1,0 @@
-import "/string.u"
-
-namespace U1
-{
-
-fn ConvertUTF8ToUTF16( ust::string_view8 s ) : ust::string16;
-fn ConvertUTF8ToUTF32( ust::string_view8 s ) : ust::string32;
-
-} // namespace U1

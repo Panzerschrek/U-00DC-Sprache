@@ -62,7 +62,6 @@ Standart library:
 *) Support opening files with appending
 *) Buffered reader/writer wrappers for files
 *) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
-*) "read_all"/"write_all" methods for files - to read/write untill all data is transferred
 *) Function for creation of the whole directories path
 *) Function for recursive directory removal
 *) Function for symlinks creation

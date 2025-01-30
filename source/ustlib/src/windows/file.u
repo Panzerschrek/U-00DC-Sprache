@@ -1,7 +1,6 @@
 import "../../imports/file.u"
 import "../../imports/minmax.u"
 import "../../imports/utf.u"
-import "../../imports/vector.u"
 import "windows.uh"
 
 namespace ust
@@ -61,6 +60,11 @@ fn file_readable::set_permissions( mut this, file_permissions permissions ) : fi
 fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
+}
+
+fn file_readable::read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( read_exact_impl( handle_, buf ) );
 }
 
 fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
@@ -138,6 +142,11 @@ fn file_writeable::set_permissions( mut this, file_permissions permissions ) : f
 fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn file_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( write_all_impl( handle_, buf ) );
 }
 
 fn file_writeable::flush( mut this ) : file_result</void/>
@@ -232,9 +241,19 @@ fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file
 	return unsafe( read_impl( handle_, buf ) );
 }
 
+fn file_readable_writeable::read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( read_exact_impl( handle_, buf ) );
+}
+
 fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn file_readable_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( write_all_impl( handle_, buf ) );
 }
 
 fn file_readable_writeable::flush( mut this ) : file_result</void/>
@@ -771,8 +790,6 @@ fn file_attributes_to_file_permissions( DWORD attributes ) : file_permissions
 
 fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
 {
-	// TODO - maybe read in loop to support larger sizes?
-
 	var DWORD mut bytes_read = 0u;
 	var BOOL res =
 		unsafe( ::ReadFile(
@@ -791,10 +808,36 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 	return size_type(bytes_read);
 }
 
+fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</void/>
+{
+	for( var size_type mut offset= 0s; offset < buf.size(); )
+	{
+		result_match( unsafe( read_impl( handle, buf ) ) )
+		{
+			Ok(bytes_read) ->
+			{
+				if( bytes_read == 0s )
+				{
+					return io_error::unexpected_end_of_file;
+				}
+				offset+= bytes_read;
+			},
+			Err(e) ->
+			{
+				if( e == io_error::interrupted )
+				{
+					continue;
+				}
+				return e;
+			},
+		}
+	}
+
+	return void();
+}
+
 fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
 {
-	// TODO - maybe write in loop to support larger sizes?
-
 	var DWORD mut bytes_written = 0u;
 	var BOOL res =
 		unsafe( ::WriteFile(
@@ -811,6 +854,34 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 
 	// Expected number of bytes or less.
 	return size_type(bytes_written);
+}
+
+fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</void/>
+{
+	for( var size_type mut offset= 0s; offset < buf.size(); )
+	{
+		result_match( unsafe( write_impl( handle, buf.subrange_start( offset ) ) ) )
+		{
+			Ok(bytes_written) ->
+			{
+				if( bytes_written == 0s )
+				{
+					return io_error::write_zero;
+				}
+				offset+= size_type(bytes_written);
+			},
+			Err(e) ->
+			{
+				if( e == io_error::interrupted )
+				{
+					continue;
+				}
+				return e;
+			},
+		}
+	}
+
+	return void();
 }
 
 fn flush_impl( native_file_handle handle ) unsafe : file_result</void/>
@@ -869,45 +940,23 @@ fn translate_error_code( DWORD code ) : io_error
 		DWORD(ERROR_DIRECTORY)-> { return io_error::not_a_directory; },
 		DWORD(ERROR_ALREADY_EXISTS), DWORD(ERROR_FILE_EXISTS) -> { return io_error::already_exists; },
 		DWORD(ERROR_ACCESS_DENIED) -> { return io_error::permission_denied; },
+		DWORD(ERROR_HANDLE_EOF) -> { return io_error::unexpected_end_of_file; },
 		default -> { return io_error::other; },
 	}
 }
 
 type wide_string= string_base</WCHAR/>;
 
-fn utf8_to_null_terminated_wide_string( string_view8 mut v ) : wide_string
+fn utf8_to_null_terminated_wide_string( string_view8 v ) : wide_string
 {
-	var wide_string mut res;
-	while( !v.empty() )
-	{
-		utf::push_code_point_to_string( res, utf::extract_code_point_or_null_from_string(v) );
-	}
-
+	var wide_string mut res= utf::convert_utf8_to_utf16_string(v);
 	res.push_back( WCHAR( "\0"c8 ) );
-
 	return res;
 }
 
-fn wide_string_to_utf8( array_view_imut</WCHAR/> mut v ) : string8
+fn wide_string_to_utf8( array_view_imut</WCHAR/> v ) : string8
 {
-	var string8 mut res;
-	while( !v.empty() )
-	{
-		var u32 mut c( v.drop_and_get_front() );
-		if( c >= 0xD800u && c <= 0xDBFFu )
-		{
-			// Surrogate pair.
-			if( !v.empty() )
-			{
-				// TODO - check if this is correct.
-				var u32 paired_c( v.drop_and_get_front() );
-				c = ((c - 0xD800u) << 10u) + ( paired_c - 0xDC00u ) + 0x0010000u;
-			}
-		}
-		utf::push_code_point_to_string( res, char32(c) );
-	}
-
-	return res;
+	return utf::convert_utf16_to_utf8_string(v);
 }
 
 // Produces INVALID_HANDLE_VALUE.

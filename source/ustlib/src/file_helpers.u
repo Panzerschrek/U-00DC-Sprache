@@ -22,11 +22,8 @@ fn read_file_to_byte8_vector( file_path path ) : file_result</ vector</byte8/> /
 		var byte8 filler= uninitialized;
 		res.resize( size_type(s), filler );
 
-		for( var size_type mut offset= 0s; offset < size_type(s); )
-		{
-			result_unwrap_or_return( bytes_read : f.read( res.range().subrange_start( offset ) ) );
-			offset+= bytes_read;
-		}
+		result_unwrap_or_return( v : f.read_exact( res ) );
+		ignore_unused(v);
 
 		return res;
 	}
@@ -51,11 +48,8 @@ fn read_file_to_string( file_path path ) : file_result</ string8 />
 		var char8 filler= uninitialized;
 		res.resize( size_type(s), filler );
 
-		for( var size_type mut offset= 0s; offset < size_type(s); )
-		{
-			result_unwrap_or_return( bytes_read : f.read( cast_range_to_bytes_range( res.range().subrange_start( offset ) ) ) );
-			offset+= bytes_read;
-		}
+		result_unwrap_or_return( v : f.read_exact( cast_range_to_bytes_range( res.range() ) ) );
+		ignore_unused(v);
 
 		return res;
 	}
@@ -65,15 +59,7 @@ fn write_byte8_range_to_file( file_path path, array_view_imut</byte8/> range ) :
 {
 	result_unwrap_or_return( mut f : file_writeable::create( path ) );
 
-	for( var size_type mut offset= 0s; offset < range.size(); )
-	{
-		result_unwrap_or_return( bytes_written : f.write( range.subrange_start( offset ) ) );
-		offset+= bytes_written;
-	}
-
-	// TODO - call "flush" here to check for errors?
-
-	return void();
+	return f.write_all( range );
 }
 
 fn write_string_view_to_file( file_path path, string_view8 range ) : file_result</void/>

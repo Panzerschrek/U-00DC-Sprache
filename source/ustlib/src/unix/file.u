@@ -61,6 +61,11 @@ fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</s
 	return unsafe( read_impl( handle_, buf ) );
 }
 
+fn file_readable::read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( read_exact_impl( handle_, buf ) );
+}
+
 fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
@@ -136,6 +141,11 @@ fn file_writeable::set_permissions( mut this, file_permissions permissions ) : f
 fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn file_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( write_all_impl( handle_, buf ) );
 }
 
 fn file_writeable::flush( mut this ) : file_result</void/>
@@ -230,9 +240,19 @@ fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file
 	return unsafe( read_impl( handle_, buf ) );
 }
 
+fn file_readable_writeable::read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( read_exact_impl( handle_, buf ) );
+}
+
 fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
+}
+
+fn file_readable_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>
+{
+	return unsafe( write_all_impl( handle_, buf ) );
 }
 
 fn file_readable_writeable::flush( mut this ) : file_result</void/>
@@ -717,8 +737,6 @@ fn set_permissions_impl( native_file_handle handle, file_permissions permissions
 
 fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
 {
-	// TODO - maybe read in loop to support larger sizes?
-
 	var ssize_type read_res = unsafe( ::read( handle, buf.data(), buf.size() ) );
 
 	if( read_res < ssize_type(0) )
@@ -726,19 +744,40 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 		return translate_errno( get_errno() );
 	}
 
-	if( read_res == ssize_type(0) )
-	{
-		return 0s; // End of file reached.
-	}
-
 	// Expected number of bytes or less.
 	return size_type(read_res);
 }
 
+fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</void/>
+{
+	for( var size_type mut offset= 0s; offset < buf.size(); )
+	{
+		result_match( unsafe( read_impl( handle, buf ) ) )
+		{
+			Ok(bytes_read) ->
+			{
+				if( bytes_read == 0s )
+				{
+					return io_error::unexpected_end_of_file;
+				}
+				offset+= bytes_read;
+			},
+			Err(e) ->
+			{
+				if( e == io_error::interrupted )
+				{
+					continue;
+				}
+				return e;
+			},
+		}
+	}
+
+	return void();
+}
+
 fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
 {
-	// TODO - maybe write in loop to support larger sizes?
-
 	var ssize_type write_res = unsafe( ::write( handle, buf.data(), buf.size() ) );
 
 	if( write_res < ssize_type(0) )
@@ -746,13 +785,36 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 		return translate_errno( get_errno() );
 	}
 
-	if( write_res == ssize_type(0) )
-	{
-		return 0s; // End of file reached.
-	}
-
 	// Expected number of bytes or less.
 	return size_type(write_res);
+}
+
+fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</void/>
+{
+	for( var size_type mut offset= 0s; offset < buf.size(); )
+	{
+		result_match( unsafe( write_impl( handle, buf.subrange_start( offset ) ) ) )
+		{
+			Ok(bytes_written) ->
+			{
+				if( bytes_written == 0s )
+				{
+					return io_error::write_zero;
+				}
+				offset+= size_type(bytes_written);
+			},
+			Err(e) ->
+			{
+				if( e == io_error::interrupted )
+				{
+					continue;
+				}
+				return e;
+			},
+		}
+	}
+
+	return void();
 }
 
 fn flush_impl( native_file_handle handle ) unsafe : file_result</void/>
@@ -805,6 +867,7 @@ fn translate_errno( i32 errno ) : io_error
 	ENOENT -> { return io_error::not_found; },
 	EEXIST -> { return io_error::already_exists; },
 	ENOTDIR -> { return io_error::not_a_directory; },
+	EINTR -> { return io_error::interrupted; },
 	// TODO - support other codes.
 	default -> { return io_error::other; },
 	}

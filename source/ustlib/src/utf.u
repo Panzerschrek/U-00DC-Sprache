@@ -1,0 +1,278 @@
+import "../imports/utf.u"
+
+
+namespace ust
+{
+
+namespace utf
+{
+
+fn push_code_point_to_string( string8 &mut str, char32 code_point )
+{
+	var u32 cc(code_point);
+	if( cc <= 0x7Fu )
+	{
+		str.push_back( char8(cc) );
+	}
+	else if( cc <= 0x7FFu )
+	{
+		var [ char8, 2 ] chars
+		[
+			( 0b11000000u | (cc >>  6u) ),
+			( 0b10000000u | (cc &  63u) ),
+		];
+		str+= chars;
+	}
+	else if( cc <= 0xFFFFu )
+	{
+		var [ char8, 3 ] chars
+		[
+			( 0b11100000u |  (cc >> 12u) ),
+			( 0b10000000u | ((cc >> 6u) & 63u) ),
+			( 0b10000000u |  (cc  & 63u) ),
+		];
+		str+= chars;
+	}
+	else if( cc <= 0x10FFFFu )
+	{
+		var [ char8, 4 ] chars
+		[
+			( 0b11110000u |  (cc >> 18u) ),
+			( 0b10000000u | ((cc >> 12u) & 63u) ),
+			( 0b10000000u | ((cc >>  6u) & 63u) ),
+			( 0b10000000u |  (cc  & 63u) ),
+		];
+		str+= chars;
+	}
+	else
+	{
+		// TODO - handle case with given code outside Unicode range.
+	}
+}
+
+fn push_code_point_to_string( string16 &mut str, char32 code_point )
+{
+	if(code_point < char32(0xD800) || (code_point > char32(0xDFFF) && code_point < char32(0x10000)))
+	{
+		str.push_back( char16( code_point ) );
+	}
+	else
+	{
+		var u32 c= u32(code_point) - 0x10000u;
+		str.push_back( char16( ( c >> 10u ) + 0xD800u ) );
+		str.push_back( char16( ( c & 0x3FFu ) + 0xDC00u ) );
+	}
+}
+
+fn push_code_point_to_string( string32 &mut str, char32 code_point )
+{
+	str.push_back( code_point );
+}
+
+fn extract_code_point_or_null_from_string( string_view8 &mut str ) : char32
+{
+	if( str.empty() )
+	{
+		return char32(0);
+	}
+
+	// c_bit_masks[4] - menas save first 4 bits
+	var [ u32, 9 ] constexpr c_bit_masks
+	[
+		-1u + (1u << 0u),
+		-1u + (1u << 1u),
+		-1u + (1u << 2u),
+		-1u + (1u << 3u),
+		-1u + (1u << 4u),
+		-1u + (1u << 5u),
+		-1u + (1u << 6u),
+		-1u + (1u << 7u),
+		-1u + (1u << 8u),
+	];
+
+	var u32 c( str.front() );
+	var char32 mut code(0);
+
+	if( c < 0b10000000u )
+	{
+		code= char32(c);
+		str.drop_front();
+	}
+	else if( c < 0b11100000u )
+	{
+		if( str.size() < 2s )
+		{
+			// Not enough size - consume remaining symbols and return 0.
+			str= string_view8();
+			return char32(0);
+		}
+
+		code= char32(
+			( (u32(str[0s]) & c_bit_masks[5]) << 6u ) |
+			( (u32(str[1s]) & c_bit_masks[6]) << 0u ) );
+
+		str= str.subrange_start(2s);
+	}
+	else if( c < 0b11110000u )
+	{
+		if( str.size() < 3s )
+		{
+			// Not enough size - consume remaining symbols and return 0.
+			str= string_view8();
+			return char32(0);
+		}
+
+		code= char32(
+			( (u32(str[0s]) & c_bit_masks[4]) << 12u ) |
+			( (u32(str[1s]) & c_bit_masks[6]) <<  6u ) |
+			( (u32(str[2s]) & c_bit_masks[6]) <<  0u ) );
+
+		str= str.subrange_start(3s);
+	}
+	else if( c < 0b11111000u )
+	{
+		if( str.size() < 4s )
+		{
+			// Not enough size - consume remaining symbols and return 0.
+			str= string_view8();
+			return char32(0);
+		}
+
+		code= char32(
+			( (u32(str[0s]) & c_bit_masks[3]) << 18u ) |
+			( (u32(str[1s]) & c_bit_masks[6]) << 12u ) |
+			( (u32(str[2s]) & c_bit_masks[6]) <<  6u ) |
+			( (u32(str[3s]) & c_bit_masks[6]) <<  0u ) );
+
+		str= str.subrange_start(4s);
+	}
+	else
+	{
+		// Codes above unicode range - wtf?
+		str.drop_front();
+		return char32(0);
+	}
+
+	return code;
+}
+
+fn extract_code_point_or_null_from_string( string_view16 &mut str ) : char32
+{
+	if( str.empty() )
+	{
+		return char32(0);
+	}
+
+	var u32 mut c( str.drop_and_get_front() );
+	if( c >= 0xD800u && c <= 0xDBFFu )
+	{
+		// Surrogate pair.
+		if( !str.empty() )
+		{
+			// TODO - check if this is correct.
+			var u32 paired_c( str.drop_and_get_front() );
+			c = ((c - 0xD800u) << 10u) + ( paired_c - 0xDC00u ) + 0x0010000u;
+		}
+		else
+		{
+			return char32(0);
+		}
+	}
+
+	return char32(c);
+}
+
+fn extract_code_point_or_null_from_string( string_view32 &mut str ) : char32
+{
+	if( str.empty() )
+	{
+		return char32(0);
+	}
+
+	return str.drop_and_get_front();
+}
+
+fn get_code_point_or_null_from_string( string_view8 mut str ) : char32
+{
+	return extract_code_point_or_null_from_string(str);
+}
+
+fn get_code_point_or_null_from_string( string_view16 mut str ) : char32
+{
+	return extract_code_point_or_null_from_string(str);
+}
+
+fn get_code_point_or_null_from_string( string_view32 mut str ) : char32
+{
+	return extract_code_point_or_null_from_string(str);
+}
+
+fn convert_utf8_to_utf16_string( string_view8 mut s ) : string16
+{
+	var string16 mut res;
+	while( !s.empty() )
+	{
+		push_code_point_to_string( res, extract_code_point_or_null_from_string(s) );
+	}
+
+	return res;
+}
+
+fn convert_utf8_to_utf32_string( string_view8 mut s ) : string32
+{
+	var string32 mut res;
+	while( !s.empty() )
+	{
+		push_code_point_to_string( res, extract_code_point_or_null_from_string(s) );
+	}
+
+	return res;
+}
+
+fn convert_utf16_to_utf8_string( string_view16 mut s ) : string8
+{
+	var string8 mut res;
+	while( !s.empty() )
+	{
+		push_code_point_to_string( res, extract_code_point_or_null_from_string(s) );
+	}
+
+	return res;
+}
+
+fn convert_utf16_to_utf32_string( string_view16 mut s ) : string32
+{
+	var string32 mut res;
+	while( !s.empty() )
+	{
+		push_code_point_to_string( res, extract_code_point_or_null_from_string(s) );
+	}
+
+	return res;
+}
+
+fn convert_utf32_to_utf8_string( string_view32 mut s ) : string8
+{
+	var string8 mut res;
+	while( !s.empty() )
+	{
+		push_code_point_to_string( res, extract_code_point_or_null_from_string(s) );
+	}
+
+	return res;
+}
+
+fn convert_utf32_to_utf16_string( string_view32 mut s ) : string16
+{
+	var string16 mut res;
+	while( !s.empty() )
+	{
+		push_code_point_to_string( res, extract_code_point_or_null_from_string(s) );
+	}
+
+	return res;
+}
+
+} // namespace utf
+
+} // namespace ust
