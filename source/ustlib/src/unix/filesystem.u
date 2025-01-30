@@ -382,7 +382,7 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 		var ssize_type bytes_sent= unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) );
 		if( bytes_sent <= ssize_type(0) )
 		{
-			auto err= get_errno();
+			var i32 err= get_errno();
 			unsafe( close_file_impl( dst_handle ) );
 			unsafe( close_file_impl( src_handle ) );
 			return translate_errno( err );
@@ -394,17 +394,19 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 		var i32 stat_res= unsafe( ::fstat( src_handle, $<(s) ) );
 		if( stat_res != 0 )
 		{
+			var i32 err= get_errno();
 			unsafe( close_file_impl( dst_handle ) );
 			unsafe( close_file_impl( src_handle ) );
-			return translate_errno( get_errno() );
+			return translate_errno( err );
 		}
 
 		var i32 chmod_res= unsafe( ::fchmod( dst_handle, s.st_mode ) );
 		if( chmod_res != 0 )
 		{
+			var i32 err= get_errno();
 			unsafe( close_file_impl( dst_handle ) );
 			unsafe( close_file_impl( src_handle ) );
-			return translate_errno( get_errno() );
+			return translate_errno( err );
 		}
 	}
 
