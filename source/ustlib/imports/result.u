@@ -19,6 +19,23 @@ import "optional_ref.u"
 	auto ?m<? mut ?> ?var_name = move( ??res ).try_take();
 ?>
 
+// Use this macro to call some function (or generally, evaluate any expression), returning "result".
+// In case of error this error is unwrapped and returned.
+// Success result is ignored.
+// Use word "return" in macro name in order to make visible, that this macro contains possible return point.
+?macro <? result_check_or_return:block ( ?e:expr ); ?>
+->
+<?
+	with( mut ??res : ?e )
+	{
+		if( ??res.is_error() )
+		{
+			// This works for functions returning result::ErrorT, functionis returning "result" with ErrorT and any other OkT, optionals and generally any types, constructible from result::ErrorT.
+			return move( ??res ).try_take_error();
+		}
+	}
+?>
+
 // Use this macro to process result or error.
 // TODO - maybe simplify it somehow?
 ?macro <?

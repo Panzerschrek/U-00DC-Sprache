@@ -88,6 +88,12 @@ fn ResultUnwrapRetTest() : ust::result</f32, SomeErrorEnum />
 	return f32(r);
 }
 
+fn ResultCheckRetTest() : ust::result</ void, SomeErrorEnum />
+{
+	result_check_or_return( RetErr( SomeErrorEnum::NotOk ) );
+	return void();
+}
+
 fn nomangle main() : i32
 {
 	{ // Construct from result.
@@ -303,6 +309,12 @@ fn nomangle main() : i32
 		halt if( r.try_deref() != f32(123 / 3) );
 	}
 	{ // result_unwrap macro
+		auto r = ResultUnwrapRetTest();
+		halt if( r.is_ok() );
+		halt if( !r.is_error() );
+		halt if( r.try_deref_error() != SomeErrorEnum::NotOk );
+	}
+	{	// result_check macro
 		auto r = ResultUnwrapRetTest();
 		halt if( r.is_ok() );
 		halt if( !r.is_error() );
