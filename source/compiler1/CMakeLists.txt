@@ -142,7 +142,7 @@ else()
 	# CodeBuilderErrors
 	#
 
-	set( ERRORS_LIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../compiler1/errors_list.hpp )
+	set( ERRORS_LIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/../errors_list.hpp )
 	set_property( DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${ERRORS_LIST_FILE} )
 
 	file( READ ${ERRORS_LIST_FILE} ERRORS_LIST_CONTENT )

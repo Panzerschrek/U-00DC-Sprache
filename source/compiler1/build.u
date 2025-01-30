@@ -13,7 +13,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 		return ust::null_optional;
 	}
 
-	auto mut errors_list_res = ust::read_file_to_string( ust::concat( source_dir, "/", "errors_list.hpp" ) );
+	auto mut errors_list_res = ust::read_file_to_string( ust::concat( source_dir, "/", "..", "/", "errors_list.hpp" ) );
 	if( errors_list_res.is_error() )
 	{
 		build_system_interface.LogError( ust::concat( "Failed to load errors list file: ", ust::enum_to_string( errors_list_res.try_deref_error() ) ) );
