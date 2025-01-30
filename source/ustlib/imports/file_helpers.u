@@ -6,15 +6,15 @@ namespace ust
 {
 
 // Read the whole file into vector of byte8 elements.
-fn read_file_to_byte8_vector( filesystem_path_view path ) : file_result</ vector</byte8/> />;
+fn read_file_to_byte8_vector( filesystem_path_view path ) : filesystem_result</ vector</byte8/> />;
 
 // Read the whole file into a string. UTF-8 correctness isn't checked.
-fn read_file_to_string( filesystem_path_view path ) : file_result</ string8 />;
+fn read_file_to_string( filesystem_path_view path ) : filesystem_result</ string8 />;
 
 // Write contents of byte8 elements range into a file. File is newly created or rewritten with truncation.
-fn write_byte8_range_to_file( filesystem_path_view path, array_view_imut</byte8/> range ) : file_result</void/>;
+fn write_byte8_range_to_file( filesystem_path_view path, array_view_imut</byte8/> range ) : filesystem_result</void/>;
 
 // Write contenst of a string view into a file. File is newly created or rewritten with truncation.
-fn write_string_view_to_file( filesystem_path_view path, string_view8 range ) : file_result</void/>;
+fn write_string_view_to_file( filesystem_path_view path, string_view8 range ) : filesystem_result</void/>;
 
 } // namespace ust

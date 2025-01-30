@@ -3,7 +3,7 @@ import "../imports/file_helpers.u"
 namespace ust
 {
 
-fn read_file_to_byte8_vector( filesystem_path_view path ) : file_result</ vector</byte8/> />
+fn read_file_to_byte8_vector( filesystem_path_view path ) : filesystem_result</ vector</byte8/> />
 {
 	result_unwrap_or_return( mut f : file_readable::open( path ) );
 	result_unwrap_or_return( s : f.get_size() );
@@ -29,7 +29,7 @@ fn read_file_to_byte8_vector( filesystem_path_view path ) : file_result</ vector
 	}
 }
 
-fn read_file_to_string( filesystem_path_view path ) : file_result</ string8 />
+fn read_file_to_string( filesystem_path_view path ) : filesystem_result</ string8 />
 {
 	result_unwrap_or_return( mut f : file_readable::open( path ) );
 	result_unwrap_or_return( s : f.get_size() );
@@ -55,14 +55,14 @@ fn read_file_to_string( filesystem_path_view path ) : file_result</ string8 />
 	}
 }
 
-fn write_byte8_range_to_file( filesystem_path_view path, array_view_imut</byte8/> range ) : file_result</void/>
+fn write_byte8_range_to_file( filesystem_path_view path, array_view_imut</byte8/> range ) : filesystem_result</void/>
 {
 	result_unwrap_or_return( mut f : file_writeable::create( path ) );
 
 	return f.write_all( range );
 }
 
-fn write_string_view_to_file( filesystem_path_view path, string_view8 range ) : file_result</void/>
+fn write_string_view_to_file( filesystem_path_view path, string_view8 range ) : filesystem_result</void/>
 {
 	return write_byte8_range_to_file( path, cast_range_to_bytes_range(range) );
 }
