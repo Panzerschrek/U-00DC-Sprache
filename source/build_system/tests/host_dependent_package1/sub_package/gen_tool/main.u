@@ -1,3 +1,4 @@
+import "/file_helpers.u"
 import "/memory.u"
 import "/stdout.u"
 
@@ -9,17 +10,18 @@ fn nomangle main( i32 argc, $($(char8)) argv ) : i32
 		return -1;
 	}
 
-	var $(char8) file_name_nt= unsafe( $>( argv + 1s ) );
+	var $(char8) arg1_ptr= unsafe( $>( argv + 1s ) );
+
+	var size_type mut len= 0s;
+	while( unsafe( $>( arg1_ptr + len ) ) != char8(0) )
+	{
+		++len;
+	}
+	auto file_name= unsafe( ust::string_view8( arg1_ptr, len ) );
 
 	auto& contents= "fn Bar() : i32 { return 123321; }";
 
-	auto ok=
-		unsafe( CreateFileWithContents(
-			file_name_nt,
-			ust::ptr_cast_to_byte8( $<( cast_mut( contents[0] ) ) ),
-			typeinfo</typeof(contents)/>.size_of ) );
-
-	if( !ok )
+	if( ust::write_string_view_to_file( file_name, contents ).is_error() )
 	{
 		ust::stderr_print( "Failed to write file!\n" );
 		return -1;
@@ -27,6 +29,3 @@ fn nomangle main( i32 argc, $($(char8)) argv ) : i32
 
 	return 0;
 }
-
-fn nomangle CreateFileWithContents(
-	$(char8) name_null_terminated, $(byte8) contents, size_type contents_size ) unsafe : bool;
