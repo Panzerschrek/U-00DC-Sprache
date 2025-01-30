@@ -125,7 +125,7 @@ const char* GetErrorMessagePattern( const CodeBuilderErrorCode code )
 	switch(code)
 	{
 	#define PROCESS_ERROR(Code, Message) case CodeBuilderErrorCode::Code: return Message;
-	#include "../../compiler1/errors_list.hpp"
+	#include "../../errors_list.hpp"
 	#undef PROCESS_ERROR
 	};
 

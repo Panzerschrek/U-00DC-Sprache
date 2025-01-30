@@ -1438,7 +1438,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::strin
 
 	var [ ust::string_view8, 5 ] sources_windows
 	[
-		"windows/file.u",
+		"windows/filesystem.u",
 		"windows/rwlock_impl.u",
 		"windows/stdout.u",
 		"windows/system_time.u",
@@ -1447,7 +1447,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::strin
 
 	var [ ust::string_view8, 5 ] sources_unix
 	[
-		"unix/file.u",
+		"unix/filesystem.u",
 		"unix/rwlock_impl.u",
 		"unix/stdout.u",
 		"unix/system_time.u",

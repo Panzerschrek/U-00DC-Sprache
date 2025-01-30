@@ -1,3 +1,4 @@
+import "../../imports/directory_iterator.u"
 import "../../imports/file.u"
 import "../../imports/scoped_array.u"
 import "unix.uh"
@@ -11,7 +12,7 @@ static_assert( same_type</native_file_handle, i32/>, "Types mismatch!" );
 // file_readable
 //
 
-fn file_readable::open( file_path path ) : file_result</file_readable/>
+fn file_readable::open( filesystem_path_view path ) : filesystem_result</file_readable/>
 {
 	unsafe
 	{
@@ -41,32 +42,32 @@ fn file_readable::take_native_handle( byval mut this ) unsafe : native_file_hand
 	return h;
 }
 
-fn file_readable::get_metatada( this ) : file_result</file_metadata/>
+fn file_readable::get_metatada( this ) : filesystem_result</file_metadata/>
 {
 	return unsafe( get_metatada_impl( handle_ ) );
 }
 
-fn file_readable::get_size( this ) : file_result</u64/>
+fn file_readable::get_size( this ) : filesystem_result</u64/>
 {
 	return unsafe( get_size_impl( handle_ ) );
 }
 
-fn file_readable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+fn file_readable::set_permissions( mut this, file_permissions permissions ) : filesystem_result</void/>
 {
 	return unsafe( set_permissions_impl( handle_, permissions ) );
 }
 
-fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
+fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : filesystem_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
 }
 
-fn file_readable::read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>
+fn file_readable::read_exact( mut this, array_view_mut</byte8/> buf ) : filesystem_result</void/>
 {
 	return unsafe( read_exact_impl( handle_, buf ) );
 }
 
-fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
+fn file_readable::seek( mut this, u64 offset ) : filesystem_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
 }
@@ -75,7 +76,7 @@ fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
 // file_writeable
 //
 
-fn file_writeable::open( file_path path ) : file_result</file_writeable/>
+fn file_writeable::open( filesystem_path_view path ) : filesystem_result</file_writeable/>
 {
 	unsafe
 	{
@@ -84,7 +85,7 @@ fn file_writeable::open( file_path path ) : file_result</file_writeable/>
 	}
 }
 
-fn file_writeable::create( file_path path ) : file_result</file_writeable/>
+fn file_writeable::create( filesystem_path_view path ) : filesystem_result</file_writeable/>
 {
 	unsafe
 	{
@@ -93,7 +94,7 @@ fn file_writeable::create( file_path path ) : file_result</file_writeable/>
 	}
 }
 
-fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
+fn file_writeable::create_new( filesystem_path_view path ) : filesystem_result</file_writeable/>
 {
 	unsafe
 	{
@@ -123,47 +124,47 @@ fn file_writeable::take_native_handle( byval mut this ) unsafe : native_file_han
 	return h;
 }
 
-fn file_writeable::get_metatada( this ) : file_result</file_metadata/>
+fn file_writeable::get_metatada( this ) : filesystem_result</file_metadata/>
 {
 	return unsafe( get_metatada_impl( handle_ ) );
 }
 
-fn file_writeable::get_size( this ) : file_result</u64/>
+fn file_writeable::get_size( this ) : filesystem_result</u64/>
 {
 	return unsafe( get_size_impl( handle_ ) );
 }
 
-fn file_writeable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+fn file_writeable::set_permissions( mut this, file_permissions permissions ) : filesystem_result</void/>
 {
 	return unsafe( set_permissions_impl( handle_, permissions ) );
 }
 
-fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
+fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : filesystem_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
 }
 
-fn file_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>
+fn file_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : filesystem_result</void/>
 {
 	return unsafe( write_all_impl( handle_, buf ) );
 }
 
-fn file_writeable::flush( mut this ) : file_result</void/>
+fn file_writeable::flush( mut this ) : filesystem_result</void/>
 {
 	return unsafe( flush_impl( handle_ ) );
 }
 
-fn file_writeable::flush_all( mut this ) : file_result</void/>
+fn file_writeable::flush_all( mut this ) : filesystem_result</void/>
 {
 	return unsafe( flush_all_impl( handle_ ) );
 }
 
-fn file_writeable::resize( mut this, u64 new_size ) : file_result</void/>
+fn file_writeable::resize( mut this, u64 new_size ) : filesystem_result</void/>
 {
 	return unsafe( resize_impl( handle_, new_size ) );
 }
 
-fn file_writeable::seek( mut this, u64 offset ) : file_result</void/>
+fn file_writeable::seek( mut this, u64 offset ) : filesystem_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
 }
@@ -172,7 +173,7 @@ fn file_writeable::seek( mut this, u64 offset ) : file_result</void/>
 // file_readable_writeable
 //
 
-fn file_readable_writeable::open( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::open( filesystem_path_view path ) : filesystem_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -181,7 +182,7 @@ fn file_readable_writeable::open( file_path path ) : file_result</file_readable_
 	}
 }
 
-fn file_readable_writeable::create( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::create( filesystem_path_view path ) : filesystem_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -190,7 +191,7 @@ fn file_readable_writeable::create( file_path path ) : file_result</file_readabl
 	}
 }
 
-fn file_readable_writeable::create_new( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::create_new( filesystem_path_view path ) : filesystem_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -220,57 +221,57 @@ fn file_readable_writeable::take_native_handle( byval mut this ) unsafe : native
 	return h;
 }
 
-fn file_readable_writeable::get_metatada( this ) : file_result</file_metadata/>
+fn file_readable_writeable::get_metatada( this ) : filesystem_result</file_metadata/>
 {
 	return unsafe( get_metatada_impl( handle_ ) );
 }
 
-fn file_readable_writeable::get_size( this ) : file_result</u64/>
+fn file_readable_writeable::get_size( this ) : filesystem_result</u64/>
 {
 	return unsafe( get_size_impl( handle_ ) );
 }
 
-fn file_readable_writeable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+fn file_readable_writeable::set_permissions( mut this, file_permissions permissions ) : filesystem_result</void/>
 {
 	return unsafe( set_permissions_impl( handle_, permissions ) );
 }
 
-fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
+fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : filesystem_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
 }
 
-fn file_readable_writeable::read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>
+fn file_readable_writeable::read_exact( mut this, array_view_mut</byte8/> buf ) : filesystem_result</void/>
 {
 	return unsafe( read_exact_impl( handle_, buf ) );
 }
 
-fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
+fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : filesystem_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
 }
 
-fn file_readable_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>
+fn file_readable_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : filesystem_result</void/>
 {
 	return unsafe( write_all_impl( handle_, buf ) );
 }
 
-fn file_readable_writeable::flush( mut this ) : file_result</void/>
+fn file_readable_writeable::flush( mut this ) : filesystem_result</void/>
 {
 	return unsafe( flush_impl( handle_ ) );
 }
 
-fn file_readable_writeable::flush_all( mut this ) : file_result</void/>
+fn file_readable_writeable::flush_all( mut this ) : filesystem_result</void/>
 {
 	return unsafe( flush_all_impl( handle_ ) );
 }
 
-fn file_readable_writeable::resize( mut this, u64 new_size ) : file_result</void/>
+fn file_readable_writeable::resize( mut this, u64 new_size ) : filesystem_result</void/>
 {
 	return unsafe( resize_impl( handle_, new_size ) );
 }
 
-fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
+fn file_readable_writeable::seek( mut this, u64 offset ) : filesystem_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
 }
@@ -279,9 +280,9 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 // various functions
 //
 
-fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
+fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var stat_ mut s= zero_init;
 	auto res= unsafe( ::lstat( path_nt.data(), $<(s) ) );
@@ -300,9 +301,9 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 	};
 }
 
-fn set_permissions_for_path( file_path path, file_permissions permissions ) : file_result</void/>
+fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : filesystem_result</void/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 	auto res= unsafe( ::chmod( path_nt.data(), permissions.bits ) );
 	if( res != 0 )
 	{
@@ -312,9 +313,9 @@ fn set_permissions_for_path( file_path path, file_permissions permissions ) : fi
 	return void();
 }
 
-fn create_directory( file_path path ) : file_result</void/>
+fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var u32 file_mode= 0o777u; // TODO - allow to select it.
 
@@ -338,19 +339,19 @@ fn create_directory( file_path path ) : file_result</void/>
 	return void();
 }
 
-fn copy_file( file_path src_path, file_path dst_path ) : file_result</void/>
+fn copy_file( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>
 {
 	return copy_file_impl( src_path, dst_path, false );
 }
 
-fn copy_file_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+fn copy_file_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>
 {
 	return copy_file_impl( src_path, dst_path, true );
 }
 
-fn copy_file_impl( file_path src_path, file_path dst_path, bool ensure_new ) : file_result</void/>
+fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path, bool ensure_new ) : filesystem_result</void/>
 {
-	var file_result</native_file_handle/> mut src_res=
+	var filesystem_result</native_file_handle/> mut src_res=
 		unsafe( open_file_impl( src_path, open_options{ .read= true, .write= false, .create= false, .truncate= false, .ensure_new= false } ) );
 	if( src_res.is_error() )
 	{
@@ -358,7 +359,7 @@ fn copy_file_impl( file_path src_path, file_path dst_path, bool ensure_new ) : f
 	}
 	var native_file_handle src_handle= move(src_res).try_take();
 
-	var file_result</native_file_handle/> mut dst_res=
+	var filesystem_result</native_file_handle/> mut dst_res=
 		unsafe( open_file_impl( dst_path, open_options{ .read= false, .write= true, .create= true, .truncate= true, .ensure_new= ensure_new } ) );
 	if( dst_res.is_error() )
 	{
@@ -367,7 +368,7 @@ fn copy_file_impl( file_path src_path, file_path dst_path, bool ensure_new ) : f
 	}
 	var native_file_handle dst_handle= move(dst_res).try_take();
 
-	var file_result</u64/> mut src_size_res= unsafe( get_size_impl( src_handle ) );
+	var filesystem_result</u64/> mut src_size_res= unsafe( get_size_impl( src_handle ) );
 	if( src_size_res.is_error() )
 	{
 		unsafe( close_file_impl( dst_handle ) );
@@ -412,10 +413,10 @@ fn copy_file_impl( file_path src_path, file_path dst_path, bool ensure_new ) : f
 	return void();
 }
 
-fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_result</void/>
+fn rename_file_or_directory( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>
 {
-	scoped_array char8 src_path_nt[ src_path.size() + 1s ]( src_path.iter().chain( file_path("\0").iter() ) );
-	scoped_array char8 dst_path_nt[ dst_path.size() + 1s ]( dst_path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 src_path_nt[ src_path.size() + 1s ]( src_path.iter().chain( filesystem_path_view("\0").iter() ) );
+	scoped_array char8 dst_path_nt[ dst_path.size() + 1s ]( dst_path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var i32 res= unsafe( ::rename( src_path_nt.data(), dst_path_nt.data() ) );
 	if( res == -1 )
@@ -425,7 +426,7 @@ fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_res
 	return void();
 }
 
-fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+fn rename_file_or_directory_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>
 {
 	// Check if destination exists.
 	// TODO - fix this. We need to do this atomically via some another system call, which fails if destination already exists.
@@ -436,9 +437,9 @@ fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_pat
 	return rename_file_or_directory( src_path, dst_path );
 }
 
-fn remove_file( file_path path ) : file_result</void/>
+fn remove_file( filesystem_path_view path ) : filesystem_result</void/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	auto res= unsafe( ::unlink( path_nt.data() ) );
 	if( res == -1 )
@@ -449,9 +450,9 @@ fn remove_file( file_path path ) : file_result</void/>
 	return void();
 }
 
-fn remove_directory( file_path path ) : file_result</void/>
+fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	auto res= unsafe( ::rmdir( path_nt.data() ) );
 	if( res == -1 )
@@ -462,9 +463,9 @@ fn remove_directory( file_path path ) : file_result</void/>
 	return void();
 }
 
-fn get_current_directory() : string8
+fn get_current_directory() : filesystem_path
 {
-	var string8 mut res;
+	var filesystem_path mut res;
 	res.resize( 256s, "\0"c8 );
 	for( auto mut i= 0s; i < 8s; ++i )
 	{
@@ -496,12 +497,12 @@ fn get_current_directory() : string8
 	}
 
 	// Return some dummy in case of fail.
-	return string8();
+	return filesystem_path();
 }
 
-fn set_current_directory( file_path path ) : file_result</void/>
+fn set_current_directory( filesystem_path_view path ) : filesystem_result</void/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 	var i32 res= unsafe( ::chdir( path_nt.data() ) );
 	if( res == -1 )
 	{
@@ -514,9 +515,9 @@ fn set_current_directory( file_path path ) : file_result</void/>
 // directory_raw_iterator
 //
 
-fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ directory_raw_iterator /> />
+fn directory_raw_iterator::open( filesystem_path_view path ) : filesystem_result</ iterator</ directory_raw_iterator /> />
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var $(DIR) res= unsafe( ::opendir( path_nt.data() ) );
 	if( is_nullptr(res) )
@@ -539,7 +540,7 @@ fn directory_raw_iterator::impl_unix::destructor()
 	}
 }
 
-fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ file_result</directory_entry/> />
+fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ filesystem_result</directory_entry/> />
 {
 	if( is_nullptr( handle_ ) )
 	{
@@ -564,7 +565,7 @@ fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ file_result<
 			}
 			else
 			{
-				return file_result</directory_entry/>( translate_errno( err ) ); // Some error occured.
+				return filesystem_result</directory_entry/>( translate_errno( err ) ); // Some error occured.
 			}
 		}
 
@@ -587,10 +588,10 @@ fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ file_result<
 		}
 
 		return
-			file_result</directory_entry/>(
+			filesystem_result</directory_entry/>(
 				directory_entry
 				{
-					.name= string_view8( entry.d_name ).subrange_end( name_size ),
+					.name= filesystem_path_view( entry.d_name ).subrange_end( name_size ),
 					.kind= directory_entry_type_to_file_kind( entry.d_type ),
 				} );
 	}
@@ -609,9 +610,9 @@ struct open_options
 	bool ensure_new;
 }
 
-fn open_file_impl( file_path path, open_options& options ) unsafe : file_result</native_file_handle/>
+fn open_file_impl( filesystem_path_view path, open_options& options ) unsafe : filesystem_result</native_file_handle/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var i32 mut open_flags= 0;
 	var u32 mut file_mode= 0u;
@@ -658,7 +659,7 @@ fn close_file_impl( native_file_handle handle ) unsafe
 	unsafe( ::close( handle ) );
 }
 
-fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
+fn get_metatada_impl( native_file_handle handle ) : filesystem_result</file_metadata/>
 {
 	var stat_ mut s= zero_init;
 	auto res= unsafe( ::fstat( handle, $<(s) ) );
@@ -712,7 +713,7 @@ fn timespec_to_system_time( timespec& t ) unsafe : system_time
 	return unsafe( system_time( system_time::impl_unix{ .seconds= t.tv_sec, .nanoseconds= t.tv_nsec } ) );
 }
 
-fn get_size_impl( native_file_handle handle ) : file_result</u64/>
+fn get_size_impl( native_file_handle handle ) : filesystem_result</u64/>
 {
 	var stat_ mut s= zero_init;
 	auto res= unsafe( ::fstat( handle, $<(s) ) );
@@ -724,7 +725,7 @@ fn get_size_impl( native_file_handle handle ) : file_result</u64/>
 	return u64(s.st_size);
 }
 
-fn set_permissions_impl( native_file_handle handle, file_permissions permissions ) : file_result</void/>
+fn set_permissions_impl( native_file_handle handle, file_permissions permissions ) : filesystem_result</void/>
 {
 	auto res= unsafe( ::fchmod( handle, permissions.bits ) );
 	if( res != 0 )
@@ -735,7 +736,7 @@ fn set_permissions_impl( native_file_handle handle, file_permissions permissions
 	return void();
 }
 
-fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
+fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : filesystem_result</size_type/>
 {
 	var ssize_type read_res = unsafe( ::read( handle, buf.data(), buf.size() ) );
 
@@ -748,7 +749,7 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 	return size_type(read_res);
 }
 
-fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</void/>
+fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : filesystem_result</void/>
 {
 	for( var size_type mut offset= 0s; offset < buf.size(); )
 	{
@@ -776,7 +777,7 @@ fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) uns
 	return void();
 }
 
-fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
+fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : filesystem_result</size_type/>
 {
 	var ssize_type write_res = unsafe( ::write( handle, buf.data(), buf.size() ) );
 
@@ -789,7 +790,7 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 	return size_type(write_res);
 }
 
-fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</void/>
+fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : filesystem_result</void/>
 {
 	for( var size_type mut offset= 0s; offset < buf.size(); )
 	{
@@ -817,7 +818,7 @@ fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) uns
 	return void();
 }
 
-fn flush_impl( native_file_handle handle ) unsafe : file_result</void/>
+fn flush_impl( native_file_handle handle ) unsafe : filesystem_result</void/>
 {
 	var i32 res= unsafe( ::fdatasync( handle ) );
 	if( res == -1 )
@@ -827,7 +828,7 @@ fn flush_impl( native_file_handle handle ) unsafe : file_result</void/>
 	return void();
 }
 
-fn flush_all_impl( native_file_handle handle ) unsafe : file_result</void/>
+fn flush_all_impl( native_file_handle handle ) unsafe : filesystem_result</void/>
 {
 	var i32 res= unsafe( ::fsync( handle ) );
 	if( res == -1 )
@@ -837,7 +838,7 @@ fn flush_all_impl( native_file_handle handle ) unsafe : file_result</void/>
 	return void();
 }
 
-fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : file_result</void/>
+fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : filesystem_result</void/>
 {
 	var i32 res= unsafe( ::ftruncate( handle, i64(new_size) ) );
 	if( res == -1 )
@@ -847,7 +848,7 @@ fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : file_result</
 	return void();
 }
 
-fn seek_impl( native_file_handle handle, u64 offset ) unsafe : file_result</void/>
+fn seek_impl( native_file_handle handle, u64 offset ) unsafe : filesystem_result</void/>
 {
 	var ü__off64_t seek_res= unsafe( ::lseek64( handle, ü__off64_t(offset), SEEK_SET ) );
 

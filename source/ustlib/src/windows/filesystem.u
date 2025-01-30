@@ -1,3 +1,4 @@
+import "../../imports/directory_iterator.u"
 import "../../imports/file.u"
 import "../../imports/minmax.u"
 import "../../imports/utf.u"
@@ -12,7 +13,7 @@ static_assert( same_type</native_file_handle, HANDLE/>, "Types mismatch!" );
 // file_readable
 //
 
-fn file_readable::open( file_path path ) : file_result</file_readable/>
+fn file_readable::open( filesystem_path_view path ) : filesystem_result</file_readable/>
 {
 	unsafe
 	{
@@ -42,32 +43,32 @@ fn file_readable::take_native_handle( byval mut this ) unsafe : native_file_hand
 	return h;
 }
 
-fn file_readable::get_metatada( this ) : file_result</file_metadata/>
+fn file_readable::get_metatada( this ) : filesystem_result</file_metadata/>
 {
 	return unsafe( get_metatada_impl( handle_ ) );
 }
 
-fn file_readable::get_size( this ) : file_result</u64/>
+fn file_readable::get_size( this ) : filesystem_result</u64/>
 {
 	return unsafe( get_size_impl( handle_ ) );
 }
 
-fn file_readable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+fn file_readable::set_permissions( mut this, file_permissions permissions ) : filesystem_result</void/>
 {
 	return unsafe( set_permissions_impl( handle_, permissions ) );
 }
 
-fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
+fn file_readable::read( mut this, array_view_mut</byte8/> buf ) : filesystem_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
 }
 
-fn file_readable::read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>
+fn file_readable::read_exact( mut this, array_view_mut</byte8/> buf ) : filesystem_result</void/>
 {
 	return unsafe( read_exact_impl( handle_, buf ) );
 }
 
-fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
+fn file_readable::seek( mut this, u64 offset ) : filesystem_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
 }
@@ -76,7 +77,7 @@ fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
 // file_writeable
 //
 
-fn file_writeable::open( file_path path ) : file_result</file_writeable/>
+fn file_writeable::open( filesystem_path_view path ) : filesystem_result</file_writeable/>
 {
 	unsafe
 	{
@@ -85,7 +86,7 @@ fn file_writeable::open( file_path path ) : file_result</file_writeable/>
 	}
 }
 
-fn file_writeable::create( file_path path ) : file_result</file_writeable/>
+fn file_writeable::create( filesystem_path_view path ) : filesystem_result</file_writeable/>
 {
 	unsafe
 	{
@@ -94,7 +95,7 @@ fn file_writeable::create( file_path path ) : file_result</file_writeable/>
 	}
 }
 
-fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
+fn file_writeable::create_new( filesystem_path_view path ) : filesystem_result</file_writeable/>
 {
 	unsafe
 	{
@@ -124,47 +125,47 @@ fn file_writeable::take_native_handle( byval mut this ) unsafe : native_file_han
 	return h;
 }
 
-fn file_writeable::get_metatada( this ) : file_result</file_metadata/>
+fn file_writeable::get_metatada( this ) : filesystem_result</file_metadata/>
 {
 	return unsafe( get_metatada_impl( handle_ ) );
 }
 
-fn file_writeable::get_size( this ) : file_result</u64/>
+fn file_writeable::get_size( this ) : filesystem_result</u64/>
 {
 	return unsafe( get_size_impl( handle_ ) );
 }
 
-fn file_writeable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+fn file_writeable::set_permissions( mut this, file_permissions permissions ) : filesystem_result</void/>
 {
 	return unsafe( set_permissions_impl( handle_, permissions ) );
 }
 
-fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
+fn file_writeable::write( mut this, array_view_imut</byte8/> buf ) : filesystem_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
 }
 
-fn file_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>
+fn file_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : filesystem_result</void/>
 {
 	return unsafe( write_all_impl( handle_, buf ) );
 }
 
-fn file_writeable::flush( mut this ) : file_result</void/>
+fn file_writeable::flush( mut this ) : filesystem_result</void/>
 {
 	return unsafe( flush_impl( handle_ ) );
 }
 
-fn file_writeable::flush_all( mut this ) : file_result</void/>
+fn file_writeable::flush_all( mut this ) : filesystem_result</void/>
 {
 	return unsafe( flush_all_impl( handle_ ) );
 }
 
-fn file_writeable::resize( mut this, u64 new_size ) : file_result</void/>
+fn file_writeable::resize( mut this, u64 new_size ) : filesystem_result</void/>
 {
 	return unsafe( resize_impl( handle_, new_size ) );
 }
 
-fn file_writeable::seek( mut this, u64 offset ) : file_result</void/>
+fn file_writeable::seek( mut this, u64 offset ) : filesystem_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
 }
@@ -173,7 +174,7 @@ fn file_writeable::seek( mut this, u64 offset ) : file_result</void/>
 // file_readable_writeable
 //
 
-fn file_readable_writeable::open( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::open( filesystem_path_view path ) : filesystem_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -182,7 +183,7 @@ fn file_readable_writeable::open( file_path path ) : file_result</file_readable_
 	}
 }
 
-fn file_readable_writeable::create( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::create( filesystem_path_view path ) : filesystem_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -191,7 +192,7 @@ fn file_readable_writeable::create( file_path path ) : file_result</file_readabl
 	}
 }
 
-fn file_readable_writeable::create_new( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::create_new( filesystem_path_view path ) : filesystem_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -200,17 +201,17 @@ fn file_readable_writeable::create_new( file_path path ) : file_result</file_rea
 	}
 }
 
-fn file_readable_writeable::get_metatada( this ) : file_result</file_metadata/>
+fn file_readable_writeable::get_metatada( this ) : filesystem_result</file_metadata/>
 {
 	return unsafe( get_metatada_impl( handle_ ) );
 }
 
-fn file_readable_writeable::get_size( this ) : file_result</u64/>
+fn file_readable_writeable::get_size( this ) : filesystem_result</u64/>
 {
 	return unsafe( get_size_impl( handle_ ) );
 }
 
-fn file_readable_writeable::set_permissions( mut this, file_permissions permissions ) : file_result</void/>
+fn file_readable_writeable::set_permissions( mut this, file_permissions permissions ) : filesystem_result</void/>
 {
 	return unsafe( set_permissions_impl( handle_, permissions ) );
 }
@@ -236,42 +237,42 @@ fn file_readable_writeable::take_native_handle( byval mut this ) unsafe : native
 	return h;
 }
 
-fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : file_result</size_type/>
+fn file_readable_writeable::read( mut this, array_view_mut</byte8/> buf ) : filesystem_result</size_type/>
 {
 	return unsafe( read_impl( handle_, buf ) );
 }
 
-fn file_readable_writeable::read_exact( mut this, array_view_mut</byte8/> buf ) : file_result</void/>
+fn file_readable_writeable::read_exact( mut this, array_view_mut</byte8/> buf ) : filesystem_result</void/>
 {
 	return unsafe( read_exact_impl( handle_, buf ) );
 }
 
-fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : file_result</size_type/>
+fn file_readable_writeable::write( mut this, array_view_imut</byte8/> buf ) : filesystem_result</size_type/>
 {
 	return unsafe( write_impl( handle_, buf ) );
 }
 
-fn file_readable_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : file_result</void/>
+fn file_readable_writeable::write_all( mut this, array_view_imut</byte8/> buf ) : filesystem_result</void/>
 {
 	return unsafe( write_all_impl( handle_, buf ) );
 }
 
-fn file_readable_writeable::flush( mut this ) : file_result</void/>
+fn file_readable_writeable::flush( mut this ) : filesystem_result</void/>
 {
 	return unsafe( flush_impl( handle_ ) );
 }
 
-fn file_readable_writeable::flush_all( mut this ) : file_result</void/>
+fn file_readable_writeable::flush_all( mut this ) : filesystem_result</void/>
 {
 	return unsafe( flush_all_impl( handle_ ) );
 }
 
-fn file_readable_writeable::resize( mut this, u64 new_size ) : file_result</void/>
+fn file_readable_writeable::resize( mut this, u64 new_size ) : filesystem_result</void/>
 {
 	return unsafe( resize_impl( handle_, new_size ) );
 }
 
-fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
+fn file_readable_writeable::seek( mut this, u64 offset ) : filesystem_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
 }
@@ -280,7 +281,7 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 // various functions
 //
 
-fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
+fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>
 {
 	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( path );
 
@@ -307,7 +308,7 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 	};
 }
 
-fn set_permissions_for_path( file_path path, file_permissions permissions ) : file_result</void/>
+fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : filesystem_result</void/>
 {
 	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( path );
 
@@ -337,7 +338,7 @@ fn set_permissions_for_path( file_path path, file_permissions permissions ) : fi
 	return void();
 }
 
-fn create_directory( file_path path ) : file_result</void/>
+fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
@@ -370,17 +371,17 @@ fn create_directory( file_path path ) : file_result</void/>
 	return translate_error_code( last_error );
 }
 
-fn copy_file( file_path src_path, file_path dst_path ) : file_result</void/>
+fn copy_file( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>
 {
 	return copy_file_impl( src_path, dst_path, false );
 }
 
-fn copy_file_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+fn copy_file_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>
 {
 	return copy_file_impl( src_path, dst_path, true );
 }
 
-fn copy_file_impl( file_path src_path, file_path dst_path, bool fail_if_exists ) : file_result</void/>
+fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path, bool fail_if_exists ) : filesystem_result</void/>
 {
 	var wide_string mut src_path_null_terminated= utf8_to_null_terminated_wide_string( src_path );
 	var wide_string mut dst_path_null_terminated= utf8_to_null_terminated_wide_string( dst_path );
@@ -398,7 +399,7 @@ fn copy_file_impl( file_path src_path, file_path dst_path, bool fail_if_exists )
 	return void();
 }
 
-fn remove_file( file_path path ) : file_result</void/>
+fn remove_file( filesystem_path_view path ) : filesystem_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
@@ -411,17 +412,17 @@ fn remove_file( file_path path ) : file_result</void/>
 	return void();
 }
 
-fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_result</void/>
+fn rename_file_or_directory( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>
 {
 	return rename_file_or_directory_impl( src_path, dst_path, true );
 }
 
-fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+fn rename_file_or_directory_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>
 {
 	return rename_file_or_directory_impl( src_path, dst_path, false );
 }
 
-fn rename_file_or_directory_impl( file_path src_path, file_path dst_path, bool replace_existing ) : file_result</void/>
+fn rename_file_or_directory_impl( filesystem_path_view src_path, filesystem_path_view dst_path, bool replace_existing ) : filesystem_result</void/>
 {
 	var wide_string mut src_path_null_terminated= utf8_to_null_terminated_wide_string( src_path );
 	var wide_string mut dst_path_null_terminated= utf8_to_null_terminated_wide_string( dst_path );
@@ -439,7 +440,7 @@ fn rename_file_or_directory_impl( file_path src_path, file_path dst_path, bool r
 	return void();
 }
 
-fn remove_directory( file_path path ) : file_result</void/>
+fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
@@ -452,7 +453,7 @@ fn remove_directory( file_path path ) : file_result</void/>
 	return void();
 }
 
-fn get_current_directory() : string8
+fn get_current_directory() : filesystem_path
 {
 	var wide_string mut res;
 	for( auto mut i= 0s; i < 8s; ++i )
@@ -461,7 +462,7 @@ fn get_current_directory() : string8
 		if( len == 0u )
 		{
 			// Fail - return some dummy.
-			return string8();
+			return filesystem_path();
 		}
 
 		if( len <= DWORD( res.size() ) )
@@ -478,7 +479,7 @@ fn get_current_directory() : string8
 	return wide_string_to_utf8( res );
 }
 
-fn set_current_directory( file_path path ) : file_result</void/>
+fn set_current_directory( filesystem_path_view path ) : filesystem_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
@@ -495,7 +496,7 @@ fn set_current_directory( file_path path ) : file_result</void/>
 // Directory iterator
 //
 
-fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ directory_raw_iterator /> />
+fn directory_raw_iterator::open( filesystem_path_view path ) : filesystem_result</ iterator</ directory_raw_iterator /> />
 {
 	if( path.empty() )
 	{
@@ -545,19 +546,19 @@ fn directory_raw_iterator::impl_windows::destructor()
 	}
 }
 
-fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_result</directory_entry/> />
+fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ filesystem_result</directory_entry/> />
 {
 	if( !first_entry_.empty() )
 	{
 		var directory_entry mut first_entry= first_entry_.try_take();
 		if( !directory_entry_should_be_ignored( first_entry.name ) )
 		{
-			return file_result</directory_entry/>( move(first_entry) );
+			return filesystem_result</directory_entry/>( move(first_entry) );
 		}
 	}
 	if( handle_ == get_invalid_handle() )
 	{
-		return optional</ file_result</directory_entry/> />();
+		return optional</ filesystem_result</directory_entry/> />();
 	}
 
 	var WIN32_FIND_DATAW mut find_data= zero_init; // TODO - avoid zeroing it for performance reasons?
@@ -576,21 +577,21 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ file_resu
 			if( err == DWORD(ERROR_NO_MORE_FILES) )
 			{
 				// Not actually an error - return empty optional to indicate end of iteration.
-				return optional</ file_result</directory_entry/> />();
+				return optional</ filesystem_result</directory_entry/> />();
 			}
 
 			// Actual error.
-			return file_result</directory_entry/>( translate_error_code( err ) );
+			return filesystem_result</directory_entry/>( translate_error_code( err ) );
 		}
 
-		var string8 mut entry_name= extract_file_name_from_find_data( find_data );
+		var filesystem_path mut entry_name= extract_file_name_from_find_data( find_data );
 		if( directory_entry_should_be_ignored(entry_name) )
 		{
 			continue;
 		}
 
 		return
-			file_result</directory_entry/>(
+			filesystem_result</directory_entry/>(
 				directory_entry
 				{
 					.name= move(entry_name),
@@ -604,7 +605,7 @@ fn directory_entry_should_be_ignored( string_view8 entry_name ) : bool
 	return entry_name == "." || entry_name == "..";
 }
 
-fn extract_file_name_from_find_data( WIN32_FIND_DATAW& find_data ) : string8
+fn extract_file_name_from_find_data( WIN32_FIND_DATAW& find_data ) : filesystem_path
 {
 	var size_type mut s= 0s;
 	while( s < typeinfo</ typeof(find_data.cFileName) />.element_count )
@@ -631,7 +632,7 @@ struct open_options
 	bool ensure_new;
 }
 
-fn open_file_impl( file_path path, open_options& options ) unsafe : file_result</native_file_handle/>
+fn open_file_impl( filesystem_path_view path, open_options& options ) unsafe : filesystem_result</native_file_handle/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
@@ -689,7 +690,7 @@ fn close_file_impl( native_file_handle handle ) unsafe
 	unsafe( ::CloseHandle( handle ) );
 }
 
-fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
+fn get_metatada_impl( native_file_handle handle ) : filesystem_result</file_metadata/>
 {
 	var BY_HANDLE_FILE_INFORMATION mut info= zero_init;
 	var BOOL res = unsafe( ::GetFileInformationByHandle( handle, $<(info) ) );
@@ -708,7 +709,7 @@ fn get_metatada_impl( native_file_handle handle ) : file_result</file_metadata/>
 	};
 }
 
-fn get_size_impl( native_file_handle handle ) : file_result</u64/>
+fn get_size_impl( native_file_handle handle ) : filesystem_result</u64/>
 {
 	var LARGE_INTEGER mut i= zero_init;
 	var BOOL res = unsafe( ::GetFileSizeEx( handle, $<(i) ) );
@@ -720,7 +721,7 @@ fn get_size_impl( native_file_handle handle ) : file_result</u64/>
 	return u64(i.union_contents[0]);
 }
 
-fn set_permissions_impl( native_file_handle handle, file_permissions permissions ) : file_result</void/>
+fn set_permissions_impl( native_file_handle handle, file_permissions permissions ) : filesystem_result</void/>
 {
 	var FILE_BASIC_INFO mut info= zero_init;
 	var BOOL get_res =
@@ -788,7 +789,7 @@ fn file_attributes_to_file_permissions( DWORD attributes ) : file_permissions
 	}
 }
 
-fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</size_type/>
+fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : filesystem_result</size_type/>
 {
 	var DWORD mut bytes_read = 0u;
 	var BOOL res =
@@ -808,7 +809,7 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 	return size_type(bytes_read);
 }
 
-fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : file_result</void/>
+fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : filesystem_result</void/>
 {
 	for( var size_type mut offset= 0s; offset < buf.size(); )
 	{
@@ -836,7 +837,7 @@ fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) uns
 	return void();
 }
 
-fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</size_type/>
+fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : filesystem_result</size_type/>
 {
 	var DWORD mut bytes_written = 0u;
 	var BOOL res =
@@ -856,7 +857,7 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 	return size_type(bytes_written);
 }
 
-fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : file_result</void/>
+fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : filesystem_result</void/>
 {
 	for( var size_type mut offset= 0s; offset < buf.size(); )
 	{
@@ -884,7 +885,7 @@ fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) uns
 	return void();
 }
 
-fn flush_impl( native_file_handle handle ) unsafe : file_result</void/>
+fn flush_impl( native_file_handle handle ) unsafe : filesystem_result</void/>
 {
 	var i32 res= unsafe( ::FlushFileBuffers( handle ) );
 	if( res == 0 )
@@ -894,13 +895,13 @@ fn flush_impl( native_file_handle handle ) unsafe : file_result</void/>
 	return void();
 }
 
-fn flush_all_impl( native_file_handle handle ) unsafe : file_result</void/>
+fn flush_all_impl( native_file_handle handle ) unsafe : filesystem_result</void/>
 {
 	// As I understand under Windows there is no difference between flushing data and metadata for a file.
 	return unsafe( flush_impl( handle ) );
 }
 
-fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : file_result</void/>
+fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : filesystem_result</void/>
 {
 	var FILE_END_OF_FILE_INFO mut e{ .EndOfFile{ .union_contents[ byte64(new_size) ] } };
 
@@ -919,7 +920,7 @@ fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : file_result</
 	return void();
 }
 
-fn seek_impl( native_file_handle handle, u64 offset ) unsafe : file_result</void/>
+fn seek_impl( native_file_handle handle, u64 offset ) unsafe : filesystem_result</void/>
 {
 	var LARGE_INTEGER li_offset{ .union_contents[ byte64(offset) ] };
 
@@ -954,7 +955,7 @@ fn utf8_to_null_terminated_wide_string( string_view8 v ) : wide_string
 	return res;
 }
 
-fn wide_string_to_utf8( array_view_imut</WCHAR/> v ) : string8
+fn wide_string_to_utf8( array_view_imut</WCHAR/> v ) : filesystem_path
 {
 	return utf::convert_utf16_to_utf8_string(v);
 }

@@ -58,7 +58,6 @@ Lambdas:
 *) Template lambdas
 
 Standart library:
-*) Reorganize filesystem-related functionality, maybe split it into several files and rename existing files
 *) Support opening files with appending
 *) Buffered reader/writer wrappers for files
 *) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
@@ -138,7 +137,6 @@ Interpreter:
 
 Compiler1:
 *) Support 128-bit types in switch operator
-*) Avoid storing common compiler files (keywords list, errors list) inside compiler1 source directory
 
 QtCreator plugin:
 *) Language server features support
@@ -186,7 +184,6 @@ CPP Header converter:
 	and type alias for it
 
 Ü Build system:
-*) Use file/directory functions from "ustlib"
 *) Fix JSON floats serialization
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
 *) Fix possible global mutable variables and type id tables duplication because of private linking of a library into
@@ -227,4 +224,3 @@ Documentation:
 *) Describe more language details
 *) Documentation for interpreter
 *) Describe undefined behavior
-*) Document files/directories functionality of the standard library
