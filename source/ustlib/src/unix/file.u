@@ -11,7 +11,7 @@ static_assert( same_type</native_file_handle, i32/>, "Types mismatch!" );
 // file_readable
 //
 
-fn file_readable::open( file_path path ) : file_result</file_readable/>
+fn file_readable::open( filesystem_path_view path ) : file_result</file_readable/>
 {
 	unsafe
 	{
@@ -75,7 +75,7 @@ fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
 // file_writeable
 //
 
-fn file_writeable::open( file_path path ) : file_result</file_writeable/>
+fn file_writeable::open( filesystem_path_view path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
@@ -84,7 +84,7 @@ fn file_writeable::open( file_path path ) : file_result</file_writeable/>
 	}
 }
 
-fn file_writeable::create( file_path path ) : file_result</file_writeable/>
+fn file_writeable::create( filesystem_path_view path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
@@ -93,7 +93,7 @@ fn file_writeable::create( file_path path ) : file_result</file_writeable/>
 	}
 }
 
-fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
+fn file_writeable::create_new( filesystem_path_view path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
@@ -172,7 +172,7 @@ fn file_writeable::seek( mut this, u64 offset ) : file_result</void/>
 // file_readable_writeable
 //
 
-fn file_readable_writeable::open( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::open( filesystem_path_view path ) : file_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -181,7 +181,7 @@ fn file_readable_writeable::open( file_path path ) : file_result</file_readable_
 	}
 }
 
-fn file_readable_writeable::create( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::create( filesystem_path_view path ) : file_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -190,7 +190,7 @@ fn file_readable_writeable::create( file_path path ) : file_result</file_readabl
 	}
 }
 
-fn file_readable_writeable::create_new( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::create_new( filesystem_path_view path ) : file_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -279,9 +279,9 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 // various functions
 //
 
-fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
+fn get_metadata_for_path( filesystem_path_view path ) : file_result</file_metadata/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var stat_ mut s= zero_init;
 	auto res= unsafe( ::lstat( path_nt.data(), $<(s) ) );
@@ -300,9 +300,9 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 	};
 }
 
-fn set_permissions_for_path( file_path path, file_permissions permissions ) : file_result</void/>
+fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : file_result</void/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 	auto res= unsafe( ::chmod( path_nt.data(), permissions.bits ) );
 	if( res != 0 )
 	{
@@ -312,9 +312,9 @@ fn set_permissions_for_path( file_path path, file_permissions permissions ) : fi
 	return void();
 }
 
-fn create_directory( file_path path ) : file_result</void/>
+fn create_directory( filesystem_path_view path ) : file_result</void/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var u32 file_mode= 0o777u; // TODO - allow to select it.
 
@@ -338,17 +338,17 @@ fn create_directory( file_path path ) : file_result</void/>
 	return void();
 }
 
-fn copy_file( file_path src_path, file_path dst_path ) : file_result</void/>
+fn copy_file( filesystem_path_view src_path, filesystem_path_view dst_path ) : file_result</void/>
 {
 	return copy_file_impl( src_path, dst_path, false );
 }
 
-fn copy_file_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+fn copy_file_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : file_result</void/>
 {
 	return copy_file_impl( src_path, dst_path, true );
 }
 
-fn copy_file_impl( file_path src_path, file_path dst_path, bool ensure_new ) : file_result</void/>
+fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path, bool ensure_new ) : file_result</void/>
 {
 	var file_result</native_file_handle/> mut src_res=
 		unsafe( open_file_impl( src_path, open_options{ .read= true, .write= false, .create= false, .truncate= false, .ensure_new= false } ) );
@@ -412,10 +412,10 @@ fn copy_file_impl( file_path src_path, file_path dst_path, bool ensure_new ) : f
 	return void();
 }
 
-fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_result</void/>
+fn rename_file_or_directory( filesystem_path_view src_path, filesystem_path_view dst_path ) : file_result</void/>
 {
-	scoped_array char8 src_path_nt[ src_path.size() + 1s ]( src_path.iter().chain( file_path("\0").iter() ) );
-	scoped_array char8 dst_path_nt[ dst_path.size() + 1s ]( dst_path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 src_path_nt[ src_path.size() + 1s ]( src_path.iter().chain( filesystem_path_view("\0").iter() ) );
+	scoped_array char8 dst_path_nt[ dst_path.size() + 1s ]( dst_path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var i32 res= unsafe( ::rename( src_path_nt.data(), dst_path_nt.data() ) );
 	if( res == -1 )
@@ -425,7 +425,7 @@ fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_res
 	return void();
 }
 
-fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+fn rename_file_or_directory_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : file_result</void/>
 {
 	// Check if destination exists.
 	// TODO - fix this. We need to do this atomically via some another system call, which fails if destination already exists.
@@ -436,9 +436,9 @@ fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_pat
 	return rename_file_or_directory( src_path, dst_path );
 }
 
-fn remove_file( file_path path ) : file_result</void/>
+fn remove_file( filesystem_path_view path ) : file_result</void/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	auto res= unsafe( ::unlink( path_nt.data() ) );
 	if( res == -1 )
@@ -449,9 +449,9 @@ fn remove_file( file_path path ) : file_result</void/>
 	return void();
 }
 
-fn remove_directory( file_path path ) : file_result</void/>
+fn remove_directory( filesystem_path_view path ) : file_result</void/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	auto res= unsafe( ::rmdir( path_nt.data() ) );
 	if( res == -1 )
@@ -499,9 +499,9 @@ fn get_current_directory() : string8
 	return string8();
 }
 
-fn set_current_directory( file_path path ) : file_result</void/>
+fn set_current_directory( filesystem_path_view path ) : file_result</void/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 	var i32 res= unsafe( ::chdir( path_nt.data() ) );
 	if( res == -1 )
 	{
@@ -514,9 +514,9 @@ fn set_current_directory( file_path path ) : file_result</void/>
 // directory_raw_iterator
 //
 
-fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ directory_raw_iterator /> />
+fn directory_raw_iterator::open( filesystem_path_view path ) : file_result</ iterator</ directory_raw_iterator /> />
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var $(DIR) res= unsafe( ::opendir( path_nt.data() ) );
 	if( is_nullptr(res) )
@@ -609,9 +609,9 @@ struct open_options
 	bool ensure_new;
 }
 
-fn open_file_impl( file_path path, open_options& options ) unsafe : file_result</native_file_handle/>
+fn open_file_impl( filesystem_path_view path, open_options& options ) unsafe : file_result</native_file_handle/>
 {
-	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( file_path("\0").iter() ) );
+	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var i32 mut open_flags= 0;
 	var u32 mut file_mode= 0u;

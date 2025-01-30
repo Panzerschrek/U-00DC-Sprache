@@ -12,7 +12,7 @@ static_assert( same_type</native_file_handle, HANDLE/>, "Types mismatch!" );
 // file_readable
 //
 
-fn file_readable::open( file_path path ) : file_result</file_readable/>
+fn file_readable::open( filesystem_path_view path ) : file_result</file_readable/>
 {
 	unsafe
 	{
@@ -76,7 +76,7 @@ fn file_readable::seek( mut this, u64 offset ) : file_result</void/>
 // file_writeable
 //
 
-fn file_writeable::open( file_path path ) : file_result</file_writeable/>
+fn file_writeable::open( filesystem_path_view path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
@@ -85,7 +85,7 @@ fn file_writeable::open( file_path path ) : file_result</file_writeable/>
 	}
 }
 
-fn file_writeable::create( file_path path ) : file_result</file_writeable/>
+fn file_writeable::create( filesystem_path_view path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
@@ -94,7 +94,7 @@ fn file_writeable::create( file_path path ) : file_result</file_writeable/>
 	}
 }
 
-fn file_writeable::create_new( file_path path ) : file_result</file_writeable/>
+fn file_writeable::create_new( filesystem_path_view path ) : file_result</file_writeable/>
 {
 	unsafe
 	{
@@ -173,7 +173,7 @@ fn file_writeable::seek( mut this, u64 offset ) : file_result</void/>
 // file_readable_writeable
 //
 
-fn file_readable_writeable::open( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::open( filesystem_path_view path ) : file_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -182,7 +182,7 @@ fn file_readable_writeable::open( file_path path ) : file_result</file_readable_
 	}
 }
 
-fn file_readable_writeable::create( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::create( filesystem_path_view path ) : file_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -191,7 +191,7 @@ fn file_readable_writeable::create( file_path path ) : file_result</file_readabl
 	}
 }
 
-fn file_readable_writeable::create_new( file_path path ) : file_result</file_readable_writeable/>
+fn file_readable_writeable::create_new( filesystem_path_view path ) : file_result</file_readable_writeable/>
 {
 	unsafe
 	{
@@ -280,7 +280,7 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : file_result</void/>
 // various functions
 //
 
-fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
+fn get_metadata_for_path( filesystem_path_view path ) : file_result</file_metadata/>
 {
 	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( path );
 
@@ -307,7 +307,7 @@ fn get_metadata_for_path( file_path path ) : file_result</file_metadata/>
 	};
 }
 
-fn set_permissions_for_path( file_path path, file_permissions permissions ) : file_result</void/>
+fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( path );
 
@@ -337,7 +337,7 @@ fn set_permissions_for_path( file_path path, file_permissions permissions ) : fi
 	return void();
 }
 
-fn create_directory( file_path path ) : file_result</void/>
+fn create_directory( filesystem_path_view path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
@@ -370,17 +370,17 @@ fn create_directory( file_path path ) : file_result</void/>
 	return translate_error_code( last_error );
 }
 
-fn copy_file( file_path src_path, file_path dst_path ) : file_result</void/>
+fn copy_file( filesystem_path_view src_path, filesystem_path_view dst_path ) : file_result</void/>
 {
 	return copy_file_impl( src_path, dst_path, false );
 }
 
-fn copy_file_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+fn copy_file_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : file_result</void/>
 {
 	return copy_file_impl( src_path, dst_path, true );
 }
 
-fn copy_file_impl( file_path src_path, file_path dst_path, bool fail_if_exists ) : file_result</void/>
+fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path, bool fail_if_exists ) : file_result</void/>
 {
 	var wide_string mut src_path_null_terminated= utf8_to_null_terminated_wide_string( src_path );
 	var wide_string mut dst_path_null_terminated= utf8_to_null_terminated_wide_string( dst_path );
@@ -398,7 +398,7 @@ fn copy_file_impl( file_path src_path, file_path dst_path, bool fail_if_exists )
 	return void();
 }
 
-fn remove_file( file_path path ) : file_result</void/>
+fn remove_file( filesystem_path_view path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
@@ -411,17 +411,17 @@ fn remove_file( file_path path ) : file_result</void/>
 	return void();
 }
 
-fn rename_file_or_directory( file_path src_path, file_path dst_path ) : file_result</void/>
+fn rename_file_or_directory( filesystem_path_view src_path, filesystem_path_view dst_path ) : file_result</void/>
 {
 	return rename_file_or_directory_impl( src_path, dst_path, true );
 }
 
-fn rename_file_or_directory_if_not_exists( file_path src_path, file_path dst_path ) : file_result</void/>
+fn rename_file_or_directory_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : file_result</void/>
 {
 	return rename_file_or_directory_impl( src_path, dst_path, false );
 }
 
-fn rename_file_or_directory_impl( file_path src_path, file_path dst_path, bool replace_existing ) : file_result</void/>
+fn rename_file_or_directory_impl( filesystem_path_view src_path, filesystem_path_view dst_path, bool replace_existing ) : file_result</void/>
 {
 	var wide_string mut src_path_null_terminated= utf8_to_null_terminated_wide_string( src_path );
 	var wide_string mut dst_path_null_terminated= utf8_to_null_terminated_wide_string( dst_path );
@@ -439,7 +439,7 @@ fn rename_file_or_directory_impl( file_path src_path, file_path dst_path, bool r
 	return void();
 }
 
-fn remove_directory( file_path path ) : file_result</void/>
+fn remove_directory( filesystem_path_view path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
@@ -478,7 +478,7 @@ fn get_current_directory() : string8
 	return wide_string_to_utf8( res );
 }
 
-fn set_current_directory( file_path path ) : file_result</void/>
+fn set_current_directory( filesystem_path_view path ) : file_result</void/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
@@ -495,7 +495,7 @@ fn set_current_directory( file_path path ) : file_result</void/>
 // Directory iterator
 //
 
-fn directory_raw_iterator::open( file_path path ) : file_result</ iterator</ directory_raw_iterator /> />
+fn directory_raw_iterator::open( filesystem_path_view path ) : file_result</ iterator</ directory_raw_iterator /> />
 {
 	if( path.empty() )
 	{
@@ -631,7 +631,7 @@ struct open_options
 	bool ensure_new;
 }
 
-fn open_file_impl( file_path path, open_options& options ) unsafe : file_result</native_file_handle/>
+fn open_file_impl( filesystem_path_view path, open_options& options ) unsafe : file_result</native_file_handle/>
 {
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 
