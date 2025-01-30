@@ -1,3 +1,4 @@
+import "../../imports/directory_iterator.u"
 import "../../imports/file.u"
 import "../../imports/scoped_array.u"
 import "unix.uh"
@@ -462,9 +463,9 @@ fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>
 	return void();
 }
 
-fn get_current_directory() : string8
+fn get_current_directory() : filesystem_path
 {
-	var string8 mut res;
+	var filesystem_path mut res;
 	res.resize( 256s, "\0"c8 );
 	for( auto mut i= 0s; i < 8s; ++i )
 	{
@@ -496,7 +497,7 @@ fn get_current_directory() : string8
 	}
 
 	// Return some dummy in case of fail.
-	return string8();
+	return filesystem_path();
 }
 
 fn set_current_directory( filesystem_path_view path ) : filesystem_result</void/>
@@ -590,7 +591,7 @@ fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ filesystem_r
 			filesystem_result</directory_entry/>(
 				directory_entry
 				{
-					.name= string_view8( entry.d_name ).subrange_end( name_size ),
+					.name= filesystem_path_view( entry.d_name ).subrange_end( name_size ),
 					.kind= directory_entry_type_to_file_kind( entry.d_type ),
 				} );
 	}

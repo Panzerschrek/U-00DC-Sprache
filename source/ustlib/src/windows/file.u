@@ -1,3 +1,4 @@
+import "../../imports/directory_iterator.u"
 import "../../imports/file.u"
 import "../../imports/minmax.u"
 import "../../imports/utf.u"
@@ -452,7 +453,7 @@ fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>
 	return void();
 }
 
-fn get_current_directory() : string8
+fn get_current_directory() : filesystem_path
 {
 	var wide_string mut res;
 	for( auto mut i= 0s; i < 8s; ++i )
@@ -461,7 +462,7 @@ fn get_current_directory() : string8
 		if( len == 0u )
 		{
 			// Fail - return some dummy.
-			return string8();
+			return filesystem_path();
 		}
 
 		if( len <= DWORD( res.size() ) )
@@ -583,7 +584,7 @@ fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ filesyste
 			return filesystem_result</directory_entry/>( translate_error_code( err ) );
 		}
 
-		var string8 mut entry_name= extract_file_name_from_find_data( find_data );
+		var filesystem_path mut entry_name= extract_file_name_from_find_data( find_data );
 		if( directory_entry_should_be_ignored(entry_name) )
 		{
 			continue;
@@ -604,7 +605,7 @@ fn directory_entry_should_be_ignored( string_view8 entry_name ) : bool
 	return entry_name == "." || entry_name == "..";
 }
 
-fn extract_file_name_from_find_data( WIN32_FIND_DATAW& find_data ) : string8
+fn extract_file_name_from_find_data( WIN32_FIND_DATAW& find_data ) : filesystem_path
 {
 	var size_type mut s= 0s;
 	while( s < typeinfo</ typeof(find_data.cFileName) />.element_count )
@@ -954,7 +955,7 @@ fn utf8_to_null_terminated_wide_string( string_view8 v ) : wide_string
 	return res;
 }
 
-fn wide_string_to_utf8( array_view_imut</WCHAR/> v ) : string8
+fn wide_string_to_utf8( array_view_imut</WCHAR/> v ) : filesystem_path
 {
 	return utf::convert_utf16_to_utf8_string(v);
 }

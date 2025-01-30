@@ -1,0 +1,76 @@
+import "file.u"
+
+namespace ust
+{
+
+// A structure describing entry within a directory.
+struct directory_entry
+{
+	filesystem_path name; // Simple name, not full path.
+	file_kind kind;
+	// TODO - add a system-specific fields, which are available for a directory entry (like permissions).
+}
+
+// Create an iterator over directory specified.
+// It iterates over all entries (files, subdirectories, etc.) within given directory.
+// "." and ".." are skipped.
+fn open_directory_for_iteration( filesystem_path_view path ) : filesystem_result</ iterator</ directory_raw_iterator /> />
+{
+	return directory_raw_iterator::open( path );
+}
+
+class directory_raw_iterator
+{
+public:
+	// Factory method for creating iterator instance.
+	fn open( filesystem_path_view path ) : filesystem_result</ iterator</ directory_raw_iterator /> />;
+
+public:
+	// Constructor for internal usage.
+	fn constructor( impl mut in_impl ) unsafe
+		( impl_= move(in_impl) )
+	{}
+
+public:
+	fn next( mut this ) : optional</ filesystem_result</directory_entry/> />
+	{
+		return impl_.next();
+	}
+
+private:
+	class impl_unix
+	{
+	public:
+		fn constructor( $(byte8) handle ) unsafe;
+		fn destructor();
+
+		fn next( mut this ) : optional</ filesystem_result</directory_entry/> />;
+
+	private:
+		$(byte8) handle_; // DIR struct pointer
+	}
+
+	class impl_windows
+	{
+	public:
+		fn constructor( $(byte8) handle, directory_entry first_entry ) unsafe;
+		fn destructor();
+
+		fn next( mut this ) : optional</ filesystem_result</directory_entry/> />;
+
+	private:
+		$(byte8) handle_; // HANDLE
+		optional</directory_entry/> first_entry_;
+	}
+
+	type impl=
+		type_select</
+			constexpr_string_equals( compiler::target::os, "windows" ),
+			impl_windows,
+			impl_unix />;
+
+private:
+	impl impl_;
+}
+
+} // namespace ust
