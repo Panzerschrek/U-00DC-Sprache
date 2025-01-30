@@ -28,7 +28,7 @@ General:
 	comparison across allocation boundaries, etc.
 *) Allow "auto-constexpr" for any function/method with body known
 *) A way to hide some names in common (imported) files - for implementation details
-*) A way to disable structs, type aliases, static asserts, other stuff in namespaces
+*) A way to disable structs, type aliases, static asserts, other stuff in namespaces - similar to "enable_if"
 *) Investigate possibility of conditional imports
 *) Functions with named parameters and ability to specify arguments in any order at call side usinig such names
 *) Create for each function a string variable constant like "__PRETTY_FUNCTION__" in order to fetch function
@@ -39,6 +39,7 @@ General:
 *) Generate order compare operators (<=>) where it can be done easily (for arrays, tuples, structs with single field).
 	Support operator <=> generation for ustlib types (if can do so).
 *) Alias for a namespace
+*) Investigate possibility to use "return" inside one of branches of ternary operator (?:)
 
 References:
 *) Support second order inner references for coroutine types
@@ -58,18 +59,7 @@ Lambdas:
 *) Template lambdas
 
 Standart library:
-*) Support opening files with appending
-*) Buffered reader/writer wrappers for files
-*) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
-*) Function for creation of the whole directories path
-*) Function for recursive directory removal
-*) Function for symlinks creation
-*) Function for symlinks resolving
-*) More file kinds - fifo, block device, etc.
-*) More file error kinds
-*) Fix "rename_file_or_directory_if_not_exists" implementation for Unix - perform operation atomically
-*) Memory-mapped files
-*) Examples for file-related functionality
+*) Filesystem path manipulation functions - concatenation, splitting, simplification, etc.
 *) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method
 *) Support types with references inside in some containers (variant, result, unordered_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
@@ -82,12 +72,23 @@ Standart library:
 *) Reverse iterators for random_access_range, unordered_map, etc.
 *) shared_ptr - store single pointer for non-polymorph types
 *) Time library - request monotonic time, perform ime difference calculations, perform conversions from/to calendar time
-*) Console input/output library
+*) Console input functions
 *) String formatting library
+*) Formatted console output functions
 *) Executor for async functions, possible multithreaded
 *) More type traits
 *) More math functions
 *) "result"-like container for reference results
+*) Support opening files with appending
+*) Fix "rename_file_or_directory_if_not_exists" implementation for Unix - perform operation atomically
+*) More file kinds - fifo, block device, etc.
+*) More file error kinds
+*) Memory-mapped files
+*) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
+*) Buffered reader/writer wrappers for files
+*) Function for creation of the whole directories path
+*) Function for recursive directory removal
+*) Examples for file-related functionality
 *) Try to optimize random_access_range - use start + end pointers instead of start + size.
 	This may improve iteration efficiency.
 *) Reference-counting immutable string class
