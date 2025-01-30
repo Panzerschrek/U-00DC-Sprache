@@ -6,12 +6,12 @@ namespace BK
 
 fn UTF8ToWideString( ust::string_view8 v ) : WideString
 {
-	return ust::utf::utf8_to_utf16_string(v);
+	return ust::utf::convert_utf8_to_utf16_string(v);
 }
 
 fn WideStringToUTF8( WideStringView mut v ) : ust::string8
 {
-	return ust::utf::utf16_to_utf8_string(v);
+	return ust::utf::convert_utf16_to_utf8_string(v);
 }
 
 }  // namespace BK

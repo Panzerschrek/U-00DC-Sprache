@@ -884,7 +884,7 @@ fn utf8_to_null_terminated_wide_string( string_view8 v ) : wide_string
 
 fn wide_string_to_utf8( array_view_imut</WCHAR/> v ) : string8
 {
-	return utf::convert_convert_utf16_to_utf8_string(v);
+	return utf::convert_utf16_to_utf8_string(v);
 }
 
 // Produces INVALID_HANDLE_VALUE.
