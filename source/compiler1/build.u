@@ -2,6 +2,9 @@ import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
+	var ust::string_view8 keywords_list_file_contents= embed</char8/>( "keywords_list.txt" );
+	var ust::string_view8 errors_list_file_contents= embed</char8/>( "errors_list.hpp" );
+
 	auto& lib_name= "CodeBuilderLib";
 	var ust::string8 generated_sources_directory= build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( lib_name );
 
@@ -14,7 +17,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.command= BK::CustomBuildStep::GenerateFileCommand
 		{
 			.destination_path= move(keywords_generated_file),
-			.contents= CreateKeywordsHeaderFileContents()
+			.contents= CreateKeywordsHeaderFileContents( keywords_list_file_contents )
 		},
 		.comment= keywords_file,
 	};
@@ -29,7 +32,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.command= BK::CustomBuildStep::GenerateFileCommand
 		{
 			.destination_path= move(code_builder_error_code_generated_file),
-			.contents= CreateCodeBuilderErrorCodeFileContents()
+			.contents= CreateCodeBuilderErrorCodeFileContents( errors_list_file_contents )
 		},
 		.comment= code_builder_error_code_file,
 	};
@@ -99,7 +102,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	};
 }
 
-fn CreateKeywordsHeaderFileContents() : ust::string8
+fn CreateKeywordsHeaderFileContents( ust::string_view8 keywords_list_file_contents ) : ust::string8
 {
 	var ust::string8 mut contents;
 	contents+= "import \"/string.u\"\n\n";
@@ -107,7 +110,7 @@ fn CreateKeywordsHeaderFileContents() : ust::string8
 
 	contents+= "enum Keyword\n{\n";
 
-	foreach( &keyword : GetKeywordsList() )
+	foreach( &keyword : GetKeywordsList( keywords_list_file_contents ) )
 	{
 		contents+= "\t";
 		contents+= keyword;
@@ -125,11 +128,8 @@ fn CreateKeywordsHeaderFileContents() : ust::string8
 	return contents;
 }
 
-fn GetKeywordsList() : ust::vector</ust::string8/>
+fn GetKeywordsList( ust::string_view8 keywords_list ) : ust::vector</ust::string8/>
 {
-	// Embed keywords list into the build script directly.
-	var ust::string_view8 keywords_list= embed</char8/>( "keywords_list.txt" );
-
 	var ust::vector</ust::string8/> mut out_keywords;
 
 	var size_type mut word_start= 0s;
@@ -153,9 +153,9 @@ fn GetKeywordsList() : ust::vector</ust::string8/>
 	return out_keywords;
 }
 
-fn CreateCodeBuilderErrorCodeFileContents() : ust::string8
+fn CreateCodeBuilderErrorCodeFileContents( ust::string_view8 errors_list_file_contents ) : ust::string8
 {
-	auto errors_list= GetCodeBuilderErrors();
+	auto errors_list= GetCodeBuilderErrors( errors_list_file_contents );
 
 	var ust::string8 mut contents;
 	contents+= "import \"/string.u\"\n";
@@ -200,12 +200,10 @@ struct CodeBuilderError
 	ust::string8 message;
 }
 
-fn GetCodeBuilderErrors() : ust::vector</CodeBuilderError/>
+fn GetCodeBuilderErrors( ust::string_view8 mut file_contents ) : ust::vector</CodeBuilderError/>
 {
 	var ust::vector</CodeBuilderError/> mut out_errors;
 
-	// Embed errors list into the build script directly.
-	var ust::string_view8 mut file_contents= embed</char8/>( "errors_list.hpp" );
 	loop
 	{
 		auto mut e= ParseNextCodeBuilderError( file_contents );
