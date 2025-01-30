@@ -208,6 +208,7 @@ auto constexpr ERROR_INVALID_ACCESS = 12;
 auto constexpr ERROR_BAD_FORMAT = 11;
 auto constexpr ERROR_INVALID_DATA = 13;
 auto constexpr ERROR_NO_MORE_FILES = 18;
+auto constexpr ERROR_HANDLE_EOF = 38;
 auto constexpr ERROR_FILE_EXISTS = 80;
 auto constexpr ERROR_ALREADY_EXISTS = 183;
 auto constexpr ERROR_DIRECTORY = 267;

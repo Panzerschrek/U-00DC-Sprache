@@ -940,6 +940,7 @@ fn translate_error_code( DWORD code ) : io_error
 		DWORD(ERROR_DIRECTORY)-> { return io_error::not_a_directory; },
 		DWORD(ERROR_ALREADY_EXISTS), DWORD(ERROR_FILE_EXISTS) -> { return io_error::already_exists; },
 		DWORD(ERROR_ACCESS_DENIED) -> { return io_error::permission_denied; },
+		DWORD(ERROR_HANDLE_EOF) -> { return io_error::unexpected_end_of_file; },
 		default -> { return io_error::other; },
 	}
 }
