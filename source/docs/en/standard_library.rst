@@ -21,6 +21,11 @@ if you want to learn more, read its sources yourself.
   Contains functions which construct an array or tuple for given arguments.
 * Various container utils (container_utils.u).
 * Coroutines helpers (coro.u).
+* Directory iterator (directory_iterator.u).
+* Functions for conversion of enums into strings and strings into enums (enum_string_conversions.u).
+* File classes (file.u).
+* Filesystem-related functions (filesystem.u).
+* File metadata structures (file_metadata.u).
 * Hashing functions (hash.u).
   Hashing of all basic language types is supported.
 * Various helpers (helpers.u).
@@ -37,6 +42,7 @@ if you want to learn more, read its sources yourself.
 * Sorting routines (sort.u).
 * stdout support (partial) (stdout.u).
 * Number to string conversion utilities (string_conversions.u).
+* System time class (system_time.u).
 * Thread class (thread.u).
 * Various helpers for types manipulation/type checks (type_traits.u).
 * Some useful macros for effective usage of some containers (ustlib_macros.u).
