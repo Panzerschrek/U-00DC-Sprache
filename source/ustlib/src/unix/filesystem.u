@@ -285,7 +285,7 @@ fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var stat_ mut s= zero_init;
-	auto res= unsafe( ::lstat( path_nt.data(), $<(s) ) );
+	var i32 res= unsafe( ::lstat( path_nt.data(), $<(s) ) );
 	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
@@ -304,7 +304,7 @@ fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_
 fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : filesystem_result</void/>
 {
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
-	auto res= unsafe( ::chmod( path_nt.data(), permissions.bits ) );
+	var i32 res= unsafe( ::chmod( path_nt.data(), permissions.bits ) );
 	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
@@ -319,8 +319,8 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 
 	var u32 file_mode= 0o777u; // TODO - allow to select it.
 
-	auto res= unsafe( ::mkdir( path_nt.data(), file_mode ) );
-	if( res == -1 )
+	var i32 res= unsafe( ::mkdir( path_nt.data(), file_mode ) );
+	if( res != 0 )
 	{
 		var i32 errno= get_errno();
 		if( errno == EEXIST )
@@ -391,7 +391,7 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 
 	{ // Copy permissions from src to dst.
 		var stat_ mut s= zero_init;
-		auto stat_res= unsafe( ::fstat( src_handle, $<(s) ) );
+		var i32 stat_res= unsafe( ::fstat( src_handle, $<(s) ) );
 		if( stat_res != 0 )
 		{
 			unsafe( close_file_impl( dst_handle ) );
@@ -399,7 +399,7 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 			return translate_errno( get_errno() );
 		}
 
-		auto chmod_res= unsafe( ::fchmod( dst_handle, s.st_mode ) );
+		var i32 chmod_res= unsafe( ::fchmod( dst_handle, s.st_mode ) );
 		if( chmod_res != 0 )
 		{
 			unsafe( close_file_impl( dst_handle ) );
@@ -419,7 +419,7 @@ fn rename_file_or_directory( filesystem_path_view src_path, filesystem_path_view
 	scoped_array char8 dst_path_nt[ dst_path.size() + 1s ]( dst_path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var i32 res= unsafe( ::rename( src_path_nt.data(), dst_path_nt.data() ) );
-	if( res == -1 )
+	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
 	}
@@ -441,8 +441,8 @@ fn remove_file( filesystem_path_view path ) : filesystem_result</void/>
 {
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
-	auto res= unsafe( ::unlink( path_nt.data() ) );
-	if( res == -1 )
+	var i32 res= unsafe( ::unlink( path_nt.data() ) );
+	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
 	}
@@ -454,8 +454,8 @@ fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>
 {
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
-	auto res= unsafe( ::rmdir( path_nt.data() ) );
-	if( res == -1 )
+	var i32 res= unsafe( ::rmdir( path_nt.data() ) );
+	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
 	}
@@ -504,7 +504,7 @@ fn set_current_directory( filesystem_path_view path ) : filesystem_result</void/
 {
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 	var i32 res= unsafe( ::chdir( path_nt.data() ) );
-	if( res == -1 )
+	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
 	}
@@ -662,7 +662,7 @@ fn close_file_impl( native_file_handle handle ) unsafe
 fn get_metatada_impl( native_file_handle handle ) : filesystem_result</file_metadata/>
 {
 	var stat_ mut s= zero_init;
-	auto res= unsafe( ::fstat( handle, $<(s) ) );
+	var i32 res= unsafe( ::fstat( handle, $<(s) ) );
 	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
@@ -716,7 +716,7 @@ fn timespec_to_system_time( timespec& t ) unsafe : system_time
 fn get_size_impl( native_file_handle handle ) : filesystem_result</u64/>
 {
 	var stat_ mut s= zero_init;
-	auto res= unsafe( ::fstat( handle, $<(s) ) );
+	var i32 res= unsafe( ::fstat( handle, $<(s) ) );
 	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
@@ -727,7 +727,7 @@ fn get_size_impl( native_file_handle handle ) : filesystem_result</u64/>
 
 fn set_permissions_impl( native_file_handle handle, file_permissions permissions ) : filesystem_result</void/>
 {
-	auto res= unsafe( ::fchmod( handle, permissions.bits ) );
+	var i32 res= unsafe( ::fchmod( handle, permissions.bits ) );
 	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
@@ -821,7 +821,7 @@ fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) uns
 fn flush_impl( native_file_handle handle ) unsafe : filesystem_result</void/>
 {
 	var i32 res= unsafe( ::fdatasync( handle ) );
-	if( res == -1 )
+	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
 	}
@@ -831,7 +831,7 @@ fn flush_impl( native_file_handle handle ) unsafe : filesystem_result</void/>
 fn flush_all_impl( native_file_handle handle ) unsafe : filesystem_result</void/>
 {
 	var i32 res= unsafe( ::fsync( handle ) );
-	if( res == -1 )
+	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
 	}
@@ -841,7 +841,7 @@ fn flush_all_impl( native_file_handle handle ) unsafe : filesystem_result</void/
 fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : filesystem_result</void/>
 {
 	var i32 res= unsafe( ::ftruncate( handle, i64(new_size) ) );
-	if( res == -1 )
+	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
 	}
@@ -852,7 +852,7 @@ fn seek_impl( native_file_handle handle, u64 offset ) unsafe : filesystem_result
 {
 	var ü__off64_t seek_res= unsafe( ::lseek64( handle, ü__off64_t(offset), SEEK_SET ) );
 
-	if( seek_res == ü__off64_t(-1) )
+	if( seek_res < ü__off64_t(-1) )
 	{
 		return translate_errno( get_errno() );
 	}
