@@ -29,16 +29,25 @@ type filesystem_path_view= array_view_imut</char8/>;
 // Request metadata for given path (file, directory, etc.).
 fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>;
 
+// Set permissions for given path (file, directory, etc.).
 fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : filesystem_result</void/>;
 
 // Create a single directory (but only if parent exists).
 // Fails if given path exists but it's not a directory.
 fn create_directory( filesystem_path_view path ) : filesystem_result</void/>;
 
+// Copy file from source to destination. Overwrites destination if it already exists.
 fn copy_file( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
+
+// Copy file from source to destination. Fails if destination already exists.
 fn copy_file_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
 
+// Rename or move file or directory into another location. This works only for path within same partition/volume.
+// If destination exists, it replaces it.
 fn rename_file_or_directory( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
+
+// Rename or move file or directory into another location. This works only for path within same partition/volume.
+// If destination exists, this function fails.
 fn rename_file_or_directory_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
 
 // Remove file or link.
@@ -47,7 +56,11 @@ fn remove_file( filesystem_path_view path ) : filesystem_result</void/>;
 // Remove an empty directory.
 fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>;
 
+// Get current (working) directory, which is used for resolving of relative paths.
 fn get_current_directory() : filesystem_path;
+
+// Set current (working) directory, which is used for resolving of relative paths.
+// Note that this is generally isn't thread safe to change current directory, so it's better to do this only at startup.
 fn set_current_directory( filesystem_path_view path ) : filesystem_result</void/>;
 
 } // namespace ust
