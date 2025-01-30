@@ -1,31 +1,8 @@
-import "file_metadata.u"
-import "result.u"
-import "string_base.u"
+import "filesystem.u"
 import "type_traits.u"
 
 namespace ust
 {
-
-enum io_error
-{
-	permission_denied,
-	not_found,
-	not_a_directory,
-	already_exists,
-	out_of_memory,
-	interrupted,
-	unexpected_end_of_file,
-	write_zero,
-	other, // Some non-listed error code.
-	// TODO - add other errors
-}
-
-template</type T/>
-type filesystem_result= result</T, io_error/>;
-
-// Filesystem paths are just strings. But not any string is a valid filesystem path, keep this in mind.
-type filesystem_path= string_base</char8/>;
-type filesystem_path_view= array_view_imut</char8/>;
 
 class file_readable
 {
@@ -165,29 +142,5 @@ type native_file_handle=
 		constexpr_string_equals( compiler::target::os, "windows" ),
 		$(byte8),
 		i32 />;
-
-// Request metadata for given path (file, directory, etc.).
-fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>;
-
-fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : filesystem_result</void/>;
-
-// Create a single directory (but only if parent exists).
-// Fails if given path exists but it's not a directory.
-fn create_directory( filesystem_path_view path ) : filesystem_result</void/>;
-
-fn copy_file( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
-fn copy_file_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
-
-fn rename_file_or_directory( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
-fn rename_file_or_directory_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
-
-// Remove file or link.
-fn remove_file( filesystem_path_view path ) : filesystem_result</void/>;
-
-// Remove an empty directory.
-fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>;
-
-fn get_current_directory() : filesystem_path;
-fn set_current_directory( filesystem_path_view path ) : filesystem_result</void/>;
 
 } // namespace ust
