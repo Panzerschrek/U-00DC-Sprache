@@ -45,6 +45,7 @@ Other functionality:
 * Thread class (thread.u)
 * Various helpers for types manipulation/type checks (type_traits.u)
 * Some useful macros for effective usage of some containers (ustlib_macros.u)
+* Functions for conversions between different strings representations (UTF-8, UTF-16, UTF-32) (utf.u)
 * Volatile memory operations support (volatile.u)
 
 
