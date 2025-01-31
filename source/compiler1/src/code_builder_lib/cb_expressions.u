@@ -4899,6 +4899,9 @@ fn CodeBuilder::BuildTempVariableConstruction(
 		.location= Variable::Location::Pointer,
 		.value_type= ValueType::Value,
 		.name= name,
+		// There is no sense to discard temporary value, it should be used.
+		// Ignore rare cases where constructor itself has side-effects.
+		.no_discard= true,
 	};
 
 	auto mut llvm_value= LLVMValueRef::Null;

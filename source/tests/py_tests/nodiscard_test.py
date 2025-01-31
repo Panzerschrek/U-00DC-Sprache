@@ -660,6 +660,47 @@ def DiscardingValueMarkedAsNodiscard_Test16():
 	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 13 ) )
 
 
+def DiscardingValueMarkedAsNodiscard_Test17():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor(i32 in_x);
+		}
+		fn Foo()
+		{
+			S(32); // Discarding value - result of a temportary variable construction.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 9 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test18():
+	c_program_text= """
+		fn Foo( u32 x )
+		{
+			i32(x); // Discarding value - result of a temportary variable construction.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 4 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test19():
+	c_program_text= """
+		fn Foo()
+		{
+			unsafe( i32( 5.5f ) ); // Discarding value - result of a temportary variable construction.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 4 ) )
+
+
 def NodiscardMismatch_Test0():
 	c_program_text= """
 		fn Foo() : i32;
