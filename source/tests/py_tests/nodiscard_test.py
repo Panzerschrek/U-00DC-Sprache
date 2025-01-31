@@ -658,3 +658,29 @@ def DiscardingValueMarkedAsNodiscard_Test16():
 	assert( len(errors_list) > 0 )
 	assert( not HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 12 ) )
 	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 13 ) )
+
+
+def NodiscardMismatch_Test0():
+	c_program_text= """
+		fn Foo() : i32;
+		fn nodiscard Foo() : i32
+		{
+			return 0;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NodiscardMismatch", 2 ) or HasError( errors_list, "NodiscardMismatch", 3 ) )
+
+
+def NodiscardMismatch_Test1():
+	c_program_text= """
+		fn nodiscard Foo() : i32;
+		fn Foo() : i32
+		{
+			return 0;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NodiscardMismatch", 2 ) or HasError( errors_list, "NodiscardMismatch", 3 ) )
