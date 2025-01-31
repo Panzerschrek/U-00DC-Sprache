@@ -1092,10 +1092,15 @@ size_t CodeBuilder::PrepareFunction(
 			return ~0u;
 	}
 
-
 	FunctionVariable func_variable;
 
 	func_variable.kind= func.kind;
+
+	func_variable.no_discard=
+		func.no_discard ||
+		// Generators and async functions are all implicitly "nodiscard".
+		func.kind == Synt::Function::Kind::Generator ||
+		func.kind == Synt::Function::Kind::Async;
 
 	{ // Prepare and process function type.
 
