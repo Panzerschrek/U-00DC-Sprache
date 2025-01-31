@@ -614,7 +614,11 @@ fn CodeBuilder::PrepareFunction(
 		.t= move(function_type),
 		.llvm_function( LazyLLVMFunction( move(llvm_function_name) ) ),
 		.kind= function_kind,
-		.no_discard= function_declaration.no_discard,
+		.no_discard=
+			function_declaration.no_discard ||
+			// Generators and async functions are all implicitly "nodiscard".
+			function_kind == FunctionVariable::Kind::Generator ||
+			function_kind == FunctionVariable::Kind::Async,
 	};
 	if( function_declaration.block.empty() )
 	{

@@ -470,3 +470,55 @@ def DiscardingValueMarkedAsNodiscard_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test6():
+	c_program_text= """
+		fn generator Bar();
+		fn Foo()
+		{
+			Bar(); // Generators are all "nodiscard". Discarding call to a generator function isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test7():
+	c_program_text= """
+		fn generator Bar( i32 x ) : i32;
+		fn Foo()
+		{
+			Bar( 123 ); // Generators are all "nodiscard". Discarding call to a generator function isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test8():
+	c_program_text= """
+		fn async Bar();
+		fn Foo()
+		{
+			Bar(); // Async functions are all "nodiscard". Discarding call to a generator function isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test9():
+	c_program_text= """
+		fn async Bar( i32 x ) : i32;
+		fn Foo()
+		{
+			Bar( 123 ); // Async functions are all "nodiscard". Discarding call to a generator function isn't allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )
