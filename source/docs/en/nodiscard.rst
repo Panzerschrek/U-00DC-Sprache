@@ -26,3 +26,41 @@ Also enums may be marked as ``nodiscard``:
 
    enum Ampel nodiscard { Rot, Gelb, Gruen }
    enum Richtungen : u32 nodiscard { Nord, Sued, Ost, West }
+
+
+nodiscard for functions
+-----------------------
+
+Functions also may be marked as ``nodiscard``.
+A result of such functions call (value or reference) should be used.
+
+.. code-block:: u_spr
+
+   fn nodiscard Bar() : i32;
+   fn Foo()
+   {
+       Bar(); // Error - a "nodiscard" value is ignored.
+   }
+
+Lambdas may be marked as ``nodiscard`` too.
+
+.. code-block:: u_spr
+
+   fn Foo()
+   {
+       auto f= lambda nodiscard () : i32 { return 654; };
+       f(); // Error - a "nodiscard" value is ignored.
+   }
+
+
+nodiscard for temporary variables
+---------------------------------
+
+Variables obtained via constructor call in expression context are marked as ``nodiscard``.
+
+.. code-block:: u_spr
+
+   fn Foo( i32 x )
+   {
+       u32( x ); // Error - a "nodiscard" value of type "u32" is ignored.
+   }
