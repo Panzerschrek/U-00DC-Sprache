@@ -701,6 +701,18 @@ def DiscardingValueMarkedAsNodiscard_Test19():
 	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 4 ) )
 
 
+def DiscardingValueMarkedAsNodiscard_Test20():
+	c_program_text= """
+		fn nodiscard Bar() : i32;
+		fn Foo()
+		{
+			auto f= Bar; // Convert function to a pointer.
+			f(); // Fine - "nodiscard" property doesn't propagate to function pointers.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def NodiscardMismatch_Test0():
 	c_program_text= """
 		fn Foo() : i32;
