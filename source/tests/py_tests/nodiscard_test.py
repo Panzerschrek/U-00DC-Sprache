@@ -522,3 +522,84 @@ def DiscardingValueMarkedAsNodiscard_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test10():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			op nodiscard ()( this ) : i32
+			{
+				return x * x;
+			}
+		}
+		fn Foo()
+		{
+			var S s{ .x= 55 };
+			s(); // Discarding result of an overloaded operator call.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 13 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test11():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			op nodiscard []( this, i32 y ) : i32
+			{
+				return x + x;
+			}
+		}
+		fn Foo()
+		{
+			var S s{ .x= 55 };
+			s[17]; // Discarding result of an overloaded operator call.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 13 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test12():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			op nodiscard ~( this ) : S
+			{
+				return S{ .x= ~x };
+			}
+		}
+		fn Foo()
+		{
+			var S s{ .x= 55 };
+			~s; // Discarding result of an overloaded operator call.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 13 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test13():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn nodiscard GetX( this ) : i32 { return x; }
+		}
+		fn Foo()
+		{
+			var S s{ .x= 55 };
+			s.GetX(); // Discarding result of a "nodiscard" method call.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 10 ) )
