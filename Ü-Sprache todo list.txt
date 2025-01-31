@@ -13,8 +13,6 @@ General:
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) More advanced macros - more context, elements, stringification, string manipulations
 *) Simpler syntax for char-types literals (like 'q' in C++)
-*) "nodiscard" for functions
-*) Consider making "nodiscard" flag presence configurable - based on a constant expression
 *) switch-style operator for expression context
 *) thread-local variables, including accessing external thread-local variables
 *) A way to construct temporary variable with sequence initializer or other initializer kinds,
@@ -40,6 +38,8 @@ General:
 	Support operator <=> generation for ustlib types (if can do so).
 *) Alias for a namespace
 *) Investigate possibility to use "return" inside one of branches of ternary operator (?:)
+*) Allow "nodiscard" flag for async functions to affect result of a call via "await"
+*) Consider making "nodiscard" flag presence configurable - based on a constant expression
 
 References:
 *) Support second order inner references for coroutine types
