@@ -944,6 +944,7 @@ private:
 
 	fn GetFunctionWithSameType( FunctionsSet & mut functions_set, FunctionType& function_type ) : ust::optional_ref_mut</ FunctionVariable /> @(ust::reference_notation::return_inner_references::param0);
 
+	// Returns true if ok.
 	fn ApplyOverloadedFunction(
 		FunctionsSet &mut functions_set,
 		FunctionVariable mut function,

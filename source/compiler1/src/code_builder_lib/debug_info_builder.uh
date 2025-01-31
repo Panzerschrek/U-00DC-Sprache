@@ -19,7 +19,7 @@ public:
 	fn CreateFunctionInfo( mut this, FunctionVariable& func_variable );
 
 	fn SetCurrentLocation( mut this, FunctionContext& function_context, SrcLoc& src_loc );
-	fn StartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef;
+	fn nodiscard StartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef;
 	fn EndBlock( mut this, FunctionContext &mut function_context, LLVMMetadataRef prev_block );
 
 	fn CreateVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string8& name, SrcLoc& src_loc );
