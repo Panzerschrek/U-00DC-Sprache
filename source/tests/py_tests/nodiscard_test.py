@@ -684,3 +684,75 @@ def NodiscardMismatch_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "NodiscardMismatch", 2 ) or HasError( errors_list, "NodiscardMismatch", 3 ) )
+
+
+def UselessNodiscardForMethod_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn nodiscard constructor();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UselessNodiscardForMethod", 4 ) )
+
+
+def UselessNodiscardForMethod_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn nodiscard destructor();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UselessNodiscardForMethod", 4 ) )
+
+
+def UselessNodiscardForMethod_Test2():
+	c_program_text= """
+		struct S
+		{
+			op nodiscard =( mut this, S& other );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UselessNodiscardForMethod", 4 ) )
+
+
+def UselessNodiscardForMethod_Test3():
+	c_program_text= """
+		struct S
+		{
+			op nodiscard %=( S &mut l, S& r );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UselessNodiscardForMethod", 4 ) )
+
+
+def UselessNodiscardForMethod_Test4():
+	c_program_text= """
+		struct S
+		{
+			op nodiscard |=( S &mut l, S& r );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UselessNodiscardForMethod", 4 ) )
+
+
+def UselessNodiscardForMethod_Test5():
+	c_program_text= """
+		struct S
+		{
+			op nodiscard >>=( S &mut l, S& r );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UselessNodiscardForMethod", 4 ) )
