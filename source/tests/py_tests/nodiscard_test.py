@@ -373,6 +373,26 @@ def NodiscardFunctionDeclaration_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def NodiscardFunctionDeclaration_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda nodiscard (){};
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NodiscardFunctionDeclaration_Test4():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			auto f= lambda nodiscard [x]( i32 y ) : i32 { return y * x; };
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def DiscardingValueMarkedAsNodiscard_Test0():
 	c_program_text= """
 		fn nodiscard Bar() : i32;
@@ -432,6 +452,19 @@ def DiscardingValueMarkedAsNodiscard_Test4():
 		fn Foo()
 		{
 			unsafe( Bar() ); // Discarding in an unsafe expression value result of a function call, where the function is marked as "nodiscard".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			auto f= lambda nodiscard () : i32 { return 55; };
+			f(); // Discarding value result of a lambda call, where it's marked as "nodiscard".
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
