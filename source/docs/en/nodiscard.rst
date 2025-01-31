@@ -52,6 +52,10 @@ Lambdas may be marked as ``nodiscard`` too.
        f(); // Error - a "nodiscard" value is ignored.
    }
 
+It makes sense to specify ``nodiscard`` for functions with side-effects and return values which needs to be used.
+For functions without side-effects ``nodiscard`` isn't really needed, because ignoring return value of such function has no sense.
+For functions with side-effects, where result may be discarded, ``nodiscard`` isn't necessary either.
+
 
 nodiscard for temporary variables
 ---------------------------------
