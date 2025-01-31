@@ -411,3 +411,29 @@ def DiscardingValueMarkedAsNodiscard_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 6 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test3():
+	c_program_text= """
+		fn nodiscard Bar() : i32;
+		fn Foo()
+		{
+			safe( Bar() ); // Discarding in a safe expression value result of a function call, where the function is marked as "nodiscard".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test4():
+	c_program_text= """
+		fn nodiscard Bar() unsafe : i32;
+		fn Foo()
+		{
+			unsafe( Bar() ); // Discarding in an unsafe expression value result of a function call, where the function is marked as "nodiscard".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )

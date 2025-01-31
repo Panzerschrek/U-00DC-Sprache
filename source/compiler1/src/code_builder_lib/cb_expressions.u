@@ -1037,6 +1037,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 					.llvm_value= variable.llvm_value,
 					.constexpr_value= LLVMValueRef::Null,
 					.name= variable.name,
+					.no_discard= variable.no_discard,
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( variable_copy_ptr );
