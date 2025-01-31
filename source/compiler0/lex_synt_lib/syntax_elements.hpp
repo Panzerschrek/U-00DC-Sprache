@@ -1254,6 +1254,7 @@ public:
 	BodyKind body_kind= BodyKind::None;
 	Kind kind= Kind::Regular;
 	bool no_mangle= false;
+	bool no_discard= false;
 	bool is_conversion_constructor= false;
 	bool constexpr_= false;
 };

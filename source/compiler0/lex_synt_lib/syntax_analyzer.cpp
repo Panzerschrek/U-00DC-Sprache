@@ -1522,6 +1522,12 @@ Lambda SyntaxAnalyzer::ParseLambda()
 
 	NextLexem(); // Skip "lambda" keyword
 
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::nodiscard_ )
+	{
+		result.function.no_discard= true;
+		NextLexem();
+	}
+
 	if( it_->type == Lexem::Type::SquareBracketLeft )
 	{
 		// Non-empty capture list.
@@ -3380,6 +3386,11 @@ Function SyntaxAnalyzer::ParseFunction()
 	{
 		NextLexem();
 		result.no_mangle= true;
+	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::nodiscard_ )
+	{
+		NextLexem();
+		result.no_discard= true;
 	}
 	// TODO - parse "enalbe_if" prior to other modifiers?
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enable_if_ )
