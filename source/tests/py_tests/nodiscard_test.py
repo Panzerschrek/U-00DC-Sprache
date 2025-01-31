@@ -371,3 +371,43 @@ def NodiscardFunctionDeclaration_Test2():
 		fn nomangle nodiscard Foo() : f32&;
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def DiscardingValueMarkedAsNodiscard_Test0():
+	c_program_text= """
+		fn nodiscard Bar() : i32;
+		fn Foo()
+		{
+			Bar(); // Discarding value result of a function call, where the function is marked as "nodiscard".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test1():
+	c_program_text= """
+		fn nodiscard Bar() : i32&;
+		fn Foo()
+		{
+			Bar(); // Discarding reference result of a function call, where the function is marked as "nodiscard".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 5 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test2():
+	c_program_text= """
+		// It's fine to specify "nodiscard" for a "void"-return function. But it has little sense.
+		fn nodiscard Bar();
+		fn Foo()
+		{
+			Bar(); // Discarding void result of a function call, where the function is marked as "nodiscard".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 6 ) )

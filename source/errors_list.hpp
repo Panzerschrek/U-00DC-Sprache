@@ -221,6 +221,7 @@ PROCESS_ERROR( NoMangleMismatch, "\"nomangle\" specifiers mismatch for function 
 
 // Nodiscard
 PROCESS_ERROR( DiscardingValueOfNodiscardType, "Discarding a value of \"nodiscard\" type \"{0}\"." )
+PROCESS_ERROR( DiscardingValueMarkedAsNodiscard, "Discarding value marked as \"nodiscard\"." )
 
 // Calling conventions
 PROCESS_ERROR( UnknownCallingConvention, "Unknown calling convention \"{0}\"." )
