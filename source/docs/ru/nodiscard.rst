@@ -26,3 +26,41 @@ nodiscard
 
    enum Ampel nodiscard { Rot, Gelb, Gruen }
    enum Richtungen : u32 nodiscard { Nord, Sued, Ost, West }
+
+
+nodiscard для функций
+---------------------
+
+Функции также могут быть помечены как ``nodiscard``.
+Результат вызова таких функций (значение или ссылку) необходимо использовать.
+
+.. code-block:: u_spr
+
+   fn nodiscard Bar() : i32;
+   fn Foo()
+   {
+       Bar(); // Ошибка - игнорируется "nodiscard" значение.
+   }
+
+Лямбды тоже могут быть помечены как ``nodiscard``
+
+.. code-block:: u_spr
+
+   fn Foo()
+   {
+       auto f= lambda nodiscard () : i32 { return 654; };
+       f(); // Ошибка - игнорируется "nodiscard" значение.
+   }
+
+
+nodiscard для временных переменных
+----------------------------------
+
+Переменные, полученные через вызов конструктора в контексте выражения, помечаются как ``nodiscard``.
+
+.. code-block:: u_spr
+
+   fn Foo( i32 x )
+   {
+       u32( x ); // Ошибка - игнорируется "nodiscard" значение типа "u32".
+   }
