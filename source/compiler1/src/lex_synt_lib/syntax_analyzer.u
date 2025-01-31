@@ -1469,7 +1469,7 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 		capture= Lambda::CaptureNothing();
 	}
 
-	var Function mut lambda_function{ .src_loc= it_.front().src_loc };
+	var Function mut lambda_function{ .src_loc= it_.front().src_loc, .no_discard= no_discard };
 	lambda_function.name.push_back( KeywordToString( Keyword::lambda_ ) );
 
 
@@ -1538,7 +1538,7 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 	// Lambdas always have a body.
 	lambda_function.block.reset( ParseBlock() );
 
-	return Lambda{ .src_loc= lambda_src_loc, .no_discard= no_discard, .capture= move(capture), .function( move(lambda_function) ) };
+	return Lambda{ .src_loc= lambda_src_loc, .capture= move(capture), .function( move(lambda_function) ) };
 }
 
 fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param

@@ -873,7 +873,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			.t= move(function_type),
 			.is_this_call= true,
 			.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto,
-			.no_discard= lambda_.no_discard,
+			.no_discard= lambda_.function.deref().no_discard,
 		};
 
 		if( !has_preprocessing_errors ) // Avoid building body in case of preprocessing errors.

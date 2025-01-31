@@ -206,7 +206,6 @@ struct Lambda
 	type Capture= ust::variant</ tup[ CaptureNothing, CaptureAllByValue, CaptureAllByReference, CaptureList ] />;
 
 	SrcLoc src_loc;
-	bool no_discard;
 	Capture capture;
 	ust::shared_ptr_final</Function/> function;
 }
