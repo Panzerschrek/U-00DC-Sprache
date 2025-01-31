@@ -1687,6 +1687,11 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		res.no_mangle= true;
 		NextLexem();
 	}
+	if( IsKeyword( it_.front(), Keyword::nodiscard_ ) )
+	{
+		res.no_discard= true;
+		NextLexem();
+	}
 	if( IsKeyword( it_.front(), Keyword::enable_if_ ) )
 	{
 		NextLexem();

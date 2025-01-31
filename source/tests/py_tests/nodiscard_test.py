@@ -346,3 +346,28 @@ def DiscardingValueOfNodiscardType_Test13():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DiscardingValueOfNodiscardType", 6 ) )
+
+
+def NodiscardFunctionDeclaration_Test0():
+	c_program_text= """
+		fn nodiscard Foo() : i32;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NodiscardFunctionDeclaration_Test1():
+	c_program_text= """
+		fn nodiscard Foo() : i32;
+		fn nodiscard Foo() : i32
+		{
+			return 123;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NodiscardFunctionDeclaration_Test2():
+	c_program_text= """
+		fn nomangle nodiscard Foo() : f32&;
+	"""
+	tests_lib.build_program( c_program_text )
