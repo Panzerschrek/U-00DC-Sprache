@@ -1986,7 +1986,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				function_value,
 				false, // Call via pointer is not constexpr.
 				call_operator.args,
-				call_operator.src_loc );
+				call_operator.src_loc,
+				false /* for function pointers call don't use "nodiscard" */ );
 		}
 
 		// Try to call overloaded () operator.
@@ -3669,7 +3670,8 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			ust::empty_range,
 			in_args,
 			args_evaluation_order,
-			src_loc );
+			src_loc,
+			overloaded_operator.no_discard );
 	}
 
 	return ust::null_optional;
@@ -4020,7 +4022,8 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 			fetch_result[1],
 			overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
 			ust::empty_range,
-			src_loc );
+			src_loc,
+			overloaded_operator.no_discard );
 	}
 
 	return ust::null_optional;
@@ -4084,7 +4087,8 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 			fetch_result[1],
 			overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
 			synt_args,
-			src_loc );
+			src_loc,
+			overloaded_operator.no_discard );
 	}
 
 	return ust::null_optional;
@@ -4182,7 +4186,8 @@ fn CodeBuilder::CallFunctionsSet(
 			fetch_res[1],
 			is_constexpr,
 			args,
-			src_loc );
+			src_loc,
+			function_selected.no_discard );
 	}
 
 	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_selected );
@@ -4195,7 +4200,8 @@ fn CodeBuilder::CallFunctionsSet(
 		llvm_function,
 		is_constexpr,
 		args,
-		src_loc );
+		src_loc,
+		function_selected.no_discard );
 }
 
 fn CodeBuilder::DoCallFunction(
@@ -4207,7 +4213,8 @@ fn CodeBuilder::DoCallFunction(
 	LLVMValueRef function,
 	bool is_constexpr,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
-	SrcLoc& src_loc ) : Value
+	SrcLoc& src_loc,
+	bool no_discard ) : Value
 {
 	var ust::vector</ VariablePtr /> mut preevaluated_args;
 	if( !this_.empty() )
@@ -4224,7 +4231,8 @@ fn CodeBuilder::DoCallFunction(
 		preevaluated_args,
 		args,
 		ArgsEvaluationOrder::Direct,
-		src_loc );
+		src_loc,
+		no_discard );
 }
 
 fn CodeBuilder::DoCallFunction(
@@ -4237,7 +4245,8 @@ fn CodeBuilder::DoCallFunction(
 	ust::array_view_imut</ VariablePtr />& preevaluated_args,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	ArgsEvaluationOrder args_evaluation_order,
-	SrcLoc& src_loc ) : Value
+	SrcLoc& src_loc,
+	bool no_discard ) : Value
 {
 	var size_type total_args= preevaluated_args.size() + args.size();
 	if( total_args != function_type.params.size() )
@@ -4569,6 +4578,7 @@ fn CodeBuilder::DoCallFunction(
 		.value_type= function_type.return_value_type,
 		.location= Variable::Location::Pointer, // set later
 		.name= "call result " + function_type.return_type.ToString(),
+		.no_discard= no_discard,
 	};
 
 	if( function_type.return_value_type == ValueType::Value )
@@ -4990,7 +5000,8 @@ fn CodeBuilder::ConvertVariable(
 				ust::make_array( result_for_constructor_call_ptr, src ),
 				ust::empty_range,
 				ArgsEvaluationOrder::Direct,
-				src_loc );
+				src_loc,
+				conversion_constructor_.no_discard );
 
 			function_context.references_graph.RemoveNode( result_for_constructor_call_ptr );
 

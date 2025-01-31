@@ -407,6 +407,9 @@ struct Variable
 	// If true - this is a temporary variable that should not be deleted even if it has no outgoing links.
 	bool preserve_temporary= false;
 
+	// Result of a "nodiscard" function call.
+	bool no_discard= false;
+
 	bool referenced= false;
 
 	// This struct is non-copyable.
@@ -475,12 +478,14 @@ struct FunctionVariable
 	FunctionType t;
 	LazyLLVMFunctionPtr llvm_function;
 
+	// TODO - make these properties more compact, like use enum for properties which can't exist together.
 	bool is_this_call= false;
 	bool is_constructor= false;
 	bool is_conversion_constructor= false;
 	bool is_generated= false;
 	bool is_deleted= false;
 	bool no_mangle= false;
+	bool no_discard= false;
 	bool is_inherited= false;
 	Kind kind= Kind::Regular;
 	u32 virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).

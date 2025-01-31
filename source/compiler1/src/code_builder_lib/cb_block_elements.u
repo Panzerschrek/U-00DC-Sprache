@@ -3366,7 +3366,8 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 				fetch_result[1],
 				false, // non-constexpr call.
 				ust::empty_range,
-				src_loc );
+				src_loc,
+				overloaded_operator.no_discard );
 			return;
 		}
 	}

@@ -590,7 +590,8 @@ private:
 		LLVMValueRef function,
 		bool is_constexpr,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
-		SrcLoc& src_loc ) : Value;
+		SrcLoc& src_loc,
+		bool no_discard ) : Value;
 
 	enum ArgsEvaluationOrder{ Direct, Reversed }
 
@@ -604,7 +605,8 @@ private:
 		ust::array_view_imut</ VariablePtr />& preevaluated_args,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		ArgsEvaluationOrder args_evaluation_order,
-		SrcLoc& src_loc ) : Value;
+		SrcLoc& src_loc,
+		bool no_discard ) : Value;
 
 	fn BuildTempVariableConstruction(
 		mut this,
