@@ -230,20 +230,20 @@ public:
 		--size_;
 	}
 
-	fn enable_if(is_mutable) drop_and_get_front( mut this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	fn nodiscard enable_if(is_mutable) drop_and_get_front( mut this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		halt if( empty() );
 		return unsafe( drop_and_get_front_unchecked() );
 	}
 
-	fn enable_if(!is_mutable) drop_and_get_front( mut this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	fn nodiscard enable_if(!is_mutable) drop_and_get_front( mut this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		halt if( empty() );
 		return unsafe( drop_and_get_front_unchecked() );
 	}
 
 	// Precondition - range is nonempty.
-	fn enable_if(is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	fn nodiscard enable_if(is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		auto & mut res= unsafe( $>(begin_) );
 		unsafe{ ++begin_; }
@@ -252,7 +252,7 @@ public:
 	}
 
 	// Precondition - range is nonempty.
-	fn enable_if(!is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	fn nodiscard enable_if(!is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
 	{
 		auto &imut res= unsafe( $>(begin_) );
 		unsafe{ ++begin_; }
@@ -303,7 +303,7 @@ public:
 		fn constructor( mut this, raw_iterator& other )= default;
 		op=( mut this, raw_iterator& other )= default;
 
-		fn next( mut this ) : auto
+		fn nodiscard next( mut this ) : auto
 		{
 			if( range_.empty() )
 			{

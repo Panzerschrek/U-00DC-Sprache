@@ -542,7 +542,7 @@ fn directory_raw_iterator::impl_unix::destructor()
 	}
 }
 
-fn directory_raw_iterator::impl_unix::next( mut this ) : optional</ filesystem_result</directory_entry/> />
+fn nodiscard directory_raw_iterator::impl_unix::next( mut this ) : optional</ filesystem_result</directory_entry/> />
 {
 	if( is_nullptr( handle_ ) )
 	{

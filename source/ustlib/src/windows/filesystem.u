@@ -546,7 +546,7 @@ fn directory_raw_iterator::impl_windows::destructor()
 	}
 }
 
-fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ filesystem_result</directory_entry/> />
+fn nodiscard directory_raw_iterator::impl_windows::next( mut this ) : optional</ filesystem_result</directory_entry/> />
 {
 	if( !first_entry_.empty() )
 	{

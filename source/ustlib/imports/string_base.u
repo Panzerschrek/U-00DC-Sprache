@@ -393,14 +393,14 @@ public:
 		size_-= count;
 	}
 
-	fn pop_back( mut this ) : char_type
+	fn nodiscard pop_back( mut this ) : char_type
 	{
 		halt if(empty());
 		--size_;
 		return unsafe( $>(ptr_ + size_) );
 	}
 
-	fn pop_back_unchecked( mut this ) unsafe : char_type
+	fn nodiscard pop_back_unchecked( mut this ) unsafe : char_type
 	{
 		--size_;
 		return unsafe( $>(ptr_ + size_) );

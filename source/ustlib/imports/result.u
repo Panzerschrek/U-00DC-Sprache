@@ -228,7 +228,7 @@ public:
 	}
 
 	// Extract and return ok value.
-	fn try_take( byval mut this ) : OkT
+	fn nodiscard try_take( byval mut this ) : OkT
 	{
 		unsafe
 		{
@@ -243,7 +243,7 @@ public:
 	}
 
 	// Extract and return error value.
-	fn try_take_error( byval mut this ) : ErrorT
+	fn nodiscard try_take_error( byval mut this ) : ErrorT
 	{
 		unsafe
 		{

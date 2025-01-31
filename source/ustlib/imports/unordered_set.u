@@ -88,7 +88,7 @@ public:
 			( impl_( move(impl) ) )
 		{}
 
-		fn next( mut this )
+		fn nodiscard next( mut this )
 			: optional_ref_imut</ T /> @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
 			auto next_res= impl_.next();

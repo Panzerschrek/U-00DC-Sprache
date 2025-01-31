@@ -32,7 +32,7 @@ public:
 	{}
 
 public:
-	fn next( mut this ) : optional</ filesystem_result</directory_entry/> />
+	fn nodiscard next( mut this ) : optional</ filesystem_result</directory_entry/> />
 	{
 		return impl_.next();
 	}
@@ -44,7 +44,7 @@ private:
 		fn constructor( $(byte8) handle ) unsafe;
 		fn destructor();
 
-		fn next( mut this ) : optional</ filesystem_result</directory_entry/> />;
+		fn nodiscard next( mut this ) : optional</ filesystem_result</directory_entry/> />;
 
 	private:
 		$(byte8) handle_; // DIR struct pointer
@@ -56,7 +56,7 @@ private:
 		fn constructor( $(byte8) handle, directory_entry first_entry ) unsafe;
 		fn destructor();
 
-		fn next( mut this ) : optional</ filesystem_result</directory_entry/> />;
+		fn nodiscard next( mut this ) : optional</ filesystem_result</directory_entry/> />;
 
 	private:
 		$(byte8) handle_; // HANDLE

@@ -386,7 +386,7 @@ public:
 	}
 
 	// Remove last element and return it.
-	fn pop_back( mut this ) : T @(c_return_inner_references)
+	fn nodiscard pop_back( mut this ) : T @(c_return_inner_references)
 	{
 		halt if(empty());
 		unsafe
@@ -398,7 +398,7 @@ public:
 		}
 	}
 
-	fn pop_back_unchecked( mut this ) unsafe : T @(c_return_inner_references)
+	fn nodiscard pop_back_unchecked( mut this ) unsafe : T @(c_return_inner_references)
 	{
 		unsafe
 		{

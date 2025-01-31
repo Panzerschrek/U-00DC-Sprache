@@ -246,7 +246,7 @@ public:
 	// Try to move value out of variant. Halts, if variant doesn't contain value of specified type.
 	// It is recommended to move variant value while calling this function.
 	template</ type T />
-	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	fn nodiscard enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
 	try_move( byval mut this ) : T
 	{
 		auto mut cur_index= 0s;

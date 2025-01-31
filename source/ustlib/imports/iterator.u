@@ -29,7 +29,7 @@ public: // Main methods.
 	// If an iterator reaches its end, "next" returns empty result.
 	// Some iterators may not have end at all.
 	// It should be safe to call this method if previous "next" call already returned empty result.
-	fn next( mut this ) : auto
+	fn nodiscard next( mut this ) : auto
 	{
 		return impl_.next();
 	}
@@ -344,7 +344,7 @@ public:
 	op enable_if( typeinfo</BaseIterator0/>.is_copy_assignable && typeinfo</BaseIterator1/>.is_copy_assignable )
 	=( mut this, this_type& other )= default;
 
-	fn next( mut this ) : auto
+	fn nodiscard next( mut this ) : auto
 	{
 		auto next0= base_iterator0_.next();
 		if( !next0.empty() )
@@ -392,7 +392,7 @@ public:
 	op enable_if( typeinfo</BaseIterator0/>.is_copy_assignable && typeinfo</BaseIterator1/>.is_copy_assignable )
 	=( mut this, this_type& other )= default;
 
-	fn next( mut this ) : auto
+	fn nodiscard next( mut this ) : auto
 	{
 		auto mut next0= base_iterator0_.next();
 		auto mut next1= base_iterator1_.next();
@@ -567,7 +567,7 @@ public:
 	op enable_if( typeinfo</BaseIterator/>.is_copy_assignable && typeinfo</Func/>.is_copy_assignable )
 	=( mut this, this_type& other )= default;
 
-	fn next( mut this ) : auto
+	fn nodiscard next( mut this ) : auto
 	{
 		loop
 		{
@@ -622,7 +622,7 @@ public:
 	op enable_if( typeinfo</BaseIterator/>.is_copy_assignable && typeinfo</Func/>.is_copy_assignable )
 	=( mut this, this_type& other )= default;
 
-	fn next( mut this ) : auto
+	fn nodiscard next( mut this ) : auto
 	{
 		loop
 		{
@@ -679,7 +679,7 @@ public:
 	fn enable_if( typeinfo</BaseIterator/>.is_copy_constructible ) constructor( mut this, this_type& other )= default;
 	op enable_if( typeinfo</BaseIterator/>.is_copy_assignable ) =( mut this, this_type& other )= default;
 
-	fn next( mut this ) : auto
+	fn nodiscard next( mut this ) : auto
 	{
 		if( limit_ == 0s )
 		{
@@ -724,7 +724,7 @@ public:
 	// If it returns immutable references - result container is "optional_ref_imut".
 	// If it returns mutable references - result container is "optional_ref_mut".
 	// Contained type is simpe type of function result.
-	fn next( mut this ) : auto
+	fn nodiscard next( mut this ) : auto
 	{
 		auto mut next_res= base_iterator_.next();
 
@@ -799,7 +799,7 @@ public:
 
 	// Iterators for generators aren't copyable.
 
-	fn next( mut this ) : auto
+	fn nodiscard next( mut this ) : auto
 	{
 		type Ret= typeof( typeinfo</Gen/>.coroutine_return_type )::src_type;
 		static_if( typeinfo</Gen/>.coroutine_return_value_is_reference )
