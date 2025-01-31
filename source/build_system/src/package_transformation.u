@@ -819,7 +819,7 @@ fn ResolvePackageAbsoluteName(
 							"\" - too many \"..\"!" ) );
 					return ust::null_optional;
 				}
-				components.pop_back();
+				components.drop_back();
 			}
 			else
 			{
@@ -1094,7 +1094,7 @@ fn DependencyGraphIsValid_r(
 		logger.LogError( ust::concat( "Dependency \"", BuildTargetAbsoluteNameToPrintableString( build_target_name ), "\" not found." ) );
 	}
 
-	call_stack.pop_back();
+	call_stack.drop_back();
 	return ok;
 }
 
