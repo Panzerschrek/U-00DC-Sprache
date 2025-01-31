@@ -95,6 +95,11 @@ fn nomangle main() : i32
 		// In this case we create a local reference to a temporary variable passed as alternative.
 		auto& ref= o.deref_or( 65 ); //##expect_error DestroyedVariableStillHasReferences
 	}
+	{
+		var ust::optional</i32/> mut o( 67890 );
+		// Taken value should'n be discarded.
+		o.try_take(); //##expect_error DiscardingValueMarkedAsNodiscard
+	}
 
 	return 0;
 }

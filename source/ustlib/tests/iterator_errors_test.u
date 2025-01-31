@@ -53,5 +53,12 @@ fn nomangle main() : i32
 		foreach( c : sequece ) //##expect_error MacroExpansionContext
 		{}
 	}
+	{
+		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];
+		auto mut it= IntRangeImut( ints ).iter();
+		// Value of "next" call should be used.
+		it.next(); //##expect_error DiscardingValueMarkedAsNodiscard
+
+	}
 	return 0;
 }
