@@ -9,7 +9,7 @@ import "unix.uh"
 namespace BK
 {
 
-fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool
+fn nodiscard RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool
 {
 	var ProcessGroupInterface::ProcessId useless_id(0);
 
@@ -267,7 +267,7 @@ public: // ProcessGroupInterface
 		return true;
 	}
 
-	fn virtual final DoWork( mut this, Logger &mut logger ) : bool
+	fn virtual final nodiscard DoWork( mut this, Logger &mut logger ) : bool
 	{
 		if( running_processes_.empty() )
 		{

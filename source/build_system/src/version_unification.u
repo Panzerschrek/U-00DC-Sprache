@@ -6,7 +6,7 @@ import "version_unification.uh"
 namespace BK
 {
 
-fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool
+fn nodiscard UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool
 {
 	// Collect list of build targets of global versioned packages first.
 	var ust::vector</GlobalPackageBuildTargetName/> mut global_packages_build_targets;

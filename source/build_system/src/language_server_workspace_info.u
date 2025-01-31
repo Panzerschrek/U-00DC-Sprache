@@ -11,7 +11,7 @@ import "path.uh"
 namespace BK
 {
 
-fn WriteLanguageServerWorkspaceInfoFile(
+fn nodiscard WriteLanguageServerWorkspaceInfoFile(
 	Logger &mut logger,
 	BuildSystemPaths& build_system_paths,
 	WorkspaceInfo& target_workspace,

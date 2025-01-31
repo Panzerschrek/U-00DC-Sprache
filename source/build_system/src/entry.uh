@@ -4,6 +4,6 @@ namespace BK
 {
 
 // A platform-independent entry point, designed to be called from some of the platform-dependent entry point functions.
-fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32;
+fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32;
 
 } // namespace BK

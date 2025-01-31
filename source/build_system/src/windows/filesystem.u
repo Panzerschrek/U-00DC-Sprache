@@ -23,7 +23,7 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
 	return ust::concat( ust::get_current_directory(), "/", path );
 }
 
-fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
+fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
 {
 	var ust::string8 path_absolute= MakePathAbsolute( path );
 

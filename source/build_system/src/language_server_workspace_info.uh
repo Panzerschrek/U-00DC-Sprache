@@ -6,7 +6,7 @@ namespace BK
 
 // Write a file with workspace information needed for Ü language server.
 // Returns true on success.
-fn WriteLanguageServerWorkspaceInfoFile(
+fn nodiscard WriteLanguageServerWorkspaceInfoFile(
 	Logger &mut logger,
 	BuildSystemPaths& build_system_paths,
 	WorkspaceInfo& target_workspace,

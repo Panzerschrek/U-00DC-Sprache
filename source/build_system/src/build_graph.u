@@ -12,7 +12,7 @@ import "process.uh"
 namespace BK
 {
 
-fn PerformGraphBuild(
+fn nodiscard PerformGraphBuild(
 	Logger &mut logger,
 	BuildGraph& build_graph,
 	ust::optional_ref_imut</BuildGraph/> prev_build_graph_opt,
