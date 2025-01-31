@@ -1287,6 +1287,29 @@ size_t CodeBuilder::PrepareFunction(
 		}
 	}
 
+	// Check "nodiscard".
+	if( func.no_discard && base_class != nullptr )
+	{
+		// Do not allow "nodiscard" for constructors, destructors, assignment operators and any operators returning "void".
+		// For them "nodiscard" is useless.
+		if( is_constructor ||
+			is_destructor ||
+			func.overloaded_operator == OverloadedOperator::Assign ||
+			func.overloaded_operator == OverloadedOperator::AssignAdd ||
+			func.overloaded_operator == OverloadedOperator::AssignSub ||
+			func.overloaded_operator == OverloadedOperator::AssignMul ||
+			func.overloaded_operator == OverloadedOperator::AssignDiv ||
+			func.overloaded_operator == OverloadedOperator::AssignRem ||
+			func.overloaded_operator == OverloadedOperator::AssignAnd ||
+			func.overloaded_operator == OverloadedOperator::AssignOr ||
+			func.overloaded_operator == OverloadedOperator::AssignXor ||
+			func.overloaded_operator == OverloadedOperator::AssignShiftLeft ||
+			func.overloaded_operator == OverloadedOperator::AssignShiftRight ||
+			func.overloaded_operator == OverloadedOperator::Increment ||
+			func.overloaded_operator == OverloadedOperator::Decrement )
+			REPORT_ERROR( UselessNodiscardForMethod, names_scope.GetErrors(), func.src_loc );
+	}
+
 	if( FunctionVariable* const prev_function= GetFunctionWithSameType( func_variable.type, functions_set ) )
 	{
 			 if( prev_function->syntax_element->block == nullptr && func.block != nullptr )
@@ -1323,6 +1346,9 @@ size_t CodeBuilder::PrepareFunction(
 
 		if( prev_function->kind != func_variable.kind )
 			REPORT_ERROR( CoroutineMismatch, names_scope.GetErrors(), func.src_loc, func_name );
+
+		if( prev_function->no_discard != func_variable.no_discard )
+			REPORT_ERROR( NodiscardMismatch,  names_scope.GetErrors(), func.src_loc, func_name );
 
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
 			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc );
