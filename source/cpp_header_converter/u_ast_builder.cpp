@@ -810,6 +810,9 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 
 	func.no_mangle= true; // For now import only C functions witohut mangling.
 
+	if( function_decl.hasAttr<clang::WarnUnusedResultAttr>() )
+		func.no_discard= true;
+
 	func.type= TranslateFunctionType( *function_decl.getFunctionType(), type_names_map );
 
 	func.type.params.reserve( function_decl.param_size() );

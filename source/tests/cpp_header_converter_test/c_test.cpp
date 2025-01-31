@@ -171,4 +171,9 @@ MyVoid VoidPtrTypedefParamFunc(MyVoidPtr p)
 	(void)p;
 }
 
+MY_NODISCARD int CNoDiscardFunc()
+{
+	return 321;
+}
+
 } // extern "C"
