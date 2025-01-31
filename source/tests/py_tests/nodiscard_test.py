@@ -603,3 +603,58 @@ def DiscardingValueMarkedAsNodiscard_Test13():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 10 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test14():
+	c_program_text= """
+		class C interface
+		{
+			fn virtual pure nodiscard GetSome( this ) : tup[ bool, i32 ];
+		}
+		fn Foo( C& c )
+		{
+			c.GetSome(); // Discarding result of a "nodiscard" virtual method call.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 8 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test15():
+	c_program_text= """
+		class C interface
+		{
+			fn virtual pure nodiscard GetSome( this ) : tup[ bool, i32 ];
+		}
+		class D abstract : C {}
+		fn Foo( D& d )
+		{
+			d.GetSome(); // Discarding result of a "nodiscard" virtual method call.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 9 ) )
+
+
+def DiscardingValueMarkedAsNodiscard_Test16():
+	c_program_text= """
+		class C interface
+		{
+			fn virtual pure nodiscard GetSome( this ) : f64;
+		}
+		class D : C
+		{
+			fn virtual override GetSome( this ) : f64; // It's possible to skip "nodiscard" in an overriden function.
+		}
+		fn Foo( D& d )
+		{
+			d.GetSome(); // Fine, derived function isn't marked as "nodiscard".
+			cast_ref</C/>(d).GetSome(); // Error - discarding value of call to base function, where "nodiscard" marker is present.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 12 ) )
+	assert( HasError( errors_list, "DiscardingValueMarkedAsNodiscard", 13 ) )
