@@ -1,0 +1,26 @@
+//##success_test
+import "../imports/assert.u"
+import "../imports/path_utils.u"
+
+fn nomangle main() : i32
+{
+	// is_absolute
+	assert( !ust::path::is_absolute( "" ) );
+	assert( !ust::path::is_absolute( " " ) );
+	assert( !ust::path::is_absolute( "some" ) );
+	assert( !ust::path::is_absolute( "some/path" ) );
+	assert( ust::path::is_absolute( "/" ) );
+	assert( ust::path::is_absolute( "/some" ) );
+	assert( ust::path::is_absolute( "/some/path" ) );
+
+	// is_relative
+	assert( ust::path::is_relative( "" ) );
+	assert( ust::path::is_relative( " " ) );
+	assert( ust::path::is_relative( "some" ) );
+	assert( ust::path::is_relative( "some/path" ) );
+	assert( !ust::path::is_relative( "/" ) );
+	assert( !ust::path::is_relative( "/some" ) );
+	assert( !ust::path::is_relative( "/some/path" ) );
+
+	return 0;
+}

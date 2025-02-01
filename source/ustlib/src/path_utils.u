@@ -6,6 +6,20 @@ namespace ust
 namespace path
 {
 
+fn is_absolute( filesystem_path_view p ) : bool
+{
+	if( p.empty() )
+	{
+		return false;
+	}
+	return p.front() == "/"c8;
+}
+
+fn is_relative( filesystem_path_view p ) : bool
+{
+	return !is_absolute(p);
+}
+
 } // namespace path
 
 } // namespace ust
