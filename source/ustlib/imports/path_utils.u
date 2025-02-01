@@ -30,7 +30,8 @@ fn get_file_extension( filesystem_path_view p )
 	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
 
 // If has a file extension - remove it. Otherwise return given path as is.
-fn get_path_without_extension( filesystem_path_view p ) : filesystem_path_view @( reference_notation::return_inner_references::param0_inner_reference0 );
+fn get_path_without_extension( filesystem_path_view p )
+	: filesystem_path_view @( reference_notation::return_inner_references::param0_inner_reference0 );
 
 // Get filename, assuming the last component is filename.
 // Returns empty optional if given path ends with separator.

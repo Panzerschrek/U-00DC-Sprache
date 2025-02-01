@@ -57,5 +57,24 @@ fn nomangle main() : i32
 	assert( ust::path::get_file_extension( "user/some....txt" ) == ust::filesystem_path_view( "txt" ) ); // A component after last "." is returned
 	assert( ust::path::get_file_extension( "some." ) == ust::filesystem_path_view( "" ) ); // Has empty extension
 
+	// get_path_without_extension
+	assert( ust::path::get_path_without_extension( "" ) == "" );
+	assert( ust::path::get_path_without_extension( "/" ) == "/" );
+	assert( ust::path::get_path_without_extension( "foo" ) == "foo" );
+	assert( ust::path::get_path_without_extension( "foo/bar" ) == "foo/bar" );
+	assert( ust::path::get_path_without_extension( "foo/bar/" ) == "foo/bar/" );
+	assert( ust::path::get_path_without_extension( "/foo/bar" ) == "/foo/bar" );
+	assert( ust::path::get_path_without_extension( ".some" ) == ".some" ); // Path starting with "." has no extension
+	assert( ust::path::get_path_without_extension( "." ) == "." ); // Has no extension in "."
+	assert( ust::path::get_path_without_extension( ".." ) == ".." ); // Has no extension in ".."
+	assert( ust::path::get_path_without_extension( "some/." ) == "some/." ); // Has no extension in "."
+	assert( ust::path::get_path_without_extension( "some/.." ) == "some/.." ); // Has no extension in ".."
+	assert( ust::path::get_path_without_extension( "some.txt" ) == "some" ); // Has extension "txt"
+	assert( ust::path::get_path_without_extension( "some." ) == "some" ); // Has empty extension
+	assert( ust::path::get_path_without_extension( "some/.hidden" ) == "some/.hidden" ); // No extension for given file, but name starts with dot
+	assert( ust::path::get_path_without_extension( "user/some.txt.backup" ) == "user/some.txt" ); // Only last extension is stripped
+	assert( ust::path::get_path_without_extension( "so.me/file" ) == "so.me/file" ); // No extension for given file, but directory name contains a dot
+	assert( ust::path::get_path_without_extension( "Welteroberungplan...txt" ) == "Welteroberungplan.." ); // Stripped last ".txt"
+
 	return 0;
 }
