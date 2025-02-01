@@ -15,6 +15,9 @@ fn is_absolute( filesystem_path_view p ) : bool;
 // Returns true if it's a relative path.
 fn is_relative( filesystem_path_view p ) : bool;
 
+// Returns true if given char is valid separator on current OS.
+fn is_separator( char8 c ) : bool;
+
 // Join several components together, separating them via directories separator.
 fn join( filesystem_path_view p0 ) : filesystem_path;
 fn join( filesystem_path_view p0, filesystem_path_view p1 ) : filesystem_path;

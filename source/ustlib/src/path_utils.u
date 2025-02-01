@@ -20,6 +20,11 @@ fn is_relative( filesystem_path_view p ) : bool
 	return !is_absolute(p);
 }
 
+fn is_separator( char8 c ) : bool
+{
+	return c == "/"c8;
+}
+
 fn join( filesystem_path_view p0 ) : filesystem_path
 {
 	return p0;
