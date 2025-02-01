@@ -90,6 +90,21 @@ fn nomangle main() : i32
 	assert( ust::path::get_file_name( "name.ext" ) == ust::filesystem_path( "name.ext" ) );
 	assert( ust::path::get_file_name( "some/file" ) == ust::filesystem_path( "file" ) );
 	assert( ust::path::get_file_name( "/some/absolute/file.txt" ) == ust::filesystem_path( "file.txt" ) );
+	assert( ust::path::get_file_name( "/some/absolute////file.txt" ) == ust::filesystem_path( "file.txt" ) );
+
+	// get_parent_path
+	assert( ust::path::get_parent_path( "" ).empty() ); // No parent for empty path
+	assert( ust::path::get_parent_path( "/" ).empty() ); // No parent for root
+	assert( ust::path::get_parent_path( "foo" ) == ust::filesystem_path( "" ) ); // Empty parent for one-component path.
+	assert( ust::path::get_parent_path( "foo/bar" ) == ust::filesystem_path( "foo" ) );
+	assert( ust::path::get_parent_path( "foo/bar/baz" ) == ust::filesystem_path( "foo/bar" ) );
+	assert( ust::path::get_parent_path( "foo/bar/baz/" ) == ust::filesystem_path( "foo/bar" ) );
+	assert( ust::path::get_parent_path( "/foo" ) == ust::filesystem_path( "/" ) );
+	assert( ust::path::get_parent_path( "/foo/bar" ) == ust::filesystem_path( "/foo" ) );
+	assert( ust::path::get_parent_path( "/foo/bar/baz" ) == ust::filesystem_path( "/foo/bar" ) );
+	assert( ust::path::get_parent_path( "/foo/bar/baz/" ) == ust::filesystem_path( "/foo/bar" ) );
+	assert( ust::path::get_parent_path( "foo///bar" ) == ust::filesystem_path( "foo" ) );
+	assert( ust::path::get_parent_path( "///foo//bar////baz" ) == ust::filesystem_path( "///foo//bar" ) );
 
 	return 0;
 }

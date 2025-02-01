@@ -271,6 +271,46 @@ fn get_file_name( filesystem_path_view p )
 	return p;
 }
 
+fn get_parent_path( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p.empty() || p == "/" )
+	{
+		return null_optional;
+	}
+
+	var size_type mut i= p.size() - 1s;
+	if( p[i] == "/"c8 )
+	{
+		// Skip trailing "/".
+		--i;
+	}
+
+	// Iterate backwards up to first "/".
+	loop
+	{
+		var char8 c= p[i];
+		if( c == "/"c8 )
+		{
+			// Skip duplicated "/" if necessary.
+			while( i > 0s && p[i] == "/"c8 )
+			{
+				--i;
+			}
+			return p.subrange_end( i + 1s );
+		}
+
+		if( i == 0s )
+		{
+			break;
+		}
+		--i;
+	}
+
+	// Return an empty path.
+	return p.subrange_end(0s);
+}
+
 } // namespace path
 
 } // namespace ust

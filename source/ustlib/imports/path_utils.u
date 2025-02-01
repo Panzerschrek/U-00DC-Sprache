@@ -40,18 +40,19 @@ fn get_file_name( filesystem_path_view p )
 
 // Returns parent path - for a file directory where it's created, for a directory its parent directory.
 // Returns empty optional if can't determine parent path, like for root path or for relative path consisting of single component.
-fn get_parent_path( filesystem_path p )
+// Non-empty result doesn't contain trailing separator.
+fn get_parent_path( filesystem_path_view p )
 	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
 
 // Returns some sort of normal form. Separators are replaced with preffered, "." and ".." are removed (if it's possible).
 // Note that this function doesn't access underlying filesystem and thus not absolutization or symlinks resolving are performed.
-fn normalize( filesystem_path p ) : filesystem_path;
+fn normalize( filesystem_path_view p ) : filesystem_path;
 
 // Replace directory separators with native separatos.
-fn replace_separators_with_native( filesystem_path p ) : filesystem_path;
+fn replace_separators_with_native( filesystem_path_view p ) : filesystem_path;
 
 // Replace backward slashes with forward slashes.
-fn replace_separators_with_forward_slashed( filesystem_path p ) : filesystem_path;
+fn replace_separators_with_forward_slashed( filesystem_path_view p ) : filesystem_path;
 
 } // namespace path
 
