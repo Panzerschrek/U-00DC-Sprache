@@ -20,6 +20,76 @@ fn is_relative( filesystem_path_view p ) : bool
 	return !is_absolute(p);
 }
 
+fn join( filesystem_path_view p0 ) : filesystem_path
+{
+	return p0;
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1 ) : filesystem_path
+{
+	var [ filesystem_path_view, 2 ] components[ p0, p1 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2 ) : filesystem_path
+{
+	var [ filesystem_path_view, 3 ] components[ p0, p1, p2 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3 ) : filesystem_path
+{
+	var [ filesystem_path_view, 4 ] components[ p0, p1, p2, p3 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4 ) : filesystem_path
+{
+	var [ filesystem_path_view, 5 ] components[ p0, p1, p2, p3, p4 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4, filesystem_path_view p5 ) : filesystem_path
+{
+	var [ filesystem_path_view, 6 ] components[ p0, p1, p2, p3, p4, p5 ];
+	return join_impl( components );
+}
+
+fn join_impl( array_view_imut</filesystem_path_view/> components ) : filesystem_path
+{
+	// Start from last absolute component.
+	var size_type mut start_component= 0s;
+	for( auto mut i= components.size() - 1s; ; )
+	{
+		var filesystem_path_view& component= components[i];
+		if( is_absolute( component ) )
+		{
+			start_component= i;
+			break;
+		}
+		if( i == 0s )
+		{
+			break;
+		}
+		--i;
+	}
+
+	var filesystem_path mut result;
+
+	foreach( &component : components.subrange_start( start_component  ) )
+	{
+		if( !result.empty() && result.back() != "/"c8 )
+		{
+			// Add separator if result ends with non-separator char.
+			result.push_back( "/"c8 );
+		}
+
+		result+= component;
+	}
+
+	return result;
+}
+
 } // namespace path
 
 } // namespace ust

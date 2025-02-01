@@ -22,5 +22,23 @@ fn nomangle main() : i32
 	assert( !ust::path::is_relative( "/some" ) );
 	assert( !ust::path::is_relative( "/some/path" ) );
 
+	// join
+	assert( ust::path::join( "foo" ) == "foo" ); // Single component - return as is
+	assert( ust::path::join( "foo/bar" ) == "foo/bar" ); // Single component - return as is
+	assert( ust::path::join( "/" ) == "/" ); // Single component - return as is
+	assert( ust::path::join( "/foo/" ) == "/foo/" ); // Single component - return as is
+	assert( ust::path::join( "/foo/bar" ) == "/foo/bar" ); // Single component - return as is
+	assert( ust::path::join( "foo", "bar" ) == "foo/bar" ); // Join two components
+	assert( ust::path::join( "foo", "bar", "baz" ) == "foo/bar/baz" ); // Join three components
+	assert( ust::path::join( "foo/", "bar" ) == "foo/bar" ); // Join with leading "/" in a component
+	assert( ust::path::join( "foo///", "bar" ) == "foo///bar" ); // Join with several leading "/" in a component
+	assert( ust::path::join( "/foo", "bar" ) == "/foo/bar" ); // Join with first path absolute
+	assert( ust::path::join( "foo", "/bar" ) == "/bar" ); // Join with trailing "/" - should return first absolute path
+	assert( ust::path::join( "foo", "/bar", "baz" ) == "/bar/baz" ); // Join with trailing "/" - should return path started from first absolute path
+	assert( ust::path::join( "foo/bar/baz", "yet_another" ) == "foo/bar/baz/yet_another" ); // Join supports separators in given components
+	assert( ust::path::join( "foo////bar/////baz", "yet_another" ) == "foo////bar/////baz/yet_another" ); // Join preserves separators in given components
+	assert( ust::path::join( "", "", "", "foo" ) == "foo" ); // Leading empty components
+	assert( ust::path::join( "foo", "", "", "" ) == "foo/" ); // Trailing empty components
+
 	return 0;
 }
