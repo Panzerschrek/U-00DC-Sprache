@@ -539,7 +539,7 @@ U_TEST(DestructorsTest11)
 			var S nontemporary(13);
 			Baz( nontemporary ); // Value copied to argument. Must call destructor for argument.
 
-			S(14); // Simple expression - must destroy temporary.
+			var i32 unused_x= S(14).x; // Must destroy temporary after it's used.
 		}
 	)";
 

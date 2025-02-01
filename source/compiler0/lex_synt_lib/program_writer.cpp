@@ -983,6 +983,8 @@ void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& str
 		stream << Keyword( Keywords::constexpr_ ) << " ";
 	if( function.no_mangle )
 		stream << Keyword( Keywords::nomangle_ ) << " ";
+	if( function.no_discard )
+		stream << Keyword( Keywords::nodiscard_ ) << " ";
 
 	if( !std::holds_alternative<EmptyVariant>(function.condition) )
 	{

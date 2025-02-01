@@ -707,6 +707,7 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *class_->members, call_op_name, op_variable.type ) );
 		op_variable.is_this_call= true;
 		op_variable.prototype_src_loc= op_variable.body_src_loc= lambda.function.src_loc;
+		op_variable.no_discard= lambda.function.no_discard;
 
 		// Use auto-constexpr for () operator.
 		op_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;

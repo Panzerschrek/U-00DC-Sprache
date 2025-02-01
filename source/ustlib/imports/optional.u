@@ -221,7 +221,7 @@ public:
 	}
 
 	// Take value, leave optional empty.
-	fn try_take( mut this ) : T @(c_return_inner_references)
+	fn nodiscard try_take( mut this ) : T @(c_return_inner_references)
 	{
 		halt if(empty());
 		has_value_ = false;

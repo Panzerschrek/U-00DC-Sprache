@@ -8,6 +8,6 @@ namespace BK
 // on several build targets which are build targets of several versions of the same global package.
 // Returns true if can do so.
 // WARNING! Build target existence should be ensured first.
-fn UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool;
+fn nodiscard UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, WorkspaceInfo &mut workspace ) : bool;
 
 } // namespace BK

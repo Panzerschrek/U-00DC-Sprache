@@ -146,7 +146,8 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 						ust::make_array( variable_ptr, expr_result_ptr ),
 						ust::empty_range,
 						ArgsEvaluationOrder::Direct,
-						src_loc );
+						src_loc,
+						conversion_constructor_.no_discard );
 
 					self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
 				} );

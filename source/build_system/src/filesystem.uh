@@ -9,17 +9,17 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8;
 
 // Creates a directory, if it doesn't exist.
 // Returns false on fail
-fn EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool;
+fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool;
 
 // Create/overwrite a file with specific contents.
-fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool;
+fn nodiscard WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool;
 
 // Creates copy of a file. May overwrite destination. Returns false on error.
-fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool;
+fn nodiscard CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool;
 
 // Read file contents (usually of a text file) into a string.
 // Returns none if can't read.
-fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>;
+fn nodiscard ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>;
 
 type FileModificationTime= ust::system_time;
 

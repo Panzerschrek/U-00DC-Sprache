@@ -505,7 +505,7 @@ fn directory_raw_iterator::open( filesystem_path_view path ) : filesystem_result
 	}
 
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
-	path_null_terminated.pop_back(); // Remove null
+	path_null_terminated.drop_back(); // Remove null
 	// Ensure trailing path separator is present.
 	if( !(path_null_terminated.back() == WCHAR("/"c8) || path_null_terminated.back() == WCHAR("\\"c8) ) )
 	{
@@ -546,7 +546,7 @@ fn directory_raw_iterator::impl_windows::destructor()
 	}
 }
 
-fn directory_raw_iterator::impl_windows::next( mut this ) : optional</ filesystem_result</directory_entry/> />
+fn nodiscard directory_raw_iterator::impl_windows::next( mut this ) : optional</ filesystem_result</directory_entry/> />
 {
 	if( !first_entry_.empty() )
 	{

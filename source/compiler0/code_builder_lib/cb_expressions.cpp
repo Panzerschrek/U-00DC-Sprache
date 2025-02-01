@@ -2019,7 +2019,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( variable_ptr->constexpr_value != nullptr )
 		{
-			const VariablePtr variable_copy=
+			const VariableMutPtr variable_copy=
 				Variable::Create(
 				variable_ptr->type,
 				variable_ptr->value_type,
@@ -2027,6 +2027,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				"unsafe(" + variable_ptr->name + ")",
 				variable_ptr->llvm_value,
 				nullptr );
+
+			variable_copy->no_discard= variable_ptr->no_discard;
 
 			function_context.variables_state.AddNode( variable_copy );
 
@@ -2459,7 +2461,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				evaluate_args_in_reverse_order,
 				names_scope,
 				function_context,
-				overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
+				overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ,
+				overloaded_operator->no_discard );
 	}
 
 	return std::nullopt;
@@ -2792,7 +2795,9 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 			{},
 			false,
 			names_scope,
-			function_context );
+			function_context,
+			overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
+			overloaded_operator->no_discard );
 }
 
 std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
@@ -2846,7 +2851,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 		false,
 		names_scope,
 		function_context,
-		function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
+		function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
+		function->no_discard );
 }
 
 Value CodeBuilder::BuildBinaryOperator(
@@ -3688,9 +3694,16 @@ Value CodeBuilder::CallFunctionValue(
 
 			return
 				DoCallFunction(
-					func_itself, function_pointer->function_type, call_src_loc,
-					nullptr, args, false,
-					names_scope, function_context );
+					func_itself,
+					function_pointer->function_type,
+					call_src_loc,
+					nullptr,
+					args,
+					false,
+					names_scope,
+					function_context,
+					false, /* function pointer calls aren't constexpr */
+					false /* function pointer calls aren't nodiscard  */ );
 		}
 
 		// Try to call overloaded () operator.
@@ -3793,7 +3806,8 @@ Value CodeBuilder::CallFunctionValue(
 			this_,
 			synt_args_ptrs, false,
 			names_scope, function_context,
-			function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
+			function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
+			function.no_discard );
 }
 
 Value CodeBuilder::DoCallFunction(
@@ -3805,7 +3819,8 @@ Value CodeBuilder::DoCallFunction(
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const bool func_is_constexpr )
+	const bool func_is_constexpr,
+	const bool no_discard )
 {
 	return DoCallFunction(
 		function,
@@ -3816,7 +3831,8 @@ Value CodeBuilder::DoCallFunction(
 		evaluate_args_in_reverse_order,
 		names_scope,
 		function_context,
-		func_is_constexpr );
+		func_is_constexpr,
+		no_discard );
 }
 
 Value CodeBuilder::DoCallFunction(
@@ -3828,7 +3844,8 @@ Value CodeBuilder::DoCallFunction(
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const bool func_is_constexpr )
+	const bool func_is_constexpr,
+	const bool no_discard )
 {
 	if( function_type.unsafe && !function_context.is_in_unsafe_block )
 		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope.GetErrors(), call_src_loc );
@@ -4139,6 +4156,8 @@ Value CodeBuilder::DoCallFunction(
 
 	function_context.variables_state.AddNode( result );
 
+	result->no_discard= no_discard;
+
 	if( return_value_is_composite )
 	{
 		if( !function_context.is_functionless_context )
@@ -4377,6 +4396,10 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 			"temp " + type.ToString() );
 	function_context.variables_state.AddNode( variable );
 
+	// There is no sense to discard temporary value, it should be used.
+	// Ignore rare cases where constructor itself has side-effects.
+	variable->no_discard= true;
+
 	if( !function_context.is_functionless_context )
 	{
 		variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( type.GetLLVMType() );
@@ -4459,7 +4482,8 @@ VariablePtr CodeBuilder::ConvertVariable(
 			false,
 			names_scope,
 			function_context,
-			false );
+			false /* non-constexpr */,
+			conversion_constructor.no_discard );
 
 		CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
 

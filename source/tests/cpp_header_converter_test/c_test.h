@@ -345,3 +345,5 @@ enum MY_NODISCARD SomeNoDiscardEnum
 {
 	NoDiscardA, NoDiscardB, NoDiscardC,
 };
+
+MY_NODISCARD int CNoDiscardFunc();

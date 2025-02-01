@@ -518,7 +518,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					false,
 					names_scope,
 					function_context,
-					conversion_constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
+					conversion_constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
+					conversion_constructor->no_discard );
 
 				CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
 			}

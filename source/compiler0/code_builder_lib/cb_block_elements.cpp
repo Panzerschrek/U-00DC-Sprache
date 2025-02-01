@@ -2604,6 +2604,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			!(  std::holds_alternative<Synt::MoveOperator>( single_expression_operator.expression ) ||
 				std::holds_alternative<std::unique_ptr<const Synt::TakeOperator>>( single_expression_operator.expression ) ) )
 			REPORT_ERROR( DiscardingValueOfNodiscardType, names_scope.GetErrors(), Synt::GetSrcLoc( single_expression_operator.expression ), variable_ptr->type );
+
+		if( variable_ptr->no_discard )
+			REPORT_ERROR( DiscardingValueMarkedAsNodiscard, names_scope.GetErrors(), Synt::GetSrcLoc( single_expression_operator.expression ) );
 	}
 	else if(
 		value.GetFunctionsSet() != nullptr ||
@@ -3114,7 +3117,17 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		overloaded_operator->referenced= true;
 
 		const auto fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names_scope.GetErrors(), src_loc );
-		DoCallFunction( fetch_result.second, overloaded_operator->type, src_loc, fetch_result.first, {}, false, names_scope, function_context );
+		DoCallFunction(
+			fetch_result.second,
+			overloaded_operator->type,
+			src_loc,
+			fetch_result.first,
+			{},
+			false,
+			names_scope,
+			function_context,
+			false /* non-constexpr*/,
+			overloaded_operator->no_discard );
 	}
 	else if( const FundamentalType* const fundamental_type= variable->type.GetFundamentalType() )
 	{

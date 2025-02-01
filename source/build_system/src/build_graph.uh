@@ -52,7 +52,7 @@ struct BuildGraph
 // Perform the build, possibly rebuilding only necessary parts of the graph.
 // Optional previous graph state may be provided. If it's empty, the full build will be triggered.
 // Returns true on success.
-fn PerformGraphBuild(
+fn nodiscard PerformGraphBuild(
 	Logger &mut logger,
 	BuildGraph& build_graph,
 	ust::optional_ref_imut</BuildGraph/> prev_build_graph_opt,

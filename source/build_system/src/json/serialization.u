@@ -78,7 +78,7 @@ fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Array& array_value 
 
 	if( !array_value.empty() )
 	{
-		out.pop_back(); // Remove trailing comma
+		out.drop_back(); // Remove trailing comma
 	}
 
 	out.push_back( "]"c8 );
@@ -98,7 +98,7 @@ fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Object& object_valu
 
 	if( !object_value.empty() )
 	{
-		out.pop_back(); // Remove trailing comma
+		out.drop_back(); // Remove trailing comma
 	}
 
 	out.push_back( "}"c8 );

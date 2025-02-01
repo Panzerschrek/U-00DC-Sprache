@@ -6,7 +6,7 @@ namespace BK
 
 // Synchronously execute a process.
 // Returns true on ok.
-fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool;
+fn nodiscard RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool;
 
 // An interface for a class which runs and manages processes.
 // There are implementations for different platforms.
@@ -27,7 +27,7 @@ class ProcessGroupInterface interface
 	// Perform work to manage processes - read their output, finish (if necessary).
 	// This call may block until an input is recieved or at least one of processes finishes.
 	// Returns false on error.
-	fn virtual pure DoWork( mut this, Logger &mut logger ) : bool;
+	fn virtual pure nodiscard DoWork( mut this, Logger &mut logger ) : bool;
 
 	// Returns id of finished process. Returns nothing if no pendning unfinished processes left.
 	// This function should be called multiple times in a row - in case if more than one pending finished process exists.

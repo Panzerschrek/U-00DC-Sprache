@@ -10,7 +10,7 @@ import "path.uh"
 namespace BK
 {
 
-fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
+fn nodiscard WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool
 {
 	if_var( &e : ust::write_string_view_to_file( path, contents ).as_error_ref() )
 	{
@@ -20,7 +20,7 @@ fn WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 cont
 	return true;
 }
 
-fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool
+fn nodiscard CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool
 {
 	// TODO - maybe also touch file modification timestamp?
 	if_var( &e : ust::copy_file( source_path, destination_path ).as_error_ref() )
@@ -31,7 +31,7 @@ fn CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string
 	return true;
 }
 
-fn ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
+fn nodiscard ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>
 {
 	result_match( ust::read_file_to_string( path ) )
 	{

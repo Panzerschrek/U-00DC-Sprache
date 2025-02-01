@@ -614,6 +614,11 @@ fn CodeBuilder::PrepareFunction(
 		.t= move(function_type),
 		.llvm_function( LazyLLVMFunction( move(llvm_function_name) ) ),
 		.kind= function_kind,
+		.no_discard=
+			function_declaration.no_discard ||
+			// Generators and async functions are all implicitly "nodiscard".
+			function_kind == FunctionVariable::Kind::Generator ||
+			function_kind == FunctionVariable::Kind::Async,
 	};
 	if( function_declaration.block.empty() )
 	{
@@ -829,6 +834,31 @@ fn CodeBuilder::PrepareFunction(
 		}
 	}
 
+	// Check "nodiscard".
+	if( function_declaration.no_discard && !class_type.empty() )
+	{
+		// Do not allow "nodiscard" for constructors, destructors, assignment operators and any operators returning "void".
+		// For them "nodiscard" is useless.
+		if( is_constructor ||
+			is_destructor ||
+			function_declaration.operator == OverloadedOperator::Assign ||
+			function_declaration.operator == OverloadedOperator::AssignAdd ||
+			function_declaration.operator == OverloadedOperator::AssignSub ||
+			function_declaration.operator == OverloadedOperator::AssignMul ||
+			function_declaration.operator == OverloadedOperator::AssignDiv ||
+			function_declaration.operator == OverloadedOperator::AssignRem ||
+			function_declaration.operator == OverloadedOperator::AssignAnd ||
+			function_declaration.operator == OverloadedOperator::AssignOr ||
+			function_declaration.operator == OverloadedOperator::AssignXor ||
+			function_declaration.operator == OverloadedOperator::AssignShiftLeft ||
+			function_declaration.operator == OverloadedOperator::AssignShiftRight ||
+			function_declaration.operator == OverloadedOperator::Increment ||
+			function_declaration.operator == OverloadedOperator::Decrement )
+		{
+			REPORT_ERROR( UselessNodiscardForMethod, names_scope_ptr, function_declaration.src_loc )
+		}
+	}
+
 	if( function_declaration.no_mangle )
 	{
 		if( names_scope_ptr.lock_imut().deref().GetParent().empty() )
@@ -912,6 +942,11 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( CoroutineMismatch, names_scope_ptr, function_declaration.src_loc, func_name )
 			return false;
+		}
+
+		if( prev_function.no_discard != function_variable.no_discard )
+		{
+			REPORT_ERROR( NodiscardMismatch, names_scope_ptr, function_declaration.src_loc, func_name )
 		}
 
 		if( prev_function.is_conversion_constructor != function_variable.is_conversion_constructor )

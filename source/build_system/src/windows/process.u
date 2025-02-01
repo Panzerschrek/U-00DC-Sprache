@@ -10,7 +10,7 @@ import "windows.uh"
 namespace BK
 {
 
-fn RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool
+fn nodiscard RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool
 {
 	var WideString exe_path_wide = CorrectExecutablePathAndMakeItWide( exe_path );
 
@@ -274,7 +274,7 @@ public: // ProcessGroupInterface
 		return true;
 	}
 
-	fn virtual override DoWork( mut this, Logger &mut logger ) : bool
+	fn virtual override nodiscard DoWork( mut this, Logger &mut logger ) : bool
 	{
 		if( runnung_processes_.empty() )
 		{

@@ -381,7 +381,7 @@ public:
 
 		fn constructor( mut this, raw_iterator</is_mutable/>& other )= default;
 
-		fn enable_if( is_mutable )
+		fn nodiscard enable_if( is_mutable )
 		next( mut this )
 			: optional</ iterator_element_mut /> @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{
@@ -398,7 +398,7 @@ public:
 			}
 		}
 
-		fn enable_if( !is_mutable )
+		fn nodiscard enable_if( !is_mutable )
 		next( mut this )
 			: optional</ iterator_element_imut /> @( reference_notation::return_inner_references::param0_inner_reference0 )
 		{

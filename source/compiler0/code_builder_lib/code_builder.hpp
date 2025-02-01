@@ -898,7 +898,8 @@ private:
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		bool func_is_constexpr= false );
+		bool func_is_constexpr,
+		bool no_discard );
 
 	Value DoCallFunction(
 		llvm::Value* function,
@@ -909,7 +910,8 @@ private:
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		bool func_is_constexpr= false );
+		bool func_is_constexpr,
+		bool no_discard );
 
 	VariablePtr BuildTempVariableConstruction(
 		const Type& type,

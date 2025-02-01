@@ -26,7 +26,7 @@ namespace BK
 {
 
 // Place actual "main" code inside the "BK" namespace.
-fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
+fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 {
 	SetupAbortSignalHandler();
 
@@ -334,13 +334,15 @@ fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 
 	// Write a helper file to be used by Ü language server.
 	// Do not fail the build if failed to write it.
-	WriteLanguageServerWorkspaceInfoFile(
-		bsi.logger_,
-		bsi.build_system_paths_,
-		target_workspace,
-		root_package_build_directory,
-		host_workspace,
-		host_packages_root_build_directory );
+	var bool workspace_info_file_write_ok=
+		WriteLanguageServerWorkspaceInfoFile(
+			bsi.logger_,
+			bsi.build_system_paths_,
+			target_workspace,
+			root_package_build_directory,
+			host_workspace,
+			host_packages_root_build_directory );
+	ust::ignore_unused( workspace_info_file_write_ok );
 
 	var ust::string8 build_graph_state_file_path= root_package_build_directory + "/build_graph.json";
 
@@ -417,10 +419,12 @@ fn Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 		bsi.logger_.LogVerbose( "Build graph seems to be updated. Rewrite it." );
 
 		// TODO - maybe fail the build if failed to serialize the build graph?
-		WriteFile(
-			bsi.logger_,
-			build_graph_state_file_path,
-			SerializeBuildGraph( build_graph ) );
+		var bool build_graph_write_is_ok=
+			WriteFile(
+				bsi.logger_,
+				build_graph_state_file_path,
+				SerializeBuildGraph( build_graph ) );
+		ust::ignore_unused( build_graph_write_is_ok );
 	}
 	else
 	{
@@ -798,7 +802,7 @@ fn CreateWorkspace(
 }
 
 // returns true on success.
-fn CreateWorkspaceBuildDirectories(
+fn nodiscard CreateWorkspaceBuildDirectories(
 	Logger &mut logger, WorkspaceInfo& workspace, ust::string_view8 root_package_build_directory ) : bool
 {
 	// Create directories for generated sources, if necessary.
@@ -1680,7 +1684,7 @@ fn GetCompiledForBuildScriptsUstlibPath( ust::string_view8 build_directory_base 
 	return NormalizePath( ust::concat( build_directory_base, "/", "ustlib.o" ) );
 }
 
-fn BuildUstlibForBuildScripts(
+fn nodiscard BuildUstlibForBuildScripts(
 	Logger &mut logger,
 	BuildSystemPaths& build_system_paths,
 	ust::string_view8 host_sysroot,
@@ -1771,7 +1775,7 @@ fn BuildUstlibForBuildScripts(
 	}
 }
 
-fn BuildSingleFileProgram(
+fn nodiscard BuildSingleFileProgram(
 	Logger &mut logger,
 	ust::string_view8 source_file_path,
 	BuildSystemPaths& build_system_paths,

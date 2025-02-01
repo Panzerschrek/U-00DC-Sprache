@@ -53,11 +53,14 @@ public:
 	FunctionType type;
 
 	uint32_t virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
+
+	// TODO - make these properties more compact, like use enum for properties which can't exist together.
 	bool has_body= false;
 	bool is_this_call= false;
 	bool is_generated= false;
 	bool is_deleted= false;
 	bool no_mangle= false;
+	bool no_discard= false;
 	bool is_constructor= false;
 	bool is_conversion_constructor= false;
 	bool is_inherited= false;
@@ -149,6 +152,9 @@ public:
 
 	// If true - this is a temporary variable that should not be deleted even if it has no outgoing links.
 	bool preserve_temporary= false;
+
+	// Result of a "nodiscard" function call.
+	bool no_discard= false;
 
 private:
 	Variable(

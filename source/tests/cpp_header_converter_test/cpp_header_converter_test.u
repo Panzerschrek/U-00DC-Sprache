@@ -266,5 +266,7 @@ fn nomangle main() : i32
 	static_assert( typeinfo</SomeNoDiscardStruct/>.is_nodiscard );
 	static_assert( typeinfo</SomeNoDiscardEnum/>.is_nodiscard );
 
+	var i32 nodiscard_res= unsafe( CNoDiscardFunc() );
+
 	return 0;
 }

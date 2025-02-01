@@ -1385,6 +1385,13 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 
 	NextLexem(); // Skip "lambda" keyword
 
+	var bool mut no_discard= false;
+	if( IsKeyword( it_.front(), Keyword::nodiscard_ ) )
+	{
+		no_discard= true;
+		NextLexem();
+	}
+
 	var Lambda::Capture mut capture;
 	if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 	{
@@ -1462,7 +1469,7 @@ fn SyntaxAnalyzer::ParseLambda( mut this ) : Lambda
 		capture= Lambda::CaptureNothing();
 	}
 
-	var Function mut lambda_function{ .src_loc= it_.front().src_loc };
+	var Function mut lambda_function{ .src_loc= it_.front().src_loc, .no_discard= no_discard };
 	lambda_function.name.push_back( KeywordToString( Keyword::lambda_ ) );
 
 
@@ -1685,6 +1692,11 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 	if( IsKeyword( it_.front(), Keyword::nomangle_ ) )
 	{
 		res.no_mangle= true;
+		NextLexem();
+	}
+	if( IsKeyword( it_.front(), Keyword::nodiscard_ ) )
+	{
+		res.no_discard= true;
 		NextLexem();
 	}
 	if( IsKeyword( it_.front(), Keyword::enable_if_ ) )

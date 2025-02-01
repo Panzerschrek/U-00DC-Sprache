@@ -4,6 +4,6 @@ namespace BK
 {
 
 // Returns true on success.
-fn InitProjectStub( Logger &mut logger, ust::string_view8 project_directory ) : bool;
+fn nodiscard InitProjectStub( Logger &mut logger, ust::string_view8 project_directory ) : bool;
 
 } // namespace BK

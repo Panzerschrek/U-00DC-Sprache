@@ -5,7 +5,7 @@ import "../code_builder_lib/code_builder.uh"
 import "../code_builder_lib/source_file_contents_hash_wrapper.uh"
 import "../../imports/funcs_u.uh"
 
-fn nomangle U1_BuildProgram(
+fn nomangle nodiscard U1_BuildProgram(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
@@ -81,7 +81,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 	}
 }
 
-fn nomangle U1_BuildProgramUsingVFS(
+fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1_IVfsInterface& vfs_interface,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
@@ -164,7 +164,7 @@ fn nomangle U1_BuildProgramUsingVFS(
 	return code_builder_res.llvm_module;
 }
 
-fn nomangle U1_BuildMultisourceProgram(
+fn nomangle nodiscard U1_BuildMultisourceProgram(
 	$(U1_SourceFile) source_files,
 	size_type source_file_count,
 	U1_StringView& root_file_path,
@@ -230,7 +230,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	return true;
 }
 
-fn nomangle U1_BuildProgramForLifetimesTest(
+fn nomangle nodiscard U1_BuildProgramForLifetimesTest(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
@@ -266,7 +266,7 @@ fn nomangle U1_BuildProgramForLifetimesTest(
 	return code_builder_res.llvm_module;
 }
 
-fn nomangle U1_BuildProgramForMSVCManglingTest(
+fn nomangle nodiscard U1_BuildProgramForMSVCManglingTest(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef

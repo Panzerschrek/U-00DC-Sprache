@@ -510,27 +510,6 @@ def UselessExpressionRoot_Test40():
 	assert( HasError( errors_list, "UselessExpressionRoot", 4 ) )
 
 
-def UselessExpressionRoot_Test41():
-	c_program_text= """
-		fn Foo()
-		{
-			S(); // OK - temp variable construction. Sometimes it is usefull, if constructor has side-effects.
-		}
-		struct S{}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def UselessExpressionRoot_Test42():
-	c_program_text= """
-		fn Foo()
-		{
-			i32(4.5f); // OK - variable conversion. For now it is not considered useless, since there is no way to dostinguish between trivial and non-trivial temp variable construction.
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
 def UselessExpressionRoot_Test43():
 	c_program_text= """
 		fn Foo(bool cond)
