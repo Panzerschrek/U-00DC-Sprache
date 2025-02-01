@@ -26,7 +26,8 @@ fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view 
 // Get file extension - string after last "." in the file name.
 // Returns empty optional if has no file extension or if it's a directory path (ending with a separator).
 // Returns empty string if "." is the last symbol in given path.
-fn get_file_extension( filesystem_path_view p ) : optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
+fn get_file_extension( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
 
 // If has a file extension - remove it. Otherwise return given path as is.
 fn get_path_without_extension( filesystem_path_view p ) : filesystem_path_view @( reference_notation::return_inner_references::param0_inner_reference0 );

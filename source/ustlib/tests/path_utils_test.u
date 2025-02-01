@@ -40,5 +40,22 @@ fn nomangle main() : i32
 	assert( ust::path::join( "", "", "", "foo" ) == "foo" ); // Leading empty components
 	assert( ust::path::join( "foo", "", "", "" ) == "foo/" ); // Trailing empty components
 
+	// get_file_extension
+	assert( ust::path::get_file_extension( "" ).empty() ); // No extension for empty path
+	assert( ust::path::get_file_extension( "." ).empty() ); // No extension for dot
+	assert( ust::path::get_file_extension( ".." ).empty() ); // No extension for two dots
+	assert( ust::path::get_file_extension( "..." ) == ust::filesystem_path_view("") ); // Has empty extension for more than two dots.
+	assert( ust::path::get_file_extension( "..a" ) == ust::filesystem_path_view( "a" ) ); // path starts with two dots and ends with non-empty extension
+	assert( ust::path::get_file_extension( ".gitignore" ).empty() ); // No extension for file starting with "."
+	assert( ust::path::get_file_extension( "some/file" ).empty() ); // No extension for given file
+	assert( ust::path::get_file_extension( "so.me/file" ).empty() ); // No extension for given file, but directory name contains a dot
+	assert( ust::path::get_file_extension( "some/.hidden" ).empty() ); // No extension for given file, but name starts with dot
+	assert( ust::path::get_file_extension( "foo/some.txt/" ).empty() ); // No extension, because path ends with "/"
+	assert( ust::path::get_file_extension( "some.txt" ) == ust::filesystem_path_view( "txt" ) ); // Has extension
+	assert( ust::path::get_file_extension( "/home/user/some.txt" ) == ust::filesystem_path_view( "txt" ) ); // Has extension with complex path
+	assert( ust::path::get_file_extension( "user/some.txt.backup" ) == ust::filesystem_path_view( "backup" ) ); // A component after last "." is returned
+	assert( ust::path::get_file_extension( "user/some....txt" ) == ust::filesystem_path_view( "txt" ) ); // A component after last "." is returned
+	assert( ust::path::get_file_extension( "some." ) == ust::filesystem_path_view( "" ) ); // Has empty extension
+
 	return 0;
 }
