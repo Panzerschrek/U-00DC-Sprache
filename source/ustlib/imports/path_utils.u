@@ -1,7 +1,7 @@
 // This file declares various functions for filesystem path manipulations.
 // Functions from this file don't perform system calls, they purely operate on inputs.
 
-import "filesystem.u" // TODO - remove this import, move "filesystem_path" defenition into a separate file
+import "path.u"
 
 namespace ust
 {
@@ -55,7 +55,7 @@ fn normalize( filesystem_path_view p ) : filesystem_path;
 fn replace_separators_with_native( filesystem_path_view p ) : filesystem_path;
 
 // Replace backward slashes with forward slashes.
-fn replace_separators_with_forward_slashed( filesystem_path_view p ) : filesystem_path;
+fn replace_separators_with_forward_slashes( filesystem_path_view p ) : filesystem_path;
 
 } // namespace path
 
