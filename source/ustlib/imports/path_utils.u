@@ -33,13 +33,15 @@ fn get_file_extension( filesystem_path_view p )
 fn get_path_without_extension( filesystem_path_view p )
 	: filesystem_path_view @( reference_notation::return_inner_references::param0_inner_reference0 );
 
-// Get filename, assuming the last component is filename.
-// Returns empty optional if given path ends with separator.
-fn get_filename( filesystem_path_view p ) : optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
+// Get file name, assuming the last component is file name.
+// Returns empty optional if given path ends with separator or with "." or "..".
+fn get_file_name( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
 
 // Returns parent path - for a file directory where it's created, for a directory its parent directory.
 // Returns empty optional if can't determine parent path, like for root path or for relative path consisting of single component.
-fn get_parent_path( filesystem_path p ) : optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
+fn get_parent_path( filesystem_path p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
 
 // Returns some sort of normal form. Separators are replaced with preffered, "." and ".." are removed (if it's possible).
 // Note that this function doesn't access underlying filesystem and thus not absolutization or symlinks resolving are performed.

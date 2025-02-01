@@ -76,5 +76,20 @@ fn nomangle main() : i32
 	assert( ust::path::get_path_without_extension( "so.me/file" ) == "so.me/file" ); // No extension for given file, but directory name contains a dot
 	assert( ust::path::get_path_without_extension( "Welteroberungplan...txt" ) == "Welteroberungplan.." ); // Stripped last ".txt"
 
+	// get_file_name
+	assert( ust::path::get_file_name( "" ).empty() );
+	assert( ust::path::get_file_name( "/" ).empty() );
+	assert( ust::path::get_file_name( "some/" ).empty() );
+	assert( ust::path::get_file_name( "/some/" ).empty() );
+	assert( ust::path::get_file_name( "." ).empty() );
+	assert( ust::path::get_file_name( ".." ).empty() );
+	assert( ust::path::get_file_name( "some/." ).empty() );
+	assert( ust::path::get_file_name( "some/.." ).empty() );
+	assert( ust::path::get_file_name( "/.." ).empty() );
+	assert( ust::path::get_file_name( "simple name" ) == ust::filesystem_path( "simple name" ) );
+	assert( ust::path::get_file_name( "name.ext" ) == ust::filesystem_path( "name.ext" ) );
+	assert( ust::path::get_file_name( "some/file" ) == ust::filesystem_path( "file" ) );
+	assert( ust::path::get_file_name( "/some/absolute/file.txt" ) == ust::filesystem_path( "file.txt" ) );
+
 	return 0;
 }

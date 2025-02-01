@@ -228,6 +228,49 @@ fn get_path_without_extension( filesystem_path_view p )
 	return p;
 }
 
+fn get_file_name( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p.empty() )
+	{
+		return null_optional;
+	}
+	if( p.back() == "/"c8 )
+	{
+		// Paths ending with "/" considered to be a directory path.
+		return null_optional;
+	}
+
+	// Iterate backwards up to first "/".
+	for( auto mut i= p.size() - 1s; ; )
+	{
+		var char8 c= p[i];
+		if( c == "/"c8 )
+		{
+			auto remainder= p.subrange_start( i + 1s );
+			if( remainder == ".." || remainder == "." )
+			{
+				// Names "." and ".." are not file names.
+				return null_optional;
+			}
+			return remainder;
+		}
+
+		if( i == 0s )
+		{
+			break;
+		}
+		--i;
+	}
+
+	// The whole path is a file name, unles it's "." or "..".
+	if( p == ".." || p == "." )
+	{
+		return null_optional;
+	}
+	return p;
+}
+
 } // namespace path
 
 } // namespace ust
