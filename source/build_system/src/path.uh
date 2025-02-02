@@ -13,10 +13,6 @@ fn SplitPathIntoComponents( ust::filesystem_path_view path )
 // Replaces separators with preferrable, removes duplicated separators, removes trailing separator (if present), performs (if possible) relative paths resolution.
 fn NormalizePath( ust::filesystem_path_view path ) : ust::filesystem_path;
 
-// Returns parent path for given path. Basically cuts contents from tail until "/" isn't reached.
-fn GetParentPath( ust::filesystem_path_view path )
-	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 );
-
 // Returns last path component - file name or directory.
 fn GetLastPathComponent( ust::filesystem_path_view path )
 	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 );

@@ -94,27 +94,6 @@ fn NormalizePath( ust::filesystem_path_view path ) : ust::filesystem_path
 	return res;
 }
 
-fn GetParentPath( ust::filesystem_path_view mut path )
-	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
-{
-	if( !path.empty() && ( ( path.back() == "/"c8 || path.back() == "\\"c8 ) ) )
-	{
-		// It's a directory name with trailing slash - skip it.
-		path.drop_back();
-	}
-
-	while( !path.empty() )
-	{
-		if( path.back() == "/"c8 || path.back() == "\\"c8 )
-		{
-			path.drop_back();
-			break;
-		}
-		path.drop_back();
-	}
-	return path;
-}
-
 fn GetLastPathComponent( ust::filesystem_path_view mut path )
 	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
 {

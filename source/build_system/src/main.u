@@ -91,7 +91,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	var ust::filesystem_path exe_directory = MakePathAbsolute( GetParentPath( GetCurrentExecutablePath() ) );
+	var ust::filesystem_path exe_directory = MakePathAbsolute( ust::path::get_parent_path( GetCurrentExecutablePath() ).deref_or( "" ) );
 
 	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory, "\"" ) );
 
