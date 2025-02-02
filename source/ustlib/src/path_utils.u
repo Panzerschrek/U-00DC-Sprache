@@ -1,4 +1,5 @@
 import "../imports/path_utils.u"
+import "../imports/vector.u"
 
 namespace ust
 {
@@ -314,6 +315,61 @@ fn get_parent_path( filesystem_path_view p )
 
 	// Return an empty path.
 	return p.subrange_end(0s);
+}
+
+fn normalize( filesystem_path_view p ) : filesystem_path
+{
+	var vector</filesystem_path_view/> mut components;
+
+	auto mut it= components_iter(p);
+	if( false )
+	{
+		// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+		components.push_back( it.next().try_deref() );
+	}
+	loop
+	{
+		auto component_opt= it.next();
+		if( component_opt.empty() )
+		{
+			break;
+		}
+		var filesystem_path_view& component= component_opt.try_deref();
+
+		if( component == "." )
+		{
+			// Skip ".", since it's useless.
+		}
+		else if( component == ".." )
+		{
+			// If we have a component prior to ".." - remove it, else - preserve it (unles it's ".." or "/" ).
+			if( !components.empty() && components.back() != ".." && components.back() != "/" )
+			{
+				components.drop_back();
+			}
+			else
+			{
+				components.push_back( component );
+			}
+		}
+		else
+		{
+			components.push_back( component );
+		}
+	}
+
+	var filesystem_path mut result;
+
+	foreach( &component : components )
+	{
+		if( !result.empty() && result.back() != "/"c8 )
+		{
+			result.push_back( "/"c8 );
+		}
+		result+= component;
+	}
+
+	return result;
 }
 
 fn components_raw_iterator::constructor( mut this, filesystem_path_view p )

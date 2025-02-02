@@ -115,6 +115,38 @@ fn nomangle main() : i32
 	assert( ust::path::get_parent_path( "foo///bar" ) == ust::filesystem_path( "foo" ) );
 	assert( ust::path::get_parent_path( "///foo//bar////baz" ) == ust::filesystem_path( "///foo//bar" ) );
 
+	// normalize
+	assert( ust::path::normalize( "" ) == "" );
+	assert( ust::path::normalize( "/" ) == "/" );
+	assert( ust::path::normalize( "///" ) == "/" );
+	assert( ust::path::normalize( "/foo" ) == "/foo" );
+	assert( ust::path::normalize( "/foo/" ) == "/foo" );
+	assert( ust::path::normalize( "////foo/////" ) == "/foo" );
+	assert( ust::path::normalize( "foo/bar/baz" ) == "foo/bar/baz" );
+	assert( ust::path::normalize( "foo/bar/baz/" ) == "foo/bar/baz" );
+	assert( ust::path::normalize( "foo///bar//baz" ) == "foo/bar/baz" );
+	assert( ust::path::normalize( "." ) == "" );
+	assert( ust::path::normalize( "foo/." ) == "foo" );
+	assert( ust::path::normalize( "/foo/." ) == "/foo" );
+	assert( ust::path::normalize( "./foo" ) == "foo" );
+	assert( ust::path::normalize( "/." ) == "/" );
+	assert( ust::path::normalize( ".." ) == ".." );
+	assert( ust::path::normalize( "../.." ) == "../.." );
+	assert( ust::path::normalize( "..///.." ) == "../.." );
+	assert( ust::path::normalize( "/.." ) == "/.." );
+	assert( ust::path::normalize( "/../.." ) == "/../.." );
+	assert( ust::path::normalize( "foo/.." ) == "" );
+	assert( ust::path::normalize( "/foo/.." ) == "/" );
+	assert( ust::path::normalize( "foo/bar/.." ) == "foo" );
+	assert( ust::path::normalize( "/foo/bar/.." ) == "/foo" );
+	assert( ust::path::normalize( "foo/bar/../" ) == "foo" );
+	assert( ust::path::normalize( "/foo/bar/../" ) == "/foo" );
+	assert( ust::path::normalize( "foo/bar/../.." ) == "" );
+	assert( ust::path::normalize( "/foo/bar/../.." ) == "/" );
+	assert( ust::path::normalize( "../foo" ) == "../foo" );
+	assert( ust::path::normalize( "../foo/bar" ) == "../foo/bar" );
+	assert( ust::path::normalize( "../foo/.." ) == ".." );
+
 	// components_iter
 	type paths_vec= ust::vector</ust::filesystem_path/>;
 	{
