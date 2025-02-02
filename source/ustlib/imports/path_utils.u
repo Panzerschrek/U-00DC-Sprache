@@ -76,6 +76,9 @@ public:
 
 private:
 	filesystem_path_view p_;
+
+	// For Windows path store a flag indicating first iteration - in order to trigger prefix parsing.
+	type_select</ constexpr_string_equals( compiler::target::os, "windows" ), bool, void /> first_iteration_flag_;
 }
 
 } // namespace path

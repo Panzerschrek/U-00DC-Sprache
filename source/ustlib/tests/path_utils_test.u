@@ -168,6 +168,174 @@ fn nomangle main() : i32
 		assert( ust::path::get_parent_path( "foo\\\\\\\\bar" ) == ust::filesystem_path( "foo" ) );
 		assert( ust::path::get_parent_path( "C:///foo//bar////baz" ) == ust::filesystem_path( "C:///foo//bar" ) );
 		assert( ust::path::get_parent_path( "C:\\\\\\foo\\\\bar\\\\\\\\baz" ) == ust::filesystem_path( "C:\\\\\\foo\\\\bar" ) );
+
+		// components_iter
+		type paths_vec= ust::vector</ust::filesystem_path/>;
+		{
+			auto components= ust::path::components_iter( "" ).collect</ paths_vec />();
+			assert( components.size() == 0s );
+		}
+
+		{
+			// Prefix is a component.
+			auto components= ust::path::components_iter( "D:" ).collect</ paths_vec />();
+			assert( components.size() == 1s );
+			assert( components[0s] == "D:" );
+		}
+		{
+			// Prefix and root as components.
+			auto components= ust::path::components_iter( "c:/" ).collect</ paths_vec />();
+			assert( components.size() == 2s );
+			assert( components[0s] == "c:" );
+			assert( components[1s] == "/" );
+		}
+		{
+			// Extra "/" are ignored.
+			auto components= ust::path::components_iter( "C:////" ).collect</ paths_vec />();
+			assert( components.size() == 2s );
+			assert( components[0s] == "C:" );
+			assert( components[1s] == "/" );
+		}
+		{
+			// Extra "\\" are ignored.
+			auto components= ust::path::components_iter( "C:\\\\" ).collect</ paths_vec />();
+			assert( components.size() == 2s );
+			assert( components[0s] == "C:" );
+			assert( components[1s] == "\\" );
+		}
+		{
+			// Several components in a relative path.
+			auto components= ust::path::components_iter( "foo/bar/baz" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "foo" );
+			assert( components[1s] == "bar" );
+			assert( components[2s] == "baz" );
+		}
+		{
+			// Several components in a relative path.
+			auto components= ust::path::components_iter( "foo\\bar\\baz" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "foo" );
+			assert( components[1s] == "bar" );
+			assert( components[2s] == "baz" );
+		}
+		{
+			// Non-absolute path with disk prefix.
+			auto components= ust::path::components_iter( "f:foo/bar/baz" ).collect</ paths_vec />();
+			assert( components.size() == 4s );
+			assert( components[0s] == "f:" );
+			assert( components[1s] == "foo" );
+			assert( components[2s] == "bar" );
+			assert( components[3s] == "baz" );
+		}
+		{
+			// Non-absolute path with disk prefix.
+			auto components= ust::path::components_iter( "f:foo\\bar\\baz" ).collect</ paths_vec />();
+			assert( components.size() == 4s );
+			assert( components[0s] == "f:" );
+			assert( components[1s] == "foo" );
+			assert( components[2s] == "bar" );
+			assert( components[3s] == "baz" );
+		}
+		{
+			// Several components in an absolute path.
+			auto components= ust::path::components_iter( "f:/foo/bar/baz" ).collect</ paths_vec />();
+			assert( components.size() == 5s );
+			assert( components[0s] == "f:" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "foo" );
+			assert( components[3s] == "bar" );
+			assert( components[4s] == "baz" );
+		}
+		{
+			// Several components in an absolute path.
+			auto components= ust::path::components_iter( "f:\\foo\\\\bar\\\\\\baz" ).collect</ paths_vec />();
+			assert( components.size() == 5s );
+			assert( components[0s] == "f:" );
+			assert( components[1s] == "\\" );
+			assert( components[2s] == "foo" );
+			assert( components[3s] == "bar" );
+			assert( components[4s] == "baz" );
+		}
+
+		{
+			// Trailing "/" are ignored.
+			auto components= ust::path::components_iter( "some path/////" ).collect</ paths_vec />();
+			assert( components.size() == 1s );
+			assert( components[0s] == "some path" );
+		}
+		{
+			// Trailing "\" are ignored for absolute paths and path with multiple components.
+			auto components= ust::path::components_iter( "\\\\?\\server\\share/foo/bar/baz\\" ).collect</ paths_vec />();
+			assert( components.size() == 5s );
+			assert( components[0s] == "\\\\?\\server\\share" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "foo" );
+			assert( components[3s] == "bar" );
+			assert( components[4s] == "baz" );
+		}
+
+		{
+			// "." has no effect on components splitting.
+			auto components= ust::path::components_iter( "F:/some.dir/file_with_extension.txt" ).collect</ paths_vec />();
+			assert( components.size() == 4s );
+			assert( components[0s] == "F:" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "some.dir" );
+			assert( components[3s] == "file_with_extension.txt" );
+		}
+		{
+			// "." is a component.
+			auto components= ust::path::components_iter( "foo/./bar" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "foo" );
+			assert( components[1s] == "." );
+			assert( components[2s] == "bar" );
+		}
+		{
+			// "." is a component.
+			auto components= ust::path::components_iter( "foo\\.\\bar" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "foo" );
+			assert( components[1s] == "." );
+			assert( components[2s] == "bar" );
+		}
+		{
+			// ".." is a component.
+			auto components= ust::path::components_iter( "Y:/foo\\bar/..\\baz/.." ).collect</ paths_vec />();
+			assert( components.size() == 7s );
+			assert( components[0s] == "Y:" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "foo" );
+			assert( components[3s] == "bar" );
+			assert( components[4s] == ".." );
+			assert( components[5s] == "baz" );
+			assert( components[6s] == ".." );
+		}
+		{
+			// Server and share are part of a single component (prefix).
+			auto components= ust::path::components_iter( "\\\\?\\UNC\\server\\share" ).collect</ paths_vec />();
+			assert( components.size() == 1s );
+			assert( components[0s] == "\\\\?\\UNC\\server\\share" );
+		}
+		{
+			// Server and share are part of a single component (prefix), then follows path.
+			auto components= ust::path::components_iter( "\\\\?\\UNC\\server\\share/path" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "\\\\?\\UNC\\server\\share" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "path" );
+		}
+		{
+			// Parse device path.
+			auto components= ust::path::components_iter( "\\\\.\\DEV//path/on/device" ).collect</ paths_vec />();
+			assert( components.size() == 5s );
+			assert( components[0s] == "\\\\.\\DEV" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "path" );
+			assert( components[3s] == "on" );
+			assert( components[4s] == "device" );
+		}
 	}
 	else
 	{
