@@ -4,7 +4,6 @@ import "/enum_string_conversions.u"
 import "/file.u"
 import "/string_conversions.u"
 import "../filesystem.uh"
-import "../path.uh"
 import "wide_string.uh"
 import "windows.uh"
 

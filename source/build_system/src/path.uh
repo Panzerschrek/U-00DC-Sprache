@@ -1,7 +1,0 @@
-import "/path.u"
-import "/vector.u"
-
-namespace BK
-{
-
-} // namespace BK

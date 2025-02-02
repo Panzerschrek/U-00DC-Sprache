@@ -3,7 +3,6 @@ import "/sort.u"
 import "package_transformation.uh"
 import "build_system_paths.uh"
 import "options.uh"
-import "path.uh"
 
 namespace BK
 {

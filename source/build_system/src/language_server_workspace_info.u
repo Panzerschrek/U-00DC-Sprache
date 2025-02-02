@@ -3,7 +3,6 @@ import "filesystem.uh"
 import "include_directories.uh"
 import "json/serialization.uh"
 import "language_server_workspace_info.uh"
-import "path.uh"
 
 //
 // If code in this file is changed, corresponding code in the Language Server should be changed too!

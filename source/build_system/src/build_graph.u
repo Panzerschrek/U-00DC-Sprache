@@ -6,7 +6,6 @@ import "/unordered_map.u"
 import "build_graph.uh"
 import "filesystem.uh"
 import "make_dep_file.uh"
-import "path.uh"
 import "process.uh"
 
 
