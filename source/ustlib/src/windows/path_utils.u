@@ -6,6 +6,8 @@ namespace ust
 namespace path
 {
 
+var char8 constexpr g_native_separator = "\\"c8;
+
 fn is_absolute( filesystem_path_view p ) : bool
 {
 	if( p.size() >= 2s )
@@ -17,12 +19,12 @@ fn is_absolute( filesystem_path_view p ) : bool
 			var char8 c2= p[2s];
 			if( ( ( c0 >= "a"c8 && c0 <= "z"c8 ) || ( c0 >= "A"c8 && c0 <= "Z"c8 ) ) &&
 				c1 == ":"c8 &&
-				( c2 == "/"c8 || c2 == "\\"c8 ) )
+				is_separator(c2) )
 			{
 				return true;
 			}
 		}
-		if( c0 == "\\"c8 && c1 == "\\"c8 )
+		if( c0 == g_native_separator && c1 == g_native_separator )
 		{
 			// TODO - improve this. Not all path starting with "\\" are absolute.
 			return true;
@@ -38,7 +40,7 @@ fn is_relative( filesystem_path_view p ) : bool
 
 fn is_separator( char8 c ) : bool
 {
-	return c == "/"c8 || c == "\\"c8;
+	return c == "/"c8 || c == g_native_separator;
 }
 
 fn join( filesystem_path_view p0 ) : filesystem_path
@@ -78,8 +80,37 @@ fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view 
 
 fn join_impl( array_view_imut</filesystem_path_view/> components ) : filesystem_path
 {
-	// TODO
-	halt;
+	// Start from last absolute component.
+	var size_type mut start_component= 0s;
+	for( auto mut i= components.size() - 1s; ; )
+	{
+		var filesystem_path_view& component= components[i];
+		if( is_absolute( component ) )
+		{
+			start_component= i;
+			break;
+		}
+		if( i == 0s )
+		{
+			break;
+		}
+		--i;
+	}
+
+	var filesystem_path mut result;
+
+	foreach( &component : components.subrange_start( start_component  ) )
+	{
+		if( !result.empty() && ! is_separator( result.back() ) )
+		{
+			// Add separator if result ends with non-separator char.
+			result.push_back( g_native_separator );
+		}
+
+		result+= component;
+	}
+
+	return result;
 }
 
 fn get_file_extension( filesystem_path_view p )

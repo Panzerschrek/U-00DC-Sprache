@@ -36,6 +36,32 @@ fn nomangle main() : i32
 		assert( !ust::path::is_relative( "\\\\system07" ) );
 		assert( !ust::path::is_relative( "\\\\?\\C:\\some/path" ) );
 		assert( !ust::path::is_relative( "\\\\.\\COM42\\some" ) );
+
+		// join
+		assert( ust::path::join( "foo" ) == "foo" ); // Single component - return as is
+		assert( ust::path::join( "foo/bar" ) == "foo/bar" ); // Single component - return as is
+		assert( ust::path::join( "foo\\bar" ) == "foo\\bar" ); // Single component - return as is
+		assert( ust::path::join( "/" ) == "/" ); // Single component - return as is
+		assert( ust::path::join( "\\" ) == "\\" ); // Single component - return as is
+		assert( ust::path::join( "C:/foo/" ) == "C:/foo/" ); // Single component - return as is
+		assert( ust::path::join( "C:\\foo\\" ) == "C:\\foo\\" ); // Single component - return as is
+		assert( ust::path::join( "D:/foo/bar" ) == "D:/foo/bar" ); // Single component - return as is
+		assert( ust::path::join( "foo", "bar" ) == "foo\\bar" ); // Join two components
+		assert( ust::path::join( "foo", "bar", "baz" ) == "foo\\bar\\baz" ); // Join three components
+		assert( ust::path::join( "foo/", "bar" ) == "foo/bar" ); // Join with leading "/" in a component - it's preserved
+		assert( ust::path::join( "foo///", "bar" ) == "foo///bar" ); // Join with several leading "/" in a component - they are preserved
+		assert( ust::path::join( "k:/foo", "bar" ) == "k:/foo\\bar" ); // Join with first path absolute
+		assert( ust::path::join( "Z:\\foo", "bar" ) == "Z:\\foo\\bar" ); // Join with first path absolute
+		assert( ust::path::join( "foo", "e:/bar" ) == "e:/bar" ); // Join with trailing drive prefix- should return first absolute path
+		assert( ust::path::join( "foo", "J:\\bar" ) == "J:\\bar" ); // Join with trailing drive prefix- should return first absolute path
+		assert( ust::path::join( "foo", "\\\\bar\\c", "baz" ) == "\\\\bar\\c\\baz" ); // Join with trailing "\\\\" - should return path started from first absolute path
+		assert( ust::path::join( "foo/bar/baz", "yet_another" ) == "foo/bar/baz\\yet_another" ); // Join supports separators in given components
+		assert( ust::path::join( "foo\\bar/baz", "yet_another" ) == "foo\\bar/baz\\yet_another" ); // Join supports separators in given components
+		assert( ust::path::join( "foo/bar\\baz", "yet_another" ) == "foo/bar\\baz\\yet_another" ); // Join supports separators in given components
+		assert( ust::path::join( "foo////bar/////baz", "yet_another" ) == "foo////bar/////baz\\yet_another" ); // Join preserves separators in given components
+		assert( ust::path::join( "foo\\/\\/bar///\\\\/baz", "yet_another" ) == "foo\\/\\/bar///\\\\/baz\\yet_another" ); // Join preserves separators in given components
+		assert( ust::path::join( "", "", "", "foo" ) == "foo" ); // Leading empty components
+		assert( ust::path::join( "foo", "", "", "" ) == "foo\\" ); // Trailing empty components
 	}
 	else
 	{
