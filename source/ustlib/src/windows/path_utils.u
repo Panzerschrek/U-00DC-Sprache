@@ -290,8 +290,46 @@ fn get_file_name( filesystem_path_view p )
 fn get_parent_path( filesystem_path_view p )
 	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
 {
-	// TODO
-	halt;
+	var prefix pref= parse_prefix(p);
+	if( p.size() == pref.p.size() )
+	{
+		return null_optional;
+	}
+
+	var size_type mut i= p.size() - 1s;
+	while( is_separator( p[i] ) )
+	{
+		// Skip trailing separator.
+		--i;
+		if( i + 1s == pref.p.size() )
+		{
+			return null_optional;
+		}
+	}
+
+	// Iterate backwards up to first separator.
+	loop
+	{
+		var char8 c= p[i];
+		if( is_separator(c) )
+		{
+			// Skip duplicated separators if necessary.
+			while( i > 0s && is_separator( p[i] ) )
+			{
+				--i;
+			}
+			return p.subrange_end( i + 1s );
+		}
+
+		if( i == pref.p.size() )
+		{
+			break;
+		}
+		--i;
+	}
+
+	// Return prefix.
+	return pref.p;
 }
 
 fn normalize( filesystem_path_view p ) : filesystem_path

@@ -144,6 +144,30 @@ fn nomangle main() : i32
 		assert( ust::path::get_file_name( "\\\\server\\share\\remote_file.bin" ) == ust::filesystem_path( "remote_file.bin" ) );
 		assert( ust::path::get_file_name( "D:/some\\absolute////file.txt" ) == ust::filesystem_path( "file.txt" ) );
 		assert( ust::path::get_file_name( "D:\\some/absolute\\\\\\\\file.txt" ) == ust::filesystem_path( "file.txt" ) );
+
+		// get_parent_path
+		assert( ust::path::get_parent_path( "" ).empty() ); // No parent for empty path
+		assert( ust::path::get_parent_path( "C:/" ).empty() ); // No parent for root of a drive
+		assert( ust::path::get_parent_path( "C:\\" ).empty() ); // No parent for root of a drive
+		assert( ust::path::get_parent_path( "C:" ).empty() ); // No parent for root of a drive
+		assert( ust::path::get_parent_path( "foo" ) == ust::filesystem_path( "" ) ); // Empty parent for one-component path.
+		assert( ust::path::get_parent_path( "foo/bar" ) == ust::filesystem_path( "foo" ) );
+		assert( ust::path::get_parent_path( "foo\\bar" ) == ust::filesystem_path( "foo" ) );
+		assert( ust::path::get_parent_path( "foo/bar/baz" ) == ust::filesystem_path( "foo/bar" ) );
+		assert( ust::path::get_parent_path( "foo\\bar\\baz" ) == ust::filesystem_path( "foo\\bar" ) );
+		assert( ust::path::get_parent_path( "foo/bar/baz/" ) == ust::filesystem_path( "foo/bar" ) );
+		assert( ust::path::get_parent_path( "foo\\\\bar\\baz\\" ) == ust::filesystem_path( "foo\\\\bar" ) );
+		assert( ust::path::get_parent_path( "C:/foo" ) == ust::filesystem_path( "C:" ) );
+		assert( ust::path::get_parent_path( "d:\\foo" ) == ust::filesystem_path( "d:" ) )
+		assert( ust::path::get_parent_path( "o:/foo/bar" ) == ust::filesystem_path( "o:/foo" ) );
+		assert( ust::path::get_parent_path( "o:\\foo\\bar" ) == ust::filesystem_path( "o:\\foo" ) );
+		assert( ust::path::get_parent_path( "G:/foo/bar/baz" ) == ust::filesystem_path( "G:/foo/bar" ) );
+		assert( ust::path::get_parent_path( "G:\\foo/bar\\baz" ) == ust::filesystem_path( "G:\\foo/bar" ) );
+		assert( ust::path::get_parent_path( "\\\\?\\C:foo/bar/baz/" ) == ust::filesystem_path( "\\\\?\\C:foo/bar" ) );
+		assert( ust::path::get_parent_path( "foo///bar" ) == ust::filesystem_path( "foo" ) );
+		assert( ust::path::get_parent_path( "foo\\\\\\\\bar" ) == ust::filesystem_path( "foo" ) );
+		assert( ust::path::get_parent_path( "C:///foo//bar////baz" ) == ust::filesystem_path( "C:///foo//bar" ) );
+		assert( ust::path::get_parent_path( "C:\\\\\\foo\\\\bar\\\\\\\\baz" ) == ust::filesystem_path( "C:\\\\\\foo\\\\bar" ) );
 	}
 	else
 	{
