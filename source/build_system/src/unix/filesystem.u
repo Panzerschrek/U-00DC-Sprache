@@ -2,6 +2,7 @@
 
 import "/enum_string_conversions.u"
 import "/file.u"
+import "/path_utils.u"
 import "/string_conversions.u"
 import "../filesystem.uh"
 import "../path.uh"
@@ -34,7 +35,7 @@ fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::filesystem_path_vie
 	// Failed to create it. Try to create all directories in given path.
 
 	var ust::filesystem_path mut path_iterative;
-	foreach( &component : SplitPathIntoComponents( path_absolute ) )
+	foreach( &component : ust::path::components_iter( path_absolute ) )
 	{
 		path_iterative+= "/";
 		path_iterative+= component;

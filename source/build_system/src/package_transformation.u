@@ -207,7 +207,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				continue;
 			}
 			auto mut public_include_directory_component_splitted=
-				ust::vector</ust::filesystem_path/>::from_iterator( SplitPathIntoComponents( public_include_directory ).iter() );
+				ust::vector</ust::filesystem_path/>::from_iterator( ust::path::components_iter( public_include_directory ) );
 
 			// Check for directory conflict.
 			foreach( &prev_source_directory : prev_targets_directories )
@@ -434,7 +434,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 		if( dependency.name.name_base.has</ PackageName::CurrentPackage />() )
 		{
 			auto mut relative_path_component_splitted=
-				ust::vector</ust::filesystem_path/>::from_iterator( SplitPathIntoComponents( dependency.name.path ).iter() );
+				ust::vector</ust::filesystem_path/>::from_iterator( ust::path::components_iter( dependency.name.path ) );
 
 			var bool mut moves_up= false;
 			foreach( &component : relative_path_component_splitted )
@@ -801,9 +801,9 @@ fn ResolvePackageAbsoluteName(
 		}
 
 		var ust::vector</ust::filesystem_path/> mut components;
-		components.append( SplitPathIntoComponents( parent_package_absolute_name.path ).iter() );
+		components.append( ust::path::components_iter( parent_package_absolute_name.path ) );
 
-		foreach( &child_component : SplitPathIntoComponents( package_name.path ) )
+		foreach( &child_component : ust::path::components_iter( package_name.path ) )
 		{
 			if( child_component == "." )
 			{} // Do not push "."
@@ -842,7 +842,7 @@ fn ResolvePackageAbsoluteName(
 	}
 	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
 	{
-		foreach( &component : SplitPathIntoComponents( package_name.path ) )
+		foreach( &component : ust::path::components_iter( package_name.path ) )
 		{
 			if( component == "." || component == ".." )
 			{
@@ -923,7 +923,7 @@ fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
 	}
 
 	// Disable "." and ".." in source file names.
-	foreach( &component : SplitPathIntoComponents( name ) )
+	foreach( &component : ust::path::components_iter( name ) )
 	{
 		if( component == "." || component == ".." )
 		{
@@ -947,7 +947,7 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::fi
 	var ust::vector</ust::vector</ust::filesystem_path/>/> mut sources_splitted_per_component;
 	foreach( &source : sources )
 	{
-		sources_splitted_per_component.push_back( SplitPathIntoComponents(source).iter().collect</ ust::vector</ ust::string8 /> />() );
+		sources_splitted_per_component.push_back( ust::path::components_iter(source).collect</ ust::vector</ ust::string8 /> />() );
 	}
 
 	if( sources_splitted_per_component.size() == 1s )
