@@ -1,19 +1,20 @@
 import "/enum_string_conversions.u"
 import "/file_helpers.u"
+import "/path_utils.u"
 import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust::optional</BK::PackageInfo/>
 {
-	var ust::string8 source_dir= build_system_interface.GetCurrentPackageSourceDirectory();
+	var ust::filesystem_path source_dir= build_system_interface.GetCurrentPackageSourceDirectory();
 
-	auto mut keywords_list_res = ust::read_file_to_string( ust::concat( source_dir, "/", "..", "/", "keywords_list.txt" ) );
+	auto mut keywords_list_res = ust::read_file_to_string( ust::path::join( source_dir, "..", "keywords_list.txt" ) );
 	if( keywords_list_res.is_error() )
 	{
 		build_system_interface.LogError( ust::concat( "Failed to load keywords list file: ", ust::enum_to_string( keywords_list_res.try_deref_error() ) ) );
 		return ust::null_optional;
 	}
 
-	auto mut errors_list_res = ust::read_file_to_string( ust::concat( source_dir, "/", "..", "/", "errors_list.hpp" ) );
+	auto mut errors_list_res = ust::read_file_to_string( ust::path::join( source_dir, "..", "errors_list.hpp" ) );
 	if( errors_list_res.is_error() )
 	{
 		build_system_interface.LogError( ust::concat( "Failed to load errors list file: ", ust::enum_to_string( errors_list_res.try_deref_error() ) ) );
@@ -24,10 +25,10 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 	var ust::string8 errors_list_file_contents= move(errors_list_res).try_take();
 
 	auto& lib_name= "CodeBuilderLib";
-	var ust::string8 generated_sources_directory= build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( lib_name );
+	var ust::filesystem_path generated_sources_directory= build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( lib_name );
 
 	auto& keywords_file= "keywords.uh";
-	var ust::string8 mut keywords_generated_file= ust::concat( generated_sources_directory, "/", keywords_file );
+	var ust::filesystem_path mut keywords_generated_file= ust::concat( generated_sources_directory, "/", keywords_file );
 
 	var BK::CustomBuildStep mut keywords_step
 	{
@@ -41,8 +42,8 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 	};
 
 	auto& code_builder_error_code_file= "code_builder_error_code.uh";
-	var ust::string8 mut code_builder_error_code_generated_file=
-		ust::concat( generated_sources_directory, "/", code_builder_error_code_file );
+	var ust::filesystem_path mut code_builder_error_code_generated_file=
+		ust::path::join( generated_sources_directory, code_builder_error_code_file );
 
 	var BK::CustomBuildStep mut code_builder_error_code_step
 	{
@@ -59,11 +60,11 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 	{
 		.target_type = BK::BuildTargetType::ObjectFile,
 		.name= lib_name,
-		.public_include_directories= ust::make_array</ust::string8/>( "imports" ),
-		.generated_private_header_files= ust::make_array</ust::string8/>( keywords_file, code_builder_error_code_file ),
+		.public_include_directories= ust::make_array</ust::filesystem_path/>( "imports" ),
+		.generated_private_header_files= ust::make_array</ust::filesystem_path/>( keywords_file, code_builder_error_code_file ),
 	};
 
-	var [ ust::string_view8, 41 ] source_files
+	var [ ust::filesystem_path_view, 41 ] source_files
 	[
 		"code_builder_lib/cb_block_elements.u",
 		"code_builder_lib/cb_coroutines.u",
