@@ -1791,7 +1791,7 @@ fn nodiscard BuildSingleFileProgram(
 
 	var ust::filesystem_path source_file_path_absolute= MakePathAbsolute( source_file_path );
 
-	var ust::filesystem_path_view base_name= StripExtension( GetLastPathComponent( source_file_path_absolute ) );
+	var ust::filesystem_path_view base_name= ust::path::get_path_without_extension( GetLastPathComponent( source_file_path_absolute ) );
 
 	var ust::filesystem_path mut out_file_path= NormalizePath( ust::concat( build_directory, "/", base_name ) );
 	if( target_is_windows )

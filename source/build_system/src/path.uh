@@ -17,8 +17,4 @@ fn NormalizePath( ust::filesystem_path_view path ) : ust::filesystem_path;
 fn GetLastPathComponent( ust::filesystem_path_view path )
 	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 );
 
-// Returns path without file extension or original path if no file extension found.
-fn StripExtension( ust::filesystem_path_view path )
-	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 );
-
 } // namespace BK

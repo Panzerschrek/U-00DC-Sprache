@@ -130,29 +130,4 @@ fn GetLastPathComponent( ust::filesystem_path_view mut path )
 	}
 }
 
-fn StripExtension( ust::filesystem_path_view path )
-	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
-{
-	var ust::filesystem_path_view mut result= path;
-	while( !result.empty() )
-	{
-		var char8 c= result.back();
-		if( c == "."c8 )
-		{
-			// Successfully stripped the extension.
-			result.drop_back();
-			return result;
-		}
-		if( c == "/"c8 || c ==  "\\"c8 )
-		{
-			// Reached path separator - means this path has no file extension.
-			return path;
-		}
-		result.drop_back();
-	}
-
-	// No dot or separator found - return original path.
-	return path;
-}
-
 } // namespace BK
