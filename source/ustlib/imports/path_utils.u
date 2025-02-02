@@ -57,6 +57,27 @@ fn replace_separators_with_native( filesystem_path_view p ) : filesystem_path;
 // Replace backward slashes with forward slashes.
 fn replace_separators_with_forward_slashes( filesystem_path_view p ) : filesystem_path;
 
+// Create iterator over path components.
+fn components_iter( filesystem_path_view p ) : auto
+{
+	return wrap_raw_iterator( components_raw_iterator( p ) );
+}
+
+// Iterator over path components - directories and file name.
+// Separators aren't returned as components paths, with only exception for root "/".
+class components_raw_iterator
+{
+public:
+	fn constructor( mut this, filesystem_path_view p )
+		@( reference_notation::pollution::param0_param_1_inner_reference );
+
+	fn nodiscard next( mut this )
+		: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
+
+private:
+	filesystem_path_view p_;
+}
+
 } // namespace path
 
 } // namespace ust

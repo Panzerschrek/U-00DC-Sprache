@@ -316,6 +316,58 @@ fn get_parent_path( filesystem_path_view p )
 	return p.subrange_end(0s);
 }
 
+fn components_raw_iterator::constructor( mut this, filesystem_path_view p )
+	@( reference_notation::pollution::param0_param_1_inner_reference )
+	( p_= p )
+{}
+
+fn nodiscard components_raw_iterator::next( mut this )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p_.empty() )
+	{
+		// Reached the end.
+		return null_optional;
+	}
+
+	if( p_.front() == "/"c8 )
+	{
+		// It's an absolute path - return "/" as first component.
+		var filesystem_path_view res= p_.subrange_end(1s);
+
+		// Remove extra "/", if necessary.
+		while( !p_.empty() && p_.front() == "/"c8 )
+		{
+			p_.drop_front();
+		}
+
+		return res;
+	}
+
+	// Try extracting component up to next "/".
+	for( auto mut i= 0s; i < p_.size(); ++i )
+	{
+		if( p_[i] == "/"c8 )
+		{
+			var filesystem_path_view res= p_.subrange_end(i);
+
+			// Remove extra "/", if necessary.
+			while( i < p_.size() && p_[i] == "/"c8 )
+			{
+				++i;
+			}
+			p_= p_.subrange_start(i);
+
+			return res;
+		}
+	}
+
+	// Last component without trailing "/" - return it as is.
+	var filesystem_path_view res= p_;
+	p_= filesystem_path_view();
+	return res;
+}
+
 } // namespace path
 
 } // namespace ust
