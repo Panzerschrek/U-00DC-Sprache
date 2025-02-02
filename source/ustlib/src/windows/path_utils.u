@@ -1,0 +1,10 @@
+import "../../imports/path_utils.u"
+
+namespace ust
+{
+
+namespace path
+{
+} // namespace path
+
+} // namespace ust
