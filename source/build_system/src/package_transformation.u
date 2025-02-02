@@ -1,3 +1,4 @@
+import "/path_utils.u"
 import "/sort.u"
 import "package_transformation.uh"
 import "build_system_paths.uh"
@@ -284,7 +285,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 		{
 			// Normalize absolute paths, preserve relative paths.
 			out_build_target.external_libraries.push_back(
-				( IsAbsolutePath(external_library) ? NormalizePath( external_library ) : external_library ) );
+				( ust::path::is_absolute(external_library) ? NormalizePath( external_library ) : external_library ) );
 		}
 		NormalizeList( out_build_target.external_libraries );
 
@@ -300,7 +301,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		foreach( &in_file : custom_build_step.input_files )
 		{
-			if( !IsAbsolutePath( in_file ) )
+			if( !ust::path::is_absolute( in_file ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step input file path \"", in_file, "\" is not absolute!" ) );
 				ok= false;
@@ -315,7 +316,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		foreach( &out_file : custom_build_step.output_files )
 		{
-			if( !IsAbsolutePath( out_file ) )
+			if( !ust::path::is_absolute( out_file ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step output file path \"", out_file, "\" is not absolute!" ) );
 				ok= false;
@@ -330,7 +331,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		if_var( mut exe_command : custom_build_step.command.get</CustomBuildStep::ExeCommand/>() )
 		{
-			if( !IsAbsolutePath( exe_command.exe_path ) )
+			if( !ust::path::is_absolute( exe_command.exe_path ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step executable path \"", exe_command.exe_path, "\" is not absolute!" ) );
 				ok= false;
@@ -362,7 +363,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 		}
 		else if_var( mut copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
 		{
-			if( !IsAbsolutePath( copy_command.destination_path ) )
+			if( !ust::path::is_absolute( copy_command.destination_path ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step copy destination \"", copy_command.destination_path, "\" is not absolute!" ) );
 				ok= false;
@@ -377,7 +378,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				}
 			}
 
-			if( !IsAbsolutePath( copy_command.source_path ) )
+			if( !ust::path::is_absolute( copy_command.source_path ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step copy source \"", copy_command.source_path, "\" is not absolute!" ) );
 				ok= false;
@@ -401,7 +402,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 		}
 		else if_var( mut generate_command : custom_build_step.command.get</ CustomBuildStep::GenerateFileCommand />() )
 		{
-			if( !IsAbsolutePath( generate_command.destination_path ) )
+			if( !ust::path::is_absolute( generate_command.destination_path ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step generate destination \"", generate_command.destination_path, "\" is not absolute!" ) );
 				ok= false;
