@@ -106,8 +106,71 @@ fn join_impl( array_view_imut</filesystem_path_view/> components ) : filesystem_
 fn get_file_extension( filesystem_path_view p )
 	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
 {
-	// TODO
-	halt;
+	var prefix pref= parse_prefix(p);
+	if( pref.p.size() == p.size() )
+	{
+		return null_optional;
+	}
+
+	// Iterate backwards up to first "." or separator or prefix.
+	for( auto mut i= p.size() - 1s; ; )
+	{
+		var char8 c= p[i];
+		if( c == "."c8 )
+		{
+			if( i > 0s )
+			{
+				var char8 prev_c= p[ i - 1s ];
+				if( prev_c == "."c8 )
+				{
+					if( i > 1s )
+					{
+						var char8 prev_prev_s= p[ i - 2s ];
+						if( is_separator( prev_prev_s ) )
+						{
+							// It's something like "some/path/..".
+							break;
+						}
+					}
+					else
+					{
+						// Path starting with "..".
+						if( i == p.size() - 1s )
+						{
+							// ".." is a special name with no extension.
+							break;
+						}
+					}
+				}
+				else if( is_separator( prev_c ) )
+				{
+					// File starts with "." - it has no extension.
+					break;
+				}
+
+				// Return what remains after this ".".
+				return p.subrange_start( i + 1s );
+			}
+			else
+			{
+				// It's single ".".
+				break;
+			}
+		}
+		else if( is_separator( c ) )
+		{
+			// Reached directories separator without encounting ".".
+			break;
+		}
+
+		if( i == pref.p.size() )
+		{
+			break;
+		}
+		--i;
+	}
+
+	return null_optional;
 }
 
 fn get_path_without_extension( filesystem_path_view p )
