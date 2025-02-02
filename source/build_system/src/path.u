@@ -94,40 +94,4 @@ fn NormalizePath( ust::filesystem_path_view path ) : ust::filesystem_path
 	return res;
 }
 
-fn GetLastPathComponent( ust::filesystem_path_view mut path )
-	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
-{
-	if( path.empty() )
-	{
-		return path;
-	}
-
-	// Handle trailing slash.
-	if( path.back() == "/"c8 || path.back()  == "\\"c8 )
-	{
-		path.drop_back();
-		if( path.empty() )
-		{
-			return path;
-		}
-	}
-
-	var size_type mut split_pos= path.size() - 1s;
-
-	loop
-	{
-		var char8 c= path[split_pos];
-		if( c == "/"c8 || c == "\\"c8 )
-		{
-			// Found it.
-			return path.subrange( split_pos + 1s, path.size() );
-		}
-		if( split_pos == 0s )
-		{
-			return path;
-		}
-		--split_pos;
-	}
-}
-
 } // namespace BK

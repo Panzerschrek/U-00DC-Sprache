@@ -1791,7 +1791,14 @@ fn nodiscard BuildSingleFileProgram(
 
 	var ust::filesystem_path source_file_path_absolute= MakePathAbsolute( source_file_path );
 
-	var ust::filesystem_path_view base_name= ust::path::get_path_without_extension( GetLastPathComponent( source_file_path_absolute ) );
+	var ust::optional</ust::filesystem_path_view/> source_file_name= ust::path::get_file_name( source_file_path_absolute );
+	if( source_file_name.empty() )
+	{
+		logger.LogError( ust::concat( "No file name can be extracted for \"", source_file_path_absolute, "\"!" ) );
+		return false;
+	}
+
+	var ust::filesystem_path_view base_name= ust::path::get_path_without_extension( source_file_name.try_deref() );
 
 	var ust::filesystem_path mut out_file_path= NormalizePath( ust::concat( build_directory, "/", base_name ) );
 	if( target_is_windows )
