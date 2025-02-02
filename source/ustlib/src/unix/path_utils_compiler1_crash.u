@@ -1,0 +1,20 @@
+import "../../imports/path_utils.u"
+
+namespace ust
+{
+
+namespace path
+{
+
+fn nodiscard components_raw_iterator::next( mut this )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var filesystem_path_view res= p_.subrange_end(1s);
+	p_= p_.subrange_start(1s);
+	return res;
+}
+
+} // namespace path
+
+} // namespace ust
+
