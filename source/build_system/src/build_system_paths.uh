@@ -1,3 +1,4 @@
+import "/path.u"
 import "package_transformation.uh"
 
 namespace BK
@@ -5,28 +6,33 @@ namespace BK
 
 struct BuildSystemPaths
 {
-	ust::string8 compiler_executable_path;
-	ust::string8 ustlib_path;
-	ust::string8 build_system_imports_path;
-	ust::string8 root_package_source_directory;
-	ust::string8 packages_repository_directory;
+	ust::filesystem_path compiler_executable_path;
+	ust::filesystem_path ustlib_path;
+	ust::filesystem_path build_system_imports_path;
+	ust::filesystem_path root_package_source_directory;
+	ust::filesystem_path packages_repository_directory;
 }
 
-fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& package_name ) : ust::string8;
+fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& package_name ) : ust::filesystem_path;
 
 fn GetPackageBuildDirectory(
-	ust::string_view8 root_package_build_directory, PackageAbsoluteName& package_name ) : ust::string8;
+	ust::filesystem_path_view root_package_build_directory,
+	PackageAbsoluteName& package_name ) : ust::filesystem_path;
 
 fn GetBuildTargetBuildFilesDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& target_name ) : ust::string8;
+	ust::filesystem_path_view root_package_build_directory,
+	BuildTargetAbsoluteName& target_name ) : ust::filesystem_path;
 
 fn GetBuildTargetGeneratedSourcesDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8;
+	ust::filesystem_path_view root_package_build_directory,
+	BuildTargetAbsoluteName& build_target_name ) : ust::filesystem_path;
 
 fn GetBuildTargetGeneratedSourcesBuildDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8;
+	ust::filesystem_path_view root_package_build_directory,
+	BuildTargetAbsoluteName& build_target_name ) : ust::filesystem_path;
 
 fn GetBuildTargetGeneratedPublicHeadersDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8;
+	ust::filesystem_path_view root_package_build_directory,
+	BuildTargetAbsoluteName& build_target_name ) : ust::filesystem_path;
 
 } // namespace BK

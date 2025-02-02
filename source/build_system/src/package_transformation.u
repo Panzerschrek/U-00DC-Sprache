@@ -15,7 +15,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 {
 	var bool mut ok= true;
 
-	var ust::vector</ ust::vector</ust::string8 /> /> mut prev_targets_directories;
+	var ust::vector</ ust::vector</ ust::filesystem_path /> /> mut prev_targets_directories;
 
 	foreach( &build_target : package_info.build_targets )
 	{
@@ -69,7 +69,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				}
 			}
 
-			var ust::vector</ust::string8/> mut sources_directory= CalculateBuildTargetSourceFilesCommonDirectory( out_build_target.source_files  );
+			var ust::vector</ust::filesystem_path/> mut sources_directory= CalculateBuildTargetSourceFilesCommonDirectory( out_build_target.source_files );
 
 			foreach( &component : sources_directory )
 			{
@@ -206,7 +206,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				continue;
 			}
 			auto mut public_include_directory_component_splitted=
-				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( public_include_directory ).iter() );
+				ust::vector</ust::filesystem_path/>::from_iterator( SplitPathIntoComponents( public_include_directory ).iter() );
 
 			// Check for directory conflict.
 			foreach( &prev_source_directory : prev_targets_directories )
@@ -230,7 +230,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				}
 			}
 
-			var ust::string8 mut directory_normalized;
+			var ust::filesystem_path mut directory_normalized;
 			foreach( &component : public_include_directory_component_splitted )
 			{
 				directory_normalized+= component;
@@ -433,7 +433,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 		if( dependency.name.name_base.has</ PackageName::CurrentPackage />() )
 		{
 			auto mut relative_path_component_splitted=
-				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( dependency.name.path ).iter() );
+				ust::vector</ust::filesystem_path/>::from_iterator( SplitPathIntoComponents( dependency.name.path ).iter() );
 
 			var bool mut moves_up= false;
 			foreach( &component : relative_path_component_splitted )
@@ -538,7 +538,7 @@ fn nodiscard CheckWorkspaceDependencyGraphIsValid( Logger &mut logger, Workspace
 }
 
 fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
-	Logger &mut logger, WorkspaceInfo& workspace, ust::string_view8 root_package_build_directory ) : bool
+	Logger &mut logger, WorkspaceInfo& workspace, ust::filesystem_path_view root_package_build_directory ) : bool
 {
 	var bool mut ok= true;
 
@@ -573,7 +573,7 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 	}
 
 	auto is_file_produces_by_custom_build_step=
-		lambda [&custom_build_steps= workspace.custom_build_steps]( ust::string_view8 file ) : bool
+		lambda [&custom_build_steps= workspace.custom_build_steps]( ust::filesystem_path_view file ) : bool
 		{
 			foreach( &step : custom_build_steps )
 			{
@@ -596,10 +596,10 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 
 		if( !build_target.generated_source_files.empty() || !build_target.generated_private_header_files.empty() )
 		{
-			var ust::string8 generated_sources_dir= GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
+			var ust::filesystem_path generated_sources_dir= GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
 			foreach( &generated_source : build_target.generated_source_files )
 			{
-				var ust::string8 file_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source ) );
+				var ust::filesystem_path file_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -614,7 +614,7 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 
 			foreach( &generated_private_header : build_target.generated_private_header_files )
 			{
-				var ust::string8 file_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_private_header ) );
+				var ust::filesystem_path file_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_private_header ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -630,10 +630,10 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 
 		if( !build_target.generated_public_header_files.empty() )
 		{
-			var ust::string8 generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, target_name );
+			var ust::filesystem_path generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, target_name );
 			foreach( &generated_public_header : build_target.generated_public_header_files )
 			{
-				var ust::string8 file_path= NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) );
+				var ust::filesystem_path file_path= NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -799,7 +799,7 @@ fn ResolvePackageAbsoluteName(
 			return parent_package_absolute_name;
 		}
 
-		var ust::vector</ust::string8/> mut components;
+		var ust::vector</ust::filesystem_path/> mut components;
 		components.append( SplitPathIntoComponents( parent_package_absolute_name.path ).iter() );
 
 		foreach( &child_component : SplitPathIntoComponents( package_name.path ) )
@@ -827,7 +827,7 @@ fn ResolvePackageAbsoluteName(
 			}
 		}
 
-		var ust::string8 mut path;
+		var ust::filesystem_path mut path;
 		foreach( &component : components )
 		{
 			if( !path.empty() )
@@ -936,14 +936,14 @@ fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
 	return true;
 }
 
-fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::string8/> sources ) : ust::vector</ust::string8/>
+fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::filesystem_path/> sources ) : ust::vector</ust::filesystem_path/>
 {
 	if( sources.empty() )
 	{
-		return ust::vector</ust::string8/>();
+		return ust::vector</ust::filesystem_path/>();
 	}
 
-	var ust::vector</ust::vector</ust::string8/>/> mut sources_splitted_per_component;
+	var ust::vector</ust::vector</ust::filesystem_path/>/> mut sources_splitted_per_component;
 	foreach( &source : sources )
 	{
 		sources_splitted_per_component.push_back( SplitPathIntoComponents(source).iter().collect</ ust::vector</ ust::string8 /> />() );
@@ -952,7 +952,7 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 	if( sources_splitted_per_component.size() == 1s )
 	{
 		// Special case with only one file - remove last component (presumably file name) and return it.
-		var ust::vector</ust::string8/> mut result= sources_splitted_per_component.pop_back();
+		var ust::vector</ust::filesystem_path/> mut result= sources_splitted_per_component.pop_back();
 		if( !result.empty() )
 		{
 			result.drop_back();
@@ -960,18 +960,18 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 		return result;
 	}
 
-	var ust::vector</ust::string8/> mut result;
+	var ust::vector</ust::filesystem_path/> mut result;
 
 	// Calculate common prefix for all files.
 
 	for( auto mut i= 0s; ; ++i ) label component_loop
 	{
-		var ust::vector</ust::string8/>& first_source= sources_splitted_per_component.front();
+		var ust::vector</ust::filesystem_path/>& first_source= sources_splitted_per_component.front();
 		if( i >= first_source.size() )
 		{
 			break label component_loop;
 		}
-		var ust::string8& first_source_component= first_source[i];
+		var ust::filesystem_path& first_source_component= first_source[i];
 
 		foreach( & source_splitted : cast_imut(sources_splitted_per_component) )
 		{
@@ -1002,7 +1002,7 @@ fn TransformDependencyName(
 	return BuildTargetAbsoluteName{ .package_name= dependency_package_name.try_take(), .name= dependency_name.name };
 }
 
-fn IsInFilesList( ust::array_view_imut</ust::string8/> files, ust::string_view8 f ) : bool
+fn IsInFilesList( ust::array_view_imut</ust::filesystem_path/> files, ust::filesystem_path_view f ) : bool
 {
 	foreach( &list_file : files )
 	{

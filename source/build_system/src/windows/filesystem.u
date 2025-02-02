@@ -11,7 +11,7 @@ import "windows.uh"
 namespace BK
 {
 
-fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
+fn MakePathAbsolute( ust::filesystem_path_view path ) : ust::filesystem_path
 {
 	if( path.size() >= 2s && path[0s] >= "A"c8 && path[0s] <= "Z"c8 && path[1s] == ":"c8 )
 	{
@@ -23,9 +23,9 @@ fn MakePathAbsolute( ust::string_view8 path ) : ust::string8
 	return ust::concat( ust::get_current_directory(), "/", path );
 }
 
-fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool
+fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::filesystem_path_view path ) : bool
 {
-	var ust::string8 path_absolute= MakePathAbsolute( path );
+	var ust::filesystem_path path_absolute= MakePathAbsolute( path );
 
 	// Optimistically assume that we need to create only one directory.
 	if(  ust::create_directory( path_absolute ).is_ok() )
@@ -37,7 +37,7 @@ fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path )
 
 	auto components= SplitPathIntoComponents( path_absolute );
 
-	var ust::string8 mut path_iterative= components.front();
+	var ust::filesystem_path mut path_iterative= components.front();
 	path_iterative+= "/";
 
 	foreach( &component : components.range().subrange_start(1s) )
@@ -55,7 +55,7 @@ fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path )
 	return true;
 }
 
-fn GetCurrentExecutablePath() : ust::string8
+fn GetCurrentExecutablePath() : ust::filesystem_path
 {
 	var WideString mut res;
 	res.resize( 256s, WCHAR(0) );

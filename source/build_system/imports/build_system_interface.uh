@@ -1,3 +1,4 @@
+import "/path.u"
 import "types.uh"
 
 namespace BK
@@ -19,7 +20,7 @@ class BuildSystemInterface interface
 	fn virtual pure LogError( mut this, ust::string_view8 message );
 
 	// Get path to executable file of the currently-used Ü compiler.
-	fn virtual pure GetCompilerExecutablePath( this ) : ust::string8;
+	fn virtual pure GetCompilerExecutablePath( this ) : ust::filesystem_path;
 
 	// Get value for given configuration option.
 	// Options are specified via a configuration file provided as build system command line option.
@@ -29,16 +30,16 @@ class BuildSystemInterface interface
 	fn virtual pure GetConfigurationOption( this, ust::string_view8 name ) : ust::optional</ust::string8/>;
 
 	// Get absolute path to the root source directory of current package.
-	fn virtual pure GetCurrentPackageSourceDirectory( this ) : ust::string8;
+	fn virtual pure GetCurrentPackageSourceDirectory( this ) : ust::filesystem_path;
 
 	// Get absolute path to the build directory of current package for current target triple and build configuration.
-	fn virtual pure GetCurrentPackageBuildDirectory( this ) : ust::string8;
+	fn virtual pure GetCurrentPackageBuildDirectory( this ) : ust::filesystem_path;
 
 	// Get absolute path to the generated sources directory for a build target of current package.
-	fn virtual pure GetCurrentPackageBuildTargetGeneratedSourcesDirectory( this, ust::string_view8 build_target_name ) : ust::string8;
+	fn virtual pure GetCurrentPackageBuildTargetGeneratedSourcesDirectory( this, ust::string_view8 build_target_name ) : ust::filesystem_path;
 
 	// Get absolute path to the generated public headers directory for a build target of current package.
-	fn virtual pure GetCurrentPackageBuildTargetGeneratedPublicHeadersDirectory( this, ust::string_view8 build_target_name ) : ust::string8;
+	fn virtual pure GetCurrentPackageBuildTargetGeneratedPublicHeadersDirectory( this, ust::string_view8 build_target_name ) : ust::filesystem_path;
 }
 
 } // namespace BK

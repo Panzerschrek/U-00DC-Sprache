@@ -3,9 +3,9 @@ import "path.uh"
 namespace BK
 {
 
-fn IsAbsolutePath( ust::string_view8 path ) : bool
+fn IsAbsolutePath( ust::filesystem_path_view path ) : bool
 {
-	if( ust::string_view8( compiler::target::os ) == "windows" )
+	if( ust::array_view_imut</char8/>( compiler::target::os ) == "windows" )
 	{
 		// TODO - handle also universal paths.
 		return path.size() >= 2s && path[0s] >= "A"c8 && path[0s] <= "Z"c8 && path[1s] == ":"c8;
@@ -16,10 +16,10 @@ fn IsAbsolutePath( ust::string_view8 path ) : bool
 	}
 }
 
-fn SplitPathIntoComponents( ust::string_view8 path )
-	: ust::vector</ust::string_view8/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+fn SplitPathIntoComponents( ust::filesystem_path_view path )
+	: ust::vector</ust::filesystem_path_view/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
 {
-	var ust::vector</ust::string_view8/> mut res;
+	var ust::vector</ust::filesystem_path_view/> mut res;
 
 	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
 	if(false)
@@ -51,11 +51,11 @@ fn SplitPathIntoComponents( ust::string_view8 path )
 	return res;
 }
 
-fn NormalizePath( ust::string_view8 path ) : ust::string8
+fn NormalizePath( ust::filesystem_path_view path ) : ust::filesystem_path
 {
 	auto components = SplitPathIntoComponents( path );
 
-	var ust::vector</ust::string_view8/> mut components_normalized;
+	var ust::vector</ust::filesystem_path_view/> mut components_normalized;
 
 	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
 	if(false)
@@ -87,7 +87,7 @@ fn NormalizePath( ust::string_view8 path ) : ust::string8
 		}
 	}
 
-	var ust::string8 mut res;
+	var ust::filesystem_path mut res;
 
 	if( !path.empty() && path.front() == "/"c8 )
 	{
@@ -107,8 +107,8 @@ fn NormalizePath( ust::string_view8 path ) : ust::string8
 	return res;
 }
 
-fn GetParentPath( ust::string_view8 mut path )
-	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+fn GetParentPath( ust::filesystem_path_view mut path )
+	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
 {
 	if( !path.empty() && ( ( path.back() == "/"c8 || path.back() == "\\"c8 ) ) )
 	{
@@ -128,8 +128,8 @@ fn GetParentPath( ust::string_view8 mut path )
 	return path;
 }
 
-fn GetLastPathComponent( ust::string_view8 mut path )
-	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+fn GetLastPathComponent( ust::filesystem_path_view mut path )
+	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
 {
 	if( path.empty() )
 	{
@@ -164,10 +164,10 @@ fn GetLastPathComponent( ust::string_view8 mut path )
 	}
 }
 
-fn StripExtension( ust::string_view8 path )
-	: ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+fn StripExtension( ust::filesystem_path_view path )
+	: ust::filesystem_path_view @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
 {
-	var ust::string_view8 mut result= path;
+	var ust::filesystem_path_view mut result= path;
 	while( !result.empty() )
 	{
 		var char8 c= result.back();

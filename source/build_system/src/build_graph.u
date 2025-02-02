@@ -440,7 +440,7 @@ fn nodiscard PerformGraphBuild(
 	return true;
 }
 
-type FilesModificationTime= ust::unordered_map</ ust::string8, ust::optional</FileModificationTime/> />;
+type FilesModificationTime= ust::unordered_map</ ust::filesystem_path, ust::optional</FileModificationTime/> />;
 
 fn CollectFilesModificationTime(
 	BuildGraph& build_graph,
@@ -489,7 +489,7 @@ fn CollectFilesModificationTime(
 	return files_with_modification_time;
 }
 
-type FileToNodesMap= ust::unordered_map</ust::string8, ust::vector</size_type/>/>;
+type FileToNodesMap= ust::unordered_map</ust::filesystem_path, ust::vector</size_type/>/>;
 
 fn BuildInputFileToNodeIndexMap(
 	BuildGraph& build_graph,
@@ -586,7 +586,7 @@ fn BuildOutputFileToNodeIndexMap(
 	return output_file_to_node_id_map;
 }
 
-fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : ust::optional</MakeDepFile/>
+fn LoadAndParseDepFile( Logger &mut logger, ust::filesystem_path_view dep_file_path ) : ust::optional</MakeDepFile/>
 {
 	if( dep_file_path.empty() )
 	{

@@ -151,7 +151,7 @@ fn nodiscard UnifyDependenciesOnGlobalVersionedPackages( Logger &mut logger, Wor
 struct GlobalPackageBuildTargetName
 {
 	ust::string8 package_name;
-	ust::string8 subpackage_path;
+	ust::filesystem_path subpackage_path;
 	ust::string8 build_target_name;
 
 	op<=>( GlobalPackageBuildTargetName& l, GlobalPackageBuildTargetName& r ) : i32

@@ -15,16 +15,16 @@ fn nodiscard WriteLanguageServerWorkspaceInfoFile(
 	Logger &mut logger,
 	BuildSystemPaths& build_system_paths,
 	WorkspaceInfo& target_workspace,
-	ust::string_view8 root_package_build_directory,
+	ust::filesystem_path_view root_package_build_directory,
 	WorkspaceInfo& host_workspace,
-	ust::string_view8 host_packages_root_build_directory ) : bool
+	ust::filesystem_path_view host_packages_root_build_directory ) : bool
 {
 	var JsonValue::Array mut json_root;
 
 	PopulateWorkspaceDirectoryGroups( build_system_paths, target_workspace, root_package_build_directory, json_root );
 	PopulateWorkspaceDirectoryGroups( build_system_paths, host_workspace, host_packages_root_build_directory, json_root );
 
-	var ust::string8 file_path= ust::concat( root_package_build_directory, "/language_server_workspace_info.json" );
+	var ust::filesystem_path file_path= ust::concat( root_package_build_directory, "/language_server_workspace_info.json" );
 
 	return WriteFile( logger, file_path, SerializeJsonValuePretty( move(json_root) ) );
 }
@@ -32,7 +32,7 @@ fn nodiscard WriteLanguageServerWorkspaceInfoFile(
 fn PopulateWorkspaceDirectoryGroups(
 	BuildSystemPaths& build_system_paths,
 	WorkspaceInfo& workspace,
-	ust::string_view8 root_package_build_directory,
+	ust::filesystem_path_view root_package_build_directory,
 	JsonValue::Array &mut json_root )
 {
 	foreach( &pair : workspace.build_targets )
@@ -40,19 +40,19 @@ fn PopulateWorkspaceDirectoryGroups(
 		var BuildTargetAbsoluteName& build_target_name= pair.key();
 		var WorkspaceInfo::BuildTarget& build_target= pair.value();
 
-		var ust::string8 package_source_directory=
+		var ust::filesystem_path package_source_directory=
 			GetPackageSourceDirectory( build_system_paths, build_target_name.package_name );
 
 		var JsonValue::Object mut file_group_json;
 
-		var ust::string8 generated_sources_dir=
+		var ust::filesystem_path generated_sources_dir=
 			( ( build_target.generated_source_files.empty() && build_target.generated_private_header_files.empty() )
-				? ust::string8()
+				? ust::filesystem_path()
 				: GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, build_target_name ) );
 
-		var ust::string8 generated_public_headers_dir=
+		var ust::filesystem_path generated_public_headers_dir=
 			( ( build_target.generated_public_header_files.empty() )
-				? ust::string8()
+				? ust::filesystem_path()
 				: GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, build_target_name ) );
 
 		// List sources directory and public include directories.

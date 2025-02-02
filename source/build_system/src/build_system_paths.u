@@ -4,9 +4,9 @@ import "build_system_paths.uh"
 namespace BK
 {
 
-fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& package_name ) : ust::string8
+fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& package_name ) : ust::filesystem_path
 {
-	var ust::string8 mut res;
+	var ust::filesystem_path mut res;
 
 	if( package_name.name_base.has</ PackageAbsoluteName::RootPackage />() )
 	{
@@ -36,9 +36,10 @@ fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& pack
 }
 
 fn GetPackageBuildDirectory(
-	ust::string_view8 root_package_build_directory, PackageAbsoluteName& package_name ) : ust::string8
+	ust::filesystem_path_view root_package_build_directory,
+	PackageAbsoluteName& package_name ) : ust::filesystem_path
 {
-	var ust::string8 mut res= root_package_build_directory;
+	var ust::filesystem_path mut res= root_package_build_directory;
 
 	if( package_name.name_base.has</ PackageAbsoluteName::RootPackage />() )
 	{
@@ -69,7 +70,8 @@ fn GetPackageBuildDirectory(
 }
 
 fn GetBuildTargetBuildFilesDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& target_name ) : ust::string8
+	ust::filesystem_path_view root_package_build_directory,
+	BuildTargetAbsoluteName& target_name ) : ust::filesystem_path
 {
 	return
 		ust::concat(
@@ -80,7 +82,8 @@ fn GetBuildTargetBuildFilesDirectory(
 }
 
 fn GetBuildTargetGeneratedSourcesDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
+	ust::filesystem_path_view root_package_build_directory,
+	BuildTargetAbsoluteName& build_target_name ) : ust::filesystem_path
 {
 	return
 		ust::concat(
@@ -90,7 +93,8 @@ fn GetBuildTargetGeneratedSourcesDirectory(
 }
 
 fn GetBuildTargetGeneratedSourcesBuildDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
+	ust::filesystem_path_view root_package_build_directory,
+	BuildTargetAbsoluteName& build_target_name ) : ust::filesystem_path
 {
 	return
 		ust::concat(
@@ -100,7 +104,8 @@ fn GetBuildTargetGeneratedSourcesBuildDirectory(
 }
 
 fn GetBuildTargetGeneratedPublicHeadersDirectory(
-	ust::string_view8 root_package_build_directory, BuildTargetAbsoluteName& build_target_name ) : ust::string8
+	ust::filesystem_path_view root_package_build_directory,
+	BuildTargetAbsoluteName& build_target_name ) : ust::filesystem_path
 {
 	return
 		ust::concat(

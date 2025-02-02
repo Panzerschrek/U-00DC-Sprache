@@ -6,7 +6,7 @@ import "windows.uh"
 namespace BK
 {
 
-fn LoadSharedLibrary( Logger &mut logger, ust::string_view8 path ) : ust::optional</SharedLibrary/>
+fn LoadSharedLibrary( Logger &mut logger, ust::filesystem_path_view path ) : ust::optional</SharedLibrary/>
 {
 	var WideString mut path_null_terminated = UTF8ToWideString( path );
 	path_null_terminated.push_back( WCHAR(0) );

@@ -1,4 +1,5 @@
 import "/box_nullable.u"
+import "/path.u"
 import "logger.uh"
 
 namespace BK
@@ -6,7 +7,8 @@ namespace BK
 
 // Synchronously execute a process.
 // Returns true on ok.
-fn nodiscard RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool;
+fn nodiscard RunExecutable(
+	Logger &mut logger, ust::filesystem_path_view exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool;
 
 // An interface for a class which runs and manages processes.
 // There are implementations for different platforms.
@@ -21,7 +23,7 @@ class ProcessGroupInterface interface
 		mut this,
 		Logger &mut logger,
 		ProcessId process_id,
-		ust::string_view8 exe_path,
+		ust::filesystem_path_view exe_path,
 		ust::array_view_imut</ust::string8/> command_line ) : bool;
 
 	// Perform work to manage processes - read their output, finish (if necessary).

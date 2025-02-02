@@ -1,3 +1,4 @@
+import "/path.u"
 import "/optional.u"
 import "logger.uh"
 
@@ -6,7 +7,7 @@ namespace BK
 
 // Load shared library without later possibility to unload it.
 // This means any symbols after a particular library loading are available until the process ends.
-fn LoadSharedLibrary( Logger &mut logger, ust::string_view8 path ) : ust::optional</SharedLibrary/>;
+fn LoadSharedLibrary( Logger &mut logger, ust::filesystem_path_view path ) : ust::optional</SharedLibrary/>;
 
 // A wrapper class for loading shared library symbols.
 // Library loaded is not unloaded even if this instance is destroyed.

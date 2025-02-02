@@ -40,9 +40,9 @@ fn ParseMakeDepFileContents( ust::string_view8 mut file_contents ) : ust::option
 	return res;
 }
 
-fn ParsePath( ust::string_view8 &mut s ) : ust::string8
+fn ParsePath( ust::string_view8 &mut s ) : ust::filesystem_path
 {
-	var ust::string8 mut res;
+	var ust::filesystem_path mut res;
 	while( !s.empty() )
 	{
 		var char8 c= s.front();

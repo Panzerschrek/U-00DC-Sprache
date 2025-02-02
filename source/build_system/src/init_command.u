@@ -4,7 +4,7 @@ import "filesystem.uh"
 namespace BK
 {
 
-fn nodiscard InitProjectStub( Logger &mut logger, ust::string_view8 project_directory ) : bool
+fn nodiscard InitProjectStub( Logger &mut logger, ust::filesystem_path_view project_directory ) : bool
 {
 	logger.LogInfo( ust::concat( "Initialize a project within directory \"", project_directory, "\"." ) );
 	if( !WriteFile( logger, ust::concat( project_directory, "/", "build.u" ), embed</char8/>( "builtin_files/project_stub_build.uh" ) ) )
