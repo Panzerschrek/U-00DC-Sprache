@@ -246,8 +246,45 @@ fn get_path_without_extension( filesystem_path_view p )
 fn get_file_name( filesystem_path_view p )
 	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
 {
-	// TODO
-	halt;
+	var prefix pref= parse_prefix(p);
+	if( pref.p.size() == p.size() )
+	{
+		return null_optional;
+	}
+	if( is_separator( p.back() ) )
+	{
+		// Paths ending with separator considered to be a directory path.
+		return null_optional;
+	}
+
+	// Iterate backwards up to first separator.
+	for( auto mut i= p.size() - 1s; ; )
+	{
+		var char8 c= p[i];
+		if( is_separator(c) )
+		{
+			auto remainder= p.subrange_start( i + 1s );
+			if( remainder == ".." || remainder == "." )
+			{
+				// Names "." and ".." are not file names.
+				return null_optional;
+			}
+			return remainder;
+		}
+
+		if( i == pref.p.size() )
+		{
+			break;
+		}
+		--i;
+	}
+
+	// The whole path is a file name, unles it's "." or ".." or it has non-empty prefix.
+	if( !pref.p.empty() || p == ".." || p == "." )
+	{
+		return null_optional;
+	}
+	return p;
 }
 
 fn get_parent_path( filesystem_path_view p )

@@ -115,6 +115,35 @@ fn nomangle main() : i32
 		assert( ust::path::get_path_without_extension( "so.me\\file" ) == "so.me\\file" ); // No extension for given file, but directory name contains a dot
 		assert( ust::path::get_path_without_extension( "\\\\?\\ser.ver\\sha.re\\file" ) == "\\\\?\\ser.ver\\sha.re\\file" ); // No extension for given file, but prefix name contains a dot
 		assert( ust::path::get_path_without_extension( "Welteroberungplan...txt" ) == "Welteroberungplan.." ); // Stripped last ".txt"
+
+		// get_file_name
+		assert( ust::path::get_file_name( "" ).empty() );
+		assert( ust::path::get_file_name( "C:" ).empty() );
+		//assert( ust::path::get_file_name( "\\\\?\\UNC\\server\\share" ).empty() ); // TODO - fix this
+		assert( ust::path::get_file_name( "\\\\server\\share" ).empty() );
+		assert( ust::path::get_file_name( "C:/" ).empty() );
+		assert( ust::path::get_file_name( "C:\\" ).empty() );
+		assert( ust::path::get_file_name( "some/" ).empty() );
+		assert( ust::path::get_file_name( "some\\" ).empty() );
+		assert( ust::path::get_file_name( "f:/some/" ).empty() );
+		assert( ust::path::get_file_name( "G:\\some\\" ).empty() );
+		assert( ust::path::get_file_name( "." ).empty() );
+		assert( ust::path::get_file_name( ".." ).empty() );
+		assert( ust::path::get_file_name( "some/." ).empty() );
+		assert( ust::path::get_file_name( "some\\." ).empty() );
+		assert( ust::path::get_file_name( "some/.." ).empty() );
+		assert( ust::path::get_file_name( "some\\.." ).empty() );
+		assert( ust::path::get_file_name( "J:/.." ).empty() );
+		assert( ust::path::get_file_name( "q:\\.." ).empty() );
+		assert( ust::path::get_file_name( "simple name" ) == ust::filesystem_path( "simple name" ) );
+		assert( ust::path::get_file_name( "name.ext" ) == ust::filesystem_path( "name.ext" ) );
+		assert( ust::path::get_file_name( "some/file" ) == ust::filesystem_path( "file" ) );
+		assert( ust::path::get_file_name( "some\\file" ) == ust::filesystem_path( "file" ) );
+		assert( ust::path::get_file_name( "D:/some/absolute/file.txt" ) == ust::filesystem_path( "file.txt" ) );
+		assert( ust::path::get_file_name( "s:\\some\\absolute\\file.txt" ) == ust::filesystem_path( "file.txt" ) );
+		assert( ust::path::get_file_name( "\\\\server\\share\\remote_file.bin" ) == ust::filesystem_path( "remote_file.bin" ) );
+		assert( ust::path::get_file_name( "D:/some\\absolute////file.txt" ) == ust::filesystem_path( "file.txt" ) );
+		assert( ust::path::get_file_name( "D:\\some/absolute\\\\\\\\file.txt" ) == ust::filesystem_path( "file.txt" ) );
 	}
 	else
 	{
