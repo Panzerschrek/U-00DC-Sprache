@@ -5,6 +5,110 @@ namespace ust
 
 namespace path
 {
+
+fn is_absolute( filesystem_path_view p ) : bool
+{
+	// TODO
+	halt;
+}
+
+fn is_relative( filesystem_path_view p ) : bool
+{
+	return !is_absolute(p);
+}
+
+fn is_separator( char8 c ) : bool
+{
+	return c == "/"c8 || c == "\\"c8;
+}
+
+fn join( filesystem_path_view p0 ) : filesystem_path
+{
+	return p0;
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1 ) : filesystem_path
+{
+	var [ filesystem_path_view, 2 ] components[ p0, p1 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2 ) : filesystem_path
+{
+	var [ filesystem_path_view, 3 ] components[ p0, p1, p2 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3 ) : filesystem_path
+{
+	var [ filesystem_path_view, 4 ] components[ p0, p1, p2, p3 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4 ) : filesystem_path
+{
+	var [ filesystem_path_view, 5 ] components[ p0, p1, p2, p3, p4 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4, filesystem_path_view p5 ) : filesystem_path
+{
+	var [ filesystem_path_view, 6 ] components[ p0, p1, p2, p3, p4, p5 ];
+	return join_impl( components );
+}
+
+fn join_impl( array_view_imut</filesystem_path_view/> components ) : filesystem_path
+{
+	// TODO
+	halt;
+}
+
+fn get_file_extension( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	// TODO
+	halt;
+}
+
+fn get_path_without_extension( filesystem_path_view p )
+	: filesystem_path_view @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	// TODO
+	halt;
+}
+
+fn get_file_name( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	// TODO
+	halt;
+}
+
+fn get_parent_path( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	// TODO
+	halt;
+}
+
+fn normalize( filesystem_path_view p ) : filesystem_path
+{
+	// TODO
+	halt;
+}
+
+fn components_raw_iterator::constructor( mut this, filesystem_path_view p )
+	@( reference_notation::pollution::param0_param_1_inner_reference )
+	( p_= p )
+{}
+
+fn nodiscard components_raw_iterator::next( mut this )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	// TODO
+	halt;
+}
+
 } // namespace path
 
 } // namespace ust
