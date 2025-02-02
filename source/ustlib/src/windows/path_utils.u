@@ -10,25 +10,15 @@ var char8 constexpr g_native_separator = "\\"c8;
 
 fn is_absolute( filesystem_path_view p ) : bool
 {
-	if( p.size() >= 2s )
+	var prefix pref= parse_prefix(p);
+	if( !p.empty() )
 	{
-		var char8 c0= p[0s];
-		var char8 c1= p[1s];
-		if( p.size() >= 3s )
+		if( pref.is_implicit_root )
 		{
-			var char8 c2= p[2s];
-			if( ( ( c0 >= "a"c8 && c0 <= "z"c8 ) || ( c0 >= "A"c8 && c0 <= "Z"c8 ) ) &&
-				c1 == ":"c8 &&
-				is_separator(c2) )
-			{
-				return true;
-			}
-		}
-		if( c0 == g_native_separator && c1 == g_native_separator )
-		{
-			// TODO - improve this. Not all path starting with "\\" are absolute.
 			return true;
 		}
+		auto remainder= p.subrange_start( pref.p.size() );
+		return !remainder.empty() && is_separator( remainder.front() );
 	}
 	return false;
 }
@@ -157,6 +147,168 @@ fn nodiscard components_raw_iterator::next( mut this )
 {
 	// TODO
 	halt;
+}
+
+struct prefix
+{
+	filesystem_path_view p;
+	bool is_implicit_root= false;
+}
+
+// Returns empty prefix if it's not valid.
+fn parse_prefix( filesystem_path_view p )
+	: prefix @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p.size() >= 2s )
+	{
+		var char8 c0= p[0s];
+		var char8 c1= p[1s];
+
+		if( ( ( c0 >= "a"c8 && c0 <= "z"c8 ) || ( c0 >= "A"c8 && c0 <= "Z"c8 ) ) && c1 == ":"c8 )
+		{
+			// C:
+			return prefix{ .p= p.subrange_end(2s), .is_implicit_root= false };
+		}
+		else if( c0 == g_native_separator && c1 == g_native_separator )
+		{
+			// \\
+			if( p.size() >= 3s )
+			{
+				var char8 c2= p[2s];
+				if( c2 == "?"c8 )
+				{
+					// \\?
+					if( p.size() >= 4s )
+					{
+						var char8 c3= p[3s];
+						if( c3 == g_native_separator )
+						{
+							// \\?\
+							if( p.size() >= 8s && p.subrange( 4s, 8s ) == "UNC\\" )
+							{
+								// \\?\UNC\server\share
+
+								auto mut i= 7s;
+								// Skip server
+								while( i < p.size() && !is_separator( p[i] ) )
+								{
+									++i;
+								}
+
+								if( i == p.size() )
+								{
+									return prefix(); // Has only server
+								}
+								while( i < p.size() && is_separator( p[i] ) )
+								{
+									++i;
+								}
+								if( i == p.size() )
+								{
+									return prefix(); // Has only server\
+								}
+
+								// skip share
+								while( i < p.size() && !is_separator( p[i] ) )
+								{
+									++i;
+								}
+
+								return prefix{ .p= p.subrange_end(i), .is_implicit_root= true };
+							}
+							if( p.size() >= 5s )
+							{
+								var char8 c4= p[4s];
+								if( p.size() >= 6s )
+								{
+									var char8 c5= p[5s];
+									if( ( ( c4 >= "a"c8 && c4 <= "z"c8 ) || ( c4 >= "A"c8 && c4 <= "Z"c8 ) ) && c5 == ":"c8 )
+									{
+										// \\?\C:
+										return prefix{ .p= p.subrange_end(6s), .is_implicit_root= true };
+									}
+								}
+
+								// \\?\server\share
+								auto mut i= 4s;
+								// Skip server
+								while( i < p.size() && !is_separator( p[i] ) )
+								{
+									++i;
+								}
+
+								if( i == p.size() )
+								{
+									return prefix(); // Has only server
+								}
+								while( i < p.size() && is_separator( p[i] ) )
+								{
+									++i;
+								}
+								if( i == p.size() )
+								{
+									return prefix(); // Has only server\
+								}
+
+								// skip share
+								while( i < p.size() && !is_separator( p[i] ) )
+								{
+									++i;
+								}
+
+								return prefix{ .p= p.subrange_end(i), .is_implicit_root= true };
+							}
+						}
+					}
+				}
+				else if( c2 == "."c8 )
+				{
+					// Device namespace
+				}
+				else
+				{
+					// \\server\share
+
+					auto mut i= 2s;
+					// Skip server
+					while( i < p.size() && !is_separator( p[i] ) )
+					{
+						++i;
+					}
+
+					if( i == p.size() )
+					{
+						return prefix(); // Has only server
+					}
+					while( i < p.size() && is_separator( p[i] ) )
+					{
+						++i;
+					}
+					if( i == p.size() )
+					{
+						return prefix(); // Has only server\
+					}
+
+					// skip share
+					while( i < p.size() && !is_separator( p[i] ) )
+					{
+						++i;
+					}
+
+					return prefix{ .p= p.subrange_end(i), .is_implicit_root= true };
+				}
+			}
+			else
+			{
+				// At least one char is expected after "\\".
+			}
+		}
+		else
+		{
+			// Not drive letter prefix or "\\" prefix.
+		}
+	}
+	return prefix();
 }
 
 } // namespace path
