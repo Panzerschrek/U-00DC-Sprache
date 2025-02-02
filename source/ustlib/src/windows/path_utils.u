@@ -327,6 +327,27 @@ fn parse_prefix( filesystem_path_view p )
 				else if( c2 == "."c8 )
 				{
 					// Device namespace
+					if( p.size() >= 4s )
+					{
+						var char8 c3= p[3s];
+						if( is_separator( c3 ) )
+						{
+							// \\.\
+							if( p.size() >= 4s )
+							{
+								// \\.\DEV
+
+								// Skip device name
+								var size_type mut i= 4s;
+								while( i < p.size() && !is_separator( p[i] ) )
+								{
+									++i;
+								}
+
+								return prefix{ .p= p.subrange_end(i), .is_implicit_root= true };
+							}
+						}
+					}
 				}
 				else
 				{
