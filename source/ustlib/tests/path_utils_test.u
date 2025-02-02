@@ -7,6 +7,35 @@ fn nomangle main() : i32
 {
 	if( ust::constexpr_string_equals( compiler::target::os, "windows" ) )
 	{
+		// is_absolute
+		assert( !ust::path::is_absolute( "" ) );
+		assert( !ust::path::is_absolute( " " ) );
+		assert( !ust::path::is_absolute( "some" ) );
+		assert( !ust::path::is_absolute( "some/path" ) );
+		assert( ust::path::is_absolute( "C:/" ) );
+		assert( ust::path::is_absolute( "D:\\" ) );
+		assert( ust::path::is_absolute( "h:/" ) ); // Lowercase drive letters are fine too.
+		assert( ust::path::is_absolute( "z:\\" ) );
+		assert( !ust::path::is_absolute( "Ü:/some" ) ); // Only ASCII letters can be drive letters
+		assert( !ust::path::is_absolute( "ч:/some" ) ); // Only ASCII letters can be drive letters
+		assert( ust::path::is_absolute( "\\\\system07" ) );
+		assert( ust::path::is_absolute( "\\\\?\\C:\\some/path" ) );
+		assert( ust::path::is_absolute( "\\\\.\\COM42\\some" ) );
+
+		// is_relative
+		assert( ust::path::is_relative( "" ) );
+		assert( ust::path::is_relative( " " ) );
+		assert( ust::path::is_relative( "some" ) );
+		assert( ust::path::is_relative( "some/path" ) );
+		assert( !ust::path::is_relative( "C:/" ) );
+		assert( !ust::path::is_relative( "D:\\" ) );
+		assert( !ust::path::is_relative( "h:/" ) ); // Lowercase drive letters are fine too.
+		assert( !ust::path::is_relative( "z:\\" ) );
+		assert( ust::path::is_relative( "Ü:/some" ) ); // Only ASCII letters can be drive letters
+		assert( ust::path::is_relative( "ч:/some" ) ); // Only ASCII letters can be drive letters
+		assert( !ust::path::is_relative( "\\\\system07" ) );
+		assert( !ust::path::is_relative( "\\\\?\\C:\\some/path" ) );
+		assert( !ust::path::is_relative( "\\\\.\\COM42\\some" ) );
 	}
 	else
 	{

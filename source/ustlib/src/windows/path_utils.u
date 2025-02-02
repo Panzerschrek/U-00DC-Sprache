@@ -8,8 +8,27 @@ namespace path
 
 fn is_absolute( filesystem_path_view p ) : bool
 {
-	// TODO
-	halt;
+	if( p.size() >= 2s )
+	{
+		var char8 c0= p[0s];
+		var char8 c1= p[1s];
+		if( p.size() >= 3s )
+		{
+			var char8 c2= p[2s];
+			if( ( ( c0 >= "a"c8 && c0 <= "z"c8 ) || ( c0 >= "A"c8 && c0 <= "Z"c8 ) ) &&
+				c1 == ":"c8 &&
+				( c2 == "/"c8 || c2 == "\\"c8 ) )
+			{
+				return true;
+			}
+		}
+		if( c0 == "\\"c8 && c1 == "\\"c8 )
+		{
+			// TODO - improve this. Not all path starting with "\\" are absolute.
+			return true;
+		}
+	}
+	return false;
 }
 
 fn is_relative( filesystem_path_view p ) : bool
