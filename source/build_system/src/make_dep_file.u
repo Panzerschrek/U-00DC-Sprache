@@ -1,3 +1,4 @@
+import "/path_utils.u"
 import "make_dep_file.uh"
 import "path.uh"
 
@@ -9,7 +10,7 @@ fn ParseMakeDepFileContents( ust::string_view8 mut file_contents ) : ust::option
 	var MakeDepFile mut res;
 
 	SkipWhitespaces( file_contents );
-	res.destination= NormalizePath( ParsePath( file_contents ) );
+	res.destination= ust::path::normalize( ParsePath( file_contents ) );
 
 	SkipWhitespaces( file_contents );
 	if( file_contents.empty() || file_contents.front() != ":"c8 )
@@ -27,7 +28,7 @@ fn ParseMakeDepFileContents( ust::string_view8 mut file_contents ) : ust::option
 			break;
 		}
 
-		res.dependencies.push_back( NormalizePath( ParsePath( file_contents ) ) );
+		res.dependencies.push_back( ust::path::normalize( ParsePath( file_contents ) ) );
 
 		auto new_s = file_contents.size();
 		if( new_s == prev_s )

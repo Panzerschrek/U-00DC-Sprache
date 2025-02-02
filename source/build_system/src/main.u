@@ -56,7 +56,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 
 	if( options.command == Options::Command::Init )
 	{
-		auto project_directory= NormalizePath( MakePathAbsolute( options.root_package_directory ) );
+		auto project_directory= ust::path::normalize( MakePathAbsolute( options.root_package_directory ) );
 		return ( InitProjectStub( logger, project_directory ) ? 0 : 1 );
 	}
 
@@ -97,26 +97,26 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 
 	var BuildSystemPaths mut build_system_paths
 	{
-		.compiler_executable_path= NormalizePath(
+		.compiler_executable_path= ust::path::normalize(
 			( options.compiler_executable_path.empty()
 				? ( exe_directory + "/Compiler1" ) // For now use "Compiler1" as compiler default. TODO - allow to tune it.
 				: MakePathAbsolute(options.compiler_executable_path) ) ),
-		.ustlib_path= NormalizePath(
+		.ustlib_path= ust::path::normalize(
 			( options.ustlib_path.empty()
 				? ( exe_directory + "/../ustlib" ) // "ustlib" is located in the root of the Ü package.
 				: MakePathAbsolute(options.ustlib_path) ) ),
-		.build_system_imports_path= NormalizePath(
+		.build_system_imports_path= ust::path::normalize(
 			( options.build_system_imports_path.empty()
 				? ( exe_directory + "/../build_system/imports" ) // Build system imports are located in "/build_system/imports".
 				: MakePathAbsolute(options.build_system_imports_path) ) ),
 		.packages_repository_directory=
-			NormalizePath(
+			ust::path::normalize(
 				MakePathAbsolute(
 					( options.packages_repository_directory.empty()
 						? options.root_package_directory
 						: options.packages_repository_directory ) ) ),
 		// If "options.root_package_directory" is empty this will become current directory.
-		.root_package_source_directory= NormalizePath( MakePathAbsolute( options.root_package_directory ) ),
+		.root_package_source_directory= ust::path::normalize( MakePathAbsolute( options.root_package_directory ) ),
 	};
 
 	if( options.command == Options::Command::BuildSingle )
@@ -138,7 +138,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 	var ust::filesystem_path root_package_build_directory_base =
 		( options.build_directory.empty()
 			? ( build_system_paths.root_package_source_directory + "/build" )
-			: NormalizePath( MakePathAbsolute( options.build_directory ) ) );
+			: ust::path::normalize( MakePathAbsolute( options.build_directory ) ) );
 
 	// Create, if necessary, subdirectory for target triple.
 	// Do it only if this target triple isn't equal to host triple.
@@ -895,7 +895,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	var ust::filesystem_path sources_dir=
 		( target.source_files.empty()
 			? ust::filesystem_path()
-			: NormalizePath( ust::concat( package_source_directory, "/", target.sources_directory ) ) );
+			: ust::path::normalize( ust::concat( package_source_directory, "/", target.sources_directory ) ) );
 
 	var ust::filesystem_path generated_sources_dir=
 		( ( target.generated_source_files.empty() && target.generated_private_header_files.empty() )
@@ -907,7 +907,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	// Get generated private headers of this build target.
 	foreach( &generated_private_header : target.generated_private_header_files )
 	{
-		generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_sources_dir, "/", generated_private_header ) ) );
+		generated_headers_dependencies.push_back( ust::path::normalize( ust::concat( generated_sources_dir, "/", generated_private_header ) ) );
 	}
 
 	// Get generated public headers of this build target and all dependencies of this build target.
@@ -922,7 +922,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			var ust::filesystem_path generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, build_target_name );
 			foreach( &generated_public_header : dependency_target.generated_public_header_files )
 			{
-				generated_headers_dependencies.push_back( NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
+				generated_headers_dependencies.push_back( ust::path::normalize( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
 			}
 
 			include_directories_prefixed.push_back( ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, build_target_name.name ) );
@@ -937,8 +937,8 @@ fn CreatePackageTargetBuildGraphNodes(
 		source_files_to_compile.push_back(
 			SourceFileToCompile
 			{
-				.source_file_full_path= NormalizePath( ust::concat( package_source_directory, "/", source_file ) ),
-				.bc_file_full_path=  NormalizePath( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) ),
+				.source_file_full_path= ust::path::normalize( ust::concat( package_source_directory, "/", source_file ) ),
+				.bc_file_full_path=  ust::path::normalize( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) ),
 				.comment= source_file + ".bc",
 			} );
 	}
@@ -953,9 +953,9 @@ fn CreatePackageTargetBuildGraphNodes(
 			source_files_to_compile.push_back(
 				SourceFileToCompile
 				{
-					.source_file_full_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source_file ) ),
+					.source_file_full_path= ust::path::normalize( ust::concat( generated_sources_dir, "/", generated_source_file ) ),
 					// Place "bc" files in separate build directory.
-					.bc_file_full_path= NormalizePath( ust::concat( generated_sources_build_dir, "/", generated_source_file, ".bc" ) ),
+					.bc_file_full_path= ust::path::normalize( ust::concat( generated_sources_build_dir, "/", generated_source_file, ".bc" ) ),
 					.comment= generated_source_file + ".bc",
 				} );
 		}
@@ -1102,7 +1102,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		},
 	}
 
-	result_target_file_path= NormalizePath( result_target_file_path );
+	result_target_file_path= ust::path::normalize( result_target_file_path );
 
 	var BuildGraph::Node mut node
 	{
@@ -1126,7 +1126,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			// Add also ".lib" file to outputs.
 			// This file is implicitly created by the linker.
-			var ust::filesystem_path lib_name = NormalizePath( ust::concat( package_build_directory, "/", target_name.name, ".lib" ) );
+			var ust::filesystem_path lib_name = ust::path::normalize( ust::concat( package_build_directory, "/", target_name.name, ".lib" ) );
 			node.output_files.push_back( lib_name );
 
 			if( target_triple.environment == "gnu" )
@@ -1170,7 +1170,7 @@ fn CreatePackageTargetBuildGraphNodes(
 				if( workspace.build_targets[ public_dependency ].target_type == BuildTargetType::Library )
 				{
 					var ust::filesystem_path mut lib_file=
-						NormalizePath( ust::concat(
+						ust::path::normalize( ust::concat(
 							GetPackageBuildDirectory( root_package_build_directory, public_dependency.package_name ),
 							"/",
 							public_dependency.name,
@@ -1204,7 +1204,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		if( workspace.build_targets[ private_dependency ].target_type == BuildTargetType::Library )
 		{
 			var ust::filesystem_path mut lib_file=
-				NormalizePath( ust::concat(
+				ust::path::normalize( ust::concat(
 					GetPackageBuildDirectory( root_package_build_directory, private_dependency.package_name ),
 					"/",
 					private_dependency.name,
@@ -1264,14 +1264,14 @@ fn CreatePackageTargetBuildGraphNodes(
 				if( target_is_windows )
 				{
 					// Windows dynamic libraries aren't linked directly, a proxy static library is used instead.
-					var ust::filesystem_path mut lib_file= NormalizePath( file_to_link + ".lib" );
+					var ust::filesystem_path mut lib_file= ust::path::normalize( file_to_link + ".lib" );
 					node.command_line.push_back( "-Wl," + lib_file );
 					node.input_files.push_back( move(lib_file) );
 				}
 				else
 				{
 					// Unix shared libraries are specified directly.
-					var ust::filesystem_path mut so_file= NormalizePath( file_to_link + ".so" );
+					var ust::filesystem_path mut so_file= ust::path::normalize( file_to_link + ".so" );
 					node.command_line.push_back( "-Wl," + so_file );
 					node.input_files.push_back( move(so_file) );
 				}
@@ -1426,7 +1426,7 @@ struct SourceFileToCompile
 
 fn GetCompiledUstlibPath( ust::filesystem_path_view root_package_build_directory ) : ust::filesystem_path
 {
-	return NormalizePath( ust::concat( root_package_build_directory, "/", "ustlib.bc" ) );
+	return ust::path::normalize( ust::concat( root_package_build_directory, "/", "ustlib.bc" ) );
 }
 
 // Returns list of relative paths.
@@ -1532,7 +1532,7 @@ fn CreateUstlibBuildGraphNodes(
 	// Since ustlib is usually never changes, it's easier to do this, complared to separate compilation of each source file.
 	foreach( &source : GetUstlibSourcesList( target_triple ) )
 	{
-		var ust::filesystem_path file_path= NormalizePath( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
+		var ust::filesystem_path file_path= ust::path::normalize( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
 		node.input_files.push_back( file_path );
 		node.command_line.push_back( file_path );
 	}
@@ -1614,7 +1614,7 @@ fn CreateCustomBuildStepBuildGraphNodes(
 	{
 		// Existence of the corresponding build target in the host workspace should be checked previously.
 		node.program=
-			NormalizePath( ust::concat(
+			ust::path::normalize( ust::concat(
 				GetPackageBuildDirectory( host_packages_root_build_directory, host_build_target_exe_command.name.package_name ),
 				"/",
 				host_build_target_exe_command.name.name,
@@ -1684,7 +1684,7 @@ fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 
 fn GetCompiledForBuildScriptsUstlibPath( ust::filesystem_path_view build_directory_base ) : ust::filesystem_path
 {
-	return NormalizePath( ust::concat( build_directory_base, "/", "ustlib.o" ) );
+	return ust::path::normalize( ust::concat( build_directory_base, "/", "ustlib.o" ) );
 }
 
 fn nodiscard BuildUstlibForBuildScripts(
@@ -1800,7 +1800,7 @@ fn nodiscard BuildSingleFileProgram(
 
 	var ust::filesystem_path_view base_name= ust::path::get_path_without_extension( source_file_name.try_deref() );
 
-	var ust::filesystem_path mut out_file_path= NormalizePath( ust::concat( build_directory, "/", base_name ) );
+	var ust::filesystem_path mut out_file_path= ust::path::normalize( ust::concat( build_directory, "/", base_name ) );
 	if( target_is_windows )
 	{
 		out_file_path+= ".exe";

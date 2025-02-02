@@ -10,7 +10,4 @@ namespace BK
 fn SplitPathIntoComponents( ust::filesystem_path_view path )
 	: ust::vector</ust::filesystem_path_view/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 );
 
-// Replaces separators with preferrable, removes duplicated separators, removes trailing separator (if present), performs (if possible) relative paths resolution.
-fn NormalizePath( ust::filesystem_path_view path ) : ust::filesystem_path;
-
 } // namespace BK

@@ -1,3 +1,4 @@
+import "/path_utils.u"
 import "filesystem.uh"
 import "include_directories.uh"
 import "json/serialization.uh"
@@ -60,7 +61,7 @@ fn PopulateWorkspaceDirectoryGroups(
 		{
 			var JsonValue::Array mut directories_json;
 
-			directories_json.push_back( NormalizePath( ust::concat( package_source_directory, "/", build_target.sources_directory ) ) );
+			directories_json.push_back( ust::path::normalize( ust::concat( package_source_directory, "/", build_target.sources_directory ) ) );
 
 			if( !generated_sources_dir.empty() )
 			{
@@ -74,7 +75,7 @@ fn PopulateWorkspaceDirectoryGroups(
 
 			foreach( &directory : build_target.public_include_directories )
 			{
-				directories_json.push_back( NormalizePath( ust::concat( package_source_directory, "/", directory ) ) );
+				directories_json.push_back( ust::path::normalize( ust::concat( package_source_directory, "/", directory ) ) );
 			}
 			file_group_json.insert( "directories", move(directories_json) );
 		}
@@ -102,7 +103,7 @@ fn PopulateWorkspaceDirectoryGroups(
 			// Add also sources directory to list of includes.
 			includes.push_back(
 				ust::concat(
-					NormalizePath( ust::concat( package_source_directory, "/", build_target.sources_directory ) ),
+					ust::path::normalize( ust::concat( package_source_directory, "/", build_target.sources_directory ) ),
 					g_include_dir_prefix_separator,
 					build_target_name.name ) );
 		}

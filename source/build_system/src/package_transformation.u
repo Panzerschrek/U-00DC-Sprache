@@ -56,7 +56,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 					continue;
 				}
 
-				out_build_target.source_files.push_back( NormalizePath( source_name ) );
+				out_build_target.source_files.push_back( ust::path::normalize( source_name ) );
 			}
 
 			// Normalize list of sources and detect duplicates.
@@ -116,7 +116,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				continue;
 			}
 
-			out_build_target.generated_source_files.push_back( NormalizePath( generated_source_file ) );
+			out_build_target.generated_source_files.push_back( ust::path::normalize( generated_source_file ) );
 		}
 
 		// Normalize list of generated sources and detect duplicates.
@@ -141,7 +141,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				continue;
 			}
 
-			out_build_target.generated_private_header_files.push_back( NormalizePath( generated_private_header_file ) );
+			out_build_target.generated_private_header_files.push_back( ust::path::normalize( generated_private_header_file ) );
 		}
 
 		// Normalize list of generated private headers and detect duplicates.
@@ -174,7 +174,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				continue;
 			}
 
-			out_build_target.generated_public_header_files.push_back( NormalizePath( generated_public_header_file ) );
+			out_build_target.generated_public_header_files.push_back( ust::path::normalize( generated_public_header_file ) );
 		}
 
 		// Normalize list of generated public headers and detect duplicates.
@@ -285,7 +285,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 		{
 			// Normalize absolute paths, preserve relative paths.
 			out_build_target.external_libraries.push_back(
-				( ust::path::is_absolute(external_library) ? NormalizePath( external_library ) : external_library ) );
+				( ust::path::is_absolute(external_library) ? ust::path::normalize( external_library ) : external_library ) );
 		}
 		NormalizeList( out_build_target.external_libraries );
 
@@ -308,7 +308,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 			}
 			else
 			{
-				out_custom_build_step.input_files.push_back( NormalizePath( in_file ) );
+				out_custom_build_step.input_files.push_back( ust::path::normalize( in_file ) );
 			}
 		}
 
@@ -323,7 +323,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 			}
 			else
 			{
-				out_custom_build_step.output_files.push_back( NormalizePath( out_file ) );
+				out_custom_build_step.output_files.push_back( ust::path::normalize( out_file ) );
 			}
 		}
 
@@ -338,7 +338,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 			}
 			else
 			{
-				exe_command.exe_path= NormalizePath( exe_command.exe_path );
+				exe_command.exe_path= ust::path::normalize( exe_command.exe_path );
 			}
 			out_custom_build_step.command= move(exe_command);
 		}
@@ -370,7 +370,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 			}
 			else
 			{
-				copy_command.destination_path= NormalizePath( copy_command.destination_path );
+				copy_command.destination_path= ust::path::normalize( copy_command.destination_path );
 				if( !IsInFilesList( out_custom_build_step.output_files, copy_command.destination_path ) )
 				{
 					logger.LogError( ust::concat( "Error, copy command destination file \"", copy_command.destination_path, "\" is not listed in output files!" ) );
@@ -385,7 +385,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 			}
 			else
 			{
-				copy_command.source_path= NormalizePath( copy_command.source_path );
+				copy_command.source_path= ust::path::normalize( copy_command.source_path );
 				if( !IsInFilesList( out_custom_build_step.input_files, copy_command.source_path ) )
 				{
 					logger.LogError( ust::concat( "Error, copy command source file \"", copy_command.source_path, "\" is not listed in input files!" ) );
@@ -409,7 +409,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 			}
 			else
 			{
-				generate_command.destination_path= NormalizePath( generate_command.destination_path );
+				generate_command.destination_path= ust::path::normalize( generate_command.destination_path );
 				if( !IsInFilesList( out_custom_build_step.output_files, generate_command.destination_path ) )
 				{
 					logger.LogError( ust::concat( "Error, generate command destination file \"", generate_command.destination_path, "\" is not listed in output files!" ) );
@@ -600,7 +600,7 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 			var ust::filesystem_path generated_sources_dir= GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
 			foreach( &generated_source : build_target.generated_source_files )
 			{
-				var ust::filesystem_path file_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source ) );
+				var ust::filesystem_path file_path= ust::path::normalize( ust::concat( generated_sources_dir, "/", generated_source ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -615,7 +615,7 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 
 			foreach( &generated_private_header : build_target.generated_private_header_files )
 			{
-				var ust::filesystem_path file_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_private_header ) );
+				var ust::filesystem_path file_path= ust::path::normalize( ust::concat( generated_sources_dir, "/", generated_private_header ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -634,7 +634,7 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 			var ust::filesystem_path generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, target_name );
 			foreach( &generated_public_header : build_target.generated_public_header_files )
 			{
-				var ust::filesystem_path file_path= NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) );
+				var ust::filesystem_path file_path= ust::path::normalize( ust::concat( generated_public_headers_dir, "/", generated_public_header ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -838,7 +838,7 @@ fn ResolvePackageAbsoluteName(
 			path+= component;
 		}
 
-		return PackageAbsoluteName{ .path= NormalizePath( path ) };
+		return PackageAbsoluteName{ .path= ust::path::normalize( path ) };
 	}
 	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
 	{

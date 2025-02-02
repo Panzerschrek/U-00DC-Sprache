@@ -1,3 +1,4 @@
+import "/path_utils.u"
 import "include_directories.uh"
 import "path.uh"
 
@@ -58,7 +59,7 @@ fn ExtractDependenciesIncludeDirectories(
 			var ust::string8 mut path= GetPackageSourceDirectory( paths, build_target_name.package_name );
 			path+= "/";
 			path+= public_include_directory;
-			path= NormalizePath( path );
+			path= ust::path::normalize( path );
 
 			path+= g_include_dir_prefix_separator;
 			path+= build_target_name.name;
