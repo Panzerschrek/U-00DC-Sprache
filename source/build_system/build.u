@@ -18,7 +18,7 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 		.private_dependencies= ust::make_array( BK::DependencyName{ .name= lib_target.name } ),
 	};
 
-	var [ ust::filesystem_path_view, 21 ] sources
+	var [ ust::filesystem_path_view, 20 ] sources
 	[
 		"abort_signal_handler.u",
 		"build_graph.u",
@@ -37,7 +37,6 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 		"make_dep_file.u",
 		"options.u",
 		"package_transformation.u",
-		"path.u",
 		"string_utils.u",
 		"target_triple.u",
 		"version_unification.u",
