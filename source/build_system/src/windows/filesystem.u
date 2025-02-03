@@ -37,8 +37,11 @@ fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::filesystem_path_vie
 
 	auto mut components_it= ust::path::components_iter( path_absolute );
 
+	// Hack! Extract first two components, lile "C:" and "\\".
+	// It's necessary, because it's impossible (for whatever reason) to create directory like "C:/".
+	// TODO - find a better way for doing this.
 	var ust::filesystem_path mut path_iterative= components_it.next().try_deref();
-	path_iterative+= "/";
+	path_iterative+= components_it.next().try_deref();
 
 	foreach( &component : move(components_it) )
 	{
