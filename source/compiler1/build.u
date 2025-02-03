@@ -111,7 +111,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 
 	foreach( &f : source_files )
 	{
-		code_builder_lib_build_target.source_files.push_back( ust::concat( "src/", f ) );
+		code_builder_lib_build_target.source_files.push_back( ust::path::join( "src", f ) );
 	}
 
 	return BK::PackageInfo
