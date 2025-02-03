@@ -15,11 +15,11 @@ fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& pack
 	}
 	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
 	{
-		res= paths.packages_repository_directory;
-		res+= "/";
-		res+= global_versioned_package.name;
-		res+= "/";
-		res+= StringifySemanticVersion( global_versioned_package.version );
+		res=
+			ust::path::join(
+				paths.packages_repository_directory,
+				global_versioned_package.name,
+				StringifySemanticVersion( global_versioned_package.version ) );
 	}
 	else
 	{
@@ -29,8 +29,7 @@ fn GetPackageSourceDirectory( BuildSystemPaths& paths, PackageAbsoluteName& pack
 
 	if( !package_name.path.empty() )
 	{
-		res+= "/";
-		res+= package_name.path;
+		ust::path::append( res, package_name.path );
 	}
 
 	return res;
@@ -49,12 +48,9 @@ fn GetPackageBuildDirectory(
 	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
 	{
 		// Put build directories of all global packages into a subdirectory.
-		res+= "/";
-		res+= "global.packages"; // Use directory with dot to avoid name conflicts with subpackages and build targets.
-		res+= "/";
-		res+= global_versioned_package.name;
-		res+= "/";
-		res+= StringifySemanticVersion( global_versioned_package.version );
+		ust::path::append( res, "global.packages" ); // Use directory with dot to avoid name conflicts with subpackages and build targets.
+		ust::path::append( res, global_versioned_package.name );
+		ust::path::append( res, StringifySemanticVersion( global_versioned_package.version ) );
 	}
 	else
 	{
@@ -64,8 +60,7 @@ fn GetPackageBuildDirectory(
 
 	if( !package_name.path.empty() )
 	{
-		res+= "/";
-		res+= package_name.path;
+		ust::path::append( res, package_name.path );
 	}
 	return res;
 }
