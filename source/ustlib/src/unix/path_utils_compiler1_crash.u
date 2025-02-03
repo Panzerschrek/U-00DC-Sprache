@@ -1,20 +1,8 @@
-import "../../imports/path_utils.u"
+import "../../imports/string.u"
 
-namespace ust
+fn nomangle next( ust::string_view8 &mut p ) : ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
 {
-
-namespace path
-{
-
-fn nodiscard components_raw_iterator::next( mut this )
-	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
-{
-	var filesystem_path_view res= p_.subrange_end(1s);
-	p_= p_.subrange_start(1s);
+	var ust::string_view8 res= p.subrange_end(1s);
+	p= p.subrange_start(1s);
 	return res;
 }
-
-} // namespace path
-
-} // namespace ust
-
