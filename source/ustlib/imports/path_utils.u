@@ -54,12 +54,6 @@ fn get_parent_path( filesystem_path_view p )
 // Note that this function doesn't access underlying filesystem and thus not absolutization or symlinks resolving are performed.
 fn normalize( filesystem_path_view p ) : filesystem_path;
 
-// Replace directory separators with native separatos.
-fn replace_separators_with_native( filesystem_path_view p ) : filesystem_path;
-
-// Replace backward slashes with forward slashes.
-fn replace_separators_with_forward_slashes( filesystem_path_view p ) : filesystem_path;
-
 // Create iterator over path components.
 fn components_iter( filesystem_path_view p ) : auto
 {
