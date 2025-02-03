@@ -55,7 +55,7 @@ public:
 	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, ErrorsContainer &mut errors, SrcLoc& src_loc );
 
 private:
-	fn GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut out_nodes );
+	fn GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut visited_nodes, NodesSet &mut out_nodes );
 
 	fn HasDirectOutgoingLinks( this, VariablePtr& from ) : bool;
 	fn HasOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr& from ) : bool;

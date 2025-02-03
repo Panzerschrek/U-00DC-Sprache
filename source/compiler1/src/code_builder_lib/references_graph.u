@@ -282,8 +282,9 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr& node ) : N
 {
 	debug_assert( nodes_.exists( node ), "Node is not registered!" );
 
+	var NodesSet mut visited_nodes_set;
 	var NodesSet mut nodes_set;
-	GetAllAccessibleVariableNodes_r( node, nodes_set );
+	GetAllAccessibleVariableNodes_r( node, visited_nodes_set, nodes_set );
 	return nodes_set;
 }
 
@@ -407,8 +408,14 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 	}
 }
 
-fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut out_nodes )
+fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut visited_nodes, NodesSet &mut out_nodes )
 {
+	if( visited_nodes.exists( node ) )
+	{
+		return; // Already visited
+	}
+	visited_nodes.insert( node );
+
 	if( node.lock_imut().deref().value_type == ValueType::Value )
 	{
 		out_nodes.insert( node );
@@ -418,14 +425,14 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, VariablePtr& node, No
 	{
 		if( link.dst == node )
 		{
-			GetAllAccessibleVariableNodes_r( link.src, out_nodes );
+			GetAllAccessibleVariableNodes_r( link.src, visited_nodes, out_nodes );
 		}
 	}
 
 	var VariableNullablePtr parent= node.lock_imut().deref().parent.lock();
 	if( !parent.empty() )
 	{
-		GetAllAccessibleVariableNodes_r( parent.try_to_non_nullable(), out_nodes );
+		GetAllAccessibleVariableNodes_r( parent.try_to_non_nullable(), visited_nodes, out_nodes );
 	}
 	// Children nodes can't have input links. So, ignore them.
 }
