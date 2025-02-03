@@ -96,6 +96,24 @@ fn join_impl( array_view_imut</filesystem_path_view/> components ) : filesystem_
 	return result;
 }
 
+fn append( filesystem_path &mut p0, filesystem_path_view p1 )
+{
+	if( is_absolute( p1 ) )
+	{
+		p0= p1;
+	}
+	else
+	{
+		if( !p0.empty() && !is_separator( p0.back() ) )
+		{
+			// Add separator if result ends with non-separator char.
+			p0.push_back( "/"c8 );
+		}
+
+		p0+= p1;
+	}
+}
+
 fn get_file_extension( filesystem_path_view p )
 	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
 {
