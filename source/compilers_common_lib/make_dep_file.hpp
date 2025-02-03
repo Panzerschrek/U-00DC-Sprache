@@ -1,5 +1,5 @@
 #pragma once
-#include "../compiler0/lex_synt_lib/source_graph_loader.hpp"
+#include "../compiler0/lex_synt_lib/i_vfs.hpp"
 
 namespace U
 {

@@ -1,5 +1,6 @@
 #pragma once
-#include "../lex_synt_lib/source_graph_loader.hpp"
+#include <map>
+#include "../lex_synt_lib/i_vfs.hpp"
 #include "build_system_integration.hpp"
 #include "uri.hpp"
 
