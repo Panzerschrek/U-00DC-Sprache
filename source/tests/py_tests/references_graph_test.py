@@ -535,7 +535,6 @@ def ReferencesLoop_Test4():
 		struct S
 		{
 			i32 & x;
-
 			fn TakeCopy( this ) : S @(return_inner_references)
 			{
 				return this;
@@ -547,6 +546,29 @@ def ReferencesLoop_Test4():
 			var S res= s;
 			s= s.TakeCopy(); // Link here inner reference node of "s" with inner reference node derived from itself.
 			return res;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReferencesLoop_Test5():
+	c_program_text= """
+		struct S
+		{
+			i32& x;
+		}
+		struct T
+		{
+			S& s;
+			fn MakeCopy( this ) : T @(return_inner_references);
+			op=( mut this, T& other );
+		}
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
+		fn Foo( T &mut t )
+		{
+			var T t_copy= t.MakeCopy();
+			t= t_copy;
+			var S& s= t.s;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
