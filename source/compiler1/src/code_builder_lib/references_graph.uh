@@ -63,7 +63,7 @@ private:
 	fn HasDirectOutgoingMutableNodes( this, VariablePtr& from ) : bool;
 	fn HasOutgoingMutableNodesIncludingChildrenNodes_r( this, VariablePtr& from ) : bool;
 
-	fn GetAllAccessibleNonInnerNodes_r( this VariablePtr& node, NodesSet &mut result_set );
+	fn GetAllAccessibleNonInnerNodes_r( this VariablePtr& node, NodesSet &mut visited_nodes, NodesSet &mut result_set );
 
 	fn TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
