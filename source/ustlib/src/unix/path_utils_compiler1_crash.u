@@ -1,8 +1,0 @@
-import "../../imports/string.u"
-
-fn nomangle next( ust::string_view8 &mut p ) : ust::string_view8 @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
-{
-	var ust::string_view8 res= p.subrange_end(1s);
-	p= p.subrange_start(1s);
-	return res;
-}
