@@ -15,7 +15,6 @@ Use the build system to build each file, like this:
 BuildSystem build_single some_example.u
 ```
 
-It's important to specify correct path to the *ustlib*.
 Different options may be specified, see the build system documentation for more information.
 
 Alternatively it's possible to build all examples as part of the whole Ü project.
