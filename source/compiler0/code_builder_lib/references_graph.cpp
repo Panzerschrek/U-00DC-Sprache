@@ -227,7 +227,8 @@ ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr&
 ReferencesGraph::NodesSet ReferencesGraph::GetAllAccessibleNonInnerNodes( const VariablePtr& node ) const
 {
 	NodesSet result;
-	GetAllAccessibleNonInnerNodes_r( node, result );
+	NodesSet visited_nodes_set;
+	GetAllAccessibleNonInnerNodes_r( node, visited_nodes_set, result );
 	return result;
 }
 
@@ -419,14 +420,20 @@ void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 	// Children nodes can't have input links. So, ignore them.
 }
 
-void ReferencesGraph::GetAllAccessibleNonInnerNodes_r( const VariablePtr& node, NodesSet& result_set ) const
+void ReferencesGraph::GetAllAccessibleNonInnerNodes_r(
+	const VariablePtr& node,
+	NodesSet& visited_nodes_set,
+	NodesSet& result_set ) const
 {
+	if( !visited_nodes_set.insert(node).second )
+		return; // Already visited
+
 	for( const auto& link : links_ )
 	{
 		if( link.dst == node )
 		{
 			if( link.src->is_inner_reference_node )
-				GetAllAccessibleNonInnerNodes_r( link.src, result_set );
+				GetAllAccessibleNonInnerNodes_r( link.src, visited_nodes_set, result_set );
 			else
 			{
 				// Do not go further if a variable/reference or child node is reached.
