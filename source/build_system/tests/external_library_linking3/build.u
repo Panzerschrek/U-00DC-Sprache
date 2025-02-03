@@ -3,7 +3,7 @@ import "/build_system.uh"
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
 	// Exe depends on a library as external library.
-	// Doing this has little sence, but it should be doable.
+	// Doing this has little sense, but it should be doable.
 
 	var BK::BuildTarget mut lib
 	{
