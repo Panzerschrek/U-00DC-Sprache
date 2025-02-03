@@ -1,3 +1,4 @@
+import "/path_utils.u"
 import "/string_conversions.u"
 import "build_system_paths.uh"
 
@@ -86,9 +87,8 @@ fn GetBuildTargetGeneratedSourcesDirectory(
 	BuildTargetAbsoluteName& build_target_name ) : ust::filesystem_path
 {
 	return
-		ust::concat(
+		ust::path::join(
 			GetBuildTargetBuildFilesDirectory( root_package_build_directory, build_target_name ),
-			"/",
 			"generated.sources" );
 }
 
@@ -97,9 +97,8 @@ fn GetBuildTargetGeneratedSourcesBuildDirectory(
 	BuildTargetAbsoluteName& build_target_name ) : ust::filesystem_path
 {
 	return
-		ust::concat(
+		ust::path::join(
 			GetBuildTargetBuildFilesDirectory( root_package_build_directory, build_target_name ),
-			"/",
 			"generated.sources.build" );
 }
 
@@ -108,9 +107,8 @@ fn GetBuildTargetGeneratedPublicHeadersDirectory(
 	BuildTargetAbsoluteName& build_target_name ) : ust::filesystem_path
 {
 	return
-		ust::concat(
+		ust::path::join(
 			GetBuildTargetBuildFilesDirectory( root_package_build_directory, build_target_name ),
-			"/",
 			"generated.public_headers" );
 }
 

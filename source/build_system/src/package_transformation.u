@@ -73,8 +73,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 			foreach( &component : sources_directory )
 			{
-				out_build_target.sources_directory+= component;
-				out_build_target.sources_directory+= "/";
+				ust::path::append( out_build_target.sources_directory, component );
 			}
 
 			logger.LogVerbose( ust::concat( "All sources of the build target \"", target_printable_name, "\" are located within directory \"", out_build_target.sources_directory, "\"." ) );
@@ -233,8 +232,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 			var ust::filesystem_path mut directory_normalized;
 			foreach( &component : public_include_directory_component_splitted )
 			{
-				directory_normalized+= component;
-				directory_normalized+= "/";
+				ust::path::append( directory_normalized, component );
 			}
 			out_build_target.public_include_directories.push_back( move(directory_normalized) );
 
@@ -599,7 +597,7 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 			var ust::filesystem_path generated_sources_dir= GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
 			foreach( &generated_source : build_target.generated_source_files )
 			{
-				var ust::filesystem_path file_path= ust::path::normalize( ust::concat( generated_sources_dir, "/", generated_source ) );
+				var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( generated_sources_dir, generated_source ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -614,7 +612,7 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 
 			foreach( &generated_private_header : build_target.generated_private_header_files )
 			{
-				var ust::filesystem_path file_path= ust::path::normalize( ust::concat( generated_sources_dir, "/", generated_private_header ) );
+				var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( generated_sources_dir, generated_private_header ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -633,7 +631,7 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 			var ust::filesystem_path generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, target_name );
 			foreach( &generated_public_header : build_target.generated_public_header_files )
 			{
-				var ust::filesystem_path file_path= ust::path::normalize( ust::concat( generated_public_headers_dir, "/", generated_public_header ) );
+				var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( generated_public_headers_dir, generated_public_header ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -909,7 +907,7 @@ fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
 		return false;
 	}
 
-	if( name.front() == "/"c8 || name.front() == "\\"c8 )
+	if( name.front() == "/"c8 || name.front() == "\\"c8 || ust::path::is_absolute( name ) )
 	{
 		// Do not allow absolute paths.
 		return false;

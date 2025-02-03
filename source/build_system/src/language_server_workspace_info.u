@@ -24,7 +24,7 @@ fn nodiscard WriteLanguageServerWorkspaceInfoFile(
 	PopulateWorkspaceDirectoryGroups( build_system_paths, target_workspace, root_package_build_directory, json_root );
 	PopulateWorkspaceDirectoryGroups( build_system_paths, host_workspace, host_packages_root_build_directory, json_root );
 
-	var ust::filesystem_path file_path= ust::concat( root_package_build_directory, "/language_server_workspace_info.json" );
+	var ust::filesystem_path file_path= ust::path::join( root_package_build_directory, "language_server_workspace_info.json" );
 
 	return WriteFile( logger, file_path, SerializeJsonValuePretty( move(json_root) ) );
 }
@@ -60,7 +60,7 @@ fn PopulateWorkspaceDirectoryGroups(
 		{
 			var JsonValue::Array mut directories_json;
 
-			directories_json.push_back( ust::path::normalize( ust::concat( package_source_directory, "/", build_target.sources_directory ) ) );
+			directories_json.push_back( ust::path::normalize( ust::path::join( package_source_directory, build_target.sources_directory ) ) );
 
 			if( !generated_sources_dir.empty() )
 			{
@@ -74,7 +74,7 @@ fn PopulateWorkspaceDirectoryGroups(
 
 			foreach( &directory : build_target.public_include_directories )
 			{
-				directories_json.push_back( ust::path::normalize( ust::concat( package_source_directory, "/", directory ) ) );
+				directories_json.push_back( ust::path::normalize( ust::path::join( package_source_directory, directory ) ) );
 			}
 			file_group_json.insert( "directories", move(directories_json) );
 		}
@@ -102,7 +102,7 @@ fn PopulateWorkspaceDirectoryGroups(
 			// Add also sources directory to list of includes.
 			includes.push_back(
 				ust::concat(
-					ust::path::normalize( ust::concat( package_source_directory, "/", build_target.sources_directory ) ),
+					ust::path::normalize( ust::path::join( package_source_directory, build_target.sources_directory ) ),
 					g_include_dir_prefix_separator,
 					build_target_name.name ) );
 		}

@@ -13,12 +13,12 @@ namespace BK
 
 fn MakePathAbsolute( ust::filesystem_path_view path ) : ust::filesystem_path
 {
-	if( !path.empty() && path.front() == "/"c8 )
+	if( ust::path::is_absolute( path ) )
 	{
 		return path;
 	}
 
-	return ust::concat( ust::get_current_directory(), "/", path );
+	return ust::path::join( ust::get_current_directory(), path );
 }
 
 fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::filesystem_path_view path ) : bool
@@ -36,8 +36,7 @@ fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::filesystem_path_vie
 	var ust::filesystem_path mut path_iterative;
 	foreach( &component : ust::path::components_iter( path_absolute ) )
 	{
-		path_iterative+= "/";
-		path_iterative+= component;
+		ust::path::append( path_iterative, component );
 		auto create_res= ust::create_directory( path_iterative );
 		if( create_res.is_error() )
 		{

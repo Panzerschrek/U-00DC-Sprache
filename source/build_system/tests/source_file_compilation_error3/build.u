@@ -1,3 +1,4 @@
+import "/path_utils.u"
 import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
@@ -15,7 +16,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.generated_source_files= ust::make_array( generated_source ),
 	};
 
-	auto mut out_file= ust::concat( build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( target.name ), "/", generated_source );
+	auto mut out_file= ust::path::join( build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( target.name ), generated_source );
 
 	var BK::CustomBuildStep mut generate_source_step
 	{

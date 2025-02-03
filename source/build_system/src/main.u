@@ -98,15 +98,15 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 	{
 		.compiler_executable_path= ust::path::normalize(
 			( options.compiler_executable_path.empty()
-				? ( exe_directory + "/Compiler1" ) // For now use "Compiler1" as compiler default. TODO - allow to tune it.
+				? ust::path::join( exe_directory, "Compiler1" ) // For now use "Compiler1" as compiler default. TODO - allow to tune it.
 				: MakePathAbsolute(options.compiler_executable_path) ) ),
 		.ustlib_path= ust::path::normalize(
 			( options.ustlib_path.empty()
-				? ( exe_directory + "/../ustlib" ) // "ustlib" is located in the root of the Ü package.
+				? ust::path::join( exe_directory, "../ustlib" ) // "ustlib" is located in the root of the Ü package.
 				: MakePathAbsolute(options.ustlib_path) ) ),
 		.build_system_imports_path= ust::path::normalize(
 			( options.build_system_imports_path.empty()
-				? ( exe_directory + "/../build_system/imports" ) // Build system imports are located in "/build_system/imports".
+				? ust::path::join( exe_directory, "../build_system/imports" ) // Build system imports are located in "/build_system/imports".
 				: MakePathAbsolute(options.build_system_imports_path) ) ),
 		.packages_repository_directory=
 			ust::path::normalize(
@@ -136,7 +136,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 	// By default use "build" directory within root package directory.
 	var ust::filesystem_path root_package_build_directory_base =
 		( options.build_directory.empty()
-			? ( build_system_paths.root_package_source_directory + "/build" )
+			? ust::path::join( build_system_paths.root_package_source_directory, "build" )
 			: ust::path::normalize( MakePathAbsolute( options.build_directory ) ) );
 
 	// Create, if necessary, subdirectory for target triple.
@@ -144,13 +144,11 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 	var ust::filesystem_path mut root_package_build_directory = root_package_build_directory_base;
 	if( target_triple != GetHostTargetTriple() )
 	{
-		root_package_build_directory+= "/";
-		root_package_build_directory+= TargetTripleToString( target_triple );
+		ust::path::append( root_package_build_directory, TargetTripleToString( target_triple ) );
 	}
 
 	// Create a subdirectory for configuration specified.
-	root_package_build_directory+= "/";
-	root_package_build_directory+= BuildConfigurationToString( options.build_configuration );
+	ust::path::append( root_package_build_directory, BuildConfigurationToString( options.build_configuration ) );
 
 	if( !EnsureDirectoryExists( logger, root_package_build_directory ) )
 	{
@@ -171,9 +169,8 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 	// Second, compilation options may be incompatible - we may want to build for targets with SSE4 (for example),
 	// on a host with no SSE4 support. In such case we need two separate build trees with two different set of compilation options.
 	var ust::filesystem_path host_packages_root_build_directory =
-		ust::concat(
+		ust::path::join(
 			root_package_build_directory,
-			"/",
 			"host.build" /* use name with dots in order to avoid name conflicts */ );
 
 	// Compile "ustlib" used in build scripts. Do it before compiling any of them.
@@ -344,7 +341,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 			host_packages_root_build_directory );
 	ust::ignore_unused( workspace_info_file_write_ok );
 
-	var ust::filesystem_path build_graph_state_file_path= root_package_build_directory + "/build_graph.json";
+	var ust::filesystem_path build_graph_state_file_path= ust::path::join( root_package_build_directory, "build_graph.json" );
 
 	// Load previous build graph state.
 	var ust::optional</BuildGraph/> mut prev_build_graph;
@@ -497,7 +494,7 @@ fn BuildAndLoadPackageBuildScript(
 	// TODO - select more catchy name for root build script file.
 	auto constexpr build_script_file= "build.u";
 
-	var ust::filesystem_path build_script_file_full_path= ust::concat(package_source_directory, "/", build_script_file );
+	var ust::filesystem_path build_script_file_full_path= ust::path::join(package_source_directory, build_script_file );
 
 	// TODO - do we need to have this check here?
 	if( GetFileModificationTime( build_script_file_full_path ).empty() )
@@ -515,20 +512,20 @@ fn BuildAndLoadPackageBuildScript(
 	{
 		logger.LogVerbose( ust::concat( "Building \"", result_shared_library_path, "\"." ) );
 
-		var ust::filesystem_path build_script_wrapper_file_directory= ust::concat( package_build_directory, "/build_script_wrapper_sources" );
+		var ust::filesystem_path build_script_wrapper_file_directory= ust::path::join( package_build_directory, "build_script_wrapper_sources" );
 		if( ! EnsureDirectoryExists( logger, build_script_wrapper_file_directory ) )
 		{
 			return ust::null_optional;
 		}
 
-		var ust::filesystem_path build_script_wrapper_header_file_directory= ust::concat( package_build_directory, "/build_script_wrapper_headers" );
+		var ust::filesystem_path build_script_wrapper_header_file_directory= ust::path::join( package_build_directory, "build_script_wrapper_headers" );
 		if( ! EnsureDirectoryExists( logger, build_script_wrapper_header_file_directory ) )
 		{
 			return ust::null_optional;
 		}
 
-		var ust::filesystem_path build_script_wrapper_file_path= ust::concat( build_script_wrapper_file_directory, "/", "build_script_wrapper.u" );
-		var ust::filesystem_path build_script_header_file_path= ust::concat( build_script_wrapper_header_file_directory, "/", "build_script_header.uh" );
+		var ust::filesystem_path build_script_wrapper_file_path= ust::path::join( build_script_wrapper_file_directory, "build_script_wrapper.u" );
+		var ust::filesystem_path build_script_header_file_path= ust::path::join( build_script_wrapper_header_file_directory, "build_script_header.uh" );
 
 		// Create our own wrapper file to ensure that the function exported from the shared library has proper type.
 		{
@@ -579,7 +576,7 @@ fn BuildAndLoadPackageBuildScript(
 		compiler_args.push_back( package_source_directory );
 		// Provide standard library imports.
 		compiler_args.push_back( "--include-dir" );
-		compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_imports_subpath ) );
+		compiler_args.push_back( ust::path::join( build_system_paths.ustlib_path, g_ustlib_imports_subpath ) );
 		// Provide path to declarations of the build system interface.
 		compiler_args.push_back( "--include-dir" );
 		compiler_args.push_back( build_system_paths.build_system_imports_path );
@@ -894,7 +891,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	var ust::filesystem_path sources_dir=
 		( target.source_files.empty()
 			? ust::filesystem_path()
-			: ust::path::normalize( ust::concat( package_source_directory, "/", target.sources_directory ) ) );
+			: ust::path::normalize( ust::path::join( package_source_directory, target.sources_directory ) ) );
 
 	var ust::filesystem_path generated_sources_dir=
 		( ( target.generated_source_files.empty() && target.generated_private_header_files.empty() )
@@ -906,7 +903,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	// Get generated private headers of this build target.
 	foreach( &generated_private_header : target.generated_private_header_files )
 	{
-		generated_headers_dependencies.push_back( ust::path::normalize( ust::concat( generated_sources_dir, "/", generated_private_header ) ) );
+		generated_headers_dependencies.push_back( ust::path::normalize( ust::path::join( generated_sources_dir, generated_private_header ) ) );
 	}
 
 	// Get generated public headers of this build target and all dependencies of this build target.
@@ -921,7 +918,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			var ust::filesystem_path generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, build_target_name );
 			foreach( &generated_public_header : dependency_target.generated_public_header_files )
 			{
-				generated_headers_dependencies.push_back( ust::path::normalize( ust::concat( generated_public_headers_dir, "/", generated_public_header ) ) );
+				generated_headers_dependencies.push_back( ust::path::normalize( ust::path::join( generated_public_headers_dir, generated_public_header ) ) );
 			}
 
 			include_directories_prefixed.push_back( ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, build_target_name.name ) );
@@ -936,7 +933,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		source_files_to_compile.push_back(
 			SourceFileToCompile
 			{
-				.source_file_full_path= ust::path::normalize( ust::concat( package_source_directory, "/", source_file ) ),
+				.source_file_full_path= ust::path::normalize( ust::path::join( package_source_directory, source_file ) ),
 				.bc_file_full_path=  ust::path::normalize( ust::concat( target_build_files_directory, "/", source_file, ".bc" ) ),
 				.comment= source_file + ".bc",
 			} );
@@ -952,7 +949,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			source_files_to_compile.push_back(
 				SourceFileToCompile
 				{
-					.source_file_full_path= ust::path::normalize( ust::concat( generated_sources_dir, "/", generated_source_file ) ),
+					.source_file_full_path= ust::path::normalize( ust::path::join( generated_sources_dir, generated_source_file ) ),
 					// Place "bc" files in separate build directory.
 					.bc_file_full_path= ust::path::normalize( ust::concat( generated_sources_build_dir, "/", generated_source_file, ".bc" ) ),
 					.comment= generated_source_file + ".bc",
@@ -1068,8 +1065,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	var bool target_is_windows = target_triple.operating_system == "windows";
 
 	var ust::filesystem_path mut result_target_file_path= package_build_directory;
-	result_target_file_path+= "/";
-	result_target_file_path+= target_name.name;
+	ust::path::append( result_target_file_path, target_name.name );
 
 	switch( target.target_type )
 	{
@@ -1255,9 +1251,8 @@ fn CreatePackageTargetBuildGraphNodes(
 		{
 			foreach( &shared_library_dependency : target.shared_library_dependencies_to_link )
 			{
-				var ust::filesystem_path mut file_to_link= ust::concat(
+				var ust::filesystem_path mut file_to_link= ust::path::join(
 					GetPackageBuildDirectory( root_package_build_directory, shared_library_dependency.package_name ),
-					"/",
 					shared_library_dependency.name );
 
 				if( target_is_windows )
@@ -1425,7 +1420,7 @@ struct SourceFileToCompile
 
 fn GetCompiledUstlibPath( ust::filesystem_path_view root_package_build_directory ) : ust::filesystem_path
 {
-	return ust::path::normalize( ust::concat( root_package_build_directory, "/", "ustlib.bc" ) );
+	return ust::path::normalize( ust::path::join( root_package_build_directory, "ustlib.bc" ) );
 }
 
 // Returns list of relative paths.
@@ -1531,7 +1526,7 @@ fn CreateUstlibBuildGraphNodes(
 	// Since ustlib is usually never changes, it's easier to do this, complared to separate compilation of each source file.
 	foreach( &source : GetUstlibSourcesList( target_triple ) )
 	{
-		var ust::filesystem_path file_path= ust::path::normalize( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
+		var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( build_system_paths.ustlib_path, g_ustlib_sources_subpath, source ) );
 		node.input_files.push_back( file_path );
 		node.command_line.push_back( file_path );
 	}
@@ -1683,7 +1678,7 @@ fn IsPublicDependencyOfSomeLinkedSharedLibrary(
 
 fn GetCompiledForBuildScriptsUstlibPath( ust::filesystem_path_view build_directory_base ) : ust::filesystem_path
 {
-	return ust::path::normalize( ust::concat( build_directory_base, "/", "ustlib.o" ) );
+	return ust::path::normalize( ust::path::join( build_directory_base, "ustlib.o" ) );
 }
 
 fn nodiscard BuildUstlibForBuildScripts(
@@ -1714,7 +1709,7 @@ fn nodiscard BuildUstlibForBuildScripts(
 
 		foreach( &source : GetUstlibSourcesList( GetHostTargetTriple() ) )
 		{
-			compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
+			compiler_args.push_back( ust::path::join( build_system_paths.ustlib_path, g_ustlib_sources_subpath, source ) );
 		}
 
 		compiler_args.push_back( "--source-dir" );
@@ -1799,7 +1794,7 @@ fn nodiscard BuildSingleFileProgram(
 
 	var ust::filesystem_path_view base_name= ust::path::get_path_without_extension( source_file_name.try_deref() );
 
-	var ust::filesystem_path mut out_file_path= ust::path::normalize( ust::concat( build_directory, "/", base_name ) );
+	var ust::filesystem_path mut out_file_path= ust::path::normalize( ust::path::join( build_directory, base_name ) );
 	if( target_is_windows )
 	{
 		out_file_path+= ".exe";
@@ -1814,7 +1809,7 @@ fn nodiscard BuildSingleFileProgram(
 	// Compile also all "ustlib" sources in the same compiler invocation.
 	foreach( &source : GetUstlibSourcesList( target_triple ) )
 	{
-		compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_sources_subpath, "/", source ) );
+		compiler_args.push_back( ust::path::join( build_system_paths.ustlib_path, g_ustlib_sources_subpath, source ) );
 	}
 
 	// Link against system libraries required by "ustlib".
@@ -1825,7 +1820,7 @@ fn nodiscard BuildSingleFileProgram(
 
 	// The only include directory that we require is "ustlib".
 	compiler_args.push_back( "--include-dir" );
-	compiler_args.push_back( ust::concat( build_system_paths.ustlib_path, "/", g_ustlib_imports_subpath ) );
+	compiler_args.push_back( ust::path::join( build_system_paths.ustlib_path, g_ustlib_imports_subpath ) );
 
 	// Don't bother limiting imports in single-source programs.
 	// Also don't care about source directory specifying - it's unnecessary, since we internalize all symbols anyway.

@@ -13,14 +13,12 @@ namespace BK
 
 fn MakePathAbsolute( ust::filesystem_path_view path ) : ust::filesystem_path
 {
-	if( path.size() >= 2s && path[0s] >= "A"c8 && path[0s] <= "Z"c8 && path[1s] == ":"c8 )
+	if( ust::path::is_absolute( path ) )
 	{
-		// Already an absolute path strting with drive letter.
-		// TODO - support universal paths.
 		return path;
 	}
 
-	return ust::concat( ust::get_current_directory(), "/", path );
+	return ust::path::join( ust::get_current_directory(), path );
 }
 
 fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::filesystem_path_view path ) : bool

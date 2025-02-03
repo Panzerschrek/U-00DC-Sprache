@@ -983,7 +983,7 @@ def SourceDirectoriesConflict0Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict0" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is already in use." ) != -1 )
+	assert( stderr.find( "Source directory \"some_dir\" of the build target \"target_b\" is already in use." ) != -1 )
 
 
 def SourceDirectoriesConflict1Test():
@@ -997,14 +997,14 @@ def SourceDirectoriesConflict2Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict2" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"sub_dir/\" of the build target \"target_b\" is located within another used directory." ) != -1 )
+	assert( stderr.find( "Source directory \"sub_dir\" of the build target \"target_b\" is located within another used directory." ) != -1 )
 
 
 def SourceDirectoriesConflict3Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict3" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is a prefix of another used directory." ) != -1 )
+	assert( stderr.find( "Source directory \"some_dir\" of the build target \"target_b\" is a prefix of another used directory." ) != -1 )
 
 
 def SourceDirectoriesConflict4Test():

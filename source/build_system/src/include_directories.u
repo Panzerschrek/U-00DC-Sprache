@@ -12,7 +12,7 @@ fn ExtractBuildTargetIncludeDirectories(
 {
 	var ust::vector</ust::string8/> mut include_directories_prefixed;
 
-	include_directories_prefixed.push_back( ust::concat( paths.ustlib_path, "/", g_ustlib_imports_subpath ) ); // Import "ustlib" files without prefix.
+	include_directories_prefixed.push_back( ust::path::join( paths.ustlib_path, g_ustlib_imports_subpath ) ); // Import "ustlib" files without prefix.
 
 	// Own include directories.
 	ExtractDependenciesIncludeDirectories(
