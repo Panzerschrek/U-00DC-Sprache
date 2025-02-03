@@ -853,7 +853,7 @@ def DuplicatedSourceFileTest():
 	stderr = str(res.stderr)
 	assert( stderr.find( "Error, duplicated source file \"main.u\" of the build target \"hello_world\"" ) != -1 )
 	if platform.system() == "Windows":
-		assert( stderr.find( "Error, duplicated source file \"dir/other.u\" of the build target \"hello_world\"" ) != -1 )
+		assert( stderr.find( "Error, duplicated source file \"dir\\\\other.u\" of the build target \"hello_world\"" ) != -1 )
 	assert( stderr.find( "Package" ) != -1 )
 	assert( stderr.find( "is invald" ) != -1 )
 
@@ -863,7 +863,7 @@ def DuplicatedGeneratedPublicHeaderFileTest():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	if platform.system() == "Windows":
-		assert( stderr.find( "Error, duplicated generated public header file \"dir/other.uh\" of the build target \"hello_world\"!" ) != -1 )
+		assert( stderr.find( "Error, duplicated generated public header file \"dir\\\\other.uh\" of the build target \"hello_world\"!" ) != -1 )
 	assert( stderr.find( "Error, duplicated generated public header file \"some.uh\" of the build target \"hello_world\"!" ) != -1 )
 
 
