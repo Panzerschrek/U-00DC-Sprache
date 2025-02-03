@@ -11,7 +11,7 @@ class shared_ptr_mt_final_base
 {
 	static_assert( typeinfo</T/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
 
-	// It's have no sence to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
+	// It has no sense to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
 	// Use singlethreaded shared pointer instead.
 	static_assert( !non_sync</T/>, "using non_sync types inside multithreaded shared pointers is not allowed" );
 

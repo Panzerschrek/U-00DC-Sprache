@@ -1038,7 +1038,7 @@ void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
 
 bool CodeBuilder::VariableExistenceMayHaveSideEffects( const Type& variable_type )
 {
-	// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
+	// Normally we should perform deep inspection in order to know, that existance of the variable has sense.
 	// For example, "ust::string8" has non-trivial destructor, but it just frees memory.
 	// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
 	const bool destructor_is_trivial=
