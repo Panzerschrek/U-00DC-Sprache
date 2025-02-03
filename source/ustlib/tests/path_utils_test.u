@@ -71,6 +71,65 @@ fn nomangle main() : i32
 		assert( ust::path::join( "", "", "", "foo" ) == "foo" ); // Leading empty components
 		assert( ust::path::join( "foo", "", "", "" ) == "foo\\" ); // Trailing empty components
 
+		// append
+		{
+			var ust::filesystem_path mut p0;
+			ust::path::append( p0, "foo" );
+			assert( p0 == "foo" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "" );
+			assert( p0 == "foo\\" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "bar" );
+			assert( p0 == "foo\\bar" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo/";
+			ust::path::append( p0, "bar" );
+			assert( p0 == "foo/bar" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo\\";
+			ust::path::append( p0, "bar" );
+			assert( p0 == "foo\\bar" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "bar\\\\baz" );
+			assert( p0 == "foo\\bar\\\\baz" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo/bar";
+			ust::path::append( p0, "baz" );
+			assert( p0 == "foo/bar\\baz" );
+		}
+		{
+			var ust::filesystem_path mut p0= "C:";
+			ust::path::append( p0, "some/long\\path" );
+			assert( p0 == "C:\\some/long\\path" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, ".." );
+			assert( p0 == "foo\\.." );
+		}
+		{
+			// Absolute path replaces current path.
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "C:/some/other" );
+			assert( p0 == "C:/some/other" );
+		}
+		{
+			// Absolute path replaces current absolute path.
+			var ust::filesystem_path mut p0= "C:\\foo";
+			ust::path::append( p0, "\\\\?\\UNC\\server\\share\\some_dir" );
+			assert( p0 == "\\\\?\\UNC\\server\\share\\some_dir" );
+		}
+
 		// get_file_extension
 		assert( ust::path::get_file_extension( "" ).empty() ); // No extension for empty path
 		assert( ust::path::get_file_extension( "." ).empty() ); // No extension for dot

@@ -26,6 +26,9 @@ fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view 
 fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4 ) : filesystem_path;
 fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4, filesystem_path_view p5 ) : filesystem_path;
 
+// Same as p0= join( p0, p1 ), but is slighly more efficient.
+fn append( filesystem_path &mut p0, filesystem_path_view p1 );
+
 // Get file extension - string after last "." in the file name.
 // Returns empty optional if has no file extension or if it's a directory path (ending with a separator).
 // Returns empty string if "." is the last symbol in given path.
