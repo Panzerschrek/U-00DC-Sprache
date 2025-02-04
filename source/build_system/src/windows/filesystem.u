@@ -21,41 +21,6 @@ fn MakePathAbsolute( ust::filesystem_path_view path ) : ust::filesystem_path
 	return ust::path::join( ust::get_current_directory(), path );
 }
 
-fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::filesystem_path_view path ) : bool
-{
-	var ust::filesystem_path path_absolute= MakePathAbsolute( path );
-
-	// Optimistically assume that we need to create only one directory.
-	if(  ust::create_directory( path_absolute ).is_ok() )
-	{
-		return true;
-	}
-
-	// Failed to create it. Try to create all directories in given path.
-
-	auto mut components_it= ust::path::components_iter( path_absolute );
-
-	// Hack! Extract first two components, lile "C:" and "\\".
-	// It's necessary, because it's impossible (for whatever reason) to create directory like "C:/".
-	// TODO - find a better way for doing this.
-	var ust::filesystem_path mut path_iterative= components_it.next().try_deref();
-	path_iterative+= components_it.next().try_deref();
-
-	foreach( &component : move(components_it) )
-	{
-		path_iterative+= component;
-		path_iterative+= "/";
-		auto create_res= ust::create_directory( path_iterative );
-		if( create_res.is_error() )
-		{
-			logger.LogInfo( ust::concat( "Failed to create directory \"", path_iterative, "\": ", ust::enum_to_string( create_res.try_deref_error() ) ) );
-			return false;
-		}
-	}
-
-	return true;
-}
-
 fn GetCurrentExecutablePath() : ust::filesystem_path
 {
 	var WideString mut res;

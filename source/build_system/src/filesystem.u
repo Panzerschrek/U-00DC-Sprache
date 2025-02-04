@@ -9,6 +9,18 @@ import "filesystem.uh"
 namespace BK
 {
 
+fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::filesystem_path_view path ) : bool
+{
+	auto create_res= ust::create_directory_with_parents( path );
+	if( create_res.is_error() )
+	{
+		logger.LogInfo( ust::concat( "Failed to create directory \"", path, "\": ", ust::enum_to_string( create_res.try_deref_error() ) ) );
+		return false;
+	}
+
+	return true;
+}
+
 fn nodiscard WriteFile( Logger &mut logger, ust::filesystem_path_view path, ust::string_view8 contents ) : bool
 {
 	if_var( &e : ust::write_string_view_to_file( path, contents ).as_error_ref() )
