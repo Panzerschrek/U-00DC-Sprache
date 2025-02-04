@@ -3,6 +3,7 @@ import "../imports/assert.u"
 import "../imports/directory_iterator.u"
 import "../imports/file.u"
 import "../imports/file_helpers.u"
+import "../imports/path_utils.u"
 
 // Some properties of the file classes.
 static_assert( !typeinfo</ ust::file_readable />.is_copy_constructible );
@@ -839,6 +840,47 @@ fn nomangle main() : i32
 		// Remove file and directories.
 		assert( ust::remove_file( file_path_full ).is_ok(), "Failed to remove \"" + file_path_full + "\"!" );
 		assert( ust::remove_directory( dir2_full ).is_ok(), "Failed to remove \"" + dir2_full + "\"!" );
+		assert( ust::remove_directory( dir1_full ).is_ok(), "Failed to remove \"" + dir1_full + "\"!" );
+		assert( ust::remove_directory( dir0 ).is_ok(), "Failed to remove \"" + dir0 + "\"!" );
+	}
+
+	// Create directory with parents using absolute path.
+	{
+		// Current directory should be absolute.
+		var ust::filesystem_path current_directory= ust::get_current_directory();
+		assert( ust::path::is_absolute( current_directory ), "Current directory isn't absolute - WTF?" );
+
+		auto &constexpr dir0= "5555 five";
+		auto &constexpr dir1= "subdir of 5555";
+		auto &constexpr file_path= "Seelenzorn";
+		var ust::filesystem_path dir1_full= ust::path::join( current_directory, dir0, dir1 );
+		var ust::filesystem_path file_path_full= ust::path::join( dir1_full, file_path );
+		auto& constexpr file_contents= "Töte alles";
+
+		// Create the whole path.
+		assert( ust::create_directory_with_parents( dir1_full ).is_ok(), "Failed to create directory \"" + dir1_full + "\"!" );
+
+		// Ensure all directories really exist.
+		auto dir0_metadata_res= ust::get_metadata_for_path( dir0 );
+		assert( dir0_metadata_res.is_ok(), "Failed to get metadata for \"" + dir0 + "\"!" );
+		assert( dir0_metadata_res.try_deref().kind == ust::file_kind::directory );
+
+		auto dir1_metadata_res= ust::get_metadata_for_path( dir1_full );
+		assert( dir1_metadata_res.is_ok(), "Failed to get metadata for \"" + dir1_full + "\"!" );
+		assert( dir1_metadata_res.try_deref().kind == ust::file_kind::directory );
+
+		// Write a file into the directory.
+		assert( ust::write_string_view_to_file( file_path_full, file_contents ).is_ok(), "Failed to write file \"" + file_path_full + "\"!" );
+
+		auto file_read_res= ust::read_file_to_string( file_path_full );
+		assert( file_read_res.is_ok(), "Failed to read file \"" + file_path_full + "\"!" );
+		assert( file_read_res.try_deref() == file_contents, "Unexpected file contents!" );
+
+		// Create the whole path again - shouldn't fail.
+		assert( ust::create_directory_with_parents( dir1_full ).is_ok(), "Failed to create directory \"" + dir1_full + "\"!" );
+
+		// Remove file and directories.
+		assert( ust::remove_file( file_path_full ).is_ok(), "Failed to remove \"" + file_path_full + "\"!" );
 		assert( ust::remove_directory( dir1_full ).is_ok(), "Failed to remove \"" + dir1_full + "\"!" );
 		assert( ust::remove_directory( dir0 ).is_ok(), "Failed to remove \"" + dir0 + "\"!" );
 	}
