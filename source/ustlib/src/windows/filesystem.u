@@ -487,6 +487,10 @@ fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</voi
 {
 	var wide_string mut search_path_null_terminated= utf8_to_null_terminated_wide_string( p );
 	search_path_null_terminated.drop_back(); // Remove null
+	if( search_path_null_terminated.empty() )
+	{
+		search_path_null_terminated.push_back( WCHAR( "."c8 ) );
+	}
 	// Ensure trailing path separator is present.
 	if( !(search_path_null_terminated.back() == WCHAR("/"c8) || search_path_null_terminated.back() == WCHAR("\\"c8) ) )
 	{
@@ -610,6 +614,10 @@ fn directory_raw_iterator::open( filesystem_path_view path ) : filesystem_result
 
 	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
 	path_null_terminated.drop_back(); // Remove null
+	if( path_null_terminated.empty() )
+	{
+		path_null_terminated.push_back( WCHAR( "."c8 ) );
+	}
 	// Ensure trailing path separator is present.
 	if( !(path_null_terminated.back() == WCHAR("/"c8) || path_null_terminated.back() == WCHAR("\\"c8) ) )
 	{
