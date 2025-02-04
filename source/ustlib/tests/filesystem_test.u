@@ -1,5 +1,6 @@
 //##success_test
 import "../imports/assert.u"
+import "../imports/enum_string_conversions.u"
 import "../imports/directory_iterator.u"
 import "../imports/file.u"
 import "../imports/file_helpers.u"

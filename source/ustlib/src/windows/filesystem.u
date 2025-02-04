@@ -1,6 +1,7 @@
 import "../../imports/directory_iterator.u"
 import "../../imports/file.u"
 import "../../imports/minmax.u"
+import "../../imports/path_utils.u"
 import "../../imports/utf.u"
 import "windows.uh"
 
@@ -357,9 +358,10 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 	}
 
 	var DWORD last_error = unsafe( GetLastError() );
-	if( last_error == DWORD(ERROR_ALREADY_EXISTS) )
+	if( last_error == DWORD(ERROR_ALREADY_EXISTS) || last_error == DWORD(ERROR_ACCESS_DENIED) )
 	{
-		// Path already exists. Check if it's a directory and not a file or something else.
+		// Path already exists or we have no permissions to create it.
+		// Check if it's a directory and not a file or something else.
 
 		var WIN32_FILE_ATTRIBUTE_DATA mut info= zero_init;
 
@@ -376,6 +378,27 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 	}
 
 	return translate_error_code( last_error );
+}
+
+fn create_directory_with_parents( filesystem_path_view p ) : filesystem_result</void/>
+{
+	// TODO - avoid calling "create_directory", this causes utf8 -> utf16 conversion of the whole path on each call.
+
+	// Optimistically assume that we need to create only one directory.
+	if( create_directory( p ).is_ok() )
+	{
+		return void();
+	}
+
+	// Create components one by one.
+	var filesystem_path mut path_iterative;
+	foreach( component : path::components_iter( p ) )
+	{
+		path::append( path_iterative, component );
+		result_check_or_return( create_directory( path_iterative ) );
+	}
+
+	return void();
 }
 
 fn copy_file( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>
