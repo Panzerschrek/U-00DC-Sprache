@@ -1,0 +1,21 @@
+import "string.u"
+
+namespace ust
+{
+
+// Get variable with given name (if it exists).
+// Returns empty optional if given variable isn't set.
+fn get_environment_variable( string_view8 name ) : optional</string8/>;
+
+// Add new or change an existing environment variable.
+// Returns true on success.
+// It's generally unsafe to set a variable, since it's not thread-safe on platforms except Windows.
+// Setting a variable may even mess code getting a variable on a different thread.
+// So, it's recommended to set variables only if no other thread is active, like just after entering "main".
+fn nodiscard set_environment_variable( string_view8 name, string_view8 value ) unsafe : bool;
+
+// Remove an environment variable.
+// Returns true on success.
+fn nodiscard unset_environment_variable( string_view8 name ) : bool;
+
+} // namespace ust
