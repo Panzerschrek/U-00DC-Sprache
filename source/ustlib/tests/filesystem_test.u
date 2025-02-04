@@ -510,6 +510,13 @@ fn nomangle main() : i32
 			},
 		}
 
+		// Try removing "dir1". Should fail, because it's not empty.
+		result_match( ust::remove_directory( dir1 ) )
+		{
+			Ok(v) -> { assert( false, "Should fail removing non-empty directory!" ); },
+			Err(e) -> { assert( e == ust::io_error::directory_not_empty, "Unexpected error code!" ) },
+		}
+
 		// Remove this file.
 		auto remove_res= ust::remove_file( file_path );
 		assert( remove_res.is_ok(), "Failed to remove file!" );
