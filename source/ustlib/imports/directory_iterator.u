@@ -53,7 +53,7 @@ private:
 	class impl_windows
 	{
 	public:
-		fn constructor( $(byte8) handle, directory_entry first_entry ) unsafe;
+		fn constructor( $(byte8) handle, optional</directory_entry/> first_entry ) unsafe;
 		fn destructor();
 
 		fn nodiscard next( mut this ) : optional</ filesystem_result</directory_entry/> />;

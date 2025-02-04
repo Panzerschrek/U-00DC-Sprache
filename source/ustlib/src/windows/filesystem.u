@@ -549,7 +549,15 @@ fn directory_raw_iterator::open( filesystem_path_view path ) : filesystem_result
 	var HANDLE handle= unsafe( ::FindFirstFileW( path_null_terminated.data(), $<(find_data) ) );
 	if( handle == get_invalid_handle() )
 	{
-		return translate_error_code( unsafe( GetLastError() ) );
+		var DWORD err= unsafe( GetLastError() );
+
+		if( err == DWORD(ERROR_FILE_NOT_FOUND) )
+		{
+			// Empty directory.
+			return wrap_raw_iterator( unsafe( directory_raw_iterator( impl_windows( handle, null_optional ) ) ) );
+		}
+
+		return translate_error_code( err );
 	}
 
 	return
@@ -564,7 +572,7 @@ fn directory_raw_iterator::open( filesystem_path_view path ) : filesystem_result
 					} ) ) ) );
 }
 
-fn directory_raw_iterator::impl_windows::constructor( $(byte8) handle, directory_entry mut first_entry ) unsafe
+fn directory_raw_iterator::impl_windows::constructor( $(byte8) handle, optional</directory_entry/> mut first_entry ) unsafe
 	( handle_= handle, first_entry_= move(first_entry) )
 {}
 
