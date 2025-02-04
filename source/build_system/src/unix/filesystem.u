@@ -1,25 +1,10 @@
 // Platform-dependent filesystem-related functions.
 
-import "/enum_string_conversions.u"
-import "/file.u"
-import "/path_utils.u"
-import "/string_conversions.u"
 import "../filesystem.uh"
 import "unix.uh"
 
-
 namespace BK
 {
-
-fn MakePathAbsolute( ust::filesystem_path_view path ) : ust::filesystem_path
-{
-	if( ust::path::is_absolute( path ) )
-	{
-		return path;
-	}
-
-	return ust::path::join( ust::get_current_directory(), path );
-}
 
 fn GetCurrentExecutablePath() : ust::filesystem_path
 {
