@@ -286,7 +286,7 @@ fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
 
 	var stat_ mut s= zero_init;
-	var i32 res= unsafe( ::lstat( path_nt.data(), $<(s) ) );
+	var i32 res= unsafe( ::stat( path_nt.data(), $<(s) ) );
 	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
@@ -328,7 +328,7 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 		{
 			// Already exists - check if it's a directory.
 			var stat_ mut s= zero_init;
-			auto res= unsafe( ::lstat( path_nt.data(), $<(s) ) );
+			auto res= unsafe( ::stat( path_nt.data(), $<(s) ) );
 			if( res == 0 && (s.st_mode & u32(S_IFMT)) == u32(S_IFDIR) )
 			{
 				return void();
