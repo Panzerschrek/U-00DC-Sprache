@@ -80,15 +80,14 @@ Standart library:
 *) "result"-like container for reference results
 *) Support opening files with appending
 *) Fix "rename_file_or_directory_if_not_exists" implementation for Unix - perform operation atomically
-*) Fix "get_metadata_for_path" implementation for Unix - follow symbolic links
+*) Fix "get_metadata_for_path" implementation for Windows - follow symbolic links
 *) More file kinds - fifo, block device, etc.
 *) More file error kinds
 *) Memory-mapped files
 *) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
 *) Buffered reader/writer wrappers for files
-*) Function for creation of the whole directories path
-*) Function for recursive directory removal
 *) Examples for file-related functionality
+*) Optimiza filesystem functions - avoid unnecessary string conversions (utf16 <-> utf8), null-terminator adding
 *) More filesystem path manipulation functions
 *) Try to optimize random_access_range - use start + end pointers instead of start + size.
 	This may improve iteration efficiency.
