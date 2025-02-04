@@ -1,5 +1,6 @@
 import "../../imports/directory_iterator.u"
 import "../../imports/file.u"
+import "../../imports/path_utils.u"
 import "../../imports/scoped_array.u"
 import "unix.uh"
 
@@ -334,6 +335,25 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 			}
 		}
 		return translate_errno( errno );
+	}
+
+	return void();
+}
+
+fn create_directory_with_parents( filesystem_path_view p ) : filesystem_result</void/>
+{
+	// Optimistically assume that we need to create only one directory.
+	if( create_directory( p ).is_ok() )
+	{
+		return void();
+	}
+
+	// Create components one by one.
+	var filesystem_path mut path_iterative;
+	foreach( component : path::components_iter( p ) )
+	{
+		path::append( path_iterative, component );
+		result_check_or_return( create_directory( path_iterative ) );
 	}
 
 	return void();

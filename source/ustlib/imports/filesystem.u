@@ -32,6 +32,9 @@ fn set_permissions_for_path( filesystem_path_view path, file_permissions permiss
 // Fails if given path exists but it's not a directory.
 fn create_directory( filesystem_path_view path ) : filesystem_result</void/>;
 
+// Create directory, creating also parent directories if necessary.
+fn create_directory_with_parents( filesystem_path_view path ) : filesystem_result</void/>;
+
 // Copy file from source to destination. Overwrites destination if it already exists.
 fn copy_file( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
 
@@ -50,6 +53,7 @@ fn rename_file_or_directory_if_not_exists( filesystem_path_view src_path, filesy
 fn remove_file( filesystem_path_view path ) : filesystem_result</void/>;
 
 // Remove an empty directory.
+// Returns error if can't do this.
 fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>;
 
 // Get current (working) directory, which is used for resolving of relative paths.
