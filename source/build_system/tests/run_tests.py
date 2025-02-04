@@ -710,7 +710,10 @@ def MissingPackage0Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not get modification time for" ) != -1 )
-	assert( stderr.find( "non_existing_package/build.u" ) != -1 )
+	if platform.system() == "Windows":
+		assert( stderr.find( "non_existing_package\\\\build.u" ) != -1 )
+	else:
+		assert( stderr.find( "non_existing_package/build.u" ) != -1 )
 	assert( stderr.find( "file does not exist?" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
@@ -720,7 +723,10 @@ def MissingPackage1Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not get modification time for" ) != -1 )
-	assert( stderr.find( "sub_package/build.u" ) != -1 )
+	if platform.system() == "Windows":
+		assert( stderr.find( "sub_package\\\\build.u" ) != -1 )
+	else:
+		assert( stderr.find( "sub_package/build.u" ) != -1 )
 	assert( stderr.find( "file does not exist?" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
