@@ -35,14 +35,13 @@ fn nomangle main() : i32
 	// Try requesting metadata for non-existing path.
 	result_match( ust::get_metadata_for_path( "this_file_does_not_exist" ) )
 	{
-		Ok(m) ->
-		{
-			assert( false, "Should not get metadata for non-existing path!" );
-		},
-		Err(e) ->
-		{
-			assert( e == ust::io_error::not_found, "Unexpected error code!" );
-		},
+		Ok(m) -> { assert( false, "Should not get metadata for non-existing path!" ); },
+		Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+	}
+	result_match( ust::get_symlink_metadata_for_path( "this_file_does_not_exist" ) )
+	{
+		Ok(m) -> { assert( false, "Should not get metadata for non-existing path!" ); },
+		Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
 	}
 
 	// Try opening non-existing file for reading.
@@ -125,6 +124,18 @@ fn nomangle main() : i32
 
 	// Request metatada for an existing file.
 	result_match( ust::get_metadata_for_path( "test_file0.txt" ) )
+	{
+		Ok(m) ->
+		{
+			assert( m.kind == ust::file_kind::file, "Unexpected file kind!" );
+			assert( m.size == 4u64, "Unexpected file size!" );
+		},
+		Err(e) ->
+		{
+			assert( false, "Failed to get metadata for an existing file!" );
+		},
+	}
+	result_match( ust::get_symlink_metadata_for_path( "test_file0.txt" ) )
 	{
 		Ok(m) ->
 		{

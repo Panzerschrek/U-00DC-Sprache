@@ -25,6 +25,9 @@ type filesystem_result= result</T, io_error/>;
 // Request metadata for given path (file, directory, etc.).
 fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>;
 
+// Request metadata, but not follow symlinks (return metadata for symlink itself).
+fn get_symlink_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>;
+
 // Set permissions for given path (file, directory, etc.).
 fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : filesystem_result</void/>;
 
