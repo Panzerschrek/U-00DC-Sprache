@@ -489,6 +489,23 @@ fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</voi
 {
 	scoped_array char8 path_nt[ p.size() + 1s ]( p.iter().chain( filesystem_path_view("\0").iter() ) );
 
+	{ // Check if it's a symlink - if so, just remove link.
+		var stat_ mut s= zero_init;
+		var i32 stat_res= unsafe( ::lstat( path_nt.data(), $<(s) ) );
+		if( stat_res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+		if( ( (s.st_mode & u32(S_IFMT)) & u32(S_IFLNK) ) == u32(S_IFLNK) )
+		{
+			var i32 unlink_res= unsafe( ::unlink( path_nt.data() ) );
+			if( unlink_res != 0 )
+			{
+				return translate_errno( get_errno() );
+			}
+		}
+	}
+
 	// Iterate this directory entries and remove them.
 
 	var $(DIR) dir_handle= unsafe( ::opendir( path_nt.data() ) );
