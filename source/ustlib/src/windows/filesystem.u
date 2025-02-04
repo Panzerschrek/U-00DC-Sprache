@@ -483,6 +483,80 @@ fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>
 	return void();
 }
 
+fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</void/>
+{
+	var wide_string mut search_path_null_terminated= utf8_to_null_terminated_wide_string( p );
+	search_path_null_terminated.drop_back(); // Remove null
+	// Ensure trailing path separator is present.
+	if( !(search_path_null_terminated.back() == WCHAR("/"c8) || search_path_null_terminated.back() == WCHAR("\\"c8) ) )
+	{
+		search_path_null_terminated.push_back( WCHAR( "\\"c8 ) );
+	}
+	search_path_null_terminated.push_back( WCHAR( "*"c8 ) ); // Add asterisk to search all.
+	search_path_null_terminated.push_back( WCHAR(0) ); // Add null again.
+
+	var WIN32_FIND_DATAW mut find_data= zero_init; // TODO - avoid zeroing it for performance reasons?
+
+	var HANDLE handle= unsafe( ::FindFirstFileW( search_path_null_terminated.data(), $<(find_data) ) );
+	if( handle == get_invalid_handle() )
+	{
+		var DWORD err = unsafe( GetLastError() );
+		if( err == DWORD(ERROR_FILE_NOT_FOUND) )
+		{
+			// Ok - empty directory.
+			return void();
+		}
+		return translate_error_code( err );
+	}
+
+	loop
+	{
+		var filesystem_path entry_name= extract_file_name_from_find_data( find_data );
+		if( !directory_entry_should_be_ignored( entry_name ) )
+		{
+			var filesystem_path entry_full_name= path::join( p, entry_name );
+
+			var filesystem_result</void/> remove_result=
+				( ( find_data.dwFileAttributes & DWORD(FILE_ATTRIBUTE_DIRECTORY) ) != 0u
+					? remove_directory_recursive( entry_full_name )
+					: remove_file( entry_full_name ) );
+
+			// Ignore "not found" error - in case if someone else removed this entry concurrently.
+			if( remove_result.is_error() && remove_result.try_deref_error() != io_error::not_found )
+			{
+				unsafe( ::FindClose( handle ) );
+				return remove_result;
+			}
+		}
+
+		var BOOL res = unsafe( ::FindNextFileW( handle, $<(find_data) ) );
+		if( res == 0 )
+		{
+			var DWORD err= unsafe( GetLastError() );
+
+			unsafe( ::FindClose( handle ) );
+
+			if( err == DWORD(ERROR_NO_MORE_FILES) )
+			{
+				break;
+			}
+
+			// Actual error.
+			return translate_error_code( err );
+		}
+	}
+
+	// Can finally remove this directory, since it should be empty.
+	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( p );
+	var BOOL res= unsafe( ::RemoveDirectoryW( path_null_terminated.data() ) );
+	if( res == 0 )
+	{
+		return translate_error_code( unsafe( GetLastError() ) );
+	}
+
+	return void();
+}
+
 fn get_current_directory() : filesystem_path
 {
 	var wide_string mut res;
