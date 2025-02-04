@@ -1,0 +1,447 @@
+import "../../imports/path_utils.u"
+import "../../imports/vector.u"
+
+namespace ust
+{
+
+namespace path
+{
+
+fn is_absolute( filesystem_path_view p ) : bool
+{
+	if( p.empty() )
+	{
+		return false;
+	}
+	return p.front() == "/"c8;
+}
+
+fn is_relative( filesystem_path_view p ) : bool
+{
+	return !is_absolute(p);
+}
+
+fn is_separator( char8 c ) : bool
+{
+	return c == "/"c8;
+}
+
+fn join( filesystem_path_view p0 ) : filesystem_path
+{
+	return p0;
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1 ) : filesystem_path
+{
+	var [ filesystem_path_view, 2 ] components[ p0, p1 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2 ) : filesystem_path
+{
+	var [ filesystem_path_view, 3 ] components[ p0, p1, p2 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3 ) : filesystem_path
+{
+	var [ filesystem_path_view, 4 ] components[ p0, p1, p2, p3 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4 ) : filesystem_path
+{
+	var [ filesystem_path_view, 5 ] components[ p0, p1, p2, p3, p4 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4, filesystem_path_view p5 ) : filesystem_path
+{
+	var [ filesystem_path_view, 6 ] components[ p0, p1, p2, p3, p4, p5 ];
+	return join_impl( components );
+}
+
+fn join_impl( array_view_imut</filesystem_path_view/> components ) : filesystem_path
+{
+	// Start from last absolute component.
+	var size_type mut start_component= 0s;
+	for( auto mut i= components.size() - 1s; ; )
+	{
+		var filesystem_path_view& component= components[i];
+		if( is_absolute( component ) )
+		{
+			start_component= i;
+			break;
+		}
+		if( i == 0s )
+		{
+			break;
+		}
+		--i;
+	}
+
+	var filesystem_path mut result;
+
+	foreach( &component : components.subrange_start( start_component  ) )
+	{
+		if( !result.empty() && result.back() != "/"c8 )
+		{
+			// Add separator if result ends with non-separator char.
+			result.push_back( "/"c8 );
+		}
+
+		result+= component;
+	}
+
+	return result;
+}
+
+fn append( filesystem_path &mut p0, filesystem_path_view p1 )
+{
+	if( is_absolute( p1 ) )
+	{
+		p0= p1;
+	}
+	else
+	{
+		if( !p0.empty() && !is_separator( p0.back() ) )
+		{
+			// Add separator if result ends with non-separator char.
+			p0.push_back( "/"c8 );
+		}
+
+		p0+= p1;
+	}
+}
+
+fn get_file_extension( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p.empty() )
+	{
+		return null_optional;
+	}
+
+	// Iterate backwards up to first "." or "/".
+	for( auto mut i= p.size() - 1s; ; )
+	{
+		var char8 c= p[i];
+		if( c == "."c8 )
+		{
+			if( i > 0s )
+			{
+				var char8 prev_c= p[ i - 1s ];
+				if( prev_c == "."c8 )
+				{
+					if( i > 1s )
+					{
+						var char8 prev_prev_s= p[ i - 2s ];
+						if( prev_prev_s == "/"c8 )
+						{
+							// It's something like "some/path/..".
+							break;
+						}
+					}
+					else
+					{
+						// Path starting with "..".
+						if( i == p.size() - 1s )
+						{
+							// ".." is a special name with no extension.
+							break;
+						}
+					}
+				}
+				else if( prev_c == "/"c8 )
+				{
+					// File starts with "." - it has no extension.
+					break;
+				}
+
+				// Return what remains after this ".".
+				return p.subrange_start( i + 1s );
+			}
+			else
+			{
+				// It's single ".".
+				break;
+			}
+		}
+		else if( c == "/"c8 )
+		{
+			// Reached directories separator without encounting ".".
+			break;
+		}
+
+		if( i == 0s )
+		{
+			break;
+		}
+		--i;
+	}
+
+	return null_optional;
+}
+
+fn get_path_without_extension( filesystem_path_view p )
+	: filesystem_path_view @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p.empty() )
+	{
+		return p;
+	}
+
+	// Iterate backwards up to first "." or "/".
+	for( auto mut i= p.size() - 1s; ; )
+	{
+		var char8 c= p[i];
+		if( c == "."c8 )
+		{
+			if( i > 0s )
+			{
+				var char8 prev_c= p[ i - 1s ];
+				if( prev_c == "."c8 )
+				{
+					if( i > 1s )
+					{
+						var char8 prev_prev_s= p[ i - 2s ];
+						if( prev_prev_s == "/"c8 )
+						{
+							// It's something like "some/path/..".
+							break;
+						}
+					}
+					else
+					{
+						// Path starting with "..".
+						if( i == p.size() - 1s )
+						{
+							// ".." is a special name with no extension.
+							break;
+						}
+					}
+				}
+				else if( prev_c == "/"c8 )
+				{
+					// File starts with "." - it has no extension.
+					break;
+				}
+
+				// Return what is before this ".".
+				return p.subrange_end(i);
+			}
+			else
+			{
+				// It's single ".".
+				break;
+			}
+		}
+		else if( c == "/"c8 )
+		{
+			// Reached directories separator without encounting ".".
+			break;
+		}
+
+		if( i == 0s )
+		{
+			break;
+		}
+		--i;
+	}
+
+	return p;
+}
+
+fn get_file_name( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p.empty() )
+	{
+		return null_optional;
+	}
+	if( p.back() == "/"c8 )
+	{
+		// Paths ending with "/" considered to be a directory path.
+		return null_optional;
+	}
+
+	// Iterate backwards up to first "/".
+	for( auto mut i= p.size() - 1s; ; )
+	{
+		var char8 c= p[i];
+		if( c == "/"c8 )
+		{
+			auto remainder= p.subrange_start( i + 1s );
+			if( remainder == ".." || remainder == "." )
+			{
+				// Names "." and ".." are not file names.
+				return null_optional;
+			}
+			return remainder;
+		}
+
+		if( i == 0s )
+		{
+			break;
+		}
+		--i;
+	}
+
+	// The whole path is a file name, unles it's "." or "..".
+	if( p == ".." || p == "." )
+	{
+		return null_optional;
+	}
+	return p;
+}
+
+fn get_parent_path( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p.empty() || p == "/" )
+	{
+		return null_optional;
+	}
+
+	var size_type mut i= p.size() - 1s;
+	if( p[i] == "/"c8 )
+	{
+		// Skip trailing "/".
+		--i;
+	}
+
+	// Iterate backwards up to first "/".
+	loop
+	{
+		var char8 c= p[i];
+		if( c == "/"c8 )
+		{
+			// Skip duplicated "/" if necessary.
+			while( i > 0s && p[i] == "/"c8 )
+			{
+				--i;
+			}
+			return p.subrange_end( i + 1s );
+		}
+
+		if( i == 0s )
+		{
+			break;
+		}
+		--i;
+	}
+
+	// Return an empty path.
+	return p.subrange_end(0s);
+}
+
+fn normalize( filesystem_path_view p ) : filesystem_path
+{
+	var vector</filesystem_path_view/> mut components;
+
+	auto mut it= components_iter(p);
+	if( false )
+	{
+		// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+		components.push_back( it.next().try_deref() );
+	}
+	loop
+	{
+		auto component_opt= it.next();
+		if( component_opt.empty() )
+		{
+			break;
+		}
+		var filesystem_path_view& component= component_opt.try_deref();
+
+		if( component == "." )
+		{
+			// Skip ".", since it's useless.
+		}
+		else if( component == ".." )
+		{
+			// If we have a component prior to ".." - remove it, else - preserve it (unles it's ".." or "/" ).
+			if( !components.empty() && components.back() != ".." && components.back() != "/" )
+			{
+				components.drop_back();
+			}
+			else
+			{
+				components.push_back( component );
+			}
+		}
+		else
+		{
+			components.push_back( component );
+		}
+	}
+
+	var filesystem_path mut result;
+
+	foreach( &component : components )
+	{
+		if( !result.empty() && result.back() != "/"c8 )
+		{
+			result.push_back( "/"c8 );
+		}
+		result+= component;
+	}
+
+	return result;
+}
+
+fn components_raw_iterator::constructor( mut this, filesystem_path_view p )
+	@( reference_notation::pollution::param0_param_1_inner_reference )
+	( p_= p )
+{}
+
+fn nodiscard components_raw_iterator::next( mut this )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p_.empty() )
+	{
+		// Reached the end.
+		return null_optional;
+	}
+
+	if( p_.front() == "/"c8 )
+	{
+		// It's an absolute path - return "/" as first component.
+		var filesystem_path_view res= p_.subrange_end(1s);
+
+		// Remove extra "/", if necessary.
+		while( !p_.empty() && p_.front() == "/"c8 )
+		{
+			p_.drop_front();
+		}
+
+		return res;
+	}
+
+	// Try extracting component up to next "/".
+	for( auto mut i= 0s; i < p_.size(); ++i )
+	{
+		if( p_[i] == "/"c8 )
+		{
+			var filesystem_path_view res= p_.subrange_end(i);
+
+			// Remove extra "/", if necessary.
+			while( i < p_.size() && p_[i] == "/"c8 )
+			{
+				++i;
+			}
+			p_= p_.subrange_start(i);
+
+			return res;
+		}
+	}
+
+	// Last component without trailing "/" - return it as is.
+	var filesystem_path_view res= p_;
+	p_= filesystem_path_view();
+	return res;
+}
+
+} // namespace path
+
+} // namespace ust

@@ -710,7 +710,10 @@ def MissingPackage0Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not get modification time for" ) != -1 )
-	assert( stderr.find( "non_existing_package/build.u" ) != -1 )
+	if platform.system() == "Windows":
+		assert( stderr.find( "non_existing_package\\\\build.u" ) != -1 )
+	else:
+		assert( stderr.find( "non_existing_package/build.u" ) != -1 )
 	assert( stderr.find( "file does not exist?" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
@@ -720,7 +723,10 @@ def MissingPackage1Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Can not get modification time for" ) != -1 )
-	assert( stderr.find( "sub_package/build.u" ) != -1 )
+	if platform.system() == "Windows":
+		assert( stderr.find( "sub_package\\\\build.u" ) != -1 )
+	else:
+		assert( stderr.find( "sub_package/build.u" ) != -1 )
 	assert( stderr.find( "file does not exist?" ) != -1 )
 	assert( stderr.find( "Failed to load/build the build script shared library" ) != -1 )
 
@@ -852,7 +858,8 @@ def DuplicatedSourceFileTest():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "Error, duplicated source file \"main.u\" of the build target \"hello_world\"" ) != -1 )
-	assert( stderr.find( "Error, duplicated source file \"dir/other.u\" of the build target \"hello_world\"" ) != -1 )
+	if platform.system() == "Windows":
+		assert( stderr.find( "Error, duplicated source file \"dir\\\\other.u\" of the build target \"hello_world\"" ) != -1 )
 	assert( stderr.find( "Package" ) != -1 )
 	assert( stderr.find( "is invald" ) != -1 )
 
@@ -861,7 +868,8 @@ def DuplicatedGeneratedPublicHeaderFileTest():
 	res = RunBuildSystemWithErrors( "duplicated_generated_public_header_file" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Error, duplicated generated public header file \"dir/other.uh\" of the build target \"hello_world\"!" ) != -1 )
+	if platform.system() == "Windows":
+		assert( stderr.find( "Error, duplicated generated public header file \"dir\\\\other.uh\" of the build target \"hello_world\"!" ) != -1 )
 	assert( stderr.find( "Error, duplicated generated public header file \"some.uh\" of the build target \"hello_world\"!" ) != -1 )
 
 
@@ -981,7 +989,7 @@ def SourceDirectoriesConflict0Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict0" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is already in use." ) != -1 )
+	assert( stderr.find( "Source directory \"some_dir\" of the build target \"target_b\" is already in use." ) != -1 )
 
 
 def SourceDirectoriesConflict1Test():
@@ -995,14 +1003,14 @@ def SourceDirectoriesConflict2Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict2" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"sub_dir/\" of the build target \"target_b\" is located within another used directory." ) != -1 )
+	assert( stderr.find( "Source directory \"sub_dir\" of the build target \"target_b\" is located within another used directory." ) != -1 )
 
 
 def SourceDirectoriesConflict3Test():
 	res = RunBuildSystemWithErrors( "source_directories_conflict3" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Source directory \"some_dir/\" of the build target \"target_b\" is a prefix of another used directory." ) != -1 )
+	assert( stderr.find( "Source directory \"some_dir\" of the build target \"target_b\" is a prefix of another used directory." ) != -1 )
 
 
 def SourceDirectoriesConflict4Test():

@@ -1,3 +1,4 @@
+import "/path_utils.u"
 import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
@@ -8,9 +9,8 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	auto& generated_file_name= "test.uh";
 
-	var ust::string8 generated_file_full_path= ust::concat(
+	var ust::filesystem_path generated_file_full_path= ust::path::join(
 		build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( target_name ),
-		"/",
 		generated_file_name );
 
 	var BK::CustomBuildStep mut custom_build_step

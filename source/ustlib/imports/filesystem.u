@@ -1,6 +1,6 @@
 import "file_metadata.u"
+import "path.u"
 import "result.u"
-import "string_base.u"
 
 namespace ust
 {
@@ -21,10 +21,6 @@ enum io_error
 
 template</type T/>
 type filesystem_result= result</T, io_error/>;
-
-// Filesystem paths are just strings. But not any string is a valid filesystem path, keep this in mind.
-type filesystem_path= string_base</char8/>;
-type filesystem_path_view= array_view_imut</char8/>;
 
 // Request metadata for given path (file, directory, etc.).
 fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>;

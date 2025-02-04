@@ -1,3 +1,4 @@
+import "/path_utils.u"
 import "/build_system.uh"
 
 fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) : BK::PackageInfo
@@ -17,7 +18,7 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 		.private_dependencies= ust::make_array( BK::DependencyName{ .name= lib_target.name } ),
 	};
 
-	var [ ust::string_view8, 21 ] sources
+	var [ ust::filesystem_path_view, 20 ] sources
 	[
 		"abort_signal_handler.u",
 		"build_graph.u",
@@ -36,7 +37,6 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 		"make_dep_file.u",
 		"options.u",
 		"package_transformation.u",
-		"path.u",
 		"string_utils.u",
 		"target_triple.u",
 		"version_unification.u",
@@ -44,12 +44,12 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 
 	foreach( &s : sources )
 	{
-		target.source_files.push_back( ust::concat( "src/", s ) );
+		target.source_files.push_back( ust::path::join( "src", s ) );
 	}
 
 	if( build_system_interface.GetTargetTriple().operating_system == "windows" )
 	{
-		var [ ust::string_view8, 6 ] sources_windows
+		var [ ust::filesystem_path_view, 6 ] sources_windows
 		[
 			"entry.u",
 			"filesystem.u",
@@ -61,12 +61,12 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 
 		foreach( &s : sources_windows )
 		{
-			target.source_files.push_back( ust::concat( "src/windows/", s ) );
+			target.source_files.push_back( ust::path::join( "src/windows", s ) );
 		}
 	}
 	else
 	{
-		var [ ust::string_view8, 6 ] sources_unix
+		var [ ust::filesystem_path_view, 6 ] sources_unix
 		[
 			"entry.u",
 			"errno.u",
@@ -78,7 +78,7 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 
 		foreach( &s : sources_unix )
 		{
-			target.source_files.push_back( ust::concat( "src/unix/", s ) );
+			target.source_files.push_back( ust::path::join( "src/unix", s ) );
 		}
 
 		// Require "libdl.so" to call "dlopen" and "dlsym".

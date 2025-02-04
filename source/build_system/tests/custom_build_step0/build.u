@@ -1,9 +1,10 @@
+import "/path_utils.u"
 import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
-	auto mut in_file= ust::concat( build_system_interface.GetCurrentPackageSourceDirectory(), "/", "some_file.txt" );
-	auto mut out_file= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "some_file_multiplied.txt" );
+	auto mut in_file= ust::path::join( build_system_interface.GetCurrentPackageSourceDirectory(), "some_file.txt" );
+	auto mut out_file= ust::path::join( build_system_interface.GetCurrentPackageBuildDirectory(), "some_file_multiplied.txt" );
 
 	auto mut program= build_system_interface.GetConfigurationOption( "test_file_generation_tool" ).try_deref();
 

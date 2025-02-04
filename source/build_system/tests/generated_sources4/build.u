@@ -1,3 +1,4 @@
+import "/path_utils.u"
 import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
@@ -27,9 +28,8 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	};
 
 	auto mut out_generated_public_header=
-		ust::concat(
+		ust::path::join(
 			build_system_interface.GetCurrentPackageBuildTargetGeneratedPublicHeadersDirectory( lib.name ),
-			"/",
 			generated_public_header );
 
 	var BK::CustomBuildStep mut generate_public_header_step
@@ -40,9 +40,8 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	};
 
 	auto mut out_generated_source=
-		ust::concat(
+		ust::path::join(
 			build_system_interface.GetCurrentPackageBuildTargetGeneratedSourcesDirectory( lib.name ),
-			"/",
 			generated_source );
 
 	var BK::CustomBuildStep mut generate_source_step

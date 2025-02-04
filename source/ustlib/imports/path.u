@@ -1,0 +1,10 @@
+import "string_base.u"
+
+namespace ust
+{
+
+// Filesystem paths are just strings. But not any string is a valid filesystem path, keep this in mind.
+type filesystem_path= string_base</char8/>;
+type filesystem_path_view= array_view_imut</char8/>;
+
+} // namespace ust

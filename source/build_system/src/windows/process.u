@@ -10,7 +10,8 @@ import "windows.uh"
 namespace BK
 {
 
-fn nodiscard RunExecutable( Logger &mut logger, ust::string_view8 exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool
+fn nodiscard RunExecutable(
+	Logger &mut logger, ust::filesystem_path_view exe_path, ust::array_view_imut</ust::string8/> command_line ) : bool
 {
 	var WideString exe_path_wide = CorrectExecutablePathAndMakeItWide( exe_path );
 
@@ -98,7 +99,7 @@ public: // ProcessGroupInterface
 		mut this,
 		Logger &mut logger,
 		ProcessId process_id,
-		ust::string_view8 exe_path,
+		ust::filesystem_path_view exe_path,
 		ust::array_view_imut</ust::string8/> command_line ) : bool
 	{
 		auto mut out_process= ust::make_box( unsafe(
@@ -487,7 +488,7 @@ private:
 	ust::vector</ProcessId/> finished_processes_;
 }
 
-fn CorrectExecutablePathAndMakeItWide( ust::string_view8 exe_path ) : WideString
+fn CorrectExecutablePathAndMakeItWide( ust::filesystem_path_view exe_path ) : WideString
 {
 	var WideString mut exe_path_wide = UTF8ToWideString( exe_path );
 

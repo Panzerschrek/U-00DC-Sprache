@@ -1,11 +1,12 @@
+import "/path_utils.u"
 import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
 	// Error here - two custom build steps depend on each other and thus form a dependency loop.
 
-	auto file_a= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "file_a.txt" );
-	auto file_b= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "file_b.txt" );
+	auto file_a= ust::path::join( build_system_interface.GetCurrentPackageBuildDirectory(), "file_a.txt" );
+	auto file_b= ust::path::join( build_system_interface.GetCurrentPackageBuildDirectory(), "file_b.txt" );
 
 	auto mut program= build_system_interface.GetConfigurationOption( "test_file_generation_tool" ).try_deref();
 

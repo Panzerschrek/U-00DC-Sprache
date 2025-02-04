@@ -1,0 +1,741 @@
+//##success_test
+import "../imports/assert.u"
+import "../imports/path_utils.u"
+import "../imports/vector.u"
+
+fn nomangle main() : i32
+{
+	if( ust::constexpr_string_equals( compiler::target::os, "windows" ) )
+	{
+		// is_absolute
+		assert( !ust::path::is_absolute( "" ) );
+		assert( !ust::path::is_absolute( " " ) );
+		assert( !ust::path::is_absolute( "some" ) );
+		assert( !ust::path::is_absolute( "some/path" ) );
+		assert( ust::path::is_absolute( "C:/" ) );
+		assert( ust::path::is_absolute( "D:\\" ) );
+		assert( ust::path::is_absolute( "h:/" ) ); // Lowercase drive letters are fine too.
+		assert( ust::path::is_absolute( "z:\\" ) );
+		assert( !ust::path::is_absolute( "Ü:/some" ) ); // Only ASCII letters can be drive letters
+		assert( !ust::path::is_absolute( "ч:/some" ) ); // Only ASCII letters can be drive letters
+		assert( ust::path::is_absolute( "\\\\system07" ) );
+		assert( ust::path::is_absolute( "\\\\?\\C:\\some/path" ) );
+		assert( ust::path::is_absolute( "\\\\.\\COM42\\some" ) );
+
+		// is_relative
+		assert( ust::path::is_relative( "" ) );
+		assert( ust::path::is_relative( " " ) );
+		assert( ust::path::is_relative( "some" ) );
+		assert( ust::path::is_relative( "some/path" ) );
+		assert( !ust::path::is_relative( "C:/" ) );
+		assert( !ust::path::is_relative( "D:\\" ) );
+		assert( !ust::path::is_relative( "h:/" ) ); // Lowercase drive letters are fine too.
+		assert( !ust::path::is_relative( "z:\\" ) );
+		assert( ust::path::is_relative( "Ü:/some" ) ); // Only ASCII letters can be drive letters
+		assert( ust::path::is_relative( "ч:/some" ) ); // Only ASCII letters can be drive letters
+		assert( !ust::path::is_relative( "\\\\system07" ) );
+		assert( !ust::path::is_relative( "\\\\?\\C:\\some/path" ) );
+		assert( !ust::path::is_relative( "\\\\.\\COM42\\some" ) );
+
+		// is_separator
+		assert( ust::path::is_separator( "/"c8 ) );
+		assert( ust::path::is_separator( "\\"c8 ) ); // On Window backslash i a separator.
+		assert( !ust::path::is_separator( " "c8 ) );
+		assert( !ust::path::is_separator( ":"c8 ) );
+		assert( !ust::path::is_separator( "y"c8 ) );
+		assert( !ust::path::is_separator( "-"c8 ) );
+
+		// join
+		assert( ust::path::join( "foo" ) == "foo" ); // Single component - return as is
+		assert( ust::path::join( "foo/bar" ) == "foo/bar" ); // Single component - return as is
+		assert( ust::path::join( "foo\\bar" ) == "foo\\bar" ); // Single component - return as is
+		assert( ust::path::join( "/" ) == "/" ); // Single component - return as is
+		assert( ust::path::join( "\\" ) == "\\" ); // Single component - return as is
+		assert( ust::path::join( "C:/foo/" ) == "C:/foo/" ); // Single component - return as is
+		assert( ust::path::join( "C:\\foo\\" ) == "C:\\foo\\" ); // Single component - return as is
+		assert( ust::path::join( "D:/foo/bar" ) == "D:/foo/bar" ); // Single component - return as is
+		assert( ust::path::join( "foo", "bar" ) == "foo\\bar" ); // Join two components
+		assert( ust::path::join( "foo", "bar", "baz" ) == "foo\\bar\\baz" ); // Join three components
+		assert( ust::path::join( "foo/", "bar" ) == "foo/bar" ); // Join with leading "/" in a component - it's preserved
+		assert( ust::path::join( "foo///", "bar" ) == "foo///bar" ); // Join with several leading "/" in a component - they are preserved
+		assert( ust::path::join( "k:/foo", "bar" ) == "k:/foo\\bar" ); // Join with first path absolute
+		assert( ust::path::join( "Z:\\foo", "bar" ) == "Z:\\foo\\bar" ); // Join with first path absolute
+		assert( ust::path::join( "foo", "e:/bar" ) == "e:/bar" ); // Join with trailing drive prefix- should return first absolute path
+		assert( ust::path::join( "foo", "J:\\bar" ) == "J:\\bar" ); // Join with trailing drive prefix- should return first absolute path
+		assert( ust::path::join( "foo", "\\\\bar\\c", "baz" ) == "\\\\bar\\c\\baz" ); // Join with trailing "\\\\" - should return path started from first absolute path
+		assert( ust::path::join( "foo/bar/baz", "yet_another" ) == "foo/bar/baz\\yet_another" ); // Join supports separators in given components
+		assert( ust::path::join( "foo\\bar/baz", "yet_another" ) == "foo\\bar/baz\\yet_another" ); // Join supports separators in given components
+		assert( ust::path::join( "foo/bar\\baz", "yet_another" ) == "foo/bar\\baz\\yet_another" ); // Join supports separators in given components
+		assert( ust::path::join( "foo////bar/////baz", "yet_another" ) == "foo////bar/////baz\\yet_another" ); // Join preserves separators in given components
+		assert( ust::path::join( "foo\\/\\/bar///\\\\/baz", "yet_another" ) == "foo\\/\\/bar///\\\\/baz\\yet_another" ); // Join preserves separators in given components
+		assert( ust::path::join( "", "", "", "foo" ) == "foo" ); // Leading empty components
+		assert( ust::path::join( "foo", "", "", "" ) == "foo\\" ); // Trailing empty components
+
+		// append
+		{
+			var ust::filesystem_path mut p0;
+			ust::path::append( p0, "foo" );
+			assert( p0 == "foo" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "" );
+			assert( p0 == "foo\\" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "bar" );
+			assert( p0 == "foo\\bar" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo/";
+			ust::path::append( p0, "bar" );
+			assert( p0 == "foo/bar" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo\\";
+			ust::path::append( p0, "bar" );
+			assert( p0 == "foo\\bar" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "bar\\\\baz" );
+			assert( p0 == "foo\\bar\\\\baz" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo/bar";
+			ust::path::append( p0, "baz" );
+			assert( p0 == "foo/bar\\baz" );
+		}
+		{
+			var ust::filesystem_path mut p0= "C:";
+			ust::path::append( p0, "some/long\\path" );
+			assert( p0 == "C:\\some/long\\path" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, ".." );
+			assert( p0 == "foo\\.." );
+		}
+		{
+			// Absolute path replaces current path.
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "C:/some/other" );
+			assert( p0 == "C:/some/other" );
+		}
+		{
+			// Absolute path replaces current absolute path.
+			var ust::filesystem_path mut p0= "C:\\foo";
+			ust::path::append( p0, "\\\\?\\UNC\\server\\share\\some_dir" );
+			assert( p0 == "\\\\?\\UNC\\server\\share\\some_dir" );
+		}
+
+		// get_file_extension
+		assert( ust::path::get_file_extension( "" ).empty() ); // No extension for empty path
+		assert( ust::path::get_file_extension( "." ).empty() ); // No extension for dot
+		assert( ust::path::get_file_extension( ".." ).empty() ); // No extension for two dots
+		assert( ust::path::get_file_extension( "..." ) == ust::filesystem_path_view("") ); // Has empty extension for more than two dots.
+		assert( ust::path::get_file_extension( "..a" ) == ust::filesystem_path_view( "a" ) ); // path starts with two dots and ends with non-empty extension
+		assert( ust::path::get_file_extension( ".gitignore" ).empty() ); // No extension for file starting with "."
+		assert( ust::path::get_file_extension( "some/file" ).empty() ); // No extension for given file
+		assert( ust::path::get_file_extension( "some\\file" ).empty() ); // No extension for given file
+		assert( ust::path::get_file_extension( "so.me/file" ).empty() ); // No extension for given file, but directory name contains a dot
+		assert( ust::path::get_file_extension( "so.me\\file" ).empty() ); // No extension for given file, but directory name contains a dot
+		assert( ust::path::get_file_extension( "some/.hidden" ).empty() ); // No extension for given file, but name starts with dot
+		assert( ust::path::get_file_extension( "some\\.hidden" ).empty() ); // No extension for given file, but name starts with dot
+		assert( ust::path::get_file_extension( "foo/some.txt/" ).empty() ); // No extension, because path ends with "/"
+		assert( ust::path::get_file_extension( "foo/some.txt\\" ).empty() ); // No extension, because path ends with "\\"
+		assert( ust::path::get_file_extension( "some.txt" ) == ust::filesystem_path_view( "txt" ) ); // Has extension
+		assert( ust::path::get_file_extension( "C:/home/user/some.txt" ) == ust::filesystem_path_view( "txt" ) ); // Has extension with complex path
+		assert( ust::path::get_file_extension( "C:\\home\\user\\some.txt" ) == ust::filesystem_path_view( "txt" ) ); // Has extension with complex path
+		assert( ust::path::get_file_extension( "\\\\?\\server\\share\\some.txt" ) == ust::filesystem_path_view( "txt" ) ); // Has extension with complex path
+		assert( ust::path::get_file_extension( "\\\\?\\server\\sha.re" ).empty() ); // Has no extension with complex path
+		assert( ust::path::get_file_extension( "user/some.txt.backup" ) == ust::filesystem_path_view( "backup" ) ); // A component after last "." is returned
+		assert( ust::path::get_file_extension( "user\\some.txt.backup" ) == ust::filesystem_path_view( "backup" ) ); // A component after last "." is returned
+		assert( ust::path::get_file_extension( "user/some....txt" ) == ust::filesystem_path_view( "txt" ) ); // A component after last "." is returned
+		assert( ust::path::get_file_extension( "user\\some....txt" ) == ust::filesystem_path_view( "txt" ) ); // A component after last "." is returned
+		assert( ust::path::get_file_extension( "some." ) == ust::filesystem_path_view( "" ) ); // Has empty extension
+
+		// get_path_without_extension
+		assert( ust::path::get_path_without_extension( "" ) == "" );
+		assert( ust::path::get_path_without_extension( "C:/" ) == "C:/" );
+		assert( ust::path::get_path_without_extension( "C:\\" ) == "C:\\" );
+		assert( ust::path::get_path_without_extension( "foo" ) == "foo" );
+		assert( ust::path::get_path_without_extension( "foo/bar" ) == "foo/bar" );
+		assert( ust::path::get_path_without_extension( "foo\\bar" ) == "foo\\bar" );
+		assert( ust::path::get_path_without_extension( "foo/bar/" ) == "foo/bar/" );
+		assert( ust::path::get_path_without_extension( "foo\\bar\\" ) == "foo\\bar\\" );
+		assert( ust::path::get_path_without_extension( "H:/foo/bar" ) == "H:/foo/bar" );
+		assert( ust::path::get_path_without_extension( "z:\\foo\\bar" ) == "z:\\foo\\bar" );
+		assert( ust::path::get_path_without_extension( ".some" ) == ".some" ); // Path starting with "." has no extension
+		assert( ust::path::get_path_without_extension( "." ) == "." ); // Has no extension in "."
+		assert( ust::path::get_path_without_extension( ".." ) == ".." ); // Has no extension in ".."
+		assert( ust::path::get_path_without_extension( "some/." ) == "some/." ); // Has no extension in "."
+		assert( ust::path::get_path_without_extension( "some/.." ) == "some/.." ); // Has no extension in ".."
+		assert( ust::path::get_path_without_extension( "some.txt" ) == "some" ); // Has extension "txt"
+		assert( ust::path::get_path_without_extension( "some." ) == "some" ); // Has empty extension
+		assert( ust::path::get_path_without_extension( "some/.hidden" ) == "some/.hidden" ); // No extension for given file, but name starts with dot
+		assert( ust::path::get_path_without_extension( "some\\.hidden" ) == "some\\.hidden" ); // No extension for given file, but name starts with dot
+		assert( ust::path::get_path_without_extension( "user/some.txt.backup" ) == "user/some.txt" ); // Only last extension is stripped
+		assert( ust::path::get_path_without_extension( "user\\some.txt.backup" ) == "user\\some.txt" ); // Only last extension is stripped
+		assert( ust::path::get_path_without_extension( "so.me/file" ) == "so.me/file" ); // No extension for given file, but directory name contains a dot
+		assert( ust::path::get_path_without_extension( "so.me\\file" ) == "so.me\\file" ); // No extension for given file, but directory name contains a dot
+		assert( ust::path::get_path_without_extension( "\\\\?\\ser.ver\\sha.re\\file" ) == "\\\\?\\ser.ver\\sha.re\\file" ); // No extension for given file, but prefix name contains a dot
+		assert( ust::path::get_path_without_extension( "Welteroberungplan...txt" ) == "Welteroberungplan.." ); // Stripped last ".txt"
+
+		// get_file_name
+		assert( ust::path::get_file_name( "" ).empty() );
+		assert( ust::path::get_file_name( "C:" ).empty() );
+		//assert( ust::path::get_file_name( "\\\\?\\UNC\\server\\share" ).empty() ); // TODO - fix this
+		assert( ust::path::get_file_name( "\\\\server\\share" ).empty() );
+		assert( ust::path::get_file_name( "C:/" ).empty() );
+		assert( ust::path::get_file_name( "C:\\" ).empty() );
+		assert( ust::path::get_file_name( "some/" ).empty() );
+		assert( ust::path::get_file_name( "some\\" ).empty() );
+		assert( ust::path::get_file_name( "f:/some/" ).empty() );
+		assert( ust::path::get_file_name( "G:\\some\\" ).empty() );
+		assert( ust::path::get_file_name( "." ).empty() );
+		assert( ust::path::get_file_name( ".." ).empty() );
+		assert( ust::path::get_file_name( "some/." ).empty() );
+		assert( ust::path::get_file_name( "some\\." ).empty() );
+		assert( ust::path::get_file_name( "some/.." ).empty() );
+		assert( ust::path::get_file_name( "some\\.." ).empty() );
+		assert( ust::path::get_file_name( "J:/.." ).empty() );
+		assert( ust::path::get_file_name( "q:\\.." ).empty() );
+		assert( ust::path::get_file_name( "simple name" ) == ust::filesystem_path( "simple name" ) );
+		assert( ust::path::get_file_name( "name.ext" ) == ust::filesystem_path( "name.ext" ) );
+		assert( ust::path::get_file_name( "some/file" ) == ust::filesystem_path( "file" ) );
+		assert( ust::path::get_file_name( "some\\file" ) == ust::filesystem_path( "file" ) );
+		assert( ust::path::get_file_name( "D:/some/absolute/file.txt" ) == ust::filesystem_path( "file.txt" ) );
+		assert( ust::path::get_file_name( "s:\\some\\absolute\\file.txt" ) == ust::filesystem_path( "file.txt" ) );
+		assert( ust::path::get_file_name( "\\\\server\\share\\remote_file.bin" ) == ust::filesystem_path( "remote_file.bin" ) );
+		assert( ust::path::get_file_name( "D:/some\\absolute////file.txt" ) == ust::filesystem_path( "file.txt" ) );
+		assert( ust::path::get_file_name( "D:\\some/absolute\\\\\\\\file.txt" ) == ust::filesystem_path( "file.txt" ) );
+
+		// get_parent_path
+		assert( ust::path::get_parent_path( "" ).empty() ); // No parent for empty path
+		assert( ust::path::get_parent_path( "C:/" ).empty() ); // No parent for root of a drive
+		assert( ust::path::get_parent_path( "C:\\" ).empty() ); // No parent for root of a drive
+		assert( ust::path::get_parent_path( "C:" ).empty() ); // No parent for root of a drive
+		assert( ust::path::get_parent_path( "foo" ) == ust::filesystem_path( "" ) ); // Empty parent for one-component path.
+		assert( ust::path::get_parent_path( "foo/bar" ) == ust::filesystem_path( "foo" ) );
+		assert( ust::path::get_parent_path( "foo\\bar" ) == ust::filesystem_path( "foo" ) );
+		assert( ust::path::get_parent_path( "foo/bar/baz" ) == ust::filesystem_path( "foo/bar" ) );
+		assert( ust::path::get_parent_path( "foo\\bar\\baz" ) == ust::filesystem_path( "foo\\bar" ) );
+		assert( ust::path::get_parent_path( "foo/bar/baz/" ) == ust::filesystem_path( "foo/bar" ) );
+		assert( ust::path::get_parent_path( "foo\\\\bar\\baz\\" ) == ust::filesystem_path( "foo\\\\bar" ) );
+		assert( ust::path::get_parent_path( "C:/foo" ) == ust::filesystem_path( "C:" ) );
+		assert( ust::path::get_parent_path( "d:\\foo" ) == ust::filesystem_path( "d:" ) )
+		assert( ust::path::get_parent_path( "o:/foo/bar" ) == ust::filesystem_path( "o:/foo" ) );
+		assert( ust::path::get_parent_path( "o:\\foo\\bar" ) == ust::filesystem_path( "o:\\foo" ) );
+		assert( ust::path::get_parent_path( "G:/foo/bar/baz" ) == ust::filesystem_path( "G:/foo/bar" ) );
+		assert( ust::path::get_parent_path( "G:\\foo/bar\\baz" ) == ust::filesystem_path( "G:\\foo/bar" ) );
+		assert( ust::path::get_parent_path( "\\\\?\\C:foo/bar/baz/" ) == ust::filesystem_path( "\\\\?\\C:foo/bar" ) );
+		assert( ust::path::get_parent_path( "foo///bar" ) == ust::filesystem_path( "foo" ) );
+		assert( ust::path::get_parent_path( "foo\\\\\\\\bar" ) == ust::filesystem_path( "foo" ) );
+		assert( ust::path::get_parent_path( "C:///foo//bar////baz" ) == ust::filesystem_path( "C:///foo//bar" ) );
+		assert( ust::path::get_parent_path( "C:\\\\\\foo\\\\bar\\\\\\\\baz" ) == ust::filesystem_path( "C:\\\\\\foo\\\\bar" ) );
+
+		// normalize
+		assert( ust::path::normalize( "" ) == "" );
+		assert( ust::path::normalize( "/" ) == "\\" );
+		assert( ust::path::normalize( "///" ) == "\\" );
+		assert( ust::path::normalize( "/foo" ) == "\\foo" );
+		assert( ust::path::normalize( "/foo/" ) == "\\foo" );
+		assert( ust::path::normalize( "foo/bar/baz" ) == "foo\\bar\\baz" );
+		assert( ust::path::normalize( "foo/bar/baz/" ) == "foo\\bar\\baz" );
+		assert( ust::path::normalize( "foo///bar//baz" ) == "foo\\bar\\baz" );
+		assert( ust::path::normalize( "." ) == "" );
+		assert( ust::path::normalize( "foo/." ) == "foo" );
+		assert( ust::path::normalize( "foo\\." ) == "foo" );
+		assert( ust::path::normalize( "C:/" ) == "C:\\" )
+		assert( ust::path::normalize( "C:/foo/." ) == "C:\\foo" );
+		assert( ust::path::normalize( "C:\\foo\\." ) == "C:\\foo" );
+		assert( ust::path::normalize( "./foo" ) == "foo" );
+		assert( ust::path::normalize( "C:/." ) == "C:\\" );
+		assert( ust::path::normalize( "C:\\." ) == "C:\\" );
+		assert( ust::path::normalize( ".." ) == ".." );
+		assert( ust::path::normalize( "../.." ) == "..\\.." );
+		assert( ust::path::normalize( "..\\.." ) == "..\\.." );
+		assert( ust::path::normalize( "..///.." ) == "..\\.." );
+		assert( ust::path::normalize( "..\\\\\\.." ) == "..\\.." );
+		assert( ust::path::normalize( "C:/.." ) == "C:\\.." );
+		assert( ust::path::normalize( "C:\\.." ) == "C:\\.." );
+		assert( ust::path::normalize( "f:/../.." ) == "f:\\..\\.." );
+		assert( ust::path::normalize( "f:\\..\\.." ) == "f:\\..\\.." );
+		assert( ust::path::normalize( "foo/.." ) == "" );
+		assert( ust::path::normalize( "foo\\.." ) == "" );
+		assert( ust::path::normalize( "\\\\?\\server\\share/../.." ) == "\\\\?\\server\\share\\..\\.." );
+		assert( ust::path::normalize( "foo/bar/.." ) == "foo" );
+		assert( ust::path::normalize( "foo\\bar\\.." ) == "foo" );
+		assert( ust::path::normalize( "F:/foo/bar/.." ) == "F:\\foo" );
+		assert( ust::path::normalize( "F:\\foo\\bar\\..\\" ) == "F:\\foo" );
+		assert( ust::path::normalize( "foo/bar/../" ) == "foo" );
+		assert( ust::path::normalize( "foo\\bar\\..\\" ) == "foo" );
+		assert( ust::path::normalize( "foo/bar/../.." ) == "" );
+		assert( ust::path::normalize( "foo\\bar\\..\\.." ) == "" );
+		assert( ust::path::normalize( "E:/foo/bar/../.." ) == "E:\\" );
+		assert( ust::path::normalize( "e:\\foo\\bar\\..\\.." ) == "e:\\" );
+		assert( ust::path::normalize( "../foo" ) == "..\\foo" );
+		assert( ust::path::normalize( "..\\foo" ) == "..\\foo" );
+		assert( ust::path::normalize( "../foo/bar" ) == "..\\foo\\bar" );
+		assert( ust::path::normalize( "..\\foo\\bar" ) == "..\\foo\\bar" );
+		assert( ust::path::normalize( "../foo/.." ) == ".." );
+		assert( ust::path::normalize( "..\\foo\\.." ) == ".." );
+
+		// components_iter
+		type paths_vec= ust::vector</ust::filesystem_path/>;
+		{
+			auto components= ust::path::components_iter( "" ).collect</ paths_vec />();
+			assert( components.size() == 0s );
+		}
+
+		{
+			// Prefix is a component.
+			auto components= ust::path::components_iter( "D:" ).collect</ paths_vec />();
+			assert( components.size() == 1s );
+			assert( components[0s] == "D:" );
+		}
+		{
+			// Prefix and root as components.
+			auto components= ust::path::components_iter( "c:/" ).collect</ paths_vec />();
+			assert( components.size() == 2s );
+			assert( components[0s] == "c:" );
+			assert( components[1s] == "/" );
+		}
+		{
+			// Extra "/" are ignored.
+			auto components= ust::path::components_iter( "C:////" ).collect</ paths_vec />();
+			assert( components.size() == 2s );
+			assert( components[0s] == "C:" );
+			assert( components[1s] == "/" );
+		}
+		{
+			// Extra "\\" are ignored.
+			auto components= ust::path::components_iter( "C:\\\\" ).collect</ paths_vec />();
+			assert( components.size() == 2s );
+			assert( components[0s] == "C:" );
+			assert( components[1s] == "\\" );
+		}
+		{
+			// Several components in a relative path.
+			auto components= ust::path::components_iter( "foo/bar/baz" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "foo" );
+			assert( components[1s] == "bar" );
+			assert( components[2s] == "baz" );
+		}
+		{
+			// Several components in a relative path.
+			auto components= ust::path::components_iter( "foo\\bar\\baz" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "foo" );
+			assert( components[1s] == "bar" );
+			assert( components[2s] == "baz" );
+		}
+		{
+			// Non-absolute path with disk prefix.
+			auto components= ust::path::components_iter( "f:foo/bar/baz" ).collect</ paths_vec />();
+			assert( components.size() == 4s );
+			assert( components[0s] == "f:" );
+			assert( components[1s] == "foo" );
+			assert( components[2s] == "bar" );
+			assert( components[3s] == "baz" );
+		}
+		{
+			// Non-absolute path with disk prefix.
+			auto components= ust::path::components_iter( "f:foo\\bar\\baz" ).collect</ paths_vec />();
+			assert( components.size() == 4s );
+			assert( components[0s] == "f:" );
+			assert( components[1s] == "foo" );
+			assert( components[2s] == "bar" );
+			assert( components[3s] == "baz" );
+		}
+		{
+			// Several components in an absolute path.
+			auto components= ust::path::components_iter( "f:/foo/bar/baz" ).collect</ paths_vec />();
+			assert( components.size() == 5s );
+			assert( components[0s] == "f:" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "foo" );
+			assert( components[3s] == "bar" );
+			assert( components[4s] == "baz" );
+		}
+		{
+			// Several components in an absolute path.
+			auto components= ust::path::components_iter( "f:\\foo\\\\bar\\\\\\baz" ).collect</ paths_vec />();
+			assert( components.size() == 5s );
+			assert( components[0s] == "f:" );
+			assert( components[1s] == "\\" );
+			assert( components[2s] == "foo" );
+			assert( components[3s] == "bar" );
+			assert( components[4s] == "baz" );
+		}
+
+		{
+			// Trailing "/" are ignored.
+			auto components= ust::path::components_iter( "some path/////" ).collect</ paths_vec />();
+			assert( components.size() == 1s );
+			assert( components[0s] == "some path" );
+		}
+		{
+			// Trailing "\" are ignored for absolute paths and path with multiple components.
+			auto components= ust::path::components_iter( "\\\\?\\server\\share/foo/bar/baz\\" ).collect</ paths_vec />();
+			assert( components.size() == 5s );
+			assert( components[0s] == "\\\\?\\server\\share" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "foo" );
+			assert( components[3s] == "bar" );
+			assert( components[4s] == "baz" );
+		}
+
+		{
+			// "." has no effect on components splitting.
+			auto components= ust::path::components_iter( "F:/some.dir/file_with_extension.txt" ).collect</ paths_vec />();
+			assert( components.size() == 4s );
+			assert( components[0s] == "F:" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "some.dir" );
+			assert( components[3s] == "file_with_extension.txt" );
+		}
+		{
+			// "." is a component.
+			auto components= ust::path::components_iter( "foo/./bar" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "foo" );
+			assert( components[1s] == "." );
+			assert( components[2s] == "bar" );
+		}
+		{
+			// "." is a component.
+			auto components= ust::path::components_iter( "foo\\.\\bar" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "foo" );
+			assert( components[1s] == "." );
+			assert( components[2s] == "bar" );
+		}
+		{
+			// ".." is a component.
+			auto components= ust::path::components_iter( "Y:/foo\\bar/..\\baz/.." ).collect</ paths_vec />();
+			assert( components.size() == 7s );
+			assert( components[0s] == "Y:" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "foo" );
+			assert( components[3s] == "bar" );
+			assert( components[4s] == ".." );
+			assert( components[5s] == "baz" );
+			assert( components[6s] == ".." );
+		}
+		{
+			// Server and share are part of a single component (prefix).
+			auto components= ust::path::components_iter( "\\\\?\\UNC\\server\\share" ).collect</ paths_vec />();
+			assert( components.size() == 1s );
+			assert( components[0s] == "\\\\?\\UNC\\server\\share" );
+		}
+		{
+			// Server and share are part of a single component (prefix), then follows path.
+			auto components= ust::path::components_iter( "\\\\?\\UNC\\server\\share/path" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "\\\\?\\UNC\\server\\share" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "path" );
+		}
+		{
+			// Parse device path.
+			auto components= ust::path::components_iter( "\\\\.\\DEV//path/on/device" ).collect</ paths_vec />();
+			assert( components.size() == 5s );
+			assert( components[0s] == "\\\\.\\DEV" );
+			assert( components[1s] == "/" );
+			assert( components[2s] == "path" );
+			assert( components[3s] == "on" );
+			assert( components[4s] == "device" );
+		}
+	}
+	else
+	{
+		// is_absolute
+		assert( !ust::path::is_absolute( "" ) );
+		assert( !ust::path::is_absolute( " " ) );
+		assert( !ust::path::is_absolute( "some" ) );
+		assert( !ust::path::is_absolute( "some/path" ) );
+		assert( ust::path::is_absolute( "/" ) );
+		assert( ust::path::is_absolute( "/some" ) );
+		assert( ust::path::is_absolute( "/some/path" ) );
+
+		// is_relative
+		assert( ust::path::is_relative( "" ) );
+		assert( ust::path::is_relative( " " ) );
+		assert( ust::path::is_relative( "some" ) );
+		assert( ust::path::is_relative( "some/path" ) );
+		assert( !ust::path::is_relative( "/" ) );
+		assert( !ust::path::is_relative( "/some" ) );
+		assert( !ust::path::is_relative( "/some/path" ) );
+
+		// is_separator
+		assert( ust::path::is_separator( "/"c8 ) );
+		assert( !ust::path::is_separator( " "c8 ) );
+		assert( !ust::path::is_separator( ":"c8 ) );
+		assert( !ust::path::is_separator( "y"c8 ) );
+		assert( !ust::path::is_separator( "-"c8 ) );
+		assert( !ust::path::is_separator( "\\"c8 ) ); // On Unix backslash isn't a separator.
+
+		// join
+		assert( ust::path::join( "foo" ) == "foo" ); // Single component - return as is
+		assert( ust::path::join( "foo/bar" ) == "foo/bar" ); // Single component - return as is
+		assert( ust::path::join( "/" ) == "/" ); // Single component - return as is
+		assert( ust::path::join( "/foo/" ) == "/foo/" ); // Single component - return as is
+		assert( ust::path::join( "/foo/bar" ) == "/foo/bar" ); // Single component - return as is
+		assert( ust::path::join( "foo", "bar" ) == "foo/bar" ); // Join two components
+		assert( ust::path::join( "foo", "bar", "baz" ) == "foo/bar/baz" ); // Join three components
+		assert( ust::path::join( "foo/", "bar" ) == "foo/bar" ); // Join with leading "/" in a component
+		assert( ust::path::join( "foo///", "bar" ) == "foo///bar" ); // Join with several leading "/" in a component
+		assert( ust::path::join( "/foo", "bar" ) == "/foo/bar" ); // Join with first path absolute
+		assert( ust::path::join( "foo", "/bar" ) == "/bar" ); // Join with trailing "/" - should return first absolute path
+		assert( ust::path::join( "foo", "/bar", "baz" ) == "/bar/baz" ); // Join with trailing "/" - should return path started from first absolute path
+		assert( ust::path::join( "foo/bar/baz", "yet_another" ) == "foo/bar/baz/yet_another" ); // Join supports separators in given components
+		assert( ust::path::join( "foo////bar/////baz", "yet_another" ) == "foo////bar/////baz/yet_another" ); // Join preserves separators in given components
+		assert( ust::path::join( "", "", "", "foo" ) == "foo" ); // Leading empty components
+		assert( ust::path::join( "foo", "", "", "" ) == "foo/" ); // Trailing empty components
+
+		// append
+		{
+			var ust::filesystem_path mut p0;
+			ust::path::append( p0, "foo" );
+			assert( p0 == "foo" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "" );
+			assert( p0 == "foo/" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "bar" );
+			assert( p0 == "foo/bar" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo/";
+			ust::path::append( p0, "bar" );
+			assert( p0 == "foo/bar" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "bar///baz" );
+			assert( p0 == "foo/bar///baz" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo/bar";
+			ust::path::append( p0, "baz" );
+			assert( p0 == "foo/bar/baz" );
+		}
+		{
+			var ust::filesystem_path mut p0= "/";
+			ust::path::append( p0, "some/long/path" );
+			assert( p0 == "/some/long/path" );
+		}
+		{
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, ".." );
+			assert( p0 == "foo/.." );
+		}
+		{
+			// Absolute path replaces current path.
+			var ust::filesystem_path mut p0= "foo";
+			ust::path::append( p0, "/some/other" );
+			assert( p0 == "/some/other" );
+		}
+		{
+			// Absolute path replaces current absolute path.
+			var ust::filesystem_path mut p0= "/C/foo";
+			ust::path::append( p0, "/" );
+			assert( p0 == "/" );
+		}
+
+		// get_file_extension
+		assert( ust::path::get_file_extension( "" ).empty() ); // No extension for empty path
+		assert( ust::path::get_file_extension( "." ).empty() ); // No extension for dot
+		assert( ust::path::get_file_extension( ".." ).empty() ); // No extension for two dots
+		assert( ust::path::get_file_extension( "..." ) == ust::filesystem_path_view("") ); // Has empty extension for more than two dots.
+		assert( ust::path::get_file_extension( "..a" ) == ust::filesystem_path_view( "a" ) ); // path starts with two dots and ends with non-empty extension
+		assert( ust::path::get_file_extension( ".gitignore" ).empty() ); // No extension for file starting with "."
+		assert( ust::path::get_file_extension( "some/file" ).empty() ); // No extension for given file
+		assert( ust::path::get_file_extension( "so.me/file" ).empty() ); // No extension for given file, but directory name contains a dot
+		assert( ust::path::get_file_extension( "some/.hidden" ).empty() ); // No extension for given file, but name starts with dot
+		assert( ust::path::get_file_extension( "foo/some.txt/" ).empty() ); // No extension, because path ends with "/"
+		assert( ust::path::get_file_extension( "some.txt" ) == ust::filesystem_path_view( "txt" ) ); // Has extension
+		assert( ust::path::get_file_extension( "/home/user/some.txt" ) == ust::filesystem_path_view( "txt" ) ); // Has extension with complex path
+		assert( ust::path::get_file_extension( "user/some.txt.backup" ) == ust::filesystem_path_view( "backup" ) ); // A component after last "." is returned
+		assert( ust::path::get_file_extension( "user/some....txt" ) == ust::filesystem_path_view( "txt" ) ); // A component after last "." is returned
+		assert( ust::path::get_file_extension( "some." ) == ust::filesystem_path_view( "" ) ); // Has empty extension
+
+		// get_path_without_extension
+		assert( ust::path::get_path_without_extension( "" ) == "" );
+		assert( ust::path::get_path_without_extension( "/" ) == "/" );
+		assert( ust::path::get_path_without_extension( "foo" ) == "foo" );
+		assert( ust::path::get_path_without_extension( "foo/bar" ) == "foo/bar" );
+		assert( ust::path::get_path_without_extension( "foo/bar/" ) == "foo/bar/" );
+		assert( ust::path::get_path_without_extension( "/foo/bar" ) == "/foo/bar" );
+		assert( ust::path::get_path_without_extension( ".some" ) == ".some" ); // Path starting with "." has no extension
+		assert( ust::path::get_path_without_extension( "." ) == "." ); // Has no extension in "."
+		assert( ust::path::get_path_without_extension( ".." ) == ".." ); // Has no extension in ".."
+		assert( ust::path::get_path_without_extension( "some/." ) == "some/." ); // Has no extension in "."
+		assert( ust::path::get_path_without_extension( "some/.." ) == "some/.." ); // Has no extension in ".."
+		assert( ust::path::get_path_without_extension( "some.txt" ) == "some" ); // Has extension "txt"
+		assert( ust::path::get_path_without_extension( "some." ) == "some" ); // Has empty extension
+		assert( ust::path::get_path_without_extension( "some/.hidden" ) == "some/.hidden" ); // No extension for given file, but name starts with dot
+		assert( ust::path::get_path_without_extension( "user/some.txt.backup" ) == "user/some.txt" ); // Only last extension is stripped
+		assert( ust::path::get_path_without_extension( "so.me/file" ) == "so.me/file" ); // No extension for given file, but directory name contains a dot
+		assert( ust::path::get_path_without_extension( "Welteroberungplan...txt" ) == "Welteroberungplan.." ); // Stripped last ".txt"
+
+		// get_file_name
+		assert( ust::path::get_file_name( "" ).empty() );
+		assert( ust::path::get_file_name( "/" ).empty() );
+		assert( ust::path::get_file_name( "some/" ).empty() );
+		assert( ust::path::get_file_name( "/some/" ).empty() );
+		assert( ust::path::get_file_name( "." ).empty() );
+		assert( ust::path::get_file_name( ".." ).empty() );
+		assert( ust::path::get_file_name( "some/." ).empty() );
+		assert( ust::path::get_file_name( "some/.." ).empty() );
+		assert( ust::path::get_file_name( "/.." ).empty() );
+		assert( ust::path::get_file_name( "simple name" ) == ust::filesystem_path( "simple name" ) );
+		assert( ust::path::get_file_name( "name.ext" ) == ust::filesystem_path( "name.ext" ) );
+		assert( ust::path::get_file_name( "some/file" ) == ust::filesystem_path( "file" ) );
+		assert( ust::path::get_file_name( "/some/absolute/file.txt" ) == ust::filesystem_path( "file.txt" ) );
+		assert( ust::path::get_file_name( "/some/absolute////file.txt" ) == ust::filesystem_path( "file.txt" ) );
+
+		// get_parent_path
+		assert( ust::path::get_parent_path( "" ).empty() ); // No parent for empty path
+		assert( ust::path::get_parent_path( "/" ).empty() ); // No parent for root
+		assert( ust::path::get_parent_path( "foo" ) == ust::filesystem_path( "" ) ); // Empty parent for one-component path.
+		assert( ust::path::get_parent_path( "foo/bar" ) == ust::filesystem_path( "foo" ) );
+		assert( ust::path::get_parent_path( "foo/bar/baz" ) == ust::filesystem_path( "foo/bar" ) );
+		assert( ust::path::get_parent_path( "foo/bar/baz/" ) == ust::filesystem_path( "foo/bar" ) );
+		assert( ust::path::get_parent_path( "/foo" ) == ust::filesystem_path( "/" ) );
+		assert( ust::path::get_parent_path( "/foo/bar" ) == ust::filesystem_path( "/foo" ) );
+		assert( ust::path::get_parent_path( "/foo/bar/baz" ) == ust::filesystem_path( "/foo/bar" ) );
+		assert( ust::path::get_parent_path( "/foo/bar/baz/" ) == ust::filesystem_path( "/foo/bar" ) );
+		assert( ust::path::get_parent_path( "foo///bar" ) == ust::filesystem_path( "foo" ) );
+		assert( ust::path::get_parent_path( "///foo//bar////baz" ) == ust::filesystem_path( "///foo//bar" ) );
+
+		// normalize
+		assert( ust::path::normalize( "" ) == "" );
+		assert( ust::path::normalize( "/" ) == "/" );
+		assert( ust::path::normalize( "///" ) == "/" );
+		assert( ust::path::normalize( "/foo" ) == "/foo" );
+		assert( ust::path::normalize( "/foo/" ) == "/foo" );
+		assert( ust::path::normalize( "////foo/////" ) == "/foo" );
+		assert( ust::path::normalize( "foo/bar/baz" ) == "foo/bar/baz" );
+		assert( ust::path::normalize( "foo/bar/baz/" ) == "foo/bar/baz" );
+		assert( ust::path::normalize( "foo///bar//baz" ) == "foo/bar/baz" );
+		assert( ust::path::normalize( "." ) == "" );
+		assert( ust::path::normalize( "foo/." ) == "foo" );
+		assert( ust::path::normalize( "/foo/." ) == "/foo" );
+		assert( ust::path::normalize( "./foo" ) == "foo" );
+		assert( ust::path::normalize( "/." ) == "/" );
+		assert( ust::path::normalize( ".." ) == ".." );
+		assert( ust::path::normalize( "../.." ) == "../.." );
+		assert( ust::path::normalize( "..///.." ) == "../.." );
+		assert( ust::path::normalize( "/.." ) == "/.." );
+		assert( ust::path::normalize( "/../.." ) == "/../.." );
+		assert( ust::path::normalize( "foo/.." ) == "" );
+		assert( ust::path::normalize( "/foo/.." ) == "/" );
+		assert( ust::path::normalize( "foo/bar/.." ) == "foo" );
+		assert( ust::path::normalize( "/foo/bar/.." ) == "/foo" );
+		assert( ust::path::normalize( "foo/bar/../" ) == "foo" );
+		assert( ust::path::normalize( "/foo/bar/../" ) == "/foo" );
+		assert( ust::path::normalize( "foo/bar/../.." ) == "" );
+		assert( ust::path::normalize( "/foo/bar/../.." ) == "/" );
+		assert( ust::path::normalize( "../foo" ) == "../foo" );
+		assert( ust::path::normalize( "../foo/bar" ) == "../foo/bar" );
+		assert( ust::path::normalize( "../foo/.." ) == ".." );
+
+		// components_iter
+		type paths_vec= ust::vector</ust::filesystem_path/>;
+		{
+			auto components= ust::path::components_iter( "" ).collect</ paths_vec />();
+			assert( components.size() == 0s );
+		}
+		{
+			// Root of an absolute path is a component.
+			auto components= ust::path::components_iter( "/" ).collect</ paths_vec />();
+			assert( components.size() == 1s );
+			assert( components[0s] == "/" );
+		}
+		{
+			// Extra "/" are ignored.
+			auto components= ust::path::components_iter( "////" ).collect</ paths_vec />();
+			assert( components.size() == 1s );
+			assert( components[0s] == "/" );
+		}
+		{
+			// Several components in a relative path.
+			auto components= ust::path::components_iter( "foo/bar/baz" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "foo" );
+			assert( components[1s] == "bar" );
+			assert( components[2s] == "baz" );
+		}
+		{
+			// Several components in an absolute path.
+			auto components= ust::path::components_iter( "/foo/bar/baz" ).collect</ paths_vec />();
+			assert( components.size() == 4s );
+			assert( components[0s] == "/" );
+			assert( components[1s] == "foo" );
+			assert( components[2s] == "bar" );
+			assert( components[3s] == "baz" );
+		}
+		{
+			// Extra "/" are ignored.
+			auto components= ust::path::components_iter( "//foo///bar////baz" ).collect</ paths_vec />();
+			assert( components.size() == 4s );
+			assert( components[0s] == "/" );
+			assert( components[1s] == "foo" );
+			assert( components[2s] == "bar" );
+			assert( components[3s] == "baz" );
+		}
+		{
+			// Trailing "/" are ignored.
+			auto components= ust::path::components_iter( "some path/////" ).collect</ paths_vec />();
+			assert( components.size() == 1s );
+			assert( components[0s] == "some path" );
+		}
+		{
+			// Trailing "/" are ignored for absolute paths and path with multiple components.
+			auto components= ust::path::components_iter( "/foo/bar/baz/" ).collect</ paths_vec />();
+			assert( components.size() == 4s );
+			assert( components[0s] == "/" );
+			assert( components[1s] == "foo" );
+			assert( components[2s] == "bar" );
+			assert( components[3s] == "baz" );
+		}
+		{
+			// "." has no effect on components splitting.
+			auto components= ust::path::components_iter( "/some.dir/file_with_extension.txt" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "/" );
+			assert( components[1s] == "some.dir" );
+			assert( components[2s] == "file_with_extension.txt" );
+		}
+		{
+			// "." is a component.
+			auto components= ust::path::components_iter( "foo/./bar" ).collect</ paths_vec />();
+			assert( components.size() == 3s );
+			assert( components[0s] == "foo" );
+			assert( components[1s] == "." );
+			assert( components[2s] == "bar" );
+		}
+		{
+			// ".." is a component.
+			auto components= ust::path::components_iter( "/foo/bar/../baz/.." ).collect</ paths_vec />();
+			assert( components.size() == 6s );
+			assert( components[0s] == "/" );
+			assert( components[1s] == "foo" );
+			assert( components[2s] == "bar" );
+			assert( components[3s] == ".." );
+			assert( components[4s] == "baz" );
+			assert( components[5s] == ".." );
+		}
+	}
+
+	return 0;
+}

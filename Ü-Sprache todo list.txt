@@ -59,7 +59,6 @@ Lambdas:
 *) Template lambdas
 
 Standart library:
-*) Filesystem path manipulation functions - concatenation, splitting, simplification, etc.
 *) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method
 *) Support types with references inside in some containers (variant, result, unordered_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
@@ -89,6 +88,7 @@ Standart library:
 *) Function for creation of the whole directories path
 *) Function for recursive directory removal
 *) Examples for file-related functionality
+*) More filesystem path manipulation functions
 *) Try to optimize random_access_range - use start + end pointers instead of start + size.
 	This may improve iteration efficiency.
 *) Reference-counting immutable string class
@@ -138,6 +138,7 @@ Interpreter:
 
 Compiler1:
 *) Support 128-bit types in switch operator
+*) Create VFS and load source files from Ü code (using ustlib filesystem functionality), instead of using VFS from C++
 
 QtCreator plugin:
 *) Language server features support

@@ -1,8 +1,8 @@
+import "/path_utils.u"
 import "/sort.u"
 import "package_transformation.uh"
 import "build_system_paths.uh"
 import "options.uh"
-import "path.uh"
 
 namespace BK
 {
@@ -15,7 +15,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 {
 	var bool mut ok= true;
 
-	var ust::vector</ ust::vector</ust::string8 /> /> mut prev_targets_directories;
+	var ust::vector</ ust::vector</ ust::filesystem_path /> /> mut prev_targets_directories;
 
 	foreach( &build_target : package_info.build_targets )
 	{
@@ -55,7 +55,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 					continue;
 				}
 
-				out_build_target.source_files.push_back( NormalizePath( source_name ) );
+				out_build_target.source_files.push_back( ust::path::normalize( source_name ) );
 			}
 
 			// Normalize list of sources and detect duplicates.
@@ -69,12 +69,11 @@ fn nodiscard TransformAndValidatePackageInfo(
 				}
 			}
 
-			var ust::vector</ust::string8/> mut sources_directory= CalculateBuildTargetSourceFilesCommonDirectory( out_build_target.source_files  );
+			var ust::vector</ust::filesystem_path/> mut sources_directory= CalculateBuildTargetSourceFilesCommonDirectory( out_build_target.source_files );
 
 			foreach( &component : sources_directory )
 			{
-				out_build_target.sources_directory+= component;
-				out_build_target.sources_directory+= "/";
+				ust::path::append( out_build_target.sources_directory, component );
 			}
 
 			logger.LogVerbose( ust::concat( "All sources of the build target \"", target_printable_name, "\" are located within directory \"", out_build_target.sources_directory, "\"." ) );
@@ -115,7 +114,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				continue;
 			}
 
-			out_build_target.generated_source_files.push_back( NormalizePath( generated_source_file ) );
+			out_build_target.generated_source_files.push_back( ust::path::normalize( generated_source_file ) );
 		}
 
 		// Normalize list of generated sources and detect duplicates.
@@ -140,7 +139,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				continue;
 			}
 
-			out_build_target.generated_private_header_files.push_back( NormalizePath( generated_private_header_file ) );
+			out_build_target.generated_private_header_files.push_back( ust::path::normalize( generated_private_header_file ) );
 		}
 
 		// Normalize list of generated private headers and detect duplicates.
@@ -173,7 +172,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				continue;
 			}
 
-			out_build_target.generated_public_header_files.push_back( NormalizePath( generated_public_header_file ) );
+			out_build_target.generated_public_header_files.push_back( ust::path::normalize( generated_public_header_file ) );
 		}
 
 		// Normalize list of generated public headers and detect duplicates.
@@ -206,7 +205,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 				continue;
 			}
 			auto mut public_include_directory_component_splitted=
-				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( public_include_directory ).iter() );
+				ust::vector</ust::filesystem_path/>::from_iterator( ust::path::components_iter( public_include_directory ) );
 
 			// Check for directory conflict.
 			foreach( &prev_source_directory : prev_targets_directories )
@@ -230,11 +229,10 @@ fn nodiscard TransformAndValidatePackageInfo(
 				}
 			}
 
-			var ust::string8 mut directory_normalized;
+			var ust::filesystem_path mut directory_normalized;
 			foreach( &component : public_include_directory_component_splitted )
 			{
-				directory_normalized+= component;
-				directory_normalized+= "/";
+				ust::path::append( directory_normalized, component );
 			}
 			out_build_target.public_include_directories.push_back( move(directory_normalized) );
 
@@ -284,7 +282,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 		{
 			// Normalize absolute paths, preserve relative paths.
 			out_build_target.external_libraries.push_back(
-				( IsAbsolutePath(external_library) ? NormalizePath( external_library ) : external_library ) );
+				( ust::path::is_absolute(external_library) ? ust::path::normalize( external_library ) : external_library ) );
 		}
 		NormalizeList( out_build_target.external_libraries );
 
@@ -300,14 +298,14 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		foreach( &in_file : custom_build_step.input_files )
 		{
-			if( !IsAbsolutePath( in_file ) )
+			if( !ust::path::is_absolute( in_file ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step input file path \"", in_file, "\" is not absolute!" ) );
 				ok= false;
 			}
 			else
 			{
-				out_custom_build_step.input_files.push_back( NormalizePath( in_file ) );
+				out_custom_build_step.input_files.push_back( ust::path::normalize( in_file ) );
 			}
 		}
 
@@ -315,14 +313,14 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		foreach( &out_file : custom_build_step.output_files )
 		{
-			if( !IsAbsolutePath( out_file ) )
+			if( !ust::path::is_absolute( out_file ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step output file path \"", out_file, "\" is not absolute!" ) );
 				ok= false;
 			}
 			else
 			{
-				out_custom_build_step.output_files.push_back( NormalizePath( out_file ) );
+				out_custom_build_step.output_files.push_back( ust::path::normalize( out_file ) );
 			}
 		}
 
@@ -330,14 +328,14 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		if_var( mut exe_command : custom_build_step.command.get</CustomBuildStep::ExeCommand/>() )
 		{
-			if( !IsAbsolutePath( exe_command.exe_path ) )
+			if( !ust::path::is_absolute( exe_command.exe_path ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step executable path \"", exe_command.exe_path, "\" is not absolute!" ) );
 				ok= false;
 			}
 			else
 			{
-				exe_command.exe_path= NormalizePath( exe_command.exe_path );
+				exe_command.exe_path= ust::path::normalize( exe_command.exe_path );
 			}
 			out_custom_build_step.command= move(exe_command);
 		}
@@ -362,14 +360,14 @@ fn nodiscard TransformAndValidatePackageInfo(
 		}
 		else if_var( mut copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
 		{
-			if( !IsAbsolutePath( copy_command.destination_path ) )
+			if( !ust::path::is_absolute( copy_command.destination_path ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step copy destination \"", copy_command.destination_path, "\" is not absolute!" ) );
 				ok= false;
 			}
 			else
 			{
-				copy_command.destination_path= NormalizePath( copy_command.destination_path );
+				copy_command.destination_path= ust::path::normalize( copy_command.destination_path );
 				if( !IsInFilesList( out_custom_build_step.output_files, copy_command.destination_path ) )
 				{
 					logger.LogError( ust::concat( "Error, copy command destination file \"", copy_command.destination_path, "\" is not listed in output files!" ) );
@@ -377,14 +375,14 @@ fn nodiscard TransformAndValidatePackageInfo(
 				}
 			}
 
-			if( !IsAbsolutePath( copy_command.source_path ) )
+			if( !ust::path::is_absolute( copy_command.source_path ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step copy source \"", copy_command.source_path, "\" is not absolute!" ) );
 				ok= false;
 			}
 			else
 			{
-				copy_command.source_path= NormalizePath( copy_command.source_path );
+				copy_command.source_path= ust::path::normalize( copy_command.source_path );
 				if( !IsInFilesList( out_custom_build_step.input_files, copy_command.source_path ) )
 				{
 					logger.LogError( ust::concat( "Error, copy command source file \"", copy_command.source_path, "\" is not listed in input files!" ) );
@@ -401,14 +399,14 @@ fn nodiscard TransformAndValidatePackageInfo(
 		}
 		else if_var( mut generate_command : custom_build_step.command.get</ CustomBuildStep::GenerateFileCommand />() )
 		{
-			if( !IsAbsolutePath( generate_command.destination_path ) )
+			if( !ust::path::is_absolute( generate_command.destination_path ) )
 			{
 				logger.LogError( ust::concat( "Error, custom build step generate destination \"", generate_command.destination_path, "\" is not absolute!" ) );
 				ok= false;
 			}
 			else
 			{
-				generate_command.destination_path= NormalizePath( generate_command.destination_path );
+				generate_command.destination_path= ust::path::normalize( generate_command.destination_path );
 				if( !IsInFilesList( out_custom_build_step.output_files, generate_command.destination_path ) )
 				{
 					logger.LogError( ust::concat( "Error, generate command destination file \"", generate_command.destination_path, "\" is not listed in output files!" ) );
@@ -433,7 +431,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 		if( dependency.name.name_base.has</ PackageName::CurrentPackage />() )
 		{
 			auto mut relative_path_component_splitted=
-				ust::vector</ust::string8/>::from_iterator( SplitPathIntoComponents( dependency.name.path ).iter() );
+				ust::vector</ust::filesystem_path/>::from_iterator( ust::path::components_iter( dependency.name.path ) );
 
 			var bool mut moves_up= false;
 			foreach( &component : relative_path_component_splitted )
@@ -538,7 +536,7 @@ fn nodiscard CheckWorkspaceDependencyGraphIsValid( Logger &mut logger, Workspace
 }
 
 fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
-	Logger &mut logger, WorkspaceInfo& workspace, ust::string_view8 root_package_build_directory ) : bool
+	Logger &mut logger, WorkspaceInfo& workspace, ust::filesystem_path_view root_package_build_directory ) : bool
 {
 	var bool mut ok= true;
 
@@ -573,7 +571,7 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 	}
 
 	auto is_file_produces_by_custom_build_step=
-		lambda [&custom_build_steps= workspace.custom_build_steps]( ust::string_view8 file ) : bool
+		lambda [&custom_build_steps= workspace.custom_build_steps]( ust::filesystem_path_view file ) : bool
 		{
 			foreach( &step : custom_build_steps )
 			{
@@ -596,10 +594,10 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 
 		if( !build_target.generated_source_files.empty() || !build_target.generated_private_header_files.empty() )
 		{
-			var ust::string8 generated_sources_dir= GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
+			var ust::filesystem_path generated_sources_dir= GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, target_name );
 			foreach( &generated_source : build_target.generated_source_files )
 			{
-				var ust::string8 file_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_source ) );
+				var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( generated_sources_dir, generated_source ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -614,7 +612,7 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 
 			foreach( &generated_private_header : build_target.generated_private_header_files )
 			{
-				var ust::string8 file_path= NormalizePath( ust::concat( generated_sources_dir, "/", generated_private_header ) );
+				var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( generated_sources_dir, generated_private_header ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -630,10 +628,10 @@ fn nodiscard CheckWorkspaceCustomBuildStepsAreValid(
 
 		if( !build_target.generated_public_header_files.empty() )
 		{
-			var ust::string8 generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, target_name );
+			var ust::filesystem_path generated_public_headers_dir= GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, target_name );
 			foreach( &generated_public_header : build_target.generated_public_header_files )
 			{
-				var ust::string8 file_path= NormalizePath( ust::concat( generated_public_headers_dir, "/", generated_public_header ) );
+				var ust::filesystem_path file_path= ust::path::normalize( ust::path::join( generated_public_headers_dir, generated_public_header ) );
 				if( !is_file_produces_by_custom_build_step( file_path ) )
 				{
 					logger.LogError( ust::concat(
@@ -799,10 +797,10 @@ fn ResolvePackageAbsoluteName(
 			return parent_package_absolute_name;
 		}
 
-		var ust::vector</ust::string8/> mut components;
-		components.append( SplitPathIntoComponents( parent_package_absolute_name.path ).iter() );
+		var ust::vector</ust::filesystem_path/> mut components;
+		components.append( ust::path::components_iter( parent_package_absolute_name.path ) );
 
-		foreach( &child_component : SplitPathIntoComponents( package_name.path ) )
+		foreach( &child_component : ust::path::components_iter( package_name.path ) )
 		{
 			if( child_component == "." )
 			{} // Do not push "."
@@ -827,7 +825,7 @@ fn ResolvePackageAbsoluteName(
 			}
 		}
 
-		var ust::string8 mut path;
+		var ust::filesystem_path mut path;
 		foreach( &component : components )
 		{
 			if( !path.empty() )
@@ -837,11 +835,11 @@ fn ResolvePackageAbsoluteName(
 			path+= component;
 		}
 
-		return PackageAbsoluteName{ .path= NormalizePath( path ) };
+		return PackageAbsoluteName{ .path= ust::path::normalize( path ) };
 	}
 	else if_var( &global_versioned_package : package_name.name_base.get</ GlobalVersionedPackageName />() )
 	{
-		foreach( &component : SplitPathIntoComponents( package_name.path ) )
+		foreach( &component : ust::path::components_iter( package_name.path ) )
 		{
 			if( component == "." || component == ".." )
 			{
@@ -909,7 +907,7 @@ fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
 		return false;
 	}
 
-	if( name.front() == "/"c8 || name.front() == "\\"c8 )
+	if( name.front() == "/"c8 || name.front() == "\\"c8 || ust::path::is_absolute( name ) )
 	{
 		// Do not allow absolute paths.
 		return false;
@@ -922,7 +920,7 @@ fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
 	}
 
 	// Disable "." and ".." in source file names.
-	foreach( &component : SplitPathIntoComponents( name ) )
+	foreach( &component : ust::path::components_iter( name ) )
 	{
 		if( component == "." || component == ".." )
 		{
@@ -936,23 +934,23 @@ fn TargetSourceNameIsValid( ust::string_view8 name ) : bool
 	return true;
 }
 
-fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::string8/> sources ) : ust::vector</ust::string8/>
+fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::filesystem_path/> sources ) : ust::vector</ust::filesystem_path/>
 {
 	if( sources.empty() )
 	{
-		return ust::vector</ust::string8/>();
+		return ust::vector</ust::filesystem_path/>();
 	}
 
-	var ust::vector</ust::vector</ust::string8/>/> mut sources_splitted_per_component;
+	var ust::vector</ust::vector</ust::filesystem_path/>/> mut sources_splitted_per_component;
 	foreach( &source : sources )
 	{
-		sources_splitted_per_component.push_back( SplitPathIntoComponents(source).iter().collect</ ust::vector</ ust::string8 /> />() );
+		sources_splitted_per_component.push_back( ust::path::components_iter(source).collect</ ust::vector</ ust::string8 /> />() );
 	}
 
 	if( sources_splitted_per_component.size() == 1s )
 	{
 		// Special case with only one file - remove last component (presumably file name) and return it.
-		var ust::vector</ust::string8/> mut result= sources_splitted_per_component.pop_back();
+		var ust::vector</ust::filesystem_path/> mut result= sources_splitted_per_component.pop_back();
 		if( !result.empty() )
 		{
 			result.drop_back();
@@ -960,18 +958,18 @@ fn CalculateBuildTargetSourceFilesCommonDirectory( ust::array_view_imut</ust::st
 		return result;
 	}
 
-	var ust::vector</ust::string8/> mut result;
+	var ust::vector</ust::filesystem_path/> mut result;
 
 	// Calculate common prefix for all files.
 
 	for( auto mut i= 0s; ; ++i ) label component_loop
 	{
-		var ust::vector</ust::string8/>& first_source= sources_splitted_per_component.front();
+		var ust::vector</ust::filesystem_path/>& first_source= sources_splitted_per_component.front();
 		if( i >= first_source.size() )
 		{
 			break label component_loop;
 		}
-		var ust::string8& first_source_component= first_source[i];
+		var ust::filesystem_path& first_source_component= first_source[i];
 
 		foreach( & source_splitted : cast_imut(sources_splitted_per_component) )
 		{
@@ -1002,7 +1000,7 @@ fn TransformDependencyName(
 	return BuildTargetAbsoluteName{ .package_name= dependency_package_name.try_take(), .name= dependency_name.name };
 }
 
-fn IsInFilesList( ust::array_view_imut</ust::string8/> files, ust::string_view8 f ) : bool
+fn IsInFilesList( ust::array_view_imut</ust::filesystem_path/> files, ust::filesystem_path_view f ) : bool
 {
 	foreach( &list_file : files )
 	{

@@ -1,0 +1,668 @@
+import "../../imports/path_utils.u"
+import "../../imports/vector.u"
+
+namespace ust
+{
+
+namespace path
+{
+
+var char8 constexpr g_native_separator = "\\"c8;
+
+fn is_absolute( filesystem_path_view p ) : bool
+{
+	var prefix pref= parse_prefix(p);
+	if( !p.empty() )
+	{
+		if( pref.is_implicit_root )
+		{
+			return true;
+		}
+		auto remainder= p.subrange_start( pref.p.size() );
+		return !remainder.empty() && is_separator( remainder.front() );
+	}
+	return false;
+}
+
+fn is_relative( filesystem_path_view p ) : bool
+{
+	return !is_absolute(p);
+}
+
+fn is_separator( char8 c ) : bool
+{
+	return c == "/"c8 || c == g_native_separator;
+}
+
+fn join( filesystem_path_view p0 ) : filesystem_path
+{
+	return p0;
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1 ) : filesystem_path
+{
+	var [ filesystem_path_view, 2 ] components[ p0, p1 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2 ) : filesystem_path
+{
+	var [ filesystem_path_view, 3 ] components[ p0, p1, p2 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3 ) : filesystem_path
+{
+	var [ filesystem_path_view, 4 ] components[ p0, p1, p2, p3 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4 ) : filesystem_path
+{
+	var [ filesystem_path_view, 5 ] components[ p0, p1, p2, p3, p4 ];
+	return join_impl( components );
+}
+
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4, filesystem_path_view p5 ) : filesystem_path
+{
+	var [ filesystem_path_view, 6 ] components[ p0, p1, p2, p3, p4, p5 ];
+	return join_impl( components );
+}
+
+fn join_impl( array_view_imut</filesystem_path_view/> components ) : filesystem_path
+{
+	// Start from last absolute component.
+	var size_type mut start_component= 0s;
+	for( auto mut i= components.size() - 1s; ; )
+	{
+		var filesystem_path_view& component= components[i];
+		if( is_absolute( component ) )
+		{
+			start_component= i;
+			break;
+		}
+		if( i == 0s )
+		{
+			break;
+		}
+		--i;
+	}
+
+	var filesystem_path mut result;
+
+	foreach( &component : components.subrange_start( start_component  ) )
+	{
+		if( !result.empty() && ! is_separator( result.back() ) )
+		{
+			// Add separator if result ends with non-separator char.
+			result.push_back( g_native_separator );
+		}
+
+		result+= component;
+	}
+
+	return result;
+}
+
+fn append( filesystem_path &mut p0, filesystem_path_view p1 )
+{
+	if( is_absolute( p1 ) )
+	{
+		p0= p1;
+	}
+	else
+	{
+		if( !p0.empty() && !is_separator( p0.back() ) )
+		{
+			// Add separator if result ends with non-separator char.
+			p0.push_back( g_native_separator );
+		}
+
+		p0+= p1;
+	}
+}
+
+fn get_file_extension( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var prefix pref= parse_prefix(p);
+	if( pref.p.size() == p.size() )
+	{
+		return null_optional;
+	}
+
+	// Iterate backwards up to first "." or separator or prefix.
+	for( auto mut i= p.size() - 1s; ; )
+	{
+		var char8 c= p[i];
+		if( c == "."c8 )
+		{
+			if( i > 0s )
+			{
+				var char8 prev_c= p[ i - 1s ];
+				if( prev_c == "."c8 )
+				{
+					if( i > 1s )
+					{
+						var char8 prev_prev_s= p[ i - 2s ];
+						if( is_separator( prev_prev_s ) )
+						{
+							// It's something like "some/path/..".
+							break;
+						}
+					}
+					else
+					{
+						// Path starting with "..".
+						if( i == p.size() - 1s )
+						{
+							// ".." is a special name with no extension.
+							break;
+						}
+					}
+				}
+				else if( is_separator( prev_c ) )
+				{
+					// File starts with "." - it has no extension.
+					break;
+				}
+
+				// Return what remains after this ".".
+				return p.subrange_start( i + 1s );
+			}
+			else
+			{
+				// It's single ".".
+				break;
+			}
+		}
+		else if( is_separator( c ) )
+		{
+			// Reached directories separator without encounting ".".
+			break;
+		}
+
+		if( i == pref.p.size() )
+		{
+			break;
+		}
+		--i;
+	}
+
+	return null_optional;
+}
+
+fn get_path_without_extension( filesystem_path_view p )
+	: filesystem_path_view @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var prefix pref= parse_prefix(p);
+	if( pref.p.size() == p.size() )
+	{
+		return p;
+	}
+
+	// Iterate backwards up to first "." or separator.
+	for( auto mut i= p.size() - 1s; ; )
+	{
+		var char8 c= p[i];
+		if( c == "."c8 )
+		{
+			if( i > 0s )
+			{
+				var char8 prev_c= p[ i - 1s ];
+				if( prev_c == "."c8 )
+				{
+					if( i > 1s )
+					{
+						var char8 prev_prev_s= p[ i - 2s ];
+						if( is_separator( prev_prev_s ) )
+						{
+							// It's something like "some/path/..".
+							break;
+						}
+					}
+					else
+					{
+						// Path starting with "..".
+						if( i == p.size() - 1s )
+						{
+							// ".." is a special name with no extension.
+							break;
+						}
+					}
+				}
+				else if( is_separator( prev_c ) )
+				{
+					// File starts with "." - it has no extension.
+					break;
+				}
+
+				// Return what is before this ".".
+				return p.subrange_end(i);
+			}
+			else
+			{
+				// It's single ".".
+				break;
+			}
+		}
+		else if( is_separator( c ) )
+		{
+			// Reached directories separator without encounting ".".
+			break;
+		}
+
+		if( i == pref.p.size() )
+		{
+			break;
+		}
+		--i;
+	}
+
+	return p;
+}
+
+fn get_file_name( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var prefix pref= parse_prefix(p);
+	if( pref.p.size() == p.size() )
+	{
+		return null_optional;
+	}
+	if( is_separator( p.back() ) )
+	{
+		// Paths ending with separator considered to be a directory path.
+		return null_optional;
+	}
+
+	// Iterate backwards up to first separator.
+	for( auto mut i= p.size() - 1s; ; )
+	{
+		var char8 c= p[i];
+		if( is_separator(c) )
+		{
+			auto remainder= p.subrange_start( i + 1s );
+			if( remainder == ".." || remainder == "." )
+			{
+				// Names "." and ".." are not file names.
+				return null_optional;
+			}
+			return remainder;
+		}
+
+		if( i == pref.p.size() )
+		{
+			break;
+		}
+		--i;
+	}
+
+	// The whole path is a file name, unles it's "." or ".." or it has non-empty prefix.
+	if( !pref.p.empty() || p == ".." || p == "." )
+	{
+		return null_optional;
+	}
+	return p;
+}
+
+fn get_parent_path( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	var prefix pref= parse_prefix(p);
+	if( p.size() == pref.p.size() )
+	{
+		return null_optional;
+	}
+
+	var size_type mut i= p.size() - 1s;
+	while( is_separator( p[i] ) )
+	{
+		// Skip trailing separator.
+		--i;
+		if( i + 1s == pref.p.size() )
+		{
+			return null_optional;
+		}
+	}
+
+	// Iterate backwards up to first separator.
+	loop
+	{
+		var char8 c= p[i];
+		if( is_separator(c) )
+		{
+			// Skip duplicated separators if necessary.
+			while( i > 0s && is_separator( p[i] ) )
+			{
+				--i;
+			}
+			return p.subrange_end( i + 1s );
+		}
+
+		if( i == pref.p.size() )
+		{
+			break;
+		}
+		--i;
+	}
+
+	// Return prefix.
+	return pref.p;
+}
+
+fn normalize( filesystem_path_view p ) : filesystem_path
+{
+	var prefix pref= parse_prefix(p);
+
+	var vector</filesystem_path_view/> mut components;
+
+	auto mut it= components_iter(p);
+	if( false )
+	{
+		// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+		components.push_back( it.next().try_deref() );
+	}
+	loop
+	{
+		auto component_opt= it.next();
+		if( component_opt.empty() )
+		{
+			break;
+		}
+		var filesystem_path_view& component= component_opt.try_deref();
+
+		if( component == "." )
+		{
+			// Skip ".", since it's useless.
+		}
+		else if( component == "/" )
+		{
+			components.push_back( "\\" );
+		}
+		else if( component == ".." )
+		{
+			// If we have a component prior to ".." - remove it, else - preserve it (unles it's ".." or prefix ).
+			if( !components.empty() && components.back() != ".." && components.back() != "\\" && !( components.size() == 1s && component == pref.p ) )
+			{
+				components.drop_back();
+			}
+			else
+			{
+				components.push_back( component );
+			}
+		}
+		else
+		{
+			components.push_back( component );
+		}
+	}
+
+	var filesystem_path mut result;
+
+	foreach( &component : components )
+	{
+		if( !result.empty() && !is_separator( result.back() ) )
+		{
+			result.push_back( g_native_separator );
+		}
+		if( result.empty() || !( !component.empty() && is_separator( component.front() ) ) )
+		{
+			result+= component;
+		}
+	}
+
+	return result;
+}
+
+fn components_raw_iterator::constructor( mut this, filesystem_path_view p )
+	@( reference_notation::pollution::param0_param_1_inner_reference )
+	( p_= p, first_iteration_flag_= true )
+{}
+
+fn nodiscard components_raw_iterator::next( mut this )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p_.empty() )
+	{
+		// Reached the end.
+		return null_optional;
+	}
+
+	if( first_iteration_flag_ )
+	{
+		// Try to parse and return prefix on first iteration.
+		first_iteration_flag_= false;
+
+		var prefix pref= parse_prefix( p_ );
+		if( !pref.p.empty() )
+		{
+			p_= p_.subrange_start( pref.p.size() );
+			return pref.p;
+		}
+	}
+
+	if( is_separator( p_.front() ) )
+	{
+		// Possible "/" after prefix.
+		var filesystem_path_view res= p_.subrange_end(1s);
+
+		// Remove extra separators, if necessary.
+		while( !p_.empty() && is_separator( p_.front() ) )
+		{
+			p_.drop_front();
+		}
+
+		return res;
+	}
+
+	// Try extracting component up to next separator.
+	for( auto mut i= 0s; i < p_.size(); ++i )
+	{
+		if( is_separator( p_[i] ) )
+		{
+			var filesystem_path_view res= p_.subrange_end(i);
+
+			// Remove extra separators, if necessary.
+			while( i < p_.size() && is_separator( p_[i] ) )
+			{
+				++i;
+			}
+			p_= p_.subrange_start(i);
+
+			return res;
+		}
+	}
+
+	// Last component without trailing separator - return it as is.
+	var filesystem_path_view res= p_;
+	p_= filesystem_path_view();
+	return res;
+}
+
+struct prefix
+{
+	filesystem_path_view p;
+	bool is_implicit_root= false;
+}
+
+// Returns empty prefix if it's not valid.
+fn parse_prefix( filesystem_path_view p )
+	: prefix @( reference_notation::return_inner_references::param0_inner_reference0 )
+{
+	if( p.size() >= 2s )
+	{
+		var char8 c0= p[0s];
+		var char8 c1= p[1s];
+
+		if( ( ( c0 >= "a"c8 && c0 <= "z"c8 ) || ( c0 >= "A"c8 && c0 <= "Z"c8 ) ) && c1 == ":"c8 )
+		{
+			// C:
+			return prefix{ .p= p.subrange_end(2s), .is_implicit_root= false };
+		}
+		else if( c0 == g_native_separator && c1 == g_native_separator )
+		{
+			// \\
+			if( p.size() >= 3s )
+			{
+				var char8 c2= p[2s];
+				if( c2 == "?"c8 )
+				{
+					// \\?
+					if( p.size() >= 4s )
+					{
+						var char8 c3= p[3s];
+						if( c3 == g_native_separator )
+						{
+							// \\?\
+							if( p.size() >= 8s && p.subrange( 4s, 8s ) == "UNC\\" )
+							{
+								// \\?\UNC\server\share
+
+								auto mut i= 8s;
+								// Skip server
+								while( i < p.size() && !is_separator( p[i] ) )
+								{
+									++i;
+								}
+
+								if( i == p.size() )
+								{
+									return prefix(); // Has only server
+								}
+								while( i < p.size() && is_separator( p[i] ) )
+								{
+									++i;
+								}
+								if( i == p.size() )
+								{
+									return prefix(); // Has only server\
+								}
+
+								// skip share
+								while( i < p.size() && !is_separator( p[i] ) )
+								{
+									++i;
+								}
+
+								return prefix{ .p= p.subrange_end(i), .is_implicit_root= true };
+							}
+							if( p.size() >= 5s )
+							{
+								var char8 c4= p[4s];
+								if( p.size() >= 6s )
+								{
+									var char8 c5= p[5s];
+									if( ( ( c4 >= "a"c8 && c4 <= "z"c8 ) || ( c4 >= "A"c8 && c4 <= "Z"c8 ) ) && c5 == ":"c8 )
+									{
+										// \\?\C:
+										return prefix{ .p= p.subrange_end(6s), .is_implicit_root= true };
+									}
+								}
+
+								// \\?\server\share
+								auto mut i= 4s;
+								// Skip server
+								while( i < p.size() && !is_separator( p[i] ) )
+								{
+									++i;
+								}
+
+								if( i == p.size() )
+								{
+									return prefix(); // Has only server
+								}
+								while( i < p.size() && is_separator( p[i] ) )
+								{
+									++i;
+								}
+								if( i == p.size() )
+								{
+									return prefix(); // Has only server\
+								}
+
+								// skip share
+								while( i < p.size() && !is_separator( p[i] ) )
+								{
+									++i;
+								}
+
+								return prefix{ .p= p.subrange_end(i), .is_implicit_root= true };
+							}
+						}
+					}
+				}
+				else if( c2 == "."c8 )
+				{
+					// Device namespace
+					if( p.size() >= 4s )
+					{
+						var char8 c3= p[3s];
+						if( is_separator( c3 ) )
+						{
+							// \\.\
+							if( p.size() >= 4s )
+							{
+								// \\.\DEV
+
+								// Skip device name
+								var size_type mut i= 4s;
+								while( i < p.size() && !is_separator( p[i] ) )
+								{
+									++i;
+								}
+
+								return prefix{ .p= p.subrange_end(i), .is_implicit_root= true };
+							}
+						}
+					}
+				}
+				else
+				{
+					// \\server\share
+
+					auto mut i= 2s;
+					// Skip server
+					while( i < p.size() && !is_separator( p[i] ) )
+					{
+						++i;
+					}
+
+					if( i == p.size() )
+					{
+						return prefix(); // Has only server
+					}
+					while( i < p.size() && is_separator( p[i] ) )
+					{
+						++i;
+					}
+					if( i == p.size() )
+					{
+						return prefix(); // Has only server\
+					}
+
+					// skip share
+					while( i < p.size() && !is_separator( p[i] ) )
+					{
+						++i;
+					}
+
+					return prefix{ .p= p.subrange_end(i), .is_implicit_root= true };
+				}
+			}
+			else
+			{
+				// At least one char is expected after "\\".
+			}
+		}
+		else
+		{
+			// Not drive letter prefix or "\\" prefix.
+		}
+	}
+	return prefix();
+}
+
+} // namespace path
+
+} // namespace ust

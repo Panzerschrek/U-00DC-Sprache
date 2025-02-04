@@ -36,6 +36,8 @@ if you want to learn more, read its sources yourself.
 * Memory helpers, mostly unsafe (memory.u).
 * Minimum/maximum functions (minmax.u).
 * Mixins-related helpers (mixin_utils.u).
+* Filesystem path type definition (path.u).
+* Filesystem paths manipulation functions (path_utils.u).
 * Functions for polymorph objects manipulation (polymorph.u).
 * Reference notation helpers (reference_notation.u).
   Used to simplify specifying reference notation for functions.

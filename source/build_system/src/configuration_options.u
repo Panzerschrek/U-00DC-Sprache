@@ -5,7 +5,8 @@ import "json/parsing.uh"
 namespace BK
 {
 
-fn LoadConfigurationOptions( Logger &mut logger, ust::string_view8 file_path ) : ust::optional</ConfigurationOptions/>
+fn LoadConfigurationOptions(
+	Logger &mut logger, ust::filesystem_path_view file_path ) : ust::optional</ConfigurationOptions/>
 {
 	var ust::optional</ust::string8/> file_contents= ReadFile( file_path );
 	if( file_contents.empty() )

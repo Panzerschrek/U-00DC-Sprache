@@ -1,12 +1,13 @@
+import "/path_utils.u"
 import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
 	// More than one input file.
 
-	auto mut in_file_a= ust::concat( build_system_interface.GetCurrentPackageSourceDirectory(), "/", "file_a.txt" );
-	auto mut in_file_b= ust::concat( build_system_interface.GetCurrentPackageSourceDirectory(), "/", "file_b.txt" );
-	auto mut out_file= ust::concat( build_system_interface.GetCurrentPackageBuildDirectory(), "/", "combined.txt" );
+	auto mut in_file_a= ust::path::join( build_system_interface.GetCurrentPackageSourceDirectory(), "file_a.txt" );
+	auto mut in_file_b= ust::path::join( build_system_interface.GetCurrentPackageSourceDirectory(), "file_b.txt" );
+	auto mut out_file= ust::path::join( build_system_interface.GetCurrentPackageBuildDirectory(), "combined.txt" );
 
 	auto mut program= build_system_interface.GetConfigurationOption( "test_file_generation_tool" ).try_deref();
 

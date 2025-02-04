@@ -1,3 +1,4 @@
+import "/path.u"
 import "/string.u"
 import "/vector.u"
 
@@ -7,8 +8,8 @@ namespace BK
 struct MakeDepFile
 {
 	// All path are normalized.
-	ust::string8 destination;
-	ust::vector</ust::string8/> dependencies;
+	ust::filesystem_path destination;
+	ust::vector</ust::filesystem_path/> dependencies;
 }
 
 // Actually can parse only dep files produced by the Ü compiler.

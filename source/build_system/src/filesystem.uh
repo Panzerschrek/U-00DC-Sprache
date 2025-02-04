@@ -1,3 +1,4 @@
+import "/path.u"
 import "/system_time.u"
 import "logger.uh"
 
@@ -5,28 +6,29 @@ namespace BK
 {
 
 // Make path absolute, if it is already absolute - just return it.
-fn MakePathAbsolute( ust::string_view8 path ) : ust::string8;
+fn MakePathAbsolute( ust::filesystem_path_view path ) : ust::filesystem_path;
 
 // Creates a directory, if it doesn't exist.
 // Returns false on fail
-fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::string_view8 path ) : bool;
+fn nodiscard EnsureDirectoryExists( Logger &mut logger, ust::filesystem_path_view path ) : bool;
 
 // Create/overwrite a file with specific contents.
-fn nodiscard WriteFile( Logger &mut logger, ust::string_view8 path, ust::string_view8 contents ) : bool;
+fn nodiscard WriteFile( Logger &mut logger, ust::filesystem_path_view path, ust::string_view8 contents ) : bool;
 
 // Creates copy of a file. May overwrite destination. Returns false on error.
-fn nodiscard CopyFile( Logger &mut logger, ust::string_view8 destination_path, ust::string_view8 source_path ) : bool;
+fn nodiscard CopyFile(
+	Logger &mut logger, ust::filesystem_path_view destination_path, ust::filesystem_path_view source_path ) : bool;
 
 // Read file contents (usually of a text file) into a string.
 // Returns none if can't read.
-fn nodiscard ReadFile( ust::string_view8 path ) : ust::optional</ust::string8/>;
+fn nodiscard ReadFile( ust::filesystem_path_view path ) : ust::optional</ust::string8/>;
 
 type FileModificationTime= ust::system_time;
 
 // Get modification time for file. Returns empty option if can't find it (probably file doesn't exist).
-fn GetFileModificationTime( ust::string_view8 path ) : ust::optional</FileModificationTime/>;
+fn GetFileModificationTime( ust::filesystem_path_view path ) : ust::optional</FileModificationTime/>;
 
 // Get absolute path to executable of current program.
-fn GetCurrentExecutablePath() : ust::string8;
+fn GetCurrentExecutablePath() : ust::filesystem_path;
 
 } // namespace BK

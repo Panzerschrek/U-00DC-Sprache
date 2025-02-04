@@ -1,3 +1,4 @@
+import "/path.u"
 import "/variant.u"
 import "/vector.u"
 import "types.uh"
@@ -31,14 +32,14 @@ struct BuildTarget
 	// Contains paths relative to the package source directory (where the build script is located).
 	// Paths with "." and ".." aren't allowed.
 	// Duplicates aren't allowed.
-	ust::vector</ust::string8/> source_files;
+	ust::vector</ust::filesystem_path/> source_files;
 
 	// List of generated source files of this build target. Order is irrelevant.
 	// Contains paths relative to the generated sources directory of this build target.
 	// Paths with "." and ".." aren't allowed.
 	// Duplicates aren't allowed.
 	// For each generated source file there should be a custom build step which generates it.
-	ust::vector</ust::string8/> generated_source_files;
+	ust::vector</ust::filesystem_path/> generated_source_files;
 
 	// List of generated private header files of this build target. Order is irrelevant.
 	// Contains paths relative to the generated sources directory of this build target.
@@ -47,7 +48,7 @@ struct BuildTarget
 	// For each generated private header file there should be a custom build step which generates it.
 	// Specifying generated headers is necessary
 	// in order to perform their generation before compiling source files which use them.
-	ust::vector</ust::string8/> generated_private_header_files;
+	ust::vector</ust::filesystem_path/> generated_private_header_files;
 
 	// List of generated public header files of this build target. Order is irrelevant.
 	// Contains paths relative to the generated public headers directory of this build target.
@@ -56,7 +57,7 @@ struct BuildTarget
 	// For each generated public header file there should be a custom build step which generates it.
 	// Specifying generated headers is necessary
 	// in order to perform their generation before compiling source files which use them.
-	ust::vector</ust::string8/> generated_public_header_files;
+	ust::vector</ust::filesystem_path/> generated_public_header_files;
 
 	// Publuc include directories of this build target.
 	// They are used in this target and in all build targets dependent on it.
@@ -65,7 +66,7 @@ struct BuildTarget
 	// will lead to these directories - some_file.uh will be searched within them.
 	// Paths with "." and ".." aren't allowed.
 	// Duplicates aren't allowed.
-	ust::vector</ust::string8/> public_include_directories;
+	ust::vector</ust::filesystem_path/> public_include_directories;
 
 	// List of dependencies, which should be also dependencies of other build targets dependent on this build target.
 	ust::vector</ DependencyName /> public_dependencies;
@@ -106,7 +107,7 @@ struct PackageName
 	// Base of package name (where to search it).
 	ust::variant</ tup[ CurrentPackage, GlobalVersionedPackageName ] /> name_base;
 	// Path starting from base.
-	ust::string8 path;
+	ust::filesystem_path path;
 }
 
 // A package from global packages directory/centralized repository, with version specified.
@@ -129,7 +130,7 @@ struct CustomBuildStep
 	struct ExeCommand
 	{
 		// Path to the executable.
-		ust::string8 exe_path;
+		ust::filesystem_path exe_path;
 		// Command line arguments.
 		ust::vector</ust::string8/> command_line;
 	}
@@ -146,8 +147,8 @@ struct CustomBuildStep
 	// Copy file from one place to another.
 	struct CopyCommand
 	{
-		ust::string8 destination_path;
-		ust::string8 source_path;
+		ust::filesystem_path destination_path;
+		ust::filesystem_path source_path;
 	}
 
 	// Generate file with contents specified.
@@ -155,15 +156,15 @@ struct CustomBuildStep
 	// if result file contents is too big, prefer using external command instead.
 	struct GenerateFileCommand
 	{
-		ust::string8 destination_path;
+		ust::filesystem_path destination_path;
 		// TODO - support here binary contents.
 		ust::string8 contents;
 	}
 
 	// List of full paths to input files.
-	ust::vector</ust::string8/> input_files;
+	ust::vector</ust::filesystem_path/> input_files;
 	// List of full paths to output files.
-	ust::vector</ust::string8/> output_files;
+	ust::vector</ust::filesystem_path/> output_files;
 
 	// What to execute.
 	ust::variant</ tup[ ExeCommand, HostBuildTargetExeCommand, CopyCommand, GenerateFileCommand ] /> command;

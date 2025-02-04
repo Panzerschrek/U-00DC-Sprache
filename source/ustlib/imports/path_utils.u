@@ -1,0 +1,83 @@
+// This file declares various functions for filesystem path manipulations.
+// Functions from this file don't perform system calls, they purely operate on inputs.
+
+import "path.u"
+
+namespace ust
+{
+
+namespace path
+{
+
+// Returns true if it's an absolute path.
+fn is_absolute( filesystem_path_view p ) : bool;
+
+// Returns true if it's a relative path.
+fn is_relative( filesystem_path_view p ) : bool;
+
+// Returns true if given char is valid separator on current OS.
+fn is_separator( char8 c ) : bool;
+
+// Join several components together, separating them via directories separator.
+fn join( filesystem_path_view p0 ) : filesystem_path;
+fn join( filesystem_path_view p0, filesystem_path_view p1 ) : filesystem_path;
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2 ) : filesystem_path;
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3 ) : filesystem_path;
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4 ) : filesystem_path;
+fn join( filesystem_path_view p0, filesystem_path_view p1, filesystem_path_view p2, filesystem_path_view p3, filesystem_path_view p4, filesystem_path_view p5 ) : filesystem_path;
+
+// Same as p0= join( p0, p1 ), but is slighly more efficient.
+fn append( filesystem_path &mut p0, filesystem_path_view p1 );
+
+// Get file extension - string after last "." in the file name.
+// Returns empty optional if has no file extension or if it's a directory path (ending with a separator).
+// Returns empty string if "." is the last symbol in given path.
+fn get_file_extension( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
+
+// If has a file extension - remove it. Otherwise return given path as is.
+fn get_path_without_extension( filesystem_path_view p )
+	: filesystem_path_view @( reference_notation::return_inner_references::param0_inner_reference0 );
+
+// Get file name, assuming the last component is file name.
+// Returns empty optional if given path ends with separator or with "." or "..".
+fn get_file_name( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
+
+// Returns parent path - for a file directory where it's created, for a directory its parent directory.
+// Returns empty optional if can't determine parent path, like for root path or for relative path consisting of single component.
+// Non-empty result doesn't contain trailing separator.
+fn get_parent_path( filesystem_path_view p )
+	: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
+
+// Returns some sort of normal form. Separators are replaced with preffered, "." and ".." are removed (if it's possible).
+// Note that this function doesn't access underlying filesystem and thus not absolutization or symlinks resolving are performed.
+fn normalize( filesystem_path_view p ) : filesystem_path;
+
+// Create iterator over path components.
+fn components_iter( filesystem_path_view p ) : auto
+{
+	return wrap_raw_iterator( components_raw_iterator( p ) );
+}
+
+// Iterator over path components - directories and file name.
+// Separators aren't returned as components paths, with only exception for root "/".
+class components_raw_iterator
+{
+public:
+	fn constructor( mut this, filesystem_path_view p )
+		@( reference_notation::pollution::param0_param_1_inner_reference );
+
+	fn nodiscard next( mut this )
+		: optional</filesystem_path_view/> @( reference_notation::return_inner_references::param0_inner_reference0 );
+
+private:
+	filesystem_path_view p_;
+
+	// For Windows path store a flag indicating first iteration - in order to trigger prefix parsing.
+	type_select</ constexpr_string_equals( compiler::target::os, "windows" ), bool, void /> first_iteration_flag_;
+}
+
+} // namespace path
+
+} // namespace ust

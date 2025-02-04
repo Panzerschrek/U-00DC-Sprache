@@ -1,11 +1,11 @@
 import "/assert.u"
+import "/path_utils.u"
 import "/scoped_array.u"
 import "/string_conversions.u"
 import "/unordered_map.u"
 import "build_graph.uh"
 import "filesystem.uh"
 import "make_dep_file.uh"
-import "path.uh"
 import "process.uh"
 
 
@@ -358,7 +358,9 @@ fn nodiscard PerformGraphBuild(
 
 				if( node_to_rebuild.program == SpecialBuildCommands::copy_file )
 				{
-					if( !EnsureDirectoryExists( logger, GetParentPath( node_to_rebuild.command_line[0s] ) ) ||
+					var ust::optional</ust::filesystem_path_view/> parent_path= ust::path::get_parent_path( node_to_rebuild.command_line[0s] );
+					if( parent_path.empty() ||
+						!EnsureDirectoryExists( logger, parent_path.try_deref() ) ||
 						!CopyFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
 					{
 						logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
@@ -369,7 +371,9 @@ fn nodiscard PerformGraphBuild(
 				}
 				else if( node_to_rebuild.program == SpecialBuildCommands::generate_file )
 				{
-					if( !EnsureDirectoryExists( logger, GetParentPath( node_to_rebuild.command_line[0s] ) ) ||
+					var ust::optional</ust::filesystem_path_view/> parent_path= ust::path::get_parent_path( node_to_rebuild.command_line[0s] );
+					if( parent_path.empty() ||
+						!EnsureDirectoryExists( logger, parent_path.try_deref() ) ||
 						!WriteFile( logger, node_to_rebuild.command_line[0s], node_to_rebuild.command_line[1s] ) )
 					{
 						logger.LogError( ust::concat( "Command \"", node_to_rebuild.comment, "\" execution failed." ) );
@@ -440,7 +444,7 @@ fn nodiscard PerformGraphBuild(
 	return true;
 }
 
-type FilesModificationTime= ust::unordered_map</ ust::string8, ust::optional</FileModificationTime/> />;
+type FilesModificationTime= ust::unordered_map</ ust::filesystem_path, ust::optional</FileModificationTime/> />;
 
 fn CollectFilesModificationTime(
 	BuildGraph& build_graph,
@@ -489,7 +493,7 @@ fn CollectFilesModificationTime(
 	return files_with_modification_time;
 }
 
-type FileToNodesMap= ust::unordered_map</ust::string8, ust::vector</size_type/>/>;
+type FileToNodesMap= ust::unordered_map</ust::filesystem_path, ust::vector</size_type/>/>;
 
 fn BuildInputFileToNodeIndexMap(
 	BuildGraph& build_graph,
@@ -586,7 +590,7 @@ fn BuildOutputFileToNodeIndexMap(
 	return output_file_to_node_id_map;
 }
 
-fn LoadAndParseDepFile( Logger &mut logger, ust::string_view8 dep_file_path ) : ust::optional</MakeDepFile/>
+fn LoadAndParseDepFile( Logger &mut logger, ust::filesystem_path_view dep_file_path ) : ust::optional</MakeDepFile/>
 {
 	if( dep_file_path.empty() )
 	{
