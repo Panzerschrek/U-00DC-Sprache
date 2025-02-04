@@ -210,6 +210,7 @@ auto constexpr ERROR_INVALID_DATA = 13;
 auto constexpr ERROR_NO_MORE_FILES = 18;
 auto constexpr ERROR_HANDLE_EOF = 38;
 auto constexpr ERROR_FILE_EXISTS = 80;
+auto constexpr ERROR_DIR_NOT_EMPTY = 145;
 auto constexpr ERROR_ALREADY_EXISTS = 183;
 auto constexpr ERROR_DIRECTORY = 267;
 

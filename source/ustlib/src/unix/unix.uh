@@ -22,6 +22,7 @@ fn nomangle readdir( $(DIR) ü__dirp ) unsafe : $(dirent);
 fn nomangle rename( $(char8) ü__old, $(char8) ü__new ) unsafe : i32;
 fn nomangle rmdir( $(char8) ü__path ) unsafe : i32;
 fn nomangle sendfile( i32 ü__out_fd, i32 ü__in_fd, $(off_t) ü__offset, size_t ü__count ) unsafe : ssize_t;
+fn nomangle stat( $(char8) ü__file, $(stat_) ü__buf ) unsafe : i32;
 fn nomangle unlink( $(char8) ü__name ) unsafe : i32;
 fn nomangle write( i32 ü__fd, $(byte8) ü__buf, size_t ü__n ) unsafe : ssize_t;
 
@@ -141,6 +142,7 @@ auto constexpr EMLINK = 31;
 auto constexpr EPIPE = 32;
 auto constexpr EDOM = 33;
 auto constexpr ERANGE = 34;
+auto constexpr ENOTEMPTY = 39;
 
 auto constexpr O_RDONLY = 0;
 auto constexpr O_WRONLY = 1;

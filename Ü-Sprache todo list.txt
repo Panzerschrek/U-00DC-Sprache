@@ -80,14 +80,15 @@ Standart library:
 *) "result"-like container for reference results
 *) Support opening files with appending
 *) Fix "rename_file_or_directory_if_not_exists" implementation for Unix - perform operation atomically
+*) Fix "get_metadata_for_path" implementation for Windows - follow symbolic links
 *) More file kinds - fifo, block device, etc.
 *) More file error kinds
 *) Memory-mapped files
 *) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
 *) Buffered reader/writer wrappers for files
-*) Function for creation of the whole directories path
-*) Function for recursive directory removal
 *) Examples for file-related functionality
+*) Optimize filesystem functions - avoid unnecessary string conversions (utf16 <-> utf8), null-terminator adding
+*) Support symlinks operations - create symlink, read symlink, handle symlinks
 *) More filesystem path manipulation functions
 *) Try to optimize random_access_range - use start + end pointers instead of start + size.
 	This may improve iteration efficiency.
@@ -203,7 +204,7 @@ CPP Header converter:
 *) Support non-absolute program paths for custom build steps - where these programs may be resolved via "$PATH"
 *) Try to detect dependency loops involving custom build steps before executing the build
 *) Save build graph atomically
-*) Rebuild build script shared library if compiler executable is changed
+*) Rebuild build script shared libraries and ustlib for them if compiler executable is changed
 *) Granular build graph nodes saving - in order to ensure no build artifacts are reused if command line is changed
 *) Speed-up build scripts compilation/loading and package information obtaining by running this in parallel for many
 	packages (if possible)
