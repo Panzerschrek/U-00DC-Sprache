@@ -515,6 +515,7 @@ fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</voi
 
 	loop
 	{
+		// TODO - remove unnecessary conversions utf16 -> utf8 -> utf16
 		var filesystem_path entry_name= extract_file_name_from_find_data( find_data );
 		if( !directory_entry_should_be_ignored( entry_name ) )
 		{
@@ -720,6 +721,7 @@ fn nodiscard directory_raw_iterator::impl_windows::next( mut this ) : optional</
 	}
 }
 
+// TODO - perform this check on raw WCHAR array to avoid extra utf16 -> utf8 conversion
 fn directory_entry_should_be_ignored( string_view8 entry_name ) : bool
 {
 	return entry_name == "." || entry_name == "..";
