@@ -10,6 +10,7 @@ enum io_error
 	permission_denied,
 	not_found,
 	not_a_directory,
+	directory_not_empty,
 	already_exists,
 	out_of_memory,
 	interrupted,
