@@ -837,11 +837,30 @@ fn nomangle main() : i32
 		// Create the whole path again - shouldn't fail again.
 		assert( ust::create_directory_with_parents( dir2_full ).is_ok(), "Failed to create directory \"" + dir2_full + "\"!" );
 
-		// Remove file and directories.
-		assert( ust::remove_file( file_path_full ).is_ok(), "Failed to remove \"" + file_path_full + "\"!" );
-		assert( ust::remove_directory( dir2_full ).is_ok(), "Failed to remove \"" + dir2_full + "\"!" );
-		assert( ust::remove_directory( dir1_full ).is_ok(), "Failed to remove \"" + dir1_full + "\"!" );
-		assert( ust::remove_directory( dir0 ).is_ok(), "Failed to remove \"" + dir0 + "\"!" );
+		// Remove directory with all contents.
+		assert( ust::remove_directory_recursive( dir0 ).is_ok(), "Failed to remove \"" + dir0 + "\"!" );
+
+		// Files and directories should be actually removed.
+		result_match( ust::get_metadata_for_path( file_path_full ) )
+		{
+			Ok(v) -> { assert( false, "Should not get metadata for removed file!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+		}
+		result_match( ust::get_metadata_for_path( dir2_full ) )
+		{
+			Ok(v) -> { assert( false, "Should not get metadata for removed directory!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+		}
+		result_match( ust::get_metadata_for_path( dir1_full ) )
+		{
+			Ok(v) -> { assert( false, "Should not get metadata for removed directory!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+		}
+		result_match( ust::get_metadata_for_path( dir0 ) )
+		{
+			Ok(v) -> { assert( false, "Should not get metadata for removed directory!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+		}
 	}
 
 	// Create directory with parents using absolute path.
@@ -853,7 +872,8 @@ fn nomangle main() : i32
 		auto &constexpr dir0= "5555 five";
 		auto &constexpr dir1= "subdir of 5555";
 		auto &constexpr file_path= "Seelenzorn";
-		var ust::filesystem_path dir1_full= ust::path::join( current_directory, dir0, dir1 );
+		var ust::filesystem_path dir0_full= ust::path::join( current_directory, dir0 );
+		var ust::filesystem_path dir1_full= ust::path::join( dir0_full, dir1 );
 		var ust::filesystem_path file_path_full= ust::path::join( dir1_full, file_path );
 		auto& constexpr file_contents= "Töte alles";
 
@@ -879,10 +899,25 @@ fn nomangle main() : i32
 		// Create the whole path again - shouldn't fail.
 		assert( ust::create_directory_with_parents( dir1_full ).is_ok(), "Failed to create directory \"" + dir1_full + "\"!" );
 
-		// Remove file and directories.
-		assert( ust::remove_file( file_path_full ).is_ok(), "Failed to remove \"" + file_path_full + "\"!" );
-		assert( ust::remove_directory( dir1_full ).is_ok(), "Failed to remove \"" + dir1_full + "\"!" );
-		assert( ust::remove_directory( dir0 ).is_ok(), "Failed to remove \"" + dir0 + "\"!" );
+		// Remove directory with all contents.
+		assert( ust::remove_directory_recursive( dir0_full ).is_ok(), "Failed to remove \"" + dir0_full + "\"!" );
+
+		// Files and directories should be actually removed.
+		result_match( ust::get_metadata_for_path( file_path_full ) )
+		{
+			Ok(v) -> { assert( false, "Should not get metadata for removed file!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+		}
+		result_match( ust::get_metadata_for_path( dir1_full ) )
+		{
+			Ok(v) -> { assert( false, "Should not get metadata for removed directory!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+		}
+		result_match( ust::get_metadata_for_path( dir0_full ) )
+		{
+			Ok(v) -> { assert( false, "Should not get metadata for removed directory!" ); },
+			Err(e) -> { assert( e == ust::io_error::not_found, "Unexpected error code!" ); },
+		}
 	}
 
 	// file copy

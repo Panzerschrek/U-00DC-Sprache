@@ -56,6 +56,10 @@ fn remove_file( filesystem_path_view path ) : filesystem_result</void/>;
 // Returns error if can't do this.
 fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>;
 
+// Remove a directory, including all files and directories within it.
+// Symlinks aren't followed and only removed.
+fn remove_directory_recursive( filesystem_path_view path ) : filesystem_result</void/>;
+
 // Get current (working) directory, which is used for resolving of relative paths.
 fn get_current_directory() : filesystem_path;
 

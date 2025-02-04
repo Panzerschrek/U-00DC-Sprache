@@ -485,6 +485,81 @@ fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>
 	return void();
 }
 
+fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</void/>
+{
+	scoped_array char8 path_nt[ p.size() + 1s ]( p.iter().chain( filesystem_path_view("\0").iter() ) );
+
+	// Iterate this directory entries and remove them.
+
+	var $(DIR) dir_handle= unsafe( ::opendir( path_nt.data() ) );
+	if( is_nullptr(dir_handle) )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	loop
+	{
+		set_errno(0); // Documentation says it's necessary to reset "errno" before "readdir" call.
+		var $(dirent) entry_ptr= unsafe( ::readdir( dir_handle ) );
+		if( is_nullptr( entry_ptr ) )
+		{
+			var i32 err= get_errno();
+
+			unsafe( ::closedir( dir_handle ) );
+
+			if( err == 0 )
+			{
+				break;
+			}
+			else
+			{
+				return translate_errno( err ); // Some error occured.
+			}
+		}
+
+		var dirent& entry= unsafe( $>(entry_ptr) );
+
+		// Skip "." and "..".
+		if( entry.d_name[0] == "."c8 && ( entry.d_name[1] == "\0"c8 || (entry.d_name[1] == "."c8 && entry.d_name[2] == "\0"c8 ) ) )
+		{
+			continue;
+		}
+
+		var size_type mut name_size= 0s;
+		while( name_size < typeinfo</ typeof( entry.d_name ) />.size_of )
+		{
+			if( entry.d_name[name_size] == "\0"c8 )
+			{
+				break;
+			}
+			++name_size;
+		}
+
+		var filesystem_path_view entry_name= filesystem_path_view( entry.d_name ).subrange_end( name_size );
+		var filesystem_path entry_full_name= path::join( p, entry_name );
+
+		var filesystem_result</void/> remove_result=
+			( entry.d_type == u8(DT_DIR)
+				? remove_directory_recursive( entry_full_name ) /* remove a subdirectory recursive */
+				: remove_file( entry_full_name ) /* remove file or symbolic link */ );
+
+		if( remove_result.is_error() )
+		{
+			unsafe( ::closedir( dir_handle ) );
+			return remove_result;
+		}
+	}
+
+	// Can finally remove this directory.
+	var i32 res= unsafe( ::rmdir( path_nt.data() ) );
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
 fn get_current_directory() : filesystem_path
 {
 	var filesystem_path mut res;
