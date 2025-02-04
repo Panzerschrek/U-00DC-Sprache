@@ -814,9 +814,11 @@ fn nomangle main() : i32
 		auto &constexpr dir1= "component one";
 		auto &constexpr dir2= "component II";
 		auto &constexpr file_path= "Lobotomie";
+		auto &constexpr file_copy_path= "Lobotomie (first copy)";
 		auto constexpr dir1_full= dir0 + "/" + dir1;
 		auto constexpr dir2_full= dir1_full + "/" + dir2;
 		auto constexpr file_path_full= dir2_full + "/" + file_path;
+		auto constexpr file_copy_path_full= dir2_full + "/" + file_copy_path;
 		auto& constexpr file_contents= "Tanz aus der Reihe, sonst zerfleischen dich die Haie!";
 
 		// Create the whole path.
@@ -844,6 +846,14 @@ fn nomangle main() : i32
 		auto file_read_res= ust::read_file_to_string( file_path_full );
 		assert( file_read_res.is_ok(), "Failed to read file \"" + file_path_full + "\"!" );
 		assert( file_read_res.try_deref() == file_contents, "Unexpected file contents!" );
+
+		// Create a copy of the file.
+		assert( ust::copy_file( file_path_full, file_copy_path_full ).is_ok(), "Failed to copy \"" + file_path_full + "\"!" );
+
+		// Ensure can read the copy.
+		auto file_copy_read_res= ust::read_file_to_string( file_copy_path_full );
+		assert( file_copy_read_res.is_ok(), "Failed to read file \"" + file_path_full + "\"!" );
+		assert( file_copy_read_res.try_deref() == file_contents, "Unexpected file contents!" );
 
 		// Create the whole path again - shouldn't fail again.
 		assert( ust::create_directory_with_parents( dir2_full ).is_ok(), "Failed to create directory \"" + dir2_full + "\"!" );
