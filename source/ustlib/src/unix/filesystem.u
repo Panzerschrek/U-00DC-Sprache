@@ -581,7 +581,8 @@ fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</voi
 				? remove_directory_recursive( entry_full_name ) /* remove a subdirectory recursive */
 				: remove_file( entry_full_name ) /* remove file or symbolic link */ );
 
-		if( remove_result.is_error() )
+		// Ignore ENOENT - in case if someone else removed this entry concurrently.
+		if( remove_result.is_error() && remove_result.try_deref_error() != io_error::not_found )
 		{
 			unsafe( ::closedir( dir_handle ) );
 			return remove_result;
