@@ -1005,6 +1005,7 @@ fn translate_errno( i32 errno ) : io_error
 	EEXIST -> { return io_error::already_exists; },
 	ENOTDIR -> { return io_error::not_a_directory; },
 	EINTR -> { return io_error::interrupted; },
+	ENOTEMPTY -> { return io_error::directory_not_empty; },
 	// TODO - support other codes.
 	default -> { return io_error::other; },
 	}

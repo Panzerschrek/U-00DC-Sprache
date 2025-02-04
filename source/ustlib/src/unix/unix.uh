@@ -142,6 +142,7 @@ auto constexpr EMLINK = 31;
 auto constexpr EPIPE = 32;
 auto constexpr EDOM = 33;
 auto constexpr ERANGE = 34;
+auto constexpr ENOTEMPTY = 39;
 
 auto constexpr O_RDONLY = 0;
 auto constexpr O_WRONLY = 1;
