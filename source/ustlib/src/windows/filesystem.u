@@ -283,10 +283,17 @@ fn file_readable_writeable::seek( mut this, u64 offset ) : filesystem_result</vo
 
 fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>
 {
+	// TODO - support following symlinks.
+	return get_symlink_metadata_for_path( path );
+}
+
+fn get_symlink_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>
+{
 	var wide_string mut path_null_terminated = utf8_to_null_terminated_wide_string( path );
 
 	var WIN32_FILE_ATTRIBUTE_DATA mut info= zero_init;
 
+	/// Documentation says that for symbolic links their metadata is returned.
 	var BOOL res =
 		unsafe( ::GetFileAttributesExW(
 			path_null_terminated.data(),

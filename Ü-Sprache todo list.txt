@@ -80,6 +80,7 @@ Standart library:
 *) "result"-like container for reference results
 *) Support opening files with appending
 *) Fix "rename_file_or_directory_if_not_exists" implementation for Unix - perform operation atomically
+*) Fix "get_metadata_for_path" implementation for Unix - follow symbolic links
 *) More file kinds - fifo, block device, etc.
 *) More file error kinds
 *) Memory-mapped files
