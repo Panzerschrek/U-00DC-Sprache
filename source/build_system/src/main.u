@@ -437,7 +437,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 
 fn EnsureHasExeExtension( ust::string8 &mut executable_path )
 {
-	if( ust::string_view8( compiler::target::os ) != "windows" )
+	if( ust::string_view8( compiler::target::os ) != g_os_windows )
 	{
 		// Non-windows executables usually have no extension.
 		return;
@@ -676,7 +676,7 @@ fn BuildAndLoadPackageBuildScript(
 		compiler_args.push_back( "--target-environment" );
 		compiler_args.push_back( compiler::target::environment );
 
-		if( ust::string_view8( compiler::target::os ) != "windows" )
+		if( ust::string_view8( compiler::target::os ) != g_os_windows )
 		{
 			// It seems that position-independent code is always enabled on systems except Windows.
 			// So, use this option for building the shared library.
@@ -687,13 +687,13 @@ fn BuildAndLoadPackageBuildScript(
 		// Put symbols into sections and remove unnecessary ones.
 		compiler_args.push_back( "--function-sections" );
 		compiler_args.push_back( "--data-sections" );
-		if( ust::string_view8( compiler::target::os ) != "windows" ||
-			ust::string_view8( compiler::target::environment ) == "gnu" )
+		if( ust::string_view8( compiler::target::os ) != g_os_windows ||
+			ust::string_view8( compiler::target::environment ) == g_environment_gnu )
 		{
 			compiler_args.push_back( "-Wl,--gc-sections" );
 		}
 
-		if( ust::string_view8( compiler::target::environment ) == "msvc" )
+		if( ust::string_view8( compiler::target::environment ) == g_environment_msvc )
 		{
 			// Do not generate ".lib" file - it's unnecessary, since we load the DLL dynamically.
 			compiler_args.push_back( "-Wl,/NOIMPLIB" );
@@ -778,7 +778,7 @@ fn CheckRebuildIsNeededBasedOnDepFile( Logger &mut logger, ust::filesystem_path_
 
 fn GetNativeSharedLibraryExtension() : ust::string_view8
 {
-	return( ust::string_view8( compiler::target::os ) == "windows" ? ust::string_view8("dll") : ust::string_view8("so") );
+	return( ust::string_view8( compiler::target::os ) == g_os_windows ? ust::string_view8("dll") : ust::string_view8("so") );
 }
 
 fn GetDependencyFilePath( ust::filesystem_path_view path ) : ust::filesystem_path
@@ -1096,7 +1096,7 @@ fn CreatePackageTargetBuildGraphNodes(
 
 	// Combine multiple ".bc" files into single result.
 
-	var bool target_is_windows = target_triple.operating_system == "windows";
+	var bool target_is_windows = target_triple.operating_system == g_os_windows;
 
 	var ust::filesystem_path mut result_target_file_path= package_build_directory;
 	ust::path::append( result_target_file_path, target_name.name );
@@ -1158,7 +1158,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			var ust::filesystem_path lib_name = ust::path::normalize( ust::concat( package_build_directory, "/", target_name.name, ".lib" ) );
 			node.output_files.push_back( lib_name );
 
-			if( target_triple.environment == "gnu" )
+			if( target_triple.environment == g_environment_gnu )
 			{
 				// MinGW linker requires a special option to produce such library.
 				node.command_line.push_back( "-Wl,--out-implib," + lib_name );
@@ -1429,7 +1429,7 @@ fn CreatePackageTargetBuildGraphNodes(
 				// Put symbols into sections and remove unnecessary ones.
 				node.command_line.push_back( "--function-sections" );
 				node.command_line.push_back( "--data-sections" );
-				if( !target_is_windows || target_triple.environment == "gnu" )
+				if( !target_is_windows || target_triple.environment == g_environment_gnu )
 				{
 					node.command_line.push_back( "-Wl,--gc-sections" );
 				}
@@ -1497,7 +1497,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		res.push_back(s);
 	}
 
-	if( target_triple.operating_system == "windows" )
+	if( target_triple.operating_system == g_os_windows )
 	{
 		foreach( &s : sources_windows )
 		{
@@ -1517,7 +1517,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 
 fn GetUstlibSystemLibrariesToLink( TargetTriple& target_triple ) : ust::vector</ust::string8/>
 {
-	if( target_triple.operating_system == "windows" )
+	if( target_triple.operating_system == g_os_windows )
 	{
 		return ust::vector</ust::string8/>();
 	}
@@ -1648,7 +1648,7 @@ fn CreateCustomBuildStepBuildGraphNodes(
 				GetPackageBuildDirectory( host_packages_root_build_directory, host_build_target_exe_command.name.package_name ),
 				"/",
 				host_build_target_exe_command.name.name,
-				( host_target_triple.operating_system == "windows" ? ust::string_view8(".exe") : ust::string_view8() ) ) );
+				( host_target_triple.operating_system == g_os_windows ? ust::string_view8(".exe") : ust::string_view8() ) ) );
 		node.command_line= host_build_target_exe_command.command_line;
 	}
 	else if_var( &copy_command : custom_build_step.command.get</ CustomBuildStep::CopyCommand />() )
@@ -1780,7 +1780,7 @@ fn nodiscard BuildUstlibForBuildScripts(
 		compiler_args.push_back( "--target-environment" );
 		compiler_args.push_back( compiler::target::environment );
 
-		if( ust::string_view8( compiler::target::os ) != "windows" )
+		if( ust::string_view8( compiler::target::os ) != g_os_windows )
 		{
 			// It seems that position-independent code is always enabled on systems except Windows.
 			// So, use this option for building the shared library.
@@ -1817,7 +1817,7 @@ fn nodiscard BuildSingleFileProgram(
 	BuildConfiguration build_configuration,
 	TargetTriple& target_triple ) : bool
 {
-	var bool target_is_windows = target_triple.operating_system == "windows";
+	var bool target_is_windows = target_triple.operating_system == g_os_windows;
 
 	var ust::filesystem_path source_file_path_absolute= MakePathAbsolute( source_file_path );
 

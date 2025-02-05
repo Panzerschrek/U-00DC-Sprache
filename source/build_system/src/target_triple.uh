@@ -9,4 +9,10 @@ fn TargetTripleToString( TargetTriple& target_triple ) : ust::string8;
 
 fn ParseTargetTriple( ust::string_view8 target_triple_str ) : ust::optional</TargetTriple/>;
 
+// Some known target triple components.
+auto &constexpr g_os_windows= "windows";
+
+auto &constexpr g_environment_gnu= "gnu";
+auto &constexpr g_environment_msvc= "msvc";
+
 } // namespace BK
