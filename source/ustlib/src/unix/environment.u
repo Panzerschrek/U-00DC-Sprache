@@ -1,6 +1,38 @@
 import "../../imports/environment.u"
+import "../../imports/scoped_array.u"
+import "unix.uh"
 
 namespace ust
 {
+
+fn get_environment_variable( string_view8 name ) : optional</string8/>
+{
+	scoped_array char8 name_nt[ name.size() + 1s ]( name.iter().chain( string_view8("\0").iter() ) );
+
+	unsafe
+	{
+		var $(char8) val_ptr= ::getenv( name_nt.data() );
+		if( is_nullptr( val_ptr ) )
+		{
+			return null_optional;
+		}
+
+		return null_terminated_c_string_to_string8( val_ptr );
+	}
+}
+
+fn null_terminated_c_string_to_string8( $(char8) ptr ) unsafe : string8
+{
+	unsafe
+	{
+		var size_type mut size= 0s;
+		while( $>( ptr + size ) != "\0"c8 )
+		{
+			++size;
+		}
+
+		return string_view8( ptr, size );
+	}
+}
 
 } // namespace ust

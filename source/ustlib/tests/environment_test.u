@@ -1,0 +1,19 @@
+//##success_test
+import "../imports/assert.u"
+import "../imports/environment.u"
+import "../imports/stdout.u"
+
+fn nomangle main() : i32
+{
+	{
+		var ust::optional</ust::string8/> path= ust::get_environment_variable( "PATH" );
+		assert( !path.empty(), "PATH is empty!" );
+		ust::stdout_print( ust::concat( "PATH: \"", path.try_deref(), "\"\n" ) );
+	}
+
+	assert(
+		ust::get_environment_variable( "SOME_UNKNOWN_ENVIRONMENT_VARIABLE_I_PROMISE" ).empty(),
+		"Should not get value for a non-existing environment variable!" );
+
+	return 0;
+}
