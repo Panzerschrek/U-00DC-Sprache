@@ -118,6 +118,10 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		.root_package_source_directory= ust::path::normalize( MakePathAbsolute( options.root_package_directory ) ),
 	};
 
+	// Make sure compiler executable on Windows has "exe" extension - this is necessary for later checking of its file timestamp.
+	EnsureHasExeExtension( build_system_paths.compiler_executable_path );
+	logger.LogVerbose( ust::concat( "Compiler executable path: \"", build_system_paths.compiler_executable_path, "\"" ) );
+
 	if( options.command == Options::Command::BuildSingle )
 	{
 		var bool ok =
@@ -429,6 +433,36 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 	}
 
 	return main_result;
+}
+
+fn EnsureHasExeExtension( ust::string8 &mut executable_path )
+{
+	if( ust::string_view8( compiler::target::os ) != "windows" )
+	{
+		// Non-windows executables usually have no extension.
+		return;
+	}
+
+	// Check if already has ".exe", ".EXE" or something with mixed case.
+	var size_type s= executable_path.size();
+	if( s >= 4s )
+	{
+		var char8 c0= executable_path[ s - 4s ];
+		var char8 c1= executable_path[ s - 3s ];
+		var char8 c2= executable_path[ s - 2s ];
+		var char8 c3= executable_path[ s - 1s ];
+
+		if( c0 == "."c8 &&
+			( c1 == "e"c8 || c1 == "E"c8 ) &&
+			( c2 == "x"c8 || c2 == "X"c8 ) &&
+			( c3 == "e"c8 || c3 == "E"c8 ) )
+		{
+			return;
+		}
+	}
+
+	// Extension seems to be missing - add it.
+	executable_path+= ".exe";
 }
 
 fn ObtainPackageInfo(
