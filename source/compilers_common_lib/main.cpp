@@ -814,6 +814,17 @@ int Main( int argc, const char* argv[] )
 		result_module->setTargetTriple( target_triple.normalize() );
 	}
 
+	// Set debug info version - it's needed for proper debug information parsing for loading of ll/bc modules.
+	if( Options::generate_debug_info &&
+		( file_type == FileType::BC || file_type == FileType::LL ) &&
+		result_module->getModuleFlag( "Debug Info Version" ) == nullptr )
+	{
+		result_module->addModuleFlag(
+			llvm::Module::Warning,
+			"Debug Info Version",
+			llvm::LLVMConstants::DEBUG_METADATA_VERSION );
+	}
+
 	if( !LinkUstLibModules( *result_module, Options::halt_mode, Options::no_system_alloc ) )
 		return 1;
 
