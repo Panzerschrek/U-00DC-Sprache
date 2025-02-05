@@ -485,8 +485,7 @@ fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>
 
 fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</void/>
 {
-	var wide_string mut search_path_null_terminated= utf8_to_null_terminated_wide_string( p );
-	search_path_null_terminated.drop_back(); // Remove null
+	var wide_string mut search_path_null_terminated= utf8_to_wide_string( p );
 	if( search_path_null_terminated.empty() )
 	{
 		search_path_null_terminated.push_back( WCHAR( "."c8 ) );
@@ -613,8 +612,7 @@ fn directory_raw_iterator::open( filesystem_path_view path ) : filesystem_result
 		return io_error::not_found;
 	}
 
-	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
-	path_null_terminated.drop_back(); // Remove null
+	var wide_string mut path_null_terminated= utf8_to_wide_string( path );
 	if( path_null_terminated.empty() )
 	{
 		path_null_terminated.push_back( WCHAR( "."c8 ) );
