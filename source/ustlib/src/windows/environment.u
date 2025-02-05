@@ -1,6 +1,42 @@
 import "../../imports/environment.u"
+import "../../imports/utf.u"
+import "windows.uh"
 
 namespace ust
 {
+
+fn get_environment_variable( string_view8 name ) : optional</string8/>
+{
+	var wide_string mut name_w_nt= utf8_to_null_terminated_wide_string( name );
+
+	unsafe
+	{
+		var DWORD buffer_size = 32768u; // There is a maximum size limit for environment variables.
+		var [ WCHAR, buffer_size ] mut buffer= uninitialized;
+		var DWORD num_chars = ::GetEnvironmentVariableW( name_w_nt.data(), $<(buffer[0]), buffer_size );
+		if( num_chars == 0u && GetLastError() == DWORD(ERROR_ENVVAR_NOT_FOUND) )
+		{
+			return null_optional;
+		}
+
+		return wide_string_to_utf8( array_view_imut</WCHAR/>( buffer ).subrange_end( size_type(num_chars) ) );
+	}
+}
+
+// TODO - remove copypaste.
+
+type wide_string= string_base</WCHAR/>;
+
+fn utf8_to_null_terminated_wide_string( string_view8 v ) : wide_string
+{
+	var wide_string mut res= utf::convert_utf8_to_utf16_string(v);
+	res.push_back( WCHAR( "\0"c8 ) );
+	return res;
+}
+
+fn wide_string_to_utf8( array_view_imut</WCHAR/> v ) : string8
+{
+	return utf::convert_utf16_to_utf8_string(v);
+}
 
 } // namespace ust
