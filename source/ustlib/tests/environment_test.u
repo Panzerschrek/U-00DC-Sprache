@@ -38,6 +38,12 @@ fn nomangle main() : i32
 		auto get1_res= ust::get_environment_variable( name );
 		assert( !get1_res.empty(), "Failed to get value of the environment variable \"" + name + "\"!" );
 		assert( get1_res.try_deref() == value1, "Unexpected environment variable value!" );
+
+		// Reset it.
+		assert( unsafe( ust::unset_environment_variable( name ) ), "Failed to unset value of an environment variable!" );
+
+		// Get it again - should get nothing.
+		assert( ust::get_environment_variable( name ).empty(), "Should not get value of a removed environment variable!" );
 	}
 
 	return 0;

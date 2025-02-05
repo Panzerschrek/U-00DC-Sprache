@@ -16,6 +16,9 @@ fn nodiscard set_environment_variable( string_view8 name, string_view8 value ) u
 
 // Remove an environment variable.
 // Returns true on success.
-fn nodiscard unset_environment_variable( string_view8 name ) : bool;
+// It's generally unsafe to unset a variable, since it's not thread-safe on platforms except Windows.
+// Unsetting a variable may even mess code getting a variable on a different thread.
+// So, it's recommended to unset variables only if no other thread is active, like just after entering "main".
+fn nodiscard unset_environment_variable( string_view8 name ) unsafe : bool;
 
 } // namespace ust

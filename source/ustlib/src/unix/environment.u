@@ -29,6 +29,13 @@ fn nodiscard set_environment_variable( string_view8 name, string_view8 value ) u
 	return unsafe( ::setenv( name_nt.data(), value_nt.data(), 1 /* overwrite */ ) ) == 0;
 }
 
+fn nodiscard unset_environment_variable( string_view8 name ) unsafe : bool
+{
+	scoped_array char8 name_nt[ name.size() + 1s ]( name.iter().chain( string_view8("\0").iter() ) );
+
+	return unsafe( ::unsetenv( name_nt.data() ) ) == 0;
+}
+
 fn null_terminated_c_string_to_string8( $(char8) ptr ) unsafe : string8
 {
 	unsafe
