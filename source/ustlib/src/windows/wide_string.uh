@@ -1,0 +1,21 @@
+import "../../imports/utf.u"
+import "windows.uh"
+
+namespace ust
+{
+
+type wide_string= string_base</WCHAR/>;
+
+fn utf8_to_null_terminated_wide_string( string_view8 v ) : wide_string
+{
+	var wide_string mut res= utf::convert_utf8_to_utf16_string(v);
+	res.push_back( WCHAR( "\0"c8 ) );
+	return res;
+}
+
+fn wide_string_to_utf8( array_view_imut</WCHAR/> v ) : string8
+{
+	return utf::convert_utf16_to_utf8_string(v);
+}
+
+} // namespace ust
