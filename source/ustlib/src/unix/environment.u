@@ -21,6 +21,14 @@ fn get_environment_variable( string_view8 name ) : optional</string8/>
 	}
 }
 
+fn nodiscard set_environment_variable( string_view8 name, string_view8 value ) unsafe : bool
+{
+	scoped_array char8 name_nt[ name.size() + 1s ]( name.iter().chain( string_view8("\0").iter() ) );
+	scoped_array char8 value_nt[ value.size() + 1s ]( value.iter().chain( string_view8("\0").iter() ) );
+
+	return unsafe( ::setenv( name_nt.data(), value_nt.data(), 1 /* overwrite */ ) ) == 0;
+}
+
 fn null_terminated_c_string_to_string8( $(char8) ptr ) unsafe : string8
 {
 	unsafe

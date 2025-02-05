@@ -15,5 +15,30 @@ fn nomangle main() : i32
 		ust::get_environment_variable( "SOME_UNKNOWN_ENVIRONMENT_VARIABLE_I_PROMISE" ).empty(),
 		"Should not get value for a non-existing environment variable!" );
 
+	{
+		auto &constexpr name= "TEST_VAR_FOR_SETTING";
+		auto &constexpr value0= "khe-khe";
+		auto &constexpr value1= "Рухнум";
+
+		// It should not exist.
+		assert( ust::get_environment_variable( name ).empty(), "Should not get value for a non-existing environment variable!" );
+
+		// Set it.
+		assert( unsafe( ust::set_environment_variable( name, value0 ) ), "Failed to set value of an environment variable!" );
+
+		// Get it.
+		auto get0_res= ust::get_environment_variable( name );
+		assert( !get0_res.empty(), "Failed to get value of the environment variable \"" + name + "\"!" );
+		assert( get0_res.try_deref() == value0, "Unexpected environment variable value!" );
+
+		// Set it again.
+		assert( unsafe( ust::set_environment_variable( name, value1 ) ), "Failed to set value of an environment variable!" );
+
+		// Get it again.
+		auto get1_res= ust::get_environment_variable( name );
+		assert( !get1_res.empty(), "Failed to get value of the environment variable \"" + name + "\"!" );
+		assert( get1_res.try_deref() == value1, "Unexpected environment variable value!" );
+	}
+
 	return 0;
 }
