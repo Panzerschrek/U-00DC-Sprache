@@ -23,6 +23,21 @@ fn get_environment_variable( string_view8 name ) : optional</string8/>
 	}
 }
 
+fn nodiscard set_environment_variable( string_view8 name, string_view8 value ) unsafe : bool
+{
+	var wide_string mut name_w_nt= utf8_to_null_terminated_wide_string( name );
+	var wide_string mut value_w_nt= utf8_to_null_terminated_wide_string( value );
+
+	return unsafe( ::SetEnvironmentVariableW( name_w_nt.data(), value_w_nt.data() ) ) == 1;
+}
+
+fn nodiscard unset_environment_variable( string_view8 name ) unsafe : bool
+{
+	var wide_string mut name_w_nt= utf8_to_null_terminated_wide_string( name );
+
+	return unsafe( ::SetEnvironmentVariableW( name_w_nt.data(), nullptr</WCHAR/>() ) ) == 1;
+}
+
 // TODO - remove copypaste.
 
 type wide_string= string_base</WCHAR/>;
