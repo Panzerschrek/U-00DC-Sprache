@@ -2,7 +2,7 @@ import "../../imports/directory_iterator.u"
 import "../../imports/file.u"
 import "../../imports/minmax.u"
 import "../../imports/path_utils.u"
-import "../../imports/utf.u"
+import "wide_string.uh"
 import "windows.uh"
 
 namespace ust
@@ -485,8 +485,7 @@ fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>
 
 fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</void/>
 {
-	var wide_string mut search_path_null_terminated= utf8_to_null_terminated_wide_string( p );
-	search_path_null_terminated.drop_back(); // Remove null
+	var wide_string mut search_path_null_terminated= utf8_to_wide_string( p );
 	if( search_path_null_terminated.empty() )
 	{
 		search_path_null_terminated.push_back( WCHAR( "."c8 ) );
@@ -613,8 +612,7 @@ fn directory_raw_iterator::open( filesystem_path_view path ) : filesystem_result
 		return io_error::not_found;
 	}
 
-	var wide_string mut path_null_terminated= utf8_to_null_terminated_wide_string( path );
-	path_null_terminated.drop_back(); // Remove null
+	var wide_string mut path_null_terminated= utf8_to_wide_string( path );
 	if( path_null_terminated.empty() )
 	{
 		path_null_terminated.push_back( WCHAR( "."c8 ) );
@@ -1067,20 +1065,6 @@ fn translate_error_code( DWORD code ) : io_error
 		DWORD(ERROR_DIR_NOT_EMPTY) -> { return io_error::directory_not_empty; },
 		default -> { return io_error::other; },
 	}
-}
-
-type wide_string= string_base</WCHAR/>;
-
-fn utf8_to_null_terminated_wide_string( string_view8 v ) : wide_string
-{
-	var wide_string mut res= utf::convert_utf8_to_utf16_string(v);
-	res.push_back( WCHAR( "\0"c8 ) );
-	return res;
-}
-
-fn wide_string_to_utf8( array_view_imut</WCHAR/> v ) : filesystem_path
-{
-	return utf::convert_utf16_to_utf8_string(v);
 }
 
 // Produces INVALID_HANDLE_VALUE.

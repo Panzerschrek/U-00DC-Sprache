@@ -1,0 +1,41 @@
+import "../../imports/environment.u"
+import "wide_string.uh"
+import "windows.uh"
+
+namespace ust
+{
+
+fn get_environment_variable( string_view8 name ) : optional</string8/>
+{
+	var wide_string mut name_w_nt= utf8_to_null_terminated_wide_string( name );
+
+	unsafe
+	{
+		var DWORD buffer_size = 32768u; // There is a maximum size limit for environment variables.
+		var [ WCHAR, buffer_size ] mut buffer= uninitialized;
+		var DWORD num_chars = ::GetEnvironmentVariableW( name_w_nt.data(), $<(buffer[0]), buffer_size );
+		if( num_chars == 0u && GetLastError() == DWORD(ERROR_ENVVAR_NOT_FOUND) )
+		{
+			return null_optional;
+		}
+
+		return wide_string_to_utf8( array_view_imut</WCHAR/>( buffer ).subrange_end( size_type(num_chars) ) );
+	}
+}
+
+fn nodiscard set_environment_variable( string_view8 name, string_view8 value ) unsafe : bool
+{
+	var wide_string mut name_w_nt= utf8_to_null_terminated_wide_string( name );
+	var wide_string mut value_w_nt= utf8_to_null_terminated_wide_string( value );
+
+	return unsafe( ::SetEnvironmentVariableW( name_w_nt.data(), value_w_nt.data() ) ) == 1;
+}
+
+fn nodiscard unset_environment_variable( string_view8 name ) unsafe : bool
+{
+	var wide_string mut name_w_nt= utf8_to_null_terminated_wide_string( name );
+
+	return unsafe( ::SetEnvironmentVariableW( name_w_nt.data(), nullptr</WCHAR/>() ) ) == 1;
+}
+
+} // namespace ust
