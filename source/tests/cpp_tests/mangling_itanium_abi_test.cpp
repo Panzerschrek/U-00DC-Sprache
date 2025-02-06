@@ -548,7 +548,7 @@ U_TEST( FunctionTypesMangling_Test1 )
 		fn Baz( ( fn( i32& x, S& s ) : S @(return_inner_references) ) ptr ) {}
 
 		var[ [ char8, 2 ], 1 ] generator_return_references[ "0a" ];
-		fn Lol( ( generator'imut' : i32 & @(generator_return_references) ) gen ) {}
+		fn Lol( ( generator(imut) : i32 & @(generator_return_references) ) gen ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -1024,10 +1024,10 @@ U_TEST( CoroutinesMangling_Test0 )
 		fn Foo( Gen gen ) {}
 		fn Bar( f32 x, Gen gen, u32 z ) {}
 
-		type ImutRefGen= generator'imut' : f64;
+		type ImutRefGen= generator(imut) : f64;
 		fn Baz( ImutRefGen gen ) {}
 
-		type MutRefRetAsnycFunc= async'mut, imut' : char8 &mut;
+		type MutRefRetAsnycFunc= async(mut, imut) : char8 &mut;
 		fn Lol( MutRefRetAsnycFunc f ) {}
 
 		type NonSyncGen = generator non_sync : [i32, 4];

@@ -1212,7 +1212,7 @@ def TypeinfoForReturnReferences_Test2():
 def TypeinfoForReturnReferences_Test3():
 	c_program_text= """
 		var [ [ char8, 2 ], 2 ] return_references[ "0a", "0b" ];
-		type GenType= generator'imut, imut' : i32 & @(return_references);
+		type GenType= generator(imut, imut) : i32 & @(return_references);
 		static_assert( typeinfo</GenType/>.coroutine_return_references == return_references );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -1244,7 +1244,7 @@ def TypeinfoForReturnInnerReferences_Test2():
 	c_program_text= """
 		struct S{ i32& x; }
 		var tup[ [ [ char8, 2 ], 2 ] ] return_inner_references[ [ "0a", "0c" ] ];
-		type AsyncType= async'imut, mut, imut' : S @(return_inner_references);
+		type AsyncType= async(imut, mut, imut) : S @(return_inner_references);
 		static_assert( typeinfo</AsyncType/>.coroutine_return_inner_references == return_inner_references );
 	"""
 	tests_lib.build_program( c_program_text )

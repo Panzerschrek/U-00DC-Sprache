@@ -385,7 +385,7 @@ def AsyncFunctionTypeName_Test4():
 
 def AsyncFunctionTypeName_Test5():
 	c_program_text= """
-		type Func= async'mut, imut, mut' : i32;
+		type Func= async(mut, imut, mut) : i32;
 		static_assert( typeinfo</Func/>.reference_tag_count == 3s );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -393,7 +393,7 @@ def AsyncFunctionTypeName_Test5():
 
 def AsyncFunctionTypeName_Test6():
 	c_program_text= """
-		type MutFunc= async'imut' : i32 &;
+		type MutFunc= async(imut) : i32 &;
 		static_assert( typeinfo</MutFunc/>.reference_tag_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -402,7 +402,7 @@ def AsyncFunctionTypeName_Test6():
 def AsyncFunctionTypeName_Test7():
 	c_program_text= """
 		struct S{ i32 &imut x; }
-		type ImutFunc= async'mut' : S;
+		type ImutFunc= async(mut) : S;
 		static_assert( typeinfo</ImutFunc/>.reference_tag_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -418,7 +418,7 @@ def AsyncFunctionTypeName_Test8():
 
 def AsyncFunctionTypeName_Test9():
 	c_program_text= """
-		type Func= async'imut' non_sync : i32;
+		type Func= async(imut) non_sync : i32;
 		static_assert( non_sync</ Func /> );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -435,7 +435,7 @@ def AsyncFunctionTypeName_Test10():
 def AsyncFunctionTypeName_Test11():
 	c_program_text= """
 		var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-		type Func= async'imut' : i32 & @(return_references);
+		type Func= async(imut) : i32 & @(return_references);
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -444,7 +444,7 @@ def AsyncFunctionTypeName_Test12():
 	c_program_text= """
 		struct S{ i32& mut x; }
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0a" ] ];
-		type Func= async'mut' : S @(return_inner_references);
+		type Func= async(mut) : S @(return_inner_references);
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -559,7 +559,7 @@ def Typeinfo_ForAsyncFunctions_Test0():
 
 def Typeinfo_ForAsyncFunctions_Test1():
 	c_program_text= """
-		type F64RefAsyncFunc= async'imut' : f64 &;
+		type F64RefAsyncFunc= async(imut) : f64 &;
 		auto& f64_async_func_gen_typeinfo= typeinfo</F64RefAsyncFunc/>;
 
 		static_assert( f64_async_func_gen_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
@@ -578,7 +578,7 @@ def Typeinfo_ForAsyncFunctions_Test1():
 
 def Typeinfo_ForAsyncFunctions_Test2():
 	c_program_text= """
-		type MutCharRefAsyncFunc= async'mut' : char8 &mut;
+		type MutCharRefAsyncFunc= async(mut) : char8 &mut;
 		auto& mut_ref_char_async_func_typeinfo= typeinfo</MutCharRefAsyncFunc/>;
 
 		static_assert( mut_ref_char_async_func_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
