@@ -90,12 +90,14 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	var ust::filesystem_path exe_directory = MakePathAbsolute( ust::path::get_parent_path( GetCurrentExecutablePath() ).deref_or( "" ) );
+	var ust::filesystem_path current_executable= GetCurrentExecutablePath();
+	var ust::filesystem_path exe_directory = MakePathAbsolute( ust::path::get_parent_path( current_executable ).deref_or( "" ) );
 
 	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory, "\"" ) );
 
 	var BuildSystemPaths mut build_system_paths
 	{
+		.build_system_executable_path= ust::path::normalize( MakePathAbsolute( current_executable ) ),
 		.compiler_executable_path= ust::path::normalize(
 			( options.compiler_executable_path.empty()
 				? ust::path::join( exe_directory, "Compiler1" ) // For now use "Compiler1" as compiler default. TODO - allow to tune it.
@@ -117,6 +119,8 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		// If "options.root_package_directory" is empty this will become current directory.
 		.root_package_source_directory= ust::path::normalize( MakePathAbsolute( options.root_package_directory ) ),
 	};
+
+	EnsureHasExeExtension( build_system_paths.build_system_executable_path );
 
 	// Make sure compiler executable on Windows has "exe" extension - this is necessary for later checking of its file timestamp.
 	EnsureHasExeExtension( build_system_paths.compiler_executable_path );
@@ -1954,6 +1958,11 @@ public: // BuildSystemInterface
 	fn virtual final LogError( mut this, ust::string_view8 message )
 	{
 		logger_.LogError( message );
+	}
+
+	fn virtual final GetBuildSystemExecutablePath( this ) : ust::filesystem_path
+	{
+		return build_system_paths_.build_system_executable_path;
 	}
 
 	fn virtual final GetCompilerExecutablePath( this ) : ust::filesystem_path

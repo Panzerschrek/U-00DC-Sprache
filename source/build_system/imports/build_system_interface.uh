@@ -19,6 +19,9 @@ class BuildSystemInterface interface
 	fn virtual pure LogInfo( mut this, ust::string_view8 message );
 	fn virtual pure LogError( mut this, ust::string_view8 message );
 
+	// Get path to current build system executable file.
+	fn virtual pure GetBuildSystemExecutablePath( this ) : ust::filesystem_path;
+
 	// Get path to executable file of the currently-used Ü compiler.
 	fn virtual pure GetCompilerExecutablePath( this ) : ust::filesystem_path;
 

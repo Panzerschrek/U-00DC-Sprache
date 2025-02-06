@@ -6,6 +6,7 @@ namespace BK
 
 struct BuildSystemPaths
 {
+	ust::filesystem_path build_system_executable_path;
 	ust::filesystem_path compiler_executable_path;
 	ust::filesystem_path ustlib_path;
 	ust::filesystem_path build_system_imports_path;

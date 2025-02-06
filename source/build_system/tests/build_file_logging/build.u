@@ -25,9 +25,13 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	auto source_dir= build_system_interface.GetCurrentPackageSourceDirectory();
 	auto build_dir= build_system_interface.GetCurrentPackageBuildDirectory();
+	auto build_system_dir= build_system_interface.GetBuildSystemExecutablePath();
+	auto compiler_dir= build_system_interface.GetCompilerExecutablePath();
 
 	build_system_interface.LogInfo( "Obtained source directory: " + source_dir );
 	build_system_interface.LogInfo( "Obtained build directory: " + build_dir );
+	build_system_interface.LogInfo( "Build system executable: " + build_system_dir );
+	build_system_interface.LogInfo( "Compiler executable: " + compiler_dir );
 
 	// Package with no targets.
 	return BK::PackageInfo{};
