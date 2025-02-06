@@ -440,8 +440,8 @@ U_TEST( TypeAliasInsideFunction_Test3 )
 		{
 			type I= char8;
 			type J= I;
-			var J i= "Q"c8;
-			static_assert( i == "Q"c8 );
+			var J i= 'Q';
+			static_assert( i == 'Q' );
 		}
 	)";
 

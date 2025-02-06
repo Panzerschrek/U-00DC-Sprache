@@ -1330,9 +1330,9 @@ U_TEST(OrderCompare_Test0)
 			halt if( CompareOrder( minus_inf, nan ) != 0 );
 			halt if( CompareOrder( nan, minus_inf ) != 0 );
 
-			halt if( CompareOrder( "g"c16, "x"c16 ) != -1 );
-			halt if( CompareOrder( "x"c16, "g"c16 ) !=  1 );
-			halt if( CompareOrder( "Я"c16, "Я"c16 ) != 0 );
+			halt if( CompareOrder( 'g'c16, 'x'c16 ) != -1 );
+			halt if( CompareOrder( 'x'c16, 'g'c16 ) !=  1 );
+			halt if( CompareOrder( 'Я'c16, 'Я'c16 ) != 0 );
 
 			var [ i32, 3 ] mut arr= zero_init;
 			halt if( CompareOrder( $<(arr[0]), $<(arr[2]) ) != -1 );
@@ -1400,9 +1400,9 @@ U_TEST(OrderCompare_Test1)
 		static_assert( CompareOrder( minus_inf, nan ) == 0 );
 		static_assert( CompareOrder( nan, minus_inf ) == 0 );
 
-		static_assert( CompareOrder( "g"c16, "x"c16 ) == -1 );
-		static_assert( CompareOrder( "x"c16, "g"c16 ) ==  1 );
-		static_assert( CompareOrder( "Я"c16, "Я"c16 ) == 0 );
+		static_assert( CompareOrder( 'g'c16, 'x'c16 ) == -1 );
+		static_assert( CompareOrder( 'x'c16, 'g'c16 ) ==  1 );
+		static_assert( CompareOrder( 'Я'c16, 'Я'c16 ) == 0 );
 	)";
 
 	BuildProgram( c_program_text );

@@ -988,7 +988,7 @@ U_TEST( CompositeTemplateArgMangling_Test4 )
 	static const char c_program_text[]=
 	R"(
 		template</ type A, type B, tup[ A, B ] tup_arg /> struct MyStruct</ tup_arg /> {}
-		var tup[ i32, char8 ] t[ 642, "Q"c8 ];
+		var tup[ i32, char8 ] t[ 642, 'Q' ];
 		type S_alias= MyStruct</ t />;
 	)";
 
@@ -1003,7 +1003,7 @@ U_TEST( CompositeTemplateArgMangling_Test5 )
 	static const char c_program_text[]=
 	R"(
 		template</ type A, type B, tup[ A, i32, B ] tup_arg /> struct MyStruct</ tup_arg /> {}
-		var tup[ u16, i32, char16 ] t[ 75u16, -5636321, "z"c16 ];
+		var tup[ u16, i32, char16 ] t[ 75u16, -5636321, 'z'c16 ];
 		type S_alias= MyStruct</ t />;
 	)";
 
