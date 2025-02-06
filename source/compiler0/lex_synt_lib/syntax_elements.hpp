@@ -55,6 +55,7 @@ struct BooleanConstant;
 struct MoveOperator;
 struct MoveOperatorCompletion;
 struct StringLiteral;
+struct CharLiteral;
 struct TypeInfo;
 struct SameType;
 struct NonSyncExpression;
@@ -180,6 +181,7 @@ using Expression= std::variant<
 	MoveOperator,
 	MoveOperatorCompletion,
 	std::unique_ptr<const StringLiteral>, // Terminal, but too heavy, to store by-value.
+	CharLiteral,
 	// Non-terminal nodes (with Expression or TypeName containing inside).
 	std::unique_ptr<const TypeInfo>,
 	std::unique_ptr<const SameType>,
@@ -447,6 +449,16 @@ struct StringLiteral
 	SrcLoc src_loc;
 	std::string value;
 	std::string type_suffix;
+};
+
+struct CharLiteral
+{
+	CharLiteral( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	uint32_t code_point= 0;
+	std::array<char, 4> type_suffix{0};
 };
 
 struct NamesScopeNameFetch

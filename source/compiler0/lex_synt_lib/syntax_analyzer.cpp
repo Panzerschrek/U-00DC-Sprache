@@ -1078,6 +1078,33 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(string_literal);
 		}
+	case Lexem::Type::CharLiteral:
+	{
+		CharLiteral char_literal( it_->src_loc );
+
+		 // Lexical analyzer should push bytes for exactly one code point.
+		U_ASSERT( !it_->text.empty() );
+		char_literal.code_point= GetUTF8FirstChar( it_->text.data(), it_->text.data() + it_->text.size() );
+
+		NextLexem();
+
+		if( it_->type == Lexem::Type::LiteralSuffix )
+		{
+			if( it_->text.size() < char_literal.type_suffix.size() )
+				std::memcpy( char_literal.type_suffix.data(), char_literal.type_suffix.data(), char_literal.type_suffix.size() );
+			else
+			{
+				LexSyntError error_message;
+				error_message.src_loc= it_->src_loc;
+				error_message.text= "Char literal type suffix overflow";
+				error_messages_.push_back( std::move(error_message) );
+			}
+
+			NextLexem();
+		}
+
+		return std::move(char_literal);
+	}
 	case Lexem::Type::BracketLeft:
 		{
 			ExpectLexem( Lexem::Type::BracketLeft );
