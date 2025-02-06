@@ -138,13 +138,13 @@ fn NormalizeTargetTripleComponent( ust::string8 &mut component )
 	foreach( &mut c : component )
 	{
 		// Convert uppercase to lowercase.
-		if( c >= "A"c8 && c <= "Z"c8 )
+		if( c >= 'A' && c <= 'Z' )
 		{
-			c= char8( u32(c) - u32("A"c8) + u32("a"c8) );
+			c= char8( u32(c) - u32('A') + u32('a') );
 		}
 	}
 }
 
-auto constexpr g_target_triple_separator= "-"c8;
+auto constexpr g_target_triple_separator= '-';
 
 } // namespace BK

@@ -68,12 +68,12 @@ fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::String& string_valu
 
 fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Array& array_value )
 {
-	out.push_back( "["c8 );
+	out.push_back( '[' );
 
 	foreach( &sub_value : array_value )
 	{
 		SerializeJsonValue( out, sub_value );
-		out.push_back( ","c8 );
+		out.push_back( ',' );
 	}
 
 	if( !array_value.empty() )
@@ -81,19 +81,19 @@ fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Array& array_value 
 		out.drop_back(); // Remove trailing comma
 	}
 
-	out.push_back( "]"c8 );
+	out.push_back( ']' );
 }
 
 fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Object& object_value )
 {
-	out.push_back( "{"c8 );
+	out.push_back( '{' );
 
 	foreach( &pair : object_value )
 	{
 		SerializeJsonString( out, pair.key() );
-		out.push_back( ":"c8 );
+		out.push_back( ':' );
 		SerializeJsonValue( out, pair.value() );
-		out.push_back( ","c8 );
+		out.push_back( ',' );
 	}
 
 	if( !object_value.empty() )
@@ -101,7 +101,7 @@ fn SerializeJsonValueImpl( ust::string8 &mut out, JsonValue::Object& object_valu
 		out.drop_back(); // Remove trailing comma
 	}
 
-	out.push_back( "}"c8 );
+	out.push_back( '}' );
 }
 
 fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonValue& value )
@@ -169,20 +169,20 @@ fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonVal
 		var size_type mut index= 0s;
 		foreach( &sub_value : array_value )
 		{
-			out.push_back( size_type(indentation + 1u), "\t"c8 );
+			out.push_back( size_type(indentation + 1u), '\t' );
 
 			SerializeJsonValuePrettyImpl( out, indentation + 1u, sub_value );
 
 			++index;
 			if( index < array_value.size() )
 			{
-				out.push_back( ","c8 );
+				out.push_back( ',' );
 			}
-			out.push_back( "\n"c8 );
+			out.push_back( '\n' );
 		}
 
-		out.push_back( size_type(indentation), "\t"c8 );
-		out.push_back( "]"c8 );
+		out.push_back( size_type(indentation), '\t' );
+		out.push_back( ']' );
 	}
 }
 
@@ -199,7 +199,7 @@ fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonVal
 		var size_type mut index= 0s;
 		foreach( &pair : object_value )
 		{
-			out.push_back( size_type(indentation + 1u), "\t"c8 );
+			out.push_back( size_type(indentation + 1u), '\t' );
 
 			SerializeJsonString( out, pair.key() );
 
@@ -209,13 +209,13 @@ fn SerializeJsonValuePrettyImpl( ust::string8 &mut out, u32 indentation, JsonVal
 			++index;
 			if( index < object_value.size() )
 			{
-				out.push_back( ","c8 );
+				out.push_back( ',' );
 			}
-			out.push_back( "\n"c8 );
+			out.push_back( '\n' );
 		}
 
-		out.push_back( size_type(indentation ), "\t"c8 );
-		out.push_back( "}"c8 );
+		out.push_back( size_type(indentation ), '\t' );
+		out.push_back( '}' );
 	}
 }
 
@@ -245,24 +245,24 @@ fn SerializeJsonNumber( ust::string8 &mut out, JsonValue::Number number_value )
 
 fn SerializeJsonString( ust::string8 &mut out, JsonValue::String& string_value )
 {
-	out.push_back( "\""c8 );
+	out.push_back( '"' );
 
 	foreach( c : string_value )
 	{
 		switch(c)
 		{
-			"\""c8 -> { out+= "\\\"" ; },
-			"\\"c8 -> { out+= "\\\\" ; },
-			"\b"c8 -> { out+= "\\b" ; },
-			"\f"c8 -> { out+= "\\f" ; },
-			"\n"c8 -> { out+= "\\n" ; },
-			"\r"c8 -> { out+= "\\r" ; },
-			"\t"c8 -> { out+= "\\t" ; },
+			'"' -> { out+= "\\\"" ; },
+			'\\' -> { out+= "\\\\" ; },
+			'\b' -> { out+= "\\b" ; },
+			'\f' -> { out+= "\\f" ; },
+			'\n' -> { out+= "\\n" ; },
+			'\r' -> { out+= "\\r" ; },
+			'\t' -> { out+= "\\t" ; },
 			default -> { out.push_back(c); }
 		}
 	}
 
-	out.push_back( "\""c8 );
+	out.push_back( '"' );
 }
 
 } // namespace BK
