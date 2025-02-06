@@ -221,7 +221,7 @@ fn ManglerState::PushLengthPrefixed( mut this, ust::string_view8 name )
 fn ManglerState::PushDecimalNumber( mut this, u64 n )
 {
 	// Small optimization for common cases. Needed because "ust::to_string8" allocates memory.
-	auto zero_char= u64("0"c8);
+	auto zero_char= u64('0');
 	if( n < 10u64 )
 	{
 		Push( char8( zero_char + n ) );
@@ -246,7 +246,7 @@ fn ManglerState::PushDecimalNumber( mut this, u64 n )
 fn ManglerState::TakeResult( mut this ) : ust::string8
 {
 	// Take copy for result. This allows us to re-use internal buffer for mangling of next name.
-	result_compressed_.push_back( "\0"c8 );
+	result_compressed_.push_back( '\0' );
 	var ust::string8 result= result_compressed_;
 
 	substitutions_.clear();
@@ -278,8 +278,8 @@ fn ManglerState::FinalizePart( mut this, size_type start, size_type compressed_s
 			cast_imut(result_full_).range().subrange( start, start + size ) ==
 			cast_imut(result_full_).range().subrange( size_type(substitution.start), size_type(substitution.start) + size_type( substitution.size) ) )
 		{
-			result_compressed_.resize( compressed_start, "\0"c8 );
-			result_compressed_.push_back( "S"c8 );
+			result_compressed_.resize( compressed_start, '0' );
+			result_compressed_.push_back( 'S' );
 
 			if( i > 0s )
 			{
@@ -302,7 +302,7 @@ fn ManglerState::FinalizePart( mut this, size_type start, size_type compressed_s
 				}
 				else { halt; } // Too much substitutions.
 			}
-			result_compressed_.push_back( "_"c8 );
+			result_compressed_.push_back( '_' );
 			return;
 		}
 	}
@@ -316,11 +316,11 @@ fn Base36Digit( u32 value ) : char8
 	debug_assert( value < 36u );
 	if( value < 10u )
 	{
-		return char8(u32("0"c8) + value);
+		return char8(u32('0') + value);
 	}
 	else
 	{
-		return char8(u32("A"c8) + ( value - 10u ) );
+		return char8(u32('A') + ( value - 10u ) );
 	}
 }
 
@@ -444,18 +444,18 @@ fn EncodeParamReference( ManglerState &mut mangler_state, FunctionType::ParamRef
 
 	mangler_state.Push( "L" );
 	mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
-	mangler_state.PushDecimalNumber( u64(param_reference.param_index) + u64("0"c8) );
+	mangler_state.PushDecimalNumber( u64(param_reference.param_index) + u64('0') );
 	mangler_state.Push( "E" );
 
 	mangler_state.Push( "L" );
 	mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
 	if( param_reference.reference_index == FunctionType::c_param_reference_number )
 	{
-		mangler_state.PushDecimalNumber( u64("_"c8) );
+		mangler_state.PushDecimalNumber( u64('_') );
 	}
 	else
 	{
-		mangler_state.PushDecimalNumber( u64(param_reference.reference_index) + u64("a"c8) );
+		mangler_state.PushDecimalNumber( u64(param_reference.reference_index) + u64('a'c8) );
 	}
 	mangler_state.Push( "E" );
 
