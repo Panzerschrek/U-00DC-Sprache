@@ -28,6 +28,7 @@ struct Lexem
 		MacroIdentifier,
 		MacroUniqueIdentifier,
 		String,
+		CharLiteral,
 		Number,
 
 		LiteralSuffix, // For strings, numbers

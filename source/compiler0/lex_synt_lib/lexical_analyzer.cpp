@@ -154,6 +154,95 @@ bool IsIdentifierChar( const sprache_char c )
 	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
+Lexem ParseCharLiteral( Iterator& it, const Iterator it_end, const SrcLoc& src_loc, LexSyntErrors& out_errors )
+{
+	U_ASSERT( *it == '\'' );
+	++it;
+
+	Lexem result;
+	result.type= Lexem::Type::CharLiteral;
+
+	if( it == it_end )
+	{
+		out_errors.emplace_back( "inexpected end of file after '", src_loc );
+		return result;
+	}
+
+	const char c = *it;
+	if( c == '\'' )
+	{
+		out_errors.emplace_back( "empty char literal", src_loc );
+		return result;
+	}
+	else if( c == '\\' )
+	{
+		++it;
+		const char escaped_c= *it;
+		++it;
+		switch( escaped_c )
+		{
+		case '"': result.text.push_back('"'); break;
+		case '\'': result.text.push_back('\''); break;
+		case '\\': result.text.push_back('\\'); break;
+		case '/': result.text.push_back('/'); break;
+		case 'b': result.text.push_back('\b'); break;
+		case 'f': result.text.push_back('\f'); break;
+		case 'n': result.text.push_back('\n'); break;
+		case 'r': result.text.push_back('\r'); break;
+		case 't': result.text.push_back('\t'); break;
+		case '0': result.text.push_back('\0'); break;
+
+		case 'u':
+			{
+				// Parse hex number.
+				if( it_end - it < 4 )
+				{
+					out_errors.emplace_back( "expected 4 hex digits", src_loc );
+					return result;
+				}
+
+				sprache_char char_code= 0u;
+				for( size_t i= 0u; i < 4u; i++ )
+				{
+					sprache_char digit;
+						 if( *it >= '0' && *it <= '9' ) digit= uint32_t( *it - '0' );
+					else if( *it >= 'a' && *it <= 'f' ) digit= uint32_t( *it - 'a' + 10 );
+					else if( *it >= 'A' && *it <= 'F' ) digit= uint32_t( *it - 'A' + 10 );
+					else
+					{
+						out_errors.emplace_back( "expected hex number", src_loc );
+						return result;
+					}
+					char_code|= digit << ( ( 3u - i ) * 4u );
+					++it;
+				}
+				PushCharToUTF8String( char_code, result.text );
+			}
+			break;
+
+		default:
+			out_errors.emplace_back( std::string("invalid escape sequence: \\") + char(*it), src_loc );
+			return result;
+		};
+	}
+	else
+		PushCharToUTF8String( ReadNextUTF8Char( it, it_end ), result.text );
+
+	if( it == it_end )
+	{
+		out_errors.emplace_back( "inexpected end of file at char literal", src_loc );
+		return result;
+	}
+	if( *it != '\'' )
+	{
+		out_errors.emplace_back( "expected ' at end of char literal", src_loc );
+		return result;
+	}
+	++it;
+
+	return result;
+}
+
 Lexem ParseStringImpl( Iterator& it, const Iterator it_end, const SrcLoc& src_loc, LexSyntErrors& out_errors )
 {
 	U_ASSERT( *it == '"' );
@@ -619,6 +708,22 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 		else if( c == '"' )
 		{
 			lexem= ParseStringImpl( it, it_end, SrcLoc( 0u, line, column ), result.errors );
+			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
+			{
+				// Parse string suffix.
+				lexem.src_loc= SrcLoc( 0u, line, column );
+
+				advance_column();
+				if( comments_depth == 0 || collect_comments )
+					result.lexems.push_back( std::move(lexem) );
+
+				lexem= ParseIdentifier( it, it_end );
+				lexem.type= Lexem::Type::LiteralSuffix;
+			}
+		}
+		else if( c == '\'' )
+		{
+			lexem= ParseCharLiteral( it, it_end, SrcLoc( 0u, line, column ), result.errors );
 			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 			{
 				// Parse string suffix.
