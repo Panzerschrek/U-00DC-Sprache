@@ -44,7 +44,7 @@ fn nomangle main() : i32
 		scoped_array i32 mem[16s]; //##expect_error MacroExpansionContext
 	}
 	{ // "scoped_array" requiers an argument of compatible type for non-default-constructible type.
-		scoped_array i32 mem[16s]( "8"c8 ); //##expect_error MacroExpansionContext
+		scoped_array i32 mem[16s]( '8' ); //##expect_error MacroExpansionContext
 	}
 	{ // "scoped_array" requiers "size_type" for size.
 		scoped_array i32 mem[ 25.0f ]( 1111 ); //##expect_error MacroExpansionContext

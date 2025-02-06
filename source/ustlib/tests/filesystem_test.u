@@ -181,7 +181,7 @@ fn nomangle main() : i32
 	{
 		Ok(s) ->
 		{
-			var [ byte8, 4 ] expected_result[ byte8("s"c8), byte8("o"c8), byte8("m"c8), byte8("e"c8) ];
+			var [ byte8, 4 ] expected_result[ byte8('s'), byte8('o'), byte8('m'), byte8('e') ];
 			assert( s == expected_result, "Unexpected file contents!" );
 		},
 		Err(e) -> { assert( false, "Failed to read file \"test_file0.txt\" to vector</byte8/>!" ); }
@@ -660,7 +660,7 @@ fn nomangle main() : i32
 				assert( s.size() == file_data_size + extra_tail_size, "Unexected file size!" );
 				assert( s.range().subrange_end(file_data_size) == file_data, "Invalid file contents!" );
 				// Should be filled with zeros.
-				assert( s.range().subrange_start(file_data_size) == ust::string8( 7s, "\0"c8 ), "Invalid file contents!" );
+				assert( s.range().subrange_start(file_data_size) == ust::string8( 7s, '\0' ), "Invalid file contents!" );
 			},
 			Err(e) -> { assert( false, "Failed to read file \"" + file_path + "\" to string!" ); }
 		}

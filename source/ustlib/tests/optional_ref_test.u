@@ -152,7 +152,7 @@ fn nomangle main() : i32
 
 				foreach( &mut c : s_ref_ref.try_deref() )
 				{
-					c= char8( u32(c) + (u32("A"c8) - u32("a"c8)) );
+					c= char8( u32(c) + (u32('A') - u32('a')) );
 				}
 			}
 
