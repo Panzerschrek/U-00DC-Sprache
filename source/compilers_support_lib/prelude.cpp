@@ -31,7 +31,7 @@ std::string GenerateCompilerPreludeCode(
 		// Options.
 		ss << "namespace options\n{\n";
 		{
-			ss << "var char8 optimization_level = \"" << optimization_level << "\"c8;\n";
+			ss << "var char8 optimization_level = '" << optimization_level << "';\n";
 			ss << "var bool generate_debug_info = " << (generate_debug_info ? "true" : "false") << ";\n";
 			ss << "auto& cpu_name = \"" << cpu_name.str() << "\";\n";
 
