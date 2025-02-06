@@ -185,6 +185,11 @@ void FindImpl( const Synt::StringLiteral& string_literal )
 	(void)string_literal;
 }
 
+void FindImpl( const Synt::CharLiteral& char_literal )
+{
+	(void)char_literal;
+}
+
 void FindImpl( const Synt::MoveOperator& move_operator )
 {
 	(void)move_operator;
