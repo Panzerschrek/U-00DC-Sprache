@@ -647,38 +647,41 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 
 			continue;
 		}
-		if( c == '/' && it_end - it > 1 && *std::next(it) == '*' )
+		// Multiline comment.
+		if( c == '/' && it + 1 < it_end && *std::next(it) == '*' )
 		{
 			++comments_depth;
-			if( collect_comments )
-			{
-				Lexem comment_lexem;
-				comment_lexem.src_loc= SrcLoc( 0u, line, column );
-				comment_lexem.type= Lexem::Type::Comment;
-				comment_lexem.text= "/*";
-				advance_column();
-				result.lexems.emplace_back( std::move(comment_lexem) );
-			}
 			it+= 2;
 			column+= 2u;
-			continue;
-		}
-		if( c == '*' && it_end - it > 1 && *(it+1) == '/' )
-		{
-			--comments_depth;
-			if( collect_comments )
+
+			while( it < it_end )
 			{
-				Lexem comment_lexem;
-				comment_lexem.src_loc= SrcLoc( 0u, line, column );
-				comment_lexem.type= Lexem::Type::Comment;
-				comment_lexem.text= "*/";
-				advance_column();
-				result.lexems.push_back( std::move(comment_lexem) );
+				if( it + 1 < it_end && *it == '*' && *std::next(it) == '/' )
+				{
+					it+= 2;
+					column+= 2u;
+					--comments_depth;
+					break;
+				}
+				const sprache_char c= sprache_char(*it);
+				if( IsNewline( c ) )
+				{
+					++line;
+					column= 0;
+					++it;
+					// Handle case with two-symbol line ending.
+					if( it < it_end )
+					{
+						auto it_copy= it;
+						if( IsNewlineSequence( c, ReadNextUTF8Char( it_copy, it ) ) )
+							it= it_copy;
+					}
+				}
+				else
+					ReadNextUTF8Char( it, it_end );
+				++column;
+				max_column= std::max( max_column, column );
 			}
-			else if( comments_depth < 0 )
-				result.errors.emplace_back( "Lexical error: unexpected */", SrcLoc( 0u, line, column ) );
-			it+= 2;
-			column+= 2u;
 			continue;
 		}
 		else if( IsNewline(c) )

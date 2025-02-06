@@ -324,11 +324,8 @@ def Comments_Test2():
 	fn Foo() : i32
 	{
 		/*
-			/* Multi
+			Multi
 			line
-			comment
-			. */
-			Inside multiline
 			comment
 		*/
 		return 0;
