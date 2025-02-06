@@ -1408,11 +1408,49 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CharLiteral& char_literal )
 {
-	// TODO
-	U_UNUSED(names_scope);
-	U_UNUSED(function_context);
-	U_UNUSED(char_literal);
-	return ErrorValue();
+	U_UNUSED( function_context );
+
+	U_FundamentalType char_type= U_FundamentalType::InvalidType;
+
+	const std::string_view type_suffix= char_literal.type_suffix.data();
+
+	if( type_suffix == "" || type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
+	{
+		// TODO - report UTF-8 overflow.
+		char_type= U_FundamentalType::char8_ ;
+	}
+	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
+	{
+		// TODO - report UTF-16 overflow.
+		char_type= U_FundamentalType::char16_;
+	}
+	else if( type_suffix == "c32" || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32_ ) )
+	{
+		char_type= U_FundamentalType::char32_;
+	}
+	else
+	{
+		// TODO - use separate error code.
+		REPORT_ERROR( UnknownStringLiteralSuffix, names_scope.GetErrors(), char_literal.src_loc, type_suffix );
+		return ErrorValue();
+	}
+
+	llvm::Constant* const initializer=
+		llvm::ConstantInt::get( GetFundamentalLLVMType(char_type), uint64_t(char_literal.code_point), false );
+
+	const VariablePtr result=
+		Variable::Create(
+			FundamentalType( char_type, GetFundamentalLLVMType( char_type ) ),
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			"",
+			initializer,
+			initializer );
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
