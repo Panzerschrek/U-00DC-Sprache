@@ -7,7 +7,7 @@ namespace ust
 namespace path
 {
 
-var char8 constexpr g_native_separator = "\\"c8;
+var char8 constexpr g_native_separator = '\\';
 
 fn is_absolute( filesystem_path_view p ) : bool
 {
@@ -31,7 +31,7 @@ fn is_relative( filesystem_path_view p ) : bool
 
 fn is_separator( char8 c ) : bool
 {
-	return c == "/"c8 || c == g_native_separator;
+	return c == '/' || c == g_native_separator;
 }
 
 fn join( filesystem_path_view p0 ) : filesystem_path
@@ -135,12 +135,12 @@ fn get_file_extension( filesystem_path_view p )
 	for( auto mut i= p.size() - 1s; ; )
 	{
 		var char8 c= p[i];
-		if( c == "."c8 )
+		if( c == '.' )
 		{
 			if( i > 0s )
 			{
 				var char8 prev_c= p[ i - 1s ];
-				if( prev_c == "."c8 )
+				if( prev_c == '.' )
 				{
 					if( i > 1s )
 					{
@@ -205,12 +205,12 @@ fn get_path_without_extension( filesystem_path_view p )
 	for( auto mut i= p.size() - 1s; ; )
 	{
 		var char8 c= p[i];
-		if( c == "."c8 )
+		if( c == '.' )
 		{
 			if( i > 0s )
 			{
 				var char8 prev_c= p[ i - 1s ];
-				if( prev_c == "."c8 )
+				if( prev_c == '.' )
 				{
 					if( i > 1s )
 					{
@@ -495,7 +495,7 @@ fn parse_prefix( filesystem_path_view p )
 		var char8 c0= p[0s];
 		var char8 c1= p[1s];
 
-		if( ( ( c0 >= "a"c8 && c0 <= "z"c8 ) || ( c0 >= "A"c8 && c0 <= "Z"c8 ) ) && c1 == ":"c8 )
+		if( ( ( c0 >= 'a' && c0 <= 'z' ) || ( c0 >= 'A' && c0 <= 'Z' ) ) && c1 == ':' )
 		{
 			// C:
 			return prefix{ .p= p.subrange_end(2s), .is_implicit_root= false };
@@ -506,7 +506,7 @@ fn parse_prefix( filesystem_path_view p )
 			if( p.size() >= 3s )
 			{
 				var char8 c2= p[2s];
-				if( c2 == "?"c8 )
+				if( c2 == '?' )
 				{
 					// \\?
 					if( p.size() >= 4s )
@@ -553,7 +553,7 @@ fn parse_prefix( filesystem_path_view p )
 								if( p.size() >= 6s )
 								{
 									var char8 c5= p[5s];
-									if( ( ( c4 >= "a"c8 && c4 <= "z"c8 ) || ( c4 >= "A"c8 && c4 <= "Z"c8 ) ) && c5 == ":"c8 )
+									if( ( ( c4 >= 'a' && c4 <= 'z' ) || ( c4 >= 'A' && c4 <= 'Z' ) ) && c5 == ':' )
 									{
 										// \\?\C:
 										return prefix{ .p= p.subrange_end(6s), .is_implicit_root= true };
@@ -592,7 +592,7 @@ fn parse_prefix( filesystem_path_view p )
 						}
 					}
 				}
-				else if( c2 == "."c8 )
+				else if( c2 == '.' )
 				{
 					// Device namespace
 					if( p.size() >= 4s )

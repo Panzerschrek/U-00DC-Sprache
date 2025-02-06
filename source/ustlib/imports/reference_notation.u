@@ -39,7 +39,7 @@ fn constexpr get_sequential_tags( size_type offset ) : field_tags_list</S/>
 	var field_tags_list</S/> mut result= zero_init;
 	for( auto mut i= 0s; i < S; ++i )
 	{
-		result[i]= char8( size_type("a"c8) + i + offset );
+		result[i]= char8( size_type('a') + i + offset );
 	}
 	return result;
 }
@@ -70,11 +70,11 @@ fn constexpr param_n_param_m_all_inner_references( u8 n, u8 m ) : pollution_list
 	for( auto mut i= 0s; i < S; ++i )
 	{
 		// dst
-		result[i][0][0]= char8( u32("0"c8) + u32(n) );
-		result[i][0][1]= char8( size_type("a"c8) + i );
+		result[i][0][0]= char8( u32('0') + u32(n) );
+		result[i][0][1]= char8( size_type('a') + i );
 		// src
-		result[i][1][0]= char8( u32("0"c8) + u32(m) );
-		result[i][1][1]= char8( size_type("a"c8) + i );
+		result[i][1][0]= char8( u32('0') + u32(m) );
+		result[i][1][1]= char8( size_type('a') + i );
 	}
 	return result;
 }
@@ -87,12 +87,12 @@ fn constexpr param_n_with_sequential_tags_of_param_m_with_dst_offset( u8 n, u8 m
 	for( auto mut i= 0s; i < S; ++i )
 	{
 		// dst
-		result[i][0][0] = char8( u32("0"c8) + u32(n) );
-		result[i][0][1] = char8( size_type("a"c8) + dst_offset + i );
+		result[i][0][0] = char8( u32('0') + u32(n) );
+		result[i][0][1] = char8( size_type('a') + dst_offset + i );
 
 		// src
-		result[i][1][0] = char8( u32("0"c8) + u32(m) );
-		result[i][1][1] = char8( size_type("a"c8) + i );
+		result[i][1][0] = char8( u32('0') + u32(m) );
+		result[i][1][1] = char8( size_type('a') + i );
 	}
 
 	return result;
@@ -126,7 +126,7 @@ var references_list</1s/> constexpr param3[ "3_" ];
 
 fn constexpr param_n( u8 n ) : references_list</1s/>
 {
-	var references_list</1s/> result[ [ char8( u32("0"c8) + u32(n) ), "_"c8 ] ];
+	var references_list</1s/> result[ [ char8( u32('0') + u32(n) ), '_' ] ];
 	return result;
 }
 
@@ -137,7 +137,7 @@ var references_list</1s/> constexpr param3_inner_reference0[ "3a" ];
 
 fn constexpr param_n_inner_reference_m( u8 n, u8 m ) : references_list</1s/>
 {
-	var references_list</1s/> result[ [ char8( u32("0"c8) + u32(n) ), char8( u32("a"c8) + u32(m) ) ] ];
+	var references_list</1s/> result[ [ char8( u32('0') + u32(n) ), char8( u32('a') + u32(m) ) ] ];
 	return result;
 }
 
@@ -154,7 +154,7 @@ var tup[ references_list</1s/> ] constexpr param3[ [ "3_" ] ];
 
 fn constexpr param_n( u8 n ) : tup[ references_list</1s/> ]
 {
-	var tup[ references_list</1s/> ] result[ [ [ char8( u32("0"c8) + u32(n) ), "_"c8 ] ] ];
+	var tup[ references_list</1s/> ] result[ [ [ char8( u32('0') + u32(n) ), '_' ] ] ];
 	return result;
 }
 
@@ -166,7 +166,7 @@ var tup[ references_list</1s/> ] constexpr param3_inner_reference0[ [ "3a" ] ];
 
 fn constexpr param_n_inner_reference_m( u8 n, u8 m ) : tup[ references_list</1s/> ]
 {
-	var tup[ references_list</1s/> ] result[ [ [ char8( u32("0"c8) + u32(n) ), char8( u32("a"c8) + u32(m) ) ] ] ];
+	var tup[ references_list</1s/> ] result[ [ [ char8( u32('0') + u32(n) ), char8( u32('a') + u32(m) ) ] ] ];
 	return result;
 }
 
@@ -191,8 +191,8 @@ fn constexpr param_n_all_inner_references( u8 n ) :  homogeneous_tuple</ referen
 		auto mut i= 0s;
 		for( &mut el : result )
 		{
-			el[0][0]= char8( u32("0"c8) + u32(n) );
-			el[0][1]= char8( size_type("a"c8) + i );
+			el[0][0]= char8( u32('0') + u32(n) );
+			el[0][1]= char8( size_type('a') + i );
 			++i;
 		}
 	}

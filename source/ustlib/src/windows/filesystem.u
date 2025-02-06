@@ -488,14 +488,14 @@ fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</voi
 	var wide_string mut search_path_null_terminated= utf8_to_wide_string( p );
 	if( search_path_null_terminated.empty() )
 	{
-		search_path_null_terminated.push_back( WCHAR( "."c8 ) );
+		search_path_null_terminated.push_back( WCHAR( '.' ) );
 	}
 	// Ensure trailing path separator is present.
-	if( !(search_path_null_terminated.back() == WCHAR("/"c8) || search_path_null_terminated.back() == WCHAR("\\"c8) ) )
+	if( !(search_path_null_terminated.back() == WCHAR('/') || search_path_null_terminated.back() == WCHAR('\\') ) )
 	{
-		search_path_null_terminated.push_back( WCHAR( "\\"c8 ) );
+		search_path_null_terminated.push_back( WCHAR( '\\' ) );
 	}
-	search_path_null_terminated.push_back( WCHAR( "*"c8 ) ); // Add asterisk to search all.
+	search_path_null_terminated.push_back( WCHAR( '*' ) ); // Add asterisk to search all.
 	search_path_null_terminated.push_back( WCHAR(0) ); // Add null again.
 
 	var WIN32_FIND_DATAW mut find_data= zero_init; // TODO - avoid zeroing it for performance reasons?
@@ -576,7 +576,7 @@ fn get_current_directory() : filesystem_path
 		if( len <= DWORD( res.size() ) )
 		{
 			// Filled enough data - resize down.
-			res.resize( size_type(len), WCHAR( " "c8 ) );
+			res.resize( size_type(len), WCHAR( ' ' ) );
 			break;
 		}
 
@@ -615,14 +615,14 @@ fn directory_raw_iterator::open( filesystem_path_view path ) : filesystem_result
 	var wide_string mut path_null_terminated= utf8_to_wide_string( path );
 	if( path_null_terminated.empty() )
 	{
-		path_null_terminated.push_back( WCHAR( "."c8 ) );
+		path_null_terminated.push_back( WCHAR( '.' ) );
 	}
 	// Ensure trailing path separator is present.
-	if( !(path_null_terminated.back() == WCHAR("/"c8) || path_null_terminated.back() == WCHAR("\\"c8) ) )
+	if( !(path_null_terminated.back() == WCHAR('/') || path_null_terminated.back() == WCHAR('\\') ) )
 	{
-		path_null_terminated.push_back( WCHAR( "\\"c8 ) );
+		path_null_terminated.push_back( WCHAR( '\\' ) );
 	}
-	path_null_terminated.push_back( WCHAR( "*"c8 ) ); // Add asterisk to search all.
+	path_null_terminated.push_back( WCHAR( '*' ) ); // Add asterisk to search all.
 	path_null_terminated.push_back( WCHAR(0) ); // Add null again.
 
 	var WIN32_FIND_DATAW mut find_data= zero_init; // TODO - avoid zeroing it for performance reasons?

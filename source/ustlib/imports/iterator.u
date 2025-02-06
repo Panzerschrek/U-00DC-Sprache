@@ -479,7 +479,7 @@ struct zip_iterator_pair
 				s+= "mut";
 			}
 
-			s+= "@(\"a\"c8)"; // Add single reference tag "a".
+			s+= "@('a')"; // Add single reference tag "a".
 			first_num_reference_tags= 1s;
 		}
 		else
@@ -489,14 +489,14 @@ struct zip_iterator_pair
 			if( first_num_reference_tags > 0s )
 			{
 				// Add inner reference tags.
-				s+= "@(\"";
+				s+= "@('";
 				for( auto mut i= 0s; i < first_num_reference_tags; ++i )
 				{
 					var [ char8, 1 ] mut reference_tag= zero_init;
-					reference_tag[0]= char8( size_type("a"c8) + i );
+					reference_tag[0]= char8( size_type('a') + i );
 					s+= reference_tag;
 				}
-				s+= "\")";
+				s+= "')";
 			}
 
 			if( first_is_mutable )
@@ -516,14 +516,14 @@ struct zip_iterator_pair
 				s+= "mut";
 			}
 
-			s+= "@(\"";
+			s+= "@('";
 
 			// Add single reference tag - next after "first" field tags.
 			var [ char8, 1 ] mut reference_tag= zero_init;
-			reference_tag[0]= char8( size_type("a"c8) + first_num_reference_tags );
+			reference_tag[0]= char8( size_type('a') + first_num_reference_tags );
 			s+= reference_tag;
 
-			s+= "\"c8)";
+			s+= "')";
 		}
 		else
 		{
@@ -531,14 +531,14 @@ struct zip_iterator_pair
 			if( second_num_reference_tags > 0s )
 			{
 				// Add inner reference tags starting from first tag after "first" field tags.
-				s+= "@(\"";
+				s+= "@('";
 				for( auto mut i= 0s; i < second_num_reference_tags; ++i )
 				{
 					var [ char8, 1 ] mut reference_tag= zero_init;
-					reference_tag[0]= char8( size_type("a"c8) + i + first_num_reference_tags );
+					reference_tag[0]= char8( size_type('a') + i + first_num_reference_tags );
 					s+= reference_tag;
 				}
-				s+= "\")";
+				s+= "')";
 			}
 
 			if( second_is_mutable )
