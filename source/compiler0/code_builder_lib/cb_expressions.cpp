@@ -1414,7 +1414,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	const std::string_view type_suffix= char_literal.type_suffix.data();
 
-	if( type_suffix == "" || type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
+	if( type_suffix == "" || type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_ ) )
 	{
 		// TODO - report UTF-8 overflow.
 		char_type= U_FundamentalType::char8_ ;
@@ -1435,12 +1435,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	llvm::Constant* const initializer=
-		llvm::ConstantInt::get( GetFundamentalLLVMType(char_type), uint64_t(char_literal.code_point), false );
+	llvm::Type* const llvm_type= GetFundamentalLLVMType( char_type );
+
+	llvm::Constant* const initializer= llvm::ConstantInt::get( llvm_type, uint64_t(char_literal.code_point), false );
 
 	const VariablePtr result=
 		Variable::Create(
-			FundamentalType( char_type, GetFundamentalLLVMType( char_type ) ),
+			FundamentalType( char_type, llvm_type ),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
 			"",

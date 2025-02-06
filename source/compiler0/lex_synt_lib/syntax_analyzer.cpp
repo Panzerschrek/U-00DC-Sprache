@@ -1091,7 +1091,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		if( it_->type == Lexem::Type::LiteralSuffix )
 		{
 			if( it_->text.size() < char_literal.type_suffix.size() )
-				std::memcpy( char_literal.type_suffix.data(), char_literal.type_suffix.data(), char_literal.type_suffix.size() );
+				std::memcpy( char_literal.type_suffix.data(), it_->text.data(), it_->text.size() );
 			else
 			{
 				LexSyntError error_message;

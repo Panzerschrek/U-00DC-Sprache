@@ -458,7 +458,7 @@ struct CharLiteral
 
 	SrcLoc src_loc;
 	uint32_t code_point= 0;
-	std::array<char, 4> type_suffix{0};
+	std::array<char, 8> type_suffix{0};
 };
 
 struct NamesScopeNameFetch
