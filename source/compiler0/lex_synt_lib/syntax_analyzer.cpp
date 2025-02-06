@@ -1760,11 +1760,11 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		coroutine_type.kind= it_->text == Keywords::generator_ ? CoroutineType::Kind::Generator : CoroutineType::Kind::AsyncFunc;
 		NextLexem();
 
-		if( it_->type == Lexem::Type::Apostrophe )
+		if( it_->type == Lexem::Type::BracketLeft )
 		{
 			NextLexem();
 
-			if( it_->type == Lexem::Type::Apostrophe )
+			if( it_->type == Lexem::Type::BracketRight )
 				NextLexem(); // Empty list.
 			else
 			{
@@ -1789,7 +1789,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 						break;
 				}
 
-				ExpectLexem( Lexem::Type::Apostrophe );
+				ExpectLexem( Lexem::Type::BracketRight );
 			}
 		}
 
