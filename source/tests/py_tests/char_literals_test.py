@@ -87,7 +87,7 @@ def InvalidSizeForCharLiteral_Test2():
 	c_program_text= """
 		fn Foo()
 		{
-			"Ü"c8; // Error, c8 literals may represent only symbols with codes 0-127.
+			'Ü'c8; // Error, c8 literals may represent only symbols with codes 0-127.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -100,7 +100,7 @@ def InvalidSizeForCharLiteral_Test3():
 	c_program_text= """
 		fn Foo()
 		{
-			"😀"c16; // Symbol does not fit into single utf-16 char.
+			'😀'c16; // Symbol does not fit into single utf-16 char.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

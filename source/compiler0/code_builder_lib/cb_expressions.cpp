@@ -1416,16 +1416,35 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( type_suffix == "" || type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_ ) )
 	{
-		// TODO - report UTF-8 overflow.
-		char_type= U_FundamentalType::char8_ ;
+		if( char_literal.code_point > 0x7Fu )
+		{
+			std::string s;
+			PushCharToUTF8String( char_literal.code_point, s );
+			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), char_literal.src_loc, s );
+			return ErrorValue();
+		}
+		char_type= U_FundamentalType::char8_;
 	}
 	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
 	{
-		// TODO - report UTF-16 overflow.
+		if( !( char_literal.code_point < 0xD800u || ( char_literal.code_point > 0xDFFFu && char_literal.code_point < 0x10000u ) ) )
+		{
+			std::string s;
+			PushCharToUTF8String( char_literal.code_point, s );
+			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), char_literal.src_loc, s );
+			return ErrorValue();
+		}
 		char_type= U_FundamentalType::char16_;
 	}
 	else if( type_suffix == "c32" || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32_ ) )
 	{
+		if( char_literal.code_point >= 0x10000u )
+		{
+			std::string s;
+			PushCharToUTF8String( char_literal.code_point, s );
+			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), char_literal.src_loc, s );
+			return ErrorValue();
+		}
 		char_type= U_FundamentalType::char32_;
 	}
 	else
