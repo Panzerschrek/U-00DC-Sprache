@@ -57,33 +57,7 @@ def CharLiteralIsConstantValue_Test0():
 	assert( errors_list[0].src_loc.line == 5 )
 
 
-def InvalidSizeForCharLiteral_Test0():
-	c_program_text= """
-		fn Foo()
-		{
-			"try mupltiple symbols"c8;
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InvalidSizeForCharLiteral" )
-	assert( errors_list[0].src_loc.line == 4 )
-
-
-def InvalidSizeForCharLiteral_Test1():
-	c_program_text= """
-		fn Foo()
-		{
-			""c16; // zero symbols
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InvalidSizeForCharLiteral" )
-	assert( errors_list[0].src_loc.line == 4 )
-
-
-def InvalidSizeForCharLiteral_Test2():
+def CharLiteralOverflow_Test2():
 	c_program_text= """
 		fn Foo()
 		{
@@ -92,11 +66,11 @@ def InvalidSizeForCharLiteral_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InvalidSizeForCharLiteral" )
+	assert( errors_list[0].error_code == "CharLiteralOverflow" )
 	assert( errors_list[0].src_loc.line == 4 )
 
 
-def InvalidSizeForCharLiteral_Test3():
+def CharLiteralOverflow_Test3():
 	c_program_text= """
 		fn Foo()
 		{
@@ -105,18 +79,5 @@ def InvalidSizeForCharLiteral_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InvalidSizeForCharLiteral" )
-	assert( errors_list[0].src_loc.line == 4 )
-
-
-def InvalidSizeForCharLiteral_Test4():
-	c_program_text= """
-		fn Foo()
-		{
-			"wtf"c32; // Too much symbols
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "InvalidSizeForCharLiteral" )
+	assert( errors_list[0].error_code == "CharLiteralOverflow" )
 	assert( errors_list[0].src_loc.line == 4 )

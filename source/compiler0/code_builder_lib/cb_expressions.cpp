@@ -1323,7 +1323,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char8_ , uint64_t(string_literal.value[0]), false );
 		}
 		else
-			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), string_literal.src_loc, string_literal.value );
+			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), string_literal.src_loc, string_literal.value );
 	}
 	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
 	{
@@ -1336,7 +1336,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char16_, uint64_t(c), false );
 		}
 		else
-			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), string_literal.src_loc, string_literal.value );
+			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), string_literal.src_loc, string_literal.value );
 	}
 	else if( type_suffix == "c32" || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32_ ) )
 	{
@@ -1349,7 +1349,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char32_, uint64_t(c), false );
 		}
 		else
-			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), string_literal.src_loc, string_literal.value );
+			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), string_literal.src_loc, string_literal.value );
 	}
 	else
 		REPORT_ERROR( UnknownStringLiteralSuffix, names_scope.GetErrors(), string_literal.src_loc, type_suffix );
@@ -1420,7 +1420,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			std::string s;
 			PushCharToUTF8String( char_literal.code_point, s );
-			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), char_literal.src_loc, s );
+			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), char_literal.src_loc, s );
 			return ErrorValue();
 		}
 		char_type= U_FundamentalType::char8_;
@@ -1431,7 +1431,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			std::string s;
 			PushCharToUTF8String( char_literal.code_point, s );
-			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), char_literal.src_loc, s );
+			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), char_literal.src_loc, s );
 			return ErrorValue();
 		}
 		char_type= U_FundamentalType::char16_;
@@ -1442,7 +1442,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			std::string s;
 			PushCharToUTF8String( char_literal.code_point, s );
-			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), char_literal.src_loc, s );
+			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), char_literal.src_loc, s );
 			return ErrorValue();
 		}
 		char_type= U_FundamentalType::char32_;
