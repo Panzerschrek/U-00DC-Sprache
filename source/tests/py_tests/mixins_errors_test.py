@@ -116,7 +116,7 @@ def MixinInvalidUTF8_Test0():
 def MixinInvalidUTF8_Test1():
 	c_program_text= """
 		mixin( s );
-		var[ char8, 3 ] s[ 199c8, "b"c8, 177c8 ];
+		var[ char8, 3 ] s[ 199c8, 'b', 177c8 ];
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "MixinInvalidUTF8", 2 ) )
@@ -133,7 +133,7 @@ def MixinInvalidUTF8_Test2():
 def MixinInvalidUTF8_Test3():
 	c_program_text= """
 		mixin( s );
-		var[ char8, 5 ] s[ "$"c8, "Q"c8, 199c8, "b"c8, 177c8 ];
+		var[ char8, 5 ] s[ '$', 'Q', 199c8, 'b', 177c8 ];
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "MixinInvalidUTF8", 2 ) )

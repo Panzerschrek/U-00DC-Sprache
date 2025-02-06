@@ -314,12 +314,12 @@ def TupleCopyAssignment_Test2():
 	c_program_text= """
 		fn Foo()
 		{
-			var tup[ [ i32, 2 ], char8 ] t0[ [ 639, 582 ], "q"c8 ];
+			var tup[ [ i32, 2 ], char8 ] t0[ [ 639, 582 ], 'q' ];
 			var tup[ [ i32, 2 ], char8 ] mut t1= zero_init;
 			t1= t0; // Assignemnt works also for array elements of tuples.
 			halt if( t1[0u][0u] != 639 );
 			halt if( t1[0u][1u] != 582 );
-			halt if( t1[1u] != "q"c8 );
+			halt if( t1[1u] != 'q' );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

@@ -5,7 +5,7 @@ def ClassFieldReferenceNotation_Test0():
 	c_program_text= """
 		struct S
 		{
-			i32 & @("a"c8) ref;
+			i32 & @('a') ref;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -15,7 +15,7 @@ def ClassFieldReferenceNotation_Test1():
 	c_program_text= """
 		struct S
 		{
-			i32 &mut @("a"c8) ref;
+			i32 &mut @('a') ref;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -25,7 +25,7 @@ def ClassFieldReferenceNotation_Test2():
 	c_program_text= """
 		struct S
 		{
-			i32 &imut @("a"c8) ref;
+			i32 &imut @('a') ref;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -73,7 +73,7 @@ def ExpectedReferenceNotation_Test1():
 		struct S
 		{
 			i32 & x;
-			i32 & @("a"c8) y;
+			i32 & @('a') y;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -86,7 +86,7 @@ def ExpectedReferenceNotation_Test2():
 		struct S
 		{
 			i32 & x;
-			i32 & @("a"c8) y;
+			i32 & @('a') y;
 			i32 & z;
 		}
 	"""
@@ -146,7 +146,7 @@ def ExpectedReferenceNotation_Test6():
 		struct S
 		{
 			T x;
-			i32 & @("a"c8) y;
+			i32 & @('a') y;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -192,7 +192,7 @@ def InvalidInnerReferenceTagName_Test0():
 	c_program_text= """
 		struct S
 		{
-			i32& @("*"c8) y; // Non-letter symobl.
+			i32& @('*') y; // Non-letter symobl.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -203,7 +203,7 @@ def InvalidInnerReferenceTagName_Test1():
 	c_program_text= """
 		struct S
 		{
-			i32& @("F"c8) y; // Capital letters for now are not supported.
+			i32& @('F') y; // Capital letters for now are not supported.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -250,8 +250,8 @@ def InnerReferenceTagCountMismatch_Test2():
 	c_program_text= """
 		struct T
 		{
-			i32 &mut @("a"c8) x;
-			i32 &mut @("b"c8) y;
+			i32 &mut @('a') x;
+			i32 &mut @('b') y;
 		}
 		struct S
 		{
@@ -314,7 +314,7 @@ def AutoReferenceNotationCalculation_Test3():
 def AutoReferenceNotationCalculation_Test4():
 	# Struct with single field containg references - number of tags is equal to number of references inside this field.
 	c_program_text= """
-		struct S{ i32 &imut @("a"c8) x; i32 &imut @("b"c8) y; i32 &imut @("c"c8) z; }
+		struct S{ i32 &imut @('a') x; i32 &imut @('b') y; i32 &imut @('c') z; }
 		struct T{ i32 x; S s; f32 y; tup[ bool, char8 ] t; }
 		static_assert( typeinfo</T/>.reference_tag_count == 3s );
 	"""
@@ -334,7 +334,7 @@ def AutoReferenceNotationCalculation_Test5():
 def AutoReferenceNotationCalculation_Test6():
 	# Inherit tags.
 	c_program_text= """
-		class A polymorph { i32 & @("a"c8) x; i32 & @("b"c8) y; }
+		class A polymorph { i32 & @('a') x; i32 & @('b') y; }
 		class B : A { f32 z; [ tup[ f32, bool ], 7 ] a; }
 		static_assert( typeinfo</A/>.reference_tag_count == 2s );
 		static_assert( typeinfo</B/>.reference_tag_count == 2s );
@@ -345,7 +345,7 @@ def AutoReferenceNotationCalculation_Test6():
 def UnusedReferenceTag_Test0():
 	# "a" tag is not used.
 	c_program_text= """
-		struct S{ i32 & @("b"c8) x; }
+		struct S{ i32 & @('b') x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) == 1 )
@@ -356,7 +356,7 @@ def UnusedReferenceTag_Test0():
 def UnusedReferenceTag_Test1():
 	# "b" and "c" tags are not used.
 	c_program_text= """
-		struct S{ i32 & @("a"c8) x; i32 & @("d"c8) y; }
+		struct S{ i32 & @('a') x; i32 & @('d') y; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) == 2 )
@@ -386,7 +386,7 @@ def UnusedReferenceTag_Test3():
 	# "b" tag is not used. "a" tag is inherited, "c" is specified.
 	c_program_text= """
 		class A polymorph { i32 &mut x; }
-		class B : A { f32 &imut @("c"c8) y; }
+		class B : A { f32 &imut @('c') y; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -398,8 +398,8 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test0():
 	c_program_text= """
 		struct S
 		{
-			i32 &imut @("a"c8) x;
-			i32 &mut  @("a"c8) y;
+			i32 &imut @('a') x;
+			i32 &mut  @('a') y;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -413,7 +413,7 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test1():
 		struct S
 		{
 			T @("a") t;
-			i32 &mut @("a"c8) y;
+			i32 &mut @('a') y;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -438,7 +438,7 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test2():
 def MixingMutableAndImmutableReferencesInSameReferenceTag_Test3():
 	# Use same tag for inner tags of struct, which are different.
 	c_program_text= """
-		struct S{ i32 &mut @("a"c8) x; i32 &imut @("b"c8) y; }
+		struct S{ i32 &mut @('a') x; i32 &imut @('b') y; }
 		struct T
 		{
 			S @("aa") s;
@@ -465,10 +465,10 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test4():
 def MixingMutableAndImmutableReferencesInSameReferenceTag_Test5():
 	# Reuse immutable tag "a" from parent for mutable reference field.
 	c_program_text= """
-		class T polymorph { i32 &imut @("a"c8) x; }
+		class T polymorph { i32 &imut @('a') x; }
 		class S : T
 		{
-			i32 &mut @("a"c8) y;
+			i32 &mut @('a') y;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -478,10 +478,10 @@ def MixingMutableAndImmutableReferencesInSameReferenceTag_Test5():
 def MixingMutableAndImmutableReferencesInSameReferenceTag_Test6():
 	# Reuse mutable tag "a" from parent for immutable reference field.
 	c_program_text= """
-		class T polymorph { i32 &mut @("a"c8) x; }
+		class T polymorph { i32 &mut @('a') x; }
 		class S : T
 		{
-			i32 &imut @("a"c8) y;
+			i32 &imut @('a') y;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -499,10 +499,10 @@ def StructMultipleInnerReferenceTags_Test0():
 		struct R{ i32& r; }
 		static_assert( typeinfo</R/>.reference_tag_count == 1s );
 
-		struct W{ i32 & @("a"c8) x; i32 & @("b"c8) y; } // Map two references to two tags.
+		struct W{ i32 & @('a') x; i32 & @('b') y; } // Map two references to two tags.
 		static_assert( typeinfo</W/>.reference_tag_count == 2s );
 
-		struct V{ i32 & @("a"c8) x; i32 & @("a"c8) y; } // Map two references to single tag.
+		struct V{ i32 & @('a') x; i32 & @('a') y; } // Map two references to single tag.
 		static_assert( typeinfo</V/>.reference_tag_count == 1s );
 
 		struct Q{ W @("ab") w; R @("c") r; }
@@ -823,7 +823,7 @@ def StructMultipleInnerReferenceTags_Test14():
 
 def StructMultipleInnerReferenceTags_Test15():
 	c_program_text= """
-		struct W{ i32 &imut @("a"c8) x; f32 &mut @("b"c8) y; }
+		struct W{ i32 &imut @('a') x; f32 &mut @('b') y; }
 		struct R{ i32 &imut f; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
 		fn DoPollution( R& mut r, i32 & f ) @(pollution);
@@ -845,7 +845,7 @@ def StructMultipleInnerReferenceTags_Test15():
 
 def StructMultipleInnerReferenceTags_Test16():
 	c_program_text= """
-		struct W{ i32 &imut @("a"c8) x; f32 &mut @("b"c8) y; }
+		struct W{ i32 &imut @('a') x; f32 &mut @('b') y; }
 		struct R{ f32 &imut f; }
 		var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
 		fn DoPollution( R& mut r, f32 & f ) @(pollution);
@@ -901,7 +901,7 @@ def TypesMismatch_ForFieldReferenceNotation_Test3():
 def TypesMismatch_ForFieldReferenceNotation_Test4():
 	c_program_text= """
 		struct S{ i32 & x; }
-		struct T{ S @("a"c8) s; }  // Expected array of char8, given char8.
+		struct T{ S @('a') s; }  // Expected array of char8, given char8.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "TypesMismatch", 3 ) )

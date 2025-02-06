@@ -1200,7 +1200,7 @@ def TypeinfoForReturnReferences_Test1():
 
 def TypeinfoForReturnReferences_Test2():
 	c_program_text= """
-		struct S{ i32& @("a"c8) x; i32& @("b"c8) y; }
+		struct S{ i32& @('a') x; i32& @('b') y; }
 		var [ [ char8, 2 ], 3 ] return_references[ "0_", "1b", "0_" ];
 		type FnPtr= fn( S& s0, S& s1 ) : i32& @(return_references);
 		var [ [ char8, 2 ], 2 ] expected_return_references[ "0_", "1b" ]; // return references should be normalized
@@ -1231,7 +1231,7 @@ def TypeinfoForReturnInnerReferences_Test0():
 
 def TypeinfoForReturnInnerReferences_Test1():
 	c_program_text= """
-		struct S{ i32& @("a"c8) x; i32& @("b"c8) y; }
+		struct S{ i32& @('a') x; i32& @('b') y; }
 		var tup[ [ [ char8, 2 ], 2 ], [ [ char8, 2 ], 2 ] ] return_inner_references[ [ "0_", "0_" ], [ "2_", "1b" ] ];
 		type FnPtr= fn( i32& x, S s, i32& y ) : S @(return_inner_references);
 		var tup[ [ [ char8, 2 ], 1 ], [ [ char8, 2 ], 2 ] ] expected_return_inner_references[ [ "0_" ], [ "1b", "2_" ] ]; // return inner references should be normalized
@@ -1308,8 +1308,8 @@ def ReferenceIndirectionDepthInTypeinfo_Test0():
 		// Struct with reference of second indirection level.
 		struct C
 		{
-			A& @("a"c8) a;
-			i32& @("b"c8) x;
+			A& @('a') a;
+			i32& @('b') x;
 		}
 		static_assert( typeinfo</ C />.reference_indirection_depth == 2s );
 		static_assert( typeinfo</ tup[ i32, C ] />.reference_indirection_depth == 2s );

@@ -1388,7 +1388,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else if( type_suffix == "c32" || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32_ ) )
 	{
-		if( char_literal.code_point >= 0x10000u )
+		if( char_literal.code_point > 0x10FFFFu )
 		{
 			std::string s;
 			PushCharToUTF8String( char_literal.code_point, s );

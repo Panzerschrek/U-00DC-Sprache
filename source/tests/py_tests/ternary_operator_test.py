@@ -269,7 +269,7 @@ def TernaryOperator_Constexpr_Test3():
 
 def TernaryOperator_Constexpr_Test4():
 	c_program_text= """
-		static_assert( ( true ? "Ab" : "bA" )[0u] == "A"c8 );
+		static_assert( ( true ? "Ab" : "bA" )[0u] == 'A' );
 	"""
 	tests_lib.build_program( c_program_text )
 

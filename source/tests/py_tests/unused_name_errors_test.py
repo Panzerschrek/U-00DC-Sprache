@@ -421,7 +421,7 @@ def UnusedLocalVariable_Test4():
 	c_program_text= """
 		fn nomangle Foo()
 		{
-			var tup[ bool, char8, f32 ] mut t[ false, "&"c8, 0.25f ]; // Trivial mutable tuple.
+			var tup[ bool, char8, f32 ] mut t[ false, '&', 0.25f ]; // Trivial mutable tuple.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -852,7 +852,7 @@ def UnusedGlobalVariable_Test4():
 
 def UnusedGlobalVariable_Test5():
 	c_program_text= """
-		var tup[ char8, bool ] t[ "a"c8, false ];
+		var tup[ char8, bool ] t[ 'a', false ];
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )

@@ -56,7 +56,7 @@ def ByteTypesConstruction_Test3():
 		fn Foo() : byte8
 		{
 			// Construct bytes from char.
-			return byte8( "Q"c8 );
+			return byte8( 'Q' );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -102,7 +102,7 @@ def ByteTypesConstruction_Test5():
 			var bytes16 b16( 0u8 );
 			var bytes32 b32( 1i32 );
 			var bytes64 b64( 0.7f );
-			var bytes128 b128( "c"char8 );
+			var bytes128 b128( 'c'char8 );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -129,7 +129,7 @@ def ByteConversionPreservesValue_Test0():
 		static_assert( i16( byte16(-25000i16) ) == -25000i16 );
 		static_assert( u64( byte64(90000050001u64) ) == 90000050001u64 );
 		static_assert( f32( byte32( 3.141592535f ) ) == 3.141592535f );
-		static_assert( char16( byte16("Ж"c16) ) == "Ж"c16 );
+		static_assert( char16( byte16('Ж'c16) ) == 'Ж'c16 );
 	"""
 	tests_lib.build_program( c_program_text )
 

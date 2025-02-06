@@ -325,7 +325,7 @@ def StringLiteral_UTF32_Test0():
 	c_program_text= """
 		template</ type T, size_type S /> fn constexpr ArraySize( [ T, S ]& arr ) : size_type {  return S;  }
 		static_assert( ArraySize( "😀"u32 ) == 1s );
-		static_assert( "😀"c32 == char32(0x1F600) );
+		static_assert( '😀'c32 == char32(0x1F600) );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -370,7 +370,7 @@ def StringLiteral_EscapeSequences_Test3():
 	c_program_text= """
 		fn Foo() : char8
 		{
-			return "\\0"c8;
+			return '\\0';
 		}
 	"""
 	tests_lib.build_program( c_program_text )

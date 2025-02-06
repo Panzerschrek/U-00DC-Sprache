@@ -121,19 +121,19 @@ def SwitchOperator_Test2():
 	c_program_text= """
 		fn Foo()
 		{
-			halt if( Capitalize( "d"c8 ) != "D"c8 );
-			halt if( Capitalize( "c"c8 ) != "C"c8 );
-			halt if( Capitalize( "b"c8 ) != "B"c8 );
-			halt if( Capitalize( "a"c8 ) != "A"c8 );
+			halt if( Capitalize( 'd' ) != 'D' );
+			halt if( Capitalize( 'c' ) != 'C' );
+			halt if( Capitalize( 'b' ) != 'B' );
+			halt if( Capitalize( 'a' ) != 'A' );
 		}
 		fn Capitalize(char8 c ) : char8
 		{
 			switch( c )
 			{
-				"a"c8 -> { return "A"c8; },
-				"b"c8 -> { return "B"c8; },
-				"c"c8 -> { return "C"c8; },
-				"d"c8 -> { return "D"c8; },
+				'a' -> { return 'A'; },
+				'b' -> { return 'B'; },
+				'c' -> { return 'C'; },
+				'd' -> { return 'D'; },
 				default -> { halt; }
 			}
 		}
@@ -332,10 +332,10 @@ def SwitchOperatorRange_Test2():
 		{
 			switch( x )
 			{
-				"a"c8 ... "z"c8 -> { return 1; },
-				"A"c8 ... "Z"c8 -> { return 2; },
-				"0"c8 ... "9"c8 -> { return 3; },
-				"$"c8 -> { return 4; },
+				'a' ... 'z' -> { return 1; },
+				'A' ... 'Z' -> { return 2; },
+				'0' ... '9' -> { return 3; },
+				'$' -> { return 4; },
 				default -> { return 5; },
 				128c8 ... -> { return 6; },
 				... 31c8 -> { return 7; },

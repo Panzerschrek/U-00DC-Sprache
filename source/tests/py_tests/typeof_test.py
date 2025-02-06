@@ -96,7 +96,7 @@ def Typeof_Test5():
 	c_program_text= """
 		struct S
 		{
-			auto constexpr SomeConstant= "8"c8;
+			auto constexpr SomeConstant= '8';
 			typeof(SomeConstant) field; // Typeof for class field
 		}
 	"""

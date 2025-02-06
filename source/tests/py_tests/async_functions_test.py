@@ -116,7 +116,7 @@ def ReturnForAsyncFunction_Test2():
 		fn async SimpleFunc() : tup[ u64, char8 ]
 		{
 			// Return tuple
-			var tup[ u64, char8 ] res[ 7778u64, "&"c8 ];
+			var tup[ u64, char8 ] res[ 7778u64, '&' ];
 			return res;
 		}
 		fn Foo()
@@ -124,7 +124,7 @@ def ReturnForAsyncFunction_Test2():
 			auto mut f= SimpleFunc();
 			if_coro_advance( x : f )
 			{
-				var tup[ u64, char8 ] x_expected[ 7778u64, "&"c8 ];
+				var tup[ u64, char8 ] x_expected[ 7778u64, '&' ];
 				halt if( x != x_expected );
 			}
 			else { halt; }

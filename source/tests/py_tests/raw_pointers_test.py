@@ -295,7 +295,7 @@ def RawPointerAssignment_Test2():
 		struct S{ $(char8) ptr; }
 		fn Foo() : char8
 		{
-			var char8 mut c= "$"c8;
+			var char8 mut c= '$';
 			var S mut s0= zero_init, s1{ .ptr= $<(c) };
 			s0= s1; // Assign struct with pointer inside. Generated assignment operator should assign raw pointers.
 			unsafe{  return $>(s0.ptr);  }
@@ -326,7 +326,7 @@ def RawPointerCopy_Test0():
 		struct S{ $(char8) ptr; }
 		fn Foo() : char8
 		{
-			var char8 mut c= "E"c8;
+			var char8 mut c= 'E';
 			var S s0{ .ptr= $<(c) };
 			var S s1(s0); // Generated copy constructor should copy raw pointer.
 			unsafe{  return $>(s0.ptr);  }

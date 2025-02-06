@@ -222,7 +222,7 @@ def SwitchInvalidRange_Test4():
 		{
 			switch(c)
 			{
-				"g"c8 ... "f"c8  -> {}, // Invalid range for cha
+				'g' ... 'f'  -> {}, // Invalid range for cha
 			}
 		}
 	"""
@@ -300,8 +300,8 @@ def SwitchRangesOverlapping_Test3():
 		{
 			switch(x)
 			{
-				"a"c8 ... "z"c8 -> {},
-				"p"c8 ... "s"c8 -> {}, // Subrange
+				'a' ... 'z' -> {},
+				'p' ... 's' -> {}, // Subrange
 			}
 		}
 	"""

@@ -100,7 +100,7 @@ def ArrayTemplateArg_Test7():
 		{
 			auto val= arr_arg;
 		}
-		var [ tup[ char8, u32, bool ], 2 ] a[ [ "~"c8, 8756u, false ], [ "\\0"c8, 75427344u, true ] ];
+		var [ tup[ char8, u32, bool ], 2 ] a[ [ '~', 8756u, false ], [ '\\0', 75427344u, true ] ];
 		static_assert( S</ a />::val == a );
 	"""
 	tests_lib.build_program( c_program_text )
@@ -162,7 +162,7 @@ def TupleTemplateArg_Test3():
 		{
 			auto val= tup_arg;
 		}
-		var tup[ char8, u32 ] t0[ "T"c8, 8765u ];
+		var tup[ char8, u32 ] t0[ 'T', 8765u ];
 		static_assert( S</ t0 />::val == t0 );
 		var tup[ i32, i16 ] t1[ 78, -5i16 ];
 		static_assert( S</ t1 />::val == t1 );
@@ -264,10 +264,10 @@ def FunctionTemplateCompositeArg_Test2():
 			u32 erste;
 			char8 zweite;
 		}
-		var S constexpr s{ .erste= 89u, .zweite="R"c8 };
+		var S constexpr s{ .erste= 89u, .zweite='R' };
 		// Deduce also "S" template argument based on first composite value argument.
 		static_assert( AccessField</ "erste" />(s) == 89u );
-		static_assert( AccessField</ "zweite" />(s) == "R"c8 );
+		static_assert( AccessField</ "zweite" />(s) == 'R' );
 	"""
 	tests_lib.build_program( c_program_text )
 
