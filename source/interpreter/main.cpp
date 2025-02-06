@@ -352,12 +352,15 @@ int Main( int argc, const char* argv[] )
 			continue;
 		}
 
+		CodeBuilderOptions options;
+		options.report_about_unused_names= false; // Do not require generating extra errors in interpreter.
+
 		CodeBuilder::BuildResult build_result=
 			CodeBuilder::BuildProgram(
 				llvm_context,
 				data_layout,
 				target_triple,
-				CodeBuilderOptions(),
+				options,
 				std::make_shared<SourceGraph>( std::move(source_graph) ),
 				vfs );
 
