@@ -164,7 +164,7 @@ Lexem ParseCharLiteral( Iterator& it, const Iterator it_end, const SrcLoc& src_l
 
 	if( it == it_end )
 	{
-		out_errors.emplace_back( "inexpected end of file after '", src_loc );
+		out_errors.emplace_back( "unexpected end of file after '", src_loc );
 		return result;
 	}
 
@@ -230,7 +230,7 @@ Lexem ParseCharLiteral( Iterator& it, const Iterator it_end, const SrcLoc& src_l
 
 	if( it == it_end )
 	{
-		out_errors.emplace_back( "inexpected end of file at char literal", src_loc );
+		out_errors.emplace_back( "unexpected end of file at char literal", src_loc );
 		return result;
 	}
 	if( *it != '\'' )

@@ -530,7 +530,7 @@ fn ParseCharLiteral( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& sr
 		it.drop_front(); // \
 		if( it.empty() )
 		{
-			out_errors.push_back( LexSyntError( src_loc, "inexpected end of file after '\\" ) );
+			out_errors.push_back( LexSyntError( src_loc, "unexpected end of file after '\\" ) );
 			return result_lexem;
 		}
 		var char8 escaped_c= it.drop_and_get_front();
