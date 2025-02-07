@@ -65,8 +65,8 @@ It consists of ``generator`` keyword, optional notation for inner references spe
 
    type IntGen= generator : i32; // Simplest generator
    var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-   type FloatRefGen= generator'imut' : f32 & @(return_references); // A generator that returns a reference and stores references inside.
-   type NonSyncRefGen= generator'mut' non_sync : u64 &mut @(return_references); // non_sync generator that returns immutable reference and stores mutable references inside.
+   type FloatRefGen= generator(imut) : f32 & @(return_references); // A generator that returns a reference and stores references inside.
+   type NonSyncRefGen= generator(mut) non_sync : u64 &mut @(return_references); // non_sync generator that returns immutable reference and stores mutable references inside.
 
 As it can be seen generator type isn't strictly affected by the details of a specific generator-function (by which it was created).
 This allows to use the same variable for storing of generators produced by calls to different generator-functions - with different bodies and parameters.

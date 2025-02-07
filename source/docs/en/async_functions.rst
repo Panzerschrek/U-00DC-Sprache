@@ -119,8 +119,8 @@ It consists of ``async`` keyword, optional notation for inner references specifi
 
    type IntAsyncFunc= async : i32; // Simplest async function
    var [ [ char8, 2 ], 1 ] return_references[ "0a" ];
-   type FloatRefAsyncFunc= async'imut' : f32 & @(return_references); // An async function that returns a reference and stores references inside.
-   type NonSyncRefAsyncFunc= async'mut' non_sync : u64 &mut @(return_references); // non_sync async function that returns immutable reference and stores mutable references inside.
+   type FloatRefAsyncFunc= async(imut) : f32 & @(return_references); // An async function that returns a reference and stores references inside.
+   type NonSyncRefAsyncFunc= async(mut) non_sync : u64 &mut @(return_references); // non_sync async function that returns immutable reference and stores mutable references inside.
 
 As it can be seen async function type isn't strictly affected by the details of a specific async function (by which it was created).
 This allows to use the same variable for storing of async function object produced by calls to different async functions - with different bodies and parameters.
