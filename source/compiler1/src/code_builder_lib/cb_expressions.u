@@ -504,6 +504,15 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 }
 
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CharLiteral& char_literal ) : Value
+{
+	// TODO
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( function_context );
+	ust::ignore_unused( char_literal );
+	return ErrorValue();
+}
+
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
 	auto name_lookup_ref= named_operand.get</Synt::NameLookup/>();

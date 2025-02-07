@@ -462,6 +462,7 @@ private:
 	fn BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value;
 	fn BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value;
 	fn BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StringLiteral& string_literal ) : Value;
+	fn BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CharLiteral& char_literal ) : Value;
 	fn BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value;
 	fn BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeinfo& typeinfo_ ) : Value;
 	fn BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SameType& same_type_ ) : Value;
