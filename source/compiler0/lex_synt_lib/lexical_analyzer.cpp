@@ -597,7 +597,6 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 	if( program_text.size() >= 3u && program_text.substr(0, 3) == "\xEF\xBB\xBF" )
 		it+= 3; // Skip UTF-8 byte order mark.
 
-	int comments_depth= 0;
 
 	uint32_t line= 1; // Count lines from "1", in human-readable format.
 	uint32_t column= 0u;
@@ -651,7 +650,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 		// Multiline comment.
 		if( c == '/' && it + 1 < it_end && *std::next(it) == '*' )
 		{
-			++comments_depth;
+			int comments_depth= 1;
 			it+= 2;
 			column+= 2u;
 
@@ -661,28 +660,43 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 				{
 					it+= 2;
 					column+= 2u;
+					max_column= std::max( max_column, column );
 					--comments_depth;
-					break;
+					if( comments_depth == 0 )
+						break;
 				}
-				const sprache_char c= sprache_char(*it);
-				if( IsNewline( c ) )
+				else if( it + 1 < it_end && *it == '/' && *std::next(it) == '*' )
 				{
-					++line;
-					column= 0;
-					++it;
-					// Handle case with two-symbol line ending.
-					if( it < it_end )
-					{
-						auto it_copy= it;
-						if( IsNewlineSequence( c, ReadNextUTF8Char( it_copy, it ) ) )
-							it= it_copy;
-					}
+					it+= 2;
+					column+= 2u;
+					max_column= std::max( max_column, column );
+					++comments_depth;
 				}
 				else
-					ReadNextUTF8Char( it, it_end );
-				++column;
-				max_column= std::max( max_column, column );
+				{
+					const sprache_char c= sprache_char(*it);
+					if( IsNewline( c ) )
+					{
+						++line;
+						column= 0;
+						++it;
+						// Handle case with two-symbol line ending.
+						if( it < it_end )
+						{
+							auto it_copy= it;
+							if( IsNewlineSequence( c, ReadNextUTF8Char( it_copy, it ) ) )
+								it= it_copy;
+						}
+					}
+					else
+						ReadNextUTF8Char( it, it_end );
+					++column;
+					max_column= std::max( max_column, column );
+				}
 			}
+
+			if( comments_depth != 0 )
+				result.errors.emplace_back( "Lexical error: expected */", SrcLoc( 0u, line, column ) );
 			continue;
 		}
 		else if( IsNewline(c) )
@@ -718,8 +732,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 				lexem.src_loc= SrcLoc( 0u, line, column );
 
 				advance_column();
-				if( comments_depth == 0 || collect_comments )
-					result.lexems.push_back( std::move(lexem) );
+				result.lexems.push_back( std::move(lexem) );
 
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
@@ -734,8 +747,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 				lexem.src_loc= SrcLoc( 0u, line, column );
 
 				advance_column();
-				if( comments_depth == 0 || collect_comments )
-					result.lexems.push_back( std::move(lexem) );
+				result.lexems.push_back( std::move(lexem) );
 
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
@@ -772,10 +784,9 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 				fixed_lexem_str.pop_back();
 			}
 
-			if( comments_depth == 0 )
-				result.errors.emplace_back(
-					"Lexical error: unrecognized character: " + std::to_string(c),
-					SrcLoc( 0u, line, column ) );
+			result.errors.emplace_back(
+				"Lexical error: unrecognized character: " + std::to_string(c),
+				SrcLoc( 0u, line, column ) );
 			++it;
 			continue;
 		}
@@ -785,13 +796,8 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 
 		advance_column();
 
-		if( !( comments_depth != 0 && !collect_comments ) )
-			result.lexems.push_back( std::move(lexem) );
+		result.lexems.push_back( std::move(lexem) );
 	} // while not end
-
-	if( !collect_comments )
-		for( int i= 0; i < comments_depth; ++i )
-			result.errors.emplace_back( "Lexical error: expected */", SrcLoc( 0u, line, column ) );
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;
