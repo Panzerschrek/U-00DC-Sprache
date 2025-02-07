@@ -403,7 +403,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 					}
 				}
 				if( char_literal.code_point <= 127 )
-						stream << char(char_literal.code_point);
+					stream << char(char_literal.code_point);
 				else
 				{
 					std::string s;
