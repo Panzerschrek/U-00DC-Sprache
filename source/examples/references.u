@@ -32,13 +32,13 @@ fn nomangle main() : i32
 	auto& v_y_ref= v.y;
 	assert( v_x_ref * v_y_ref == -11.2f * 564.3f );
 
-	var char8 mut c= "Q"c8;
+	var char8 mut c= 'Q';
 	{
 		// Variable itself is immutable, but it contains mutable reference inside.
 		var R r{ .char_ref= c };
-		r.char_ref= "^"c8;
+		r.char_ref= '^';
 	}
-	assert( c == "^"c8 );
+	assert( c == '^' );
 
 	var [ i32, 8 ] mut arr[ 7, 34, 16, 867, 43, 1, 6, 32 ];
 	GetMaxArrayElementRef( arr )= 0; // Obtain a mutable reference to max element and zero it.
