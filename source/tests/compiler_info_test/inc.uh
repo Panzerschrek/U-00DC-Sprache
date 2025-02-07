@@ -2,7 +2,7 @@ static_assert( compiler::version == "0.9" );
 static_assert( compiler::generation <= 10s );
 static_assert( typeinfo</ typeof(compiler::git_revision) />.element_count == 40s );
 
-var bool is_debug = compiler::options::generate_debug_info || compiler::options::optimization_level == "0"c8;
+var bool is_debug = compiler::options::generate_debug_info || compiler::options::optimization_level == '0';
 var bool is_haswell= string_equals( compiler::options::cpu_name, "haswell" );
 
 var bool is_windows = string_equals( compiler::target::os, "windows" );

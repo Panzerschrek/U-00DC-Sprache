@@ -12,7 +12,7 @@ fn ParseMakeDepFileContents( ust::string_view8 mut file_contents ) : ust::option
 	res.destination= ust::path::normalize( ParsePath( file_contents ) );
 
 	SkipWhitespaces( file_contents );
-	if( file_contents.empty() || file_contents.front() != ":"c8 )
+	if( file_contents.empty() || file_contents.front() != ':' )
 	{
 		return ust::null_optional;
 	}
@@ -50,22 +50,22 @@ fn ParsePath( ust::string_view8 &mut s ) : ust::filesystem_path
 		{
 			break;
 		}
-		else if( c == ":"c8 && s.size() >= 2s && s[1s] == " "c8 )
+		else if( c == ':' && s.size() >= 2s && s[1s] == ' ' )
 		{
 			// "Allow : inside paths, but skip : at the and (before space).
 			// Do so, since we need to support Windows paths.
 			break;
 		}
-		else if( c == "\\"c8 && s.size() >= 2s )
+		else if( c == '\\' && s.size() >= 2s )
 		{
-			if( s[1s] == "\n"c8 )
+			if( s[1s] == '\n' )
 			{
 				break;
 			}
 			s.drop_front();
 			res.push_back( s.drop_and_get_front() );
 		}
-		else if( c == "$"c8 && s.size() >= 2s )
+		else if( c == '$' && s.size() >= 2s )
 		{
 			s.drop_front();
 			res.push_back( s.drop_and_get_front() );
@@ -88,7 +88,7 @@ fn SkipWhitespaces( ust::string_view8 &mut s )
 		{
 			s.drop_front();
 		}
-		else if( c == "\\"c8 && s.size() >= 2s && s[1s] == "\n"c8 )
+		else if( c == '\\' && s.size() >= 2s && s[1s] == '\n' )
 		{
 			s.drop_front();
 			s.drop_front();
@@ -102,7 +102,7 @@ fn SkipWhitespaces( ust::string_view8 &mut s )
 
 fn IsWhitespaceChar( char8 c ) : bool
 {
-	return c == " "c8 || c == "\t"c8 || c == "\n"c8;
+	return c == ' ' || c == '\t' || c == '\n';
 }
 
 } // namespace BK

@@ -11,7 +11,7 @@ fn GetCurrentExecutablePath() : ust::filesystem_path
 	auto mut link_path_nt= "/proc/self/exe\0";
 
 	var ust::filesystem_path mut res;
-	res.resize( 256s, "\0"c8 );
+	res.resize( 256s, '\0' );
 	for( auto mut i= 0s; i < 8s; ++i )
 	{
 		auto len = unsafe( ::readlink( $<(link_path_nt[0]), res.data(), res.size() ) );
@@ -23,11 +23,11 @@ fn GetCurrentExecutablePath() : ust::filesystem_path
 		{
 			// Possible truncation.
 			auto new_size= res.size() * 2s;
-			res.resize( new_size, "\0"c8 );
+			res.resize( new_size, '\0' );
 			continue;
 		}
 
-		res.resize( size_type(len), " "c8 );
+		res.resize( size_type(len), ' ' );
 		return res;
 	}
 

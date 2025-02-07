@@ -33,13 +33,13 @@ fn nomangle main() : i32
 		halt if( v.get</f64/>().try_deref() != 33.0 );
 	}
 	{
-		var ust::variant</ tup[ char8, f64 ] /> mut v( "S"c8 );
+		var ust::variant</ tup[ char8, f64 ] /> mut v( 'S' );
 
 		variant_visit( &mut el : v )
 		{
 			el= typeof(el)(33);
 		}
-		halt if( v.get</char8/>().try_deref() != "!"c8 );
+		halt if( v.get</char8/>().try_deref() != '!' );
 	}
 
 	return 0;

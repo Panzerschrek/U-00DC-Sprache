@@ -50,7 +50,6 @@ const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ "~", Lexem::Type::Tilda },
 		{ "!", Lexem::Type::Not },
 
-		{ "'", Lexem::Type::Apostrophe },
 		{ "@", Lexem::Type::At },
 
 		{ "$", Lexem::Type::PointerTypeMark },
@@ -155,6 +154,95 @@ bool IsIdentifierChar( const sprache_char c )
 	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
+Lexem ParseCharLiteral( Iterator& it, const Iterator it_end, const SrcLoc& src_loc, LexSyntErrors& out_errors )
+{
+	U_ASSERT( *it == '\'' );
+	++it;
+
+	Lexem result;
+	result.type= Lexem::Type::CharLiteral;
+
+	if( it == it_end )
+	{
+		out_errors.emplace_back( "unexpected end of file after '", src_loc );
+		return result;
+	}
+
+	const char c = *it;
+	if( c == '\'' )
+	{
+		out_errors.emplace_back( "empty char literal", src_loc );
+		return result;
+	}
+	else if( c == '\\' )
+	{
+		++it;
+		const char escaped_c= *it;
+		++it;
+		switch( escaped_c )
+		{
+		case '"': result.text.push_back('"'); break;
+		case '\'': result.text.push_back('\''); break;
+		case '\\': result.text.push_back('\\'); break;
+		case '/': result.text.push_back('/'); break;
+		case 'b': result.text.push_back('\b'); break;
+		case 'f': result.text.push_back('\f'); break;
+		case 'n': result.text.push_back('\n'); break;
+		case 'r': result.text.push_back('\r'); break;
+		case 't': result.text.push_back('\t'); break;
+		case '0': result.text.push_back('\0'); break;
+
+		case 'u':
+			{
+				// Parse hex number.
+				if( it_end - it < 4 )
+				{
+					out_errors.emplace_back( "expected 4 hex digits", src_loc );
+					return result;
+				}
+
+				sprache_char char_code= 0u;
+				for( size_t i= 0u; i < 4u; i++ )
+				{
+					sprache_char digit;
+						 if( *it >= '0' && *it <= '9' ) digit= uint32_t( *it - '0' );
+					else if( *it >= 'a' && *it <= 'f' ) digit= uint32_t( *it - 'a' + 10 );
+					else if( *it >= 'A' && *it <= 'F' ) digit= uint32_t( *it - 'A' + 10 );
+					else
+					{
+						out_errors.emplace_back( "expected hex number", src_loc );
+						return result;
+					}
+					char_code|= digit << ( ( 3u - i ) * 4u );
+					++it;
+				}
+				PushCharToUTF8String( char_code, result.text );
+			}
+			break;
+
+		default:
+			out_errors.emplace_back( std::string("invalid escape sequence: \\") + char(*it), src_loc );
+			return result;
+		};
+	}
+	else
+		PushCharToUTF8String( ReadNextUTF8Char( it, it_end ), result.text );
+
+	if( it == it_end )
+	{
+		out_errors.emplace_back( "unexpected end of file at char literal", src_loc );
+		return result;
+	}
+	if( *it != '\'' )
+	{
+		out_errors.emplace_back( "expected ' at end of char literal", src_loc );
+		return result;
+	}
+	++it;
+
+	return result;
+}
+
 Lexem ParseStringImpl( Iterator& it, const Iterator it_end, const SrcLoc& src_loc, LexSyntErrors& out_errors )
 {
 	U_ASSERT( *it == '"' );
@@ -185,6 +273,7 @@ Lexem ParseStringImpl( Iterator& it, const Iterator it_end, const SrcLoc& src_lo
 			switch( *it )
 			{
 			case '"':
+			case '\'':
 			case '\\':
 			case '/':
 				result.text.push_back(*it);
@@ -498,7 +587,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 
 } // namespace
 
-LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, const bool collect_comments )
+LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 {
 	LexicalAnalysisResult result;
 
@@ -508,7 +597,6 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 	if( program_text.size() >= 3u && program_text.substr(0, 3) == "\xEF\xBB\xBF" )
 		it+= 3; // Skip UTF-8 byte order mark.
 
-	int comments_depth= 0;
 
 	uint32_t line= 1; // Count lines from "1", in human-readable format.
 	uint32_t column= 0u;
@@ -536,8 +624,6 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 		// line comment.
 		if( c == '/' && it_end - it > 1 && *(it+1) == '/' )
 		{
-			const auto comment_start_it= it;
-
 			// Read all until new line, but do not extract new line symbol itself.
 			while( it < it_end )
 			{
@@ -548,49 +634,58 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 				it= it_copy;
 			}
 
-			if( collect_comments )
+			continue;
+		}
+		// Multiline comment.
+		if( c == '/' && it + 1 < it_end && *std::next(it) == '*' )
+		{
+			int comments_depth= 1;
+			it+= 2;
+			column+= 2u;
+
+			while( it < it_end )
 			{
-				Lexem comment_lexem;
-				comment_lexem.src_loc= SrcLoc( 0u, line, column );
-				comment_lexem.type= Lexem::Type::Comment;
-				comment_lexem.text.insert( comment_lexem.text.end(), comment_start_it, it );
-				result.lexems.emplace_back( std::move(comment_lexem) );
+				if( it + 1 < it_end && *it == '*' && *std::next(it) == '/' )
+				{
+					it+= 2;
+					column+= 2u;
+					max_column= std::max( max_column, column );
+					--comments_depth;
+					if( comments_depth == 0 )
+						break;
+				}
+				else if( it + 1 < it_end && *it == '/' && *std::next(it) == '*' )
+				{
+					it+= 2;
+					column+= 2u;
+					max_column= std::max( max_column, column );
+					++comments_depth;
+				}
+				else
+				{
+					const sprache_char c= sprache_char(*it);
+					if( IsNewline( c ) )
+					{
+						++line;
+						column= 0;
+						++it;
+						// Handle case with two-symbol line ending.
+						if( it < it_end )
+						{
+							auto it_copy= it;
+							if( IsNewlineSequence( c, ReadNextUTF8Char( it_copy, it ) ) )
+								it= it_copy;
+						}
+					}
+					else
+						ReadNextUTF8Char( it, it_end );
+					++column;
+					max_column= std::max( max_column, column );
+				}
 			}
 
-			continue;
-		}
-		if( c == '/' && it_end - it > 1 && *std::next(it) == '*' )
-		{
-			++comments_depth;
-			if( collect_comments )
-			{
-				Lexem comment_lexem;
-				comment_lexem.src_loc= SrcLoc( 0u, line, column );
-				comment_lexem.type= Lexem::Type::Comment;
-				comment_lexem.text= "/*";
-				advance_column();
-				result.lexems.emplace_back( std::move(comment_lexem) );
-			}
-			it+= 2;
-			column+= 2u;
-			continue;
-		}
-		if( c == '*' && it_end - it > 1 && *(it+1) == '/' )
-		{
-			--comments_depth;
-			if( collect_comments )
-			{
-				Lexem comment_lexem;
-				comment_lexem.src_loc= SrcLoc( 0u, line, column );
-				comment_lexem.type= Lexem::Type::Comment;
-				comment_lexem.text= "*/";
-				advance_column();
-				result.lexems.push_back( std::move(comment_lexem) );
-			}
-			else if( comments_depth < 0 )
-				result.errors.emplace_back( "Lexical error: unexpected */", SrcLoc( 0u, line, column ) );
-			it+= 2;
-			column+= 2u;
+			if( comments_depth != 0 )
+				result.errors.emplace_back( "Lexical error: expected */", SrcLoc( 0u, line, column ) );
 			continue;
 		}
 		else if( IsNewline(c) )
@@ -626,8 +721,22 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 				lexem.src_loc= SrcLoc( 0u, line, column );
 
 				advance_column();
-				if( comments_depth == 0 || collect_comments )
-					result.lexems.push_back( std::move(lexem) );
+				result.lexems.push_back( std::move(lexem) );
+
+				lexem= ParseIdentifier( it, it_end );
+				lexem.type= Lexem::Type::LiteralSuffix;
+			}
+		}
+		else if( c == '\'' )
+		{
+			lexem= ParseCharLiteral( it, it_end, SrcLoc( 0u, line, column ), result.errors );
+			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
+			{
+				// Parse string suffix.
+				lexem.src_loc= SrcLoc( 0u, line, column );
+
+				advance_column();
+				result.lexems.push_back( std::move(lexem) );
 
 				lexem= ParseIdentifier( it, it_end );
 				lexem.type= Lexem::Type::LiteralSuffix;
@@ -664,10 +773,9 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 				fixed_lexem_str.pop_back();
 			}
 
-			if( comments_depth == 0 )
-				result.errors.emplace_back(
-					"Lexical error: unrecognized character: " + std::to_string(c),
-					SrcLoc( 0u, line, column ) );
+			result.errors.emplace_back(
+				"Lexical error: unrecognized character: " + std::to_string(c),
+				SrcLoc( 0u, line, column ) );
 			++it;
 			continue;
 		}
@@ -677,13 +785,8 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 
 		advance_column();
 
-		if( !( comments_depth != 0 && !collect_comments ) )
-			result.lexems.push_back( std::move(lexem) );
+		result.lexems.push_back( std::move(lexem) );
 	} // while not end
-
-	if( !collect_comments )
-		for( int i= 0; i < comments_depth; ++i )
-			result.errors.emplace_back( "Lexical error: expected */", SrcLoc( 0u, line, column ) );
 
 	Lexem eof_lexem;
 	eof_lexem.type= Lexem::Type::EndOfFile;

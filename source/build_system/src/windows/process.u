@@ -519,9 +519,9 @@ fn ConstructCommandLineNullTerminated(
 		// Escape quotes and backspashes in args. TODO - check if it's correct.
 		foreach( c : UTF8ToWideString( arg ) )
 		{
-			if( c == WCHAR("\\"c8) || c == WCHAR("\""c8) )
+			if( c == WCHAR('\\') || c == WCHAR('"') )
 			{
-				command_line_combined.push_back( WCHAR("\\"c8) );
+				command_line_combined.push_back( WCHAR('\\') );
 			}
 			command_line_combined.push_back( c );
 		}

@@ -17,7 +17,7 @@ fn nomangle main() : i32
 	assert( float_bool_pair.elements[0] < 3.0f );
 	assert( float_bool_pair.elements[1] );
 
-	var VecN</ char8, 4s /> char8_array4[ "S"c8, "P"c8, "Q"c8, "R"c8 ];
+	var VecN</ char8, 4s /> char8_array4[ 'S', 'P', 'Q', 'R' ];
 	assert( char8_array4 == "SPQR" );
 
 	var Vec3</ f64 /> f64_3dvec= zero_init;

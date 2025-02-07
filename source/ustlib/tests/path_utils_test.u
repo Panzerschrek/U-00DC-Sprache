@@ -38,12 +38,12 @@ fn nomangle main() : i32
 		assert( !ust::path::is_relative( "\\\\.\\COM42\\some" ) );
 
 		// is_separator
-		assert( ust::path::is_separator( "/"c8 ) );
-		assert( ust::path::is_separator( "\\"c8 ) ); // On Window backslash i a separator.
-		assert( !ust::path::is_separator( " "c8 ) );
-		assert( !ust::path::is_separator( ":"c8 ) );
-		assert( !ust::path::is_separator( "y"c8 ) );
-		assert( !ust::path::is_separator( "-"c8 ) );
+		assert( ust::path::is_separator( '/' ) );
+		assert( ust::path::is_separator( '\\' ) ); // On Window backslash i a separator.
+		assert( !ust::path::is_separator( ' ' ) );
+		assert( !ust::path::is_separator( ':' ) );
+		assert( !ust::path::is_separator( 'y' ) );
+		assert( !ust::path::is_separator( '-' ) );
 
 		// join
 		assert( ust::path::join( "foo" ) == "foo" ); // Single component - return as is
@@ -472,12 +472,12 @@ fn nomangle main() : i32
 		assert( !ust::path::is_relative( "/some/path" ) );
 
 		// is_separator
-		assert( ust::path::is_separator( "/"c8 ) );
-		assert( !ust::path::is_separator( " "c8 ) );
-		assert( !ust::path::is_separator( ":"c8 ) );
-		assert( !ust::path::is_separator( "y"c8 ) );
-		assert( !ust::path::is_separator( "-"c8 ) );
-		assert( !ust::path::is_separator( "\\"c8 ) ); // On Unix backslash isn't a separator.
+		assert( ust::path::is_separator( '/' ) );
+		assert( !ust::path::is_separator( ' ' ) );
+		assert( !ust::path::is_separator( ':' ) );
+		assert( !ust::path::is_separator( 'y' ) );
+		assert( !ust::path::is_separator( '-' ) );
+		assert( !ust::path::is_separator( '\\' ) ); // On Unix backslash isn't a separator.
 
 		// join
 		assert( ust::path::join( "foo" ) == "foo" ); // Single component - return as is

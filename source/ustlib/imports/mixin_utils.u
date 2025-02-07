@@ -53,7 +53,7 @@ struct static_string
 
 	fn constexpr append_decimal_number( mut this, u64 n )
 	{
-		auto constexpr zero_char= "0"c8;
+		auto constexpr zero_char= '0';
 
 		if( n == 0u64 )
 		{

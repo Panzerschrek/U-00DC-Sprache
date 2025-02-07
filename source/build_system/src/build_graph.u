@@ -615,7 +615,7 @@ fn LoadAndParseDepFile( Logger &mut logger, ust::filesystem_path_view dep_file_p
 
 fn IsSpecialBuildCommand( ust::string_view8 command_name ) : bool
 {
-	return command_name.size() >= 2s && command_name[0s] == "?"c8 && command_name[1s] == "?"c8;
+	return command_name.size() >= 2s && command_name[0s] == '?' && command_name[1s] == '?';
 }
 
 enum BuildGraphNodeState

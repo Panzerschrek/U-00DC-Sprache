@@ -241,19 +241,19 @@ def TypeinfoClassFieldsList_Order_Test0():
 		auto& ti= typeinfo</S/>;
 
 		static_assert( ti.fields_list[0].type.is_float );
-		static_assert( ti.fields_list[0].name[0] == "a"c8 );
+		static_assert( ti.fields_list[0].name[0] == 'a' );
 
 		static_assert( ti.fields_list[1].type.is_bool );
-		static_assert( ti.fields_list[1].name[0] == "a"c8 );
+		static_assert( ti.fields_list[1].name[0] == 'a' );
 
 		static_assert( ti.fields_list[2].type.is_signed_integer );
-		static_assert( ti.fields_list[2].name[0] == "b"c8 );
+		static_assert( ti.fields_list[2].name[0] == 'b' );
 
 		static_assert( ti.fields_list[3].type.is_void );
-		static_assert( ti.fields_list[3].name[0] == "f"c8 );
+		static_assert( ti.fields_list[3].name[0] == 'f' );
 
 		static_assert( ti.fields_list[4].type.is_array );
-		static_assert( ti.fields_list[4].name[0] == "q"c8 );
+		static_assert( ti.fields_list[4].name[0] == 'q' );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -278,13 +278,13 @@ def TypeinfoClassFieldsList_Order_Test1():
 		auto& ti= typeinfo</Derived/>;
 
 		static_assert( ti.fields_list[0].type.is_unsigned_integer );
-		static_assert( ti.fields_list[0].name[0] == "b"c8 );
+		static_assert( ti.fields_list[0].name[0] == 'b' );
 
 		static_assert( ti.fields_list[1].type.is_bool );
-		static_assert( ti.fields_list[1].name[0] == "d"c8 );
+		static_assert( ti.fields_list[1].name[0] == 'd' );
 
 		static_assert( ti.fields_list[2].type.is_tuple );
-		static_assert( ti.fields_list[2].name[0] == "f"c8 );
+		static_assert( ti.fields_list[2].name[0] == 'f' );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -304,19 +304,19 @@ def TypeinfoClassTypesList_Order_Test0():
 		auto& ti= typeinfo</S/>;
 
 		static_assert( ti.types_list[0].type.is_float );
-		static_assert( ti.types_list[0].name[0] == "a"c8 );
+		static_assert( ti.types_list[0].name[0] == 'a' );
 
 		static_assert( ti.types_list[1].type.is_array );
-		static_assert( ti.types_list[1].name[0] == "a"c8 );
+		static_assert( ti.types_list[1].name[0] == 'a' );
 
 		static_assert( ti.types_list[2].type.is_bool );
-		static_assert( ti.types_list[2].name[0] == "b"c8 );
+		static_assert( ti.types_list[2].name[0] == 'b' );
 
 		static_assert( ti.types_list[3].type.is_tuple );
-		static_assert( ti.types_list[3].name[0] == "l"c8 );
+		static_assert( ti.types_list[3].name[0] == 'l' );
 
 		static_assert( ti.types_list[4].type.is_signed_integer );
-		static_assert( ti.types_list[4].name[0] == "w"c8 );
+		static_assert( ti.types_list[4].name[0] == 'w' );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -339,10 +339,10 @@ def TypeinfoClassTypesList_Order_Test1():
 		auto& ti= typeinfo</Derived/>;
 
 		static_assert( ti.types_list[0].type.is_array );
-		static_assert( ti.types_list[0].name[0] == "A"c8 );
+		static_assert( ti.types_list[0].name[0] == 'A' );
 
 		static_assert( ti.types_list[1].type.is_void );
-		static_assert( ti.types_list[1].name[0] == "O"c8 );
+		static_assert( ti.types_list[1].name[0] == 'O' );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -410,19 +410,19 @@ def TypeinfoEnumElementsList_Order_Test0():
 		auto& ti= typeinfo</E/>;
 
 		static_assert( ti.elements_list[0].value == u8(E::a) );
-		static_assert( ti.elements_list[0].name[0] == "a"c8 );
+		static_assert( ti.elements_list[0].name[0] == 'a' );
 
 		static_assert( ti.elements_list[1].value == u8(E::ar) );
-		static_assert( ti.elements_list[1].name[0] == "a"c8 );
+		static_assert( ti.elements_list[1].name[0] == 'a' );
 
 		static_assert( ti.elements_list[2].value == u8(E::b) );
-		static_assert( ti.elements_list[2].name[0] == "b"c8 );
+		static_assert( ti.elements_list[2].name[0] == 'b' );
 
 		static_assert( ti.elements_list[3].value == u8(E::fff) );
-		static_assert( ti.elements_list[3].name[0] == "f"c8 );
+		static_assert( ti.elements_list[3].name[0] == 'f' );
 
 		static_assert( ti.elements_list[4].value == u8(E::qwerty) );
-		static_assert( ti.elements_list[4].name[0] == "q"c8 );
+		static_assert( ti.elements_list[4].name[0] == 'q' );
 	"""
 	tests_lib.build_program( c_program_text )
 

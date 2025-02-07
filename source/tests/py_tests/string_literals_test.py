@@ -316,7 +316,7 @@ def StringLiteral_UTF16_Test0():
 		static_assert( ArraySize( "строка"u16 ) == size_type( 6 ) );
 		static_assert( ArraySize( "string"u16 ) == size_type( 6 ) );
 		static_assert( ArraySize( "ღთႭა"u16 ) == size_type( 4 ) );
-		static_assert( ArraySize( "😀"u16 ) == 2s );
+		static_assert( ArraySize( "😀"u16 ) == 2s ); // This symbol uses surrogate pair in UTF-16 representation.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -325,7 +325,7 @@ def StringLiteral_UTF32_Test0():
 	c_program_text= """
 		template</ type T, size_type S /> fn constexpr ArraySize( [ T, S ]& arr ) : size_type {  return S;  }
 		static_assert( ArraySize( "😀"u32 ) == 1s );
-		static_assert( "😀"c32 == char32(0x1F600) );
+		static_assert( '😀'c32 == char32(0x1F600) );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -370,7 +370,7 @@ def StringLiteral_EscapeSequences_Test3():
 	c_program_text= """
 		fn Foo() : char8
 		{
-			return "\\0"c8;
+			return "\\0"[0u];
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -424,6 +424,18 @@ def StringLiteral_EscapeSequences_Test7():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == ord('\b') )
+
+
+def StringLiteral_EscapeSequences_Test8():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return "\\'"[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\'') )
 
 
 def StringLiteral_CharNumber_Test0():

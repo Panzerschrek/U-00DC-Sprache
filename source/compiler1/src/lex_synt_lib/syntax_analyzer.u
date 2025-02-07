@@ -2,6 +2,7 @@ import "/assert.u"
 import "/shared_ptr.u"
 import "/string_conversions.u"
 import "/unordered_set.u"
+import "/utf.u"
 import "/CodeBuilderLib/keywords.uh"
 import "syntax_analyzer.uh"
 
@@ -848,6 +849,36 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 			return ust::make_box( move(string_literal) );
 		},
+		Lexem::Type::CharLiteral ->
+		{
+			var CharLiteral mut char_literal
+			{
+				.src_loc= it_.front().src_loc,
+				// Lexical analyzer should push bytes for exactly one code point.
+				.code_point= ust::utf::get_code_point_or_null_from_string( it_.front().text ),
+			};
+			NextLexem();
+
+			if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
+			{
+				var ust::string8& text= it_.front().text;
+				if( text.size() > typeinfo</ typeof( char_literal.type_suffix )/>.element_count )
+				{
+					errors_.push_back( LexSyntError( it_.front().src_loc, "Char literal type suffix overflow" ) );
+				}
+				else
+				{
+					for( auto mut i= 0s; i < text.size(); ++i )
+					{
+						char_literal.type_suffix[i]= text[i];
+					}
+				}
+
+				NextLexem();
+			}
+
+			return char_literal;
+		},
 		Lexem::Type::SquareBracketLeft ->
 		{
 			return ust::make_box( ParseArrayType() );
@@ -1303,11 +1334,11 @@ fn SyntaxAnalyzer::ParseCoroutineType( mut this ) : CoroutineType
 
 	NextLexem();
 
-	if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+	if( it_.front().lexem_type == Lexem::Type::BracketLeft )
 	{
 		NextLexem();
 
-		if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+		if( it_.front().lexem_type == Lexem::Type::BracketRight )
 		{
 			NextLexem(); // Empty list.
 		}
@@ -1336,7 +1367,7 @@ fn SyntaxAnalyzer::ParseCoroutineType( mut this ) : CoroutineType
 				}
 			}
 
-			ExpectLexem( Lexem::Type::Apostrophe );
+			ExpectLexem( Lexem::Type::BracketRight );
 		}
 	}
 

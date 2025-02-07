@@ -105,7 +105,7 @@ def IntIsConstructibleFromChar_Test0():
 	c_program_text= """
 		fn Foo() : i32
 		{
-			var i32 c( "a"c8 );
+			var i32 c( 'a' );
 			return c;
 		}
 	"""
@@ -118,7 +118,7 @@ def IntIsConstructibleFromChar_Test1():
 	c_program_text= """
 		fn Foo() : u8
 		{
-			var u8 c( "⅀"c32 ); // It's truncated.
+			var u8 c( '⅀'c32 ); // It's truncated.
 			return c;
 		}
 	"""

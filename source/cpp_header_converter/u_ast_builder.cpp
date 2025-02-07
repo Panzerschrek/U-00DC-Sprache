@@ -1391,16 +1391,18 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 					preprocessor_,
 					token.getKind() );
 
-			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
-			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			auto_variable_declaration.name= name;
+			if( !char_literal_parser.isMultiChar() )
+			{
+				Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
+				auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+				auto_variable_declaration.name= name;
 
-			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
-			string_constant->value.push_back( char(char_literal_parser.getValue()) );
-			string_constant->type_suffix= "c8";
+				Synt::CharLiteral char_literal( g_dummy_src_loc );
+				char_literal.code_point= uint32_t( char_literal_parser.getValue() );
 
-			auto_variable_declaration.initializer_expression= std::move(string_constant);
-			root_program_elements_.Append( std::move( auto_variable_declaration ) );
+				auto_variable_declaration.initializer_expression= std::move(char_literal);
+				root_program_elements_.Append( std::move( auto_variable_declaration ) );
+			}
 		}
 	} // for defines
 }

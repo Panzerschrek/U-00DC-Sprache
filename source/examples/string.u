@@ -42,19 +42,19 @@ fn nomangle main() : i32
 	assert( s < s3 );
 
 	// It's possible to access sting elements via [] operator.
-	assert( s[2s] == "m"c8 );
+	assert( s[2s] == 'm' );
 
 	// Modifiecation via [] is also possible.
-	s[1s]= "0"c8;
+	s[1s]= '0';
 	assert( s == "s0me foo" );
 	ust::stdout_print( s );
 	ust::stdout_print( "\n" );
 
 	// There are also front/back methods.
-	assert( s3.front() == "s"c8 );
+	assert( s3.front() == 's' );
 
-	s.back() = "!"c8;
-	assert( s[7s] == "!"c8 );
+	s.back() = '!';
+	assert( s[7s] == '!' );
 	ust::stdout_print( s );
 	ust::stdout_print( "\n" );
 
@@ -72,7 +72,7 @@ fn nomangle main() : i32
 	ust::stdout_print( "\n" );
 
 	// Range object allows also to mutate source string.
-	s.range()[3s] = "_"c8;
+	s.range()[3s] = '_';
 	assert( s == "s0m_ fo!" );
 	ust::stdout_print( s );
 	ust::stdout_print( "\n" );

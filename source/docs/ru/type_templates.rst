@@ -117,7 +117,7 @@
    // Шаблон структуры с композитным параметром.
    template</ ArgType arg /> struct S {}
 
-   var ArgType constexpr my_arg[ [ 7, -5 ], "y"c8, true, E::B ];
+   var ArgType constexpr my_arg[ [ 7, -5 ], 'y', true, E::B ];
 
    // Параметрезуем шаблон композитным значением.
    type MyS= S</ my_arg />;

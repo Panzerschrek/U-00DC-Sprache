@@ -487,7 +487,7 @@ U_TEST( GoToDefinition_Test14 )
 		fn Bar( bool b, char8 c );
 		fn Foo()
 		{
-			Bar( false, "7"c8 );
+			Bar( false, '7' );
 			Bar();
 			Bar( 67.5f );
 			Bar( 777 );
@@ -522,7 +522,7 @@ U_TEST( GoToDefinition_Test15 )
 		fn Foo()
 		{
 			var S s;
-			s.Bar( false, "7"c8 );
+			s.Bar( false, '7' );
 			s.Bar();
 			s.Bar( 67.5f );
 			s.Bar( 777 );
@@ -557,7 +557,7 @@ U_TEST( GoToDefinition_Test16 )
 
 		fn Foo()
 		{
-			Bar( false, "7"c8 );
+			Bar( false, '7' );
 			Bar();
 			Bar( 67.5f );
 			Bar( 777 );
@@ -983,7 +983,7 @@ U_TEST( GetAllOccurrences_Test5 )
 
 		fn Foo()
 		{
-			Bar( false, "7"c8 );
+			Bar( false, '7' );
 			Bar();
 			Bar( 67.5f );
 			Bar( 777 );

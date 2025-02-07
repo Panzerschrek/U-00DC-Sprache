@@ -371,7 +371,7 @@ def CoroutineMismatch_ForAsyncFunction_Test2():
 			fn async Foo(this) : i32;
 		}
 		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-		fn S::Foo(this) : ( async'imut' : i32 ) @(return_inner_references) { halt; }
+		fn S::Foo(this) : ( async(imut) : i32 ) @(return_inner_references) { halt; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -383,7 +383,7 @@ def CoroutineMismatch_ForAsyncFunction_Test3():
 		struct S
 		{
 			var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
-			fn Foo(this) : ( async'imut' : i32 ) @(return_inner_references);
+			fn Foo(this) : ( async(imut) : i32 ) @(return_inner_references);
 		}
 		fn async S::Foo(this) : i32 { return 0; }
 	"""

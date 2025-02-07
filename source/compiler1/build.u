@@ -155,7 +155,7 @@ fn GetKeywordsList( ust::string_view8 keywords_list ) : ust::vector</ust::string
 	for( auto mut i= 0s; i < keywords_list.size(); ++i )
 	{
 		var char8 c= keywords_list[i];
-		if( c == "\n"c8 || c == "\r"c8 )
+		if( c == '\n' || c == '\r' )
 		{
 			if( i - word_start > 1s )
 			{
@@ -257,7 +257,7 @@ fn ParseNextCodeBuilderError( ust::string_view8 &mut s ) : ust::optional</CodeBu
 
 	SkipWhitespaceAndCPPComments( s );
 
-	if( s.empty() || s.front() != "("c8 )
+	if( s.empty() || s.front() != '(' )
 	{
 		return ust::null_optional;
 	}
@@ -273,7 +273,7 @@ fn ParseNextCodeBuilderError( ust::string_view8 &mut s ) : ust::optional</CodeBu
 
 	SkipWhitespaceAndCPPComments( s );
 
-	if( s.empty() || s.front() != ","c8 )
+	if( s.empty() || s.front() != ',' )
 	{
 		return ust::null_optional;
 	}
@@ -320,18 +320,18 @@ fn ParseCPPIdentifier( ust::string_view8 &mut s ) : ust::optional</ust::string8/
 
 fn IsCPPIdentifierStartChar( char8 c ) : bool
 {
-	return ( c >= "a"c8 && c <= "z"c8 ) || ( c >= "A"c8 && c <= "Z"c8 );
+	return ( c >= 'a' && c <= 'z' ) || ( c >= 'A' && c <= 'Z' );
 }
 
 fn IsCPPIdentifierChar( char8 c ) : bool
 {
-	return IsCPPIdentifierStartChar( c ) || ( c >= "0"c8 && c <= "9"c8 );
+	return IsCPPIdentifierStartChar( c ) || ( c >= '0' && c <= '9' );
 }
 
 // Parse C++-like string syntax.
 fn ParseCPPString( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
 {
-	if( s.empty() || s.front() != "\""c8 )
+	if( s.empty() || s.front() != '"' )
 	{
 		return ust::null_optional;
 	}
@@ -341,12 +341,12 @@ fn ParseCPPString( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
 	while( !s.empty() )
 	{
 		var char8 c= s.front();
-		if( c == "\""c8 )
+		if( c == '"' )
 		{
 			s.drop_front();
 			break;
 		}
-		else if( c == "\\"c8 )
+		else if( c == '\\' )
 		{
 			s.drop_front();
 			if( s.empty() )
@@ -356,13 +356,13 @@ fn ParseCPPString( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
 			var char8 c2= s.drop_and_get_front();
 			switch( c2 )
 			{
-				"\""c8 -> { res.push_back( "\""c8 ); },
-				"\\"c8 -> { res.push_back( "\""c8 ); },
-				"t"c8 -> { res.push_back( "\t"c8 ); },
-				"n"c8 -> { res.push_back( "\n"c8 ); },
-				"r"c8 -> { res.push_back( "\r"c8 ); },
-				"f"c8 -> { res.push_back( "\f"c8 ); },
-				"b"c8 -> { res.push_back( "\b"c8 ); },
+				'"' -> { res.push_back( '"' ); },
+				'\\' -> { res.push_back( '\\' ); },
+				't' -> { res.push_back( '\t' ); },
+				'n' -> { res.push_back( '\n' ); },
+				'r' -> { res.push_back( '\r' ); },
+				'f' -> { res.push_back( '\f' ); },
+				'b' -> { res.push_back( '\b' ); },
 				default -> { res.push_back( c2 ); },
 			}
 		}
@@ -384,11 +384,11 @@ fn SkipWhitespaceAndCPPComments( ust::string_view8 &mut s )
 
 		if( s.size() >= 2s )
 		{
-			if( s[0s] == "/"c8 && s[1s] == "/"c8 )
+			if( s[0s] == '/' && s[1s] == '/' )
 			{
 				s.drop_front();
 				s.drop_front();
-				while( !s.empty() && s.front() != "\n"c8 )
+				while( !s.empty() && s.front() != '\n' )
 				{
 					s.drop_front();
 				}
@@ -410,7 +410,7 @@ fn SkipWhitespace( ust::string_view8 &mut s )
 	while( !s.empty() )
 	{
 		var char8 c= s.front();
-		if( c == " "c8 || c == "\t"c8 || c == "\n"c8 || c == "\r"c8 )
+		if( c == ' ' || c == '\t' || c == '\n' || c == '\r' )
 		{
 			s.drop_front();
 		}
@@ -425,25 +425,25 @@ fn SkipWhitespace( ust::string_view8 &mut s )
 fn MakeStringLiteral( ust::string_view8 s ) : ust::string8
 {
 	var ust::string8 mut res;
-	res.push_back( "\""c8 );
+	res.push_back( '"' );
 
 	foreach( c : s )
 	{
 		switch( c )
 		{
-			"\""c8 -> { res+= "\\\""; },
-			"\\"c8 -> { res+= "\\\\"; },
-			"\n"c8 -> { res+= "\\n"; },
-			"\r"c8 -> { res+= "\\r"; },
-			"\t"c8 -> { res+= "\\t"; },
-			"\f"c8 -> { res+= "\\f"; },
-			"\b"c8 -> { res+= "\\b"; },
-			"\0"c8 -> { res+= "\\0"; },
+			'"' -> { res+= "\\\""; },
+			'\\' -> { res+= "\\\\"; },
+			'\n' -> { res+= "\\n"; },
+			'\r' -> { res+= "\\r"; },
+			'\t' -> { res+= "\\t"; },
+			'\f' -> { res+= "\\f"; },
+			'\b' -> { res+= "\\b"; },
+			'\0' -> { res+= "\\0"; },
 			default -> { res.push_back(c); },
 		}
 	}
 
-	res.push_back( "\""c8 );
+	res.push_back( '"' );
 
 	return res;
 }

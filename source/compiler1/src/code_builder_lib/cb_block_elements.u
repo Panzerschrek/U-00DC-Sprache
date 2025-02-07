@@ -3468,6 +3468,7 @@ fn SingleExpressionIsUselessImpl( Synt::ComplexName& e ) : bool { ust::ignore_un
 fn SingleExpressionIsUselessImpl( Synt::NumericConstant& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::BooleanConstant& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::StringLiteral& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CharLiteral& e ) : bool { ust::ignore_unused(e); return true; }
 // Move and take have side effects.
 fn SingleExpressionIsUselessImpl( Synt::MoveOperator& e ) : bool { ust::ignore_unused(e); return false; }
 fn SingleExpressionIsUselessImpl( Synt::TakeOperator& e ) : bool { ust::ignore_unused(e); return false; }

@@ -292,7 +292,7 @@ fn ParseDecimalNumber( ust::string_view8 mut str ) : ust::optional</u32/>
 	{
 		return ust::null_optional;
 	}
-	if( !( str.front() >= "1"c8 && str.front() <= "9"c8 ) )
+	if( !( str.front() >= '1' && str.front() <= '9' ) )
 	{
 		// First digin shouldn't be zero.
 		return ust::null_optional;
@@ -302,11 +302,11 @@ fn ParseDecimalNumber( ust::string_view8 mut str ) : ust::optional</u32/>
 	while( !str.empty() )
 	{
 		var char8 c= str.drop_and_get_front();
-		if( !( c >= "0"c8 && c <= "9"c8 ) )
+		if( !( c >= '0' && c <= '9' ) )
 		{
 			return ust::null_optional;
 		}
-		res= res * 10u + (u32(c) - u32("0"c8));
+		res= res * 10u + (u32(c) - u32('0'));
 	}
 
 	return res;

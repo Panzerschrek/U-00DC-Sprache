@@ -24,9 +24,9 @@ fn CodeBuilder::EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope,
 	}
 
 	var u64 value= unsafe( LLVMConstIntGetZExtValue( variable.constexpr_value ) );
-	if( value >= u64( "a"c8 ) && value <= u64( "z"c8 ) )
+	if( value >= u64( 'a' ) && value <= u64( 'z' ) )
 	{
-		return u8( value - u64( "a"c8 ) );
+		return u8( value - u64( 'a' ) );
 	}
 	else
 	{
@@ -59,9 +59,9 @@ fn CodeBuilder::EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_
 		for( auto mut i= 0u64; i < array_type.element_count; ++i )
 		{
 			var u64 value= unsafe( LLVMConstIntGetZExtValue( LLVMGetAggregateElement( variable.constexpr_value, u32(i) ) ) );
-			if( value >= u64( "a"c8 ) && value <= u64( "z"c8 ) )
+			if( value >= u64( 'a' ) && value <= u64( 'z' ) )
 			{
-				result[ size_type(i) ]= u8( value - u64( "a"c8 ) );
+				result[ size_type(i) ]= u8( value - u64( 'a' ) );
 			}
 			else
 			{
@@ -342,10 +342,10 @@ fn CodeBuilder::GetParamReferenceConstant( this, FunctionType::ParamReference& p
 {
 	var [ char8, 2 ] mut initializer
 	[
-		char8( u32( "0"c8 ) + u32( param_reference.param_index ) ),
+		char8( u32( '0' ) + u32( param_reference.param_index ) ),
 		( ( param_reference.reference_index == FunctionType::c_param_reference_number
-				? "_"c8
-				: char8( u32( "a"c8 ) + u32( param_reference.reference_index ) ) ) ),
+				? '_'
+				: char8( u32( 'a' ) + u32( param_reference.reference_index ) ) ) ),
 	];
 	return unsafe( U1_ConstDataArray( fundamental_llvm_types_.char8_, ust::ptr_cast_to_byte8( $<(initializer) ), 2s, 2s ) );
 }
@@ -355,13 +355,13 @@ fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, Na
 	var u64 param= unsafe( LLVMConstIntGetZExtValue( LLVMGetAggregateElement( constant, 0u ) ) );
 	var u64 ref= unsafe( LLVMConstIntGetZExtValue( LLVMGetAggregateElement( constant, 1u ) ) );
 
-	if( !( param >= u64( "0"c8 ) && param <= u64( "9"c8 ) ) )
+	if( !( param >= u64( '0' ) && param <= u64( '9' ) ) )
 	{
 		REPORT_ERROR( InvalidParamNumber, names_scope, src_loc, param )
 		return ust::null_optional;
 	}
 
-	if( !( ( ref >= u64( "a"c8 ) && ref <= u64( "z"c8 ) ) || ref == u64( "_"c8 ) ) )
+	if( !( ( ref >= u64( 'a' ) && ref <= u64( 'z' ) ) || ref == u64( '_' ) ) )
 	{
 		REPORT_ERROR( InvalidInnerReferenceTagName, names_scope, src_loc, ref )
 		return ust::null_optional;
@@ -369,8 +369,8 @@ fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, Na
 
 	var FunctionType::ParamReference result
 	{
-		.param_index= u8( param - u64( "0"c8 ) ),
-		.reference_index= ( ref == u64( "_"c8 ) ? FunctionType::c_param_reference_number : u8( ref - u64( "a"c8 ) ) )
+		.param_index= u8( param - u64( '0' ) ),
+		.reference_index= ( ref == u64( '_' ) ? FunctionType::c_param_reference_number : u8( ref - u64( 'a' ) ) )
 	};
 
 	if( size_type(result.param_index) >= num_params )

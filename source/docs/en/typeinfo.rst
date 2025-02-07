@@ -95,9 +95,9 @@ Each enum member description contains:
    static_assert( info.elements_list[0].value == 0u8 );
    static_assert( info.elements_list[1].value == 1u8 );
    static_assert( info.elements_list[2].value == 2u8 );
-   static_assert( info.elements_list[0].name[0] == "A"c8 );
-   static_assert( info.elements_list[1].name[0] == "B"c8 );
-   static_assert( info.elements_list[2].name[0] == "C"c8 );
+   static_assert( info.elements_list[0].name[0] == 'A' );
+   static_assert( info.elements_list[1].name[0] == 'B' );
+   static_assert( info.elements_list[2].name[0] == 'C' );
 
 *****************************
 *Type information for arrays*

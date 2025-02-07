@@ -233,20 +233,20 @@ Example:
 
    struct S
    {
-       i32& @("a"c8) x; // Reference points to tag "a" (#0).
-       i32& @("b"c8) y; // Reference points to tag "b" (#1).
+       i32& @('a') x; // Reference points to tag "a" (#0).
+       i32& @('b') y; // Reference points to tag "b" (#1).
    }
    static_assert( typeinfo</S/>.reference_tag_count == 2s );
 
    struct T
    {
-       f32 &mut @("a"c8) f;
-       bool& @("b"c8) b;
+       f32 &mut @('a') f;
+       bool& @('b') b;
        // Map tags "c" (#3) and "d" (#4) to inner references of "S".
        S @("cd") s;
        // Map tag "e" (#5) to two different references.
-       u64& @("e"c8) i0;
-       i64& @("e"c8) i1;
+       u64& @('e') i0;
+       i64& @('e') i1;
    }
    static_assert( typeinfo</T/>.reference_tag_count == 5s );
 

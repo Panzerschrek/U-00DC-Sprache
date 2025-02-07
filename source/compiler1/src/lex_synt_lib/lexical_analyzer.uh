@@ -23,6 +23,7 @@ struct Lexem
 		MacroIdentifier,
 		MacroUniqueIdentifier,
 		String,
+		CharLiteral,
 		Number,
 
 		LiteralSuffix, // For strings, numbers
@@ -63,7 +64,6 @@ struct Lexem
 		Tilda, // ~
 		Not, // !
 
-		Apostrophe, // '
 		At, // @
 
 		Increment, // ++

@@ -22,12 +22,11 @@ struct Lexem
 	{
 		None,
 
-		Comment,
-
 		Identifier,
 		MacroIdentifier,
 		MacroUniqueIdentifier,
 		String,
+		CharLiteral,
 		Number,
 
 		LiteralSuffix, // For strings, numbers
@@ -68,7 +67,6 @@ struct Lexem
 		Tilda, // ~
 		Not, // !
 
-		Apostrophe, // '
 		At, // @
 
 		Increment, // ++
@@ -131,7 +129,7 @@ struct LexicalAnalysisResult
 	LexSyntErrors errors;
 };
 
-LexicalAnalysisResult LexicalAnalysis( std::string_view program_text, bool collect_comments= false );
+LexicalAnalysisResult LexicalAnalysis( std::string_view program_text );
 
 //
 // Additional text-related stuff.

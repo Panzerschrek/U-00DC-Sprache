@@ -95,7 +95,7 @@ fn ManglerMSVC::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::s
 	mangler_state.PushElement( g_name_prefix );
 	EncodeFullName( mangler_state, variable_name, parent_scope );
 
-	mangler_state.PushElement( "3"c8 ); // Special name for global variables.
+	mangler_state.PushElement( '3' ); // Special name for global variables.
 	EncodeType( mangler_state, t );
 	mangler_state.PushElement( ( is_constant ? g_imut_prefix : g_mut_prefix ) );
 
@@ -412,7 +412,7 @@ fn ManglerMSVC::EncodeFunctionParams( this, ManglerState &mut mangler_state, ust
 			{
 				if( param == back_references[i] )
 				{
-					mangler_state.PushElement( char8(i + size_type("0"c8)) );
+					mangler_state.PushElement( char8(i + size_type('0')) );
 					continue label params_loop;
 				}
 			}
@@ -736,7 +736,7 @@ fn ManglerMSVC::EncodeNumber( this, ManglerState &mut mangler_state, u64 num )
 	}
 	else if( num <= 10u64 )
 	{
-		mangler_state.PushElement( char8(num - 1u64 + u64("0"c8)) );
+		mangler_state.PushElement( char8(num - 1u64 + u64('0')) );
 	}
 	else
 	{
@@ -749,7 +749,7 @@ fn ManglerMSVC::EncodeNumber( this, ManglerState &mut mangler_state, u64 num )
 
 		while(hex_digit >= 0i64)
 		{
-			mangler_state.PushElement( char8(u64("A"c8) + ((num >> u64(hex_digit << 2u)) & u64(0xF))) );
+			mangler_state.PushElement( char8(u64('A') + ((num >> u64(hex_digit << 2u)) & u64(0xF))) );
 			--hex_digit;
 		}
 
@@ -903,11 +903,11 @@ fn ManglerMSVC::EncodeParamReference( this, ManglerState &mut mangler_state, Fun
 
 	mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
 	mangler_state.PushElement( "0" );
-	EncodeNumber( mangler_state, u64("0"c8) + u64(param_reference.param_index) );
+	EncodeNumber( mangler_state, u64('0') + u64(param_reference.param_index) );
 
 	mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
 	mangler_state.PushElement( "0" );
-	var u64 param_reference_char= ( param_reference.reference_index == FunctionType::c_param_reference_number ? u64("_"c8) : ( u64("a"c8) + u64(param_reference.reference_index)) );
+	var u64 param_reference_char= ( param_reference.reference_index == FunctionType::c_param_reference_number ? u64('_') : ( u64('a') + u64(param_reference.reference_index)) );
 	EncodeNumber( mangler_state, param_reference_char );
 
 	mangler_state.PushElement( g_terminator );
@@ -954,7 +954,7 @@ private:
 			var BackReference &mut br= back_references_[i];
 			if( res_.range().subrange( size_type(br.pos), size_type(br.pos + br.count) ) == str )
 			{
-				res_.push_back( char8(i + size_type("0"c8) ) );
+				res_.push_back( char8(i + size_type('0') ) );
 				return;
 			}
 			if( br.count == 0u )
@@ -1062,7 +1062,7 @@ fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
 
 fn MakeNullTerminatedString( ust::string8 mut str ) : ust::string8
 {
-	str.push_back( "\0"c8 );
+	str.push_back( '\0' );
 	return str;
 }
 
@@ -1079,15 +1079,15 @@ fn GetCallingConventionName( LLVMCallConvID cc ) : ust::string_view8
 }
 
 auto g_num_back_references= 10s;
-auto g_name_prefix= "?"c8; // All names (function, variables) should start with it.
-auto g_terminator= "@"c8;
+auto g_name_prefix= '?'; // All names (function, variables) should start with it.
+auto g_terminator= '@';
 auto& g_template_prefix= "?$";
 auto& g_numeric_template_arg_prefix= "$0";
 auto& g_array_type_name_in_templates_prefix= "$$B";
-auto g_class_type_prefix = "U"c8;
-auto g_reference_prefix = "A"c8;
-auto g_pointer_prefix = "P"c8;
-auto g_mut_prefix= "A"c8;
-auto g_imut_prefix= "B"c8;
+auto g_class_type_prefix = 'U';
+auto g_reference_prefix = 'A';
+auto g_pointer_prefix = 'P';
+auto g_mut_prefix= 'A';
+auto g_imut_prefix= 'B';
 
 } // namespace U1

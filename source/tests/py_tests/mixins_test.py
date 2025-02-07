@@ -86,7 +86,7 @@ def MixinWithinTemplate_Test1():
 				for( auto mut i= 0s; i < n; ++i )
 				{
 					StrAppend( s, dst, "T field" );
-					s[dst]= char8( size_type("0"c8) + i );
+					s[dst]= char8( size_type('0') + i );
 					++dst;
 					StrAppend( s, dst, ";\\n" );
 				}
@@ -129,7 +129,7 @@ def MixinWithinTemplate_Test2():
 				for( &field_info : typeinfo</T/>.fields_list )
 				{
 					StrAppend( s, dst, "typeof(typeinfo</T/>.fields_list[" );
-					s[dst]= char8( size_type("0"c8) + i );
+					s[dst]= char8( size_type('0') + i );
 					++dst;
 					StrAppend( s, dst, "].type)::src_type " );
 					StrAppend( s, dst, field_info.name );

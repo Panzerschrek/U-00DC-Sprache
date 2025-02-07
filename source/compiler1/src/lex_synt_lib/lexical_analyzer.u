@@ -24,6 +24,11 @@ fn Lexem::ToDiagnosticString(this) : ust::string8
 		// For now ignore escape sequences (for simplicity).
 		return ust::concat( "\"", text, "\"" );
 	}
+	if( lexem_type == Lexem::Type::CharLiteral )
+	{
+		// For now ignore escape sequences (for simplicity).
+		return ust::concat( "'", text, "'" );
+	}
 	if( lexem_type == Lexem::Type::Number )
 	{
 		halt if( text.size() < typeinfo</NumberLexemData/>.size_of );
@@ -63,11 +68,11 @@ fn IsWhitespace( char32 c ) : bool
 {
 	switch(c)
 	{
-		" "c32,
-		// "\f"c32,
-		// "\n"c32,
-		// "\r"c32,
-		// "\t"c32,
+		' 'c32,
+		// '\f'c32,
+		// '\n'c32,
+		// '\r'c32,
+		// '\t'c32,
 		... char32(0x1Fu),
 		char32(0x7Fu) -> { return true; },
 		default -> { return false; }
@@ -78,9 +83,9 @@ fn IsNewline( char32 c ) : bool
 {
 	// See https://en.wikipedia.org/wiki/Newline#Unicode.
 	return
-		c == "\n"c32 || // line feed
-		c == "\r"c32 || // carriage return
-		c == "\f"c32 || // form feed
+		c == '\n'c32 || // line feed
+		c == '\r'c32 || // carriage return
+		c == '\f'c32 || // form feed
 		c == char32(0x000B) || // vertical tab
 		c == char32(0x0085) || // Next line
 		c == char32(0x2028) || // line separator
@@ -89,12 +94,12 @@ fn IsNewline( char32 c ) : bool
 
 fn IsNewlineSequence( char32 c0, char32 c1 ) : bool
 {
-	return c0 == "\r"c32 && c1 == "\n"c32;
+	return c0 == '\r'c32 && c1 == '\n'c32;
 }
 
 fn IsNumberStartChar( char32 c ) : bool
 {
-	return c >= "0"c32 && c <= "9"c32;
+	return c >= '0'c32 && c <= '9'c32;
 }
 
 fn IsIdentifierStartChar( char32 c ) : bool
@@ -103,8 +108,8 @@ fn IsIdentifierStartChar( char32 c ) : bool
 	// TODO - use something, like symbol category from unicode.
 	switch(c)
 	{
-		"a"c32 ... "z"c32,
-		"A"c32 ... "Z"c32,
+		'a'c32 ... 'z'c32,
+		'A'c32 ... 'Z'c32,
 		char32(0x0400u) ... char32(0x04FFu), // Cyrillic
 		char32(0x0500u) ... char32(0x0527u), // Extended cyrillic
 		char32(0x00C0u) ... char32(0x00D6u), // Additional latin symbols
@@ -119,7 +124,7 @@ fn IsIdentifierStartChar( char32 c ) : bool
 
 fn IsIdentifierChar( char32 c ) : bool
 {
-	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == "_"c32;
+	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_'c32;
 }
 
 fn ParseIdentifier( Iterator &mut it ) : Lexem
@@ -220,27 +225,27 @@ fn PowI( u64 base_, u64 pow ) : f64
 
 fn NumberFunc2( char8 c ) : u64
 {
-	if( c >= "0"c8 && c <= "1"c8 )
+	if( c >= '0' && c <= '1' )
 	{
-		return u64(c) - u64("0"c8);
+		return u64(c) - u64('0');
 	}
 	return -1u64;
 }
 
 fn NumberFunc8( char8 c ) : u64
 {
-	if( c >= "0"c8 && c <= "7"c8 )
+	if( c >= '0' && c <= '7' )
 	{
-		return u64(c) - u64("0"c8);
+		return u64(c) - u64('0');
 	}
 	return -1u64;
 }
 
 fn NumberFunc10( char8 c ) : u64
 {
-	if( c >= "0"c8 && c <= "9"c8 )
+	if( c >= '0' && c <= '9' )
 	{
-		return u64(c) - u64("0"c8);
+		return u64(c) - u64('0');
 	}
 	return -1u64;
 }
@@ -249,9 +254,9 @@ fn NumberFunc16( char8 c ) : u64
 {
 	switch(c)
 	{
-		"0"c8 ... "9"c8 -> { return u64(c) - u64("0"c8); },
-		"a"c8 ... "f"c8 -> { return u64(c) - u64("a"c8) + u64(10); },
-		"A"c8 ... "F"c8 -> { return u64(c) - u64("A"c8) + u64(10); },
+		'0' ... '9' -> { return u64(c) - u64('0'); },
+		'a' ... 'f' -> { return u64(c) - u64('a') + u64(10); },
+		'A' ... 'F' -> { return u64(c) - u64('A') + u64(10); },
 		default -> { return -1u64; },
 	}
 }
@@ -261,22 +266,22 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 	var u64 mut base_(10);
 	auto mut number_func= NumberFunc10;
 
-	if( it.size() >= 3s && it.front() == "0"c8 )
+	if( it.size() >= 3s && it.front() == '0' )
 	{
 		auto d= it[1s];
-		if( d == "b"c8 )
+		if( d == 'b' )
 		{
 			base_= 2u64;
 			number_func= NumberFunc2;
 			it= it.subrange_start(2s);
 		}
-		if( d == "o"c8 )
+		if( d == 'o' )
 		{
 			base_= 8u64;
 			number_func= NumberFunc8;
 			it= it.subrange_start(2s);
 		}
-		if( d == "x"c8 )
+		if( d == 'x' )
 		{
 			base_= 16u64;
 			number_func= NumberFunc16;
@@ -307,7 +312,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 		}
 	}
 
-	if( !it.empty() && it.front() == "."c8 )
+	if( !it.empty() && it.front() == '.' )
 	{
 		it.drop_front();
 		has_fraction_point= true;
@@ -333,17 +338,17 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 		}
 	}
 
-	if( base_ == 10u64 && !it.empty() && it.front() == "e"c8 )
+	if( base_ == 10u64 && !it.empty() && it.front() == 'e' )
 	{
 		it.drop_front();
 
 		auto mut sign= 1;
-		if( !it.empty() && it.front() == "-"c8 )
+		if( !it.empty() && it.front() == '-' )
 		{
 			sign= -1;
 			it.drop_front();
 		}
-		else if( !it.empty() && it.front() == "+"c8 )
+		else if( !it.empty() && it.front() == '+' )
 		{
 			sign=  1;
 			it.drop_front();
@@ -429,7 +434,7 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 
 	var Lexem mut result_lexem;
 	result_lexem.lexem_type= Lexem::Type::Number;
-	result_lexem.text.resize( typeinfo</NumberLexemData/>.size_of, "\0"c8 );
+	result_lexem.text.resize( typeinfo</NumberLexemData/>.size_of, '\0' );
 	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8(result_lexem.text.data()), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</NumberLexemData/>.size_of ) );
 	return result_lexem;
 }
@@ -446,8 +451,8 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 		it.drop_front();
 		switch(c)
 		{
-			"\""c8 -> { break; },
-			"\\"c8 ->
+			'"' -> { break; },
+			'\\' ->
 			{
 				if( it.empty() )
 				{
@@ -457,14 +462,14 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 				it.drop_front();
 				switch(escaped_c)
 				{
-					"\""c8 , "\\"c8 -> { result_lexem.text.push_back( escaped_c ); },
-					"b"c8 -> { result_lexem.text.push_back( "\b"c8 ); },
-					"f"c8 -> { result_lexem.text.push_back( "\f"c8 ); },
-					"n"c8 -> { result_lexem.text.push_back( "\n"c8 ); },
-					"r"c8 -> { result_lexem.text.push_back( "\r"c8 ); },
-					"t"c8 -> { result_lexem.text.push_back( "\t"c8 ); },
-					"0"c8 -> { result_lexem.text.push_back( "\0"c8 ); },
-					"u"c8 ->
+					'"' , '\\', '\'' -> { result_lexem.text.push_back( escaped_c ); },
+					'b' -> { result_lexem.text.push_back( '\b' ); },
+					'f' -> { result_lexem.text.push_back( '\f' ); },
+					'n' -> { result_lexem.text.push_back( '\n' ); },
+					'r' -> { result_lexem.text.push_back( '\r' ); },
+					't' -> { result_lexem.text.push_back( '\t' ); },
+					'0' -> { result_lexem.text.push_back( '\0' ); },
+					'u' ->
 					{
 						if( it.size() < 4s )
 						{
@@ -502,6 +507,96 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 	return result_lexem;
 }
 
+fn ParseCharLiteral( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
+{
+	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::CharLiteral };
+
+	it.drop_front(); // '
+
+	if( it.empty() )
+	{
+		out_errors.push_back( LexSyntError( src_loc, "unexpected end of file after '" ) );
+		return result_lexem;
+	}
+
+	var char8 c= it.front();
+	if( c == '\'' )
+	{
+		out_errors.push_back( LexSyntError( src_loc, "empty char literal" ) );
+		return result_lexem;
+	}
+	else if( c == '\\' )
+	{
+		it.drop_front(); // \
+		if( it.empty() )
+		{
+			out_errors.push_back( LexSyntError( src_loc, "unexpected end of file after '\\" ) );
+			return result_lexem;
+		}
+		var char8 escaped_c= it.drop_and_get_front();
+		switch( escaped_c )
+		{
+			'"' -> { result_lexem.text.push_back('"'); },
+			'\'' -> { result_lexem.text.push_back('\''); },
+			'\\' -> { result_lexem.text.push_back('\\'); },
+			'/' -> { result_lexem.text.push_back('/'); },
+			'b' -> { result_lexem.text.push_back('\b'); },
+			'f' -> { result_lexem.text.push_back('\f'); },
+			'n' -> { result_lexem.text.push_back('\n'); },
+			'r' -> { result_lexem.text.push_back('\r'); },
+			't' -> { result_lexem.text.push_back('\t'); },
+			'0' -> { result_lexem.text.push_back('\0'); },
+			'u' ->
+			{
+				if( it.size() < 4s )
+				{
+					out_errors.push_back( LexSyntError( src_loc, "expected 4 hex digits" ) );
+					return result_lexem;
+				}
+				auto mut char_code= 0u;
+				for( auto mut i= 0u; i < 4u; ++i )
+				{
+					auto digit= NumberFunc16( it.front() );
+					if( digit == -1u64 )
+					{
+						out_errors.push_back( LexSyntError( src_loc, "expected hex number" ) );
+						return result_lexem;
+					}
+
+					char_code|= u32(digit) << ( ( 3u - i ) * 4u );
+					it.drop_front();
+				}
+				ust::utf::push_code_point_to_string( result_lexem.text, char32(char_code) );
+			},
+			default ->
+			{
+				var ust::string8 mut err= "invalid escape sequence: \\";
+				err.push_back( escaped_c );
+				out_errors.push_back( LexSyntError( src_loc, move(err) ) );
+				return result_lexem;
+			}
+		}
+	}
+	else
+	{
+		ust::utf::push_code_point_to_string( result_lexem.text, ust::utf::extract_code_point_or_null_from_string( it ) );
+	}
+
+	if( it.empty() )
+	{
+		out_errors.push_back( LexSyntError( src_loc, "unexpected end of file at char literal" ) );
+		return result_lexem;
+	}
+	if( it.front() != '\'' )
+	{
+		out_errors.push_back( LexSyntError( src_loc, "expected ' at end of char literal" ) );
+		return result_lexem;
+	}
+	it.drop_front();
+
+	return result_lexem;
+}
+
 fn DiffUTF8Chars( Iterator mut start, Iterator end ) : size_type
 {
 	auto mut r= 0s;
@@ -516,7 +611,7 @@ fn DiffUTF8Chars( Iterator mut start, Iterator end ) : size_type
 var tup[
 	[ tup[ [ char8, 3 ], Lexem::Type ],  4 ],
 	[ tup[ [ char8, 2 ], Lexem::Type ], 26 ],
-	[ tup[ [ char8, 1 ], Lexem::Type ], 27 ] ]
+	[ tup[ [ char8, 1 ], Lexem::Type ], 26 ] ]
 c_fixed_lexems_table
 [
 	[
@@ -578,7 +673,6 @@ c_fixed_lexems_table
 		[ "^", Lexem::Type::Xor ],
 		[ "~", Lexem::Type::Tilda ],
 		[ "!", Lexem::Type::Not ],
-		[ "'", Lexem::Type::Apostrophe ],
 		[ "@", Lexem::Type::At ],
 		[ "$", Lexem::Type::PointerTypeMark ],
 	]
@@ -616,7 +710,7 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		var Lexem mut lexem;
 
 		// single line comment
-		if( c == "/"c32 && next_c == "/"c32 )
+		if( c == '/'c32 && next_c == '/'c32 )
 		{
 			// Read all until new line, but do not extract new line symbol itself.
 			while( !it.empty() )
@@ -633,18 +727,18 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 			continue;
 		}
 		// multiline comment
-		if( c == "/"c32 && next_c == "*"c32 )
+		if( c == '/'c32 && next_c == '*'c32 )
 		{
 			it= it.subrange_start(2s);
 			auto mut comments_depth= 1u;
 			while( it.size() >= 2s && comments_depth > 0u )
 			{
-				if( it[0s] == "*"c8 && it[1s] == "/"c8 )
+				if( it[0s] == '*' && it[1s] == '/' )
 				{
 					it= it.subrange_start(2s);
 					--comments_depth;
 				}
-				else if( it[0s] == "/"c8 && it[1s] == "*"c8 )
+				else if( it[0s] == '/' && it[1s] == '*' )
 				{
 					it= it.subrange_start(2s);
 					++comments_depth;
@@ -708,11 +802,11 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		{
 			lexem= ParseIdentifier(it);
 		}
-		else if( c == "?"c32 && next_c == "?"c32 )
+		else if( c == '?'c32 && next_c == '?'c32 )
 		{
 			lexem= ParseMacroUniqueIdentifier(it);
 		}
-		else if( c == "?"c32 && IsIdentifierStartChar(next_c) )
+		else if( c == '?'c32 && IsIdentifierStartChar(next_c) )
 		{
 			lexem= ParseMacroIdentifier(it);
 		}
@@ -720,9 +814,21 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		{
 			lexem= ParseNumber( it, result.errors, src_loc );
 		}
-		else if( c == "\""c32 )
+		else if( c == '"'c32 )
 		{
 			lexem= ParseString( it, result.errors, src_loc );
+			if( !it.empty() && IsIdentifierStartChar( ust::utf::get_code_point_or_null_from_string( it ) ) )
+			{
+				lexem.src_loc= src_loc;
+				result.lexems.push_back( take(lexem) );
+
+				lexem= ParseIdentifier(it);
+				lexem.lexem_type= Lexem::Type::LiteralSuffix;
+			}
+		}
+		else if( c == '\''c32 )
+		{
+			lexem= ParseCharLiteral( it, result.errors, src_loc );
 			if( !it.empty() && IsIdentifierStartChar( ust::utf::get_code_point_or_null_from_string( it ) ) )
 			{
 				lexem.src_loc= src_loc;

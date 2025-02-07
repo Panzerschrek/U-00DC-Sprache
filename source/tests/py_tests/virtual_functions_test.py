@@ -1150,8 +1150,8 @@ def VirtualCall_UsingDifferentVirtualTables_Test0():
 			halt if( impl2.Foo1( 0i64 ) != 1 );
 			halt if( impl2.Bar0( 0.0f ) != 2 );
 			halt if( impl2.Bar1( 0.0  ) != 3 );
-			halt if( impl2.Baz0( "a"c16 ) != 4 );
-			halt if( impl2.Baz1( "a"c32 ) != 5 );
+			halt if( impl2.Baz0( 'a'c16 ) != 4 );
+			halt if( impl2.Baz1( 'a'c32 ) != 5 );
 			var Impl &impl_ref= impl2;
 			halt if( impl_ref.Foo0( 0i32 ) != 0 );
 			halt if( impl_ref.Foo1( 0i64 ) != 1 );

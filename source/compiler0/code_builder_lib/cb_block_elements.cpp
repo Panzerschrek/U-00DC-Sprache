@@ -56,6 +56,7 @@ bool SingleExpressionIsUselessImpl( const Synt::TemplateParameterization& ) { re
 bool SingleExpressionIsUselessImpl( const Synt::NumericConstant& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::BooleanConstant& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::StringLiteral& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::CharLiteral& ) { return true; }
 // Move and take have side effects.
 bool SingleExpressionIsUselessImpl( const Synt::MoveOperator& ) { return false; }
 bool SingleExpressionIsUselessImpl( const Synt::MoveOperatorCompletion& ) { return false; }

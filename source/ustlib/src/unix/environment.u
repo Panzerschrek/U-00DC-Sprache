@@ -41,7 +41,7 @@ fn null_terminated_c_string_to_string8( $(char8) ptr ) unsafe : string8
 	unsafe
 	{
 		var size_type mut size= 0s;
-		while( $>( ptr + size ) != "\0"c8 )
+		while( $>( ptr + size ) != '\0' )
 		{
 			++size;
 		}

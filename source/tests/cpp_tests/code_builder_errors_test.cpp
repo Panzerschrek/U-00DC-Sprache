@@ -780,7 +780,7 @@ U_TEST(OperationNotSupportedForThisTypeTest5)
 			~e;
 			~s;
 			~0.35f;
-			~"7"c8;
+			~'7';
 		}
 	)";
 
@@ -810,7 +810,7 @@ U_TEST(OperationNotSupportedForThisTypeTest6)
 			!e;
 			!s;
 			!0.35f;
-			!"7"c8;
+			!'7';
 			! 678;
 		}
 	)";
@@ -1120,7 +1120,7 @@ U_TEST(TypesMismatchTest12)
 			var i32 mut x= 0;
 			arr[ 0.25f ]; // f32
 			arr[ 0.5 ]; // f64
-			arr[ "Z"c8 ]; // char
+			arr[ 'Z' ]; // char
 			arr[ x ]; // non-constexpr signed integer
 			arr[ S() ]; // struct type
 		}

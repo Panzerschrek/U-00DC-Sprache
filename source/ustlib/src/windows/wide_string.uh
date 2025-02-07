@@ -14,7 +14,7 @@ fn utf8_to_wide_string( string_view8 v ) : wide_string
 fn utf8_to_null_terminated_wide_string( string_view8 v ) : wide_string
 {
 	var wide_string mut res= utf8_to_wide_string(v);
-	res.push_back( WCHAR( "\0"c8 ) );
+	res.push_back( WCHAR( '\0' ) );
 	return res;
 }
 

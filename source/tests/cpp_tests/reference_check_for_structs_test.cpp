@@ -47,8 +47,8 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test1 )
 	R"(
 		struct S
 		{
-			i32 &mut @("a"c8) x;
-			i32 &mut @("b"c8) y;
+			i32 &mut @('a') x;
+			i32 &mut @('b') y;
 		}
 
 		fn Foo()
@@ -73,8 +73,8 @@ U_TEST( LockVariableMultipleTimesInSameStruct_Test3 )
 	R"(
 		struct S
 		{
-			i32 &imut @("a"c8) x;
-			i32 &imut @("a"c8) y;
+			i32 &imut @('a') x;
+			i32 &imut @('a') y;
 		}
 
 		fn Foo()

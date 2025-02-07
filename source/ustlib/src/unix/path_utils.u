@@ -13,7 +13,7 @@ fn is_absolute( filesystem_path_view p ) : bool
 	{
 		return false;
 	}
-	return p.front() == "/"c8;
+	return p.front() == '/';
 }
 
 fn is_relative( filesystem_path_view p ) : bool
@@ -23,7 +23,7 @@ fn is_relative( filesystem_path_view p ) : bool
 
 fn is_separator( char8 c ) : bool
 {
-	return c == "/"c8;
+	return c == '/';
 }
 
 fn join( filesystem_path_view p0 ) : filesystem_path
@@ -84,10 +84,10 @@ fn join_impl( array_view_imut</filesystem_path_view/> components ) : filesystem_
 
 	foreach( &component : components.subrange_start( start_component  ) )
 	{
-		if( !result.empty() && result.back() != "/"c8 )
+		if( !result.empty() && result.back() != '/' )
 		{
 			// Add separator if result ends with non-separator char.
-			result.push_back( "/"c8 );
+			result.push_back( '/' );
 		}
 
 		result+= component;
@@ -107,7 +107,7 @@ fn append( filesystem_path &mut p0, filesystem_path_view p1 )
 		if( !p0.empty() && !is_separator( p0.back() ) )
 		{
 			// Add separator if result ends with non-separator char.
-			p0.push_back( "/"c8 );
+			p0.push_back( '/' );
 		}
 
 		p0+= p1;
@@ -126,17 +126,17 @@ fn get_file_extension( filesystem_path_view p )
 	for( auto mut i= p.size() - 1s; ; )
 	{
 		var char8 c= p[i];
-		if( c == "."c8 )
+		if( c == '.' )
 		{
 			if( i > 0s )
 			{
 				var char8 prev_c= p[ i - 1s ];
-				if( prev_c == "."c8 )
+				if( prev_c == '.' )
 				{
 					if( i > 1s )
 					{
 						var char8 prev_prev_s= p[ i - 2s ];
-						if( prev_prev_s == "/"c8 )
+						if( prev_prev_s == '/' )
 						{
 							// It's something like "some/path/..".
 							break;
@@ -152,7 +152,7 @@ fn get_file_extension( filesystem_path_view p )
 						}
 					}
 				}
-				else if( prev_c == "/"c8 )
+				else if( prev_c == '/' )
 				{
 					// File starts with "." - it has no extension.
 					break;
@@ -167,7 +167,7 @@ fn get_file_extension( filesystem_path_view p )
 				break;
 			}
 		}
-		else if( c == "/"c8 )
+		else if( c == '/' )
 		{
 			// Reached directories separator without encounting ".".
 			break;
@@ -195,17 +195,17 @@ fn get_path_without_extension( filesystem_path_view p )
 	for( auto mut i= p.size() - 1s; ; )
 	{
 		var char8 c= p[i];
-		if( c == "."c8 )
+		if( c == '.' )
 		{
 			if( i > 0s )
 			{
 				var char8 prev_c= p[ i - 1s ];
-				if( prev_c == "."c8 )
+				if( prev_c == '.' )
 				{
 					if( i > 1s )
 					{
 						var char8 prev_prev_s= p[ i - 2s ];
-						if( prev_prev_s == "/"c8 )
+						if( prev_prev_s == '/' )
 						{
 							// It's something like "some/path/..".
 							break;
@@ -221,7 +221,7 @@ fn get_path_without_extension( filesystem_path_view p )
 						}
 					}
 				}
-				else if( prev_c == "/"c8 )
+				else if( prev_c == '/' )
 				{
 					// File starts with "." - it has no extension.
 					break;
@@ -236,7 +236,7 @@ fn get_path_without_extension( filesystem_path_view p )
 				break;
 			}
 		}
-		else if( c == "/"c8 )
+		else if( c == '/' )
 		{
 			// Reached directories separator without encounting ".".
 			break;
@@ -259,7 +259,7 @@ fn get_file_name( filesystem_path_view p )
 	{
 		return null_optional;
 	}
-	if( p.back() == "/"c8 )
+	if( p.back() == '/' )
 	{
 		// Paths ending with "/" considered to be a directory path.
 		return null_optional;
@@ -269,7 +269,7 @@ fn get_file_name( filesystem_path_view p )
 	for( auto mut i= p.size() - 1s; ; )
 	{
 		var char8 c= p[i];
-		if( c == "/"c8 )
+		if( c == '/' )
 		{
 			auto remainder= p.subrange_start( i + 1s );
 			if( remainder == ".." || remainder == "." )
@@ -304,7 +304,7 @@ fn get_parent_path( filesystem_path_view p )
 	}
 
 	var size_type mut i= p.size() - 1s;
-	if( p[i] == "/"c8 )
+	if( p[i] == '/' )
 	{
 		// Skip trailing "/".
 		--i;
@@ -314,10 +314,10 @@ fn get_parent_path( filesystem_path_view p )
 	loop
 	{
 		var char8 c= p[i];
-		if( c == "/"c8 )
+		if( c == '/' )
 		{
 			// Skip duplicated "/" if necessary.
-			while( i > 0s && p[i] == "/"c8 )
+			while( i > 0s && p[i] == '/' )
 			{
 				--i;
 			}
@@ -380,9 +380,9 @@ fn normalize( filesystem_path_view p ) : filesystem_path
 
 	foreach( &component : components )
 	{
-		if( !result.empty() && result.back() != "/"c8 )
+		if( !result.empty() && result.back() != '/' )
 		{
-			result.push_back( "/"c8 );
+			result.push_back( '/' );
 		}
 		result+= component;
 	}
@@ -404,13 +404,13 @@ fn nodiscard components_raw_iterator::next( mut this )
 		return null_optional;
 	}
 
-	if( p_.front() == "/"c8 )
+	if( p_.front() == '/' )
 	{
 		// It's an absolute path - return "/" as first component.
 		var filesystem_path_view res= p_.subrange_end(1s);
 
 		// Remove extra "/", if necessary.
-		while( !p_.empty() && p_.front() == "/"c8 )
+		while( !p_.empty() && p_.front() == '/' )
 		{
 			p_.drop_front();
 		}
@@ -421,12 +421,12 @@ fn nodiscard components_raw_iterator::next( mut this )
 	// Try extracting component up to next "/".
 	for( auto mut i= 0s; i < p_.size(); ++i )
 	{
-		if( p_[i] == "/"c8 )
+		if( p_[i] == '/' )
 		{
 			var filesystem_path_view res= p_.subrange_end(i);
 
 			// Remove extra "/", if necessary.
-			while( i < p_.size() && p_[i] == "/"c8 )
+			while( i < p_.size() && p_[i] == '/' )
 			{
 				++i;
 			}

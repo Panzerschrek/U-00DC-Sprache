@@ -150,7 +150,7 @@ def SecondOrderReferenceInsideStructUsage_Test7():
 	c_program_text= """
 		struct A{ i32 &mut x; }
 		struct B{ A &imut a; }
-		struct C{ i32 & @("a"c8) i; B @("b") b; }
+		struct C{ i32 & @('a') i; B @("b") b; }
 
 		// Return a reference to contents of an argument.
 		var [ [ char8, 2 ], 1 ] return_references[ "1b" ];
@@ -596,7 +596,7 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test8():
 def ReferenceProtectionError_ForSecondOrderInnerReference_Test9():
 	c_program_text= """
 		struct A{ i32 &mut x; }
-		struct B{ A &imut @("b"c8) a; i32 &mut @("a"c8) y; i32 &imut @("c"c8) z; }
+		struct B{ A &imut @('b') a; i32 &mut @('a') y; i32 &imut @('c') z; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y=0 , imut z= 0;
@@ -617,7 +617,7 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_Test10():
 	c_program_text= """
 		struct A{ i32 &mut x; }
 		struct B{ A &imut a;}
-		struct BWrapper{ B @("c") b; i32 &mut @("a"c8) y; i32 &imut @("b"c8) z; }
+		struct BWrapper{ B @("c") b; i32 &mut @('a') y; i32 &imut @('b') z; }
 		fn Foo()
 		{
 			var i32 mut x= 0, mut y=0 , imut z= 0;
@@ -1634,7 +1634,7 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test14():
 	c_program_text= """
 		struct A{ i32 &mut x; }
 		struct B{ A &imut a; }
-		struct C{ i32 & @("a"c8) i; B @("b") b; }
+		struct C{ i32 & @('a') i; B @("b") b; }
 
 		// Return a reference to contents of an argument.
 		var [ [ char8, 2 ], 1 ] return_references[ "1b" ];
@@ -1665,7 +1665,7 @@ def ReferenceProtectionError_ForSecondOrderInnerReference_InCall_Test15():
 	c_program_text= """
 		struct A{ i32 &mut x; }
 		struct B{ A &imut a; }
-		struct C{ i32 & @("a"c8) i; B @("b") b; }
+		struct C{ i32 & @('a') i; B @("b") b; }
 
 		// Return a reference to contents of an argument.
 		var [ [ char8, 2 ], 1 ] return_references[ "0b" ];
@@ -2796,8 +2796,8 @@ def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_Test0():
 	c_program_text= """
 		struct A
 		{
-			i32 & @("a"c8) x;
-			f32 & @("b"c8) y;
+			i32 & @('a') x;
+			f32 & @('b') y;
 		}
 		struct B
 		{
@@ -2827,8 +2827,8 @@ def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_Test2():
 	c_program_text= """
 		struct A
 		{
-			i32 & @("a"c8) x;
-			f32 & @("b"c8) y;
+			i32 & @('a') x;
+			f32 & @('b') y;
 		}
 		fn Foo(A& a)
 		{
@@ -2848,8 +2848,8 @@ def MoreThanOneInnerReferenceTagForSecondOrderReferenceField_Test3():
 	c_program_text= """
 		struct A // This struct have two references inside, but they use the same inner reference tag.
 		{
-			i32 & @("a"c8) x;
-			f32 & @("a"c8) y;
+			i32 & @('a') x;
+			f32 & @('a') y;
 		}
 		struct B
 		{
@@ -2865,8 +2865,8 @@ def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test0():
 		struct B { i32 &mut  r; }
 		struct C
 		{
-			A& @("a"c8) a;
-			B& @("a"c8) b;
+			A& @('a') a;
+			B& @('a') b;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -2880,8 +2880,8 @@ def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test1():
 		struct B { i32 &imut r; }
 		struct C // Fine - second order inner references are both immutable.
 		{
-			A& @("a"c8) a;
-			B& @("a"c8) b;
+			A& @('a') a;
+			B& @('a') b;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -2893,8 +2893,8 @@ def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test2():
 		struct B { i32 &mut r; }
 		struct C // Fine - second order inner references are both mutable.
 		{
-			A& @("a"c8) a;
-			B& @("a"c8) b;
+			A& @('a') a;
+			B& @('a') b;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -2955,7 +2955,7 @@ def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test6():
 		struct E
 		{
 			C @("a") c;
-			B & @("a"c8) b;
+			B & @('a') b;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -2969,11 +2969,11 @@ def MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag_Test7():
 		struct B { i32 &mut  r; }
 		class C polymorph
 		{
-			A & @("a"c8) a;
+			A & @('a') a;
 		}
 		class D : C // Inherit field with tag "a" with immutable second order inner reference.
 		{
-			B & @("a"c8) b; // Add field with tag "a" with mutable second order inner reference.
+			B & @('a') b; // Add field with tag "a" with mutable second order inner reference.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -3054,7 +3054,7 @@ def InnerReferenceTagsForReferenceField_Test1():
 		struct A{ i32 &mut x; }
 		struct B
 		{
-			A @("a") & @("a"c8) a_ref;
+			A @("a") & @('a') a_ref;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -3067,7 +3067,7 @@ def InnerReferenceTagsForReferenceField_Test2():
 		struct A{ i32 &mut x; }
 		struct B
 		{
-			A @("b") & @("a"c8) a_ref;
+			A @("b") & @('a') a_ref;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

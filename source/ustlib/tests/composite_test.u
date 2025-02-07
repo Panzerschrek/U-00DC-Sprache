@@ -47,11 +47,11 @@ fn nomangle main() : i32
 		halt if(arr[2] != 222u);
 	}
 	{ // 4 elements
-		var [char8, 4] constexpr arr = ust::make_array("S"c8, "P"c8, "Q"c8, "R"c8);
-		halt if(arr[0] != "S"c8);
-		halt if(arr[1] != "P"c8);
-		halt if(arr[2] != "Q"c8);
-		halt if(arr[3] != "R"c8);
+		var [char8, 4] constexpr arr = ust::make_array('S', 'P', 'Q', 'R');
+		halt if(arr[0] != 'S');
+		halt if(arr[1] != 'P');
+		halt if(arr[2] != 'Q');
+		halt if(arr[3] != 'R');
 	}
 	{ // 5 elements
 		var [i32, 5] constexpr arr = ust::make_array(1, 2, 3, 4, 5);
@@ -145,10 +145,10 @@ fn nomangle main() : i32
 		halt if(t[2] != 354.1);
 	}
 	{ // 4 elements
-		var tup[f32, i16, char8, tup[]] constexpr t = ust::make_tuple(0.001f, 546i16, "G"c8, ust::make_tuple());
+		var tup[f32, i16, char8, tup[]] constexpr t = ust::make_tuple(0.001f, 546i16, 'G', ust::make_tuple());
 		halt if(t[0] != 0.001f);
 		halt if(t[1] != 546i16);
-		halt if(t[2] != "G"c8);
+		halt if(t[2] != 'G');
 		//halt if(t[3] != ust::make_tuple());
 	}
 	{ // 5 elements
@@ -169,19 +169,19 @@ fn nomangle main() : i32
 		halt if(t[5] != 5u32);
 	}
 	{ // 7 elements
-		var tup[char8, char16, char32, bool, f32, f64, void] constexpr t = ust::make_tuple("Q"c8, "W"c16, "E"c32, true, -34.4f, 34.4, void());
-		halt if(t[0] != "Q"c8);
-		halt if(t[1] != "W"c16);
-		halt if(t[2] != "E"c32);
+		var tup[char8, char16, char32, bool, f32, f64, void] constexpr t = ust::make_tuple('Q', 'W'c16, 'E'c32, true, -34.4f, 34.4, void());
+		halt if(t[0] != 'Q');
+		halt if(t[1] != 'W'c16);
+		halt if(t[2] != 'E'c32);
 		halt if(t[3] != true);
 		halt if(t[4] != -34.4f);
 		halt if(t[5] != 34.4);
 		halt if(t[6] != void());
 	}
 	{ // 8 elements
-		var tup[void, char8, u8, u16, u32, u64, u128, bool] constexpr t = ust::make_tuple(void(), "~"c8, 6u8, 7u16, 8u32, 9u64, 10u128, true);
+		var tup[void, char8, u8, u16, u32, u64, u128, bool] constexpr t = ust::make_tuple(void(), '~', 6u8, 7u16, 8u32, 9u64, 10u128, true);
 		halt if(t[0] != void());
-		halt if(t[1] != "~"c8);
+		halt if(t[1] != '~');
 		halt if(t[2] != 6u8);
 		halt if(t[3] != 7u16);
 		halt if(t[4] != 8u32);
@@ -205,7 +205,7 @@ fn nomangle main() : i32
 		halt if(t[2].GetX() != -33);
 	}
 	{ // make_tuple for non-copyable type.
-		var tup[void, char8, u8, u16, u32, u64, NonCopyable, bool] t = ust::make_tuple(void(), "~"c8, 6u8, 8u16, 8u32, 9u64, NonCopyable(123), false);
+		var tup[void, char8, u8, u16, u32, u64, NonCopyable, bool] t = ust::make_tuple(void(), '~', 6u8, 8u16, 8u32, 9u64, NonCopyable(123), false);
 		halt if(t[6].GetX() != 123);
 	}
 	{ // make_tuple for string class

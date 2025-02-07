@@ -219,7 +219,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
 {
 	var ust::string_view8 mut type_suffix( numeric_constant.num.type_suffix );
-	while( !type_suffix.empty() && type_suffix.back() == "\0"c8 )
+	while( !type_suffix.empty() && type_suffix.back() == '\0' )
 	{
 		type_suffix.drop_back();
 	}
@@ -320,38 +320,19 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StringLiteral& string_literal ) : Value
 {
 	auto mut char_type= U_FundamentalType::InvalidType;
-	auto mut is_array= true;
 
 	auto& type_suffix= string_literal.type_suffix;
 	if( type_suffix == "" || type_suffix == "u8" )
 	{
 		char_type= U_FundamentalType::char8_;
-		is_array= true;
 	}
 	else if( type_suffix == "u16" )
 	{
 		char_type= U_FundamentalType::char16_;
-		is_array= true;
 	}
 	else if( type_suffix == "u32" )
 	{
 		char_type= U_FundamentalType::char32_;
-		is_array= true;
-	}
-	else if( type_suffix == "c8"  || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
-	{
-		char_type= U_FundamentalType::char8_ ;
-		is_array= false;
-	}
-	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
-	{
-		char_type= U_FundamentalType::char16_;
-		is_array= false;
-	}
-	else if( type_suffix == "c32" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char32_ ) )
-	{
-		char_type= U_FundamentalType::char32_;
-		is_array= false;
 	}
 	else
 	{
@@ -362,146 +343,163 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	auto element_llvm_type= GetFundamentalLLVMType(char_type);
 
 	var ust::string8& string_literal_value = string_literal.value;
-	if( is_array )
+
+	auto mut array_size= 0s;
+	auto mut llvm_type= LLVMTypeRef::Null;
+	auto mut constexpr_value= LLVMValueRef::Null;
+	auto mut global_value= LLVMValueRef::Null;
+	unsafe
 	{
-		auto mut array_size= 0s;
-		auto mut llvm_type= LLVMTypeRef::Null;
-		auto mut constexpr_value= LLVMValueRef::Null;
-		auto mut global_value= LLVMValueRef::Null;
-		unsafe
+		if( char_type == U_FundamentalType::char8_ )
 		{
-			if( char_type == U_FundamentalType::char8_ )
+			constexpr_value= LLVMConstStringInContext( llvm_context_, cast_mut(string_literal_value).data(), u32(string_literal_value.size()), LLVMBool::True );
+			array_size= string_literal_value.size();
+
+			if( !string_literals_cache_[0].exists( string_literal_value ) )
 			{
-				constexpr_value= LLVMConstStringInContext( llvm_context_, cast_mut(string_literal_value).data(), u32(string_literal_value.size()), LLVMBool::True );
-				array_size= string_literal_value.size();
-
-				if( !string_literals_cache_[0].exists( string_literal_value ) )
-				{
-					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
-					string_literals_cache_[0].insert( string_literal_value, global_value );
-				}
-				else
-				{
-					global_value= string_literals_cache_[0][string_literal_value];
-				}
+				global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
+				string_literals_cache_[0].insert( string_literal_value, global_value );
 			}
-			else if( char_type == U_FundamentalType::char16_ )
+			else
 			{
-				var ust::string16 mut buff= ust::utf::convert_utf8_to_utf16_string( string_literal_value );
-
-				array_size= buff.size();
-
-				constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte8(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
-
-				if( !string_literals_cache_[1].exists( buff ) )
-				{
-					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
-					string_literals_cache_[1].insert( buff, global_value );
-				}
-				else
-				{
-					global_value= string_literals_cache_[1][buff];
-				}
+				global_value= string_literals_cache_[0][string_literal_value];
 			}
-			else if( char_type == U_FundamentalType::char32_ )
-			{
-				var ust::string32 mut buff= ust::utf::convert_utf8_to_utf32_string( string_literal_value );
-
-				array_size= buff.size();
-
-				constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte8(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
-
-				if( !string_literals_cache_[2].exists( buff ) )
-				{
-					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
-					string_literals_cache_[2].insert( buff, global_value );
-				}
-				else
-				{
-					global_value= string_literals_cache_[2][buff];
-				}
-			}
-			else { halt; }
-
-			llvm_type= LLVMTypeOf( constexpr_value );
 		}
+		else if( char_type == U_FundamentalType::char16_ )
+		{
+			var ust::string16 mut buff= ust::utf::convert_utf8_to_utf16_string( string_literal_value );
 
-		var VariablePtr result_ptr=
-			Variable
+			array_size= buff.size();
+
+			constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte8(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
+
+			if( !string_literals_cache_[1].exists( buff ) )
 			{
-				.t=
-					ArrayType
-					{
-						.element_type= FundamentalType( char_type, element_llvm_type ),
-						.element_count= u64(array_size),
-						.llvm_type= llvm_type,
-					},
-				.location= Variable::Location::Pointer,
-				.value_type= ValueType::ReferenceImut,
-				.llvm_value= global_value,
-				.constexpr_value= constexpr_value,
-				.name= "string literal",
-			}.CreatePtr();
+				global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
+				string_literals_cache_[1].insert( buff, global_value );
+			}
+			else
+			{
+				global_value= string_literals_cache_[1][buff];
+			}
+		}
+		else if( char_type == U_FundamentalType::char32_ )
+		{
+			var ust::string32 mut buff= ust::utf::convert_utf8_to_utf32_string( string_literal_value );
 
-		function_context.references_graph.AddNode( result_ptr );
-		RegisterTemporaryVariable( function_context, result_ptr );
-		return result_ptr;
+			array_size= buff.size();
+
+			constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte8(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
+
+			if( !string_literals_cache_[2].exists( buff ) )
+			{
+				global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
+				string_literals_cache_[2].insert( buff, global_value );
+			}
+			else
+			{
+				global_value= string_literals_cache_[2][buff];
+			}
+		}
+		else { halt; }
+
+		llvm_type= LLVMTypeOf( constexpr_value );
+	}
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t=
+				ArrayType
+				{
+					.element_type= FundamentalType( char_type, element_llvm_type ),
+					.element_count= u64(array_size),
+					.llvm_type= llvm_type,
+				},
+			.location= Variable::Location::Pointer,
+			.value_type= ValueType::ReferenceImut,
+			.llvm_value= global_value,
+			.constexpr_value= constexpr_value,
+			.name= "string literal",
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
+}
+
+fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CharLiteral& char_literal ) : Value
+{
+	ust::ignore_unused( function_context );
+
+	var ust::string_view8 mut type_suffix( char_literal.type_suffix );
+	while( !type_suffix.empty() && type_suffix.back() == '\0' )
+	{
+		type_suffix.drop_back();
+	}
+
+	auto mut char_type= U_FundamentalType::InvalidType;
+
+	if( type_suffix == "" || type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_ ) )
+	{
+		if( char_literal.code_point > char32(0x7Fu) )
+		{
+			// This code point can't be represented as single UTF-8 byte.
+			var ust::string8 mut s;
+			ust::utf::push_code_point_to_string( s, char_literal.code_point );
+			REPORT_ERROR( CharLiteralOverflow, names_scope, char_literal.src_loc, s )
+			return ErrorValue();
+		}
+		char_type= U_FundamentalType::char8_;
+	}
+	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
+	{
+		if( char_literal.code_point > char32(0xFFFFu) )
+		{
+			// This code point can't be encoded via single char16 value - it may be encoded only via a surrogate pair.
+			var ust::string8 mut s;
+			ust::utf::push_code_point_to_string( s, char_literal.code_point );
+			REPORT_ERROR( CharLiteralOverflow, names_scope, char_literal.src_loc, s )
+			return ErrorValue();
+		}
+		char_type= U_FundamentalType::char16_;
+	}
+	else if( type_suffix == "c32" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char32_ ) )
+	{
+		if( char_literal.code_point > char32(0x10FFFFu) )
+		{
+			// Invalid char literal above Unicode range.
+			var ust::string8 mut s;
+			ust::utf::push_code_point_to_string( s, char_literal.code_point );
+			REPORT_ERROR( CharLiteralOverflow, names_scope, char_literal.src_loc, s )
+			return ErrorValue();
+		}
+		char_type= U_FundamentalType::char32_;
 	}
 	else
 	{
-		auto mut constexpr_value= LLVMValueRef::Null;
-		unsafe
-		{
-			if( char_type == U_FundamentalType::char8_ )
-			{
-				if( string_literal_value.size() != 1s )
-				{
-					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
-					return ErrorValue();
-				}
-
-				constexpr_value= LLVMConstInt( element_llvm_type, u64(string_literal_value.front()), LLVMBool::False );
-			}
-			else if( char_type == U_FundamentalType::char16_ )
-			{
-				var ust::string16 s= ust::utf::convert_utf8_to_utf16_string( string_literal_value );
-				if( s.size() != 1s )
-				{
-					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
-					return ErrorValue();
-				}
-
-				constexpr_value= LLVMConstInt( element_llvm_type, u64(s.front()), LLVMBool::False );
-			}
-			else if( char_type == U_FundamentalType::char32_ )
-			{
-				var ust::string32 s= ust::utf::convert_utf8_to_utf32_string( string_literal_value );
-				if( s.size() != 1s )
-				{
-					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
-					return ErrorValue();
-				}
-
-				constexpr_value= LLVMConstInt( element_llvm_type, u64(s.front()), LLVMBool::False );
-			}
-			else{ halt; }
-		}
-
-		var VariablePtr result_ptr=
-			Variable
-			{
-				.t= FundamentalType( char_type, element_llvm_type ),
-				.location= Variable::Location::LLVMRegister,
-				.value_type= ValueType::Value,
-				.llvm_value= constexpr_value,
-				.constexpr_value= constexpr_value,
-				.name= "char literal",
-			}.CreatePtr();
-
-		function_context.references_graph.AddNode( result_ptr );
-		RegisterTemporaryVariable( function_context, result_ptr );
-		return result_ptr;
+		REPORT_ERROR( UnknownCharLiteralSuffix, names_scope, char_literal.src_loc, type_suffix )
+		return ErrorValue();
 	}
+
+	auto element_llvm_type= GetFundamentalLLVMType(char_type);
+
+	auto constexpr_value= unsafe( LLVMConstInt( element_llvm_type, u64(char_literal.code_point), LLVMBool::False ) );
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= FundamentalType( char_type, element_llvm_type ),
+			.location= Variable::Location::LLVMRegister,
+			.value_type= ValueType::Value,
+			.llvm_value= constexpr_value,
+			.constexpr_value= constexpr_value,
+			.name= "char literal",
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
@@ -850,7 +848,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	// Use contents hash-based names for embed arrays.
 	var ust::string8 mut name= "_embed_array_" + CalculateSourceFileContentsHash( loaded_file );
-	name.push_back( "\0"c8 );
+	name.push_back( '\0' );
 
 	var LLVMValueRef constexpr_value= unsafe( LLVMConstStringInContext( llvm_context_, cast_mut(loaded_file).data(), u32(array_size), LLVMBool::True ) );
 	var LLVMValueRef global_value= unsafe( AddGlobalConstantVariable( name, LLVMTypeOf( constexpr_value ), constexpr_value ) );
@@ -1237,7 +1235,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.name= variable_name,
 	};
 
-	variable_name.push_back( "\0"c8 );
+	variable_name.push_back( '\0' );
 	if( !function_context.is_functionless_context )
 	{
 		result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), variable_name.front() ) );

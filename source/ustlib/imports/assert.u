@@ -16,7 +16,7 @@ import "stdout.u"
 {
 	// Enable debug assert only without any optimizations.
 	// Use non-static if with constexpr expression in order to compile the assert expression, but avoiding executing it.
-	if( ::compiler::options::optimization_level == "0"c8 )
+	if( ::compiler::options::optimization_level == '0' )
 	{
 		assert( ?e ?m<? , ?message ?> )
 	}

@@ -242,7 +242,7 @@ fn to_string( i64 x ) : string_base</C/>
 	{
 		// TODO - optimize, do not concatenate strings.
 		var string_base</C/> mut result;
-		result.push_back( C("-"c8) );
+		result.push_back( C('-') );
 		result += to_string_impl</C/>( u64(-x) );
 		return result;
 	}
@@ -260,7 +260,7 @@ fn to_string( u64 x ) : string_base</C/>
 template</type C/>
 fn to_string_impl( u64 x ) : string_base</C/>
 {
-	auto constexpr zero_char= C("0"c8);
+	auto constexpr zero_char= C('0');
 
 	var string_base</C/> mut result;
 

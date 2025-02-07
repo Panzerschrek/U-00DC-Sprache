@@ -393,4 +393,24 @@ U_TEST( IdentifierStartEndPosition_Test1 )
 	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 26 ) == std::nullopt );
 }
 
+U_TEST( CharLiteral_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		'q' '\\' '\f' '"' '\'' '\"'
+	)";
+
+	const Lexems expected_result
+	{
+		{ "q", SrcLoc( 0, 2,   2 ), Lexem::Type::CharLiteral },
+		{ "\\", SrcLoc( 0, 2,  6 ), Lexem::Type::CharLiteral },
+		{ "\f", SrcLoc( 0, 2, 11 ), Lexem::Type::CharLiteral },
+		{ "\"", SrcLoc( 0, 2, 16 ), Lexem::Type::CharLiteral },
+		{ "'" , SrcLoc( 0, 2, 20 ), Lexem::Type::CharLiteral },
+		{ "\"", SrcLoc( 0, 2, 25 ), Lexem::Type::CharLiteral },
+	};
+
+	TestLexResult( c_program_text, expected_result );
+}
+
 } // namespace U

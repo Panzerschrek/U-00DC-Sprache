@@ -158,6 +158,7 @@
 			<RegExpr attribute="Number" String="0o[0-7]+(\.[0-7]+)?" insensitive="false" minimal="false" context="#stay" />
 			<RegExpr attribute="Number" String="0x[0-9a-fA-F]+(\.[0-9a-fA-F]+)" insensitive="false" minimal="false" context="#stay" />
 			<RegExpr attribute="NumberDecimal" String="[0-9]+(\.[0-9]+)?(e[0-9]+)?" insensitive="false" minimal="false" context="#stay" />
+			<RegExpr attribute="CharLiteral" String="'(([^'\\\n\r\t\b\f])|(\\&quot;)|(\\\')|(\\\\)|(\\\/)|(\\b)|(\\f)|(\\n)|(\\r)|(\\t)|(\\0))'" insensitive="false" minimal="false" context="#stay" />
 			<DetectChar attribute="String" char="&quot;" context="string" />
 			<Detect2Chars attribute="NormalText" char="&lt;" char1="/" context="normal_text" />
 			<Detect2Chars attribute="NormalText" char="/" char1="&rt;" context="normal_text" />
@@ -194,6 +195,7 @@
 		<itemData name="Number" defStyleNum="dsBaseN" />
 		<itemData name="NumberDecimal" defStyleNum="dsDecVal" />
 		<itemData name="String" defStyleNum="dsString" />
+		<itemData name="CharLiteral" defStyleNum="dsChar" />
 		<itemData name="Comment" defStyleNum="dsComment" />
 	</itemDatas>
 

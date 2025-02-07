@@ -33,7 +33,7 @@ def EqualityOperatorGeneration_Test0():
 		halt if( r != e );
 		halt if( !( e == r ) );
 
-		r.b[1]= "%"c8;
+		r.b[1]= '%';
 		halt if( e == r );
 	}
 	"""

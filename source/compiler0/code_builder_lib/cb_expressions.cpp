@@ -1284,7 +1284,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	U_UNUSED( function_context );
 
 	U_FundamentalType char_type= U_FundamentalType::InvalidType;
-	uint64_t array_size= ~0u; // ~0 - means non-array
+	uint64_t array_size= ~0u;
 	llvm::Constant* initializer= nullptr;
 
 	const std::string& type_suffix= string_literal.type_suffix;
@@ -1314,68 +1314,19 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		array_size= str.size();
 		initializer= llvm::ConstantDataArray::get( llvm_context_, str );
 	}
-	// If string literal has char suffix, process it as single char literal.
-	else if( type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
-	{
-		if( string_literal.value.size() == 1u )
-		{
-			char_type= U_FundamentalType::char8_ ;
-			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char8_ , uint64_t(string_literal.value[0]), false );
-		}
-		else
-			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), string_literal.src_loc, string_literal.value );
-	}
-	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
-	{
-		const char* it_start= string_literal.value.data();
-		const char* const it_end= it_start + string_literal.value.size();
-		const sprache_char c= ReadNextUTF8Char( it_start, it_end );
-		if( it_start == it_end && c <= 65535u )
-		{
-			char_type= U_FundamentalType::char16_;
-			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char16_, uint64_t(c), false );
-		}
-		else
-			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), string_literal.src_loc, string_literal.value );
-	}
-	else if( type_suffix == "c32" || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32_ ) )
-	{
-		const char* it_start= string_literal.value.data();
-		const char* const it_end= it_start + string_literal.value.size() ;
-		const sprache_char c= ReadNextUTF8Char( it_start, it_end );
-		if( it_start == it_end )
-		{
-			char_type= U_FundamentalType::char32_;
-			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char32_, uint64_t(c), false );
-		}
-		else
-			REPORT_ERROR( InvalidSizeForCharLiteral, names_scope.GetErrors(), string_literal.src_loc, string_literal.value );
-	}
 	else
 		REPORT_ERROR( UnknownStringLiteralSuffix, names_scope.GetErrors(), string_literal.src_loc, type_suffix );
 
 	if( initializer == nullptr )
 		return ErrorValue();
 
-	VariableMutPtr result;
-	if( array_size == ~0u )
-	{
-		result= Variable::Create(
-			FundamentalType( char_type, GetFundamentalLLVMType( char_type ) ),
-			ValueType::Value,
-			Variable::Location::LLVMRegister,
-			"",
-			initializer,
-			initializer );
-	}
-	else
-	{
-		ArrayType array_type;
-		array_type.element_type= FundamentalType( char_type, GetFundamentalLLVMType( char_type ) );
-		array_type.element_count= array_size;
-		array_type.llvm_type= llvm::ArrayType::get( GetFundamentalLLVMType( char_type ), array_size );
+	ArrayType array_type;
+	array_type.element_type= FundamentalType( char_type, GetFundamentalLLVMType( char_type ) );
+	array_type.element_count= array_size;
+	array_type.llvm_type= llvm::ArrayType::get( GetFundamentalLLVMType( char_type ), array_size );
 
-		result= Variable::Create(
+	VariableMutPtr result=
+		Variable::Create(
 			std::move(array_type),
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
@@ -1383,19 +1334,90 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			nullptr,
 			initializer );
 
-		// Use md5 for string literal names.
-		llvm::MD5 md5;
-		if( const auto constant_data_array = llvm::dyn_cast<llvm::ConstantDataArray>(initializer) )
-			md5.update( constant_data_array->getRawDataValues() );
-		else if( llvm::dyn_cast<llvm::ConstantAggregateZero>(initializer) != nullptr )
-			md5.update( std::string( size_t(array_size * GetFundamentalTypeSize(char_type) ), '\0' ) );
-		md5.update( llvm::ArrayRef<uint8_t>( reinterpret_cast<const uint8_t*>(&char_type), sizeof(U_FundamentalType) ) ); // Add type to hash for distinction of zero-sized strings with different types.
-		llvm::MD5::MD5Result md5_result;
-		md5.final(md5_result);
-		result->name= ( "_string_literal_" + md5_result.digest() ).str();
+	// Use md5 for string literal names.
+	llvm::MD5 md5;
+	if( const auto constant_data_array = llvm::dyn_cast<llvm::ConstantDataArray>(initializer) )
+		md5.update( constant_data_array->getRawDataValues() );
+	else if( llvm::dyn_cast<llvm::ConstantAggregateZero>(initializer) != nullptr )
+		md5.update( std::string( size_t(array_size * GetFundamentalTypeSize(char_type) ), '\0' ) );
+	md5.update( llvm::ArrayRef<uint8_t>( reinterpret_cast<const uint8_t*>(&char_type), sizeof(U_FundamentalType) ) ); // Add type to hash for distinction of zero-sized strings with different types.
+	llvm::MD5::MD5Result md5_result;
+	md5.final(md5_result);
+	result->name= ( "_string_literal_" + md5_result.digest() ).str();
 
-		result->llvm_value= CreateGlobalConstantVariable( result->type, result->name, result->constexpr_value );
+	result->llvm_value= CreateGlobalConstantVariable( result->type, result->name, result->constexpr_value );
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+
+	return result;
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::CharLiteral& char_literal )
+{
+	U_UNUSED( function_context );
+
+	U_FundamentalType char_type= U_FundamentalType::InvalidType;
+
+	const std::string_view type_suffix= char_literal.type_suffix.data();
+
+	if( type_suffix == "" || type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_ ) )
+	{
+		if( char_literal.code_point > 0x7Fu )
+		{
+			// This code point can't be represented as single UTF-8 byte.
+			std::string s;
+			PushCharToUTF8String( char_literal.code_point, s );
+			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), char_literal.src_loc, s );
+			return ErrorValue();
+		}
+		char_type= U_FundamentalType::char8_;
 	}
+	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
+	{
+		if( char_literal.code_point > 0xFFFFu )
+		{
+			// This code point can't be encoded via single char16 value - it may be encoded only via a surrogate pair.
+			std::string s;
+			PushCharToUTF8String( char_literal.code_point, s );
+			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), char_literal.src_loc, s );
+			return ErrorValue();
+		}
+		char_type= U_FundamentalType::char16_;
+	}
+	else if( type_suffix == "c32" || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32_ ) )
+	{
+		if( char_literal.code_point > 0x10FFFFu )
+		{
+			// Invalid char literal above Unicode range.
+			std::string s;
+			PushCharToUTF8String( char_literal.code_point, s );
+			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), char_literal.src_loc, s );
+			return ErrorValue();
+		}
+		char_type= U_FundamentalType::char32_;
+	}
+	else
+	{
+		REPORT_ERROR( UnknownCharLiteralSuffix, names_scope.GetErrors(), char_literal.src_loc, type_suffix );
+		return ErrorValue();
+	}
+
+	llvm::Type* const llvm_type= GetFundamentalLLVMType( char_type );
+
+	llvm::Constant* const initializer= llvm::ConstantInt::get( llvm_type, uint64_t(char_literal.code_point), false );
+
+	const VariablePtr result=
+		Variable::Create(
+			FundamentalType( char_type, llvm_type ),
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			"",
+			initializer,
+			initializer );
 
 	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );

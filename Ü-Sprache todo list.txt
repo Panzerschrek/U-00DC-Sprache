@@ -12,7 +12,6 @@ General:
 	statement, etc
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) More advanced macros - more context, elements, stringification, string manipulations
-*) Simpler syntax for char-types literals (like 'q' in C++)
 *) switch-style operator for expression context
 *) thread-local variables, including accessing external thread-local variables
 *) A way to construct temporary variable with sequence initializer or other initializer kinds,
@@ -40,6 +39,8 @@ General:
 *) Investigate possibility to use "return" inside one of branches of ternary operator (?:)
 *) Allow "nodiscard" flag for async functions to affect result of a call via "await"
 *) Consider making "nodiscard" flag presence configurable - based on a constant expression
+*) Consider to use entry point other than C-like "main" - with "argc" and "argv" converted into something like
+	"ust::array_view_imit</ust::string_view8/>"
 
 References:
 *) Support second order inner references for coroutine types
@@ -78,6 +79,7 @@ Standart library:
 *) More type traits
 *) More math functions
 *) "result"-like container for reference results
+*) Optimize size of the "result" container for storing an enum-like error and "void" succes type
 *) Support opening files with appending
 *) Fix "rename_file_or_directory_if_not_exists" implementation for Unix - perform operation atomically
 *) Fix "get_metadata_for_path" implementation for Windows - follow symbolic links

@@ -61,9 +61,12 @@ void WriteStringEscaped( const std::string_view s, std::ostream& stream )
 	{
 		switch(c)
 		{
-		case '\"':
+		case '"':
 			escaped.push_back( '\\' );
 			escaped.push_back( '\"' );
+			break;
+		case '\'':
+			escaped.push_back( '\'' );
 			break;
 		case '\\':
 			escaped.push_back( '\\' );
@@ -370,6 +373,50 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			WriteStringEscaped( string_literal->value, stream );
 			stream << string_literal->type_suffix;
+		}
+		void operator()( const CharLiteral& char_literal ) const
+		{
+			stream << "'";
+			switch(char_literal.code_point)
+			{
+			case '"': stream << "\""; break;
+			case '\'': stream << "\\'"; break;
+			case '\\': stream << "\\\\"; break;
+			case '\b': stream << "\\b"; break;
+			case '\f': stream << "\\f"; break;
+			case '\n': stream << "\\n"; break;
+			case '\r': stream << "\\r"; break;
+			case '\t': stream << "\\t"; break;
+			case '\0': stream << "\\0"; break;
+				break;
+			default:
+				if( char_literal.code_point < 32 )
+				{
+					stream << "\\u";
+					for( uint32_t i= 0u; i < 4u; ++i )
+					{
+						const sprache_char val= ( sprache_char(char_literal.code_point) >> ((3u-i) * 4u ) ) & 15u;
+						if( val < 10u )
+							stream << char( '0' + int(val) );
+						else
+							stream << char( 'a' + int(val-10u) );
+					}
+				}
+				if( char_literal.code_point <= 127 )
+					stream << char(char_literal.code_point);
+				else
+				{
+					std::string s;
+					PushCharToUTF8String( char_literal.code_point, s );
+					stream << s;
+				}
+
+				break;
+			};
+			stream << "'";
+
+			if( char_literal.type_suffix[0] != 0 )
+				stream << char_literal.type_suffix.data();
 		}
 		void operator()( const BooleanConstant& boolean_constant ) const
 		{

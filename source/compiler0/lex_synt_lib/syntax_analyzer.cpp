@@ -1078,6 +1078,33 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(string_literal);
 		}
+	case Lexem::Type::CharLiteral:
+	{
+		CharLiteral char_literal( it_->src_loc );
+
+		// Lexical analyzer should push bytes for exactly one code point.
+		U_ASSERT( !it_->text.empty() );
+		char_literal.code_point= GetUTF8FirstChar( it_->text.data(), it_->text.data() + it_->text.size() );
+
+		NextLexem();
+
+		if( it_->type == Lexem::Type::LiteralSuffix )
+		{
+			if( it_->text.size() < char_literal.type_suffix.size() )
+				std::memcpy( char_literal.type_suffix.data(), it_->text.data(), it_->text.size() );
+			else
+			{
+				LexSyntError error_message;
+				error_message.src_loc= it_->src_loc;
+				error_message.text= "Char literal type suffix overflow";
+				error_messages_.push_back( std::move(error_message) );
+			}
+
+			NextLexem();
+		}
+
+		return std::move(char_literal);
+	}
 	case Lexem::Type::BracketLeft:
 		{
 			ExpectLexem( Lexem::Type::BracketLeft );
@@ -1760,11 +1787,11 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		coroutine_type.kind= it_->text == Keywords::generator_ ? CoroutineType::Kind::Generator : CoroutineType::Kind::AsyncFunc;
 		NextLexem();
 
-		if( it_->type == Lexem::Type::Apostrophe )
+		if( it_->type == Lexem::Type::BracketLeft )
 		{
 			NextLexem();
 
-			if( it_->type == Lexem::Type::Apostrophe )
+			if( it_->type == Lexem::Type::BracketRight )
 				NextLexem(); // Empty list.
 			else
 			{
@@ -1789,7 +1816,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 						break;
 				}
 
-				ExpectLexem( Lexem::Type::Apostrophe );
+				ExpectLexem( Lexem::Type::BracketRight );
 			}
 		}
 

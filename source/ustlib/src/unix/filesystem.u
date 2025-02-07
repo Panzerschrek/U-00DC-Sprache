@@ -558,7 +558,7 @@ fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</voi
 		var dirent& entry= unsafe( $>(entry_ptr) );
 
 		// Skip "." and "..".
-		if( entry.d_name[0] == "."c8 && ( entry.d_name[1] == "\0"c8 || (entry.d_name[1] == "."c8 && entry.d_name[2] == "\0"c8 ) ) )
+		if( entry.d_name[0] == '.' && ( entry.d_name[1] == '\0' || (entry.d_name[1] == '.' && entry.d_name[2] == '\0' ) ) )
 		{
 			continue;
 		}
@@ -566,7 +566,7 @@ fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</voi
 		var size_type mut name_size= 0s;
 		while( name_size < typeinfo</ typeof( entry.d_name ) />.size_of )
 		{
-			if( entry.d_name[name_size] == "\0"c8 )
+			if( entry.d_name[name_size] == '\0' )
 			{
 				break;
 			}
@@ -602,7 +602,7 @@ fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</voi
 fn get_current_directory() : filesystem_path
 {
 	var filesystem_path mut res;
-	res.resize( 256s, "\0"c8 );
+	res.resize( 256s, '\0' );
 	for( auto mut i= 0s; i < 8s; ++i )
 	{
 		auto call_res = unsafe( ::getcwd( res.data(), res.size() ) );
@@ -612,7 +612,7 @@ fn get_current_directory() : filesystem_path
 			{
 				// Not enough space - double it and call the function again.
 				var size_type new_size= res.size() * 2s;
-				res.resize( new_size, "\0"c8 );
+				res.resize( new_size, '\0' );
 				continue;
 			}
 			else
@@ -623,12 +623,12 @@ fn get_current_directory() : filesystem_path
 		}
 
 		var size_type mut len= 0s;
-		while( len < res.size() && res[len] != "\0"c8 )
+		while( len < res.size() && res[len] != '\0' )
 		{
 			++len;
 		}
 
-		res.resize( len, " "c8 );
+		res.resize( len, ' ' );
 		return res;
 	}
 
@@ -708,7 +708,7 @@ fn nodiscard directory_raw_iterator::impl_unix::next( mut this ) : optional</ fi
 		var dirent& entry= unsafe( $>(entry_ptr) );
 
 		// Skip "." and "..".
-		if( entry.d_name[0] == "."c8  && ( entry.d_name[1] == "\0"c8 || (entry.d_name[1] == "."c8 && entry.d_name[2] == "\0"c8 ) ) )
+		if( entry.d_name[0] == '.'  && ( entry.d_name[1] == '\0' || (entry.d_name[1] == '.' && entry.d_name[2] == '\0' ) ) )
 		{
 			continue;
 		}
@@ -716,7 +716,7 @@ fn nodiscard directory_raw_iterator::impl_unix::next( mut this ) : optional</ fi
 		var size_type mut name_size= 0s;
 		while( name_size < typeinfo</ typeof( entry.d_name ) />.size_of )
 		{
-			if( entry.d_name[name_size] == "\0"c8 )
+			if( entry.d_name[name_size] == '\0' )
 			{
 				break;
 			}

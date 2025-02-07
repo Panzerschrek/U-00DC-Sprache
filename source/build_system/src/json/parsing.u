@@ -19,7 +19,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 
 	switch( text.front() )
 	{
-		"n"c8 ->
+		'n' ->
 		{
 			// Null
 			auto &constexpr expected= "null";
@@ -31,7 +31,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 			text= text.subrange_end(s);
 			return JsonValue( JsonValue::Null() );
 		},
-		"f"c8 ->
+		'f' ->
 		{
 			// Bool false
 			auto &constexpr expected= "false";
@@ -43,7 +43,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 			text= text.subrange_end(s);
 			return JsonValue( false );
 		},
-		"t"c8 ->
+		't' ->
 		{
 			// Bool true
 			auto &constexpr expected= "true";
@@ -55,7 +55,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 			text= text.subrange_end(s);
 			return JsonValue( true );
 		},
-		"0"c8 ... "9"c8, "-"c8 ->
+		'0' ... '9', '-' ->
 		{
 			// Number
 			auto mut num= ParseJsonNumber( text );
@@ -65,7 +65,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 			}
 			return JsonValue( num.try_take() );
 		},
-		"\""c8 ->
+		'"' ->
 		{
 			auto mut str= ParseJsonString( text );
 			if( str.empty() )
@@ -74,7 +74,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 			}
 			return JsonValue( str.try_take() );
 		},
-		"["c8 ->
+		'[' ->
 		{
 			// Array
 			text.drop_front();
@@ -87,7 +87,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 
 			var JsonValue::Array mut array;
 
-			if( text.front() == "]"c8 )
+			if( text.front() == ']' )
 			{
 				text.drop_front();
 			}
@@ -107,12 +107,12 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 					{
 						return ust::null_optional;
 					}
-					if( text.front() == ","c8 )
+					if( text.front() == ',' )
 					{
 						text.drop_front();
 						continue;
 					}
-					if( text.front() == "]"c8 )
+					if( text.front() == ']' )
 					{
 						text.drop_front();
 						break;
@@ -123,7 +123,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 
 			return JsonValue( move(array) );
 		},
-		"{"c8 ->
+		'{' ->
 		{
 			// Object
 			text.drop_front();
@@ -136,7 +136,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 
 			var JsonValue::Object mut object;
 
-			if( text.front() == "}"c8 )
+			if( text.front() == '}' )
 			{
 				text.drop_front();
 			}
@@ -152,7 +152,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 					}
 
 					SkipWhitespaces( text );
-					if( text.empty() || text.front() != ":"c8 )
+					if( text.empty() || text.front() != ':' )
 					{
 						return ust::null_optional;
 					}
@@ -170,12 +170,12 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 					{
 						return ust::null_optional;
 					}
-					if( text.front() == ","c8 )
+					if( text.front() == ',' )
 					{
 						text.drop_front();
 						continue;
 					}
-					if( text.front() == "}"c8 )
+					if( text.front() == '}' )
 					{
 						text.drop_front();
 						break;
@@ -196,7 +196,7 @@ fn SkipWhitespaces( ust::string_view8 &mut text )
 	{
 		switch( text.front() )
 		{
-			" "c8, "\t"c8, "\r"c8, "\n"c8 -> { text.drop_front(); },
+			' ', '\t', '\r', '\n' -> { text.drop_front(); },
 			default -> { break; }
 		}
 	}
@@ -205,7 +205,7 @@ fn SkipWhitespaces( ust::string_view8 &mut text )
 fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Number/>
 {
 	var f64 mut sign= 1.0;
-	if( text.front() == "-"c8 )
+	if( text.front() == '-' )
 	{
 		sign= -1.0;
 		text.drop_front();
@@ -220,9 +220,9 @@ fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Nu
 	while( !text.empty() )
 	{
 		var char8 c= text.front();
-		if( c >= "0"c8 && c <= "9"c8 )
+		if( c >= '0' && c <= '9' )
 		{
-			num= num * 10.0 + f64( u32(c) - u32( "0"c8 ) );
+			num= num * 10.0 + f64( u32(c) - u32( '0' ) );
 			text.drop_front();
 		}
 		else
@@ -232,7 +232,7 @@ fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Nu
 	}
 
 	var i32 mut decimal_point_position= 0;
-	if( !text.empty() && text.front() == "."c8 )
+	if( !text.empty() && text.front() == '.' )
 	{
 		text.drop_front();
 
@@ -244,9 +244,9 @@ fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Nu
 		while( !text.empty() )
 		{
 			var char8 c= text.front();
-			if( c >= "0"c8 && c <= "9"c8 )
+			if( c >= '0' && c <= '9' )
 			{
-				num= num * 10.0 + f64( u32(c) - u32( "0"c8 ) );
+				num= num * 10.0 + f64( u32(c) - u32( '0' ) );
 				++decimal_point_position;
 				text.drop_front();
 			}
@@ -257,7 +257,7 @@ fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Nu
 		}
 	}
 
-	if( !text.empty() && ( text.front() == "e"c8 || text.front() == "E"c8 ) )
+	if( !text.empty() && ( text.front() == 'e' || text.front() == 'E' ) )
 	{
 		text.drop_front();
 
@@ -267,12 +267,12 @@ fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Nu
 		}
 
 		var bool mut exponent_is_negative= false;
-		if( text.front() == "-"c8 )
+		if( text.front() == '-' )
 		{
 			exponent_is_negative= true;
 			text.drop_front();
 		}
-		else if( text.front() == "+"c8 )
+		else if( text.front() == '+' )
 		{
 			exponent_is_negative= false;
 			text.drop_front();
@@ -287,9 +287,9 @@ fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Nu
 		while( !text.empty() )
 		{
 			var char8 c= text.front();
-			if( c >= "0"c8 && c <= "9"c8 )
+			if( c >= '0' && c <= '9' )
 			{
-				exponent= exponent * 10 + ( i32(c) - i32( "0"c8 ) );
+				exponent= exponent * 10 + ( i32(c) - i32( '0' ) );
 				text.drop_front();
 			}
 			else
@@ -322,7 +322,7 @@ fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Nu
 
 fn ParseJsonString( ust::string_view8 &mut text ) : ust::optional</JsonValue::String/>
 {
-	if( text.empty() || text.front() != "\""c8 )
+	if( text.empty() || text.front() != '"' )
 	{
 		return ust::null_optional;
 	}
@@ -346,8 +346,8 @@ fn ParseJsonString( ust::string_view8 &mut text ) : ust::optional</JsonValue::St
 
 		switch( c )
 		{
-			"\""c8 -> { break; },
-			"\\"c8 ->
+			'"' -> { break; },
+			'\\' ->
 			{
 				if( text.empty() )
 				{
@@ -356,13 +356,13 @@ fn ParseJsonString( ust::string_view8 &mut text ) : ust::optional</JsonValue::St
 				var char8 c_escaped= text.drop_and_get_front();
 				switch( c_escaped )
 				{
-					"\""c8, "\\"c8, "/"c8 -> { res.push_back( c_escaped ); },
-					"b"c8 -> { res.push_back( "\b"c8 ); },
-					"f"c8 -> { res.push_back( "\f"c8 ); },
-					"n"c8 -> { res.push_back( "\n"c8 ); },
-					"r"c8 -> { res.push_back( "\r"c8 ); },
-					"t"c8 -> { res.push_back( "\t"c8 ); },
-					"u"c8 ->
+					'"', '\\', '/' -> { res.push_back( c_escaped ); },
+					'b' -> { res.push_back( '\b' ); },
+					'f' -> { res.push_back( '\f' ); },
+					'n' -> { res.push_back( '\n' ); },
+					'r' -> { res.push_back( '\r' ); },
+					't' -> { res.push_back( '\t' ); },
+					'u' ->
 					{
 						// A hex number.
 						if( text.size() < 4s )
@@ -373,17 +373,17 @@ fn ParseJsonString( ust::string_view8 &mut text ) : ust::optional</JsonValue::St
 						for( auto mut i= 0u; i < 4u; ++i )
 						{
 							var char8 c= text.drop_and_get_front();
-							if( c >= "0"c8 && c <= "9"c8 )
+							if( c >= '0' && c <= '9' )
 							{
-								cc|= (u32(c) - u32("0"c8)) << ( ( 3u - i ) * 4u );
+								cc|= (u32(c) - u32('0')) << ( ( 3u - i ) * 4u );
 							}
-							else if( c >= "a"c8 && c <= "f"c8 )
+							else if( c >= 'a' && c <= 'f' )
 							{
-								cc|= (u32(c) + 10u - u32("a"c8)) << ( ( 3u - i ) * 4u );
+								cc|= (u32(c) + 10u - u32('a')) << ( ( 3u - i ) * 4u );
 							}
-							else if( c >= "A"c8 && c <= "F"c8 )
+							else if( c >= 'A' && c <= 'F' )
 							{
-								cc|= (u32(c) + 10u - u32("A"c8)) << ( ( 3u - i ) * 4u );
+								cc|= (u32(c) + 10u - u32('A')) << ( ( 3u - i ) * 4u );
 							}
 							else
 							{

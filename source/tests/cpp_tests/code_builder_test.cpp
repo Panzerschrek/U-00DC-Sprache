@@ -2100,18 +2100,18 @@ U_TEST(HeapUsage_Test0)
 		{
 			unsafe
 			{
-				$>(addr + 0s)= byte8("Q"c8);
-				$>(addr + 1s)= byte8("y"c8);
-				$>(addr + 2s)= byte8("!"c8);
+				$>(addr + 0s)= byte8('Q');
+				$>(addr + 1s)= byte8('y');
+				$>(addr + 2s)= byte8('!');
 			}
 		}
 		fn Read( $(byte8) addr )
 		{
 			unsafe
 			{
-				halt if( $>(addr + 0s) != byte8("Q"c8) );
-				halt if( $>(addr + 1s) != byte8("y"c8) );
-				halt if( $>(addr + 2s) != byte8("!"c8) );
+				halt if( $>(addr + 0s) != byte8('Q') );
+				halt if( $>(addr + 1s) != byte8('y') );
+				halt if( $>(addr + 2s) != byte8('!') );
 			}
 		}
 		fn Free( $(byte8) addr )
@@ -2147,18 +2147,18 @@ U_TEST(HeapUsage_Test1)
 		{
 			unsafe
 			{
-				$>(addr + 0s)= byte8("h"c8);
-				$>(addr + 1s)= byte8("T"c8);
-				$>(addr + 2s)= byte8("&"c8);
+				$>(addr + 0s)= byte8('h');
+				$>(addr + 1s)= byte8('T');
+				$>(addr + 2s)= byte8('&');
 			}
 		}
 		fn Read( $(byte8) addr )
 		{
 			unsafe
 			{
-				halt if( $>(addr + 0s) != byte8("h"c8) );
-				halt if( $>(addr + 1s) != byte8("T"c8) );
-				halt if( $>(addr + 2s) != byte8("&"c8) );
+				halt if( $>(addr + 0s) != byte8('h') );
+				halt if( $>(addr + 1s) != byte8('T') );
+				halt if( $>(addr + 2s) != byte8('&') );
 			}
 		}
 		fn Free( $(byte8) addr )

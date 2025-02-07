@@ -948,11 +948,11 @@ def ChangingReferenceTagCountInInheritance_Test2():
 	c_program_text= """
 		class A polymorph
 		{
-			i32 & @("a"c8) x;
+			i32 & @('a') x;
 		}
 		class B : A // Parent has 1 reference, child has 2 references inside.
 		{
-			i32 & @("b"c8) y;
+			i32 & @('b') y;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -965,7 +965,7 @@ def ChangingReferenceTagCountInInheritance_Test3():
 		class A interface {}
 		class B polymorph
 		{
-			i32 & @("a"c8) x;
+			i32 & @('a') x;
 		}
 		class C : A, B // Parent "A" has no references, child has 1 reference inside.
 		{

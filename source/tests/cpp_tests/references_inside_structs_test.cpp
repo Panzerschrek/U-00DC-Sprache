@@ -16,9 +16,9 @@ U_TEST( ReferenceClassFieldDeclaration )
 			i32 mut mut_value_field;
 			i32 imut imut_value_field;
 
-			f32 & @("a"c8) ref_field;
-			f32 &mut @("b"c8) mut_ref_field;
-			f32 &imut @("c"c8) imut_ref_field;
+			f32 & @('a') ref_field;
+			f32 &mut @('b') mut_ref_field;
+			f32 &imut @('c') imut_ref_field;
 		}
 	)";
 
@@ -57,8 +57,8 @@ U_TEST( MultipleReferencesInside )
 	R"(
 		struct S
 		{
-			i32& @("a"c8) x;
-			i32& @("a"c8) y;
+			i32& @('a') x;
+			i32& @('a') y;
 		}
 
 		fn Foo() : i32
@@ -84,8 +84,8 @@ U_TEST( MultipleMutableReferencesInside )
 	R"(
 		struct S
 		{
-			i32 &mut @("a"c8) x;
-			i32 &mut @("b"c8) y;
+			i32 &mut @('a') x;
+			i32 &mut @('b') y;
 		}
 
 		fn Foo() : i32
