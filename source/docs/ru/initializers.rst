@@ -64,7 +64,7 @@
    var i32 x= 0, x_copy(x);
    var f32 y(x); // преобразование i32 -> f32
    var f64 z(y), w(x_copy); // преобразования f32 -> f64 и i32 -> f64
-   var u16 cc("B"c8); // преобразование char8 -> u16
+   var u16 cc('B'); // преобразование char8 -> u16
    var char32 cccc(66); // преобразование i32 -> char32
    var u16 short_int(574);
    var i64 long_signed_int(short_int); // преобразование u16 -> i64

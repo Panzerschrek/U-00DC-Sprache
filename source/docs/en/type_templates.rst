@@ -120,7 +120,7 @@ Arrays and tuples are also possible, if their element types are types, listed ab
    // Struct template with composite value parameter.
    template</ ArgType arg /> struct S {}
 
-   var ArgType constexpr my_arg[ [ 7, -5 ], "y"c8, true, E::B ];
+   var ArgType constexpr my_arg[ [ 7, -5 ], 'y', true, E::B ];
 
    // Parameterize the template with a composite value.
    type MyS= S</ my_arg />;

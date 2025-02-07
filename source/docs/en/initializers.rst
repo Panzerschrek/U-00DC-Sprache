@@ -67,7 +67,7 @@ For fundamental types it's possible to perform type conversion via constructor i
    var i32 x= 0, x_copy(x);
    var f32 y(x); // conversion i32 -> f32
    var f64 z(y), w(x_copy); // conversions f32 -> f64 and i32 -> f64
-   var u16 cc("B"c8); // conversion char8 -> u16
+   var u16 cc('B'); // conversion char8 -> u16
    var char32 cccc(66); // conversion i32 -> char32
    var u16 short_int(574);
    var i64 long_signed_int(short_int); // conversion u16 -> i64
