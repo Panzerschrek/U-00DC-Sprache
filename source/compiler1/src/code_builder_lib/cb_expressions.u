@@ -506,11 +506,73 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CharLiteral& char_literal ) : Value
 {
-	// TODO
-	ust::ignore_unused( names_scope );
 	ust::ignore_unused( function_context );
-	ust::ignore_unused( char_literal );
-	return ErrorValue();
+
+	var ust::string_view8 mut type_suffix( char_literal.type_suffix );
+	while( !type_suffix.empty() && type_suffix.back() == '\0' )
+	{
+		type_suffix.drop_back();
+	}
+
+	auto mut char_type= U_FundamentalType::InvalidType;
+
+	if( type_suffix == "" || type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_ ) )
+	{
+		if( char_literal.code_point > char32(0x7Fu) )
+		{
+			var ust::string8 mut s;
+			ust::utf::push_code_point_to_string( s, char_literal.code_point );
+			REPORT_ERROR( CharLiteralOverflow, names_scope, char_literal.src_loc, s )
+			return ErrorValue();
+		}
+		char_type= U_FundamentalType::char8_;
+	}
+	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
+	{
+		if( !( char_literal.code_point < char32(0xD800u) || ( char_literal.code_point > char32(0xDFFFu) && char_literal.code_point < char32(0x10000u) ) ) )
+		{
+			var ust::string8 mut s;
+			ust::utf::push_code_point_to_string( s, char_literal.code_point );
+			REPORT_ERROR( CharLiteralOverflow, names_scope, char_literal.src_loc, s )
+			return ErrorValue();
+		}
+		char_type= U_FundamentalType::char16_;
+	}
+	else if( type_suffix == "c32" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char32_ ) )
+	{
+		if( char_literal.code_point > char32(0x10FFFFu) )
+		{
+			var ust::string8 mut s;
+			ust::utf::push_code_point_to_string( s, char_literal.code_point );
+			REPORT_ERROR( CharLiteralOverflow, names_scope, char_literal.src_loc, s )
+			return ErrorValue();
+		}
+		char_type= U_FundamentalType::char32_;
+	}
+	else
+	{
+		REPORT_ERROR( UnknownStringLiteralSuffix, names_scope, char_literal.src_loc, type_suffix )
+		return ErrorValue();
+	}
+
+	auto element_llvm_type= GetFundamentalLLVMType(char_type);
+
+	auto constexpr_value= unsafe( LLVMConstInt( element_llvm_type, u64(char_literal.code_point), LLVMBool::False ) );
+
+	var VariablePtr result_ptr=
+		Variable
+		{
+			.t= FundamentalType( char_type, element_llvm_type ),
+			.location= Variable::Location::LLVMRegister,
+			.value_type= ValueType::Value,
+			.llvm_value= constexpr_value,
+			.constexpr_value= constexpr_value,
+			.name= "char literal",
+		}.CreatePtr();
+
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return result_ptr;
 }
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
