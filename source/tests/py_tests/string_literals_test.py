@@ -370,7 +370,7 @@ def StringLiteral_EscapeSequences_Test3():
 	c_program_text= """
 		fn Foo() : char8
 		{
-			return '\\0';
+			return "\\0"[0u];
 		}
 	"""
 	tests_lib.build_program( c_program_text )

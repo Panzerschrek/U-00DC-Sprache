@@ -43,6 +43,114 @@ def CharLiteral_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def CharLiteral_EscapeSequences_Test0():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return '\\n';
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\n') )
+
+
+def CharLiteral_EscapeSequences_Test1():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return '\\\\';
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\\') )
+
+
+def CharLiteral_EscapeSequences_Test2():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return '\\"';
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('"') )
+
+
+def CharLiteral_EscapeSequences_Test3():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return '\\0';
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 0 )
+
+
+def CharLiteral_EscapeSequences_Test4():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return '\\t';
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\t') )
+
+
+def CharLiteral_EscapeSequences_Test5():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return '\\r';
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\r') )
+
+
+def CharLiteral_EscapeSequences_Test6():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return '\\f';
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\f') )
+
+
+def CharLiteral_EscapeSequences_Test7():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return '\\b';
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\b') )
+
+
+def CharLiteral_EscapeSequences_Test8():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return '\\'';
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\'') )
+
+
 def CharLiteralIsConstantValue_Test0():
 	c_program_text= """
 		fn Bar( char16 &mut c ) {}
