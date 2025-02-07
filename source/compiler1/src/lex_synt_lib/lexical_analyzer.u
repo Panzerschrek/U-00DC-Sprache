@@ -24,6 +24,11 @@ fn Lexem::ToDiagnosticString(this) : ust::string8
 		// For now ignore escape sequences (for simplicity).
 		return ust::concat( "\"", text, "\"" );
 	}
+	if( lexem_type == Lexem::Type::CharLiteral )
+	{
+		// For now ignore escape sequences (for simplicity).
+		return ust::concat( "'", text, "'" );
+	}
 	if( lexem_type == Lexem::Type::Number )
 	{
 		halt if( text.size() < typeinfo</NumberLexemData/>.size_of );
@@ -502,6 +507,96 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 	return result_lexem;
 }
 
+fn ParseCharLiteral( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
+{
+	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::CharLiteral };
+
+	it.drop_front(); // '
+
+	if( it.empty() )
+	{
+		out_errors.push_back( LexSyntError( src_loc, "unexpected end of file after '" ) );
+		return result_lexem;
+	}
+
+	var char8 c= it.front();
+	if( c == '\'' )
+	{
+		out_errors.push_back( LexSyntError( src_loc, "empty char literal" ) );
+		return result_lexem;
+	}
+	else if( c == '\\' )
+	{
+		it.drop_front(); // \
+		if( it.empty() )
+		{
+			out_errors.push_back( LexSyntError( src_loc, "inexpected end of file after '\\" ) );
+			return result_lexem;
+		}
+		var char8 escaped_c= it.drop_and_get_front();
+		switch( escaped_c )
+		{
+			'"' -> { result_lexem.text.push_back('"'); },
+			'\'' -> { result_lexem.text.push_back('\''); },
+			'\\' -> { result_lexem.text.push_back('\\'); },
+			'/' -> { result_lexem.text.push_back('/'); },
+			'b' -> { result_lexem.text.push_back('\b'); },
+			'f' -> { result_lexem.text.push_back('\f'); },
+			'n' -> { result_lexem.text.push_back('\n'); },
+			'r' -> { result_lexem.text.push_back('\r'); },
+			't' -> { result_lexem.text.push_back('\t'); },
+			'0' -> { result_lexem.text.push_back('\0'); },
+			'u' ->
+			{
+				if( it.size() < 4s )
+				{
+					out_errors.push_back( LexSyntError( src_loc, "expected 4 hex digits" ) );
+					return result_lexem;
+				}
+				auto mut char_code= 0u;
+				for( auto mut i= 0u; i < 4u; ++i )
+				{
+					auto digit= NumberFunc16( it.front() );
+					if( digit == -1u64 )
+					{
+						out_errors.push_back( LexSyntError( src_loc, "expected hex number" ) );
+						return result_lexem;
+					}
+
+					char_code|= u32(digit) << ( ( 3u - i ) * 4u );
+					it.drop_front();
+				}
+				ust::utf::push_code_point_to_string( result_lexem.text, char32(char_code) );
+			},
+			default ->
+			{
+				var ust::string8 mut err= "invalid escape sequence: \\";
+				err.push_back( escaped_c );
+				out_errors.push_back( LexSyntError( src_loc, move(err) ) );
+				return result_lexem;
+			}
+		}
+	}
+	else
+	{
+		ust::utf::push_code_point_to_string( result_lexem.text, ust::utf::extract_code_point_or_null_from_string( it ) );
+	}
+
+	if( it.empty() )
+	{
+		out_errors.push_back( LexSyntError( src_loc, "unexpected end of file at char literal" ) );
+		return result_lexem;
+	}
+	if( it.front() != '\'' )
+	{
+		out_errors.push_back( LexSyntError( src_loc, "expected ' at end of char literal" ) );
+		return result_lexem;
+	}
+	it.drop_front();
+
+	return result_lexem;
+}
+
 fn DiffUTF8Chars( Iterator mut start, Iterator end ) : size_type
 {
 	auto mut r= 0s;
@@ -722,6 +817,18 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		else if( c == '"'c32 )
 		{
 			lexem= ParseString( it, result.errors, src_loc );
+			if( !it.empty() && IsIdentifierStartChar( ust::utf::get_code_point_or_null_from_string( it ) ) )
+			{
+				lexem.src_loc= src_loc;
+				result.lexems.push_back( take(lexem) );
+
+				lexem= ParseIdentifier(it);
+				lexem.lexem_type= Lexem::Type::LiteralSuffix;
+			}
+		}
+		else if( c == '\''c32 )
+		{
+			lexem= ParseCharLiteral( it, result.errors, src_loc );
 			if( !it.empty() && IsIdentifierStartChar( ust::utf::get_code_point_or_null_from_string( it ) ) )
 			{
 				lexem.src_loc= src_loc;
