@@ -444,6 +444,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	{
 		if( char_literal.code_point > char32(0x7Fu) )
 		{
+			// This code point can't be represented as single UTF-8 byte.
 			var ust::string8 mut s;
 			ust::utf::push_code_point_to_string( s, char_literal.code_point );
 			REPORT_ERROR( CharLiteralOverflow, names_scope, char_literal.src_loc, s )
@@ -453,8 +454,9 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
 	{
-		if( !( char_literal.code_point < char32(0xD800u) || ( char_literal.code_point > char32(0xDFFFu) && char_literal.code_point < char32(0x10000u) ) ) )
+		if( char_literal.code_point > char32(0xFFFFu) )
 		{
+			// This code point can't be encoded via single char16 value - it may be encoded only via a surrogate pair.
 			var ust::string8 mut s;
 			ust::utf::push_code_point_to_string( s, char_literal.code_point );
 			REPORT_ERROR( CharLiteralOverflow, names_scope, char_literal.src_loc, s )
@@ -466,6 +468,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	{
 		if( char_literal.code_point > char32(0x10FFFFu) )
 		{
+			// Invalid char literal above Unicode range.
 			var ust::string8 mut s;
 			ust::utf::push_code_point_to_string( s, char_literal.code_point );
 			REPORT_ERROR( CharLiteralOverflow, names_scope, char_literal.src_loc, s )

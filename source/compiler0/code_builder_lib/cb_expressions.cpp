@@ -1368,6 +1368,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( char_literal.code_point > 0x7Fu )
 		{
+			// This code point can't be represented as single UTF-8 byte.
 			std::string s;
 			PushCharToUTF8String( char_literal.code_point, s );
 			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), char_literal.src_loc, s );
@@ -1377,8 +1378,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
 	{
-		if( !( char_literal.code_point < 0xD800u || ( char_literal.code_point > 0xDFFFu && char_literal.code_point < 0x10000u ) ) )
+		if( char_literal.code_point > 0xFFFFu )
 		{
+			// This code point can't be encoded via single char16 value - it may be encoded only via a surrogate pair.
 			std::string s;
 			PushCharToUTF8String( char_literal.code_point, s );
 			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), char_literal.src_loc, s );
@@ -1390,6 +1392,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( char_literal.code_point > 0x10FFFFu )
 		{
+			// Invalid char literal above Unicode range.
 			std::string s;
 			PushCharToUTF8String( char_literal.code_point, s );
 			REPORT_ERROR( CharLiteralOverflow, names_scope.GetErrors(), char_literal.src_loc, s );

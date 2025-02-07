@@ -316,7 +316,7 @@ def StringLiteral_UTF16_Test0():
 		static_assert( ArraySize( "строка"u16 ) == size_type( 6 ) );
 		static_assert( ArraySize( "string"u16 ) == size_type( 6 ) );
 		static_assert( ArraySize( "ღთႭა"u16 ) == size_type( 4 ) );
-		static_assert( ArraySize( "😀"u16 ) == 2s );
+		static_assert( ArraySize( "😀"u16 ) == 2s ); // This symbol uses surrogate pair in UTF-16 representation.
 	"""
 	tests_lib.build_program( c_program_text )
 
