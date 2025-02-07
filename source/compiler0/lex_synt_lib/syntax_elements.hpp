@@ -425,7 +425,7 @@ struct BooleanConstant
 
 struct MoveOperator
 {
-	MoveOperator( const SrcLoc& src_loc )
+	explicit MoveOperator( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
@@ -434,7 +434,7 @@ struct MoveOperator
 
 struct MoveOperatorCompletion
 {
-	MoveOperatorCompletion( const SrcLoc& src_loc )
+	explicit MoveOperatorCompletion( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
@@ -443,7 +443,7 @@ struct MoveOperatorCompletion
 
 struct StringLiteral
 {
-	StringLiteral( const SrcLoc& src_loc )
+	explicit StringLiteral( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
@@ -453,7 +453,7 @@ struct StringLiteral
 
 struct CharLiteral
 {
-	CharLiteral( const SrcLoc& src_loc )
+	explicit CharLiteral( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
@@ -495,7 +495,7 @@ struct TupleType
 
 struct RawPointerType
 {
-	RawPointerType( const SrcLoc& src_loc )
+	explicit RawPointerType( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
@@ -514,7 +514,7 @@ struct ArrayTypeName
 
 struct FunctionParam
 {
-	FunctionParam( const SrcLoc& src_loc )
+	explicit FunctionParam( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
@@ -526,7 +526,7 @@ struct FunctionParam
 
 struct FunctionType
 {
-	FunctionType( const SrcLoc& src_loc )
+	explicit FunctionType( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	bool IsAutoReturn() const;
@@ -555,7 +555,7 @@ public:
 	};
 
 public:
-	CoroutineType( const SrcLoc& src_loc )
+	explicit CoroutineType( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 public:
