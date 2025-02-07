@@ -44,7 +44,7 @@ fn nomangle main() : i32
 	static_assert( string_equals( STRING_CONSTANT_UTF8 , " утф8 - наше всё\0"u8 ) );
 	static_assert( string_equals( STRING_CONSTANT_UTF16, "Таки да, utf-16 это\0"u16 ) );
 	static_assert( string_equals( STRING_CONSTANT_UTF32, "да даже utf-32 могём\0"u32 ) );
-	static_assert( CHAR_CONSTANT == "Z"c8 );
+	static_assert( CHAR_CONSTANT == 'Z' );
 
 	unsafe
 	{
@@ -98,7 +98,7 @@ fn nomangle main() : i32
 	}
 	{
 		var TypedefedStruct mut s{ .data= zero_init };
-		s.data[0u]= "f"c8;
+		s.data[0u]= 'f';
 	}
 	{
 		var StructWithAnonimousRecordsInside mut s
