@@ -9,10 +9,10 @@ fn FundamentalTypesTest()
 	var bool true_value= true, false_value= false;
 	var u64 value64= 9870000000000u64;
 	var i128 loooong_int= i128(1.23e42);
-	var char8 c= "Q"c8;
-	var char16 cc= "Ž"c16;
-	var char32 ccc= "Я"c32;
-	var [ char8, 4 ] ca[ "W"c8, "T"c8, "F"c8, 0c8 ];
+	var char8 c= 'Q';
+	var char16 cc= 'Ž'c16;
+	var char32 ccc= 'Я'c32;
+	var [ char8, 4 ] ca[ 'W', 'T', 'F', 0c8 ];
 	var void v0;
 	var [ void, 16 ] v1= zero_init;
 	var byte8 b0= zero_init, b1(1u8), b_minus_5(-5i8);
@@ -123,9 +123,9 @@ fn ParametersTest()
 
 struct StructWithRef
 {
-	void& @("a"c8) v;
+	void& @('a') v;
 	i32 x= 0;
-	S0& @("a"c8) s0;
+	S0& @('a') s0;
 }
 
 fn StructsWithReferencesTest()
