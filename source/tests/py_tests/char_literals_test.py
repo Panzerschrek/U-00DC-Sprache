@@ -189,3 +189,42 @@ def CharLiteralOverflow_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "CharLiteralOverflow" )
 	assert( errors_list[0].src_loc.line == 4 )
+
+
+def UnknownCharLiteralSuffix_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			's'fff;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnknownCharLiteralSuffix" )
+	assert( errors_list[0].src_loc.line == 4 )
+
+
+def UnknownCharLiteralSuffix_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			's'a;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnknownCharLiteralSuffix" )
+	assert( errors_list[0].src_loc.line == 4 )
+
+
+def UnknownCharLiteralSuffix_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			's'u64;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "UnknownCharLiteralSuffix" )
+	assert( errors_list[0].src_loc.line == 4 )

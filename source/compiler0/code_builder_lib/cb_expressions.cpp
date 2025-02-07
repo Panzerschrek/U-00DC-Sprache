@@ -1399,8 +1399,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else
 	{
-		// TODO - use separate error code.
-		REPORT_ERROR( UnknownStringLiteralSuffix, names_scope.GetErrors(), char_literal.src_loc, type_suffix );
+		REPORT_ERROR( UnknownCharLiteralSuffix, names_scope.GetErrors(), char_literal.src_loc, type_suffix );
 		return ErrorValue();
 	}
 
