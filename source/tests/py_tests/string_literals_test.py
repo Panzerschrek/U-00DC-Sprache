@@ -426,6 +426,18 @@ def StringLiteral_EscapeSequences_Test7():
 	assert( call_result == ord('\b') )
 
 
+def StringLiteral_EscapeSequences_Test8():
+	c_program_text= """
+		fn Foo() : char8
+		{
+			return "\\'"[0u];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == ord('\'') )
+
+
 def StringLiteral_CharNumber_Test0():
 	c_program_text= """
 		fn Foo() : char16

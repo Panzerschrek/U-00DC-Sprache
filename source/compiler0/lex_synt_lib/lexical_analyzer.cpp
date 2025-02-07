@@ -273,6 +273,7 @@ Lexem ParseStringImpl( Iterator& it, const Iterator it_end, const SrcLoc& src_lo
 			switch( *it )
 			{
 			case '"':
+			case '\'':
 			case '\\':
 			case '/':
 				result.text.push_back(*it);

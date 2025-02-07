@@ -462,7 +462,7 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 				it.drop_front();
 				switch(escaped_c)
 				{
-					'"' , '\\' -> { result_lexem.text.push_back( escaped_c ); },
+					'"' , '\\', '\'' -> { result_lexem.text.push_back( escaped_c ); },
 					'b' -> { result_lexem.text.push_back( '\b' ); },
 					'f' -> { result_lexem.text.push_back( '\f' ); },
 					'n' -> { result_lexem.text.push_back( '\n' ); },
