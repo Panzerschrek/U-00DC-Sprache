@@ -321,7 +321,12 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 {
 	auto mut char_type= U_FundamentalType::InvalidType;
 
-	auto& type_suffix= string_literal.type_suffix;
+	var ust::string_view8 mut type_suffix( string_literal.type_suffix );
+	while( !type_suffix.empty() && type_suffix.back() == '\0' )
+	{
+		type_suffix.drop_back();
+	}
+
 	if( type_suffix == "" || type_suffix == "u8" )
 	{
 		char_type= U_FundamentalType::char8_;

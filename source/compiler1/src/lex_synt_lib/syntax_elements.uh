@@ -94,7 +94,7 @@ struct StringLiteral
 {
 	SrcLoc src_loc;
 	ust::string8 value;
-	ust::string8 type_suffix;
+	[ char8, 8 ] type_suffix= zero_init;
 }
 
 struct CharLiteral
@@ -303,7 +303,7 @@ type Expression= ust::variant</ tup[
 	EmptyVariant,
 	NumericConstant,
 	BooleanConstant,
-	ust::box</StringLiteral/>, // Terminal, but too heavy, to store by-value.
+	StringLiteral,
 	CharLiteral,
 	ComplexName,
 	ust::box</Typeinfo/>,

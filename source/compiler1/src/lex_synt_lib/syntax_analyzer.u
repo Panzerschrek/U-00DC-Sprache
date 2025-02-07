@@ -843,11 +843,22 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 
 			if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
 			{
-				string_literal.type_suffix= it_.front().text;
+				var ust::string8& text= it_.front().text;
+				if( text.size() > typeinfo</ typeof( string_literal.type_suffix )/>.element_count )
+				{
+					errors_.push_back( LexSyntError( it_.front().src_loc, "String literal type suffix overflow" ) );
+				}
+				else
+				{
+					for( auto mut i= 0s; i < text.size(); ++i )
+					{
+						string_literal.type_suffix[i]= text[i];
+					}
+				}
 				NextLexem();
 			}
 
-			return ust::make_box( move(string_literal) );
+			return string_literal;
 		},
 		Lexem::Type::CharLiteral ->
 		{
