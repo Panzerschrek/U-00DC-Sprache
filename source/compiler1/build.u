@@ -356,7 +356,7 @@ fn ParseCPPString( ust::string_view8 &mut s ) : ust::optional</ust::string8/>
 			var char8 c2= s.drop_and_get_front();
 			switch( c2 )
 			{
-				'"' -> { res.push_back( '\"' ); },
+				'"' -> { res.push_back( '"' ); },
 				'\\' -> { res.push_back( '\\' ); },
 				't' -> { res.push_back( '\t' ); },
 				'n' -> { res.push_back( '\n' ); },
@@ -425,13 +425,13 @@ fn SkipWhitespace( ust::string_view8 &mut s )
 fn MakeStringLiteral( ust::string_view8 s ) : ust::string8
 {
 	var ust::string8 mut res;
-	res.push_back( '\"'c8 );
+	res.push_back( '"' );
 
 	foreach( c : s )
 	{
 		switch( c )
 		{
-			'\"' -> { res+= "\\\""; },
+			'"' -> { res+= "\\\""; },
 			'\\' -> { res+= "\\\\"; },
 			'\n' -> { res+= "\\n"; },
 			'\r' -> { res+= "\\r"; },
@@ -443,7 +443,7 @@ fn MakeStringLiteral( ust::string_view8 s ) : ust::string8
 		}
 	}
 
-	res.push_back( '\"' );
+	res.push_back( '"' );
 
 	return res;
 }

@@ -222,7 +222,7 @@ def SwitchInvalidRange_Test4():
 		{
 			switch(c)
 			{
-				'g' ... 'f'  -> {}, // Invalid range for cha
+				'g' ... 'f'  -> {}, // Invalid range for char
 			}
 		}
 	"""

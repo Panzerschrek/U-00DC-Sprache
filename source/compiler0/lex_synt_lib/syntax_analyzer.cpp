@@ -1082,7 +1082,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 	{
 		CharLiteral char_literal( it_->src_loc );
 
-		 // Lexical analyzer should push bytes for exactly one code point.
+		// Lexical analyzer should push bytes for exactly one code point.
 		U_ASSERT( !it_->text.empty() );
 		char_literal.code_point= GetUTF8FirstChar( it_->text.data(), it_->text.data() + it_->text.size() );
 

@@ -61,9 +61,12 @@ void WriteStringEscaped( const std::string_view s, std::ostream& stream )
 	{
 		switch(c)
 		{
-		case '\"':
+		case '"':
 			escaped.push_back( '\\' );
 			escaped.push_back( '\"' );
+			break;
+		case '\'':
+			escaped.push_back( '\'' );
 			break;
 		case '\\':
 			escaped.push_back( '\\' );
@@ -376,7 +379,8 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			stream << "'";
 			switch(char_literal.code_point)
 			{
-			case '\"': stream << "\\\""; break;
+			case '"': stream << "\""; break;
+			case '\'': stream << "\\'"; break;
 			case '\\': stream << "\\\\"; break;
 			case '\b': stream << "\\b"; break;
 			case '\f': stream << "\\f"; break;
