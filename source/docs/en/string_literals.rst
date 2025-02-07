@@ -63,16 +63,18 @@ If terminating zero is required, for C code interaction for example, it may be e
 *String literals for single character*
 **************************************
 
-A string literal specifies usually an array of symbols.
-But if it is necessary to specify a literal for a single symbol, one of special suffixes ``c8``, ``c16``, ``c32`` may be used.
-Full type names as suffixes may be used too - ``char8``, ``char16``, ``char32``.
+Single char literals are specified via single quotes ``''``.
+By default such literals are of ``char8`` type.
+There are suffixes ``c8``, ``c16``, ``c32``,``char8``, ``char16``, ``char32`` for explicit type specifying.
 
 .. code-block:: u_spr
 
-   "Q"c8 // char8
-   "~"char8 // char8
-   "Ё"c16 // char16
-   "й"char16 // char16
-   "\u00DC"c32 // char32
-   "ß"char32 // char32
+   'J' // char8
+   '\t' // char8
+   'Q'c8 // char8
+   '~'char8 // char8
+   'Ё'c16 // char16
+   'й'char16 // char16
+   '\u00DC'c32 // char32
+   'ß'char32 // char32
    

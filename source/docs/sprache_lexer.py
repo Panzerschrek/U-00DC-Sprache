@@ -14,6 +14,8 @@ class SpracheLexer(RegexLexer):
 			(r'//[^\n]*\n', token.Comment),
 			# Strings
 			(r'\"([^\\\"]|(\\n)|(\\r)|(\\t)|(\\b)|(\\f)|(\\\")|(\\0)|(\\\\)|(\\u[0-9a-fA-F]{4,4}))*\"', token.String),
+			# Char literals
+			(r'\'(([^\'\\\n\r\t\b\f])|(\\")|(\\\')|(\\\\)|(\\\/)|(\\b)|(\\f)|(\\n)|(\\r)|(\\t)|(\\0)|(\\u[0-9a-fA-F]{4,4}))\'', token.String),
 			# Whitespaces
 			(r'[\ \t\n\r]+', token.Whitespace),
 			# Numbers
