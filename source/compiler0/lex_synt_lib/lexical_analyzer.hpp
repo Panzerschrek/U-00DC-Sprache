@@ -22,8 +22,6 @@ struct Lexem
 	{
 		None,
 
-		Comment,
-
 		Identifier,
 		MacroIdentifier,
 		MacroUniqueIdentifier,
@@ -131,7 +129,7 @@ struct LexicalAnalysisResult
 	LexSyntErrors errors;
 };
 
-LexicalAnalysisResult LexicalAnalysis( std::string_view program_text, bool collect_comments= false );
+LexicalAnalysisResult LexicalAnalysis( std::string_view program_text );
 
 //
 // Additional text-related stuff.
