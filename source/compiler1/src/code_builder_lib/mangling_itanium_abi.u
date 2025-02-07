@@ -455,7 +455,7 @@ fn EncodeParamReference( ManglerState &mut mangler_state, FunctionType::ParamRef
 	}
 	else
 	{
-		mangler_state.PushDecimalNumber( u64(param_reference.reference_index) + u64('a'c8) );
+		mangler_state.PushDecimalNumber( u64(param_reference.reference_index) + u64('a') );
 	}
 	mangler_state.Push( "E" );
 
