@@ -883,7 +883,7 @@ def TypesMismatch_ForFieldReferenceNotation_Test1():
 
 def TypesMismatch_ForFieldReferenceNotation_Test2():
 	c_program_text= """
-		struct S{ i32 & @("a"c16) x; } // Expected char8, given char16.
+		struct S{ i32 & @('a'c16) x; } // Expected char8, given char16.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "TypesMismatch", 2 ) )

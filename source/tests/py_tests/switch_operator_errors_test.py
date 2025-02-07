@@ -23,7 +23,7 @@ def TypesMismatch_ForSwitchOperator_Test1():
 		{
 			switch(c)
 			{
-				"7"c16 -> {}, // Expected char8, got char16
+				'7'c16 -> {}, // Expected char8, got char16
 				default -> {},
 			}
 		}
