@@ -49,14 +49,14 @@ import "type_traits.u"
 namespace ust
 {
 
-type main_func= fn( array_view_imut</string_view8/> args ) : i32;
+type pretty_main_func_type= fn( array_view_imut</string_view8/> args ) : i32;
 
 // External implementation functions. Do not use directly!
 
 fn enable_if( constexpr_string_equals( compiler::target::os, "windows" ) )
-	main_wrapper_impl( i32 argc, $($(char16)) argv, main_func func ) : i32;
+	main_wrapper_impl( i32 argc, $($(char16)) argv, pretty_main_func_type func ) : i32;
 
 fn enable_if( !constexpr_string_equals( compiler::target::os, "windows" ) )
-	main_wrapper_impl( i32 argc, $($(char8)) argv, main_func func ) : i32;
+	main_wrapper_impl( i32 argc, $($(char8)) argv, pretty_main_func_type func ) : i32;
 
 } // namespace ust

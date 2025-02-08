@@ -4,7 +4,7 @@ import "../../imports/scoped_array.u"
 namespace ust
 {
 
-fn main_wrapper_impl( i32 argc, $($(char8)) argv, main_func func ) : i32
+fn main_wrapper_impl( i32 argc, $($(char8)) argv, pretty_main_func_type func ) : i32
 {
 	// Create an array of string_view8 objects.
 	// For each null-terminated arg calculate actual size.
