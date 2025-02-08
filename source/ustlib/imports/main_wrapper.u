@@ -1,9 +1,19 @@
 import "string.u"
+import "type_traits.u"
 
 ?macro <? pretty_main:namespace ?b:block ?>
 ->
 <?
-	fn nomangle main( i32 argc, $($(char8)) argv ) : i32
+	// For Windows use "wmain" - with UTF-16 args.
+	fn nomangle enable_if( ::ust::constexpr_string_equals( compiler::target::os, "windows" ) )
+		wmain( i32 argc, $($(char16)) argv ) : i32
+	{
+		return ust::main_wrapper_impl( argc, argv, ??main_impl );
+	}
+
+	// For non-Windows use just "main" with UTF-8 args.
+	fn nomangle enable_if( !::ust::constexpr_string_equals( compiler::target::os, "windows" ) )
+		main( i32 argc, $($(char8)) argv ) : i32
 	{
 		return ust::main_wrapper_impl( argc, argv, ??main_impl );
 	}
@@ -17,7 +27,12 @@ namespace ust
 
 type main_func= fn( array_view_imut</string_view8/> args ) : i32;
 
-// External implementation function. Do not use directly!
-fn main_wrapper_impl( i32 argc, $($(char8)) argv, main_func func ) : i32;
+// External implementation functions. Do not use directly!
+
+fn enable_if( constexpr_string_equals( compiler::target::os, "windows" ) )
+	main_wrapper_impl( i32 argc, $($(char16)) argv, main_func func ) : i32;
+
+fn enable_if( !constexpr_string_equals( compiler::target::os, "windows" ) )
+	main_wrapper_impl( i32 argc, $($(char8)) argv, main_func func ) : i32;
 
 } // namespace ust

@@ -1474,10 +1474,11 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"utf.u",
 	];
 
-	var [ ust::filesystem_path_view, 7 ] sources_windows
+	var [ ust::filesystem_path_view, 8 ] sources_windows
 	[
 		"windows/environment.u",
 		"windows/filesystem.u",
+		"windows/main_wrapper.u",
 		"windows/path_utils.u",
 		"windows/rwlock_impl.u",
 		"windows/stdout.u",
