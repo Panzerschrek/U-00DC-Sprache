@@ -32,6 +32,7 @@ if you want to learn more, read its sources yourself.
 * Various helpers (helpers.u).
 * Iterator class template (iterator.u).
   Supports transformations, filtering and other operations over iterators.
+* A helper wrapper macro for executable entry function (main_wrapper.u).
 * Math functions (math.u).
 * Memory helpers, mostly unsafe (memory.u).
 * Minimum/maximum functions (minmax.u).

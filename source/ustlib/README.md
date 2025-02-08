@@ -38,6 +38,7 @@ Other functionality:
 * Hashing functions (hash.u)
 * Various helpers (helpers.u)
 * Iterator class template (iterator.u)
+* A helper wrapper macro for executable entry function (main_wrapper.u)
 * Math functions (math.u)
 * Memory helpers (memory.u)
 * Minimum/maximum functions (minmax.u)
