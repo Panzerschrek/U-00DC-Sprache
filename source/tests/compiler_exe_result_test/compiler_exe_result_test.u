@@ -1,11 +1,12 @@
 import "../../ustlib/imports/math.u"
+import "../../ustlib/imports/main_wrapper.u"
 import "../../ustlib/imports/stdout.u"
 import "../../ustlib/imports/string_conversions.u"
 
 // This executable should properly link against C standard library (with allocation and stdout functionality).
 // Also linking against libm with math functions should work.
 
-fn nomangle main() : i32
+pretty_main
 {
 	var ust::string8 msg= "Compiler exe result test: " + ust::to_string8( compiler::generation ) + "\n";
 	ust::stdout_print( msg );
