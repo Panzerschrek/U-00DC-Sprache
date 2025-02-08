@@ -1,8 +1,9 @@
 // This example demonstraits  usage of unsafe code, raw pointers, unsafe cast operators.
 
 import "/assert.u"
+import "/main_wrapper.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	var [ i32, 4 ] mut arr[ 11, 22, 33, 44 ];
 	var $(i32) mut ptr= $<( arr[0] ); // Convert a reference to first array element into a pointer.

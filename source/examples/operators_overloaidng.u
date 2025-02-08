@@ -1,8 +1,9 @@
 // This example demonstraits operators overloading.
 
 import "/assert.u"
+import "/main_wrapper.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	var Complex c0( 3.0f, 5.0f ), c1( -2.0f, 3.5f );
 	auto mut c2= c0 + c1;

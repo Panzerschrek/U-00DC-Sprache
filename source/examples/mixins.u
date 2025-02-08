@@ -1,9 +1,10 @@
 // This example demonstraits usage of mixins.
 
 import "/assert.u"
+import "/main_wrapper.u"
 import "/mixin_utils.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	// Call functions, generated via a global mixin.
 	assert( Ret0() == 0 );

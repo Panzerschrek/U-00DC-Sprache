@@ -1,9 +1,10 @@
 // This example demonstraits usage of function pinters.
 
 import "/assert.u"
+import "/main_wrapper.u"
 import "/stdout.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	// Create a couple of function pointer variables.
 	var FnIntTransform foo_ptr( Foo ), bar_ptr( Bar );

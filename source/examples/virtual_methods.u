@@ -1,9 +1,10 @@
 // This example demonstraits basic runtime polymorphism via virtual methods.
 
 import "/assert.u"
+import "/main_wrapper.u"
 import "/stdout.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	var Implementation0 impl0;
 	var Implementation1 mut impl1;

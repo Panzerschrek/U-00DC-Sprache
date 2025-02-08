@@ -1,10 +1,11 @@
 // This example demonstraits basic structs and methods usage, basic initialization.
 
 import "/assert.u"
+import "/main_wrapper.u"
 import "/stdout.u"
 import "/string.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	// {} initializer may be used for structs.
 	var Vec2 mut v{ .x= 4.5f, .y= -0.25f };

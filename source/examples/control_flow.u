@@ -1,9 +1,10 @@
 // This example demonstraits basic control flow constructions - loops and conditions.
 
+import "/main_wrapper.u"
 import "/stdout.u"
 import "/string_conversions.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	SimpleLoop();
 	WhileLoop( 17u );

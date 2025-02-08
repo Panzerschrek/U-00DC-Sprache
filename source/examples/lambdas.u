@@ -1,9 +1,10 @@
 // This example demonstraits usage of lambdas.
 
 import "/assert.u"
+import "/main_wrapper.u"
 import "/stdout.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	// Basic non-capture lambda.
 	{

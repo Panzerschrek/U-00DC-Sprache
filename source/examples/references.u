@@ -1,8 +1,9 @@
 // This example demonstraits usage of references.
 
 import "/assert.u"
+import "/main_wrapper.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	var i32 x= 6543;
 	// A reference is defined with "&" modifier.
