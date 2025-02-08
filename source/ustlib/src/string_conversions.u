@@ -222,13 +222,24 @@ fn to_string( u16 x ) : string_base</C/>
 template</type C/>
 fn to_string( i32 x ) : string_base</C/>
 {
-	return to_string</C/>( i64(x) );
+	if( x >= 0 )
+	{
+		return to_string_impl</C/>( u32( x) );
+	}
+	else
+	{
+		// TODO - optimize, do not concatenate strings.
+		var string_base</C/> mut result;
+		result.push_back( C('-') );
+		result += to_string_impl</C/>( u32(-x) );
+		return result;
+	}
 }
 
 template</type C/>
 fn to_string( u32 x ) : string_base</C/>
 {
-	return to_string</C/>( u64(x) );
+	return to_string_impl</C/>(x);
 }
 
 template</type C/>
@@ -257,6 +268,40 @@ fn to_string( u64 x ) : string_base</C/>
 // Main implementation of stringification function.
 // TODO - optimize this.
 
+// 32-bit version.
+template</type C/>
+fn to_string_impl( u32 x ) : string_base</C/>
+{
+	auto constexpr zero_char= C('0');
+
+	var string_base</C/> mut result;
+
+	if( x == 0u )
+	{
+		result.push_back(zero_char);
+	}
+	else
+	{
+		var u32 mut div= 1000000000u;
+		while( div > x )
+		{
+			div/= 10u;
+		}
+
+		var u32 mut rem= x;
+		while( div > 0u )
+		{
+			auto digit= rem / div;
+			result.push_back( C( digit + u32(zero_char) ) );
+			rem-= digit * div;
+			div/= 10u;
+		}
+	}
+
+	return result;
+}
+
+// 64-bit version.
 template</type C/>
 fn to_string_impl( u64 x ) : string_base</C/>
 {
