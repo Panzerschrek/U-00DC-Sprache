@@ -1,0 +1,292 @@
+import "../imports/string_conversions.u"
+
+namespace ust
+{
+
+fn to_string8 ( i8 x ) : string8
+{
+	return to_string</char8 />(x);
+}
+
+fn to_string8 ( u8 x ) : string8
+{
+	return to_string</char8 />(x);
+}
+
+fn to_string8 ( i16 x ) : string8
+{
+	return to_string</char8 />(x);
+}
+
+fn to_string8 ( u16 x ) : string8
+{
+	return to_string</char8 />(x);
+}
+
+fn to_string8 ( i32 x ) : string8
+{
+	return to_string</char8 />(x);
+}
+
+fn to_string8 ( u32 x ) : string8
+{
+	return to_string</char8 />(x);
+}
+
+fn to_string8 ( i64 x ) : string8
+{
+	return to_string</char8 />(x);
+}
+
+fn to_string8 ( u64 x ) : string8
+{
+	return to_string</char8 />(x);
+}
+
+fn to_string8 ( ssize_type x ) : string8
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+	{
+		return to_string8 ( i32(x) );
+	}
+	else
+	{
+		return to_string8 ( i64(x) );
+	}
+}
+
+fn to_string8 ( size_type x ) : string8
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return to_string8 ( u32(x) );
+	}
+	else
+	{
+		return to_string8 ( u64(x) );
+	}
+}
+
+fn to_string16( i8 x ) : string16
+{
+	return to_string</char16/>(x);
+}
+
+fn to_string16( u8 x ) : string16
+{
+	return to_string</char16/>(x);
+}
+
+fn to_string16( i16 x ) : string16
+{
+	return to_string</char16/>(x);
+}
+
+fn to_string16( u16 x ) : string16
+{
+	return to_string</char16/>(x);
+}
+
+fn to_string16( i32 x ) : string16
+{
+	return to_string</char16/>(x);
+}
+
+fn to_string16( u32 x ) : string16
+{
+	return to_string</char16/>(x);
+}
+
+fn to_string16( i64 x ) : string16
+{
+	return to_string</char16/>(x);
+}
+
+fn to_string16( u64 x ) : string16
+{
+	return to_string</char16/>(x);
+}
+
+fn to_string16( ssize_type x ) : string16
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+	{
+		return to_string16( i32(x) );
+	}
+	else
+	{
+		return to_string16( i64(x) );
+	}
+}
+
+fn to_string16( size_type x ) : string16
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return to_string16( u32(x) );
+	}
+	else
+	{
+		return to_string16( u64(x) );
+	}
+}
+
+fn to_string32( i8 x ) : string32
+{
+	return to_string</char32/>(x);
+}
+
+fn to_string32( u8 x ) : string32
+{
+	return to_string</char32/>(x);
+}
+
+fn to_string32( i16 x ) : string32
+{
+	return to_string</char32/>(x);
+}
+
+fn to_string32( u16 x ) : string32
+{
+	return to_string</char32/>(x);
+}
+
+fn to_string32( i32 x ) : string32
+{
+	return to_string</char32/>(x);
+}
+
+fn to_string32( u32 x ) : string32
+{
+	return to_string</char32/>(x);
+}
+
+fn to_string32( i64 x ) : string32
+{
+	return to_string</char32/>(x);
+}
+
+fn to_string32( u64 x ) : string32
+{
+	return to_string</char32/>(x);
+}
+
+fn to_string32( ssize_type x ) : string32
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+	{
+		return to_string32( i32(x) );
+	}
+	else
+	{
+		return to_string32( i64(x) );
+	}
+}
+
+fn to_string32( size_type x ) : string32
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return to_string32( u32(x) );
+	}
+	else
+	{
+		return to_string32( u64(x) );
+	}
+}
+
+template</type C/>
+fn to_string( i8 x ) :string_base</C/>
+{
+	return to_string</C/>( i64(x) );
+}
+
+template</type C/>
+fn to_string( u8 x ) : string_base</C/>
+{
+	return to_string</C/>( u64(x) );
+}
+
+template</type C/>
+fn to_string( i16 x ) : string_base</C/>
+{
+	return to_string</C/>( i64(x) );
+}
+
+template</type C/>
+fn to_string( u16 x ) : string_base</C/>
+{
+	return to_string</C/>( u64(x) );
+}
+
+template</type C/>
+fn to_string( i32 x ) : string_base</C/>
+{
+	return to_string</C/>( i64(x) );
+}
+
+template</type C/>
+fn to_string( u32 x ) : string_base</C/>
+{
+	return to_string</C/>( u64(x) );
+}
+
+template</type C/>
+fn to_string( i64 x ) : string_base</C/>
+{
+	if( x >= 0i64 )
+	{
+		return to_string_impl</C/>( u64( x) );
+	}
+	else
+	{
+		// TODO - optimize, do not concatenate strings.
+		var string_base</C/> mut result;
+		result.push_back( C('-') );
+		result += to_string_impl</C/>( u64(-x) );
+		return result;
+	}
+}
+
+template</type C/>
+fn to_string( u64 x ) : string_base</C/>
+{
+	return to_string_impl</C/>(x);
+}
+
+// Main implementation of stringification function.
+// TODO - optimize this.
+
+template</type C/>
+fn to_string_impl( u64 x ) : string_base</C/>
+{
+	auto constexpr zero_char= C('0');
+
+	var string_base</C/> mut result;
+
+	if( x == 0u64 )
+	{
+		result.push_back(zero_char);
+	}
+	else
+	{
+		var u64 mut div= 10000000000000000000u64;
+		while( div > x )
+		{
+			div/= 10u64;
+		}
+
+		var u64 mut rem= x;
+		while( div > 0u64 )
+		{
+			auto digit= rem / div;
+			result.push_back( C( digit + u64(zero_char) ) );
+			rem-= digit * div;
+			div/= 10u64;
+		}
+	}
+
+	return result;
+}
+
+} // namespace ust
