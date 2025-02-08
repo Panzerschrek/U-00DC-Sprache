@@ -222,59 +222,56 @@ fn to_string( u16 x ) : string_base</C/>
 template</type C/>
 fn to_string( i32 x ) : string_base</C/>
 {
+	var string_base</C/> mut result;
 	if( x >= 0 )
 	{
-		return to_string_impl</C/>( u32( x) );
+		to_string_impl</C/>( u32( x), result );
 	}
 	else
 	{
-		// TODO - optimize, do not concatenate strings.
-		var string_base</C/> mut result;
 		result.push_back( C('-') );
-		result += to_string_impl</C/>( u32(-x) );
-		return result;
+		to_string_impl</C/>( u32(-x), result );
 	}
+	return result;
 }
 
 template</type C/>
 fn to_string( u32 x ) : string_base</C/>
 {
-	return to_string_impl</C/>(x);
+	var string_base</C/> mut result;
+	to_string_impl</C/>( x, result );
+	return result;
 }
 
 template</type C/>
 fn to_string( i64 x ) : string_base</C/>
 {
+	var string_base</C/> mut result;
 	if( x >= 0i64 )
 	{
-		return to_string_impl</C/>( u64( x) );
+		to_string_impl</C/>( u64( x), result );
 	}
 	else
 	{
-		// TODO - optimize, do not concatenate strings.
-		var string_base</C/> mut result;
 		result.push_back( C('-') );
-		result += to_string_impl</C/>( u64(-x) );
-		return result;
+		to_string_impl</C/>( u64(-x), result );
 	}
+	return result;
 }
 
 template</type C/>
 fn to_string( u64 x ) : string_base</C/>
 {
-	return to_string_impl</C/>(x);
+	var string_base</C/> mut result;
+	to_string_impl</C/>( x, result );
+	return result;
 }
-
-// Main implementation of stringification function.
-// TODO - optimize this.
 
 // 32-bit version.
 template</type C/>
-fn to_string_impl( u32 x ) : string_base</C/>
+fn to_string_impl( u32 x, string_base</C/>& mut result )
 {
 	auto constexpr zero_char= C('0');
-
-	var string_base</C/> mut result;
 
 	if( x == 0u )
 	{
@@ -297,17 +294,13 @@ fn to_string_impl( u32 x ) : string_base</C/>
 			div/= 10u;
 		}
 	}
-
-	return result;
 }
 
 // 64-bit version.
 template</type C/>
-fn to_string_impl( u64 x ) : string_base</C/>
+fn to_string_impl( u64 x, string_base</C/>& mut result )
 {
 	auto constexpr zero_char= C('0');
-
-	var string_base</C/> mut result;
 
 	if( x == 0u64 )
 	{
@@ -330,8 +323,6 @@ fn to_string_impl( u64 x ) : string_base</C/>
 			div/= 10u64;
 		}
 	}
-
-	return result;
 }
 
 } // namespace ust
