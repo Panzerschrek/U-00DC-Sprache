@@ -39,8 +39,6 @@ General:
 *) Investigate possibility to use "return" inside one of branches of ternary operator (?:)
 *) Allow "nodiscard" flag for async functions to affect result of a call via "await"
 *) Consider making "nodiscard" flag presence configurable - based on a constant expression
-*) Consider to use entry point other than C-like "main" - with "argc" and "argv" converted into something like
-	"ust::array_view_imit</ust::string_view8/>"
 
 References:
 *) Support second order inner references for coroutine types
