@@ -1,0 +1,40 @@
+import "scoped_array.u"
+import "string.u"
+
+?macro <? pretty_main:namespace ?b:block ?>
+->
+<?
+	fn nomangle main( i32 argc, $($(char8)) argv ) : i32
+	{
+		return ust::main_wrapper_impl( argc, argv, ??main_impl );
+	}
+
+	fn ??main_impl( ::ust::array_view_imut</::ust::string_view8/> args ) : i32
+	?b
+?>
+
+namespace ust
+{
+
+type main_func= fn( array_view_imut</string_view8/> args ) : i32;
+
+fn main_wrapper_impl( i32 argc, $($(char8)) argv, main_func func ) : i32
+{
+	scoped_array string_view8 mut args_array[ size_type(argc) ];
+	for( auto mut i= 0s; i < args_array.size(); ++i )
+	{
+		unsafe
+		{
+			var $(char8) arg_ptr= $>( argv + i );
+			var size_type mut arg_len= 0s;
+			while( $>( arg_ptr + arg_len ) != '\0' )
+			{
+				++arg_len;
+			}
+			args_array[i]= string_view8( arg_ptr, arg_len );
+		}
+	}
+	return func( args_array );
+}
+
+} // namespace ust
