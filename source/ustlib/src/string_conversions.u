@@ -279,19 +279,44 @@ fn to_string_impl( u32 x, string_base</C/>& mut result )
 	}
 	else
 	{
-		var u32 mut div= 1000000000u;
-		while( div > x )
+		// Count number of digits.
+		var u32 mut num_digits= 0u;
+		for( auto mut ten_power= 1u; ; )
 		{
-			div/= 10u;
+			if( x < ten_power )
+			{
+				break;
+			}
+			++num_digits;
+			if( ten_power == 1000000000u )
+			{
+				break;
+			}
+			ten_power *= 10u;
 		}
 
-		var u32 mut rem= x;
-		while( div > 0u )
+		unsafe // Because of uninitialized storage.
 		{
-			auto digit= rem / div;
-			result.push_back( C( digit + u32(zero_char) ) );
-			rem-= digit * div;
-			div/= 10u;
+			// Fill digits from minor to major.
+			var [ C, 10 ] mut digits= uninitialized;
+
+			var u32 mut rem= x;
+			var u32 mut target_digit= num_digits - 1u;
+			loop
+			{
+				// use only single division by 10 on each iteration, which should be fast.
+				var u32 digit= rem % 10u;
+				rem /= 10u;
+				digits[ target_digit ]= C( digit + u32(zero_char) );
+				if( target_digit == 0u )
+				{
+					break;
+				}
+				--target_digit;
+			}
+
+			// Push the whole array at one time, instead of using "push_back" on each iteration, which should be faster.
+			result+= random_access_range_imut</C/>( digits ).subrange_end( size_type(num_digits) );
 		}
 	}
 }
@@ -308,20 +333,46 @@ fn to_string_impl( u64 x, string_base</C/>& mut result )
 	}
 	else
 	{
-		var u64 mut div= 10000000000000000000u64;
-		while( div > x )
+		// Count number of digits.
+		var u32 mut num_digits= 0u;
+		for( auto mut ten_power= 1u64; ; )
 		{
-			div/= 10u64;
+			if( x < ten_power )
+			{
+				break;
+			}
+			++num_digits;
+			if( ten_power == 10000000000000000000u64 )
+			{
+				break;
+			}
+			ten_power *= 10u64;
 		}
 
-		var u64 mut rem= x;
-		while( div > 0u64 )
+		unsafe // Because of uninitialized storage.
 		{
-			auto digit= rem / div;
-			result.push_back( C( digit + u64(zero_char) ) );
-			rem-= digit * div;
-			div/= 10u64;
+			// Fill digits from minor to major.
+			var [ C, 20 ] mut digits= uninitialized;
+
+			var u64 mut rem= x;
+			var u32 mut target_digit= num_digits - 1u;
+			loop
+			{
+				// use only single division by 10 on each iteration, which should be fast.
+				var u64 digit= rem % 10u64;
+				rem /= 10u64;
+				digits[ target_digit ]= C( digit + u64(zero_char) );
+				if( target_digit == 0u )
+				{
+					break;
+				}
+				--target_digit;
+			}
+
+			// Push the whole array at one time, instead of using "push_back" on each iteration, which should be faster.
+			result+= random_access_range_imut</C/>( digits ).subrange_end( size_type(num_digits) );
 		}
+
 	}
 }
 
