@@ -5,7 +5,7 @@ import "wide_string.uh"
 namespace ust
 {
 
-fn main_wrapper_impl( i32 argc, $($(char16)) argv, pretty_main_func_type func ) : i32
+fn main_wrapper_impl( i32 argc, $($(char16)) argv, pretty_main_func_type func ) unsafe : i32
 {
 	// Store here UTF-8 strings converted from UTF-16.
 	scoped_array string8 mut args_storage_array[ size_type(argc) ];
