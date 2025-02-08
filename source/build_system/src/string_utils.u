@@ -17,15 +17,4 @@ fn NullTerminatedStringToStringView( $(char8) ptr ) unsafe : ust::string_view8
 	}
 }
 
-fn MainArgsToStringView( i32 argc, $($(char8)) argv ) unsafe : ust::vector</ust::string_view8/>
-{
-	var ust::vector</ust::string_view8/> mut res;
-	for( auto mut i= 0; i < argc; ++i )
-	{
-		res.push_back( unsafe( NullTerminatedStringToStringView( $>( argv + i ) ) ) );
-	}
-
-	return res;
-}
-
 } // namespace BK
