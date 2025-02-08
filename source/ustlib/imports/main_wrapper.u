@@ -31,14 +31,14 @@ import "type_traits.u"
 	fn nomangle enable_if( ::ust::constexpr_string_equals( compiler::target::os, "windows" ) )
 		wmain( i32 argc, $($(char16)) argv ) : i32
 	{
-		return ust::main_wrapper_impl( argc, argv, ??main_impl );
+		return ::ust::main_wrapper_impl( argc, argv, ??main_impl );
 	}
 
 	// For non-Windows use just "main" with UTF-8 args.
 	fn nomangle enable_if( !::ust::constexpr_string_equals( compiler::target::os, "windows" ) )
 		main( i32 argc, $($(char8)) argv ) : i32
 	{
-		return ust::main_wrapper_impl( argc, argv, ??main_impl );
+		return ::ust::main_wrapper_impl( argc, argv, ??main_impl );
 	}
 
 	// Define a function with name - macro unique identifier, which uses provided main body block.
