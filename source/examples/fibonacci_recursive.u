@@ -1,9 +1,10 @@
 // This example demonstrates usage of variables, "while" loop, basic function usage (including recurisve).
 
+import "/main_wrapper.u"
 import "/stdout.u"
 import "/string_conversions.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	auto mut i= 0u;
 	while( i < 32u )

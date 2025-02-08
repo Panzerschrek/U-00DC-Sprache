@@ -1,8 +1,9 @@
 // This example demonstraits usage of type templates.
 
 import "/assert.u"
+import "/main_wrapper.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	// Use <//> in order to instantiate a type template with the given arguments.
 

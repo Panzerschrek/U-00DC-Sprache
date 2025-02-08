@@ -1,10 +1,11 @@
 // This example demonstraits basic usage of async functions.
 
 import "/assert.u"
+import "/main_wrapper.u"
 import "/stdout.u"
 import "/string_conversions.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	// Create an async function object.
 	auto mut f= Fun0(11);

@@ -1,9 +1,10 @@
 // This example demonstrates basic usage of generators.
 
+import "/main_wrapper.u"
 import "/stdout.u"
 import "/string_conversions.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	// Create generator object via call to generator function.
 	auto mut gen= FibonacciGen();

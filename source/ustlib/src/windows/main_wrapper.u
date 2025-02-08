@@ -1,0 +1,46 @@
+import "../../imports/main_wrapper.u"
+import "../../imports/scoped_array.u"
+import "wide_string.uh"
+
+namespace ust
+{
+
+fn main_wrapper_impl( i32 argc, $($(char16)) argv, pretty_main_func_type func ) unsafe : i32
+{
+	// Store here UTF-8 strings converted from UTF-16.
+	scoped_array string8 mut args_storage_array[ size_type(argc) ];
+
+	for( auto mut i= 0s; i < args_storage_array.size(); ++i )
+	{
+		unsafe
+		{
+			var $(char16) arg_ptr= $>( argv + i );
+			var size_type mut arg_len= 0s;
+			while( $>( arg_ptr + arg_len ) != '\0'c16 )
+			{
+				++arg_len;
+			}
+			args_storage_array[i]= wide_string_to_utf8( string_view16( arg_ptr, arg_len ) );
+		}
+	}
+
+	// Store here string views to strings in the array declared above.
+	scoped_array string_view8 mut args_array[ size_type(argc) ];
+
+	var array_view_imut</string8/> args_storage_array_ref= args_storage_array;
+
+	// Hack to prevent "ReferencePollutionOfOuterLoopVariable" error.
+	if( false )
+	{
+		args_array[0s]= args_storage_array_ref[0s];
+	}
+
+	for( auto mut i= 0s; i < args_array.size(); ++i )
+	{
+		args_array[i]= args_storage_array_ref[i];
+	}
+
+	return func( args_array );
+}
+
+} // namespace ust

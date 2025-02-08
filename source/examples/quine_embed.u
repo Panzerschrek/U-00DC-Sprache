@@ -1,9 +1,10 @@
 // This is a quine, but with cheating.
 // It uses a derective to embed contents of its source file.
 
+import "/main_wrapper.u"
 import "/stdout.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	ust::stdout_print( embed</char8/>( "quine_embed.u" ) ); // Embed code of this file and print it.
 	return 0;

@@ -1,3 +1,4 @@
+import "/main_wrapper.u"
 import "/path_utils.u"
 import "/sort.u"
 import "/string_conversions.u"
@@ -7,7 +8,6 @@ import "abort_signal_handler.uh"
 import "build_graph_serialization.uh"
 import "build_system_paths.uh"
 import "configuration_options.uh"
-import "entry.uh"
 import "filesystem.uh"
 import "include_directories.uh"
 import "init_command.uh"
@@ -18,9 +18,13 @@ import "package_transformation.uh"
 import "process.uh"
 import "proc.uh"
 import "shared_library.uh"
-import "string_utils.uh"
 import "target_triple.uh"
 import "version_unification.uh"
+
+pretty_main
+{
+	return BK::Main( args.subrange_start( 1s ) );
+}
 
 namespace BK
 {
@@ -1474,10 +1478,11 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"utf.u",
 	];
 
-	var [ ust::filesystem_path_view, 7 ] sources_windows
+	var [ ust::filesystem_path_view, 8 ] sources_windows
 	[
 		"windows/environment.u",
 		"windows/filesystem.u",
+		"windows/main_wrapper.u",
 		"windows/path_utils.u",
 		"windows/rwlock_impl.u",
 		"windows/stdout.u",
@@ -1485,10 +1490,11 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"windows/thread_impl.u",
 	];
 
-	var [ ust::filesystem_path_view, 7 ] sources_unix
+	var [ ust::filesystem_path_view, 8 ] sources_unix
 	[
 		"unix/environment.u",
 		"unix/filesystem.u",
+		"unix/main_wrapper.u",
 		"unix/path_utils.u",
 		"unix/rwlock_impl.u",
 		"unix/stdout.u",

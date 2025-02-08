@@ -1,0 +1,29 @@
+import "../../imports/main_wrapper.u"
+import "../../imports/scoped_array.u"
+
+namespace ust
+{
+
+fn main_wrapper_impl( i32 argc, $($(char8)) argv, pretty_main_func_type func ) unsafe : i32
+{
+	// Create an array of string_view8 objects.
+	// For each null-terminated arg calculate actual size.
+
+	scoped_array string_view8 mut args_array[ size_type(argc) ];
+	for( auto mut i= 0s; i < args_array.size(); ++i )
+	{
+		unsafe
+		{
+			var $(char8) arg_ptr= $>( argv + i );
+			var size_type mut arg_len= 0s;
+			while( $>( arg_ptr + arg_len ) != '\0' )
+			{
+				++arg_len;
+			}
+			args_array[i]= string_view8( arg_ptr, arg_len );
+		}
+	}
+	return func( args_array );
+}
+
+} // namespace ust

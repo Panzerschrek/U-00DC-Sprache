@@ -1,9 +1,10 @@
 // This example demonstraits usage of destructors.
 
+import "/main_wrapper.u"
 import "/stdout.u"
 import "/string_conversions.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	{
 		ust::stdout_print( "Create s\n" );

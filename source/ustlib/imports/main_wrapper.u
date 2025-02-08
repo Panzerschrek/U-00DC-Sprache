@@ -1,0 +1,62 @@
+import "string.u"
+import "type_traits.u"
+
+// Use this macro to define executable entry point (main function) with command-line arguments provided in following form:
+//    ust::array_view_imut</ust::string_view8/> args
+//
+// This macro defines a native main function ( "wmain" on Windows, "main" on other systems ) and translates C-style
+// "argc" and "argv" command-line arguments into a safe form of array view of string views.
+// In case of "wmain" UTF-16 to UTF-8 conversion is also performed.
+//
+// Usage example:
+//
+//    pretty_main
+//    {
+//        do_something( args );
+//        return 0;
+//    }
+//
+// This macro may be used only in the global namespace,
+// since it defines an entry function as "nomangle" and nomangle functions may be placed only in the global namespace.
+//
+// Command line is accessible via an argument named "args". For now there is no way to change this name.
+// Usually "args" will contain at least one argument, with program executable path in args[0].
+//
+// Body block provided should return a value of type "i32", as "main" in C usually does.
+//
+?macro <? pretty_main:namespace ?b:block ?>
+->
+<?
+	// For Windows use "wmain" - with UTF-16 args.
+	fn nomangle enable_if( ::ust::constexpr_string_equals( compiler::target::os, "windows" ) )
+		wmain( i32 argc, $($(char16)) argv ) unsafe : i32
+	{
+		return unsafe( ::ust::main_wrapper_impl( argc, argv, ??main_impl ) );
+	}
+
+	// For non-Windows use just "main" with UTF-8 args.
+	fn nomangle enable_if( !::ust::constexpr_string_equals( compiler::target::os, "windows" ) )
+		main( i32 argc, $($(char8)) argv ) unsafe : i32
+	{
+		return unsafe( ::ust::main_wrapper_impl( argc, argv, ??main_impl ) );
+	}
+
+	// Define a function with name - macro unique identifier, which uses provided main body block.
+	fn ??main_impl( ::ust::array_view_imut</::ust::string_view8/> args ) : i32
+	?b
+?>
+
+namespace ust
+{
+
+type pretty_main_func_type= fn( array_view_imut</string_view8/> args ) : i32;
+
+// External implementation functions. Do not use directly!
+
+fn enable_if( constexpr_string_equals( compiler::target::os, "windows" ) )
+	main_wrapper_impl( i32 argc, $($(char16)) argv, pretty_main_func_type func ) unsafe : i32;
+
+fn enable_if( !constexpr_string_equals( compiler::target::os, "windows" ) )
+	main_wrapper_impl( i32 argc, $($(char8)) argv, pretty_main_func_type func ) unsafe : i32;
+
+} // namespace ust

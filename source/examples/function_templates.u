@@ -1,8 +1,9 @@
 // This example demonstraits usage of template functions.
 
 import "/assert.u"
+import "/main_wrapper.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	// A template function may be called as regular function, as soon as it's possible to deduce template arguments from the given function arguments.
 	assert( DoubleIt( 3.5f ) == 7.0f );

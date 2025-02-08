@@ -1,8 +1,9 @@
 // This example demonstraits compile-time calculations via "constexpr" and usage of global constants.
 
+import "/main_wrapper.u"
 import "/stdout.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	ust::stdout_print( "If this file compiles, all constexpr code below is ok.\n" );
 	return 0;

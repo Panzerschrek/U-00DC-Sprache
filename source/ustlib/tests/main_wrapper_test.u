@@ -1,0 +1,18 @@
+//##success_test
+import "../imports/main_wrapper.u"
+import "../imports/stdout.u"
+import "../imports/string_conversions.u"
+
+pretty_main
+{
+	ust::stdout_print( ust::concat( "Has total ", ust::to_string8( args.size() ), " command-line args:", "\n" ) );
+
+	foreach( &arg : args )
+	{
+		ust::stdout_print( arg );
+		ust::stdout_print( "\n" );
+	}
+	ust::stdout_print( "\n" );
+
+	return 0;
+}

@@ -1,9 +1,10 @@
 // This example demonstraits usage of enums and "switch" operator for them/.
 
 import "/assert.u"
+import "/main_wrapper.u"
 import "/stdout.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	// "zero_init" for an enum variable initializes it with the first value.
 	var TrafficLight mut light= zero_init;

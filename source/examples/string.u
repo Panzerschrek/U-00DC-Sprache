@@ -1,10 +1,11 @@
 // This example demonstraits ust string library class.
 
 import "/assert.u"
+import "/main_wrapper.u"
 import "/stdout.u"
 import "/string.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	// String literals in the language are references to "constexpr" arrays of "char8" (or other char type) elements.
 	// There is NO terminating null in Ü string literals, unless it is manually specified.

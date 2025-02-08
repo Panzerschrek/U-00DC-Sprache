@@ -1,23 +1,17 @@
 import "/file_helpers.u"
+import "/main_wrapper.u"
 import "/memory.u"
 import "/stdout.u"
 
-fn nomangle main( i32 argc, $($(char8)) argv ) : i32
+pretty_main
 {
-	if( argc < 2 )
+	if( args.size() < 2s )
 	{
 		ust::stderr_print( "At least one argument required!\n" );
 		return -1;
 	}
 
-	var $(char8) arg1_ptr= unsafe( $>( argv + 1s ) );
-
-	var size_type mut len= 0s;
-	while( unsafe( $>( arg1_ptr + len ) ) != char8(0) )
-	{
-		++len;
-	}
-	auto file_name= unsafe( ust::string_view8( arg1_ptr, len ) );
+	auto file_name= args[1s];
 
 	auto& contents= "fn Bar() : i32 { return 123321; }";
 

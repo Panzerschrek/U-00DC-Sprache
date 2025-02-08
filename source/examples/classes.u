@@ -1,9 +1,10 @@
 // This example demonstraits basic classes usage.
 
 import "/assert.u"
+import "/main_wrapper.u"
 import "/stdout.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	var C c0(654);
 	assert( c0.GetX() == 654 );

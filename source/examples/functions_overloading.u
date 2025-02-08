@@ -1,9 +1,10 @@
 // This example demonstraits basic functions overloading.
 
 import "/assert.u"
+import "/main_wrapper.u"
 import "/stdout.u"
 
-fn nomangle main() : i32
+pretty_main
 {
 	var f32 float_var(0.25f);
 	var i32 int_var= 0;
