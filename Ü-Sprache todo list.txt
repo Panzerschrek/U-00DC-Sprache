@@ -61,6 +61,7 @@ Standart library:
 *) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method
 *) Support types with references inside in some containers (variant, result, unordered_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
+*) Support Unix-systems other than 64-bit Linux - 32-bit Linux, x32 ABI Linux, FreeBSD, OS X, Hurd, etc.
 *) switch-like macro for variant
 *) Associative containers - map, set, string_map
 *) More algorithms
@@ -97,6 +98,7 @@ Standart library:
 *) Support recursive types with usage of "vector" without need to use additional indirection (via "box")
 *) String/vector-like containers with limited number of elements (32-bit or 16-bit sizes)
 *) Compact vector-like container - with size/capacity stored in allocated memory block
+*) Optimize sorting - use faster algorithm for small number of elements, select median element wisely
 *) Priority heap support
 *) Binary search routines
 *) Detachable thread
