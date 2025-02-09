@@ -280,7 +280,7 @@ fn to_string_impl( u32 x, string_base</C/>& mut result )
 	else
 	{
 		// Count number of digits.
-		var u32 mut num_digits= 0u;
+		var size_type mut num_digits= 0s;
 		for( auto mut ten_power= 1u; ; )
 		{
 			if( x < ten_power )
@@ -288,35 +288,36 @@ fn to_string_impl( u32 x, string_base</C/>& mut result )
 				break;
 			}
 			++num_digits;
-			if( ten_power == 1000000000u )
+			if( num_digits == 10s )
 			{
 				break;
 			}
 			ten_power *= 10u;
 		}
 
-		unsafe // Because of uninitialized storage.
+		unsafe
 		{
-			// Fill digits from minor to major.
-			var [ C, 10 ] mut digits= uninitialized;
+			var size_type new_size= result.size() + num_digits;
 
+			// Resize with uninitialized value - in order to avoid filling storage allocated.
+			var C filler= uninitialized;
+			result.resize( new_size, filler );
+
+			// Fill digits from minor to major.
 			var u32 mut rem= x;
-			var u32 mut target_digit= num_digits - 1u;
+			var size_type mut dst_index= new_size - 1s;
 			loop
 			{
 				// use only single division by 10 on each iteration, which should be fast.
 				var u32 digit= rem % 10u;
 				rem /= 10u;
-				digits[ target_digit ]= C( digit + u32(zero_char) );
-				if( target_digit == 0u )
+				result.index_unchecked( dst_index ) = C( digit + u32(zero_char) );
+				if( rem == 0u )
 				{
 					break;
 				}
-				--target_digit;
+				--dst_index;
 			}
-
-			// Push the whole array at one time, instead of using "push_back" on each iteration, which should be faster.
-			result+= random_access_range_imut</C/>( digits ).subrange_end( size_type(num_digits) );
 		}
 	}
 }
@@ -334,7 +335,7 @@ fn to_string_impl( u64 x, string_base</C/>& mut result )
 	else
 	{
 		// Count number of digits.
-		var u32 mut num_digits= 0u;
+		var size_type mut num_digits= 0s;
 		for( auto mut ten_power= 1u64; ; )
 		{
 			if( x < ten_power )
@@ -342,37 +343,37 @@ fn to_string_impl( u64 x, string_base</C/>& mut result )
 				break;
 			}
 			++num_digits;
-			if( ten_power == 10000000000000000000u64 )
+			if( num_digits == 20s )
 			{
 				break;
 			}
 			ten_power *= 10u64;
 		}
 
-		unsafe // Because of uninitialized storage.
+		unsafe
 		{
-			// Fill digits from minor to major.
-			var [ C, 20 ] mut digits= uninitialized;
+			var size_type new_size= result.size() + num_digits;
 
+			// Resize with uninitialized value - in order to avoid filling storage allocated.
+			var C filler= uninitialized;
+			result.resize( new_size, filler );
+
+			// Fill digits from minor to major.
 			var u64 mut rem= x;
-			var u32 mut target_digit= num_digits - 1u;
+			var size_type mut dst_index= new_size - 1s;
 			loop
 			{
 				// use only single division by 10 on each iteration, which should be fast.
 				var u64 digit= rem % 10u64;
 				rem /= 10u64;
-				digits[ target_digit ]= C( digit + u64(zero_char) );
-				if( target_digit == 0u )
+				result.index_unchecked( dst_index ) = C( digit + u64(zero_char) );
+				if( rem == 0u64 )
 				{
 					break;
 				}
-				--target_digit;
+				--dst_index;
 			}
-
-			// Push the whole array at one time, instead of using "push_back" on each iteration, which should be faster.
-			result+= random_access_range_imut</C/>( digits ).subrange_end( size_type(num_digits) );
 		}
-
 	}
 }
 
