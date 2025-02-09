@@ -91,6 +91,12 @@ fn CompareStringSize( ust::string8& l, ust::string8& r ) : bool
 
 fn nomangle main() : i32
 {
+	{ // Sort empty array.
+		var [ i32, 0 ] mut arr[ ];
+		ust::sort( arr );
+		halt if( !IsSorted( arr ) );
+	}
+
 	{
 		var [ i32, 1 ] mut arr[ 45254 ];
 		ust::sort( arr );
