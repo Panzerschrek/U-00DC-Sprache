@@ -69,8 +69,6 @@ public:
 
 	// Take stored value.
 	// Box instance should be moved into this method call.
-	// This is a zero-params template function, because type checks require T completeness, which may create globals loop.
-	template<//>
 	fn nodiscard enable_if( !is_polymorph_non_final_class</T/>() && !is_abstract</T/>() ) take_value( byval mut this ) : T
 	{
 		unsafe
