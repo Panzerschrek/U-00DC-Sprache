@@ -38,16 +38,16 @@ struct static_string
 			if( n < int_type(0) )
 			{
 				this += "-";
-				this.append_decimal_number( u64( -n ) );
+				append_decimal_number( u64( -n ) );
 			}
 			else
 			{
-				this.append_decimal_number( u64( n ) );
+				append_decimal_number( u64( n ) );
 			}
 		}
 		else
 		{
-			this.append_decimal_number( u64(n) );
+			append_decimal_number( u64(n) );
 		}
 	}
 
