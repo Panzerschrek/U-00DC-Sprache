@@ -241,7 +241,7 @@ if( U_BUILD_COMPILER )
 	target_compile_definitions( Compiler${NEXT_COMPILER_GENERATION} PRIVATE "-DU_COMPILER_GENERATION=${NEXT_COMPILER_GENERATION}" )
 
 	# Install Compiler1 and Compiler2, but not other generations (3, 4, etc).
-	if( ${NEXT_COMPILER_GENERATION} GREATER_EQUAL "1" )
+	if( ${NEXT_COMPILER_GENERATION} LESS_EQUAL "2" )
 		install( TARGETS Compiler${NEXT_COMPILER_GENERATION} )
 	endif()
 
