@@ -198,8 +198,6 @@ endif()
 # Generated stuff
 #
 
-# Put keywords list into compiler1 directory, because the Build System (which is used to build it) doesn't allow to import files outside root project directory.
-# TODO - fix this, read file from the build script in runtime.
 file( READ keywords_list.txt KEYWORDS_LIST_CONTENT )
 set( KEYWORDS_LIST_REGEXP "[A-Za-z][A-Za-z0-9_]*" )
 
