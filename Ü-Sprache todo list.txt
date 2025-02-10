@@ -37,6 +37,7 @@ General:
 	Support operator <=> generation for ustlib types (if can do so).
 *) Alias for a namespace
 *) Investigate possibility to use "return" inside one of branches of ternary operator (?:)
+*) Inverstigate possibility to add "with" operator (or something similar) in expression context
 *) Allow "nodiscard" flag for async functions to affect result of a call via "await"
 *) Consider making "nodiscard" flag presence configurable - based on a constant expression
 
@@ -68,9 +69,11 @@ Standart library:
 *) More iterator class methods - like "enumerate" and others
 *) Vector drain iterator
 *) Functions for conversion of floating-point numbers into string
-*) Reverse iterators for random_access_range, unordered_map, etc.
+*) Functions for integer/floating point numbers parsing
+*) Reverse iterators for random_access_range, unordered_map, unordered_set, etc.
 *) shared_ptr - store single pointer for non-polymorph types
-*) Time library - request monotonic time, perform ime difference calculations, perform conversions from/to calendar time
+*) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
+	time, perform conversions to human-readable format
 *) Console input functions
 *) String formatting library
 *) Formatted console output functions
@@ -102,6 +105,7 @@ Standart library:
 *) Priority heap support
 *) Binary search routines
 *) Detachable thread
+*) More atomic functions - for 64-bit types, pointer types, size_type
 
 Compiler:
 *) Fix possible overflows in numeric literals
@@ -127,7 +131,6 @@ Compiler:
 *) Do not crash in some cases of code with errors
 *) Prevent execution of constexpr functions with errors
 *) Inline assembly/module level assembly support
-*) Precompiled modules
 *) More calling conventions (including platform-dependent)
 *) Generate errors about unused function templates
 *) Built-in compiler optimization hints ("assume", "likely", "unlikely", etc.)
@@ -147,9 +150,8 @@ QtCreator plugin:
 *) Language server features support
 
 Language server:
-*) Expand macros even if matching fails - in order for code completion to work while writing code using a macro
 *) Fix crashes occuring sometimes during editing (possible because of broken code)
-*) Fix possible crashes due to accessing source graph instance stored withing CodeBuilder class instance while
+*) Fix possible crashes due to accessing source graph instance stored within CodeBuilder class instance while
 	performing completion or signature help. It's wrong, since new syntax elements are constructed for completion or
 	signature help and accessing source graph based on source location from new syntax elements is incorrect.
 *) Reduce memory usage - avoid building unnecessary code, clear unused internal data structures, make mangled names shorter, etc.
@@ -161,7 +163,7 @@ Language server:
 *) SignatureHelp - filter suggested functions based on already provided arguments
 *) SignatureHelp - return ranges of arguments and active range
 *) Improve "go to definition" for templates - fix some cases where templates processing doesn't work
-*) Go to definition for non-value names - loop labels, etc.
+*) Go to definition for non-value names - loop labels, macro names, etc.
 *) Go to definition for macros
 *) Complete file names in "import"
 *) Backup completion for non-compiled documents
@@ -194,8 +196,8 @@ CPP Header converter:
 *) Fix possible global mutable variables and type id tables duplication because of private linking of a library into
 	more than one other build targets, which end up in the same result executable or shared library
 *) Add possibility to mark a library build target as "force public" and thus make it public dependency even for build
-	targets which depends on it privately. This should ensure exactly one version of this library is linked into result
-	executable or shared library.
+	targets which depend on it privately. This should ensure that exactly one version of this library is linked into
+	result executable or shared library.
 *) Prevent at least some name conflicts in imports (where multiple files exist for the given import path)
 *) Clean command - to delete build files
 *) Command line option for building only specified build targets (at least for the root package)
