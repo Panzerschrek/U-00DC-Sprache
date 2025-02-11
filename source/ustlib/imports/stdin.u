@@ -2,6 +2,7 @@ namespace ust
 {
 
 // Extract single code point from STDIN, which may lead to extraction of multiple bytes because of UTF-8.
+// Returns zero char in case if actual zero char was read or in case of end of file.
 fn stdin_read_character() : char32;
 
 } // namespace ust
