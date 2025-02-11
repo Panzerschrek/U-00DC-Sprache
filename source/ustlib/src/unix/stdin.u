@@ -3,12 +3,12 @@ import "../../imports/stdin.u"
 namespace ust
 {
 
-fn stdin_read_character() : char32
+fn stdin_read_character() : optional</char32/>
 {
 	var i32 c0= ::getchar();
 	if( c0 == g_end_of_file )
 	{
-		return '\0'c32;
+		return null_optional;
 	}
 
 	if( c0 < 0b10000000 )
@@ -34,7 +34,7 @@ fn stdin_read_character() : char32
 	var i32 c1= ::getchar();
 	if( c1 == g_end_of_file )
 	{
-		return '\0'c32;
+		return null_optional;
 	}
 
 	if( c0 < 0b11100000 )
@@ -48,7 +48,7 @@ fn stdin_read_character() : char32
 	var i32 c2= ::getchar();
 	if( c2 == g_end_of_file )
 	{
-		return '\0'c32;
+		return null_optional;
 	}
 
 	if( c0 < 0b11110000 )
@@ -63,7 +63,7 @@ fn stdin_read_character() : char32
 	var i32 c3= ::getchar();
 	if( c3 == g_end_of_file )
 	{
-		return '\0'c32;
+		return null_optional;
 	}
 
 	if( c0 < 0b11111000 )
@@ -80,7 +80,7 @@ fn stdin_read_character() : char32
 	return '\0'c32;
 }
 
-fn stdin_read_line() : string_base</char8/>
+fn stdin_read_line() : optional</string_base</char8/>/>
 {
 	var string_base</char8/> mut s;
 	loop
@@ -88,7 +88,7 @@ fn stdin_read_line() : string_base</char8/>
 		var i32 c= ::getchar();
 		if( c == g_end_of_file )
 		{
-			return "";
+			return null_optional;
 		}
 		if( c == i32('\n') )
 		{
