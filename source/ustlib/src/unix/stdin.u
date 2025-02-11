@@ -6,7 +6,7 @@ namespace ust
 fn stdin_read_character() : char32
 {
 	var i32 c0= ::getchar();
-	if( c0 == -1 ) // End of file
+	if( c0 == g_end_of_file )
 	{
 		return char32(0);
 	}
@@ -67,6 +67,27 @@ fn stdin_read_character() : char32
 	// Codes above unicode range - wtf?
 	return char32(0);
 }
+
+fn stdin_read_line() : string_base</char8/>
+{
+	var string_base</char8/> mut s;
+	loop
+	{
+		var i32 c= ::getchar();
+		if( c == g_end_of_file )
+		{
+			return "";
+		}
+		if( c == i32('\n') )
+		{
+			return s;
+		}
+		// Do not bother with UTF-8 here. Assume we get correct UTF-8 after reading the whole line byte by byte.
+		s.push_back( char8(c) );
+	}
+}
+
+var i32 g_end_of_file= -1;
 
 } // namespace ust
 
