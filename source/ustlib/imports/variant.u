@@ -352,8 +352,8 @@ fn constexpr get_tuple_type_properties() : TupleTypeProperties
 
 	for( & element : typeinfo</T/>.elements_list )
 	{
-		result.max_element_size = max( result.max_element_size, element.type.size_of );
-		result.max_element_alignment = max( result.max_element_alignment, element.type.align_of );
+		max_assign( result.max_element_size, element.type.size_of );
+		max_assign( result.max_element_alignment, element.type.align_of );
 		result.all_elements_are_copy_constructible &= element.type.is_copy_constructible;
 		result.all_elements_are_equality_comparable &= element.type.is_equality_comparable;
 	}
