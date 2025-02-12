@@ -304,6 +304,12 @@ fn CodeBuilder::BuildFunctionsSetBodies( mut this, NamesScopePtr& names_scope_pt
 	// Prepare functions before building.
 	PrepareFunctionsSet( names_scope_ptr, functions_set_ptr );
 
+	// Reset the flag in order to avoid recursion.
+	with( mut lock : functions_set_ptr.lock_mut() )
+	{
+		lock.deref().has_unbuilt_constexpr_functions= false;
+	}
+
 	// Take copy, and make manipulations only with it. Update value inside shareed pointer in one operation.
 	var FunctionsSet mut functions_set= functions_set_ptr.lock_imut().deref();
 
