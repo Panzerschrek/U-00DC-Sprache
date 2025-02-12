@@ -28,6 +28,9 @@ fn nomangle main() : i32
 	assert( ust::parse_integer_exact</u32/>( "" ).empty() ); // Empty range
 	assert( ust::parse_integer_exact</u32/>( "apple" ).empty() ); // Starts with non-digit
 	assert( ust::parse_integer_exact</u32/>( "!56" ).empty() ); // Starts with non-digit
+	assert( ust::parse_integer_exact</u32/>( "4294967296" ).empty() ); // Overflow
+	assert( ust::parse_integer_exact</u32/>( "71237800629" ).empty() ); // Overflow
+	assert( ust::parse_integer_exact</u32/>( "11237800620" ).empty() ); // Overflow
 
 	return 0;
 }

@@ -23,7 +23,7 @@ fn parse_integer( array_view_imut</char8/> range ) : optional</T/>
 template</type T/>
 fn parse_integer_exact( array_view_imut</char8/> mut range ) : optional</T/>
 {
-	auto res= parse_integer_impl</T/>( range );
+	auto res= parse_integer_impl_u32( range );
 	if( res.empty() )
 	{
 		return res;
@@ -35,8 +35,7 @@ fn parse_integer_exact( array_view_imut</char8/> mut range ) : optional</T/>
 	return res;
 }
 
-template</type T/>
-fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
+fn parse_integer_impl_u32( array_view_imut</char8/> &mut range ) : optional</u32/>
 {
 	if( range.empty() )
 	{
@@ -46,21 +45,32 @@ fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
 	var char8 first_char= range.drop_and_get_front();
 	if( first_char == '0' )
 	{
-		return T(0);
+		return u32(0);
 	}
 	if( !( first_char >= '1' && first_char <= '9' ) )
 	{
 		return null_optional;
 	}
 
-	var T mut result= T(first_char) - T('0');
+	var u32 mut result= u32(first_char) - u32('0');
 	while( !range.empty() )
 	{
 		var char8 c= range.front();
 		if( c >= '0' && c <= '9' )
 		{
-			// TODO - detect overflow.
-			result= result * T(10) + (T(c) - T('0'));
+			if( result > 429496729u )
+			{
+				// Overflow detected.
+				return null_optional;
+			}
+			var u32 mul10= result * 10u;
+			var u32 add_digit= mul10 + (u32(c) - u32('0'));
+			if( add_digit < mul10 )
+			{
+				// Overflow detected.
+				return null_optional;
+			}
+			result= add_digit;
 			range.drop_front();
 		}
 		else
