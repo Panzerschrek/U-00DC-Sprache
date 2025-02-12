@@ -26,7 +26,7 @@ template</ size_type alignment />
 struct aligned_storage</ 0s, alignment />
 {}
 
-// Unsafe, since caller must ensure that logical reference pollution doesn't actually happens with "swap".
+// Unsafe, since caller must ensure that logical reference pollution doesn't actually happen with "swap".
 // It is totally fine to call "swap" for types without references inside.
 // It's also fine to call it inside containers to swap contained values.
 // But swapping different variables with references inside isn't supported yet.

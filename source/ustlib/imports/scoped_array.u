@@ -6,7 +6,7 @@ import "reference_notation.u"
 // It creates an array-like object with dynamic size specified on construction.
 // Memory is allocated via compiler built-in operator "alloca", which may use cheap stack allocation.
 //
-// This macro is entended for declaring dynamic arrays with small size in function context.
+// This macro is intended for declaring dynamic arrays with small size in function context.
 //
 // Usage example:
 //		scoped_array i32 some_array[16s]( 0 ); // Creates array of i32 elements of size 16 and fills it with zeros.

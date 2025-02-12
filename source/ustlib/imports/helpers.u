@@ -1,7 +1,7 @@
 namespace ust
 {
 
-// Use this function to suspend "unused name" error for variables.
+// Use this function to supress "unused name" error for variables.
 template</type T/>
 fn ignore_unused(T& t)
 {
