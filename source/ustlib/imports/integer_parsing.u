@@ -9,7 +9,7 @@ template</type T/>
 fn parse_and_extract_integer( array_view_imut</char8/> &mut range ) : optional</T/>
 {
 	auto mut range_copy= range;
-	auto res= parse_integer_impl</T/>( range_copy );
+	auto res= integer_parsing_impl::parse_integer</T/>( range_copy );
 	if( !res.empty() )
 	{
 		range= range_copy;
@@ -22,7 +22,7 @@ fn parse_and_extract_integer( array_view_imut</char8/> &mut range ) : optional</
 template</type T/>
 fn parse_integer( array_view_imut</char8/> mut range ) : optional</T/>
 {
-	return parse_integer_impl</T/>( range );
+	return integer_parsing_impl::parse_integer</T/>( range );
 }
 
 // Parse the whole range as an integer.
@@ -31,7 +31,7 @@ fn parse_integer( array_view_imut</char8/> mut range ) : optional</T/>
 template</type T/>
 fn parse_integer_exact( array_view_imut</char8/> mut range ) : optional</T/>
 {
-	auto res= parse_integer_impl</T/>( range );
+	auto res= integer_parsing_impl::parse_integer</T/>( range );
 	if( res.empty() )
 	{
 		return res;
@@ -43,13 +43,18 @@ fn parse_integer_exact( array_view_imut</char8/> mut range ) : optional</T/>
 	return res;
 }
 
+namespace integer_parsing_impl
+{
+
+// Implementation functions, do not use directly!
+
 template</type T/>
-fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
+fn parse_integer( array_view_imut</char8/> &mut range ) : optional</T/>
 {
 	// Parse integers smaller than 32-bit using 32-bit parser - for simplicity.
 	static_if( same_type</T, i8/> )
 	{
-		if_var( num : parse_integer_impl_i32( range ) )
+		if_var( num : parse_integer_i32( range ) )
 		{
 			if( num < -128 || num > 127 )
 			{
@@ -61,7 +66,7 @@ fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
 	}
 	else static_if( same_type</T, u8/> )
 	{
-		if_var( num : parse_integer_impl_u32( range ) )
+		if_var( num : parse_integer_u32( range ) )
 		{
 			if( num > 255u )
 			{
@@ -73,7 +78,7 @@ fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
 	}
 	else static_if( same_type</T, i16/> )
 	{
-		if_var( num : parse_integer_impl_i32( range ) )
+		if_var( num : parse_integer_i32( range ) )
 		{
 			if( num < -32768 || num > 32767 )
 			{
@@ -85,7 +90,7 @@ fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
 	}
 	else static_if( same_type</T, u16/> )
 	{
-		if_var( num : parse_integer_impl_u32( range ) )
+		if_var( num : parse_integer_u32( range ) )
 		{
 			if( num > 65535u )
 			{
@@ -97,19 +102,19 @@ fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
 	}
 	else static_if( same_type</T, i32/> )
 	{
-		return parse_integer_impl_i32( range );
+		return parse_integer_i32( range );
 	}
 	else static_if( same_type</T, u32/> )
 	{
-		return parse_integer_impl_u32( range );
+		return parse_integer_u32( range );
 	}
 	else static_if( same_type</T, i64/> )
 	{
-		return parse_integer_impl_i64( range );
+		return parse_integer_i64( range );
 	}
 	else static_if( same_type</T, u64/> )
 	{
-		return parse_integer_impl_u64( range );
+		return parse_integer_u64( range );
 	}
 	else
 	{
@@ -117,154 +122,12 @@ fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
 	}
 }
 
-fn parse_integer_impl_i32( array_view_imut</char8/> &mut range ) : optional</i32/>
-{
-	if( !range.empty() && range.front() == '-' )
-	{
-		range.drop_front();
-		if_var( res : parse_integer_impl_u32(range) )
-		{
-			if( res > 2147483648u )
-			{
-				return null_optional;
-			}
-			return i32(-res);
-		}
-	}
-	else
-	{
-		if_var( res : parse_integer_impl_u32(range) )
-		{
-			if( res > 2147483647u )
-			{
-				return null_optional;
-			}
-			return i32(res);
-		}
-	}
-	return null_optional;
-}
+fn parse_integer_i32( array_view_imut</char8/> &mut range ) : optional</i32/>;
+fn parse_integer_i64( array_view_imut</char8/> &mut range ) : optional</i64/>;
 
-fn parse_integer_impl_i64( array_view_imut</char8/> &mut range ) : optional</i64/>
-{
-	if( !range.empty() && range.front() == '-' )
-	{
-		range.drop_front();
-		if_var( res : parse_integer_impl_u64(range) )
-		{
-			if( res > 9223372036854775808u64 )
-			{
-				return null_optional;
-			}
-			return i64(-res);
-		}
-	}
-	else
-	{
-		if_var( res : parse_integer_impl_u64(range) )
-		{
-			if( res > 9223372036854775807u64 )
-			{
-				return null_optional;
-			}
-			return i64(res);
-		}
-	}
-	return null_optional;
-}
+fn parse_integer_u32( array_view_imut</char8/> &mut range ) : optional</u32/>;
+fn parse_integer_u64( array_view_imut</char8/> &mut range ) : optional</u64/>;
 
-fn parse_integer_impl_u32( array_view_imut</char8/> &mut range ) : optional</u32/>
-{
-	if( range.empty() )
-	{
-		return null_optional;
-	}
-
-	var char8 first_char= range.drop_and_get_front();
-	if( first_char == '0' )
-	{
-		return u32(0);
-	}
-	if( !( first_char >= '1' && first_char <= '9' ) )
-	{
-		return null_optional;
-	}
-
-	var u32 mut result= u32(first_char) - u32('0');
-	while( !range.empty() )
-	{
-		var char8 c= range.front();
-		if( c >= '0' && c <= '9' )
-		{
-			if( result > 429496729u )
-			{
-				// Overflow detected.
-				return null_optional;
-			}
-			var u32 mul10= result * 10u;
-			var u32 add_digit= mul10 + (u32(c) - u32('0'));
-			if( add_digit < mul10 )
-			{
-				// Overflow detected.
-				return null_optional;
-			}
-			result= add_digit;
-			range.drop_front();
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	return result;
-}
-
-fn parse_integer_impl_u64( array_view_imut</char8/> &mut range ) : optional</u64/>
-{
-	if( range.empty() )
-	{
-		return null_optional;
-	}
-
-	var char8 first_char= range.drop_and_get_front();
-	if( first_char == '0' )
-	{
-		return u64(0);
-	}
-	if( !( first_char >= '1' && first_char <= '9' ) )
-	{
-		return null_optional;
-	}
-
-	var u64 mut result= u64(first_char) - u64('0');
-	while( !range.empty() )
-	{
-		var char8 c= range.front();
-		if( c >= '0' && c <= '9' )
-		{
-			if( result > 1844674407370955161u64 )
-			{
-				// Overflow detected.
-				return null_optional;
-			}
-			var u64 mul10= result * 10u64;
-			var u64 add_digit= mul10 + (u64(c) - u64('0'));
-			if( add_digit < mul10 )
-			{
-				// Overflow detected.
-				return null_optional;
-			}
-			result= add_digit;
-			range.drop_front();
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	return result;
-}
+} // namespace integer_parsing_imp
 
 } // namespace ust
