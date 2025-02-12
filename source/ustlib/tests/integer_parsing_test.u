@@ -1,0 +1,33 @@
+//##success_test
+import "../imports/assert.u"
+import "../imports/integer_parsing.u"
+
+fn nomangle main() : i32
+{
+	assert( ust::parse_integer_exact</u32/>( "0" ) == 0u );
+	assert( ust::parse_integer_exact</u32/>( "1" ) == 1u );
+	assert( ust::parse_integer_exact</u32/>( "2" ) == 2u );
+	assert( ust::parse_integer_exact</u32/>( "4" ) == 4u );
+	assert( ust::parse_integer_exact</u32/>( "5" ) == 5u );
+	assert( ust::parse_integer_exact</u32/>( "8" ) == 8u );
+	assert( ust::parse_integer_exact</u32/>( "9" ) == 9u );
+	assert( ust::parse_integer_exact</u32/>( "10" ) == 10u );
+	assert( ust::parse_integer_exact</u32/>( "25" ) == 25u );
+	assert( ust::parse_integer_exact</u32/>( "347" ) == 347u );
+	assert( ust::parse_integer_exact</u32/>( "99999" ) == 99999u );
+	assert( ust::parse_integer_exact</u32/>( "100000" ) == 100000u );
+	assert( ust::parse_integer_exact</u32/>( "100000" ) == 100000u );
+	assert( ust::parse_integer_exact</u32/>( "2147483647" ) == 2147483647u );
+	assert( ust::parse_integer_exact</u32/>( "2147483648" ) == 2147483648u );
+	assert( ust::parse_integer_exact</u32/>( "4000023005" ) == 4000023005u );
+	assert( ust::parse_integer_exact</u32/>( "4294967295" ) == 4294967295u );
+	assert( ust::parse_integer_exact</u32/>( "00" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left
+	assert( ust::parse_integer_exact</u32/>( "03" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left
+	assert( ust::parse_integer_exact</u32/>( "5 " ).empty() ); // Chars are left
+	assert( ust::parse_integer_exact</u32/>( "375i" ).empty() ); // Chars are left
+	assert( ust::parse_integer_exact</u32/>( "" ).empty() ); // Empty range
+	assert( ust::parse_integer_exact</u32/>( "apple" ).empty() ); // Starts with non-digit
+	assert( ust::parse_integer_exact</u32/>( "!56" ).empty() ); // Starts with non-digit
+
+	return 0;
+}

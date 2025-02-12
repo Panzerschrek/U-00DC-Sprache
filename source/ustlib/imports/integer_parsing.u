@@ -1,0 +1,75 @@
+import "random_access_range.u"
+
+namespace ust
+{
+
+// Extract integer from given range, dropping characters of this integer from start.
+// Returns empty optional if failed to parse or faced an overflow.
+template</type T/>
+fn parse_and_extract_integer( array_view_imut</char8/> &mut range ) : optional</T/>
+{
+}
+
+// Parse integer at start of given range.
+// Returns empty optional if failed to parse or faced an overflow.
+template</type T/>
+fn parse_integer( array_view_imut</char8/> range ) : optional</T/>
+{
+}
+
+// Parse the whole range as an integer.
+// Returns empty optional if failed to parse or faced an overflow.
+// Alse returns empty optional if have symbols trailing.
+template</type T/>
+fn parse_integer_exact( array_view_imut</char8/> mut range ) : optional</T/>
+{
+	auto res= parse_integer_impl</T/>( range );
+	if( res.empty() )
+	{
+		return res;
+	}
+	if( !range.empty() )
+	{
+		return null_optional;
+	}
+	return res;
+}
+
+template</type T/>
+fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
+{
+	if( range.empty() )
+	{
+		return null_optional;
+	}
+
+	var char8 first_char= range.drop_and_get_front();
+	if( first_char == '0' )
+	{
+		return T(0);
+	}
+	if( !( first_char >= '1' && first_char <= '9' ) )
+	{
+		return null_optional;
+	}
+
+	var T mut result= T(first_char) - T('0');
+	while( !range.empty() )
+	{
+		var char8 c= range.front();
+		if( c >= '0' && c <= '9' )
+		{
+			// TODO - detect overflow.
+			result= result * T(10) + (T(c) - T('0'));
+			range.drop_front();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return result;
+}
+
+} // namespace ust
