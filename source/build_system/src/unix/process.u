@@ -186,7 +186,10 @@ public:
 		}
 		pid_= c_empty_descriptor; // Reset pid in order to avoid calling waitpid in destructor again.
 
-		( status == 0 ? logger.LogInfo( process_out_ ) : logger.LogError( process_out_ ) );
+		if( !process_out_.empty() )
+		{
+			( status == 0 ? logger.LogInfo( process_out_ ) : logger.LogError( process_out_ ) );
+		}
 
 		return status == 0;
 	}

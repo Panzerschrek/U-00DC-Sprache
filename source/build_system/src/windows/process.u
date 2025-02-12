@@ -441,7 +441,11 @@ private:
 			logger.LogError( ust::concat( "Process exited with code ", ust::to_string8(exit_code), "." ) );
 		}
 
-		( ok ? logger.LogInfo( process.output ) : logger.LogError( process.output ) );
+		if( !process.output.empty() )
+		{
+			( ok ? logger.LogInfo( process.output ) : logger.LogError( process.output ) );
+		}
+
 		return ok;
 	}
 
