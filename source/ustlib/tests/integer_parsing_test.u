@@ -348,5 +348,44 @@ fn nomangle main() : i32
 	assert( ust::parse_integer_exact</i64/>( "-apple" ).empty() ); // Starts with non-digit
 	assert( ust::parse_integer_exact</i64/>( "-!56" ).empty() ); // Starts with non-digit
 
+	// parse_and_extract_integer.
+	{
+		var ust::array_view_imut</char8/> mut s= "24";
+		assert( ust::parse_and_extract_integer</u32/>( s ) == 24u );
+		assert( s == "" );
+	}
+	{
+		var ust::array_view_imut</char8/> mut s= "3left";
+		assert( ust::parse_and_extract_integer</u32/>( s ) == 3u );
+		assert( s == "left" );
+	}
+	{
+		var ust::array_view_imut</char8/> mut s= "-26f";
+		assert( ust::parse_and_extract_integer</i32/>( s ) == -26 );
+		assert( s == "f" );
+	}
+	{
+		var ust::array_view_imut</char8/> mut s= "672  lol";
+		assert( ust::parse_and_extract_integer</u32/>( s ) == 672u );
+		assert( s == "  lol" );
+	}
+	{
+		var ust::array_view_imut</char8/> mut s= "78463788323---Q";
+		assert( ust::parse_and_extract_integer</i64/>( s ) == 78463788323i64 );
+		assert( s == "---Q" );
+	}
+	{
+		// Should not extract chars on error.
+		var ust::array_view_imut</char8/> mut s= "678";
+		assert( ust::parse_and_extract_integer</u8/>( s ).empty() ); // Overflow deteted.
+		assert( s == "678" );
+	}
+	{
+		// Only leading zero is extracted
+		var ust::array_view_imut</char8/> mut s= "078";
+		assert( ust::parse_and_extract_integer</u32/>( s ) == 0u );
+		assert( s == "78" );
+	}
+
 	return 0;
 }

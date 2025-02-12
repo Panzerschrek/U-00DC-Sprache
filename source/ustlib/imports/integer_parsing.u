@@ -8,6 +8,13 @@ namespace ust
 template</type T/>
 fn parse_and_extract_integer( array_view_imut</char8/> &mut range ) : optional</T/>
 {
+	auto mut range_copy= range;
+	auto res= parse_integer_impl</T/>( range_copy );
+	if( !res.empty() )
+	{
+		range= range_copy;
+	}
+	return res;
 }
 
 // Parse integer at start of given range.
