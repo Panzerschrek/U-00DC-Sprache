@@ -1,0 +1,112 @@
+import "../imports/stdin.u"
+
+namespace ust
+{
+
+// TODO - fix this code for Windows.
+// "getchar" works fine in Git Bash.
+// But it returns zero in CMD and Powershell consoles, if non-ASCII symbol is entered.
+// But redirecting file contents into stdin works fine in CMD for non-ASCII symbols.
+
+fn stdin_read_character() : optional</char32/>
+{
+	var i32 c0= ::getchar();
+	if( c0 == g_end_of_file )
+	{
+		return null_optional;
+	}
+
+	if( c0 < 0b10000000 )
+	{
+		// ASCII char.
+		return char32(c0);
+	}
+
+	// c_bit_masks[4] - menas save first 4 bits
+	var [ i32, 9 ] constexpr c_bit_masks
+	[
+		-1 + (1 << 0u),
+		-1 + (1 << 1u),
+		-1 + (1 << 2u),
+		-1 + (1 << 3u),
+		-1 + (1 << 4u),
+		-1 + (1 << 5u),
+		-1 + (1 << 6u),
+		-1 + (1 << 7u),
+		-1 + (1 << 8u),
+	];
+
+	var i32 c1= ::getchar();
+	if( c1 == g_end_of_file )
+	{
+		return null_optional;
+	}
+
+	if( c0 < 0b11100000 )
+	{
+		// Two-byte sequence.
+		return char32(
+			( (c0 & c_bit_masks[5]) << 6u ) |
+			( (c1 & c_bit_masks[6]) << 0u ) );
+	}
+
+	var i32 c2= ::getchar();
+	if( c2 == g_end_of_file )
+	{
+		return null_optional;
+	}
+
+	if( c0 < 0b11110000 )
+	{
+		// Three-byte sequence.
+		return char32(
+			( (c0 & c_bit_masks[4]) << 12u ) |
+			( (c1 & c_bit_masks[6]) <<  6u ) |
+			( (c2 & c_bit_masks[6]) <<  0u ) );
+	}
+
+	var i32 c3= ::getchar();
+	if( c3 == g_end_of_file )
+	{
+		return null_optional;
+	}
+
+	if( c0 < 0b11111000 )
+	{
+		// Four-byte sequence.
+		return char32(
+			( (c0 & c_bit_masks[3]) << 18u ) |
+			( (c1 & c_bit_masks[6]) << 12u ) |
+			( (c2 & c_bit_masks[6]) <<  6u ) |
+			( (c3 & c_bit_masks[6]) <<  0u ) );
+	}
+
+	// Codes above unicode range - wtf?
+	return '\0'c32;
+}
+
+fn stdin_read_line() : optional</string_base</char8/>/>
+{
+	var string_base</char8/> mut s;
+	loop
+	{
+		var i32 c= ::getchar();
+		if( c == g_end_of_file )
+		{
+			return null_optional;
+		}
+		if( c == i32('\n') )
+		{
+			return s;
+		}
+		// Do not bother with UTF-8 here. Assume we get correct UTF-8 after reading the whole line byte by byte.
+		s.push_back( char8(c) );
+	}
+}
+
+var i32 g_end_of_file= -1;
+
+} // namespace ust
+
+// C standard library function.
+fn nomangle getchar() : i32;

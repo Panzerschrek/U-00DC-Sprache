@@ -7,22 +7,26 @@ namespace ust
 
 fn stdout_print( array_view_imut</char8/> str )
 {
+	var FilePtr f= unsafe( import fn</ AcrtIobFuncType />( "__acrt_iob_func" )( STDOUT_FILENO ) );
 	unsafe( ::fwrite(
 		ptr_cast_to_byte8(str.data()),
 		1s,
 		str.size(),
-		import fn</ AcrtIobFuncType />( "__acrt_iob_func" )( STDOUT_FILENO ) ) );
+		f ) );
 	// TODO - halt if fwrite fails
+	unsafe( ::fflush( f ) );
 }
 
 fn stderr_print( array_view_imut</char8/> str )
 {
+	var FilePtr f= unsafe( import fn</ AcrtIobFuncType />( "__acrt_iob_func" )( STDERR_FILENO ) );
 	unsafe( ::fwrite(
 		ptr_cast_to_byte8(str.data()),
 		1s,
 		str.size(),
-		import fn</ AcrtIobFuncType />( "__acrt_iob_func" )( STDERR_FILENO ) ) );
+		f ) );
 	// TODO - halt if fwrite fails
+	unsafe( ::fflush( f ) );
 }
 
 } // namespace ust
@@ -32,6 +36,7 @@ auto constexpr STDOUT_FILENO = 1;
 auto constexpr STDERR_FILENO = 2;
 
 fn nomangle fwrite( $(byte8) data, size_type size, size_type count, FilePtr file_ptr ) : size_type;
+fn nomangle fflush( FilePtr file_ptr ) : i32;
 
 type AcrtIobFuncType= fn( i32 x ) : FilePtr;
 type FilePtr= $(byte8);
