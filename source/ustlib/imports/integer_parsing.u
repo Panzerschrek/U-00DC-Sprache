@@ -5,8 +5,8 @@ namespace ust
 
 // Extract integer from given range, dropping characters of this integer from start.
 // Returns empty optional if failed to parse or faced an overflow.
-template</type T/>
-fn parse_and_extract_integer( array_view_imut</char8/> &mut range ) : optional</T/>
+template</type T, type C/>
+fn parse_and_extract_integer( array_view_imut</C/> &mut range ) : optional</T/>
 {
 	auto mut range_copy= range;
 	auto res= integer_parsing_impl::parse_integer</T/>( range_copy );
@@ -19,17 +19,23 @@ fn parse_and_extract_integer( array_view_imut</char8/> &mut range ) : optional</
 
 // Parse integer at start of given range.
 // Returns empty optional if failed to parse or faced an overflow.
-template</type T/>
-fn parse_integer( array_view_imut</char8/> mut range ) : optional</T/>
+template</type T, type C/>
+fn parse_integer( array_view_imut</C/> mut range ) : optional</T/>
 {
 	return integer_parsing_impl::parse_integer</T/>( range );
+}
+
+template</type T, type C, size_type S/>
+fn parse_integer( [ C, S ] arr ) : optional</T/>
+{
+	return parse_integer</T/>( array_view_imut</C/>( arr ) );
 }
 
 // Parse the whole range as an integer.
 // Returns empty optional if failed to parse or faced an overflow.
 // Alse returns empty optional if have symbols trailing.
-template</type T/>
-fn parse_integer_exact( array_view_imut</char8/> mut range ) : optional</T/>
+template</type T, type C/>
+fn parse_integer_exact( array_view_imut</C/> mut range ) : optional</T/>
 {
 	auto res= integer_parsing_impl::parse_integer</T/>( range );
 	if( res.empty() )
@@ -43,13 +49,19 @@ fn parse_integer_exact( array_view_imut</char8/> mut range ) : optional</T/>
 	return res;
 }
 
+template</type T, type C, size_type S/>
+fn parse_integer_exact( [ C, S ] arr ) : optional</T/>
+{
+	return parse_integer_exact</T/>( array_view_imut</C/>( arr ) );
+}
+
 namespace integer_parsing_impl
 {
 
 // Implementation functions, do not use directly!
 
-template</type T/>
-fn parse_integer( array_view_imut</char8/> &mut range ) : optional</T/>
+template</type T, type C/>
+fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
 {
 	// Parse integers smaller than 32-bit using 32-bit parser - for simplicity.
 	static_if( same_type</T, i8/> )
@@ -124,9 +136,18 @@ fn parse_integer( array_view_imut</char8/> &mut range ) : optional</T/>
 
 fn parse_integer_i32( array_view_imut</char8/> &mut range ) : optional</i32/>;
 fn parse_integer_i64( array_view_imut</char8/> &mut range ) : optional</i64/>;
-
 fn parse_integer_u32( array_view_imut</char8/> &mut range ) : optional</u32/>;
 fn parse_integer_u64( array_view_imut</char8/> &mut range ) : optional</u64/>;
+
+fn parse_integer_i32( array_view_imut</char16/> &mut range ) : optional</i32/>;
+fn parse_integer_i64( array_view_imut</char16/> &mut range ) : optional</i64/>;
+fn parse_integer_u32( array_view_imut</char16/> &mut range ) : optional</u32/>;
+fn parse_integer_u64( array_view_imut</char16/> &mut range ) : optional</u64/>;
+
+fn parse_integer_i32( array_view_imut</char32/> &mut range ) : optional</i32/>;
+fn parse_integer_i64( array_view_imut</char32/> &mut range ) : optional</i64/>;
+fn parse_integer_u32( array_view_imut</char32/> &mut range ) : optional</u32/>;
+fn parse_integer_u64( array_view_imut</char32/> &mut range ) : optional</u64/>;
 
 } // namespace integer_parsing_imp
 

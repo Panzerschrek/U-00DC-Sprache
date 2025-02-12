@@ -396,5 +396,9 @@ fn nomangle main() : i32
 	assert( ust::parse_integer</u8/>( "678" ).empty() ); // Overflow deteted.
 	assert( ust::parse_integer</u32/>( "078" ) == 0u ); // Only leading zero is extracted
 
+	// Wide chars
+	assert( ust::parse_integer_exact</u32/>( "347"u16 ) == 347u );
+	assert( ust::parse_integer_exact</i64/>( "-77478348893"u32 ) == -77478348893i64 );
+
 	return 0;
 }
