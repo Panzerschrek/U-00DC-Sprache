@@ -1,3 +1,4 @@
+import "/integer_parsing.u"
 import "/stdout.u"
 import "options.uh"
 
@@ -119,7 +120,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 				ust::stderr_print( "Error, missing an argument after \"-j\".\n" );
 				return ust::null_optional;
 			}
-			if_var( num : ParseDecimalNumber( args[i + 1s] ) )
+			if_var( num : ust::parse_integer_exact</u32/>( args[i + 1s] ) )
 			{
 				res.number_of_jobs= num;
 			}
@@ -278,38 +279,6 @@ fn BuildConfigurationToString( BuildConfiguration c ) : ust::string_view8
 		BuildConfiguration::Debug -> { return "debug"; },
 		BuildConfiguration::Release -> { return "release"; },
 	}
-}
-
-// Returns number if can parse the whole string into it.
-fn ParseDecimalNumber( ust::string_view8 mut str ) : ust::optional</u32/>
-{
-	if( str == "0" )
-	{
-		return 0u;
-	}
-
-	if( str.empty() )
-	{
-		return ust::null_optional;
-	}
-	if( !( str.front() >= '1' && str.front() <= '9' ) )
-	{
-		// First digin shouldn't be zero.
-		return ust::null_optional;
-	}
-
-	var u32 mut res= 0u;
-	while( !str.empty() )
-	{
-		var char8 c= str.drop_and_get_front();
-		if( !( c >= '0' && c <= '9' ) )
-		{
-			return ust::null_optional;
-		}
-		res= res * 10u + (u32(c) - u32('0'));
-	}
-
-	return res;
 }
 
 } // namespace BK

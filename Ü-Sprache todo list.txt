@@ -69,7 +69,8 @@ Standart library:
 *) More iterator class methods - like "enumerate" and others
 *) Vector drain iterator
 *) Functions for conversion of floating-point numbers into string
-*) Functions for integer/floating point numbers parsing
+*) Functions for floating-point numbers parsing
+*) Support 128-bit integer types stringification/parsing
 *) Reverse iterators for random_access_range, unordered_map, unordered_set, etc.
 *) shared_ptr - store single pointer for non-polymorph types
 *) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
@@ -110,6 +111,7 @@ Standart library:
 Compiler:
 *) Fix possible overflows in numeric literals
 *) Ensure floating-point numbers parsing produces correct result
+*) Support parsing 128-bit integers
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
 *) Fix possible overflows in SrcLoc and/or try to optimize its size (use only 4 bytes)
