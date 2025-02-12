@@ -23,7 +23,7 @@ fn parse_integer( array_view_imut</char8/> range ) : optional</T/>
 template</type T/>
 fn parse_integer_exact( array_view_imut</char8/> mut range ) : optional</T/>
 {
-	auto res= parse_integer_impl_u32( range );
+	auto res= parse_integer_impl</T/>( range );
 	if( res.empty() )
 	{
 		return res;
@@ -33,6 +33,51 @@ fn parse_integer_exact( array_view_imut</char8/> mut range ) : optional</T/>
 		return null_optional;
 	}
 	return res;
+}
+
+template</type T/>
+fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
+{
+	static_if( same_type</T, i32/> )
+	{
+		return parse_integer_impl_i32( range );
+	}
+	else static_if( same_type</T, u32/> )
+	{
+		return parse_integer_impl_u32( range );
+	}
+	else
+	{
+		static_assert( false, "Unhandled integer type!" );
+	}
+}
+
+fn parse_integer_impl_i32( array_view_imut</char8/> &mut range ) : optional</i32/>
+{
+	if( !range.empty() && range.front() == '-' )
+	{
+		range.drop_front();
+		if_var( res : parse_integer_impl_u32(range) )
+		{
+			if( res > 2147483648u )
+			{
+				return null_optional;
+			}
+			return i32(-res);
+		}
+	}
+	else
+	{
+		if_var( res : parse_integer_impl_u32(range) )
+		{
+			if( res > 2147483647u )
+			{
+				return null_optional;
+			}
+			return i32(res);
+		}
+	}
+	return null_optional;
 }
 
 fn parse_integer_impl_u32( array_view_imut</char8/> &mut range ) : optional</u32/>
