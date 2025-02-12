@@ -9,7 +9,7 @@ template</type T, type C/>
 fn parse_and_extract_integer( array_view_imut</C/> &mut range ) : optional</T/>
 {
 	auto mut range_copy= range;
-	auto res= integer_parsing_impl::parse_integer</T/>( range_copy );
+	auto res= integer_parsing_impl::parse</T/>( range_copy );
 	if( !res.empty() )
 	{
 		range= range_copy;
@@ -22,7 +22,7 @@ fn parse_and_extract_integer( array_view_imut</C/> &mut range ) : optional</T/>
 template</type T, type C/>
 fn parse_integer( array_view_imut</C/> mut range ) : optional</T/>
 {
-	return integer_parsing_impl::parse_integer</T/>( range );
+	return integer_parsing_impl::parse</T/>( range );
 }
 
 template</type T, type C, size_type S/>
@@ -33,11 +33,11 @@ fn parse_integer( [ C, S ] arr ) : optional</T/>
 
 // Parse the whole range as an integer.
 // Returns empty optional if failed to parse or faced an overflow.
-// Alse returns empty optional if have symbols trailing.
+// Alse returns empty optional if has trailing symbols after parsed number.
 template</type T, type C/>
 fn parse_integer_exact( array_view_imut</C/> mut range ) : optional</T/>
 {
-	auto res= integer_parsing_impl::parse_integer</T/>( range );
+	auto res= integer_parsing_impl::parse</T/>( range );
 	if( res.empty() )
 	{
 		return res;
@@ -61,12 +61,12 @@ namespace integer_parsing_impl
 // Implementation functions, do not use directly!
 
 template</type T, type C/>
-fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
+fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 {
 	// Parse integers smaller than 32-bit using 32-bit parser - for simplicity.
 	static_if( same_type</T, i8/> )
 	{
-		if_var( num : parse_integer_i32( range ) )
+		if_var( num : parse_i32( range ) )
 		{
 			if( num < -128 || num > 127 )
 			{
@@ -78,7 +78,7 @@ fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
 	}
 	else static_if( same_type</T, u8/> )
 	{
-		if_var( num : parse_integer_u32( range ) )
+		if_var( num : parse_u32( range ) )
 		{
 			if( num > 255u )
 			{
@@ -90,7 +90,7 @@ fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
 	}
 	else static_if( same_type</T, i16/> )
 	{
-		if_var( num : parse_integer_i32( range ) )
+		if_var( num : parse_i32( range ) )
 		{
 			if( num < -32768 || num > 32767 )
 			{
@@ -102,7 +102,7 @@ fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
 	}
 	else static_if( same_type</T, u16/> )
 	{
-		if_var( num : parse_integer_u32( range ) )
+		if_var( num : parse_u32( range ) )
 		{
 			if( num > 65535u )
 			{
@@ -114,25 +114,25 @@ fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
 	}
 	else static_if( same_type</T, i32/> )
 	{
-		return parse_integer_i32( range );
+		return parse_i32( range );
 	}
 	else static_if( same_type</T, u32/> )
 	{
-		return parse_integer_u32( range );
+		return parse_u32( range );
 	}
 	else static_if( same_type</T, i64/> )
 	{
-		return parse_integer_i64( range );
+		return parse_i64( range );
 	}
 	else static_if( same_type</T, u64/> )
 	{
-		return parse_integer_u64( range );
+		return parse_u64( range );
 	}
 	else static_if( same_type</T, ssize_type/> )
 	{
 		if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
 		{
-			if_var( res : parse_integer_i32( range ) )
+			if_var( res : parse_i32( range ) )
 			{
 				return ssize_type(res);
 			}
@@ -140,7 +140,7 @@ fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
 		}
 		else
 		{
-			if_var( res : parse_integer_i64( range ) )
+			if_var( res : parse_i64( range ) )
 			{
 				return ssize_type(res);
 			}
@@ -151,7 +151,7 @@ fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
 	{
 		if( typeinfo</size_type/>.size_of == typeinfo</i32/>.size_of )
 		{
-			if_var( res : parse_integer_u32( range ) )
+			if_var( res : parse_u32( range ) )
 			{
 				return size_type(res);
 			}
@@ -159,7 +159,7 @@ fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
 		}
 		else
 		{
-			if_var( res : parse_integer_u64( range ) )
+			if_var( res : parse_u64( range ) )
 			{
 				return size_type(res);
 			}
@@ -168,25 +168,25 @@ fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
 	}
 	else
 	{
-		static_assert( false, "Unhandled integer type!" );
+		static_assert( false, "Unsupported integer type!" );
 	}
 }
 
-fn parse_integer_i32( array_view_imut</char8/> &mut range ) : optional</i32/>;
-fn parse_integer_i64( array_view_imut</char8/> &mut range ) : optional</i64/>;
-fn parse_integer_u32( array_view_imut</char8/> &mut range ) : optional</u32/>;
-fn parse_integer_u64( array_view_imut</char8/> &mut range ) : optional</u64/>;
+fn parse_i32( array_view_imut</char8/> &mut range ) : optional</i32/>;
+fn parse_i64( array_view_imut</char8/> &mut range ) : optional</i64/>;
+fn parse_u32( array_view_imut</char8/> &mut range ) : optional</u32/>;
+fn parse_u64( array_view_imut</char8/> &mut range ) : optional</u64/>;
 
-fn parse_integer_i32( array_view_imut</char16/> &mut range ) : optional</i32/>;
-fn parse_integer_i64( array_view_imut</char16/> &mut range ) : optional</i64/>;
-fn parse_integer_u32( array_view_imut</char16/> &mut range ) : optional</u32/>;
-fn parse_integer_u64( array_view_imut</char16/> &mut range ) : optional</u64/>;
+fn parse_i32( array_view_imut</char16/> &mut range ) : optional</i32/>;
+fn parse_u32( array_view_imut</char16/> &mut range ) : optional</u32/>;
+fn parse_i64( array_view_imut</char16/> &mut range ) : optional</i64/>;
+fn parse_u64( array_view_imut</char16/> &mut range ) : optional</u64/>;
 
-fn parse_integer_i32( array_view_imut</char32/> &mut range ) : optional</i32/>;
-fn parse_integer_i64( array_view_imut</char32/> &mut range ) : optional</i64/>;
-fn parse_integer_u32( array_view_imut</char32/> &mut range ) : optional</u32/>;
-fn parse_integer_u64( array_view_imut</char32/> &mut range ) : optional</u64/>;
+fn parse_i32( array_view_imut</char32/> &mut range ) : optional</i32/>;
+fn parse_i64( array_view_imut</char32/> &mut range ) : optional</i64/>;
+fn parse_u32( array_view_imut</char32/> &mut range ) : optional</u32/>;
+fn parse_u64( array_view_imut</char32/> &mut range ) : optional</u64/>;
 
-} // namespace integer_parsing_imp
+} // namespace integer_parsing_impl
 
 } // namespace ust
