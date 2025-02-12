@@ -38,7 +38,32 @@ fn parse_integer_exact( array_view_imut</char8/> mut range ) : optional</T/>
 template</type T/>
 fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
 {
-	static_if( same_type</T, i32/> )
+	// Parse integers smaller than 32-bit using 32-bit parser - for simplicity.
+	static_if( same_type</T, i8/> )
+	{
+		if_var( num : parse_integer_impl_i32( range ) )
+		{
+			if( num < -128 || num > 127 )
+			{
+				return null_optional;
+			}
+			return i8(num);
+		}
+		return null_optional;
+	}
+	else static_if( same_type</T, u8/> )
+	{
+		if_var( num : parse_integer_impl_u32( range ) )
+		{
+			if( num > 255u )
+			{
+				return null_optional;
+			}
+			return u8(num);
+		}
+		return null_optional;
+	}
+	else static_if( same_type</T, i32/> )
 	{
 		return parse_integer_impl_i32( range );
 	}

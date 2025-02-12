@@ -81,5 +81,77 @@ fn nomangle main() : i32
 	assert( ust::parse_integer_exact</u32/>( "-!56" ).empty() ); // Starts with non-digit
 	assert( ust::parse_integer_exact</i32/>( "--7" ).empty() ); // Duplicated "--"
 
+	assert( ust::parse_integer_exact</u8/>( "0" ) == 0u8 );
+	assert( ust::parse_integer_exact</u8/>( "1" ) == 1u8 );
+	assert( ust::parse_integer_exact</u8/>( "2" ) == 2u8 );
+	assert( ust::parse_integer_exact</u8/>( "4" ) == 4u8 );
+	assert( ust::parse_integer_exact</u8/>( "7" ) == 7u8 );
+	assert( ust::parse_integer_exact</u8/>( "9" ) == 9u8 );
+	assert( ust::parse_integer_exact</u8/>( "10" ) == 10u8 );
+	assert( ust::parse_integer_exact</u8/>( "39" ) == 39u8 );
+	assert( ust::parse_integer_exact</u8/>( "82" ) == 82u8 );
+	assert( ust::parse_integer_exact</u8/>( "146" ) == 146u8 );
+	assert( ust::parse_integer_exact</u8/>( "253" ) == 253u8 );
+	assert( ust::parse_integer_exact</u8/>( "254" ) == 254u8 );
+	assert( ust::parse_integer_exact</u8/>( "255" ) == 255u8 );
+	assert( ust::parse_integer_exact</u8/>( "256" ).empty() ); // Overflow
+	assert( ust::parse_integer_exact</u8/>( "257" ).empty() ); // Overflow
+	assert( ust::parse_integer_exact</u8/>( "1000" ).empty() ); // Overflow
+	assert( ust::parse_integer_exact</u8/>( "00" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left
+	assert( ust::parse_integer_exact</u8/>( "03" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left
+	assert( ust::parse_integer_exact</u8/>( "5 " ).empty() ); // Chars are left
+	assert( ust::parse_integer_exact</u8/>( "37i" ).empty() ); // Chars are left
+	assert( ust::parse_integer_exact</u8/>( "" ).empty() ); // Empty range
+	assert( ust::parse_integer_exact</u8/>( "apple" ).empty() ); // Starts with non-digit
+	assert( ust::parse_integer_exact</u8/>( "~92" ).empty() ); // Starts with non-digit
+
+	assert( ust::parse_integer_exact</i8/>( "0" ) == 0i8 );
+	assert( ust::parse_integer_exact</i8/>( "1" ) == 1i8 );
+	assert( ust::parse_integer_exact</i8/>( "2" ) == 2i8 );
+	assert( ust::parse_integer_exact</i8/>( "4" ) == 4i8 );
+	assert( ust::parse_integer_exact</i8/>( "7" ) == 7i8 );
+	assert( ust::parse_integer_exact</i8/>( "9" ) == 9i8 );
+	assert( ust::parse_integer_exact</i8/>( "10" ) == 10i8 );
+	assert( ust::parse_integer_exact</i8/>( "39" ) == 39i8 );
+	assert( ust::parse_integer_exact</i8/>( "82" ) == 82i8 );
+	assert( ust::parse_integer_exact</i8/>( "105" ) == 105i8 );
+	assert( ust::parse_integer_exact</i8/>( "125" ) == 125i8 );
+	assert( ust::parse_integer_exact</i8/>( "126" ) == 126i8 );
+	assert( ust::parse_integer_exact</i8/>( "127" ) == 127i8 );
+	assert( ust::parse_integer_exact</i8/>( "128" ).empty() ); // Overflow
+	assert( ust::parse_integer_exact</i8/>( "129" ).empty() ); // Overflow
+	assert( ust::parse_integer_exact</i8/>( "1000" ).empty() ); // Overflow
+	assert( ust::parse_integer_exact</i8/>( "00" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left
+	assert( ust::parse_integer_exact</i8/>( "03" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left
+	assert( ust::parse_integer_exact</i8/>( "5 " ).empty() ); // Chars are left
+	assert( ust::parse_integer_exact</i8/>( "37i" ).empty() ); // Chars are left
+	assert( ust::parse_integer_exact</i8/>( "" ).empty() ); // Empty range
+	assert( ust::parse_integer_exact</i8/>( "apple" ).empty() ); // Starts with non-digit
+	assert( ust::parse_integer_exact</i8/>( "~92" ).empty() ); // Starts with non-digit
+	assert( ust::parse_integer_exact</i8/>( "-0" ) == 0i8 );
+	assert( ust::parse_integer_exact</i8/>( "-1" ) == -1i8 );
+	assert( ust::parse_integer_exact</i8/>( "-2" ) == -2i8 );
+	assert( ust::parse_integer_exact</i8/>( "-4" ) == -4i8 );
+	assert( ust::parse_integer_exact</i8/>( "-7" ) == -7i8 );
+	assert( ust::parse_integer_exact</i8/>( "-9" ) == -9i8 );
+	assert( ust::parse_integer_exact</i8/>( "-10" ) == -10i8 );
+	assert( ust::parse_integer_exact</i8/>( "-39" ) == -39i8 );
+	assert( ust::parse_integer_exact</i8/>( "-82" ) == -82i8 );
+	assert( ust::parse_integer_exact</i8/>( "-105" ) == -105i8 );
+	assert( ust::parse_integer_exact</i8/>( "-125" ) == -125i8 );
+	assert( ust::parse_integer_exact</i8/>( "-126" ) == -126i8 );
+	assert( ust::parse_integer_exact</i8/>( "-127" ) == -127i8 );
+	assert( ust::parse_integer_exact</i8/>( "-128" ) == -128i8 );
+	assert( ust::parse_integer_exact</i8/>( "-129" ).empty() ); // Overflow
+	assert( ust::parse_integer_exact</i8/>( "-1000" ).empty() ); // Overflow
+	assert( ust::parse_integer_exact</i8/>( "-00" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left
+	assert( ust::parse_integer_exact</i8/>( "-03" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left
+	assert( ust::parse_integer_exact</i8/>( "-5 " ).empty() ); // Chars are left
+	assert( ust::parse_integer_exact</i8/>( "-37i" ).empty() ); // Chars are left
+	assert( ust::parse_integer_exact</i8/>( "-" ).empty() ); // Range with only minus sign
+	assert( ust::parse_integer_exact</i8/>( "-apple" ).empty() ); // Starts with non-digit
+	assert( ust::parse_integer_exact</i8/>( "-~92" ).empty() ); // Starts with non-digit
+	assert( ust::parse_integer_exact</i8/>( "--7" ).empty() ); // Duplicated "--"
+
 	return 0;
 }
