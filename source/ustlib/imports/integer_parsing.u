@@ -20,8 +20,9 @@ fn parse_and_extract_integer( array_view_imut</char8/> &mut range ) : optional</
 // Parse integer at start of given range.
 // Returns empty optional if failed to parse or faced an overflow.
 template</type T/>
-fn parse_integer( array_view_imut</char8/> range ) : optional</T/>
+fn parse_integer( array_view_imut</char8/> mut range ) : optional</T/>
 {
+	return parse_integer_impl</T/>( range );
 }
 
 // Parse the whole range as an integer.

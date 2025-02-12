@@ -387,5 +387,14 @@ fn nomangle main() : i32
 		assert( s == "78" );
 	}
 
+	// parse_integer
+	assert( ust::parse_integer</u32/>( "24" ) == 24u );
+	assert( ust::parse_integer</u32/>( "3left" ) == 3u );
+	assert( ust::parse_integer</i32/>( "-26f" ) == -26 );
+	assert( ust::parse_integer</u32/>( "672  lol" ) == 672u );
+	assert( ust::parse_integer</i64/>( "78463788323---Q" ) == 78463788323i64 );
+	assert( ust::parse_integer</u8/>( "678" ).empty() ); // Overflow deteted.
+	assert( ust::parse_integer</u32/>( "078" ) == 0u ); // Only leading zero is extracted
+
 	return 0;
 }
