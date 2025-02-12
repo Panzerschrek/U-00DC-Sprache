@@ -1,7 +1,12 @@
-import "../../imports/stdin.u"
+import "../imports/stdin.u"
 
 namespace ust
 {
+
+// TODO - fix this code for Windows.
+// "getchar" works fine in Git Bash.
+// But it returns zero in CMD and Powershell consoles, if non-ASCII symbol is entered.
+// But redirecting file contents into stdin works fine in CMD for non-ASCII symbols.
 
 fn stdin_read_character() : optional</char32/>
 {

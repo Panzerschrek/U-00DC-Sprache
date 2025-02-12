@@ -1471,9 +1471,10 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 	// Hardcode all files that we need to compile. There is no other way to do this.
 	// It's not possible to use a usual build script for ustlib, since building it requires building ustlib first.
 
-	var [ ust::filesystem_path_view, 3 ] sources_common
+	var [ ust::filesystem_path_view, 4 ] sources_common
 	[
 		"file_helpers.u",
+		"stdin.u",
 		"string_conversions.u",
 		"utf.u",
 	];
@@ -1490,14 +1491,13 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"windows/thread_impl.u",
 	];
 
-	var [ ust::filesystem_path_view, 7 ] sources_unix
+	var [ ust::filesystem_path_view, 8 ] sources_unix
 	[
 		"unix/environment.u",
 		"unix/filesystem.u",
 		"unix/main_wrapper.u",
 		"unix/path_utils.u",
 		"unix/rwlock_impl.u",
-		"unix/stdin.u",
 		"unix/stdout.u",
 		"unix/system_time.u",
 		"unix/thread_impl.u",
