@@ -318,6 +318,8 @@ void CodeBuilder::BuildFunctionsSetBodies( NamesScope& names_scope, OverloadedFu
 {
 	PrepareFunctionsSet( names_scope, functions_set );
 
+	functions_set.has_unbuilt_constexpr_functions= false; // // Reset the flag in order to avoid recursion.
+
 	for( FunctionVariable& function_variable : functions_set.functions )
 	{
 		if(
