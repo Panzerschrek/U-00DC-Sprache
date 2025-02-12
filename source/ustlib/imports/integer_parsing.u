@@ -68,11 +68,10 @@ fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 	{
 		if_var( num : parse_i32( range ) )
 		{
-			if( num < -128 || num > 127 )
+			if( num >= -128 && num <= 127 )
 			{
-				return null_optional;
+				return i8(num);
 			}
-			return i8(num);
 		}
 		return null_optional;
 	}
@@ -80,11 +79,10 @@ fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 	{
 		if_var( num : parse_u32( range ) )
 		{
-			if( num > 255u )
+			if( num <= 255u )
 			{
-				return null_optional;
+				return u8(num);
 			}
-			return u8(num);
 		}
 		return null_optional;
 	}
@@ -92,11 +90,10 @@ fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 	{
 		if_var( num : parse_i32( range ) )
 		{
-			if( num < -32768 || num > 32767 )
+			if( num >= -32768 && num <= 32767 )
 			{
-				return null_optional;
+				return i16(num);
 			}
-			return i16(num);
 		}
 		return null_optional;
 	}
@@ -104,11 +101,10 @@ fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 	{
 		if_var( num : parse_u32( range ) )
 		{
-			if( num > 65535u )
+			if( num <= 65535u )
 			{
-				return null_optional;
+				return u16(num);
 			}
-			return u16(num);
 		}
 		return null_optional;
 	}
@@ -136,7 +132,6 @@ fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 			{
 				return ssize_type(res);
 			}
-			return null_optional;
 		}
 		else
 		{
@@ -144,18 +139,17 @@ fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 			{
 				return ssize_type(res);
 			}
-			return null_optional;
 		}
+		return null_optional;
 	}
 	else static_if( same_type</T, size_type/> )
 	{
-		if( typeinfo</size_type/>.size_of == typeinfo</i32/>.size_of )
+		if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
 		{
 			if_var( res : parse_u32( range ) )
 			{
 				return size_type(res);
 			}
-			return null_optional;
 		}
 		else
 		{
@@ -163,8 +157,8 @@ fn parse( array_view_imut</C/> &mut range ) : optional</T/>
 			{
 				return size_type(res);
 			}
-			return null_optional;
 		}
+		return null_optional;
 	}
 	else
 	{
