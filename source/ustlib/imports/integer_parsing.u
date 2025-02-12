@@ -95,6 +95,14 @@ fn parse_integer_impl( array_view_imut</char8/> &mut range ) : optional</T/>
 	{
 		return parse_integer_impl_u32( range );
 	}
+	else static_if( same_type</T, i64/> )
+	{
+		return parse_integer_impl_i64( range );
+	}
+	else static_if( same_type</T, u64/> )
+	{
+		return parse_integer_impl_u64( range );
+	}
 	else
 	{
 		static_assert( false, "Unhandled integer type!" );
@@ -124,6 +132,34 @@ fn parse_integer_impl_i32( array_view_imut</char8/> &mut range ) : optional</i32
 				return null_optional;
 			}
 			return i32(res);
+		}
+	}
+	return null_optional;
+}
+
+fn parse_integer_impl_i64( array_view_imut</char8/> &mut range ) : optional</i64/>
+{
+	if( !range.empty() && range.front() == '-' )
+	{
+		range.drop_front();
+		if_var( res : parse_integer_impl_u64(range) )
+		{
+			if( res > 9223372036854775808u64 )
+			{
+				return null_optional;
+			}
+			return i64(-res);
+		}
+	}
+	else
+	{
+		if_var( res : parse_integer_impl_u64(range) )
+		{
+			if( res > 9223372036854775807u64 )
+			{
+				return null_optional;
+			}
+			return i64(res);
 		}
 	}
 	return null_optional;
@@ -159,6 +195,53 @@ fn parse_integer_impl_u32( array_view_imut</char8/> &mut range ) : optional</u32
 			}
 			var u32 mul10= result * 10u;
 			var u32 add_digit= mul10 + (u32(c) - u32('0'));
+			if( add_digit < mul10 )
+			{
+				// Overflow detected.
+				return null_optional;
+			}
+			result= add_digit;
+			range.drop_front();
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	return result;
+}
+
+fn parse_integer_impl_u64( array_view_imut</char8/> &mut range ) : optional</u64/>
+{
+	if( range.empty() )
+	{
+		return null_optional;
+	}
+
+	var char8 first_char= range.drop_and_get_front();
+	if( first_char == '0' )
+	{
+		return u64(0);
+	}
+	if( !( first_char >= '1' && first_char <= '9' ) )
+	{
+		return null_optional;
+	}
+
+	var u64 mut result= u64(first_char) - u64('0');
+	while( !range.empty() )
+	{
+		var char8 c= range.front();
+		if( c >= '0' && c <= '9' )
+		{
+			if( result > 1844674407370955161u64 )
+			{
+				// Overflow detected.
+				return null_optional;
+			}
+			var u64 mul10= result * 10u64;
+			var u64 add_digit= mul10 + (u64(c) - u64('0'));
 			if( add_digit < mul10 )
 			{
 				// Overflow detected.
