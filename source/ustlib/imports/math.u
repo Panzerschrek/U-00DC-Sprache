@@ -104,6 +104,104 @@ fn trunc( f64 x ) : f64 { return ust_trunc_f64_impl( x ); }
 fn fma( f32 x, f32 y, f32 z ) : f32 { return ust_fma_f32_impl( x, y, z ); }
 fn fma( f64 x, f64 y, f64 z ) : f64 { return ust_fma_f64_impl( x, y, z ); }
 
+//
+// Byte swap functions. TODO - maybe move them into another file?
+//
+
+fn constexpr swap_bytes( u8 x ) : u8
+{
+	return x;
+}
+
+fn constexpr swap_bytes( i8 x ) : i8
+{
+	return x;
+}
+
+fn constexpr swap_bytes( byte8 x ) : byte8
+{
+	return x;
+}
+
+fn constexpr swap_bytes( u16 x ) : u16
+{
+	// LLVM optimizer is smart enough to replace this code with native byte swapping instruction, if it's available.
+	return u16( ( u32(x) >> 8u ) | ( u32(x) << 8u ) );
+}
+
+fn constexpr swap_bytes( i16 x ) : i16
+{
+	return i16( swap_bytes( u16(x) ) );
+}
+
+fn constexpr swap_bytes( byte16 x ) : byte16
+{
+	return byte16( swap_bytes( u16(x) ) );
+}
+
+fn constexpr swap_bytes( u32 x ) : u32
+{
+	// LLVM optimizer is smart enough to replace this code with native byte swapping instruction, if it's available.
+	return ( x >> 24u ) | ( ( x >> 8u ) & 0x0000FF00u ) | ( ( x << 8u ) & 0x00FF0000u ) | ( x << 24u );
+}
+
+fn constexpr swap_bytes( i32 x ) : i32
+{
+	return i32( swap_bytes( u32(x) ) );
+}
+
+fn constexpr swap_bytes( byte32 x ) : byte32
+{
+	return byte32( swap_bytes( u32(x) ) );
+}
+
+fn constexpr swap_bytes( u64 x ) : u64
+{
+	return
+		( ( x >> 56u ) & 0x00000000000000FFu64 ) |
+		( ( x >> 40u ) & 0x000000000000FF00u64 ) |
+		( ( x >> 24u ) & 0x0000000000FF0000u64 ) |
+		( ( x >>  8u ) & 0x00000000FF000000u64 ) |
+		( ( x <<  8u ) & 0x000000FF00000000u64 ) |
+		( ( x << 24u ) & 0x0000FF0000000000u64 ) |
+		( ( x << 40u ) & 0x00FF000000000000u64 ) |
+		( ( x << 56u ) & 0xFF00000000000000u64 );
+}
+
+fn constexpr swap_bytes( i64 x ) : i64
+{
+	return i64( swap_bytes( u64(x) ) );
+}
+
+fn constexpr swap_bytes( byte64 x ) : byte64
+{
+	return byte64( swap_bytes( u64(x) ) );
+}
+
+fn constexpr swap_bytes( ssize_type x ) : ssize_type
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+	{
+		return ssize_type( swap_bytes( i32(x) ) );
+	}
+	else
+	{
+		return ssize_type( swap_bytes( i64(x) ) );
+	}
+}
+
+fn constexpr swap_bytes( size_type x ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( swap_bytes( u32(x) ) );
+	}
+	else
+	{
+		return size_type( swap_bytes( u64(x) ) );
+	}
+}
+
 // TODO:
 // * add hyperbolic trigonometric functions
 // * add more classification functions - is_finite, is_infinity, is_normal, etc.
