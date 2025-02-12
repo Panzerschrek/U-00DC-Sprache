@@ -74,7 +74,6 @@ Standart library:
 *) shared_ptr - store single pointer for non-polymorph types
 *) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
 	time, perform conversions to human-readable format
-*) Console input functions
 *) String formatting library
 *) Formatted console output functions
 *) Executor for async functions, possible multithreaded
@@ -85,6 +84,7 @@ Standart library:
 *) Support opening files with appending
 *) Fix "rename_file_or_directory_if_not_exists" implementation for Unix - perform operation atomically
 *) Fix "get_metadata_for_path" implementation for Windows - follow symbolic links
+*) Fix non-ASCII input on Windows (in CMD consoles)
 *) More file kinds - fifo, block device, etc.
 *) More file error kinds
 *) Memory-mapped files
