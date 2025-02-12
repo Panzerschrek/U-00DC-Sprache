@@ -128,6 +128,44 @@ fn parse_integer( array_view_imut</C/> &mut range ) : optional</T/>
 	{
 		return parse_integer_u64( range );
 	}
+	else static_if( same_type</T, ssize_type/> )
+	{
+		if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+		{
+			if_var( res : parse_integer_i32( range ) )
+			{
+				return ssize_type(res);
+			}
+			return null_optional;
+		}
+		else
+		{
+			if_var( res : parse_integer_i64( range ) )
+			{
+				return ssize_type(res);
+			}
+			return null_optional;
+		}
+	}
+	else static_if( same_type</T, size_type/> )
+	{
+		if( typeinfo</size_type/>.size_of == typeinfo</i32/>.size_of )
+		{
+			if_var( res : parse_integer_u32( range ) )
+			{
+				return size_type(res);
+			}
+			return null_optional;
+		}
+		else
+		{
+			if_var( res : parse_integer_u64( range ) )
+			{
+				return size_type(res);
+			}
+			return null_optional;
+		}
+	}
 	else
 	{
 		static_assert( false, "Unhandled integer type!" );

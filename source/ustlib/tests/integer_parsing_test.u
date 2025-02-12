@@ -400,5 +400,9 @@ fn nomangle main() : i32
 	assert( ust::parse_integer_exact</u32/>( "347"u16 ) == 347u );
 	assert( ust::parse_integer_exact</i64/>( "-77478348893"u32 ) == -77478348893i64 );
 
+	// size_type
+	assert( ust::parse_integer_exact</size_type/>( "7856231" ) == 7856231s );
+	assert( ust::parse_integer_exact</ssize_type/>( "-6753478" ) == ssize_type(-6753478) );
+
 	return 0;
 }
