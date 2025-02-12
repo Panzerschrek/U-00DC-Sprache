@@ -93,7 +93,16 @@ fn stdin_read_line() : optional</string_base</char8/>/>
 		var i32 c= ::getchar();
 		if( c == g_end_of_file )
 		{
-			return null_optional;
+			if( s.empty() )
+			{
+				// If no symbols were extracted yet, return empty optional.
+				return null_optional;
+			}
+			else
+			{
+				// Return what we managed to extract before EOF.
+				return s;
+			}
 		}
 		if( c == i32('\n') )
 		{
