@@ -356,19 +356,19 @@ void CodeBuilder::PrepareFunctionsSetAndBuildConstexprBodies( NamesScope& names_
 	functions_set.has_unbuilt_constexpr_functions= false; // // Reset the flag in order to avoid recursion.
 
 	for( FunctionVariable& function_variable : functions_set.functions )
+	{
+		if( function_variable.syntax_element != nullptr &&
+			function_variable.syntax_element->block != nullptr &&
+			!function_variable.has_body &&
+			function_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 		{
-			if( function_variable.syntax_element != nullptr &&
-				function_variable.syntax_element->block != nullptr &&
-				!function_variable.has_body &&
-				function_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
-			{
-				BuildFuncCode(
-					function_variable,
-					functions_set.base_class,
-					names_scope,
-					function_variable.syntax_element->name.back().name );
-			}
+			BuildFuncCode(
+				function_variable,
+				functions_set.base_class,
+				names_scope,
+				function_variable.syntax_element->name.back().name );
 		}
+	}
 }
 
 void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type )
