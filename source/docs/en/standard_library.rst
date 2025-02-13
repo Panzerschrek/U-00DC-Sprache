@@ -30,6 +30,7 @@ if you want to learn more, read its sources yourself.
 * Hashing functions (hash.u).
   Hashing of all basic language types is supported.
 * Various helpers (helpers.u).
+* Functions for decimal integers parsing (integer_parsing.u).
 * Iterator class template (iterator.u).
   Supports transformations, filtering and other operations over iterators.
 * A helper wrapper macro for executable entry function (main_wrapper.u).
@@ -44,7 +45,8 @@ if you want to learn more, read its sources yourself.
   Used to simplify specifying reference notation for functions.
 * Helper classes and macros for scoped arrays creation (scoped_array.u).
 * Sorting routines (sort.u).
-* stdout support (partial) (stdout.u).
+* stdin support (stdin.u).
+* stdout support (stdout.u).
 * Number to string conversion utilities (string_conversions.u).
 * System time class (system_time.u).
 * Thread class (thread.u).
