@@ -1,0 +1,49 @@
+V Ü horošo bylo by imetj vstrojennyj mehanizm napisanija junit-testov.
+On dolžen pozvolätj pisatj i zapuskatj testy, ne pribegaja k otdeljnym bibliotekam dlä etogo.
+Dolžna bytj vozmožnostj takže pisatj testy prämo v tom fajle, gde objavlen testirujemyj funkçional.
+
+V jazyk možno dobavitj otdeljnyj tip suscnosti - junit-test.
+Po suti eto funkçija, objavläjemaja s ispoljzovanijem osobogo sintaksisa.
+Parametrov u nejo bytj ne dolžno, no dolžno bytj unikaljnoje imä.
+
+Dolžno bytj razrešeno objavlätj testy v prostranstvah imön, vklücaja globaljnoje.
+S klassami poka ne ponätno - razrešitj ih tam, ili že net.
+V šablonnom že kode testy tocno ne nužny i sledovateljno dolžny bytj zapresceny.
+
+Proverka korrektnosti rezuljtatov raboty testov možet bytj osuscestvlena cerez imejuscijsä v jazyke operator "halt".
+Krome togo mogut bytj ispoljzovany makrosy assertov, ili drugije konstrukçii, bazirujuscijesä na "halt".
+
+Mogut bytj polezny makrosy, kotoryje vypolnäjut tipicnyje v testah operaçii - proverka istennosti uslovija, sravnenije (razlicnyje vidy).
+Pri etom neploho bylo by sdelatj tak, ctoby v slucaje padenija testa v log pisalsä tekst uslovija, ishodnyj fajl i poziçija v nöm, a takže operandy.
+
+Junit-testy dolžny kompilirovatjsä, toljko jesli kompilätor zapuscen s flagom, vklücajuscim ih.
+Inace že oni ne dolžny kompilirovatjsä (kak funkçii, otklücönnyje cerez "enable_if") - daby sokratitj vremä kompiläçii, jesli sborka testov ne nužna.
+
+Skompilirovannyje junit-testy dolžny skladyvatjsä v nekotoryj globaljnyj massiv.
+Etot massiv dolžen bytj dostupen iz koda, kotoryj eti testy zapuskajet - ctoby zapuskatelj testov znal o vseh testah.
+Vozmožno tut stoit ispoljzovatj mehanizm, analogicnyj iniçializatoram globaljnyh peremennyh v C++.
+
+Zapuskatelj testov zapuskajet po oceredi vse testy, kotoryje objavleny v nekoj sborocnoj çeli.
+
+Padenije testov planirujetsä osuscestvlätj cerez osobyj obrabotcik "halt".
+Etot obrabotcik dolžen vozvrascatj potok upravlenija v kod zapuskatelä testov, ispoljzuja "longjmp".
+Etot podhod ne optimalen, t. k. upavšij test ne osvobodit resursy, ibo destruktory ne vyzovutsä.
+No eto vsö že lucše, cem valitj vesj nabor testov, jesli upal toljko odin test.
+Navernoje lucše bylo by ispoljzovatj razmotku steka s vyzovom destruktorov, no Ü takogo ne umejet, da i ne bezopasno eto, vyzyvatj destruktory v upavšem kode.
+
+Sborocnaja sistema dolžna imetj komandu dlä sborki i zapuska testov.
+Nu ili kakoj-to drugoj mehanizm, kotoryj zapuskajet testy.
+
+Sborocnaja sistema dolžna dlä každoj sborocnoj çeli sozdatj jejo kopiju, kotoraja sobirajetsä s nemnogo drugimi opçijami.
+Eti opçii vklücajut flag kompilätora, vklücajuscij sborku testov.
+Krome togo takaja kopija sborocnoj çeli dlä testov vsegda dolžna kompilirovatjsä v ispolnäjemyj fajl ili razdeläjemuju biblioteku (poka ne jasno), ctoby kod testov možno bylo neposredstvenno zapuskatj.
+Pri sborke testov v ispolnäjemyj fajl dolžny vykidyvatjsä rodnyje vhodnyje tocki ("main" i "wmain"), t. k. oni konfliktujut s tockoj vhoda koda zapuska testov.
+
+Važno otmetitj, cto testy iz zavisimostej sobiratjsä dlä dannoj sborocnoj çeli ne dolžny - dolžny bytj ispoljzovany zavisimosti, kak oni sobrany dlä slucaja bez testov.
+Isklücenije sostavläjut testy, objavlennyje v zagolovocnyh fajlah.
+Oni mogut sobiratjsä vo vseh sborocnyh çeläh, gde vklücajetsä dannyj fajl.
+Nado eto imetj v vidu i predusmotretj vozmožnostj deduplikaçii.
+
+Poka ne ponätno, kak testy dolžny družitj s kross-kompiläçijej.
+Poka cto vidätsä kak minimum dva varianta - sobiratj testy pod çelevuju platformu, ili že pod host-platformu.
+Oba sposoba ne idealjny.
