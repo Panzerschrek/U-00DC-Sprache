@@ -32,6 +32,22 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read(x) != -10 );
 	}
 	{
+		var size_type mut x= 0s;
+		halt if( ust::atomic_add( x, 56s ) !=  0s );
+		halt if( ust::atomic_sub( x,  6s ) != 56s );
+		halt if( ust::atomic_inc( x ) != 50s );
+		halt if( ust::atomic_dec( x ) != 51s );
+		halt if( ust::atomic_read(x) != 50s );
+	}
+	{
+		var ssize_type mut x(0);
+		halt if( ust::atomic_add( x, ssize_type(56) ) != ssize_type( 0) );
+		halt if( ust::atomic_sub( x, ssize_type(66) ) != ssize_type(56) );
+		halt if( ust::atomic_inc( x ) != ssize_type(-10) );
+		halt if( ust::atomic_dec( x ) != ssize_type(-9) );
+		halt if( ust::atomic_read(x) != ssize_type(-10) );
+	}
+	{
 		var i32 mut x= 22, mut y= 22;
 		halt if( ust::atomic_compare_exchange_strong( x, y, 7 ) != true );
 		halt if( ust::atomic_read(x) !=  7 );

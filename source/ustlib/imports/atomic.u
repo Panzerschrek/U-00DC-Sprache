@@ -14,6 +14,16 @@ fn atomic_read( u32& addr ) : u32
 	return ust_atomic_read_u32_impl( addr );
 }
 
+fn atomic_read( ssize_type& addr ) : ssize_type
+{
+	return ust_atomic_read_ssize_type_impl( addr );
+}
+
+fn atomic_read( size_type& addr ) : size_type
+{
+	return ust_atomic_read_size_type_impl( addr );
+}
+
 fn atomic_write( i32 &mut addr, i32 x )
 {
 	return ust_atomic_write_i32_impl( addr, x );
@@ -34,6 +44,16 @@ fn atomic_add( u32 &mut x, u32 y ) : u32 { return ust_atomic_add_u32_impl( x, y 
 fn atomic_sub( u32 &mut x, u32 y ) : u32 { return atomic_add( x, -y ); }
 fn atomic_inc( u32 &mut x ) : u32 { return atomic_add( x,  1u ); }
 fn atomic_dec( u32 &mut x ) : u32 { return atomic_add( x, ~0u ); }
+
+fn atomic_add( ssize_type &mut x, ssize_type y ) : ssize_type { return ust_atomic_add_ssize_type_impl( x, y ); }
+fn atomic_sub( ssize_type &mut x, ssize_type y ) : ssize_type { return atomic_add( x, -y ); }
+fn atomic_inc( ssize_type &mut x ) : ssize_type { return atomic_add( x, ssize_type(1) ); }
+fn atomic_dec( ssize_type &mut x ) : ssize_type { return atomic_add( x, -ssize_type(1) ); }
+
+fn atomic_add( size_type &mut x, size_type y ) : size_type { return ust_atomic_add_size_type_impl( x, y ); }
+fn atomic_sub( size_type &mut x, size_type y ) : size_type { return atomic_add( x, -y ); }
+fn atomic_inc( size_type &mut x ) : size_type { return atomic_add( x,  1s ); }
+fn atomic_dec( size_type &mut x ) : size_type { return atomic_add( x, ~0s ); }
 
 // Aatomically compare 'expected' and 'dst'. If they are equal, set 'dst' to 'new', else - set 'expected' to content of 'dst'.
 // Returns true, if 'dst' == 'expected'.
@@ -64,12 +84,18 @@ fn nodiscard atomic_compare_exchange_weak( u32 &mut dst, u32 &mut expected, u32 
 
 fn nomangle ust_atomic_read_i32_impl( i32& addr ) : i32;
 fn nomangle ust_atomic_read_u32_impl( u32& addr ) : u32;
+fn nomangle ust_atomic_read_ssize_type_impl( ssize_type& addr ) : ssize_type;
+fn nomangle ust_atomic_read_size_type_impl( size_type& addr ) : size_type;
 
 fn nomangle ust_atomic_write_i32_impl( i32 &mut addr, i32 x );
 fn nomangle ust_atomic_write_u32_impl( u32 &mut addr, u32 x );
+fn nomangle ust_atomic_write_ssize_type_impl( ssize_type &mut addr, ssize_type x );
+fn nomangle ust_atomic_write_size_type_impl( size_type &mut addr, size_type x );
 
 fn nomangle ust_atomic_add_i32_impl( i32 &mut x, i32 y ) : i32;
 fn nomangle ust_atomic_add_u32_impl( u32 &mut x, u32 y ) : u32;
+fn nomangle ust_atomic_add_ssize_type_impl( ssize_type &mut x, ssize_type y ) : ssize_type;
+fn nomangle ust_atomic_add_size_type_impl( size_type &mut x, size_type y ) : size_type;
 
 fn nomangle ust_atomic_compare_exchange_strong_i32_impl( i32 &mut dst, i32 &mut expected, i32 new ) : bool;
 fn nomangle ust_atomic_compare_exchange_strong_u32_impl( u32 &mut dst, u32 &mut expected, u32 new ) : bool;
