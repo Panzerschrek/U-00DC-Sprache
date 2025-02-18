@@ -40,6 +40,9 @@ General:
 *) Inverstigate possibility to add "with" operator (or something similar) in expression context
 *) Allow "nodiscard" flag for async functions to affect result of a call via "await"
 *) Consider making "nodiscard" flag presence configurable - based on a constant expression
+*) Operators to get current file/line/column - in order to use them in macros, like in "assert"
+*) Support unit-testing - add function-like unit tests global objects, which are compiled if special compiler flag
+	is provided, support building and running such unit-tests in the build system
 
 References:
 *) Support second order inner references for coroutine types
@@ -193,6 +196,10 @@ CPP Header converter:
 	and type alias for it
 
 Ü Build system:
+*) Support building "ustlib" into a shared library (dll/so)
+*) Add an option to tweak optimization level for release builds add possibility to use -O3 instead of -O2
+*) Add build type for minimal size - with -Os optimization level or -Oz
+*) Add possibility to specify halt mode (trap/abort/unreachable/custom)
 *) Fix JSON floats serialization
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
 *) Fix possible global mutable variables and type id tables duplication because of private linking of a library into
