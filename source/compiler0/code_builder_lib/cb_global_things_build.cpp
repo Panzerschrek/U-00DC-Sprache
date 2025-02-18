@@ -1420,7 +1420,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			llvm::GlobalVariable* const global_variable=
 				is_mutable
-					? CreateGlobalMutableVariable( type, name_mangled, src_loc )
+					? CreateGlobalMutableVariable( type, name_mangled )
 					: CreateGlobalConstantVariable( type, name_mangled );
 
 			const VariableMutPtr variable=
@@ -1576,7 +1576,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, auto_variable_declaration->name, variable_reference->type, !is_mutable );
 			llvm::GlobalVariable* const global_variable=
 				is_mutable
-					? CreateGlobalMutableVariable( variable_reference->type, name_mangled, src_loc )
+					? CreateGlobalMutableVariable( variable_reference->type, name_mangled )
 					: CreateGlobalConstantVariable( variable_reference->type, name_mangled );
 
 			variable_reference->llvm_value= global_variable;

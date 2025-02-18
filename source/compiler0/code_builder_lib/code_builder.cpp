@@ -2418,8 +2418,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	return val;
 }
 
-llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
-	const Type& type, const std::string_view mangled_name, const SrcLoc& src_loc )
+llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string_view mangled_name )
 {
 	const auto var=
 		new llvm::GlobalVariable(
@@ -2428,33 +2427,17 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
 			false, // is constant
 			llvm::GlobalValue::ExternalLinkage,
 			nullptr,
-			StringViewToStringRef(mangled_name) );
+			StringViewToStringRef(mangled_name) /* TODO - use file contents hash for mangling */ );
 
-	if( !IsSrcLocFromMainFile( src_loc ) )
-	{
-		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
-		llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
-		comdat->setSelectionKind( llvm::Comdat::Any );
-		var->setComdat( comdat );
+	// TODO - maybe set unnamed address?
 
-		var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+	// Use external linkage and comdat for global mutable variables to guarantee address uniqueness and enforce deduplication.
+	llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
+	comdat->setSelectionKind( llvm::Comdat::Any );
+	var->setComdat( comdat );
 
-		if( IsSrcLocFromOtherImportedFile( src_loc ) )
-		{
-			// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
-			var->setVisibility( llvm::GlobalValue::DefaultVisibility );
-		}
-		else
-		{
-			// This variable is defined within a private import file - use hidden visibility to hide it from outside.
-			var->setVisibility( llvm::GlobalValue::HiddenVisibility );
-		}
-	}
-	else
-	{
-		// This global mutable variable is local for this module, do not need to use external linkage.
-		var->setLinkage( llvm::GlobalValue::PrivateLinkage );
-	}
+	// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).
+	var->setVisibility( llvm::GlobalValue::HiddenVisibility );
 
 	return var;
 }
