@@ -281,6 +281,9 @@ private:
 
 	bool IsSrcLocFromOtherImportedFile( const SrcLoc& src_loc );
 
+	// If this is non-macro - return this location, else search for root macro expansion.
+	SrcLoc GetRootMacroExpansionLocation( const SrcLoc& src_loc );
+
 	// Function context required for accesing local constexpr variables.
 	Type PrepareType( const Synt::TypeName& type_name, NamesScope& names_scope, FunctionContext& function_context );
 

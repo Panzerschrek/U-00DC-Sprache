@@ -516,7 +516,7 @@ U_TEST( PolymorphClassesDataLinkage_Test1 )
 
 U_TEST( PolymorphClassesDataLinkage_Test2 )
 {
-	// Type id table of class, declared in main file, should have private linkage.
+	// Type id table of class, declared in main file, should have external linkage and comdat.
 	static const char c_program_text[]=
 	R"(
 		class C polymorph {}
@@ -524,10 +524,11 @@ U_TEST( PolymorphClassesDataLinkage_Test2 )
 
 	const auto engine= CreateEngine( BuildProgram( c_program_text ) );
 
-	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C", true );
+	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C.b14a7b8059d9c055954c92674ce60032", true );
 	U_TEST_ASSERT( type_id_table != nullptr );
-	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::PrivateLinkage );
-	U_TEST_ASSERT( !type_id_table->hasComdat() );
+	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( type_id_table->hasComdat() );
+	U_TEST_ASSERT( type_id_table->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
 U_TEST( PolymorphClassesDataLinkage_Test3 )
@@ -543,7 +544,7 @@ U_TEST( PolymorphClassesDataLinkage_Test3 )
 		},
 		"root" ) );
 
-	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C" );
+	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C.0cc175b9c0f1b6a831c399e269772661" );
 	U_TEST_ASSERT( type_id_table != nullptr );
 	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( type_id_table->hasComdat() );
@@ -552,7 +553,7 @@ U_TEST( PolymorphClassesDataLinkage_Test3 )
 
 U_TEST( PolymorphClassesDataLinkage_Test4 )
 {
-	// Class defined in imported macro expansion is assumed to be private.
+	// Class defined in imported macro expansion is assumed to be private. But type id table is still external and has comdat.
 	static const char c_program_text_a[]= "?macro <? DEFINE_CLASS:namespace ?> -> <? class C polymorph {} ?> ";
 	static const char c_program_text_root[]= " import \"a\" DEFINE_CLASS ";
 
@@ -563,11 +564,13 @@ U_TEST( PolymorphClassesDataLinkage_Test4 )
 		},
 		"root" ) );
 
-	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C", true );
+	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C.63a9f0ea7bb98050796b649e85481845", true );
 	U_TEST_ASSERT( type_id_table != nullptr );
-	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::PrivateLinkage );
-	U_TEST_ASSERT( !type_id_table->hasComdat() );
+	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( type_id_table->hasComdat() );
+	U_TEST_ASSERT( type_id_table->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
+	// Vtable is always private, since it's contant and deduplication isn't necessary.
 	const llvm::GlobalVariable* const vtable= engine->FindGlobalVariableNamed( "_ZTV1C", true );
 	U_TEST_ASSERT( vtable != nullptr );
 	U_TEST_ASSERT( vtable->getLinkage() == llvm::GlobalValue::PrivateLinkage );

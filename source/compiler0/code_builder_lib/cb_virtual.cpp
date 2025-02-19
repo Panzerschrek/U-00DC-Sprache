@@ -325,6 +325,15 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 
 	const auto type_id_table_type= llvm::ArrayType::get( polymorph_type_id_table_element_type_, table_initializers.size() );
 
+	// Extract "src_loc" of the root macro expansion.
+	// Avoid using "src_loc" as is, because it may come from different file.
+	const uint32_t file_index= GetRootMacroExpansionLocation( class_type->syntax_element->src_loc ).GetFileIndex();
+
+	const llvm::StringRef file_path_hash=
+		file_index < source_graph_->nodes_storage.size()
+		? llvm::StringRef( source_graph_->nodes_storage[ file_index ].file_path_hash )
+		: llvm::StringRef( "" );
+
 	the_class.polymorph_type_id_table=
 		new llvm::GlobalVariable(
 			*module_,
@@ -332,33 +341,18 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 			true, // is_constant
 			llvm::GlobalValue::ExternalLinkage,
 			llvm::ConstantArray::get( type_id_table_type, table_initializers ),
-			"_type_id_for_" + mangler_->MangleType( class_type ) );
+			// Add suffix based on file path hash.
+			// This is needed to avoid merging global mutable variables which share same name, but defined in different files.
+			// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
+			llvm::StringRef("_type_id_for_") + mangler_->MangleType( class_type ) + "." + file_path_hash );
 
-	if( !IsSrcLocFromMainFile( class_type->syntax_element->src_loc ) )
-	{
-		// This is a class, declared in imported file.
-		// Create comdat in order to ensure uniquiness of the table across different modules, that import file with declaration of this class.
-		llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id_table->getName() );
-		type_id_comdat->setSelectionKind( llvm::Comdat::Any );
-		the_class.polymorph_type_id_table->setComdat( type_id_comdat );
+	// Create comdat in order to ensure uniquiness of the table across different modules.
+	llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id_table->getName() );
+	type_id_comdat->setSelectionKind( llvm::Comdat::Any );
+	the_class.polymorph_type_id_table->setComdat( type_id_comdat );
 
-		if( IsSrcLocFromOtherImportedFile( class_type->syntax_element->src_loc ) )
-		{
-			// This class is defined within an import file - use default visibility in order to make type id table available for other build targets.
-			the_class.polymorph_type_id_table->setVisibility( llvm::GlobalValue::DefaultVisibility );
-		}
-		else
-		{
-			// This class is defined within a private import file - use hidden visibility to hide type id table from outside.
-			the_class.polymorph_type_id_table->setVisibility( llvm::GlobalValue::HiddenVisibility );
-		}
-	}
-	else
-	{
-		// This class is declared in main file.
-		// It should not be externally available, thus there is no need to use external linkage or comdat.
-		the_class.polymorph_type_id_table->setLinkage( llvm::GlobalValue::PrivateLinkage );
-	}
+	// This class is defined within a private import file - use hidden visibility to hide type id table from outside.
+	the_class.polymorph_type_id_table->setVisibility( llvm::GlobalValue::HiddenVisibility );
 }
 
 llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_class, const Class& dst_class, const uint64_t offset )

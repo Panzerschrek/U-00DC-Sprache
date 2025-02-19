@@ -583,32 +583,29 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 
 bool CodeBuilder::IsSrcLocFromMainFile( const SrcLoc& src_loc )
 {
-	if( src_loc.GetFileIndex() == 0 )
-		return true; // Definition in main file.
-
-	const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
-	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
-		return false; // Not something from macro - definition can't be from main file.
-
-	// If this is a src_loc in macro expansion - check recursively macro expansion point.
-	U_ASSERT( macro_expansion_index < macro_expansion_contexts_->size() );
-	return IsSrcLocFromMainFile( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
+	return GetRootMacroExpansionLocation( src_loc ).GetFileIndex() == 0;
 }
 
 bool CodeBuilder::IsSrcLocFromOtherImportedFile( const SrcLoc& src_loc )
 {
-	const uint32_t file_index= src_loc.GetFileIndex();
+	const uint32_t file_index= GetRootMacroExpansionLocation( src_loc ).GetFileIndex();
 	if( file_index != 0 && file_index < source_graph_->nodes_storage.size() &&
 		source_graph_->nodes_storage[file_index].category == SourceGraph::Node::Category::OtherImport )
 		return true;
 
+	return false;
+}
+
+SrcLoc CodeBuilder::GetRootMacroExpansionLocation( const SrcLoc& src_loc )
+{
 	const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
 	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
-		return false;
+		return src_loc;
 
-	// If this is a src_loc in macro expansion - check recursively macro expansion point.
-	U_ASSERT( macro_expansion_index < macro_expansion_contexts_->size() );
-	return IsSrcLocFromOtherImportedFile( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
+	if( macro_expansion_index < macro_expansion_contexts_->size() )
+		return GetRootMacroExpansionLocation( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
+
+	return src_loc;
 }
 
 void CodeBuilder::TryCallCopyConstructor(
@@ -2422,19 +2419,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
 {
 	// Extract "src_loc" of the root macro expansion.
 	// Avoid using "src_loc" as is, because it may come from different file.
-	SrcLoc src_loc_corrected= src_loc;
-	while( true )
-	{
-		const uint32_t macro_expansion_index= src_loc_corrected.GetMacroExpansionIndex();
-		if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
-			break;
-
-		if( macro_expansion_index >= source_graph_->macro_expansion_contexts->size() )
-			break;
-		src_loc_corrected= (*source_graph_->macro_expansion_contexts)[ macro_expansion_index ].src_loc;
-	}
-
-	const uint32_t file_index= src_loc_corrected.GetFileIndex();
+	const uint32_t file_index= GetRootMacroExpansionLocation( src_loc ).GetFileIndex();
 
 	const llvm::StringRef file_path_hash=
 		file_index < source_graph_->nodes_storage.size()
