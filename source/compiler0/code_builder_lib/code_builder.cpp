@@ -2251,7 +2251,7 @@ void CodeBuilder::CreateTypedReferenceStore( FunctionContext& function_context, 
 
 llvm::Value* CodeBuilder::CreateMoveToLLVMRegisterInstruction( const Variable& variable, FunctionContext& function_context )
 {
-	// Contant values always are register-values.
+	// Constant values always are register-values.
 	if( variable.constexpr_value != nullptr )
 		return variable.constexpr_value;
 

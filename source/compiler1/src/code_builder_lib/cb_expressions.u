@@ -2897,8 +2897,8 @@ fn CodeBuilder::BuildBinaryOperator(
 					l_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, l_in_register, diff_llvm_type, g_null_string ),
 					r_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, r_in_register, diff_llvm_type, g_null_string ),
 					diff= LLVMBuildSub( function_context.llvm_ir_builder, l_as_int, r_as_int, "-\0"[0] ),
-					element_size_contant= LLVMConstInt( diff_llvm_type, element_size, LLVMBool::False ),
-					diff_divided= LLVMBuildExactSDiv( function_context.llvm_ir_builder, diff, element_size_contant, "/\0"[0] );
+					element_size_constant= LLVMConstInt( diff_llvm_type, element_size, LLVMBool::False ),
+					diff_divided= LLVMBuildExactSDiv( function_context.llvm_ir_builder, diff, element_size_constant, "/\0"[0] );
 				result.llvm_value= diff_divided;
 			}
 		}

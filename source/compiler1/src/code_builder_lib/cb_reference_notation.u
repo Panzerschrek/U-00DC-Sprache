@@ -296,10 +296,10 @@ fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInne
 
 	for( auto mut i= 0s; i < return_inner_references.size(); ++i )
 	{
-		auto return_references_contant= GetReturnReferencesConstant( return_inner_references[i] );
-		tuple_type.element_types.push_back( return_references_contant[0] );
-		elements_llvm_types[i]= return_references_contant[0].GetLLVMType();
-		constant_initializers[i]= return_references_contant[1];
+		auto return_references_constant= GetReturnReferencesConstant( return_inner_references[i] );
+		tuple_type.element_types.push_back( return_references_constant[0] );
+		elements_llvm_types[i]= return_references_constant[0].GetLLVMType();
+		constant_initializers[i]= return_references_constant[1];
 	}
 
 	tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, elements_llvm_types.data(), u32(elements_llvm_types.size()), LLVMBool::False ) );

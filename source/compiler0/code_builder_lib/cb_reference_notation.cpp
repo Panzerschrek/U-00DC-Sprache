@@ -290,10 +290,10 @@ CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnInnerReferencesCons
 
 	for( const auto& return_references : return_inner_references )
 	{
-		auto return_references_contant= GetReturnReferencesConstant( return_references );
-		elements_llvm_types.push_back( return_references_contant.first.GetLLVMType() );
-		tuple_type.element_types.push_back( std::move(return_references_contant.first) );
-		constant_initializers.push_back( return_references_contant.second );
+		auto return_references_constant= GetReturnReferencesConstant( return_references );
+		elements_llvm_types.push_back( return_references_constant.first.GetLLVMType() );
+		tuple_type.element_types.push_back( std::move(return_references_constant.first) );
+		constant_initializers.push_back( return_references_constant.second );
 	}
 
 	const auto tuple_llvm_type= llvm::StructType::get( llvm_context_, elements_llvm_types );

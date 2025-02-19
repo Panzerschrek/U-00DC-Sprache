@@ -8,7 +8,7 @@ namespace
 
 U_TEST(ExpectedConstantExpressionTest0)
 {
-	// Constructed struct is not contant expression.
+	// Constructed struct is not constant expression.
 	static const char c_program_text[]=
 	R"(
 		struct S{}

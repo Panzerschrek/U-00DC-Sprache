@@ -330,7 +330,7 @@ private:
 	// Requires type to be complete.
 	fn GetSingleScalarType( LLVMTypeRef t ) : LLVMTypeRef;
 
-	// Returns constant value if initializer is contant
+	// Returns constant value if initializer is constant
 	fn ApplyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef;
 
 	template</type T/>
