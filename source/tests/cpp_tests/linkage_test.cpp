@@ -364,8 +364,9 @@ U_TEST( VariableLinkage_Test1 )
 {
 	// Mutable global variables, that are defined in imported files, should have external linkage.
 	// Additionaly comdat must be present in order to merge identical mutable variables in different modules.
+	// Global mutable variables defined in main files should also have external linkage, comdat and private visibility.
+	// All names of global mutable variables should also contain suffix - file path contents.
 	static const char c_program_text_a[]= " var i32 mut x = 0; auto mut y = false; ";
-	// Global mutable variables, defined in main files, should have private linkage.
 	static const char c_program_text_root[]= "import \"a\" var f32 mut z= 0.0f; auto mut w= \"lol\"; ";
 
 	const auto engine= CreateEngine( BuildMultisourceProgram(
@@ -375,32 +376,34 @@ U_TEST( VariableLinkage_Test1 )
 		},
 		"root" ) );
 
-	const llvm::GlobalVariable* const x= engine->FindGlobalVariableNamed( "x", true );
+	const llvm::GlobalVariable* const x= engine->FindGlobalVariableNamed( "x.0cc175b9c0f1b6a831c399e269772661", true );
 	U_TEST_ASSERT( x != nullptr );
 	U_TEST_ASSERT( x->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( x->hasComdat() );
 	U_TEST_ASSERT( x->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
-	const llvm::GlobalVariable* const y= engine->FindGlobalVariableNamed( "y", true );
+	const llvm::GlobalVariable* const y= engine->FindGlobalVariableNamed( "y.0cc175b9c0f1b6a831c399e269772661", true );
 	U_TEST_ASSERT( y != nullptr );
 	U_TEST_ASSERT( y->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( y->hasComdat() );
 	U_TEST_ASSERT( y->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
-	const llvm::GlobalVariable* const z= engine->FindGlobalVariableNamed( "z", true );
+	const llvm::GlobalVariable* const z= engine->FindGlobalVariableNamed( "z.63a9f0ea7bb98050796b649e85481845", true );
 	U_TEST_ASSERT( z != nullptr );
-	U_TEST_ASSERT( z->getLinkage() == llvm::GlobalValue::PrivateLinkage );
-	U_TEST_ASSERT( !z->hasComdat() );
+	U_TEST_ASSERT( z->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( z->hasComdat() );
+	U_TEST_ASSERT( z->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
-	const llvm::GlobalVariable* const w= engine->FindGlobalVariableNamed( "w", true );
+	const llvm::GlobalVariable* const w= engine->FindGlobalVariableNamed( "w.63a9f0ea7bb98050796b649e85481845", true );
 	U_TEST_ASSERT( w != nullptr );
-	U_TEST_ASSERT( w->getLinkage() == llvm::GlobalValue::PrivateLinkage );
-	U_TEST_ASSERT( !w->hasComdat() );
+	U_TEST_ASSERT( w->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( w->hasComdat() );
+	U_TEST_ASSERT( w->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
 U_TEST( VariableLinkage_Test2 )
 {
-	// Mutable variables defined via imported macro expansion should be private,
+	// Mutable variables defined via imported macro expansion should have prefix based on main file,
 	// because technically it is defined inside main file.
 	static const char c_program_text_a[]= "?macro <? DEFINE_VAR:namespace ?> -> <? auto mut some_var= 0; ?> ";
 	static const char c_program_text_root[]= " import \"a\" DEFINE_VAR ";
@@ -410,12 +413,13 @@ U_TEST( VariableLinkage_Test2 )
 			{ "a", c_program_text_a },
 			{ "root", c_program_text_root }
 		},
-		"root" ) );
+		"root", false ) );
 
-	const llvm::GlobalVariable* const some_var= engine->FindGlobalVariableNamed( "some_var", true );
+	const llvm::GlobalVariable* const some_var= engine->FindGlobalVariableNamed( "some_var.63a9f0ea7bb98050796b649e85481845", true );
 	U_TEST_ASSERT( some_var != nullptr );
-	U_TEST_ASSERT( some_var->getLinkage() == llvm::GlobalValue::PrivateLinkage );
-	U_TEST_ASSERT( !some_var->hasComdat() );
+	U_TEST_ASSERT( some_var->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( some_var->hasComdat() );
+	U_TEST_ASSERT( some_var->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
 U_TEST( VariableLinkage_Test3 )
@@ -456,22 +460,23 @@ U_TEST( VariableLinkage_Test3 )
 		},
 		"root" ) );
 
-	const llvm::GlobalVariable* const x_i32= engine->FindGlobalVariableNamed( "_ZN3BoxIiE19global_template_varE", true );
+	const llvm::GlobalVariable* const x_i32= engine->FindGlobalVariableNamed( "_ZN3BoxIiE19global_template_varE.0cc175b9c0f1b6a831c399e269772661", true );
 	U_TEST_ASSERT( x_i32 != nullptr );
 	U_TEST_ASSERT( x_i32->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( x_i32->hasComdat() );
 	U_TEST_ASSERT( x_i32->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
-	const llvm::GlobalVariable* const x_f64= engine->FindGlobalVariableNamed( "_ZN3BoxIdE19global_template_varE", true );
+	const llvm::GlobalVariable* const x_f64= engine->FindGlobalVariableNamed( "_ZN3BoxIdE19global_template_varE.0cc175b9c0f1b6a831c399e269772661", true );
 	U_TEST_ASSERT( x_f64 != nullptr );
 	U_TEST_ASSERT( x_f64->getLinkage() == llvm::GlobalValue::ExternalLinkage );
 	U_TEST_ASSERT( x_f64->hasComdat() );
 	U_TEST_ASSERT( x_f64->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
-	const llvm::GlobalVariable* const x_local= engine->FindGlobalVariableNamed( "_ZN8LocalBoxIjE19global_template_varE", true );
+	const llvm::GlobalVariable* const x_local= engine->FindGlobalVariableNamed( "_ZN8LocalBoxIjE19global_template_varE.63a9f0ea7bb98050796b649e85481845", true );
 	U_TEST_ASSERT( x_local != nullptr );
-	U_TEST_ASSERT( x_local->getLinkage() == llvm::GlobalValue::PrivateLinkage );
-	U_TEST_ASSERT( !x_local->hasComdat() );
+	U_TEST_ASSERT( x_local->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( x_local->hasComdat() );
+	U_TEST_ASSERT( x_local->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
 U_TEST( PolymorphClassesDataLinkage_Test0 )
