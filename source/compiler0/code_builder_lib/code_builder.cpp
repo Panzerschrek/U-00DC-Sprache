@@ -2418,8 +2418,30 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	return val;
 }
 
-llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string_view mangled_name )
+llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
+	const Type& type, const std::string_view mangled_name, const SrcLoc& src_loc )
 {
+	// Extract "src_loc" of the root macro expansion.
+	// Avoid using "src_loc" as is, because it may come from different file.
+	SrcLoc src_loc_corrected= src_loc;
+	while( true )
+	{
+		const uint32_t macro_expansion_index= src_loc_corrected.GetMacroExpansionIndex();
+		if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
+			break;
+
+		if( macro_expansion_index >= source_graph_->macro_expansion_contexts->size() )
+			break;
+		src_loc_corrected= (*source_graph_->macro_expansion_contexts)[ macro_expansion_index ].src_loc;
+	}
+
+	const uint32_t file_index= src_loc_corrected.GetFileIndex();
+
+	const llvm::StringRef file_path_hash=
+		file_index < source_graph_->nodes_storage.size()
+		? llvm::StringRef( source_graph_->nodes_storage[ file_index ].file_path_hash )
+		: llvm::StringRef( "" );
+
 	const auto var=
 		new llvm::GlobalVariable(
 			*module_,
@@ -2427,9 +2449,10 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 			false, // is constant
 			llvm::GlobalValue::ExternalLinkage,
 			nullptr,
-			StringViewToStringRef(mangled_name) /* TODO - use file contents hash for mangling */ );
-
-	// TODO - maybe set unnamed address?
+			// Add suffix based on file path hash.
+			// This is needed to avoid merging global mutable variables which share same name, but defined in different files.
+			// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
+			StringViewToStringRef(mangled_name) + "." + file_path_hash );
 
 	// Use external linkage and comdat for global mutable variables to guarantee address uniqueness and enforce deduplication.
 	llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
