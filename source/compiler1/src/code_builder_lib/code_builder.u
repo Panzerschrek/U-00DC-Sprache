@@ -418,27 +418,14 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 
 fn CodeBuilder::IsSrcLocFromMainFile( this, SrcLoc& src_loc ) : bool
 {
-	if( src_loc.GetFileIndex() == 0u )
-	{
-		return true; // Definition in main file.
-	}
-
-	auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
-	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
-	{
-		return false; // Not something from macro - definition can't be from main file.
-	}
-
-	// If this is a src_loc in macro expansion - check recursively macro expansion point.
-	auto macro_expansion_src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
-	return IsSrcLocFromMainFile( macro_expansion_src_loc );
+	return GetRootMacroExpansionLocation( src_loc ).GetFileIndex() == 0u;
 }
 
 fn CodeBuilder::IsSrcLocFromOtherImportedFile( this, SrcLoc& src_loc ) : bool
 {
 	with( &nodes : source_graph_.try_deref().nodes )
 	{
-		var size_type file_index( src_loc.GetFileIndex() );
+		var size_type file_index( GetRootMacroExpansionLocation( src_loc ).GetFileIndex() );
 		if( file_index != 0s && file_index < nodes.size() &&
 			nodes[file_index].category == SourceGraph::Node::Category::OtherImport )
 		{
@@ -446,15 +433,24 @@ fn CodeBuilder::IsSrcLocFromOtherImportedFile( this, SrcLoc& src_loc ) : bool
 		}
 	}
 
+	return false;
+}
+
+fn CodeBuilder::GetRootMacroExpansionLocation( this, SrcLoc& src_loc ) : SrcLoc
+{
 	auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
 	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
 	{
-		return false;
+		return src_loc;
 	}
 
-	// If this is a src_loc in macro expansion - check recursively macro expansion point.
-	auto macro_expansion_src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
-	return IsSrcLocFromOtherImportedFile( macro_expansion_src_loc );
+	if( size_type(macro_expansion_index) < macro_expansion_contexts_.try_lock_imut().deref().size() )
+	{
+		var SrcLoc expansion_src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
+		return GetRootMacroExpansionLocation( expansion_src_loc );
+	}
+
+	return src_loc;
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
@@ -2370,28 +2366,9 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string_view8 name_null_ter
 
 fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, SrcLoc& src_loc ) : LLVMValueRef
 {
-	var SourceGraph& source_graph= source_graph_.try_deref();
-
 	// Extract "src_loc" of the root macro expansion.
 	// Avoid using "src_loc" as is, because it may come from different file.
-	var SrcLoc mut src_loc_corrected= src_loc;
-	with( &macro_expansion_context : source_graph.macro_expansion_contexts.lock_imut().deref() )
-	{
-		loop
-		{
-			var u32 macro_expansion_index= src_loc_corrected.GetMacroExpansionIndex();
-			if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
-			{
-				break;
-			}
-
-			if( size_type(macro_expansion_index) >= macro_expansion_context.size() )
-			{
-				break;
-			}
-			src_loc_corrected= macro_expansion_context[ size_type(macro_expansion_index) ].src_loc;
-		}
-	}
+	var size_type file_index( GetRootMacroExpansionLocation( src_loc ).GetFileIndex() );
 
 	// Add suffix based on file path hash.
 	// This is needed to avoid merging global mutable variables which share same name, but defined in different files.
@@ -2402,7 +2379,7 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 	var ust::string8 mut name_with_suffix= name_null_terminated;
 	name_with_suffix.back() = '.'; // Replace terminating null.
 
-	var size_type file_index( src_loc_corrected.GetFileIndex() );
+	var SourceGraph& source_graph= source_graph_.try_deref();
 	if( file_index <= source_graph.nodes.size() )
 	{
 		name_with_suffix+= source_graph.nodes[ file_index ].file_path_hash;

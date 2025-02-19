@@ -349,7 +349,25 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_ptr )
 {
 	// Mangle name before creating mutable lock.
-	var ust::string8 name_mangled_null_terminated= "_type_id_for_" + mangler_.deref().MangleType( class_type_ptr );
+	var ust::string8 mut name_mangled_null_terminated= "_type_id_for_" + mangler_.deref().MangleType( class_type_ptr );
+
+	// Extract "src_loc" of the root macro expansion.
+	// Avoid using "src_loc" as is, because it may come from different file.
+	var size_type file_index( GetRootMacroExpansionLocation( class_type_ptr.lock_imut().deref().syntax_element.try_deref().src_loc ).GetFileIndex() );
+
+	// Add suffix based on file path hash.
+	// This is needed to avoid merging type id table which share same name, but defined in different files.
+	// Use file path hash and not file contents hash in order to avoid merging type id tables from different files which have identical contents.
+	debug_assert( !name_mangled_null_terminated.empty() && name_mangled_null_terminated.back() == '\0', "String is not null-terminated as expected!" );
+
+	name_mangled_null_terminated.back() = '.'; // Replace terminating null.
+
+	var SourceGraph& source_graph= source_graph_.try_deref();
+	if( file_index <= source_graph.nodes.size() )
+	{
+		name_mangled_null_terminated+= source_graph.nodes[ file_index ].file_path_hash;
+	}
+	name_mangled_null_terminated.push_back( '\0' );
 
 	auto mut class_lock= class_type_ptr.lock_mut();
 	var ClassType& mut class_= class_lock.deref();
@@ -403,35 +421,15 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, type_id_table_type, name_mangled_null_terminated.front() );
 		LLVMSetInitializer( global_value, initializer );
 		LLVMSetGlobalConstant( global_value, LLVMBool::True );
+		LLVMSetLinkage( global_value, LLVMLinkage::External );
 
-		var SrcLoc class_src_loc= class_.syntax_element.try_deref().src_loc;
-		if( !IsSrcLocFromMainFile( class_src_loc ) )
-		{
-			// This is a class, declared in imported file.
-			// Create comdat in order to ensure uniquiness of the table across different modules, that import file with declaration of this class.
-			LLVMSetLinkage( global_value, LLVMLinkage::External );
+		// Create comdat in order to ensure uniquiness of the table across different modules, that import file with declaration of this class.
+		var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front() );
+		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+		LLVMSetComdat( global_value, comdat );
 
-			var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front() );
-			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
-			LLVMSetComdat( global_value, comdat );
-
-			if( IsSrcLocFromOtherImportedFile( class_src_loc ) )
-			{
-				// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
-				LLVMSetVisibility( global_value, LLVMVisibility::Default );
-			}
-			else
-			{
-				// This variable is defined within a private import file - use hidden visibility to hide it from outside.
-				LLVMSetVisibility( global_value, LLVMVisibility::Hidden );
-			}
-		}
-		else
-		{
-			// This class is declared in main file.
-			// It should not be externally available, thus there is no need to use external linkage or comdat.
-			LLVMSetLinkage( global_value, LLVMLinkage::Private );
-		}
+		// Make type id table hidden in order to avoid exporting it.
+		LLVMSetVisibility( global_value, LLVMVisibility::Hidden );
 
 		halt if( class_.polymorph_type_id_table != LLVMValueRef::Null );
 		class_.polymorph_type_id_table= global_value;
