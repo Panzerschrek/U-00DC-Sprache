@@ -236,6 +236,7 @@ fn LoadSourceGraph_r(
 			.contents_hash= move(contents_hash),
 			.synt_result= move(synt_result),
 			.category= node_category,
+			.file_path_hash= source_file_contents_hashing_function( file_path_normalized ),
 		};
 
 	return node_index;

@@ -2371,38 +2371,58 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string_view8 name_null_ter
 
 fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, SrcLoc& src_loc ) : LLVMValueRef
 {
+	var SourceGraph& source_graph= source_graph_.try_deref();
+
+	// Extract "src_loc" of the root macro expansion.
+	// Avoid using "src_loc" as is, because it may come from different file.
+	var SrcLoc mut src_loc_corrected= src_loc;
+	with( &macro_expansion_context : source_graph.macro_expansion_contexts.lock_imut().deref() )
+	{
+		loop
+		{
+			var u32 macro_expansion_index= src_loc_corrected.GetMacroExpansionIndex();
+			if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
+			{
+				break;
+			}
+
+			if( size_type(macro_expansion_index) >= macro_expansion_context.size() )
+			{
+				break;
+			}
+			src_loc_corrected= macro_expansion_context[ size_type(macro_expansion_index) ].src_loc;
+		}
+	}
+
+	// Add suffix based on file path hash.
+	// This is needed to avoid merging global mutable variables which share same name, but defined in different files.
+	// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
+
 	debug_assert( !name_null_terminated.empty() && name_null_terminated.back() == '\0', "String is not null-terminated as expected!" );
+
+	var ust::string8 mut name_with_suffix= name_null_terminated;
+	name_with_suffix.back() = '.'; // Replace terminating null.
+
+	var size_type file_index( src_loc_corrected.GetFileIndex() );
+	if( file_index <= source_graph.nodes.size() )
+	{
+		name_with_suffix+= source_graph.nodes[ file_index ].file_path_hash;
+	}
+	name_with_suffix.push_back( '\0' );
 
 	unsafe
 	{
-		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
-		LLVMSetUnnamedAddress( global_variable, LLVMUnnamedAddr::GlobalUnnamedAddr );
+		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_with_suffix.front() );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
 
-		if( !IsSrcLocFromMainFile( src_loc ) )
-		{
-			// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
-			LLVMSetLinkage( global_variable, LLVMLinkage::External );
-			auto comdat= LLVMGetOrInsertComdat( module_, name_null_terminated.front() );
-			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
-			LLVMSetComdat( global_variable, comdat );
+		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
+		LLVMSetLinkage( global_variable, LLVMLinkage::External );
+		auto comdat= LLVMGetOrInsertComdat( module_, name_with_suffix.front() );
+		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+		LLVMSetComdat( global_variable, comdat );
 
-			if( IsSrcLocFromOtherImportedFile( src_loc ) )
-			{
-				// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
-				LLVMSetVisibility( global_variable, LLVMVisibility::Default );
-			}
-			else
-			{
-				// This variable is defined within a private import file - use hidden visibility to hide it from outside.
-				LLVMSetVisibility( global_variable, LLVMVisibility::Hidden );
-			}
-		}
-		else
-		{
-			// This global mutable variable is local for this module, do not need to use external linkage.
-			LLVMSetLinkage( global_variable, LLVMLinkage::Private );
-		}
+		// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).
+		LLVMSetVisibility( global_variable, LLVMVisibility::Hidden );
 
 		return global_variable;
 	}
