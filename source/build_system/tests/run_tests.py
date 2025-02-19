@@ -448,6 +448,8 @@ def ObjectFileTargetTest():
 		assert( stdout.find( "FloatDiv" ) != -1 )
 		# Should not export internal functions
 		assert( stdout.find( "InternalFunction" ) == -1 )
+		# Should export global mutable variable - in order to support possible deduplication.
+		assert( stdout.find( "internal_global_mutable_variable." ) != -1 )
 
 
 def ExternalLibraryLinking0Test():
