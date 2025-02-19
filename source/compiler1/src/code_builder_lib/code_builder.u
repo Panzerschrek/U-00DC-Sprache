@@ -2371,7 +2371,7 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 	var size_type file_index( GetRootMacroExpansionLocation( src_loc ).GetFileIndex() );
 
 	// Add suffix based on file path hash.
-	// This is needed to avoid merging global mutable variables which share same name, but defined in different files.
+	// This is needed to avoid merging global mutable variables which share same name, but are defined in different files.
 	// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
 
 	debug_assert( !name_null_terminated.empty() && name_null_terminated.back() == '\0', "String is not null-terminated as expected!" );

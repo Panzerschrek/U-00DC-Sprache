@@ -342,8 +342,8 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 			llvm::GlobalValue::ExternalLinkage,
 			llvm::ConstantArray::get( type_id_table_type, table_initializers ),
 			// Add suffix based on file path hash.
-			// This is needed to avoid merging global mutable variables which share same name, but defined in different files.
-			// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
+			// This is needed to avoid merging type id for classes, which share same name, but are defined in different files.
+			// Use file path hash and not file contents hash in order to avoid merging type id tables of classes from different files which have identical contents.
 			llvm::StringRef("_type_id_for_") + mangler_->MangleType( class_type ) + "." + file_path_hash );
 
 	// Create comdat in order to ensure uniquiness of the table across different modules.
@@ -351,7 +351,7 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 	type_id_comdat->setSelectionKind( llvm::Comdat::Any );
 	the_class.polymorph_type_id_table->setComdat( type_id_comdat );
 
-	// This class is defined within a private import file - use hidden visibility to hide type id table from outside.
+	// Make type id table hidden in order to avoid exporting it.
 	the_class.polymorph_type_id_table->setVisibility( llvm::GlobalValue::HiddenVisibility );
 }
 

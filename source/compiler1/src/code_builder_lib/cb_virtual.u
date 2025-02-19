@@ -356,8 +356,8 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 	var size_type file_index( GetRootMacroExpansionLocation( class_type_ptr.lock_imut().deref().syntax_element.try_deref().src_loc ).GetFileIndex() );
 
 	// Add suffix based on file path hash.
-	// This is needed to avoid merging type id table which share same name, but defined in different files.
-	// Use file path hash and not file contents hash in order to avoid merging type id tables from different files which have identical contents.
+	// This is needed to avoid merging type id for classes, which share same name, but are defined in different files.
+	// Use file path hash and not file contents hash in order to avoid merging type id tables of classes from different files which have identical contents.
 	debug_assert( !name_mangled_null_terminated.empty() && name_mangled_null_terminated.back() == '\0', "String is not null-terminated as expected!" );
 
 	name_mangled_null_terminated.back() = '.'; // Replace terminating null.

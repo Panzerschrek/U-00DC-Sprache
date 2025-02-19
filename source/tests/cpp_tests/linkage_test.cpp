@@ -365,7 +365,7 @@ U_TEST( VariableLinkage_Test1 )
 	// Mutable global variables, that are defined in imported files, should have external linkage.
 	// Additionaly comdat must be present in order to merge identical mutable variables in different modules.
 	// Global mutable variables defined in main files should also have external linkage, comdat and private visibility.
-	// All names of global mutable variables should also contain suffix - file path contents.
+	// All names of global mutable variables should also contain suffix - file path hash.
 	static const char c_program_text_a[]= " var i32 mut x = 0; auto mut y = false; ";
 	static const char c_program_text_root[]= "import \"a\" var f32 mut z= 0.0f; auto mut w= \"lol\"; ";
 
@@ -403,7 +403,7 @@ U_TEST( VariableLinkage_Test1 )
 
 U_TEST( VariableLinkage_Test2 )
 {
-	// Mutable variables defined via imported macro expansion should have prefix based on main file,
+	// Mutable variables defined via imported macro expansion should have siffix based on main file path hash,
 	// because technically it is defined inside main file.
 	static const char c_program_text_a[]= "?macro <? DEFINE_VAR:namespace ?> -> <? auto mut some_var= 0; ?> ";
 	static const char c_program_text_root[]= " import \"a\" DEFINE_VAR ";
@@ -553,7 +553,7 @@ U_TEST( PolymorphClassesDataLinkage_Test3 )
 
 U_TEST( PolymorphClassesDataLinkage_Test4 )
 {
-	// Class defined in imported macro expansion is assumed to be private. But type id table is still external and has comdat.
+	// Class defined in imported macro expansion is assumed to be private. But its type id table is still external and has comdat.
 	static const char c_program_text_a[]= "?macro <? DEFINE_CLASS:namespace ?> -> <? class C polymorph {} ?> ";
 	static const char c_program_text_root[]= " import \"a\" DEFINE_CLASS ";
 
@@ -570,7 +570,7 @@ U_TEST( PolymorphClassesDataLinkage_Test4 )
 	U_TEST_ASSERT( type_id_table->hasComdat() );
 	U_TEST_ASSERT( type_id_table->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
-	// Vtable is always private, since it's contant and deduplication isn't necessary.
+	// Vtable is always private, since it's constant and deduplication isn't necessary.
 	const llvm::GlobalVariable* const vtable= engine->FindGlobalVariableNamed( "_ZTV1C", true );
 	U_TEST_ASSERT( vtable != nullptr );
 	U_TEST_ASSERT( vtable->getLinkage() == llvm::GlobalValue::PrivateLinkage );

@@ -2434,7 +2434,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
 			llvm::GlobalValue::ExternalLinkage,
 			nullptr,
 			// Add suffix based on file path hash.
-			// This is needed to avoid merging global mutable variables which share same name, but defined in different files.
+			// This is needed to avoid merging global mutable variables which share same name, but are defined in different files.
 			// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
 			StringViewToStringRef(mangled_name) + "." + file_path_hash );
 
