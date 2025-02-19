@@ -202,8 +202,6 @@ CPP Header converter:
 *) Add possibility to specify halt mode (trap/abort/unreachable/custom)
 *) Fix JSON floats serialization
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
-*) Fix possible global mutable variables and type id tables duplication because of private linking of a library into
-	more than one other build targets, which end up in the same result executable or shared library
 *) Add possibility to mark a library build target as "force public" and thus make it public dependency even for build
 	targets which depend on it privately. This should ensure that exactly one version of this library is linked into
 	result executable or shared library.
