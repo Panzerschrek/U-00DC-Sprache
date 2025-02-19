@@ -701,6 +701,12 @@ def GlobalMutableVariablesDeduplication0Test():
 	RunExecutable( test_dir, "exe" )
 
 
+def GlobalMutableVariablesDeduplication1Test():
+	test_dir= "global_mutable_variables_deduplication1"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1421,6 +1427,7 @@ def main():
 		SingleFileProgram0Test,
 		SingleFileProgram1Test,
 		GlobalMutableVariablesDeduplication0Test,
+		GlobalMutableVariablesDeduplication1Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,

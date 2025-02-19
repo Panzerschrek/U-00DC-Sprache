@@ -1,0 +1,14 @@
+import "common.uh"
+
+fn BGetVar() : i32
+{
+	return unsafe( some_global_mutable_var );
+}
+
+fn BSetVar( i32 x )
+{
+	unsafe
+	{
+		some_global_mutable_var= x;
+	}
+}

@@ -1,0 +1,14 @@
+import "common.uh"
+
+fn AGetVar() : i32
+{
+	return unsafe( some_global_mutable_var );
+}
+
+fn ASetVar( i32 x )
+{
+	unsafe
+	{
+		some_global_mutable_var= x;
+	}
+}
