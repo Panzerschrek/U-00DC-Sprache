@@ -1250,8 +1250,8 @@ fn CreatePackageTargetBuildGraphNodes(
 			node.command_line.push_back( lib_file );
 			node.input_files.push_back( lib_file );
 
-			// Internalize all symbols from private dependencies.
-			node.command_line.push_back( "--internalize-symbols-from" );
+			// Internalize all functions from private dependencies.
+			node.command_line.push_back( "--internalize-functions-from" );
 			node.command_line.push_back( move(lib_file) );
 		}
 	}
@@ -1265,8 +1265,8 @@ fn CreatePackageTargetBuildGraphNodes(
 			var ust::filesystem_path mut bc_file= GetCompiledUstlibPath( root_package_build_directory );
 			node.command_line.push_back( bc_file );
 			node.input_files.push_back( bc_file );
-			// Internalize all symbols from ustlib.
-			node.command_line.push_back( "--internalize-symbols-from" );
+			// Internalize all functions from ustlib.
+			node.command_line.push_back( "--internalize-functions-from" );
 			node.command_line.push_back( move(bc_file) );
 		},
 		BuildTargetType::Library -> { /* It's not necessary to link bitcode libraries against ustlib. */ },

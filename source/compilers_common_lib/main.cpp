@@ -269,10 +269,10 @@ cl::list<std::string> internalize_preserve(
 	cl::Optional,
 	cl::cat(options_category) );
 
-cl::list<std::string> internalize_symbols_from(
-	"internalize-symbols-from",
+cl::list<std::string> internalize_functions_from(
+	"internalize-functions-from",
 	cl::Prefix,
-	cl::desc("Internalize symbols from given input file. File name must be specified exactly as it specified in input files option."),
+	cl::desc("Internalize functions from given input file. File name must be specified exactly as it specified in input files option."),
 	cl::value_desc("file"),
 	cl::ZeroOrMore,
 	cl::cat(options_category));
@@ -342,20 +342,11 @@ void InternalizeHiddenFunctions( llvm::Module& module )
 	}
 }
 
-struct ExternalSymbolsInfo
-{
-	// Symbols with external linkage have uniqie names, so, we can identify them by name.
-	std::vector<std::string> functions;
-	std::vector<std::string> variables;
-};
-
-void CollectExternalSymbolsForInternalizatioin(
-	const llvm::Module& module,
-	const std::string& input_file_name,
-	ExternalSymbolsInfo& external_symbols_info )
+void CollectExternalFunctionsForInternalizatioin(
+	const llvm::Module& module, const std::string& input_file_name, std::vector<std::string>& functions )
 {
 	bool should_internalize= false;
-	for( const auto& file_name : Options::internalize_symbols_from )
+	for( const auto& file_name : Options::internalize_functions_from )
 	{
 		if( input_file_name == file_name )
 		{
@@ -369,16 +360,12 @@ void CollectExternalSymbolsForInternalizatioin(
 
 	for( const llvm::Function& function : module.functions() )
 		if( !function.isDeclaration() && !function.hasLocalLinkage() )
-			external_symbols_info.functions.push_back( function.getName().str() );
-
-	for( const llvm::GlobalVariable& global_variable : module.globals() )
-		if( !global_variable.isDeclaration() && !global_variable.hasLocalLinkage() )
-			external_symbols_info.variables.push_back( global_variable.getName().str() );
+			functions.push_back( function.getName().str() );
 }
 
-void InternalizeCollectedSymbols( llvm::Module& module, const ExternalSymbolsInfo& external_symbols_info )
+void InternalizeCollectedFunctions( llvm::Module& module, const llvm::ArrayRef<std::string> external_functions )
 {
-	for( const std::string& function_name : external_symbols_info.functions )
+	for( const std::string& function_name : external_functions )
 	{
 		if( const auto function= module.getFunction( function_name ) )
 		{
@@ -389,21 +376,6 @@ void InternalizeCollectedSymbols( llvm::Module& module, const ExternalSymbolsInf
 				// HACK! LLVM Doesn't remove unused comdat. Make this manually.
 				if( comdat->getName() == function->getName() )
 					function->getParent()->getComdatSymbolTable().erase( comdat->getName() );
-			}
-		}
-	}
-
-	for( const std::string& variable_name : external_symbols_info.variables )
-	{
-		if( const auto variable= module.getGlobalVariable( variable_name ) )
-		{
-			variable->setLinkage( llvm::GlobalValue::PrivateLinkage );
-			if( const auto comdat = variable->getComdat() )
-			{
-				variable->setComdat( nullptr );
-				// HACK! LLVM Doesn't remove unused comdat. Make this manually.
-				if( comdat->getName() == variable->getName() )
-					variable->getParent()->getComdatSymbolTable().erase( comdat->getName() );
 			}
 		}
 	}
@@ -497,7 +469,7 @@ int Main( int argc, const char* argv[] )
 	Options::internalize.removeArgument();
 	Options::internalize_hidden_functions.removeArgument();
 	Options::internalize_preserve.removeArgument();
-	Options::internalize_symbols_from.removeArgument();
+	Options::internalize_functions_from.removeArgument();
 	Options::lto_mode.removeArgument();
 	Options::linker_args.removeArgument();
 
@@ -616,7 +588,7 @@ int Main( int argc, const char* argv[] )
 
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
-	ExternalSymbolsInfo external_symbols_info;
+	std::vector<std::string> external_functions_for_internalization;
 
 	if( Options::input_files_type == Options::InputFileType::Source )
 	{
@@ -677,7 +649,8 @@ int Main( int argc, const char* argv[] )
 				continue;
 			}
 
-			CollectExternalSymbolsForInternalizatioin( *code_builder_launch_result.llvm_module, input_file, external_symbols_info );
+			CollectExternalFunctionsForInternalizatioin(
+				*code_builder_launch_result.llvm_module, input_file, external_functions_for_internalization );
 
 			if( result_module == nullptr )
 				result_module= std::move( code_builder_launch_result.llvm_module );
@@ -778,7 +751,7 @@ int Main( int argc, const char* argv[] )
 
 			deps_list.push_back( input_file );
 
-			CollectExternalSymbolsForInternalizatioin( *module, input_file, external_symbols_info );
+			CollectExternalFunctionsForInternalizatioin( *module, input_file, external_functions_for_internalization );
 
 			if( result_module == nullptr )
 				result_module= std::move( module );
@@ -837,8 +810,8 @@ int Main( int argc, const char* argv[] )
 		Options::input_files_type == Options::InputFileType::Source )
 		InlineAsyncCalls( *result_module );
 
-	// Internalize symbols from input files listed in "internalize-symbols-from" option.
-	InternalizeCollectedSymbols( *result_module, external_symbols_info );
+	// Internalize functions from input files listed in "internalize-functions-from" option.
+	InternalizeCollectedFunctions( *result_module, external_functions_for_internalization );
 
 	// Internalize hidden functions, if necessary.
 	// Do it before optimization, to encourange inlining of internalized functions.
