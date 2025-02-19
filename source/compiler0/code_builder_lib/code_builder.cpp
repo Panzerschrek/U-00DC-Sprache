@@ -1582,7 +1582,6 @@ void CodeBuilder::BuildFuncCode(
 	else
 	{
 		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
-		// Do not need to use comdat here, since this function is defined only in main (compiled) file.
 		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
 		llvm_function->setVisibility( visibility );
 	}
