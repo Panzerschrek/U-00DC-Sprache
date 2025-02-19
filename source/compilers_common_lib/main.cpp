@@ -383,28 +383,21 @@ void InternalizeCollectedFunctions( llvm::Module& module, const llvm::ArrayRef<s
 
 void SetupDLLExport( llvm::Module& module )
 {
-	const auto set_dllexport=
-		[]( llvm::GlobalValue& v )
-		{
-			if( v.isDeclaration() )
-				return; // Skip declarations.
-
-			const llvm::GlobalValue::LinkageTypes linkage= v.getLinkage();
-			if( linkage == llvm::GlobalValue::InternalLinkage ||
-				linkage == llvm::GlobalValue::PrivateLinkage )
-				return; // Set dllexport only for public symbols.
-
-			if( v.getVisibility() == llvm::GlobalValue::DefaultVisibility )
-				v.setDLLStorageClass( llvm::GlobalValue::DLLExportStorageClass );
-			else
-			{} // Do not export "hidden" symbols from dll.
-		};
-
 	for( llvm::Function& function : module.functions() )
-		set_dllexport( function );
+	{
+		if( function.isDeclaration() )
+			return; // Skip declarations.
 
-	for( llvm::GlobalVariable& global_variable : module.globals() )
-		set_dllexport( global_variable );
+		const llvm::GlobalValue::LinkageTypes linkage= function.getLinkage();
+		if( linkage == llvm::GlobalValue::InternalLinkage ||
+			linkage == llvm::GlobalValue::PrivateLinkage )
+			return; // Set dllexport only for public functions.
+
+		if( function.getVisibility() == llvm::GlobalValue::DefaultVisibility )
+			function.setDLLStorageClass( llvm::GlobalValue::DLLExportStorageClass );
+		else
+		{} // Do not export "hidden" functions from dll.
+	}
 }
 
 int Main( int argc, const char* argv[] )
@@ -915,7 +908,7 @@ int Main( int argc, const char* argv[] )
 		module_pass_manager.run( *result_module, module_analysis_manager );
 	}
 
-	// Translate "visibility(default)" into "dllexport" for Windows dynamic libraries.
+	// Translate functions with "visibility(default)" into "dllexport" for Windows dynamic libraries.
 	if( file_type == FileType::Dll && target_machine->getTargetTriple().getOS() == llvm::Triple::Win32 )
 		SetupDLLExport( *result_module );
 
