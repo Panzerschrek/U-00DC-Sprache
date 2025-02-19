@@ -695,8 +695,8 @@ def SingleFileProgram1Test():
 	RunSingleProgramCompilationTest( "single_file_program1" )
 
 
-def GlobalMutableVariablesDeduplicationTest():
-	test_dir= "global_mutable_variables_deduplication"
+def GlobalMutableVariablesDeduplication0Test():
+	test_dir= "global_mutable_variables_deduplication0"
 	RunBuildSystem( test_dir )
 	RunExecutable( test_dir, "exe" )
 
@@ -1420,7 +1420,7 @@ def main():
 		BuildTargetWithoutSources1Test,
 		SingleFileProgram0Test,
 		SingleFileProgram1Test,
-		GlobalMutableVariablesDeduplicationTest,
+		GlobalMutableVariablesDeduplication0Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
