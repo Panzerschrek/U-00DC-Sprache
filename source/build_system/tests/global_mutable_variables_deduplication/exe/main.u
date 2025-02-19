@@ -1,0 +1,22 @@
+import "/lib_a/lib_a.uh"
+import "/lib_b/lib_b.uh"
+
+fn nomangle main() : i32
+{
+	// Libraries "lib_a" and "lib_b" both depend privately on "lib_common".
+	// It means that "lib_common" will be linked into these libraries with internalisation.
+	// This "lib_common" library defines an internal global mutable variable.
+	// This variable should be deduplicated in this executable.
+
+	// Setting variable via "lib_a" should affect "lib_b".
+	ASetVar( 7871 );
+	halt if( BGetVar() != 7871 );
+	halt if( AGetVar() != 7871 );
+
+	// Setting variable via "lib_b" should affect "lib_a".
+	BSetVar( -38901 );
+	halt if( AGetVar() != -38901 );
+	halt if( BGetVar() != -38901 );
+
+	return 0;
+}
