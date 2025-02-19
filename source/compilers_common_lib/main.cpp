@@ -255,9 +255,9 @@ cl::opt<bool> internalize(
 	cl::init(false),
 	cl::cat(options_category) );
 
-cl::opt<bool> internalize_hidden(
-	"internalize-hidden",
-	cl::desc("Internalize symbols with hidden visibility."),
+cl::opt<bool> internalize_hidden_functions(
+	"internalize-hidden-functions",
+	cl::desc("Internalize functions with hidden visibility."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -324,29 +324,22 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 	return false;
 }
 
-void InternalizeHiddenSymbols( llvm::Module& module )
+void InternalizeHiddenFunctions( llvm::Module& module )
 {
-	const auto internalize=
-		[]( llvm::GlobalObject& v )
-		{
-			if( !v.isDeclaration() && v.getVisibility() == llvm::GlobalValue::HiddenVisibility )
-			{
-				v.setLinkage( llvm::GlobalValue::PrivateLinkage );
-				if( const auto comdat = v.getComdat() )
-				{
-					v.setComdat( nullptr );
-					// HACK! LLVM Doesn't remove unused comdat. Make this manually.
-					if( comdat->getName() == v.getName() )
-						v.getParent()->getComdatSymbolTable().erase( comdat->getName() );
-				}
-			}
-		};
-
 	for( llvm::Function& function : module.functions() )
-		internalize( function );
-
-	for( llvm::GlobalVariable& global_variable : module.globals() )
-		internalize( global_variable );
+	{
+		if( !function.isDeclaration() && function.getVisibility() == llvm::GlobalValue::HiddenVisibility )
+		{
+			function.setLinkage( llvm::GlobalValue::PrivateLinkage );
+			if( const auto comdat = function.getComdat() )
+			{
+				function.setComdat( nullptr );
+				// HACK! LLVM Doesn't remove unused comdat. Make this manually.
+				if( comdat->getName() == function.getName() )
+					function.getParent()->getComdatSymbolTable().erase( comdat->getName() );
+			}
+		}
+	}
 }
 
 struct ExternalSymbolsInfo
@@ -502,7 +495,7 @@ int Main( int argc, const char* argv[] )
 	Options::no_system_alloc.removeArgument();
 	Options::verify_module.removeArgument();
 	Options::internalize.removeArgument();
-	Options::internalize_hidden.removeArgument();
+	Options::internalize_hidden_functions.removeArgument();
 	Options::internalize_preserve.removeArgument();
 	Options::internalize_symbols_from.removeArgument();
 	Options::lto_mode.removeArgument();
@@ -847,10 +840,10 @@ int Main( int argc, const char* argv[] )
 	// Internalize symbols from input files listed in "internalize-symbols-from" option.
 	InternalizeCollectedSymbols( *result_module, external_symbols_info );
 
-	// Internalize hidden symbols, if necessary.
+	// Internalize hidden functions, if necessary.
 	// Do it before optimization, to encourange inlining of internalized functions.
-	if( Options::internalize_hidden )
-		InternalizeHiddenSymbols( *result_module );
+	if( Options::internalize_hidden_functions )
+		InternalizeHiddenFunctions( *result_module );
 
 	// Perform verification after code generation/linking and after special optimizations and internalizations, but before running LLVM optimizations pipeline.
 	if( Options::verify_module )

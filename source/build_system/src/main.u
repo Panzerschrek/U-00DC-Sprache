@@ -1389,18 +1389,18 @@ fn CreatePackageTargetBuildGraphNodes(
 		},
 		BuildTargetType::Library ->
 		{
-			// Internalize hidden symbols - to hide functions/variables which shouldn't be available outside this library.
-			node.command_line.push_back( "--internalize-hidden" );
+			// Internalize hidden functions - to hide functions which shouldn't be available outside this library.
+			node.command_line.push_back( "--internalize-hidden-functions" );
 		},
 		BuildTargetType::SharedLibrary ->
 		{
-			// Run internalization of hidden symbols, preserve others in order to export them.
-			node.command_line.push_back( "--internalize-hidden" );
+			// Run internalization of hidden functions, preserve others in order to export them.
+			node.command_line.push_back( "--internalize-hidden-functions" );
 		},
 		BuildTargetType::ObjectFile ->
 		{
-			// Run internalization of hidden symbols, preserve others, in order to access them by external code using this object file.
-			node.command_line.push_back( "--internalize-hidden" );
+			// Run internalization of hidden functions, preserve others, in order to access them by external code using this object file.
+			node.command_line.push_back( "--internalize-hidden-functions" );
 		},
 	}
 
