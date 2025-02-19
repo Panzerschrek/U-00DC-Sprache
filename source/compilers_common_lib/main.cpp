@@ -386,12 +386,12 @@ void SetupDLLExport( llvm::Module& module )
 	for( llvm::Function& function : module.functions() )
 	{
 		if( function.isDeclaration() )
-			return; // Skip declarations.
+			continue; // Skip declarations.
 
 		const llvm::GlobalValue::LinkageTypes linkage= function.getLinkage();
 		if( linkage == llvm::GlobalValue::InternalLinkage ||
 			linkage == llvm::GlobalValue::PrivateLinkage )
-			return; // Set dllexport only for public functions.
+			continue; // Set dllexport only for public functions.
 
 		if( function.getVisibility() == llvm::GlobalValue::DefaultVisibility )
 			function.setDLLStorageClass( llvm::GlobalValue::DLLExportStorageClass );
