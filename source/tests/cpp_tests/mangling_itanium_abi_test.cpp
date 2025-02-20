@@ -233,13 +233,13 @@ U_TEST( GlobalVariablesManglingTest0 )
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace2piE", true ) != nullptr );
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace9pi_doubleE", true ) != nullptr );
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace3Bar7abcdefgE", true ) != nullptr );
-	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace3Bar6BarMutE", true ) != nullptr );
-	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace13namespace_mutE", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace3Bar6BarMutE.b14a7b8059d9c055954c92674ce60032", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN8SSS_Pace13namespace_mutE.b14a7b8059d9c055954c92674ce60032", true ) != nullptr );
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN4Ball4rrttE", true ) != nullptr );
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN3BoxIfE4sizeE", true ) != nullptr );
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN3BoxIfE5InnerIjE9inner_valE", true ) != nullptr );
-	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN3BoxIfE5InnerIjE9inner_mutE", true ) != nullptr );
-	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "GlobalMut", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZN3BoxIfE5InnerIjE9inner_mutE.b14a7b8059d9c055954c92674ce60032", true ) != nullptr );
+	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "GlobalMut.b14a7b8059d9c055954c92674ce60032", true ) != nullptr );
 }
 
 U_TEST( OperatorsManglingTest )

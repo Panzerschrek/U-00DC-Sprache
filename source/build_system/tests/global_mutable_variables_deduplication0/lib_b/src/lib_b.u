@@ -1,0 +1,12 @@
+import "/lib_b/lib_b.uh"
+import "/lib_common/lib_common.uh"
+
+fn BGetVar() : i32
+{
+	return CommonGetVar();
+}
+
+fn BSetVar( i32 x )
+{
+	CommonSetVar(x);
+}

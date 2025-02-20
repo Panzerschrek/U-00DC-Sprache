@@ -1,0 +1,21 @@
+import "common.uh"
+
+fn nomangle main() : i32
+{
+	ASetVar( 7554 );
+	halt if( BGetVar() != 7554 );
+	halt if( AGetVar() != 7554 );
+	halt if( unsafe( some_global_mutable_var ) != 7554 );
+
+	BSetVar( 398 );
+	halt if( AGetVar() != 398 );
+	halt if( BGetVar() != 398 );
+	halt if( unsafe( some_global_mutable_var ) != 398 );
+
+	unsafe{ some_global_mutable_var= -77812; }
+	halt if( AGetVar() != -77812 );
+	halt if( BGetVar() != -77812 );
+	halt if( unsafe( some_global_mutable_var ) != -77812 );
+
+	return 0;
+}

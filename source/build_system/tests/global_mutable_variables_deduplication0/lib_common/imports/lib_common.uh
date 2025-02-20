@@ -1,0 +1,2 @@
+fn CommonGetVar() : i32;
+fn CommonSetVar( i32 x );

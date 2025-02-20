@@ -448,6 +448,8 @@ def ObjectFileTargetTest():
 		assert( stdout.find( "FloatDiv" ) != -1 )
 		# Should not export internal functions
 		assert( stdout.find( "InternalFunction" ) == -1 )
+		# Should export global mutable variable - in order to support possible deduplication.
+		assert( stdout.find( "internal_global_mutable_variable." ) != -1 )
 
 
 def ExternalLibraryLinking0Test():
@@ -693,6 +695,18 @@ def SingleFileProgram0Test():
 
 def SingleFileProgram1Test():
 	RunSingleProgramCompilationTest( "single_file_program1" )
+
+
+def GlobalMutableVariablesDeduplication0Test():
+	test_dir= "global_mutable_variables_deduplication0"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
+
+
+def GlobalMutableVariablesDeduplication1Test():
+	test_dir= "global_mutable_variables_deduplication1"
+	RunBuildSystem( test_dir )
+	RunExecutable( test_dir, "exe" )
 
 
 def MissingBuildFileTest():
@@ -1414,6 +1428,8 @@ def main():
 		BuildTargetWithoutSources1Test,
 		SingleFileProgram0Test,
 		SingleFileProgram1Test,
+		GlobalMutableVariablesDeduplication0Test,
+		GlobalMutableVariablesDeduplication1Test,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,

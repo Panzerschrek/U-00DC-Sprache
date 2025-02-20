@@ -583,32 +583,29 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 
 bool CodeBuilder::IsSrcLocFromMainFile( const SrcLoc& src_loc )
 {
-	if( src_loc.GetFileIndex() == 0 )
-		return true; // Definition in main file.
-
-	const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
-	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
-		return false; // Not something from macro - definition can't be from main file.
-
-	// If this is a src_loc in macro expansion - check recursively macro expansion point.
-	U_ASSERT( macro_expansion_index < macro_expansion_contexts_->size() );
-	return IsSrcLocFromMainFile( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
+	return GetRootMacroExpansionLocation( src_loc ).GetFileIndex() == 0;
 }
 
 bool CodeBuilder::IsSrcLocFromOtherImportedFile( const SrcLoc& src_loc )
 {
-	const uint32_t file_index= src_loc.GetFileIndex();
+	const uint32_t file_index= GetRootMacroExpansionLocation( src_loc ).GetFileIndex();
 	if( file_index != 0 && file_index < source_graph_->nodes_storage.size() &&
 		source_graph_->nodes_storage[file_index].category == SourceGraph::Node::Category::OtherImport )
 		return true;
 
+	return false;
+}
+
+SrcLoc CodeBuilder::GetRootMacroExpansionLocation( const SrcLoc& src_loc )
+{
 	const auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
 	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
-		return false;
+		return src_loc;
 
-	// If this is a src_loc in macro expansion - check recursively macro expansion point.
-	U_ASSERT( macro_expansion_index < macro_expansion_contexts_->size() );
-	return IsSrcLocFromOtherImportedFile( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
+	if( macro_expansion_index < macro_expansion_contexts_->size() )
+		return GetRootMacroExpansionLocation( (*macro_expansion_contexts_)[ macro_expansion_index ].src_loc );
+
+	return src_loc;
 }
 
 void CodeBuilder::TryCallCopyConstructor(
@@ -1582,7 +1579,6 @@ void CodeBuilder::BuildFuncCode(
 	else
 	{
 		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
-		// Do not need to use comdat here, since this function is defined only in main (compiled) file.
 		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
 		llvm_function->setVisibility( visibility );
 	}
@@ -2421,6 +2417,15 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
 	const Type& type, const std::string_view mangled_name, const SrcLoc& src_loc )
 {
+	// Extract "src_loc" of the root macro expansion.
+	// Avoid using "src_loc" as is, because it may come from different file.
+	const uint32_t file_index= GetRootMacroExpansionLocation( src_loc ).GetFileIndex();
+
+	const llvm::StringRef file_path_hash=
+		file_index < source_graph_->nodes_storage.size()
+		? llvm::StringRef( source_graph_->nodes_storage[ file_index ].file_path_hash )
+		: llvm::StringRef( "" );
+
 	const auto var=
 		new llvm::GlobalVariable(
 			*module_,
@@ -2428,33 +2433,18 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
 			false, // is constant
 			llvm::GlobalValue::ExternalLinkage,
 			nullptr,
-			StringViewToStringRef(mangled_name) );
+			// Add suffix based on file path hash.
+			// This is needed to avoid merging global mutable variables which share same name, but are defined in different files.
+			// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
+			StringViewToStringRef(mangled_name) + "." + file_path_hash );
 
-	if( !IsSrcLocFromMainFile( src_loc ) )
-	{
-		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
-		llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
-		comdat->setSelectionKind( llvm::Comdat::Any );
-		var->setComdat( comdat );
+	// Use external linkage and comdat for global mutable variables to guarantee address uniqueness and enforce deduplication.
+	llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
+	comdat->setSelectionKind( llvm::Comdat::Any );
+	var->setComdat( comdat );
 
-		var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
-
-		if( IsSrcLocFromOtherImportedFile( src_loc ) )
-		{
-			// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
-			var->setVisibility( llvm::GlobalValue::DefaultVisibility );
-		}
-		else
-		{
-			// This variable is defined within a private import file - use hidden visibility to hide it from outside.
-			var->setVisibility( llvm::GlobalValue::HiddenVisibility );
-		}
-	}
-	else
-	{
-		// This global mutable variable is local for this module, do not need to use external linkage.
-		var->setLinkage( llvm::GlobalValue::PrivateLinkage );
-	}
+	// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).
+	var->setVisibility( llvm::GlobalValue::HiddenVisibility );
 
 	return var;
 }

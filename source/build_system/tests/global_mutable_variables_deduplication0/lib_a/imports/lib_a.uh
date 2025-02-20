@@ -1,0 +1,2 @@
+fn AGetVar() : i32;
+fn ASetVar( i32 x );

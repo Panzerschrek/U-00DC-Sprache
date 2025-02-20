@@ -418,27 +418,14 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 
 fn CodeBuilder::IsSrcLocFromMainFile( this, SrcLoc& src_loc ) : bool
 {
-	if( src_loc.GetFileIndex() == 0u )
-	{
-		return true; // Definition in main file.
-	}
-
-	auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
-	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
-	{
-		return false; // Not something from macro - definition can't be from main file.
-	}
-
-	// If this is a src_loc in macro expansion - check recursively macro expansion point.
-	auto macro_expansion_src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
-	return IsSrcLocFromMainFile( macro_expansion_src_loc );
+	return GetRootMacroExpansionLocation( src_loc ).GetFileIndex() == 0u;
 }
 
 fn CodeBuilder::IsSrcLocFromOtherImportedFile( this, SrcLoc& src_loc ) : bool
 {
 	with( &nodes : source_graph_.try_deref().nodes )
 	{
-		var size_type file_index( src_loc.GetFileIndex() );
+		var size_type file_index( GetRootMacroExpansionLocation( src_loc ).GetFileIndex() );
 		if( file_index != 0s && file_index < nodes.size() &&
 			nodes[file_index].category == SourceGraph::Node::Category::OtherImport )
 		{
@@ -446,15 +433,24 @@ fn CodeBuilder::IsSrcLocFromOtherImportedFile( this, SrcLoc& src_loc ) : bool
 		}
 	}
 
+	return false;
+}
+
+fn CodeBuilder::GetRootMacroExpansionLocation( this, SrcLoc& src_loc ) : SrcLoc
+{
 	auto macro_expansion_index= src_loc.GetMacroExpansionIndex();
 	if( macro_expansion_index == SrcLoc::c_max_macro_expanison_index )
 	{
-		return false;
+		return src_loc;
 	}
 
-	// If this is a src_loc in macro expansion - check recursively macro expansion point.
-	auto macro_expansion_src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
-	return IsSrcLocFromOtherImportedFile( macro_expansion_src_loc );
+	if( size_type(macro_expansion_index) < macro_expansion_contexts_.try_lock_imut().deref().size() )
+	{
+		var SrcLoc expansion_src_loc= macro_expansion_contexts_.try_lock_imut().deref()[ size_type(macro_expansion_index) ].src_loc;
+		return GetRootMacroExpansionLocation( expansion_src_loc );
+	}
+
+	return src_loc;
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
@@ -1195,7 +1191,6 @@ fn CodeBuilder::BuildFuncCode(
 	else
 	{
 		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
-		// Do not need to use comdat here, since this function is defined only in main (compiled) file.
 		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::External ) );
 		unsafe( LLVMSetVisibility( llvm_function, visibility ) );
 	}
@@ -2371,38 +2366,39 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string_view8 name_null_ter
 
 fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, SrcLoc& src_loc ) : LLVMValueRef
 {
+	// Extract "src_loc" of the root macro expansion.
+	// Avoid using "src_loc" as is, because it may come from different file.
+	var size_type file_index( GetRootMacroExpansionLocation( src_loc ).GetFileIndex() );
+
+	// Add suffix based on file path hash.
+	// This is needed to avoid merging global mutable variables which share same name, but are defined in different files.
+	// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
+
 	debug_assert( !name_null_terminated.empty() && name_null_terminated.back() == '\0', "String is not null-terminated as expected!" );
+
+	var ust::string8 mut name_with_suffix= name_null_terminated;
+	name_with_suffix.back() = '.'; // Replace terminating null.
+
+	var SourceGraph& source_graph= source_graph_.try_deref();
+	if( file_index <= source_graph.nodes.size() )
+	{
+		name_with_suffix+= source_graph.nodes[ file_index ].file_path_hash;
+	}
+	name_with_suffix.push_back( '\0' );
 
 	unsafe
 	{
-		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
-		LLVMSetUnnamedAddress( global_variable, LLVMUnnamedAddr::GlobalUnnamedAddr );
+		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_with_suffix.front() );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
 
-		if( !IsSrcLocFromMainFile( src_loc ) )
-		{
-			// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
-			LLVMSetLinkage( global_variable, LLVMLinkage::External );
-			auto comdat= LLVMGetOrInsertComdat( module_, name_null_terminated.front() );
-			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
-			LLVMSetComdat( global_variable, comdat );
+		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
+		LLVMSetLinkage( global_variable, LLVMLinkage::External );
+		auto comdat= LLVMGetOrInsertComdat( module_, name_with_suffix.front() );
+		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+		LLVMSetComdat( global_variable, comdat );
 
-			if( IsSrcLocFromOtherImportedFile( src_loc ) )
-			{
-				// This variable is defined within an import file - use default visibility in order to make it available for other build targets.
-				LLVMSetVisibility( global_variable, LLVMVisibility::Default );
-			}
-			else
-			{
-				// This variable is defined within a private import file - use hidden visibility to hide it from outside.
-				LLVMSetVisibility( global_variable, LLVMVisibility::Hidden );
-			}
-		}
-		else
-		{
-			// This global mutable variable is local for this module, do not need to use external linkage.
-			LLVMSetLinkage( global_variable, LLVMLinkage::Private );
-		}
+		// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).
+		LLVMSetVisibility( global_variable, LLVMVisibility::Hidden );
 
 		return global_variable;
 	}

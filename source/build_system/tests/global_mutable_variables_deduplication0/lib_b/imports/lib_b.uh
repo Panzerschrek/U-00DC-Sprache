@@ -1,0 +1,2 @@
+fn BGetVar() : i32;
+fn BSetVar( i32 x );

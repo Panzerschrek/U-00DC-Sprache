@@ -145,6 +145,7 @@ size_t LoadNode_r(
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );
 	result.nodes_storage[node_index].contents_hash= std::move(contents_hash);
+	result.nodes_storage[node_index].file_path_hash= source_file_contents_hashing_function( full_file_path );
 	return node_index;
 }
 

@@ -116,6 +116,9 @@ private:
 
 	fn IsSrcLocFromOtherImportedFile( this, SrcLoc& src_loc ) : bool;
 
+	// If this location is not from macro expansion - return this location, otherwise search for root macro expansion location.
+	fn GetRootMacroExpansionLocation( this, SrcLoc& src_loc ) : SrcLoc;
+
 	//
 	// Resolving
 	//

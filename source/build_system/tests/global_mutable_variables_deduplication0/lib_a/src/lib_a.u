@@ -1,0 +1,12 @@
+import "/lib_a/lib_a.uh"
+import "/lib_common/lib_common.uh"
+
+fn AGetVar() : i32
+{
+	return CommonGetVar();
+}
+
+fn ASetVar( i32 x )
+{
+	CommonSetVar(x);
+}

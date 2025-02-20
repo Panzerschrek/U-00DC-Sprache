@@ -1,0 +1,44 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	// "exe" depends on "lib_a" and "lib_b", each of them depends privately on "lib_common".
+	// This creates symbols duplication in "exe", but such duplication should be properly handled for global mutable variables.
+	var BK::BuildTarget mut exe
+	{
+		.target_type = BK::BuildTargetType::Executable,
+		.name= "exe",
+		.source_files= ust::make_array</ust::filesystem_path/>( "exe/main.u" ),
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= "lib_a" }, BK::DependencyName{ .name= "lib_b" } ),
+	};
+
+	var BK::BuildTarget mut lib_a
+	{
+		.target_type = BK::BuildTargetType::Library,
+		.name= "lib_a",
+		.source_files= ust::make_array</ust::filesystem_path/>( "lib_a/src/lib_a.u" ),
+		.public_include_directories= ust::make_array</ust::filesystem_path/>( "lib_a/imports" ),
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= "lib_common" } ),
+	};
+
+	var BK::BuildTarget mut lib_b
+	{
+		.target_type = BK::BuildTargetType::Library,
+		.name= "lib_b",
+		.source_files= ust::make_array</ust::filesystem_path/>( "lib_b/src/lib_b.u" ),
+		.public_include_directories= ust::make_array</ust::filesystem_path/>( "lib_b/imports" ),
+		.private_dependencies= ust::make_array( BK::DependencyName{ .name= "lib_common" } ),
+	};
+
+	var BK::BuildTarget mut lib_common
+	{
+		.target_type = BK::BuildTargetType::Library,
+		.name= "lib_common",
+		.source_files= ust::make_array</ust::filesystem_path/>( "lib_common/src/lib_common.u" ),
+		.public_include_directories= ust::make_array</ust::filesystem_path/>( "lib_common/imports" ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(exe), move(lib_a), move(lib_b), move(lib_common) ) };
+}

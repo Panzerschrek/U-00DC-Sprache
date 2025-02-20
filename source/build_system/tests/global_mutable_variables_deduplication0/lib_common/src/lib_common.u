@@ -1,0 +1,16 @@
+import "/lib_common/lib_common.uh"
+
+fn CommonGetVar() : i32
+{
+	return unsafe( my_internal_var );
+}
+
+fn CommonSetVar( i32 x )
+{
+	unsafe
+	{
+		my_internal_var= x;
+	}
+}
+
+var i32 mut my_internal_var= 0;
