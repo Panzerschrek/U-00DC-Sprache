@@ -44,6 +44,8 @@ add_custom_command(
 		-o ${current_subdir}/ustlib.o
 		-MF ${CMAKE_CURRENT_BINARY_DIR}/ustlib.d
 		--data-sections --function-sections # Put symbols into sections in order to remove unused functions during linking.
+		# Mark the whole ustlib directory as source directory - in order to make all functions hidden and thus avoid exporting them from shared libraries.
+		--source-dir ${CMAKE_CURRENT_SOURCE_DIR}
 		${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
 		--verify-module
 	${DEPFILE_OPTION}
