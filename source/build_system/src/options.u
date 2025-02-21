@@ -33,7 +33,7 @@ auto constexpr g_help_message=
 	"  -v                                     - be verbose\n" +
 	"  -h, --help                             - show this message\n" +
 	"  -j <number>                            - max number of parallel build jobs. Use 0 for using all CPU cores.\n" +
-	"  --build-configuration                  - select build configuration. Available configuarations are \"debug\", \"release\". Default configuration is \"release\".\n" +
+	"  --build-configuration                  - select build configuration. Available configuarations are \"debug\", \"release\", \"min_size_release\". Default configuration is \"release\".\n" +
 	"  --configuration-options                - provide path to configuration options JSON file\n" +
 	"  --target-triple                        - select target triple in form of architecture-vendor-operating_system or architecture-vendor-operating_system-environment.\n" +
 	"  --project-directory <path>             - path to the root package directory. Default is current directory.\n" +
