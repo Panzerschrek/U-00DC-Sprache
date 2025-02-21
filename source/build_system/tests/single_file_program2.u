@@ -1,0 +1,8 @@
+import "/stdout.u"
+import "/main_wrapper.u"
+
+pretty_main
+{
+	ust::stdout_print( ust::concat( "Single file program 2: ", args.front(), "!\n" ) );
+	return 0;
+}

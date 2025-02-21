@@ -100,12 +100,6 @@ def RunSingleProgramCompilationTest( test_name_base ):
 		"--build-directory", g_tests_build_root_path,
 		]
 
-	if g_sysroot is not None:
-		build_system_args.append( "--sysroot" )
-		build_system_args.append( g_sysroot )
-		build_system_args.append( "--host-sysroot" )
-		build_system_args.append( g_sysroot )
-
 	# Run the build.
 	subprocess.check_call( build_system_args )
 
@@ -123,12 +117,14 @@ def HelloWorldTest():
 
 
 def MultipleConfigurationsTest():
-	# Build both "debug" and "release".
+	# Build all configurations - "debug", "release", "min_size_release".
 	RunBuildSystemWithExplicitConfiguration( "multiple_configurations", "debug" )
 	RunBuildSystemWithExplicitConfiguration( "multiple_configurations", "release" )
-	# Should get two executables in different subdirectories.
+	RunBuildSystemWithExplicitConfiguration( "multiple_configurations", "min_size_release" )
+	# Should get three executables in different subdirectories.
 	RunExecutableWithExplicitConfiguration( "multiple_configurations", "multiple_configurations", "debug" )
 	RunExecutableWithExplicitConfiguration( "multiple_configurations", "multiple_configurations", "release" )
+	RunExecutableWithExplicitConfiguration( "multiple_configurations", "multiple_configurations", "min_size_release" )
 
 
 def DebugOnlyProjectTest():
@@ -695,6 +691,22 @@ def SingleFileProgram0Test():
 
 def SingleFileProgram1Test():
 	RunSingleProgramCompilationTest( "single_file_program1" )
+
+
+def SingleFileProgram2Test():
+	test_name_base= "single_file_program2"
+	build_system_args= [
+		g_build_system_executable,
+		"build_single", os.path.join( g_tests_path, test_name_base + ".u" ),
+		"-q",
+		"--build-configuration", "min_size_release",
+		"--compiler-executable", g_compiler_executable,
+		"--ustlib-path", g_ustlib_path,
+		"--build-directory", g_tests_build_root_path,
+		]
+
+	subprocess.check_call( build_system_args )
+	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_name_base ) ], stdout= subprocess.DEVNULL )
 
 
 def GlobalMutableVariablesDeduplication0Test():
@@ -1428,6 +1440,7 @@ def main():
 		BuildTargetWithoutSources1Test,
 		SingleFileProgram0Test,
 		SingleFileProgram1Test,
+		SingleFileProgram2Test,
 		GlobalMutableVariablesDeduplication0Test,
 		GlobalMutableVariablesDeduplication1Test,
 		MissingBuildFileTest,
