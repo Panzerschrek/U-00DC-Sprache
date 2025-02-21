@@ -1,5 +1,7 @@
 import "/integer_parsing.u"
 import "/stdout.u"
+import "/vector.u"
+import "/unordered_set.u"
 import "options.uh"
 
 namespace BK
@@ -44,7 +46,7 @@ auto constexpr g_help_message=
 	"  --host-sysroot <path>                  - provide sysroot directory for the compiler while compiling for host target triple (in order to find system libraries for linking)\n"
 	;
 
-fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optional</Options/>
+fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::optional</Options/>
 {
 	//
 	// Keep this up-to date with the help message!
@@ -58,36 +60,33 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 
 	var Options mut res;
 
-	auto mut i= 0s;
-
 	// Command should be always at first place.
 	var ust::string_view8 command= args.front();
 	if( command == "help" || command == "--help" )
 	{
 		res.command= Options::Command::Help;
-		++i;
+		args.drop_front();
 	}
 	else if( command == "build" )
 	{
 		res.command= Options::Command::Build;
-		++i;
+		args.drop_front();
 	}
 	else if( command == "build_single" )
 	{
 		res.command= Options::Command::BuildSingle;
-		++i;
-		if( i >= args.size() )
+		args.drop_front();
+		if( args.empty() )
 		{
 			ust::stderr_print( "Error, missing an argument after \"build_single\".\n" );
 			return ust::null_optional;
 		}
-		res.single_file_to_build= args[i];
-		++i;
+		res.single_file_to_build= args.drop_and_get_front();
 	}
 	else if( command == "init" )
 	{
 		res.command= Options::Command::Init;
-		++i;
+		args.drop_front();
 	}
 	else
 	{
@@ -96,162 +95,61 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> args ) : ust::optiona
 	}
 
 	// Parse options after command.
-	while( i < args.size() )
+
+	var bool mut help_short= false, mut help_long= false;
+	var ust::string8 mut num_jobs;
+	var ust::string8 mut build_configuration;
+
 	{
-		if( args[i] == "-q" )
+		var OptionsParser mut options_parser;
+
+		options_parser.AddOption( "-q", res.quiet );
+		options_parser.AddOption( "-v", res.verbose );
+		options_parser.AddOption( "-h", help_short );
+		options_parser.AddOption( "--help", help_long );
+		options_parser.AddOption( "-j", num_jobs );
+		options_parser.AddOption( "--build-configuration", build_configuration );
+		options_parser.AddOption( "--configuration-options", res.configuration_options_file );
+		options_parser.AddOption( "--target-triple", res.target_triple );
+		options_parser.AddOption( "--compiler-executable", res.compiler_executable_path );
+		options_parser.AddOption( "--build-directory", res.build_directory );
+		options_parser.AddOption( "--project-directory", res.root_package_directory );
+		options_parser.AddOption( "--ustlib-path", res.ustlib_path );
+		options_parser.AddOption( "--build-system-imports-path", res.build_system_imports_path );
+		options_parser.AddOption( "--packages-repository-directory", res.packages_repository_directory );
+		options_parser.AddOption( "--sysroot", res.sysroot );
+		options_parser.AddOption( "--host-sysroot", res.host_sysroot );
+
+		if( !options_parser.Parse( args ) )
 		{
-			res.quiet= true;
-			++i;
+			return ust::null_optional;
 		}
-		else if( args[i] == "-v" )
+	}
+
+	res.help= help_short | help_long;
+
+	if( !num_jobs.empty() )
+	{
+		if_var( num : ust::parse_integer_exact</u32/>( ust::string_view8(num_jobs) ) )
 		{
-			res.verbose= true;
-			++i;
-		}
-		else if( args[i] == "-h" || args[i] == "--help" )
-		{
-			res.help= true;
-			++i;
-		}
-		else if( args[i] == "-j" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"-j\".\n" );
-				return ust::null_optional;
-			}
-			if_var( num : ust::parse_integer_exact</u32/>( args[i + 1s] ) )
-			{
-				res.number_of_jobs= num;
-			}
-			else
-			{
-				ust::stderr_print( "Error, failed to parse number after \"-j\".\n" );
-				return ust::null_optional;
-			}
-			i+= 2s;
-		}
-		else if( args[i] == "--build-configuration" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--build-configuration\".\n" );
-				return ust::null_optional;
-			}
-			auto conf = StringToBuildConfiguration( args[i + 1s] );
-			if( conf.empty() )
-			{
-				ust::stderr_print( ust::concat( "Error, unknown build configuration \"", args[i + 1s], "\".\n" ) );
-				return ust::null_optional;
-			}
-			res.build_configuration= conf.try_deref();
-			i+= 2s;
-		}
-		else if( args[i] == "--configuration-options" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--configuration-options\".\n" );
-				return ust::null_optional;
-			}
-			res.configuration_options_file= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--target-triple" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--target-triple\".\n" );
-				return ust::null_optional;
-			}
-			res.target_triple= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--compiler-executable" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--compiler-executable\".\n" );
-				return ust::null_optional;
-			}
-			res.compiler_executable_path= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--build-directory" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--build-directory\".\n" );
-				return ust::null_optional;
-			}
-			res.build_directory= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--project-directory" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--project-directory\".\n" );
-				return ust::null_optional;
-			}
-			res.root_package_directory= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--ustlib-path" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--ustlib-path\".\n" );
-				return ust::null_optional;
-			}
-			res.ustlib_path= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--build-system-imports-path" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--build-system-imports-path\".\n" );
-				return ust::null_optional;
-			}
-			res.build_system_imports_path= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--packages-repository-directory" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--packages-repository-directory\".\n" );
-				return ust::null_optional;
-			}
-			res.packages_repository_directory= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--sysroot" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--sysroot\".\n" );
-				return ust::null_optional;
-			}
-			res.sysroot= args[i + 1s];
-			i+= 2s;
-		}
-		else if( args[i] == "--host-sysroot" )
-		{
-			if( i + 1s >= args.size() )
-			{
-				ust::stderr_print( "Error, missing an argument after \"--host-sysroot\".\n" );
-				return ust::null_optional;
-			}
-			res.host_sysroot= args[i + 1s];
-			i+= 2s;
+			res.number_of_jobs= num;
 		}
 		else
 		{
-			ust::stderr_print( ust::concat( "Error, unrecognized option \"", args[i], "\".\n" ) );
+			ust::stderr_print( "Error, failed to parse number after \"-j\".\n" );
 			return ust::null_optional;
 		}
+	}
+
+	if( !build_configuration.empty() )
+	{
+		auto conf = StringToBuildConfiguration( build_configuration );
+		if( conf.empty() )
+		{
+			ust::stderr_print( ust::concat( "Error, unknown build configuration \"", build_configuration, "\".\n" ) );
+			return ust::null_optional;
+		}
+		res.build_configuration= conf.try_deref();
 	}
 
 	return res;
@@ -279,6 +177,89 @@ fn BuildConfigurationToString( BuildConfiguration c ) : ust::string_view8
 		BuildConfiguration::Debug -> { return "debug"; },
 		BuildConfiguration::Release -> { return "release"; },
 	}
+}
+
+class OptionsParser
+{
+public:
+	fn AddOption( mut this, ust::string8 mut name, ust::string8 &mut value ) @(c_add_option_pollution)
+	{
+		string_options_.push_back( StringOption{ .name= move(name), .value= value } );
+	}
+
+	fn AddOption( mut this, ust::string8 mut name, bool &mut value ) @(c_add_option_pollution)
+	{
+		bool_flag_options_.push_back( BoolFlagOption{ .name= move(name), .value= value } );
+	}
+
+	fn nodiscard Parse( this, ust::array_view_imut</ust::string_view8/> mut args ) : bool
+	{
+		var ust::unordered_set</ust::string8/> mut prev_args;
+
+		while( !args.empty() ) label args_non_empty
+		{
+			var ust::string8 arg= args.drop_and_get_front();
+
+			// Ensure no args are duplicated.
+			if( prev_args.exists( arg ) )
+			{
+				ust::stderr_print( ust::concat( "Error, duplicated argument \"", arg, "\".\n" ) );
+				return false;
+			}
+			prev_args.insert( arg );
+
+			// Search this arg in options of different kinds. If found it - continue to next iteration of the outer loop.
+
+			foreach( &option : string_options_ )
+			{
+				if( arg == option.name )
+				{
+					if( args.empty() )
+					{
+						ust::stderr_print( ust::concat( "Error, missing an argument after \"", option.name, "\".\n" ) );
+						return false;
+					}
+					option.value= args.drop_and_get_front();
+					continue label args_non_empty;
+				}
+			}
+
+			foreach( &option : bool_flag_options_ )
+			{
+				if( arg == option.name )
+				{
+					// No value is required after a boolean flag. Specifying such flag just sets its value to "true".
+					option.value= true;
+					continue label args_non_empty;
+				}
+			}
+
+			// This arg wasn't found in options.
+
+			ust::stderr_print( ust::concat( "Error, unrecognized option \"", arg, "\".\n" ) );
+			return false;
+		}
+		return true;
+	}
+
+private:
+	struct StringOption
+	{
+		ust::string8 name;
+		ust::string8 &mut value;
+	}
+
+	struct BoolFlagOption
+	{
+		ust::string8 name;
+		bool &mut value;
+	}
+
+	var [ ust::reference_notation::pollution_element, 1 ] c_add_option_pollution[ [ "0a", "2_" ] ];
+
+private:
+	ust::vector</StringOption/> @("a") string_options_;
+	ust::vector</BoolFlagOption/> @("a") bool_flag_options_;
 }
 
 } // namespace BK
