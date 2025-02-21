@@ -5,11 +5,11 @@ namespace BK
 
 enum BuildConfiguration
 {
-	// No optimisation, has debug info.
+	// No optimization, has debug info.
 	Debug,
-	// Full optimization for speed, no debug info.
+	// Full optimization for speed, has no debug info.
 	Release,
-	// Full optimization for size, no debug info.
+	// Full optimization for size, has no debug info.
 	MinSizeRelease,
 }
 

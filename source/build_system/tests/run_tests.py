@@ -117,7 +117,7 @@ def HelloWorldTest():
 
 
 def MultipleConfigurationsTest():
-	# Build both "debug", "release", "min_size_release".
+	# Build all configurations - "debug", "release", "min_size_release".
 	RunBuildSystemWithExplicitConfiguration( "multiple_configurations", "debug" )
 	RunBuildSystemWithExplicitConfiguration( "multiple_configurations", "release" )
 	RunBuildSystemWithExplicitConfiguration( "multiple_configurations", "min_size_release" )
