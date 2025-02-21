@@ -5,8 +5,12 @@ namespace BK
 
 enum BuildConfiguration
 {
+	// No optimisation, has debug info.
 	Debug,
+	// Full optimization for speed, no debug info.
 	Release,
+	// Full optimization for size, no debug info.
+	MinSizeRelease,
 }
 
 struct TargetTriple

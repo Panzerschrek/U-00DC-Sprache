@@ -166,6 +166,10 @@ fn StringToBuildConfiguration( ust::string_view8 s ) : ust::optional</BuildConfi
 	{
 		return BuildConfiguration::Release;
 	}
+	if( s == "min_size_release" )
+	{
+		return BuildConfiguration::MinSizeRelease;
+	}
 	return ust::null_optional;
 }
 
@@ -176,6 +180,7 @@ fn BuildConfigurationToString( BuildConfiguration c ) : ust::string_view8
 	{
 		BuildConfiguration::Debug -> { return "debug"; },
 		BuildConfiguration::Release -> { return "release"; },
+		BuildConfiguration::MinSizeRelease -> { return "min_size_release"; },
 	}
 }
 

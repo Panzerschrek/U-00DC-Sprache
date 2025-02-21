@@ -1092,6 +1092,13 @@ fn CreatePackageTargetBuildGraphNodes(
 				// Prepare for LTO.
 				node.command_line.push_back( "--lto-mode=prelink" );
 			},
+			BuildConfiguration::MinSizeRelease ->
+			{
+				// Run full optimization for size.
+				node.command_line.push_back( "-Os" );
+				// Prepare for LTO.
+				node.command_line.push_back( "--lto-mode=prelink" );
+			},
 		}
 
 		AddTargetTripleCompilerFlags( target_triple, node.command_line );
@@ -1443,6 +1450,30 @@ fn CreatePackageTargetBuildGraphNodes(
 				}
 			}
 		},
+		BuildConfiguration::MinSizeRelease ->
+		{
+			if( target.target_type == BuildTargetType::Library )
+			{
+				// Do not run optimization for library targets.
+				// Individual optimization of their source files was performed earlier.
+				// Full optimization will be performed while using this library in some other target kind, like in executable.
+			}
+			else
+			{
+				// Run full optimization for size.
+				node.command_line.push_back( "-Os" );
+				// Also run LTO.
+				node.command_line.push_back( "--lto-mode=link" );
+
+				// Put symbols into sections and remove unnecessary ones.
+				node.command_line.push_back( "--function-sections" );
+				node.command_line.push_back( "--data-sections" );
+				if( !target_is_windows || target_triple.environment == g_environment_gnu )
+				{
+					node.command_line.push_back( "-Wl,--gc-sections" );
+				}
+			}
+		},
 	}
 
 	AddTargetTripleCompilerFlags( target_triple, node.command_line );
@@ -1599,6 +1630,13 @@ fn CreateUstlibBuildGraphNodes(
 		{
 			// Run full optimizations, but not by using O3 - it isn't much better than O2.
 			node.command_line.push_back( "-O2" );
+			// Also prepare for further LTO.
+			node.command_line.push_back( "--lto-mode=prelink" );
+		},
+		BuildConfiguration::MinSizeRelease ->
+		{
+			// Run full optimization for size.
+			node.command_line.push_back( "-Os" );
 			// Also prepare for further LTO.
 			node.command_line.push_back( "--lto-mode=prelink" );
 		},
@@ -1900,6 +1938,10 @@ fn nodiscard BuildSingleFileProgram(
 		BuildConfiguration::Release ->
 		{
 			compiler_args.push_back( "-O2" );
+		},
+		BuildConfiguration::MinSizeRelease ->
+		{
+			compiler_args.push_back( "-Os" );
 		},
 	}
 
