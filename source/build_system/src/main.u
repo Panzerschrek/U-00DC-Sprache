@@ -631,7 +631,9 @@ fn BuildAndLoadPackageBuildScript(
 		// Link against "ustlib" previously built into an object file.
 		compiler_args.push_back( ust::concat( "-Wl,", ustlib_compiled_for_build_scripts_path ) );
 
-		foreach( &lib : GetUstlibSystemLibrariesToLink( GetHostTargetTriple() ) )
+		var TargetTriple host_target_triple= GetHostTargetTriple();
+
+		foreach( &lib : GetUstlibSystemLibrariesToLink( host_target_triple ) )
 		{
 			compiler_args.push_back( "-Wl," + lib );
 		}
@@ -693,13 +695,7 @@ fn BuildAndLoadPackageBuildScript(
 		}
 
 		// Put symbols into sections and remove unnecessary ones.
-		compiler_args.push_back( "--function-sections" );
-		compiler_args.push_back( "--data-sections" );
-		if( ust::string_view8( compiler::target::os ) != g_os_windows ||
-			ust::string_view8( compiler::target::environment ) == g_environment_gnu )
-		{
-			compiler_args.push_back( "-Wl,--gc-sections" );
-		}
+		AddGCSectionsCompilerFlags( host_target_triple, compiler_args );
 
 		if( ust::string_view8( compiler::target::environment ) == g_environment_msvc )
 		{
@@ -1442,12 +1438,7 @@ fn CreatePackageTargetBuildGraphNodes(
 				node.command_line.push_back( "--lto-mode=link" );
 
 				// Put symbols into sections and remove unnecessary ones.
-				node.command_line.push_back( "--function-sections" );
-				node.command_line.push_back( "--data-sections" );
-				if( !target_is_windows || target_triple.environment == g_environment_gnu )
-				{
-					node.command_line.push_back( "-Wl,--gc-sections" );
-				}
+				AddGCSectionsCompilerFlags( target_triple, node.command_line );
 			}
 		},
 		BuildConfiguration::MinSizeRelease ->
@@ -1466,12 +1457,7 @@ fn CreatePackageTargetBuildGraphNodes(
 				node.command_line.push_back( "--lto-mode=link" );
 
 				// Put symbols into sections and remove unnecessary ones.
-				node.command_line.push_back( "--function-sections" );
-				node.command_line.push_back( "--data-sections" );
-				if( !target_is_windows || target_triple.environment == g_environment_gnu )
-				{
-					node.command_line.push_back( "-Wl,--gc-sections" );
-				}
+				AddGCSectionsCompilerFlags( target_triple, node.command_line );
 			}
 		},
 	}
@@ -1671,6 +1657,16 @@ fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::
 	compiler_flags.push_back( target_triple.environment );
 }
 
+fn AddGCSectionsCompilerFlags( TargetTriple& target_triple, ust::vector</ust::string8/> &mut compiler_flags )
+{
+	compiler_flags.push_back( "--function-sections" );
+	compiler_flags.push_back( "--data-sections" );
+	if( target_triple.operating_system != g_os_windows || target_triple.environment == g_environment_gnu )
+	{
+		compiler_flags.push_back( "-Wl,--gc-sections" );
+	}
+}
+
 fn CreateCustomBuildStepBuildGraphNodes(
 	TargetTriple& host_target_triple,
 	ust::filesystem_path_view host_packages_root_build_directory,
@@ -1779,6 +1775,8 @@ fn nodiscard BuildUstlibForBuildScripts(
 
 	if( CheckRebuildIsNeededBasedOnDepFile( logger, out_dep_file_path ) )
 	{
+		var TargetTriple host_target_triple= GetHostTargetTriple();
+
 		logger.LogVerbose( ust::concat( "Building \"", out_file_path, "\"." ) );
 
 		var ust::vector</ust::string8/> mut compiler_args;
@@ -1794,7 +1792,7 @@ fn nodiscard BuildUstlibForBuildScripts(
 		// It's suboptimal, since no inlining can be performed, but still fine for build scripts, where a lot of performance isn't necessary.
 		compiler_args.push_back( "-filetype=obj" );
 
-		foreach( &source : GetUstlibSourcesList( GetHostTargetTriple() ) )
+		foreach( &source : GetUstlibSourcesList( host_target_triple ) )
 		{
 			compiler_args.push_back( ust::path::join( build_system_paths.ustlib_path, g_ustlib_sources_subpath, source ) );
 		}
@@ -1840,8 +1838,7 @@ fn nodiscard BuildUstlibForBuildScripts(
 		}
 
 		// Put symbols into sections in order to allow removing unnecessary ones.
-		compiler_args.push_back( "--function-sections" );
-		compiler_args.push_back( "--data-sections" );
+		AddGCSectionsCompilerFlags( host_target_triple, compiler_args );
 
 		// Use host sysroot for building ustlib for build scripts.
 		if( !host_sysroot.empty() )
