@@ -197,8 +197,8 @@ CPP Header converter:
 
 Ü Build system:
 *) Support building "ustlib" into a shared library (dll/so)
-*) Add an option to tweak optimization level for release builds add possibility to use -O3 instead of -O2
-*) Add build type for minimal size - with -Os optimization level or -Oz
+*) Add an option to tweak optimization level for release builds - use -O3 instead of -O2
+*) Add an option to tweak optimization level for minimum size release builds - use -Oz instead of -Os
 *) Add possibility to specify halt mode (trap/abort/unreachable/custom)
 *) Fix JSON floats serialization
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
