@@ -186,7 +186,7 @@ Default value is current directory.
 Default value is *build* subdirectory within root package directory.
 
 ``--build-configuration`` option selects build configuration.
-Available configurations are ``release`` and ``debug``.
+Available configurations are ``release``, ``debug``, ``min_size_release``.
 
 ``--configuration-options`` option specifies path to a JSON file with additional configuration options.
 Such file should be JSON object with string values.
