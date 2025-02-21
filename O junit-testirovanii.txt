@@ -47,3 +47,12 @@ Nado eto imetj v vidu i predusmotretj vozmožnostj deduplikaçii.
 Poka ne ponätno, kak testy dolžny družitj s kross-kompiläçijej.
 Poka cto vidätsä kak minimum dva varianta - sobiratj testy pod çelevuju platformu, ili že pod host-platformu.
 Oba sposoba ne idealjny.
+
+Problemu dlä raboty testov predstavläjut takže sborocnyje çeli - razdeläjemyje biblioteki.
+Jesli kakaja-to sborocnaja çelj zavisit ot drugoj çeli - razdeläjemoj biblioteki, to možet vozniknutj problema s zapuskom testov etoj çeli.
+Dinamiceskaja zavisimostj ot razdeläjemoj biblioteki možet ne najtisj, jesli eta biblioteka objavlena v drugom pakete i sootvetstvenno jejo fajl ("dll"/"so") ležit v direktorii, otlicnoj ot direktorii sborocnoj çeli, dlä kotoroj zapuskajetsä test.
+Krome togo mogut vozniknutj problemy, jesli vspomogateljnyj kod testirovanija (kod testovogo frejmvorka) komponujetsä v boleje cem odin fajl ("exe" i "dll") i globaljnyje izmenäjemyje peremennyje etogo frejmvorka takim obrazom dublirujutsä.
+
+Odno iz vozmožnyh rešenij problemy zapuska testov, ispoljzujuschih razdeläjemyje biblioteki - sobiratj dlä testov proekt s izmenenijem tipa sborocnyh çelej - razdeläjemyh bibliotek na obycnyje biblioteki (Ü biblioteki).
+Eto ustranit problemy dublirovanija  globaljnyh izmenäjemyh peremennyh i poiska dinamiceskih zavisimostej.
+No poka ne ponätno, kakije drugije problemy eto možet vyzvatj.
