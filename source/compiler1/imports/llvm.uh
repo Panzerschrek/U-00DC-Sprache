@@ -392,6 +392,9 @@ fn nomangle LLVMSetInitializer(LLVMValueRef GlobalVar, LLVMValueRef ConstantVal)
 fn nomangle LLVMSetGlobalConstant(LLVMValueRef GlobalVar, LLVMBool IsConstant) unsafe;
 fn nomangle LLVMGlobalGetValueType(LLVMValueRef Global) unsafe : LLVMTypeRef;
 
+fn nomangle LLVMIsThreadLocal(LLVMValueRef GlobalVar) unsafe : LLVMBool;
+fn nomangle LLVMSetThreadLocal(LLVMValueRef GlobalVar, LLVMBool IsThreadLocal) unsafe;
+
 // Function
 
 fn nomangle LLVMGetParam(LLVMValueRef Fn, u32 Index) unsafe : LLVMValueRef;
