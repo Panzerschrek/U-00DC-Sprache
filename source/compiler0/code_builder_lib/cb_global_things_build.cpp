@@ -1423,6 +1423,12 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 					? CreateGlobalMutableVariable( type, name_mangled, src_loc )
 					: CreateGlobalConstantVariable( type, name_mangled );
 
+			if( variable_declaration.is_thread_local )
+			{
+				U_ASSERT( is_mutable ); // All thread-local vaiables should be mutable.
+				global_variable->setThreadLocal( true );
+			}
+
 			const VariableMutPtr variable=
 				Variable::Create(
 					type,

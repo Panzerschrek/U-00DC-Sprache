@@ -295,3 +295,31 @@ def ThreadLocalVariableDeclaration_Test3():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ThreadLocalVariableUnsage_Test0():
+	c_program_text= """
+		thread_local i32 x= 1;
+		fn Bar() : i32
+		{
+			unsafe
+			{
+				auto res= x;
+				x*= 2;
+				return res;
+			}
+		}
+		fn Foo()
+		{
+			halt if( Bar() != 1 );
+			halt if( Bar() != 2 );
+			halt if( Bar() != 4 );
+			halt if( Bar() != 8 );
+			halt if( Bar() != 16 );
+			unsafe{ x= 33; }
+			halt if( Bar() != 33 );
+			halt if( Bar() != 66 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
