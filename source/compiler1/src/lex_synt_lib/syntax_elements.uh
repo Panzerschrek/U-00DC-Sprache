@@ -490,6 +490,7 @@ struct VariablesDeclaration
 		SrcLoc src_loc;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+		bool is_thread_local= false; // Parsed only for global variables.
 		ust::string8 name;
 		Initializer initializer;
 	}

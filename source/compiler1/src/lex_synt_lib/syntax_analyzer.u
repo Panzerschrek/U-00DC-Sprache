@@ -197,6 +197,7 @@ private:
 	fn TryParseIfAlternative( mut this ) : IfAlternative;
 	fn ParseIfAlternative( mut this ) : IfAlternative;
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
+	fn ParseThreadLocalVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
 	fn ParseAllocaDeclaration( mut this ) : AllocaDeclaration;
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
@@ -520,6 +521,10 @@ fn SyntaxAnalyzer::ParseNamespaceBodyImpl( mut this, Lexem::Type end_lexem ) : N
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
 			namespace_elements.push_back( ust::make_shared_ptr_final( ParseVariablesDeclaration() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::thread_local_ ) )
+		{
+			namespace_elements.push_back( ust::make_shared_ptr_final( ParseThreadLocalVariablesDeclaration() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 		{
@@ -2565,6 +2570,52 @@ fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration
 	return variables_declaration;
 }
 
+fn SyntaxAnalyzer::ParseThreadLocalVariablesDeclaration( mut this ) : VariablesDeclaration
+{
+	var VariablesDeclaration mut variables_declaration{ .src_loc= it_.front().src_loc };
+
+	NextLexem(); // thread_local
+
+	variables_declaration.t= ParseTypeName();
+
+	while( NotEndOfFile() )
+	{
+		// Parse only name and initializer for thread-local variables. They are always mutable and thread-local references aren't possible.
+
+		var VariablesDeclaration::VariableEntry mut variable_entry
+		{
+			.is_thread_local= true,
+			.mutability_modifier= MutabilityModifier::Mutable
+		};
+
+		if( it_.front().lexem_type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+			break;
+		}
+		variable_entry.src_loc= it_.front().src_loc;
+		variable_entry.name= it_.front().text;
+		NextLexem();
+
+		variable_entry.initializer= ParseVariableInitializer();
+
+		variables_declaration.variables.push_back( move(variable_entry) );
+
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			continue;
+		}
+		if( it_.front().lexem_type == Lexem::Type::Semicolon )
+		{
+			NextLexem();
+			break;
+		}
+	}
+
+	return variables_declaration;
+}
+
 fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration
 {
 	var AutoVariableDeclaration mut variable_declaration;
@@ -3330,6 +3381,10 @@ fn SyntaxAnalyzer::ParseClassBodyElementsImpl( mut this, Lexem::Type end_lexem )
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{
 			class_elements.push_back( ust::make_shared_ptr_final( ParseVariablesDeclaration() ) );
+		}
+		else if( IsKeyword( it_.front(), Keyword::thread_local_ ) )
+		{
+			class_elements.push_back( ust::make_shared_ptr_final( ParseThreadLocalVariablesDeclaration() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 		{
