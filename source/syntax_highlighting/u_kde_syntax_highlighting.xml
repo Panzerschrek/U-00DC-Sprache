@@ -95,6 +95,7 @@
 			<item>package</item>
 			<item>module</item>
 			<item>mixin</item>
+			<item>thread_local</item>
 		</list>
 		<list name="Sprache_Unsafe">
 			<item>unsafe</item>
