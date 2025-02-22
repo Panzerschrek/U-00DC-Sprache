@@ -125,6 +125,8 @@ private:
 	void ProcessStacksave( const llvm::CallInst* instruction );
 	void ProcessStackrestore( const llvm::CallInst* instruction );
 
+	void ProcessThreadLocalAddress( const llvm::CallInst* instruction );
+
 	void ResumeCoroutine( const llvm::CallInst* instruction, bool destroy );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
