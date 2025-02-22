@@ -185,10 +185,48 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		var VariableNullablePtr v_ptr= global_variable_ptr_non_null.lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
-			var VariablePtr v_ptr_non_null= v_ptr.try_to_non_nullable();
+			var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();
 			if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
+			}
+
+			var VariablePtr var_ptr_copy= v_ptr_non_null;
+			with( &variable : var_ptr_copy.lock_imut().deref() )
+			{
+				// On each access to a thread-local variable replace its address with a call to "llvm.threadlocal.address".
+				if( variable.llvm_value != LLVMValueRef::Null &&
+					variable.location == Variable::Location::Pointer &&
+					unsafe( LLVMIsAGlobalVariable( variable.llvm_value ) ) != LLVMValueRef::Null &&
+					unsafe( LLVMIsThreadLocal( variable.llvm_value ) ) == LLVMBool::True )
+				{
+					var LLVMValueRef mut call_result= LLVMValueRef::Null;
+					if( !function_context.is_functionless_context )
+					{
+						var LLVMValueRef mut arg= variable.llvm_value;
+
+						call_result=
+							unsafe( LLVMBuildCall2(
+								function_context.llvm_ir_builder,
+								U1_GetFunctionType(threadlocal_address_intrinsic_),
+								threadlocal_address_intrinsic_,
+								$<(arg),
+								1u,
+								g_null_string ) );
+					}
+
+					v_ptr_non_null=
+						Variable
+						{
+							.t= variable.t,
+							.value_type= variable.value_type,
+							.location= variable.location,
+							.llvm_value= call_result,
+							.constexpr_value= variable.constexpr_value,
+							.name= variable.name,
+							.src_loc= variable.src_loc,
+						}.CreatePtr();
+				}
 			}
 
 			function_context.references_graph.AddNodeIfNotExists( v_ptr_non_null );

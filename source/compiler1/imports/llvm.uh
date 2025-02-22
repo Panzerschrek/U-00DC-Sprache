@@ -367,6 +367,7 @@ fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantAggregateZero(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantDataArray(LLVMValueRef Val) unsafe : LLVMValueRef;
+fn nomangle LLVMIsAGlobalVariable(LLVMValueRef Val) unsafe : LLVMValueRef;
 
 fn nomangle LLVMGetInstructionOpcode(LLVMValueRef Inst) unsafe : LLVMOpcodeType;
 fn nomangle LLVMGetInstructionParent(LLVMValueRef Inst) unsafe : LLVMBasicBlockRef;
