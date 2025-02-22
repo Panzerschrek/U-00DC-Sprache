@@ -261,3 +261,37 @@ def MutableGlobalReferencesAreNotAllowed_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "MutableGlobalReferencesAreNotAllowed", 3 ) )
+
+
+def ThreadLocalVariableDeclaration_Test0():
+	c_program_text= """
+		thread_local i32 x = 66;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThreadLocalVariableDeclaration_Test1():
+	c_program_text= """
+		thread_local [ f32, 2 ] x= zero_init, y[ 0.5f, 0.25f ];
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThreadLocalVariableDeclaration_Test2():
+	c_program_text= """
+		namespace NN
+		{
+			thread_local u64 sss(2);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThreadLocalVariableDeclaration_Test3():
+	c_program_text= """
+		class SomeClass
+		{
+			thread_local ssize_type some(12345);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
