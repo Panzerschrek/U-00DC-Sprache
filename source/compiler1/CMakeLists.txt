@@ -199,7 +199,7 @@ else()
 				-o ${CODE_BUILDER_LIB_O}
 				--input-filetype=bc
 				-lto-mode=link
-				--internalize-hidden # Internalize all except publically-available symbols.
+				--internalize-hidden-functions # Internalize all except publically-available functions.
 			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 			COMMENT "Building ${CODE_BUILDER_LIB_O}"
 			)
