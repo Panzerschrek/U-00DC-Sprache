@@ -325,6 +325,37 @@ def ThreadLocalVariableUnsage_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def ThreadLocalVariableUnsage_Test1():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		thread_local S s{ .x= 1, .y= 1 };
+		fn Bar() : i32
+		{
+			unsafe
+			{
+				auto res= s.x + s.y;
+				s.x*= 2;
+				s.y*= 3;
+				return res;
+			}
+		}
+		fn Foo()
+		{
+			halt if( Bar() != 2 );
+			halt if( Bar() != 5 );
+			halt if( Bar() != 13 );
+			halt if( Bar() != 35 );
+			halt if( Bar() != 97 );
+			unsafe{ s.x= 5; }
+			unsafe{ s.y= 7; }
+			halt if( Bar() != 12 );
+			halt if( Bar() != 31 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def ThreadLocalVariableAccesIsNotAllowedOutsideUnsafeBlock_Test0():
 	c_program_text= """
 		thread_local i32 x= 0;

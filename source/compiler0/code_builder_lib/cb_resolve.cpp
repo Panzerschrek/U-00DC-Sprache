@@ -373,8 +373,12 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 
 		if( IsGlobalVariable(variable) )
 		{
+			// Add global variable nodes lazily.
+			function_context.variables_state.AddNodeIfNotExists( variable );
+
 			// On each access to a thread-local variable replace its address with a call to "llvm.threadlocal.address".
-			if( variable->llvm_value != nullptr && variable->location == Variable::Location::Pointer )
+			if( !function_context.is_functionless_context &&
+				variable->llvm_value != nullptr && variable->location == Variable::Location::Pointer )
 			{
 				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) )
 				{
@@ -386,17 +390,15 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 								variable->value_type,
 								variable->location,
 								variable->name,
-								function_context.is_functionless_context
-									? nullptr
-									: function_context.llvm_ir_builder.CreateThreadLocalAddress( variable->llvm_value ),
+								function_context.llvm_ir_builder.CreateThreadLocalAddress( variable->llvm_value ),
 								variable->constexpr_value );
 						variable= std::move( variable_with_corrected_address );
+
+						function_context.variables_state.AddNode( variable );
+						RegisterTemporaryVariable( function_context, variable );
 					}
 				}
 			}
-
-			// Add global variable nodes lazily.
-			function_context.variables_state.AddNodeIfNotExists( variable );
 		}
 
 		return variable;
