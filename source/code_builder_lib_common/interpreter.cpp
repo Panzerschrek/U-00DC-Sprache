@@ -1297,7 +1297,7 @@ void Interpreter::ProcessStackrestore( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessThreadLocalAddress( const llvm::CallInst* const instruction )
 {
-	// Just return variable itself. For now we don't support handling thread-local variables properly - with TLS creation.
+	// Just return variable itself. For now we don't support handling thread-local variables properly (with TLS creation).
 	llvm::GenericValue val= GetVal( instruction->getArgOperand(0) );
 	current_function_frame_.instructions_map[ instruction ]= std::move(val);
 }

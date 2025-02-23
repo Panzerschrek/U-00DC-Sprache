@@ -1425,7 +1425,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			if( variable_declaration.is_thread_local )
 			{
-				U_ASSERT( is_mutable ); // All thread-local vaiables should be mutable.
+				U_ASSERT( is_mutable ); // All thread-local variables should be mutable.
 				global_variable->setThreadLocal( true );
 			}
 

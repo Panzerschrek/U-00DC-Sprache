@@ -2321,7 +2321,8 @@ VariablesDeclaration SyntaxAnalyzer::ParseThreadLocalVariablesDeclaration()
 
 	do
 	{
-		// Parse only name and initializer for thread-local variables. They are always mutable and thread-local references aren't possible.
+		// Parse only name and initializer for thread-local variables.
+		// They are always mutable and thread-local references aren't possible.
 
 		VariablesDeclaration::VariableEntry variable_entry;
 		variable_entry.mutability_modifier= MutabilityModifier::Mutable;
@@ -2333,7 +2334,6 @@ VariablesDeclaration SyntaxAnalyzer::ParseThreadLocalVariablesDeclaration()
 			PushErrorMessage();
 			break;
 		}
-
 		variable_entry.name= it_->text;
 		variable_entry.src_loc= it_->src_loc;
 		NextLexem();

@@ -1708,7 +1708,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 		if( variable_declaration.is_thread_local )
 		{
-			debug_assert( is_mutable ); // All thread-local vaiables should be mutable.
+			debug_assert( is_mutable ); // All thread-local variables should be mutable.
 			unsafe( LLVMSetThreadLocal( llvm_value, LLVMBool::True ) );
 		}
 

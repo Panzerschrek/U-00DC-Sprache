@@ -2580,7 +2580,8 @@ fn SyntaxAnalyzer::ParseThreadLocalVariablesDeclaration( mut this ) : VariablesD
 
 	while( NotEndOfFile() )
 	{
-		// Parse only name and initializer for thread-local variables. They are always mutable and thread-local references aren't possible.
+		// Parse only name and initializer for thread-local variables.
+		// They are always mutable and thread-local references aren't possible.
 
 		var VariablesDeclaration::VariableEntry mut variable_entry
 		{
