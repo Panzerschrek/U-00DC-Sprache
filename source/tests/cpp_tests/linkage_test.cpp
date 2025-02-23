@@ -479,6 +479,24 @@ U_TEST( VariableLinkage_Test3 )
 	U_TEST_ASSERT( x_local->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
+U_TEST( VariableLinkage_Test4 )
+{
+	// Thread-local variables has comdat, external linkage and hidden visibility.
+	static const char c_program_text[]=
+	R"(
+		thread_local i32 x= 123;
+	)";
+
+	const auto engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	const llvm::GlobalVariable* const x= engine->FindGlobalVariableNamed( "x.b14a7b8059d9c055954c92674ce60032", true );
+	U_TEST_ASSERT( x != nullptr );
+	U_TEST_ASSERT( x->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( x->hasComdat() );
+	U_TEST_ASSERT( x->getVisibility() == llvm::GlobalValue::HiddenVisibility );
+	U_TEST_ASSERT( x->isThreadLocal() );
+}
+
 U_TEST( PolymorphClassesDataLinkage_Test0 )
 {
 	// Virtaul functions table should have private linkage.

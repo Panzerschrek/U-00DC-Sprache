@@ -217,6 +217,7 @@ private:
 	Initializer ParseConstructorInitializer();
 
 	VariablesDeclaration ParseVariablesDeclaration();
+	VariablesDeclaration ParseThreadLocalVariablesDeclaration();
 	AutoVariableDeclaration ParseAutoVariableDeclaration();
 	AllocaDeclaration ParseAllocaDeclaration();
 
@@ -777,6 +778,10 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
 			result_builder.Append( ParseVariablesDeclaration() );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::thread_local_ )
+		{
+			result_builder.Append( ParseThreadLocalVariablesDeclaration() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 		{
@@ -2306,6 +2311,57 @@ VariablesDeclaration SyntaxAnalyzer::ParseVariablesDeclaration()
 	return decl;
 }
 
+VariablesDeclaration SyntaxAnalyzer::ParseThreadLocalVariablesDeclaration()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::thread_local_ );
+	VariablesDeclaration decl( it_->src_loc );
+	NextLexem();
+
+	decl.type= ParseTypeName();
+
+	do
+	{
+		// Parse only name and initializer for thread-local variables.
+		// They are always mutable and thread-local references aren't possible.
+
+		VariablesDeclaration::VariableEntry variable_entry;
+		variable_entry.mutability_modifier= MutabilityModifier::Mutable;
+		variable_entry.reference_modifier= ReferenceModifier::None;
+		variable_entry.is_thread_local= true;
+
+		if( it_->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+			break;
+		}
+		variable_entry.name= it_->text;
+		variable_entry.src_loc= it_->src_loc;
+		NextLexem();
+
+		Initializer initializer= ParseVariableInitializer();
+		if( !std::holds_alternative<EmptyVariant>( initializer ) )
+			variable_entry.initializer= std::make_unique<Initializer>( std::move(initializer) );
+
+		decl.variables.push_back( std::move(variable_entry) );
+
+		if( it_->type == Lexem::Type::Comma )
+			NextLexem();
+		else if( it_->type == Lexem::Type::Semicolon )
+		{
+			NextLexem();
+			break;
+		}
+		else
+		{
+			PushErrorMessage();
+			break;
+		}
+
+	} while( NotEndOfFile() );
+
+	return decl;
+}
+
 AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ );
@@ -3816,6 +3872,10 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
 			result_builder.Append( ParseVariablesDeclaration() );
+		}
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::thread_local_ )
+		{
+			result_builder.Append( ParseThreadLocalVariablesDeclaration() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 		{

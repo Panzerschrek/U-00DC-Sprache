@@ -114,3 +114,15 @@ Global mutable variables are declared like immutable ones, but with ``mut`` modi
 
 The only substantial difference between mutable and immutable global variables is a possibility of mutable references creation.
 There are forbidden, since it's not possible to synchronize access properly.
+
+
+thread_local variables
+-----------------------
+
+``thread_local`` variables are just global mutable variables, but having only one difference - each thread has its own copy of such variable.
+They have the same limitations as regular global mutable variables - it's allowed to access them only in ``unsafe`` code, only ``constexpr`` types are allowed for them.
+Their syntax is different from regular variables - it's necessary to specify ``thread_local`` keyword, following by type name and list of variables (with initializers), separated by comma. Reference and mutability modifiers aren't allowed.
+
+.. code-block:: u_spr
+
+   thread_local i32 x= zero_init, y(1), z= 2;

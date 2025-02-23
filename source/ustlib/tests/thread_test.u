@@ -80,6 +80,23 @@ private:
 
 static_assert( !typeinfo</NonCopyableByvalThisFunctor/>.is_copy_constructible );
 
+thread_local i32 some_thread_local_variable= 9999;
+
+fn ModifyThreadLocalVariable() : i32
+{
+	unsafe
+	{
+		// Should have initial value of the variable.
+		halt if( some_thread_local_variable != 9999 );
+
+		for( auto mut i= 0s; i < 65536s; ++i )
+		{
+			some_thread_local_variable+= i32( i & 43s );
+		}
+		return some_thread_local_variable;
+	}
+}
+
 fn nomangle main() : i32
 {
 	{
@@ -204,6 +221,33 @@ fn nomangle main() : i32
 			auto res= threads.pop_back().join();
 			halt if( res != f32(i_end - 1s - i) * v );
 		}
+	}
+	{
+		// Run several threads, each of them works with its own copy of a thread-local variable.
+
+		unsafe{ some_thread_local_variable = 123456; }
+
+		var ust::vector</ ust::thread</ fn() : i32, i32 /> /> mut threads;
+		for( auto mut i= 0s; i < 16s; ++i )
+		{
+			threads.push_back( ust::make_thread( ModifyThreadLocalVariable ) );
+		}
+
+		// Get results of each thread.
+		var ust::vector</i32/> mut results;
+		while( !threads.empty() )
+		{
+			results.push_back( threads.pop_back().join() );
+		}
+
+		// Should get identical results.
+		foreach( res : cast_imut(results) )
+		{
+			halt if( res != cast_imut(results).front() );
+		}
+
+		// The value of this thread-local variable in this thread shouldn't be changed.
+		unsafe{ halt if( some_thread_local_variable != 123456 ); }
 	}
 
 	return 0;

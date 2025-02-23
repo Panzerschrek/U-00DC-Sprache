@@ -367,6 +367,7 @@ fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantAggregateZero(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantDataArray(LLVMValueRef Val) unsafe : LLVMValueRef;
+fn nomangle LLVMIsAGlobalVariable(LLVMValueRef Val) unsafe : LLVMValueRef;
 
 fn nomangle LLVMGetInstructionOpcode(LLVMValueRef Inst) unsafe : LLVMOpcodeType;
 fn nomangle LLVMGetInstructionParent(LLVMValueRef Inst) unsafe : LLVMBasicBlockRef;
@@ -391,6 +392,9 @@ fn nomangle LLVMAddGlobal(LLVMModuleRef M, LLVMTypeRef Ty, NullTerminatedString&
 fn nomangle LLVMSetInitializer(LLVMValueRef GlobalVar, LLVMValueRef ConstantVal) unsafe : LLVMValueRef;
 fn nomangle LLVMSetGlobalConstant(LLVMValueRef GlobalVar, LLVMBool IsConstant) unsafe;
 fn nomangle LLVMGlobalGetValueType(LLVMValueRef Global) unsafe : LLVMTypeRef;
+
+fn nomangle LLVMIsThreadLocal(LLVMValueRef GlobalVar) unsafe : LLVMBool;
+fn nomangle LLVMSetThreadLocal(LLVMValueRef GlobalVar, LLVMBool IsThreadLocal) unsafe;
 
 // Function
 

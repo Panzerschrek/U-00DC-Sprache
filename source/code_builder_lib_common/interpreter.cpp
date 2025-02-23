@@ -908,6 +908,9 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 		case llvm::Intrinsic::stackrestore:
 			ProcessStackrestore( instruction );
 			return;
+		case llvm::Intrinsic::threadlocal_address:
+			ProcessThreadLocalAddress( instruction );
+			return;
 		default:
 			break;
 		};
@@ -1290,6 +1293,13 @@ void Interpreter::ProcessStackrestore( const llvm::CallInst* const instruction )
 {
 	// For now ignore this instruction.
 	U_UNUSED(instruction);
+}
+
+void Interpreter::ProcessThreadLocalAddress( const llvm::CallInst* const instruction )
+{
+	// Just return variable itself. For now we don't support handling thread-local variables properly (with TLS creation).
+	llvm::GenericValue val= GetVal( instruction->getArgOperand(0) );
+	current_function_frame_.instructions_map[ instruction ]= std::move(val);
 }
 
 void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const bool destroy )

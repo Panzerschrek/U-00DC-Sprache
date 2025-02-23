@@ -1398,6 +1398,8 @@ private:
 	LLVMValueRef lifetime_end_debug_func_= LLVMValueRef::Null;
 	LLVMTypeRef lifetime_function_arg_type_= LLVMTypeRef::Null;
 
+	LLVMValueRef threadlocal_address_intrinsic_= LLVMValueRef::Null;
+
 	// Coroutines
 	struct Coro
 	{

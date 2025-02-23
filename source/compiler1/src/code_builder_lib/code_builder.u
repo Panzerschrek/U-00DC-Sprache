@@ -189,6 +189,11 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 		}
 	}
 
+	threadlocal_address_intrinsic_=
+		GetIntrinsic(
+			"llvm.threadlocal.address",
+			ust::make_array( unsafe( LLVMPointerType( fundamental_llvm_types_.size_type_, 0u ) ) ) );
+
 	// Get coroutine intrisincs.
 	{
 		coro_.id= GetIntrinsic( "llvm.coro.id", ust::empty_range );

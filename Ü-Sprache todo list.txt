@@ -13,7 +13,6 @@ General:
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) More advanced macros - more context, elements, stringification, string manipulations
 *) switch-style operator for expression context
-*) thread-local variables, including accessing external thread-local variables
 *) A way to construct temporary variable with sequence initializer or other initializer kinds,
 	(in expression context)
 *) Function to function pointer assignment with multiple possible functions

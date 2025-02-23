@@ -115,7 +115,7 @@ def GlobalMutableVariableUsage_Test2():
 	assert( tests_lib.run_function( "_Z3Incv" ) == 2 )
 
 
-def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test0():
+def GlobalMutableVariableAccesIsNotAllowedOutsideUnsafeBlock_Test0():
 	c_program_text= """
 		var i32 mut x= 0;
 		fn Foo() : i32
@@ -127,7 +127,7 @@ def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test0():
 	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
 
 
-def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test1():
+def GlobalMutableVariableAccesIsNotAllowedOutsideUnsafeBlock_Test1():
 	c_program_text= """
 		auto mut ff= -456341.053;
 		fn Foo() : f64
@@ -139,7 +139,7 @@ def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test1():
 	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
 
 
-def GlobalMutableVariableAccesDoesNotAllowedOutsideUnsafeBlock_Test2():
+def GlobalMutableVariableAccesIsNotAllowedOutsideUnsafeBlock_Test2():
 	c_program_text= """
 		auto mut b= false;
 		// Even global mutable variable access in another global mutable variable initialization is forbidden, because global context is not usafe.
@@ -261,3 +261,256 @@ def MutableGlobalReferencesAreNotAllowed_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "MutableGlobalReferencesAreNotAllowed", 3 ) )
+
+
+def ThreadLocalVariableDeclaration_Test0():
+	c_program_text= """
+		thread_local i32 x = 66;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThreadLocalVariableDeclaration_Test1():
+	c_program_text= """
+		thread_local [ f32, 2 ] x= zero_init, y[ 0.5f, 0.25f ];
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThreadLocalVariableDeclaration_Test2():
+	c_program_text= """
+		namespace NN
+		{
+			thread_local u64 sss(2);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThreadLocalVariableDeclaration_Test3():
+	c_program_text= """
+		class SomeClass
+		{
+			thread_local ssize_type some(12345);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThreadLocalVariableUnsage_Test0():
+	c_program_text= """
+		thread_local i32 x= 1;
+		fn Bar() : i32
+		{
+			unsafe
+			{
+				auto res= x;
+				x*= 2;
+				return res;
+			}
+		}
+		fn Foo()
+		{
+			halt if( Bar() != 1 );
+			halt if( Bar() != 2 );
+			halt if( Bar() != 4 );
+			halt if( Bar() != 8 );
+			halt if( Bar() != 16 );
+			unsafe{ x= 33; }
+			halt if( Bar() != 33 );
+			halt if( Bar() != 66 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ThreadLocalVariableUnsage_Test1():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		thread_local S s{ .x= 1, .y= 1 };
+		fn Bar() : i32
+		{
+			unsafe
+			{
+				auto res= s.x + s.y;
+				s.x*= 2;
+				s.y*= 3;
+				return res;
+			}
+		}
+		fn Foo()
+		{
+			halt if( Bar() != 2 );
+			halt if( Bar() != 5 );
+			halt if( Bar() != 13 );
+			halt if( Bar() != 35 );
+			halt if( Bar() != 97 );
+			unsafe{ s.x= 5; }
+			unsafe{ s.y= 7; }
+			halt if( Bar() != 12 );
+			halt if( Bar() != 31 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ThreadLocalVariableUnsage_Test2():
+	c_program_text= """
+		fn Inc( i32 &mut a ) : i32
+		{
+			auto res= a;
+			++a;
+			return res;
+		}
+		thread_local i32 x= 1;
+		fn Bar() : i32
+		{
+			// Pass mutable reference to a "thread_local" variable into a function.
+			return unsafe( Inc(x) );
+		}
+		fn Foo()
+		{
+			halt if( Bar() != 1 );
+			halt if( Bar() != 2 );
+			halt if( Bar() != 3 );
+			halt if( Bar() != 4 );
+			halt if( Bar() != 5 );
+			unsafe{ x= 33; }
+			halt if( Bar() != 33 );
+			halt if( Bar() != 34 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ThreadLocalVariableAccesIsNotAllowedOutsideUnsafeBlock_Test0():
+	c_program_text= """
+		thread_local i32 x= 0;
+		fn Foo() : i32
+		{
+			return x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
+
+
+def ThreadLocalVariableAccesIsNotAllowedOutsideUnsafeBlock_Test1():
+	c_program_text= """
+		thread_local f64 ff= -456341.053;
+		fn Foo() : f64
+		{
+			return ff;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
+
+
+def ThreadLocalVariableAccesIsNotAllowedOutsideUnsafeBlock_Test2():
+	c_program_text= """
+		thread_local bool b= false;
+		// Even thread-local variable access in another thread-local variable initialization is forbidden, because global context is not usafe.
+		// Also this code should produce an error about non-constexpr global variable initializer.
+		thread_local bool b_copy= b;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 5 ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
+
+
+def VariableInitializerIsNotConstantExpression_ForThreadLocalVariable_Test0():
+	c_program_text= """
+		thread_local u32 x= Foo(); // Initializer is result of non-constexpr function call.
+		fn Foo() : u32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 2 ) )
+
+
+def VariableInitializerIsNotConstantExpression_ForThreadLocalVariable_Test1():
+	c_program_text= """
+		thread_local i32 x= 0;
+		thread_local i32 y= x; // Thread-local variable 'x' became non-constexpr after initialization. So, it's not possible to use it for initializer of another thread-local variable.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 3 ) )
+
+
+def VariableInitializerIsNotConstantExpression_ForThreadLocalVariable_Test2():
+	c_program_text= """
+		struct SS
+		{
+			thread_local mut x= 0;
+			thread_local imut y= x; // Thread-local variable 'x' became non-constexpr after initialization. So, it's not possible to use it for initializer of immutable global variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
+
+
+def ThreadLocalVariableIsNotConstexpr_Test0():
+	c_program_text= """
+		thread_local u32 ght=6754;
+		fn Foo()
+		{
+			var u32 constexpr x= ght;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
+
+
+def ThreadLocalVariableIsNotConstexpr_Test1():
+	c_program_text= """
+		thread_local i32 s=16;
+		type IVec= [ i32, s ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 3 ) )
+
+
+def ThreadLocalVariableIsNotConstexpr_Test2():
+	c_program_text= """
+		thread_local bool bb= true;
+		fn Foo()
+		{
+			static_if( bb ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "ExpectedConstantExpression", 5 ) )
+
+
+def ThreadLocalVariableShouldHasConstexprType_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn destructor(){}
+		}
+		thread_local S s= zero_init; // Type with explicit destructor declaration is not "constexpr"
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 6 ) )
+
+
+def ThreadLocalVariableShouldHaveConstexprType_Test1():
+	c_program_text= """
+		class C{ }
+		thread_local C c; // Class is not "constexpr".
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 3 ) )
+
+
+def ThreadLocalVariableShouldHaveConstexprType_Test2():
+	c_program_text= """
+		// Raw pointer type is not "constexpr" type.
+		// So, now it's not possible to use raw pointers in thread-local variables.
+		thread_local $(i32) ptr= zero_init;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 4 ) )

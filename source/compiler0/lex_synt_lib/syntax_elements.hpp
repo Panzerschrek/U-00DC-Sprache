@@ -948,6 +948,7 @@ struct VariablesDeclaration
 		std::unique_ptr<const Initializer> initializer; // May be null for types with default constructor.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
+		bool is_thread_local= false; // Parsed only for global variables.
 	};
 
 	SrcLoc src_loc;

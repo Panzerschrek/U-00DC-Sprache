@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/scoped_array.u"
 import "/CodeBuilderLib/keywords.uh"
 import "error_reporting.uh"
@@ -1704,6 +1705,12 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		auto llvm_value= ( is_mutable
 			? AddGlobalMutableVariable( name_mangled, t.GetLLVMType(), variable_declaration.src_loc )
 			: AddGlobalConstantVariable( name_mangled, t.GetLLVMType(), LLVMValueRef::Null ) );
+
+		if( variable_declaration.is_thread_local )
+		{
+			debug_assert( is_mutable ); // All thread-local variables should be mutable.
+			unsafe( LLVMSetThreadLocal( llvm_value, LLVMBool::True ) );
+		}
 
 		with( mut lock : variable_ptr.lock_mut() )
 		{

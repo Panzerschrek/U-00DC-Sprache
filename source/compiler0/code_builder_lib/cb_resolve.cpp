@@ -358,7 +358,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 			}
 		}
 	}
-	else if( const VariablePtr variable= value.GetVariable() )
+	else if( VariablePtr variable= value.GetVariable() )
 	{
 		if( function_context.variables_state.NodeMoved( variable ) )
 			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, variable->name );
@@ -375,7 +375,33 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 		{
 			// Add global variable nodes lazily.
 			function_context.variables_state.AddNodeIfNotExists( variable );
+
+			// On each access to a thread-local variable replace its address with a call to "llvm.threadlocal.address".
+			if( !function_context.is_functionless_context &&
+				variable->llvm_value != nullptr && variable->location == Variable::Location::Pointer )
+			{
+				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) )
+				{
+					if( global_variable->isThreadLocal() )
+					{
+						VariablePtr variable_with_corrected_address=
+							Variable::Create(
+								variable->type,
+								variable->value_type,
+								variable->location,
+								variable->name,
+								function_context.llvm_ir_builder.CreateThreadLocalAddress( variable->llvm_value ),
+								variable->constexpr_value );
+						variable= std::move( variable_with_corrected_address );
+
+						function_context.variables_state.AddNode( variable );
+						RegisterTemporaryVariable( function_context, variable );
+					}
+				}
+			}
 		}
+
+		return variable;
 	}
 
 	return value;

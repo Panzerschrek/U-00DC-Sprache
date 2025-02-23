@@ -127,3 +127,4 @@ static
 package
 module
 mixin
+thread_local

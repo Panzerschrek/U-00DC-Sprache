@@ -153,6 +153,7 @@ class SpracheLexer(RegexLexer):
 			(r'package(?![a-zA-Z_0-9])', token.Keyword),
 			(r'module(?![a-zA-Z_0-9])', token.Keyword),
 			(r'mixin(?![a-zA-Z_0-9])', token.Keyword),
+			(r'thread_local(?![a-zA-Z_0-9])', token.Keyword),
 			# Identifiers
 			(r'[a-zA-Z][a-zA-Z_0-9]*', token.Name),
 			# Other lexems
