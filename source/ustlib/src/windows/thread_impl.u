@@ -33,6 +33,11 @@ fn join_and_destroy_thread( thread_handle handle ) unsafe
 	unsafe( ::CloseHandle( handle ) );
 }
 
+fn get_current_thread_id() : thread_id
+{
+	return unsafe( GetCurrentThreadId() );
+}
+
 } // namespace thread_impl
 
 } // namespace us

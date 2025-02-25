@@ -131,4 +131,11 @@ fn make_thread( Func mut func ) : auto
 	return thread</ Func, ReturnType />( move(func) );
 }
 
+type thread_id= thread_impl::thread_id;
+
+fn get_current_thread_id() : thread_id
+{
+	return thread_impl::get_current_thread_id();
+}
+
 } // namespace ust

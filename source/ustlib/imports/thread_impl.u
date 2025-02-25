@@ -9,11 +9,18 @@ namespace ust
 namespace thread_impl
 {
 
+// Thread Id has platform-dependent format.
+type thread_id=
+	type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		u32, // DWORD
+		size_type />;
+
 // Thread handle has platform-dependent format.
 type thread_handle=
 	type_select</
 		constexpr_string_equals( compiler::target::os, "windows" ),
-		$(byte8),
+		$(byte8), // HANDLE
 		size_type />;
 
 // Use sligtly-different types for thread entry functions on different platforms.
@@ -29,6 +36,9 @@ fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : 
 
 // Input thread id should be valid and thread shouldn't be joined yet.
 fn join_and_destroy_thread( thread_handle handle ) unsafe;
+
+// Get id of current (caller) thread.
+fn get_current_thread_id() : thread_id;
 
 } // namespace thread_impl
 

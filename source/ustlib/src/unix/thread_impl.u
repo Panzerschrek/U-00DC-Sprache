@@ -30,6 +30,11 @@ fn join_and_destroy_thread( thread_handle handle ) unsafe
 	halt if( unsafe( ::pthread_join( handle, nullptr</$(byte8)/>() ) ) != 0 );
 }
 
+fn get_current_thread_id() : thread_id
+{
+	return unsafe( pthread_self() );
+}
+
 } // namespace thread_impl
 
 } // namespace us

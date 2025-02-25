@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/thread.u"
 import "../imports/shared_ptr_mt.u"
+import "../imports/sort.u"
 import "../imports/vector.u"
 
 fn Bar(){}
@@ -248,6 +249,38 @@ fn nomangle main() : i32
 
 		// The value of this thread-local variable in this thread shouldn't be changed.
 		unsafe{ halt if( some_thread_local_variable != 123456 ); }
+	}
+
+	{
+		var ust::thread_id this_thread= ust::get_current_thread_id();
+
+		// Start threads, where on each of them "get_current_thread_id" is called.
+		var ust::vector</ ust::thread</ fn() : ust::thread_id, ust::thread_id /> /> mut threads;
+		for( auto mut i= 0s; i < 8s; ++i )
+		{
+			threads.push_back( ust::make_thread( ust::get_current_thread_id ) );
+		}
+
+		// Get results of each thread.
+		var ust::vector</ust::thread_id/> mut results;
+		while( !threads.empty() )
+		{
+			results.push_back( threads.pop_back().join() );
+		}
+
+		// All threads should have id distinct from this thread id.
+		foreach( id : results )
+		{
+			halt if( id == this_thread );
+		}
+
+		// Sort and remove duplicates. Ensure, that all ids are unqies.
+		var size_type size_before= results.size();
+
+		ust::sort( results );
+		results.remove_adjacent_duplicates();
+
+		halt if( results.size() != size_before );
 	}
 
 	return 0;
