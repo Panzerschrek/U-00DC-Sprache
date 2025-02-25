@@ -39,7 +39,9 @@ public:
 			move_into_uninitialized( impl, Impl( move(func) ) );
 
 			// Create system thread.
-			impl.thread_id= thread_impl::create_and_start_thread( thread_function, ptr_cast_to_byte8(impl_) );
+			auto res= thread_impl::create_and_start_thread( thread_function, ptr_cast_to_byte8(impl_) );
+			impl.thread_handle= res[0];
+			impl.thread_id= res[1];
 		}
 	}
 
@@ -47,10 +49,15 @@ public:
 	fn constructor( mut this, this_type &imut other )= delete;
 	op=( mut this, this_type &imut other )= delete;
 
+	fn get_id( this ) : thread_id
+	{
+		return unsafe( $>(impl_) ).thread_id;
+	}
+
 	// Implement "join" as byval this-call method to enforce user to move thread to join it and avoid calling "join" again.
 	fn join( byval mut this ) : ResultType
 	{
-		unsafe( thread_impl::join_and_destroy_thread( $>(impl_).thread_id ) );
+		unsafe( thread_impl::join_and_destroy_thread( $>(impl_).thread_handle ) );
 
 		auto res= unsafe( $>(impl_) ).result.try_take();
 
@@ -67,7 +74,7 @@ public:
 		if( impl_ != nullptr</Impl/>() )
 		{
 			// Join it and free Impl if it wasn't done previously.
-			unsafe( thread_impl::join_and_destroy_thread( $>(impl_).thread_id ) );
+			unsafe( thread_impl::join_and_destroy_thread( $>(impl_).thread_handle ) );
 			unsafe( call_destructor( $>(impl_) ) );
 			unsafe( memory_free( ptr_cast_to_byte8( impl_ ) ) );
 		}
@@ -79,6 +86,7 @@ private:
 	{
 		optional</Func/> func;
 		optional</ResultType/> result;
+		thread_impl::thread_handle thread_handle= zero_init;
 		thread_impl::thread_id thread_id= zero_init;
 
 		fn constructor( Func mut in_func ) @(c_constructor_pollution)
@@ -129,6 +137,15 @@ fn make_thread( Func mut func ) : auto
 {
 	type ReturnType= typeof( move(func)() );
 	return thread</ Func, ReturnType />( move(func) );
+}
+
+// A value unique for each thread.
+type thread_id= thread_impl::thread_id;
+
+// Get id of current (caller) thread.
+fn get_current_thread_id() : thread_id
+{
+	return thread_impl::get_current_thread_id();
 }
 
 } // namespace ust

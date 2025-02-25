@@ -9,25 +9,33 @@ namespace thread_impl
 {
 
 static_assert( same_type</thread_id, pthread_t/>, "Types mismatch!" );
+static_assert( same_type</thread_handle, pthread_t/>, "Types mismatch!" );
 
-fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_id
+fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : tup[ thread_handle, thread_id ]
 {
 	unsafe
 	{
 		var pthread_attr_t mut attr= zero_init;
-		var pthread_t mut id(0);
+		var pthread_t mut handle(0);
 
 		halt if( ::pthread_attr_init( attr ) != 0 );
-		halt if( ::pthread_create( id, attr, func, arg ) != 0 );
+		halt if( ::pthread_create( handle, attr, func, arg ) != 0 );
 		halt if( ::pthread_attr_destroy( attr ) != 0 );
 
-		return id;
+		// In "pthread" library id=handle.
+		var tup[ thread_handle, thread_id ] res[ handle, handle ];
+		return res;
 	}
 }
 
-fn join_and_destroy_thread( thread_id id ) unsafe
+fn join_and_destroy_thread( thread_handle handle ) unsafe
 {
-	halt if( unsafe( ::pthread_join( id, nullptr</$(byte8)/>() ) ) != 0 );
+	halt if( unsafe( ::pthread_join( handle, nullptr</$(byte8)/>() ) ) != 0 );
+}
+
+fn get_current_thread_id() : thread_id
+{
+	return unsafe( pthread_self() );
 }
 
 } // namespace thread_impl

@@ -27,3 +27,4 @@ fn nomangle pthread_rwlock_destroy( pthread_rwlock_t &mut rwlock ) unsafe : i32;
 fn nomangle pthread_rwlock_rdlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
 fn nomangle pthread_rwlock_wrlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
 fn nomangle pthread_rwlock_unlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
+fn nomangle pthread_self() unsafe : pthread_t;
