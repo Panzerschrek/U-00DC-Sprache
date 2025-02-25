@@ -39,13 +39,20 @@ public:
 			move_into_uninitialized( impl, Impl( move(func) ) );
 
 			// Create system thread.
-			impl.thread_handle= thread_impl::create_and_start_thread( thread_function, ptr_cast_to_byte8(impl_) );
+			auto res= thread_impl::create_and_start_thread( thread_function, ptr_cast_to_byte8(impl_) );
+			impl.thread_handle= res[0];
+			impl.thread_id= res[1];
 		}
 	}
 
 	// Thread class is obviously non-copyable.
 	fn constructor( mut this, this_type &imut other )= delete;
 	op=( mut this, this_type &imut other )= delete;
+
+	fn get_id( this ) : thread_id
+	{
+		return unsafe( $>(impl_) ).thread_id;
+	}
 
 	// Implement "join" as byval this-call method to enforce user to move thread to join it and avoid calling "join" again.
 	fn join( byval mut this ) : ResultType
@@ -80,6 +87,7 @@ private:
 		optional</Func/> func;
 		optional</ResultType/> result;
 		thread_impl::thread_handle thread_handle= zero_init;
+		thread_impl::thread_id thread_id= zero_init;
 
 		fn constructor( Func mut in_func ) @(c_constructor_pollution)
 			( func(move(in_func)) )

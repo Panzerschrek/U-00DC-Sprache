@@ -10,7 +10,7 @@ namespace thread_impl
 
 static_assert( same_type</thread_handle, pthread_t/>, "Types mismatch!" );
 
-fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_handle
+fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : tup[ thread_handle, thread_id ]
 {
 	unsafe
 	{
@@ -21,7 +21,9 @@ fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : 
 		halt if( ::pthread_create( handle, attr, func, arg ) != 0 );
 		halt if( ::pthread_attr_destroy( attr ) != 0 );
 
-		return handle;
+		// In "pthread" library id=handle.
+		var tup[ thread_handle, thread_id ] res[ handle, handle ];
+		return res;
 	}
 }
 

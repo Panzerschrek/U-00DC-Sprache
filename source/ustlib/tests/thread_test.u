@@ -265,7 +265,11 @@ fn nomangle main() : i32
 		var ust::vector</ust::thread_id/> mut results;
 		while( !threads.empty() )
 		{
-			results.push_back( threads.pop_back().join() );
+			var ust::thread_id self_id= threads.back().get_id();
+			var ust::thread_id returned_id= threads.pop_back().join();
+			// Result of "get_id" method should be identical to the result of "get_current_thread_id" call within this thread.
+			halt if( self_id != returned_id );
+			results.push_back( returned_id );
 		}
 
 		// All threads should have id distinct from this thread id.

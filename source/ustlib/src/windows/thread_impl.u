@@ -11,8 +11,10 @@ namespace thread_impl
 
 static_assert( same_type</thread_handle, HANDLE/>, "Types mismatch!" );
 
-fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_handle
+fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : tup[ thread_handle, thread_id ]
 {
+	var DWORD mut id= zero_init;
+
 	var HANDLE handle=
 		unsafe( ::CreateThread(
 			nullptr</SECURITY_ATTRIBUTES/>(),
@@ -20,11 +22,12 @@ fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : 
 			func,
 			arg,
 			DWORD(0), // flags
-			nullptr</DWORD/>() /* thread id */ ) );
+			$<(id) ) );
 
 	halt if( is_nullptr(handle) );
 
-	return handle;
+	var tup[ thread_handle, thread_id ] res[ handle, id ];
+	return res;
 }
 
 fn join_and_destroy_thread( thread_handle handle ) unsafe
