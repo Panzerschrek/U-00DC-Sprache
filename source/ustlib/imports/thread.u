@@ -139,8 +139,10 @@ fn make_thread( Func mut func ) : auto
 	return thread</ Func, ReturnType />( move(func) );
 }
 
+// A value unique for each thread.
 type thread_id= thread_impl::thread_id;
 
+// Get id of current (caller) thread.
 fn get_current_thread_id() : thread_id
 {
 	return thread_impl::get_current_thread_id();

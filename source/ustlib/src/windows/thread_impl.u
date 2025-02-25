@@ -9,6 +9,7 @@ namespace ust
 namespace thread_impl
 {
 
+static_assert( same_type</thread_id, DWORD/>, "Types mismatch!" );
 static_assert( same_type</thread_handle, HANDLE/>, "Types mismatch!" );
 
 fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : tup[ thread_handle, thread_id ]
