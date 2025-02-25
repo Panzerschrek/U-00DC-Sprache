@@ -39,7 +39,7 @@ public:
 			move_into_uninitialized( impl, Impl( move(func) ) );
 
 			// Create system thread.
-			impl.thread_id= thread_impl::create_and_start_thread( thread_function, ptr_cast_to_byte8(impl_) );
+			impl.thread_handle= thread_impl::create_and_start_thread( thread_function, ptr_cast_to_byte8(impl_) );
 		}
 	}
 
@@ -50,7 +50,7 @@ public:
 	// Implement "join" as byval this-call method to enforce user to move thread to join it and avoid calling "join" again.
 	fn join( byval mut this ) : ResultType
 	{
-		unsafe( thread_impl::join_and_destroy_thread( $>(impl_).thread_id ) );
+		unsafe( thread_impl::join_and_destroy_thread( $>(impl_).thread_handle ) );
 
 		auto res= unsafe( $>(impl_) ).result.try_take();
 
@@ -67,7 +67,7 @@ public:
 		if( impl_ != nullptr</Impl/>() )
 		{
 			// Join it and free Impl if it wasn't done previously.
-			unsafe( thread_impl::join_and_destroy_thread( $>(impl_).thread_id ) );
+			unsafe( thread_impl::join_and_destroy_thread( $>(impl_).thread_handle ) );
 			unsafe( call_destructor( $>(impl_) ) );
 			unsafe( memory_free( ptr_cast_to_byte8( impl_ ) ) );
 		}
@@ -79,7 +79,7 @@ private:
 	{
 		optional</Func/> func;
 		optional</ResultType/> result;
-		thread_impl::thread_id thread_id= zero_init;
+		thread_impl::thread_handle thread_handle= zero_init;
 
 		fn constructor( Func mut in_func ) @(c_constructor_pollution)
 			( func(move(in_func)) )

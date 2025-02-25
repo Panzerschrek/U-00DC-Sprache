@@ -9,9 +9,9 @@ namespace ust
 namespace thread_impl
 {
 
-static_assert( same_type</thread_id, HANDLE/>, "Types mismatch!" );
+static_assert( same_type</thread_handle, HANDLE/>, "Types mismatch!" );
 
-fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_id
+fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : thread_handle
 {
 	var HANDLE handle=
 		unsafe( ::CreateThread(
@@ -27,10 +27,10 @@ fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : 
 	return handle;
 }
 
-fn join_and_destroy_thread( thread_id id ) unsafe
+fn join_and_destroy_thread( thread_handle handle ) unsafe
 {
-	unsafe( ::WaitForSingleObject( id, DWORD(INFINITE) ) );
-	unsafe( ::CloseHandle( id ) );
+	unsafe( ::WaitForSingleObject( handle, DWORD(INFINITE) ) );
+	unsafe( ::CloseHandle( handle ) );
 }
 
 } // namespace thread_impl
