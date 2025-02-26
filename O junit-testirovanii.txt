@@ -31,6 +31,15 @@ Etot podhod ne optimalen, t. k. upavšij test ne osvobodit resursy, ibo destrukt
 No eto vsö že lucše, cem valitj vesj nabor testov, jesli upal toljko odin test.
 Navernoje lucše bylo by ispoljzovatj razmotku steka s vyzovom destruktorov, no Ü takogo ne umejet, da i ne bezopasno eto, vyzyvatj destruktory v upavšem kode.
 
+Aljternativnyj variant obrabotki padenija testov zaklücajetsä v sledujuscem:
+Ispolnäjemyj fajl s testami prosto padajet, jesli test upal.
+Eto garantirovanno osvobodit vse resursy - vklücaja pamätj, otkrytyje fajly, potoki.
+Tot, kto jego zapuskajet (sborocnaja sistema), možet zapustitj jego jescö raz, zaprosiv pri etom zapusk sledujuscego posle upavšego testa (cerez argumenty komandnoj stroki).
+Pri etom na každyj uspešnyj test ispolnäjemyj fajl s testami dolžen vyzyvajuscej storone kak-to soobscatj, cto test prošöl, naprimer, ispoljzuja dlä komminukaçii kanal (imenovanyj ili bezimännyj).
+Dolžen bytj pri etom predel perezapuskov, skažem, ne boljje 16 raz, ctoby v slucaje, jesli cto-to slomalo srazu mnogo testov, ne tratitj vremä na perezapusk proçessa s testami, cto samo po sebe neskoljko nakladno.
+V optimisticnom že slucaje (kogda testy ne padajut), nakladnyje rashody budut minimaljny, t. k. proçess s testami zapuskajetsä toljko odin raz.
+V takom podhode daže ne trebujetsä osobyj obrabotcik "halt", hvatit i standartnogo.
+
 Sborocnaja sistema dolžna imetj komandu dlä sborki i zapuska testov.
 Nu ili kakoj-to drugoj mehanizm, kotoryj zapuskajet testy.
 
