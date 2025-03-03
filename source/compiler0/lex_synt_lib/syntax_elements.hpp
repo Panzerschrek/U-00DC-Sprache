@@ -98,6 +98,7 @@ struct Block;
 struct ScopeBlock;
 struct VariablesDeclaration;
 struct AutoVariableDeclaration;
+struct DisassemblyDeclaration;
 struct AllocaDeclaration;
 struct ReturnOperator;
 struct YieldOperator;
@@ -251,6 +252,7 @@ using BlockElementsList= VariantLinkedList<
 	ScopeBlock,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
+	DisassemblyDeclaration,
 	AllocaDeclaration,
 	ReturnOperator,
 	YieldOperator,
@@ -966,6 +968,62 @@ struct AutoVariableDeclaration
 	Expression initializer_expression;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
+};
+
+struct DisassemblyDeclarationNamedComponent;
+struct DisassemblyDeclarationSequenceComponent;
+struct DisassemblyDeclarationStructComponent;
+
+using DisassemblyDeclarationComponent=
+	std::variant<
+		DisassemblyDeclarationNamedComponent,
+		DisassemblyDeclarationSequenceComponent,
+		DisassemblyDeclarationStructComponent >;
+
+struct DisassemblyDeclarationNamedComponent
+{
+	explicit DisassemblyDeclarationNamedComponent( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::string name;
+};
+
+struct DisassemblyDeclarationSequenceComponent
+{
+	explicit DisassemblyDeclarationSequenceComponent( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::vector<DisassemblyDeclarationComponent> sub_components;
+};
+
+struct DisassemblyDeclarationStructComponent
+{
+	struct Entry;
+
+	explicit DisassemblyDeclarationStructComponent( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::vector<Entry> entries;
+};
+
+struct DisassemblyDeclarationStructComponent::Entry
+{
+	SrcLoc src_loc;
+	std::string name;
+	DisassemblyDeclarationComponent component;
+};
+
+struct DisassemblyDeclaration
+{
+	explicit DisassemblyDeclaration( const SrcLoc& src_loc, DisassemblyDeclarationComponent in_root_component )
+		: src_loc(src_loc), root_component(std::move(in_root_component)) {}
+
+	SrcLoc src_loc;
+	DisassemblyDeclarationComponent root_component;
+	Expression initializer_expression;
 };
 
 struct AllocaDeclaration
