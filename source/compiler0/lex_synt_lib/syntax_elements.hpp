@@ -987,6 +987,7 @@ struct DisassemblyDeclarationNamedComponent
 
 	SrcLoc src_loc;
 	std::string name;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 };
 
 struct DisassemblyDeclarationSequenceComponent

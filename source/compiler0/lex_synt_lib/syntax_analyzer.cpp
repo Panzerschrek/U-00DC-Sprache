@@ -219,6 +219,8 @@ private:
 	VariablesDeclaration ParseVariablesDeclaration();
 	VariablesDeclaration ParseThreadLocalVariablesDeclaration();
 	AutoVariableDeclaration ParseAutoVariableDeclaration();
+	DisassemblyDeclaration ParseDisassemblyDeclaration();
+	DisassemblyDeclarationComponent ParseDisassemblyDeclarationComponent();
 	AllocaDeclaration ParseAllocaDeclaration();
 
 	ReturnOperator ParseReturnOperator();
@@ -2415,6 +2417,133 @@ AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 	return result;
 }
 
+DisassemblyDeclaration SyntaxAnalyzer::ParseDisassemblyDeclaration()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ );
+	SrcLoc src_loc= it_->src_loc;
+	NextLexem();
+
+	U_ASSERT( it_->type == Lexem::Type::SquareBracketLeft || it_->type == Lexem::Type::BraceLeft );
+	DisassemblyDeclarationComponent root_component= ParseDisassemblyDeclarationComponent();
+
+	DisassemblyDeclaration result( src_loc, std::move( root_component ) );
+
+	ExpectLexem( Lexem::Type::Assignment );
+
+	result.initializer_expression= ParseExpression();
+	ExpectSemicolon();
+
+	return result;
+}
+
+DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationComponent()
+{
+	if( it_->type == Lexem::Type::SquareBracketLeft )
+	{
+		DisassemblyDeclarationSequenceComponent result( it_->src_loc );
+		NextLexem();
+		if( it_->type == Lexem::Type::SquareBracketLeft )
+		{
+			// Empty list.
+			NextLexem();
+		}
+		else
+		{
+			while( NotEndOfFile() )
+			{
+				result.sub_components.push_back( ParseDisassemblyDeclarationComponent() );
+
+				if( it_->type == Lexem::Type::Comma )
+				{
+					NextLexem();
+					continue;
+				}
+				else
+					break;
+			}
+			ExpectLexem( Lexem::Type::SquareBracketLeft );
+		}
+
+		return result;
+	}
+	else if( it_->type == Lexem::Type::BraceLeft )
+	{
+		DisassemblyDeclarationStructComponent result( it_->src_loc );
+		NextLexem();
+		if( it_->type == Lexem::Type::BraceLeft )
+		{
+			// Empty list.
+			NextLexem();
+		}
+		else
+		{
+			while( NotEndOfFile() )
+			{
+				if( it_->type != Lexem::Type::Identifier )
+				{
+					PushErrorMessage();
+					break;
+				}
+
+				std::string name= it_->text;
+				const SrcLoc src_loc= it_->src_loc;
+				NextLexem();
+
+				ExpectLexem( Lexem::Type::Colon );
+
+				result.entries.push_back(
+					DisassemblyDeclarationStructComponent::Entry
+					{
+						src_loc,
+						std::move(name),
+						ParseDisassemblyDeclarationComponent()
+					} );
+
+				if( it_->type == Lexem::Type::Comma )
+				{
+					NextLexem();
+					continue;
+				}
+				else
+					break;
+			}
+			ExpectLexem( Lexem::Type::BraceRight );
+		}
+
+		return result;
+	}
+	else if( it_->type == Lexem::Type::Identifier )
+	{
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+		if( it_->text == Keywords::mut_ )
+		{
+			mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+		else if( it_->text == Keywords::imut_ )
+		{
+			mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+
+		if( it_->type != Lexem::Type::Identifier )
+			PushErrorMessage();
+
+		DisassemblyDeclarationNamedComponent result( it_->src_loc );
+		result.name= it_->text;
+		NextLexem();
+
+		result.mutability_modifier= mutability_modifier;
+
+		return result;
+	}
+	else
+	{
+		PushErrorMessage();
+		return DisassemblyDeclarationNamedComponent( it_->src_loc );
+	}
+}
+
 AllocaDeclaration SyntaxAnalyzer::ParseAllocaDeclaration()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::alloca_ );
@@ -3060,7 +3189,13 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 			result_builder.Append( ParseVariablesDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
-			result_builder.Append( ParseAutoVariableDeclaration() );
+		{
+			const Lexem::Type l= std::next(it_)->type;
+			if( l == Lexem::Type::SquareBracketLeft || l == Lexem::Type::BraceLeft )
+				result_builder.Append( ParseDisassemblyDeclaration() );
+			else
+				result_builder.Append( ParseAutoVariableDeclaration() );
+		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::alloca_ )
 			result_builder.Append( ParseAllocaDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ )
