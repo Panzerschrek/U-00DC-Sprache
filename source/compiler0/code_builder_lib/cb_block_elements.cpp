@@ -536,14 +536,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const Synt::DisassemblyDeclaration& disassembly_declaration )
 {
 	// Destruction frame for temporary variables of initializer expression.
-	// StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( disassembly_declaration.initializer_expression, names_scope, function_context );
 	if( initializer_experrsion->type == invalid_type_ )
 		return BlockBuildInfo(); // Some error was generated before.
 
-	// TODO
+	BuildDisassemblyDeclarationComponent( names_scope, function_context, initializer_experrsion, disassembly_declaration.root_component );
 
 	CallDestructors( temp_variables_storage, names_scope, function_context, disassembly_declaration.src_loc );
 
@@ -3198,6 +3197,196 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	}
 
 	CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
+}
+
+void CodeBuilder::BuildDisassemblyDeclarationComponent(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const VariablePtr& variable,
+	const Synt::DisassemblyDeclarationComponent& component )
+{
+	return
+		std::visit(
+			[&]( const auto& el )
+			{
+				return BuildDisassemblyDeclarationComponentImpl( names_scope, function_context, variable, el );
+			},
+			component );
+}
+
+void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const VariablePtr& initializer_variable,
+	const Synt::DisassemblyDeclarationNamedComponent& component )
+{
+	if( initializer_variable->value_type != ValueType::Value )
+	{
+		// TODO - use other error code.
+		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), component.src_loc, "non-immediate values in disassembly declaration" );
+		return;
+	}
+	if( component.mutability_modifier == MutabilityModifier::Constexpr && initializer_variable->constexpr_value == nullptr )
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), component.src_loc );
+
+	// Expect that target variables frame is one below last (temporary).
+	StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2 ];
+
+	if( !initializer_variable->type.CanBeConstexpr() )
+		function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+
+	const VariableMutPtr variable=
+		Variable::Create(
+			initializer_variable->type,
+			ValueType::Value,
+			Variable::Location::Pointer,
+			component.name + " variable itself",
+			function_context.alloca_ir_builder.CreateAlloca( initializer_variable->type.GetLLVMType(), nullptr, component.name ),
+			component.mutability_modifier == MutabilityModifier::Mutable ? nullptr : initializer_variable->constexpr_value );
+
+	CreateLifetimeStart( function_context, variable->llvm_value );
+	debug_info_builder_->CreateVariableInfo( *variable, component.name, component.src_loc, function_context );
+
+	function_context.variables_state.AddNode( variable );
+	prev_variables_storage.RegisterVariable( variable );
+	function_context.variables_state.TryAddInnerLinks( initializer_variable, variable, names_scope.GetErrors(), component.src_loc );
+
+	function_context.variables_state.MoveNode( initializer_variable );
+
+	if( initializer_variable->location == Variable::Location::LLVMRegister )
+		CreateTypedStore( function_context, initializer_variable->type, initializer_variable->llvm_value, variable->llvm_value );
+	else
+	{
+		CopyBytes( variable->llvm_value, initializer_variable->llvm_value, variable->type, function_context );
+		CreateLifetimeEnd( function_context, initializer_variable->llvm_value );
+	}
+
+	const VariableMutPtr variable_reference=
+		Variable::Create(
+			initializer_variable->type,
+			component.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			component.name,
+			variable->llvm_value,
+			variable->constexpr_value );
+
+	function_context.variables_state.AddNode( variable_reference );
+	prev_variables_storage.RegisterVariable( variable_reference );
+	function_context.variables_state.AddLink( variable, variable_reference );
+	function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names_scope.GetErrors(), component.src_loc );
+
+	const bool force_referenced= VariableExistenceMayHaveSideEffects( variable_reference->type );
+
+	const NamesScopeValue* const inserted_value=
+		names_scope.AddName( component.name, NamesScopeValue( variable_reference, component.src_loc, force_referenced ) );
+	if( inserted_value == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), component.src_loc, component.name );
+}
+
+void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const VariablePtr& variable,
+	const Synt::DisassemblyDeclarationSequenceComponent& component )
+{
+	if( variable->value_type != ValueType::Value )
+	{
+		// TODO - use other error code.
+		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), component.src_loc, "non-immediate values in disassembly declaration" );
+		return;
+	}
+	if( function_context.variables_state.NodeMoved( variable ) )
+	{
+		// TODO - do we need such check?
+		REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), component.src_loc, variable->name );
+		return;
+	}
+
+	if( const auto array_type= variable->type.GetArrayType() )
+	{
+		if( array_type->element_count != component.sub_components.size() )
+		{
+			// TODO - use other error code.
+			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), component.src_loc, "mismatch in disassembly element count" );
+			return;
+		}
+
+		for( uint64_t i= 0; i < array_type->element_count; ++i )
+		{
+			const VariablePtr element_variable=
+				Variable::Create(
+					array_type->element_type,
+					ValueType::Value,
+					Variable::Location::Pointer,
+					variable->name + "[" + std::to_string(i) + "]",
+					CreateArrayElementGEP( function_context, *array_type, variable->llvm_value, i ),
+					variable->constexpr_value == nullptr ? nullptr : variable->constexpr_value->getAggregateElement( uint32_t(i) ) );
+
+			function_context.variables_state.AddNode( element_variable );
+			RegisterTemporaryVariable( function_context, element_variable );
+
+			SetupReferencesInCopyOrMove( function_context, element_variable, variable, names_scope.GetErrors(), component.src_loc );
+
+			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
+		}
+	}
+	else if( const auto tuple_type= variable->type.GetTupleType() )
+	{
+		if( tuple_type->element_types.size() != component.sub_components.size() )
+		{
+			// TODO - use other error code.
+			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), component.src_loc, "mismatch in disassembly element count" );
+			return;
+		}
+
+		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
+		{
+			const VariableMutPtr element_variable=
+				Variable::Create(
+					tuple_type->element_types[i],
+					ValueType::Value,
+					Variable::Location::Pointer,
+					variable->name + "[" + std::to_string(i) + "]",
+					CreateTupleElementGEP( function_context, *tuple_type, variable->llvm_value, i ),
+					variable->constexpr_value == nullptr ? nullptr : variable->constexpr_value->getAggregateElement( uint32_t(i) ) );
+
+			function_context.variables_state.AddNode( element_variable );
+			RegisterTemporaryVariable( function_context, element_variable );
+
+			function_context.variables_state.TryAddInnerLinksForTupleElement( variable, element_variable, i, names_scope.GetErrors(), component.src_loc );
+
+			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
+		}
+	}
+	else
+	{
+		// TODO - use other error code.
+		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), component.src_loc, "non-array or tuple in sequence disassembly" );
+		return;
+	}
+
+	// Mark this variable as destroyed - to avoid calling destructs.
+	function_context.variables_state.MoveNode( variable );
+	CreateLifetimeEnd( function_context, variable->llvm_value );
+}
+
+void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const VariablePtr& variable,
+	const Synt::DisassemblyDeclarationStructComponent& component )
+{
+	if( variable->value_type != ValueType::Value )
+	{
+		// TODO - use other error code.
+		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), component.src_loc, "non-immediate values in disassembly declaration" );
+		return;
+	}
+	// TODO
+	U_UNUSED(names_scope);
+	U_UNUSED(function_context);
+	U_UNUSED(variable);
+	U_UNUSED(component);
 }
 
 } // namespace U

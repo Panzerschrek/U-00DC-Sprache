@@ -1019,6 +1019,30 @@ private:
 		NamesScope& names_scope,
 		FunctionContext& function_context );
 
+	void BuildDisassemblyDeclarationComponent(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const Synt::DisassemblyDeclarationComponent& component );
+
+	void BuildDisassemblyDeclarationComponentImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const Synt::DisassemblyDeclarationNamedComponent& component );
+
+	void BuildDisassemblyDeclarationComponentImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const Synt::DisassemblyDeclarationSequenceComponent& component );
+
+	void BuildDisassemblyDeclarationComponentImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const Synt::DisassemblyDeclarationStructComponent& component );
+
 	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names_scope, FunctionContext& function_context );
 
 	//
