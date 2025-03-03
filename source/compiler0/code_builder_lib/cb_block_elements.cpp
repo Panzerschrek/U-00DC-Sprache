@@ -533,6 +533,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::DisassemblyDeclaration& disassembly_declaration )
+{
+	// Destruction frame for temporary variables of initializer expression.
+	// StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
+	const StackVariablesStorage temp_variables_storage( function_context );
+
+	const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( disassembly_declaration.initializer_expression, names_scope, function_context );
+	if( initializer_experrsion->type == invalid_type_ )
+		return BlockBuildInfo(); // Some error was generated before.
+
+	// TODO
+
+	CallDestructors( temp_variables_storage, names_scope, function_context, disassembly_declaration.src_loc );
+
+	return BlockBuildInfo();
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::AllocaDeclaration& alloca_declaration )
 {
 	if( IsKeyword( alloca_declaration.name ) )

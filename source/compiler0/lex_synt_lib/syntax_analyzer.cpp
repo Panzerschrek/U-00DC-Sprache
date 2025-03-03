@@ -2442,7 +2442,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 	{
 		DisassemblyDeclarationSequenceComponent result( it_->src_loc );
 		NextLexem();
-		if( it_->type == Lexem::Type::SquareBracketLeft )
+		if( it_->type == Lexem::Type::SquareBracketRight )
 		{
 			// Empty list.
 			NextLexem();
@@ -2461,7 +2461,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 				else
 					break;
 			}
-			ExpectLexem( Lexem::Type::SquareBracketLeft );
+			ExpectLexem( Lexem::Type::SquareBracketRight );
 		}
 
 		return result;
@@ -2470,7 +2470,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 	{
 		DisassemblyDeclarationStructComponent result( it_->src_loc );
 		NextLexem();
-		if( it_->type == Lexem::Type::BraceLeft )
+		if( it_->type == Lexem::Type::BraceRight )
 		{
 			// Empty list.
 			NextLexem();

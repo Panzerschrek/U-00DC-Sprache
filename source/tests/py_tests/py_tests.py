@@ -43,6 +43,7 @@ def main():
 		"constexpr_functions_errors_test",
 		"constexpr_functions_test",
 		"constexpr_structs_test",
+		"disassembly_declaration_test",
 		"enable_if_test",
 		"equality_operators_generation_test",
 		"external_symbols_access_test",
