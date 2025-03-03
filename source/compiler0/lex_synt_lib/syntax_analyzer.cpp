@@ -2479,25 +2479,25 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 		{
 			while( NotEndOfFile() )
 			{
+				DisassemblyDeclarationComponent component= ParseDisassemblyDeclarationComponent();
+
+				ExpectLexem( Lexem::Type::Colon );
+
 				if( it_->type != Lexem::Type::Identifier )
 				{
 					PushErrorMessage();
 					break;
 				}
 
-				std::string name= it_->text;
-				const SrcLoc src_loc= it_->src_loc;
-				NextLexem();
-
-				ExpectLexem( Lexem::Type::Colon );
-
 				result.entries.push_back(
 					DisassemblyDeclarationStructComponent::Entry
 					{
-						src_loc,
-						std::move(name),
-						ParseDisassemblyDeclarationComponent()
+						it_->src_loc,
+						it_->text,
+						std::move(component),
 					} );
+
+				NextLexem();
 
 				if( it_->type == Lexem::Type::Comma )
 				{

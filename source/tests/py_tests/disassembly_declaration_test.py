@@ -51,7 +51,7 @@ def DisassemblyDeclaration_Test4():
 		fn Bar() : S;
 		fn Foo()
 		{
-			auto { x : a, y : b } = Bar();
+			auto { a : x, b : y } = Bar();
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -63,7 +63,7 @@ def DisassemblyDeclaration_Test5():
 		fn Bar() : S;
 		fn Foo()
 		{
-			auto { x : mut a, y : imut b } = Bar();
+			auto { mut a : x, imut b : y } = Bar();
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -75,7 +75,7 @@ def DisassemblyDeclaration_Test6():
 		fn Bar() : tup[ bool, S ];
 		fn Foo()
 		{
-			auto [ b, { x : a, y : [ S, P, Q, R ] } ] = Bar();
+			auto [ b, { a : x, [ S, P, Q, R ] : y } ] = Bar();
 		}
 	"""
 	tests_lib.build_program( c_program_text )
