@@ -3427,10 +3427,12 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 
 	// TODO - call destructor for fields which are skipped.
 
+	llvm::SmallVector<bool, 32> disassembled_fields;
+	disassembled_fields.resize( class_type->llvm_type->getNumElements(), false );
+
 	for( size_t i= 0; i < component.entries.size(); ++i )
 	{
 		const Synt::DisassemblyDeclarationStructComponent::Entry& entry= component.entries[i];
-		// TODO - detect duplicates.
 
 		const NamesScopeValue* const class_member= class_type->members->GetThisScopeValue( entry.name );
 		if( class_member == nullptr )
@@ -3453,6 +3455,13 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			REPORT_ERROR( InitializerForBaseClassField, names_scope.GetErrors(), entry.src_loc, entry.name );
 			continue;
 		}
+
+		if( disassembled_fields[ field->index ] )
+		{
+			REPORT_ERROR( DuplicatedFieldInDisassemblyDeclaration, names_scope.GetErrors(), entry.src_loc, entry.name );
+			continue;
+		}
+		disassembled_fields[ field->index ]= true;
 
 		if( field->is_reference )
 		{

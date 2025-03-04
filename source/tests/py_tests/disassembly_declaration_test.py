@@ -424,3 +424,35 @@ def DisassemblingStructWithExplicitDestructor_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def DuplicatedFieldInDisassemblyDeclaration_Test0():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : x, b : y, c : x } = move(s);
+		}
+		struct S
+		{
+			i32 x; f32 y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DuplicatedFieldInDisassemblyDeclaration", 4 ) )
+
+
+def DuplicatedFieldInDisassemblyDeclaration_Test1():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : x, b : y, c : y } = move(s);
+		}
+		struct S
+		{
+			i32 x; f32 y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DuplicatedFieldInDisassemblyDeclaration", 4 ) )
