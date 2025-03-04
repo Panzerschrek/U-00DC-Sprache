@@ -2522,7 +2522,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 		}
 		else if( it_->text == Keywords::imut_ )
 		{
-			mutability_modifier= MutabilityModifier::Mutable;
+			mutability_modifier= MutabilityModifier::Immutable;
 			NextLexem();
 		}
 

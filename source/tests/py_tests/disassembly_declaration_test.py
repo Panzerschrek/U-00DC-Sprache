@@ -252,6 +252,110 @@ def DisassemblyDeclarationConstexpr_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def DisassembledVariableIsImmutable_Test0():
+	c_program_text= """
+		fn Foo( [ i32, 2 ] mut arr )
+		{
+			auto [ x, y ]= move(arr);
+			// Can't modify variables, which are immutable by default.
+			++x;
+			y*= 2;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+
+
+def DisassembledVariableIsImmutable_Test1():
+	c_program_text= """
+		fn Foo( [ i32, 3 ] mut arr )
+		{
+			auto [ imut x, imut y, imut z ]= move(arr);
+			// Can't modify variables, which are declated with "imut:
+			++x;
+			y*= 2;
+			z= 54;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+
+
+def DisassembledVariableIsImmutable_Test2():
+	c_program_text= """
+		fn Foo( tup[ i32, f32 ] mut t )
+		{
+			auto [ x, y ]= move(t);
+			// Can't modify variables, which are immutable by default.
+			++x;
+			y*= 2.0f;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+
+
+def DisassembledVariableIsImmutable_Test3():
+	c_program_text= """
+		fn Foo( tup[ i32, f32, u32 ] mut t )
+		{
+			auto [ imut x, imut y, imut z ]= move(t);
+			// Can't modify variables, which are declated with "imut:
+			++x;
+			y*= 2.0f;
+			z= 54u;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+
+
+def DisassembledVariableIsImmutable_Test4():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { x : a, y : b }= move(s);
+			// Can't modify variables, which are immutable by default.
+			++x;
+			y*= 2.0f;
+		}
+		struct S{ i32 a; f32 b; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+
+
+def DisassembledVariableIsImmutable_Test5():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { imut x : a, imut y : b, imut z : c }= move(s);
+			// Can't modify variables, which are declated with "imut:
+			++x;
+			y*= 2.0f;
+			z= 54u;
+		}
+		struct S{ i32 a; f32 b; u32 c; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+
+
 def ImmediateValueExpectedInDisassemblyDeclaration_Test0():
 	c_program_text= """
 		fn Foo( [ i32, 2 ] arr )
