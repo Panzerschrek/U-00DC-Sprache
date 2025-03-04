@@ -156,3 +156,169 @@ def DisassemblyDeclaration_Test7():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def DisassemblyDeclaration_Test8():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 3 ] mut arr[ 76, 543, 2109 ];
+			// Move and disassembly a local variable.
+			auto [ x, y, z ]= move(arr);
+			halt if( x != 76 );
+			halt if( y != 543 );
+			halt if( z != 2109 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def DisassemblyDeclaration_Test9():
+	c_program_text= """
+		fn Bar( [ i32 , 3 ] mut arr )
+		{
+			// Move and disassembly an argument.
+			auto [ x, y, z ]= move(arr);
+			halt if( x != 2109 );
+			halt if( y != 543 );
+			halt if( z != 76 );
+		}
+		fn Foo()
+		{
+			var [ i32, 3 ] arr[ 2109, 543, 76 ];
+			Bar( arr );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def ImmediateValueExpectedInDisassemblyDeclaration_Test0():
+	c_program_text= """
+		fn Foo( [ i32, 2 ] arr )
+		{
+			auto [ x, y ]= arr; // Expected immediate value, got immutable reference to an argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+
+
+def ImmediateValueExpectedInDisassemblyDeclaration_Test1():
+	c_program_text= """
+		fn Foo( [ i32, 2 ] mut arr )
+		{
+			auto [ x, y ]= arr; // Expected immediate value, got mmutable reference to an argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+
+
+def ImmediateValueExpectedInDisassemblyDeclaration_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var [i32, 2 ] arr= zer_init;
+			auto [ x, y ]= arr; // Expected immediate value, got immutable reference to a local variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 5 ) )
+
+
+def ImmediateValueExpectedInDisassemblyDeclaration_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var [i32, 2 ] mut arr= zer_init;
+			auto [ x, y ]= arr; // Expected immediate value, got mutable reference to a local variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 5 ) )
+
+
+
+def ImmediateValueExpectedInDisassemblyDeclaration_Test4():
+	c_program_text= """
+		fn Foo( S s )
+		{
+			auto { a : x, b : y }= s; // Expected immediate value, got immutable reference to an argument.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+
+
+def ImmediateValueExpectedInDisassemblyDeclaration_Test5():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : x, b : y }= s; // Expected immediate value, got mutable reference to an argument.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+
+
+def ImmediateValueExpectedInDisassemblyDeclaration_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var S s= zero_init;
+			auto { a : x, b : y }= s; // Expected immediate value, got immutable reference to a local variable.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 5 ) )
+
+
+def ImmediateValueExpectedInDisassemblyDeclaration_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			auto { a : x, b : y }= s; // Expected immediate value, got mutable reference to a local variable.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 5 ) )
+
+
+def ImmediateValueExpectedInDisassemblyDeclaration_Test8():
+	c_program_text= """
+		fn Foo( [ i32, 2 ]& arr )
+		{
+			auto [ x, y ]= arr; // Expected immediate value, got immutable reference to an argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+
+
+def ImmediateValueExpectedInDisassemblyDeclaration_Test9():
+	c_program_text= """
+		fn Foo( S &mut s )
+		{
+			auto { a : x, b : y }= s; // Expected immediate value, got mutable reference to an argument.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )

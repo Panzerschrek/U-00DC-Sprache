@@ -287,3 +287,6 @@ PROCESS_ERROR( ExternalFunctionTypeMismatch, "External function type doesn't mat
 PROCESS_ERROR( AccessingExternalVariableInGlobalContext, "Accessing external variable in global context - it's not allowed." )
 PROCESS_ERROR( AccessingExternalVariableOutsideUnsafeBlock, "Accessing external variable outside unsafe block or unsafe expression." )
 PROCESS_ERROR( ExternalVariableTypeMismatch, "External variable type doesn't match its previous usage." )
+
+// Disassembly declaration.
+PROCESS_ERROR( ImmediateValueExpectedInDisassemblyDeclaration, "Expected immediate value in disassembly declaration." )
