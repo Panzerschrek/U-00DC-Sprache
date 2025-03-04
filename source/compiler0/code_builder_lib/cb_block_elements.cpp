@@ -3425,8 +3425,6 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 		}
 	}
 
-	// TODO - call destructor for fields which are skipped.
-
 	llvm::SmallVector<bool, 32> disassembled_fields;
 	disassembled_fields.resize( class_type->llvm_type->getNumElements(), false );
 
@@ -3484,6 +3482,18 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 
 			function_context.variables_state.RemoveNode( struct_member );
 		}
+	}
+
+	// Call destructors for fields which weren't disassembled.
+	for( const ClassFieldPtr& field : class_type->fields_order )
+	{
+		if( !disassembled_fields[ field->index ] )
+			CallDestructor(
+				CreateClassFieldGEP( function_context, *variable, field->index ),
+				field->type,
+				function_context,
+				names_scope.GetErrors(),
+				component.src_loc );
 	}
 
 	// Mark this variable as destroyed - to avoid calling destructs.
