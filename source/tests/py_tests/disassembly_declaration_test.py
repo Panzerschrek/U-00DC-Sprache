@@ -456,3 +456,35 @@ def DuplicatedFieldInDisassemblyDeclaration_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DuplicatedFieldInDisassemblyDeclaration", 4 ) )
+
+
+def NameNotFound_ForStructDisassembly_Test0():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : X } = move(s); // There is no "X" inside "S".
+		}
+		struct S
+		{
+			i32 x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NameNotFound", 4 ) )
+
+
+def NameNotFound_ForStructDisassembly_Test1():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : smoe_filed } = move(s); // There is no "smoe_filed" inside "S".
+		}
+		struct S
+		{
+			i32 some_field;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NameNotFound", 4 ) )
