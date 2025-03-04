@@ -537,6 +537,67 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test9():
 	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
 
 
+def DisassemblingNonStructAsStruct_Test0():
+	c_program_text= """
+		fn Foo( i32 mut i )
+		{
+			auto { a : x } = move(i); // Can't disassemble scalar as struct.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
+def DisassemblingNonStructAsStruct_Test1():
+	c_program_text= """
+		fn Foo( $(u8) mut p )
+		{
+			auto { a : x } = move(p); // Can't disassemble scalar as struct.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
+def DisassemblingNonStructAsStruct_Test2():
+	c_program_text= """
+		fn Foo( E mut e )
+		{
+			auto { a : x } = move(e); // Can't disassemble scalar as struct.
+		}
+		enum E{ A, B, C }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
+def DisassemblingNonStructAsStruct_Test3():
+	c_program_text= """
+		fn Foo( [ i32, 2 ] mut arr )
+		{
+			auto { a : x, b : y } = move(arr); // Can't disassemble array as struct.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
+def DisassemblingNonStructAsStruct_Test4():
+	c_program_text= """
+		fn Foo( tup[ u32, f64 ] mut t )
+		{
+			auto { a : x, b : y } = move(t); // Can't disassemble tuple as struct.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
 def DisassemblingClassValue_Test0():
 	c_program_text= """
 		fn Foo( C mut c )
