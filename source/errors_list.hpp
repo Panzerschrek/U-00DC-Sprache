@@ -295,3 +295,4 @@ PROCESS_ERROR( DisassemblingStructWithExplicitDestructor, "Disassembling value o
 PROCESS_ERROR( DuplicatedFieldInDisassemblyDeclaration, "Field {0} is duplicated within a disassembly declaration." )
 PROCESS_ERROR( DisassemblingNonFieldStructMember, "Struct member {0} is not a field." )
 PROCESS_ERROR( DisassemblingReferenceField, "Disassembling reference field {0}." )
+PROCESS_ERROR( DisassemblySequenceElementCountMismatch, "Element count mismatch in sequence disassembly declaration, expected {0}, got {1}." )

@@ -813,3 +813,75 @@ def DisassemblingReferenceField_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DisassemblingReferenceField", 4 ) )
+
+
+def DisassemblySequenceElementCountMismatch_Test0():
+	c_program_text= """
+		fn Foo( [ i32, 3 ] mut arr )
+		{
+			auto [ a, b ]= move(arr); // Too few elements.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+
+
+def DisassemblySequenceElementCountMismatch_Test1():
+	c_program_text= """
+		fn Foo( [ i32, 3 ] mut arr )
+		{
+			auto [ a, b, c, d ]= move(arr); // Too many elements.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+
+
+def DisassemblySequenceElementCountMismatch_Test2():
+	c_program_text= """
+		fn Foo( tup[ i32, f32, bool ] mut t )
+		{
+			auto [ a, b ]= move(t); // Too few elements.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+
+
+def DisassemblySequenceElementCountMismatch_Test3():
+	c_program_text= """
+		fn Foo( tup[ i32, f32, bool ] mut t )
+		{
+			auto [ a, b, c, d ]= move(t); // Too many elements.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+
+
+def DisassemblySequenceElementCountMismatch_Test4():
+	c_program_text= """
+		fn Foo( tup[] mut t )
+		{
+			auto [ a ]= move(t); // Too many elements.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+
+
+def DisassemblySequenceElementCountMismatch_Test5():
+	c_program_text= """
+		fn Foo( tup[ i32 ] mut t )
+		{
+			auto []= move(t); // Too few elements.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )

@@ -3315,8 +3315,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	{
 		if( array_type->element_count != component.sub_components.size() )
 		{
-			// TODO - use other error code.
-			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), component.src_loc, "mismatch in disassembly element count" );
+			REPORT_ERROR( DisassemblySequenceElementCountMismatch, names_scope.GetErrors(), component.src_loc, array_type->element_count, component.sub_components.size() );
 			return;
 		}
 
@@ -3343,8 +3342,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	{
 		if( tuple_type->element_types.size() != component.sub_components.size() )
 		{
-			// TODO - use other error code.
-			REPORT_ERROR( NotImplemented, names_scope.GetErrors(), component.src_loc, "mismatch in disassembly element count" );
+			REPORT_ERROR( DisassemblySequenceElementCountMismatch, names_scope.GetErrors(), component.src_loc, tuple_type->element_types.size(), component.sub_components.size() );
 			return;
 		}
 
