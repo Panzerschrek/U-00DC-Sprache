@@ -1021,3 +1021,84 @@ def SequenceDisassemblyForNonSequenceType_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
+def Redefinition_ForDisassemblyDeclaration_Test0():
+	c_program_text= """
+		fn Foo( [ i32, 1 ] mut arr )
+		{
+			var f64 a= 0.0;
+			auto [ a ]= move(arr); // Error, "a" already defined in this scope.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "Redefinition", 5 ) )
+
+
+def Redefinition_ForDisassemblyDeclaration_Test1():
+	c_program_text= """
+		fn Foo( tup[ f32, bool ] mut t )
+		{
+			var u8 b= zero_init;
+			auto [ a, b ]= move(t); // Error, "b" already defined in this scope.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "Redefinition", 5 ) )
+
+
+def Redefinition_ForDisassemblyDeclaration_Test2():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			var f64 a= 0.0;
+			auto { a : x }= move(s); // Error, "a" already defined in this scope.
+		}
+		struct S{ i32 x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "Redefinition", 5 ) )
+
+
+def Redefinition_ForDisassemblyDeclaration_Test3():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			var f64 a= 0.0;
+			auto { a : x }= move(s); // Error, "a" already defined in this scope.
+		}
+		struct S{ i32& x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "Redefinition", 5 ) )
+
+
+def Redefinition_ForDisassemblyDeclaration_Test4():
+	c_program_text= """
+		fn Foo( [ i32, 1 ] mut arr )
+		{
+			var f64 a= 0.0;
+			{
+				auto [ a ]= move(arr); // Fine, "a" is defined in outer scope.
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Redefinition_ForDisassemblyDeclaration_Test5():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			var f64 a= 0.0;
+			{
+				auto { a : x }= move(s); // Fine, "a" is defined in outer scope.
+			}
+		}
+		struct S{ i32 x; }
+	"""
+	tests_lib.build_program( c_program_text )
