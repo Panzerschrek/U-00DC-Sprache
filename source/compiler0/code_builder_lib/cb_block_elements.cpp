@@ -3443,14 +3443,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 		const ClassFieldPtr field= class_member->value.GetClassField();
 		if( field == nullptr )
 		{
-			// TODO - use other kind of error.
-			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope.GetErrors(), entry.src_loc, entry.name );
-			continue;
-		}
-		if( field->class_ != variable->type )
-		{
-			// TODO - use other kind of error.
-			REPORT_ERROR( InitializerForBaseClassField, names_scope.GetErrors(), entry.src_loc, entry.name );
+			REPORT_ERROR( DisassemblingNonFieldStructMember, names_scope.GetErrors(), entry.src_loc, entry.name );
 			continue;
 		}
 

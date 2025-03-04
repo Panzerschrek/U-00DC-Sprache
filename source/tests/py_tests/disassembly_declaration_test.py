@@ -488,3 +488,51 @@ def NameNotFound_ForStructDisassembly_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "NameNotFound", 4 ) )
+
+
+def DisassemblingNonFieldStructMember_Test0():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : x } = move(s); // "x" isn't a field, but global variable.
+		}
+		struct S
+		{
+			var i32 mut x= 0;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingNonFieldStructMember", 4 ) )
+
+
+def DisassemblingNonFieldStructMember_Test1():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : SomeFunc } = move(s); // "SomeFunc" isn't a field, but a function.
+		}
+		struct S
+		{
+			fn SomeFunc( this );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingNonFieldStructMember", 4 ) )
+
+
+def DisassemblingNonFieldStructMember_Test2():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : X } = move(s); // "X" isn't a field, but a type alias.
+		}
+		struct S
+		{
+			type X= f32;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingNonFieldStructMember", 4 ) )
