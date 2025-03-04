@@ -194,6 +194,64 @@ def DisassemblyDeclaration_Test9():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def DisassemblyDeclarationConstexpr_Test0():
+	c_program_text= """
+		fn constexpr Bar( i32 scale ) : [ i32, 3 ]
+		{
+			var [ i32, 3 ] arr[ 2 * scale, 3 * scale, 4 * scale ];
+			return arr;
+		}
+		fn Foo()
+		{
+			auto [ x, y, z ]= Bar(7);
+			static_assert( x == 14 );
+			static_assert( y == 21 );
+			static_assert( z == 28 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def DisassemblyDeclarationConstexpr_Test1():
+	c_program_text= """
+		fn constexpr Bar( i32 scale ) : tup[ i32, f32, bool ]
+		{
+			var bool even= ( scale & 1 ) == 0;
+			var tup[ i32, f32, bool ] t[ scale * 3, f32(scale) * 4.0f, even ];
+			return t;
+		}
+		fn Foo()
+		{
+			auto [ x, y, z ]= Bar( 9 );
+			static_assert( x == 27 );
+			static_assert( y == 36.0f );
+			static_assert( !z );
+			auto [ a, b, c ]= Bar( 4 );
+			static_assert( a == 12 );
+			static_assert( b == 16.0f );
+			static_assert( c );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def DisassemblyDeclarationConstexpr_Test2():
+	c_program_text= """
+		struct S{ i32 x; u32 y; }
+		fn constexpr Bar( i32 scale ) : S
+		{
+			return S{ .x= -3 * scale, .y= u32(scale) * 7u };
+		}
+		fn Foo()
+		{
+			auto { a : x, b : y }= Bar(11);
+			static_assert( a == -33 );
+			static_assert( b == 77u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ImmediateValueExpectedInDisassemblyDeclaration_Test0():
 	c_program_text= """
 		fn Foo( [ i32, 2 ] arr )

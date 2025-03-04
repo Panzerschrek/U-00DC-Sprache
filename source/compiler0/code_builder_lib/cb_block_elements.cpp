@@ -3332,11 +3332,11 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 					variable->constexpr_value == nullptr ? nullptr : variable->constexpr_value->getAggregateElement( uint32_t(i) ) );
 
 			function_context.variables_state.AddNode( element_variable );
-			RegisterTemporaryVariable( function_context, element_variable );
-
 			SetupReferencesInCopyOrMove( function_context, element_variable, variable, names_scope.GetErrors(), component.src_loc );
 
 			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
+
+			function_context.variables_state.RemoveNode( element_variable );
 		}
 	}
 	else if( const auto tuple_type= variable->type.GetTupleType() )
@@ -3466,7 +3466,8 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 					ValueType::Value,
 					Variable::Location::Pointer,
 					variable->name + "." + entry.name,
-					CreateClassFieldGEP( function_context, *variable, field->index ) );
+					CreateClassFieldGEP( function_context, *variable, field->index ),
+					variable->constexpr_value == nullptr ? nullptr : variable->constexpr_value->getAggregateElement( field->index ) );
 
 			function_context.variables_state.AddNode( struct_member );
 			function_context.variables_state.TryAddInnerLinksForClassField( variable, struct_member, *field, names_scope.GetErrors(), entry.src_loc );
