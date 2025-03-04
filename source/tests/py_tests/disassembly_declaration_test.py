@@ -786,3 +786,30 @@ def BindingConstReferenceToNonconstReference_ForReferenceFieldDisassembly_Test2(
 		struct S { i32 &mut x; }
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def DisassemblingReferenceField_Test0():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { [ a, b ] : x } = move(s); // Error - can't disassemble "x" further, since it's a reference field.
+		}
+		struct S { [ i32, 2 ] & x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingReferenceField", 4 ) )
+
+
+def DisassemblingReferenceField_Test1():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { { a : m, b : n } : t } = move(s); // Error - can't disassemble "t" further, since it's a reference field.
+		}
+		struct S { T & t; }
+		struct T { f32 m; f64 n; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingReferenceField", 4 ) )

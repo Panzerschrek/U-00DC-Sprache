@@ -3464,7 +3464,9 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			const auto named_component= std::get_if<Synt::DisassemblyDeclarationNamedComponent>( &entry.component );
 			if( named_component == nullptr )
 			{
-				// TODO - generate an error.
+				// We can only bind a reference field to a name.
+				// Disassembling it further isn't possible.
+				REPORT_ERROR( DisassemblingReferenceField, names_scope.GetErrors(), entry.src_loc, entry.name );
 				continue;
 			}
 

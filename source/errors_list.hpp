@@ -294,3 +294,4 @@ PROCESS_ERROR( DisassemblingClassValue, "Disassembling values of class types isn
 PROCESS_ERROR( DisassemblingStructWithExplicitDestructor, "Disassembling value of struct {0}, which has explicit destructor." )
 PROCESS_ERROR( DuplicatedFieldInDisassemblyDeclaration, "Field {0} is duplicated within a disassembly declaration." )
 PROCESS_ERROR( DisassemblingNonFieldStructMember, "Struct member {0} is not a field." )
+PROCESS_ERROR( DisassemblingReferenceField, "Disassembling reference field {0}." )
