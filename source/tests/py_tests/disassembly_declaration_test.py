@@ -348,3 +348,79 @@ def DisassemblingClassValue_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
+
+
+def DisassemblingStructWithExplicitDestructor_Test0():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : x, b : y } = move(s);
+		}
+		struct S
+		{
+			f32 x;
+			u32 y;
+			fn destructor() {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingStructWithExplicitDestructor", 4 ) )
+
+
+def DisassemblingStructWithExplicitDestructor_Test1():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto {} = move(s);
+		}
+		struct S
+		{
+			fn destructor();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingStructWithExplicitDestructor", 4 ) )
+
+
+def DisassemblingStructWithExplicitDestructor_Test1():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : x, { b : y } : t } = move(s);
+		}
+		struct S
+		{
+			i32 x;
+			T t;
+		}
+		struct T
+		{
+			f32 y;
+			fn destructor();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingStructWithExplicitDestructor", 4 ) )
+
+
+def DisassemblingStructWithExplicitDestructor_Test2():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { a : x, b : t } = move(s); // Fine - "s" can be disassembled, since its destructor is generated, "t" with explicit destructor isn't disassembled.
+		}
+		struct S
+		{
+			i32 x;
+			T t;
+		}
+		struct T
+		{
+			f32 y;
+			fn destructor();
+		}
+	"""
+	tests_lib.build_program( c_program_text )

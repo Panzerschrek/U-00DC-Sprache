@@ -3410,6 +3410,20 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 		REPORT_ERROR( DisassemblingClassValue, names_scope.GetErrors(), component.src_loc );
 		return;
 	}
+	if( const auto destructors= class_type->members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
+	{
+		if( const OverloadedFunctionsSetPtr functions_set= destructors->value.GetFunctionsSet() )
+		{
+			for( const FunctionVariable& function_variable : functions_set->functions )
+			{
+				if( !function_variable.is_generated )
+				{
+					REPORT_ERROR( DisassemblingStructWithExplicitDestructor, names_scope.GetErrors(), component.src_loc, variable->type );
+					return;
+				}
+			}
+		}
+	}
 
 	// TODO - call destructor for fields which are skipped.
 

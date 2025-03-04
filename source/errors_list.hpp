@@ -291,3 +291,4 @@ PROCESS_ERROR( ExternalVariableTypeMismatch, "External variable type doesn't mat
 // Disassembly declaration.
 PROCESS_ERROR( ImmediateValueExpectedInDisassemblyDeclaration, "Expected immediate value in disassembly declaration." )
 PROCESS_ERROR( DisassemblingClassValue, "Disassembling values of class types isn't allowed, only structs support disassembly." )
+PROCESS_ERROR( DisassemblingStructWithExplicitDestructor, "Disassembling value of struct {0}, which has explicit destructor." )
