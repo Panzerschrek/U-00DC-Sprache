@@ -1102,3 +1102,53 @@ def Redefinition_ForDisassemblyDeclaration_Test5():
 		struct S{ i32 x; }
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def UsingKeywordAsName_ForDisassemblyDeclaration_Test0():
+	c_program_text= """
+		fn Foo( tup[ f32 ] mut t )
+		{
+			auto [ yield ]= move(t); // Error "yield" is a keyword.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
+
+
+def UsingKeywordAsName_ForDisassemblyDeclaration_Test1():
+	c_program_text= """
+		fn Foo( [ f64, 2] mut arr )
+		{
+			auto [ x, constructor ]= move(arr); // Error "constructor" is a keyword.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
+
+
+def UsingKeywordAsName_ForDisassemblyDeclaration_Test2():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { label : x } = move(s); // Error "label" is a keyword.
+		}
+		struct S{ i32 x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
+
+
+def UsingKeywordAsName_ForDisassemblyDeclaration_Test3():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { protected : x } = move(s); // Error "protected" is a keyword.
+		}
+		struct S{ i32& x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )

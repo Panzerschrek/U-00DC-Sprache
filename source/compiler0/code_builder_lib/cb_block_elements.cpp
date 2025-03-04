@@ -3220,6 +3220,9 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	const VariablePtr& initializer_variable,
 	const Synt::DisassemblyDeclarationNamedComponent& component )
 {
+	if( IsKeyword( component.name ) )
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), component.src_loc );
+
 	if( initializer_variable->value_type != ValueType::Value )
 	{
 		// Allow disassembling only immediate values.
@@ -3466,6 +3469,9 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 				REPORT_ERROR( DisassemblingReferenceField, names_scope.GetErrors(), entry.src_loc, entry.name );
 				continue;
 			}
+
+			if( IsKeyword( named_component->name ) )
+				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), component.src_loc );
 
 			if( !field->is_mutable && named_component->mutability_modifier == MutabilityModifier::Mutable )
 			{
