@@ -3400,9 +3400,14 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	}
 
 	const Class* const class_type= variable->type.GetClassType();
-	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
+	if( class_type == nullptr )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), component.src_loc, variable->type );
+		return;
+	}
+	if( class_type->kind != Class::Kind::Struct )
+	{
+		REPORT_ERROR( DisassemblingClassValue, names_scope.GetErrors(), component.src_loc );
 		return;
 	}
 

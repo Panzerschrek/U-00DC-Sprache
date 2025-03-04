@@ -322,3 +322,29 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test9():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+
+
+def DisassemblingClassValue_Test0():
+	c_program_text= """
+		fn Foo( C mut c )
+		{
+			auto {} = move(c);
+		}
+		class C{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
+
+
+def DisassemblingClassValue_Test1():
+	c_program_text= """
+		fn Foo( C mut c )
+		{
+			auto { a : x, b : y } = move(c);
+		}
+		class C polymorph{ f32 x; u32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
