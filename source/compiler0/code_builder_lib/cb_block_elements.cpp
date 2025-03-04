@@ -3454,9 +3454,62 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 		}
 		disassembled_fields[ field->index ]= true;
 
+		llvm::Value* const field_address= CreateClassFieldGEP( function_context, *variable, field->index );
+
 		if( field->is_reference )
 		{
-			// TODO - handle reference fields, declare named reference.
+			// Expect that target variables frame is one below last (temporary).
+			StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2 ];
+
+			const auto named_component= std::get_if<Synt::DisassemblyDeclarationNamedComponent>( &entry.component );
+			if( named_component == nullptr )
+			{
+				// TODO - generate an error.
+				continue;
+			}
+
+			// TODO - prevent binding imut reference to mut reference.
+
+			const VariableMutPtr result_reference=
+				Variable::Create(
+					field->type,
+					named_component->mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+					Variable::Location::Pointer,
+					named_component->name,
+					CreateTypedReferenceLoad( function_context, field->type, field_address ),
+					nullptr );
+
+			debug_info_builder_->CreateReferenceVariableInfo( *result_reference, named_component->name, named_component->src_loc, function_context );
+
+			function_context.variables_state.AddNode( result_reference );
+			prev_variables_storage.RegisterVariable( result_reference );
+
+			U_ASSERT( field->reference_tag < variable->inner_reference_nodes.size() );
+			const VariablePtr& inner_reference_node= variable->inner_reference_nodes[ field->reference_tag ];
+
+			function_context.variables_state.TryAddLink( inner_reference_node, result_reference, names_scope.GetErrors(), named_component->src_loc );
+
+			// Setup inner reference node links for reference fields with references inside.
+			// Only reference-fields with single inner reference tag are supported.
+			if( field->type.ReferenceTagCount() == 1 )
+			{
+				U_ASSERT( result_reference->inner_reference_nodes.size() == 1 );
+
+				for( const VariablePtr& accessible_node :
+					function_context.variables_state.GetAllAccessibleNonInnerNodes( inner_reference_node ) )
+				{
+					// Usually we should have here only one inner reference node.
+					// But it may be more if a member of a composite value is referenced.
+					// In such case it's necessary to create links for all inner reference nodes, even if sometimes it can create false-positive reference protection errors.
+					for( const VariablePtr& node : accessible_node->inner_reference_nodes )
+						function_context.variables_state.TryAddLink( node, result_reference->inner_reference_nodes.front(), names_scope.GetErrors(), named_component->src_loc );
+				}
+			}
+
+			const NamesScopeValue* const inserted_value=
+				names_scope.AddName( named_component->name, NamesScopeValue( result_reference, named_component->src_loc ) );
+			if( inserted_value == nullptr )
+				REPORT_ERROR( Redefinition, names_scope.GetErrors(), named_component->src_loc, named_component->name );
 		}
 		else
 		{
@@ -3466,7 +3519,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 					ValueType::Value,
 					Variable::Location::Pointer,
 					variable->name + "." + entry.name,
-					CreateClassFieldGEP( function_context, *variable, field->index ),
+					field_address,
 					variable->constexpr_value == nullptr ? nullptr : variable->constexpr_value->getAggregateElement( field->index ) );
 
 			function_context.variables_state.AddNode( struct_member );

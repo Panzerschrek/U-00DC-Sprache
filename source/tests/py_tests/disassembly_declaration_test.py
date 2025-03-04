@@ -252,6 +252,57 @@ def DisassemblyDeclarationConstexpr_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def DisassemblyDeclarationForReferenceField_Test0():
+	c_program_text= """
+		struct S{ u64 v; i32& x; }
+		fn Foo()
+		{
+			var i32 n= 66;
+			auto { a : v, ref : x }= S{ .v(77), .x= n };
+			halt if( a != 77u64 );
+			halt if( ref != n );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def DisassemblyDeclarationForReferenceField_Test1():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn Foo()
+		{
+			var i32 mut n= 66;
+			{
+				auto { mut ref : x }= S{ .x= n };
+				ref*= 2;
+			}
+			halt if( n != 66 * 2 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def DisassemblyDeclarationForReferenceField_Test2():
+	c_program_text= """
+		struct S{ i32 &mut @('a') x; i32 &mut @('b') y; }
+		fn Foo()
+		{
+			var i32 mut n= 13, mut m= 78;
+			{
+				auto { mut a : x, mut b : y }= S{ .x= n, .y= m };
+				a*= 3;
+				b/= 2;
+			}
+			halt if( n != 13 * 3 );
+			halt if( m != 78 / 2 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def DisassembledVariableIsImmutable_Test0():
 	c_program_text= """
 		fn Foo( [ i32, 2 ] mut arr )
