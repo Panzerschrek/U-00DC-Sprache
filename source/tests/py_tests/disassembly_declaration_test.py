@@ -885,3 +885,78 @@ def DisassemblySequenceElementCountMismatch_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+
+
+def SequenceDisassemblyForNonSequenceType_Test0():
+	c_program_text= """
+		fn Foo( i32 mut i )
+		{
+			auto [ x ]= move(i); // Can't disassemble scalar.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
+def SequenceDisassemblyForNonSequenceType_Test1():
+	c_program_text= """
+		fn Foo( E mut e )
+		{
+			auto [ x ]= move(e); // Can't disassemble scalar.
+		}
+		enum E{ A, B, C }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
+def SequenceDisassemblyForNonSequenceType_Test2():
+	c_program_text= """
+		fn Foo( $(f64) mut p )
+		{
+			auto [ x ]= move(p); // Can't disassemble scalar.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
+def SequenceDisassemblyForNonSequenceType_Test3():
+	c_program_text= """
+		fn Foo( (fn()) mut p )
+		{
+			auto [ x ]= move(p); // Can't disassemble scalar.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
+def SequenceDisassemblyForNonSequenceType_Test4():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto [ a, b ]= move(s); // Can't disassemble structure as sequence.
+		}
+		struct S{ i32 x; i32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
+
+
+def SequenceDisassemblyForNonSequenceType_Test5():
+	c_program_text= """
+		fn Foo( C mut c )
+		{
+			auto [ a ]= move(c); // Can't disassemble class as sequence.
+		}
+		class C{ i32 x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )

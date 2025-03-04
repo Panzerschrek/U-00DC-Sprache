@@ -3367,8 +3367,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	}
 	else
 	{
-		// TODO - use other error code.
-		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), component.src_loc, "non-array or tuple in sequence disassembly" );
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), component.src_loc, variable->type );
 		return;
 	}
 
