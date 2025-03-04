@@ -749,3 +749,40 @@ def DisassemblingNonFieldStructMember_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "DisassemblingNonFieldStructMember", 4 ) )
+
+
+def BindingConstReferenceToNonconstReference_ForReferenceFieldDisassembly_Test0():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { mut x_ref : x } = move(s); // Can't declare "x_ref" with "mut", since original field is immutable.
+		}
+		struct S { i32& x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
+
+
+def BindingConstReferenceToNonconstReference_ForReferenceFieldDisassembly_Test1():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { mut x_ref : x } = move(s); // Can't declare "x_ref" with "mut", since original field is immutable.
+		}
+		struct S { i32 &imut x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
+
+
+def BindingConstReferenceToNonconstReference_ForReferenceFieldDisassembly_Test2():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { imut x_ref : x } = move(s); // Ok - create immutable reference for mutable reference field.
+		}
+		struct S { i32 &mut x; }
+	"""
+	tests_lib.build_program( c_program_text )

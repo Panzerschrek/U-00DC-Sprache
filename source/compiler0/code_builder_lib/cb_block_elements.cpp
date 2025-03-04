@@ -3468,7 +3468,11 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 				continue;
 			}
 
-			// TODO - prevent binding imut reference to mut reference.
+			if( !field->is_mutable && named_component->mutability_modifier == MutabilityModifier::Mutable )
+			{
+				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), named_component->src_loc );
+				continue;
+			}
 
 			const VariableMutPtr result_reference=
 				Variable::Create(
