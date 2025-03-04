@@ -3351,11 +3351,11 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 					variable->constexpr_value == nullptr ? nullptr : variable->constexpr_value->getAggregateElement( uint32_t(i) ) );
 
 			function_context.variables_state.AddNode( element_variable );
-			RegisterTemporaryVariable( function_context, element_variable );
-
 			function_context.variables_state.TryAddInnerLinksForTupleElement( variable, element_variable, i, names_scope.GetErrors(), component.src_loc );
 
 			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
+
+			function_context.variables_state.RemoveNode( element_variable );
 		}
 	}
 	else
@@ -3382,11 +3382,69 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 		REPORT_ERROR( NotImplemented, names_scope.GetErrors(), component.src_loc, "non-immediate values in disassembly declaration" );
 		return;
 	}
-	// TODO
-	U_UNUSED(names_scope);
-	U_UNUSED(function_context);
-	U_UNUSED(variable);
-	U_UNUSED(component);
+
+	const Class* const class_type= variable->type.GetClassType();
+	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), component.src_loc, variable->type );
+		return;
+	}
+
+	// TODO - call destructor for fields which are skipped.
+
+	for( size_t i= 0; i < component.entries.size(); ++i )
+	{
+		const Synt::DisassemblyDeclarationStructComponent::Entry& entry= component.entries[i];
+		// TODO - detect duplicates.
+
+		const NamesScopeValue* const class_member= class_type->members->GetThisScopeValue( entry.name );
+		if( class_member == nullptr )
+		{
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), entry.src_loc, entry.name );
+			continue;
+		}
+		CollectDefinition( *class_member, entry.src_loc );
+
+		const ClassFieldPtr field= class_member->value.GetClassField();
+		if( field == nullptr )
+		{
+			// TODO - use other kind of error.
+			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope.GetErrors(), entry.src_loc, entry.name );
+			continue;
+		}
+		if( field->class_ != variable->type )
+		{
+			// TODO - use other kind of error.
+			REPORT_ERROR( InitializerForBaseClassField, names_scope.GetErrors(), entry.src_loc, entry.name );
+			continue;
+		}
+
+		if( field->is_reference )
+		{
+			// TODO - handle reference fields, declare named reference.
+		}
+		else
+		{
+			const VariablePtr struct_member=
+				Variable::Create(
+					field->type,
+					ValueType::Value,
+					Variable::Location::Pointer,
+					variable->name + "." + entry.name,
+					CreateClassFieldGEP( function_context, *variable, field->index ) );
+
+			function_context.variables_state.AddNode( struct_member );
+			function_context.variables_state.TryAddInnerLinksForClassField( variable, struct_member, *field, names_scope.GetErrors(), entry.src_loc );
+
+			BuildDisassemblyDeclarationComponent( names_scope, function_context, struct_member, entry.component );
+
+			function_context.variables_state.RemoveNode( struct_member );
+		}
+	}
+
+	// Mark this variable as destroyed - to avoid calling destructs.
+	function_context.variables_state.MoveNode( variable );
+	CreateLifetimeEnd( function_context, variable->llvm_value );
 }
 
 } // namespace U

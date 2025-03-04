@@ -77,37 +77,62 @@ def DisassemblyDeclaration_Test3():
 def DisassemblyDeclaration_Test4():
 	c_program_text= """
 		struct S{ i32 x; f32 y; }
-		fn Bar() : S;
+		fn Bar() : S
+		{
+			return S{ .x= 55551, .y= -76.25f };
+		}
 		fn Foo()
 		{
 			auto { a : x, b : y } = Bar();
+			halt if( a != 55551 );
+			halt if( b != -76.25f );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def DisassemblyDeclaration_Test5():
 	c_program_text= """
 		struct S{ i32 x; f32 y; }
-		fn Bar() : S;
+		fn Bar() : S
+		{
+			return S{ .x= 7867, .y= 123.45f };
+		}
 		fn Foo()
 		{
 			auto { mut a : x, imut b : y } = Bar();
+			halt if( a != 7867 );
+			halt if( b != 123.45f );
+			// Can modify variable declared as "mut".
+			a= 665544;
+			halt if( a != 665544 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def DisassemblyDeclaration_Test6():
 	c_program_text= """
 		struct S{ i32 x; [ f32, 4 ] y; }
-		fn Bar() : tup[ bool, S ];
+		fn Bar() : tup[ bool, S ]
+		{
+			var tup[ bool, S ] res[ true, { .x= 432, .y[ 1.0f, 2.0f, 3.0f, 4.0f ] } ];
+			return res;
+		}
 		fn Foo()
 		{
 			auto [ b, { a : x, [ S, P, Q, R ] : y } ] = Bar();
+			halt if( b != true );
+			halt if( S != 1.0f );
+			halt if( P != 2.0f );
+			halt if( Q != 3.0f );
+			halt if( R != 4.0f );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
 
 
 def DisassemblyDeclaration_Test7():
