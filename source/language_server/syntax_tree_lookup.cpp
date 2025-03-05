@@ -473,6 +473,36 @@ void FindImpl( const Synt::AutoVariableDeclaration& auto_variable_declaration )
 	FindImpl( auto_variable_declaration.initializer_expression );
 }
 
+void FindImpl( const Synt::DisassemblyDeclaration& disassembly_declaration )
+{
+	FindImpl( disassembly_declaration.root_component );
+	FindImpl( disassembly_declaration.initializer_expression );
+}
+
+void FindImpl( const Synt::DisassemblyDeclarationComponent& component )
+{
+	FindImplVariant( component );
+}
+
+void FindImpl( const Synt::DisassemblyDeclarationNamedComponent& component )
+{
+	U_UNUSED( component );
+}
+
+void FindImpl( const Synt::DisassemblyDeclarationSequenceComponent& component )
+{
+	for( const auto& c : component.sub_components )
+		FindImpl( c );
+}
+
+void FindImpl( const Synt::DisassemblyDeclarationStructComponent& component )
+{
+	for( const auto& entry : component.entries )
+	{
+		FindImpl( entry.component );
+	}
+}
+
 void FindImpl( const Synt::AllocaDeclaration& alloca_declaration )
 {
 	FindImpl( alloca_declaration.type );
