@@ -500,6 +500,12 @@ void FindImpl( const Synt::DisassemblyDeclarationStructComponent& component )
 	for( const auto& entry : component.entries )
 	{
 		FindImpl( entry.component );
+
+		if( entry.src_loc.GetLine() == line_ && entry.src_loc.GetColumn() == column_ )
+		{
+			U_ASSERT( global_item_ != std::nullopt );
+			result_= SyntaxTreeLookupResult{ prefix_, &entry, *global_item_ };
+		}
 	}
 }
 

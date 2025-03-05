@@ -1207,6 +1207,27 @@ U_TEST( DocumentCompletion_Test34 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test35 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "struct S{ i32 for_glory; } fn Foo( S mut s ) { auto {  } = move(s); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should suggest struct field in disassembly declaration.
+	document.UpdateText( DocumentRange{ { 1, 54 }, { 1, 54 } }, "x : fo" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 60 } );
+	const CompletionItemsNormalized expected_completion_result{ "for_glory" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;

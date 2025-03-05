@@ -3432,6 +3432,9 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	{
 		const Synt::DisassemblyDeclarationStructComponent::Entry& entry= component.entries[i];
 
+		if( entry.completion_requested )
+			MemberAccessCompleteImpl( variable, entry.name );
+
 		const NamesScopeValue* const class_member= class_type->members->GetThisScopeValue( entry.name );
 		if( class_member == nullptr )
 		{
@@ -3439,6 +3442,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			continue;
 		}
 		CollectDefinition( *class_member, entry.src_loc );
+
 
 		const ClassFieldPtr field= class_member->value.GetClassField();
 		if( field == nullptr )

@@ -1015,6 +1015,7 @@ struct DisassemblyDeclarationStructComponent::Entry
 	SrcLoc src_loc;
 	std::string name;
 	DisassemblyDeclarationComponent component;
+	bool completion_requested= false;
 };
 
 struct DisassemblyDeclaration

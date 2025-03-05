@@ -2483,7 +2483,10 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 
 				ExpectLexem( Lexem::Type::Colon );
 
-				if( it_->type != Lexem::Type::Identifier )
+				bool completion_requested= false;
+				if( it_->type == Lexem::Type::CompletionIdentifier )
+					completion_requested= true;
+				else if( it_->type != Lexem::Type::Identifier )
 				{
 					PushErrorMessage();
 					break;
@@ -2495,6 +2498,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 						it_->src_loc,
 						it_->text,
 						std::move(component),
+						completion_requested,
 					} );
 
 				NextLexem();
