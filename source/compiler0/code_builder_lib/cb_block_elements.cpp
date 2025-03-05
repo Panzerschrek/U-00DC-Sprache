@@ -3334,7 +3334,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 					variable->constexpr_value == nullptr ? nullptr : variable->constexpr_value->getAggregateElement( uint32_t(i) ) );
 
 			function_context.variables_state.AddNode( element_variable );
-			SetupReferencesInCopyOrMove( function_context, element_variable, variable, names_scope.GetErrors(), component.src_loc );
+			function_context.variables_state.TryAddInnerLinks( variable, element_variable, names_scope.GetErrors(), component.src_loc );
 
 			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
 

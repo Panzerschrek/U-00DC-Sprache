@@ -1152,3 +1152,98 @@ def UsingKeywordAsName_ForDisassemblyDeclaration_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
+
+
+def DisassemblyDeclarationReferenceLinking_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var [ S, 1 ] mut arr[ { .x= x } ];
+			auto [ s ]= move(arr); // Inner reference of "arr" should be linked with "s".
+			++x; // Error here, "s" still holds a reference to "x".
+		}
+		struct S{ i32& x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def DisassemblyDeclarationReferenceLinking_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var tup[ S ] mut t[ { .x= x } ];
+			auto [ s ]= move(t); // Inner reference of "t" should be linked with "s".
+			++x; // Error here, "s" still holds a reference to "x".
+		}
+		struct S{ i32& x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def DisassemblyDeclarationReferenceLinking_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut a= 0, mut b= 0;
+			var [ S, 2 ] mut arr[ { .x= a }, { .x= b } ];
+			auto [ mut sa, mut sb ]= move(arr); // Inner reference of "sa" and "sb" should be linked with "arr".
+			move( sa );
+			++a; // Error here, even if "sa" is destroyed, it's assumed that "sb" may point to "a".
+		}
+		struct S{ i32& x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def DisassemblyDeclarationReferenceLinking_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut a= 0, mut b= 0;
+			var tup[ S, S ] mut t[ { .x= a }, { .x= b } ];
+			auto [ mut sa, mut sb ]= move(t); // Inner reference of "sa" points to "a", inner reference of "sb" points to "b".
+			move( sa );
+			++a; // Fine, there is no alive reference to "a".
+		}
+		struct S{ i32& x; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def DisassemblyDeclarationReferenceLinking_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut a= 0;
+			auto { a_ref : x } = S{ .x= a };
+			++a; // Error, "a_ref" points to "a", so we can't mutate it.
+		}
+		struct S{ i32& x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def DisassemblyDeclarationReferenceLinking_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut a= 0;
+			auto { { a_ref : x } : s } = T{ .s{ .x= a } };
+			++a; // Error, "a_ref" points to "a", so we can't mutate it.
+		}
+		struct S{ i32& x; }
+		struct T{ S s; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
