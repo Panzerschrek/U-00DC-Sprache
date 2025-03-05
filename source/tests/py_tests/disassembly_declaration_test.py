@@ -1247,3 +1247,20 @@ def DisassemblyDeclarationReferenceLinking_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def DisassemblyDeclarationReferenceLinking_Test6():
+	c_program_text= """
+		var [ [ char8, 2 ], 0 ] return_references[];
+		fn Foo( i32& a ) : i32& @(return_references)
+		{
+			var S s{ .x= a };
+			auto { s_ref : s } = T{ .s= s }; // "s_ref" contains reference to "a"
+			return s_ref.x; // This results into "a" returning, which isn't allowed.
+		}
+		struct S{ i32& x; }
+		struct T{ S& s; } // This struct contains second order reference inside.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReturningUnallowedReference", 7 ) )
