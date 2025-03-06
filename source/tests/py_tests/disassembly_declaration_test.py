@@ -252,6 +252,19 @@ def DisassemblyDeclarationConstexpr_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def DisassemblyDeclarationConstexpr_Test3():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn Foo()
+		{
+			var i32 x= 87678;
+			auto { x_ref : x } = S{ .x= x };
+			static_assert( x_ref == x ); // Constexpr references should be preserved.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def DisassemblyDeclarationForReferenceField_Test0():
 	c_program_text= """
 		struct S{ u64 v; i32& x; }

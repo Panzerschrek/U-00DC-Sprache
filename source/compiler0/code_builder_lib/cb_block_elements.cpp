@@ -3483,14 +3483,35 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 				continue;
 			}
 
-			const VariableMutPtr result_reference=
+			llvm::Constant* constexpr_value= nullptr;
+			if( variable->constexpr_value != nullptr )
+			{
+				// Constexpr references field should be "GlobalVariable" or Constexpr GEP.
+				const auto element= variable->constexpr_value->getAggregateElement( field->index );
+
+				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
+					constexpr_value= global_variable->getInitializer();
+				else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
+				{
+					// TODO - what first operand is constant GEP too?
+					llvm::Constant* value= llvm::dyn_cast<llvm::GlobalVariable>(constant_expression->getOperand(0u))->getInitializer();
+
+					// Skip first zero index.
+					for( llvm::User::const_op_iterator op= std::next(std::next(constant_expression->op_begin())), op_end= constant_expression->op_end(); op != op_end; ++op )
+						value= value->getAggregateElement( llvm::dyn_cast<llvm::Constant>(op->get()) );
+					constexpr_value= value;
+				}
+				else U_ASSERT(false);
+			}
+
+			const VariablePtr result_reference=
 				Variable::Create(
 					field->type,
 					named_component->mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 					Variable::Location::Pointer,
 					named_component->name,
 					CreateTypedReferenceLoad( function_context, field->type, field_address ),
-					nullptr );
+					constexpr_value );
 
 			debug_info_builder_->CreateReferenceVariableInfo( *result_reference, named_component->name, named_component->src_loc, function_context );
 
