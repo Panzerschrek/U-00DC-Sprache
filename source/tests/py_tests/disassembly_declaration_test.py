@@ -637,6 +637,44 @@ def DisassemblingClassValue_Test1():
 	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
 
 
+def DisassemblingClassValue_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto {} = lambda(){}; // Lambda is a class, it's not possible to disassemble it.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
+
+
+def DisassemblingClassValue_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto {} = Bar(); // Coroutine object is a class, it's not possible to disassemble it.
+		}
+		fn async Bar();
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
+
+
+def DisassemblingClassValue_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			auto {} = Bar(); // Coroutine object is a class, it's not possible to disassemble it.
+		}
+		fn generator Bar() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
+
+
 def DisassemblingStructWithExplicitDestructor_Test0():
 	c_program_text= """
 		fn Foo( S mut s )

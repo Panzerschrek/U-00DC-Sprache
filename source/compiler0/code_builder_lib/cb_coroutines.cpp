@@ -178,6 +178,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 		coroutine_class->inner_references.push_back( InnerReference( k ) );
 
 	coroutine_class->members->SetClass( coroutine_class.get() );
+	coroutine_class->kind= Class::Kind::NonPolymorph; // Mark coroutine type as non-struct, to avoid usages it as struct ({} initializer, disassembly).
 	coroutine_class->parents_list_prepared= true;
 	coroutine_class->is_default_constructible= false;
 	coroutine_class->is_copy_constructible= false;
