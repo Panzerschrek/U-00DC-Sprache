@@ -713,6 +713,30 @@ def DisassemblingStructWithExplicitDestructor_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def DisassemblingTypeinfoStruct_Test0():
+	c_program_text= """
+		fn Foo( typeof( typeinfo</i32/> ) mut t )
+		{
+			auto { } = move(t);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingTypeinfoStruct", 4 ) )
+
+
+def DisassemblingTypeinfoStruct_Test1():
+	c_program_text= """
+		fn Foo( typeof( typeinfo</ fn( i32 x ) />.params_list[0] ) mut t )
+		{
+			auto { } = move(t);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "DisassemblingTypeinfoStruct", 4 ) )
+
+
 def DuplicatedFieldInDisassemblyDeclaration_Test0():
 	c_program_text= """
 		fn Foo( S mut s )

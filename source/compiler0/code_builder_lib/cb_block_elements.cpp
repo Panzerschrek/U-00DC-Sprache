@@ -3405,11 +3405,14 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), component.src_loc, variable->type );
 		return;
 	}
+
 	if( class_type->kind != Class::Kind::Struct )
 	{
+		// Don't allow to disassemble classes, sinse they may be polymorph or have private fields.
 		REPORT_ERROR( DisassemblingClassValue, names_scope.GetErrors(), component.src_loc );
 		return;
 	}
+
 	if( const auto destructors= class_type->members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 	{
 		if( const OverloadedFunctionsSetPtr functions_set= destructors->value.GetFunctionsSet() )
@@ -3418,11 +3421,20 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			{
 				if( !function_variable.is_generated )
 				{
+					// Don't allow to disassemble structs with destructors, since such destructors may have side-effects, which we shouldn't skip by disassembly.
 					REPORT_ERROR( DisassemblingStructWithExplicitDestructor, names_scope.GetErrors(), component.src_loc, variable->type );
 					return;
 				}
 			}
 		}
+	}
+
+	if( std::holds_alternative< TypeinfoClassDescription >( class_type->generated_class_data ) )
+	{
+		// Dodn't allow disassembling typeinfor structs, since some fields are generated on-fly.
+		// Generally it has no sense to disassemble them.
+		REPORT_ERROR( DisassemblingTypeinfoStruct, names_scope.GetErrors(), component.src_loc, variable->type );
+		return;
 	}
 
 	llvm::SmallVector<bool, 32> disassembled_fields;
