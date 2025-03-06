@@ -3230,13 +3230,6 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 		return;
 	}
 
-	if( function_context.variables_state.NodeMoved( initializer_variable ) )
-	{
-		// TODO - do we need such check?
-		REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), component.src_loc, initializer_variable->name );
-		return;
-	}
-
 	if( component.mutability_modifier == MutabilityModifier::Constexpr && initializer_variable->constexpr_value == nullptr )
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), component.src_loc );
 
@@ -3304,13 +3297,6 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	{
 		// Allow disassembling only immediate values.
 		REPORT_ERROR( ImmediateValueExpectedInDisassemblyDeclaration, names_scope.GetErrors(), component.src_loc );
-		return;
-	}
-
-	if( function_context.variables_state.NodeMoved( variable ) )
-	{
-		// TODO - do we need such check?
-		REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), component.src_loc, variable->name );
 		return;
 	}
 
@@ -3389,13 +3375,6 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	{
 		// Allow disassembling only immediate values.
 		REPORT_ERROR( ImmediateValueExpectedInDisassemblyDeclaration, names_scope.GetErrors(), component.src_loc );
-		return;
-	}
-
-	if( function_context.variables_state.NodeMoved( variable ) )
-	{
-		// TODO - do we need such check?
-		REPORT_ERROR( AccessingMovedVariable, names_scope.GetErrors(), component.src_loc, variable->name );
 		return;
 	}
 
