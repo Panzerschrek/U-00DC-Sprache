@@ -3495,6 +3495,13 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 				continue;
 			}
 
+			if( named_component->mutability_modifier == MutabilityModifier::Constexpr &&
+				variable->constexpr_value == nullptr )
+			{
+				REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), named_component->src_loc );
+				continue;
+			}
+
 			llvm::Constant* constexpr_value= nullptr;
 			if( variable->constexpr_value != nullptr )
 			{

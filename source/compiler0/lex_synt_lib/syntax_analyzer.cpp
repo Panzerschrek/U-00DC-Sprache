@@ -2553,6 +2553,11 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 			mutability_modifier= MutabilityModifier::Immutable;
 			NextLexem();
 		}
+		else if( it_->text == Keywords::constexpr_ )
+		{
+			mutability_modifier= MutabilityModifier::Constexpr;
+			NextLexem();
+		}
 
 		if( it_->type != Lexem::Type::Identifier )
 			PushErrorMessage();

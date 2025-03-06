@@ -1452,3 +1452,31 @@ def DisassemblyDeclarationReferenceLinking_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReturningUnallowedReference", 7 ) )
+
+
+def VariableInitializerIsNotConstantExpression_ForDisassemblyOperator_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 2 ] mut arr= zero_init;
+			auto [ constexpr x, constexpr y ]= move(arr);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
+
+
+def VariableInitializerIsNotConstantExpression_ForDisassemblyOperator_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 x= 0;
+			var S mut s{ .x= x };
+			auto{ constexpr x_ref : x }= move(s); // Error, "x_ref" can't be constexpr, since "s" is declared as mutable.
+		}
+		struct S{ i32& x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
