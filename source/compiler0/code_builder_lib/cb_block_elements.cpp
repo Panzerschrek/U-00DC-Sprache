@@ -3503,7 +3503,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			}
 
 			llvm::Constant* constexpr_value= nullptr;
-			if( variable->constexpr_value != nullptr )
+			if( variable->constexpr_value != nullptr && named_component->mutability_modifier != MutabilityModifier::Mutable )
 			{
 				// Constexpr references field should be "GlobalVariable" or Constexpr GEP.
 				const auto element= variable->constexpr_value->getAggregateElement( field->index );

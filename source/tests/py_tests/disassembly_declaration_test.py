@@ -1480,3 +1480,19 @@ def VariableInitializerIsNotConstantExpression_ForDisassemblyOperator_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
+
+
+def ConstexprValueResetForMutableVariableInDisassembly_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut t= zero_init;
+			auto [ mut x, mut y ] = move(t);
+			static_assert( x == 0 );
+			static_assert( y == 0.0f );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 6 ) )
+	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 7 ) )
