@@ -3267,7 +3267,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 
 	const VariableMutPtr variable_reference=
 		Variable::Create(
-			initializer_variable->type,
+			variable->type,
 			component.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
 			component.name,
@@ -3387,7 +3387,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 
 	if( class_type->kind != Class::Kind::Struct )
 	{
-		// Don't allow to disassemble classes, sinse they may be polymorph or have private fields.
+		// Doesn't allow disassembling classes, sinse they may be polymorph or have private fields.
 		REPORT_ERROR( DisassemblingClassValue, names_scope.GetErrors(), component.src_loc );
 		return;
 	}
@@ -3400,7 +3400,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			{
 				if( !function_variable.is_generated )
 				{
-					// Don't allow to disassemble structs with destructors, since such destructors may have side-effects, which we shouldn't skip by disassembly.
+					// Doesn't allow disassembling structs with destructors, since such destructors may have side-effects, which we shouldn't skip by disassembling.
 					REPORT_ERROR( DisassemblingStructWithExplicitDestructor, names_scope.GetErrors(), component.src_loc, variable->type );
 					return;
 				}
@@ -3410,7 +3410,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 
 	if( std::holds_alternative< TypeinfoClassDescription >( class_type->generated_class_data ) )
 	{
-		// Dodn't allow disassembling typeinfor structs, since some fields are generated on-fly.
+		// Doesn't allow disassembling typeinfo structs, since some fields are generated on-fly.
 		// Generally it has no sense to disassemble them.
 		REPORT_ERROR( DisassemblingTypeinfoStruct, names_scope.GetErrors(), component.src_loc, variable->type );
 		return;
@@ -3419,10 +3419,8 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	llvm::SmallVector<bool, 32> disassembled_fields;
 	disassembled_fields.resize( class_type->llvm_type->getNumElements(), false );
 
-	for( size_t i= 0; i < component.entries.size(); ++i )
+	for( const Synt::DisassemblyDeclarationStructComponent::Entry& entry : component.entries )
 	{
-		const Synt::DisassemblyDeclarationStructComponent::Entry& entry= component.entries[i];
-
 		if( entry.completion_requested )
 			MemberAccessCompleteImpl( variable, entry.name );
 
@@ -3433,7 +3431,6 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			continue;
 		}
 		CollectDefinition( *class_member, entry.src_loc );
-
 
 		const ClassFieldPtr field= class_member->value.GetClassField();
 		if( field == nullptr )
