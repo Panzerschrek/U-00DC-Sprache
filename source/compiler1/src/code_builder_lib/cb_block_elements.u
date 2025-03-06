@@ -546,6 +546,20 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 	}
 }
 
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::DisassemblyDeclaration& disassembly_declaration ) : BlockElementBuildInfo
+{
+	WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+		{
+			// TODO
+			self.BuildExpressionCodeEnsureVariable( names_scope, function_context, disassembly_declaration.initializer_expression );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, disassembly_declaration.src_loc );
+		} );
+
+	return BlockElementBuildInfo();
+}
+
 fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::AllocaDeclaration/>& alloca_declaration ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(

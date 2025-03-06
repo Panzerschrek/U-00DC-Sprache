@@ -199,6 +199,8 @@ private:
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseThreadLocalVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
+	fn ParseDisassemblyDeclaration( mut this ) : DisassemblyDeclaration;
+	fn ParseDisassemblyDeclarationComponent( mut this ) : DisassemblyDeclarationComponent;
 	fn ParseAllocaDeclaration( mut this ) : AllocaDeclaration;
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
 	fn ParseYieldOperator( mut this ) : YieldOperator;
@@ -2288,7 +2290,14 @@ fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : B
 		}
 		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 		{
-			block_elements.push_back( ParseAutoVariableDeclaration() );
+			if( it_[1s].lexem_type == Lexem::Type::SquareBracketLeft || it_[1s].lexem_type == Lexem::Type::BraceLeft )
+			{
+				block_elements.push_back( ust::make_box( ParseDisassemblyDeclaration() ) );
+			}
+			else
+			{
+				block_elements.push_back( ParseAutoVariableDeclaration() );
+			}
 		}
 		else if( IsKeyword( it_.front(), Keyword::alloca_ ) )
 		{
@@ -2663,6 +2672,173 @@ fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclar
 	ExpectSemicolon();
 
 	return variable_declaration;
+}
+
+fn SyntaxAnalyzer::ParseDisassemblyDeclaration( mut this ) : DisassemblyDeclaration
+{
+	debug_assert( IsKeyword( it_.front(), Keyword::alloca_ ) );
+
+	var SrcLoc src_loc= it_.front().src_loc;
+	NextLexem();
+
+	debug_assert( it_.front().lexem_type == Lexem::Type::SquareBracketLeft || it_.front().lexem_type == Lexem::Type::BraceLeft );
+
+	var DisassemblyDeclarationComponent mut root_component= ParseDisassemblyDeclarationComponent();
+
+	ExpectLexem( Lexem::Type::Assignment );
+
+	var Expression mut initializer_expression= ParseExpression();
+
+	ExpectSemicolon();
+
+	return DisassemblyDeclaration
+	{
+		.src_loc= src_loc,
+		.root_component= move(root_component),
+		.initializer_expression= move(initializer_expression),
+	};
+}
+
+fn SyntaxAnalyzer::ParseDisassemblyDeclarationComponent( mut this ) : DisassemblyDeclarationComponent
+{
+	if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
+	{
+		var DisassemblyDeclarationSequenceComponent mut res{ .src_loc= it_.front().src_loc };
+
+		NextLexem();
+
+		if( it_.front().lexem_type == Lexem::Type::SquareBracketRight )
+		{
+			NextLexem();
+		}
+		else
+		{
+			while( NotEndOfFile() )
+			{
+				res.sub_components.push_back( ParseDisassemblyDeclarationComponent() );
+
+				if( it_.front().lexem_type == Lexem::Type::Comma )
+				{
+					NextLexem();
+					continue;
+				}
+				break;
+			}
+
+			ExpectLexem( Lexem::Type::SquareBracketRight );
+		}
+
+		return ust::make_box( move(res) );
+	}
+	else if( it_.front().lexem_type == Lexem::Type::BraceLeft )
+	{
+		var DisassemblyDeclarationStructComponent mut res{ .src_loc= it_.front().src_loc };
+
+		NextLexem();
+
+		if( it_.front().lexem_type == Lexem::Type::BraceRight )
+		{
+			NextLexem();
+		}
+		else
+		{
+			while( NotEndOfFile() )
+			{
+				var DisassemblyDeclarationComponent mut component= ParseDisassemblyDeclarationComponent();
+
+				if( it_.front().lexem_type == Lexem::Type::Colon )
+				{
+					NextLexem();
+
+					if( it_.front().lexem_type != Lexem::Type::Identifier )
+					{
+						PushErrorMessage();
+						break;
+					}
+
+					res.entries.push_back(
+						DisassemblyDeclarationStructComponent::Entry
+						{
+							.src_loc= it_.front().src_loc,
+							.name= it_.front().text,
+							.component= move(component),
+						} );
+
+					NextLexem();
+				}
+				else
+				{
+					// Short form - with field name equal to variable name.
+					var SrcLoc mut src_loc;
+					var ust::string8 mut name;
+					if_var( &named_component : component.get</ DisassemblyDeclarationNamedComponent />() )
+					{
+						src_loc= named_component.src_loc;
+						name= named_component.name;
+					}
+					else
+					{
+						PushErrorMessage();
+					}
+
+					res.entries.push_back(
+						DisassemblyDeclarationStructComponent::Entry
+						{
+							.src_loc= src_loc,
+							.name= move(name),
+							.component= move(component),
+						} );
+				}
+
+				if( it_.front().lexem_type == Lexem::Type::Comma )
+				{
+					NextLexem();
+					continue;
+				}
+				break;
+			}
+
+			ExpectLexem( Lexem::Type::BraceRight );
+		}
+
+		return ust::make_box( move(res) );
+	}
+	else
+	{
+		var MutabilityModifier mut mutability_modifier= MutabilityModifier::None;
+		if( IsKeyword( it_.front(), Keyword::mut_ ) )
+		{
+			mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::constexpr_ ) )
+		{
+			mutability_modifier= MutabilityModifier::Constexpr;
+			NextLexem();
+		}
+
+		if( it_.front().lexem_type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+			return DisassemblyDeclarationNamedComponent{};
+		}
+
+		var DisassemblyDeclarationNamedComponent res
+		{
+			.mutability_modifier= mutability_modifier,
+			.src_loc= it_.front().src_loc,
+			.name= it_.front().text,
+		};
+
+		NextLexem();
+
+		return res;
+	}
 }
 
 fn SyntaxAnalyzer::ParseAllocaDeclaration( mut this ) : AllocaDeclaration

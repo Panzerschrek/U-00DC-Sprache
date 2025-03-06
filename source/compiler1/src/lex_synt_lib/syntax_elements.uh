@@ -509,6 +509,46 @@ struct AutoVariableDeclaration
 	Expression initializer_expression;
 }
 
+struct DisassemblyDeclaration
+{
+	SrcLoc src_loc;
+	DisassemblyDeclarationComponent root_component;
+	Expression initializer_expression;
+}
+
+type DisassemblyDeclarationComponent=
+	ust::variant</ tup [
+	DisassemblyDeclarationNamedComponent,
+	ust::box</DisassemblyDeclarationSequenceComponent/>,
+	ust::box</DisassemblyDeclarationStructComponent/>
+	] />;
+
+struct DisassemblyDeclarationNamedComponent
+{
+	SrcLoc src_loc;
+	ust::string8 name;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+}
+
+struct DisassemblyDeclarationSequenceComponent
+{
+	SrcLoc src_loc;
+	ust::vector</ DisassemblyDeclarationComponent /> sub_components;
+}
+
+struct DisassemblyDeclarationStructComponent
+{
+	struct Entry
+	{
+		SrcLoc src_loc;
+		ust::string8 name;
+		DisassemblyDeclarationComponent component;
+	}
+
+	SrcLoc src_loc;
+	ust::vector</Entry/> entries;
+}
+
 struct AllocaDeclaration
 {
 	SrcLoc src_loc;
@@ -723,6 +763,7 @@ type BlockElement = ust::variant</ tup[
 	ust::box</ScopeBlock/>,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
+	ust::box</DisassemblyDeclaration/>, // Boxed because it's too big.
 	ust::box</AllocaDeclaration/>, // Boxed because it's too big.
 	ReturnOperator,
 	YieldOperator,

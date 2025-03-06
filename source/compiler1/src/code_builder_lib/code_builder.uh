@@ -389,6 +389,12 @@ private:
 		return BuildBlockElementImpl( names_scope, function_context, t.deref() );
 	}
 
+	template</type T/>
+	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::box</T/>& t ) : BlockElementBuildInfo
+	{
+		return BuildBlockElementImpl( names_scope, function_context, t.deref() );
+	}
+
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ScopeBlock& scope_block ) : BlockElementBuildInfo;
@@ -396,6 +402,7 @@ private:
 	fn BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration::VariableEntry& variable_declaration, Type& t );
 	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;
 	fn BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration );
+	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::DisassemblyDeclaration& disassembly_declaration ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::AllocaDeclaration/>& alloca_declaration ) : BlockElementBuildInfo;
 	fn BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AllocaDeclaration& alloca_declaration );
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo;
