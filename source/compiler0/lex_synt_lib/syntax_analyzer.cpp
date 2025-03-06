@@ -2481,27 +2481,51 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 			{
 				DisassemblyDeclarationComponent component= ParseDisassemblyDeclarationComponent();
 
-				ExpectLexem( Lexem::Type::Colon );
-
 				bool completion_requested= false;
-				if( it_->type == Lexem::Type::CompletionIdentifier )
-					completion_requested= true;
-				else if( it_->type != Lexem::Type::Identifier )
+
+				if( it_->type == Lexem::Type::Colon )
+				{
+					NextLexem();
+
+					if( it_->type == Lexem::Type::CompletionIdentifier )
+						completion_requested= true;
+					else if( it_->type != Lexem::Type::Identifier )
+					{
+						PushErrorMessage();
+						break;
+					}
+
+					result.entries.push_back(
+						DisassemblyDeclarationStructComponent::Entry
+						{
+							it_->src_loc,
+							it_->text,
+							std::move(component),
+							completion_requested,
+						} );
+
+					NextLexem();
+				}
+				else if( const auto named_component= std::get_if<DisassemblyDeclarationNamedComponent>( &component ) )
+				{
+					// Short form - with field name equal to variable name.
+					SrcLoc src_loc= named_component->src_loc;
+					std::string name= named_component->name;
+
+					result.entries.push_back(
+						DisassemblyDeclarationStructComponent::Entry
+						{
+							std::move(src_loc),
+							std::move(name),
+							std::move(component),
+							completion_requested,
+						} );
+				}
+				else
 				{
 					PushErrorMessage();
 					break;
 				}
-
-				result.entries.push_back(
-					DisassemblyDeclarationStructComponent::Entry
-					{
-						it_->src_loc,
-						it_->text,
-						std::move(component),
-						completion_requested,
-					} );
-
-				NextLexem();
 
 				if( it_->type == Lexem::Type::Comma )
 				{

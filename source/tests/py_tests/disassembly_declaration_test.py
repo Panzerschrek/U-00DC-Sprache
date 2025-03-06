@@ -194,6 +194,72 @@ def DisassemblyDeclaration_Test9():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def StructDisassemblyShortForm_Test0():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		fn Foo()
+		{
+			// Short form with only names.
+			auto { x, y }= S{ .x= 78, .y= 92 };
+			halt if( x != 78 );
+			halt if( y != 92 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructDisassemblyShortForm_Test1():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		fn Foo()
+		{
+			// Short form with mutability modifier.
+			auto { mut x, mut y }= S{ .x= 567, .y= -65 };
+			halt if( x != 567 );
+			halt if( y != -65 );
+			x*= 3;
+			halt if( x != 567 * 3 );
+			y/= 4;
+			halt if( y != -65 / 4 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructDisassemblyShortForm_Test2():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		fn Foo()
+		{
+			// Can mix short and full form.
+			auto { x_renamed : x, y }= S{ .x= 78, .y= 92 };
+			halt if( x_renamed != 78 );
+			halt if( y != 92 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructDisassemblyShortForm_Test3():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		fn Foo()
+		{
+			// Can mix short and full form.
+			auto { x, mut y_renamed : y }= S{ .x= 987, .y= 3232 };
+			halt if( x != 987 );
+			halt if( y_renamed != 3232 );
+			y_renamed+= 100;
+			halt if( y_renamed != 3232 + 100 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def DisassemblyDeclarationConstexpr_Test0():
 	c_program_text= """
 		fn constexpr Bar( i32 scale ) : [ i32, 3 ]
@@ -406,7 +472,7 @@ def DisassembledVariableIsImmutable_Test5():
 		fn Foo( S mut s )
 		{
 			auto { imut x : a, imut y : b, imut z : c }= move(s);
-			// Can't modify variables, which are declated with "imut:
+			// Can't modify variables, which are declated with "imut".
 			++x;
 			y*= 2.0f;
 			z= 54u;
@@ -418,6 +484,40 @@ def DisassembledVariableIsImmutable_Test5():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
 	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
 	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+
+
+def DisassembledVariableIsImmutable_Test6():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { x, y }= move(s);
+			// Can't modify variables, which are immutable by default.
+			++x;
+			y*= 2;
+		}
+		struct S{ i32 x; i32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+
+
+def DisassembledVariableIsImmutable_Test7():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { imut x, imut y }= move(s);
+			// Can't modify variables, which are declated with "imut".
+			++x;
+			y*= 2;
+		}
+		struct S{ i32 x; i32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
 
 
 def ImmediateValueExpectedInDisassemblyDeclaration_Test0():
@@ -833,6 +933,19 @@ def NameNotFound_ForStructDisassembly_Test1():
 		{
 			i32 some_field;
 		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NameNotFound", 4 ) )
+
+
+def NameNotFound_ForStructDisassembly_Test2():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			auto { not_x } = move(s); // There is no "not_x" inside "S".
+		}
+		struct S { i32 x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
