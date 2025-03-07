@@ -693,7 +693,8 @@ struct CStyleForOperator
 	ust::variant</ tup[
 		EmptyVariant,
 		VariablesDeclaration,
-		AutoVariableDeclaration
+		AutoVariableDeclaration,
+		DisassemblyDeclaration
 		] />
 	variable_declaration_part;
 
