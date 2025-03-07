@@ -3533,6 +3533,7 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			.value_type= ( component.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.llvm_value= llvm_value,
+			.constexpr_value= ( component.mutability_modifier == Synt::MutabilityModifier::Mutable ? LLVMValueRef::Null : initializer_variable_lite.constexpr_value ),
 			.name= component.name,
 			.src_loc= component.src_loc,
 		}.CreatePtr();
@@ -3773,6 +3774,35 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 				continue;
 			}
 
+			var LLVMValueRef mut constexpr_value= LLVMValueRef::Null;
+			if( variable_lite.constexpr_value != LLVMValueRef::Null && named_component.mutability_modifier != Synt::MutabilityModifier::Mutable )
+			{
+				unsafe // Because of LLVM calls
+				{
+					var LLVMValueRef element= LLVMGetAggregateElement( variable_lite.constexpr_value, field.index );
+
+					// References in constexpr structs should be implemented, using global variables or ConstantGEP for global variables.
+					var LLVMValueRef constant_expression= LLVMIsAConstantExpr( element ) ;
+					if( constant_expression != LLVMValueRef::Null )
+					{
+						// Assume constant GEP.
+						var LLVMValueRef global_variable= LLVMGetOperand( constant_expression, 0u );
+						var i32 num_operands= LLVMGetNumOperands( constant_expression );
+						var LLVMValueRef mut element= LLVMGetInitializer( global_variable );
+						for( var i32 mut i= 2; i < num_operands; ++i ) // Skip first zero index.
+						{
+							auto index= u32( LLVMConstIntGetZExtValue( LLVMGetOperand( constant_expression, u32(i) ) ) );
+							element= LLVMGetAggregateElement( element, index );
+						}
+						constexpr_value= element;
+					}
+					else
+					{
+						constexpr_value= LLVMGetInitializer( element );
+					}
+				}
+			}
+
 			var VariablePtr mut result_reference=
 				Variable
 				{
@@ -3780,6 +3810,7 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 					.value_type= ( named_component.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 					.location= Variable::Location::Pointer,
 					.llvm_value= CreateTypedReferenceLoad( function_context, field.t, field_address ),
+					.constexpr_value= constexpr_value,
 					.name= named_component.name,
 					.src_loc= named_component.src_loc,
 				}.CreatePtr();
