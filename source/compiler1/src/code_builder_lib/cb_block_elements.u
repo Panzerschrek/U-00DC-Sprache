@@ -3740,6 +3740,8 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 		}
 		disassembled_fields[ size_type(field.index) ]= true;
 
+		var LLVMValueRef field_address= CreateClassFieldGEP( function_context, variable_lite, field );
+
 		if( field.is_reference )
 		{
 		}
@@ -3751,7 +3753,7 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 					.t= field.t,
 					.value_type= ValueType::Value,
 					.location= Variable::Location::Pointer,
-					.llvm_value= CreateClassFieldGEP( function_context, variable_lite, field ),
+					.llvm_value= field_address,
 					.constexpr_value=
 						( variable_lite.constexpr_value == LLVMValueRef::Null
 							? LLVMValueRef::Null
@@ -3766,6 +3768,18 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, entry.component );
 
 			function_context.references_graph.RemoveNode( element_variable );
+		}
+	}
+
+	foreach( &field_pair : class_type_ptr.lock_imut().deref().fields_order )
+	{
+		with( &field : field_pair[1].lock_imut().deref() )
+		{
+			if( !field.is_reference && !disassembled_fields[ size_type(field.index) ] && field.t.HasDestructor() )
+			{
+				var LLVMValueRef field_address= CreateClassFieldGEP( function_context, variable_lite, field );
+				BuildDestructorPart( names_scope, function_context, field_address, field.t, component.src_loc );
+			}
 		}
 	}
 
