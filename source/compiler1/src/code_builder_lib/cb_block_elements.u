@@ -3815,6 +3815,8 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 					.src_loc= named_component.src_loc,
 				}.CreatePtr();
 
+			debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, result_reference.lock_imut().deref(), named_component.name, named_component.src_loc );
+
 			function_context.references_graph.AddNode( result_reference );
 			RegisterFrameVariable( function_context, result_reference, 1s );
 
