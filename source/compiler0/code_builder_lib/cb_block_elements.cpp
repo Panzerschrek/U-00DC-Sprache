@@ -1218,14 +1218,25 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope loop_names_scope("", &names_scope);
 
 	// Variables declaration part.
-	if( c_style_for_operator.variable_declaration_part != nullptr )
-		std::visit(
-			[&]( const auto& t )
-			{
-				debug_info_builder_->SetCurrentLocation( t.src_loc, function_context );
-				BuildBlockElementImpl( loop_names_scope, function_context, t );
-			},
-			*c_style_for_operator.variable_declaration_part );
+	if( const auto variables_declaration= std::get_if<Synt::VariablesDeclaration>( &c_style_for_operator.variable_declaration_part ) )
+	{
+		debug_info_builder_->SetCurrentLocation( variables_declaration->src_loc, function_context );
+		BuildBlockElementImpl( loop_names_scope, function_context, *variables_declaration );
+	}
+	else if( const auto auto_variable_declaration= std::get_if<Synt::AutoVariableDeclaration>( &c_style_for_operator.variable_declaration_part ) )
+	{
+		debug_info_builder_->SetCurrentLocation( auto_variable_declaration->src_loc, function_context );
+		BuildBlockElementImpl( loop_names_scope, function_context, *auto_variable_declaration );
+	}
+	else if( const auto disassembly_declaration= std::get_if<Synt::DisassemblyDeclaration>( &c_style_for_operator.variable_declaration_part ) )
+	{
+		debug_info_builder_->SetCurrentLocation( disassembly_declaration->src_loc, function_context );
+		BuildBlockElementImpl( loop_names_scope, function_context, *disassembly_declaration );
+	}
+	else
+	{
+		U_ASSERT(false); // Unhandled kind.
+	}
 
 	const ReferencesGraph variables_state_before_loop= function_context.variables_state;
 

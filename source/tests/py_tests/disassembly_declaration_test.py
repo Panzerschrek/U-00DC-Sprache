@@ -382,6 +382,40 @@ def DisassemblyDeclarationForReferenceField_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def DisassemblyInCStyleForOperator_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ i32, 2 ] mut arr[ 3, 13 ];
+			for( auto [ mut i, mut j ]= move(arr); i < 10; ++i, j*= 2 )
+			{
+				halt if( i != 3 );
+				halt if( j != 13 );
+				break;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def DisassemblyInCStyleForOperator_Test1():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+		fn Foo()
+		{
+			for( auto { mut i : x, mut j : y } = S{ .x= 3, .y= 13 }; i < 10; ++i, j*= 2 )
+			{
+				halt if( i != 3 );
+				halt if( j != 13 );
+				break;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def DisassembledVariableIsImmutable_Test0():
 	c_program_text= """
 		fn Foo( [ i32, 2 ] mut arr )

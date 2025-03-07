@@ -2756,13 +2756,15 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 	{
-		result.variable_declaration_part=
-			std::make_unique< std::variant<VariablesDeclaration, AutoVariableDeclaration> >( ParseVariablesDeclaration() );
+		result.variable_declaration_part= ParseVariablesDeclaration();
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 	{
-		result.variable_declaration_part=
-			std::make_unique< std::variant<VariablesDeclaration, AutoVariableDeclaration> >( ParseAutoVariableDeclaration() );
+		const Lexem::Type l= std::next(it_)->type;
+		if( l == Lexem::Type::SquareBracketLeft || l == Lexem::Type::BraceLeft )
+			result.variable_declaration_part= ParseDisassemblyDeclaration();
+		else
+			result.variable_declaration_part= ParseAutoVariableDeclaration();
 	}
 	else if( it_->type == Lexem::Type::Semicolon )
 		NextLexem();

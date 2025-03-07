@@ -1101,12 +1101,19 @@ struct CStyleForOperator
 		IncrementOperator,
 		DecrementOperator>;
 
+	using DisassemblyDeclaration=
+		std::variant<
+			EmptyVariant,
+			VariablesDeclaration,
+			AutoVariableDeclaration,
+			DisassemblyDeclaration >;
+
 	explicit CStyleForOperator( const SrcLoc& src_loc )
 		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
 
-	std::unique_ptr< const std::variant< VariablesDeclaration, AutoVariableDeclaration > > variable_declaration_part;
+	DisassemblyDeclaration variable_declaration_part;
 	Expression loop_condition;
 	IterationPartElementsList iteration_part_elements;
 	std::optional<Label> label;
