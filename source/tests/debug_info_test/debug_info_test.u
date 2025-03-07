@@ -384,7 +384,7 @@ fn AllocaTest()
 	AllocaTestImpl( 16s * 1024s );
 }
 
-fn DisassemblyDeclarationTest()
+fn DecomposeDeclarationTest()
 {
 	{
 		var [ i32, 3 ] mut arr[ 66, 77, 88 ];
@@ -431,6 +431,6 @@ fn nomangle main() : i32
 	LambdasTest();
 	MixinsTest();
 	AllocaTest();
-	DisassemblyDeclarationTest();
+	DecomposeDeclarationTest();
 	return 0;
 }
