@@ -5715,6 +5715,39 @@ U_TEST(DisassemblyDeclaration_Destruction_Test7)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 987, 654,  777777,  -654, -987 } ) );
 }
 
+U_TEST(DisassemblyDeclaration_Destruction_Test8)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); }
+		}
+		struct T{ S& x; }
+		fn Foo()
+		{
+			// Construct "S" with value 77.
+			var S s( 77 );
+			auto {}= T{ .x= s }; // Should not call destructor for skipped reference field.
+			DestructorCalled( 5555 );
+			// Destroy "S" with value 77.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 77, 5555, -77 } ) );
+}
+
 } // namespace
 
 } // namespace U

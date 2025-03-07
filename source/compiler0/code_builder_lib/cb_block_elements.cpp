@@ -3563,7 +3563,7 @@ void CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	// Call destructors for fields which weren't disassembled.
 	for( const ClassFieldPtr& field : class_type->fields_order )
 	{
-		if( !disassembled_fields[ field->index ] && field->type.HasDestructor() )
+		if( !field->is_reference && !disassembled_fields[ field->index ] && field->type.HasDestructor() )
 			CallDestructor(
 				CreateClassFieldGEP( function_context, *variable, field->index ),
 				field->type,
