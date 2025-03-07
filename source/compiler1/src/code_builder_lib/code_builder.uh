@@ -455,6 +455,45 @@ private:
 
 	fn BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta );
 
+	fn BuildDisassemblyDeclarationComponent(
+		mut this,
+		NamesScopeMutPtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& variable,
+		Synt::DisassemblyDeclarationComponent& component );
+
+	template</type T/>
+	fn BuildDisassemblyDeclarationComponentImpl(
+		mut this,
+		NamesScopeMutPtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& variable,
+		ust::box</T/>& component )
+	{
+		return BuildDisassemblyDeclarationComponentImpl( names_scope, function_context, variable, component.deref() );
+	}
+
+	fn BuildDisassemblyDeclarationComponentImpl(
+		mut this,
+		NamesScopeMutPtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& variable,
+		Synt::DisassemblyDeclarationNamedComponent& component );
+
+	fn BuildDisassemblyDeclarationComponentImpl(
+		mut this,
+		NamesScopeMutPtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& variable,
+		Synt::DisassemblyDeclarationSequenceComponent& component );
+
+	fn BuildDisassemblyDeclarationComponentImpl(
+		mut this,
+		NamesScopeMutPtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& variable,
+		Synt::DisassemblyDeclarationStructComponent& component );
+
 	fn BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr;
 
 	// May move local variables.
