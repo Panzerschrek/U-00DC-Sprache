@@ -675,8 +675,7 @@ void FindImpl( const Synt::RangeForOperator& range_for_operator )
 
 void FindImpl( const Synt::CStyleForOperator& c_style_for_operator )
 {
-	if( c_style_for_operator.variable_declaration_part != nullptr )
-		FindImplVariant( *c_style_for_operator.variable_declaration_part );
+	FindImplVariant( c_style_for_operator.variable_declaration_part );
 
 	FindImpl( c_style_for_operator.loop_condition );
 
