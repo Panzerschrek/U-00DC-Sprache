@@ -3744,6 +3744,79 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 
 		if( field.is_reference )
 		{
+			auto named_component_opt= entry.component.get</ Synt::DisassemblyDeclarationNamedComponent />();
+			if( named_component_opt.empty() )
+			{
+				// We can only bind a reference field to a name.
+				// Disassembling it further isn't possible.
+				REPORT_ERROR( DisassemblingReferenceField, names_scope, entry.src_loc, entry.name )
+				continue;
+			}
+
+			var Synt::DisassemblyDeclarationNamedComponent& named_component= named_component_opt.try_deref();
+
+			if( IsKeyword( named_component.name ) )
+			{
+				REPORT_ERROR( UsingKeywordAsName, names_scope, component.src_loc )
+			}
+
+			if( !field.is_mutable && named_component.mutability_modifier == Synt::MutabilityModifier::Mutable )
+			{
+				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, named_component.src_loc )
+				continue;
+			}
+
+			if( named_component.mutability_modifier == Synt::MutabilityModifier::Constexpr &&
+				variable_lite.constexpr_value == LLVMValueRef::Null )
+			{
+				REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, named_component.src_loc )
+				continue;
+			}
+
+			var VariablePtr mut result_reference=
+				Variable
+				{
+					.t= field.t,
+					.value_type= ( named_component.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateTypedReferenceLoad( function_context, field.t, field_address ),
+					.name= named_component.name,
+					.src_loc= named_component.src_loc,
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( result_reference );
+			RegisterFrameVariable( function_context, result_reference, 1s );
+
+			var VariablePtr inner_reference_node= variable.lock_imut().deref().inner_reference_nodes[ size_type(field.reference_tag) ];
+
+			function_context.references_graph.TryAddLink( inner_reference_node, result_reference, names_scope, named_component.src_loc );
+
+			// Setup inner reference node links for reference fields with references inside.
+			// Only reference-fields with single inner reference tag are supported.
+			if( field.t.ReferenceTagCount() == 1u )
+			{
+				var VariablePtr dst_node= result_reference.lock_imut().deref().inner_reference_nodes.front();
+				foreach( &accessible_node : function_context.references_graph.GetAllAccessibleNonInnerNodes( inner_reference_node ) )
+				{
+					// Usually we should have here only one inner reference node.
+					// But it may be more if a member of a composite value is referenced.
+					// In such case it's necessary to create links for all inner reference nodes, even if sometimes it can create false-positive reference protection errors.
+					foreach( & src_node : accessible_node.lock_imut().deref().inner_reference_nodes )
+					{
+						function_context.references_graph.TryAddLink( src_node, dst_node, names_scope, named_component.src_loc );
+					}
+				}
+			}
+
+			var bool mut insert_not_ok= false;
+			with( mut lock : names_scope.lock_mut() )
+			{
+				insert_not_ok= lock.deref().AddName( named_component.name, move(result_reference) ).empty();
+			}
+			if( insert_not_ok )
+			{
+				REPORT_ERROR( Redefinition, names_scope, named_component.src_loc, named_component.name )
+			}
 		}
 		else
 		{
