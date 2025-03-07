@@ -402,7 +402,7 @@ private:
 	fn BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration::VariableEntry& variable_declaration, Type& t );
 	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;
 	fn BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration );
-	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::DisassemblyDeclaration& disassembly_declaration ) : BlockElementBuildInfo;
+	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::DecomposeDeclaration& decompose_declaration ) : BlockElementBuildInfo;
 	fn BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::AllocaDeclaration/>& alloca_declaration ) : BlockElementBuildInfo;
 	fn BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AllocaDeclaration& alloca_declaration );
 	fn BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo;
@@ -455,44 +455,44 @@ private:
 
 	fn BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta );
 
-	fn BuildDisassemblyDeclarationComponent(
+	fn BuildDecomposeDeclarationComponent(
 		mut this,
 		NamesScopeMutPtr& names_scope,
 		FunctionContext &mut function_context,
 		VariablePtr& variable,
-		Synt::DisassemblyDeclarationComponent& component );
+		Synt::DecomposeDeclarationComponent& component );
 
 	template</type T/>
-	fn BuildDisassemblyDeclarationComponentImpl(
+	fn BuildDecomposeDeclarationComponentImpl(
 		mut this,
 		NamesScopeMutPtr& names_scope,
 		FunctionContext &mut function_context,
 		VariablePtr& variable,
 		ust::box</T/>& component )
 	{
-		return BuildDisassemblyDeclarationComponentImpl( names_scope, function_context, variable, component.deref() );
+		return BuildDecomposeDeclarationComponentImpl( names_scope, function_context, variable, component.deref() );
 	}
 
-	fn BuildDisassemblyDeclarationComponentImpl(
+	fn BuildDecomposeDeclarationComponentImpl(
 		mut this,
 		NamesScopeMutPtr& names_scope,
 		FunctionContext &mut function_context,
 		VariablePtr& variable,
-		Synt::DisassemblyDeclarationNamedComponent& component );
+		Synt::DecomposeDeclarationNamedComponent& component );
 
-	fn BuildDisassemblyDeclarationComponentImpl(
+	fn BuildDecomposeDeclarationComponentImpl(
 		mut this,
 		NamesScopeMutPtr& names_scope,
 		FunctionContext &mut function_context,
 		VariablePtr& variable,
-		Synt::DisassemblyDeclarationSequenceComponent& component );
+		Synt::DecomposeDeclarationSequenceComponent& component );
 
-	fn BuildDisassemblyDeclarationComponentImpl(
+	fn BuildDecomposeDeclarationComponentImpl(
 		mut this,
 		NamesScopeMutPtr& names_scope,
 		FunctionContext &mut function_context,
 		VariablePtr& variable,
-		Synt::DisassemblyDeclarationStructComponent& component );
+		Synt::DecomposeDeclarationStructComponent& component );
 
 	fn BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr;
 

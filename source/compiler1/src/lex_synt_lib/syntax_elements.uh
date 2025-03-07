@@ -509,40 +509,40 @@ struct AutoVariableDeclaration
 	Expression initializer_expression;
 }
 
-struct DisassemblyDeclaration
+struct DecomposeDeclaration
 {
 	SrcLoc src_loc;
-	DisassemblyDeclarationComponent root_component;
+	DecomposeDeclarationComponent root_component;
 	Expression initializer_expression;
 }
 
-type DisassemblyDeclarationComponent=
+type DecomposeDeclarationComponent=
 	ust::variant</ tup [
-	DisassemblyDeclarationNamedComponent,
-	ust::box</DisassemblyDeclarationSequenceComponent/>,
-	ust::box</DisassemblyDeclarationStructComponent/>
+	DecomposeDeclarationNamedComponent,
+	ust::box</DecomposeDeclarationSequenceComponent/>,
+	ust::box</DecomposeDeclarationStructComponent/>
 	] />;
 
-struct DisassemblyDeclarationNamedComponent
+struct DecomposeDeclarationNamedComponent
 {
 	SrcLoc src_loc;
 	ust::string8 name;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 }
 
-struct DisassemblyDeclarationSequenceComponent
+struct DecomposeDeclarationSequenceComponent
 {
 	SrcLoc src_loc;
-	ust::vector</ DisassemblyDeclarationComponent /> sub_components;
+	ust::vector</ DecomposeDeclarationComponent /> sub_components;
 }
 
-struct DisassemblyDeclarationStructComponent
+struct DecomposeDeclarationStructComponent
 {
 	struct Entry
 	{
 		SrcLoc src_loc;
 		ust::string8 name;
-		DisassemblyDeclarationComponent component;
+		DecomposeDeclarationComponent component;
 	}
 
 	SrcLoc src_loc;
@@ -694,7 +694,7 @@ struct CStyleForOperator
 		EmptyVariant,
 		VariablesDeclaration,
 		AutoVariableDeclaration,
-		DisassemblyDeclaration
+		DecomposeDeclaration
 		] />
 	variable_declaration_part;
 
@@ -764,7 +764,7 @@ type BlockElement = ust::variant</ tup[
 	ust::box</ScopeBlock/>,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
-	ust::box</DisassemblyDeclaration/>, // Boxed because it's too big.
+	ust::box</DecomposeDeclaration/>, // Boxed because it's too big.
 	ust::box</AllocaDeclaration/>, // Boxed because it's too big.
 	ReturnOperator,
 	YieldOperator,

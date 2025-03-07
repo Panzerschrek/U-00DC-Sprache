@@ -547,21 +547,21 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 	}
 }
 
-fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::DisassemblyDeclaration& disassembly_declaration ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::DecomposeDeclaration& decompose_declaration ) : BlockElementBuildInfo
 {
 	WithVariablesFrame(
 		function_context,
 		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			var VariablePtr initializer_variable= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, disassembly_declaration.initializer_expression );
+			var VariablePtr initializer_variable= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, decompose_declaration.initializer_expression );
 			if( initializer_variable.lock_imut().deref().t == self.invalid_type_ )
 			{
 				return;
 			}
 
-			self.BuildDisassemblyDeclarationComponent( names_scope, function_context, initializer_variable, disassembly_declaration.root_component );
+			self.BuildDecomposeDeclarationComponent( names_scope, function_context, initializer_variable, decompose_declaration.root_component );
 
-			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, disassembly_declaration.src_loc );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, decompose_declaration.src_loc );
 		} );
 
 	return BlockElementBuildInfo();
@@ -3450,25 +3450,25 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	}
 }
 
-fn CodeBuilder::BuildDisassemblyDeclarationComponent(
+fn CodeBuilder::BuildDecomposeDeclarationComponent(
 	mut this,
 	NamesScopeMutPtr& names_scope,
 	FunctionContext &mut function_context,
 	VariablePtr& variable,
-	Synt::DisassemblyDeclarationComponent& component )
+	Synt::DecomposeDeclarationComponent& component )
 {
 	variant_visit( &el : component )
 	{
-		BuildDisassemblyDeclarationComponentImpl( names_scope, function_context, variable, el );
+		BuildDecomposeDeclarationComponentImpl( names_scope, function_context, variable, el );
 	}
 }
 
-fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
+fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 	mut this,
 	NamesScopeMutPtr& names_scope,
 	FunctionContext &mut function_context,
 	VariablePtr& initializer_variable,
-	Synt::DisassemblyDeclarationNamedComponent& component )
+	Synt::DecomposeDeclarationNamedComponent& component )
 {
 	if( IsKeyword( component.name ) )
 	{
@@ -3479,8 +3479,8 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 
 	if( initializer_variable_lite.value_type != ValueType::Value )
 	{
-		// Allow disassembling only immediate values.
-		REPORT_ERROR( ImmediateValueExpectedInDisassemblyDeclaration, names_scope, component.src_loc )
+		// Allow decomposing only immediate values.
+		REPORT_ERROR( ImmediateValueExpectedInDecomposeDeclaration, names_scope, component.src_loc )
 		return;
 	}
 
@@ -3554,19 +3554,19 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	}
 }
 
-fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
+fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 	mut this,
 	NamesScopeMutPtr& names_scope,
 	FunctionContext &mut function_context,
 	VariablePtr& variable,
-	Synt::DisassemblyDeclarationSequenceComponent& component )
+	Synt::DecomposeDeclarationSequenceComponent& component )
 {
 	var VariableLite variable_lite= variable.lock_imut().deref();
 
 	if( variable_lite.value_type != ValueType::Value )
 	{
-		// Allow disassembling only immediate values.
-		REPORT_ERROR( ImmediateValueExpectedInDisassemblyDeclaration, names_scope, component.src_loc )
+		// Allow decomposing only immediate values.
+		REPORT_ERROR( ImmediateValueExpectedInDecomposeDeclaration, names_scope, component.src_loc )
 		return;
 	}
 
@@ -3574,7 +3574,7 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	{
 		if( array_type.element_count != u64(component.sub_components.size()) )
 		{
-			REPORT_ERROR( DisassemblySequenceElementCountMismatch, names_scope, component.src_loc, array_type.element_count, component.sub_components.size() )
+			REPORT_ERROR( DecomposeSequenceElementCountMismatch, names_scope, component.src_loc, array_type.element_count, component.sub_components.size() )
 			return;
 		}
 
@@ -3598,7 +3598,7 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			function_context.references_graph.AddNode( element_variable );
 			function_context.references_graph.TryAddInnerLinks( variable, element_variable, names_scope, component.src_loc );
 
-			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
+			BuildDecomposeDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
 
 			function_context.references_graph.RemoveNode( element_variable );
 		}
@@ -3607,7 +3607,7 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	{
 		if( tuple_type.element_types.size() != component.sub_components.size() )
 		{
-			REPORT_ERROR( DisassemblySequenceElementCountMismatch, names_scope, component.src_loc, tuple_type.element_types.size(), component.sub_components.size() )
+			REPORT_ERROR( DecomposeSequenceElementCountMismatch, names_scope, component.src_loc, tuple_type.element_types.size(), component.sub_components.size() )
 			return;
 		}
 
@@ -3631,7 +3631,7 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			function_context.references_graph.AddNode( element_variable );
 			function_context.references_graph.TryAddInnerLinksForTupleElement( variable, element_variable, i, names_scope, component.src_loc );
 
-			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
+			BuildDecomposeDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
 
 			function_context.references_graph.RemoveNode( element_variable );
 		}
@@ -3647,19 +3647,19 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	CreateLifetimeEnd( function_context, variable_lite.llvm_value );
 }
 
-fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
+fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 	mut this,
 	NamesScopeMutPtr& names_scope,
 	FunctionContext &mut function_context,
 	VariablePtr& variable,
-	Synt::DisassemblyDeclarationStructComponent& component )
+	Synt::DecomposeDeclarationStructComponent& component )
 {
 	var VariableLite variable_lite= variable.lock_imut().deref();
 
 	if( variable_lite.value_type != ValueType::Value )
 	{
-		// Allow disassembling only immediate values.
-		REPORT_ERROR( ImmediateValueExpectedInDisassemblyDeclaration, names_scope, component.src_loc )
+		// Allow decomposing only immediate values.
+		REPORT_ERROR( ImmediateValueExpectedInDecomposeDeclaration, names_scope, component.src_loc )
 		return;
 	}
 
@@ -3676,8 +3676,8 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 
 	if( class_type_ptr.lock_imut().deref().kind != ClassType::Kind::Struct )
 	{
-		// Doesn't allow disassembling classes, sinse they may be polymorph or have private fields.
-		REPORT_ERROR( DisassemblingClassValue, names_scope, component.src_loc )
+		// Doesn't allow decomposing classes, sinse they may be polymorph or have private fields.
+		REPORT_ERROR( DecomposingClassValue, names_scope, component.src_loc )
 		return;
 	}
 
@@ -3692,8 +3692,8 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 				{
 					if( !function.is_generated )
 					{
-						// Doesn't allow disassembling structs with destructors, since such destructors may have side-effects, which we shouldn't skip by disassembling.
-						REPORT_ERROR( DisassemblingStructWithExplicitDestructor, names_scope, component.src_loc, variable_lite.t )
+						// Doesn't allow decomposing structs with destructors, since such destructors may have side-effects, which we shouldn't skip by decomposing.
+						REPORT_ERROR( DecomposingStructWithExplicitDestructor, names_scope, component.src_loc, variable_lite.t )
 						return;
 					}
 				}
@@ -3703,13 +3703,13 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 
 	if( class_type_ptr.lock_imut().deref().generated_class_data.has</ TypeinfoClassDescription />() )
 	{
-		// Doesn't allow disassembling typeinfo structs, since some fields are generated on-fly.
-		// Generally it has no sense to disassemble them.
-		REPORT_ERROR( DisassemblingTypeinfoStruct, names_scope, component.src_loc, variable_lite.t )
+		// Doesn't allow decomposing typeinfo structs, since some fields are generated on-fly.
+		// Generally it has no sense to decompose them.
+		REPORT_ERROR( DecomposingTypeinfoStruct, names_scope, component.src_loc, variable_lite.t )
 		return;
 	}
 
-	scoped_array bool mut disassembled_fields[ class_type_ptr.lock_imut().deref().fields_order.size() ]( false );
+	scoped_array bool mut decomposed_fields[ class_type_ptr.lock_imut().deref().fields_order.size() ]( false );
 
 	foreach( &entry : component.entries )
 	{
@@ -3727,34 +3727,34 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 
 		if( class_field_nullable.empty() )
 		{
-			REPORT_ERROR( DisassemblingNonFieldStructMember, names_scope, entry.src_loc, entry.name )
+			REPORT_ERROR( DecomposingNonFieldStructMember, names_scope, entry.src_loc, entry.name )
 			continue;
 		}
 
 		auto field_lock= class_field_nullable.try_lock_imut();
 		var ClassField& field= field_lock.deref();
 
-		if( disassembled_fields[ size_type(field.index) ] )
+		if( decomposed_fields[ size_type(field.index) ] )
 		{
-			REPORT_ERROR( DuplicatedFieldInDisassemblyDeclaration, names_scope, entry.src_loc, entry.name )
+			REPORT_ERROR( DuplicatedFieldInDecomposeDeclaration, names_scope, entry.src_loc, entry.name )
 			continue;
 		}
-		disassembled_fields[ size_type(field.index) ]= true;
+		decomposed_fields[ size_type(field.index) ]= true;
 
 		var LLVMValueRef field_address= CreateClassFieldGEP( function_context, variable_lite, field );
 
 		if( field.is_reference )
 		{
-			auto named_component_opt= entry.component.get</ Synt::DisassemblyDeclarationNamedComponent />();
+			auto named_component_opt= entry.component.get</ Synt::DecomposeDeclarationNamedComponent />();
 			if( named_component_opt.empty() )
 			{
 				// We can only bind a reference field to a name.
-				// Disassembling it further isn't possible.
-				REPORT_ERROR( DisassemblingReferenceField, names_scope, entry.src_loc, entry.name )
+				// Decomposing it further isn't possible.
+				REPORT_ERROR( DecomposingReferenceField, names_scope, entry.src_loc, entry.name )
 				continue;
 			}
 
-			var Synt::DisassemblyDeclarationNamedComponent& named_component= named_component_opt.try_deref();
+			var Synt::DecomposeDeclarationNamedComponent& named_component= named_component_opt.try_deref();
 
 			if( IsKeyword( named_component.name ) )
 			{
@@ -3871,7 +3871,7 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			function_context.references_graph.AddNode( element_variable );
 			function_context.references_graph.TryAddInnerLinksForClassField( variable, element_variable, field, names_scope, component.src_loc );
 
-			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, entry.component );
+			BuildDecomposeDeclarationComponent( names_scope, function_context, element_variable, entry.component );
 
 			function_context.references_graph.RemoveNode( element_variable );
 		}
@@ -3881,7 +3881,7 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	{
 		with( &field : field_pair[1].lock_imut().deref() )
 		{
-			if( !field.is_reference && !disassembled_fields[ size_type(field.index) ] && field.t.HasDestructor() )
+			if( !field.is_reference && !decomposed_fields[ size_type(field.index) ] && field.t.HasDestructor() )
 			{
 				var LLVMValueRef field_address= CreateClassFieldGEP( function_context, variable_lite, field );
 				BuildDestructorPart( names_scope, function_context, field_address, field.t, component.src_loc );

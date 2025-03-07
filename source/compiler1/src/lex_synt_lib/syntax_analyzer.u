@@ -199,8 +199,8 @@ private:
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseThreadLocalVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
-	fn ParseDisassemblyDeclaration( mut this ) : DisassemblyDeclaration;
-	fn ParseDisassemblyDeclarationComponent( mut this ) : DisassemblyDeclarationComponent;
+	fn ParseDecomposeDeclaration( mut this ) : DecomposeDeclaration;
+	fn ParseDecomposeDeclarationComponent( mut this ) : DecomposeDeclarationComponent;
 	fn ParseAllocaDeclaration( mut this ) : AllocaDeclaration;
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
 	fn ParseYieldOperator( mut this ) : YieldOperator;
@@ -2292,7 +2292,7 @@ fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : B
 		{
 			if( it_[1s].lexem_type == Lexem::Type::SquareBracketLeft || it_[1s].lexem_type == Lexem::Type::BraceLeft )
 			{
-				block_elements.push_back( ust::make_box( ParseDisassemblyDeclaration() ) );
+				block_elements.push_back( ust::make_box( ParseDecomposeDeclaration() ) );
 			}
 			else
 			{
@@ -2674,7 +2674,7 @@ fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclar
 	return variable_declaration;
 }
 
-fn SyntaxAnalyzer::ParseDisassemblyDeclaration( mut this ) : DisassemblyDeclaration
+fn SyntaxAnalyzer::ParseDecomposeDeclaration( mut this ) : DecomposeDeclaration
 {
 	debug_assert( IsKeyword( it_.front(), Keyword::alloca_ ) );
 
@@ -2683,7 +2683,7 @@ fn SyntaxAnalyzer::ParseDisassemblyDeclaration( mut this ) : DisassemblyDeclarat
 
 	debug_assert( it_.front().lexem_type == Lexem::Type::SquareBracketLeft || it_.front().lexem_type == Lexem::Type::BraceLeft );
 
-	var DisassemblyDeclarationComponent mut root_component= ParseDisassemblyDeclarationComponent();
+	var DecomposeDeclarationComponent mut root_component= ParseDecomposeDeclarationComponent();
 
 	ExpectLexem( Lexem::Type::Assignment );
 
@@ -2691,7 +2691,7 @@ fn SyntaxAnalyzer::ParseDisassemblyDeclaration( mut this ) : DisassemblyDeclarat
 
 	ExpectSemicolon();
 
-	return DisassemblyDeclaration
+	return DecomposeDeclaration
 	{
 		.src_loc= src_loc,
 		.root_component= move(root_component),
@@ -2699,11 +2699,11 @@ fn SyntaxAnalyzer::ParseDisassemblyDeclaration( mut this ) : DisassemblyDeclarat
 	};
 }
 
-fn SyntaxAnalyzer::ParseDisassemblyDeclarationComponent( mut this ) : DisassemblyDeclarationComponent
+fn SyntaxAnalyzer::ParseDecomposeDeclarationComponent( mut this ) : DecomposeDeclarationComponent
 {
 	if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
 	{
-		var DisassemblyDeclarationSequenceComponent mut res{ .src_loc= it_.front().src_loc };
+		var DecomposeDeclarationSequenceComponent mut res{ .src_loc= it_.front().src_loc };
 
 		NextLexem();
 
@@ -2715,7 +2715,7 @@ fn SyntaxAnalyzer::ParseDisassemblyDeclarationComponent( mut this ) : Disassembl
 		{
 			while( NotEndOfFile() )
 			{
-				res.sub_components.push_back( ParseDisassemblyDeclarationComponent() );
+				res.sub_components.push_back( ParseDecomposeDeclarationComponent() );
 
 				if( it_.front().lexem_type == Lexem::Type::Comma )
 				{
@@ -2732,7 +2732,7 @@ fn SyntaxAnalyzer::ParseDisassemblyDeclarationComponent( mut this ) : Disassembl
 	}
 	else if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 	{
-		var DisassemblyDeclarationStructComponent mut res{ .src_loc= it_.front().src_loc };
+		var DecomposeDeclarationStructComponent mut res{ .src_loc= it_.front().src_loc };
 
 		NextLexem();
 
@@ -2744,7 +2744,7 @@ fn SyntaxAnalyzer::ParseDisassemblyDeclarationComponent( mut this ) : Disassembl
 		{
 			while( NotEndOfFile() )
 			{
-				var DisassemblyDeclarationComponent mut component= ParseDisassemblyDeclarationComponent();
+				var DecomposeDeclarationComponent mut component= ParseDecomposeDeclarationComponent();
 
 				if( it_.front().lexem_type == Lexem::Type::Colon )
 				{
@@ -2757,7 +2757,7 @@ fn SyntaxAnalyzer::ParseDisassemblyDeclarationComponent( mut this ) : Disassembl
 					}
 
 					res.entries.push_back(
-						DisassemblyDeclarationStructComponent::Entry
+						DecomposeDeclarationStructComponent::Entry
 						{
 							.src_loc= it_.front().src_loc,
 							.name= it_.front().text,
@@ -2771,7 +2771,7 @@ fn SyntaxAnalyzer::ParseDisassemblyDeclarationComponent( mut this ) : Disassembl
 					// Short form - with field name equal to variable name.
 					var SrcLoc mut src_loc;
 					var ust::string8 mut name;
-					if_var( &named_component : component.get</ DisassemblyDeclarationNamedComponent />() )
+					if_var( &named_component : component.get</ DecomposeDeclarationNamedComponent />() )
 					{
 						src_loc= named_component.src_loc;
 						name= named_component.name;
@@ -2782,7 +2782,7 @@ fn SyntaxAnalyzer::ParseDisassemblyDeclarationComponent( mut this ) : Disassembl
 					}
 
 					res.entries.push_back(
-						DisassemblyDeclarationStructComponent::Entry
+						DecomposeDeclarationStructComponent::Entry
 						{
 							.src_loc= src_loc,
 							.name= move(name),
@@ -2825,10 +2825,10 @@ fn SyntaxAnalyzer::ParseDisassemblyDeclarationComponent( mut this ) : Disassembl
 		if( it_.front().lexem_type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage();
-			return DisassemblyDeclarationNamedComponent{};
+			return DecomposeDeclarationNamedComponent{};
 		}
 
-		var DisassemblyDeclarationNamedComponent res
+		var DecomposeDeclarationNamedComponent res
 		{
 			.mutability_modifier= mutability_modifier,
 			.src_loc= it_.front().src_loc,
@@ -3188,7 +3188,7 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 	{
 		if( it_[1s].lexem_type == Lexem::Type::SquareBracketLeft || it_[1s].lexem_type == Lexem::Type::BraceLeft )
 		{
-			for_operator.variable_declaration_part= ParseDisassemblyDeclaration();
+			for_operator.variable_declaration_part= ParseDecomposeDeclaration();
 		}
 		else
 		{
