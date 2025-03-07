@@ -1,5 +1,6 @@
 import "/assert.u"
 import "/helpers.u"
+import "/scoped_array.u"
 import "/sort.u"
 import "/string_conversions.u"
 import "/CodeBuilderLib/keywords.uh"
@@ -3652,11 +3653,125 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 	VariablePtr& variable,
 	Synt::DisassemblyDeclarationStructComponent& component )
 {
-	// TODO
-	ust::ignore_unused(names_scope);
-	ust::ignore_unused(function_context);
-	ust::ignore_unused(variable);
-	ust::ignore_unused(component);
+	var VariableLite variable_lite= variable.lock_imut().deref();
+
+	if( variable_lite.value_type != ValueType::Value )
+	{
+		// Allow disassembling only immediate values.
+		REPORT_ERROR( ImmediateValueExpectedInDisassemblyDeclaration, names_scope, component.src_loc )
+		return;
+	}
+
+	auto class_type_opt= variable_lite.t.GetClassType();
+
+	if( class_type_opt.empty() )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, component.src_loc, variable_lite.t )
+		return;
+	}
+
+	var ClassTypePtr class_type_ptr= class_type_opt.try_deref();
+	var NamesScopePtr class_members= class_type_ptr.lock_imut().deref().members;
+
+	if( class_type_ptr.lock_imut().deref().kind != ClassType::Kind::Struct )
+	{
+		// Doesn't allow disassembling classes, sinse they may be polymorph or have private fields.
+		REPORT_ERROR( DisassemblingClassValue, names_scope, component.src_loc )
+		return;
+	}
+
+	if_var( &destructors : class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ) )
+	{
+		auto functions_set_nullable= destructors.Get</FunctionsSet/>();
+		if( !functions_set_nullable.empty() )
+		{
+			with( &functions_set : functions_set_nullable.try_lock_imut().deref() )
+			{
+				foreach( &function : functions_set.functions )
+				{
+					if( !function.is_generated )
+					{
+						// Doesn't allow disassembling structs with destructors, since such destructors may have side-effects, which we shouldn't skip by disassembling.
+						REPORT_ERROR( DisassemblingStructWithExplicitDestructor, names_scope, component.src_loc, variable_lite.t )
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	if( class_type_ptr.lock_imut().deref().generated_class_data.has</ TypeinfoClassDescription />() )
+	{
+		// Doesn't allow disassembling typeinfo structs, since some fields are generated on-fly.
+		// Generally it has no sense to disassemble them.
+		REPORT_ERROR( DisassemblingTypeinfoStruct, names_scope, component.src_loc, variable_lite.t )
+		return;
+	}
+
+	scoped_array bool mut disassembled_fields[ class_type_ptr.lock_imut().deref().fields_order.size() ]( false );
+
+	foreach( &entry : component.entries )
+	{
+		var ust::shared_ptr_nullable_imut</ClassField/> mut class_field_nullable;
+
+		if_var( &member : class_members.lock_imut().deref().GetThisScopeValue( entry.name ) )
+		{
+			class_field_nullable= member.Get</ClassField/>();
+		}
+		else
+		{
+			REPORT_ERROR( NameNotFound, names_scope, entry.src_loc, entry.name )
+			continue;
+		}
+
+		if( class_field_nullable.empty() )
+		{
+			REPORT_ERROR( DisassemblingNonFieldStructMember, names_scope, entry.src_loc, entry.name )
+			continue;
+		}
+
+		auto field_lock= class_field_nullable.try_lock_imut();
+		var ClassField& field= field_lock.deref();
+
+		if( disassembled_fields[ size_type(field.index) ] )
+		{
+			REPORT_ERROR( DuplicatedFieldInDisassemblyDeclaration, names_scope, entry.src_loc, entry.name )
+			continue;
+		}
+		disassembled_fields[ size_type(field.index) ]= true;
+
+		if( field.is_reference )
+		{
+		}
+		else
+		{
+			var VariablePtr element_variable=
+				Variable
+				{
+					.t= field.t,
+					.value_type= ValueType::Value,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateClassFieldGEP( function_context, variable_lite, field ),
+					.constexpr_value=
+						( variable_lite.constexpr_value == LLVMValueRef::Null
+							? LLVMValueRef::Null
+							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, field.index ) ) ),
+					.name= ust::concat( variable.lock_imut().deref().name, ".", "some_field_name - TODO" ),
+					.src_loc= component.src_loc,
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( element_variable );
+			function_context.references_graph.TryAddInnerLinksForClassField( variable, element_variable, field, names_scope, component.src_loc );
+
+			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, entry.component );
+
+			function_context.references_graph.RemoveNode( element_variable );
+		}
+	}
+
+	// Mark this variable as destroyed - to avoid calling destructs.
+	function_context.references_graph.MoveNode( variable );
+	CreateLifetimeEnd( function_context, variable_lite.llvm_value );
 }
 
 // Return true, if root of expression is useless in single expression block element.
