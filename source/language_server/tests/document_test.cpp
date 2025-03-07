@@ -1220,7 +1220,7 @@ U_TEST( DocumentCompletion_Test35 )
 	document.StartRebuild( g_tests_thread_pool );
 	document.WaitUntilRebuildFinished();
 
-	// Should suggest struct field in disassembly declaration.
+	// Should suggest struct field in decompose declaration.
 	document.UpdateText( DocumentRange{ { 1, 54 }, { 1, 54 } }, "x : fo" );
 
 	const auto completion_result= document.Complete( DocumentPosition{ 1, 60 } );
