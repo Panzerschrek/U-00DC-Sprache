@@ -969,7 +969,7 @@ private:
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ScopeBlock& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::VariablesDeclaration& variables_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AutoVariableDeclaration& auto_variable_declaration );
-	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::DisassemblyDeclaration& disassembly_declaration );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::DecomposeDeclaration& decompose_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AllocaDeclaration& alloca_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ReturnOperator& return_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::YieldOperator& yield_operator );
@@ -1019,29 +1019,29 @@ private:
 		NamesScope& names_scope,
 		FunctionContext& function_context );
 
-	void BuildDisassemblyDeclarationComponent(
+	void BuildDecomposeDeclarationComponent(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const VariablePtr& variable,
-		const Synt::DisassemblyDeclarationComponent& component );
+		const Synt::DecomposeDeclarationComponent& component );
 
-	void BuildDisassemblyDeclarationComponentImpl(
+	void BuildDecomposeDeclarationComponentImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const VariablePtr& variable,
-		const Synt::DisassemblyDeclarationNamedComponent& component );
+		const Synt::DecomposeDeclarationNamedComponent& component );
 
-	void BuildDisassemblyDeclarationComponentImpl(
+	void BuildDecomposeDeclarationComponentImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const VariablePtr& variable,
-		const Synt::DisassemblyDeclarationSequenceComponent& component );
+		const Synt::DecomposeDeclarationSequenceComponent& component );
 
-	void BuildDisassemblyDeclarationComponentImpl(
+	void BuildDecomposeDeclarationComponentImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const VariablePtr& variable,
-		const Synt::DisassemblyDeclarationStructComponent& component );
+		const Synt::DecomposeDeclarationStructComponent& component );
 
 	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names_scope, FunctionContext& function_context );
 

@@ -1,7 +1,7 @@
 from py_tests_common import *
 
 
-def DisassemblyDeclaration_Test0():
+def DecomposeDeclaration_Test0():
 	c_program_text= """
 		fn Bar() : [ i32, 3 ]
 		{
@@ -20,7 +20,7 @@ def DisassemblyDeclaration_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclaration_Test1():
+def DecomposeDeclaration_Test1():
 	c_program_text= """
 		fn Bar() : tup[];
 		fn Foo()
@@ -31,7 +31,7 @@ def DisassemblyDeclaration_Test1():
 	tests_lib.build_program( c_program_text )
 
 
-def DisassemblyDeclaration_Test2():
+def DecomposeDeclaration_Test2():
 	c_program_text= """
 		fn Bar() : tup[ f32, u64 ]
 		{
@@ -52,7 +52,7 @@ def DisassemblyDeclaration_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclaration_Test3():
+def DecomposeDeclaration_Test3():
 	c_program_text= """
 		fn Bar() : [ [ i32, 2 ], 3 ]
 		{
@@ -74,7 +74,7 @@ def DisassemblyDeclaration_Test3():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclaration_Test4():
+def DecomposeDeclaration_Test4():
 	c_program_text= """
 		struct S{ i32 x; f32 y; }
 		fn Bar() : S
@@ -92,7 +92,7 @@ def DisassemblyDeclaration_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclaration_Test5():
+def DecomposeDeclaration_Test5():
 	c_program_text= """
 		struct S{ i32 x; f32 y; }
 		fn Bar() : S
@@ -113,7 +113,7 @@ def DisassemblyDeclaration_Test5():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclaration_Test6():
+def DecomposeDeclaration_Test6():
 	c_program_text= """
 		struct S{ i32 x; [ f32, 4 ] y; }
 		fn Bar() : tup[ bool, S ]
@@ -135,7 +135,7 @@ def DisassemblyDeclaration_Test6():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclaration_Test7():
+def DecomposeDeclaration_Test7():
 	c_program_text= """
 		fn Bar() : [ [ i32, 2 ], 3 ]
 		{
@@ -144,7 +144,7 @@ def DisassemblyDeclaration_Test7():
 		}
 		fn Foo()
 		{
-			// Can disassemble to non-terminal elements.
+			// Can decompose to non-terminal elements.
 			auto [ ab, cd, ef ]= Bar();
 			halt if( ab[0] != 1 );
 			halt if( ab[1] != 2 );
@@ -158,12 +158,12 @@ def DisassemblyDeclaration_Test7():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclaration_Test8():
+def DecomposeDeclaration_Test8():
 	c_program_text= """
 		fn Foo()
 		{
 			var [ i32, 3 ] mut arr[ 76, 543, 2109 ];
-			// Move and disassembly a local variable.
+			// Move and decompose a local variable.
 			auto [ x, y, z ]= move(arr);
 			halt if( x != 76 );
 			halt if( y != 543 );
@@ -174,11 +174,11 @@ def DisassemblyDeclaration_Test8():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclaration_Test9():
+def DecomposeDeclaration_Test9():
 	c_program_text= """
 		fn Bar( [ i32 , 3 ] mut arr )
 		{
-			// Move and disassembly an argument.
+			// Move and decompose an argument.
 			auto [ x, y, z ]= move(arr);
 			halt if( x != 2109 );
 			halt if( y != 543 );
@@ -194,7 +194,7 @@ def DisassemblyDeclaration_Test9():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def StructDisassemblyShortForm_Test0():
+def StructDecomposeShortForm_Test0():
 	c_program_text= """
 		struct S{ i32 x; i32 y; }
 		fn Foo()
@@ -209,7 +209,7 @@ def StructDisassemblyShortForm_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def StructDisassemblyShortForm_Test1():
+def StructDecomposeShortForm_Test1():
 	c_program_text= """
 		struct S{ i32 x; i32 y; }
 		fn Foo()
@@ -228,7 +228,7 @@ def StructDisassemblyShortForm_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def StructDisassemblyShortForm_Test2():
+def StructDecomposeShortForm_Test2():
 	c_program_text= """
 		struct S{ i32 x; i32 y; }
 		fn Foo()
@@ -243,7 +243,7 @@ def StructDisassemblyShortForm_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def StructDisassemblyShortForm_Test3():
+def StructDecomposeShortForm_Test3():
 	c_program_text= """
 		struct S{ i32 x; i32 y; }
 		fn Foo()
@@ -260,7 +260,7 @@ def StructDisassemblyShortForm_Test3():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclarationConstexpr_Test0():
+def DecomposeDeclarationConstexpr_Test0():
 	c_program_text= """
 		fn constexpr Bar( i32 scale ) : [ i32, 3 ]
 		{
@@ -278,7 +278,7 @@ def DisassemblyDeclarationConstexpr_Test0():
 	tests_lib.build_program( c_program_text )
 
 
-def DisassemblyDeclarationConstexpr_Test1():
+def DecomposeDeclarationConstexpr_Test1():
 	c_program_text= """
 		fn constexpr Bar( i32 scale ) : tup[ i32, f32, bool ]
 		{
@@ -301,7 +301,7 @@ def DisassemblyDeclarationConstexpr_Test1():
 	tests_lib.build_program( c_program_text )
 
 
-def DisassemblyDeclarationConstexpr_Test2():
+def DecomposeDeclarationConstexpr_Test2():
 	c_program_text= """
 		struct S{ i32 x; u32 y; }
 		fn constexpr Bar( i32 scale ) : S
@@ -318,7 +318,7 @@ def DisassemblyDeclarationConstexpr_Test2():
 	tests_lib.build_program( c_program_text )
 
 
-def DisassemblyDeclarationConstexpr_Test3():
+def DecomposeDeclarationConstexpr_Test3():
 	c_program_text= """
 		struct S{ i32& x; }
 		fn Foo()
@@ -331,7 +331,7 @@ def DisassemblyDeclarationConstexpr_Test3():
 	tests_lib.build_program( c_program_text )
 
 
-def DisassemblyDeclarationForReferenceField_Test0():
+def DecomposeDeclarationForReferenceField_Test0():
 	c_program_text= """
 		struct S{ u64 v; i32& x; }
 		fn Foo()
@@ -346,7 +346,7 @@ def DisassemblyDeclarationForReferenceField_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclarationForReferenceField_Test1():
+def DecomposeDeclarationForReferenceField_Test1():
 	c_program_text= """
 		struct S{ i32 &mut x; }
 		fn Foo()
@@ -363,7 +363,7 @@ def DisassemblyDeclarationForReferenceField_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyDeclarationForReferenceField_Test2():
+def DecomposeDeclarationForReferenceField_Test2():
 	c_program_text= """
 		struct S{ i32 &mut @('a') x; i32 &mut @('b') y; }
 		fn Foo()
@@ -382,7 +382,7 @@ def DisassemblyDeclarationForReferenceField_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyInCStyleForOperator_Test0():
+def DecomposeInCStyleForOperator_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -399,7 +399,7 @@ def DisassemblyInCStyleForOperator_Test0():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassemblyInCStyleForOperator_Test1():
+def DecomposeInCStyleForOperator_Test1():
 	c_program_text= """
 		struct S{ i32 x; i32 y; }
 		fn Foo()
@@ -416,7 +416,7 @@ def DisassemblyInCStyleForOperator_Test1():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def DisassembledVariableIsImmutable_Test0():
+def DecomposedVariableIsImmutable_Test0():
 	c_program_text= """
 		fn Foo( [ i32, 2 ] mut arr )
 		{
@@ -432,7 +432,7 @@ def DisassembledVariableIsImmutable_Test0():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
 
 
-def DisassembledVariableIsImmutable_Test1():
+def DecomposedVariableIsImmutable_Test1():
 	c_program_text= """
 		fn Foo( [ i32, 3 ] mut arr )
 		{
@@ -450,7 +450,7 @@ def DisassembledVariableIsImmutable_Test1():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
-def DisassembledVariableIsImmutable_Test2():
+def DecomposedVariableIsImmutable_Test2():
 	c_program_text= """
 		fn Foo( tup[ i32, f32 ] mut t )
 		{
@@ -466,7 +466,7 @@ def DisassembledVariableIsImmutable_Test2():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
 
 
-def DisassembledVariableIsImmutable_Test3():
+def DecomposedVariableIsImmutable_Test3():
 	c_program_text= """
 		fn Foo( tup[ i32, f32, u32 ] mut t )
 		{
@@ -484,7 +484,7 @@ def DisassembledVariableIsImmutable_Test3():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
-def DisassembledVariableIsImmutable_Test4():
+def DecomposedVariableIsImmutable_Test4():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -501,7 +501,7 @@ def DisassembledVariableIsImmutable_Test4():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
 
 
-def DisassembledVariableIsImmutable_Test5():
+def DecomposedVariableIsImmutable_Test5():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -520,7 +520,7 @@ def DisassembledVariableIsImmutable_Test5():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
 
 
-def DisassembledVariableIsImmutable_Test6():
+def DecomposedVariableIsImmutable_Test6():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -537,7 +537,7 @@ def DisassembledVariableIsImmutable_Test6():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
 
 
-def DisassembledVariableIsImmutable_Test7():
+def DecomposedVariableIsImmutable_Test7():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -554,7 +554,7 @@ def DisassembledVariableIsImmutable_Test7():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
 
 
-def ImmediateValueExpectedInDisassemblyDeclaration_Test0():
+def ImmediateValueExpectedInDecomposeDeclaration_Test0():
 	c_program_text= """
 		fn Foo( [ i32, 2 ] arr )
 		{
@@ -563,10 +563,10 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDecomposeDeclaration", 4 ) )
 
 
-def ImmediateValueExpectedInDisassemblyDeclaration_Test1():
+def ImmediateValueExpectedInDecomposeDeclaration_Test1():
 	c_program_text= """
 		fn Foo( [ i32, 2 ] mut arr )
 		{
@@ -575,10 +575,10 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDecomposeDeclaration", 4 ) )
 
 
-def ImmediateValueExpectedInDisassemblyDeclaration_Test2():
+def ImmediateValueExpectedInDecomposeDeclaration_Test2():
 	c_program_text= """
 		fn Foo()
 		{
@@ -588,10 +588,10 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 5 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDecomposeDeclaration", 5 ) )
 
 
-def ImmediateValueExpectedInDisassemblyDeclaration_Test3():
+def ImmediateValueExpectedInDecomposeDeclaration_Test3():
 	c_program_text= """
 		fn Foo()
 		{
@@ -601,11 +601,11 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 5 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDecomposeDeclaration", 5 ) )
 
 
 
-def ImmediateValueExpectedInDisassemblyDeclaration_Test4():
+def ImmediateValueExpectedInDecomposeDeclaration_Test4():
 	c_program_text= """
 		fn Foo( S s )
 		{
@@ -615,10 +615,10 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDecomposeDeclaration", 4 ) )
 
 
-def ImmediateValueExpectedInDisassemblyDeclaration_Test5():
+def ImmediateValueExpectedInDecomposeDeclaration_Test5():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -628,10 +628,10 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDecomposeDeclaration", 4 ) )
 
 
-def ImmediateValueExpectedInDisassemblyDeclaration_Test6():
+def ImmediateValueExpectedInDecomposeDeclaration_Test6():
 	c_program_text= """
 		fn Foo()
 		{
@@ -642,10 +642,10 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 5 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDecomposeDeclaration", 5 ) )
 
 
-def ImmediateValueExpectedInDisassemblyDeclaration_Test7():
+def ImmediateValueExpectedInDecomposeDeclaration_Test7():
 	c_program_text= """
 		fn Foo()
 		{
@@ -656,10 +656,10 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 5 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDecomposeDeclaration", 5 ) )
 
 
-def ImmediateValueExpectedInDisassemblyDeclaration_Test8():
+def ImmediateValueExpectedInDecomposeDeclaration_Test8():
 	c_program_text= """
 		fn Foo( [ i32, 2 ]& arr )
 		{
@@ -668,10 +668,10 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test8():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDecomposeDeclaration", 4 ) )
 
 
-def ImmediateValueExpectedInDisassemblyDeclaration_Test9():
+def ImmediateValueExpectedInDecomposeDeclaration_Test9():
 	c_program_text= """
 		fn Foo( S &mut s )
 		{
@@ -681,14 +681,14 @@ def ImmediateValueExpectedInDisassemblyDeclaration_Test9():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ImmediateValueExpectedInDisassemblyDeclaration", 4 ) )
+	assert( HasError( errors_list, "ImmediateValueExpectedInDecomposeDeclaration", 4 ) )
 
 
-def DisassemblingNonStructAsStruct_Test0():
+def DecomposingNonStructAsStruct_Test0():
 	c_program_text= """
 		fn Foo( i32 mut i )
 		{
-			auto { a : x } = move(i); // Can't disassemble scalar as struct.
+			auto { a : x } = move(i); // Can't decompose scalar as struct.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -696,11 +696,11 @@ def DisassemblingNonStructAsStruct_Test0():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def DisassemblingNonStructAsStruct_Test1():
+def DecomposingNonStructAsStruct_Test1():
 	c_program_text= """
 		fn Foo( $(u8) mut p )
 		{
-			auto { a : x } = move(p); // Can't disassemble scalar as struct.
+			auto { a : x } = move(p); // Can't decompose scalar as struct.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -708,11 +708,11 @@ def DisassemblingNonStructAsStruct_Test1():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def DisassemblingNonStructAsStruct_Test2():
+def DecomposingNonStructAsStruct_Test2():
 	c_program_text= """
 		fn Foo( E mut e )
 		{
-			auto { a : x } = move(e); // Can't disassemble scalar as struct.
+			auto { a : x } = move(e); // Can't decompose scalar as struct.
 		}
 		enum E{ A, B, C }
 	"""
@@ -721,11 +721,11 @@ def DisassemblingNonStructAsStruct_Test2():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def DisassemblingNonStructAsStruct_Test3():
+def DecomposingNonStructAsStruct_Test3():
 	c_program_text= """
 		fn Foo( [ i32, 2 ] mut arr )
 		{
-			auto { a : x, b : y } = move(arr); // Can't disassemble array as struct.
+			auto { a : x, b : y } = move(arr); // Can't decompose array as struct.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -733,11 +733,11 @@ def DisassemblingNonStructAsStruct_Test3():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def DisassemblingNonStructAsStruct_Test4():
+def DecomposingNonStructAsStruct_Test4():
 	c_program_text= """
 		fn Foo( tup[ u32, f64 ] mut t )
 		{
-			auto { a : x, b : y } = move(t); // Can't disassemble tuple as struct.
+			auto { a : x, b : y } = move(t); // Can't decompose tuple as struct.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -745,7 +745,7 @@ def DisassemblingNonStructAsStruct_Test4():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def DisassemblingClassValue_Test0():
+def DecomposingClassValue_Test0():
 	c_program_text= """
 		fn Foo( C mut c )
 		{
@@ -755,10 +755,10 @@ def DisassemblingClassValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
+	assert( HasError( errors_list, "DecomposingClassValue", 4 ) )
 
 
-def DisassemblingClassValue_Test1():
+def DecomposingClassValue_Test1():
 	c_program_text= """
 		fn Foo( C mut c )
 		{
@@ -768,48 +768,48 @@ def DisassemblingClassValue_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
+	assert( HasError( errors_list, "DecomposingClassValue", 4 ) )
 
 
-def DisassemblingClassValue_Test2():
+def DecomposingClassValue_Test2():
 	c_program_text= """
 		fn Foo()
 		{
-			auto {} = lambda(){}; // Lambda is a class, it's not possible to disassemble it.
+			auto {} = lambda(){}; // Lambda is a class, it's not possible to decompose it.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
+	assert( HasError( errors_list, "DecomposingClassValue", 4 ) )
 
 
-def DisassemblingClassValue_Test3():
+def DecomposingClassValue_Test3():
 	c_program_text= """
 		fn Foo()
 		{
-			auto {} = Bar(); // Coroutine object is a class, it's not possible to disassemble it.
+			auto {} = Bar(); // Coroutine object is a class, it's not possible to decompose it.
 		}
 		fn async Bar();
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
+	assert( HasError( errors_list, "DecomposingClassValue", 4 ) )
 
 
-def DisassemblingClassValue_Test4():
+def DecomposingClassValue_Test4():
 	c_program_text= """
 		fn Foo()
 		{
-			auto {} = Bar(); // Coroutine object is a class, it's not possible to disassemble it.
+			auto {} = Bar(); // Coroutine object is a class, it's not possible to decompose it.
 		}
 		fn generator Bar() : i32;
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingClassValue", 4 ) )
+	assert( HasError( errors_list, "DecomposingClassValue", 4 ) )
 
 
-def DisassemblingStructWithExplicitDestructor_Test0():
+def DecomposingStructWithExplicitDestructor_Test0():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -824,10 +824,10 @@ def DisassemblingStructWithExplicitDestructor_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingStructWithExplicitDestructor", 4 ) )
+	assert( HasError( errors_list, "DecomposingStructWithExplicitDestructor", 4 ) )
 
 
-def DisassemblingStructWithExplicitDestructor_Test1():
+def DecomposingStructWithExplicitDestructor_Test1():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -840,10 +840,10 @@ def DisassemblingStructWithExplicitDestructor_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingStructWithExplicitDestructor", 4 ) )
+	assert( HasError( errors_list, "DecomposingStructWithExplicitDestructor", 4 ) )
 
 
-def DisassemblingStructWithExplicitDestructor_Test1():
+def DecomposingStructWithExplicitDestructor_Test1():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -862,14 +862,14 @@ def DisassemblingStructWithExplicitDestructor_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingStructWithExplicitDestructor", 4 ) )
+	assert( HasError( errors_list, "DecomposingStructWithExplicitDestructor", 4 ) )
 
 
-def DisassemblingStructWithExplicitDestructor_Test2():
+def DecomposingStructWithExplicitDestructor_Test2():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
-			auto { a : x, b : t } = move(s); // Fine - "s" can be disassembled, since its destructor is generated, "t" with explicit destructor isn't disassembled.
+			auto { a : x, b : t } = move(s); // Fine - "s" can be decomposed, since its destructor is generated, "t" with explicit destructor isn't decomposed.
 		}
 		struct S
 		{
@@ -885,7 +885,7 @@ def DisassemblingStructWithExplicitDestructor_Test2():
 	tests_lib.build_program( c_program_text )
 
 
-def DisassemblingTypeinfoStruct_Test0():
+def DecomposingTypeinfoStruct_Test0():
 	c_program_text= """
 		fn Foo( typeof( typeinfo</i32/> ) mut t )
 		{
@@ -894,10 +894,10 @@ def DisassemblingTypeinfoStruct_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingTypeinfoStruct", 4 ) )
+	assert( HasError( errors_list, "DecomposingTypeinfoStruct", 4 ) )
 
 
-def DisassemblingTypeinfoStruct_Test1():
+def DecomposingTypeinfoStruct_Test1():
 	c_program_text= """
 		fn Foo( typeof( typeinfo</ fn( i32 x ) />.params_list[0] ) mut t )
 		{
@@ -906,10 +906,10 @@ def DisassemblingTypeinfoStruct_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingTypeinfoStruct", 4 ) )
+	assert( HasError( errors_list, "DecomposingTypeinfoStruct", 4 ) )
 
 
-def DuplicatedFieldInDisassemblyDeclaration_Test0():
+def DuplicatedFieldInDecomposeDeclaration_Test0():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -922,10 +922,10 @@ def DuplicatedFieldInDisassemblyDeclaration_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DuplicatedFieldInDisassemblyDeclaration", 4 ) )
+	assert( HasError( errors_list, "DuplicatedFieldInDecomposeDeclaration", 4 ) )
 
 
-def DuplicatedFieldInDisassemblyDeclaration_Test1():
+def DuplicatedFieldInDecomposeDeclaration_Test1():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -938,10 +938,10 @@ def DuplicatedFieldInDisassemblyDeclaration_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DuplicatedFieldInDisassemblyDeclaration", 4 ) )
+	assert( HasError( errors_list, "DuplicatedFieldInDecomposeDeclaration", 4 ) )
 
 
-def NameNotFound_ForStructDisassembly_Test0():
+def NameNotFound_ForStructDecompose_Test0():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -957,7 +957,7 @@ def NameNotFound_ForStructDisassembly_Test0():
 	assert( HasError( errors_list, "NameNotFound", 4 ) )
 
 
-def NameNotFound_ForStructDisassembly_Test1():
+def NameNotFound_ForStructDecompose_Test1():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -973,7 +973,7 @@ def NameNotFound_ForStructDisassembly_Test1():
 	assert( HasError( errors_list, "NameNotFound", 4 ) )
 
 
-def NameNotFound_ForStructDisassembly_Test2():
+def NameNotFound_ForStructDecompose_Test2():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -986,7 +986,7 @@ def NameNotFound_ForStructDisassembly_Test2():
 	assert( HasError( errors_list, "NameNotFound", 4 ) )
 
 
-def DisassemblingNonFieldStructMember_Test0():
+def DecomposingNonFieldStructMember_Test0():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -999,10 +999,10 @@ def DisassemblingNonFieldStructMember_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingNonFieldStructMember", 4 ) )
+	assert( HasError( errors_list, "DecomposingNonFieldStructMember", 4 ) )
 
 
-def DisassemblingNonFieldStructMember_Test1():
+def DecomposingNonFieldStructMember_Test1():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1015,10 +1015,10 @@ def DisassemblingNonFieldStructMember_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingNonFieldStructMember", 4 ) )
+	assert( HasError( errors_list, "DecomposingNonFieldStructMember", 4 ) )
 
 
-def DisassemblingNonFieldStructMember_Test2():
+def DecomposingNonFieldStructMember_Test2():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1031,10 +1031,10 @@ def DisassemblingNonFieldStructMember_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingNonFieldStructMember", 4 ) )
+	assert( HasError( errors_list, "DecomposingNonFieldStructMember", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_ForReferenceFieldDisassembly_Test0():
+def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test0():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1047,7 +1047,7 @@ def BindingConstReferenceToNonconstReference_ForReferenceFieldDisassembly_Test0(
 	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_ForReferenceFieldDisassembly_Test1():
+def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test1():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1060,7 +1060,7 @@ def BindingConstReferenceToNonconstReference_ForReferenceFieldDisassembly_Test1(
 	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_ForReferenceFieldDisassembly_Test2():
+def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test2():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1071,34 +1071,34 @@ def BindingConstReferenceToNonconstReference_ForReferenceFieldDisassembly_Test2(
 	tests_lib.build_program( c_program_text )
 
 
-def DisassemblingReferenceField_Test0():
+def DecomposingReferenceField_Test0():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
-			auto { [ a, b ] : x } = move(s); // Error - can't disassemble "x" further, since it's a reference field.
+			auto { [ a, b ] : x } = move(s); // Error - can't decompose "x" further, since it's a reference field.
 		}
 		struct S { [ i32, 2 ] & x; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingReferenceField", 4 ) )
+	assert( HasError( errors_list, "DecomposingReferenceField", 4 ) )
 
 
-def DisassemblingReferenceField_Test1():
+def DecomposingReferenceField_Test1():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
-			auto { { a : m, b : n } : t } = move(s); // Error - can't disassemble "t" further, since it's a reference field.
+			auto { { a : m, b : n } : t } = move(s); // Error - can't decompose "t" further, since it's a reference field.
 		}
 		struct S { T & t; }
 		struct T { f32 m; f64 n; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblingReferenceField", 4 ) )
+	assert( HasError( errors_list, "DecomposingReferenceField", 4 ) )
 
 
-def DisassemblySequenceElementCountMismatch_Test0():
+def DecomposeSequenceElementCountMismatch_Test0():
 	c_program_text= """
 		fn Foo( [ i32, 3 ] mut arr )
 		{
@@ -1107,10 +1107,10 @@ def DisassemblySequenceElementCountMismatch_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+	assert( HasError( errors_list, "DecomposeSequenceElementCountMismatch", 4 ) )
 
 
-def DisassemblySequenceElementCountMismatch_Test1():
+def DecomposeSequenceElementCountMismatch_Test1():
 	c_program_text= """
 		fn Foo( [ i32, 3 ] mut arr )
 		{
@@ -1119,10 +1119,10 @@ def DisassemblySequenceElementCountMismatch_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+	assert( HasError( errors_list, "DecomposeSequenceElementCountMismatch", 4 ) )
 
 
-def DisassemblySequenceElementCountMismatch_Test2():
+def DecomposeSequenceElementCountMismatch_Test2():
 	c_program_text= """
 		fn Foo( tup[ i32, f32, bool ] mut t )
 		{
@@ -1131,10 +1131,10 @@ def DisassemblySequenceElementCountMismatch_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+	assert( HasError( errors_list, "DecomposeSequenceElementCountMismatch", 4 ) )
 
 
-def DisassemblySequenceElementCountMismatch_Test3():
+def DecomposeSequenceElementCountMismatch_Test3():
 	c_program_text= """
 		fn Foo( tup[ i32, f32, bool ] mut t )
 		{
@@ -1143,10 +1143,10 @@ def DisassemblySequenceElementCountMismatch_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+	assert( HasError( errors_list, "DecomposeSequenceElementCountMismatch", 4 ) )
 
 
-def DisassemblySequenceElementCountMismatch_Test4():
+def DecomposeSequenceElementCountMismatch_Test4():
 	c_program_text= """
 		fn Foo( tup[] mut t )
 		{
@@ -1155,10 +1155,10 @@ def DisassemblySequenceElementCountMismatch_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+	assert( HasError( errors_list, "DecomposeSequenceElementCountMismatch", 4 ) )
 
 
-def DisassemblySequenceElementCountMismatch_Test5():
+def DecomposeSequenceElementCountMismatch_Test5():
 	c_program_text= """
 		fn Foo( tup[ i32 ] mut t )
 		{
@@ -1167,14 +1167,14 @@ def DisassemblySequenceElementCountMismatch_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "DisassemblySequenceElementCountMismatch", 4 ) )
+	assert( HasError( errors_list, "DecomposeSequenceElementCountMismatch", 4 ) )
 
 
-def SequenceDisassemblyForNonSequenceType_Test0():
+def SequenceDecomposeForNonSequenceType_Test0():
 	c_program_text= """
 		fn Foo( i32 mut i )
 		{
-			auto [ x ]= move(i); // Can't disassemble scalar.
+			auto [ x ]= move(i); // Can't decompose scalar.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1182,11 +1182,11 @@ def SequenceDisassemblyForNonSequenceType_Test0():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def SequenceDisassemblyForNonSequenceType_Test1():
+def SequenceDecomposeForNonSequenceType_Test1():
 	c_program_text= """
 		fn Foo( E mut e )
 		{
-			auto [ x ]= move(e); // Can't disassemble scalar.
+			auto [ x ]= move(e); // Can't decompose scalar.
 		}
 		enum E{ A, B, C }
 	"""
@@ -1195,11 +1195,11 @@ def SequenceDisassemblyForNonSequenceType_Test1():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def SequenceDisassemblyForNonSequenceType_Test2():
+def SequenceDecomposeForNonSequenceType_Test2():
 	c_program_text= """
 		fn Foo( $(f64) mut p )
 		{
-			auto [ x ]= move(p); // Can't disassemble scalar.
+			auto [ x ]= move(p); // Can't decompose scalar.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1207,11 +1207,11 @@ def SequenceDisassemblyForNonSequenceType_Test2():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def SequenceDisassemblyForNonSequenceType_Test3():
+def SequenceDecomposeForNonSequenceType_Test3():
 	c_program_text= """
 		fn Foo( (fn()) mut p )
 		{
-			auto [ x ]= move(p); // Can't disassemble scalar.
+			auto [ x ]= move(p); // Can't decompose scalar.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1219,11 +1219,11 @@ def SequenceDisassemblyForNonSequenceType_Test3():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def SequenceDisassemblyForNonSequenceType_Test4():
+def SequenceDecomposeForNonSequenceType_Test4():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
-			auto [ a, b ]= move(s); // Can't disassemble structure as sequence.
+			auto [ a, b ]= move(s); // Can't decompose structure as sequence.
 		}
 		struct S{ i32 x; i32 y; }
 	"""
@@ -1232,11 +1232,11 @@ def SequenceDisassemblyForNonSequenceType_Test4():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def SequenceDisassemblyForNonSequenceType_Test5():
+def SequenceDecomposeForNonSequenceType_Test5():
 	c_program_text= """
 		fn Foo( C mut c )
 		{
-			auto [ a ]= move(c); // Can't disassemble class as sequence.
+			auto [ a ]= move(c); // Can't decompose class as sequence.
 		}
 		class C{ i32 x; }
 	"""
@@ -1245,7 +1245,7 @@ def SequenceDisassemblyForNonSequenceType_Test5():
 	assert( HasError( errors_list, "OperationNotSupportedForThisType", 4 ) )
 
 
-def Redefinition_ForDisassemblyDeclaration_Test0():
+def Redefinition_ForDecomposeDeclaration_Test0():
 	c_program_text= """
 		fn Foo( [ i32, 1 ] mut arr )
 		{
@@ -1258,7 +1258,7 @@ def Redefinition_ForDisassemblyDeclaration_Test0():
 	assert( HasError( errors_list, "Redefinition", 5 ) )
 
 
-def Redefinition_ForDisassemblyDeclaration_Test1():
+def Redefinition_ForDecomposeDeclaration_Test1():
 	c_program_text= """
 		fn Foo( tup[ f32, bool ] mut t )
 		{
@@ -1271,7 +1271,7 @@ def Redefinition_ForDisassemblyDeclaration_Test1():
 	assert( HasError( errors_list, "Redefinition", 5 ) )
 
 
-def Redefinition_ForDisassemblyDeclaration_Test2():
+def Redefinition_ForDecomposeDeclaration_Test2():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1285,7 +1285,7 @@ def Redefinition_ForDisassemblyDeclaration_Test2():
 	assert( HasError( errors_list, "Redefinition", 5 ) )
 
 
-def Redefinition_ForDisassemblyDeclaration_Test3():
+def Redefinition_ForDecomposeDeclaration_Test3():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1299,7 +1299,7 @@ def Redefinition_ForDisassemblyDeclaration_Test3():
 	assert( HasError( errors_list, "Redefinition", 5 ) )
 
 
-def Redefinition_ForDisassemblyDeclaration_Test4():
+def Redefinition_ForDecomposeDeclaration_Test4():
 	c_program_text= """
 		fn Foo( [ i32, 1 ] mut arr )
 		{
@@ -1312,7 +1312,7 @@ def Redefinition_ForDisassemblyDeclaration_Test4():
 	tests_lib.build_program( c_program_text )
 
 
-def Redefinition_ForDisassemblyDeclaration_Test5():
+def Redefinition_ForDecomposeDeclaration_Test5():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1326,7 +1326,7 @@ def Redefinition_ForDisassemblyDeclaration_Test5():
 	tests_lib.build_program( c_program_text )
 
 
-def UsingKeywordAsName_ForDisassemblyDeclaration_Test0():
+def UsingKeywordAsName_ForDecomposeDeclaration_Test0():
 	c_program_text= """
 		fn Foo( tup[ f32 ] mut t )
 		{
@@ -1338,7 +1338,7 @@ def UsingKeywordAsName_ForDisassemblyDeclaration_Test0():
 	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
 
 
-def UsingKeywordAsName_ForDisassemblyDeclaration_Test1():
+def UsingKeywordAsName_ForDecomposeDeclaration_Test1():
 	c_program_text= """
 		fn Foo( [ f64, 2] mut arr )
 		{
@@ -1350,7 +1350,7 @@ def UsingKeywordAsName_ForDisassemblyDeclaration_Test1():
 	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
 
 
-def UsingKeywordAsName_ForDisassemblyDeclaration_Test2():
+def UsingKeywordAsName_ForDecomposeDeclaration_Test2():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1363,7 +1363,7 @@ def UsingKeywordAsName_ForDisassemblyDeclaration_Test2():
 	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
 
 
-def UsingKeywordAsName_ForDisassemblyDeclaration_Test3():
+def UsingKeywordAsName_ForDecomposeDeclaration_Test3():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1376,7 +1376,7 @@ def UsingKeywordAsName_ForDisassemblyDeclaration_Test3():
 	assert( HasError( errors_list, "UsingKeywordAsName", 4 ) )
 
 
-def DisassemblyDeclarationReferenceLinking_Test0():
+def DecomposeDeclarationReferenceLinking_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -1392,7 +1392,7 @@ def DisassemblyDeclarationReferenceLinking_Test0():
 	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
-def DisassemblyDeclarationReferenceLinking_Test1():
+def DecomposeDeclarationReferenceLinking_Test1():
 	c_program_text= """
 		fn Foo()
 		{
@@ -1408,7 +1408,7 @@ def DisassemblyDeclarationReferenceLinking_Test1():
 	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
-def DisassemblyDeclarationReferenceLinking_Test2():
+def DecomposeDeclarationReferenceLinking_Test2():
 	c_program_text= """
 		fn Foo()
 		{
@@ -1425,7 +1425,7 @@ def DisassemblyDeclarationReferenceLinking_Test2():
 	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
 
 
-def DisassemblyDeclarationReferenceLinking_Test3():
+def DecomposeDeclarationReferenceLinking_Test3():
 	c_program_text= """
 		fn Foo()
 		{
@@ -1440,7 +1440,7 @@ def DisassemblyDeclarationReferenceLinking_Test3():
 	tests_lib.build_program( c_program_text )
 
 
-def DisassemblyDeclarationReferenceLinking_Test4():
+def DecomposeDeclarationReferenceLinking_Test4():
 	c_program_text= """
 		fn Foo()
 		{
@@ -1455,7 +1455,7 @@ def DisassemblyDeclarationReferenceLinking_Test4():
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
-def DisassemblyDeclarationReferenceLinking_Test5():
+def DecomposeDeclarationReferenceLinking_Test5():
 	c_program_text= """
 		fn Foo()
 		{
@@ -1471,7 +1471,7 @@ def DisassemblyDeclarationReferenceLinking_Test5():
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
-def DisassemblyDeclarationReferenceLinking_Test6():
+def DecomposeDeclarationReferenceLinking_Test6():
 	c_program_text= """
 		var [ [ char8, 2 ], 0 ] return_references[];
 		fn Foo( i32& a ) : i32& @(return_references)
@@ -1488,7 +1488,7 @@ def DisassemblyDeclarationReferenceLinking_Test6():
 	assert( HasError( errors_list, "ReturningUnallowedReference", 7 ) )
 
 
-def VariableInitializerIsNotConstantExpression_ForDisassemblyOperator_Test0():
+def VariableInitializerIsNotConstantExpression_ForDecomposeOperator_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -1501,7 +1501,7 @@ def VariableInitializerIsNotConstantExpression_ForDisassemblyOperator_Test0():
 	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 5 ) )
 
 
-def VariableInitializerIsNotConstantExpression_ForDisassemblyOperator_Test1():
+def VariableInitializerIsNotConstantExpression_ForDecomposeOperator_Test1():
 	c_program_text= """
 		fn Foo()
 		{
@@ -1516,7 +1516,7 @@ def VariableInitializerIsNotConstantExpression_ForDisassemblyOperator_Test1():
 	assert( HasError( errors_list, "VariableInitializerIsNotConstantExpression", 6 ) )
 
 
-def ConstexprValueResetForMutableVariableInDisassembly_Test0():
+def ConstexprValueResetForMutableVariableInDecompose_Test0():
 	c_program_text= """
 		fn Foo()
 		{

@@ -5445,7 +5445,7 @@ U_TEST( LambdaDestructor_Test11 )
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 9988, 767, -9988, -767 } ) );
 }
 
-U_TEST(DisassemblyDeclaration_Destruction_Test0)
+U_TEST(DecomposeDeclaration_Destruction_Test0)
 {
 	static const char c_program_text[]=
 	R"(
@@ -5479,7 +5479,7 @@ U_TEST(DisassemblyDeclaration_Destruction_Test0)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 67, 23,  777,  -23, -67 } ) );
 }
 
-U_TEST(DisassemblyDeclaration_Destruction_Test1)
+U_TEST(DecomposeDeclaration_Destruction_Test1)
 {
 	static const char c_program_text[]=
 	R"(
@@ -5515,7 +5515,7 @@ U_TEST(DisassemblyDeclaration_Destruction_Test1)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 376, 54, 11,  88888,  -11, -54, -376 } ) );
 }
 
-U_TEST(DisassemblyDeclaration_Destruction_Test2)
+U_TEST(DecomposeDeclaration_Destruction_Test2)
 {
 	static const char c_program_text[]=
 	R"(
@@ -5548,7 +5548,7 @@ U_TEST(DisassemblyDeclaration_Destruction_Test2)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 78, 12341,  33333,  -12341, -78, } ) );
 }
 
-U_TEST(DisassemblyDeclaration_Destruction_Test3)
+U_TEST(DecomposeDeclaration_Destruction_Test3)
 {
 	static const char c_program_text[]=
 	R"(
@@ -5564,7 +5564,7 @@ U_TEST(DisassemblyDeclaration_Destruction_Test3)
 		fn Foo()
 		{
 			// Construct 9752, then 64.
-			// Disassemble in reverse order.
+			// Decompose in reverse order.
 			auto { a : y, b : x } = T{ .x(9752), .y(64) };
 			DestructorCalled(11111);
 			// Destroy "b" containing value 9752.
@@ -5582,7 +5582,7 @@ U_TEST(DisassemblyDeclaration_Destruction_Test3)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 9752, 64,  11111,  -9752, -64, } ) );
 }
 
-U_TEST(DisassemblyDeclaration_Destruction_Test4)
+U_TEST(DecomposeDeclaration_Destruction_Test4)
 {
 	static const char c_program_text[]=
 	R"(
@@ -5615,7 +5615,7 @@ U_TEST(DisassemblyDeclaration_Destruction_Test4)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 767, 8712,  -8712,   99999,  -767, } ) );
 }
 
-U_TEST(DisassemblyDeclaration_Destruction_Test5)
+U_TEST(DecomposeDeclaration_Destruction_Test5)
 {
 	static const char c_program_text[]=
 	R"(
@@ -5648,7 +5648,7 @@ U_TEST(DisassemblyDeclaration_Destruction_Test5)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 889, 554,  -889,  4444,  -554, } ) );
 }
 
-U_TEST(DisassemblyDeclaration_Destruction_Test6)
+U_TEST(DecomposeDeclaration_Destruction_Test6)
 {
 	static const char c_program_text[]=
 	R"(
@@ -5681,7 +5681,7 @@ U_TEST(DisassemblyDeclaration_Destruction_Test6)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 65, 78,  -65, -78,  88888, } ) );
 }
 
-U_TEST(DisassemblyDeclaration_Destruction_Test7)
+U_TEST(DecomposeDeclaration_Destruction_Test7)
 {
 	static const char c_program_text[]=
 	R"(
@@ -5715,7 +5715,7 @@ U_TEST(DisassemblyDeclaration_Destruction_Test7)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 987, 654,  777777,  -654, -987 } ) );
 }
 
-U_TEST(DisassemblyDeclaration_Destruction_Test8)
+U_TEST(DecomposeDeclaration_Destruction_Test8)
 {
 	static const char c_program_text[]=
 	R"(

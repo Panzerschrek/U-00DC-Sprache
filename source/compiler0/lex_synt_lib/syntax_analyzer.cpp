@@ -219,8 +219,8 @@ private:
 	VariablesDeclaration ParseVariablesDeclaration();
 	VariablesDeclaration ParseThreadLocalVariablesDeclaration();
 	AutoVariableDeclaration ParseAutoVariableDeclaration();
-	DisassemblyDeclaration ParseDisassemblyDeclaration();
-	DisassemblyDeclarationComponent ParseDisassemblyDeclarationComponent();
+	DecomposeDeclaration ParseDecomposeDeclaration();
+	DecomposeDeclarationComponent ParseDecomposeDeclarationComponent();
 	AllocaDeclaration ParseAllocaDeclaration();
 
 	ReturnOperator ParseReturnOperator();
@@ -2417,16 +2417,16 @@ AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 	return result;
 }
 
-DisassemblyDeclaration SyntaxAnalyzer::ParseDisassemblyDeclaration()
+DecomposeDeclaration SyntaxAnalyzer::ParseDecomposeDeclaration()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ );
 	SrcLoc src_loc= it_->src_loc;
 	NextLexem();
 
 	U_ASSERT( it_->type == Lexem::Type::SquareBracketLeft || it_->type == Lexem::Type::BraceLeft );
-	DisassemblyDeclarationComponent root_component= ParseDisassemblyDeclarationComponent();
+	DecomposeDeclarationComponent root_component= ParseDecomposeDeclarationComponent();
 
-	DisassemblyDeclaration result( src_loc, std::move( root_component ) );
+	DecomposeDeclaration result( src_loc, std::move( root_component ) );
 
 	ExpectLexem( Lexem::Type::Assignment );
 
@@ -2436,11 +2436,11 @@ DisassemblyDeclaration SyntaxAnalyzer::ParseDisassemblyDeclaration()
 	return result;
 }
 
-DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationComponent()
+DecomposeDeclarationComponent SyntaxAnalyzer::ParseDecomposeDeclarationComponent()
 {
 	if( it_->type == Lexem::Type::SquareBracketLeft )
 	{
-		DisassemblyDeclarationSequenceComponent result( it_->src_loc );
+		DecomposeDeclarationSequenceComponent result( it_->src_loc );
 		NextLexem();
 		if( it_->type == Lexem::Type::SquareBracketRight )
 		{
@@ -2451,7 +2451,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 		{
 			while( NotEndOfFile() )
 			{
-				result.sub_components.push_back( ParseDisassemblyDeclarationComponent() );
+				result.sub_components.push_back( ParseDecomposeDeclarationComponent() );
 
 				if( it_->type == Lexem::Type::Comma )
 				{
@@ -2468,7 +2468,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 	}
 	else if( it_->type == Lexem::Type::BraceLeft )
 	{
-		DisassemblyDeclarationStructComponent result( it_->src_loc );
+		DecomposeDeclarationStructComponent result( it_->src_loc );
 		NextLexem();
 		if( it_->type == Lexem::Type::BraceRight )
 		{
@@ -2479,7 +2479,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 		{
 			while( NotEndOfFile() )
 			{
-				DisassemblyDeclarationComponent component= ParseDisassemblyDeclarationComponent();
+				DecomposeDeclarationComponent component= ParseDecomposeDeclarationComponent();
 
 				bool completion_requested= false;
 
@@ -2496,7 +2496,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 					}
 
 					result.entries.push_back(
-						DisassemblyDeclarationStructComponent::Entry
+						DecomposeDeclarationStructComponent::Entry
 						{
 							it_->src_loc,
 							it_->text,
@@ -2506,14 +2506,14 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 
 					NextLexem();
 				}
-				else if( const auto named_component= std::get_if<DisassemblyDeclarationNamedComponent>( &component ) )
+				else if( const auto named_component= std::get_if<DecomposeDeclarationNamedComponent>( &component ) )
 				{
 					// Short form - with field name equal to variable name.
 					SrcLoc src_loc= named_component->src_loc;
 					std::string name= named_component->name;
 
 					result.entries.push_back(
-						DisassemblyDeclarationStructComponent::Entry
+						DecomposeDeclarationStructComponent::Entry
 						{
 							std::move(src_loc),
 							std::move(name),
@@ -2562,7 +2562,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 		if( it_->type != Lexem::Type::Identifier )
 			PushErrorMessage();
 
-		DisassemblyDeclarationNamedComponent result( it_->src_loc );
+		DecomposeDeclarationNamedComponent result( it_->src_loc );
 		result.name= it_->text;
 		NextLexem();
 
@@ -2573,7 +2573,7 @@ DisassemblyDeclarationComponent SyntaxAnalyzer::ParseDisassemblyDeclarationCompo
 	else
 	{
 		PushErrorMessage();
-		return DisassemblyDeclarationNamedComponent( it_->src_loc );
+		return DecomposeDeclarationNamedComponent( it_->src_loc );
 	}
 }
 
@@ -2762,7 +2762,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 	{
 		const Lexem::Type l= std::next(it_)->type;
 		if( l == Lexem::Type::SquareBracketLeft || l == Lexem::Type::BraceLeft )
-			result.variable_declaration_part= ParseDisassemblyDeclaration();
+			result.variable_declaration_part= ParseDecomposeDeclaration();
 		else
 			result.variable_declaration_part= ParseAutoVariableDeclaration();
 	}
@@ -3227,7 +3227,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 		{
 			const Lexem::Type l= std::next(it_)->type;
 			if( l == Lexem::Type::SquareBracketLeft || l == Lexem::Type::BraceLeft )
-				result_builder.Append( ParseDisassemblyDeclaration() );
+				result_builder.Append( ParseDecomposeDeclaration() );
 			else
 				result_builder.Append( ParseAutoVariableDeclaration() );
 		}

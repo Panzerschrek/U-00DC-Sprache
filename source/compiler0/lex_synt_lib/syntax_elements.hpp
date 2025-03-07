@@ -98,7 +98,7 @@ struct Block;
 struct ScopeBlock;
 struct VariablesDeclaration;
 struct AutoVariableDeclaration;
-struct DisassemblyDeclaration;
+struct DecomposeDeclaration;
 struct AllocaDeclaration;
 struct ReturnOperator;
 struct YieldOperator;
@@ -252,7 +252,7 @@ using BlockElementsList= VariantLinkedList<
 	ScopeBlock,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
-	DisassemblyDeclaration,
+	DecomposeDeclaration,
 	AllocaDeclaration,
 	ReturnOperator,
 	YieldOperator,
@@ -970,19 +970,19 @@ struct AutoVariableDeclaration
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
 
-struct DisassemblyDeclarationNamedComponent;
-struct DisassemblyDeclarationSequenceComponent;
-struct DisassemblyDeclarationStructComponent;
+struct DecomposeDeclarationNamedComponent;
+struct DecomposeDeclarationSequenceComponent;
+struct DecomposeDeclarationStructComponent;
 
-using DisassemblyDeclarationComponent=
+using DecomposeDeclarationComponent=
 	std::variant<
-		DisassemblyDeclarationNamedComponent,
-		DisassemblyDeclarationSequenceComponent,
-		DisassemblyDeclarationStructComponent >;
+		DecomposeDeclarationNamedComponent,
+		DecomposeDeclarationSequenceComponent,
+		DecomposeDeclarationStructComponent >;
 
-struct DisassemblyDeclarationNamedComponent
+struct DecomposeDeclarationNamedComponent
 {
-	explicit DisassemblyDeclarationNamedComponent( const SrcLoc& src_loc )
+	explicit DecomposeDeclarationNamedComponent( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
@@ -990,41 +990,41 @@ struct DisassemblyDeclarationNamedComponent
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 };
 
-struct DisassemblyDeclarationSequenceComponent
+struct DecomposeDeclarationSequenceComponent
 {
-	explicit DisassemblyDeclarationSequenceComponent( const SrcLoc& src_loc )
+	explicit DecomposeDeclarationSequenceComponent( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	std::vector<DisassemblyDeclarationComponent> sub_components;
+	std::vector<DecomposeDeclarationComponent> sub_components;
 };
 
-struct DisassemblyDeclarationStructComponent
+struct DecomposeDeclarationStructComponent
 {
 	struct Entry;
 
-	explicit DisassemblyDeclarationStructComponent( const SrcLoc& src_loc )
+	explicit DecomposeDeclarationStructComponent( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::vector<Entry> entries;
 };
 
-struct DisassemblyDeclarationStructComponent::Entry
+struct DecomposeDeclarationStructComponent::Entry
 {
 	SrcLoc src_loc;
 	std::string name;
-	DisassemblyDeclarationComponent component;
+	DecomposeDeclarationComponent component;
 	bool completion_requested= false;
 };
 
-struct DisassemblyDeclaration
+struct DecomposeDeclaration
 {
-	explicit DisassemblyDeclaration( const SrcLoc& src_loc, DisassemblyDeclarationComponent in_root_component )
+	explicit DecomposeDeclaration( const SrcLoc& src_loc, DecomposeDeclarationComponent in_root_component )
 		: src_loc(src_loc), root_component(std::move(in_root_component)) {}
 
 	SrcLoc src_loc;
-	DisassemblyDeclarationComponent root_component;
+	DecomposeDeclarationComponent root_component;
 	Expression initializer_expression;
 };
 
@@ -1106,7 +1106,7 @@ struct CStyleForOperator
 			EmptyVariant,
 			VariablesDeclaration,
 			AutoVariableDeclaration,
-			DisassemblyDeclaration >;
+			DecomposeDeclaration >;
 
 	explicit CStyleForOperator( const SrcLoc& src_loc )
 		: src_loc(src_loc), block(src_loc) {}
