@@ -39,9 +39,9 @@ public:
 			move_into_uninitialized( impl, Impl( move(func) ) );
 
 			// Create system thread.
-			auto res= thread_impl::create_and_start_thread( thread_function, ptr_cast_to_byte8(impl_) );
-			impl.thread_handle= res[0];
-			impl.thread_id= res[1];
+			auto [ handle, id ] = thread_impl::create_and_start_thread( thread_function, ptr_cast_to_byte8(impl_) );
+			impl.thread_handle= handle;
+			impl.thread_id= id;
 		}
 	}
 

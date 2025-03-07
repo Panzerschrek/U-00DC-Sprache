@@ -982,6 +982,7 @@ private:
 		ClassTypePtr& class_type_ptr,
 		FunctionContext &mut function_context );
 
+	// Returns corrected this + LLVM value to call.
 	fn TryFetchVirtualFunction(
 		mut this,
 		VariablePtr& this_ptr,

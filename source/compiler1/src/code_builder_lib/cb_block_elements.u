@@ -3372,7 +3372,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		auto operator= ( delta == 1 ? OverloadedOperator::Increment : OverloadedOperator::Decrement );
 		if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 		{
-			auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
+			auto [ this_variable, llvm_value ]= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
 
 			if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 			{
@@ -3387,9 +3387,9 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 			DoCallFunction(
 				names_scope,
 				function_context,
-				fetch_result[0],
+				this_variable,
 				overloaded_operator.t,
-				fetch_result[1],
+				llvm_value,
 				false, // non-constexpr call.
 				ust::empty_range,
 				src_loc,
