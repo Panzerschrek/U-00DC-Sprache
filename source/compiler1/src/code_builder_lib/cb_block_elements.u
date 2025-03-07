@@ -3608,6 +3608,31 @@ fn CodeBuilder::BuildDisassemblyDeclarationComponentImpl(
 			REPORT_ERROR( DisassemblySequenceElementCountMismatch, names_scope, component.src_loc, tuple_type.element_types.size(), component.sub_components.size() )
 			return;
 		}
+
+		for( auto mut i= 0s; i < component.sub_components.size(); ++i )
+		{
+			var VariablePtr element_variable=
+				Variable
+				{
+					.t= tuple_type.element_types[i],
+					.value_type= ValueType::Value,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateTupleElementGEP( function_context, tuple_type, variable_lite.llvm_value, u32(i) ),
+					.constexpr_value=
+						( variable_lite.constexpr_value == LLVMValueRef::Null
+							? LLVMValueRef::Null
+							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, u32(i) ) ) ),
+					.name= ust::concat( variable.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
+					.src_loc= component.src_loc,
+				}.CreatePtr();
+
+			function_context.references_graph.AddNode( element_variable );
+			function_context.references_graph.TryAddInnerLinksForTupleElement( variable, element_variable, i, names_scope, component.src_loc );
+
+			BuildDisassemblyDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
+
+			function_context.references_graph.RemoveNode( element_variable );
+		}
 	}
 	else
 	{
