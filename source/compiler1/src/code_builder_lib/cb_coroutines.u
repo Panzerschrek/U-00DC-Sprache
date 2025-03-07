@@ -202,6 +202,7 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 				.iter()
 				.map( lambda( InnerReferenceKind k ) : InnerReference { return InnerReference{ .kind= k }; } )
 				.collect</ ust::vector />(),
+			.kind= ClassType::Kind::NonPolymorph, // Mark coroutine type as non-struct, to avoid usages it as struct ({} initializer, disassembly).
 			.generated_class_data( coroutine_type_description ),
 		} );
 
