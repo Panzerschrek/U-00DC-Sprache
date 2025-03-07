@@ -1101,7 +1101,7 @@ struct CStyleForOperator
 		IncrementOperator,
 		DecrementOperator>;
 
-	using DisassemblyDeclaration=
+	using VariableDeclarationPart=
 		std::variant<
 			EmptyVariant,
 			VariablesDeclaration,
@@ -1113,7 +1113,7 @@ struct CStyleForOperator
 
 	SrcLoc src_loc;
 
-	DisassemblyDeclaration variable_declaration_part;
+	VariableDeclarationPart variable_declaration_part;
 	Expression loop_condition;
 	IterationPartElementsList iteration_part_elements;
 	std::optional<Label> label;
