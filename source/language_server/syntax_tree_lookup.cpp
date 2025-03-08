@@ -473,6 +473,42 @@ void FindImpl( const Synt::AutoVariableDeclaration& auto_variable_declaration )
 	FindImpl( auto_variable_declaration.initializer_expression );
 }
 
+void FindImpl( const Synt::DecomposeDeclaration& decompose_declaration )
+{
+	FindImpl( decompose_declaration.root_component );
+	FindImpl( decompose_declaration.initializer_expression );
+}
+
+void FindImpl( const Synt::DecomposeDeclarationComponent& component )
+{
+	FindImplVariant( component );
+}
+
+void FindImpl( const Synt::DecomposeDeclarationNamedComponent& component )
+{
+	U_UNUSED( component );
+}
+
+void FindImpl( const Synt::DecomposeDeclarationSequenceComponent& component )
+{
+	for( const auto& c : component.sub_components )
+		FindImpl( c );
+}
+
+void FindImpl( const Synt::DecomposeDeclarationStructComponent& component )
+{
+	for( const auto& entry : component.entries )
+	{
+		FindImpl( entry.component );
+
+		if( entry.src_loc.GetLine() == line_ && entry.src_loc.GetColumn() == column_ )
+		{
+			U_ASSERT( global_item_ != std::nullopt );
+			result_= SyntaxTreeLookupResult{ prefix_, &entry, *global_item_ };
+		}
+	}
+}
+
 void FindImpl( const Synt::AllocaDeclaration& alloca_declaration )
 {
 	FindImpl( alloca_declaration.type );
@@ -639,8 +675,7 @@ void FindImpl( const Synt::RangeForOperator& range_for_operator )
 
 void FindImpl( const Synt::CStyleForOperator& c_style_for_operator )
 {
-	if( c_style_for_operator.variable_declaration_part != nullptr )
-		FindImplVariant( *c_style_for_operator.variable_declaration_part );
+	FindImplVariant( c_style_for_operator.variable_declaration_part );
 
 	FindImpl( c_style_for_operator.loop_condition );
 

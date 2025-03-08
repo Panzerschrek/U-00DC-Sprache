@@ -45,6 +45,16 @@ pretty_main
 	assert( custom_person.age == 65u8 );
 	assert( custom_person.sex == Sex::Male );
 
+	{
+		var Vec2 mut vv{ .x= 4.1f, .y= -77.5f };
+
+		// It's possible to decompose a struct value into separate variables.
+		auto { x, y_decomposed : y } = move(vv);
+
+		assert( x == 4.1f );
+		assert( y_decomposed == -77.5f );
+	}
+
 	return 0;
 }
 

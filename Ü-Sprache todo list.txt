@@ -4,7 +4,6 @@ Delete the features from the list as soon as they are implemented.
 
 General:
 *) build-in "for" for array types.
-*) Disassembly operator - declare variables with initializer as members of value of composite type.
 *) More float types ( 16 bit, 128 bit )
 *) More integer types ( 256 bit, 512 bit )
 *) Constructor initializer for constexpr structs
@@ -42,6 +41,7 @@ General:
 *) Operators to get current file/line/column - in order to use them in macros, like in "assert"
 *) Support unit-testing - add function-like unit tests global objects, which are compiled if special compiler flag
 	is provided, support building and running such unit-tests in the build system
+*) Allow variables decomposition in constructions "with" and "if_coro_advance"
 
 References:
 *) Support second order inner references for coroutine types

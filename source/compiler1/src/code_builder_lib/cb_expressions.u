@@ -4006,7 +4006,7 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 
 	if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 	{
-		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
+		auto [ this_variable, llvm_value ] = TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
 
 		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		{
@@ -4021,9 +4021,9 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 		return DoCallFunction(
 			names_scope,
 			function_context,
-			fetch_result[0],
+			this_variable,
 			overloaded_operator.t,
-			fetch_result[1],
+			llvm_value,
 			overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
 			ust::empty_range,
 			src_loc,
@@ -4071,7 +4071,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 
 	if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 	{
-		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
+		auto [ this_variable, llvm_value ]= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
 
 		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		{
@@ -4086,9 +4086,9 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 		return DoCallFunction(
 			names_scope,
 			function_context,
-			fetch_result[0],
+			this_variable,
 			overloaded_operator.t,
-			fetch_result[1],
+			llvm_value,
 			overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
 			synt_args,
 			src_loc,
@@ -4181,13 +4181,13 @@ fn CodeBuilder::CallFunctionsSet(
 
 	if( !this_.empty() )
 	{
-		auto fetch_res= TryFetchVirtualFunction( this_.try_to_non_nullable(), function_selected, names_scope, function_context, src_loc );
+		auto [ this_variable, llvm_value ]= TryFetchVirtualFunction( this_.try_to_non_nullable(), function_selected, names_scope, function_context, src_loc );
 		return DoCallFunction(
 			names_scope,
 			function_context,
-			fetch_res[0],
+			this_variable,
 			function_selected.t,
-			fetch_res[1],
+			llvm_value,
 			is_constexpr,
 			args,
 			src_loc,

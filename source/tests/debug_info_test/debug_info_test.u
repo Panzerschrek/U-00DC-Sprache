@@ -384,6 +384,25 @@ fn AllocaTest()
 	AllocaTestImpl( 16s * 1024s );
 }
 
+fn DecomposeDeclarationTest()
+{
+	{
+		var [ i32, 3 ] mut arr[ 66, 77, 88 ];
+		auto [ x, y, z ]= move(arr);
+		var tup[ f32, u32, bool ] mut t[ 0.45f, 6677u, false ];
+		auto [ a, mut b, c ]= move(t);
+		b= 0u;
+	}
+	{
+		var void some_void;
+		var S0 s0{ .x= 661215, .y= -6532.1f };
+		var StructWithRef mut struct_with_ref{ .v= some_void, .x= -5555, .s0= s0 };
+
+		auto { x, s0_ref : s0, some_void_copy : v } = move(struct_with_ref);
+		return;
+	}
+}
+
 fn nomangle main() : i32
 {
 	FundamentalTypesTest();
@@ -412,5 +431,6 @@ fn nomangle main() : i32
 	LambdasTest();
 	MixinsTest();
 	AllocaTest();
+	DecomposeDeclarationTest();
 	return 0;
 }

@@ -969,6 +969,7 @@ private:
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ScopeBlock& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::VariablesDeclaration& variables_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AutoVariableDeclaration& auto_variable_declaration );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::DecomposeDeclaration& decompose_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::AllocaDeclaration& alloca_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ReturnOperator& return_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::YieldOperator& yield_operator );
@@ -1017,6 +1018,30 @@ private:
 		bool positive, // true - increment, false - decrement
 		NamesScope& names_scope,
 		FunctionContext& function_context );
+
+	void BuildDecomposeDeclarationComponent(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const Synt::DecomposeDeclarationComponent& component );
+
+	void BuildDecomposeDeclarationComponentImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const Synt::DecomposeDeclarationNamedComponent& component );
+
+	void BuildDecomposeDeclarationComponentImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const Synt::DecomposeDeclarationSequenceComponent& component );
+
+	void BuildDecomposeDeclarationComponentImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const Synt::DecomposeDeclarationStructComponent& component );
 
 	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names_scope, FunctionContext& function_context );
 

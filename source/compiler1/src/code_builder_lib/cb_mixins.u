@@ -186,15 +186,15 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 		var SourceGraph& source_graph= source_graph_.try_deref();
 		var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
 
-		auto mut synt_result= Synt::ParseNamespaceElements(
+		auto { mut namespace_elements, errors } = Synt::ParseNamespaceElements(
 			lexems.try_deref(),
 			source_graph_node.synt_result.macros, // Macros should not be modified.
 			source_graph.macro_expansion_contexts,
 			source_graph_node.contents_hash );
 
-		if( !synt_result.errors.empty() )
+		if( !errors.empty() )
 		{
-			foreach( & error : synt_result.errors )
+			foreach( & error : errors )
 			{
 				REPORT_ERROR( MixinSyntaxError, names_scope_ptr, error.src_loc, error.text )
 			}
@@ -202,10 +202,10 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 			return;
 		}
 
-		NamesScopeFill( names_scope_ptr, synt_result.namespace_elements );
-		NamesScopeFillOutOfLineElements( names_scope_ptr, synt_result.namespace_elements );
+		NamesScopeFill( names_scope_ptr, namespace_elements );
+		NamesScopeFillOutOfLineElements( names_scope_ptr, namespace_elements );
 
-		namespace_mixin_expansions_.insert( key, ust::make_shared_ptr_final( take(synt_result.namespace_elements) ) );
+		namespace_mixin_expansions_.insert( key, ust::make_shared_ptr_final( move(namespace_elements) ) );
 	}
 }
 
@@ -247,15 +247,15 @@ fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut
 		var SourceGraph& source_graph= source_graph_.try_deref();
 		var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( mixin_.src_loc.GetFileIndex() ) ];
 
-		auto mut synt_result= Synt::ParseClassElements(
+		auto { mut class_elements, errors } = Synt::ParseClassElements(
 			lexems.try_deref(),
 			source_graph_node.synt_result.macros, // Macros should not be modified.
 			source_graph.macro_expansion_contexts,
 			source_graph_node.contents_hash );
 
-		if( !synt_result.errors.empty() )
+		if( !errors.empty() )
 		{
-			foreach( & error : synt_result.errors )
+			foreach( & error : errors )
 			{
 				REPORT_ERROR( MixinSyntaxError, class_members, error.src_loc, error.text )
 			}
@@ -263,9 +263,9 @@ fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut
 			return;
 		}
 
-		NamesScopeFillClass( class_members, synt_result.class_elements, class_type, mixin_.visibility );
+		NamesScopeFillClass( class_members, class_elements, class_type, mixin_.visibility );
 
-		class_mixin_expansions_.insert( key, ust::make_shared_ptr_final( take(synt_result.class_elements) ) );
+		class_mixin_expansions_.insert( key, ust::make_shared_ptr_final( move(class_elements) ) );
 	}
 }
 
@@ -302,15 +302,15 @@ fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, Func
 	var SourceGraph& source_graph= source_graph_.try_deref();
 	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( temp_mixin.src_loc.GetFileIndex() ) ];
 
-	auto mut synt_result= Synt::ParseBlockElements(
+	auto { mut block_elements, errors } = Synt::ParseBlockElements(
 		lexems.try_deref(),
 		source_graph_node.synt_result.macros, // Macros should not be modified.
 		source_graph.macro_expansion_contexts,
 		source_graph_node.contents_hash );
 
-	if( !synt_result.errors.empty() )
+	if( !errors.empty() )
 	{
-		foreach( & error : synt_result.errors )
+		foreach( & error : errors )
 		{
 			REPORT_ERROR( MixinSyntaxError, names_scope_ptr, error.src_loc, error.text )
 		}
@@ -319,7 +319,7 @@ fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, Func
 	}
 
 	// Cache the syntax element.
-	auto result_ptr= ust::make_shared_ptr_final( take( synt_result.block_elements ) );
+	auto result_ptr= ust::make_shared_ptr_final( move( block_elements ) );
 	block_mixin_expansions_.insert( key, result_ptr );
 	return result_ptr;
 }
@@ -356,15 +356,15 @@ fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, F
 	var SourceGraph& source_graph= source_graph_.try_deref();
 	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( temp_mixin.src_loc.GetFileIndex() ) ];
 
-	auto mut synt_result= Synt::ParseTypeName(
+	auto { mut type_name, errors } = Synt::ParseTypeName(
 		lexems.try_deref(),
 		source_graph_node.synt_result.macros, // Macros should not be modified.
 		source_graph.macro_expansion_contexts,
 		source_graph_node.contents_hash );
 
-	if( !synt_result.errors.empty() )
+	if( !errors.empty() )
 	{
-		foreach( & error : synt_result.errors )
+		foreach( & error : errors )
 		{
 			REPORT_ERROR( MixinSyntaxError, names_scope_ptr, error.src_loc, error.text )
 		}
@@ -373,7 +373,7 @@ fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, F
 	}
 
 	// Cache the syntax element.
-	auto result_ptr= ust::make_shared_ptr_final( take( synt_result.type_name ) );
+	auto result_ptr= ust::make_shared_ptr_final( move( type_name ) );
 	type_name_mixin_expansions_.insert( key, result_ptr );
 	return result_ptr;
 }
@@ -410,15 +410,15 @@ fn CodeBuilder::ExpandExpressionMixin( mut this, NamesScopePtr& names_scope_ptr,
 	var SourceGraph& source_graph= source_graph_.try_deref();
 	var SourceGraph::Node& source_graph_node= source_graph.nodes[ size_type( temp_mixin.src_loc.GetFileIndex() ) ];
 
-	auto mut synt_result= Synt::ParseExpression(
+	auto { mut expression, errors } = Synt::ParseExpression(
 		lexems.try_deref(),
 		source_graph_node.synt_result.macros, // Macros should not be modified.
 		source_graph.macro_expansion_contexts,
 		source_graph_node.contents_hash );
 
-	if( !synt_result.errors.empty() )
+	if( !errors.empty() )
 	{
-		foreach( & error : synt_result.errors )
+		foreach( & error : errors )
 		{
 			REPORT_ERROR( MixinSyntaxError, names_scope_ptr, error.src_loc, error.text )
 		}
@@ -427,7 +427,7 @@ fn CodeBuilder::ExpandExpressionMixin( mut this, NamesScopePtr& names_scope_ptr,
 	}
 
 	// Cache syntax elements.
-	auto result_ptr= ust::make_shared_ptr_final( take( synt_result.expression ) );
+	auto result_ptr= ust::make_shared_ptr_final( move( expression ) );
 	expression_mixin_expansions_.insert( key, result_ptr );
 	return result_ptr;
 }
@@ -497,7 +497,7 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 
 fn CodeBuilder::PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, SrcLoc& src_loc, ust::string_view8 mixin_text ) : ust::optional</Lexems/>
 {
-	auto mut lex_result= LexicalAnalysis( mixin_text );
+	auto { mut lexems, errors }= LexicalAnalysis( mixin_text );
 
 	// Create new macro expansion context for mixin expansion.
 	var u32 mut macro_expansion_index(0);
@@ -520,7 +520,7 @@ fn CodeBuilder::PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, Sr
 	// Numerate lines in mixin lexems starting with line of the mixin expansion point.
 	var u32 line_shift= src_loc.GetLine() - 1u;
 
-	foreach( &mut lexem : lex_result.lexems )
+	foreach( &mut lexem : lexems )
 	{
 		lexem.src_loc.SetFileIndex( file_index );
 		lexem.src_loc.SetMacroExpansionIndex( macro_expansion_index );
@@ -528,9 +528,9 @@ fn CodeBuilder::PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, Sr
 		lexem.src_loc.SetLine( line_corrected );
 	}
 
-	if( !lex_result.errors.empty() )
+	if( !errors.empty() )
 	{
-		foreach( & error : lex_result.errors )
+		foreach( & error : errors )
 		{
 			var SrcLoc mut src_loc_corrected= error.src_loc;
 			src_loc_corrected.SetFileIndex( file_index );
@@ -544,7 +544,7 @@ fn CodeBuilder::PrepareMixinLexems( mut this, NamesScopePtr& names_scope_ptr, Sr
 		return ust::null_optional;
 	}
 
-	return take(lex_result.lexems);
+	return lexems;
 }
 
 var u32 g_max_mixins_depth(4);

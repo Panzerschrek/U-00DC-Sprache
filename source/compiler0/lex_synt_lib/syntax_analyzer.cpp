@@ -219,6 +219,8 @@ private:
 	VariablesDeclaration ParseVariablesDeclaration();
 	VariablesDeclaration ParseThreadLocalVariablesDeclaration();
 	AutoVariableDeclaration ParseAutoVariableDeclaration();
+	DecomposeDeclaration ParseDecomposeDeclaration();
+	DecomposeDeclarationComponent ParseDecomposeDeclarationComponent();
 	AllocaDeclaration ParseAllocaDeclaration();
 
 	ReturnOperator ParseReturnOperator();
@@ -2415,6 +2417,166 @@ AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 	return result;
 }
 
+DecomposeDeclaration SyntaxAnalyzer::ParseDecomposeDeclaration()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ );
+	SrcLoc src_loc= it_->src_loc;
+	NextLexem();
+
+	U_ASSERT( it_->type == Lexem::Type::SquareBracketLeft || it_->type == Lexem::Type::BraceLeft );
+	DecomposeDeclarationComponent root_component= ParseDecomposeDeclarationComponent();
+
+	DecomposeDeclaration result( src_loc, std::move( root_component ) );
+
+	ExpectLexem( Lexem::Type::Assignment );
+
+	result.initializer_expression= ParseExpression();
+	ExpectSemicolon();
+
+	return result;
+}
+
+DecomposeDeclarationComponent SyntaxAnalyzer::ParseDecomposeDeclarationComponent()
+{
+	if( it_->type == Lexem::Type::SquareBracketLeft )
+	{
+		DecomposeDeclarationSequenceComponent result( it_->src_loc );
+		NextLexem();
+		if( it_->type == Lexem::Type::SquareBracketRight )
+		{
+			// Empty list.
+			NextLexem();
+		}
+		else
+		{
+			while( NotEndOfFile() )
+			{
+				result.sub_components.push_back( ParseDecomposeDeclarationComponent() );
+
+				if( it_->type == Lexem::Type::Comma )
+				{
+					NextLexem();
+					continue;
+				}
+				else
+					break;
+			}
+			ExpectLexem( Lexem::Type::SquareBracketRight );
+		}
+
+		return result;
+	}
+	else if( it_->type == Lexem::Type::BraceLeft )
+	{
+		DecomposeDeclarationStructComponent result( it_->src_loc );
+		NextLexem();
+		if( it_->type == Lexem::Type::BraceRight )
+		{
+			// Empty list.
+			NextLexem();
+		}
+		else
+		{
+			while( NotEndOfFile() )
+			{
+				DecomposeDeclarationComponent component= ParseDecomposeDeclarationComponent();
+
+				bool completion_requested= false;
+
+				if( it_->type == Lexem::Type::Colon )
+				{
+					NextLexem();
+
+					if( it_->type == Lexem::Type::CompletionIdentifier )
+						completion_requested= true;
+					else if( it_->type != Lexem::Type::Identifier )
+					{
+						PushErrorMessage();
+						break;
+					}
+
+					result.entries.push_back(
+						DecomposeDeclarationStructComponent::Entry
+						{
+							it_->src_loc,
+							it_->text,
+							std::move(component),
+							completion_requested,
+						} );
+
+					NextLexem();
+				}
+				else if( const auto named_component= std::get_if<DecomposeDeclarationNamedComponent>( &component ) )
+				{
+					// Short form - with field name equal to variable name.
+					SrcLoc src_loc= named_component->src_loc;
+					std::string name= named_component->name;
+
+					result.entries.push_back(
+						DecomposeDeclarationStructComponent::Entry
+						{
+							std::move(src_loc),
+							std::move(name),
+							std::move(component),
+							completion_requested,
+						} );
+				}
+				else
+				{
+					PushErrorMessage();
+					break;
+				}
+
+				if( it_->type == Lexem::Type::Comma )
+				{
+					NextLexem();
+					continue;
+				}
+				else
+					break;
+			}
+			ExpectLexem( Lexem::Type::BraceRight );
+		}
+
+		return result;
+	}
+	else if( it_->type == Lexem::Type::Identifier )
+	{
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+		if( it_->text == Keywords::mut_ )
+		{
+			mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+		else if( it_->text == Keywords::imut_ )
+		{
+			mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
+		else if( it_->text == Keywords::constexpr_ )
+		{
+			mutability_modifier= MutabilityModifier::Constexpr;
+			NextLexem();
+		}
+
+		if( it_->type != Lexem::Type::Identifier )
+			PushErrorMessage();
+
+		DecomposeDeclarationNamedComponent result( it_->src_loc );
+		result.name= it_->text;
+		NextLexem();
+
+		result.mutability_modifier= mutability_modifier;
+
+		return result;
+	}
+	else
+	{
+		PushErrorMessage();
+		return DecomposeDeclarationNamedComponent( it_->src_loc );
+	}
+}
+
 AllocaDeclaration SyntaxAnalyzer::ParseAllocaDeclaration()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::alloca_ );
@@ -2594,13 +2756,15 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 	{
-		result.variable_declaration_part=
-			std::make_unique< std::variant<VariablesDeclaration, AutoVariableDeclaration> >( ParseVariablesDeclaration() );
+		result.variable_declaration_part= ParseVariablesDeclaration();
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 	{
-		result.variable_declaration_part=
-			std::make_unique< std::variant<VariablesDeclaration, AutoVariableDeclaration> >( ParseAutoVariableDeclaration() );
+		const Lexem::Type l= std::next(it_)->type;
+		if( l == Lexem::Type::SquareBracketLeft || l == Lexem::Type::BraceLeft )
+			result.variable_declaration_part= ParseDecomposeDeclaration();
+		else
+			result.variable_declaration_part= ParseAutoVariableDeclaration();
 	}
 	else if( it_->type == Lexem::Type::Semicolon )
 		NextLexem();
@@ -3060,7 +3224,13 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 			result_builder.Append( ParseVariablesDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
-			result_builder.Append( ParseAutoVariableDeclaration() );
+		{
+			const Lexem::Type l= std::next(it_)->type;
+			if( l == Lexem::Type::SquareBracketLeft || l == Lexem::Type::BraceLeft )
+				result_builder.Append( ParseDecomposeDeclaration() );
+			else
+				result_builder.Append( ParseAutoVariableDeclaration() );
+		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::alloca_ )
 			result_builder.Append( ParseAllocaDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ )

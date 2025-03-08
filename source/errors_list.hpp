@@ -287,3 +287,13 @@ PROCESS_ERROR( ExternalFunctionTypeMismatch, "External function type doesn't mat
 PROCESS_ERROR( AccessingExternalVariableInGlobalContext, "Accessing external variable in global context - it's not allowed." )
 PROCESS_ERROR( AccessingExternalVariableOutsideUnsafeBlock, "Accessing external variable outside unsafe block or unsafe expression." )
 PROCESS_ERROR( ExternalVariableTypeMismatch, "External variable type doesn't match its previous usage." )
+
+// Decompose declaration.
+PROCESS_ERROR( ImmediateValueExpectedInDecomposeDeclaration, "Expected immediate value in decompose declaration." )
+PROCESS_ERROR( DecomposingClassValue, "Decomposing values of class types isn't allowed, only structs support decomposing." )
+PROCESS_ERROR( DecomposingStructWithExplicitDestructor, "Decomposing value of struct {0}, which has explicit destructor." )
+PROCESS_ERROR( DecomposingTypeinfoStruct, "Decomposing value of typeinfo struct {0}, decomposing typeinfo values isn't allowed." )
+PROCESS_ERROR( DuplicatedFieldInDecomposeDeclaration, "Field {0} is duplicated within a decompose declaration." )
+PROCESS_ERROR( DecomposingNonFieldStructMember, "Struct member {0} is not a field." )
+PROCESS_ERROR( DecomposingReferenceField, "Decomposing reference field {0}." )
+PROCESS_ERROR( DecomposeSequenceElementCountMismatch, "Element count mismatch in sequence decompose declaration, expected {0}, got {1}." )

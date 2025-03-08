@@ -533,6 +533,25 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::DecomposeDeclaration& decompose_declaration )
+{
+	// Destruction frame for temporary variables of initializer expression.
+	const StackVariablesStorage temp_variables_storage( function_context );
+
+	const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( decompose_declaration.initializer_expression, names_scope, function_context );
+	if( initializer_experrsion->type == invalid_type_ )
+		return BlockBuildInfo(); // Some error was generated before.
+
+	BuildDecomposeDeclarationComponent( names_scope, function_context, initializer_experrsion, decompose_declaration.root_component );
+
+	CallDestructors( temp_variables_storage, names_scope, function_context, decompose_declaration.src_loc );
+
+	return BlockBuildInfo();
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::AllocaDeclaration& alloca_declaration )
 {
 	if( IsKeyword( alloca_declaration.name ) )
@@ -1199,14 +1218,27 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope loop_names_scope("", &names_scope);
 
 	// Variables declaration part.
-	if( c_style_for_operator.variable_declaration_part != nullptr )
-		std::visit(
-			[&]( const auto& t )
-			{
-				debug_info_builder_->SetCurrentLocation( t.src_loc, function_context );
-				BuildBlockElementImpl( loop_names_scope, function_context, t );
-			},
-			*c_style_for_operator.variable_declaration_part );
+	if( std::holds_alternative<Synt::EmptyVariant>( c_style_for_operator.variable_declaration_part ) )
+	{}
+	else if( const auto variables_declaration= std::get_if<Synt::VariablesDeclaration>( &c_style_for_operator.variable_declaration_part ) )
+	{
+		debug_info_builder_->SetCurrentLocation( variables_declaration->src_loc, function_context );
+		BuildBlockElementImpl( loop_names_scope, function_context, *variables_declaration );
+	}
+	else if( const auto auto_variable_declaration= std::get_if<Synt::AutoVariableDeclaration>( &c_style_for_operator.variable_declaration_part ) )
+	{
+		debug_info_builder_->SetCurrentLocation( auto_variable_declaration->src_loc, function_context );
+		BuildBlockElementImpl( loop_names_scope, function_context, *auto_variable_declaration );
+	}
+	else if( const auto decompose_declaration= std::get_if<Synt::DecomposeDeclaration>( &c_style_for_operator.variable_declaration_part ) )
+	{
+		debug_info_builder_->SetCurrentLocation( decompose_declaration->src_loc, function_context );
+		BuildBlockElementImpl( loop_names_scope, function_context, *decompose_declaration );
+	}
+	else
+	{
+		U_ASSERT(false); // Unhandled kind.
+	}
 
 	const ReferencesGraph variables_state_before_loop= function_context.variables_state;
 
@@ -3178,6 +3210,384 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	}
 
 	CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
+}
+
+void CodeBuilder::BuildDecomposeDeclarationComponent(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const VariablePtr& variable,
+	const Synt::DecomposeDeclarationComponent& component )
+{
+	return
+		std::visit(
+			[&]( const auto& el )
+			{
+				return BuildDecomposeDeclarationComponentImpl( names_scope, function_context, variable, el );
+			},
+			component );
+}
+
+void CodeBuilder::BuildDecomposeDeclarationComponentImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const VariablePtr& initializer_variable,
+	const Synt::DecomposeDeclarationNamedComponent& component )
+{
+	if( IsKeyword( component.name ) )
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), component.src_loc );
+
+	if( initializer_variable->value_type != ValueType::Value )
+	{
+		// Allow decomposing only immediate values.
+		REPORT_ERROR( ImmediateValueExpectedInDecomposeDeclaration, names_scope.GetErrors(), component.src_loc );
+		return;
+	}
+
+	if( component.mutability_modifier == MutabilityModifier::Constexpr && initializer_variable->constexpr_value == nullptr )
+		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), component.src_loc );
+
+	// Expect that target variables frame is one below last (temporary).
+	StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2 ];
+
+	if( !initializer_variable->type.CanBeConstexpr() )
+		function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+
+	const VariableMutPtr variable=
+		Variable::Create(
+			initializer_variable->type,
+			ValueType::Value,
+			Variable::Location::Pointer,
+			component.name + " variable itself",
+			function_context.alloca_ir_builder.CreateAlloca( initializer_variable->type.GetLLVMType(), nullptr, component.name ),
+			component.mutability_modifier == MutabilityModifier::Mutable ? nullptr : initializer_variable->constexpr_value );
+
+	CreateLifetimeStart( function_context, variable->llvm_value );
+	debug_info_builder_->CreateVariableInfo( *variable, component.name, component.src_loc, function_context );
+
+	function_context.variables_state.AddNode( variable );
+	prev_variables_storage.RegisterVariable( variable );
+	function_context.variables_state.TryAddInnerLinks( initializer_variable, variable, names_scope.GetErrors(), component.src_loc );
+
+	function_context.variables_state.MoveNode( initializer_variable );
+
+	if( initializer_variable->location == Variable::Location::LLVMRegister )
+		CreateTypedStore( function_context, initializer_variable->type, initializer_variable->llvm_value, variable->llvm_value );
+	else
+	{
+		CopyBytes( variable->llvm_value, initializer_variable->llvm_value, variable->type, function_context );
+		CreateLifetimeEnd( function_context, initializer_variable->llvm_value );
+	}
+
+	const VariableMutPtr variable_reference=
+		Variable::Create(
+			variable->type,
+			component.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			component.name,
+			variable->llvm_value,
+			variable->constexpr_value );
+
+	function_context.variables_state.AddNode( variable_reference );
+	prev_variables_storage.RegisterVariable( variable_reference );
+	function_context.variables_state.AddLink( variable, variable_reference );
+	function_context.variables_state.TryAddInnerLinks( variable, variable_reference, names_scope.GetErrors(), component.src_loc );
+
+	const bool force_referenced= VariableExistenceMayHaveSideEffects( variable_reference->type );
+
+	const NamesScopeValue* const inserted_value=
+		names_scope.AddName( component.name, NamesScopeValue( variable_reference, component.src_loc, force_referenced ) );
+	if( inserted_value == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), component.src_loc, component.name );
+}
+
+void CodeBuilder::BuildDecomposeDeclarationComponentImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const VariablePtr& variable,
+	const Synt::DecomposeDeclarationSequenceComponent& component )
+{
+	if( variable->value_type != ValueType::Value )
+	{
+		// Allow decomposing only immediate values.
+		REPORT_ERROR( ImmediateValueExpectedInDecomposeDeclaration, names_scope.GetErrors(), component.src_loc );
+		return;
+	}
+
+	if( const auto array_type= variable->type.GetArrayType() )
+	{
+		if( array_type->element_count != component.sub_components.size() )
+		{
+			REPORT_ERROR( DecomposeSequenceElementCountMismatch, names_scope.GetErrors(), component.src_loc, array_type->element_count, component.sub_components.size() );
+			return;
+		}
+
+		for( uint64_t i= 0; i < array_type->element_count; ++i )
+		{
+			const VariablePtr element_variable=
+				Variable::Create(
+					array_type->element_type,
+					ValueType::Value,
+					Variable::Location::Pointer,
+					variable->name + "[" + std::to_string(i) + "]",
+					CreateArrayElementGEP( function_context, *array_type, variable->llvm_value, i ),
+					variable->constexpr_value == nullptr ? nullptr : variable->constexpr_value->getAggregateElement( uint32_t(i) ) );
+
+			function_context.variables_state.AddNode( element_variable );
+			function_context.variables_state.TryAddInnerLinks( variable, element_variable, names_scope.GetErrors(), component.src_loc );
+
+			BuildDecomposeDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
+
+			function_context.variables_state.RemoveNode( element_variable );
+		}
+	}
+	else if( const auto tuple_type= variable->type.GetTupleType() )
+	{
+		if( tuple_type->element_types.size() != component.sub_components.size() )
+		{
+			REPORT_ERROR( DecomposeSequenceElementCountMismatch, names_scope.GetErrors(), component.src_loc, tuple_type->element_types.size(), component.sub_components.size() );
+			return;
+		}
+
+		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
+		{
+			const VariableMutPtr element_variable=
+				Variable::Create(
+					tuple_type->element_types[i],
+					ValueType::Value,
+					Variable::Location::Pointer,
+					variable->name + "[" + std::to_string(i) + "]",
+					CreateTupleElementGEP( function_context, *tuple_type, variable->llvm_value, i ),
+					variable->constexpr_value == nullptr ? nullptr : variable->constexpr_value->getAggregateElement( uint32_t(i) ) );
+
+			function_context.variables_state.AddNode( element_variable );
+			function_context.variables_state.TryAddInnerLinksForTupleElement( variable, element_variable, i, names_scope.GetErrors(), component.src_loc );
+
+			BuildDecomposeDeclarationComponent( names_scope, function_context, element_variable, component.sub_components[i] );
+
+			function_context.variables_state.RemoveNode( element_variable );
+		}
+	}
+	else
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), component.src_loc, variable->type );
+		return;
+	}
+
+	// Mark this variable as destroyed - to avoid calling destructs.
+	function_context.variables_state.MoveNode( variable );
+	CreateLifetimeEnd( function_context, variable->llvm_value );
+}
+
+void CodeBuilder::BuildDecomposeDeclarationComponentImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const VariablePtr& variable,
+	const Synt::DecomposeDeclarationStructComponent& component )
+{
+	if( variable->value_type != ValueType::Value )
+	{
+		// Allow decomposing only immediate values.
+		REPORT_ERROR( ImmediateValueExpectedInDecomposeDeclaration, names_scope.GetErrors(), component.src_loc );
+		return;
+	}
+
+	const Class* const class_type= variable->type.GetClassType();
+	if( class_type == nullptr )
+	{
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), component.src_loc, variable->type );
+		return;
+	}
+
+	if( class_type->kind != Class::Kind::Struct )
+	{
+		// Doesn't allow decomposing classes, sinse they may be polymorph or have private fields.
+		REPORT_ERROR( DecomposingClassValue, names_scope.GetErrors(), component.src_loc );
+		return;
+	}
+
+	if( const auto destructors= class_type->members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
+	{
+		if( const OverloadedFunctionsSetPtr functions_set= destructors->value.GetFunctionsSet() )
+		{
+			for( const FunctionVariable& function_variable : functions_set->functions )
+			{
+				if( !function_variable.is_generated )
+				{
+					// Doesn't allow decomposing structs with destructors, since such destructors may have side-effects, which we shouldn't skip by decomposing.
+					REPORT_ERROR( DecomposingStructWithExplicitDestructor, names_scope.GetErrors(), component.src_loc, variable->type );
+					return;
+				}
+			}
+		}
+	}
+
+	if( std::holds_alternative< TypeinfoClassDescription >( class_type->generated_class_data ) )
+	{
+		// Doesn't allow decomposing typeinfo structs, since some fields are generated on-fly.
+		// Generally it has no sense to decompose them.
+		REPORT_ERROR( DecomposingTypeinfoStruct, names_scope.GetErrors(), component.src_loc, variable->type );
+		return;
+	}
+
+	llvm::SmallVector<bool, 32> decomposed_fields;
+	decomposed_fields.resize( class_type->llvm_type->getNumElements(), false );
+
+	for( const Synt::DecomposeDeclarationStructComponent::Entry& entry : component.entries )
+	{
+		if( entry.completion_requested )
+			MemberAccessCompleteImpl( variable, entry.name );
+
+		const NamesScopeValue* const class_member= class_type->members->GetThisScopeValue( entry.name );
+		if( class_member == nullptr )
+		{
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), entry.src_loc, entry.name );
+			continue;
+		}
+		CollectDefinition( *class_member, entry.src_loc );
+
+		const ClassFieldPtr field= class_member->value.GetClassField();
+		if( field == nullptr )
+		{
+			REPORT_ERROR( DecomposingNonFieldStructMember, names_scope.GetErrors(), entry.src_loc, entry.name );
+			continue;
+		}
+
+		if( decomposed_fields[ field->index ] )
+		{
+			REPORT_ERROR( DuplicatedFieldInDecomposeDeclaration, names_scope.GetErrors(), entry.src_loc, entry.name );
+			continue;
+		}
+		decomposed_fields[ field->index ]= true;
+
+		llvm::Value* const field_address= CreateClassFieldGEP( function_context, *variable, field->index );
+
+		if( field->is_reference )
+		{
+			// Expect that target variables frame is one below last (temporary).
+			StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack[ function_context.stack_variables_stack.size() - 2 ];
+
+			const auto named_component= std::get_if<Synt::DecomposeDeclarationNamedComponent>( &entry.component );
+			if( named_component == nullptr )
+			{
+				// We can only bind a reference field to a name.
+				// Decomposing it further isn't possible.
+				REPORT_ERROR( DecomposingReferenceField, names_scope.GetErrors(), entry.src_loc, entry.name );
+				continue;
+			}
+
+			if( IsKeyword( named_component->name ) )
+				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), component.src_loc );
+
+			if( !field->is_mutable && named_component->mutability_modifier == MutabilityModifier::Mutable )
+			{
+				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), named_component->src_loc );
+				continue;
+			}
+
+			if( named_component->mutability_modifier == MutabilityModifier::Constexpr &&
+				variable->constexpr_value == nullptr )
+			{
+				REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), named_component->src_loc );
+				continue;
+			}
+
+			llvm::Constant* constexpr_value= nullptr;
+			if( variable->constexpr_value != nullptr && named_component->mutability_modifier != MutabilityModifier::Mutable )
+			{
+				// Constexpr reference fields should be "GlobalVariable" or сonstexpr GEP.
+				const auto element= variable->constexpr_value->getAggregateElement( field->index );
+
+				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
+					constexpr_value= global_variable->getInitializer();
+				else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
+				{
+					// TODO - what first operand is constant GEP too?
+					llvm::Constant* value= llvm::dyn_cast<llvm::GlobalVariable>(constant_expression->getOperand(0u))->getInitializer();
+
+					// Skip first zero index.
+					for( llvm::User::const_op_iterator op= std::next(std::next(constant_expression->op_begin())), op_end= constant_expression->op_end(); op != op_end; ++op )
+						value= value->getAggregateElement( llvm::dyn_cast<llvm::Constant>(op->get()) );
+					constexpr_value= value;
+				}
+				else U_ASSERT(false);
+			}
+
+			const VariablePtr result_reference=
+				Variable::Create(
+					field->type,
+					named_component->mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+					Variable::Location::Pointer,
+					named_component->name,
+					CreateTypedReferenceLoad( function_context, field->type, field_address ),
+					constexpr_value );
+
+			debug_info_builder_->CreateReferenceVariableInfo( *result_reference, named_component->name, named_component->src_loc, function_context );
+
+			function_context.variables_state.AddNode( result_reference );
+			prev_variables_storage.RegisterVariable( result_reference );
+
+			U_ASSERT( field->reference_tag < variable->inner_reference_nodes.size() );
+			const VariablePtr& inner_reference_node= variable->inner_reference_nodes[ field->reference_tag ];
+
+			function_context.variables_state.TryAddLink( inner_reference_node, result_reference, names_scope.GetErrors(), named_component->src_loc );
+
+			// Setup inner reference node links for reference fields with references inside.
+			// Only reference-fields with single inner reference tag are supported.
+			if( field->type.ReferenceTagCount() == 1 )
+			{
+				U_ASSERT( result_reference->inner_reference_nodes.size() == 1 );
+
+				for( const VariablePtr& accessible_node :
+					function_context.variables_state.GetAllAccessibleNonInnerNodes( inner_reference_node ) )
+				{
+					// Usually we should have here only one inner reference node.
+					// But it may be more if a member of a composite value is referenced.
+					// In such case it's necessary to create links for all inner reference nodes, even if sometimes it can create false-positive reference protection errors.
+					for( const VariablePtr& node : accessible_node->inner_reference_nodes )
+						function_context.variables_state.TryAddLink( node, result_reference->inner_reference_nodes.front(), names_scope.GetErrors(), named_component->src_loc );
+				}
+			}
+
+			const NamesScopeValue* const inserted_value=
+				names_scope.AddName( named_component->name, NamesScopeValue( result_reference, named_component->src_loc ) );
+			if( inserted_value == nullptr )
+				REPORT_ERROR( Redefinition, names_scope.GetErrors(), named_component->src_loc, named_component->name );
+		}
+		else
+		{
+			const VariablePtr struct_member=
+				Variable::Create(
+					field->type,
+					ValueType::Value,
+					Variable::Location::Pointer,
+					variable->name + "." + entry.name,
+					field_address,
+					variable->constexpr_value == nullptr ? nullptr : variable->constexpr_value->getAggregateElement( field->index ) );
+
+			function_context.variables_state.AddNode( struct_member );
+			function_context.variables_state.TryAddInnerLinksForClassField( variable, struct_member, *field, names_scope.GetErrors(), entry.src_loc );
+
+			BuildDecomposeDeclarationComponent( names_scope, function_context, struct_member, entry.component );
+
+			function_context.variables_state.RemoveNode( struct_member );
+		}
+	}
+
+	// Call destructors for fields which weren't decomposed.
+	for( const ClassFieldPtr& field : class_type->fields_order )
+	{
+		if( !field->is_reference && !decomposed_fields[ field->index ] && field->type.HasDestructor() )
+			CallDestructor(
+				CreateClassFieldGEP( function_context, *variable, field->index ),
+				field->type,
+				function_context,
+				names_scope.GetErrors(),
+				component.src_loc );
+	}
+
+	// Mark this variable as destroyed - to avoid calling destructs.
+	function_context.variables_state.MoveNode( variable );
+	CreateLifetimeEnd( function_context, variable->llvm_value );
 }
 
 } // namespace U

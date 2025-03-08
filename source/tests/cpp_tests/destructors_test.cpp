@@ -5445,6 +5445,309 @@ U_TEST( LambdaDestructor_Test11 )
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 9988, 767, -9988, -767 } ) );
 }
 
+U_TEST(DecomposeDeclaration_Destruction_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); }
+		}
+
+		fn Foo()
+		{
+			// Construct 67, then 23.
+			var [ S, 2 ] mut arr[ (67), (23) ];
+			auto [ a, b ]= move(arr);
+			DestructorCalled(777);
+			// Destroy "b" containing value 67.
+			// Destroy "a" containing value 23.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 67, 23,  777,  -23, -67 } ) );
+}
+
+U_TEST(DecomposeDeclaration_Destruction_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); }
+		}
+		struct T{ S s; }
+		fn Foo()
+		{
+			// Construct 376, then 54, then 11.
+			var tup[ S, f32, S, T ] mut t[ (376), 13.1f, (54), { .s(11) } ];
+			auto [ a, b, c, d ]= move(t);
+			DestructorCalled(88888);
+			// Destroy "d" containing value 11.
+			// Destroy "c" containing value 54.
+			// Destroy "b".
+			// Destroy "a" containing value 376.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 376, 54, 11,  88888,  -11, -54, -376 } ) );
+}
+
+U_TEST(DecomposeDeclaration_Destruction_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); }
+		}
+		struct T{ S x; S y; }
+		fn Foo()
+		{
+			// Construct 78, then 12341.
+			auto { a : x, b : y } = T{ .x(78), .y(12341) };
+			DestructorCalled(33333);
+			// Destroy "b" containing value 12341.
+			// Destroy "a" containing value 78.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 78, 12341,  33333,  -12341, -78, } ) );
+}
+
+U_TEST(DecomposeDeclaration_Destruction_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); }
+		}
+		struct T{ S x; S y; }
+		fn Foo()
+		{
+			// Construct 9752, then 64.
+			// Decompose in reverse order.
+			auto { a : y, b : x } = T{ .x(9752), .y(64) };
+			DestructorCalled(11111);
+			// Destroy "b" containing value 9752.
+			// Destroy "a" containing value 64.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 9752, 64,  11111,  -9752, -64, } ) );
+}
+
+U_TEST(DecomposeDeclaration_Destruction_Test4)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); }
+		}
+		struct T{ S x; S y; }
+		fn Foo()
+		{
+			// Construct 767, then 8712.
+			// Skip "b", so it's immideately destroyed.
+			auto { a : x } = T{ .x(767), .y(8712) };
+			DestructorCalled(99999);
+			// Destroy "a" containing value 767.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 767, 8712,  -8712,   99999,  -767, } ) );
+}
+
+U_TEST(DecomposeDeclaration_Destruction_Test5)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); }
+		}
+		struct T{ S x; S y; }
+		fn Foo()
+		{
+			// Construct 889, then 554.
+			// Skip "a", so it's immediately destroyed.
+			auto { b : y } = T{ .x(889), .y(554) };
+			DestructorCalled(4444);
+			// Destroy "b" containing value 554.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 889, 554,  -889,  4444,  -554, } ) );
+}
+
+U_TEST(DecomposeDeclaration_Destruction_Test6)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); }
+		}
+		struct T{ S x; S y; }
+		fn Foo()
+		{
+			// Construct 65, then 78.
+			// Skip all fields, so that they are immediately destroyed.
+			auto {} = T{ .x(65), .y(78) };
+			DestructorCalled(88888);
+			// Nothing to destroy here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 65, 78,  -65, -78,  88888, } ) );
+}
+
+U_TEST(DecomposeDeclaration_Destruction_Test7)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); }
+		}
+		struct T{ S x; S y; }
+		struct U{ T t; }
+		fn Foo()
+		{
+			// Construct 987, then 654.
+			auto { { a : x, b : y } : t } = U{ .t{ .x(987), .y(654) } };
+			DestructorCalled(777777);
+			// Destroy "b" containing value 654.
+			// Destroy "a" containing value 987.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 987, 654,  777777,  -654, -987 } ) );
+}
+
+U_TEST(DecomposeDeclaration_Destruction_Test8)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= delete;
+			fn constructor( i32 in_x ) ( x= in_x ) { DestructorCalled(x); }
+			fn destructor() { DestructorCalled(-x); }
+		}
+		struct T{ S& x; }
+		fn Foo()
+		{
+			// Construct "S" with value 77.
+			var S s( 77 );
+			auto {}= T{ .x= s }; // Should not call destructor for skipped reference field.
+			DestructorCalled( 5555 );
+			// Destroy "S" with value 77.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 77, 5555, -77 } ) );
+}
+
 } // namespace
 
 } // namespace U

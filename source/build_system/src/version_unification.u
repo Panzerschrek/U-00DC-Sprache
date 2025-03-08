@@ -323,42 +323,42 @@ fn FindBuildTargetUsersGraphConnectedComponents(
 	// Perform depth-first search.
 	while( !search_stack.empty() )
 	{
-		var tup[ BuildTargetAbsoluteName, GraphComponentIndex ] name_with_index= search_stack.pop_back();
-		if( component_index_map.exists( name_with_index[0] ) )
+		auto [ name, index ] = search_stack.pop_back();
+		if( component_index_map.exists( name ) )
 		{
 			continue; // Already visited this build target.
 		}
 
-		component_index_map.insert( name_with_index[0], name_with_index[1] );
+		component_index_map.insert( name, index );
 
 		// Process graph upwards, but only if current build target is a public user (direct or indirect) of the given build target.
-		if( build_target_public_users_set.exists( name_with_index[0] ) )
+		if( build_target_public_users_set.exists( name ) )
 		{
-			var BuildTargetUsers& users= workspace_build_targets_users[ name_with_index[0] ];
+			var BuildTargetUsers& users= workspace_build_targets_users[ name ];
 			foreach( &public_user : users.public_users )
 			{
-				search_stack.push_back( ust::make_tuple( public_user, name_with_index[1] ) );
+				search_stack.push_back( ust::make_tuple( public_user, index ) );
 			}
 			foreach( &private_user : users.private_users )
 			{
-				search_stack.push_back( ust::make_tuple( private_user, name_with_index[1] ) );
+				search_stack.push_back( ust::make_tuple( private_user, index ) );
 			}
 		}
 
 		// Process graph downwards, but only for build targets which are public users (direct or indirect) of the given build target.
-		var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ name_with_index[0] ];
+		var WorkspaceInfo::BuildTarget& build_target= workspace.build_targets[ name ];
 		foreach( &public_dependency : build_target.public_dependencies )
 		{
 			if( build_target_public_users_set.exists( public_dependency ) )
 			{
-				search_stack.push_back( ust::make_tuple( public_dependency, name_with_index[1] ) );
+				search_stack.push_back( ust::make_tuple( public_dependency, index ) );
 			}
 		}
 		foreach( &private_dependency : build_target.private_dependencies )
 		{
 			if( build_target_public_users_set.exists( private_dependency ) )
 			{
-				search_stack.push_back( ust::make_tuple( private_dependency, name_with_index[1] ) );
+				search_stack.push_back( ust::make_tuple( private_dependency, index ) );
 			}
 		}
 	}

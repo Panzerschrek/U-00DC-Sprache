@@ -98,6 +98,7 @@ struct Block;
 struct ScopeBlock;
 struct VariablesDeclaration;
 struct AutoVariableDeclaration;
+struct DecomposeDeclaration;
 struct AllocaDeclaration;
 struct ReturnOperator;
 struct YieldOperator;
@@ -251,6 +252,7 @@ using BlockElementsList= VariantLinkedList<
 	ScopeBlock,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
+	DecomposeDeclaration,
 	AllocaDeclaration,
 	ReturnOperator,
 	YieldOperator,
@@ -968,6 +970,64 @@ struct AutoVariableDeclaration
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
 
+struct DecomposeDeclarationNamedComponent;
+struct DecomposeDeclarationSequenceComponent;
+struct DecomposeDeclarationStructComponent;
+
+using DecomposeDeclarationComponent=
+	std::variant<
+		DecomposeDeclarationNamedComponent,
+		DecomposeDeclarationSequenceComponent,
+		DecomposeDeclarationStructComponent >;
+
+struct DecomposeDeclarationNamedComponent
+{
+	explicit DecomposeDeclarationNamedComponent( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::string name;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+};
+
+struct DecomposeDeclarationSequenceComponent
+{
+	explicit DecomposeDeclarationSequenceComponent( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::vector<DecomposeDeclarationComponent> sub_components;
+};
+
+struct DecomposeDeclarationStructComponent
+{
+	struct Entry;
+
+	explicit DecomposeDeclarationStructComponent( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	std::vector<Entry> entries;
+};
+
+struct DecomposeDeclarationStructComponent::Entry
+{
+	SrcLoc src_loc;
+	std::string name;
+	DecomposeDeclarationComponent component;
+	bool completion_requested= false;
+};
+
+struct DecomposeDeclaration
+{
+	explicit DecomposeDeclaration( const SrcLoc& src_loc, DecomposeDeclarationComponent in_root_component )
+		: src_loc(src_loc), root_component(std::move(in_root_component)) {}
+
+	SrcLoc src_loc;
+	DecomposeDeclarationComponent root_component;
+	Expression initializer_expression;
+};
+
 struct AllocaDeclaration
 {
 	explicit AllocaDeclaration( const SrcLoc& src_loc )
@@ -1041,12 +1101,19 @@ struct CStyleForOperator
 		IncrementOperator,
 		DecrementOperator>;
 
+	using VariableDeclarationPart=
+		std::variant<
+			EmptyVariant,
+			VariablesDeclaration,
+			AutoVariableDeclaration,
+			DecomposeDeclaration >;
+
 	explicit CStyleForOperator( const SrcLoc& src_loc )
 		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
 
-	std::unique_ptr< const std::variant< VariablesDeclaration, AutoVariableDeclaration > > variable_declaration_part;
+	VariableDeclarationPart variable_declaration_part;
 	Expression loop_condition;
 	IterationPartElementsList iteration_part_elements;
 	std::optional<Label> label;

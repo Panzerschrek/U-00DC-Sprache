@@ -38,11 +38,11 @@ fn LoadSourceGraph(
 	{
 		auto prelude_node_index= source_graph.nodes.size();
 
-		auto mut lex_result= LexicalAnalysis( prelude_code );
+		auto { mut lexems, mut lex_errors : errors } = LexicalAnalysis( prelude_code );
 
-		debug_assert( lex_result.errors.empty(), "Prelude code is invalid!" );
+		debug_assert( lex_errors.empty(), "Prelude code is invalid!" );
 
-		foreach( &mut lexem : lex_result.lexems )
+		foreach( &mut lexem : lexems )
 		{
 			lexem.src_loc.SetFileIndex( u32(prelude_node_index) );
 		}
@@ -51,7 +51,7 @@ fn LoadSourceGraph(
 
 		var Synt::SyntaxAnalysisResult mut synt_result=
 			Synt::SyntaxAnalysis(
-				lex_result.lexems,
+				lexems,
 				Synt::MacrosPtr( Synt::MacrosByContextMap() ), // Prelude macros list is empty.
 				source_graph.macro_expansion_contexts,
 				contents_hash );
@@ -151,11 +151,11 @@ fn LoadSourceGraph_r(
 			.category= node_category,
 		} );
 
-	auto mut lex_result= LexicalAnalysis( file_content_view );
+	auto { mut lexems, mut lex_errors : errors } = LexicalAnalysis( file_content_view );
 
-	source_graph.errors.append( lex_result.errors );
+	source_graph.errors.append( lex_errors );
 
-	foreach( &mut lexem : lex_result.lexems )
+	foreach( &mut lexem : lexems )
 	{
 		lexem.src_loc.SetFileIndex( u32(node_index) );
 	}
@@ -163,7 +163,7 @@ fn LoadSourceGraph_r(
 	// Recursively load imports.
 	var ust::vector</size_type/> mut node_children;
 
-	var Synt::ImportsList imports= Synt::ParseImports( lex_result.lexems );
+	var Synt::ImportsList imports= Synt::ParseImports( lexems );
 
 	imports_stack.push_back( file_path_normalized );
 	foreach( &import_ : imports )
@@ -221,7 +221,7 @@ fn LoadSourceGraph_r(
 
 	auto mut synt_result=
 		Synt::SyntaxAnalysis(
-			lex_result.lexems,
+			lexems,
 			node_macros_ptr,
 			source_graph.macro_expansion_contexts,
 			contents_hash );

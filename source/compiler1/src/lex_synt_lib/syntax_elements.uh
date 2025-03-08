@@ -509,6 +509,46 @@ struct AutoVariableDeclaration
 	Expression initializer_expression;
 }
 
+struct DecomposeDeclaration
+{
+	SrcLoc src_loc;
+	DecomposeDeclarationComponent root_component;
+	Expression initializer_expression;
+}
+
+type DecomposeDeclarationComponent=
+	ust::variant</ tup [
+	DecomposeDeclarationNamedComponent,
+	ust::box</DecomposeDeclarationSequenceComponent/>,
+	ust::box</DecomposeDeclarationStructComponent/>
+	] />;
+
+struct DecomposeDeclarationNamedComponent
+{
+	SrcLoc src_loc;
+	ust::string8 name;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+}
+
+struct DecomposeDeclarationSequenceComponent
+{
+	SrcLoc src_loc;
+	ust::vector</ DecomposeDeclarationComponent /> sub_components;
+}
+
+struct DecomposeDeclarationStructComponent
+{
+	struct Entry
+	{
+		SrcLoc src_loc;
+		ust::string8 name;
+		DecomposeDeclarationComponent component;
+	}
+
+	SrcLoc src_loc;
+	ust::vector</Entry/> entries;
+}
+
 struct AllocaDeclaration
 {
 	SrcLoc src_loc;
@@ -653,7 +693,8 @@ struct CStyleForOperator
 	ust::variant</ tup[
 		EmptyVariant,
 		VariablesDeclaration,
-		AutoVariableDeclaration
+		AutoVariableDeclaration,
+		DecomposeDeclaration
 		] />
 	variable_declaration_part;
 
@@ -723,6 +764,7 @@ type BlockElement = ust::variant</ tup[
 	ust::box</ScopeBlock/>,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
+	ust::box</DecomposeDeclaration/>, // Boxed because it's too big.
 	ust::box</AllocaDeclaration/>, // Boxed because it's too big.
 	ReturnOperator,
 	YieldOperator,
