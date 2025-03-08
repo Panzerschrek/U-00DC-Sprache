@@ -70,6 +70,53 @@ It consists of ``auto`` keyword, optional reference and mutability modifiers, va
    var [ bool, 16 ] arr= zero_init;
    auto& arr_ref= arr;// Immutable auto reference. Its type is "[ bool, 16 ]".
 
+******************************************
+*Variables declaration with decomposition*
+******************************************
+
+There is a possibility to declare several variables initialized by decomposing of an immediate value of a composite type.
+For arrays decomposition ``auto`` keyword is used, following by variables list in ``[]``.
+One of mutability modifiers ``imut``, ``mut``, ``constexpr`` may be specified before a variable name.
+
+.. code-block:: u_spr
+
+   var [ i32, 3 ] mut arr[ 1, 2, 3 ];
+   auto [ mut x, imut y, z ]= move(arr); // Decompose an array value
+
+For tuples decomposition syntax is the same as for arrays.
+
+.. code-block:: u_spr
+
+   var tup[ i32, u32 ] mut t[ 1, 2u ];
+   auto [ x, mut y ]= move(t); // Decompose a tuple
+
+Decomposition syntax for structs is different - ``{}`` is used, with list of variables mapped to struct fields.
+It's possible to skip fields, which aren't needed.
+
+.. code-block:: u_spr
+
+   struct S{ i32 x; f32 y; bool z; }
+   // ...
+   var S mut s{ .x= 78, .y= 13.4f, .z= false };
+   auto { imut a : x, mut b : y } = move(s); // Decompose a struct value into components "x" and "y", ignoring "z"
+
+There is a short form of fields specifying - with variable name identical to field name.
+
+.. code-block:: u_spr
+
+   struct S{ i32 x; f32 y; }
+   // ...
+   var S mut s{ .x= 78, .y= 13.4f };
+   auto { mut x, y } = move(s); // Decompose a struct value into components "x" and "y"
+
+Nested decomposition is also possible:
+
+.. code-block:: u_spr
+
+   struct S{ i32 x; f32 y; bool z; }
+   // ...
+   var tup[ S, [ i32, 2 ] ] mut t[ { .x= 78, .y= 13.4f, .z= false }, [ 7, 8 ] ];
+
 ******************
 *Global variables*
 ******************
