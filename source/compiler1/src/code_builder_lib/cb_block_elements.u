@@ -3494,6 +3494,8 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 		function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 	}
 
+	var LLVMValueRef constexpr_value= ( component.mutability_modifier == Synt::MutabilityModifier::Mutable ? LLVMValueRef::Null : initializer_variable_lite.constexpr_value );
+
 	var LLVMValueRef llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, initializer_variable_lite.t.GetLLVMType(), (component.name + "\0").front() ) );
 	CreateLifetimeStart( function_context, llvm_value );
 
@@ -3503,6 +3505,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 		.value_type= ValueType::Value,
 		.location= Variable::Location::Pointer,
 		.llvm_value= llvm_value,
+		.constexpr_value= constexpr_value,
 		.name= component.name + " variable itself",
 		.src_loc= component.src_loc,
 	};
@@ -3533,7 +3536,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 			.value_type= ( component.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.llvm_value= llvm_value,
-			.constexpr_value= ( component.mutability_modifier == Synt::MutabilityModifier::Mutable ? LLVMValueRef::Null : initializer_variable_lite.constexpr_value ),
+			.constexpr_value= constexpr_value,
 			.name= component.name,
 			.src_loc= component.src_loc,
 		}.CreatePtr();
@@ -3781,7 +3784,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 				{
 					var LLVMValueRef element= LLVMGetAggregateElement( variable_lite.constexpr_value, field.index );
 
-					// References in constexpr structs should be implemented, using global variables or ConstantGEP for global variables.
+					// Constexpr reference fields should be "GlobalVariable" or сonstexpr GEP.
 					var LLVMValueRef constant_expression= LLVMIsAConstantExpr( element ) ;
 					if( constant_expression != LLVMValueRef::Null )
 					{
@@ -3864,7 +3867,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 						( variable_lite.constexpr_value == LLVMValueRef::Null
 							? LLVMValueRef::Null
 							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, field.index ) ) ),
-					.name= ust::concat( variable.lock_imut().deref().name, ".", "some_field_name - TODO" ),
+					.name= ust::concat( variable.lock_imut().deref().name, ".", entry.name ),
 					.src_loc= component.src_loc,
 				}.CreatePtr();
 

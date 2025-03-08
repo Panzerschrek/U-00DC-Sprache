@@ -3492,7 +3492,7 @@ void CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 			llvm::Constant* constexpr_value= nullptr;
 			if( variable->constexpr_value != nullptr && named_component->mutability_modifier != MutabilityModifier::Mutable )
 			{
-				// Constexpr references field should be "GlobalVariable" or Constexpr GEP.
+				// Constexpr reference fields should be "GlobalVariable" or сonstexpr GEP.
 				const auto element= variable->constexpr_value->getAggregateElement( field->index );
 
 				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )

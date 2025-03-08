@@ -2290,7 +2290,8 @@ fn SyntaxAnalyzer::ParseBlockElementsImpl( mut this, Lexem::Type end_lexem ) : B
 		}
 		else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 		{
-			if( it_[1s].lexem_type == Lexem::Type::SquareBracketLeft || it_[1s].lexem_type == Lexem::Type::BraceLeft )
+			auto l= it_[1s].lexem_type;
+			if( l == Lexem::Type::SquareBracketLeft || l == Lexem::Type::BraceLeft )
 			{
 				block_elements.push_back( ust::make_box( ParseDecomposeDeclaration() ) );
 			}
@@ -2676,7 +2677,7 @@ fn SyntaxAnalyzer::ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclar
 
 fn SyntaxAnalyzer::ParseDecomposeDeclaration( mut this ) : DecomposeDeclaration
 {
-	debug_assert( IsKeyword( it_.front(), Keyword::alloca_ ) );
+	debug_assert( IsKeyword( it_.front(), Keyword::auto_ ) );
 
 	var SrcLoc src_loc= it_.front().src_loc;
 	NextLexem();
@@ -2779,6 +2780,7 @@ fn SyntaxAnalyzer::ParseDecomposeDeclarationComponent( mut this ) : DecomposeDec
 					else
 					{
 						PushErrorMessage();
+						break;
 					}
 
 					res.entries.push_back(
@@ -3186,7 +3188,8 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 	}
 	else if( IsKeyword( it_.front(), Keyword::auto_ ) )
 	{
-		if( it_[1s].lexem_type == Lexem::Type::SquareBracketLeft || it_[1s].lexem_type == Lexem::Type::BraceLeft )
+		auto l= it_[1s].lexem_type;
+		if( l == Lexem::Type::SquareBracketLeft || l == Lexem::Type::BraceLeft )
 		{
 			for_operator.variable_declaration_part= ParseDecomposeDeclaration();
 		}
