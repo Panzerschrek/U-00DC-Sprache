@@ -1218,7 +1218,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope loop_names_scope("", &names_scope);
 
 	// Variables declaration part.
-	if( const auto variables_declaration= std::get_if<Synt::VariablesDeclaration>( &c_style_for_operator.variable_declaration_part ) )
+	if( std::holds_alternative<Synt::EmptyVariant>( c_style_for_operator.variable_declaration_part ) )
+	{}
+	else if( const auto variables_declaration= std::get_if<Synt::VariablesDeclaration>( &c_style_for_operator.variable_declaration_part ) )
 	{
 		debug_info_builder_->SetCurrentLocation( variables_declaration->src_loc, function_context );
 		BuildBlockElementImpl( loop_names_scope, function_context, *variables_declaration );
