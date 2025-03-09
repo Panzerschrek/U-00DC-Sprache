@@ -272,7 +272,7 @@ private:
 			errors_.push_back(
 				LexSyntError(
 					expansion_src_loc,
-					"Macro expansion depth " + ust::to_string8(depth_limit) + " reached"
+					ust::concat( "Macro expansion depth ", ust::to_string8(depth_limit), " reached" )
 				) );
 
 			return T();

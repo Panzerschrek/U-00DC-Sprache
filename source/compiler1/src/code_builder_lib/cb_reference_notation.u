@@ -241,7 +241,7 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
 	}
 	else
 	{
-		REPORT_ERROR( TypesMismatch, names_scope, src_loc, "tuple of " + reference_notation_param_reference_description_type_.ToString() + " arrays", variable.t )
+		REPORT_ERROR( TypesMismatch, names_scope, src_loc, ust::concat( "tuple of ", reference_notation_param_reference_description_type_.ToString(), " arrays" ), variable.t )
 		return result;
 	}
 }

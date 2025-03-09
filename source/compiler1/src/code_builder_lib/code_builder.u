@@ -1541,7 +1541,7 @@ fn CodeBuilder::BuildFuncCode(
 											.t= invalid_type_,
 											.value_type= ValueType::Value,
 											.location= Variable::Location::Pointer,
-											.name= field_name + " second order referenced variable " + ust::to_string8(i),
+											.name= ust::concat( field_name, " second order referenced variable ", ust::to_string8(i) ),
 										}.CreatePtr();
 
 									function_context.references_graph.AddNode( second_order_accesible_variable );
