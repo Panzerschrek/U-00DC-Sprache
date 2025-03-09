@@ -3321,7 +3321,7 @@ void CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 			return;
 		}
 
-		for( uint64_t i= 0; i < array_type->element_count; ++i )
+		for( size_t i= 0; i < component.sub_components.size(); ++i )
 		{
 			const VariablePtr element_variable=
 				Variable::Create(
