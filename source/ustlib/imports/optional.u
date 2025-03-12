@@ -192,6 +192,9 @@ public:
 		}
 	}
 
+	// "as_ref" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of optional_ref classes where it isn't necessary.
+
+	template<//>
 	fn
 	enable_if( c_enable_as_ref )
 	as_ref( mut this ) : optional_ref_mut</T/> @( reference_notation::return_inner_references::param0 )
@@ -206,6 +209,7 @@ public:
 		}
 	}
 
+	template<//>
 	fn
 	enable_if( c_enable_as_ref )
 	as_ref( imut this ) : optional_ref_imut</T/> @( reference_notation::return_inner_references::param0 )
