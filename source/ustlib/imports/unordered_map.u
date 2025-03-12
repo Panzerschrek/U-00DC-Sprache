@@ -204,11 +204,15 @@ public:
 		size_= 0s;
 	}
 
+	// "iter" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of iterator classes where it isn't necessary.
+
+	template<//>
 	fn iter( imut this ) : auto
 	{
 		return wrap_raw_iterator( raw_iterator</false/>( this ) );
 	}
 
+	template<//>
 	fn iter(  mut this ) : auto
 	{
 		return wrap_raw_iterator( raw_iterator</true />( this ) );
