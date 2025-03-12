@@ -260,7 +260,7 @@ public:
 		return res;
 	}
 
-	// "iter" method is declared as zero-param templates to instantiate it lazily and thus avoid instantiation of iterator classes where it isn't necessary.
+	// "iter" method is declared as zero-param template to instantiate it lazily and thus avoid instantiation of iterator classes where it isn't necessary.
 
 	template<//>
 	fn iter( byval mut this ) : auto

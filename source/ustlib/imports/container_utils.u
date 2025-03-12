@@ -4,7 +4,7 @@ import "memory.u"
 namespace ust
 {
 
-// Place a value of this type inside containers, that store some type indirectly - vai internal buffer or heap memory.
+// Place a field of this type inside containers, that store some type indirectly - via internal buffer or heap memory.
 // This is needed in order to propagate reference tags and non_sync tags.
 // Avoid using this for containers, that are used for recursive structs (including indirectly-recursive), use manual non_sync tag propagation instead.
 template</ type T /> type ContainerTag= [ T, 0 ];
