@@ -276,10 +276,23 @@ public:
 	}
 
 	// ==
-	op enable_if( typeinfo</T/>.is_equality_comparable && c_enable_range )
+	op enable_if( typeinfo</T/>.is_equality_comparable )
 	==( this_type& l, this_type& r ) : bool
 	{
-		return l.range() == r.range();
+		if( l.size() != r.size() )
+		{
+			return false;
+		}
+
+		for( auto mut i= 0s; i < l.size_; ++i )
+		{
+			if( unsafe( l.index_unchecked(i) ) != unsafe( r.index_unchecked(i) ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	// modificators
@@ -447,24 +460,30 @@ public:
 		}
 	}
 
+	// "iter" and "range" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of range and iterator classes where it isn't necessary.
+
+	template<//>
 	fn enable_if( c_enable_range )
 	range(  mut this ) : random_access_range_mut </T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_mut </T/>( ptr_, size_ ) );
 	}
 
+	template<//>
 	fn enable_if( c_enable_range )
 	range( imut this ) : random_access_range_imut</T/> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( random_access_range_imut</T/>( ptr_, size_ ) );
 	}
 
+	template<//>
 	fn enable_if( c_enable_range )
 	iter(  mut this ) : auto
 	{
 		return range().iter();
 	}
 
+	template<//>
 	fn enable_if( c_enable_range )
 	iter( imut this ) : auto
 	{
