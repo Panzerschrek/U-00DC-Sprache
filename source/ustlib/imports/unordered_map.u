@@ -37,7 +37,7 @@ public:
 			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
 				auto &mut table_value= $>(other.table_ + i);
-				if( table_value.cell_content == TableValue::CellContent::HaveValue )
+				if( table_value.cell_content == unordered_map_impl::CellContent::HaveValue )
 				{
 					this.insert( table_value.key_storage, table_value.value_storage );
 				}
@@ -86,7 +86,7 @@ public:
 			{
 				auto cell_content= $>(table_ + key_hash_wrapped).cell_content;
 				auto next_key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
-				if( cell_content == TableValue::CellContent::Empty || next_key_hash_wrapped == initial_key_hash_wrapped )
+				if( cell_content == unordered_map_impl::CellContent::Empty || next_key_hash_wrapped == initial_key_hash_wrapped )
 				{
 					++size_;
 
@@ -97,14 +97,14 @@ public:
 
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
-					dst_value.cell_content= TableValue::CellContent::HaveValue;
+					dst_value.cell_content= unordered_map_impl::CellContent::HaveValue;
 					return dst_value.value_storage;
 				}
-				else if( cell_content == TableValue::CellContent::ValueRemoved )
+				else if( cell_content == unordered_map_impl::CellContent::ValueRemoved )
 				{
 					insert_index= key_hash_wrapped; // Insert new value into place of tombstone.
 				}
-				else if( cell_content == TableValue::CellContent::HaveValue )
+				else if( cell_content == unordered_map_impl::CellContent::HaveValue )
 				{
 					auto &mut dst_value= $>(table_ + key_hash_wrapped);
 					if( key == dst_value.key_storage )
@@ -130,7 +130,7 @@ public:
 			{
 				auto &mut table_value= $>(table_value_ptr);
 				--size_;
-				table_value.cell_content= TableValue::CellContent::ValueRemoved;
+				table_value.cell_content= unordered_map_impl::CellContent::ValueRemoved;
 				call_destructor( table_value.key_storage );
 				var value_type mut r= uninitialized;
 				memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, ptr_cast_to_byte8( $<(r) ), ptr_cast_to_byte8( $<(table_value.value_storage) ), typeinfo</ typeof(table_value.value_storage) />.size_of );
@@ -193,9 +193,9 @@ public:
 			for( auto mut i= 0s; i < capacity_; ++i )
 			{
 				auto &mut table_value= $>(table_ + i);
-				if( table_value.cell_content == TableValue::CellContent::HaveValue )
+				if( table_value.cell_content == unordered_map_impl::CellContent::HaveValue )
 				{
-					table_value.cell_content= TableValue::CellContent::ValueRemoved;
+					table_value.cell_content= unordered_map_impl::CellContent::ValueRemoved;
 					call_destructor( table_value.key_storage );
 					call_destructor( table_value.value_storage );
 				}
@@ -204,11 +204,15 @@ public:
 		size_= 0s;
 	}
 
+	// "iter" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of iterator classes where it isn't necessary.
+
+	template<//>
 	fn iter( imut this ) : auto
 	{
 		return wrap_raw_iterator( raw_iterator</false/>( this ) );
 	}
 
+	template<//>
 	fn iter(  mut this ) : auto
 	{
 		return wrap_raw_iterator( raw_iterator</true />( this ) );
@@ -236,7 +240,7 @@ private:
 			auto new_table= byte_ptr_cast</TableValue/>( memory_allocate( new_capacity * typeinfo</TableValue/>.size_of ) );
 			for( auto mut i= 0s; i < new_capacity; ++i )
 			{
-				$>(new_table + i).cell_content= TableValue::CellContent::Empty;
+				$>(new_table + i).cell_content= unordered_map_impl::CellContent::Empty;
 			}
 
 			// Move content of old table into new table.
@@ -245,9 +249,9 @@ private:
 				for( auto mut i= 0s; i < capacity_; ++i )
 				{
 					auto &mut old_value= $>(table_ + i);
-					if( old_value.cell_content == TableValue::CellContent::Empty || old_value.cell_content == TableValue::CellContent::ValueRemoved )
+					if( old_value.cell_content == unordered_map_impl::CellContent::Empty || old_value.cell_content == unordered_map_impl::CellContent::ValueRemoved )
 					{}
-					else if( old_value.cell_content == TableValue::CellContent::HaveValue )
+					else if( old_value.cell_content == unordered_map_impl::CellContent::HaveValue )
 					{
 						// Insert value into new table.
 						auto key_hash= hash( old_value.key_storage );
@@ -255,9 +259,9 @@ private:
 						loop
 						{
 							auto &mut new_value= $>(new_table + key_hash_wrapped);
-							if( new_value.cell_content == TableValue::CellContent::Empty )
+							if( new_value.cell_content == unordered_map_impl::CellContent::Empty )
 							{
-								new_value.cell_content= TableValue::CellContent::HaveValue;
+								new_value.cell_content= unordered_map_impl::CellContent::HaveValue;
 								memory_copy_aligned( typeinfo</ key_type   />.align_of, ptr_cast_to_byte8( $<(new_value.key_storage   ) ), ptr_cast_to_byte8( $<( old_value.key_storage   ) ), typeinfo</ key_type   />.size_of );
 								memory_copy_aligned( typeinfo</ value_type />.align_of, ptr_cast_to_byte8( $<(new_value.value_storage ) ), ptr_cast_to_byte8( $<( old_value.value_storage ) ), typeinfo</ value_type />.size_of );
 								break; // We must find value, bacause new_capacity >= size_
@@ -290,9 +294,9 @@ private:
 			loop
 			{
 				auto &mut table_value= $>(table_ + key_hash_wrapped);
-				if( table_value.cell_content == TableValue::CellContent::Empty ) { break; }
-				else if( table_value.cell_content == TableValue::CellContent::ValueRemoved ) {}
-				else if( table_value.cell_content == TableValue::CellContent::HaveValue )
+				if( table_value.cell_content == unordered_map_impl::CellContent::Empty ) { break; }
+				else if( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved ) {}
+				else if( table_value.cell_content == unordered_map_impl::CellContent::HaveValue )
 				{
 					if( key == table_value.key_storage )
 					{
@@ -418,7 +422,7 @@ public:
 	private:
 		fn advance_to_next_element( mut this )
 		{
-			while( capacity_ > 0s && unsafe( $>(table_) ).cell_content != TableValue::CellContent::HaveValue )
+			while( capacity_ > 0s && unsafe( $>(table_) ).cell_content != unordered_map_impl::CellContent::HaveValue )
 			{
 				unsafe{ ++table_; }
 				--capacity_;
@@ -441,8 +445,7 @@ public:
 private:
 	struct TableValue
 	{
-		enum CellContent { Empty, HaveValue, ValueRemoved }
-		CellContent cell_content;
+		unordered_map_impl::CellContent cell_content;
 		// Actually, destructors and constructors not called.
 		key_type key_storage;
 		value_type value_storage;
@@ -451,11 +454,23 @@ private:
 	type ptr_type= $(TableValue);
 
 private:
-	ContainerTag</ K /> key_tag_;
-	ContainerTag</ V /> value_tag_;
+	ContainerTag</ tup[ K, V ] /> key_value_tag_;
+
 	ptr_type table_= zero_init;
 	size_type size_(0);
 	size_type capacity_(0); // Always must be power of two.
 }
+
+namespace unordered_map_impl
+{
+
+enum CellContent
+{
+	Empty,
+	HaveValue,
+	ValueRemoved
+}
+
+} // namespace unordered_map_impl
 
 } // namespace ust

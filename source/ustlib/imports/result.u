@@ -170,7 +170,9 @@ public:
 	}
 
 	// Get optional reference.
+	// These methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of optional_ref classes where it isn't necessary.
 
+	template<//>
 	fn
 	enable_if( typeinfo</OkT/>.reference_tag_count == 0s )
 	as_ref(  mut this ) : optional_ref_mut </OkT/> @( reference_notation::return_inner_references::param0 )
@@ -185,6 +187,7 @@ public:
 		}
 	}
 
+	template<//>
 	fn
 	enable_if( typeinfo</OkT/>.reference_tag_count == 0s )
 	as_ref( imut this ) : optional_ref_imut</OkT/> @( reference_notation::return_inner_references::param0 )
@@ -199,6 +202,7 @@ public:
 		}
 	}
 
+	template<//>
 	fn
 	enable_if( typeinfo</ErrorT/>.reference_tag_count == 0s )
 	as_error_ref(  mut this ) : optional_ref_mut </ErrorT/> @( reference_notation::return_inner_references::param0 )
@@ -213,6 +217,7 @@ public:
 		}
 	}
 
+	template<//>
 	fn
 	enable_if( typeinfo</ErrorT/>.reference_tag_count == 0s )
 	as_error_ref( imut this ) : optional_ref_imut</ErrorT/> @( reference_notation::return_inner_references::param0 )

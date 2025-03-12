@@ -73,37 +73,12 @@ public:
 		impl_.clear();
 	}
 
+	// "iter" method is declared as zero-param template to instantiate it lazily and thus avoid instantiation of iterator classes where it isn't necessary.
+
+	template<//>
 	fn iter( this ) : auto
 	{
-		return wrap_raw_iterator( raw_iterator( impl_.iter() ) );
-	}
-
-public:
-	// Iterator over unordered set.
-	// Internally it is just a wrapper over unordered_map iterator.
-	class raw_iterator
-	{
-	public:
-		fn constructor( mut this, ImplIter mut impl ) @( reference_notation::pollution::param0_param_1_inner_reference )
-			( impl_( move(impl) ) )
-		{}
-
-		fn nodiscard next( mut this )
-			: optional_ref_imut</ T /> @( reference_notation::return_inner_references::param0_inner_reference0 )
-		{
-			auto next_res= impl_.next();
-			if( next_res.empty() )
-			{
-				return null_optional_ref;
-			}
-			return next_res.try_deref().key();
-		}
-
-	private:
-		type ImplIter= iterator</ Impl::raw_iterator</false/> />;
-
-	private:
-		ImplIter impl_;
+		return wrap_raw_iterator( unordered_set_raw_iterator</T/>( impl_.iter() ) );
 	}
 
 private:
@@ -112,5 +87,34 @@ private:
 private:
 	Impl impl_;
 }
+
+// Iterator over unordered set.
+// Internally it is just a wrapper over unordered_map iterator.
+template</type T/>
+class unordered_set_raw_iterator
+{
+public:
+	fn constructor( mut this, ImplIter mut impl ) @( reference_notation::pollution::param0_param_1_inner_reference )
+		( impl_( move(impl) ) )
+	{}
+
+	fn nodiscard next( mut this )
+		: optional_ref_imut</ T /> @( reference_notation::return_inner_references::param0_inner_reference0 )
+	{
+		auto next_res= impl_.next();
+		if( next_res.empty() )
+		{
+			return null_optional_ref;
+		}
+		return next_res.try_deref().key();
+	}
+
+private:
+	type ImplIter= iterator</ unordered_map</T, void/>::raw_iterator</false/> />;
+
+private:
+	ImplIter impl_;
+}
+
 
 } // namespace ust

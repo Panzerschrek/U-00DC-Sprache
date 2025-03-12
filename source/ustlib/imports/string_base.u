@@ -270,11 +270,15 @@ public:
 		return this_type( range().subrange( start_index, end_index ) );
 	}
 
+	// "iter" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of iterator classes where it isn't necessary.
+
+	template<//>
 	fn iter(  mut this ) : auto
 	{
 		return range().iter();
 	}
 
+	template<//>
 	fn iter( imut this ) : auto
 	{
 		return range().iter();
