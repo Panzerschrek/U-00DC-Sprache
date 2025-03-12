@@ -4047,27 +4047,30 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 	var ust::vector</ VariableTypeExtended /> mut args(
 		1s, VariableTypeExtended{ .t(variable.t), .value_type= variable.value_type } );
 
-	WithVariablesFrame(
-		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
-		{
-			var bool prev_is_functionless_context= function_context.is_functionless_context;
-			function_context.is_functionless_context= true;
-
-			auto state= SaveFunctionContextState( function_context );
-
-			foreach( &in_arg : synt_args )
+	if( !synt_args.empty() )
+	{
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 			{
-				with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
-				{
-					args.push_back( VariableTypeExtended{ .t(arg.t), .value_type= arg.value_type } );
-				}
-				self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
-			}
+				var bool prev_is_functionless_context= function_context.is_functionless_context;
+				function_context.is_functionless_context= true;
 
-			RestoreFunctionContextState( function_context, state );
-			function_context.is_functionless_context= prev_is_functionless_context;
-		} );
+				auto state= SaveFunctionContextState( function_context );
+
+				foreach( &in_arg : synt_args )
+				{
+					with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
+					{
+						args.push_back( VariableTypeExtended{ .t(arg.t), .value_type= arg.value_type } );
+					}
+					self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+				}
+
+				RestoreFunctionContextState( function_context, state );
+				function_context.is_functionless_context= prev_is_functionless_context;
+			} );
+	}
 
 	if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 	{
@@ -4109,39 +4112,43 @@ fn CodeBuilder::CallFunctionsSet(
 {
 	// Pre-evaluate arguments to know exact types and select exact function.
 	var ust::vector</VariableTypeExtended/> mut args_evaluated;
-	WithVariablesFrame(
-		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
+
+	if( !this_.empty() )
+	{
+		with( &thi : this_.try_lock_imut().deref() )
 		{
-			var bool prev_is_functionless_context= function_context.is_functionless_context;
-			function_context.is_functionless_context= true;
+			args_evaluated.push_back( VariableTypeExtended{ .t( thi.t ), .value_type= thi.value_type } );
+		}
+	}
 
-			auto state= SaveFunctionContextState( function_context );
-
-			if( !this_.empty() )
+	if( !args.empty() )
+	{
+		WithVariablesFrame(
+			function_context,
+			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 			{
-				with( &thi : this_.try_lock_imut().deref() )
-				{
-					args_evaluated.push_back( VariableTypeExtended{ .t( thi.t ), .value_type= thi.value_type } );
-				}
-			}
+				var bool prev_is_functionless_context= function_context.is_functionless_context;
+				function_context.is_functionless_context= true;
 
-			foreach( &arg : args )
-			{
-				if( !function_context.args_preevaluation_cache.exists( arg ) )
+				auto state= SaveFunctionContextState( function_context );
+
+				foreach( &arg : args )
 				{
-					with( &arg_variable : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.deref() ).lock_imut().deref() )
+					if( !function_context.args_preevaluation_cache.exists( arg ) )
 					{
-						function_context.args_preevaluation_cache.insert( arg, VariableTypeExtended{ .t( arg_variable.t ), .value_type= arg_variable.value_type } );
+						with( &arg_variable : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.deref() ).lock_imut().deref() )
+						{
+							function_context.args_preevaluation_cache.insert( arg, VariableTypeExtended{ .t( arg_variable.t ), .value_type= arg_variable.value_type } );
+						}
+						self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 					}
-					self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+					args_evaluated.push_back( function_context.args_preevaluation_cache[arg] );
 				}
-				args_evaluated.push_back( function_context.args_preevaluation_cache[arg] );
-			}
 
-			RestoreFunctionContextState( function_context, state );
-			function_context.is_functionless_context= prev_is_functionless_context;
-		} );
+				RestoreFunctionContextState( function_context, state );
+				function_context.is_functionless_context= prev_is_functionless_context;
+			} );
+	}
 
 	auto function_selected_opt=
 		GetOverloadedFunction(
