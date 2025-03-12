@@ -11,19 +11,11 @@ template</ type T /> type ContainerTag= [ T, 0 ];
 
 // Use reference tag for types, that are logically store reference to some type.
 // This is needed to ensure reference tags and non_sync tags propagation.
-template</ type T />
-struct ReferenceContainerTag</ T, false />
-{
-	struct Impl{ T &imut r; }
-	[ Impl, 0 ] dummy;
-}
+template</ type T /> type ReferenceContainerTag</ T, false /> = [ ReferenceContainerTagImutImpl</T/>, 0 ];
+template</ type T /> type ReferenceContainerTag</ T, true  /> = [ ReferenceContainerTagMutImpl </T/>, 0 ];
 
-template</ type T />
-struct ReferenceContainerTag</ T, true  />
-{
-	struct Impl{ T & mut r; }
-	[ Impl, 0 ] dummy;
-}
+template</type T/> struct ReferenceContainerTagImutImpl{ T &imut r; }
+template</type T/> struct ReferenceContainerTagMutImpl { T & mut r; }
 
 template</ type T />
 fn call_destructor( T&mut t ) unsafe
