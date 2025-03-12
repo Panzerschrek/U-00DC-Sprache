@@ -63,13 +63,11 @@ private:
 	ManglerState state_;
 };
 
-char Base36Digit( const size_t value )
+char Base36Digit( const uint32_t value )
 {
 	U_ASSERT( value < 36u );
-	if( value < 10 )
-		return char('0' + value);
-	else
-		return char('A' + ( value - 10 ) );
+	static constexpr char digits[]{"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"};
+	return digits[value];
 }
 
 //
