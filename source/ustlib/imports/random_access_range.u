@@ -260,9 +260,12 @@ public:
 		return res;
 	}
 
+	// "iter" method is declared as zero-param templates to instantiate it lazily and thus avoid instantiation of iterator classes where it isn't necessary.
+
+	template<//>
 	fn iter( byval mut this ) : auto
 	{
-		return wrap_raw_iterator( raw_iterator( move(this) ) );
+		return wrap_raw_iterator( random_access_range_raw_iterator</T, is_mutable/>( move(this) ) );
 	}
 
 	// Access raw data.
@@ -291,31 +294,6 @@ public:
 		}
 	}
 
-public:
-	// Iterator over range.
-	class raw_iterator
-	{
-	public:
-		fn constructor( random_access_range</ T, is_mutable /> mut range ) @( reference_notation::pollution::param0_param_1_inner_reference )
-			( range_= move(range) )
-		{}
-
-		fn constructor( mut this, raw_iterator& other )= default;
-		op=( mut this, raw_iterator& other )= default;
-
-		fn nodiscard next( mut this ) : auto
-		{
-			if( range_.empty() )
-			{
-				return optional_ref</ T, is_mutable />();
-			}
-			return optional_ref</ T, is_mutable />( range_.drop_and_get_front() );
-		}
-
-	private:
-		random_access_range</ T, is_mutable /> range_;
-	}
-
 private:
 	type this_type= random_access_range</ T, is_mutable />;
 
@@ -327,6 +305,34 @@ private:
 	// TODO - maybe use begin + end for non-zero-sized elements?
 	$(T) begin_= zero_init;
 	size_type size_= 0s;
+}
+
+// Iterator over range.
+template</type T, bool is_mutable/>
+class random_access_range_raw_iterator
+{
+public:
+	fn constructor( random_access_range</ T, is_mutable /> mut range ) @( reference_notation::pollution::param0_param_1_inner_reference )
+		( range_= move(range) )
+	{}
+
+	fn constructor( mut this, this_type& other )= default;
+	op=( mut this, this_type& other )= default;
+
+	fn nodiscard next( mut this ) : auto
+	{
+		if( range_.empty() )
+		{
+			return optional_ref</ T, is_mutable />();
+		}
+		return optional_ref</ T, is_mutable />( range_.drop_and_get_front() );
+	}
+
+private:
+	type this_type= random_access_range_raw_iterator</T, is_mutable/>;
+
+private:
+	random_access_range</ T, is_mutable /> range_;
 }
 
 template</ type T />
