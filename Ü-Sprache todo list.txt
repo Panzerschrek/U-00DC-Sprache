@@ -16,7 +16,6 @@ General:
 	(in expression context)
 *) Function to function pointer assignment with multiple possible functions
 *) Provide calling convention in typeinfo for function types
-*) Provide limited information in typeinfo about member function templates for structs/classes
 *) Calling convention as arbitrary constant expression (possibility to generate it in compilation time)
 *) Multidimensional [] operator - for accessing elements of multidimensional arrays or as overloaded operator
 *) Allow unsafe code and raw pointers in constexpr functions and perform additional safety checks during constexpr
@@ -43,6 +42,8 @@ General:
 *) Support unit-testing - add function-like unit tests global objects, which are compiled if special compiler flag
 	is provided, support building and running such unit-tests in the build system
 *) Allow variables decomposition in constructions "with" and "if_coro_advance"
+*) Provide more information in typeinfo about member function templates for structs/classes, like calling convention or
+	mutability/reference modifiers for params and return values
 
 References:
 *) Support second order inner references for coroutine types

@@ -1340,3 +1340,149 @@ def ReferenceIndirectionDepthInTypeinfo_Test1():
 
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ClassFunctionTemplatesList_Test0():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr GetParamCount( T& list, [ char8, name_size ]& name ) : size_type
+		{
+			for( & list_element : list )
+			{
+				if( StringEquals( list_element.name, name ) )
+				{
+					return list_element.param_count;
+				}
+			}
+			halt;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr IsThisCall( T& list, [ char8, name_size ]& name ) : bool
+		{
+			for( & list_element : list )
+			{
+				if( StringEquals( list_element.name, name ) )
+				{
+					return list_element.is_this_call;
+				}
+			}
+			halt;
+		}
+
+		struct PPP
+		{
+			bool is_public;
+			bool is_private;
+			bool is_protected;
+		}
+		template</ type T, size_type name_size />
+		fn constexpr GetVisibility( T& list, [ char8, name_size ]& name ) : PPP
+		{
+			for( & list_element : list )
+			{
+				if( StringEquals( list_element.name, name ) )
+				{
+					return PPP{ .is_public= list_element.is_public, .is_private= list_element.is_private, .is_protected= list_element.is_protected };
+				}
+			}
+			halt;
+		}
+
+		class S
+		{
+		public:
+			template<//> fn Foo(){}
+			template<//> fn Bar( this ) {}
+			template<//> fn Baz( i32& x ) {}
+
+		private:
+			template</type T/> fn Lol( T t ) {}
+			template</type T/> fn Kek( T a, T b ) {}
+
+			template</type U, type V/> fn Billy( mut this, U a, U b, V c, V d ) {}
+		}
+
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Foo" ) == 0s );
+		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Foo" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Foo" ).is_public );
+
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Bar" ) == 1s );
+		static_assert(  IsThisCall( typeinfo</S/>.function_templates_list, "Bar" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Bar" ).is_public );
+
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Baz" ) == 1s );
+		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Baz" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Baz" ).is_public );
+
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Lol" ) == 1s );
+		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Lol" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Lol" ).is_private );
+
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Kek" ) == 2s );
+		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Kek" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Kek" ).is_private );
+
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Billy" ) == 5s );
+		static_assert(  IsThisCall( typeinfo</S/>.function_templates_list, "Billy" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Billy" ).is_private );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ClassFunctionTemplatesList_Test1():
+	c_program_text= """
+		struct S
+		{
+			template<//> fn Foo(){}
+			template</type T/> fn Foo( this, T t ){}
+			template</type U, type V/> fn Foo( U u, V v, size_type s ){}
+		}
+
+		static_assert( typeinfo</S/>.function_templates_list[0].name == "Foo" );
+		static_assert( typeinfo</S/>.function_templates_list[0].param_count == 0s );
+		static_assert( !typeinfo</S/>.function_templates_list[0].is_this_call );
+
+		static_assert( typeinfo</S/>.function_templates_list[1].name == "Foo" );
+		static_assert( typeinfo</S/>.function_templates_list[1].param_count == 2s );
+		static_assert( typeinfo</S/>.function_templates_list[1].is_this_call );
+
+		static_assert( typeinfo</S/>.function_templates_list[2].name == "Foo" );
+		static_assert( typeinfo</S/>.function_templates_list[2].param_count == 3s );
+		static_assert( !typeinfo</S/>.function_templates_list[2].is_this_call );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ClassFunctionTemplatesList_Test2():
+	c_program_text= """
+		struct S
+		{
+			template</type T/> fn Foo( T t ){}
+			template</type T, size_type S/> fn Foo( [ T, S ] t ){}
+			template</type A, type B, type C/> fn Foo( tup[ A, B, C ] t ){}
+		}
+
+		auto& list= typeinfo</S/>.function_templates_list;
+
+		static_assert( list[0].name == "Foo" );
+		static_assert( list[0].param_count == 1s );
+		static_assert( !list[0].is_this_call );
+
+		// All function templates are merged into one, because they have identical properties.
+		static_assert( typeinfo</ typeof( list ) />.element_count == 1s );
+	"""
+	tests_lib.build_program( c_program_text )

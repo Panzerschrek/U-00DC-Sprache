@@ -19,9 +19,23 @@ const std::string g_typeinfo_enum_elements_list_node_class_name= "_TIEL_";
 const std::string g_typeinfo_class_fields_list_node_class_name= "_TICFiL_";
 const std::string g_typeinfo_class_types_list_node_class_name= "_TICTL_";
 const std::string g_typeinfo_class_functions_list_node_class_name= "_TICFuL_";
+const std::string g_typeinfo_class_template_functions_list_node_class_name= "_TICTFuL_";
 const std::string g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
 const std::string g_typeinfo_function_params_list_node_class_name= "_TIAL_";
 const std::string g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
+
+struct FunctionTemplateTypeinfoProperties
+{
+	size_t param_count= 0;
+	bool is_this_call= false;
+
+	bool operator==( const FunctionTemplateTypeinfoProperties& other ) const
+	{
+		return
+			this->param_count == other.param_count &&
+			this->is_this_call == other.is_this_call;
+	}
+};
 
 } // namespace
 
@@ -389,6 +403,15 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 			}
 			return cache_element.functions_list;
 		}
+		if( name == "function_templates_list" )
+		{
+			if( cache_element.function_templates_list == nullptr )
+			{
+				cache_element.function_templates_list= BuildTypeinfoClassFunctionTemplatesList( class_type, root_namespace );
+				typeinfo_cache_[source_type]= cache_element;
+			}
+			return cache_element.function_templates_list;
+		}
 		if( name == "parents_list" )
 		{
 			if( cache_element.parents_list == nullptr )
@@ -752,6 +775,88 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_t
 						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 						node_type } );
 			} // for functions with same name
+		};
+
+	class_type->members->ForEachInThisScope( process_class_member );
+
+	return CreateTypeinfoListVariable( list_elements );
+}
+
+VariablePtr CodeBuilder::BuildTypeinfoClassFunctionTemplatesList( const ClassPtr class_type, NamesScope& root_namespace )
+{
+	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
+
+	const auto process_class_member=
+		[&]( const std::string_view name, const NamesScopeValue& class_member )
+		{
+			const OverloadedFunctionsSetPtr functions_set= class_member.value.GetFunctionsSet();
+			if( functions_set == nullptr )
+				return;
+
+			// Make sure functions list is prepared.
+			PrepareFunctionsSet( *class_type->members, *functions_set );
+
+			llvm::SmallVector<FunctionTemplateTypeinfoProperties, 8> function_templates_processed;
+			for( const FunctionTemplatePtr& function_template : functions_set->template_functions )
+			{
+				FunctionTemplateTypeinfoProperties prop;
+				prop.param_count= function_template->signature_params.size();
+
+				const auto& params= function_template->syntax_element->function->type.params;
+				prop.is_this_call= !params.empty() && params.front().name == Keyword( Keywords::this_ );
+
+				// It may happen that several function templates are different, but are expressed as identical in typeinfo.
+				// In such case deduplicate them - create only one typeinfo entry.
+				bool duplicated= false;
+				for( const FunctionTemplateTypeinfoProperties& prev_prop : function_templates_processed )
+				{
+					if( prev_prop == prop )
+					{
+						duplicated= true;
+						break;
+					}
+				}
+
+				if( !duplicated )
+					function_templates_processed.push_back( prop );
+			}
+
+			for( const FunctionTemplateTypeinfoProperties& function_template_properties : function_templates_processed )
+			{
+				std::string node_name;
+				node_name+= g_typeinfo_class_template_functions_list_node_class_name;
+				node_name+= std::to_string( function_template_properties.param_count );
+				node_name.push_back( function_template_properties.is_this_call ? 't' : 'f' );
+				node_name+= name;
+
+				const ClassPtr node_type= CreateTypeinfoClass( root_namespace, class_type, node_name );
+				Class& node_type_class= *node_type;
+
+				ClassFieldsVector<llvm::Type*> fields_llvm_types;
+				ClassFieldsVector<llvm::Constant*> fields_initializers;
+
+				node_type_class.members->AddName(
+					"param_count",
+					NamesScopeValue( std::make_shared<ClassField>( "param_count", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				fields_llvm_types.push_back( fundamental_llvm_types_.size_type_ );
+				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), function_template_properties.param_count ) ) );
+
+				node_type_class.members->AddName(
+					"is_this_call",
+					NamesScopeValue( std::make_shared<ClassField>( "is_this_call", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function_template_properties.is_this_call ? 1 : 0 ) ) );
+
+				CreateTypeinfoClassMembersListNodeCommonFields( *class_type, node_type, name, fields_llvm_types, fields_initializers );
+
+				FinishTypeinfoClass( node_type, fields_llvm_types );
+
+				list_elements.push_back(
+					TypeinfoListElement{
+						std::move(node_name),
+						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
+						node_type } );
+			} // for function templates with same name
 		};
 
 	class_type->members->ForEachInThisScope( process_class_member );

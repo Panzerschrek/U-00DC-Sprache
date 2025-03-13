@@ -573,7 +573,8 @@ private:
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
 		llvm::ArrayRef<FunctionType::Param> actual_args,
-		bool first_actual_arg_is_this );
+		bool first_actual_arg_is_this,
+		bool enable_type_conversions );
 
 	const FunctionVariable* FinishTemplateFunctionParameterization(
 		CodeBuilderErrorsContainer& errors_container,
@@ -959,6 +960,7 @@ private:
 	VariablePtr BuildTypeinfoClassFieldsList( ClassPtr class_type, NamesScope& root_namespace );
 	VariablePtr BuildTypeinfoClassTypesList( ClassPtr class_type, NamesScope& root_namespace );
 	VariablePtr BuildTypeinfoClassFunctionsList( ClassPtr class_type, NamesScope& root_namespace );
+	VariablePtr BuildTypeinfoClassFunctionTemplatesList( ClassPtr class_type, NamesScope& root_namespace );
 	VariablePtr BuildTypeinfoClassParentsList( ClassPtr class_type, NamesScope& root_namespace );
 	VariablePtr BuildTypeinfoFunctionParams( const FunctionType& function_type, NamesScope& root_namespace );
 	VariablePtr BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );

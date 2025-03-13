@@ -710,3 +710,23 @@ def ConversionConstructorSourceTypeIsIdenticalToDestinationType_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ConversionConstructorSourceTypeIsIdenticalToDestinationType", 4 ) )
+
+
+def ConversionConstructorSourceTypeIsIdenticalToDestinationType_Test2():
+	c_program_text= """
+		struct S {}
+		struct T
+		{
+			template</ />
+			fn conversion_constructor( mut this, T& s ){}
+		}
+		fn Foo()
+		{
+			var T t0( S() );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert(
+		HasError( errors_list, "ConversionConstructorSourceTypeIsIdenticalToDestinationType", 6 ) or
+		HasError( errors_list, "CouldNotSelectOverloadedFunction", 10 ) )

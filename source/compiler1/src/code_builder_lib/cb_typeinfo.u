@@ -151,6 +151,7 @@ auto& g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 auto& g_typeinfo_function_params_list_node_class_name= "_TIAL_";
 auto& g_typeinfo_class_fields_list_node_class_name= "_TICFiL_";
 auto& g_typeinfo_class_functions_list_node_class_name= "_TICFuL_";
+auto& g_typeinfo_class_template_functions_list_node_class_name= "_TICTFuL_";
 auto& g_typeinfo_class_types_list_node_class_name= "_TICTL_";
 auto& g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
 auto& g_typeinfo_enum_elements_list_node_class_name= "_TIEL_";
@@ -595,6 +596,15 @@ fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, u
 			}
 			return cache_element.functions_list;
 		}
+		if( name == "function_templates_list" )
+		{
+			if( cache_element.function_templates_list.empty() )
+			{
+				cache_element.function_templates_list= BuildTypeinfoClassFunctionTemplatesList( root_namespace, class_type );
+				typeinfo_cache_[ source_type ]= cache_element;
+			}
+			return cache_element.function_templates_list;
+		}
 		if( name == "parents_list" )
 		{
 			if( cache_element.parents_list.empty() )
@@ -804,6 +814,81 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 	return FinishTypeinfoList( move(list_types), list_initializers );
 }
 
+fn CodeBuilder::BuildTypeinfoClassFunctionTemplatesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr
+{
+	var ust::vector</FunctionTemplateTypeinfoProperties/> mut function_templates_list;
+
+	with( class_members_ptr : class_type.lock_imut().deref().members )
+	{
+		foreach( &class_member : class_members_ptr.lock_imut().deref() )
+		{
+			auto functions_set_nullable_ptr= class_member.value().Get</FunctionsSet/>();
+			if( functions_set_nullable_ptr.empty() )
+			{
+				continue;
+			}
+			auto functions_set_ptr= functions_set_nullable_ptr.try_to_non_nullable();
+
+			PrepareFunctionsSet( class_members_ptr, functions_set_ptr );
+
+			foreach( &function_template_ptr : functions_set_ptr.lock_imut().deref().function_templates )
+			{
+				with( &function_template : function_template_ptr.lock_imut().deref() )
+				{
+					auto& params= function_template.syntax_element.deref().function.deref().function_type.params;
+
+					function_templates_list.push_back(
+						FunctionTemplateTypeinfoProperties
+						{
+							.name= class_member.key(),
+							.param_count= function_template.signature_params.size(),
+							.is_this_call= !params.empty() && params.front().name == KeywordToString( Keyword::this_ ),
+						} );
+				}
+			}
+		}
+	}
+
+	// Sort class function templates in typeinfo by name and properties, because we need strong order.
+	ust::sort( function_templates_list );
+
+	// It may happen that several function templates are different, but are expressed as identical in typeinfo.
+	// In such case deduplicate them - create only one typeinfo entry.
+	function_templates_list.remove_adjacent_duplicates();
+
+	var ust::vector</Type/> mut list_types;
+	var ust::vector</LLVMValueRef/> mut list_initializers;
+
+	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
+
+	foreach( &class_function_template : function_templates_list )
+	{
+		var ust::string8 mut class_name;
+		class_name+= g_typeinfo_class_template_functions_list_node_class_name;
+		class_name+= ust::to_string8( class_function_template.param_count );
+		class_name.push_back( ( class_function_template.is_this_call ? 't' : 'f' ) );
+		class_name+= class_function_template.name;
+
+		var ClassTypePtr typeinfo_class= CreateTypeinfoHelperClass( root_namespace, class_type, move(class_name) );
+		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
+
+		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
+		var ust::vector</LLVMValueRef/> mut fields_initializers;
+
+		ADD_SIZE_FIELD( "param_count", class_function_template.param_count )
+		ADD_BOOL_FIELD( "is_this_call" , class_function_template.is_this_call )
+
+		ADD_CLASS_MEMBER_COMMON_FIELDS( class_function_template.name )
+
+		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
+
+		list_types.push_back( typeinfo_class );
+		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
+	}
+
+	return FinishTypeinfoList( move(list_types), list_initializers );
+}
+
 fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr
 {
 	var ust::vector</ClassInnerTypeForTypeinfo/> mut class_inner_types;
@@ -992,6 +1077,33 @@ fn CodeBuilder::FinishTypeinfoList( mut this, ust::vector</Type/> mut element_ty
 	v.llvm_value= unsafe( AddGlobalConstantVariable( name_nt, v.t.GetLLVMType(), v.constexpr_value ) );
 
 	return move(v).CreatePtr();
+}
+
+struct FunctionTemplateTypeinfoProperties
+{
+	ust::string8 name;
+	size_type param_count;
+	bool is_this_call;
+
+	op<=>( FunctionTemplateTypeinfoProperties& l, FunctionTemplateTypeinfoProperties& r ) : i32
+	{
+		auto param_count_res= l.param_count <=> r.param_count;
+		if( param_count_res != 0 )
+		{
+			return param_count_res;
+		}
+
+		if( l.is_this_call && !r.is_this_call )
+		{
+			return 1;
+		}
+		if( !l.is_this_call && r.is_this_call )
+		{
+			return -1;
+		}
+
+		return l.name <=> r.name;
+	}
 }
 
 } // namespace U1

@@ -1098,6 +1098,7 @@ fn CodeBuilder::PrepareTemplateFunction(
 	ust::array_view_imut</TemplateArgFinished/> known_template_args,
 	ust::array_view_imut</VariableTypeExtended/> mut args,
 	bool first_arg_is_this,
+	bool allow_type_conversions,
 	SrcLoc& src_loc ) : ust::optional</TemplateFunctionPreparationResult/>
 {
 	auto function_template_lock= function_template_ptr.lock_imut();
@@ -1151,7 +1152,7 @@ fn CodeBuilder::PrepareTemplateFunction(
 				// TODO - maybe forbid type conversion for copy and conversion constructors?
 				all_ok&=
 					arg.t.ReferenceIsConvertibleTo( t ) ||
-					( !param_is_mutable_reference && HasConversionConstructor( result_names_scope, t, arg, src_loc ) );
+					( !param_is_mutable_reference && allow_type_conversions && HasConversionConstructor( result_names_scope, t, arg, src_loc ) );
 				continue;
 			}
 		}
@@ -1160,7 +1161,7 @@ fn CodeBuilder::PrepareTemplateFunction(
 			// TODO - maybe forbid type conversion for copy and conversion constructors?
 			all_ok&=
 				arg.t.ReferenceIsConvertibleTo( type_param.t ) ||
-				( !param_is_mutable_reference && HasConversionConstructor( result_names_scope, type_param.t, arg, src_loc ) );
+				( !param_is_mutable_reference && allow_type_conversions && HasConversionConstructor( result_names_scope, type_param.t, arg, src_loc ) );
 			continue;
 		}
 

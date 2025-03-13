@@ -822,6 +822,7 @@ private:
 		ust::array_view_imut</TemplateArgFinished/> known_template_args,
 		ust::array_view_imut</VariableTypeExtended/> args,
 		bool first_arg_is_this,
+		bool allow_type_conversions,
 		SrcLoc& src_loc ) : ust::optional</TemplateFunctionPreparationResult/>;
 
 	fn FinishFunctionTemplateParameterization(
@@ -955,6 +956,7 @@ private:
 	fn BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariablePtr;
 	fn BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
 	fn BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
+	fn BuildTypeinfoClassFunctionTemplatesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
 	fn BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
 	fn BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
 	fn BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : VariablePtr;

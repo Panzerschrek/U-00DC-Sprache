@@ -20,6 +20,7 @@ struct TypeinfoCacheElement
 	VariablePtr fields_list= nullptr;
 	VariablePtr types_list= nullptr;
 	VariablePtr functions_list= nullptr;
+	VariablePtr function_templates_list= nullptr;
 	VariablePtr parents_list= nullptr;
 	VariablePtr params_list= nullptr;
 };
