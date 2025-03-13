@@ -1465,3 +1465,24 @@ def ClassFunctionTemplatesList_Test1():
 		static_assert( !typeinfo</S/>.function_templates_list[2].is_this_call );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ClassFunctionTemplatesList_Test2():
+	c_program_text= """
+		struct S
+		{
+			template</type T/> fn Foo( T t ){}
+			template</type T, size_type S/> fn Foo( [ T, S ] t ){}
+			template</type A, type B, type C/> fn Foo( tup[ A, B, C ] t ){}
+		}
+
+		auto& list= typeinfo</S/>.function_templates_list;
+
+		static_assert( list[0].name == "Foo" );
+		static_assert( list[0].param_count == 1s );
+		static_assert( !list[0].is_this_call );
+
+		// All function templates are merged into one, because they have identical properties.
+		static_assert( typeinfo</ typeof( list ) />.element_count == 1s );
+	"""
+	tests_lib.build_program( c_program_text )
