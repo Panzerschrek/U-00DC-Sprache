@@ -1370,6 +1370,19 @@ def ClassFunctionTemplatesList_Test0():
 			halt;
 		}
 
+		template</ type T, size_type name_size />
+		fn constexpr IsThisCall( T& list, [ char8, name_size ]& name ) : bool
+		{
+			for( & list_element : list )
+			{
+				if( StringEquals( list_element.name, name ) )
+				{
+					return list_element.is_this_call;
+				}
+			}
+			halt;
+		}
+
 		struct S
 		{
 			template<//> fn Foo(){}
@@ -1383,10 +1396,16 @@ def ClassFunctionTemplatesList_Test0():
 		}
 
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Foo" ) == 0s );
+		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Foo" ) );
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Bar" ) == 1s );
+		static_assert(  IsThisCall( typeinfo</S/>.function_templates_list, "Bar" ) );
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Baz" ) == 1s );
+		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Baz" ) );
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Lol" ) == 1s );
+		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Lol" ) );
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Kek" ) == 2s );
+		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Kek" ) );
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Billy" ) == 5s );
+		static_assert(  IsThisCall( typeinfo</S/>.function_templates_list, "Billy" ) );
 	"""
 	tests_lib.build_program( c_program_text )

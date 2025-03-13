@@ -27,10 +27,13 @@ const std::string g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 struct FunctionTemplateTypeinfoProperties
 {
 	size_t param_count= 0;
+	bool is_this_call= false;
 
 	bool operator==( const FunctionTemplateTypeinfoProperties& other ) const
 	{
-		return this->param_count == other.param_count;
+		return
+			this->param_count == other.param_count &&
+			this->is_this_call == other.is_this_call;
 	}
 };
 
@@ -799,6 +802,9 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionTemplatesList( const ClassPtr
 				FunctionTemplateTypeinfoProperties prop;
 				prop.param_count= function_template->signature_params.size();
 
+				const auto& params= function_template->syntax_element->function->type.params;
+				prop.is_this_call= !params.empty() && params.front().name == Keyword( Keywords::this_ );
+
 				// It may happen that several function templates are different, but are expressed as identical in typeinfo.
 				// In such case deduplicate them - create only one typeinfo entry.
 				bool duplicated= false;
@@ -817,8 +823,11 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionTemplatesList( const ClassPtr
 
 			for( const FunctionTemplateTypeinfoProperties& function_template_properties : function_templates_processed )
 			{
-				const std::string node_name=
-					g_typeinfo_class_template_functions_list_node_class_name + std::to_string( function_template_properties.param_count ) + std::string( name );
+				std::string node_name;
+				node_name+= g_typeinfo_class_template_functions_list_node_class_name;
+				node_name+= std::to_string( function_template_properties.param_count );
+				node_name.push_back( function_template_properties.is_this_call ? 't' : 'f' );
+				node_name+= name;
 
 				const ClassPtr node_type=
 					CreateTypeinfoClass(
@@ -836,13 +845,19 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionTemplatesList( const ClassPtr
 				fields_llvm_types.push_back( fundamental_llvm_types_.size_type_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), function_template_properties.param_count ) ) );
 
+				node_type_class.members->AddName(
+					"is_this_call",
+					NamesScopeValue( std::make_shared<ClassField>( "is_this_call", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function_template_properties.is_this_call ? 1 : 0 ) ) );
+
 				CreateTypeinfoClassMembersListNodeCommonFields( *class_type, node_type, name, fields_llvm_types, fields_initializers );
 
 				FinishTypeinfoClass( node_type, fields_llvm_types );
 
 				list_elements.push_back(
 					TypeinfoListElement{
-						node_name,
+						std::move(node_name),
 						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 						node_type } );
 			} // for function templates with same name
