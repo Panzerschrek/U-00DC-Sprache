@@ -2833,13 +2833,16 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	llvm::SmallVector<FunctionType::Param, 16> actual_args;
 	actual_args.reserve( 1 + synt_args.size() );
 
+	actual_args.push_back( GetArgExtendedType( *variable ) );
+
+	if( !synt_args.empty() )
 	{
 		const bool prev_is_functionless_context= function_context.is_functionless_context;
 		function_context.is_functionless_context= true;
 		const auto state= SaveFunctionContextState( function_context );
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
-			actual_args.push_back( GetArgExtendedType( *variable ) );
+
 			for( const Synt::Expression& arg_expression : synt_args )
 				actual_args.push_back( PreEvaluateArg( arg_expression, names_scope, function_context ) );
 		}
@@ -3748,15 +3751,16 @@ Value CodeBuilder::CallFunctionValue(
 		llvm::SmallVector<FunctionType::Param, 16> actual_args;
 		actual_args.reserve( (this_ == nullptr ? 0u : 1u) + synt_args.size() );
 
+		if( this_ != nullptr )
+			actual_args.push_back( GetArgExtendedType( *this_ ) );
+
+		if( !synt_args.empty() )
 		{
 			const bool prev_is_functionless_context= function_context.is_functionless_context;
 			function_context.is_functionless_context= true;
 			const auto state= SaveFunctionContextState( function_context );
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
-				if( this_ != nullptr )
-					actual_args.push_back( GetArgExtendedType( *this_ ) );
 
 				for( const Synt::Expression& arg_expression : synt_args )
 					actual_args.push_back( PreEvaluateArg( arg_expression, names_scope, function_context ) );
