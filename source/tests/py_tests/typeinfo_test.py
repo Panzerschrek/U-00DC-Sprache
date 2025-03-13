@@ -1383,12 +1383,33 @@ def ClassFunctionTemplatesList_Test0():
 			halt;
 		}
 
-		struct S
+		struct PPP
 		{
+			bool is_public;
+			bool is_private;
+			bool is_protected;
+		}
+		template</ type T, size_type name_size />
+		fn constexpr GetVisibility( T& list, [ char8, name_size ]& name ) : PPP
+		{
+			for( & list_element : list )
+			{
+				if( StringEquals( list_element.name, name ) )
+				{
+					return PPP{ .is_public= list_element.is_public, .is_private= list_element.is_private, .is_protected= list_element.is_protected };
+				}
+			}
+			halt;
+		}
+
+		class S
+		{
+		public:
 			template<//> fn Foo(){}
 			template<//> fn Bar( this ) {}
 			template<//> fn Baz( i32& x ) {}
 
+		private:
 			template</type T/> fn Lol( T t ) {}
 			template</type T/> fn Kek( T a, T b ) {}
 
@@ -1397,15 +1418,26 @@ def ClassFunctionTemplatesList_Test0():
 
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Foo" ) == 0s );
 		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Foo" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Foo" ).is_public );
+
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Bar" ) == 1s );
 		static_assert(  IsThisCall( typeinfo</S/>.function_templates_list, "Bar" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Bar" ).is_public );
+
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Baz" ) == 1s );
 		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Baz" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Baz" ).is_public );
+
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Lol" ) == 1s );
 		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Lol" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Lol" ).is_private );
+
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Kek" ) == 2s );
 		static_assert( !IsThisCall( typeinfo</S/>.function_templates_list, "Kek" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Kek" ).is_private );
+
 		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Billy" ) == 5s );
 		static_assert(  IsThisCall( typeinfo</S/>.function_templates_list, "Billy" ) );
+		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Billy" ).is_private );
 	"""
 	tests_lib.build_program( c_program_text )
