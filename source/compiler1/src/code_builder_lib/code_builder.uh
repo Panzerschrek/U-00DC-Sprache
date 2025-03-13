@@ -822,6 +822,7 @@ private:
 		ust::array_view_imut</TemplateArgFinished/> known_template_args,
 		ust::array_view_imut</VariableTypeExtended/> args,
 		bool first_arg_is_this,
+		bool allow_type_conversions,
 		SrcLoc& src_loc ) : ust::optional</TemplateFunctionPreparationResult/>;
 
 	fn FinishFunctionTemplateParameterization(
