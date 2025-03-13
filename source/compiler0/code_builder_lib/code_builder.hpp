@@ -959,6 +959,7 @@ private:
 	VariablePtr BuildTypeinfoClassFieldsList( ClassPtr class_type, NamesScope& root_namespace );
 	VariablePtr BuildTypeinfoClassTypesList( ClassPtr class_type, NamesScope& root_namespace );
 	VariablePtr BuildTypeinfoClassFunctionsList( ClassPtr class_type, NamesScope& root_namespace );
+	VariablePtr BuildTypeinfoClassFunctionTemplatesList( ClassPtr class_type, NamesScope& root_namespace );
 	VariablePtr BuildTypeinfoClassParentsList( ClassPtr class_type, NamesScope& root_namespace );
 	VariablePtr BuildTypeinfoFunctionParams( const FunctionType& function_type, NamesScope& root_namespace );
 	VariablePtr BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );

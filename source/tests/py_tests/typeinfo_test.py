@@ -1340,3 +1340,53 @@ def ReferenceIndirectionDepthInTypeinfo_Test1():
 
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ClassFunctionTemplatesList_Test0():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr GetParamCount( T& list, [ char8, name_size ]& name ) : size_type
+		{
+			for( & list_element : list )
+			{
+				if( StringEquals( list_element.name, name ) )
+				{
+					return list_element.param_count;
+				}
+			}
+			halt;
+		}
+
+		struct S
+		{
+			template<//> fn Foo(){}
+			template<//> fn Bar( this ) {}
+			template<//> fn Baz( i32& x ) {}
+
+			template</type T/> fn Lol( T t ) {}
+			template</type T/> fn Kek( T a, T b ) {}
+
+			template</type U, type V/> fn Billy( mut this, U a, U b, V c, V d ) {}
+		}
+
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Foo" ) == 0s );
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Bar" ) == 1s );
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Baz" ) == 1s );
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Lol" ) == 1s );
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Kek" ) == 2s );
+		static_assert( GetParamCount( typeinfo</S/>.function_templates_list, "Billy" ) == 5s );
+	"""
+	tests_lib.build_program( c_program_text )

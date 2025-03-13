@@ -389,6 +389,15 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 			}
 			return cache_element.functions_list;
 		}
+		if( name == "function_templates_list" )
+		{
+			if( cache_element.function_templates_list == nullptr )
+			{
+				cache_element.function_templates_list= BuildTypeinfoClassFunctionTemplatesList( class_type, root_namespace );
+				typeinfo_cache_[source_type]= cache_element;
+			}
+			return cache_element.function_templates_list;
+		}
 		if( name == "parents_list" )
 		{
 			if( cache_element.parents_list == nullptr )
@@ -752,6 +761,57 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_t
 						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 						node_type } );
 			} // for functions with same name
+		};
+
+	class_type->members->ForEachInThisScope( process_class_member );
+
+	return CreateTypeinfoListVariable( list_elements );
+}
+
+VariablePtr CodeBuilder::BuildTypeinfoClassFunctionTemplatesList( const ClassPtr class_type, NamesScope& root_namespace )
+{
+	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
+
+	const auto process_class_member=
+		[&]( const std::string_view name, const NamesScopeValue& class_member )
+		{
+			const OverloadedFunctionsSetPtr functions_set= class_member.value.GetFunctionsSet();
+			if( functions_set == nullptr )
+				return;
+
+			// Make sure functions list is prepared.
+			PrepareFunctionsSet( *class_type->members, *functions_set );
+
+			for( const FunctionTemplatePtr& function_template : functions_set->template_functions )
+			{
+				const ClassPtr node_type=
+					CreateTypeinfoClass(
+						root_namespace,
+						class_type,
+						"TODO - class name" ); // Use mangled name for type name.
+				Class& node_type_class= *node_type;
+
+				ClassFieldsVector<llvm::Type*> fields_llvm_types;
+				ClassFieldsVector<llvm::Constant*> fields_initializers;
+
+				const size_t param_count= function_template->signature_params.size();
+
+				node_type_class.members->AddName(
+					"param_count",
+					NamesScopeValue( std::make_shared<ClassField>( "param_count", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				fields_llvm_types.push_back( fundamental_llvm_types_.size_type_ );
+				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), param_count ) ) );
+
+				CreateTypeinfoClassMembersListNodeCommonFields( *class_type, node_type, name, fields_llvm_types, fields_initializers );
+
+				FinishTypeinfoClass( node_type, fields_llvm_types );
+
+				list_elements.push_back(
+					TypeinfoListElement{
+						std::string(name), // TODO - use different name for different templates.
+						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
+						node_type } );
+			} // for function templates with same name
 		};
 
 	class_type->members->ForEachInThisScope( process_class_member );
