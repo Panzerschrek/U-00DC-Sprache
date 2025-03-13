@@ -1441,3 +1441,27 @@ def ClassFunctionTemplatesList_Test0():
 		static_assert( GetVisibility( typeinfo</S/>.function_templates_list, "Billy" ).is_private );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ClassFunctionTemplatesList_Test1():
+	c_program_text= """
+		struct S
+		{
+			template<//> fn Foo(){}
+			template</type T/> fn Foo( this, T t ){}
+			template</type U, type V/> fn Foo( U u, V v, size_type s ){}
+		}
+
+		static_assert( typeinfo</S/>.function_templates_list[0].name == "Foo" );
+		static_assert( typeinfo</S/>.function_templates_list[0].param_count == 0s );
+		static_assert( !typeinfo</S/>.function_templates_list[0].is_this_call );
+
+		static_assert( typeinfo</S/>.function_templates_list[1].name == "Foo" );
+		static_assert( typeinfo</S/>.function_templates_list[1].param_count == 2s );
+		static_assert( typeinfo</S/>.function_templates_list[1].is_this_call );
+
+		static_assert( typeinfo</S/>.function_templates_list[2].name == "Foo" );
+		static_assert( typeinfo</S/>.function_templates_list[2].param_count == 3s );
+		static_assert( !typeinfo</S/>.function_templates_list[2].is_this_call );
+	"""
+	tests_lib.build_program( c_program_text )
