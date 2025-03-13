@@ -573,7 +573,8 @@ private:
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
 		llvm::ArrayRef<FunctionType::Param> actual_args,
-		bool first_actual_arg_is_this );
+		bool first_actual_arg_is_this,
+		bool enable_type_conversions );
 
 	const FunctionVariable* FinishTemplateFunctionParameterization(
 		CodeBuilderErrorsContainer& errors_container,

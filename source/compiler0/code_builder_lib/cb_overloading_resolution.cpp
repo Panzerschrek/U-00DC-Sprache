@@ -620,7 +620,8 @@ void CodeBuilder::FetchMatchedOverloadedFunctions(
 	{
 		// Only prepare template function.
 		// Finalize (and trigger its build) later - only if this function is selected.
-		TemplateFunctionPreparationResult result= PrepareTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this );
+		TemplateFunctionPreparationResult result=
+			PrepareTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this, enable_type_conversions );
 		if( result.function_template != nullptr )
 			out_match_functions.push_back( std::move(result) );
 	}

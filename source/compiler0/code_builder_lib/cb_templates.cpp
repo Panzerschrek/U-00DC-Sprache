@@ -1190,7 +1190,8 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
 	const llvm::ArrayRef<FunctionType::Param> actual_args,
-	const bool first_actual_arg_is_this )
+	const bool first_actual_arg_is_this,
+	const bool enable_type_conversions )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function;
@@ -1232,16 +1233,18 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 		if( const auto type_param = signature_param.GetType() )
 		{
 			const Type& type= type_param->t;
-			if( type == given_type || ReferenceIsConvertible( given_type, type, errors_container, src_loc ) ||
-				( !expected_arg_is_mutalbe_reference && HasConversionConstructor( given_args[i], type, errors_container, src_loc ) ) )
+			if( type == given_type ||
+				ReferenceIsConvertible( given_type, type, errors_container, src_loc ) ||
+				( !expected_arg_is_mutalbe_reference && enable_type_conversions && HasConversionConstructor( given_args[i], type, errors_container, src_loc ) ) )
 				deduced_specially= true;
 		}
 		else if( const auto template_param= signature_param.GetTemplateParam() )
 		{
 			if( const auto type= result.template_args_namespace->GetThisScopeValue( function_template.template_params[ template_param->index ].name )->value.GetTypeName() )
 			{
-				if( *type == given_type || ReferenceIsConvertible( given_type, *type, errors_container, src_loc ) ||
-					( !expected_arg_is_mutalbe_reference && HasConversionConstructor( given_args[i], *type, errors_container, src_loc ) ) )
+				if( *type == given_type ||
+					ReferenceIsConvertible( given_type, *type, errors_container, src_loc ) ||
+					( !expected_arg_is_mutalbe_reference && enable_type_conversions && HasConversionConstructor( given_args[i], *type, errors_container, src_loc ) ) )
 					deduced_specially= true;
 			}
 		}
