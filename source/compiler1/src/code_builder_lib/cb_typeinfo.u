@@ -849,7 +849,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionTemplatesList( mut this, NamesScopePtr
 		}
 	}
 
-	// Sort class function templates in typeinfo by mangled name, because we need strong order.
+	// Sort class function templates in typeinfo by name and properties, because we need strong order.
 	ust::sort( function_templates_list );
 
 	// It may happen that several function templates are different, but are expressed as identical in typeinfo.

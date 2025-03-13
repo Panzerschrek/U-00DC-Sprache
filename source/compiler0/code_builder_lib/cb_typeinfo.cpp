@@ -829,11 +829,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionTemplatesList( const ClassPtr
 				node_name.push_back( function_template_properties.is_this_call ? 't' : 'f' );
 				node_name+= name;
 
-				const ClassPtr node_type=
-					CreateTypeinfoClass(
-						root_namespace,
-						class_type,
-						node_name );
+				const ClassPtr node_type= CreateTypeinfoClass( root_namespace, class_type, node_name );
 				Class& node_type_class= *node_type;
 
 				ClassFieldsVector<llvm::Type*> fields_llvm_types;
