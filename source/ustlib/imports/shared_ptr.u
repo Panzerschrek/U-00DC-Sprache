@@ -44,6 +44,7 @@ public:
 	}
 
 	// Constructor for nullable ptr from non-nullable ptr.
+	template<//>
 	fn enable_if( is_nullable ) conversion_constructor( mut this, shared_ptr_base</T, false, is_mutable/>& ptr )
 	{
 		unsafe
