@@ -19,9 +19,20 @@ const std::string g_typeinfo_enum_elements_list_node_class_name= "_TIEL_";
 const std::string g_typeinfo_class_fields_list_node_class_name= "_TICFiL_";
 const std::string g_typeinfo_class_types_list_node_class_name= "_TICTL_";
 const std::string g_typeinfo_class_functions_list_node_class_name= "_TICFuL_";
+const std::string g_typeinfo_class_template_functions_list_node_class_name= "_TICTFuL_";
 const std::string g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
 const std::string g_typeinfo_function_params_list_node_class_name= "_TIAL_";
 const std::string g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
+
+struct FunctionTemplateTypeinfoProperties
+{
+	size_t param_count= 0;
+
+	bool operator==( const FunctionTemplateTypeinfoProperties& other ) const
+	{
+		return this->param_count == other.param_count;
+	}
+};
 
 } // namespace
 
@@ -782,25 +793,48 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionTemplatesList( const ClassPtr
 			// Make sure functions list is prepared.
 			PrepareFunctionsSet( *class_type->members, *functions_set );
 
+			llvm::SmallVector<FunctionTemplateTypeinfoProperties, 8> function_templates_processed;
 			for( const FunctionTemplatePtr& function_template : functions_set->template_functions )
 			{
+				FunctionTemplateTypeinfoProperties prop;
+				prop.param_count= function_template->signature_params.size();
+
+				// It may happen that several function templates are different, but are expressed as identical in typeinfo.
+				// In such case deduplicate them - create only one typeinfo entry.
+				bool duplicated= false;
+				for( const FunctionTemplateTypeinfoProperties& prev_prop : function_templates_processed )
+				{
+					if( prev_prop == prop )
+					{
+						duplicated= true;
+						break;
+					}
+				}
+
+				if( !duplicated )
+					function_templates_processed.push_back( prop );
+			}
+
+			for( const FunctionTemplateTypeinfoProperties& function_template_properties : function_templates_processed )
+			{
+				const std::string node_name=
+					g_typeinfo_class_template_functions_list_node_class_name + std::to_string( function_template_properties.param_count ) + std::string( name );
+
 				const ClassPtr node_type=
 					CreateTypeinfoClass(
 						root_namespace,
 						class_type,
-						"TODO - class name" ); // Use mangled name for type name.
+						node_name );
 				Class& node_type_class= *node_type;
 
 				ClassFieldsVector<llvm::Type*> fields_llvm_types;
 				ClassFieldsVector<llvm::Constant*> fields_initializers;
 
-				const size_t param_count= function_template->signature_params.size();
-
 				node_type_class.members->AddName(
 					"param_count",
 					NamesScopeValue( std::make_shared<ClassField>( "param_count", node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.size_type_ );
-				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), param_count ) ) );
+				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.size_type_, llvm::APInt( fundamental_llvm_types_.size_type_->getIntegerBitWidth(), function_template_properties.param_count ) ) );
 
 				CreateTypeinfoClassMembersListNodeCommonFields( *class_type, node_type, name, fields_llvm_types, fields_initializers );
 
@@ -808,7 +842,7 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionTemplatesList( const ClassPtr
 
 				list_elements.push_back(
 					TypeinfoListElement{
-						std::string(name), // TODO - use different name for different templates.
+						node_name,
 						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 						node_type } );
 			} // for function templates with same name
