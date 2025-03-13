@@ -955,6 +955,7 @@ private:
 	fn BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariablePtr;
 	fn BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
 	fn BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
+	fn BuildTypeinfoClassFunctionTemplatesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
 	fn BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
 	fn BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
 	fn BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : VariablePtr;

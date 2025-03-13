@@ -161,6 +161,7 @@ struct TypeinfoCacheElement
 	VariableNullablePtr fields_list;
 	VariableNullablePtr types_list;
 	VariableNullablePtr functions_list;
+	VariableNullablePtr function_templates_list;
 	VariableNullablePtr parents_list;
 	VariableNullablePtr params_list;
 }
