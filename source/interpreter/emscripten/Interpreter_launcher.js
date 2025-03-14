@@ -10,7 +10,7 @@ function InterpreterCompileAndRun( program_text )
 
 	var file_name = 'test.u';
 	FS.writeFile( file_name, program_text );
-	var call_result = callMain( [file_name, '--entry', 'main'] );
+	var call_result = callMain( [file_name, '--entry', 'main', '--include-dir', '/ustlib/imports' ] );
 
 	return [ call_result, interpreter_stdout, interpreter_stderr ];
 };
