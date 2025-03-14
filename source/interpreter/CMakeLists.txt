@@ -5,6 +5,9 @@ if( CMAKE_SYSTEM_NAME STREQUAL "Emscripten" )
 	set( CMAKE_EXECUTABLE_SUFFIX ".js" )
 	set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/shell.js --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib@/" )
 	file( COPY ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/Interpreter_launcher.js DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
+
+	# Test shell is used for debugging.
+	# Launch a local http server in the build directory via command "python3 -m http.server" and open http://127.0.0.1:8000/Interpreter_test_shell.html in a browser.
 	file( COPY ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/Interpreter_test_shell.html DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
 endif()
 
