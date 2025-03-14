@@ -7,7 +7,7 @@ if( CMAKE_SYSTEM_NAME STREQUAL "Emscripten" )
 
 	set(
 		CMAKE_EXE_LINKER_FLAGS
-		"${CMAKE_EXE_LINKER_FLAGS}--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/shell.js --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports/@ustlib/imports" )
+		"${CMAKE_EXE_LINKER_FLAGS}--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/shell.js --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports/@ustlib/imports --embed-file ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/src/@ustlib/src" )
 
 	file( COPY ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/Interpreter_launcher.js DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
 
