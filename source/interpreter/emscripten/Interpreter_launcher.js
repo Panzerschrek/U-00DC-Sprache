@@ -31,17 +31,21 @@ function InterpreterCompileAndRun( program_text )
 function PirintText(text)
 {
 	if (arguments.length > 1)
-		text = Array.prototype.slice.call(arguments).join('');
+		text = Array.prototype.slice.call(arguments).join('\n');
 	console.log(text);
+	console.log('\n');
 	interpreter_stdout += text;
+	interpreter_stdout += '\n';
 };
 
 function PirintErrText(text)
 {
 	if (arguments.length > 1)
-		text = Array.prototype.slice.call(arguments).join('');
+		text = Array.prototype.slice.call(arguments).join('\n');
 	console.log(text);
+	console.log('\n');
 	interpreter_stderr += text;
+	interpreter_stderr += '\n';
 };
 
 // This variable is used by template script.
