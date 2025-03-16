@@ -167,6 +167,8 @@ fn nomangle main() : i32
 		auto key_provider= ust::string8::size;
 		var ust::compare_by_key</ ust::string8, typeof(key_provider) /> comp{ .key_provider= key_provider };
 
+		var StringSizeComparator heterogenous_comp;
+
 		assert( IsSorted( range, comp ) );
 
 		var ust::string8 very_long_string= "Ohne Wein und ohne Weiber holt der Teufel unsere Leiber!";
@@ -194,6 +196,14 @@ fn nomangle main() : i32
 					assert( by_key_greater_res == greater_res );
 					assert( by_key_greater_equal_res == greater_equal_res );
 					assert( by_key_equal_range_res == equal_range_res );
+
+					// Compare by providing size directly and using heterogenous comparator (with different-type params).
+					var size_type heterogenous_comp_greater_res= ust::binary_search::first_greater( subrange, s.size(), heterogenous_comp );
+					var size_type heterogenous_comp_greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, s.size(), heterogenous_comp );
+					var [ size_type, 2 ] heterogenous_comp_equal_range_res= ust::binary_search::equal_range( subrange, s.size(), heterogenous_comp );
+					assert( heterogenous_comp_greater_res == greater_res );
+					assert( heterogenous_comp_greater_equal_res == greater_equal_res );
+					assert( heterogenous_comp_equal_range_res == equal_range_res );
 				}
 
 				// Check a string which sould be ordered after all array elements.
@@ -205,11 +215,27 @@ fn nomangle main() : i32
 				assert( ust::binary_search::first_greater_by_key( subrange, very_long_string, key_provider ) == subrange.size() );
 				assert( ust::binary_search::first_greater_or_equal_by_key( subrange, very_long_string, key_provider ) == subrange.size() );
 				assert( ust::binary_search::equal_range_by_key( subrange, very_long_string, key_provider ) == ust::make_array( subrange.size(), subrange.size() ) );
+
+				assert( ust::binary_search::first_greater( subrange, very_long_string.size(), heterogenous_comp ) == subrange.size() );
+				assert( ust::binary_search::first_greater_or_equal( subrange, very_long_string.size(), heterogenous_comp ) == subrange.size() );
+				assert( ust::binary_search::equal_range( subrange, very_long_string.size(), heterogenous_comp ) == ust::make_array( subrange.size(), subrange.size() ) );
 			}
 		}
 	}
 
 	return 0;
+}
+
+struct StringSizeComparator
+{
+	op ()( this, ust::string8& l, size_type r ) : bool
+	{
+		return l.size() < r;
+	}
+	op ()( this, size_type l, ust::string8& r ) : bool
+	{
+		return l < r.size();
+	}
 }
 
 // TODO - create a function within ustlib?

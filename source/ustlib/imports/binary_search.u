@@ -10,8 +10,8 @@ namespace binary_search
 
 // Find index of the first element which is greater than given value.
 // Returns range size if not found.
-template</type T, type Compare/>
-fn first_greater( array_view_imut</T/> r, T& el, Compare& comp ) : size_type
+template</type T, type El, type Compare/>
+fn first_greater( array_view_imut</T/> r, El& el, Compare& comp ) : size_type
 {
 	var size_type mut begin= 0s, mut end= r.size();
 	while( begin < end )
@@ -64,8 +64,8 @@ fn first_greater( [T, S]& arr, T& el ) : size_type
 
 // Find index of the first element which is greater than given value or equal to it.
 // Returns range size if not found.
-template</type T, type Compare/>
-fn first_greater_or_equal( array_view_imut</T/> r, T& el, Compare& comp ) : size_type
+template</type T, type El, type Compare/>
+fn first_greater_or_equal( array_view_imut</T/> r, El& el, Compare& comp ) : size_type
 {
 	var size_type mut begin= 0s, mut end= r.size();
 	while( begin < end )
@@ -122,8 +122,8 @@ fn first_greater_or_equal( [T, S]& arr, T& el ) : size_type
 // Index0 <= Index1
 // Index0 or Index1 may be equal to range size.
 // This function effectively combines "first_greater_or_equal" and "first_greater".
-template</type T, type Compare/>
-fn equal_range( array_view_imut</T/> r, T& el, Compare& comp ) : [ size_type, 2 ]
+template</type T, type El, type Compare/>
+fn equal_range( array_view_imut</T/> r, El& el, Compare& comp ) : [ size_type, 2 ]
 {
 	var size_type g= first_greater( r, el, comp );
 	var size_type ge= first_greater_or_equal( r.subrange_end(g), el, comp );
