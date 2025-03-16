@@ -10,6 +10,7 @@ fn nomangle main() : i32
 		var ust::array_view_imut</i32/> range= arr;
 		TestGreater( range );
 		TestGreaterOrEqual( range );
+		TestEqualRange( range );
 	}
 	{
 		// Duplicates at start.
@@ -17,6 +18,7 @@ fn nomangle main() : i32
 		var ust::array_view_imut</i32/> range= arr;
 		TestGreater( range );
 		TestGreaterOrEqual( range );
+		TestEqualRange( range );
 	}
 	{
 		// Duplicates at end.
@@ -24,6 +26,7 @@ fn nomangle main() : i32
 		var ust::array_view_imut</i32/> range= arr;
 		TestGreater( range );
 		TestGreaterOrEqual( range );
+		TestEqualRange( range );
 	}
 	{
 		// Duplicates  in the middle.
@@ -31,6 +34,7 @@ fn nomangle main() : i32
 		var ust::array_view_imut</i32/> range= arr;
 		TestGreater( range );
 		TestGreaterOrEqual( range );
+		TestEqualRange( range );
 	}
 	{
 		// Duplicates  in the middle.
@@ -38,6 +42,7 @@ fn nomangle main() : i32
 		var ust::array_view_imut</i32/> range= arr;
 		TestGreater( range );
 		TestGreaterOrEqual( range );
+		TestEqualRange( range );
 	}
 	{
 		// Duplicates everywhere.
@@ -45,6 +50,7 @@ fn nomangle main() : i32
 		var ust::array_view_imut</i32/> range= arr;
 		TestGreater( range );
 		TestGreaterOrEqual( range );
+		TestEqualRange( range );
 	}
 
 	// Test all possible combinations of numbers 0-7.
@@ -78,11 +84,15 @@ fn nomangle main() : i32
 										{
 											var size_type greater_res= ust::binary_search::first_greater( subrange, i );
 											var size_type greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i );
+											var [ size_type, 2 ] equal_range_res= ust::binary_search::equal_range( subrange, i );
 											if( is_sorted )
 											{
 												// If this combination is sorted check if returned result is equal to expected by linear search.
 												assert( greater_res == FirstGreaterLinear( subrange, i ) );
 												assert( greater_equal_res == FirstGreaterOrEqualLinear( subrange, i ) );
+												assert( equal_range_res[0] == greater_equal_res );
+												assert( equal_range_res[1] == greater_res );
+												assert( equal_range_res == EqualRangeLinear( subrange, i ) );
 											}
 										}
 									}
@@ -158,6 +168,27 @@ fn TestGreaterOrEqual( ust::array_view_imut</i32/> range )
 	}
 }
 
+fn TestEqualRange( ust::array_view_imut</i32/> range )
+{
+	// For each possible subrange search for position for each possible number.
+	for( var size_type mut start= 0s; start < range.size(); ++start )
+	{
+		for( var size_type mut end= start; end < range.size(); ++end )
+		{
+			auto subrange= range.subrange( start, end );
+			foreach( el : range )
+			{
+				assert( ust::binary_search::equal_range( subrange, el ) == EqualRangeLinear( subrange, el ) );
+			}
+			assert( ust::binary_search::equal_range( subrange, range.front() - 2 ) == ust::make_array( 0s, 0s ) );
+			assert( ust::binary_search::equal_range( subrange, range.front() - 1 ) == ust::make_array( 0s, 0s ) );
+			assert( ust::binary_search::equal_range( subrange, range.back() + 1 ) == ust::make_array( subrange.size(), subrange.size() ) );
+			assert( ust::binary_search::equal_range( subrange, range.back() + 2 ) == ust::make_array( subrange.size(), subrange.size() ) );
+		}
+	}
+}
+
+
 template</type T/>
 fn FirstGreaterLinear( ust::array_view_imut</T/> r, T& el ) : size_type
 {
@@ -182,4 +213,11 @@ fn FirstGreaterOrEqualLinear( ust::array_view_imut</T/> r, T& el ) : size_type
 		}
 	}
 	return r.size();
+}
+
+template</type T/>
+fn EqualRangeLinear( ust::array_view_imut</T/> r, T& el ) : [ size_type, 2 ]
+{
+	var [ size_type, 2 ] res[ FirstGreaterOrEqualLinear( r, el ), FirstGreaterLinear( r, el ) ];
+	return res;
 }
