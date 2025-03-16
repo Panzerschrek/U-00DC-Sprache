@@ -15,19 +15,6 @@ namespace binary_search
 template</type T/>
 fn first_greater_or_equal( array_view_imut</T/> r, T& el ) : size_type
 {
-	/*
-	for( var size_type mut i= 0s; i < r.size(); ++i )
-	{
-		if( !( r[i] <= el ) )
-		{
-			return i;
-		}
-	}
-	return r.size();
-	*/
-
-	ust::stdout_print( ust::concat( "Searching for ", ust::to_string8(el), "\n" ) );
-
 	if( r.empty() )
 	{
 		return 0s;
@@ -38,21 +25,16 @@ fn first_greater_or_equal( array_view_imut</T/> r, T& el ) : size_type
 	{
 		var size_type middle= begin + ((end - begin) >> 1u);
 
-		ust::stdout_print( ust::concat( "Process range for ", ust::to_string8(begin), " to ", ust::to_string8(end), " with middle ", ust::to_string8(middle), "\n" ) );
-
-		var bool less= r[middle] < el;
-		if(less)
+		if( r[middle] < el )
 		{
-			ust::stdout_print( "Less\n" );
-			begin= middle;
-			if( begin + 1s == end )
+			if( begin == middle )
 			{
-				return begin + 1s;
+				return end;
 			}
+			begin= middle;
 		}
 		else
 		{
-			ust::stdout_print( "Not less\n" );
 			end= middle;
 			if( begin == end )
 			{
