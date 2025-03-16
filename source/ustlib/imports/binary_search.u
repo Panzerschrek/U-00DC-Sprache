@@ -1,8 +1,5 @@
+import "compare.u"
 import "random_access_range.u"
-
-// import "stdout.u"
-// import "string.u"
-// import "string_conversions.u"
 
 namespace ust
 {
@@ -12,8 +9,8 @@ namespace binary_search
 
 // Find index of the first element which is greater than given value.
 // Returns range size if not found.
-template</type T/>
-fn first_greater( array_view_imut</T/> r, T& el ) : size_type
+template</type T, type Compare/>
+fn first_greater( array_view_imut</T/> r, T& el, Compare& comp ) : size_type
 {
 	if( r.empty() )
 	{
@@ -25,15 +22,7 @@ fn first_greater( array_view_imut</T/> r, T& el ) : size_type
 	{
 		var size_type middle= begin + ((end - begin) >> 1u);
 
-		if( r[middle] <= el )
-		{
-			if( begin == middle )
-			{
-				return end;
-			}
-			begin= middle;
-		}
-		else
+		if( comp( el, r[middle] ) )
 		{
 			end= middle;
 			if( begin == end )
@@ -41,7 +30,21 @@ fn first_greater( array_view_imut</T/> r, T& el ) : size_type
 				return begin;
 			}
 		}
+		else
+		{
+			if( begin == middle )
+			{
+				return end;
+			}
+			begin= middle;
+		}
 	}
+}
+
+template</type T/>
+fn first_greater( array_view_imut</T/> r, T& el ) : size_type
+{
+	return first_greater</T/>( r, el, default_compare</T/>() );
 }
 
 template</type T/>
@@ -58,8 +61,8 @@ fn first_greater( [T, S]& arr, T& el ) : size_type
 
 // Find index of the first element which is greater than given value or equal to it.
 // Returns range size if not found.
-template</type T/>
-fn first_greater_or_equal( array_view_imut</T/> r, T& el ) : size_type
+template</type T, type Compare/>
+fn first_greater_or_equal( array_view_imut</T/> r, T& el, Compare& comp ) : size_type
 {
 	if( r.empty() )
 	{
@@ -71,7 +74,7 @@ fn first_greater_or_equal( array_view_imut</T/> r, T& el ) : size_type
 	{
 		var size_type middle= begin + ((end - begin) >> 1u);
 
-		if( r[middle] < el )
+		if( comp( r[middle], el ) )
 		{
 			if( begin == middle )
 			{
@@ -88,6 +91,12 @@ fn first_greater_or_equal( array_view_imut</T/> r, T& el ) : size_type
 			}
 		}
 	}
+}
+
+template</type T/>
+fn first_greater_or_equal( array_view_imut</T/> r, T& el ) : size_type
+{
+	return first_greater_or_equal( r, el, default_compare</T/>() );
 }
 
 template</type T/>
@@ -108,13 +117,19 @@ fn first_greater_or_equal( [T, S]& arr, T& el ) : size_type
 // Index0 <= Index1
 // Index0 or Index1 may be equal to range size.
 // This function effectively combines "first_greater_or_equal" and "first_greater".
+template</type T, type Compare/>
+fn equal_range( array_view_imut</T/> r, T& el, Compare& comp ) : [ size_type, 2 ]
+{
+	var size_type ge= first_greater_or_equal( r, el, comp );
+	var size_type g= ge + first_greater( r.subrange_start( ge ), el, comp );
+	var [ size_type, 2 ] res[ ge, g ];
+	return res;
+}
+
 template</type T/>
 fn equal_range( array_view_imut</T/> r, T& el ) : [ size_type, 2 ]
 {
-	var size_type ge= first_greater_or_equal( r, el );
-	var size_type g= ge + first_greater( r.subrange_start( ge ), el );
-	var [ size_type, 2 ] res[ ge, g ];
-	return res;
+	return equal_range( r, el, default_compare</T/>() );
 }
 
 template</type T/>

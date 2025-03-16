@@ -1,0 +1,26 @@
+// This file contains compare classes used for things like sorting and binary search.
+
+namespace ust
+{
+
+template</type T/>
+struct default_compare
+{
+	op()( this, T& a, T& b ) : bool
+	{
+		return a < b;
+	}
+}
+
+template</type T, type KeyProvider/>
+struct compare_by_key
+{
+	KeyProvider key_provider;
+	op()( this, T& a, T& b ) : bool
+	{
+		// Compare here whatever given function returns.
+		return key_provider(a) < key_provider(b);
+	}
+}
+
+} // namespace ust

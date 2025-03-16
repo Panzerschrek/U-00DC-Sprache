@@ -55,6 +55,9 @@ fn nomangle main() : i32
 
 	// Test all possible combinations of numbers 0-7.
 	// Even the most of these combinations aren't valid for binary search (not sorted), we still should ensure that binary search doesn't crash or loop forever.
+
+	auto compare_reverse= lambda[]( i32 l, i32 r ) : bool { return l > r; };
+
 	for( auto mut a= 0; a < 7; ++a )
 	{
 		for( auto mut b= 0; b < 7; ++b )
@@ -73,6 +76,7 @@ fn nomangle main() : i32
 								var ust::array_view_imut</i32/> range= arr;
 
 								var bool is_sorted= IsSorted( range );
+								var bool is_sorted_reverse= IsSorted( range, compare_reverse );
 
 								// For each possible subrange search for position for each possible number.
 								for( var size_type mut start= 0s; start < range.size(); ++start )
@@ -94,6 +98,19 @@ fn nomangle main() : i32
 												assert( equal_range_res[1] == greater_res );
 												assert( equal_range_res == EqualRangeLinear( subrange, i ) );
 											}
+
+											var size_type reversed_greater_res= ust::binary_search::first_greater( subrange, i, compare_reverse );
+											var size_type reversed_greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i, compare_reverse );
+											var [ size_type, 2 ] reversed_equal_range_res= ust::binary_search::equal_range( subrange, i, compare_reverse );
+											if( is_sorted_reverse )
+											{
+												// If this combination is sorted in reverse order check if returned result is equal to expected by linear search.
+												assert( reversed_greater_res == FirstGreaterLinear( subrange, i, compare_reverse ) );
+												assert( reversed_greater_equal_res == FirstGreaterOrEqualLinear( subrange, i, compare_reverse ) );
+												assert( reversed_equal_range_res[0] == reversed_greater_equal_res );
+												assert( reversed_equal_range_res[1] == reversed_greater_res );
+												assert( reversed_equal_range_res == EqualRangeLinear( subrange, i, compare_reverse ) );
+											}
 										}
 									}
 								}
@@ -112,6 +129,12 @@ fn nomangle main() : i32
 template</type T/>
 fn IsSorted( ust::array_view_imut</T/> range ) : bool
 {
+	return IsSorted( range, ust::default_compare</T/>() );
+}
+
+template</type T, type Compare/>
+fn IsSorted( ust::array_view_imut</T/> range, Compare& comp ) : bool
+{
 	if( range.size() <= 1s )
 	{
 		return true;
@@ -119,7 +142,7 @@ fn IsSorted( ust::array_view_imut</T/> range ) : bool
 
 	for( auto mut i= 1s; i < range.size(); ++i )
 	{
-		if( range[i - 1s] > range[i] )
+		if( comp( range[i], range[i - 1s] ) )
 		{
 			return false;
 		}
@@ -188,13 +211,31 @@ fn TestEqualRange( ust::array_view_imut</i32/> range )
 	}
 }
 
+template</type T, type Compare/>
+fn FirstGreaterLinear( ust::array_view_imut</T/> r, T& el, Compare& comp ) : size_type
+{
+	for( var size_type mut i= 0s; i < r.size(); ++i )
+	{
+		if( comp( el, r[i] ) )
+		{
+			return i;
+		}
+	}
+	return r.size();
+}
 
 template</type T/>
 fn FirstGreaterLinear( ust::array_view_imut</T/> r, T& el ) : size_type
 {
+	return FirstGreaterLinear( r, el, ust::default_compare</T/>() );
+}
+
+template</type T, type Compare/>
+fn FirstGreaterOrEqualLinear( ust::array_view_imut</T/> r, T& el, Compare& comp ) : size_type
+{
 	for( var size_type mut i= 0s; i < r.size(); ++i )
 	{
-		if( el < r[i] )
+		if( !comp( r[i], el ) )
 		{
 			return i;
 		}
@@ -205,19 +246,18 @@ fn FirstGreaterLinear( ust::array_view_imut</T/> r, T& el ) : size_type
 template</type T/>
 fn FirstGreaterOrEqualLinear( ust::array_view_imut</T/> r, T& el ) : size_type
 {
-	for( var size_type mut i= 0s; i < r.size(); ++i )
-	{
-		if( el <= r[i] )
-		{
-			return i;
-		}
-	}
-	return r.size();
+	return FirstGreaterOrEqualLinear( r, el, ust::default_compare</T/>() );
+}
+
+template</type T, type Compare/>
+fn EqualRangeLinear( ust::array_view_imut</T/> r, T& el, Compare& comp ) : [ size_type, 2 ]
+{
+	var [ size_type, 2 ] res[ FirstGreaterOrEqualLinear( r, el, comp ), FirstGreaterLinear( r, el, comp ) ];
+	return res;
 }
 
 template</type T/>
 fn EqualRangeLinear( ust::array_view_imut</T/> r, T& el ) : [ size_type, 2 ]
 {
-	var [ size_type, 2 ] res[ FirstGreaterOrEqualLinear( r, el ), FirstGreaterLinear( r, el ) ];
-	return res;
+	return EqualRangeLinear( r, el, ust::default_compare</T/>() );
 }
