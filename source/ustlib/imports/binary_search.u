@@ -1,0 +1,79 @@
+import "random_access_range.u"
+
+import "stdout.u"
+import "string.u"
+import "string_conversions.u"
+
+namespace ust
+{
+
+namespace binary_search
+{
+
+// Find index of the first element which is greater than given value or equal to it.
+// Returns range size if not found.
+template</type T/>
+fn first_greater_or_equal( array_view_imut</T/> r, T& el ) : size_type
+{
+	/*
+	for( var size_type mut i= 0s; i < r.size(); ++i )
+	{
+		if( !( r[i] <= el ) )
+		{
+			return i;
+		}
+	}
+	return r.size();
+	*/
+
+	ust::stdout_print( ust::concat( "Searching for ", ust::to_string8(el), "\n" ) );
+
+	if( r.empty() )
+	{
+		return 0s;
+	}
+
+	var size_type mut begin= 0s, mut end= r.size();
+	loop
+	{
+		var size_type middle= begin + ((end - begin) >> 1u);
+
+		ust::stdout_print( ust::concat( "Process range for ", ust::to_string8(begin), " to ", ust::to_string8(end), " with middle ", ust::to_string8(middle), "\n" ) );
+
+		var bool less= r[middle] < el;
+		if(less)
+		{
+			ust::stdout_print( "Less\n" );
+			begin= middle;
+			if( begin + 1s == end )
+			{
+				return begin + 1s;
+			}
+		}
+		else
+		{
+			ust::stdout_print( "Not less\n" );
+			end= middle;
+			if( begin == end )
+			{
+				return begin;
+			}
+		}
+	}
+}
+
+template</type T/>
+fn first_greater_or_equal( array_view_mut</T/> r, T& el ) : size_type
+{
+	return first_greater_or_equal</T/>( array_view_imut</T/>(r), el );
+}
+
+template</type T, size_type S/>
+fn first_greater_or_equal( [T, S]& arr, T& el ) : size_type
+{
+	return first_greater_or_equal</T/>( array_view_imut</T/>(arr), el );
+}
+
+} // namespace binary_search
+
+} // namespace ust
