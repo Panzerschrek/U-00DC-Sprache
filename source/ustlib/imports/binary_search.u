@@ -12,33 +12,21 @@ namespace binary_search
 template</type T, type Compare/>
 fn first_greater( array_view_imut</T/> r, T& el, Compare& comp ) : size_type
 {
-	if( r.empty() )
-	{
-		return 0s;
-	}
-
 	var size_type mut begin= 0s, mut end= r.size();
-	loop
+	while( begin < end )
 	{
 		var size_type middle= begin + ((end - begin) >> 1u);
 
 		if( comp( el, r[middle] ) )
 		{
 			end= middle;
-			if( begin == end )
-			{
-				return begin;
-			}
 		}
 		else
 		{
-			if( begin == middle )
-			{
-				return end;
-			}
-			begin= middle;
+			begin= middle + 1s;
 		}
 	}
+	return begin;
 }
 
 // Search using key obtained via given key provider function.
@@ -71,33 +59,21 @@ fn first_greater( [T, S]& arr, T& el ) : size_type
 template</type T, type Compare/>
 fn first_greater_or_equal( array_view_imut</T/> r, T& el, Compare& comp ) : size_type
 {
-	if( r.empty() )
-	{
-		return 0s;
-	}
-
 	var size_type mut begin= 0s, mut end= r.size();
-	loop
+	while( begin < end )
 	{
 		var size_type middle= begin + ((end - begin) >> 1u);
 
 		if( comp( r[middle], el ) )
 		{
-			if( begin == middle )
-			{
-				return end;
-			}
-			begin= middle;
+			begin= middle + 1s;
 		}
 		else
 		{
 			end= middle;
-			if( begin == end )
-			{
-				return begin;
-			}
 		}
 	}
+	return begin;
 }
 
 // Search using key obtained via given key provider function.
