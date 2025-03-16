@@ -125,8 +125,8 @@ fn first_greater_or_equal( [T, S]& arr, T& el ) : size_type
 template</type T, type Compare/>
 fn equal_range( array_view_imut</T/> r, T& el, Compare& comp ) : [ size_type, 2 ]
 {
-	var size_type ge= first_greater_or_equal( r, el, comp );
-	var size_type g= ge + first_greater( r.subrange_start( ge ), el, comp );
+	var size_type g= first_greater( r, el, comp );
+	var size_type ge= first_greater_or_equal( r.subrange_end(g), el, comp );
 	var [ size_type, 2 ] res[ ge, g ];
 	return res;
 }
