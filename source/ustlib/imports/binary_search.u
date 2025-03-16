@@ -1,3 +1,4 @@
+import "assert.u"
 import "compare.u"
 import "random_access_range.u"
 
@@ -15,7 +16,11 @@ fn first_greater( array_view_imut</T/> r, T& el, Compare& comp ) : size_type
 	var size_type mut begin= 0s, mut end= r.size();
 	while( begin < end )
 	{
+		debug_assert( begin < r.size() );
+		debug_assert( end <= r.size() );
+
 		var size_type middle= begin + ((end - begin) >> 1u);
+		debug_assert( middle >= begin && middle < end );
 
 		if( comp( el, r[middle] ) )
 		{
@@ -26,6 +31,8 @@ fn first_greater( array_view_imut</T/> r, T& el, Compare& comp ) : size_type
 			begin= middle + 1s;
 		}
 	}
+
+	debug_assert( begin <= r.size() );
 	return begin;
 }
 
@@ -62,7 +69,11 @@ fn first_greater_or_equal( array_view_imut</T/> r, T& el, Compare& comp ) : size
 	var size_type mut begin= 0s, mut end= r.size();
 	while( begin < end )
 	{
+		debug_assert( begin < r.size() );
+		debug_assert( end <= r.size() );
+
 		var size_type middle= begin + ((end - begin) >> 1u);
+		debug_assert( middle >= begin && middle < end );
 
 		if( comp( r[middle], el ) )
 		{
@@ -73,6 +84,8 @@ fn first_greater_or_equal( array_view_imut</T/> r, T& el, Compare& comp ) : size
 			end= middle;
 		}
 	}
+
+	debug_assert( begin <= r.size() );
 	return begin;
 }
 
