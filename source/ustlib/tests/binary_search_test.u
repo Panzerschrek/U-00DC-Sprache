@@ -47,7 +47,75 @@ fn nomangle main() : i32
 		TestGreaterOrEqual( range );
 	}
 
+	// Test all possible combinations of numbers 0-7.
+	// Even the most of these combinations aren't valid for binary search (not sorted), we still should ensure that binary search doesn't crash or loop forever.
+	for( auto mut a= 0; a < 7; ++a )
+	{
+		for( auto mut b= 0; b < 7; ++b )
+		{
+			for( auto mut c= 0; c < 7; ++c )
+			{
+				for( auto mut d= 0; d < 7; ++d )
+				{
+					for( auto mut e= 0; e < 7; ++e )
+					{
+						for( auto mut f= 0; f < 7; ++f )
+						{
+							for( auto mut g= 0; g < 7; ++g )
+							{
+								var [ i32, 7 ] arr[ a, b, c, d, e, f, g ];
+								var ust::array_view_imut</i32/> range= arr;
+
+								var bool is_sorted= IsSorted( range );
+
+								// For each possible subrange search for position for each possible number.
+								for( var size_type mut start= 0s; start < range.size(); ++start )
+								{
+									for( var size_type mut end= start; end < range.size(); ++end )
+									{
+										auto subrange= range.subrange( start, end );
+										for( auto mut i= -1; i < 7 + 1; ++i )
+										{
+											var size_type greater_res= ust::binary_search::first_greater( subrange, i );
+											var size_type greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i );
+											if( is_sorted )
+											{
+												// If this combination is sorted check if returned result is equal to expected by linear search.
+												assert( greater_res == FirstGreaterLinear( subrange, i ) );
+												assert( greater_equal_res == FirstGreaterOrEqualLinear( subrange, i ) );
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return 0;
+}
+
+// TODO - create a function within ustlib?
+template</type T/>
+fn IsSorted( ust::array_view_imut</T/> range ) : bool
+{
+	if( range.size() <= 1s )
+	{
+		return true;
+	}
+
+	for( auto mut i= 1s; i < range.size(); ++i )
+	{
+		if( range[i - 1s] > range[i] )
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 fn TestGreater( ust::array_view_imut</i32/> range )
