@@ -41,6 +41,13 @@ fn first_greater( array_view_imut</T/> r, T& el, Compare& comp ) : size_type
 	}
 }
 
+// Search using key obtained via given key provider function.
+template</type T, type KeyProvider/>
+fn first_greater_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : size_type
+{
+	return first_greater( r, el, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
+}
+
 template</type T/>
 fn first_greater( array_view_imut</T/> r, T& el ) : size_type
 {
@@ -93,6 +100,13 @@ fn first_greater_or_equal( array_view_imut</T/> r, T& el, Compare& comp ) : size
 	}
 }
 
+// Search using key obtained via given key provider function.
+template</type T, type KeyProvider/>
+fn first_greater_or_equal_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : size_type
+{
+	return first_greater_or_equal( r, el, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
+}
+
 template</type T/>
 fn first_greater_or_equal( array_view_imut</T/> r, T& el ) : size_type
 {
@@ -124,6 +138,13 @@ fn equal_range( array_view_imut</T/> r, T& el, Compare& comp ) : [ size_type, 2 
 	var size_type g= ge + first_greater( r.subrange_start( ge ), el, comp );
 	var [ size_type, 2 ] res[ ge, g ];
 	return res;
+}
+
+// Search using key obtained via given key provider function.
+template</type T, type KeyProvider/>
+fn equal_range_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : [ size_type, 2 ]
+{
+	return equal_range( r, el, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
 }
 
 template</type T/>

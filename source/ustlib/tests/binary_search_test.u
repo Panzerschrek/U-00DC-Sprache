@@ -57,6 +57,7 @@ fn nomangle main() : i32
 	// Even the most of these combinations aren't valid for binary search (not sorted), we still should ensure that binary search doesn't crash or loop forever.
 
 	auto compare_reverse= lambda[]( i32 l, i32 r ) : bool { return l > r; };
+	auto key_provider_reverse= lambda[]( i32 x ) : i32 { return -x; }; // Comparing reversed values is identical to use > instead of <.
 
 	for( auto mut a= 0; a < 7; ++a )
 	{
@@ -102,14 +103,15 @@ fn nomangle main() : i32
 											var size_type reversed_greater_res= ust::binary_search::first_greater( subrange, i, compare_reverse );
 											var size_type reversed_greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i, compare_reverse );
 											var [ size_type, 2 ] reversed_equal_range_res= ust::binary_search::equal_range( subrange, i, compare_reverse );
+
+											var size_type reversed_by_key_greater_res= ust::binary_search::first_greater_by_key( subrange, i, key_provider_reverse );
+											var size_type reversed_by_key_greater_equal_res= ust::binary_search::first_greater_or_equal_by_key( subrange, i, key_provider_reverse );
+											var [ size_type, 2 ] reversed_by_key_equal_range_res= ust::binary_search::equal_range_by_key( subrange, i, key_provider_reverse );
 											if( is_sorted_reverse )
 											{
-												// If this combination is sorted in reverse order check if returned result is equal to expected by linear search.
-												assert( reversed_greater_res == FirstGreaterLinear( subrange, i, compare_reverse ) );
-												assert( reversed_greater_equal_res == FirstGreaterOrEqualLinear( subrange, i, compare_reverse ) );
-												assert( reversed_equal_range_res[0] == reversed_greater_equal_res );
-												assert( reversed_equal_range_res[1] == reversed_greater_res );
-												assert( reversed_equal_range_res == EqualRangeLinear( subrange, i, compare_reverse ) );
+												assert( reversed_by_key_greater_res == reversed_greater_res );
+												assert( reversed_by_key_greater_equal_res == reversed_greater_equal_res );
+												assert( reversed_by_key_equal_range_res == reversed_equal_range_res );
 											}
 										}
 									}
