@@ -8,40 +8,66 @@ fn nomangle main() : i32
 		// All nums are unique.
 		var [ i32, 32 ] arr[ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 ];
 		var ust::array_view_imut</i32/> range= arr;
-		TestGreaterOrEqual( ust::array_view_imut</i32/>(arr) );
+		TestGreater( range );
+		TestGreaterOrEqual( range );
 	}
 	{
 		// Duplicates at start.
 		var [ i32, 8 ] arr[ -1, -1, -1, 1, 4, 5, 7, 8 ];
 		var ust::array_view_imut</i32/> range= arr;
-		TestGreaterOrEqual( ust::array_view_imut</i32/>(arr) );
+		TestGreater( range );
+		TestGreaterOrEqual( range );
 	}
 	{
 		// Duplicates at end.
 		var [ i32, 8 ] arr[ -2, -1, 1, 4, 5, 7, 8, 8 ];
 		var ust::array_view_imut</i32/> range= arr;
-		TestGreaterOrEqual( ust::array_view_imut</i32/>(arr) );
+		TestGreater( range );
+		TestGreaterOrEqual( range );
 	}
 	{
 		// Duplicates  in the middle.
 		var [ i32, 8 ] arr[ -2, -1, 1, 4, 4, 5, 7, 8 ];
 		var ust::array_view_imut</i32/> range= arr;
-		TestGreaterOrEqual( ust::array_view_imut</i32/>(arr) );
+		TestGreater( range );
+		TestGreaterOrEqual( range );
 	}
 	{
 		// Duplicates  in the middle.
 		var [ i32, 8 ] arr[ -2, -1, -1, 1, 4, 5, 7, 8 ];
 		var ust::array_view_imut</i32/> range= arr;
-		TestGreaterOrEqual( ust::array_view_imut</i32/>(arr) );
+		TestGreater( range );
+		TestGreaterOrEqual( range );
 	}
 	{
 		// Duplicates everywhere.
 		var [ i32, 16 ] arr[ 1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5, 5, 6, 6 ];
 		var ust::array_view_imut</i32/> range= arr;
-		TestGreaterOrEqual( ust::array_view_imut</i32/>(arr) );
+		TestGreater( range );
+		TestGreaterOrEqual( range );
 	}
 
 	return 0;
+}
+
+fn TestGreater( ust::array_view_imut</i32/> range )
+{
+	// For each possible subrange search for position for each possible number.
+	for( var size_type mut start= 0s; start < range.size(); ++start )
+	{
+		for( var size_type mut end= start; end < range.size(); ++end )
+		{
+			auto subrange= range.subrange( start, end );
+			foreach( el : range )
+			{
+				assert( ust::binary_search::first_greater( subrange, el ) == FirstGreaterLinear( subrange, el ) );
+			}
+			assert( ust::binary_search::first_greater( subrange, range.front() - 2 ) == 0s );
+			assert( ust::binary_search::first_greater( subrange, range.front() - 1 ) == 0s );
+			assert( ust::binary_search::first_greater( subrange, range.back() + 1 ) == subrange.size() );
+			assert( ust::binary_search::first_greater( subrange, range.back() + 2 ) == subrange.size() );
+		}
+	}
 }
 
 fn TestGreaterOrEqual( ust::array_view_imut</i32/> range )
@@ -62,6 +88,19 @@ fn TestGreaterOrEqual( ust::array_view_imut</i32/> range )
 			assert( ust::binary_search::first_greater_or_equal( subrange, range.back() + 2 ) == subrange.size() );
 		}
 	}
+}
+
+template</type T/>
+fn FirstGreaterLinear( ust::array_view_imut</T/> r, T& el ) : size_type
+{
+	for( var size_type mut i= 0s; i < r.size(); ++i )
+	{
+		if( el < r[i] )
+		{
+			return i;
+		}
+	}
+	return r.size();
 }
 
 template</type T/>

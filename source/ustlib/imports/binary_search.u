@@ -10,6 +10,52 @@ namespace ust
 namespace binary_search
 {
 
+// Find index of the first element which is greater than given value.
+// Returns range size if not found.
+template</type T/>
+fn first_greater( array_view_imut</T/> r, T& el ) : size_type
+{
+	if( r.empty() )
+	{
+		return 0s;
+	}
+
+	var size_type mut begin= 0s, mut end= r.size();
+	loop
+	{
+		var size_type middle= begin + ((end - begin) >> 1u);
+
+		if( r[middle] <= el )
+		{
+			if( begin == middle )
+			{
+				return end;
+			}
+			begin= middle;
+		}
+		else
+		{
+			end= middle;
+			if( begin == end )
+			{
+				return begin;
+			}
+		}
+	}
+}
+
+template</type T/>
+fn first_greater( array_view_mut</T/> r, T& el ) : size_type
+{
+	return first_greater</T/>( array_view_imut</T/>(r), el );
+}
+
+template</type T, size_type S/>
+fn first_greater( [T, S]& arr, T& el ) : size_type
+{
+	return first_greater</T/>( array_view_imut</T/>(arr), el );
+}
+
 // Find index of the first element which is greater than given value or equal to it.
 // Returns range size if not found.
 template</type T/>
