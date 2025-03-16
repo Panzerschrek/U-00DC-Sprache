@@ -22,7 +22,8 @@ fn first_greater( array_view_imut</T/> r, T& el, Compare& comp ) : size_type
 		var size_type middle= begin + ((end - begin) >> 1u);
 		debug_assert( middle >= begin && middle < end );
 
-		if( comp( el, r[middle] ) )
+		// Use unchecked indexing for better performance.
+		if( comp( el, unsafe( r.index_unchecked(middle) ) ) )
 		{
 			end= middle;
 		}
@@ -75,7 +76,8 @@ fn first_greater_or_equal( array_view_imut</T/> r, T& el, Compare& comp ) : size
 		var size_type middle= begin + ((end - begin) >> 1u);
 		debug_assert( middle >= begin && middle < end );
 
-		if( comp( r[middle], el ) )
+		// Use unchecked indexing for better performance.
+		if( comp( unsafe( r.index_unchecked(middle) ), el ) )
 		{
 			begin= middle + 1s;
 		}
