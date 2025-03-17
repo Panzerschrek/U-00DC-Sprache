@@ -64,7 +64,7 @@ fn CreateTemplateErrorsContext(
 			}
 			else { halt; }
 
-			if( ust::ref_cmp_ne( param, template_.params.front() ) )
+			if( ust::ref_cmp_ne( param, template_.params.back() ) )
 			{
 				result.args_description+= ", ";
 			}
