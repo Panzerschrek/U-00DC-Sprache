@@ -59,7 +59,7 @@ fn is_sorted_by_key( T& container, KeyProvider mut key_provider ) : bool
 template</type T, type KeyProvider/>
 fn is_sorted_by_key( random_access_range</T, false/> range, KeyProvider mut key_provider ) : bool
 {
-	return is_sorted_by_key( range, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
+	return is_sorted( range, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
 }
 
 // Generic sort overloading for types other than "random_access_range".

@@ -90,18 +90,25 @@ fn CompareStringSize( ust::string8& l, ust::string8& r ) : bool
 	return l.size() < r.size();
 }
 
+fn GetNegative( i32 x ) : i32
+{
+	return -x;
+}
+
 fn nomangle main() : i32
 {
 	{ // "is_sorted" for empty array.
 		var [ i32, 0 ] arr[ ];
 		halt if( !ust::is_sorted( arr ) );
 		halt if( !ust::is_sorted( IntRangeImut(arr), CompareGreater() ) );
+		halt if( !ust::is_sorted_by_key( IntRangeImut(arr), GetNegative ) );
 	}
 
 	{ // "is_sorted" for array consisting of single element.
 		var [ i32, 1 ]  arr[ 55 ];
 		halt if( !ust::is_sorted( arr ) );
 		halt if( !ust::is_sorted( IntRangeImut(arr), CompareGreater() ) );
+		halt if( !ust::is_sorted_by_key( IntRangeImut(arr), GetNegative ) );
 	}
 
 	{ // "is_sorted" for array consisting of two elements.
@@ -112,6 +119,9 @@ fn nomangle main() : i32
 		halt if(  ust::is_sorted( IntRangeImut(arr_sorted), CompareGreater() ) );
 		halt if( !ust::is_sorted( IntRangeImut(arr_unsorted), CompareGreater() ) );
 		halt if( !ust::is_sorted( IntRangeImut(arr_equal), CompareGreater() ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(arr_sorted), GetNegative ) );
+		halt if( !ust::is_sorted_by_key( IntRangeImut(arr_unsorted), GetNegative ) );
+		halt if( !ust::is_sorted_by_key( IntRangeImut(arr_equal), GetNegative ) );
 	}
 
 	{ // "is_sorted" for array consisting of three elements.
@@ -129,6 +139,12 @@ fn nomangle main() : i32
 		halt if(  ust::is_sorted( IntRangeImut(d), CompareGreater() ) );
 		halt if(  ust::is_sorted( IntRangeImut(e), CompareGreater() ) );
 		halt if( !ust::is_sorted( IntRangeImut(f), CompareGreater() ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(a), GetNegative ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(b), GetNegative ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(c), GetNegative ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(d), GetNegative ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(e), GetNegative ) );
+		halt if( !ust::is_sorted_by_key( IntRangeImut(f), GetNegative ) );
 	}
 	{ // "is_sorted" for array consisting of three elements, two of them are equal.
 		var [ i32, 3 ]
@@ -153,6 +169,15 @@ fn nomangle main() : i32
 		halt if(  ust::is_sorted( IntRangeImut(g), CompareGreater() ) );
 		halt if(  ust::is_sorted( IntRangeImut(h), CompareGreater() ) );
 		halt if( !ust::is_sorted( IntRangeImut(i), CompareGreater() ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(a), GetNegative ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(b), GetNegative ) );
+		halt if( !ust::is_sorted_by_key( IntRangeImut(c), GetNegative ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(d), GetNegative ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(e), GetNegative ) );
+		halt if( !ust::is_sorted_by_key( IntRangeImut(f), GetNegative ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(g), GetNegative ) );
+		halt if(  ust::is_sorted_by_key( IntRangeImut(h), GetNegative ) );
+		halt if( !ust::is_sorted_by_key( IntRangeImut(i), GetNegative ) );
 	}
 
 	{ // Sort empty array.
