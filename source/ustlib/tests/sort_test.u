@@ -17,48 +17,6 @@ fn ArrayEq( [ T, S ]& l, [ T, S ]& r ) : bool
 	return true;
 }
 
-template</ type T, size_type S />
-fn IsSorted( [ T, S ]& arr ) : bool
-{
-	for( auto mut i= 1s; i < S; ++i )
-	{
-		if( arr[i] < arr[i-1s] )
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-template</ type T />
-fn IsSorted( ust::vector</T/>& vec ) : bool
-{
-	for( auto mut i= 1s; i < vec.size(); ++i )
-	{
-		if( vec[i] < vec[i-1s] )
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-template</ type T, size_type S, type Compare />
-fn IsSorted( [ T, S ]& arr, Compare& comp ) : bool
-{
-	for( auto mut i= 1s; i < S; ++i )
-	{
-		if( !comp( arr[i-1s], arr[i] ) )
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
 class RandGenerator
 {
 public:
@@ -183,13 +141,13 @@ fn nomangle main() : i32
 	{ // Sort empty array.
 		var [ i32, 0 ] mut arr[ ];
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 
 	{
 		var [ i32, 1 ] mut arr[ 45254 ];
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 
 	// All combinations of 2 elements.
@@ -199,7 +157,7 @@ fn nomangle main() : i32
 		{
 			var [ i32, 2 ] mut arr[ i0, i1 ];
 			ust::sort( arr );
-			halt if( !IsSorted( arr ) );
+			halt if( !ust::is_sorted( arr ) );
 		}
 	}
 
@@ -212,7 +170,7 @@ fn nomangle main() : i32
 			{
 				var [ i32, 3 ] mut arr[ i0, i1, i2 ];
 				ust::sort( arr );
-				halt if( !IsSorted( arr ) );
+				halt if( !ust::is_sorted( arr ) );
 			}
 		}
 	}
@@ -228,7 +186,7 @@ fn nomangle main() : i32
 				{
 					var [ i32, 4 ] mut arr[ i0, i1, i2, i3 ];
 					ust::sort( arr );
-					halt if( !IsSorted( arr ) );
+					halt if( !ust::is_sorted( arr ) );
 				}
 			}
 		}
@@ -247,7 +205,7 @@ fn nomangle main() : i32
 					{
 						var [ i32, 5 ] mut arr[ i0, i1, i2, i3, i4 ];
 						ust::sort( arr );
-						halt if( !IsSorted( arr ) );
+						halt if( !ust::is_sorted( arr ) );
 					}
 				}
 			}
@@ -269,7 +227,7 @@ fn nomangle main() : i32
 						{
 							var [ i32, 6 ] mut arr[ i0, i1, i2, i3, i4, i5 ];
 							ust::sort( arr );
-							halt if( !IsSorted( arr ) );
+							halt if( !ust::is_sorted( arr ) );
 						}
 					}
 				}
@@ -294,7 +252,7 @@ fn nomangle main() : i32
 							{
 								var [ i32, 7 ] mut arr[ i0, i1, i2, i3, i4, i5, i6 ];
 								ust::sort( arr );
-								halt if( !IsSorted( arr ) );
+								halt if( !ust::is_sorted( arr ) );
 							}
 						}
 					}
@@ -306,7 +264,7 @@ fn nomangle main() : i32
 	{ // All elements are same.
 		var [ i32, 50 ] mut arr= zero_init;
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Cases, where all elements are same, except one element which is greater than others.
 		auto num= 100;
@@ -315,7 +273,7 @@ fn nomangle main() : i32
 			var [ i32, num ] mut arr= zero_init;
 			arr[ u32(i) ]= 1;
 			ust::sort( arr );
-			halt if( !IsSorted( arr ) );
+			halt if( !ust::is_sorted( arr ) );
 		}
 	}
 	{ // Cases, where all elements are same, except one element which is less than others.
@@ -325,7 +283,7 @@ fn nomangle main() : i32
 			var [ i32, num ] mut arr= zero_init;
 			arr[ u32(i) ]= -1;
 			ust::sort( arr );
-			halt if( !IsSorted( arr ) );
+			halt if( !ust::is_sorted( arr ) );
 		}
 	}
 	{ // Sort sorted array.
@@ -335,9 +293,9 @@ fn nomangle main() : i32
 		{
 			arr[ u32(i) ]= i;
 		}
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 
 	{ // Sort reverse-sorted array.
@@ -349,7 +307,7 @@ fn nomangle main() : i32
 		}
 
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Sort array with only two values - 0 or 1.
 		auto num= 107;
@@ -360,7 +318,7 @@ fn nomangle main() : i32
 		}
 
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Sort sorted array with only two values - 0 or 1.
 		auto num= 120;
@@ -371,7 +329,7 @@ fn nomangle main() : i32
 		}
 
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Sort reverse-sorted array with only two values - 0 or 1.
 		auto num= 106;
@@ -382,7 +340,7 @@ fn nomangle main() : i32
 		}
 
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Test for complexity. Sort array of million pseudo-random numbers.
 		var ust::vector</i32/> mut vec;
@@ -395,7 +353,7 @@ fn nomangle main() : i32
 		}
 
 		ust::sort( vec );
-		halt if( !IsSorted( vec ) );
+		halt if( !ust::is_sorted( vec ) );
 	}
 	{ // Test for complexity. Sort already sorted array.
 		var ust::vector</i32/> mut vec;
@@ -411,7 +369,7 @@ fn nomangle main() : i32
 		}
 
 		ust::sort( vec );
-		halt if( !IsSorted( vec ) );
+		halt if( !ust::is_sorted( vec ) );
 	}
 	{ // Test for complexity. Sort reverse-sorted array.
 		var ust::vector</i32/> mut vec;
@@ -427,7 +385,7 @@ fn nomangle main() : i32
 		}
 
 		ust::sort( vec );
-		halt if( !IsSorted( vec ) );
+		halt if( !ust::is_sorted( vec ) );
 	}
 	{ // Sort, using custom comparator in form of function pointer.
 		auto num= 113;
@@ -440,7 +398,7 @@ fn nomangle main() : i32
 		}
 
 		ust::sort( IntRange(arr), CompareAbs );
-		halt if( !IsSorted( arr, CompareAbs ) );
+		halt if( !ust::is_sorted( IntRangeImut(arr), CompareAbs ) );
 	}
 	{ // Sort by key, using custom key provider in form of function pointer.
 		auto num= 113;
@@ -456,7 +414,7 @@ fn nomangle main() : i32
 		var ( fn( i32 l, i32 r ) : bool ) comp= CompareAbs;
 
 		ust::sort_by_key( IntRange(arr), abs_func );
-		halt if( !IsSorted( arr, CompareAbs ) );
+		halt if( !ust::is_sorted( IntRangeImut(arr), CompareAbs ) );
 	}
 	{ // Sort, using custom comparator in form of functional object.
 		auto num= 99;
@@ -469,7 +427,7 @@ fn nomangle main() : i32
 		}
 
 		ust::sort( IntRange(arr), CompareGreater() );
-		halt if( !IsSorted( arr, CompareGreater() ) );
+		halt if( !ust::is_sorted( IntRangeImut(arr), CompareGreater() ) );
 	}
 	{ // Sort, using custom comparator in form of lambda.
 		auto num= 99;
@@ -483,20 +441,20 @@ fn nomangle main() : i32
 
 		auto greater= lambda( i32 x, i32 y ) : bool { return x > y; };
 		ust::sort( IntRange(arr), greater );
-		halt if( !IsSorted( arr, greater ) );
+		halt if( !ust::is_sorted( IntRangeImut(arr), greater ) );
 	}
 	{
 		var [ ust::string8, 6 ] mut arr[ "aqwsd", "", "1", "n6Y", "4R", "dawghawfaw" ];
 
 		ust::sort( ust::array_view_mut</ ust::string8 />( arr ), CompareStringSize );
-		halt if( !IsSorted( arr, CompareStringSize ) );
+		halt if( !ust::is_sorted( ust::array_view_imut</ ust::string8 />( arr ), CompareStringSize ) );
 	}
 	{
 		var [ ust::string8, 6 ] mut arr[ "aqwsd", "", "1", "n6Y", "4R", "dawghawfaw" ];
 
 		// The same as above, but use "sort_by_key" version of sorting algorithm.
 		ust::sort_by_key( ust::array_view_mut</ ust::string8 />( arr ), ust::string8::size );
-		halt if( !IsSorted( arr, CompareStringSize ) );
+		halt if( !ust::is_sorted_by_key( ust::array_view_imut</ ust::string8 />( arr ), ust::string8::size ) );
 	}
 	{ // Sort strings using default (<) comparator
 		auto num= 23s;
@@ -504,7 +462,7 @@ fn nomangle main() : i32
 			 mut arr[ "4", "8", "15", "16", "23", "42", "quck", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "Bc", "Ba", "A", "Af", "L", "lolwat", "Zy", "XXX", "" ],
 			imut res[ "", "15", "16", "23", "4", "42", "8", "A", "Af", "Ba", "Bc", "L", "XXX", "Zy", "brown", "dog", "fox", "jumps", "lazy", "lolwat", "over", "quck", "the" ];
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 
 		for( auto mut i= 0s; i < num; ++i )
 		{
@@ -517,17 +475,17 @@ fn nomangle main() : i32
 	{ // Sort array with "NaN" in random positions.
 		var [ f32, 8 ] mut arr[ 0.0f, -5.0f, nan_f, 1.3f, nan_f, 256.66f, -999.0f, nan_f ];
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Sort array with "NaN" at start.
 		var [ f32, 8 ] mut arr[ nan_f, nan_f, nan_f, 0.0f, -5.0f, 1.3f, 256.66f, -999.0f ];
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Sort array with "NaN" at end.
 		var [ f32, 8 ] mut arr[ 0.0f, -5.0f, 1.3f, 256.66f, -999.0f, nan_f, nan_f, nan_f ];
 		ust::sort( arr );
-		halt if( !IsSorted( arr ) );
+		halt if( !ust::is_sorted( arr ) );
 	}
 
 	return 0;
