@@ -49,19 +49,27 @@ fn first_greater_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_prov
 template</type T/>
 fn first_greater( array_view_imut</T/> r, T& el ) : size_type
 {
-	return first_greater</T/>( r, el, default_compare</T/>() );
+	return first_greater( r, el, default_compare</T/>() );
 }
 
 template</type T/>
 fn first_greater( array_view_mut</T/> r, T& el ) : size_type
 {
-	return first_greater</T/>( array_view_imut</T/>(r), el );
+	return first_greater( array_view_imut</T/>(r), el );
 }
 
 template</type T, size_type S/>
 fn first_greater( [T, S]& arr, T& el ) : size_type
 {
-	return first_greater</T/>( array_view_imut</T/>(arr), el );
+	return first_greater( array_view_imut</T/>(arr), el );
+}
+
+// Generic "first_greater" overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+template</type Container, type El/>
+fn first_greater( Container& container, El& el ) : size_type
+{
+	return first_greater( container.range(), el );
 }
 
 // Find index of the first element which is greater than given value or equal to it.
@@ -111,13 +119,21 @@ fn first_greater_or_equal( array_view_imut</T/> r, T& el ) : size_type
 template</type T/>
 fn first_greater_or_equal( array_view_mut</T/> r, T& el ) : size_type
 {
-	return first_greater_or_equal</T/>( array_view_imut</T/>(r), el );
+	return first_greater_or_equal( array_view_imut</T/>(r), el );
 }
 
 template</type T, size_type S/>
 fn first_greater_or_equal( [T, S]& arr, T& el ) : size_type
 {
-	return first_greater_or_equal</T/>( array_view_imut</T/>(arr), el );
+	return first_greater_or_equal( array_view_imut</T/>(arr), el );
+}
+
+// Generic "first_greater_or_equal" overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+template</type Container, type El/>
+fn first_greater_or_equal( Container& container, El& el ) : size_type
+{
+	return first_greater_or_equal( container.range(), el );
 }
 
 // Returns a pair of indices.
@@ -153,13 +169,21 @@ fn equal_range( array_view_imut</T/> r, T& el ) : [ size_type, 2 ]
 template</type T/>
 fn equal_range( array_view_mut</T/> r, T& el ) : [ size_type, 2 ]
 {
-	return equal_range</T/>( array_view_imut</T/>(r), el );
+	return equal_range( array_view_imut</T/>(r), el );
 }
 
 template</type T, size_type S/>
 fn equal_range( [T, S]& arr, T& el ) : [ size_type, 2 ]
 {
-	return equal_range</T/>( array_view_imut</T/>(arr), el );
+	return equal_range( array_view_imut</T/>(arr), el );
+}
+
+// Generic "equal_range" overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+template</type Container, type El/>
+fn equal_range( Container& container, El& el ) : [ size_type, 2 ]
+{
+	return equal_range( container.range(), el );
 }
 
 // Check if given element exists in given range.
@@ -193,6 +217,14 @@ template</type T, size_type S/>
 fn is_present( [T, S]& arr, T& el ) : bool
 {
 	return is_present( array_view_imut</T/>(arr), el );
+}
+
+// Generic "is_present" overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+template</type Container, type El/>
+fn is_present( Container& container, El& el ) : bool
+{
+	return is_present( container.range(), el );
 }
 
 } // namespace binary_search
