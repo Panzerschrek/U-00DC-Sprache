@@ -1,4 +1,6 @@
 import argparse
+import concurrent.futures
+import multiprocessing
 import os
 import subprocess
 import sys
@@ -214,18 +216,42 @@ def RunTestForFile( file_path ):
 	return result
 
 
-def RunTestsInDirectory( dir_path ):
+def StartTestTasksInDirectory_r( executor, dir_path ):
+
 	print( "Running test for directory \"" + dir_path + "\"" )
 
-	result= 0
+	tasks_list = []
+
 	for path in os.listdir( dir_path ):
 
 		full_name= os.path.join( dir_path, path )
 
 		if os.path.isdir(full_name):
-			result+= RunTestsInDirectory( full_name )
+			tasks_list.extend( StartTestTasksInDirectory_r( executor, full_name ) )
 		elif os.path.isfile( full_name ) and full_name.endswith( ".u" ):
-			result+= RunTestForFile( full_name )
+			tasks_list.append( executor.submit( RunTestForFile, full_name ) )
+
+	return tasks_list
+
+
+def RunTestsInDirectory( dir_path ):
+
+	result= 0
+
+	# Run tests in parallel, because some of them are computationally-expensive.
+	# Create number of threads equal to number of CPU cores.
+	num_cpus= multiprocessing.cpu_count()
+
+	with concurrent.futures.ThreadPoolExecutor( max_workers = num_cpus ) as executor:
+
+		tasks_list = StartTestTasksInDirectory_r( executor, dir_path )
+
+		for task in tasks_list:
+			try:
+				future_res= task.result()
+				result+= future_res
+			except Exception as e:
+				print( "Exception during execution: ", e )
 
 	return result
 
