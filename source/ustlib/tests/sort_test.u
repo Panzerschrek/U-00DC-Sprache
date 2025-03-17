@@ -5,6 +5,7 @@ import "../imports/string.u"
 import "../imports/vector.u"
 
 type IntRange= ust::random_access_range_mut</i32/>;
+type IntRangeImut= ust::random_access_range_imut</i32/>;
 
 template</ type T, size_type S />
 fn ArrayEq( [ T, S ]& l, [ T, S ]& r ) : bool
@@ -94,11 +95,13 @@ fn nomangle main() : i32
 	{ // "is_sorted" for empty array.
 		var [ i32, 0 ] arr[ ];
 		halt if( !ust::is_sorted( arr ) );
+		halt if( !ust::is_sorted( IntRangeImut(arr), CompareGreater() ) );
 	}
 
 	{ // "is_sorted" for array consisting of single element.
 		var [ i32, 1 ]  arr[ 55 ];
 		halt if( !ust::is_sorted( arr ) );
+		halt if( !ust::is_sorted( IntRangeImut(arr), CompareGreater() ) );
 	}
 
 	{ // "is_sorted" for array consisting of two elements.
@@ -106,6 +109,9 @@ fn nomangle main() : i32
 		halt if( !ust::is_sorted( arr_sorted ) );
 		halt if(  ust::is_sorted( arr_unsorted ) );
 		halt if( !ust::is_sorted( arr_equal ) );
+		halt if(  ust::is_sorted( IntRangeImut(arr_sorted), CompareGreater() ) );
+		halt if( !ust::is_sorted( IntRangeImut(arr_unsorted), CompareGreater() ) );
+		halt if( !ust::is_sorted( IntRangeImut(arr_equal), CompareGreater() ) );
 	}
 
 	{ // "is_sorted" for array consisting of three elements.
@@ -117,6 +123,12 @@ fn nomangle main() : i32
 		halt if(  ust::is_sorted( d ) );
 		halt if(  ust::is_sorted( e ) );
 		halt if(  ust::is_sorted( f ) );
+		halt if(  ust::is_sorted( IntRangeImut(a), CompareGreater() ) );
+		halt if(  ust::is_sorted( IntRangeImut(b), CompareGreater() ) );
+		halt if(  ust::is_sorted( IntRangeImut(c), CompareGreater() ) );
+		halt if(  ust::is_sorted( IntRangeImut(d), CompareGreater() ) );
+		halt if(  ust::is_sorted( IntRangeImut(e), CompareGreater() ) );
+		halt if( !ust::is_sorted( IntRangeImut(f), CompareGreater() ) );
 	}
 	{ // "is_sorted" for array consisting of three elements, two of them are equal.
 		var [ i32, 3 ]
@@ -132,6 +144,15 @@ fn nomangle main() : i32
 		halt if( !ust::is_sorted( g ) );
 		halt if(  ust::is_sorted( h ) );
 		halt if(  ust::is_sorted( i ) );
+		halt if(  ust::is_sorted( IntRangeImut(a), CompareGreater() ) );
+		halt if(  ust::is_sorted( IntRangeImut(b), CompareGreater() ) );
+		halt if( !ust::is_sorted( IntRangeImut(c), CompareGreater() ) );
+		halt if(  ust::is_sorted( IntRangeImut(d), CompareGreater() ) );
+		halt if(  ust::is_sorted( IntRangeImut(e), CompareGreater() ) );
+		halt if( !ust::is_sorted( IntRangeImut(f), CompareGreater() ) );
+		halt if(  ust::is_sorted( IntRangeImut(g), CompareGreater() ) );
+		halt if(  ust::is_sorted( IntRangeImut(h), CompareGreater() ) );
+		halt if( !ust::is_sorted( IntRangeImut(i), CompareGreater() ) );
 	}
 
 	{ // Sort empty array.
