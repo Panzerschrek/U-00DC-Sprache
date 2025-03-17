@@ -16,7 +16,9 @@ if you want to learn more, read its sources yourself.
 * Allocation/deallocation functions (alloc.u).
 * Asserts (assert.u).
 * Atomic operations support (atomic.u).
+* Binary search routines (binary_seach.u).
 * Math functions with overflow checks (checked_math.u).
+* Comparators for sorting and binary search (compare.u).
 * Helpers for arrays and tuples construction (composite.u).
   Contains functions which construct an array or tuple for given arguments.
 * Various container utils (container_utils.u).
