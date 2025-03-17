@@ -156,6 +156,32 @@ fn equal_range( [T, S]& arr, T& el ) : [ size_type, 2 ]
 	return equal_range</T/>( array_view_imut</T/>(arr), el );
 }
 
+// Check if given element exists in given range.
+template</type T, type El, type Compare/>
+fn is_present( array_view_imut</T/> r, El& el, Compare& comp ) : bool
+{
+	var size_type pos= first_greater_or_equal( r, el, comp );
+	return pos < r.size() && !comp( el, r[pos] );
+}
+
+template</type T/>
+fn is_present( array_view_imut</T/> r, T& el ) : bool
+{
+	return is_present( r, el, default_compare</T/>() );
+}
+
+template</type T/>
+fn is_present( array_view_mut</T/> r, T& el )  : bool
+{
+	return is_present( array_view_imut</T/>(r), el );
+}
+
+template</type T, size_type S/>
+fn is_present( [T, S]& arr, T& el ) : bool
+{
+	return is_present( array_view_imut</T/>(arr), el );
+}
+
 } // namespace binary_search
 
 } // namespace ust
