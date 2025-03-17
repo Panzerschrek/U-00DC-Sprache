@@ -35,10 +35,10 @@ fn is_sorted( random_access_range</T, false/> range, Compare& comp ) : bool
 		return true;
 	}
 
-	for( var size_type mut i= 1s; i < range.size(); ++i )
+	for( var size_type mut i= 0s, i_end = range.size() - 1s; i < i_end; ++i )
 	{
-		// TODO - use unsafe index.
-		if( comp( range[i], range[i - 1s] ) )
+		// Use unchecked indexing for slightly better performance.
+		if( comp( unsafe( range.index_unchecked( i + 1s ) ), unsafe( range.index_unchecked( i ) ) ) )
 		{
 			return false;
 		}
