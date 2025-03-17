@@ -225,9 +225,11 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			else if( value.GetErrorValue() != nullptr ){}
 			else if( const auto static_assert_= value.GetStaticAssert() )
 			{
-				BuildStaticAssert( *static_assert_, names_scope, *global_function_context_ );
-				global_function_context_->args_preevaluation_cache.clear();
-				global_function_context_->variables_state.Clear();
+				WithGlobalFunctionContext(
+					[&]( FunctionContext& function_context )
+					{
+						BuildStaticAssert( *static_assert_, names_scope, function_context );
+					} );
 			}
 			else if( value.GetTypeAlias() != nullptr )
 				GlobalThingBuildTypeAlias( names_scope, value );
@@ -386,9 +388,12 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 	NamesScope& class_parent_namespace= *class_type->members->GetParent();
 	for( const Synt::ComplexName& parent : class_declaration.parents )
 	{
-		const Value parent_value= ResolveValue( class_parent_namespace, *global_function_context_, parent );
-		global_function_context_->args_preevaluation_cache.clear();
-		global_function_context_->variables_state.Clear();
+		const Value parent_value=
+			WithGlobalFunctionContext(
+				[&]( FunctionContext& function_context )
+				{
+					return ResolveValue( class_parent_namespace, function_context, parent );
+				} );
 
 		const Type* const type_name= parent_value.GetTypeName();
 		if( type_name == nullptr )
@@ -499,9 +504,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 			class_field->class_= class_type;
 			class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
-			class_field->type= PrepareType( class_field->syntax_element->type, *the_class.members, *global_function_context_ );
-			global_function_context_->args_preevaluation_cache.clear();
-			global_function_context_->variables_state.Clear();
+
+			WithGlobalFunctionContext(
+				[&]( FunctionContext& function_context )
+				{
+					class_field->type= PrepareType( class_field->syntax_element->type, *the_class.members, function_context );
+				} );
 
 			if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 			{
@@ -1272,8 +1280,13 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	// Process custom underlying type.
 	if( enum_decl.underlying_type_name != std::nullopt )
 	{
-		const Value type_value= ResolveValue( names_scope, *global_function_context_, *enum_decl.underlying_type_name );
-		global_function_context_->args_preevaluation_cache.clear();
+		const Value type_value=
+			WithGlobalFunctionContext(
+				[&]( FunctionContext& function_context )
+				{
+					return ResolveValue( names_scope, function_context, *enum_decl.underlying_type_name );;
+				} );
+
 		const Type* const type= type_value.GetTypeName();
 		if( type == nullptr )
 			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), Synt::GetSrcLoc(*enum_decl.underlying_type_name), type_value.GetKindName() );
@@ -1354,12 +1367,23 @@ void CodeBuilder::GlobalThingBuildTypeAlias( NamesScope& names_scope, Value& typ
 	DETECT_GLOBALS_LOOP( &type_alias_value, syntax_element.name, syntax_element.src_loc );
 
 	// Replace value in names map, when type alias is comlete.
-	type_alias_value= PrepareType( syntax_element.value, names_scope, *global_function_context_ );
-	global_function_context_->args_preevaluation_cache.clear();
-	global_function_context_->variables_state.Clear();
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			type_alias_value= PrepareType( syntax_element.value, names_scope, function_context );
+		} );
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
+{
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			GlobalThingBuildVariableImpl( names_scope, global_variable_value, function_context );
+		} );
+}
+
+void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& global_variable_value, FunctionContext& function_context )
 {
 	U_ASSERT( global_variable_value.GetIncompleteGlobalVariable() != nullptr );
 	const IncompleteGlobalVariable incomplete_global_variable= *global_variable_value.GetIncompleteGlobalVariable();
@@ -1379,7 +1403,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	DETECT_GLOBALS_LOOP( &global_variable_value, std::string(name), src_loc );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
-	FunctionContext& function_context= *global_function_context_;
 	const StackVariablesStorage dummy_stack( function_context );
 
 	if( const auto variables_declaration= incomplete_global_variable.variables_declaration )
@@ -1611,9 +1634,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		global_variable_value= variable_reference;
 	}
 	else U_ASSERT(false);
-
-	global_function_context_->args_preevaluation_cache.clear();
-	global_function_context_->variables_state.Clear();
 
 	#undef FAIL_RETURN
 }

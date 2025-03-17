@@ -452,9 +452,12 @@ FunctionType::Param CodeBuilder::OverloadingResolutionItemGetParamExtendedType( 
 		}
 		else
 		{
-			result.type= PrepareType( param.type, *template_function_preparation_result->template_args_namespace, *global_function_context_ );
-			global_function_context_->args_preevaluation_cache.clear();
-			global_function_context_->variables_state.Clear();
+			result.type=
+				WithGlobalFunctionContext(
+					[&]( FunctionContext& function_context )
+					{
+						return PrepareType( param.type, *template_function_preparation_result->template_args_namespace, function_context );
+					} );
 		}
 
 		return result;

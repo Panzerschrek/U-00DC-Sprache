@@ -1393,6 +1393,8 @@ private:
 	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 	void GlobalThingBuildTypeAlias( NamesScope& names_scope, Value& type_alias_value );
 	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );
+	void GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& global_variable_value, FunctionContext& function_context );
+
 	size_t GlobalThingDetectloop( const GlobalThing& global_thing ); // returns loop start index or ~0u
 	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, std::string_view last_loop_element_name, const SrcLoc& last_loop_element_src_loc );
 
@@ -1452,6 +1454,17 @@ private:
 
 	FunctionContextState SaveFunctionContextState( FunctionContext& function_context );
 	void RestoreFunctionContextState( FunctionContext& function_context, const FunctionContextState& state );
+
+	template<typename Func>
+	auto WithGlobalFunctionContext( Func func )
+	{
+		FunctionContext function_context( global_function_type_, llvm_context_, global_function_ );
+		function_context.is_functionless_context= true;
+
+		StackVariablesStorage stack_variables_storage( function_context );
+
+		return func( function_context );
+	}
 
 private:
 	llvm::LLVMContext& llvm_context_;
@@ -1528,8 +1541,8 @@ private:
 	const std::shared_ptr<IMangler> mangler_;
 	TBAAMetadataBuilder tbaa_metadata_builder_;
 
-	std::unique_ptr<FunctionContext> global_function_context_;
-	std::unique_ptr<StackVariablesStorage> global_function_context_variables_storage_;
+	FunctionType global_function_type_;
+	llvm::Function* global_function_= nullptr;
 
 	std::unique_ptr<llvm::Module> module_;
 	const std::shared_ptr<CodeBuilderErrorsContainer> global_errors_= std::make_shared<CodeBuilderErrorsContainer>();

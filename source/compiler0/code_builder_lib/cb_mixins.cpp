@@ -384,10 +384,11 @@ const Synt::Expression* CodeBuilder::ExpandExpressionMixin( NamesScope& names_sc
 
 void CodeBuilder::EvaluateMixinExpressionInGlobalContext( NamesScope& names_scope, Mixin& mixin )
 {
-	const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
-	EvaluateMixinExpression( names_scope, *global_function_context_, mixin );
-	global_function_context_->args_preevaluation_cache.clear();
-	global_function_context_->variables_state.Clear();
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			EvaluateMixinExpression( names_scope, function_context, mixin );
+		} );
 }
 
 void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin )
