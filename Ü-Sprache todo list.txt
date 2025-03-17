@@ -110,9 +110,11 @@ Standart library:
 *) Compact vector-like container - with size/capacity stored in allocated memory block
 *) Optimize sorting - use faster algorithm for small number of elements, select median element wisely
 *) Priority heap support
-*) Binary search routines
 *) Detachable thread
 *) More atomic functions - for 64-bit types, pointer types, size_type
+*) More binary search functions - index of last element less than given (or equal to it), index of given element,
+	range partition
+*) Add function(s) for checking if given range is sorted
 
 Compiler:
 *) Fix possible overflows in numeric literals

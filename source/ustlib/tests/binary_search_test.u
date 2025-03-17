@@ -1,0 +1,604 @@
+//##success_test
+import "../imports/assert.u"
+import "../imports/binary_search.u"
+import "../imports/string.u"
+import "../imports/vector.u"
+
+fn nomangle main() : i32
+{
+	{
+		// All nums are unique.
+		var [ i32, 32 ] arr[ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 ];
+		var ust::array_view_imut</i32/> range= arr;
+		TestGreater( range );
+		TestGreaterOrEqual( range );
+		TestEqualRange( range );
+		TestAdditionalOverloads( arr );
+
+		// Test operations with array argument.
+		{
+			for( auto mut i= 0s; i < range.size(); ++i )
+			{
+				var i32 el= arr[i];
+
+				// Overload for any container type.
+				assert( ust::binary_search::first_greater( arr, el ) == i + 1s );
+				assert( ust::binary_search::first_greater_or_equal( arr, el ) == i );
+				assert( ust::binary_search::equal_range( arr, el ) == ust::make_array( i, i + 1s ) );
+				assert( ust::binary_search::is_present( arr, el ) );
+
+			}
+
+			var i32 pre_front= range.front() - 1;
+			var i32 post_back= range.back() + 1;
+
+			assert( ust::binary_search::first_greater( arr, pre_front ) == 0s );
+			assert( ust::binary_search::first_greater_or_equal( arr, pre_front ) == 0s );
+			assert( ust::binary_search::equal_range( arr, pre_front ) == ust::make_array( 0s, 0s ) );
+			assert( !ust::binary_search::is_present( arr, pre_front ) );
+			assert( ust::binary_search::first_greater( arr, post_back ) == range.size() );
+			assert( ust::binary_search::first_greater_or_equal( arr, post_back ) == range.size() );
+			assert( ust::binary_search::equal_range( arr, post_back ) == ust::make_array( range.size(), range.size() ) );
+			assert( !ust::binary_search::is_present( arr, post_back ) );
+		}
+
+		// Test operations with vector and mutable range argument.
+		{
+			var ust::vector</i32/> mut v= arr;
+			for( auto mut i= 0s; i < v.size(); ++i )
+			{
+				var i32 el= v[i];
+
+				// Overload for any container type.
+				assert( ust::binary_search::first_greater( v, el ) == i + 1s );
+				assert( ust::binary_search::first_greater_or_equal( v, el ) == i );
+				assert( ust::binary_search::equal_range( v, el ) == ust::make_array( i, i + 1s ) );
+				assert( ust::binary_search::is_present( v, el ) );
+
+				var ust::array_view_mut</i32/> range_mut= v;
+
+				// Overload for mutable range.
+				assert( ust::binary_search::first_greater( range_mut, el ) == i + 1s );
+				assert( ust::binary_search::first_greater_or_equal( range_mut, el ) == i );
+				assert( ust::binary_search::equal_range( range_mut, el ) == ust::make_array( i, i + 1s ) );
+				assert( ust::binary_search::is_present( range_mut, el ) );
+			}
+
+			var i32 pre_front= v.front() - 1;
+			var i32 post_back= v.back() + 1;
+
+			assert( ust::binary_search::first_greater( v, pre_front ) == 0s );
+			assert( ust::binary_search::first_greater_or_equal( v, pre_front ) == 0s );
+			assert( ust::binary_search::equal_range( v, pre_front ) == ust::make_array( 0s, 0s ) );
+			assert( !ust::binary_search::is_present( v, pre_front ) );
+			assert( ust::binary_search::first_greater( v, post_back ) == v.size() );
+			assert( ust::binary_search::first_greater_or_equal( v, post_back ) == v.size() );
+			assert( ust::binary_search::equal_range( v, post_back ) == ust::make_array( v.size(), v.size() ) );
+			assert( !ust::binary_search::is_present( v, post_back ) );
+
+			var ust::array_view_mut</i32/> range_mut= v;
+
+			assert( ust::binary_search::first_greater( range_mut, pre_front ) == 0s );
+			assert( ust::binary_search::first_greater_or_equal( range_mut, pre_front ) == 0s );
+			assert( ust::binary_search::equal_range( range_mut, pre_front ) == ust::make_array( 0s, 0s ) );
+			assert( !ust::binary_search::is_present( range_mut, pre_front ) );
+			assert( ust::binary_search::first_greater( range_mut, post_back ) == range_mut.size() );
+			assert( ust::binary_search::first_greater_or_equal( range_mut, post_back ) == range_mut.size() );
+			assert( ust::binary_search::equal_range( range_mut, post_back ) == ust::make_array( range_mut.size(), range_mut.size() ) );
+			assert( !ust::binary_search::is_present( range_mut, post_back ) );
+		}
+	}
+	{
+		// Duplicates at start.
+		var [ i32, 8 ] arr[ -1, -1, -1, 1, 4, 5, 7, 8 ];
+		var ust::array_view_imut</i32/> range= arr;
+		TestGreater( range );
+		TestGreaterOrEqual( range );
+		TestEqualRange( range );
+		TestAdditionalOverloads( arr );
+	}
+	{
+		// Duplicates at end.
+		var [ i32, 8 ] arr[ -2, -1, 1, 4, 5, 7, 8, 8 ];
+		var ust::array_view_imut</i32/> range= arr;
+		TestGreater( range );
+		TestGreaterOrEqual( range );
+		TestEqualRange( range );
+		TestAdditionalOverloads( arr );
+	}
+	{
+		// Duplicates  in the middle.
+		var [ i32, 8 ] arr[ -2, -1, 1, 4, 4, 5, 7, 8 ];
+		var ust::array_view_imut</i32/> range= arr;
+		TestGreater( range );
+		TestGreaterOrEqual( range );
+		TestEqualRange( range );
+		TestAdditionalOverloads( arr );
+	}
+	{
+		// Duplicates  in the middle.
+		var [ i32, 8 ] arr[ -2, -1, -1, 1, 4, 5, 7, 8 ];
+		var ust::array_view_imut</i32/> range= arr;
+		TestGreater( range );
+		TestGreaterOrEqual( range );
+		TestEqualRange( range );
+		TestAdditionalOverloads( arr );
+	}
+	{
+		// Duplicates everywhere.
+		var [ i32, 16 ] arr[ 1, 1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 5, 5, 6, 6 ];
+		var ust::array_view_imut</i32/> range= arr;
+		TestGreater( range );
+		TestGreaterOrEqual( range );
+		TestEqualRange( range );
+		TestAdditionalOverloads( arr );
+	}
+
+	// Test all possible combinations of numbers 0-7.
+	// Even the most of these combinations aren't valid for binary search (not sorted), we still should ensure that binary search doesn't crash or loop forever.
+
+	auto compare_reverse= lambda[]( i32 l, i32 r ) : bool { return l > r; };
+	auto key_provider_reverse= lambda[]( i32 x ) : i32 { return -x; }; // Comparing reversed values is identical to use > instead of <.
+
+	for( auto mut a= 0; a < 7; ++a )
+	{
+		for( auto mut b= 0; b < 7; ++b )
+		{
+			for( auto mut c= 0; c < 7; ++c )
+			{
+				for( auto mut d= 0; d < 7; ++d )
+				{
+					for( auto mut e= 0; e < 7; ++e )
+					{
+						for( auto mut f= 0; f < 7; ++f )
+						{
+							for( auto mut g= 0; g < 7; ++g )
+							{
+								var [ i32, 7 ] arr[ a, b, c, d, e, f, g ];
+								var ust::array_view_imut</i32/> range= arr;
+
+								// Test results for subranges starting with 0 up to full size.
+								// Testing subranges with other shift isn't necessary, since such subrange should be present in some other 7-numbers combination.
+								for( var size_type mut start= 0s; start < range.size(); ++start )
+								{
+									auto subrange= range.subrange_start( start );
+
+									var bool is_sorted= IsSorted( subrange );
+									var bool is_sorted_reverse= IsSorted( subrange, compare_reverse );
+
+									for( auto mut i= -1; i < 7 + 1; ++i )
+									{
+										var size_type greater_res= ust::binary_search::first_greater( subrange, i );
+										var size_type greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i );
+										var [ size_type, 2 ] equal_range_res= ust::binary_search::equal_range( subrange, i );
+										var bool is_present_res= ust::binary_search::is_present( subrange, i );
+
+										// These invariants should remain true even for unsorted ranges.
+										assert( greater_res <= subrange.size() );
+										assert( greater_equal_res <= subrange.size() );
+										assert( equal_range_res[0] <= equal_range_res[1] );
+										assert( equal_range_res[1] <= subrange.size() );
+
+										if( is_sorted )
+										{
+											// If this combination is sorted check if returned result is equal to expected by linear search.
+											assert( greater_res == FirstGreaterLinear( subrange, i ) );
+											assert( greater_equal_res == FirstGreaterOrEqualLinear( subrange, i ) );
+											assert( equal_range_res[0] == greater_equal_res );
+											assert( equal_range_res[1] == greater_res );
+											assert( equal_range_res == EqualRangeLinear( subrange, i ) );
+											assert( is_present_res == IsPresentLinear( subrange, i ) );
+										}
+
+										var size_type reversed_greater_res= ust::binary_search::first_greater( subrange, i, compare_reverse );
+										var size_type reversed_greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i, compare_reverse );
+										var [ size_type, 2 ] reversed_equal_range_res= ust::binary_search::equal_range( subrange, i, compare_reverse );
+										var bool reversed_is_present_res= ust::binary_search::is_present( subrange, i, compare_reverse );
+
+										// These invariants should remain true even for unsorted ranges.
+										assert( reversed_greater_res <= subrange.size() );
+										assert( reversed_greater_equal_res <= subrange.size() );
+										assert( reversed_equal_range_res[0] <= reversed_equal_range_res[1] );
+										assert( reversed_equal_range_res[1] <= subrange.size() );
+
+										var size_type reversed_by_key_greater_res= ust::binary_search::first_greater_by_key( subrange, i, key_provider_reverse );
+										var size_type reversed_by_key_greater_equal_res= ust::binary_search::first_greater_or_equal_by_key( subrange, i, key_provider_reverse );
+										var [ size_type, 2 ] reversed_by_key_equal_range_res= ust::binary_search::equal_range_by_key( subrange, i, key_provider_reverse );
+										var bool reversed_by_key_is_present_res= ust::binary_search::is_present_by_key( subrange, i, key_provider_reverse );
+
+										// These invariants should remain true even for unsorted ranges.
+										assert( reversed_by_key_greater_res <= subrange.size() );
+										assert( reversed_by_key_greater_equal_res <= subrange.size() );
+										assert( reversed_by_key_equal_range_res[0] <= reversed_by_key_equal_range_res[1] );
+										assert( reversed_by_key_equal_range_res[1] <= subrange.size() );
+
+										if( is_sorted_reverse )
+										{
+											assert( reversed_greater_res == FirstGreaterLinear( subrange, i, compare_reverse ) );
+											assert( reversed_greater_equal_res == FirstGreaterOrEqualLinear( subrange, i, compare_reverse ) );
+											assert( reversed_equal_range_res == EqualRangeLinear( subrange, i, compare_reverse ) );
+											assert( reversed_is_present_res == IsPresentLinear( subrange, i, compare_reverse ) );
+
+											assert( reversed_by_key_greater_res == reversed_greater_res );
+											assert( reversed_by_key_greater_equal_res == reversed_greater_equal_res );
+											assert( reversed_by_key_equal_range_res == reversed_equal_range_res );
+											assert( reversed_by_key_is_present_res == reversed_is_present_res );
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Binary search for sorted array of strings.
+	{
+		var [ ust::string8, 16 ] arr[ "aaa", "aab", "b4", "b4", "ccc", "ccd", "cd", "d", "d", "e", "f65", "f66", "f871", "ga", "gb", "q" ];
+		var ust::array_view_imut</ust::string8/> range= arr;
+		assert( IsSorted( range ) );
+
+		var ust::string8 last_string= "z";
+
+		// For each possible subrange search for position for each possible string.
+		for( var size_type mut start= 0s; start < range.size(); ++start )
+		{
+			for( var size_type mut end= start; end < range.size(); ++end )
+			{
+				auto subrange= range.subrange( start, end );
+				foreach( &s : range )
+				{
+					var size_type greater_res= ust::binary_search::first_greater( subrange, s );
+					var size_type greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, s );
+					var [ size_type, 2 ] equal_range_res= ust::binary_search::equal_range( subrange, s );
+					var bool is_present_res= ust::binary_search::is_present( subrange, s );
+
+					assert( greater_res == FirstGreaterLinear( subrange, s ) );
+					assert( greater_equal_res == FirstGreaterOrEqualLinear( subrange, s ) );
+					assert( equal_range_res[0] == greater_equal_res );
+					assert( equal_range_res[1] == greater_res );
+					assert( equal_range_res == EqualRangeLinear( subrange, s ) );
+					assert( is_present_res == IsPresentLinear( subrange, s ) );
+				}
+
+				// Check a string which sould be ordered after all array elements.
+				assert( ust::binary_search::first_greater( subrange, last_string ) == subrange.size() );
+				assert( ust::binary_search::first_greater_or_equal( subrange, last_string ) == subrange.size() );
+				assert( ust::binary_search::equal_range( subrange, last_string ) == ust::make_array( subrange.size(), subrange.size() ) );
+				assert( !ust::binary_search::is_present( subrange, last_string ) );
+			}
+		}
+	}
+
+	// Binary search for sorted array of strings, where they are sorted by length.
+	{
+		var [ ust::string8, 16 ] arr[ "", "a", "b", "c", "dd", "eee", "fff", "ggg", "hhhhh", "iiiiii", "jjjjjj", "kkkkkkkkkk", "llllllllll", "mmmmmmmmmmmmmm", "nnnnnnnnnnnnnnnnnn", "oooooooooooooooooo" ];
+		var ust::array_view_imut</ust::string8/> range= arr;
+
+		auto key_provider= ust::string8::size;
+		var ust::compare_by_key</ ust::string8, typeof(key_provider) /> comp{ .key_provider= key_provider };
+
+		var StringSizeComparator heterogenous_comp;
+
+		assert( IsSorted( range, comp ) );
+
+		var ust::string8 very_long_string= "Ohne Wein und ohne Weiber holt der Teufel unsere Leiber!";
+
+		// For each possible subrange search for position for each possible string.
+		for( var size_type mut start= 0s; start < range.size(); ++start )
+		{
+			for( var size_type mut end= start; end < range.size(); ++end )
+			{
+				auto subrange= range.subrange( start, end );
+				foreach( &s : range )
+				{
+					var size_type greater_res= ust::binary_search::first_greater( subrange, s, comp );
+					var size_type greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, s, comp );
+					var [ size_type, 2 ] equal_range_res= ust::binary_search::equal_range( subrange, s, comp );
+					var bool is_present_res= ust::binary_search::is_present( subrange, s, comp );
+
+					assert( greater_res == FirstGreaterLinear( subrange, s, comp ) );
+					assert( greater_equal_res == FirstGreaterOrEqualLinear( subrange, s, comp ) );
+					assert( equal_range_res[0] == greater_equal_res );
+					assert( equal_range_res[1] == greater_res );
+					assert( equal_range_res == EqualRangeLinear( subrange, s, comp ) );
+					assert( is_present_res == IsPresentLinear( subrange, s, comp ) );
+
+					var size_type by_key_greater_res= ust::binary_search::first_greater_by_key( subrange, s, key_provider );
+					var size_type by_key_greater_equal_res= ust::binary_search::first_greater_or_equal_by_key( subrange, s, key_provider );
+					var [ size_type, 2 ] by_key_equal_range_res= ust::binary_search::equal_range_by_key( subrange, s, key_provider );
+					var bool by_key_is_present_res= ust::binary_search::is_present_by_key( subrange, s, key_provider );
+
+					assert( by_key_greater_res == greater_res );
+					assert( by_key_greater_equal_res == greater_equal_res );
+					assert( by_key_equal_range_res == equal_range_res );
+					assert( by_key_is_present_res == is_present_res );
+
+					// Compare by providing size directly and using heterogenous comparator (with different-type params).
+					var size_type heterogenous_comp_greater_res= ust::binary_search::first_greater( subrange, s.size(), heterogenous_comp );
+					var size_type heterogenous_comp_greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, s.size(), heterogenous_comp );
+					var [ size_type, 2 ] heterogenous_comp_equal_range_res= ust::binary_search::equal_range( subrange, s.size(), heterogenous_comp );
+					var bool heterogenous_comp_is_present_res= ust::binary_search::is_present( subrange, s.size(), heterogenous_comp );
+
+					assert( heterogenous_comp_greater_res == greater_res );
+					assert( heterogenous_comp_greater_equal_res == greater_equal_res );
+					assert( heterogenous_comp_equal_range_res == equal_range_res );
+					assert( heterogenous_comp_is_present_res == is_present_res );
+				}
+
+				// Check a string which sould be ordered after all array elements.
+
+				assert( ust::binary_search::first_greater( subrange, very_long_string, comp ) == subrange.size() );
+				assert( ust::binary_search::first_greater_or_equal( subrange, very_long_string, comp ) == subrange.size() );
+				assert( ust::binary_search::equal_range( subrange, very_long_string, comp ) == ust::make_array( subrange.size(), subrange.size() ) );
+				assert( !ust::binary_search::is_present( subrange, very_long_string, comp ) );
+
+				assert( ust::binary_search::first_greater_by_key( subrange, very_long_string, key_provider ) == subrange.size() );
+				assert( ust::binary_search::first_greater_or_equal_by_key( subrange, very_long_string, key_provider ) == subrange.size() );
+				assert( ust::binary_search::equal_range_by_key( subrange, very_long_string, key_provider ) == ust::make_array( subrange.size(), subrange.size() ) );
+				assert( !ust::binary_search::is_present_by_key( subrange, very_long_string, key_provider ) );
+
+				assert( ust::binary_search::first_greater( subrange, very_long_string.size(), heterogenous_comp ) == subrange.size() );
+				assert( ust::binary_search::first_greater_or_equal( subrange, very_long_string.size(), heterogenous_comp ) == subrange.size() );
+				assert( ust::binary_search::equal_range( subrange, very_long_string.size(), heterogenous_comp ) == ust::make_array( subrange.size(), subrange.size() ) );
+				assert( !ust::binary_search::is_present( subrange, very_long_string.size(), heterogenous_comp ) );
+			}
+		}
+	}
+
+	return 0;
+}
+
+struct StringSizeComparator
+{
+	op ()( this, ust::string8& l, size_type r ) : bool
+	{
+		return l.size() < r;
+	}
+	op ()( this, size_type l, ust::string8& r ) : bool
+	{
+		return l < r.size();
+	}
+}
+
+// TODO - create a function within ustlib?
+template</type T/>
+fn IsSorted( ust::array_view_imut</T/> range ) : bool
+{
+	return IsSorted( range, ust::default_compare</T/>() );
+}
+
+template</type T, type Compare/>
+fn IsSorted( ust::array_view_imut</T/> range, Compare& comp ) : bool
+{
+	if( range.size() <= 1s )
+	{
+		return true;
+	}
+
+	for( auto mut i= 1s; i < range.size(); ++i )
+	{
+		if( comp( range[i], range[i - 1s] ) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+fn TestGreater( ust::array_view_imut</i32/> range )
+{
+	// For each possible subrange search for position for each possible number.
+	for( var size_type mut start= 0s; start < range.size(); ++start )
+	{
+		for( var size_type mut end= start; end < range.size(); ++end )
+		{
+			auto subrange= range.subrange( start, end );
+			foreach( el : range )
+			{
+				assert( ust::binary_search::first_greater( subrange, el ) == FirstGreaterLinear( subrange, el ) );
+			}
+			assert( ust::binary_search::first_greater( subrange, range.front() - 2 ) == 0s );
+			assert( ust::binary_search::first_greater( subrange, range.front() - 1 ) == 0s );
+			assert( ust::binary_search::first_greater( subrange, range.back() + 1 ) == subrange.size() );
+			assert( ust::binary_search::first_greater( subrange, range.back() + 2 ) == subrange.size() );
+		}
+	}
+}
+
+fn TestGreaterOrEqual( ust::array_view_imut</i32/> range )
+{
+	// For each possible subrange search for position for each possible number.
+	for( var size_type mut start= 0s; start < range.size(); ++start )
+	{
+		for( var size_type mut end= start; end < range.size(); ++end )
+		{
+			auto subrange= range.subrange( start, end );
+			foreach( el : range )
+			{
+				assert( ust::binary_search::first_greater_or_equal( subrange, el ) == FirstGreaterOrEqualLinear( subrange, el ) );
+				assert( ust::binary_search::is_present( subrange, el ) == IsPresentLinear( subrange, el ) );
+
+			}
+			assert( ust::binary_search::first_greater_or_equal( subrange, range.front() - 2 ) == 0s );
+			assert( ust::binary_search::first_greater_or_equal( subrange, range.front() - 1 ) == 0s );
+			assert( ust::binary_search::first_greater_or_equal( subrange, range.back() + 1 ) == subrange.size() );
+			assert( ust::binary_search::first_greater_or_equal( subrange, range.back() + 2 ) == subrange.size() );
+
+			assert( !ust::binary_search::is_present( subrange, range.front() - 2 ) );
+			assert( !ust::binary_search::is_present( subrange, range.front() - 1 ) );
+			assert( !ust::binary_search::is_present( subrange, range.back() + 1 ) );
+			assert( !ust::binary_search::is_present( subrange, range.back() + 2 ) );
+		}
+	}
+}
+
+fn TestEqualRange( ust::array_view_imut</i32/> range )
+{
+	// For each possible subrange search for position for each possible number.
+	for( var size_type mut start= 0s; start < range.size(); ++start )
+	{
+		for( var size_type mut end= start; end < range.size(); ++end )
+		{
+			auto subrange= range.subrange( start, end );
+			foreach( el : range )
+			{
+				assert( ust::binary_search::equal_range( subrange, el ) == EqualRangeLinear( subrange, el ) );
+			}
+			assert( ust::binary_search::equal_range( subrange, range.front() - 2 ) == ust::make_array( 0s, 0s ) );
+			assert( ust::binary_search::equal_range( subrange, range.front() - 1 ) == ust::make_array( 0s, 0s ) );
+			assert( ust::binary_search::equal_range( subrange, range.back() + 1 ) == ust::make_array( subrange.size(), subrange.size() ) );
+			assert( ust::binary_search::equal_range( subrange, range.back() + 2 ) == ust::make_array( subrange.size(), subrange.size() ) );
+		}
+	}
+}
+
+template</size_type S/>
+fn TestAdditionalOverloads( [ i32, S ]& arr )
+{
+	// Test operations with array argument.
+	{
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			var i32 el= arr[i];
+
+			// Overload for any container type.
+			assert( ust::binary_search::first_greater( arr, el ) == FirstGreaterLinear( ust::array_view_imut</i32/>(arr), el ) );
+			assert( ust::binary_search::first_greater_or_equal( arr, el ) <= i );
+			assert( ust::binary_search::equal_range( arr, el ) == EqualRangeLinear( ust::array_view_imut</i32/>(arr), el ) );
+			assert( ust::binary_search::is_present( arr, el ) );
+
+		}
+
+		var i32 pre_front= arr[0] - 1;
+		var i32 post_back= arr[S - 1s] + 1;
+
+		assert( ust::binary_search::first_greater( arr, pre_front ) == 0s );
+		assert( ust::binary_search::first_greater_or_equal( arr, pre_front ) == 0s );
+		assert( ust::binary_search::equal_range( arr, pre_front ) == ust::make_array( 0s, 0s ) );
+		assert( !ust::binary_search::is_present( arr, pre_front ) );
+		assert( ust::binary_search::first_greater( arr, post_back ) == S );
+		assert( ust::binary_search::first_greater_or_equal( arr, post_back ) == S );
+		assert( ust::binary_search::equal_range( arr, post_back ) == ust::make_array( S, S ) );
+		assert( !ust::binary_search::is_present( arr, post_back ) );
+	}
+
+	// Test operations with vector and mutable range argument.
+	{
+		var ust::vector</i32/> mut v= arr;
+		for( auto mut i= 0s; i < v.size(); ++i )
+		{
+			var i32 el= v[i];
+
+			// Overload for any container type.
+			assert( ust::binary_search::first_greater( v, el ) == FirstGreaterLinear( cast_imut(v).range(), el ) );
+			assert( ust::binary_search::first_greater_or_equal( v, el ) <= i );
+			assert( ust::binary_search::equal_range( v, el ) == EqualRangeLinear( cast_imut(v).range(), el ) );
+			assert( ust::binary_search::is_present( v, el ) );
+
+			var ust::array_view_mut</i32/> range_mut= v;
+
+			// Overload for mutable range.
+			assert( ust::binary_search::first_greater( range_mut, el ) == FirstGreaterLinear( ust::array_view_imut</i32/>(range_mut), el ) );
+			assert( ust::binary_search::first_greater_or_equal( range_mut, el ) <= i );
+			assert( ust::binary_search::equal_range( range_mut, el ) == EqualRangeLinear( ust::array_view_imut</i32/>(range_mut), el ) );
+			assert( ust::binary_search::is_present( range_mut, el ) );
+		}
+
+		var i32 pre_front= v.front() - 1;
+		var i32 post_back= v.back() + 1;
+
+		assert( ust::binary_search::first_greater( v, pre_front ) == 0s );
+		assert( ust::binary_search::first_greater_or_equal( v, pre_front ) == 0s );
+		assert( ust::binary_search::equal_range( v, pre_front ) == ust::make_array( 0s, 0s ) );
+		assert( !ust::binary_search::is_present( v, pre_front ) );
+		assert( ust::binary_search::first_greater( v, post_back ) == v.size() );
+		assert( ust::binary_search::first_greater_or_equal( v, post_back ) == v.size() );
+		assert( ust::binary_search::equal_range( v, post_back ) == ust::make_array( v.size(), v.size() ) );
+		assert( !ust::binary_search::is_present( v, post_back ) );
+
+		var ust::array_view_mut</i32/> range_mut= v;
+
+		assert( ust::binary_search::first_greater( range_mut, pre_front ) == 0s );
+		assert( ust::binary_search::first_greater_or_equal( range_mut, pre_front ) == 0s );
+		assert( ust::binary_search::equal_range( range_mut, pre_front ) == ust::make_array( 0s, 0s ) );
+		assert( !ust::binary_search::is_present( range_mut, pre_front ) );
+		assert( ust::binary_search::first_greater( range_mut, post_back ) == range_mut.size() );
+		assert( ust::binary_search::first_greater_or_equal( range_mut, post_back ) == range_mut.size() );
+		assert( ust::binary_search::equal_range( range_mut, post_back ) == ust::make_array( range_mut.size(), range_mut.size() ) );
+		assert( !ust::binary_search::is_present( range_mut, post_back ) );
+	}
+}
+
+template</type T, type Compare/>
+fn FirstGreaterLinear( ust::array_view_imut</T/> r, T& el, Compare& comp ) : size_type
+{
+	for( var size_type mut i= 0s; i < r.size(); ++i )
+	{
+		if( comp( el, r[i] ) )
+		{
+			return i;
+		}
+	}
+	return r.size();
+}
+
+template</type T/>
+fn FirstGreaterLinear( ust::array_view_imut</T/> r, T& el ) : size_type
+{
+	return FirstGreaterLinear( r, el, ust::default_compare</T/>() );
+}
+
+template</type T, type Compare/>
+fn FirstGreaterOrEqualLinear( ust::array_view_imut</T/> r, T& el, Compare& comp ) : size_type
+{
+	for( var size_type mut i= 0s; i < r.size(); ++i )
+	{
+		if( !comp( r[i], el ) )
+		{
+			return i;
+		}
+	}
+	return r.size();
+}
+
+template</type T/>
+fn FirstGreaterOrEqualLinear( ust::array_view_imut</T/> r, T& el ) : size_type
+{
+	return FirstGreaterOrEqualLinear( r, el, ust::default_compare</T/>() );
+}
+
+template</type T, type Compare/>
+fn EqualRangeLinear( ust::array_view_imut</T/> r, T& el, Compare& comp ) : [ size_type, 2 ]
+{
+	var [ size_type, 2 ] res[ FirstGreaterOrEqualLinear( r, el, comp ), FirstGreaterLinear( r, el, comp ) ];
+	return res;
+}
+
+template</type T/>
+fn EqualRangeLinear( ust::array_view_imut</T/> r, T& el ) : [ size_type, 2 ]
+{
+	return EqualRangeLinear( r, el, ust::default_compare</T/>() );
+}
+
+template</type T, type Compare/>
+fn IsPresentLinear( ust::array_view_imut</T/> r, T& el, Compare& comp ) : bool
+{
+	foreach( &x : r )
+	{
+		if( !comp( x, el ) && !comp( el, x ) )
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+template</type T/>
+fn IsPresentLinear( ust::array_view_imut</T/> r, T& el ) : bool
+{
+	return IsPresentLinear( r, el, ust::default_compare</T/>() );
+}

@@ -1,0 +1,236 @@
+import "assert.u"
+import "compare.u"
+import "random_access_range.u"
+
+namespace ust
+{
+
+namespace binary_search
+{
+
+// Find index of the first element which is greater than given value.
+// Returns range size if not found.
+// It's analogous to "std::upper_bound" function in C++.
+// Note that strictly speaking "greater" term isn't correct if non-default comparator (like reverse) is used.
+// If given range isn't sorted according to given comparator or comparator isn't correct, result is incorrect but still in valid range.
+template</type T, type El, type Compare/>
+fn first_greater( array_view_imut</T/> r, El& el, Compare& comp ) : size_type
+{
+	var size_type mut begin= 0s, mut end= r.size();
+	while( begin < end )
+	{
+		debug_assert( begin < r.size() );
+		debug_assert( end <= r.size() );
+
+		var size_type middle= begin + ((end - begin) >> 1u);
+		debug_assert( middle >= begin && middle < end );
+
+		// Use unchecked indexing for better performance.
+		if( comp( el, unsafe( r.index_unchecked(middle) ) ) )
+		{
+			end= middle;
+		}
+		else
+		{
+			begin= middle + 1s;
+		}
+	}
+
+	debug_assert( begin <= r.size() );
+	return begin;
+}
+
+// Same as "first_greater", but use comparison based on key obtained via given key provider function.
+template</type T, type KeyProvider/>
+fn first_greater_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : size_type
+{
+	return first_greater( r, el, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
+}
+
+template</type T/>
+fn first_greater( array_view_imut</T/> r, T& el ) : size_type
+{
+	return first_greater( r, el, default_compare</T/>() );
+}
+
+template</type T/>
+fn first_greater( array_view_mut</T/> r, T& el ) : size_type
+{
+	return first_greater( array_view_imut</T/>(r), el );
+}
+
+template</type T, size_type S/>
+fn first_greater( [T, S]& arr, T& el ) : size_type
+{
+	return first_greater( array_view_imut</T/>(arr), el );
+}
+
+// Generic "first_greater" overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+template</type Container, type El/>
+fn first_greater( Container& container, El& el ) : size_type
+{
+	return first_greater( container.range(), el );
+}
+
+// Find index of the first element which is greater than given value or equal to it.
+// Returns range size if not found.
+// It's analogous to "std::lower_bound" function in C++.
+// Note that strictly speaking "greater" term isn't correct if non-default comparator (like reverse) is used.
+// If given range isn't sorted according to given comparator or comparator isn't correct, result is incorrect but still in valid range.
+template</type T, type El, type Compare/>
+fn first_greater_or_equal( array_view_imut</T/> r, El& el, Compare& comp ) : size_type
+{
+	var size_type mut begin= 0s, mut end= r.size();
+	while( begin < end )
+	{
+		debug_assert( begin < r.size() );
+		debug_assert( end <= r.size() );
+
+		var size_type middle= begin + ((end - begin) >> 1u);
+		debug_assert( middle >= begin && middle < end );
+
+		// Use unchecked indexing for better performance.
+		if( comp( unsafe( r.index_unchecked(middle) ), el ) )
+		{
+			begin= middle + 1s;
+		}
+		else
+		{
+			end= middle;
+		}
+	}
+
+	debug_assert( begin <= r.size() );
+	return begin;
+}
+
+// Same as "first_greater_or_equal", but use comparison based on key obtained via given key provider function.
+template</type T, type KeyProvider/>
+fn first_greater_or_equal_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : size_type
+{
+	return first_greater_or_equal( r, el, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
+}
+
+template</type T/>
+fn first_greater_or_equal( array_view_imut</T/> r, T& el ) : size_type
+{
+	return first_greater_or_equal( r, el, default_compare</T/>() );
+}
+
+template</type T/>
+fn first_greater_or_equal( array_view_mut</T/> r, T& el ) : size_type
+{
+	return first_greater_or_equal( array_view_imut</T/>(r), el );
+}
+
+template</type T, size_type S/>
+fn first_greater_or_equal( [T, S]& arr, T& el ) : size_type
+{
+	return first_greater_or_equal( array_view_imut</T/>(arr), el );
+}
+
+// Generic "first_greater_or_equal" overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+template</type Container, type El/>
+fn first_greater_or_equal( Container& container, El& el ) : size_type
+{
+	return first_greater_or_equal( container.range(), el );
+}
+
+// Returns a pair of indices.
+// Index 0 points to the first element which is greater than given or equal to it.
+// Index 1 points to the first element which is greater than given.
+// Index0 <= Index1
+// Index0 or Index1 may be equal to range size.
+// This function effectively combines "first_greater_or_equal" and "first_greater".
+// It's analogous to "std::equal_range" function in C++.
+// Note that strictly speaking "greater" term isn't correct if non-default comparator (like reverse) is used.
+// If given range isn't sorted according to given comparator or comparator isn't correct, result is incorrect but still in valid range.
+template</type T, type El, type Compare/>
+fn equal_range( array_view_imut</T/> r, El& el, Compare& comp ) : [ size_type, 2 ]
+{
+	var size_type g= first_greater( r, el, comp );
+	var size_type ge= first_greater_or_equal( r.subrange_end(g), el, comp );
+	var [ size_type, 2 ] res[ ge, g ];
+	return res;
+}
+
+// Same as "equal_range", but use comparison based on key obtained via given key provider function.
+template</type T, type KeyProvider/>
+fn equal_range_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : [ size_type, 2 ]
+{
+	return equal_range( r, el, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
+}
+
+template</type T/>
+fn equal_range( array_view_imut</T/> r, T& el ) : [ size_type, 2 ]
+{
+	return equal_range( r, el, default_compare</T/>() );
+}
+
+template</type T/>
+fn equal_range( array_view_mut</T/> r, T& el ) : [ size_type, 2 ]
+{
+	return equal_range( array_view_imut</T/>(r), el );
+}
+
+template</type T, size_type S/>
+fn equal_range( [T, S]& arr, T& el ) : [ size_type, 2 ]
+{
+	return equal_range( array_view_imut</T/>(arr), el );
+}
+
+// Generic "equal_range" overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+// If given range isn't sorted according to given comparator or comparator isn't correct, result is incorrect but still in valid range.
+template</type Container, type El/>
+fn equal_range( Container& container, El& el ) : [ size_type, 2 ]
+{
+	return equal_range( container.range(), el );
+}
+
+// Check if given element exists in given range.
+template</type T, type El, type Compare/>
+fn is_present( array_view_imut</T/> r, El& el, Compare& comp ) : bool
+{
+	var size_type pos= first_greater_or_equal( r, el, comp );
+	return pos < r.size() && !comp( el, r[pos] );
+}
+
+// Same as "is_present", but use comparison based on key obtained via given key provider function.
+template</type T, type KeyProvider/>
+fn is_present_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : bool
+{
+	return is_present( r, el, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
+}
+
+template</type T/>
+fn is_present( array_view_imut</T/> r, T& el ) : bool
+{
+	return is_present( r, el, default_compare</T/>() );
+}
+
+template</type T/>
+fn is_present( array_view_mut</T/> r, T& el )  : bool
+{
+	return is_present( array_view_imut</T/>(r), el );
+}
+
+template</type T, size_type S/>
+fn is_present( [T, S]& arr, T& el ) : bool
+{
+	return is_present( array_view_imut</T/>(arr), el );
+}
+
+// Generic "is_present" overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+template</type Container, type El/>
+fn is_present( Container& container, El& el ) : bool
+{
+	return is_present( container.range(), el );
+}
+
+} // namespace binary_search
+
+} // namespace ust
