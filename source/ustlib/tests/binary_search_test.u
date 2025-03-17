@@ -157,73 +157,72 @@ fn nomangle main() : i32
 								var [ i32, 7 ] arr[ a, b, c, d, e, f, g ];
 								var ust::array_view_imut</i32/> range= arr;
 
-								var bool is_sorted= IsSorted( range );
-								var bool is_sorted_reverse= IsSorted( range, compare_reverse );
-
-								// For each possible subrange search for position for each possible number.
+								// Test results for subranges starting with 0 up to full size.
+								// Testing subranges with other shift isn't necessary, since such subrange should be present in some other 7-numbers combination.
 								for( var size_type mut start= 0s; start < range.size(); ++start )
 								{
-									for( var size_type mut end= start; end < range.size(); ++end )
+									auto subrange= range.subrange_start( start );
+
+									var bool is_sorted= IsSorted( subrange );
+									var bool is_sorted_reverse= IsSorted( subrange, compare_reverse );
+
+									for( auto mut i= -1; i < 7 + 1; ++i )
 									{
-										auto subrange= range.subrange( start, end );
-										for( auto mut i= -1; i < 7 + 1; ++i )
+										var size_type greater_res= ust::binary_search::first_greater( subrange, i );
+										var size_type greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i );
+										var [ size_type, 2 ] equal_range_res= ust::binary_search::equal_range( subrange, i );
+										var bool is_present_res= ust::binary_search::is_present( subrange, i );
+
+										// These invariants should remain true even for unsorted ranges.
+										assert( greater_res <= subrange.size() );
+										assert( greater_equal_res <= subrange.size() );
+										assert( equal_range_res[0] <= equal_range_res[1] );
+										assert( equal_range_res[1] <= subrange.size() );
+
+										if( is_sorted )
 										{
-											var size_type greater_res= ust::binary_search::first_greater( subrange, i );
-											var size_type greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i );
-											var [ size_type, 2 ] equal_range_res= ust::binary_search::equal_range( subrange, i );
-											var bool is_present_res= ust::binary_search::is_present( subrange, i );
+											// If this combination is sorted check if returned result is equal to expected by linear search.
+											assert( greater_res == FirstGreaterLinear( subrange, i ) );
+											assert( greater_equal_res == FirstGreaterOrEqualLinear( subrange, i ) );
+											assert( equal_range_res[0] == greater_equal_res );
+											assert( equal_range_res[1] == greater_res );
+											assert( equal_range_res == EqualRangeLinear( subrange, i ) );
+											assert( is_present_res == IsPresentLinear( subrange, i ) );
+										}
 
-											// These invariants should remain true even for unsorted ranges.
-											assert( greater_res <= subrange.size() );
-											assert( greater_equal_res <= subrange.size() );
-											assert( equal_range_res[0] <= equal_range_res[1] );
-											assert( equal_range_res[1] <= subrange.size() );
+										var size_type reversed_greater_res= ust::binary_search::first_greater( subrange, i, compare_reverse );
+										var size_type reversed_greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i, compare_reverse );
+										var [ size_type, 2 ] reversed_equal_range_res= ust::binary_search::equal_range( subrange, i, compare_reverse );
+										var bool reversed_is_present_res= ust::binary_search::is_present( subrange, i, compare_reverse );
 
-											if( is_sorted )
-											{
-												// If this combination is sorted check if returned result is equal to expected by linear search.
-												assert( greater_res == FirstGreaterLinear( subrange, i ) );
-												assert( greater_equal_res == FirstGreaterOrEqualLinear( subrange, i ) );
-												assert( equal_range_res[0] == greater_equal_res );
-												assert( equal_range_res[1] == greater_res );
-												assert( equal_range_res == EqualRangeLinear( subrange, i ) );
-												assert( is_present_res == IsPresentLinear( subrange, i ) );
-											}
+										// These invariants should remain true even for unsorted ranges.
+										assert( reversed_greater_res <= subrange.size() );
+										assert( reversed_greater_equal_res <= subrange.size() );
+										assert( reversed_equal_range_res[0] <= reversed_equal_range_res[1] );
+										assert( reversed_equal_range_res[1] <= subrange.size() );
 
-											var size_type reversed_greater_res= ust::binary_search::first_greater( subrange, i, compare_reverse );
-											var size_type reversed_greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i, compare_reverse );
-											var [ size_type, 2 ] reversed_equal_range_res= ust::binary_search::equal_range( subrange, i, compare_reverse );
-											var bool reversed_is_present_res= ust::binary_search::is_present( subrange, i, compare_reverse );
+										var size_type reversed_by_key_greater_res= ust::binary_search::first_greater_by_key( subrange, i, key_provider_reverse );
+										var size_type reversed_by_key_greater_equal_res= ust::binary_search::first_greater_or_equal_by_key( subrange, i, key_provider_reverse );
+										var [ size_type, 2 ] reversed_by_key_equal_range_res= ust::binary_search::equal_range_by_key( subrange, i, key_provider_reverse );
+										var bool reversed_by_key_is_present_res= ust::binary_search::is_present_by_key( subrange, i, key_provider_reverse );
 
-											// These invariants should remain true even for unsorted ranges.
-											assert( reversed_greater_res <= subrange.size() );
-											assert( reversed_greater_equal_res <= subrange.size() );
-											assert( reversed_equal_range_res[0] <= reversed_equal_range_res[1] );
-											assert( reversed_equal_range_res[1] <= subrange.size() );
+										// These invariants should remain true even for unsorted ranges.
+										assert( reversed_by_key_greater_res <= subrange.size() );
+										assert( reversed_by_key_greater_equal_res <= subrange.size() );
+										assert( reversed_by_key_equal_range_res[0] <= reversed_by_key_equal_range_res[1] );
+										assert( reversed_by_key_equal_range_res[1] <= subrange.size() );
 
-											var size_type reversed_by_key_greater_res= ust::binary_search::first_greater_by_key( subrange, i, key_provider_reverse );
-											var size_type reversed_by_key_greater_equal_res= ust::binary_search::first_greater_or_equal_by_key( subrange, i, key_provider_reverse );
-											var [ size_type, 2 ] reversed_by_key_equal_range_res= ust::binary_search::equal_range_by_key( subrange, i, key_provider_reverse );
-											var bool reversed_by_key_is_present_res= ust::binary_search::is_present_by_key( subrange, i, key_provider_reverse );
+										if( is_sorted_reverse )
+										{
+											assert( reversed_greater_res == FirstGreaterLinear( subrange, i, compare_reverse ) );
+											assert( reversed_greater_equal_res == FirstGreaterOrEqualLinear( subrange, i, compare_reverse ) );
+											assert( reversed_equal_range_res == EqualRangeLinear( subrange, i, compare_reverse ) );
+											assert( reversed_is_present_res == IsPresentLinear( subrange, i, compare_reverse ) );
 
-											// These invariants should remain true even for unsorted ranges.
-											assert( reversed_by_key_greater_res <= subrange.size() );
-											assert( reversed_by_key_greater_equal_res <= subrange.size() );
-											assert( reversed_by_key_equal_range_res[0] <= reversed_by_key_equal_range_res[1] );
-											assert( reversed_by_key_equal_range_res[1] <= subrange.size() );
-
-											if( is_sorted_reverse )
-											{
-												assert( reversed_greater_res == FirstGreaterLinear( subrange, i, compare_reverse ) );
-												assert( reversed_greater_equal_res == FirstGreaterOrEqualLinear( subrange, i, compare_reverse ) );
-												assert( reversed_equal_range_res == EqualRangeLinear( subrange, i, compare_reverse ) );
-												assert( reversed_is_present_res == IsPresentLinear( subrange, i, compare_reverse ) );
-
-												assert( reversed_by_key_greater_res == reversed_greater_res );
-												assert( reversed_by_key_greater_equal_res == reversed_greater_equal_res );
-												assert( reversed_by_key_equal_range_res == reversed_equal_range_res );
-												assert( reversed_by_key_is_present_res == reversed_is_present_res );
-											}
+											assert( reversed_by_key_greater_res == reversed_greater_res );
+											assert( reversed_by_key_greater_equal_res == reversed_greater_equal_res );
+											assert( reversed_by_key_equal_range_res == reversed_equal_range_res );
+											assert( reversed_by_key_is_present_res == reversed_is_present_res );
 										}
 									}
 								}
