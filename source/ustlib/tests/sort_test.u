@@ -137,6 +137,18 @@ fn nomangle main() : i32
 		halt if(  ust::is_sorted_by_key( IntRangeImut(h), GetNegative ) );
 		halt if( !ust::is_sorted_by_key( IntRangeImut(i), GetNegative ) );
 	}
+	{
+		var [ i32, 2 ] mut arr_sorted[ 1, 6 ], mut arr_unsorted[ 67, 8 ], mut arr_equal[ -78, -78 ];
+		// "is_sorted" for mutable arrays.
+		halt if( !ust::is_sorted( arr_sorted ) );
+		halt if(  ust::is_sorted( arr_unsorted ) );
+		halt if( !ust::is_sorted( arr_equal ) );
+		// "is_sorted" for mutable ranges.
+		var IntRange arr_sorted_range= arr_sorted, arr_unsorted_range= arr_unsorted, arr_equal_range= arr_equal;
+		halt if( !ust::is_sorted( arr_sorted_range ) );
+		halt if(  ust::is_sorted( arr_unsorted_range ) );
+		halt if( !ust::is_sorted( arr_equal_range ) );
+	}
 
 	{ // Sort empty array.
 		var [ i32, 0 ] mut arr[ ];

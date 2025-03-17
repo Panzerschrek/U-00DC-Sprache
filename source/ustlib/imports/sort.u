@@ -5,7 +5,6 @@ import "random_access_range.u"
 namespace ust
 {
 
-
 // Generic "is_sorted" overloading for types other than "random_access_range".
 // It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
 template</type T/>
@@ -27,6 +26,15 @@ fn is_sorted( random_access_range</T, false/> range ) : bool
 	return is_sorted( range, default_compare</T/>() );
 }
 
+// "is_sorted" overloading for mutable ranges.
+template</type T/>
+fn is_sorted( random_access_range</T, true/> range ) : bool
+{
+	return is_sorted( random_access_range</T, false/>( range ), default_compare</T/>() );
+}
+
+// This function checks if given range is sorted according to given comparator.
+// Time complexity is linear.
 template</type T, type Compare/>
 fn is_sorted( random_access_range</T, false/> range, Compare& comp ) : bool
 {
