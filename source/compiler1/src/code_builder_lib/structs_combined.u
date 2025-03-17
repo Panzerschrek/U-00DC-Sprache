@@ -937,11 +937,9 @@ fn TypeHasher::hash( EnumTypePtr& t ) : size_type
 
 fn TypeHasher::hash_combine( size_type x, size_type y ) : size_type
 {
-	auto shift= 7s;
-	auto hash_bits= typeinfo</size_type/>.size_of * 8s;
-
-	// Use simple XOR and rotate.
-	return x ^ ( (y << shift) | (y >> hash_bits - shift) );
+	// Same, as 'boost::hash_range'.
+	// TODO - check correctness for 32bit/64bit.
+	return x ^ ( y + size_type(0x9e3779b9u) + (x<<6u) + (x>>2u) );
 }
 
 //
