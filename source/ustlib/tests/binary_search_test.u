@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/assert.u"
 import "../imports/binary_search.u"
+import "../imports/sort.u"
 import "../imports/string.u"
 import "../imports/vector.u"
 
@@ -163,8 +164,8 @@ fn nomangle main() : i32
 								{
 									auto subrange= range.subrange_start( start );
 
-									var bool is_sorted= IsSorted( subrange );
-									var bool is_sorted_reverse= IsSorted( subrange, compare_reverse );
+									var bool is_sorted= ust::is_sorted( subrange );
+									var bool is_sorted_reverse= ust::is_sorted( subrange, compare_reverse );
 
 									for( auto mut i= -1; i < 7 + 1; ++i )
 									{
@@ -238,7 +239,7 @@ fn nomangle main() : i32
 	{
 		var [ ust::string8, 16 ] arr[ "aaa", "aab", "b4", "b4", "ccc", "ccd", "cd", "d", "d", "e", "f65", "f66", "f871", "ga", "gb", "q" ];
 		var ust::array_view_imut</ust::string8/> range= arr;
-		assert( IsSorted( range ) );
+		assert( ust::is_sorted( range ) );
 
 		var ust::string8 last_string= "z";
 
@@ -282,7 +283,7 @@ fn nomangle main() : i32
 
 		var StringSizeComparator heterogenous_comp;
 
-		assert( IsSorted( range, comp ) );
+		assert( ust::is_sorted( range, comp ) );
 
 		var ust::string8 very_long_string= "Ohne Wein und ohne Weiber holt der Teufel unsere Leiber!";
 
@@ -361,32 +362,6 @@ struct StringSizeComparator
 	{
 		return l < r.size();
 	}
-}
-
-// TODO - create a function within ustlib?
-template</type T/>
-fn IsSorted( ust::array_view_imut</T/> range ) : bool
-{
-	return IsSorted( range, ust::default_compare</T/>() );
-}
-
-template</type T, type Compare/>
-fn IsSorted( ust::array_view_imut</T/> range, Compare& comp ) : bool
-{
-	if( range.size() <= 1s )
-	{
-		return true;
-	}
-
-	for( auto mut i= 1s; i < range.size(); ++i )
-	{
-		if( comp( range[i], range[i - 1s] ) )
-		{
-			return false;
-		}
-	}
-
-	return true;
 }
 
 fn TestGreater( ust::array_view_imut</i32/> range )
