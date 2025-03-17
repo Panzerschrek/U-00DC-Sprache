@@ -1449,7 +1449,7 @@ private:
 	struct FunctionContextState
 	{
 		ReferencesGraph variables_state;
-		size_t block_count= 0;
+		llvm::BasicBlock* current_block= nullptr;
 	};
 
 	FunctionContextState SaveFunctionContextState( FunctionContext& function_context );

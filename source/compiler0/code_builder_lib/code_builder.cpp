@@ -2675,7 +2675,7 @@ CodeBuilder::FunctionContextState CodeBuilder::SaveFunctionContextState( Functio
 {
 	FunctionContextState result;
 	result.variables_state= function_context.variables_state;
-	result.block_count= function_context.function->size();
+	result.current_block= function_context.llvm_ir_builder.GetInsertBlock();
 	return result;
 }
 
@@ -2684,7 +2684,7 @@ void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context
 	function_context.variables_state= state.variables_state;
 
 	// Make sure no new basic blocks were added.
-	U_ASSERT( function_context.function->size() == state.block_count );
+	U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock() == state.current_block );
 	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
 }
 
