@@ -91,6 +91,49 @@ fn CompareStringSize( ust::string8& l, ust::string8& r ) : bool
 
 fn nomangle main() : i32
 {
+	{ // "is_sorted" for empty array.
+		var [ i32, 0 ] arr[ ];
+		halt if( !ust::is_sorted( arr ) );
+	}
+
+	{ // "is_sorted" for array consisting of single element.
+		var [ i32, 1 ]  arr[ 55 ];
+		halt if( !ust::is_sorted( arr ) );
+	}
+
+	{ // "is_sorted" for array consisting of two elements.
+		var [ i32, 2 ] arr_sorted[ 1, 6 ], arr_unsorted[ 67, 8 ], arr_equal[ -78, -78 ];
+		halt if( !ust::is_sorted( arr_sorted ) );
+		halt if(  ust::is_sorted( arr_unsorted ) );
+		halt if( !ust::is_sorted( arr_equal ) );
+	}
+
+	{ // "is_sorted" for array consisting of three elements.
+		// All combinations of three different elements. Only one of them is sorted.
+		var [ i32, 3 ] a[ 1, 2, 3 ], b[ 1, 3, 2 ], c[ 2, 1, 3 ], d[ 2, 3, 1 ], e[ 3, 1, 2 ], f[ 3, 2, 1 ];
+		halt if( !ust::is_sorted( a ) );
+		halt if(  ust::is_sorted( b ) );
+		halt if(  ust::is_sorted( c ) );
+		halt if(  ust::is_sorted( d ) );
+		halt if(  ust::is_sorted( e ) );
+		halt if(  ust::is_sorted( f ) );
+	}
+	{ // "is_sorted" for array consisting of three elements, two of them are equal.
+		var [ i32, 3 ]
+			a[ 1, 1, 2 ], b[ 1, 2, 1 ], c[ 2, 1, 1 ],
+			d[ 2, 2, 3 ], e[ 2, 3, 2 ], f[ 3, 2, 2 ],
+			g[ 1, 3, 3 ], h[ 3, 1, 3 ], i[ 3, 3, 1 ];
+		halt if( !ust::is_sorted( a ) );
+		halt if(  ust::is_sorted( b ) );
+		halt if(  ust::is_sorted( c ) );
+		halt if( !ust::is_sorted( d ) );
+		halt if(  ust::is_sorted( e ) );
+		halt if(  ust::is_sorted( f ) );
+		halt if( !ust::is_sorted( g ) );
+		halt if(  ust::is_sorted( h ) );
+		halt if(  ust::is_sorted( i ) );
+	}
+
 	{ // Sort empty array.
 		var [ i32, 0 ] mut arr[ ];
 		ust::sort( arr );
