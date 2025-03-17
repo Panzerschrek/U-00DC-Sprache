@@ -164,6 +164,13 @@ fn is_present( array_view_imut</T/> r, El& el, Compare& comp ) : bool
 	return pos < r.size() && !comp( el, r[pos] );
 }
 
+// Search using key obtained via given key provider function.
+template</type T, type KeyProvider/>
+fn is_present_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : bool
+{
+	return is_present( r, el, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
+}
+
 template</type T/>
 fn is_present( array_view_imut</T/> r, T& el ) : bool
 {
