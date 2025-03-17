@@ -346,3 +346,14 @@ def StaticAssertMessage_Test0():
 	assert( errors_list[0].error_code == "StaticAssertionFailed" )
 	assert( errors_list[0].src_loc.line == 2 )
 	assert( errors_list[0].text.find( "Lorem ipsum" ) != -1 )
+
+
+def RecursiveNumericTypeTemplate_Test0():
+	# This test triggers quadratic compilation time complexity on both compilers.
+	c_program_text= """
+		template</size_type S/> struct Some { type Next= Some</S - 1s/>; }
+		template<//> struct Some</0s/> {}
+
+		type SomeLarge= Some</16384s/>;
+	"""
+	tests_lib.build_program( c_program_text )
