@@ -349,7 +349,8 @@ def StaticAssertMessage_Test0():
 
 
 def RecursiveNumericTypeTemplate_Test0():
-	# This test triggers quadratic compilation time complexity on both compilers.
+	# This test causes recursive instatitation of a large count of type templates.
+	# Such cases should be handled properly without quadratic complexity.
 	c_program_text= """
 		template</size_type S/> struct Some { type Next= Some</S - 1s/>; }
 		template<//> struct Some</0s/> {}
