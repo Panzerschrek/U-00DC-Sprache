@@ -10,6 +10,8 @@ namespace binary_search
 
 // Find index of the first element which is greater than given value.
 // Returns range size if not found.
+// It's analogous to "std::upper_bound" function in C++.
+// Note that strictly speaking "greater" term isn't correct if non-default comparator (like reverse) is used.
 template</type T, type El, type Compare/>
 fn first_greater( array_view_imut</T/> r, El& el, Compare& comp ) : size_type
 {
@@ -37,7 +39,7 @@ fn first_greater( array_view_imut</T/> r, El& el, Compare& comp ) : size_type
 	return begin;
 }
 
-// Search using key obtained via given key provider function.
+// Same as "first_greater", but use comparison based on key obtained via given key provider function.
 template</type T, type KeyProvider/>
 fn first_greater_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : size_type
 {
@@ -64,6 +66,8 @@ fn first_greater( [T, S]& arr, T& el ) : size_type
 
 // Find index of the first element which is greater than given value or equal to it.
 // Returns range size if not found.
+// It's analogous to "std::lower_bound" function in C++.
+// Note that strictly speaking "greater" term isn't correct if non-default comparator (like reverse) is used.
 template</type T, type El, type Compare/>
 fn first_greater_or_equal( array_view_imut</T/> r, El& el, Compare& comp ) : size_type
 {
@@ -91,7 +95,7 @@ fn first_greater_or_equal( array_view_imut</T/> r, El& el, Compare& comp ) : siz
 	return begin;
 }
 
-// Search using key obtained via given key provider function.
+// Same as "first_greater_or_equal", but use comparison based on key obtained via given key provider function.
 template</type T, type KeyProvider/>
 fn first_greater_or_equal_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : size_type
 {
@@ -122,6 +126,8 @@ fn first_greater_or_equal( [T, S]& arr, T& el ) : size_type
 // Index0 <= Index1
 // Index0 or Index1 may be equal to range size.
 // This function effectively combines "first_greater_or_equal" and "first_greater".
+// It's analogous to "std::equal_range" function in C++.
+// Note that strictly speaking "greater" term isn't correct if non-default comparator (like reverse) is used.
 template</type T, type El, type Compare/>
 fn equal_range( array_view_imut</T/> r, El& el, Compare& comp ) : [ size_type, 2 ]
 {
@@ -131,7 +137,7 @@ fn equal_range( array_view_imut</T/> r, El& el, Compare& comp ) : [ size_type, 2
 	return res;
 }
 
-// Search using key obtained via given key provider function.
+// Same as "equal_range", but use comparison based on key obtained via given key provider function.
 template</type T, type KeyProvider/>
 fn equal_range_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : [ size_type, 2 ]
 {
@@ -164,7 +170,7 @@ fn is_present( array_view_imut</T/> r, El& el, Compare& comp ) : bool
 	return pos < r.size() && !comp( el, r[pos] );
 }
 
-// Search using key obtained via given key provider function.
+// Same as "is_present", but use comparison based on key obtained via given key provider function.
 template</type T, type KeyProvider/>
 fn is_present_by_key( array_view_imut</T/> r, T& el, KeyProvider mut key_provider ) : bool
 {
