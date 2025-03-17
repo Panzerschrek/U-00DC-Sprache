@@ -1085,6 +1085,7 @@ size_t CodeBuilder::PrepareFunction(
 	{
 		const bool res= EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition );
 		global_function_context_->args_preevaluation_cache.clear();
+		global_function_context_->variables_state.Clear();
 		if( !res )
 			return ~0u;
 	}
@@ -1127,6 +1128,7 @@ size_t CodeBuilder::PrepareFunction(
 
 		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );
 		global_function_context_->args_preevaluation_cache.clear();
+		global_function_context_->variables_state.Clear();
 
 		if( is_special_method && !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 		{
@@ -1168,6 +1170,7 @@ size_t CodeBuilder::PrepareFunction(
 
 			TransformCoroutineFunctionType( function_type, func_variable.kind, names_scope, func.src_loc );
 			global_function_context_->args_preevaluation_cache.clear();
+			global_function_context_->variables_state.Clear();
 
 			// Disable auto-coroutines.
 			if( func.type.IsAutoReturn() )

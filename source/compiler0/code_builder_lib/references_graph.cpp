@@ -25,6 +25,12 @@ void ReferencesGraph::AddNode( const VariablePtr& node )
 			AddNode( inner_reference_node );
 }
 
+void ReferencesGraph::Clear()
+{
+	nodes_.clear();
+	links_.clear();
+}
+
 void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
 {
 	if( nodes_.count( node ) == 0 )

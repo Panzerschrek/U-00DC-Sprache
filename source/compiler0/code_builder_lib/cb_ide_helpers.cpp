@@ -269,6 +269,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		function_context.variables_state.RemoveNode( variable );
 	}
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration )
@@ -276,6 +277,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	// Complete names in auto-variable expression initializer.
 	BuildExpressionCode( auto_variable_declaration.initializer_expression, names_scope, *global_function_context_ );
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ )
@@ -283,6 +285,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	// Complete names in static assert expression.
 	BuildExpressionCode( static_assert_.expression, names_scope, *global_function_context_ );
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias )
@@ -290,6 +293,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	// Complete names in aliased type name.
 	PrepareType( type_alias.value, names_scope, *global_function_context_ );
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ )
@@ -434,6 +438,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	// Do not complete class members, since completion for class member should be triggered instead.
 
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template )
@@ -486,6 +491,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		BuildExpressionCode( class_field.inner_reference_tags_expression, names_scope, *global_function_context_ );
 
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label )
@@ -500,6 +506,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	// Complete in mixin expression.
 	BuildExpressionCode( mixin.expression, names_scope, *global_function_context_ );
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
 }
 
 NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTemplatePtr& type_template )

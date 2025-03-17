@@ -227,6 +227,7 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			{
 				BuildStaticAssert( *static_assert_, names_scope, *global_function_context_ );
 				global_function_context_->args_preevaluation_cache.clear();
+				global_function_context_->variables_state.Clear();
 			}
 			else if( value.GetTypeAlias() != nullptr )
 				GlobalThingBuildTypeAlias( names_scope, value );
@@ -387,6 +388,7 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 	{
 		const Value parent_value= ResolveValue( class_parent_namespace, *global_function_context_, parent );
 		global_function_context_->args_preevaluation_cache.clear();
+		global_function_context_->variables_state.Clear();
 
 		const Type* const type_name= parent_value.GetTypeName();
 		if( type_name == nullptr )
@@ -499,6 +501,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
 			class_field->type= PrepareType( class_field->syntax_element->type, *the_class.members, *global_function_context_ );
 			global_function_context_->args_preevaluation_cache.clear();
+			global_function_context_->variables_state.Clear();
 
 			if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 			{
@@ -1353,6 +1356,7 @@ void CodeBuilder::GlobalThingBuildTypeAlias( NamesScope& names_scope, Value& typ
 	// Replace value in names map, when type alias is comlete.
 	type_alias_value= PrepareType( syntax_element.value, names_scope, *global_function_context_ );
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
@@ -1609,6 +1613,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	else U_ASSERT(false);
 
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
 
 	#undef FAIL_RETURN
 }

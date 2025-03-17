@@ -144,11 +144,13 @@ void CodeBuilder::PrepareTypeTemplate(
 			type_template->signature_params.push_back(
 				CreateTemplateSignatureParameter( names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags, signature_param.name ) );
 			global_function_context_->args_preevaluation_cache.clear();
+			global_function_context_->variables_state.Clear();
 
 			if( !std::holds_alternative<Synt::EmptyVariant>( signature_param.default_value ) )
 			{
 				CreateTemplateSignatureParameter( names_scope, *global_function_context_, template_parameters, template_parameters_usage_flags, signature_param.default_value );
 				global_function_context_->args_preevaluation_cache.clear();
+				global_function_context_->variables_state.Clear();
 			}
 			else
 			{
@@ -225,6 +227,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 			function_template->signature_params.push_back(
 				CreateTemplateSignatureParameter( names_scope, *global_function_context_, function_template->template_params, template_parameters_usage_flags, function_param.type ) );
 			global_function_context_->args_preevaluation_cache.clear();
+			global_function_context_->variables_state.Clear();
 		}
 	}
 
@@ -292,6 +295,7 @@ void CodeBuilder::ProcessTemplateParams(
 					template_parameters_usage_flags,
 					variable_param_data->type );
 			global_function_context_->args_preevaluation_cache.clear();
+			global_function_context_->variables_state.Clear();
 
 			CheckSignatureParamIsValidForTemplateValueArgumentType(
 				variable_param_type,
@@ -1005,6 +1009,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 									given_class_template_args_scope,
 									*global_function_context_ );
 							global_function_context_->args_preevaluation_cache.clear();
+							global_function_context_->variables_state.Clear();
 
 							if( const auto template_arg_opt=
 									ValueToTemplateArg(
@@ -1101,6 +1106,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 			const auto& expr= type_template.syntax_element->signature_params[i].default_value;
 			const Value value= BuildExpressionCode( expr, *result.template_args_namespace, *global_function_context_ );
 			global_function_context_->args_preevaluation_cache.clear();
+			global_function_context_->variables_state.Clear();
 
 			auto template_arg_opt= ValueToTemplateArg( value, result.template_args_namespace->GetErrors(), Synt::GetSrcLoc(expr) );
 			if( template_arg_opt != std::nullopt )
@@ -1259,6 +1265,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	{
 		const bool res= EvaluateBoolConstantExpression( *result.template_args_namespace, *global_function_context_, function_declaration.condition );
 		global_function_context_->args_preevaluation_cache.clear();
+		global_function_context_->variables_state.Clear();
 		if( !res )
 			return result;
 	}

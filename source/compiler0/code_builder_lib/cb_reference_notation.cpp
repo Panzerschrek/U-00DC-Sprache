@@ -48,6 +48,8 @@ std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names
 {
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, *global_function_context_, expression );
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
+
 	const SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
 	const Type expected_type= FundamentalType( U_FundamentalType::char8_ );
@@ -76,6 +78,8 @@ std::optional< llvm::SmallVector<uint8_t, 4> > CodeBuilder::EvaluateReferenceFie
 {
 	const VariablePtr variable= EvaluateReferenceNotationExpression( names_scope, *global_function_context_, expression );
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
+
 	const SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
 	const auto array_type= variable->type.GetArrayType();

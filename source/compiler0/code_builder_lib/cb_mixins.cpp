@@ -387,6 +387,7 @@ void CodeBuilder::EvaluateMixinExpressionInGlobalContext( NamesScope& names_scop
 	const StackVariablesStorage dummy_stack_variables_storage( *global_function_context_ );
 	EvaluateMixinExpression( names_scope, *global_function_context_, mixin );
 	global_function_context_->args_preevaluation_cache.clear();
+	global_function_context_->variables_state.Clear();
 }
 
 void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin )
