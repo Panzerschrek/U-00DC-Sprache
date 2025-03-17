@@ -172,6 +172,13 @@ fn nomangle main() : i32
 											var size_type greater_equal_res= ust::binary_search::first_greater_or_equal( subrange, i );
 											var [ size_type, 2 ] equal_range_res= ust::binary_search::equal_range( subrange, i );
 											var bool is_present_res= ust::binary_search::is_present( subrange, i );
+
+											// These invariants should remain true even for unsorted ranges.
+											assert( greater_res <= subrange.size() );
+											assert( greater_equal_res <= subrange.size() );
+											assert( equal_range_res[0] <= equal_range_res[1] );
+											assert( equal_range_res[1] <= subrange.size() );
+
 											if( is_sorted )
 											{
 												// If this combination is sorted check if returned result is equal to expected by linear search.
@@ -188,10 +195,22 @@ fn nomangle main() : i32
 											var [ size_type, 2 ] reversed_equal_range_res= ust::binary_search::equal_range( subrange, i, compare_reverse );
 											var bool reversed_is_present_res= ust::binary_search::is_present( subrange, i, compare_reverse );
 
+											// These invariants should remain true even for unsorted ranges.
+											assert( reversed_greater_res <= subrange.size() );
+											assert( reversed_greater_equal_res <= subrange.size() );
+											assert( reversed_equal_range_res[0] <= reversed_equal_range_res[1] );
+											assert( reversed_equal_range_res[1] <= subrange.size() );
+
 											var size_type reversed_by_key_greater_res= ust::binary_search::first_greater_by_key( subrange, i, key_provider_reverse );
 											var size_type reversed_by_key_greater_equal_res= ust::binary_search::first_greater_or_equal_by_key( subrange, i, key_provider_reverse );
 											var [ size_type, 2 ] reversed_by_key_equal_range_res= ust::binary_search::equal_range_by_key( subrange, i, key_provider_reverse );
 											var bool reversed_by_key_is_present_res= ust::binary_search::is_present_by_key( subrange, i, key_provider_reverse );
+
+											// These invariants should remain true even for unsorted ranges.
+											assert( reversed_by_key_greater_res <= subrange.size() );
+											assert( reversed_by_key_greater_equal_res <= subrange.size() );
+											assert( reversed_by_key_equal_range_res[0] <= reversed_by_key_equal_range_res[1] );
+											assert( reversed_by_key_equal_range_res[1] <= subrange.size() );
 
 											if( is_sorted_reverse )
 											{

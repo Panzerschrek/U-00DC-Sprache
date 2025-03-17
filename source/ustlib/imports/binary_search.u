@@ -12,6 +12,7 @@ namespace binary_search
 // Returns range size if not found.
 // It's analogous to "std::upper_bound" function in C++.
 // Note that strictly speaking "greater" term isn't correct if non-default comparator (like reverse) is used.
+// If given range isn't sorted according to given comparator or comparator isn't correct, result is incorrect but still in valid range.
 template</type T, type El, type Compare/>
 fn first_greater( array_view_imut</T/> r, El& el, Compare& comp ) : size_type
 {
@@ -76,6 +77,7 @@ fn first_greater( Container& container, El& el ) : size_type
 // Returns range size if not found.
 // It's analogous to "std::lower_bound" function in C++.
 // Note that strictly speaking "greater" term isn't correct if non-default comparator (like reverse) is used.
+// If given range isn't sorted according to given comparator or comparator isn't correct, result is incorrect but still in valid range.
 template</type T, type El, type Compare/>
 fn first_greater_or_equal( array_view_imut</T/> r, El& el, Compare& comp ) : size_type
 {
@@ -144,6 +146,7 @@ fn first_greater_or_equal( Container& container, El& el ) : size_type
 // This function effectively combines "first_greater_or_equal" and "first_greater".
 // It's analogous to "std::equal_range" function in C++.
 // Note that strictly speaking "greater" term isn't correct if non-default comparator (like reverse) is used.
+// If given range isn't sorted according to given comparator or comparator isn't correct, result is incorrect but still in valid range.
 template</type T, type El, type Compare/>
 fn equal_range( array_view_imut</T/> r, El& el, Compare& comp ) : [ size_type, 2 ]
 {
@@ -180,6 +183,7 @@ fn equal_range( [T, S]& arr, T& el ) : [ size_type, 2 ]
 
 // Generic "equal_range" overloading for types other than "random_access_range".
 // It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+// If given range isn't sorted according to given comparator or comparator isn't correct, result is incorrect but still in valid range.
 template</type Container, type El/>
 fn equal_range( Container& container, El& el ) : [ size_type, 2 ]
 {
