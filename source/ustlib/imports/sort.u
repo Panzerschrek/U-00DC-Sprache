@@ -5,6 +5,71 @@ import "random_access_range.u"
 namespace ust
 {
 
+// Generic "is_sorted" overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+template</type T/>
+fn is_sorted( T& container ) : bool
+{
+	return is_sorted( container.range() );
+}
+
+// "is_sorted" overloading for arrays.
+template</type T, size_type S/>
+fn is_sorted( [ T, S ] & arr ) : bool
+{
+	return is_sorted( random_access_range</T, false/>( arr ) );
+}
+
+template</type T/>
+fn is_sorted( random_access_range</T, false/> range ) : bool
+{
+	return is_sorted( range, default_compare</T/>() );
+}
+
+// "is_sorted" overloading for mutable ranges.
+template</type T/>
+fn is_sorted( random_access_range</T, true/> range ) : bool
+{
+	return is_sorted( random_access_range</T, false/>( range ), default_compare</T/>() );
+}
+
+// This function checks if given range is sorted according to given comparator.
+// Time complexity is linear.
+template</type T, type Compare/>
+fn is_sorted( random_access_range</T, false/> range, Compare& comp ) : bool
+{
+	if( range.size() <= 1s )
+	{
+		return true;
+	}
+
+	for( var size_type mut i= 0s, i_end = range.size() - 1s; i < i_end; ++i )
+	{
+		// Use unchecked indexing for slightly better performance.
+		if( comp( unsafe( range.index_unchecked( i + 1s ) ), unsafe( range.index_unchecked( i ) ) ) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+// "is_sorted_by_key" overloading for containers
+template</type T, type KeyProvider/>
+fn is_sorted_by_key( T& container, KeyProvider mut key_provider ) : bool
+{
+	return is_sorted_by_key( container.range(), move(key_provider) );
+}
+
+// Check if given range is sorted by key obtained via given key provider function.
+// This function accepts a single value and should return a value or a reference with operator <=> defined for its type.
+template</type T, type KeyProvider/>
+fn is_sorted_by_key( random_access_range</T, false/> range, KeyProvider mut key_provider ) : bool
+{
+	return is_sorted( range, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
+}
+
 // Generic sort overloading for types other than "random_access_range".
 // It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
 template</type T/>

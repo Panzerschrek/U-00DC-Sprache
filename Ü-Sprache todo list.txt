@@ -114,7 +114,6 @@ Standart library:
 *) More atomic functions - for 64-bit types, pointer types, size_type
 *) More binary search functions - index of last element less than given (or equal to it), index of given element,
 	range partition
-*) Add function(s) for checking if given range is sorted
 
 Compiler:
 *) Fix possible overflows in numeric literals
