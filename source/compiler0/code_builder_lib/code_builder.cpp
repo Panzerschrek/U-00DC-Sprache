@@ -277,6 +277,8 @@ void CodeBuilder::BuildProgramInternal( const SourceGraphPtr& source_graph )
 			"",
 			module_.get() );
 
+	FunctionContext::CreateGlobalFunctionContextBlocks( global_function_ );
+
 	debug_info_builder_.emplace( llvm_context_, data_layout_, *source_graph, *module_, build_debug_info_ );
 
 	// Build graph.

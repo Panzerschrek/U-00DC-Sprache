@@ -1457,8 +1457,7 @@ private:
 	template<typename Func>
 	auto WithGlobalFunctionContext( Func func )
 	{
-		FunctionContext function_context( global_function_type_, llvm_context_, global_function_ );
-		function_context.is_functionless_context= true;
+		FunctionContext function_context( FunctionContext::GlobalFunctionContextTag{}, global_function_type_, global_function_ );
 
 		StackVariablesStorage stack_variables_storage( function_context );
 

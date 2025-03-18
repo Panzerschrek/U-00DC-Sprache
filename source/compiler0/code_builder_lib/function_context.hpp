@@ -71,6 +71,15 @@ public:
 
 	FunctionContext(const FunctionContext&)= delete;
 
+	struct GlobalFunctionContextTag{};
+
+	// Special constructor for global function context.
+	// LLVM function provided should contain basic blocks "alloca" and "func_code"!.
+	FunctionContext( GlobalFunctionContextTag, FunctionType function_type, llvm::Function* function );
+
+	// This function should be called for global function prior to creating global function context for it.
+	static void CreateGlobalFunctionContextBlocks( llvm::Function* function );
+
 public:
 	const FunctionType function_type;
 
