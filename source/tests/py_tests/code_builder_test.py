@@ -358,3 +358,29 @@ def RecursiveNumericTypeTemplate_Test0():
 		type SomeLarge= Some</16384s/>;
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ArgsPreevaluationCacheClear_Test0():
+
+	c_program_text= """
+		fn Bar(i32 x) : i32;
+		fn Bar(f64 x) : f64;
+
+		template</type T/>
+		struct Box
+		{
+			T t= Bar( T(0) ); // Should not cache type of "Bar" call here across different instantiations of "Box".
+		}
+
+		struct Pair
+		{
+			Box</i32/> x;
+			Box</f64/> y;
+		}
+
+		fn Foo()
+		{
+			var Pair p { .x{}, .y{} }; // Use own fields initializers for "x.t" and "y.t".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
