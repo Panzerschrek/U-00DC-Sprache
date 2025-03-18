@@ -533,6 +533,12 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		}
 		else
 		{
+			// Save and restore later args preevaluation cache.
+			// It's necessary to avoid populating it with entries for the initializer expression and its parts.
+			// It's incorrect to do so, because expression result types may depend on class members namespace,
+			// which may be different for different invocations for the same expression syntax elements - in case of templates.
+			auto mut args_preevaluation_cache= take( function_context.args_preevaluation_cache );
+
 			if( field.is_reference )
 			{
 				constexpr_initializer= InitializeReferenceField( class_members_initial, function_context, variable_ptr, field, initializer );
@@ -541,6 +547,8 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 			{
 				constexpr_initializer= ApplyInitializer( class_members_initial, function_context, member_variable_ptr, initializer );
 			}
+
+			function_context.args_preevaluation_cache= move( args_preevaluation_cache );
 		}
 
 		function_context.references_graph.RemoveNode( member_variable_ptr );
