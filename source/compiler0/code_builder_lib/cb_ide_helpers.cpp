@@ -232,64 +232,74 @@ std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::SignatureHelpResultFina
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
 {
-	FunctionContext& function_context= *global_function_context_;
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			// Complete type name.
+			const Type type= PrepareType( variables_declaration.type, names_scope, function_context );
 
-	// Complete type name.
-	const Type type= PrepareType( variables_declaration.type, names_scope, function_context );
+			// Complete names in initializers.
+			for( const Synt::VariablesDeclaration::VariableEntry& variable_entry : variables_declaration.variables )
+			{
+				if( variable_entry.initializer == nullptr )
+					continue;
 
-	// Complete names in initializers.
-	for( const Synt::VariablesDeclaration::VariableEntry& variable_entry : variables_declaration.variables )
-	{
-		if( variable_entry.initializer == nullptr )
-			continue;
+				const VariablePtr variable=
+					Variable::Create(
+						type,
+						ValueType::Value,
+						Variable::Location::Pointer,
+						variable_entry.name + " variable itself" );
 
-		const VariablePtr variable=
-			Variable::Create(
-				type,
-				ValueType::Value,
-				Variable::Location::Pointer,
-				variable_entry.name + " variable itself" );
+				function_context.variables_state.AddNode( variable );
 
-		function_context.variables_state.AddNode( variable );
+				const VariablePtr variable_for_initialization=
+					Variable::Create(
+						type,
+						ValueType::ReferenceMut,
+						Variable::Location::Pointer,
+						variable_entry.name,
+						variable->llvm_value );
 
-		const VariablePtr variable_for_initialization=
-			Variable::Create(
-				type,
-				ValueType::ReferenceMut,
-				Variable::Location::Pointer,
-				variable_entry.name,
-				variable->llvm_value );
+				function_context.variables_state.AddNode( variable_for_initialization );
+				function_context.variables_state.AddLink( variable, variable_for_initialization );
 
-		function_context.variables_state.AddNode( variable_for_initialization );
-		function_context.variables_state.AddLink( variable, variable_for_initialization );
+				ApplyInitializer( variable_for_initialization, names_scope, function_context, *variable_entry.initializer );
 
-		ApplyInitializer( variable_for_initialization, names_scope, function_context, *variable_entry.initializer );
-
-		function_context.variables_state.RemoveNode( variable_for_initialization );
-		function_context.variables_state.RemoveNode( variable );
-	}
-	global_function_context_->args_preevaluation_cache.clear();
+				function_context.variables_state.RemoveNode( variable_for_initialization );
+				function_context.variables_state.RemoveNode( variable );
+			}
+		} );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration )
 {
-	// Complete names in auto-variable expression initializer.
-	BuildExpressionCode( auto_variable_declaration.initializer_expression, names_scope, *global_function_context_ );
-	global_function_context_->args_preevaluation_cache.clear();
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			// Complete names in auto-variable expression initializer.
+			BuildExpressionCode( auto_variable_declaration.initializer_expression, names_scope, function_context );
+		} );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ )
 {
-	// Complete names in static assert expression.
-	BuildExpressionCode( static_assert_.expression, names_scope, *global_function_context_ );
-	global_function_context_->args_preevaluation_cache.clear();
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			// Complete names in static assert expression.
+			BuildExpressionCode( static_assert_.expression, names_scope, function_context );
+		} );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias )
 {
-	// Complete names in aliased type name.
-	PrepareType( type_alias.value, names_scope, *global_function_context_ );
-	global_function_context_->args_preevaluation_cache.clear();
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			// Complete names in aliased type name.
+			PrepareType( type_alias.value, names_scope, function_context );
+		} );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ )
@@ -420,20 +430,22 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ )
 {
-	// Complete names in parent names.
-	for( const Synt::ComplexName& parent_name : class_.parents )
-		ResolveValue( names_scope, *global_function_context_, parent_name );
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			// Complete names in parent names.
+			for( const Synt::ComplexName& parent_name : class_.parents )
+				ResolveValue( names_scope, function_context, parent_name );
 
-	// Complete names in non-sync tag.
-	if( const auto non_sync_expression= std::get_if< std::unique_ptr<const Synt::Expression> >( &class_.non_sync_tag ) )
-	{
-		if( *non_sync_expression != nullptr )
-			BuildExpressionCode( **non_sync_expression, names_scope, *global_function_context_ );
-	}
+			// Complete names in non-sync tag.
+			if( const auto non_sync_expression= std::get_if< std::unique_ptr<const Synt::Expression> >( &class_.non_sync_tag ) )
+			{
+				if( *non_sync_expression != nullptr )
+					BuildExpressionCode( **non_sync_expression, names_scope, function_context );
+			}
 
-	// Do not complete class members, since completion for class member should be triggered instead.
-
-	global_function_context_->args_preevaluation_cache.clear();
+			// Do not complete class members, since completion for class member should be triggered instead.
+		} );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template )
@@ -476,16 +488,18 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field )
 {
-	// Complete type name of class field.
-	PrepareType( class_field.type, names_scope, *global_function_context_ );
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			// Complete type name of class field.
+			PrepareType( class_field.type, names_scope, function_context );
 
-	// Complete inside reference notation expressions.
-	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.reference_tag_expression ) )
-		BuildExpressionCode( class_field.reference_tag_expression, names_scope, *global_function_context_ );
-	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.inner_reference_tags_expression ) )
-		BuildExpressionCode( class_field.inner_reference_tags_expression, names_scope, *global_function_context_ );
-
-	global_function_context_->args_preevaluation_cache.clear();
+			// Complete inside reference notation expressions.
+			if( !std::holds_alternative< Synt::EmptyVariant >( class_field.reference_tag_expression ) )
+				BuildExpressionCode( class_field.reference_tag_expression, names_scope, function_context );
+			if( !std::holds_alternative< Synt::EmptyVariant >( class_field.inner_reference_tags_expression ) )
+				BuildExpressionCode( class_field.inner_reference_tags_expression, names_scope, function_context );
+		} );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label )
@@ -498,8 +512,11 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Mixin& mixin )
 {
 	// Complete in mixin expression.
-	BuildExpressionCode( mixin.expression, names_scope, *global_function_context_ );
-	global_function_context_->args_preevaluation_cache.clear();
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
+		{
+			BuildExpressionCode( mixin.expression, names_scope, function_context );
+		} );
 }
 
 NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTemplatePtr& type_template )

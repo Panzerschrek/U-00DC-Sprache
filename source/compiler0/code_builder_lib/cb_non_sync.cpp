@@ -113,8 +113,13 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 				{
 					// Process "non_sync</T/>" expression specially to handle cases with recursive dependencies.
 					// TODO - handle also simple logical expressions with "non_sync" tag?
-					const Type dependent_type= PrepareType( (*non_sync_expression_ptr)->type, class_parent_scope, *global_function_context_ );
-					global_function_context_->args_preevaluation_cache.clear();
+					const Type dependent_type=
+						WithGlobalFunctionContext(
+							[&]( FunctionContext& function_context )
+							{
+								return PrepareType( (*non_sync_expression_ptr)->type, class_parent_scope, function_context );
+							} );
+
 					if( GetTypeNonSyncImpl( prev_types_stack, dependent_type, names_scope, src_loc ) )
 					{
 						prev_types_stack.pop_back();
@@ -124,11 +129,15 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 				else
 				{
 					// Process general non_sync expression. This approach can't resolve circular dependency.
-					const bool res= EvaluateBoolConstantExpression( class_parent_scope, *global_function_context_, expression );
-					global_function_context_->args_preevaluation_cache.clear();
+					const bool res=
+						WithGlobalFunctionContext(
+							[&]( FunctionContext& function_context )
+							{
+								return EvaluateBoolConstantExpression( class_parent_scope, function_context, expression );
+							} );
+
 					if( res )
 					{
-
 						prev_types_stack.pop_back();
 						return true;
 					}
@@ -205,9 +214,15 @@ void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 {
 	if( class_type->syntax_element != nullptr )
 	{
-		// Evaluate non_sync condition using initial class members parent scope.
-		ImmediateEvaluateNonSyncTag(  *class_type->members_initial->GetParent(), *global_function_context_, class_type->syntax_element->non_sync_tag );
-		global_function_context_->args_preevaluation_cache.clear();
+		if( const auto expression_ptr= std::get_if< std::unique_ptr<const Synt::Expression> >( &class_type->syntax_element->non_sync_tag ) )
+		{
+			WithGlobalFunctionContext(
+				[&]( FunctionContext& function_context )
+				{
+					// Evaluate non_sync condition using initial class members parent scope.
+					EvaluateBoolConstantExpression( *class_type->members_initial->GetParent(), function_context, **expression_ptr );
+				} );
+		}
 	}
 }
 

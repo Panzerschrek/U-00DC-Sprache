@@ -1826,7 +1826,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::ExternalFunctionAccess& external_function_access )
 {
-	if( function_context.function == global_function_context_->function )
+	if( function_context.function == global_function_ )
 	{
 		REPORT_ERROR( AccessingExternalFunctionInGlobalContext, names_scope.GetErrors(), external_function_access.src_loc );
 		return ErrorValue();
@@ -1886,7 +1886,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::ExternalVariableAccess& external_variable_access )
 {
-	if( function_context.function == global_function_context_->function )
+	if( function_context.function == global_function_ )
 	{
 		REPORT_ERROR( AccessingExternalVariableInGlobalContext, names_scope.GetErrors(), external_variable_access.src_loc );
 		return ErrorValue();
@@ -2024,7 +2024,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::UnsafeExpression& unsafe_expression )
 {
-	if( function_context.function == global_function_context_->function )
+	if( function_context.function == global_function_ )
 		REPORT_ERROR( UnsafeExpressionInGlobalContext, names_scope.GetErrors(), unsafe_expression.src_loc );
 
 	// "unsafe" expression usage should prevent function to be "constexpr".

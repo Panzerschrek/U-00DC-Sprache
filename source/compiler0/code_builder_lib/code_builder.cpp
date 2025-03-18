@@ -261,25 +261,23 @@ void CodeBuilder::BuildProgramInternal( const SourceGraphPtr& source_graph )
 					module_.get() );
 	}
 
-	FunctionType global_function_type;
-	global_function_type.return_type= void_type_;
+	{
+		FunctionType global_function_type;
+		global_function_type.return_type= void_type_;
+
+		global_function_type_= std::move( global_function_type );
+	}
 
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this function context.
-	llvm::Function* const global_function=
+	global_function_=
 		llvm::Function::Create(
-			GetLLVMFunctionType( global_function_type ),
+			GetLLVMFunctionType( global_function_type_ ),
 			llvm::Function::LinkageTypes::PrivateLinkage,
 			"",
 			module_.get() );
 
-	global_function_context_=
-		std::make_unique<FunctionContext> (
-			std::move(global_function_type),
-			llvm_context_,
-			global_function );
-	global_function_context_->is_functionless_context= true;
-	global_function_context_variables_storage_= std::make_unique<StackVariablesStorage>( *global_function_context_ );
+	FunctionContext::CreateGlobalFunctionContextBlocks( global_function_ );
 
 	debug_info_builder_.emplace( llvm_context_, data_layout_, *source_graph, *module_, build_debug_info_ );
 
@@ -314,7 +312,7 @@ void CodeBuilder::FinalizeProgram()
 	for( auto& key_value_pair : generated_template_things_storage_ )
 		SetupDereferenceableFunctionParamsAndRetAttributes_r( *key_value_pair.second );
 
-	global_function_context_->function->eraseFromParent(); // Kill global function.
+	global_function_->eraseFromParent(); // Kill global function.
 
 	// Fix incomplete typeinfo.
 	for( const auto& typeinfo_entry : typeinfo_cache_ )
@@ -1083,8 +1081,13 @@ size_t CodeBuilder::PrepareFunction(
 
 	if( !std::holds_alternative<Synt::EmptyVariant>( func.condition ) )
 	{
-		const bool res= EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition );
-		global_function_context_->args_preevaluation_cache.clear();
+		const bool res=
+			WithGlobalFunctionContext(
+			[&]( FunctionContext& function_context )
+			{
+				return EvaluateBoolConstantExpression( names_scope, function_context, func.condition );
+			} );
+
 		if( !res )
 			return ~0u;
 	}
@@ -1125,8 +1128,12 @@ size_t CodeBuilder::PrepareFunction(
 				REPORT_ERROR( ReferenceNotationForAutoFunction, names_scope.GetErrors(), Synt::GetSrcLoc( *func.type.references_pollution_expression ) );
 		}
 
-		FunctionType function_type= PrepareFunctionType( names_scope, *global_function_context_, func.type, base_class );
-		global_function_context_->args_preevaluation_cache.clear();
+		FunctionType function_type=
+			WithGlobalFunctionContext(
+				[&]( FunctionContext& function_context )
+				{
+					return PrepareFunctionType( names_scope, function_context, func.type, base_class );
+				} );
 
 		if( is_special_method && !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 		{
@@ -1167,7 +1174,6 @@ size_t CodeBuilder::PrepareFunction(
 			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
 			TransformCoroutineFunctionType( function_type, func_variable.kind, names_scope, func.src_loc );
-			global_function_context_->args_preevaluation_cache.clear();
 
 			// Disable auto-coroutines.
 			if( func.type.IsAutoReturn() )
@@ -2671,7 +2677,7 @@ CodeBuilder::FunctionContextState CodeBuilder::SaveFunctionContextState( Functio
 {
 	FunctionContextState result;
 	result.variables_state= function_context.variables_state;
-	result.block_count= function_context.function->size();
+	result.current_block= function_context.llvm_ir_builder.GetInsertBlock();
 	return result;
 }
 
@@ -2680,7 +2686,7 @@ void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context
 	function_context.variables_state= state.variables_state;
 
 	// Make sure no new basic blocks were added.
-	U_ASSERT( function_context.function->size() == state.block_count );
+	U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock() == state.current_block );
 	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
 }
 
