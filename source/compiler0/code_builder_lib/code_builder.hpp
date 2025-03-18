@@ -1372,7 +1372,6 @@ private:
 	const Synt::BlockElementsList* ExpandBlockMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 	const Synt::TypeName* ExpandTypeNameMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
 	const Synt::Expression* ExpandExpressionMixin( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin );
-	void EvaluateMixinExpressionInGlobalContext( NamesScope& names_scope, Mixin& mixin );
 	void EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin );
 
 	std::optional<Lexems> PrepareMixinLexems( NamesScope& names_scope, const SrcLoc& src_loc, std::string_view mixin_text );

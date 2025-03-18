@@ -214,12 +214,15 @@ void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 {
 	if( class_type->syntax_element != nullptr )
 	{
-		// Evaluate non_sync condition using initial class members parent scope.
-		WithGlobalFunctionContext(
-			[&]( FunctionContext& function_context )
-			{
-				ImmediateEvaluateNonSyncTag(  *class_type->members_initial->GetParent(), function_context, class_type->syntax_element->non_sync_tag );
-			} );
+		if( const auto expression_ptr= std::get_if< std::unique_ptr<const Synt::Expression> >( &class_type->syntax_element->non_sync_tag ) )
+		{
+			WithGlobalFunctionContext(
+				[&]( FunctionContext& function_context )
+				{
+					// Evaluate non_sync condition using initial class members parent scope.
+					EvaluateBoolConstantExpression( *class_type->members_initial->GetParent(), function_context, **expression_ptr );
+				} );
+		}
 	}
 }
 

@@ -139,32 +139,30 @@ void CodeBuilder::PrepareTypeTemplate(
 	{
 		// Check and fill signature args.
 		type_template->first_optional_signature_param= 0u;
-		for( const Synt::TypeTemplate::SignatureParam& signature_param : type_template_declaration.signature_params )
+		if( !type_template_declaration.signature_params.empty() )
 		{
 			WithGlobalFunctionContext(
 				[&]( FunctionContext& function_context )
 				{
-					type_template->signature_params.push_back(
-						CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, signature_param.name ) );
-				} );
-
-			if( !std::holds_alternative<Synt::EmptyVariant>( signature_param.default_value ) )
-			{
-				WithGlobalFunctionContext(
-					[&]( FunctionContext& function_context )
+					for( const Synt::TypeTemplate::SignatureParam& signature_param : type_template_declaration.signature_params )
 					{
-						CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, signature_param.default_value );
-					} );
-			}
-			else
-			{
-				const size_t index= type_template->signature_params.size() - 1u;
-				if (index > type_template->first_optional_signature_param )
-					REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration.src_loc );
+						type_template->signature_params.push_back(
+							CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, signature_param.name ) );
 
-				++type_template->first_optional_signature_param;
-			}
+						if( !std::holds_alternative<Synt::EmptyVariant>( signature_param.default_value ) )
+							CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, signature_param.default_value );
+						else
+						{
+							const size_t index= type_template->signature_params.size() - 1u;
+							if (index > type_template->first_optional_signature_param )
+								REPORT_ERROR( MandatoryTemplateSignatureArgumentAfterOptionalArgument, names_scope.GetErrors(), type_template_declaration.src_loc );
+
+							++type_template->first_optional_signature_param;
+						}
+					}
+				} );
 		}
+
 	}
 	U_ASSERT( type_template->first_optional_signature_param <= type_template->signature_params.size() );
 
@@ -222,19 +220,20 @@ void CodeBuilder::PrepareFunctionTemplate(
 		function_template->template_params,
 		template_parameters_usage_flags );
 
-	for( const Synt::FunctionParam& function_param : function_template_declaration.function->type.params )
+	if( !function_template_declaration.function->type.params.empty() )
 	{
-		if( base_class != nullptr && function_param.name == Keyword( Keywords::this_ ) )
-			function_template->signature_params.push_back( TemplateSignatureParam::Type{ Type(base_class) } );
-		else
-		{
-			WithGlobalFunctionContext(
-				[&]( FunctionContext& function_context )
+		WithGlobalFunctionContext(
+			[&]( FunctionContext& function_context )
+			{
+				for( const Synt::FunctionParam& function_param : function_template_declaration.function->type.params )
 				{
-					function_template->signature_params.push_back(
-						CreateTemplateSignatureParameter( names_scope, function_context, function_template->template_params, template_parameters_usage_flags, function_param.type ) );
-				} );
-		}
+					if( base_class != nullptr && function_param.name == Keyword( Keywords::this_ ) )
+						function_template->signature_params.push_back( TemplateSignatureParam::Type{ Type(base_class) } );
+					else
+						function_template->signature_params.push_back(
+							CreateTemplateSignatureParameter( names_scope, function_context, function_template->template_params, template_parameters_usage_flags, function_param.type ) );
+				}
+			} );
 	}
 
 	// Do not report about unused template parameters because they may not be used in function signature or even in function type but used only inside body.

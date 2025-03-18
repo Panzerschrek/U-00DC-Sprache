@@ -383,48 +383,50 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 
 	const Synt::Class& class_declaration= *class_type->syntax_element;
 
-	// Perform only steps necessary to build parents list.
-	// Do not even require completeness of parent class.
-	NamesScope& class_parent_namespace= *class_type->members->GetParent();
-	for( const Synt::ComplexName& parent : class_declaration.parents )
+	if( !class_declaration.parents.empty() )
 	{
-		const Value parent_value=
-			WithGlobalFunctionContext(
-				[&]( FunctionContext& function_context )
+		WithGlobalFunctionContext(
+			[&]( FunctionContext& function_context )
+			{
+				// Perform only steps necessary to build parents list.
+				// Do not even require completeness of parent class.
+				NamesScope& class_parent_namespace= *class_type->members->GetParent();
+				for( const Synt::ComplexName& parent : class_declaration.parents )
 				{
-					return ResolveValue( class_parent_namespace, function_context, parent );
-				} );
+					const Value parent_value= ResolveValue( class_parent_namespace, function_context, parent );
 
-		const Type* const type_name= parent_value.GetTypeName();
-		if( type_name == nullptr )
-		{
-			REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), Synt::GetSrcLoc(parent), parent_value.GetKindName() );
-			continue;
-		}
+					const Type* const type_name= parent_value.GetTypeName();
+					if( type_name == nullptr )
+					{
+						REPORT_ERROR( NameIsNotTypeName, class_parent_namespace.GetErrors(), Synt::GetSrcLoc(parent), parent_value.GetKindName() );
+						continue;
+					}
 
-		const ClassPtr parent_class= type_name->GetClassType();
-		if( parent_class == nullptr )
-		{
-			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc, type_name );
-			continue;
-		}
+					const ClassPtr parent_class= type_name->GetClassType();
+					if( parent_class == nullptr )
+					{
+						REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc, type_name );
+						continue;
+					}
 
-		bool duplicated= false;
-		for( const Class::Parent& parent : class_type->parents )
-			duplicated= duplicated || parent.class_ == parent_class;
-		if( duplicated )
-		{
-			REPORT_ERROR( DuplicatedParentClass, class_parent_namespace.GetErrors(), class_declaration.src_loc, type_name );
-			continue;
-		}
+					bool duplicated= false;
+					for( const Class::Parent& parent : class_type->parents )
+						duplicated= duplicated || parent.class_ == parent_class;
+					if( duplicated )
+					{
+						REPORT_ERROR( DuplicatedParentClass, class_parent_namespace.GetErrors(), class_declaration.src_loc, type_name );
+						continue;
+					}
 
-		class_type->parents.emplace_back();
-		class_type->parents.back().class_= parent_class;
+					class_type->parents.emplace_back();
+					class_type->parents.back().class_= parent_class;
 
-		GlobalThingPrepareClassParentsList( parent_class );
-		AddAncestorsAccessRights_r( *class_type, parent_class );
+					GlobalThingPrepareClassParentsList( parent_class );
+					AddAncestorsAccessRights_r( *class_type, parent_class );
 
-	} // for parents
+				} // for parents
+			} );
+	}
 
 	class_type->parents_list_prepared= true;
 }
@@ -493,63 +495,63 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 	the_class.can_be_constexpr= the_class.kind == Class::Kind::Struct;
 
-	the_class.members->ForEachValueInThisScope(
-		[&]( Value& value )
+	WithGlobalFunctionContext(
+		[&]( FunctionContext& function_context )
 		{
-			ClassFieldPtr const class_field= value.GetClassField();
-			if( class_field == nullptr )
-				return;
-
-			const Synt::ClassField& in_field= *class_field->syntax_element;
-
-			class_field->class_= class_type;
-			class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
-
-			WithGlobalFunctionContext(
-				[&]( FunctionContext& function_context )
+			the_class.members->ForEachValueInThisScope(
+				[&]( Value& value )
 				{
+					ClassFieldPtr const class_field= value.GetClassField();
+					if( class_field == nullptr )
+						return;
+
+					const Synt::ClassField& in_field= *class_field->syntax_element;
+
+					class_field->class_= class_type;
+					class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
+
 					class_field->type= PrepareType( class_field->syntax_element->type, *the_class.members, function_context );
+
+					if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
+					{
+						// Full type completeness required for value-fields and constexpr reference-fields.
+						if( !EnsureTypeComplete( class_field->type ) )
+						{
+							REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
+							return;
+						}
+					}
+
+					if( class_field->is_reference )
+					{
+						if( !EnsureTypeComplete( class_field->type ) )
+						{
+							REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
+							return;
+						}
+
+						const size_t reference_tag_count= class_field->type.ReferenceTagCount();
+						if( reference_tag_count > 0 )
+						{
+							if( class_field->type.GetSecondOrderInnerReferenceKind(0) != SecondOrderInnerReferenceKind::None )
+								REPORT_ERROR( ReferenceIndirectionDepthExceeded, class_parent_namespace.GetErrors(), in_field.src_loc, 2, in_field.name );
+
+							if( reference_tag_count > 1 )
+								REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, class_parent_namespace.GetErrors(), in_field.src_loc, in_field.name );
+						}
+					}
+					else if( class_field->type.IsAbstract() )
+						REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
+
+					if( class_field->is_reference ) // Reference-fields are immutable by default
+						class_field->is_mutable= in_field.mutability_modifier == Synt::MutabilityModifier::Mutable;
+					else // But value-fields are mutable by default
+						class_field->is_mutable= in_field.mutability_modifier != Synt::MutabilityModifier::Immutable;
+
+					// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
+					if( !class_field->type.CanBeConstexpr() || ( class_field->is_reference && class_field->is_mutable ) )
+						the_class.can_be_constexpr= false;
 				} );
-
-			if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
-			{
-				// Full type completeness required for value-fields and constexpr reference-fields.
-				if( !EnsureTypeComplete( class_field->type ) )
-				{
-					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
-					return;
-				}
-			}
-
-			if( class_field->is_reference )
-			{
-				if( !EnsureTypeComplete( class_field->type ) )
-				{
-					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
-					return;
-				}
-
-				const size_t reference_tag_count= class_field->type.ReferenceTagCount();
-				if( reference_tag_count > 0 )
-				{
-					if( class_field->type.GetSecondOrderInnerReferenceKind(0) != SecondOrderInnerReferenceKind::None )
-						REPORT_ERROR( ReferenceIndirectionDepthExceeded, class_parent_namespace.GetErrors(), in_field.src_loc, 2, in_field.name );
-
-					if( reference_tag_count > 1 )
-						REPORT_ERROR( MoreThanOneInnerReferenceTagForSecondOrderReferenceField, class_parent_namespace.GetErrors(), in_field.src_loc, in_field.name );
-				}
-			}
-			else if( class_field->type.IsAbstract() )
-				REPORT_ERROR( ConstructingAbstractClassOrInterface, class_parent_namespace.GetErrors(), in_field.src_loc, class_field->type );
-
-			if( class_field->is_reference ) // Reference-fields are immutable by default
-				class_field->is_mutable= in_field.mutability_modifier == Synt::MutabilityModifier::Mutable;
-			else // But value-fields are mutable by default
-				class_field->is_mutable= in_field.mutability_modifier != Synt::MutabilityModifier::Immutable;
-
-			// Disable constexpr, if field can not be constexpr, or if field is mutable reference.
-			if( !class_field->type.CanBeConstexpr() || ( class_field->is_reference && class_field->is_mutable ) )
-				the_class.can_be_constexpr= false;
 		} );
 
 	// Determine inner references.

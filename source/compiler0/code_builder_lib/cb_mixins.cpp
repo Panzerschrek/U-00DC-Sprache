@@ -59,9 +59,17 @@ uint32_t CodeBuilder::EvaluateMixinsExpressions_r( NamesScope& names_scope )
 			}
 			else if( const auto mixins= value.GetMixins() )
 			{
-				result+= uint32_t(mixins->size());
-				for( Mixin& mixin : *mixins )
-					EvaluateMixinExpressionInGlobalContext( names_scope, mixin );
+				if( !mixins->empty() )
+				{
+					result+= uint32_t(mixins->size());
+
+					WithGlobalFunctionContext(
+						[&]( FunctionContext& function_context )
+						{
+							for( Mixin& mixin : *mixins )
+								EvaluateMixinExpression( names_scope, function_context, mixin );
+						} );
+				}
 			}
 		} );
 
@@ -380,15 +388,6 @@ const Synt::Expression* CodeBuilder::ExpandExpressionMixin( NamesScope& names_sc
 	}
 
 	return &it->second;
-}
-
-void CodeBuilder::EvaluateMixinExpressionInGlobalContext( NamesScope& names_scope, Mixin& mixin )
-{
-	WithGlobalFunctionContext(
-		[&]( FunctionContext& function_context )
-		{
-			EvaluateMixinExpression( names_scope, function_context, mixin );
-		} );
 }
 
 void CodeBuilder::EvaluateMixinExpression( NamesScope& names_scope, FunctionContext& function_context, Mixin& mixin )

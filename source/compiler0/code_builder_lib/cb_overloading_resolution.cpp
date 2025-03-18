@@ -451,14 +451,11 @@ FunctionType::Param CodeBuilder::OverloadingResolutionItemGetParamExtendedType( 
 				result.type= invalid_type_; // May be in case of error.
 		}
 		else
-		{
-			result.type=
-				WithGlobalFunctionContext(
-					[&]( FunctionContext& function_context )
-					{
-						return PrepareType( param.type, *template_function_preparation_result->template_args_namespace, function_context );
-					} );
-		}
+			WithGlobalFunctionContext(
+				[&]( FunctionContext& function_context )
+				{
+					result.type= PrepareType( param.type, *template_function_preparation_result->template_args_namespace, function_context );
+				} );
 
 		return result;
 	}
