@@ -1487,12 +1487,21 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 	VariablePtr prev_this= function_context.this_;
 	function_context.this_= nullptr;
 
+	// Save and restore later args preevaluation cache.
+	// It's necessary to avoid populating it with entries for the initializer expression and its parts.
+	// It's incorrect to do so, because expression result types may depend on class members namespace,
+	// which may be different for different invocations for the same expression syntax elements - in case of templates.
+	std::unordered_map< const Synt::Expression*, FunctionType::Param > args_preevaluation_cache;
+	std::swap( args_preevaluation_cache, function_context.args_preevaluation_cache );
+
 	llvm::Constant* const result=
 		ApplyInitializer(
 			field_variable,
 			*class_field.class_->members_initial, // Use initial class members names scope.
 			function_context,
 			*class_field.syntax_element->initializer );
+
+	std::swap( args_preevaluation_cache, function_context.args_preevaluation_cache );
 
 	function_context.this_= std::move(prev_this);
 
@@ -1512,6 +1521,13 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 	VariablePtr prev_this= function_context.this_;
 	function_context.this_= nullptr;
 
+	// Save and restore later args preevaluation cache.
+	// It's necessary to avoid populating it with entries for the initializer expression and its parts.
+	// It's incorrect to do so, because expression result types may depend on class members namespace,
+	// which may be different for different invocations for the same expression syntax elements - in case of templates.
+	std::unordered_map< const Synt::Expression*, FunctionType::Param > args_preevaluation_cache;
+	std::swap( args_preevaluation_cache, function_context.args_preevaluation_cache );
+
 	llvm::Constant* const result=
 		InitializeReferenceField(
 			variable,
@@ -1519,6 +1535,8 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 			*class_field.syntax_element->initializer,
 			*class_field.class_->members_initial, // Use initial class members names scope.
 			function_context );
+
+	std::swap( args_preevaluation_cache, function_context.args_preevaluation_cache );
 
 	function_context.this_= std::move(prev_this);
 
