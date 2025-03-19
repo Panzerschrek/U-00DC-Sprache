@@ -1,6 +1,7 @@
 import importlib
 import inspect
 import sys
+import threading
 import traceback
 import os
 from py_tests_common import *
@@ -20,7 +21,7 @@ def GetTestsList( tests_modules_list ):
 	return result
 
 
-def main():
+def run_tests():
 	tests_modules_list= [
 		"alloca_test",
 		"arrays_test",
@@ -146,6 +147,27 @@ def main():
 	print( str(tests_filtered) + " tests filtered" )
 	print( str(tests_failed) + " tests failed" )
 	return tests_failed
+
+
+# Since "Thread" class can't return a value, append return value into the passed dictionary.
+def run_tests_thread_entry( res_dict ):
+	res= run_tests()
+	res_dict.append( res )
+
+def main():
+	# Create a separate thread for actual tests running.
+	# It's necessary, since we need large stack size (for deep recursion)
+	# and we can set stack size only for newly-created threads, but not for the main thread.
+
+	threading.stack_size( 1024 * 1024 * 16 )
+
+	res_dict= [] # Pass result via dictionary
+
+	t= threading.Thread( target= run_tests_thread_entry, args= [ res_dict ] )
+	t.start()
+	t.join()
+
+	return res_dict[0]
 
 
 if __name__ == "__main__":
