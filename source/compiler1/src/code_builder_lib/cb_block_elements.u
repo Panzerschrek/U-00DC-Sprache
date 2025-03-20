@@ -3166,15 +3166,13 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	ust::ignore_unused( names_scope );
 	ust::ignore_unused( halt_ );
 
-	var BlockElementBuildInfo block_element_build_info{ .has_terminal_instruction_inside= true };
-
 	unsafe
 	{
 		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, g_null_string );
 		LLVMBuildUnreachable( function_context.llvm_ir_builder );
 	}
 
-	return block_element_build_info;
+	return BlockElementBuildInfo{ .has_terminal_instruction_inside= true };
 }
 
 fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo
