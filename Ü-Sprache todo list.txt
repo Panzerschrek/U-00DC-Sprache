@@ -65,12 +65,15 @@ Lambdas:
 Standart library:
 *) Optimize template functions and classes in order to minimize number of things being compiling and thus speed-up
 	compilation of user programs using ustlib.
-*) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method
+*) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method,
+	reduce iteration time for cases where unordered_map was fileld and then mostly emptied,
+	add more methods for elements access, etc.
+*) Fix/improve hasing functions and hash combine functions to minimize possibility of hash-collisions in common cases
 *) Support types with references inside in some containers (variant, result, unordered_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
 *) Support Unix-systems other than 64-bit Linux - 32-bit Linux, x32 ABI Linux, FreeBSD, OS X, Hurd, etc.
 *) switch-like macro for variant
-*) Associative containers - map, set, string_map
+*) Associative (ordered) containers - map, set, string_map
 *) More algorithms
 *) More iterator class methods - like "enumerate" and others
 *) Vector drain iterator
@@ -110,6 +113,7 @@ Standart library:
 *) Compact vector-like container - with size/capacity stored in allocated memory block
 *) Optimize sorting - use faster algorithm for small number of elements, select median element wisely
 *) Priority heap support
+*) Implement heap-sorting (which has guaranted logolinear time complexity)
 *) Detachable thread
 *) More atomic functions - for 64-bit types, pointer types, size_type
 *) More binary search functions - index of last element less than given (or equal to it), index of given element,
@@ -119,10 +123,14 @@ Compiler:
 *) Fix possible overflows in numeric literals
 *) Ensure floating-point numbers parsing produces correct result
 *) Support parsing 128-bit integers
+*) Prevent infinite or near-infinite templates instantiation, possibly via a hard limit for total number of template
+	instantiations. This may prevent stack overflow in some cases.
+*) Limit number of lex/synt errors printed - to avoid printing too many of them
+*) Generate a parsing error if line count/line length limits are reached
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
 *) Fix possible overflows in SrcLoc and/or try to optimize its size (use only 4 bytes)
-*) Speed-up references graph code
+*) Speed-up references graph code - try using faster hash-map implementation
 *) Avoid recursion in VariantLinkedList destructor - it causes stack overflow for long lists
 *) Find a way to detect recursive mixins in blocks, type names, expressions
 *) Print full mixin text on error within mixin
