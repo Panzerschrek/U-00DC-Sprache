@@ -116,6 +116,7 @@ Nested decomposition is also possible:
    struct S{ i32 x; f32 y; bool z; }
    // ...
    var tup[ S, [ i32, 2 ] ] mut t[ { .x= 78, .y= 13.4f, .z= false }, [ 7, 8 ] ];
+   auto [ { imut a : x, mut b : y, z }, [ c, mut d ] ] = move(t);
 
 ******************
 *Global variables*
