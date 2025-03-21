@@ -272,7 +272,7 @@ U_TEST( StaticAssertTest0 )
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	BuildProgram( c_program_text );
 }
 
 U_TEST( StaticAssertTest1 )
@@ -321,7 +321,7 @@ U_TEST( StaticAssertTest2 )
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	BuildProgram( c_program_text );
 }
 
 U_TEST(ConstexprTest10)

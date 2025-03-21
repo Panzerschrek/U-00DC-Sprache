@@ -170,7 +170,7 @@ struct ArrayType
 	llvm::ArrayType* llvm_type= nullptr;
 };
 
-bool operator==( const ArrayType& r, const ArrayType& l );
+bool operator==( const ArrayType& l, const ArrayType& r );
 inline bool operator!=( const ArrayType& l, const ArrayType& r ) { return !( l == r ); }
 
 struct RawPointerType
@@ -179,7 +179,7 @@ struct RawPointerType
 	llvm::PointerType* llvm_type= nullptr;
 };
 
-bool operator==( const RawPointerType& r, const RawPointerType& l );
+bool operator==( const RawPointerType& l, const RawPointerType& r );
 inline bool operator!=( const RawPointerType& l, const RawPointerType& r ) { return !( l == r ); }
 
 struct FunctionType

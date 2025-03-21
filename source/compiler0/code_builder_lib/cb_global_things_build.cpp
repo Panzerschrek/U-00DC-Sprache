@@ -50,7 +50,7 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 
 	bool fields_are_ok= true;
 	class_.members->ForEachValueInThisScope(
-		[&]( Value& value )
+		[&]( const Value& value )
 		{
 			if( const ClassFieldPtr field= value.GetClassField() )
 			{
@@ -499,7 +499,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		[&]( FunctionContext& function_context )
 		{
 			the_class.members->ForEachValueInThisScope(
-				[&]( Value& value )
+				[&]( const Value& value )
 				{
 					ClassFieldPtr const class_field= value.GetClassField();
 					if( class_field == nullptr )
@@ -882,7 +882,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		ClassFieldsVector< ClassFieldPtr > class_fields_in_original_order;
 
 		the_class.members->ForEachValueInThisScope(
-			[&]( Value& value )
+			[&]( const Value& value )
 			{
 				if( const ClassFieldPtr class_field= value.GetClassField() )
 					class_fields_in_original_order.push_back( class_field );

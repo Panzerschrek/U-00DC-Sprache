@@ -4539,13 +4539,13 @@ bool CodeBuilder::EvaluateBoolConstantExpression( NamesScope& names_scope, Funct
 	return v->constexpr_value->isAllOnesValue();
 }
 
-FunctionType::Param CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context )
+FunctionType::Param CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names_scope, FunctionContext& function_context )
 {
 	if( function_context.args_preevaluation_cache.count(&expression) == 0 )
 	{
-		const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+		const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 		function_context.args_preevaluation_cache.emplace( &expression, GetArgExtendedType(*v) );
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), Synt::GetSrcLoc( expression ) );
+		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), Synt::GetSrcLoc( expression ) );
 
 	}
 	return function_context.args_preevaluation_cache[&expression];

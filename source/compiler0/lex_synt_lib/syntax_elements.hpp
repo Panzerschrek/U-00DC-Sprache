@@ -727,7 +727,7 @@ struct BinaryOperator
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	BinaryOperatorType operator_type;
+	BinaryOperatorType operator_type= BinaryOperatorType::Add; // Set actual value later
 	Expression left;
 	Expression right;
 };
@@ -1245,7 +1245,7 @@ struct CompoundAssignmentOperator
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	BinaryOperatorType compound_operation;
+	BinaryOperatorType compound_operation= BinaryOperatorType::Add; // Set actual value later.
 	Expression l_value;
 	Expression r_value;
 };

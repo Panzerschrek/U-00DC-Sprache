@@ -759,7 +759,7 @@ U_TEST(EmptyInitializerTest0)
 	}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	BuildProgram( c_program_text );
 }
 
 U_TEST(EmptyInitializerTest1)

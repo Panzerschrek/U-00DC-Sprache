@@ -274,34 +274,28 @@ SIZE_ASSERT( Value, 56u )
 SIZE_ASSERT( NamesScopeValue, 72u )
 
 Value::Value( VariablePtr variable )
-{
-	something_= std::move(variable);
-}
+	: something_( std::move(variable) )
+{}
 
 Value::Value( VariableMutPtr variable )
-{
-	something_= std::move(variable);
-}
+	: something_( std::move(variable) )
+{}
 
 Value::Value( OverloadedFunctionsSetPtr functions_set )
-{
-	something_= std::move(functions_set);
-}
+	: something_( std::move(functions_set) )
+{}
 
 Value::Value( Type type )
-{
-	something_= std::move(type);
-}
+	: something_( std::move(type) )
+{}
 
 Value::Value( ClassFieldPtr class_field )
-{
-	something_= std::move( class_field );
-}
+	: something_( std::move( class_field ) )
+{}
 
 Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
-{
-	something_= std::move( this_overloaded_methods_set );
-}
+	: something_( std::move( this_overloaded_methods_set ) )
+{}
 
 Value::Value( NamesScopePtr namespace_ )
 {
@@ -310,39 +304,32 @@ Value::Value( NamesScopePtr namespace_ )
 }
 
 Value::Value( TypeTemplatesSet type_templates )
-{
-	something_= std::move(type_templates);
-}
+	: something_( std::move(type_templates) )
+{}
 
 Value::Value( StaticAssert static_assert_ )
-{
-	something_= std::move(static_assert_);
-}
+	: something_( std::move(static_assert_) )
+{}
 
 Value::Value( TypeAlias type_alias )
-{
-	something_= std::move(type_alias);
-}
+	: something_( std::move(type_alias ) )
+{}
 
 Value::Value( IncompleteGlobalVariable incomplete_global_variable )
-{
-	something_= std::move(incomplete_global_variable);
-}
+	: something_( std::move(incomplete_global_variable) )
+{}
 
 Value::Value( Mixins mixins )
-{
-	something_= std::move(mixins);
-}
+	: something_( std::move(mixins) )
+{}
 
 Value::Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg )
-{
-	something_= std::move(yet_not_deduced_template_arg);
-}
+	: something_( std::move(yet_not_deduced_template_arg) )
+{}
 
 Value::Value( ErrorValue error_value )
-{
-	something_= std::move(error_value);
-}
+	: something_( std::move(error_value) )
+{}
 
 size_t Value::GetKindIndex() const
 {
