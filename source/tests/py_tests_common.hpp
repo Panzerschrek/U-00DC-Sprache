@@ -86,12 +86,6 @@ PyObject* BuildProgramUnusedErrorsEnabled( PyObject* const self, PyObject* const
 		return nullptr;
 	}
 
-	if( g_current_engine != nullptr )
-	{
-		PyErr_SetString( PyExc_RuntimeError, "can not have more than one program in one time" );
-		return nullptr;
-	}
-
 	std::unique_ptr<llvm::Module> module= BuildProgramImpl( program_text, true );
 
 	if( module == nullptr )
