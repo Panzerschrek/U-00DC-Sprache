@@ -142,7 +142,7 @@ U_TEST( NamespacesTest5 )
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	BuildProgram( c_program_text );
 }
 
 } // namespace
