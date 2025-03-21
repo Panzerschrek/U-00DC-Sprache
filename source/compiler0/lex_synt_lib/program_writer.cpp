@@ -388,7 +388,6 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			case '\r': stream << "\\r"; break;
 			case '\t': stream << "\\t"; break;
 			case '\0': stream << "\\0"; break;
-				break;
 			default:
 				if( char_literal.code_point < 32 )
 				{
