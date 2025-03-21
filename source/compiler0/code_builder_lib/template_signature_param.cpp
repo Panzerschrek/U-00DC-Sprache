@@ -85,54 +85,44 @@ bool TemplateSignatureParam::SpecializedTemplate::operator==( const SpecializedT
 }
 
 TemplateSignatureParam::TemplateSignatureParam( Type type )
-{
-	something_= std::move(type);
-}
+	: something_( std::move(type) )
+{}
 
 TemplateSignatureParam::TemplateSignatureParam( Variable variable )
-{
-	something_= std::move(variable);
-}
+	: something_( std::move(variable) )
+{}
 
 TemplateSignatureParam::TemplateSignatureParam( TypeTemplate type_template_param )
-{
-	something_= std::move(type_template_param);
-}
+	: something_( std::move(type_template_param) )
+{}
 
 TemplateSignatureParam::TemplateSignatureParam( TemplateParam template_parameter )
-{
-	something_= std::move(template_parameter);
-}
+	: something_( std::move(template_parameter) )
+{}
 
 TemplateSignatureParam::TemplateSignatureParam( Array array )
-{
-	something_= std::move(array);
-}
+	: something_( std::move(array) )
+{}
 
 TemplateSignatureParam::TemplateSignatureParam( RawPointer raw_pointer )
-{
-	something_= std::move(raw_pointer);
-}
+	: something_( std::move(raw_pointer) )
+{}
 
 TemplateSignatureParam::TemplateSignatureParam( Tuple tuple )
-{
-	something_= std::move(tuple);
-}
+	: something_( std::move(tuple) )
+{}
 
 TemplateSignatureParam::TemplateSignatureParam( Function function )
-{
-	something_= std::move(function);
-}
+	: something_( std::move(function) )
+{}
 
 TemplateSignatureParam::TemplateSignatureParam( Coroutine coroutine )
-{
-	something_= std::move(coroutine);
-}
+	: something_( std::move(coroutine) )
+{}
 
 TemplateSignatureParam::TemplateSignatureParam( SpecializedTemplate template_ )
-{
-	something_= std::move(template_);
-}
+	: something_( std::move(template_) )
+{}
 
 bool TemplateSignatureParam::IsType() const
 {
