@@ -2597,7 +2597,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesScope& names_scope )
 {
 	names_scope.ForEachValueInThisScope(
-		[&]( Value& value )
+		[&]( const Value& value )
 		{
 			if( const NamesScopePtr inner_namespace= value.GetNamespace() )
 				SetupDereferenceableFunctionParamsAndRetAttributes_r( *inner_namespace );

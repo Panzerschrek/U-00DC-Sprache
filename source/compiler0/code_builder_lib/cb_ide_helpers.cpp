@@ -924,7 +924,7 @@ void CodeBuilder::DummyInstantiateTemplates_r( NamesScope& names_scope )
 	// Doing so we allow to collect definition points for template code, even if it was not instantiated.
 	// Process only templates, defined in root namespace.
 	names_scope.ForEachValueInThisScope(
-		[&]( Value& value )
+		[&]( const Value& value )
 		{
 			if( const auto type_templates_set= value.GetTypeTemplatesSet() )
 			{
@@ -1267,7 +1267,7 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 void CodeBuilder::DeleteFunctionsBodies_r( NamesScope& names_scope )
 {
 	names_scope.ForEachValueInThisScope(
-		[&]( Value& value )
+		[&]( const Value& value )
 		{
 			if( const OverloadedFunctionsSetPtr functions_set= value.GetFunctionsSet() )
 			{
