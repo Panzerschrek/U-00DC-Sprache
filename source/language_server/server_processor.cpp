@@ -327,9 +327,9 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 	for( const DocumentRange& range : document_manager_.GetHighlightLocations( highlight.position ) )
 	{
-		Json::Object highlight;
-		highlight["range"]= DocumentRangeToJson( range );
-		result.push_back( std::move(highlight) );
+		Json::Object result_highlight;
+		result_highlight["range"]= DocumentRangeToJson( range );
+		result.push_back( std::move(result_highlight) );
 	}
 
 	return result;
