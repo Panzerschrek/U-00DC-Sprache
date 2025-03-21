@@ -218,9 +218,9 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_syntax_element );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
@@ -308,7 +308,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CoroutineType& coroutine_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Mixin& mixin_type_name );
-	Type ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc );
+	Type ValueToType( const NamesScope& names_scope, const Value& value, const SrcLoc& src_loc );
 
 	FunctionType PrepareFunctionType( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name, ClassPtr class_= nullptr );
 	FunctionPointerType FunctionTypeToPointer( FunctionType function_type );
@@ -772,7 +772,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CharLiteral& char_literal );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MoveOperator& move_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MoveOperatorCompletion& move_operator_completion );
-	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TakeOperator& move_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TakeOperator& take_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CastMut& cast_mut );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CastImut& cast_imut );
@@ -1069,7 +1069,7 @@ private:
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParameterization& template_parameterization );
 
 	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* value );
-	Value ContextualizeValueInResolve( NamesScope& names_scope, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc );
+	Value ContextualizeValueInResolve( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc );
 
 	struct NameLookupResult
 	{
@@ -1330,7 +1330,7 @@ private:
 	Value BuildLambda( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda );
 	std::pair<llvm::Value*, llvm::Constant*> InitializeLambdaField( NamesScope& names_scope, FunctionContext& function_context, const ClassField& field, const VariablePtr& variable, const VariablePtr& result, const SrcLoc& src_loc );
 	ClassPtr PrepareLambdaClass( NamesScope& names_scope, FunctionContext& function_context, const Synt::Lambda& lambda );
-	ClassPtr GetLambdaPreprocessingDummyClass( NamesScope& names );
+	ClassPtr GetLambdaPreprocessingDummyClass( NamesScope& names_scope );
 	std::string GetLambdaBaseName( const Synt::Lambda& lambda, llvm::ArrayRef<uint32_t> tuple_for_indices );
 	std::unordered_set<VariablePtr> CollectCurrentFunctionVariables( FunctionContext& function_context );
 	void LambdaPreprocessingCheckVariableUsage( NamesScope& names_scope, FunctionContext& function_context, const VariablePtr& variable, const std::string& name, const SrcLoc& src_loc );
@@ -1352,7 +1352,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplate& type_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Mixin& mixin, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );

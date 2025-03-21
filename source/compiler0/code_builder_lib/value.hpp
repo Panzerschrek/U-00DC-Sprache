@@ -255,7 +255,7 @@ public:
 	Value( OverloadedFunctionsSetPtr functions_set );
 	Value( Type type );
 	Value( ClassFieldPtr class_field );
-	Value( ThisOverloadedMethodsSet class_field );
+	Value( ThisOverloadedMethodsSet this_overloaded_methods_set );
 	Value( NamesScopePtr namespace_ );
 	Value( TypeTemplatesSet type_templates );
 	Value( StaticAssert static_assert_ );

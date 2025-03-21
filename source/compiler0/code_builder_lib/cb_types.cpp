@@ -210,7 +210,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return invalid_type_;
 }
 
-Type CodeBuilder::ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc )
+Type CodeBuilder::ValueToType( const NamesScope& names_scope, const Value& value, const SrcLoc& src_loc )
 {
 	if( const Type* const type= value.GetTypeName() )
 		return *type;
