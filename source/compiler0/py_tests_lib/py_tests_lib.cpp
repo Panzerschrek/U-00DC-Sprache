@@ -63,7 +63,6 @@ CodeBuilder::BuildResult RunCodeBuilder( const bool enable_unused_name_errors, I
 	CodeBuilderOptions options;
 	options.build_debug_info= true;
 	options.generate_tbaa_metadata= true;
-	options.report_about_unused_names= false; // It is easier to silence such errors, rather than fixing a lot of tests.
 	options.report_about_unused_names= enable_unused_name_errors;
 
 	return
