@@ -1149,7 +1149,6 @@ fn CodeBuilder::PrepareTemplateFunction(
 
 			if_var( &t : template_arg.something.get</Type/>() )
 			{
-				// TODO - maybe forbid type conversion for copy and conversion constructors?
 				all_ok&=
 					arg.t.ReferenceIsConvertibleTo( t ) ||
 					( !param_is_mutable_reference && allow_type_conversions && HasConversionConstructor( result_names_scope, t, arg, src_loc ) );
@@ -1158,7 +1157,6 @@ fn CodeBuilder::PrepareTemplateFunction(
 		}
 		if_var( &type_param : param.GetType() )
 		{
-			// TODO - maybe forbid type conversion for copy and conversion constructors?
 			all_ok&=
 				arg.t.ReferenceIsConvertibleTo( type_param.t ) ||
 				( !param_is_mutable_reference && allow_type_conversions && HasConversionConstructor( result_names_scope, type_param.t, arg, src_loc ) );
