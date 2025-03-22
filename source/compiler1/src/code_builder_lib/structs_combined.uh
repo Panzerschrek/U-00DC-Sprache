@@ -569,7 +569,7 @@ struct ClassField
 	u8 reference_tag= 0u8; // For reference fields - mapping of class inner reference tag to reference tag.
 	ust::vector</ u8 /> inner_reference_tags; // For value fields with references inside - mapping of class inner reference tags to reference tags if this field.
 
-	// Class, where this field is defined. May be not same class in case of inheritance.
+	// Class where this field is defined. Needed for tracking source class after field lookup from a namespace.
 	ClassTypePtr source_class;
 }
 
