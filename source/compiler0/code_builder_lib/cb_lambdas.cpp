@@ -154,7 +154,7 @@ std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
 
 		if( variable->constexpr_value != nullptr )
 		{
-			if( variable != nullptr && llvm::isa<llvm::GlobalVariable>( variable->llvm_value ) )
+			if( variable->llvm_value != nullptr && llvm::isa<llvm::GlobalVariable>( variable->llvm_value ) )
 				return std::make_pair( field_address, llvm::dyn_cast<llvm::Constant>(variable->llvm_value) ); // Return address of existing global constant.
 
 			// We need to store constant somewhere. Create global variable for it.
