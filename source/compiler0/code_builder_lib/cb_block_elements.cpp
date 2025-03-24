@@ -1691,8 +1691,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	llvm::BasicBlock* const if_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const alternative_block= llvm::BasicBlock::Create( llvm_context_ );
 
-	ReferencesGraph variables_state_before_branching= function_context.variables_state;
-
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
 		const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( if_operator.condition, names_scope, function_context );
@@ -1715,8 +1713,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, if_block, alternative_block );
 		}
 
-		variables_state_before_branching= function_context.variables_state;
 	}
+
+	ReferencesGraph variables_state_before_branching= function_context.variables_state;
 
 	// If block.
 	if_block->insertInto( function_context.function );
