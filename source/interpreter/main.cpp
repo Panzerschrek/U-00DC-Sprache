@@ -268,7 +268,6 @@ int Main( int argc, const char* argv[] )
 		"Compiles provided files and emmideately executes result.\n";
 	llvm::cl::ParseCommandLineOptions( argc, argv, description );
 
-	std::string target_triple_str;
 	llvm::Triple target_triple( llvm::sys::getProcessTriple() );
 	const llvm::StringRef cpu_name= llvm::sys::getHostCPUName();
 	const std::string features_str= GetNativeTargetFeaturesStr();
@@ -283,7 +282,7 @@ int Main( int argc, const char* argv[] )
 		llvm::InitializeNativeTargetAsmPrinter();
 
 		// Prepare target machine.
-		target_triple_str= target_triple.normalize();
+		const std::string target_triple_str= target_triple.normalize();
 
 		std::string error_str;
 		const llvm::Target* const target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
