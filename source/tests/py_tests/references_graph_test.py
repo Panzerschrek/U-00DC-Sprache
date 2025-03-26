@@ -1171,7 +1171,120 @@ def ConstructorMutableReferenceTagSelfPollution_Test1():
 			var S s( v );
 			s.vec_ref.clear(); // This call may invalidate "s.el" reference.
 		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
 
+
+def ConstructorMutableReferenceTagSelfPollution_Test2():
+	c_program_text= """
+		class Vec
+		{
+		public:
+			fn clear( mut this )
+			{
+				// It's possible to invalidate element reverenses via this method.
+			}
+
+			fn get_element( mut this ) : i32 &mut @(return_references)
+			{
+				return x_; // This can be generally a reference to a heap-allocated element instead.
+			}
+
+		private:
+			var [ [ char8, 2 ] , 1 ] return_references[ "0_" ];
+
+		private:
+			i32 x_= 0;
+		}
+
+		template</type T/>
+		struct Ref
+		{
+			T &mut r;
+
+			fn constructor();
+			fn constructor( T &mut in_r ) @(pollution);
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+
+		struct T
+		{
+			Ref</Vec/> @("a") vec_ref;
+			Ref</i32/> @("a") int_ref;
+		}
+
+		fn MakeDerivedReverence( Vec &mut v ) : Ref</i32/> @(return_inner_references)
+		{
+			return Ref</i32/>( v.get_element() );
+		}
+
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+
+		fn Foo()
+		{
+			var Vec mut v;
+			var T mut t{ .vec_ref(v), .int_ref() };
+			t.int_ref= MakeDerivedReverence( t.vec_ref.r );
+			t.vec_ref.r.clear();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 51 ) )
+
+
+def ConstructorMutableReferenceTagSelfPollution_Test3():
+	c_program_text= """
+		class Vec
+		{
+		public:
+			fn clear( mut this )
+			{
+				// It's possible to invalidate element reverenses via this method.
+			}
+
+			fn get_element( mut this ) : i32 &mut @(return_references)
+			{
+				return x_; // This can be generally a reference to a heap-allocated element instead.
+			}
+
+		private:
+			var [ [ char8, 2 ] , 1 ] return_references[ "0_" ];
+
+		private:
+			i32 x_= 0;
+		}
+
+		template</type T/>
+		struct Ref
+		{
+			T &mut r;
+
+			fn constructor();
+			fn constructor( T &mut in_r ) @(pollution);
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+
+		struct T
+		{
+			Ref</Vec/> @("a") vec_ref;
+			Ref</i32/> @("a") int_ref;
+		}
+
+		fn MakeDerivedReverence( Vec &mut v ) : Ref</i32/> @(return_inner_references)
+		{
+			return Ref</i32/>( v.get_element() );
+		}
+
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+
+		fn Bar( T &mut t )
+		{
+			t.int_ref= MakeDerivedReverence( t.vec_ref.r );
+		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
