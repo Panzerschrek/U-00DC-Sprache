@@ -1122,3 +1122,21 @@ def CompositeAssignmentForDestinationWithReferences_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def ConstructorMutableReferenceTagSelfPollution_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut @('a') x;
+			i32 &mut @('a') y;
+
+			fn constructor( i32 &mut a ) @(pollution)
+				( x= a, y= x ) // Since "x" and "y" mutable reference share same reference tag, it shouldn't be avoid to initialize reference one field using another field.
+			{}
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
