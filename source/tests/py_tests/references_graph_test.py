@@ -1140,3 +1140,38 @@ def ConstructorMutableReferenceTagSelfPollution_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+
+
+def ConstructorMutableReferenceTagSelfPollution_Test1():
+	c_program_text= """
+		class Vec
+		{
+			fn clear( mut this );
+
+			fn get_element( mut this ) : i32 &mut @(return_references);
+
+			var [ [ char8, 2 ] , 1 ] return_references[ "0_" ];
+		}
+
+		struct S
+		{
+			Vec &mut @('a') vec_ref;
+			i32 &mut @('a') el;
+
+			fn constructor( Vec &mut v ) @(pollution)
+				( vec_ref= v, el= vec_ref.get_element() ) // A mutable reference and another reference derived from it are stored in the same reference tag of a struct.
+			{}
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+
+		fn Foo()
+		{
+			var Vec mut v;
+			var S s( v );
+			s.vec_ref.clear(); // This call may invalidate "s.el" reference.
+		}
+
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
