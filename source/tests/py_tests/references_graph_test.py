@@ -1290,3 +1290,62 @@ def CreatingMutableReferencesLoop_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 48 ) )
+
+
+def CreatingMutableReferencesLoop_Test4():
+	c_program_text= """
+		class Vec
+		{
+		public:
+			fn clear( mut this )
+			{
+				// It's possible to invalidate element reverenses via this method.
+			}
+
+			fn get_element( mut this ) : i32 &mut @(return_references)
+			{
+				return x_; // This can be generally a reference to a heap-allocated element instead.
+			}
+
+		private:
+			var [ [ char8, 2 ] , 1 ] return_references[ "0_" ];
+
+		private:
+			i32 x_= 0;
+		}
+
+		template</type T/>
+		struct Ref
+		{
+			T &mut r;
+
+			fn constructor();
+			fn constructor( T &mut in_r ) @(pollution);
+			op=( mut this, Ref</T/>& other );
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+
+		struct T
+		{
+			Ref</Vec/> @("a") vec_ref;
+			[ Ref</i32/>, 1 ] @("a") int_ref;
+		}
+
+		fn MakeDerivedReverence( Vec &mut v ) : [ Ref</i32/>, 1 ] @(return_inner_references)
+		{
+			var [ Ref</i32/>, 1 ] res[ ( v.get_element() ) ];
+			return res;
+		}
+
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+
+		fn Bar( T &mut t )
+		{
+			var [ Ref</i32/>, 1 ] i_ref= MakeDerivedReverence( t.vec_ref.r );
+			t.int_ref= i_ref;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 51 ) )
