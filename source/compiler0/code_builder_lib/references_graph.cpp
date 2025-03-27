@@ -217,7 +217,7 @@ ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr&
 	NodesSet result;
 
 	VariablePtr current_node= node;
-	while( current_node != nullptr )
+	do
 	{
 		for( const Link& link : links_ )
 			if( link.dst == current_node )
@@ -225,6 +225,7 @@ ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr&
 
 		current_node= current_node->parent.lock();
 	}
+	while( current_node != nullptr );
 
 	return result;
 }
