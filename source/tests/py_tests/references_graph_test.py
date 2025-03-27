@@ -1132,7 +1132,7 @@ def CreatingMutableReferencesLoop_Test0():
 			i32 &mut @('a') y;
 
 			fn constructor( i32 &mut a ) @(pollution)
-				( x= a, y= x ) // Since "x" and "y" mutable reference share same reference tag, it shouldn't be allowed to initialize reference one field using another field.
+				( x= a, y= x ) // Since "x" and "y" mutable references share same reference tag, it shouldn't be allowed to initialize one reference field using another reference field.
 			{}
 
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
@@ -1185,7 +1185,7 @@ def CreatingMutableReferencesLoop_Test2():
 		public:
 			fn clear( mut this )
 			{
-				// It's possible to invalidate element reverenses via this method.
+				// It's possible to invalidate element references via this method.
 			}
 
 			fn get_element( mut this ) : i32 &mut @(return_references)
@@ -1228,7 +1228,9 @@ def CreatingMutableReferencesLoop_Test2():
 		{
 			var Vec mut v;
 			var T mut t{ .vec_ref(v), .int_ref() };
-			t.int_ref= MakeDerivedReverence( t.vec_ref.r );
+			t.int_ref= MakeDerivedReverence( t.vec_ref.r ); // This shouldn't be allowed.
+			t.vec_ref.r.clear(); // Perform possible invalidation.
+			auto& el= t.int_ref.r; // Accessing possibly-invalidated reference.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1243,7 +1245,7 @@ def CreatingMutableReferencesLoop_Test3():
 		public:
 			fn clear( mut this )
 			{
-				// It's possible to invalidate element reverenses via this method.
+				// It's possible to invalidate element references via this method.
 			}
 
 			fn get_element( mut this ) : i32 &mut @(return_references)
@@ -1284,7 +1286,9 @@ def CreatingMutableReferencesLoop_Test3():
 
 		fn Bar( T &mut t )
 		{
-			t.int_ref= MakeDerivedReverence( t.vec_ref.r );
+			t.int_ref= MakeDerivedReverence( t.vec_ref.r ); // This shouldn't be allowed.
+			t.vec_ref.r.clear(); // Perform possible invalidation.
+			auto& el= t.int_ref.r; // Accessing possibly-invalidated reference.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1299,7 +1303,7 @@ def CreatingMutableReferencesLoop_Test4():
 		public:
 			fn clear( mut this )
 			{
-				// It's possible to invalidate element reverenses via this method.
+				// It's possible to invalidate element references via this method.
 			}
 
 			fn get_element( mut this ) : i32 &mut @(return_references)
@@ -1342,8 +1346,11 @@ def CreatingMutableReferencesLoop_Test4():
 
 		fn Bar( T &mut t )
 		{
-			var [ Ref</i32/>, 1 ] i_ref= MakeDerivedReverence( t.vec_ref.r );
-			t.int_ref= i_ref;
+			var [ Ref</i32/>, 1 ] mut i_ref= MakeDerivedReverence( t.vec_ref.r );
+			t.int_ref= i_ref; // This shouldn't be allowed.
+			move(i_ref);
+			t.vec_ref.r.clear(); // Perform possible invalidation.
+			auto& el= t.int_ref[0].r; // Accessing possibly-invalidated reference.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
