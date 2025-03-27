@@ -85,6 +85,9 @@ private:
 
 	void TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
+	bool IsNodeReachable( const VariablePtr& from, const VariablePtr& to ) const;
+	bool IsNodeReachable_r( const VariablePtr& from, const VariablePtr& to, NodesSet& visited_nodes_set ) const;
+
 private:
 	std::unordered_map<VariablePtr, NodeState> nodes_;
 	std::vector<Link> links_; // Check for duplicates before insertion!
