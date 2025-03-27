@@ -1356,3 +1356,69 @@ def CreatingMutableReferencesLoop_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 51 ) )
+
+
+def CreatingMutableReferencesLoop_Test5():
+	c_program_text= """
+		struct S
+		{
+			i32 &imut @('a') x;
+			i32 &imut @('a') y;
+
+			fn constructor( i32 &mut a ) @(pollution)
+				( x= a, y= x ) // Fine, initializing an immutable reference field with other immutable reference field using same reference tag.
+			{}
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CreatingMutableReferencesLoop_Test6():
+	c_program_text= """
+		class Vec
+		{
+		public:
+			fn get_element( this ) : i32 &imut @(return_references)
+			{
+				return x_; // This can be generally a reference to a heap-allocated element instead.
+			}
+
+		private:
+			var [ [ char8, 2 ] , 1 ] return_references[ "0_" ];
+
+		private:
+			i32 x_= 0;
+		}
+
+		template</type T/>
+		struct Ref
+		{
+			T &imut r;
+
+			fn constructor();
+			fn constructor( T &imut in_r ) @(pollution);
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+
+		struct T
+		{
+			Ref</Vec/> @("a") vec_ref;
+			Ref</i32/> @("a") int_ref;
+		}
+
+		fn MakeDerivedReverence( Vec &imut v ) : Ref</i32/> @(return_inner_references)
+		{
+			return Ref</i32/>( v.get_element() );
+		}
+
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+
+		fn Bar( T &mut t )
+		{
+			t.int_ref= MakeDerivedReverence( t.vec_ref.r ); // Ok, creating loop using immutable inner reference tags is allowed.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
