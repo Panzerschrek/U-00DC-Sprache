@@ -83,8 +83,7 @@ void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to
 
 	if( to->value_type == ValueType::ReferenceMut && to->is_variable_inner_reference_node && IsNodeReachable( to, from ) )
 	{
-		// Forbid creating loops with mutable inner reference nodes.
-		REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, from->name );
+		REPORT_ERROR( CreatingMutableReferencesLoop, errors_container, src_loc, to->name );
 		return;
 	}
 

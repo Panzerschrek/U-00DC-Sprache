@@ -1124,7 +1124,7 @@ def CompositeAssignmentForDestinationWithReferences_Test1():
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
 
 
-def ConstructorMutableReferenceTagSelfPollution_Test0():
+def CreatingMutableReferencesLoop_Test0():
 	c_program_text= """
 		struct S
 		{
@@ -1132,7 +1132,7 @@ def ConstructorMutableReferenceTagSelfPollution_Test0():
 			i32 &mut @('a') y;
 
 			fn constructor( i32 &mut a ) @(pollution)
-				( x= a, y= x ) // Since "x" and "y" mutable reference share same reference tag, it shouldn't be avoid to initialize reference one field using another field.
+				( x= a, y= x ) // Since "x" and "y" mutable reference share same reference tag, it shouldn't be allowed to initialize reference one field using another field.
 			{}
 
 			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
@@ -1140,9 +1140,10 @@ def ConstructorMutableReferenceTagSelfPollution_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 8 ) )
 
 
-def ConstructorMutableReferenceTagSelfPollution_Test1():
+def CreatingMutableReferencesLoop_Test1():
 	c_program_text= """
 		class Vec
 		{
@@ -1174,9 +1175,10 @@ def ConstructorMutableReferenceTagSelfPollution_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 17 ) )
 
 
-def ConstructorMutableReferenceTagSelfPollution_Test2():
+def CreatingMutableReferencesLoop_Test2():
 	c_program_text= """
 		class Vec
 		{
@@ -1227,15 +1229,14 @@ def ConstructorMutableReferenceTagSelfPollution_Test2():
 			var Vec mut v;
 			var T mut t{ .vec_ref(v), .int_ref() };
 			t.int_ref= MakeDerivedReverence( t.vec_ref.r );
-			t.vec_ref.r.clear();
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ReferenceProtectionError", 51 ) )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 50 ) )
 
 
-def ConstructorMutableReferenceTagSelfPollution_Test3():
+def CreatingMutableReferencesLoop_Test3():
 	c_program_text= """
 		class Vec
 		{
@@ -1288,3 +1289,4 @@ def ConstructorMutableReferenceTagSelfPollution_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 48 ) )

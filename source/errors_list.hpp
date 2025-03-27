@@ -142,6 +142,7 @@ PROCESS_ERROR( DestroyedVariableStillHasReferences, "Destroyed variable \"{0}\" 
 PROCESS_ERROR( AccessingMovedVariable, "Accessing moved variable \"{0}\"." )
 PROCESS_ERROR( ReturningUnallowedReference, "Returning unallowed reference." )
 PROCESS_ERROR( SelfReferencePollution, "Reference self-pollution." )
+PROCESS_ERROR( CreatingMutableReferencesLoop, "Creating mutable references loop involving variable \"{0}\"." )
 PROCESS_ERROR( ArgReferencePollution, "Pollution of arg reference." )
 PROCESS_ERROR( ConstructorThisReferencePollution, "Capturing \"this\" reference in constructor." )
 PROCESS_ERROR( ReferencePollutionOfOuterLoopVariable, "Reference pollution for outer variables inside loop. \"{0}\" polluted by \"{1}\"." )
