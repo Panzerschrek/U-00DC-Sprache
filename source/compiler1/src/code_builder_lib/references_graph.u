@@ -96,6 +96,14 @@ fn ReferencesGraph::TryAddLink( mut this, VariablePtr& from, VariablePtr& to, Na
 		return;
 	}
 
+	if( to.lock_imut().deref().value_type == ValueType::ReferenceMut &&
+		to.lock_imut().deref().is_variable_inner_reference_node &&
+		IsNodeReachable( to, from )  )
+	{
+		REPORT_ERROR( CreatingMutableReferencesLoop, names_scope, src_loc, to.lock_imut().deref().name )
+		return;
+	}
+
 	AddLink( from, to );
 }
 
@@ -604,6 +612,43 @@ fn ReferencesGraph::RemoveNodeLinks( mut this, VariablePtr& node )
 			AddLink( parent_non_null, to );
 		}
 	}
+}
+
+fn ReferencesGraph::IsNodeReachable( this, VariablePtr& from, VariablePtr& to ) : bool
+{
+	var NodesSet mut visited_nodes_set;
+	return IsNodeReachable_r( from, to, visited_nodes_set );
+}
+
+fn ReferencesGraph::IsNodeReachable_r( this, VariablePtr& from, VariablePtr& to, NodesSet &mut visited_nodes_set ) : bool
+{
+	if( from == to )
+	{
+		return true;
+	}
+
+	if( visited_nodes_set.exists(to) )
+	{
+		return false; // Already visited
+	}
+
+	visited_nodes_set.insert(to);
+
+	foreach( &link : links_ )
+	{
+		if( link.dst == to && IsNodeReachable_r( from, link.src, visited_nodes_set ) )
+		{
+			return true;
+		}
+	}
+
+	var VariableNullablePtr parent= to.lock_imut().deref().parent.lock();
+	if( !parent.empty() && IsNodeReachable_r( from, parent.try_to_non_nullable(), visited_nodes_set ) )
+	{
+		return true;
+	}
+
+	return false;
 }
 
 } // namespace U1
