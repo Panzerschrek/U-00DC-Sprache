@@ -69,6 +69,9 @@ private:
 
 	fn RemoveNodeLinks( mut this, VariablePtr& node );
 
+	fn IsNodeReachable( this, VariablePtr& from, VariablePtr& to ) : bool;
+	fn IsNodeReachable_r( this, VariablePtr& from, VariablePtr& to, NodesSet &mut visited_nodes_set ) : bool;
+
 private:
 	struct NodeState
 	{

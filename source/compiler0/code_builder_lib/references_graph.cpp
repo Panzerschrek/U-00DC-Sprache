@@ -81,6 +81,12 @@ void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to
 		REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, from->name );
 	}
 
+	if( to->value_type == ValueType::ReferenceMut && to->is_variable_inner_reference_node && IsNodeReachable( to, from ) )
+	{
+		REPORT_ERROR( CreatingMutableReferencesLoop, errors_container, src_loc, to->name );
+		return;
+	}
+
 	AddLink( from, to );
 }
 
@@ -211,7 +217,7 @@ ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr&
 	NodesSet result;
 
 	VariablePtr current_node= node;
-	while( current_node != nullptr )
+	do
 	{
 		for( const Link& link : links_ )
 			if( link.dst == current_node )
@@ -219,6 +225,7 @@ ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr&
 
 		current_node= current_node->parent.lock();
 	}
+	while( current_node != nullptr );
 
 	return result;
 }
@@ -459,6 +466,35 @@ void ReferencesGraph::TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( c
 		for( const VariablePtr& src_node : src_nodes )
 			TryAddLinkToAllAccessibleVariableNodesInnerReferences_r( from, src_node, errors_container, src_loc );
 	}
+}
+
+bool ReferencesGraph::IsNodeReachable( const VariablePtr& from, const VariablePtr& to ) const
+{
+	NodesSet visited_nodes_set;
+	return IsNodeReachable_r( from, to, visited_nodes_set );
+}
+
+bool ReferencesGraph::IsNodeReachable_r( const VariablePtr& from, const VariablePtr& to, NodesSet& visited_nodes_set ) const
+{
+	if( from == to )
+		return true;
+
+	if( !visited_nodes_set.insert(to).second )
+		return false; // Already visited
+
+	for( const auto& link : links_ )
+	{
+		if( link.dst == to && IsNodeReachable_r( from, link.src, visited_nodes_set ) )
+			return true;
+	}
+
+	if( const VariablePtr parent= to->parent.lock() )
+	{
+		if( IsNodeReachable_r( from, parent, visited_nodes_set ) )
+			return true;
+	}
+
+	return false;
 }
 
 } // namespace U

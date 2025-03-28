@@ -1122,3 +1122,303 @@ def CompositeAssignmentForDestinationWithReferences_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def CreatingMutableReferencesLoop_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 &mut @('a') x;
+			i32 &mut @('a') y;
+
+			fn constructor( i32 &mut a ) @(pollution)
+				( x= a, y= x ) // Since "x" and "y" mutable references share same reference tag, it shouldn't be allowed to initialize one reference field using another reference field.
+			{}
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 8 ) )
+
+
+def CreatingMutableReferencesLoop_Test1():
+	c_program_text= """
+		class Vec
+		{
+			fn clear( mut this );
+
+			fn get_element( mut this ) : i32 &mut @(return_references);
+
+			var [ [ char8, 2 ] , 1 ] return_references[ "0_" ];
+		}
+
+		struct S
+		{
+			Vec &mut @('a') vec_ref;
+			i32 &mut @('a') el;
+
+			fn constructor( Vec &mut v ) @(pollution)
+				( vec_ref= v, el= vec_ref.get_element() ) // A mutable reference and another reference derived from it are stored in the same reference tag of a struct.
+			{}
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+
+		fn Foo()
+		{
+			var Vec mut v;
+			var S s( v );
+			s.vec_ref.clear(); // This call may invalidate "s.el" reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 17 ) )
+
+
+def CreatingMutableReferencesLoop_Test2():
+	c_program_text= """
+		class Vec
+		{
+		public:
+			fn clear( mut this )
+			{
+				// It's possible to invalidate element references via this method.
+			}
+
+			fn get_element( mut this ) : i32 &mut @(return_references)
+			{
+				return x_; // This can be generally a reference to a heap-allocated element instead.
+			}
+
+		private:
+			var [ [ char8, 2 ] , 1 ] return_references[ "0_" ];
+
+		private:
+			i32 x_= 0;
+		}
+
+		template</type T/>
+		struct Ref
+		{
+			T &mut r;
+
+			fn constructor();
+			fn constructor( T &mut in_r ) @(pollution);
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+
+		struct T
+		{
+			Ref</Vec/> @("a") vec_ref;
+			Ref</i32/> @("a") int_ref;
+		}
+
+		fn MakeDerivedReverence( Vec &mut v ) : Ref</i32/> @(return_inner_references)
+		{
+			return Ref</i32/>( v.get_element() );
+		}
+
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+
+		fn Foo()
+		{
+			var Vec mut v;
+			var T mut t{ .vec_ref(v), .int_ref() };
+			t.int_ref= MakeDerivedReverence( t.vec_ref.r ); // This shouldn't be allowed.
+			t.vec_ref.r.clear(); // Perform possible invalidation.
+			auto& el= t.int_ref.r; // Accessing possibly-invalidated reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 50 ) )
+
+
+def CreatingMutableReferencesLoop_Test3():
+	c_program_text= """
+		class Vec
+		{
+		public:
+			fn clear( mut this )
+			{
+				// It's possible to invalidate element references via this method.
+			}
+
+			fn get_element( mut this ) : i32 &mut @(return_references)
+			{
+				return x_; // This can be generally a reference to a heap-allocated element instead.
+			}
+
+		private:
+			var [ [ char8, 2 ] , 1 ] return_references[ "0_" ];
+
+		private:
+			i32 x_= 0;
+		}
+
+		template</type T/>
+		struct Ref
+		{
+			T &mut r;
+
+			fn constructor();
+			fn constructor( T &mut in_r ) @(pollution);
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+
+		struct T
+		{
+			Ref</Vec/> @("a") vec_ref;
+			Ref</i32/> @("a") int_ref;
+		}
+
+		fn MakeDerivedReverence( Vec &mut v ) : Ref</i32/> @(return_inner_references)
+		{
+			return Ref</i32/>( v.get_element() );
+		}
+
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+
+		fn Bar( T &mut t )
+		{
+			t.int_ref= MakeDerivedReverence( t.vec_ref.r ); // This shouldn't be allowed.
+			t.vec_ref.r.clear(); // Perform possible invalidation.
+			auto& el= t.int_ref.r; // Accessing possibly-invalidated reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 48 ) )
+
+
+def CreatingMutableReferencesLoop_Test4():
+	c_program_text= """
+		class Vec
+		{
+		public:
+			fn clear( mut this )
+			{
+				// It's possible to invalidate element references via this method.
+			}
+
+			fn get_element( mut this ) : i32 &mut @(return_references)
+			{
+				return x_; // This can be generally a reference to a heap-allocated element instead.
+			}
+
+		private:
+			var [ [ char8, 2 ] , 1 ] return_references[ "0_" ];
+
+		private:
+			i32 x_= 0;
+		}
+
+		template</type T/>
+		struct Ref
+		{
+			T &mut r;
+
+			fn constructor();
+			fn constructor( T &mut in_r ) @(pollution);
+			op=( mut this, Ref</T/>& other );
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+
+		struct T
+		{
+			Ref</Vec/> @("a") vec_ref;
+			[ Ref</i32/>, 1 ] @("a") int_ref;
+		}
+
+		fn MakeDerivedReverence( Vec &mut v ) : [ Ref</i32/>, 1 ] @(return_inner_references)
+		{
+			var [ Ref</i32/>, 1 ] res[ ( v.get_element() ) ];
+			return res;
+		}
+
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+
+		fn Bar( T &mut t )
+		{
+			var [ Ref</i32/>, 1 ] mut i_ref= MakeDerivedReverence( t.vec_ref.r );
+			t.int_ref= i_ref; // This shouldn't be allowed.
+			move(i_ref);
+			t.vec_ref.r.clear(); // Perform possible invalidation.
+			auto& el= t.int_ref[0].r; // Accessing possibly-invalidated reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CreatingMutableReferencesLoop", 51 ) )
+
+
+def CreatingMutableReferencesLoop_Test5():
+	c_program_text= """
+		struct S
+		{
+			i32 &imut @('a') x;
+			i32 &imut @('a') y;
+
+			fn constructor( i32 &mut a ) @(pollution)
+				( x= a, y= x ) // Fine, initializing an immutable reference field with other immutable reference field using same reference tag.
+			{}
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CreatingMutableReferencesLoop_Test6():
+	c_program_text= """
+		class Vec
+		{
+		public:
+			fn get_element( this ) : i32 &imut @(return_references)
+			{
+				return x_; // This can be generally a reference to a heap-allocated element instead.
+			}
+
+		private:
+			var [ [ char8, 2 ] , 1 ] return_references[ "0_" ];
+
+		private:
+			i32 x_= 0;
+		}
+
+		template</type T/>
+		struct Ref
+		{
+			T &imut r;
+
+			fn constructor();
+			fn constructor( T &imut in_r ) @(pollution);
+
+			var [ [ [char8, 2], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
+		}
+
+		struct T
+		{
+			Ref</Vec/> @("a") vec_ref;
+			Ref</i32/> @("a") int_ref;
+		}
+
+		fn MakeDerivedReverence( Vec &imut v ) : Ref</i32/> @(return_inner_references)
+		{
+			return Ref</i32/>( v.get_element() );
+		}
+
+		var tup[ [ [ char8, 2 ], 1 ] ] return_inner_references[ [ "0_" ] ];
+
+		fn Bar( T &mut t )
+		{
+			t.int_ref= MakeDerivedReverence( t.vec_ref.r ); // Ok, creating loop using immutable inner reference tags is allowed.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
