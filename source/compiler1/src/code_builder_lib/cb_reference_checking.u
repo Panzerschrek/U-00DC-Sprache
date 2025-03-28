@@ -132,7 +132,7 @@ fn CodeBuilder::CheckReturnedReferenceIsAllowed( this, NamesScopePtr& names, Fun
 	{
 		if( !IsReferenceAllowedForReturn( function_context, node ) )
 		{
-			REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+			REPORT_ERROR( ReturningUnallowedReference, names, src_loc, node.lock_imut().deref().name )
 		}
 	}
 }
@@ -167,7 +167,7 @@ fn CodeBuilder::CheckReturnedInnerReferenceIsAllowed( this, NamesScopePtr& names
 			{
 				if( !IsReferenceAllowedForInnerReturn( function_context, node, i ) )
 				{
-					REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+					REPORT_ERROR( ReturningUnallowedReference, names, src_loc, node.lock_imut().deref().name )
 				}
 			}
 		}
@@ -240,7 +240,7 @@ fn CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 			}
 		}
 
-		REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+		REPORT_ERROR( ReturningUnallowedReference, names, src_loc, var_node.lock_imut().deref().name )
 	}
 }
 
@@ -270,7 +270,7 @@ fn CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
 					}
 				}
 
-				REPORT_ERROR( ReturningUnallowedReference, names, src_loc )
+				REPORT_ERROR( ReturningUnallowedReference, names, src_loc, var_node.lock_imut().deref().name )
 			}
 		}
 	}

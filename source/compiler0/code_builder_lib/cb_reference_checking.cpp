@@ -252,7 +252,7 @@ void CodeBuilder::CheckReturnedReferenceIsAllowed( NamesScope& names_scope, Func
 {
 	for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node ) )
 		if( !IsReferenceAllowedForReturn( function_context, var_node ) )
-			REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc );
+			REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, var_node->name );
 }
 
 bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node )
@@ -278,7 +278,7 @@ void CodeBuilder::CheckReturnedInnerReferenceIsAllowed( NamesScope& names_scope,
 	for( size_t i= 0; i < return_reference_node->inner_reference_nodes.size(); ++i )
 		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( return_reference_node->inner_reference_nodes[i] ) )
 			if( !IsReferenceAllowedForInnerReturn( function_context, var_node, i ) )
-				REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc );
+				REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, var_node->name );
 }
 
 bool CodeBuilder::IsReferenceAllowedForInnerReturn( FunctionContext& function_context, const VariablePtr& variable_node, const size_t index )
@@ -340,7 +340,7 @@ void CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 
 		if( coroutine_inner_reference == std::nullopt ||
 			coroutine_type_description.return_references.count( *coroutine_inner_reference ) == 0 )
-			REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc );
+			REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, var_node->name );
 	}
 }
 
@@ -360,7 +360,7 @@ void CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
 			if( coroutine_inner_reference == std::nullopt ||
 				i >= coroutine_type_description.return_inner_references.size() ||
 				coroutine_type_description.return_inner_references[i].count( *coroutine_inner_reference ) == 0 )
-				REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc );
+				REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, var_node->name );
 		}
 	}
 }

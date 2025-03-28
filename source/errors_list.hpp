@@ -140,7 +140,7 @@ PROCESS_ERROR( MoreThanOneTypeTemplateAsTemplateArgument, "Using a set of more t
 PROCESS_ERROR( ReferenceProtectionError, "Reference protection check for variable \"{0}\" failed." )
 PROCESS_ERROR( DestroyedVariableStillHasReferences, "Destroyed variable \"{0}\" still has reference(s)." )
 PROCESS_ERROR( AccessingMovedVariable, "Accessing moved variable \"{0}\"." )
-PROCESS_ERROR( ReturningUnallowedReference, "Returning unallowed reference." )
+PROCESS_ERROR( ReturningUnallowedReference, "Returning unallowed reference to \"{0}\"." )
 PROCESS_ERROR( SelfReferencePollution, "Reference self-pollution." )
 PROCESS_ERROR( CreatingMutableReferencesLoop, "Creating mutable references loop involving variable \"{0}\"." )
 PROCESS_ERROR( ArgReferencePollution, "Pollution of arg reference." )
