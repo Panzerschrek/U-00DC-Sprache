@@ -149,7 +149,7 @@ PROCESS_ERROR( ReferencePollutionOfOuterLoopVariable, "Reference pollution for o
 PROCESS_ERROR( OuterVariableMoveInsideLoop, "Outer loop variable \"{0}\" move inside loop." )
 PROCESS_ERROR( ConditionalMove, "Variable \"{0}\" moved not in all if-else bracnes." )
 PROCESS_ERROR( MovedVariableHasReferences, "Moved variable \"{0}\" has reference(s)." )
-PROCESS_ERROR( UnallowedReferencePollution, "Unallowed reference pollution." )
+PROCESS_ERROR( UnallowedReferencePollution, "Unallowed reference pollution for inner tag {0} of variable \"{1}\" via variable \"{2}\"." )
 PROCESS_ERROR( ExplicitReferencePollutionForCopyConstructor, "Explicit reference pollution for copy constructor. Reference pollution for copy constructors generated automatically." )
 PROCESS_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, "Explicit reference pollution for copy assignment operator. Reference pollution for copy assignment operators generated automatically." )
 PROCESS_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, "Explicit reference pollution for equality compare operator. Reference pollution for such operators is not allowed." )

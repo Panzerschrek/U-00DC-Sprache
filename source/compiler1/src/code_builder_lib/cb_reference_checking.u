@@ -324,8 +324,9 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 		{
 			continue;
 		}
-		with( &inner_reference_nodes : function_context.args_nodes[param_i][0].lock_imut().deref().inner_reference_nodes )
+		with( &variable_node : function_context.args_nodes[param_i][0].lock_imut().deref())
 		{
+			auto& inner_reference_nodes= variable_node.inner_reference_nodes;
 			for( auto mut tag_i= 0s; tag_i < inner_reference_nodes.size(); ++tag_i )
 			{
 				var VariablePtr& inner_reference_node= inner_reference_nodes[tag_i];
@@ -369,7 +370,7 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 						}
 					}
 
-					REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
+					REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc, tag_i, variable_node.name, accessible_variable_node.lock_imut().deref().name )
 				}
 			}
 		}
@@ -393,7 +394,7 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 						{
 							if( v != second_order_variable_node )
 							{
-								REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc )
+								REPORT_ERROR( UnallowedReferencePollution, names_scope, src_loc, inner_reference_index, nodes_pair[0].lock_imut().deref().name, v.lock_imut().deref().name )
 							}
 						}
 					}

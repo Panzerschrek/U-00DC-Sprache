@@ -1354,7 +1354,7 @@ fn CodeBuilder::BuildFuncCode(
 						.t= invalid_type_,
 						.value_type= ValueType::Value,
 						.location= Variable::Location::Pointer,
-						.name= in_param.name + " referenced variable"
+						.name= in_param.name + " referenced variable " + ust::to_string8(i)
 					}.CreatePtr();
 
 				var SecondOrderInnerReferenceKind second_order_inner_reference_kind= type_param.t.GetSecondOrderInnerReferenceKind(i);

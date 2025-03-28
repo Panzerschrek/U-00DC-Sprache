@@ -437,7 +437,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 					if( function_context.function_type.references_pollution.count( pollution ) != 0u )
 						continue;
 				}
-				REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc );
+				REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc, dst_tag, node_pair.first->name, accesible_variable->name );
 			}
 		}
 	}
@@ -459,7 +459,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 						for( const VariablePtr& v : function_context.variables_state.GetAllAccessibleVariableNodes( inner_node ) )
 						{
 							if( v != second_order_variable_node )
-								REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc );
+								REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc, inner_reference_index, nodes_pair.first->name, v->name );
 						}
 					}
 				}
