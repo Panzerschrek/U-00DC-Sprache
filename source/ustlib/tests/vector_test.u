@@ -623,5 +623,18 @@ fn nomangle main() : i32
 		halt if( arr1[2] != -12 );
 		halt if( arr1[3] != -14 );
 	}
+	{
+		var [ i32, 3 ] ints[ 11, 222, 3333 ];
+
+		var ust::vector</f32/> v=
+			ust::make_vector_from_range(
+				ust::array_view_imut</i32/>( ints ),
+				lambda(i32 x ) : f32 { return f32(x); } );
+
+		halt if( v.size() != 3s );
+		halt if( v[0s] != 11.0f );
+		halt if( v[1s] != 222.0f );
+		halt if( v[2s] != 3333.0f );
+	}
 	return 0;
 }

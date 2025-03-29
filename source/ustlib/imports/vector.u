@@ -37,6 +37,19 @@ public:
 		return result;
 	}
 
+	template</type T, type Func/>
+	fn from_mapped_range( array_view_imut</T/> r, Func& func ) : auto
+	{
+		var this_type mut result;
+		unsafe( result.ensure_capacity( r.size() ) );
+		// TODO - optimize this, use unchecked index, use raw memory access directly instead of "push_back".
+		for( var size_type mut i= 0s; i < r.size(); ++i )
+		{
+			result.push_back( func(r[i]) );
+		}
+		return result;
+	}
+
 public:
 	// Default constructor.
 	fn constructor()= default;
@@ -608,6 +621,13 @@ private:
 	$(T) ptr_= zero_init;
 	size_type size_(0);
 	size_type capacity_(0);
+}
+
+template</type T, type Func/>
+fn make_vector_from_range( random_access_range_imut</T/> r, Func& f ) : auto
+{
+	type T= typeof( f( r.front() ) );
+	return vector</T/>::from_mapped_range( r, f );
 }
 
 } // namespace ust
