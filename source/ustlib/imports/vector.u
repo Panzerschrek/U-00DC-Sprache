@@ -37,6 +37,31 @@ public:
 		return result;
 	}
 
+	// Overloading for typical usage-case - for something like
+	//    some_container.iter().map( mapping_func ).collect</ ust::vector />()
+	// It's better, since it can resever space.
+	template</type RangeEl, bool range_is_mutable, type MappingFunction/>
+	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
+	from_iterator(
+		iterator</
+			iterator_impl::map_raw_iterator</
+				iterator</ random_access_range_raw_iterator</RangeEl, range_is_mutable/> />,
+				MappingFunction />/> mut it ) : auto
+	{
+		var this_type mut result;
+		result.ensure_capacity( it.size() );
+		loop
+		{
+			auto mut next_result= it.next();
+			if( next_result.empty() )
+			{
+				break;
+			}
+			result.push_back( next_result.try_take() ); // Type conversion is possible here.
+		}
+		return result;
+	}
+
 public:
 	// Default constructor.
 	fn constructor()= default;

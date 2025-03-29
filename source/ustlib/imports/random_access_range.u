@@ -328,6 +328,12 @@ public:
 		return optional_ref</ T, is_mutable />( range_.drop_and_get_front() );
 	}
 
+	// Method specific for this kind of iterator.
+	fn size( this ) : size_type
+	{
+		return range_.size();
+	}
+
 private:
 	type this_type= random_access_range_raw_iterator</T, is_mutable/>;
 
