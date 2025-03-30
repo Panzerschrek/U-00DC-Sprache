@@ -37,6 +37,33 @@ public:
 		return result;
 	}
 
+	// Construct vector from given range by mapping all elements using given function.
+	// This is the most effective way to create vector with fixed size, compared to methods like "from_iterator" or "push_back",
+	// since this function allocates memory in one call and has no capacity check on each insertion.
+	// Mapping function should accept single argument of type "ElementT" (value or immutable reference) and return value or immutable reference of type "T".
+	// Mapping function shouldn't be unsafe.
+	// Mapping function is immutable in order to encourage pure mapping (without modifying internal state in process).
+	template</type ElementT, type Func/>
+	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
+	from_mapped_range( array_view_imut</ElementT/> r, Func& func ) : this_type
+	{
+		var this_type mut result;
+		unsafe
+		{
+			var size_type size= r.size();
+			result.ensure_capacity( size );
+			for( var size_type mut i= 0s; i < size; ++i )
+			{
+				// Access range element via unsafe indexing (since we know that index is valid),
+				// call mapping function for this element,
+				// move call result directly into vector memory.
+				move_into_uninitialized( $>( result.ptr_ + i ), safe( func( unsafe( r.index_unchecked(i) ) ) ) );
+			}
+			result.size_= size;
+		}
+		return result;
+	}
+
 public:
 	// Default constructor.
 	fn constructor()= default;
@@ -608,6 +635,28 @@ private:
 	$(T) ptr_= zero_init;
 	size_type size_(0);
 	size_type capacity_(0);
+}
+
+// A wrapper for "vector::from_mapped_range", which automatically deduce result vector type.
+// For more details see comment for "vector::from_mapped_range".
+template</type T, type Func/>
+fn make_vector_from_mapped_range( random_access_range_imut</T/> r, Func& f ) : auto
+{
+	return vector</ typeof( f( r.front() ) ) />::from_mapped_range( r, f );
+}
+
+// Overloading for mutable ranges - it just casts range to immutable.
+template</type T, type Func/>
+fn make_vector_from_mapped_range( random_access_range_mut</T/> r, Func& f ) : auto
+{
+	return vector</ typeof( f( r.front() ) ) />::from_mapped_range( random_access_range_imut</T/>( r ), f );
+}
+
+// Overloading for vectors.
+template</type T, type Func/>
+fn make_vector_from_mapped_range( vector</T/>& v, Func& f ) : auto
+{
+	return vector</ typeof( f( v.front() ) ) />::from_mapped_range( v.range(), f );
 }
 
 } // namespace ust

@@ -363,7 +363,8 @@ fn StringToArrayView( U1_StringView& string_view ) unsafe : ust::string_view8
 fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_count ) unsafe : TestVfs::SourceEntries
 {
 	return
-		unsafe( ust::array_view_imut</U1_SourceFile/>( source_files, source_file_count ) ).iter().map(
+		unsafe( TestVfs::SourceEntries::from_mapped_range(
+			ust::array_view_imut</U1_SourceFile/>( source_files, source_file_count ),
 			lambda[]( U1_SourceFile& source_file ) : TestVfs::SourceEntry
 			{
 				return TestVfs::SourceEntry
@@ -371,7 +372,7 @@ fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_co
 					.file_path= unsafe( StringToArrayView( source_file.file_path ) ),
 					.file_content= unsafe( StringToArrayView( source_file.file_content ) ),
 				};
-			} ).collect</TestVfs::SourceEntries/>();
+			} ) );
 }
 
 fn PrintLexSyntErrors( SourceGraph& source_graph )

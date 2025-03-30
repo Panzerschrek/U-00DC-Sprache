@@ -103,6 +103,7 @@ public: // Helper methods.
 
 	// Collect elements into given container type.
 	// This method is just a wrapper for a container-specific collection method.
+	// For collecting ranges with fixed size into vector prefer using "make_vector_from_mapped_range" function, since it's faster.
 	template</type Container/>
 	fn collect( byval mut this ) : auto
 	{
@@ -111,6 +112,7 @@ public: // Helper methods.
 
 	// Collect elements into given container.
 	// This method is just a wrapper for a container-specific collection method.
+	// For collecting ranges with fixed size into vector prefer using "make_vector_from_mapped_range" function, since it's faster.
 	template</type template Container/>
 	fn collect( byval mut this ) : auto
 	{
