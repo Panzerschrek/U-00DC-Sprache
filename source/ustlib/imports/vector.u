@@ -43,7 +43,7 @@ public:
 	// Given function is immutable in order to encourage pure mapping (without modifying internal state in process).
 	template</type T, type Func/>
 	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
-	make_from_mapped_range( array_view_imut</T/> r, Func& func ) : this_type
+	from_mapped_range( array_view_imut</T/> r, Func& func ) : this_type
 	{
 		var this_type mut result;
 		unsafe
@@ -635,26 +635,26 @@ private:
 	size_type capacity_(0);
 }
 
-// A wrapper for "make_from_mapped_range", which automatically deduce result vector type.
-// For more details see comment for "make_from_mapped_range".
+// A wrapper for "vector::from_mapped_range", which automatically deduce result vector type.
+// For more details see comment for "vector::from_mapped_range".
 template</type T, type Func/>
 fn make_vector_from_mapped_range( random_access_range_imut</T/> r, Func& f ) : auto
 {
-	return vector</ typeof( f( r.front() ) ) />::make_from_mapped_range( r, f );
+	return vector</ typeof( f( r.front() ) ) />::from_mapped_range( r, f );
 }
 
 // Overloading for mutable ranges - it just casts range to immutable.
 template</type T, type Func/>
 fn make_vector_from_mapped_range( random_access_range_mut</T/> r, Func& f ) : auto
 {
-	return vector</ typeof( f( r.front() ) ) />::make_from_mapped_range( random_access_range_imut</T/>( r ), f );
+	return vector</ typeof( f( r.front() ) ) />::from_mapped_range( random_access_range_imut</T/>( r ), f );
 }
 
 // Overloading for vectors.
 template</type T, type Func/>
 fn make_vector_from_mapped_range( vector</T/>& v, Func& f ) : auto
 {
-	return vector</ typeof( f( v.front() ) ) />::make_from_mapped_range( v.range(), f );
+	return vector</ typeof( f( v.front() ) ) />::from_mapped_range( v.range(), f );
 }
 
 } // namespace ust

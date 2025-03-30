@@ -363,7 +363,7 @@ fn StringToArrayView( U1_StringView& string_view ) unsafe : ust::string_view8
 fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_count ) unsafe : TestVfs::SourceEntries
 {
 	return
-		unsafe( TestVfs::SourceEntries::make_from_mapped_range(
+		unsafe( TestVfs::SourceEntries::from_mapped_range(
 			ust::array_view_imut</U1_SourceFile/>( source_files, source_file_count ),
 			lambda[]( U1_SourceFile& source_file ) : TestVfs::SourceEntry
 			{
