@@ -122,7 +122,13 @@ fn nomangle main() : i32
 		// Mapping function is "mut this", which isn't allowed in "from_mapped_range" function.
 		auto mapping_func= lambda mut ( i32 x ) : f32 { return f32(x); };
 		ust::make_vector_from_mapped_range( ust::array_view_imut</i32/>( ints ), mapping_func ); //##expect_error TemplateContext
+	}
+	{
+		var [ i32, 3 ] ints[ 11, 222, 3333 ];
 
+		// Mapping function is unsafe, which isn't allowed in "from_mapped_range" function.
+		auto mapping_func= lambda ( i32 x ) unsafe : f32 { return f32(x); };
+		ust::make_vector_from_mapped_range( ust::array_view_imut</i32/>( ints ), mapping_func ); //##expect_error TemplateContext
 	}
 	return 0;
 }

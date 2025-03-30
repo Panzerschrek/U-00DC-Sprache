@@ -721,6 +721,20 @@ fn nomangle main() : i32
 		halt if( vec[4s] != "still" );
 		halt if( vec[5s] != "serve" );
 	}
+	{ // from_mapped_range - mapping function returns reference.
+		type IntPair= [ i32, 2 ];
+		var [ IntPair, 4 ] pairs[ [ 1, 2 ], [ 3, 4 ], [ 5, 6 ], [ 7, 8 ] ];
+
+		auto vec= ust::make_vector_from_mapped_range(
+			ust::array_view_imut</IntPair/>( pairs ),
+			lambda( IntPair& p ) : i32 & { return p[1]; } );
+
+		halt if( vec.size() != 4s );
+		halt if( vec[0s] != 2 );
+		halt if( vec[1s] != 4 );
+		halt if( vec[2s] != 6 );
+		halt if( vec[3s] != 8 );
+	}
 	{ // from_mapped_range - input is vector
 		var ust::vector</i32/> ints= ust::make_array( 66, 55, 44 );
 
