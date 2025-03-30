@@ -37,8 +37,11 @@ public:
 		return result;
 	}
 
+	// Construct vector from given range by mapping all elements using given function.
+	// This is the most effective way to create vector with fixed size, compared to methods like "from_iterator" or "push_back",
+	// since this function allocates memory in one call and has no capacity check on each insertion.
 	template</type T, type Func/>
-	fn from_mapped_range( array_view_imut</T/> r, Func& func ) : auto
+	fn make_from_mapped_range( array_view_imut</T/> r, Func& func ) : auto
 	{
 		var this_type mut result;
 		unsafe( result.ensure_capacity( r.size() ) );
@@ -623,11 +626,13 @@ private:
 	size_type capacity_(0);
 }
 
+// A wrapper for "make_from_mapped_range", which automatically deduce result vector type.
+// For more details see comment for "make_from_mapped_range".
 template</type T, type Func/>
-fn make_vector_from_range( random_access_range_imut</T/> r, Func& f ) : auto
+fn make_vector_from_mapped_range( random_access_range_imut</T/> r, Func& f ) : auto
 {
 	type T= typeof( f( r.front() ) );
-	return vector</T/>::from_mapped_range( r, f );
+	return vector</T/>::make_from_mapped_range( r, f );
 }
 
 } // namespace ust
