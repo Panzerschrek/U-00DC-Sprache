@@ -683,4 +683,11 @@ fn make_vector_from_mapped_range( vector</T/>& v, Func& f ) : auto
 	return vector</ typeof( f( v.front() ) ) />::from_mapped_range( v.range(), f );
 }
 
+// A helper for "vector::from_filler_function".
+template</type Func/>
+fn make_vector_from_filler_function( size_type size, Func mut f ) : auto
+{
+	return vector</ typeof( f() ) />::from_filler_function( size, move(f) );
+}
+
 } // namespace ust
