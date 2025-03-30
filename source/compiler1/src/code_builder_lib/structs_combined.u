@@ -1027,22 +1027,24 @@ fn ClassType::HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool
 
 fn Variable::CreatePtr( byval mut this ) : VariablePtr
 {
-	auto reference_tag_count= this.t.ReferenceTagCount();
-	for( auto mut i= 0u; i < reference_tag_count; ++i )
-	{
-		// Create inner reference node.
+	this.inner_reference_nodes=
+		ust::make_vector_from_filler_function(
+			size_type( this.t.ReferenceTagCount() ),
+			lambda[&v= this, i= 0s] mut () : VariablePtr
+			{
+				auto index= i;
+				++i;
 
-		var Variable mut node_src
-		{
-			.value_type= ( this.t.GetInnerReferenceKind( size_type(i) ) == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-			.location= Variable::Location::Pointer,
-			.name= ust::concat( this.name, " inner reference ", ust::to_string8(i) ),
-			.is_variable_inner_reference_node= this.value_type == ValueType::Value,
-			.is_inner_reference_node= true,
-		};
-
-		this.inner_reference_nodes.push_back( VariablePtr( move(node_src) ) );
-	}
+				return VariablePtr(
+					Variable
+					{
+						.value_type= ( v.t.GetInnerReferenceKind(index) == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+						.location= Variable::Location::Pointer,
+						.name= ust::concat( v.name, " inner reference ", ust::to_string8(index) ),
+						.is_variable_inner_reference_node= v.value_type == ValueType::Value,
+						.is_inner_reference_node= true,
+					} );
+			});
 
 	return VariablePtr( move(this) );
 }

@@ -1118,19 +1118,6 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 			.llvm_value= v.llvm_value,
 		};
 
-		var ust::vector</VariablePtr/> mut accessible_variables;
-		for( auto mut i= 0s; i < reference_tag_count; ++i )
-		{
-			accessible_variables.push_back(
-				Variable
-				{
-					.t= invalid_type_,
-					.value_type= ValueType::Value,
-					.location= Variable::Location::Pointer,
-					.name= ust::concat( "referenced variable ", ust::to_string8(i), " of captured lambda variable ", v.name ),
-				}.CreatePtr() );
-		}
-
 		lambda_preprocessing_context.captured_external_variables.insert(
 			name,
 			LambdaPreprocessingContext::CapturedVariableData
@@ -1138,7 +1125,22 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 				.source_variable= variable,
 				.variable_node= move(variable_node_value).CreatePtr(),
 				.reference_node= move(reference_node_value).CreatePtr(),
-				.accessible_variables= move(accessible_variables),
+				.accessible_variables=
+					ust::make_vector_from_filler_function(
+						reference_tag_count,
+						lambda[i= 0s, &t= invalid_type_, &v] mut () : auto
+						{
+							auto index= i;
+							++i;
+							return
+								Variable
+								{
+									.t= t,
+									.value_type= ValueType::Value,
+									.location= Variable::Location::Pointer,
+									.name= ust::concat( "referenced variable ", ust::to_string8(index), " of captured lambda variable ", v.name ),
+								}.CreatePtr();
+						} ),
 			} );
 	}
 

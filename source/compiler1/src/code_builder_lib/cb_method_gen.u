@@ -298,21 +298,22 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			.return_value_type= ValueType::Value,
 			.params= ust::make_array(
 				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut },
-				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } )
-		};
-
-		{
-			auto reference_tag_count= class_type.lock_imut().deref().inner_references.size();
-			for( auto mut i= 0s; i < reference_tag_count; ++i )
-			{
-				function_type.references_pollution.push_back(
-					FunctionType::ReferencePollution
+				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } ),
+			.references_pollution=
+				ust::make_vector_from_filler_function(
+					class_type.lock_imut().deref().inner_references.size(),
+					lambda[i= 0u] mut () : auto
 					{
-						.dst{ .param_index= 0u8, .reference_index= u8(i) },
-						.src{ .param_index= 1u8, .reference_index= u8(i) },
-					} );
-			}
-		}
+						auto index= i;
+						++i;
+						return
+							FunctionType::ReferencePollution
+							{
+								.dst{ .param_index= 0u8, .reference_index= u8(index) },
+								.src{ .param_index= 1u8, .reference_index= u8(index) },
+							};
+					} )
+		};
 
 		// Prepare function variable.
 		constructor_index= constructors.functions.size();
@@ -470,21 +471,22 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			.return_value_type= ValueType::Value,
 			.params= ust::make_array(
 				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceMut },
-				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } )
-		};
-
-		{
-			auto reference_tag_count= class_type.lock_imut().deref().inner_references.size();
-			for( auto mut i= 0s; i < reference_tag_count; ++i )
-			{
-				function_type.references_pollution.push_back(
-					FunctionType::ReferencePollution
+				FunctionType::Param{ .t( class_type ), .value_type= ValueType::ReferenceImut } ),
+			.references_pollution=
+				ust::make_vector_from_filler_function(
+					class_type.lock_imut().deref().inner_references.size(),
+					lambda[i= 0u] mut () : auto
 					{
-						.dst{ .param_index= 0u8, .reference_index= u8(i) },
-						.src{ .param_index= 1u8, .reference_index= u8(i) },
-					} );
-			}
-		}
+						auto index= i;
+						++i;
+						return
+							FunctionType::ReferencePollution
+							{
+								.dst{ .param_index= 0u8, .reference_index= u8(index) },
+								.src{ .param_index= 1u8, .reference_index= u8(index) },
+							};
+					} )
+		};
 
 		// Prepare function variable.
 		operator_index= operators.functions.size();
