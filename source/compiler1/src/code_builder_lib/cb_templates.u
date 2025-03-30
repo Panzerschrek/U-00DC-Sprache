@@ -407,7 +407,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 						.type_templates= ust::make_array( TemplateSignatureParam( TemplateSignatureParam::TemplateParam{ .index= u32(i), .kind_index= u32( template_param.kind_data.index() ) } ) ),
 						.params= ust::make_vector_from_mapped_range(
 							template_parameterization.deref().template_args,
-							lambda[&self= this, &names_scope, &function_context, &template_params, &template_params_usage_flags]( Synt::Expression& arg ) : TemplateSignatureParam
+							lambda[&self= this, &names_scope, &function_context, &template_params, &template_params_usage_flags]( Synt::Expression& arg ) : auto
 							{
 								return self.CreateTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
 							}
@@ -755,7 +755,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		.inner_references=
 			ust::make_vector_from_mapped_range(
 				signature_param.inner_reference_tags,
-				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
+				lambda( Synt::MutabilityModifier m ) : auto
 				{
 					return ( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				} )
@@ -858,7 +858,7 @@ fn CodeBuilder::GenTemplateType(
 
 	scoped_array TypeTemplatePtr templates_for_check[ candidate_type_templates.size() ](
 		candidate_type_templates.iter().map(
-			lambda( TemplateTypeArgsEvaluationResult& candidate ) : TypeTemplatePtr
+			lambda( TemplateTypeArgsEvaluationResult& candidate ) : auto
 			{
 				return candidate.type_template;
 			}) );

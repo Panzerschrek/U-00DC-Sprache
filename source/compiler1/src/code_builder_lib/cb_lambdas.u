@@ -440,7 +440,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 					auto expr_result_ptr= WithVariablesFrame(
 						function_context,
-						lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariablePtr
+						lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : auto
 						{
 							var bool prev_is_functionless_context= function_context.is_functionless_context;
 							function_context.is_functionless_context= true;

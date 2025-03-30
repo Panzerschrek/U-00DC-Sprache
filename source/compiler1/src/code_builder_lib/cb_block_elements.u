@@ -36,7 +36,7 @@ fn CodeBuilder::BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContex
 {
 	return WithVariablesFrame(
 		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : auto
 		{
 			return self.BuildBlockImpl( names_scope, function_context, block );
 		} );
@@ -1379,7 +1379,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 {
 	return WithVariablesFrame(
 		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : auto
 		{
 			return self.BuildIfCoroAdvanceOperatorImpl( names_scope, function_context, if_coro_advance_operator );
 		} );
@@ -2447,7 +2447,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 {
 	return WithVariablesFrame(
 		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : auto
 		{
 			return self.BuildRangeForOperatorImpl( names_scope, function_context, range_for_operator );
 		} );
@@ -2889,7 +2889,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 {
 	return WithVariablesFrame(
 		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : BlockElementBuildInfo
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : auto
 		{
 			return self.BuildWithOperatorImpl( names_scope, function_context, with_operator );
 		} );

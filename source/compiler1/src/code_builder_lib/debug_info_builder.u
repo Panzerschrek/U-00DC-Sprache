@@ -23,7 +23,7 @@ fn DebugInfoBuilder::constructor(
 	source_file_entries_=
 		ust::make_vector_from_mapped_range(
 			source_graph.nodes,
-			lambda[builder= builder_]( SourceGraph::Node& node ) : LLVMMetadataRef
+			lambda[builder= builder_]( SourceGraph::Node& node ) : auto
 			{
 				return unsafe( LLVMDIBuilderCreateFile(
 					builder,

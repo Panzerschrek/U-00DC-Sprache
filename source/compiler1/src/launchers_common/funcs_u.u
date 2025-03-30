@@ -365,7 +365,7 @@ fn TransformSourceFiles( $(U1_SourceFile) source_files, size_type source_file_co
 	return
 		unsafe( TestVfs::SourceEntries::from_mapped_range(
 			ust::array_view_imut</U1_SourceFile/>( source_files, source_file_count ),
-			lambda[]( U1_SourceFile& source_file ) : TestVfs::SourceEntry
+			lambda[]( U1_SourceFile& source_file ) : auto
 			{
 				return TestVfs::SourceEntry
 				{

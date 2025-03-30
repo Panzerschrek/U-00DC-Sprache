@@ -150,7 +150,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 		.inner_references=
 			ust::make_vector_from_mapped_range(
 				coroutine_type.inner_reference_tags,
-				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
+				lambda( Synt::MutabilityModifier m ) : auto
 				{
 					return ( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				} ),

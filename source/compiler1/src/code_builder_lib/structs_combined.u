@@ -1551,7 +1551,7 @@ fn MapTemplateParamsToSignatureParamsImpl(
 		.element_types=
 			ust::make_vector_from_mapped_range(
 				param.element_types,
-				lambda[&]( TemplateSignatureParam& p ) : TemplateSignatureParam { return MapTemplateParamsToSignatureParams( mapping, p ); } )
+				lambda[&]( TemplateSignatureParam& p ) : auto { return MapTemplateParamsToSignatureParams( mapping, p ); } )
 	};
 }
 
@@ -1593,7 +1593,7 @@ fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
 	TemplateSignatureParam::SpecializedTemplate& param ) : TemplateSignatureParam
 {
-	auto map_fn = lambda[mapping]( TemplateSignatureParam& p ) : TemplateSignatureParam { return MapTemplateParamsToSignatureParams( mapping, p ); };
+	auto map_fn = lambda[mapping]( TemplateSignatureParam& p ) : auto { return MapTemplateParamsToSignatureParams( mapping, p ); };
 
 	return TemplateSignatureParam::SpecializedTemplate
 	{
