@@ -748,5 +748,23 @@ fn nomangle main() : i32
 		halt if( v[1s] != 55.5f );
 		halt if( v[2s] != 44.5f );
 	}
+	{ // from_filler_function
+		auto vec=
+			ust::vector</i32/>::from_filler_function(
+				4s,
+				// This lambda mutates its state on each call.
+				lambda[x = 0] mut () : i32
+				{
+					auto res= x;
+					++x;
+					return res;
+				} );
+
+		halt if( vec.size() != 4s );
+		halt if( vec[0s] != 0 );
+		halt if( vec[1s] != 1 );
+		halt if( vec[2s] != 2 );
+		halt if( vec[3s] != 3 );
+	}
 	return 0;
 }
