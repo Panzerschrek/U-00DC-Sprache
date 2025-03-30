@@ -41,7 +41,8 @@ public:
 	// This is the most effective way to create vector with fixed size, compared to methods like "from_iterator" or "push_back",
 	// since this function allocates memory in one call and has no capacity check on each insertion.
 	template</type T, type Func/>
-	fn make_from_mapped_range( array_view_imut</T/> r, Func& func ) : this_type
+	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
+	make_from_mapped_range( array_view_imut</T/> r, Func& func ) : this_type
 	{
 		var this_type mut result;
 		unsafe
