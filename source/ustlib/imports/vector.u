@@ -640,8 +640,14 @@ private:
 template</type T, type Func/>
 fn make_vector_from_mapped_range( random_access_range_imut</T/> r, Func& f ) : auto
 {
-	type T= typeof( f( r.front() ) );
-	return vector</T/>::make_from_mapped_range( r, f );
+	return vector</ typeof( f( r.front() ) ) />::make_from_mapped_range( r, f );
+}
+
+// Overloading for mutable ranges - it just casts range to immutable.
+template</type T, type Func/>
+fn make_vector_from_mapped_range( random_access_range_mut</T/> r, Func& f ) : auto
+{
+	return vector</ typeof( f( r.front() ) ) />::make_from_mapped_range( random_access_range_imut</T/>( r ), f );
 }
 
 } // namespace ust
