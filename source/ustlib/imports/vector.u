@@ -40,6 +40,7 @@ public:
 	// Construct vector from given range by mapping all elements using given function.
 	// This is the most effective way to create vector with fixed size, compared to methods like "from_iterator" or "push_back",
 	// since this function allocates memory in one call and has no capacity check on each insertion.
+	// Given function is immutable in order to encourage pure mapping (without modifying internal state in process).
 	template</type T, type Func/>
 	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
 	make_from_mapped_range( array_view_imut</T/> r, Func& func ) : this_type
