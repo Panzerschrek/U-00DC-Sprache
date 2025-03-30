@@ -36,6 +36,16 @@ class NC // Non-copyable by-default.
 {
 }
 
+class IntClassWrapper
+{
+	i32 x;
+	fn constructor( i32 in_x )
+		( x= in_x )
+	{}
+}
+
+static_assert( !typeinfo</IntClassWrapper/>.is_copy_constructible );
+
 type I32Vec= ust::vector</i32/>;
 type AVec= ust::vector</A/>;
 type BVec= ust::vector</B/>;
@@ -623,7 +633,7 @@ fn nomangle main() : i32
 		halt if( arr1[2] != -12 );
 		halt if( arr1[3] != -14 );
 	}
-	{
+	{ // make_from_mapped_range
 		var [ i32, 3 ] ints[ 11, 222, 3333 ];
 
 		var ust::vector</f32/> v=
@@ -635,6 +645,68 @@ fn nomangle main() : i32
 		halt if( v[0s] != 11.0f );
 		halt if( v[1s] != 222.0f );
 		halt if( v[2s] != 3333.0f );
+	}
+	{ // make_from_mapped_range for empty range
+		var [ i32, 0 ] ints[];
+
+		var ust::vector</f32/> v=
+			ust::make_vector_from_mapped_range(
+				ust::array_view_imut</i32/>( ints ),
+				lambda(i32 x ) : f32 { halt; /* this function should be never called */ } );
+
+		halt if( v.size() != 0s );
+	}
+	{ // make_from_mapped_range for non-copyable type
+		var [ i32, 5 ] ints[ 5, 4, 3, 2, 1 ];
+
+		var ust::vector</IntClassWrapper/> v=
+			ust::vector</IntClassWrapper/>::make_from_mapped_range(
+				ust::array_view_imut</i32/>( ints ),
+				lambda( i32 x ) : IntClassWrapper { return IntClassWrapper(x); } );
+
+		halt if( v.size() != 5s );
+		halt if( v[0s].x != 5 );
+		halt if( v[1s].x != 4 );
+		halt if( v[2s].x != 3 );
+		halt if( v[3s].x != 2 );
+		halt if( v[4s].x != 1 );
+	}
+	{ // make_from_mapped_range - check destructors are properly called and only once.
+		var [ i32, 4 ] mut ints[ 12, 23, 34, 45 ];
+
+		{
+			auto vec= ust::make_vector_from_mapped_range(
+				ust::array_view_imut</i32/>(ints),
+				// It's hacky way to capture mutable references. Do not do this in production code.
+				lambda( i32 & x ) : RMut { return unsafe( RMut( cast_mut(x) ) ); } );
+
+			halt if( vec.size() != 4s );
+			halt if( unsafe( $>( vec[0s].r ) ) != 12 );
+			halt if( unsafe( $>( vec[1s].r ) ) != 23 );
+			halt if( unsafe( $>( vec[2s].r ) ) != 34 );
+			halt if( unsafe( $>( vec[3s].r ) ) != 45 );
+		}
+
+		// Elements should be modified by destructor.
+		halt if( ints[0] != 13 );
+		halt if( ints[1] != 24 );
+		halt if( ints[2] != 35 );
+		halt if( ints[3] != 46 );
+	}
+	{ // make_from_mapped_range - map range of string_view's to range of strings.
+		var [ ust::string_view8, 6 ] strings[ "Even", "in", "death", "I", "still", "serve" ];
+
+		var ust::vector</ust::string8/> vec= ust::make_vector_from_mapped_range(
+			ust::array_view_imut</ust::string_view8/>(strings),
+			lambda( ust::string_view8 s ) : ust::string8 { return s; } );
+
+		halt if( vec.size() != 6s );
+		halt if( vec[0s] != "Even" );
+		halt if( vec[1s] != "in" );
+		halt if( vec[2s] != "death" );
+		halt if( vec[3s] != "I" );
+		halt if( vec[4s] != "still" );
+		halt if( vec[5s] != "serve" );
 	}
 	return 0;
 }
