@@ -74,5 +74,17 @@ pretty_main
 	assert( ints_vec[2s] == 89 );
 	assert( ints_vec[3s] == -15 );
 
+	// Can construct vector from array with mapping.
+	var ust::vector</f32/> mapped_vec=
+		ust::make_vector_from_mapped_range(
+			ust::array_view_imut</i32/>(ints),
+			lambda( i32 x ) : f32 { return f32(x); } );
+
+	assert( mapped_vec.size() == 4s );
+	assert( mapped_vec[0s] == 7.0f );
+	assert( mapped_vec[1s] == 5.0f );
+	assert( mapped_vec[2s] == 89.0f );
+	assert( mapped_vec[3s] == -15.0f );
+
 	return 0;
 }
