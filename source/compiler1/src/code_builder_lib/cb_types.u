@@ -144,13 +144,12 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 			: ValueType::Value ),
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type.non_sync_tag ),
 		.inner_references=
-			coroutine_type.inner_reference_tags.iter()
-			.map(
+			ust::make_vector_from_mapped_range(
+				coroutine_type.inner_reference_tags.range(),
 				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
 				{
 					return ( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
-				} )
-			.collect</ ust::vector/>()
+				} ),
 	};
 
 	if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, coroutine_type.src_loc  ) )

@@ -197,11 +197,9 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 			.can_be_constexpr= false,
 			.parents_list_prepared= true,
 			.inner_references=
-				coroutine_type_description
-				.inner_references
-				.iter()
-				.map( lambda( InnerReferenceKind k ) : InnerReference { return InnerReference{ .kind= k }; } )
-				.collect</ ust::vector />(),
+				ust::make_vector_from_mapped_range(
+					coroutine_type_description.inner_references.range(),
+					lambda( InnerReferenceKind k ) : InnerReference { return InnerReference{ .kind= k }; } ),
 			.kind= ClassType::Kind::NonPolymorph, // Mark coroutine type as non-struct, to avoid usages it as struct ({} initializer, decompose).
 			.generated_class_data( coroutine_type_description ),
 		} );

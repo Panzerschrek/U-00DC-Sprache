@@ -1597,8 +1597,8 @@ fn MapTemplateParamsToSignatureParamsImpl(
 
 	return TemplateSignatureParam::SpecializedTemplate
 	{
-		.type_templates= param.type_templates.iter().map( map_fn ).collect</ ust::vector />(),
-		.params= param.params.iter().map( map_fn ).collect</ ust::vector />(),
+		.type_templates= ust::make_vector_from_mapped_range( param.type_templates.range(), map_fn ),
+		.params=  ust::make_vector_from_mapped_range( param.params.range(), map_fn ),
 	};
 }
 

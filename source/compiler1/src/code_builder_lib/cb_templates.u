@@ -548,13 +548,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 			return TemplateSignatureParam::SpecializedTemplate
 			{
 				.type_templates=
-					type_templates_set_ptr
-					.lock_imut()
-					.deref()
-					.type_templates
-					.iter()
-					.map( lambda( TypeTemplatePtr& type_tempate ) : TemplateSignatureParam { return TemplateSignatureParam::TypeTemplate{ .type_template= type_tempate }; } )
-					.collect</ ust::vector />(),
+					ust::make_vector_from_mapped_range(
+						type_templates_set_ptr.lock_imut().deref().type_templates.range(),
+						lambda( TypeTemplatePtr& type_tempate ) : TemplateSignatureParam { return TemplateSignatureParam::TypeTemplate{ .type_template= type_tempate }; } ),
 				.params= move(specialized_template_params)
 			};
 		}
@@ -757,13 +753,12 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 			: ValueType::Value ),
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, signature_param.non_sync_tag ),
 		.inner_references=
-			signature_param.inner_reference_tags.iter()
-			.map(
+			ust::make_vector_from_mapped_range(
+				signature_param.inner_reference_tags.range(),
 				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
 				{
 					return ( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );
 				} )
-			.collect</ ust::vector />()
 	};
 
 	auto num_params= 1s;
