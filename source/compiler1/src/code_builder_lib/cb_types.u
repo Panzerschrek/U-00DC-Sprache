@@ -102,7 +102,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 	{
 		.element_types=
 			ust::make_vector_from_mapped_range(
-				tuple_type.elements.range(),
+				tuple_type.elements,
 				lambda[&self= this, &names_scope, &function_context]( Synt::TypeName& element ) : Type
 				{
 					return self.PrepareType( names_scope, function_context, element );
@@ -149,7 +149,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, coroutine_type.non_sync_tag ),
 		.inner_references=
 			ust::make_vector_from_mapped_range(
-				coroutine_type.inner_reference_tags.range(),
+				coroutine_type.inner_reference_tags,
 				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
 				{
 					return ( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );

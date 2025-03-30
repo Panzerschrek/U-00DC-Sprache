@@ -721,5 +721,18 @@ fn nomangle main() : i32
 		halt if( vec[4s] != "still" );
 		halt if( vec[5s] != "serve" );
 	}
+	{ // make_vector_from_mapped_range - input is vector
+		var ust::vector</i32/> ints= ust::make_array( 66, 55, 44 );
+
+		var ust::vector</f32/> v=
+			ust::make_vector_from_mapped_range(
+				ints,
+				lambda( i32 x ) : f32 { return f32(x) + 0.5f; } );
+
+		halt if( v.size() != 3s );
+		halt if( v[0s] != 66.5f );
+		halt if( v[1s] != 55.5f );
+		halt if( v[2s] != 44.5f );
+	}
 	return 0;
 }

@@ -406,7 +406,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 					{
 						.type_templates= ust::make_array( TemplateSignatureParam( TemplateSignatureParam::TemplateParam{ .index= u32(i), .kind_index= u32( template_param.kind_data.index() ) } ) ),
 						.params= ust::make_vector_from_mapped_range(
-							template_parameterization.deref().template_args.range(),
+							template_parameterization.deref().template_args,
 							lambda[&self= this, &names_scope, &function_context, &template_params, &template_params_usage_flags]( Synt::Expression& arg ) : TemplateSignatureParam
 							{
 								return self.CreateTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
@@ -549,7 +549,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 			{
 				.type_templates=
 					ust::make_vector_from_mapped_range(
-						type_templates_set_ptr.lock_imut().deref().type_templates.range(),
+						type_templates_set_ptr.lock_imut().deref().type_templates,
 						lambda( TypeTemplatePtr& type_tempate ) : TemplateSignatureParam { return TemplateSignatureParam::TypeTemplate{ .type_template= type_tempate }; } ),
 				.params= move(specialized_template_params)
 			};
@@ -754,7 +754,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, signature_param.non_sync_tag ),
 		.inner_references=
 			ust::make_vector_from_mapped_range(
-				signature_param.inner_reference_tags.range(),
+				signature_param.inner_reference_tags,
 				lambda( Synt::MutabilityModifier m ) : InnerReferenceKind
 				{
 					return ( m == Synt::MutabilityModifier::Mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut );

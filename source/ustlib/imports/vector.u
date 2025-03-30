@@ -650,4 +650,11 @@ fn make_vector_from_mapped_range( random_access_range_mut</T/> r, Func& f ) : au
 	return vector</ typeof( f( r.front() ) ) />::make_from_mapped_range( random_access_range_imut</T/>( r ), f );
 }
 
+// Overloading for vectors.
+template</type T, type Func/>
+fn make_vector_from_mapped_range( vector</T/>& v, Func& f ) : auto
+{
+	return vector</ typeof( f( v.front() ) ) />::make_from_mapped_range( v.range(), f );
+}
+
 } // namespace ust
