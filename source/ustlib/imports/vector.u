@@ -41,14 +41,21 @@ public:
 	// This is the most effective way to create vector with fixed size, compared to methods like "from_iterator" or "push_back",
 	// since this function allocates memory in one call and has no capacity check on each insertion.
 	template</type T, type Func/>
-	fn make_from_mapped_range( array_view_imut</T/> r, Func& func ) : auto
+	fn make_from_mapped_range( array_view_imut</T/> r, Func& func ) : this_type
 	{
 		var this_type mut result;
-		unsafe( result.ensure_capacity( r.size() ) );
-		// TODO - optimize this, use unchecked index, use raw memory access directly instead of "push_back".
-		for( var size_type mut i= 0s; i < r.size(); ++i )
+		unsafe
 		{
-			result.push_back( func(r[i]) );
+			var size_type size= r.size();
+			result.ensure_capacity( size );
+			for( var size_type mut i= 0s; i < size; ++i )
+			{
+				// Access range element via unsafe indexing (since we know that index is valid),
+				// call mapping function for this element,
+				// move call result directly into vector memory.
+				move_into_uninitialized( $>( result.ptr_ + i ), safe( func( unsafe( r.index_unchecked(i) ) ) ) );
+			}
+			result.size_= size;
 		}
 		return result;
 	}
