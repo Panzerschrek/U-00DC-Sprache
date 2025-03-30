@@ -1546,13 +1546,13 @@ fn MapTemplateParamsToSignatureParamsImpl(
 	TemplateParamsToSignatureParamsMappingRef mapping,
 	TemplateSignatureParam::Tuple& param ) : TemplateSignatureParam
 {
-	var TemplateSignatureParam::Tuple mut out_param;
-	foreach( &element_type : param.element_types )
+	return TemplateSignatureParam::Tuple
 	{
-		out_param.element_types.push_back( MapTemplateParamsToSignatureParams( mapping, element_type ) );
-	}
-
-	return out_param;
+		.element_types=
+			ust::make_vector_from_mapped_range(
+				param.element_types.range(),
+				lambda[&]( TemplateSignatureParam& p ) : TemplateSignatureParam { return MapTemplateParamsToSignatureParams( mapping, p ); } )
+	};
 }
 
 fn MapTemplateParamsToSignatureParamsImpl(

@@ -98,12 +98,16 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Type
 {
-	var TupleType mut out_tuple_type;
-
-	foreach( & element : tuple_type.elements )
+	var TupleType mut out_tuple_type
 	{
-		out_tuple_type.element_types.push_back( PrepareType( names_scope, function_context, element ) );
-	}
+		.element_types=
+			ust::make_vector_from_mapped_range(
+				tuple_type.elements.range(),
+				lambda[&self= this, &names_scope, &function_context]( Synt::TypeName& element ) : Type
+				{
+					return self.PrepareType( names_scope, function_context, element );
+				} ),
+	};
 
 	scoped_array LLVMTypeRef mut element_llvm_types[ out_tuple_type.element_types.size() ]( out_tuple_type.element_types.iter().map( Type::GetLLVMType ) );
 

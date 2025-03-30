@@ -20,14 +20,16 @@ fn DebugInfoBuilder::constructor(
 
 	builder_= unsafe( LLVMCreateDIBuilder( mod ) );
 
-	foreach( & node : source_graph.nodes )
-	{
-		source_file_entries_.push_back(
-			unsafe( LLVMDIBuilderCreateFile(
-				builder_,
-				cast_mut(node.file_path_normalized).data(), node.file_path_normalized.size(),
-				ust::nullptr</char8/>(), 0s ) ) );
-	}
+	source_file_entries_=
+		ust::make_vector_from_mapped_range(
+			source_graph.nodes.range(),
+			lambda[builder= builder_]( SourceGraph::Node& node ) : LLVMMetadataRef
+			{
+				return unsafe( LLVMDIBuilderCreateFile(
+					builder,
+					cast_mut(node.file_path_normalized).data(), node.file_path_normalized.size(),
+					ust::nullptr</char8/>(), 0s ) );
+			} );
 
 	// TODO - fix this. LLVM C interface doesn't provide any way to specify custom language, so, use language id for "C".
 	var LLVMDWARFSourceLanguage c_dwarf_language_id= 1u;
