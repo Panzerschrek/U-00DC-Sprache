@@ -304,13 +304,13 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 					class_type.lock_imut().deref().inner_references.size(),
 					lambda[i= 0u] mut () : auto
 					{
-						auto index= i;
+						auto index= u8(i);
 						++i;
 						return
 							FunctionType::ReferencePollution
 							{
-								.dst{ .param_index= 0u8, .reference_index= u8(index) },
-								.src{ .param_index= 1u8, .reference_index= u8(index) },
+								.dst{ .param_index= 0u8, .reference_index= index },
+								.src{ .param_index= 1u8, .reference_index= index },
 							};
 					} )
 		};
@@ -477,13 +477,13 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 					class_type.lock_imut().deref().inner_references.size(),
 					lambda[i= 0u] mut () : auto
 					{
-						auto index= i;
+						auto index= u8(i);
 						++i;
 						return
 							FunctionType::ReferencePollution
 							{
-								.dst{ .param_index= 0u8, .reference_index= u8(index) },
-								.src{ .param_index= 1u8, .reference_index= u8(index) },
+								.dst{ .param_index= 0u8, .reference_index= index },
+								.src{ .param_index= 1u8, .reference_index= index },
 							};
 					} )
 		};
