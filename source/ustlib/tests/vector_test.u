@@ -748,5 +748,89 @@ fn nomangle main() : i32
 		halt if( v[1s] != 55.5f );
 		halt if( v[2s] != 44.5f );
 	}
+	{ // from_filler_function
+		auto vec=
+			ust::vector</i32/>::from_filler_function(
+				4s,
+				// This lambda mutates its state on each call.
+				lambda[x = 0] mut () : i32
+				{
+					auto res= x;
+					++x;
+					return res;
+				} );
+
+		halt if( vec.size() != 4s );
+		halt if( vec[0s] != 0 );
+		halt if( vec[1s] != 1 );
+		halt if( vec[2s] != 2 );
+		halt if( vec[3s] != 3 );
+	}
+	{ // from_filler_function - use separate helper function.
+		auto vec=
+			ust::make_vector_from_filler_function(
+				5s,
+				// This lambda mutates its state on each call.
+				lambda[x = 1] mut () : i32
+				{
+					auto res= x * x;
+					++x;
+					return res;
+				} );
+
+		halt if( vec.size() != 5s );
+		halt if( vec[0s] !=  1 );
+		halt if( vec[1s] !=  4 );
+		halt if( vec[2s] !=  9 );
+		halt if( vec[3s] != 16 );
+		halt if( vec[4s] != 25 );
+	}
+	{ // from_filler_function - generate strings.
+		auto vec=
+			ust::make_vector_from_filler_function(
+				6s,
+				// This lambda mutates its state on each call.
+				lambda[s= ust::string8("a")] mut () : ust::string8
+				{
+					auto res= s;
+					var char8 c= s.back();
+					s.push_back( char8( u32(c) + 1u ) );
+					return res;
+				} );
+
+		halt if( vec.size() != 6s );
+		halt if( vec[0s] != "a" );
+		halt if( vec[1s] != "ab" );
+		halt if( vec[2s] != "abc" );
+		halt if( vec[3s] != "abcd" );
+		halt if( vec[4s] != "abcde" );
+		halt if( vec[5s] != "abcdef" );
+	}
+	{ // from_filler_function - generate identical elements.
+		auto vec=
+			ust::make_vector_from_filler_function(
+				3s,
+				lambda[s= ust::string8("abc")] () : ust::string8 & // Returning a reference should work fine.
+				{
+					return s;
+				} );
+
+		halt if( vec.size() != 3s );
+		halt if( vec[0s] != "abc" );
+		halt if( vec[1s] != "abc" );
+		halt if( vec[2s] != "abc" );
+	}
+	{ // from_filler_function - generate with type conversion.
+		var ust::vector</ust::string8/> vec=
+			ust::vector</ust::string8/>::from_filler_function(
+				4s,
+				lambda() : [ char8, 3 ] { return "ABC"; } );
+
+		halt if( vec.size() != 4s );
+		halt if( vec[0s] != "ABC" );
+		halt if( vec[1s] != "ABC" );
+		halt if( vec[2s] != "ABC" );
+		halt if( vec[3s] != "ABC" );
+	}
 	return 0;
 }

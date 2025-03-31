@@ -130,5 +130,9 @@ fn nomangle main() : i32
 		auto mapping_func= lambda ( i32 x ) unsafe : f32 { return f32(x); };
 		ust::make_vector_from_mapped_range( ust::array_view_imut</i32/>( ints ), mapping_func ); //##expect_error TemplateContext
 	}
+	{
+		// Filler function is unsafe, which isn't allowed in "from_filler_function" function.
+		ust::make_vector_from_filler_function( 4s, lambda() unsafe : i32 { return 0; } ); //##expect_error TemplateContext
+	}
 	return 0;
 }

@@ -724,18 +724,22 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.references_pollution.clear();
 			}
 
-			// Assume, that this function is called during function preparation, which for class is called after determining number of inner reference tags.
-			// So, we can request it.
-			auto reference_tag_count= class_type_non_null.lock_imut().deref().inner_references.size();
-			for( auto mut i= 0s; i < reference_tag_count; ++i )
-			{
-				function_variable.t.references_pollution.push_back(
-					FunctionType::ReferencePollution
+			function_variable.t.references_pollution=
+				ust::make_vector_from_filler_function(
+					// Assume, that this function is called during function preparation, which for class is called after determining number of inner reference tags.
+					// So, we can request it.
+					class_type_non_null.lock_imut().deref().inner_references.size(),
+					lambda[i= 0u] mut () : auto
 					{
-						.dst{ .param_index= 0u8, .reference_index= u8(i) },
-						.src{ .param_index= 1u8, .reference_index= u8(i) },
+						auto index= u8(i);
+						++i;
+						return
+							FunctionType::ReferencePollution
+							{
+								.dst{ .param_index= 0u8, .reference_index= index },
+								.src{ .param_index= 1u8, .reference_index= index },
+							};
 					} );
-			}
 		}
 
 		if( function_declaration.operator == OverloadedOperator::CompareEqual &&

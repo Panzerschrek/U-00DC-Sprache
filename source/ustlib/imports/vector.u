@@ -64,6 +64,30 @@ public:
 		return result;
 	}
 
+	// Construct vector with given size and fill it with elements obtained via given filler function.
+	// This is the most effective way to create vector with fixed size, compared to methods like "from_iterator" or "push_back",
+	// since this function allocates memory in one call and has no capacity check on each insertion.
+	// Filler function should return value or immutable reference of type "T".
+	// Filler function shouldn't be unsafe.
+	// Filler function may mutate itself, in order to have possibility to fill different values.
+	template</type Func/>
+	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
+	from_filler_function( size_type size, Func mut func ) : this_type
+	{
+		var this_type mut result;
+		unsafe
+		{
+			result.ensure_capacity( size );
+			for( var size_type mut i= 0s; i < size; ++i )
+			{
+				// Call passed function and move call result directly into vector memory.
+				move_into_uninitialized( $>( result.ptr_ + i ), safe( func() ) );
+			}
+			result.size_= size;
+		}
+		return result;
+	}
+
 public:
 	// Default constructor.
 	fn constructor()= default;
@@ -657,6 +681,13 @@ template</type T, type Func/>
 fn make_vector_from_mapped_range( vector</T/>& v, Func& f ) : auto
 {
 	return vector</ typeof( f( v.front() ) ) />::from_mapped_range( v.range(), f );
+}
+
+// A helper for "vector::from_filler_function".
+template</type Func/>
+fn make_vector_from_filler_function( size_type size, Func mut f ) : auto
+{
+	return vector</ typeof( f() ) />::from_filler_function( size, move(f) );
 }
 
 } // namespace ust
