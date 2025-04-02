@@ -31,7 +31,7 @@ inline cl::opt<std::string> error_log_file_path(
 
 inline cl::opt<uint32_t> num_threads(
 	"num-threads",
-	cl::desc("Number of threads for background tasks. Use 0 to create threads for all awailable CPU cores."),
+	cl::desc("Number of threads for background tasks. Use 0 to create threads for all available CPU cores."),
 	cl::value_desc("non-negative whole number"),
 	cl::Optional,
 	cl::cat(options_category) );
@@ -39,7 +39,7 @@ inline cl::opt<uint32_t> num_threads(
 inline cl::list<std::string> build_dir(
 	"build-dir",
 	cl::Prefix,
-	cl::desc("Add a build directory for searching a build system-created project description file."),
+	cl::desc("Add a build directory for searching for a build system-created project description file."),
 	cl::value_desc("dir"),
 	cl::ZeroOrMore,
 	cl::cat(options_category));
