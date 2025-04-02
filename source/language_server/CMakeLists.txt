@@ -7,7 +7,7 @@ target_link_libraries( LanguageServerLib PUBLIC CodeBuilderLib CompilersSupportL
 
 add_executable( LanguageServer "tool/main.cpp" )
 target_link_libraries( LanguageServer PRIVATE LanguageServerLib )
-install( TARGETS LanguageServer )
+install( PROGRAMS $<TARGET_FILE:LanguageServer> TYPE BIN RENAME u.._language_server${CMAKE_EXECUTABLE_SUFFIX} )
 
 if( U_BUILD_TESTS )
 	file( GLOB TEST_SOURCES "tests/*.cpp" )

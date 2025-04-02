@@ -10,7 +10,7 @@ if( TARGET clangTooling )
 	target_include_directories( CppHeaderConverter PRIVATE ${LLVM_EXTERNAL_CLANG_SOURCE_DIR}/include )
 	target_include_directories( CppHeaderConverter PRIVATE ${CMAKE_BINARY_DIR}/llvm/tools/clang/include )
 
-	install( TARGETS CppHeaderConverter )
+	install( PROGRAMS $<TARGET_FILE:CppHeaderConverter> TYPE BIN RENAME u.._cpp_header_converter${CMAKE_EXECUTABLE_SUFFIX} )
 
 	# Install clang headers.
 	install( DIRECTORY ${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER} DESTINATION ${CLANG_BUILTIN_HEADERS_INSTALL_DESTINATION} )

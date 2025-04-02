@@ -242,7 +242,7 @@ if( U_BUILD_COMPILER )
 
 	# Install Compiler1 and Compiler2, but not other generations (3, 4, etc).
 	if( ${NEXT_COMPILER_GENERATION} LESS_EQUAL "2" )
-		install( TARGETS Compiler${NEXT_COMPILER_GENERATION} )
+		install( PROGRAMS $<TARGET_FILE:Compiler${NEXT_COMPILER_GENERATION}> TYPE BIN RENAME u.._compiler${NEXT_COMPILER_GENERATION}${CMAKE_EXECUTABLE_SUFFIX} )
 	endif()
 
 endif()
