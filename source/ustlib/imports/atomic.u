@@ -2,7 +2,9 @@ namespace ust
 {
 
 // All atomic operations have strickest memory order - "sequentially consistent".
-// Use only 32-bit atomic operations, because they are supported almost on all platforms.
+// Atomic operations for i32 and u32 supported on all platforms.
+// There are no atomic operations for i64 and u64, since not all platforms support them.
+// But operations on ssize_type and size_type are possible, which are 64-bit on 64-bit platforms.
 
 fn atomic_read( i32& addr ) : i32
 {
