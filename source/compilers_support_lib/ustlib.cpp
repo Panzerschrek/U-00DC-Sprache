@@ -26,6 +26,8 @@ bool LinkUstLibModules(
 	#include "bc_files_headers/alloc_winapi_64.h"
 	#include "bc_files_headers/alloc_dummy.h"
 	#include "bc_files_headers/atomic.h"
+	#include "bc_files_headers/atomic_32.h"
+	#include "bc_files_headers/atomic_64.h"
 	#include "bc_files_headers/coro.h"
 	#include "bc_files_headers/checked_math.h"
 	#include "bc_files_headers/halt_abort.h"
@@ -65,6 +67,7 @@ bool LinkUstLibModules(
 	const llvm::StringRef asm_funcs_modules[]=
 	{
 		STRING_REF(atomic),
+		is_32_bit ? STRING_REF(atomic_32) : STRING_REF(atomic_64),
 		STRING_REF(coro),
 		STRING_REF(checked_math),
 		halt_module,
