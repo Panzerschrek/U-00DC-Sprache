@@ -2,7 +2,11 @@ namespace ust
 {
 
 // All atomic operations have strickest memory order - "sequentially consistent".
-// Use only 32-bit atomic operations, because they are supported almost on all platforms.
+// Atomic operations for i32 and u32 supported on all platforms.
+// There are no atomic operations for i64 and u64, since not all platforms support them.
+// But operations on ssize_type and size_type are possible, which are 64-bit on 64-bit platforms.
+// Operations on raw pointer types are available on all platforms.
+// Operations on "byte64" are available only on 64-bit platforms.
 
 fn atomic_read( i32& addr ) : i32
 {
@@ -12,6 +16,51 @@ fn atomic_read( i32& addr ) : i32
 fn atomic_read( u32& addr ) : u32
 {
 	return ust_atomic_read_u32_impl( addr );
+}
+
+fn atomic_read( ssize_type& addr ) : ssize_type
+{
+	return ust_atomic_read_ssize_type_impl( addr );
+}
+
+fn atomic_read( size_type& addr ) : size_type
+{
+	return ust_atomic_read_size_type_impl( addr );
+}
+
+fn atomic_read( byte32& addr ) : byte32
+{
+	return ust_atomic_read_byte32_impl( addr );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_read( byte64& addr ) : byte64
+{
+	return ust_atomic_read_byte64_impl( addr );
+}
+
+template</type T/>
+fn atomic_read( $(T)& addr ) : $(T)
+{
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		unsafe
+		{
+			// Cast reference to pointer to reference to byte type and read byte type value - it's fine.
+			var byte64 res= ust_atomic_read_byte64_impl( cast_ref_unsafe</ byte64 />( addr ) );
+			// Cast reference to byte type to reference to pointer type and read it - this should be fine too.
+			return cast_ref_unsafe</ $(T) />(res);
+		}
+	}
+	else
+	{
+		unsafe
+		{
+			// Cast reference to pointer to reference to byte type and read byte type value - it's fine.
+			var byte32 res= ust_atomic_read_byte32_impl( cast_ref_unsafe</ byte32 />( addr ) );
+			// Cast reference to byte type to reference to pointer type and read it - this should be fine too.
+			return cast_ref_unsafe</ $(T) />(res);
+		}
+	}
 }
 
 fn atomic_write( i32 &mut addr, i32 x )
@@ -24,6 +73,41 @@ fn atomic_write( u32 &mut addr, u32 x )
 	return ust_atomic_write_u32_impl( addr, x );
 }
 
+fn atomic_write( ssize_type &mut addr, ssize_type x )
+{
+	return ust_atomic_write_ssize_type_impl( addr, x );
+}
+
+fn atomic_write( size_type &mut addr, size_type x )
+{
+	return ust_atomic_write_size_type_impl( addr, x );
+}
+
+fn atomic_write( byte32 &mut addr, byte32 x )
+{
+	return ust_atomic_write_byte32_impl( addr, x );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_write( byte64 &mut addr, byte64 x )
+{
+	return ust_atomic_write_byte64_impl( addr, x );
+}
+
+template</type T/>
+fn atomic_write( $(T) &mut addr, $(T) x )
+{
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		// Cast reference to pointer type to reference to byte type. It should be fine both times.
+		unsafe( ust_atomic_write_byte64_impl( cast_ref_unsafe</byte64/>( addr ), cast_ref_unsafe</byte64/>(x) ) );
+	}
+	else
+	{
+		// Cast reference to pointer type to reference to byte type. It should be fine both times.
+		unsafe( ust_atomic_write_byte32_impl( cast_ref_unsafe</byte32/>( addr ), cast_ref_unsafe</byte32/>(x) ) );
+	}
+}
+
 // Functions returns old value of 'x'.
 fn atomic_add( i32 &mut x, i32 y ) : i32 { return ust_atomic_add_i32_impl( x, y ); }
 fn atomic_sub( i32 &mut x, i32 y ) : i32 { return atomic_add( x, -y ); }
@@ -34,6 +118,16 @@ fn atomic_add( u32 &mut x, u32 y ) : u32 { return ust_atomic_add_u32_impl( x, y 
 fn atomic_sub( u32 &mut x, u32 y ) : u32 { return atomic_add( x, -y ); }
 fn atomic_inc( u32 &mut x ) : u32 { return atomic_add( x,  1u ); }
 fn atomic_dec( u32 &mut x ) : u32 { return atomic_add( x, ~0u ); }
+
+fn atomic_add( ssize_type &mut x, ssize_type y ) : ssize_type { return ust_atomic_add_ssize_type_impl( x, y ); }
+fn atomic_sub( ssize_type &mut x, ssize_type y ) : ssize_type { return atomic_add( x, -y ); }
+fn atomic_inc( ssize_type &mut x ) : ssize_type { return atomic_add( x, ssize_type(1) ); }
+fn atomic_dec( ssize_type &mut x ) : ssize_type { return atomic_add( x, -ssize_type(1) ); }
+
+fn atomic_add( size_type &mut x, size_type y ) : size_type { return ust_atomic_add_size_type_impl( x, y ); }
+fn atomic_sub( size_type &mut x, size_type y ) : size_type { return atomic_add( x, -y ); }
+fn atomic_inc( size_type &mut x ) : size_type { return atomic_add( x,  1s ); }
+fn atomic_dec( size_type &mut x ) : size_type { return atomic_add( x, ~0s ); }
 
 // Aatomically compare 'expected' and 'dst'. If they are equal, set 'dst' to 'new', else - set 'expected' to content of 'dst'.
 // Returns true, if 'dst' == 'expected'.
@@ -48,6 +142,48 @@ fn nodiscard atomic_compare_exchange_strong( u32 &mut dst, u32 &mut expected, u3
 	return ust_atomic_compare_exchange_strong_u32_impl( dst, expected, new );
 }
 
+fn nodiscard atomic_compare_exchange_strong( ssize_type &mut dst, ssize_type &mut expected, ssize_type new ) : bool
+{
+	return ust_atomic_compare_exchange_strong_ssize_type_impl( dst, expected, new );
+}
+
+fn nodiscard atomic_compare_exchange_strong( size_type &mut dst, size_type &mut expected, size_type new ) : bool
+{
+	return ust_atomic_compare_exchange_strong_size_type_impl( dst, expected, new );
+}
+
+fn nodiscard atomic_compare_exchange_strong( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool
+{
+	return ust_atomic_compare_exchange_strong_byte32_impl( dst, expected, new );
+}
+
+fn nodiscard enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_compare_exchange_strong( byte64 &mut dst, byte64 &mut expected, byte64 new ) : bool
+{
+	return ust_atomic_compare_exchange_strong_byte64_impl( dst, expected, new );
+}
+
+template</type T/>
+fn nodiscard atomic_compare_exchange_strong( $(T) &mut dst, $(T) &mut expected, $(T) new ) : bool
+{
+	// Casting pointers to byte-types with size equal to pointer should be fine.
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		return
+			unsafe( ust_atomic_compare_exchange_strong_byte64_impl(
+				cast_ref_unsafe</byte64/>( dst ),
+				cast_ref_unsafe</byte64/>( expected ),
+				cast_ref_unsafe</byte64/>( new ) ) );
+	}
+	else
+	{
+		return
+			unsafe( ust_atomic_compare_exchange_strong_byte32_impl(
+				cast_ref_unsafe</byte32/>( dst ),
+				cast_ref_unsafe</byte32/>( expected ),
+				cast_ref_unsafe</byte32/>( new ) ) );
+	}
+}
+
 fn nodiscard atomic_compare_exchange_weak( i32 &mut dst, i32 &mut expected, i32 new ) : bool
 {
 	return ust_atomic_compare_exchange_weak_i32_impl( dst, expected, new );
@@ -58,20 +194,81 @@ fn nodiscard atomic_compare_exchange_weak( u32 &mut dst, u32 &mut expected, u32 
 	return ust_atomic_compare_exchange_weak_u32_impl( dst, expected, new );
 }
 
+fn nodiscard atomic_compare_exchange_weak( ssize_type &mut dst, ssize_type &mut expected, ssize_type new ) : bool
+{
+	return ust_atomic_compare_exchange_weak_ssize_type_impl( dst, expected, new );
+}
+
+fn nodiscard atomic_compare_exchange_weak( size_type &mut dst, size_type &mut expected, size_type new ) : bool
+{
+	return ust_atomic_compare_exchange_weak_size_type_impl( dst, expected, new );
+}
+
+fn nodiscard atomic_compare_exchange_weak( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool
+{
+	return ust_atomic_compare_exchange_weak_byte32_impl( dst, expected, new );
+}
+
+fn nodiscard enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_compare_exchange_weak( byte64 &mut dst, byte64 &mut expected, byte64 new ) : bool
+{
+	return ust_atomic_compare_exchange_weak_byte64_impl( dst, expected, new );
+}
+
+template</type T/>
+fn nodiscard atomic_compare_exchange_weak( $(T) &mut dst, $(T) &mut expected, $(T) new ) : bool
+{
+	// Casting pointers to byte-types with size equal to pointer should be fine.
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		return
+			unsafe( ust_atomic_compare_exchange_weak_byte64_impl(
+				cast_ref_unsafe</byte64/>( dst ),
+				cast_ref_unsafe</byte64/>( expected ),
+				cast_ref_unsafe</byte64/>( new ) ) );
+	}
+	else
+	{
+		return
+			unsafe( ust_atomic_compare_exchange_weak_byte32_impl(
+				cast_ref_unsafe</byte32/>( dst ),
+				cast_ref_unsafe</byte32/>( expected ),
+				cast_ref_unsafe</byte32/>( new ) ) );
+	}
+}
+
 } // namespace ust
 
 // External implementation functions. Do not use directly!
 
 fn nomangle ust_atomic_read_i32_impl( i32& addr ) : i32;
 fn nomangle ust_atomic_read_u32_impl( u32& addr ) : u32;
+fn nomangle ust_atomic_read_ssize_type_impl( ssize_type& addr ) : ssize_type;
+fn nomangle ust_atomic_read_size_type_impl( size_type& addr ) : size_type;
+fn nomangle ust_atomic_read_byte32_impl( byte32& addr ) : byte32;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_read_byte64_impl( byte64& addr ) : byte64;
 
 fn nomangle ust_atomic_write_i32_impl( i32 &mut addr, i32 x );
 fn nomangle ust_atomic_write_u32_impl( u32 &mut addr, u32 x );
+fn nomangle ust_atomic_write_ssize_type_impl( ssize_type &mut addr, ssize_type x );
+fn nomangle ust_atomic_write_size_type_impl( size_type &mut addr, size_type x );
+fn nomangle ust_atomic_write_byte32_impl( byte32 &mut addr, byte32 x );
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_write_byte64_impl( byte64 &mut addr, byte64 x );
 
 fn nomangle ust_atomic_add_i32_impl( i32 &mut x, i32 y ) : i32;
 fn nomangle ust_atomic_add_u32_impl( u32 &mut x, u32 y ) : u32;
+fn nomangle ust_atomic_add_ssize_type_impl( ssize_type &mut x, ssize_type y ) : ssize_type;
+fn nomangle ust_atomic_add_size_type_impl( size_type &mut x, size_type y ) : size_type;
 
 fn nomangle ust_atomic_compare_exchange_strong_i32_impl( i32 &mut dst, i32 &mut expected, i32 new ) : bool;
 fn nomangle ust_atomic_compare_exchange_strong_u32_impl( u32 &mut dst, u32 &mut expected, u32 new ) : bool;
+fn nomangle ust_atomic_compare_exchange_strong_ssize_type_impl( ssize_type &mut dst, ssize_type &mut expected, ssize_type new ) : bool;
+fn nomangle ust_atomic_compare_exchange_strong_size_type_impl( size_type &mut dst, size_type &mut expected, size_type new ) : bool;
+fn nomangle ust_atomic_compare_exchange_strong_byte32_impl( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_compare_exchange_strong_byte64_impl( byte64 &mut dst, byte64 &mut expected, byte64 new ) : bool;
+
 fn nomangle ust_atomic_compare_exchange_weak_i32_impl( i32 &mut dst, i32 &mut expected, i32 new ) : bool;
 fn nomangle ust_atomic_compare_exchange_weak_u32_impl( u32 &mut dst, u32 &mut expected, u32 new ) : bool;
+fn nomangle ust_atomic_compare_exchange_weak_ssize_type_impl( ssize_type &mut dst, ssize_type &mut expected, ssize_type new ) : bool;
+fn nomangle ust_atomic_compare_exchange_weak_size_type_impl( size_type &mut dst, size_type &mut expected, size_type new ) : bool;
+fn nomangle ust_atomic_compare_exchange_weak_byte32_impl( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_compare_exchange_weak_byte64_impl( byte64 &mut dst, byte64 &mut expected, byte64 new ) : bool;
