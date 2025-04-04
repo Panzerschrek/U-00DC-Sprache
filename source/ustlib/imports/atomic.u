@@ -31,6 +31,11 @@ fn atomic_read( byte32& addr ) : byte32
 	return ust_atomic_read_byte32_impl( addr );
 }
 
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_read( byte64& addr ) : byte64
+{
+	return ust_atomic_read_byte64_impl( addr );
+}
+
 fn atomic_write( i32 &mut addr, i32 x )
 {
 	return ust_atomic_write_i32_impl( addr, x );
@@ -54,6 +59,11 @@ fn atomic_write( size_type &mut addr, size_type x )
 fn atomic_write( byte32 &mut addr, byte32 x )
 {
 	return ust_atomic_write_byte32_impl( addr, x );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_write( byte64 &mut addr, byte64 x )
+{
+	return ust_atomic_write_byte64_impl( addr, x );
 }
 
 // Functions returns old value of 'x'.
@@ -129,12 +139,14 @@ fn nomangle ust_atomic_read_u32_impl( u32& addr ) : u32;
 fn nomangle ust_atomic_read_ssize_type_impl( ssize_type& addr ) : ssize_type;
 fn nomangle ust_atomic_read_size_type_impl( size_type& addr ) : size_type;
 fn nomangle ust_atomic_read_byte32_impl( byte32& addr ) : byte32;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_read_byte64_impl( byte64& addr ) : byte64;
 
 fn nomangle ust_atomic_write_i32_impl( i32 &mut addr, i32 x );
 fn nomangle ust_atomic_write_u32_impl( u32 &mut addr, u32 x );
 fn nomangle ust_atomic_write_ssize_type_impl( ssize_type &mut addr, ssize_type x );
 fn nomangle ust_atomic_write_size_type_impl( size_type &mut addr, size_type x );
 fn nomangle ust_atomic_write_byte32_impl( byte32 &mut addr, byte32 x );
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_write_byte64_impl( byte64 &mut addr, byte64 x );
 
 fn nomangle ust_atomic_add_i32_impl( i32 &mut x, i32 y ) : i32;
 fn nomangle ust_atomic_add_u32_impl( u32 &mut x, u32 y ) : u32;
