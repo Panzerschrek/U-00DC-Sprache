@@ -36,6 +36,31 @@ fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_read( byte64& addr ) 
 	return ust_atomic_read_byte64_impl( addr );
 }
 
+template</type T/>
+fn atomic_read( $(T)& addr ) : $(T)
+{
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		unsafe
+		{
+			// Cast reference to pointer to reference to byte type and read byte type value - it's fine.
+			var byte64 res= ust_atomic_read_byte64_impl( cast_ref_unsafe</ byte64 />( addr ) );
+			// Cast reference to byte type to reference to pointer type and read it - this should be fine too.
+			return cast_ref_unsafe</ $(T) />(res);
+		}
+	}
+	else
+	{
+	unsafe
+		{
+			// Cast reference to pointer to reference to byte type and read byte type value - it's fine.
+			var byte32 res= ust_atomic_read_byte32_impl( cast_ref_unsafe</ byte32 />( addr ) );
+			// Cast reference to byte type to reference to pointer type and read it - this should be fine too.
+			return cast_ref_unsafe</ $(T) />(res);
+		}
+	}
+}
+
 fn atomic_write( i32 &mut addr, i32 x )
 {
 	return ust_atomic_write_i32_impl( addr, x );
@@ -64,6 +89,21 @@ fn atomic_write( byte32 &mut addr, byte32 x )
 fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_write( byte64 &mut addr, byte64 x )
 {
 	return ust_atomic_write_byte64_impl( addr, x );
+}
+
+template</type T/>
+fn atomic_write( $(T) &mut addr, $(T) x )
+{
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		// Cast reference to pointer type to reference to byte type. It should be fine both times.
+		unsafe( ust_atomic_write_byte64_impl( cast_ref_unsafe</byte64/>( addr ), cast_ref_unsafe</byte64/>(x) ) );
+	}
+	else
+	{
+		// Cast reference to pointer type to reference to byte type. It should be fine both times.
+		unsafe( ust_atomic_write_byte32_impl( cast_ref_unsafe</byte32/>( addr ), cast_ref_unsafe</byte32/>(x) ) );
+	}
 }
 
 // Functions returns old value of 'x'.

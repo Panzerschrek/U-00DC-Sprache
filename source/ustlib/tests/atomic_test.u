@@ -108,6 +108,14 @@ fn nomangle main() : i32
 		ust::atomic_write( b, byte64(33000000000000u64) );
 		halt if( ust::atomic_read( b ) != byte64(33000000000000u64) );
 	}
+	{
+		var char16 mut c= zero_init, mut d= zero_init;
+		var $(char16) mut c_ptr= $<(c), mut d_ptr= $<(d);
+
+		halt if( ust::atomic_read( c_ptr ) != $<(c) );
+		ust::atomic_write( c_ptr, d_ptr );
+		halt if( ust::atomic_read( c_ptr ) != $<(d) );
+	}
 
 	return 0;
 }
