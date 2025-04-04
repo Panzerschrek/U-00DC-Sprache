@@ -5,6 +5,8 @@ namespace ust
 // Atomic operations for i32 and u32 supported on all platforms.
 // There are no atomic operations for i64 and u64, since not all platforms support them.
 // But operations on ssize_type and size_type are possible, which are 64-bit on 64-bit platforms.
+// Operations on raw pointer types are available on all platforms.
+// Operations on "byte64" are available only on 64-bit platforms.
 
 fn atomic_read( i32& addr ) : i32
 {
