@@ -51,7 +51,7 @@ fn atomic_read( $(T)& addr ) : $(T)
 	}
 	else
 	{
-	unsafe
+		unsafe
 		{
 			// Cast reference to pointer to reference to byte type and read byte type value - it's fine.
 			var byte32 res= ust_atomic_read_byte32_impl( cast_ref_unsafe</ byte32 />( addr ) );
@@ -233,7 +233,6 @@ fn nodiscard atomic_compare_exchange_weak( $(T) &mut dst, $(T) &mut expected, $(
 				cast_ref_unsafe</byte32/>( new ) ) );
 	}
 }
-
 
 } // namespace ust
 
