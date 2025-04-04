@@ -95,6 +95,12 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read(x) != 521s );
 		halt if( ust::atomic_read(y) != 521s );
 	}
+	{
+		var byte32 mut b(123);
+		halt if( ust::atomic_read( b ) != byte32(123) );
+		ust::atomic_write( b, byte32(54) );
+		halt if( ust::atomic_read( b ) != byte32(54) );
+	}
 
 	return 0;
 }

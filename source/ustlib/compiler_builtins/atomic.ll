@@ -14,6 +14,13 @@ define linkonce_odr hidden i32 @ust_atomic_read_u32_impl( i32* %addr ) unnamed_a
 	ret i32 %1
 }
 
+$ust_atomic_read_byte32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_read_byte32_impl( i32* %addr ) unnamed_addr comdat
+{
+	%1= load atomic volatile i32, i32* %addr seq_cst, align 4
+	ret i32 %1
+}
+
 $ust_atomic_write_i32_impl = comdat any
 define linkonce_odr hidden void @ust_atomic_write_i32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
 {
@@ -23,6 +30,13 @@ define linkonce_odr hidden void @ust_atomic_write_i32_impl( i32* %addr, i32 %x )
 
 $ust_atomic_write_u32_impl = comdat any
 define linkonce_odr hidden void @ust_atomic_write_u32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
+{
+	store atomic volatile i32 %x, i32* %addr seq_cst, align 4
+	ret void
+}
+
+$ust_atomic_write_byte32_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_byte32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
 {
 	store atomic volatile i32 %x, i32* %addr seq_cst, align 4
 	ret void
