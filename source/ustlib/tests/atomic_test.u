@@ -72,6 +72,18 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read(y) != 521u );
 	}
 	{
+		var byte32 mut x= byte32(14), mut y= byte32(14);
+		halt if( ust::atomic_compare_exchange_strong( x, y, byte32(85) ) != true );
+		halt if( ust::atomic_read(x) != byte32(85) );
+		halt if( ust::atomic_read(y) != byte32(14) );
+	}
+	{
+		var byte32 mut x= byte32(521), mut y= byte32(66);
+		halt if( ust::atomic_compare_exchange_strong( x, y, byte32(55524) ) != false );
+		halt if( ust::atomic_read(x) != byte32(521) );
+		halt if( ust::atomic_read(y) != byte32(521) );
+	}
+	{
 		var ssize_type mut x(14), mut y(14);
 		halt if( ust::atomic_compare_exchange_strong( x, y, ssize_type(85) ) != true );
 		halt if( ust::atomic_read(x) != ssize_type(85) );

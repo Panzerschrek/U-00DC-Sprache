@@ -150,6 +150,11 @@ fn nodiscard atomic_compare_exchange_strong( size_type &mut dst, size_type &mut 
 	return ust_atomic_compare_exchange_strong_size_type_impl( dst, expected, new );
 }
 
+fn nodiscard atomic_compare_exchange_strong( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool
+{
+	return ust_atomic_compare_exchange_strong_byte32_impl( dst, expected, new );
+}
+
 fn nodiscard atomic_compare_exchange_weak( i32 &mut dst, i32 &mut expected, i32 new ) : bool
 {
 	return ust_atomic_compare_exchange_weak_i32_impl( dst, expected, new );
@@ -168,6 +173,11 @@ fn nodiscard atomic_compare_exchange_weak( ssize_type &mut dst, ssize_type &mut 
 fn nodiscard atomic_compare_exchange_weak( size_type &mut dst, size_type &mut expected, size_type new ) : bool
 {
 	return ust_atomic_compare_exchange_weak_size_type_impl( dst, expected, new );
+}
+
+fn nodiscard atomic_compare_exchange_weak( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool
+{
+	return ust_atomic_compare_exchange_weak_byte32_impl( dst, expected, new );
 }
 
 } // namespace ust
@@ -197,8 +207,10 @@ fn nomangle ust_atomic_compare_exchange_strong_i32_impl( i32 &mut dst, i32 &mut 
 fn nomangle ust_atomic_compare_exchange_strong_u32_impl( u32 &mut dst, u32 &mut expected, u32 new ) : bool;
 fn nomangle ust_atomic_compare_exchange_strong_ssize_type_impl( ssize_type &mut dst, ssize_type &mut expected, ssize_type new ) : bool;
 fn nomangle ust_atomic_compare_exchange_strong_size_type_impl( size_type &mut dst, size_type &mut expected, size_type new ) : bool;
+fn nomangle ust_atomic_compare_exchange_strong_byte32_impl( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool;
 
 fn nomangle ust_atomic_compare_exchange_weak_i32_impl( i32 &mut dst, i32 &mut expected, i32 new ) : bool;
 fn nomangle ust_atomic_compare_exchange_weak_u32_impl( u32 &mut dst, u32 &mut expected, u32 new ) : bool;
 fn nomangle ust_atomic_compare_exchange_weak_ssize_type_impl( ssize_type &mut dst, ssize_type &mut expected, ssize_type new ) : bool;
 fn nomangle ust_atomic_compare_exchange_weak_size_type_impl( size_type &mut dst, size_type &mut expected, size_type new ) : bool;
+fn nomangle ust_atomic_compare_exchange_weak_byte32_impl( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool;
