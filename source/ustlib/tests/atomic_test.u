@@ -122,6 +122,20 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read(y) != 521s );
 	}
 	{
+		var i32 mut x= 0, mut y= 0;
+		var $(i32) mut ptr_a= $<(x), mut ptr_b= $<(x), mut ptr_c= $<(y);
+		halt if( ust::atomic_compare_exchange_strong( ptr_a, ptr_b, ptr_c ) != true );
+		halt if( ust::atomic_read(ptr_a) != $<(y) );
+		halt if( ust::atomic_read(ptr_b) != $<(x) );
+	}
+	{
+		var i32 mut x= 0, mut y= 0, mut z= 0;
+		var $(i32) mut ptr_a= $<(x), mut ptr_b= $<(y), mut ptr_c= $<(z);
+		halt if( ust::atomic_compare_exchange_strong( ptr_a, ptr_b, ptr_c ) != false );
+		halt if( ust::atomic_read(ptr_a) != $<(x) );
+		halt if( ust::atomic_read(ptr_b) != $<(x) );
+	}
+	{
 		var byte32 mut b(123);
 		halt if( ust::atomic_read( b ) != byte32(123) );
 		ust::atomic_write( b, byte32(54) );

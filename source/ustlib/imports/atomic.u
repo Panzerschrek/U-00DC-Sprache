@@ -160,6 +160,28 @@ fn nodiscard enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_compare_exc
 	return ust_atomic_compare_exchange_strong_byte64_impl( dst, expected, new );
 }
 
+template</type T/>
+fn nodiscard atomic_compare_exchange_strong( $(T) &mut dst, $(T) &mut expected, $(T) new ) : bool
+{
+	// Casting pointers to byte-types with size equal to pointer should be fine.
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		return
+			unsafe( ust_atomic_compare_exchange_strong_byte64_impl(
+				cast_ref_unsafe</byte64/>( dst ),
+				cast_ref_unsafe</byte64/>( expected ),
+				cast_ref_unsafe</byte64/>( new ) ) );
+	}
+	else
+	{
+		return
+			unsafe( ust_atomic_compare_exchange_strong_byte32_impl(
+				cast_ref_unsafe</byte32/>( dst ),
+				cast_ref_unsafe</byte32/>( expected ),
+				cast_ref_unsafe</byte32/>( new ) ) );
+	}
+}
+
 fn nodiscard atomic_compare_exchange_weak( i32 &mut dst, i32 &mut expected, i32 new ) : bool
 {
 	return ust_atomic_compare_exchange_weak_i32_impl( dst, expected, new );
@@ -189,6 +211,29 @@ fn nodiscard enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_compare_exc
 {
 	return ust_atomic_compare_exchange_weak_byte64_impl( dst, expected, new );
 }
+
+template</type T/>
+fn nodiscard atomic_compare_exchange_weak( $(T) &mut dst, $(T) &mut expected, $(T) new ) : bool
+{
+	// Casting pointers to byte-types with size equal to pointer should be fine.
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		return
+			unsafe( ust_atomic_compare_exchange_weak_byte64_impl(
+				cast_ref_unsafe</byte64/>( dst ),
+				cast_ref_unsafe</byte64/>( expected ),
+				cast_ref_unsafe</byte64/>( new ) ) );
+	}
+	else
+	{
+		return
+			unsafe( ust_atomic_compare_exchange_weak_byte32_impl(
+				cast_ref_unsafe</byte32/>( dst ),
+				cast_ref_unsafe</byte32/>( expected ),
+				cast_ref_unsafe</byte32/>( new ) ) );
+	}
+}
+
 
 } // namespace ust
 
