@@ -19,7 +19,7 @@ fn GetHelpMessage() : ust::string_view8
 auto constexpr g_help_message=
 	"Bürokratie - the Ü build system\n" +
 	"\n" +
-	"USAGE: BuildSystem [command] [options]\n" +
+	"USAGE: u_..build_system [command] [options]\n" +
 	"\n" +
 	"COMMANDS:\n" +
 	"  build                              - perform the build\n" +
