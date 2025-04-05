@@ -405,7 +405,7 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 					const ClassPtr parent_class= type_name->GetClassType();
 					if( parent_class == nullptr )
 					{
-						REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc, type_name );
+						REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc, *type_name );
 						continue;
 					}
 
@@ -414,7 +414,7 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 						duplicated= duplicated || parent.class_ == parent_class;
 					if( duplicated )
 					{
-						REPORT_ERROR( DuplicatedParentClass, class_parent_namespace.GetErrors(), class_declaration.src_loc, type_name );
+						REPORT_ERROR( DuplicatedParentClass, class_parent_namespace.GetErrors(), class_declaration.src_loc, *type_name );
 						continue;
 					}
 
@@ -458,14 +458,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	{
 		if( !EnsureTypeComplete( parent.class_ ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.src_loc, parent.class_ );
+			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.src_loc, Type(parent.class_) );
 			return;
 		}
 
 		const auto parent_kind= parent.class_->kind;
 		if( !( parent_kind == Class::Kind::Abstract || parent_kind == Class::Kind::Interface || parent_kind == Class::Kind::PolymorphNonFinal ) )
 		{
-			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc, parent.class_ );
+			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc, Type(parent.class_) );
 			return;
 		}
 
@@ -473,7 +473,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		{
 			if( the_class.base_class != nullptr )
 			{
-				REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.src_loc, parent.class_ );
+				REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.src_loc, Type(parent.class_) );
 				return;
 			}
 			the_class.base_class= parent.class_;
@@ -1298,7 +1298,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 			if( fundamental_type == nullptr || !IsInteger( fundamental_type->fundamental_type ) )
 			{
 				// SPRACHE_TODO - maybe allow inheritance of enums?
-				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.src_loc, "any integer type", type );
+				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), enum_decl.src_loc, "any integer type", *type );
 			}
 			else
 				enum_->underlying_type= *fundamental_type;

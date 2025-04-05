@@ -618,7 +618,7 @@ void CodeBuilder::TryCallCopyConstructor(
 
 	if( !class_.is_copy_constructible )
 	{
-		REPORT_ERROR( CopyConstructValueOfNoncopyableType, errors_container, src_loc, class_type );
+		REPORT_ERROR( CopyConstructValueOfNoncopyableType, errors_container, src_loc, Type(class_type) );
 		return;
 	}
 

@@ -607,11 +607,11 @@ Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionCon
 
 	if( !EnsureTypeComplete( *type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_initialization.src_loc, type );
+		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), variable_initialization.src_loc, *type );
 		return ErrorValue();
 	}
 	else if( type->IsAbstract() )
-		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), variable_initialization.src_loc, type );
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope.GetErrors(), variable_initialization.src_loc, *type );
 
 	const VariableMutPtr variable=
 		Variable::Create(
