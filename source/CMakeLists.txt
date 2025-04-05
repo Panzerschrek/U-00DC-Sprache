@@ -164,7 +164,7 @@ if(MSVC)
 	add_link_options("/STACK:33554432")
 
 else()
-	add_compile_options( -Werror -Wall -Wextra -Wconversion )
+	add_compile_options( -Werror -Wall -Wextra -Wconversion -Wpedantic )
 	add_compile_options( -fvisibility=hidden -fvisibility-inlines-hidden )
 	add_compile_options( -fdata-sections -ffunction-sections ) # simplify later gc-sections.
 
