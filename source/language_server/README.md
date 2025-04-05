@@ -2,7 +2,7 @@
 
 This is an implementation of the [Language Server Protocol](https://en.wikipedia.org/wiki/Language_Server_Protocol) for Ü.
 
-_LanguageServer_ executable reads messages via _stdin_ and outputs messages via _stdout_.
+The language server executable reads messages via _stdin_ and outputs messages via _stdout_.
 For now this is the only way to perform communications with it (no things like sockets or pipes).
 
 

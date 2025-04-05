@@ -19,7 +19,7 @@ Basic usage is to provide one or more input files and specify output file path, 
 
 .. code-block:: sh
 
-   Compiler source.u -o source.o
+   u.._compiler source.u -o source.o
 
 Default input file type is Ü source file, default output file type is native object file.
 
@@ -130,5 +130,5 @@ It's used while producing executable and shared library outputs.
 *********************************
 
 Some other command-line options are available, which are declared by the LLVM library used for Ü compiler.
-Run ``Compiler --help`` for more information.
+Run ``u.._compiler --help`` for more information.
 Available options may depend on compiler build configuration and LLVM library version.

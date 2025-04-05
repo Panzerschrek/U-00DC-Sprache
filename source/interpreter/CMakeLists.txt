@@ -21,7 +21,7 @@ add_executable( Interpreter ${SOURCES} ${HEADERS} )
 target_link_libraries( Interpreter CodeBuilderLib CompilersSupportLib ${LLVM_LIBS_FOR_INTERPRETER} )
 
 if( NOT CMAKE_CROSSCOMPILING )
-	install( TARGETS Interpreter )
+	install( PROGRAMS $<TARGET_FILE:Interpreter> TYPE BIN RENAME u.._interpreter${CMAKE_EXECUTABLE_SUFFIX} )
 endif()
 
 if( NOT CMAKE_CROSSCOMPILING )

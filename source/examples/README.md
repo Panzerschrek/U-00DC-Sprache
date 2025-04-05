@@ -12,7 +12,7 @@ Read the documentation to know more about the language.
 Use the build system to build each file, like this:
 
 ```
-BuildSystem build_single some_example.u
+u.._build_system build_single some_example.u
 ```
 
 Different options may be specified, see the build system documentation for more information.
