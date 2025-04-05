@@ -35,7 +35,7 @@ template<class T> void PreprocessArg( const T* const ptr )
 	(void)ptr;
 }
 
-template<class T> std::string PreprocessArg( T* const ptr )
+template<class T> void PreprocessArg( T* const ptr )
 {
 	static_assert( sizeof(T) && false, "Shouldn't preprocess pointer arg in REPORT_ERROR macro!" );
 	(void)ptr;
