@@ -52,7 +52,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		return;
 	}
 
-	// Check if all fields is default-constructible.
+	// Check if all fields are default-constructible.
 	auto mut all_fields_are_default_constructible= true;
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{

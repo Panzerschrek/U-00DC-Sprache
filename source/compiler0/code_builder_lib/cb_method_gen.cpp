@@ -46,7 +46,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 	if( the_class.has_explicit_noncopy_constructors && constructor_variable == nullptr )
 		return;
 
-	// Generate default constructor, if all fields is default constructible.
+	// Generate default constructor, if all fields are default constructible.
 	bool all_fields_are_default_constructible= true;
 
 	for( const ClassFieldPtr& field : the_class.fields_order )
