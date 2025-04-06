@@ -638,28 +638,27 @@ fn CodeBuilder::NamesScopeFillOutOfLineFunction( this, NamesScopePtr& names_scop
 
 		if( !namespace_.empty() )
 		{
-			auto namespace_lock= namespace_.try_lock_imut();
-			auto new_value= namespace_lock.deref().GetThisScopeValue( name_component );
-			if( new_value.empty() )
+			if_var( &new_value : namespace_.try_lock_imut().deref().GetThisScopeValue( name_component ) )
+			{
+				current_value= new_value;
+			}
+			else
 			{
 				REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.src_loc, name_component )
 				return;
 			}
-
-			current_value= new_value.try_deref();
 		}
 		else if( !class_.empty() )
 		{
-			auto class_lock= class_.try_lock_imut();
-			auto namespace_lock= class_lock.deref().members.lock_imut();
-			auto new_value= namespace_lock.deref().GetThisScopeValue( name_component );
-			if( new_value.empty() )
+			if_var( &new_value : class_.try_lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( name_component ) )
+			{
+				current_value= new_value;
+			}
+			else
 			{
 				REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.src_loc, name_component )
 				return;
 			}
-
-			current_value= new_value.try_deref();
 		}
 		else
 		{

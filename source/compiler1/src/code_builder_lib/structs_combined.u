@@ -1815,9 +1815,10 @@ fn NamesScope::ToString( this ) : ust::string8
 						}
 						else if_var( &v_ptr : arg.get</VariablePtr/>() )
 						{
-							auto lock= v_ptr.lock_imut();
-							auto& v= lock.deref();
-							res+= ConstantVariableToString( v.t, v.constexpr_value );
+							with( &v : v_ptr.lock_imut().deref() )
+							{
+								res+= ConstantVariableToString( v.t, v.constexpr_value );
+							}
 						}
 						else if_var( &type_template : arg.get</TypeTemplatePtr/>() )
 						{

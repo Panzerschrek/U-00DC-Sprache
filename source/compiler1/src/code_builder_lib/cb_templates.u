@@ -54,9 +54,10 @@ fn CreateTemplateErrorsContext(
 			}
 			else if_var( &v_ptr : arg.something.get</VariablePtr/>() )
 			{
-				auto lock= v_ptr.lock_imut();
-				auto& v= lock.deref();
-				result.args_description+= ConstantVariableToString( v.t, v.constexpr_value );
+				with( &v : v_ptr.lock_imut().deref() )
+				{
+					result.args_description+= ConstantVariableToString( v.t, v.constexpr_value );
+				}
 			}
 			else if_var( &type_template : arg.something.get</TypeTemplatePtr/>() )
 			{
@@ -1546,13 +1547,13 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			}
 			if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
 			{
-				auto lock= v_ptr.lock_imut();
-				var Variable& v= lock.deref();
-
-				return
-					given_variable.t == v.t &&
-					// LLVM constants are deduplicated, so, comparing pointers should work.
-					given_variable.constexpr_value == v.constexpr_value;
+				with( &v : v_ptr.lock_imut().deref() )
+				{
+					return
+						given_variable.t == v.t &&
+						// LLVM constants are deduplicated, so, comparing pointers should work.
+						given_variable.constexpr_value == v.constexpr_value;
+				}
 			}
 		}
 	}
@@ -1622,13 +1623,13 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 	if_var( &given_variable_ptr : given_arg.get</VariablePtr/>() )
 	{
-		auto given_variable_lock= given_variable_ptr.lock_imut();
-		auto& given_variable= given_variable_lock.deref();
-
-		return
-			given_variable.t == variable_param.t &&
-			// LLVM constants are deduplicated, so, comparing pointers should work.
-			given_variable.constexpr_value == variable_param.constexpr_value;
+		with( &given_variable : given_variable_ptr.lock_imut().deref() )
+		{
+			return
+				given_variable.t == variable_param.t &&
+				// LLVM constants are deduplicated, so, comparing pointers should work.
+				given_variable.constexpr_value == variable_param.constexpr_value;
+		}
 	}
 
 	return false;
@@ -2006,19 +2007,19 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 			}
 			else if_var( &v_ptr : known_template_arg.get</VariablePtr/>() )
 			{
-				auto lock= v_ptr.lock_imut();
-				var Variable& v= lock.deref();
-
-				template_arg.something= VariablePtr(
-					Variable
-					{
-						.t= v.t,
-						.value_type= ValueType::ReferenceImut,
-						.location= Variable::Location::Pointer,
-						.llvm_value= AddGlobalConstantVariable( (param_name + "\0"), v.t.GetLLVMType(), v.constexpr_value ),
-						.constexpr_value= v.constexpr_value,
-						.name= param_name,
-					} );
+				with( &v : v_ptr.lock_imut().deref() )
+				{
+					template_arg.something= VariablePtr(
+						Variable
+						{
+							.t= v.t,
+							.value_type= ValueType::ReferenceImut,
+							.location= Variable::Location::Pointer,
+							.llvm_value= AddGlobalConstantVariable( (param_name + "\0"), v.t.GetLLVMType(), v.constexpr_value ),
+							.constexpr_value= v.constexpr_value,
+							.name= param_name,
+						} );
+				}
 			}
 			else if_var( &type_template : known_template_arg.get</TypeTemplatePtr/>() )
 			{

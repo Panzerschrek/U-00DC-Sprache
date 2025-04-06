@@ -431,11 +431,11 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 	}
 	else if_var( &enum_ptr : t.GetEnumType() )
 	{
-		auto lock= enum_ptr.lock_imut();
-		var Enum& enum_= lock.deref();
-
-		ADD_SIZE_FIELD( "element_count", enum_.elements.size() )
-		ADD_TYPEINFO_FIELD( "underlying_type", enum_.underlying_type )
+		with( &enum_ : enum_ptr.lock_imut().deref() )
+		{
+			ADD_SIZE_FIELD( "element_count", enum_.elements.size() )
+			ADD_TYPEINFO_FIELD( "underlying_type", enum_.underlying_type )
+		}
 	}
 	else { halt; }
 

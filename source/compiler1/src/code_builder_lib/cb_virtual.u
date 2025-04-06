@@ -511,10 +511,8 @@ fn CodeBuilder::BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, C
 fn CodeBuilder::BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr )
 {
 	auto mut virtual_table_initializer= LLVMValueRef::Null;
+	with( &class_ : class_type_ptr.lock_imut().deref() )
 	{
-		auto class_lock= class_type_ptr.lock_imut();
-		auto& class_= class_lock.deref();
-
 		// Build virtual table only for polymorph non-abstract classes.
 		if( !(
 			class_.kind == ClassType::Kind::PolymorphNonFinal ||
@@ -707,20 +705,20 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 		auto next_class_ptr= current_class.parents[ size_type(parent_virtual_table_index) ].class_;
 
-		auto next_class_lock= next_class_ptr.lock_imut();
-		auto& next_class= next_class_lock.deref();
-		var ClassType::VirtualTableEntry& next_virtual_table_entry= next_class.virtual_table[ size_type(index_in_table) ];
-		parent_virtual_table_index= next_virtual_table_entry.parent_virtual_table_index;
-		index_in_table= next_virtual_table_entry.index_in_table;
+		with( &next_class : next_class_ptr.lock_imut().deref() )
+		{
+			var ClassType::VirtualTableEntry& next_virtual_table_entry= next_class.virtual_table[ size_type(index_in_table) ];
+			parent_virtual_table_index= next_virtual_table_entry.parent_virtual_table_index;
+			index_in_table= next_virtual_table_entry.index_in_table;
+		}
 
 		current_class_ptr= next_class_ptr;
 	}
 
 	var u32 mut functions_table_field_number= ~0u;
 	auto mut function_class_virtual_table_type= LLVMTypeRef::Null;
+	with( &current_class : current_class_ptr.lock_imut().deref() )
 	{
-		auto current_class_lock= current_class_ptr.lock_imut();
-		auto& current_class= current_class_lock.deref();
 		functions_table_field_number= ( current_class.parents.empty() ? c_funcs_table_field_number : u32( current_class.parents.size() ) );
 		function_class_virtual_table_type= current_class.virtual_table_llvm_type;
 	}

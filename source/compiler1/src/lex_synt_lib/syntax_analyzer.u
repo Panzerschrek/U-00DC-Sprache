@@ -4390,9 +4390,7 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : Macro::ResultElements
 
 fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>
 {
-	auto macros_lock= macros_.lock_imut();
-	var MacrosByContextMap& macros_by_context= macros_lock.deref();
-	if_var( &macro_map : macros_by_context.find( context ) )
+	if_var( &macro_map : macros_.lock_imut().deref().find( context ) )
 	{
 		if_var( &macro : macro_map.find( name ) )
 		{

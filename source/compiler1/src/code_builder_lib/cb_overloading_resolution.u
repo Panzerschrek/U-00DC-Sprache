@@ -1062,29 +1062,30 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 
 			foreach( &candidate_r_ptr : type_templates )
 			{
-				auto r_lock= candidate_r_ptr.lock_imut();
-				auto& candidate_r= r_lock.deref();
-
-				auto comp= CompareTemplateSpecialization(
-					candidate_l.signature_params[arg_n],
-					candidate_r.signature_params[arg_n] );
-				if( comp == ConversionsCompareResult::Incomparable || comp == ConversionsCompareResult::RightIsBetter )
+				with( &candidate_r : candidate_r_ptr.lock_imut().deref() )
 				{
-					continue label templates_search;
+					auto comp= CompareTemplateSpecialization(
+						candidate_l.signature_params[arg_n],
+						candidate_r.signature_params[arg_n] );
+					if( comp == ConversionsCompareResult::Incomparable || comp == ConversionsCompareResult::RightIsBetter )
+					{
+						continue label templates_search;
+					}
 				}
 			}
 
 			for( auto mut index_r= 0s; index_r < type_templates.size(); ++index_r )
 			{
-				auto r_lock= type_templates[index_r].lock_imut();
-				auto& candidate_r= r_lock.deref();
-				auto comp= CompareTemplateSpecialization(
-					candidate_l.signature_params[arg_n],
-					candidate_r.signature_params[arg_n] );
-
-				if( comp != ConversionsCompareResult::Same )
+				with( &candidate_r : type_templates[index_r].lock_imut().deref() )
 				{
-					best_templates[index_r]= false;
+					auto comp= CompareTemplateSpecialization(
+						candidate_l.signature_params[arg_n],
+						candidate_r.signature_params[arg_n] );
+
+					if( comp != ConversionsCompareResult::Same )
+					{
+						best_templates[index_r]= false;
+					}
 				}
 			}
 		}
