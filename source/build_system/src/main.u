@@ -104,7 +104,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		.build_system_executable_path= ust::path::normalize( MakePathAbsolute( current_executable ) ),
 		.compiler_executable_path= ust::path::normalize(
 			( options.compiler_executable_path.empty()
-				? ust::path::join( exe_directory, "Compiler1" ) // For now use "Compiler1" as compiler default. TODO - allow to tune it.
+				? ust::path::join( exe_directory, "u.._compiler1" ) // For now use "Compiler1" as compiler default. TODO - allow to tune it.
 				: MakePathAbsolute(options.compiler_executable_path) ) ),
 		.ustlib_path= ust::path::normalize(
 			( options.ustlib_path.empty()

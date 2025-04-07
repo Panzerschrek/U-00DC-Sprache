@@ -46,7 +46,7 @@ if( U_BUILD_COMPILER )
 	add_executable( Compiler ${COMPILER_SOURCES} )
 	target_link_libraries( Compiler CodeBuilderLib CodeBuilderLib CompilersCommonLib )
 
-	install( TARGETS Compiler )
+	install( PROGRAMS $<TARGET_FILE:Compiler> TYPE BIN RENAME u.._compiler${CMAKE_EXECUTABLE_SUFFIX} )
 
 endif()
 
