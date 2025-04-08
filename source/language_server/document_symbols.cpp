@@ -43,9 +43,6 @@ Symbols BuildMacrosSymbols(
 			if( macro.src_loc.GetFileIndex() != 0 )
 				continue; // Ignore imported macros.
 
-			if( macro.name == "if_var" || macro.name == "foreach" ) // HACK - ignore built-in macros.
-				continue;
-
 			Symbol symbol;
 			symbol.kind= SymbolKind::Namespace; // There is no kind for macros in LSP.
 			symbol.name= macro.name;
