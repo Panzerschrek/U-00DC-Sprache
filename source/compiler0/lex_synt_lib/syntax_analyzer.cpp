@@ -66,43 +66,43 @@ const std::vector<ExpectedLexem> g_template_arguments_list_control_lexems
 const std::vector< std::pair< Lexem::Type, BinaryOperatorType> > g_operators_by_priority_table[]
 {
 	{
-		{ Lexem::Type::Disjunction, BinaryOperatorType::LazyLogicalOr },
+		{ Lexem::Type::DoublePipe, BinaryOperatorType::LazyLogicalOr },
 	},
 	{
-		{ Lexem::Type::Conjunction, BinaryOperatorType::LazyLogicalAnd },
+		{ Lexem::Type::DoubleAmpersand, BinaryOperatorType::LazyLogicalAnd },
 	},
 	{
-		{ Lexem::Type::Or, BinaryOperatorType::Or },
+		{ Lexem::Type::Pipe, BinaryOperatorType::Or },
 	},
 	{
-		{ Lexem::Type::Xor, BinaryOperatorType::Xor },
+		{ Lexem::Type::Caret, BinaryOperatorType::Xor },
 	},
 	{
-		{ Lexem::Type::And, BinaryOperatorType::And },
+		{ Lexem::Type::Ampersand, BinaryOperatorType::And },
 	},
 	{
-		{ Lexem::Type::CompareEqual, BinaryOperatorType::Equal },
-		{ Lexem::Type::CompareNotEqual, BinaryOperatorType::NotEqual },
+		{ Lexem::Type::DoubleEqual, BinaryOperatorType::Equal },
+		{ Lexem::Type::ExclamationEqual, BinaryOperatorType::NotEqual },
 	},
 	{
-		{ Lexem::Type::CompareLess, BinaryOperatorType::Less },
-		{ Lexem::Type::CompareLessOrEqual, BinaryOperatorType::LessEqual },
-		{ Lexem::Type::CompareGreater, BinaryOperatorType::Greater },
-		{ Lexem::Type::CompareGreaterOrEqual, BinaryOperatorType::GreaterEqual },
+		{ Lexem::Type::Less, BinaryOperatorType::Less },
+		{ Lexem::Type::LessEqual, BinaryOperatorType::LessEqual },
+		{ Lexem::Type::Greater, BinaryOperatorType::Greater },
+		{ Lexem::Type::GreaterEqual, BinaryOperatorType::GreaterEqual },
 	},
 	{
-		{ Lexem::Type::CompareOrder, BinaryOperatorType::CompareOrder },
+		{ Lexem::Type::LessEqualGreater, BinaryOperatorType::CompareOrder },
 	},
 	{
-		{ Lexem::Type::ShiftLeft, BinaryOperatorType::ShiftLeft },
-		{ Lexem::Type::ShiftRight, BinaryOperatorType::ShiftRight },
+		{ Lexem::Type::DoubleLess, BinaryOperatorType::ShiftLeft },
+		{ Lexem::Type::DoubleGreater, BinaryOperatorType::ShiftRight },
 	},
 	{
 		{ Lexem::Type::Plus, BinaryOperatorType::Add },
 		{ Lexem::Type::Minus, BinaryOperatorType::Sub },
 	},
 	{
-		{ Lexem::Type::Star, BinaryOperatorType::Mul },
+		{ Lexem::Type::Asterisk, BinaryOperatorType::Mul },
 		{ Lexem::Type::Slash, BinaryOperatorType::Div },
 		{ Lexem::Type::Percent, BinaryOperatorType::Rem },
 	},
@@ -112,16 +112,16 @@ std::optional<BinaryOperatorType> GetCompoundAssignmentOperator( const Lexem& le
 {
 	switch(lexem.type)
 	{
-		case Lexem::Type::AssignAdd: return BinaryOperatorType::Add;
-		case Lexem::Type::AssignSub: return BinaryOperatorType::Sub;
-		case Lexem::Type::AssignMul: return BinaryOperatorType::Mul;
-		case Lexem::Type::AssignDiv: return BinaryOperatorType::Div;
-		case Lexem::Type::AssignAnd: return BinaryOperatorType::And;
-		case Lexem::Type::AssignRem: return BinaryOperatorType::Rem;
-		case Lexem::Type::AssignOr : return BinaryOperatorType::Or;
-		case Lexem::Type::AssignXor: return BinaryOperatorType::Xor;
-		case Lexem::Type::AssignShiftLeft : return BinaryOperatorType::ShiftLeft;
-		case Lexem::Type::AssignShiftRight: return BinaryOperatorType::ShiftRight;
+		case Lexem::Type::PlusEqual: return BinaryOperatorType::Add;
+		case Lexem::Type::MinusEqual: return BinaryOperatorType::Sub;
+		case Lexem::Type::AsteriskEqual: return BinaryOperatorType::Mul;
+		case Lexem::Type::SlashEqual: return BinaryOperatorType::Div;
+		case Lexem::Type::AmpersandEqual: return BinaryOperatorType::And;
+		case Lexem::Type::PercentEqual: return BinaryOperatorType::Rem;
+		case Lexem::Type::PipeEqual : return BinaryOperatorType::Or;
+		case Lexem::Type::CaretEqual: return BinaryOperatorType::Xor;
+		case Lexem::Type::DoubleLessEqual : return BinaryOperatorType::ShiftLeft;
+		case Lexem::Type::DoubleGreaterEqual: return BinaryOperatorType::ShiftRight;
 
 		default:
 			return std::nullopt;
@@ -481,7 +481,7 @@ void SyntaxAnalyzer::ParseMacro()
 	macro.match_template_elements= ParseMacroMatchBlock();
 
 	ExpectLexem( Lexem::Type::MacroBracketRight );
-	ExpectLexem( Lexem::Type::RightArrow );
+	ExpectLexem( Lexem::Type::MinusGreater );
 
 	// Result body.
 	ExpectLexem( Lexem::Type::MacroBracketLeft );
@@ -1050,7 +1050,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			unary_minus->expression= ParseBinaryOperatorComponent();
 			return std::move(unary_minus);
 		}
-	case Lexem::Type::Not:
+	case Lexem::Type::Exclamation:
 		{
 			auto logical_not= std::make_unique<LogicalNot>( it_->src_loc );
 			NextLexem();
@@ -1058,7 +1058,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			logical_not->expression= ParseBinaryOperatorComponent();
 			return std::move(logical_not);
 		}
-	case Lexem::Type::Tilda:
+	case Lexem::Type::Tilde:
 		{
 			auto bitwise_not= std::make_unique<BitwiseNot>( it_->src_loc );
 			NextLexem();
@@ -1066,7 +1066,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			bitwise_not->expression= ParseBinaryOperatorComponent();
 			return std::move(bitwise_not);
 		}
-	case Lexem::Type::Scope:
+	case Lexem::Type::DoubleColon:
 	case Lexem::Type::CompletionScope:
 			return ComplexNameToExpression( ParseComplexName() );
 	case Lexem::Type::Number:
@@ -1143,9 +1143,9 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			return expr;
 		}
 	case Lexem::Type::SquareBracketLeft:
-	case Lexem::Type::PointerTypeMark:
+	case Lexem::Type::Dollar:
 			return TypeNameToExpression( ParseTypeName() );
-	case Lexem::Type::ReferenceToPointer:
+	case Lexem::Type::DollarLess:
 		{
 			auto reference_to_raw_pointer_operator= std::make_unique<ReferenceToRawPointerOperator>( it_->src_loc );
 			NextLexem();
@@ -1154,7 +1154,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(reference_to_raw_pointer_operator);
 		}
-	case Lexem::Type::PointerToReference:
+	case Lexem::Type::DollarGreater:
 		{
 			auto raw_pointer_to_reference_operator= std::make_unique<RawPointerToReferenceOperator>( it_->src_loc );
 			NextLexem();
@@ -1406,7 +1406,7 @@ FunctionParam SyntaxAnalyzer::ParseFunctionParam()
 	result.reference_modifier= ReferenceModifier::None;
 	result.mutability_modifier= MutabilityModifier::None;
 
-	if( it_->type == Lexem::Type::And )
+	if( it_->type == Lexem::Type::Ampersand )
 	{
 		result.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
@@ -1484,7 +1484,7 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 			result.return_value_inner_references_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 		}
 
-		if( it_->type == Lexem::Type::And )
+		if( it_->type == Lexem::Type::Ampersand )
 		{
 			result.return_value_reference_modifier= ReferenceModifier::Reference;
 			NextLexem();
@@ -1567,13 +1567,13 @@ Lambda SyntaxAnalyzer::ParseLambda()
 		// Non-empty capture list.
 		NextLexem();
 
-		if( it_->type == Lexem::Type::Assignment )
+		if( it_->type == Lexem::Type::Equal )
 		{
 			NextLexem();
 			ExpectLexem( Lexem::Type::SquareBracketRight );
 			result.capture= Lambda::CaptureAllByValue{};
 		}
-		else if( it_->type == Lexem::Type::And && std::next(it_)->type == Lexem::Type::SquareBracketRight )
+		else if( it_->type == Lexem::Type::Ampersand && std::next(it_)->type == Lexem::Type::SquareBracketRight )
 		{
 			NextLexem();
 			ExpectLexem( Lexem::Type::SquareBracketRight );
@@ -1590,7 +1590,7 @@ Lambda SyntaxAnalyzer::ParseLambda()
 				{
 					Lambda::CaptureListElement capture_element;
 
-					if( it_->type == Lexem::Type::And )
+					if( it_->type == Lexem::Type::Ampersand )
 					{
 						capture_element.by_reference= true;
 						NextLexem();
@@ -1614,7 +1614,7 @@ Lambda SyntaxAnalyzer::ParseLambda()
 					else
 						PushErrorMessage();
 
-					if( it_->type == Lexem::Type::Assignment )
+					if( it_->type == Lexem::Type::Equal )
 					{
 						NextLexem();
 						capture_element.expression= ParseExpression();
@@ -1776,7 +1776,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 
 		return std::move(tuple_type);
 	}
-	else if( it_->type == Lexem::Type::PointerTypeMark )
+	else if( it_->type == Lexem::Type::Dollar )
 	{
 		auto raw_pointer_type= std::make_unique<RawPointerType>( it_->src_loc );
 		NextLexem();
@@ -1838,7 +1838,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 			coroutine_type.return_value_inner_references_expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 		}
 
-		if( it_->type == Lexem::Type::And )
+		if( it_->type == Lexem::Type::Ampersand )
 		{
 			NextLexem();
 			coroutine_type.return_value_reference_modifier= ReferenceModifier::Reference;
@@ -1920,7 +1920,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 
 		return std::move(root_namespace_lookup_completion);
 	}
-	else if( it_->type == Lexem::Type::Scope )
+	else if( it_->type == Lexem::Type::DoubleColon )
 	{
 		NextLexem(); // Skip ::
 
@@ -1984,7 +1984,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 
 ComplexName SyntaxAnalyzer::ParseComplexNameTail( ComplexName base )
 {
-	if( it_->type == Lexem::Type::Scope )
+	if( it_->type == Lexem::Type::DoubleColon )
 	{
 		NextLexem(); // Skip ::
 
@@ -2109,7 +2109,7 @@ Initializer SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initia
 Initializer SyntaxAnalyzer::ParseVariableInitializer()
 {
 	Initializer initializer;
-	if( it_->type == Lexem::Type::Assignment )
+	if( it_->type == Lexem::Type::Equal )
 	{
 		NextLexem();
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::zero_init_ )
@@ -2253,7 +2253,7 @@ VariablesDeclaration SyntaxAnalyzer::ParseVariablesDeclaration()
 		decl.variables.emplace_back();
 		VariablesDeclaration::VariableEntry& variable_entry= decl.variables.back();
 
-		if( it_->type == Lexem::Type::And )
+		if( it_->type == Lexem::Type::Ampersand )
 		{
 			variable_entry.reference_modifier= ReferenceModifier::Reference;
 			NextLexem();
@@ -2370,7 +2370,7 @@ AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 	AutoVariableDeclaration result( it_->src_loc );
 	NextLexem();
 
-	if( it_->type == Lexem::Type::And )
+	if( it_->type == Lexem::Type::Ampersand )
 	{
 		result.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
@@ -2408,7 +2408,7 @@ AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 	result.src_loc= it_->src_loc;
 	NextLexem();
 
-	ExpectLexem( Lexem::Type::Assignment );
+	ExpectLexem( Lexem::Type::Equal );
 
 	result.initializer_expression = ParseExpression();
 
@@ -2428,7 +2428,7 @@ DecomposeDeclaration SyntaxAnalyzer::ParseDecomposeDeclaration()
 
 	DecomposeDeclaration result( src_loc, std::move( root_component ) );
 
-	ExpectLexem( Lexem::Type::Assignment );
+	ExpectLexem( Lexem::Type::Equal );
 
 	result.initializer_expression= ParseExpression();
 	ExpectSemicolon();
@@ -2710,7 +2710,7 @@ RangeForOperator SyntaxAnalyzer::ParseRangeForOperator()
 
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	if( it_->type == Lexem::Type::And )
+	if( it_->type == Lexem::Type::Ampersand )
 	{
 		result.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
@@ -2782,7 +2782,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 	CStyleForOperator::IterationPartElementsList::Builder iteration_part_elements_list_builder;
 	while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
 	{
-		if( it_->type == Lexem::Type::Increment )
+		if( it_->type == Lexem::Type::DoublePlus )
 		{
 			IncrementOperator increment_operator( it_->src_loc );
 			NextLexem();
@@ -2790,7 +2790,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 
 			iteration_part_elements_list_builder.Append( std::move(increment_operator) );
 		}
-		else if( it_->type == Lexem::Type::Decrement )
+		else if( it_->type == Lexem::Type::DoubleMinus )
 		{
 			DecrementOperator decrement_operator( it_->src_loc );
 			NextLexem();
@@ -2802,7 +2802,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 		{
 			Expression expression_l= ParseExpression();
 
-			if( it_->type == Lexem::Type::Assignment )
+			if( it_->type == Lexem::Type::Equal )
 			{
 				AssignmentOperator assignment_operator( it_->src_loc );
 				NextLexem();
@@ -2889,7 +2889,7 @@ WithOperator SyntaxAnalyzer::ParseWithOperator()
 
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	if( it_->type == Lexem::Type::And )
+	if( it_->type == Lexem::Type::Ampersand )
 	{
 		result.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
@@ -2960,7 +2960,7 @@ IfCoroAdvanceOperator SyntaxAnalyzer::ParseIfCoroAdvanceOperator()
 
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	if( it_->type == Lexem::Type::And )
+	if( it_->type == Lexem::Type::Ampersand )
 	{
 		result.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
@@ -3009,7 +3009,7 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 
 	while( it_->type != Lexem::Type::BraceRight && NotEndOfFile() )
 	{
-		const auto values_end_lexem= Lexem::Type::RightArrow;
+		const auto values_end_lexem= Lexem::Type::MinusGreater;
 
 		SwitchOperator::CaseValues case_values;
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::default_ )
@@ -3289,7 +3289,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 			block.label= TryParseLabel();
 			result_builder.Append( std::move(block) );
 		}
-		else if( it_->type == Lexem::Type::Increment )
+		else if( it_->type == Lexem::Type::DoublePlus )
 		{
 			IncrementOperator op( it_->src_loc );
 			NextLexem();
@@ -3299,7 +3299,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 
 			ExpectSemicolon();
 		}
-		else if( it_->type == Lexem::Type::Decrement )
+		else if( it_->type == Lexem::Type::DoubleMinus )
 		{
 			DecrementOperator op( it_->src_loc );
 			NextLexem();
@@ -3322,7 +3322,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElementsImpl( const Lexem::Type end_
 
 			Expression l_expression= ParseExpression();
 
-			if( it_->type == Lexem::Type::Assignment )
+			if( it_->type == Lexem::Type::Equal )
 			{
 				AssignmentOperator assignment_operator( it_->src_loc );
 				NextLexem();
@@ -3577,7 +3577,7 @@ TypeAlias SyntaxAnalyzer::ParseTypeAliasBody()
 
 	TypeAlias result( it_->src_loc );
 
-	ExpectLexem( Lexem::Type::Assignment );
+	ExpectLexem( Lexem::Type::Equal );
 
 	result.value= ParseTypeName();
 
@@ -3654,7 +3654,7 @@ Function SyntaxAnalyzer::ParseFunction()
 	}
 
 	// Parse complex name before function name - such "fn MyStruct::A::B"
-	if( it_->type == Lexem::Type::Scope )
+	if( it_->type == Lexem::Type::DoubleColon )
 	{
 		result.name.push_back(Function::NameComponent{});
 		NextLexem();
@@ -3696,7 +3696,7 @@ Function SyntaxAnalyzer::ParseFunction()
 			result.src_loc= it_->src_loc;
 			NextLexem();
 
-			if( it_->type == Lexem::Type::Scope )
+			if( it_->type == Lexem::Type::DoubleColon )
 			{
 				NextLexem();
 
@@ -3743,33 +3743,33 @@ Function SyntaxAnalyzer::ParseFunction()
 		OverloadedOperator overloaded_operator= OverloadedOperator::None;
 		switch( it_->type )
 		{
-		case Lexem::Type::Plus   : overloaded_operator= OverloadedOperator::Add; break;
-		case Lexem::Type::Minus  : overloaded_operator= OverloadedOperator::Sub; break;
-		case Lexem::Type::Star   : overloaded_operator= OverloadedOperator::Mul; break;
-		case Lexem::Type::Slash  : overloaded_operator= OverloadedOperator::Div; break;
+		case Lexem::Type::Plus: overloaded_operator= OverloadedOperator::Add; break;
+		case Lexem::Type::Minus: overloaded_operator= OverloadedOperator::Sub; break;
+		case Lexem::Type::Asterisk: overloaded_operator= OverloadedOperator::Mul; break;
+		case Lexem::Type::Slash: overloaded_operator= OverloadedOperator::Div; break;
 		case Lexem::Type::Percent: overloaded_operator= OverloadedOperator::Rem; break;
-		case Lexem::Type::CompareEqual: overloaded_operator= OverloadedOperator::CompareEqual; break;
-		case Lexem::Type::CompareOrder: overloaded_operator= OverloadedOperator::CompareOrder; break;
-		case Lexem::Type::And: overloaded_operator= OverloadedOperator::And; break;
-		case Lexem::Type::Or : overloaded_operator= OverloadedOperator::Or ; break;
-		case Lexem::Type::Xor: overloaded_operator= OverloadedOperator::Xor; break;
-		case Lexem::Type::ShiftLeft : overloaded_operator= OverloadedOperator::ShiftLeft ; break;
-		case Lexem::Type::ShiftRight: overloaded_operator= OverloadedOperator::ShiftRight; break;
-		case Lexem::Type::AssignAdd: overloaded_operator= OverloadedOperator::AssignAdd; break;
-		case Lexem::Type::AssignSub: overloaded_operator= OverloadedOperator::AssignSub; break;
-		case Lexem::Type::AssignMul: overloaded_operator= OverloadedOperator::AssignMul; break;
-		case Lexem::Type::AssignDiv: overloaded_operator= OverloadedOperator::AssignDiv; break;
-		case Lexem::Type::AssignRem: overloaded_operator= OverloadedOperator::AssignRem; break;
-		case Lexem::Type::AssignAnd: overloaded_operator= OverloadedOperator::AssignAnd; break;
-		case Lexem::Type::AssignOr : overloaded_operator= OverloadedOperator::AssignOr ; break;
-		case Lexem::Type::AssignXor: overloaded_operator= OverloadedOperator::AssignXor; break;
-		case Lexem::Type::AssignShiftLeft : overloaded_operator= OverloadedOperator::AssignShiftLeft ; break;
-		case Lexem::Type::AssignShiftRight: overloaded_operator= OverloadedOperator::AssignShiftRight; break;
-		case Lexem::Type::Not  : overloaded_operator= OverloadedOperator::LogicalNot; break;
-		case Lexem::Type::Tilda: overloaded_operator= OverloadedOperator::BitwiseNot; break;
-		case Lexem::Type::Assignment: overloaded_operator= OverloadedOperator::Assign; break;
-		case Lexem::Type::Increment: overloaded_operator= OverloadedOperator::Increment; break;
-		case Lexem::Type::Decrement: overloaded_operator= OverloadedOperator::Decrement; break;
+		case Lexem::Type::DoubleEqual: overloaded_operator= OverloadedOperator::CompareEqual; break;
+		case Lexem::Type::LessEqualGreater: overloaded_operator= OverloadedOperator::CompareOrder; break;
+		case Lexem::Type::Ampersand: overloaded_operator= OverloadedOperator::And; break;
+		case Lexem::Type::Pipe: overloaded_operator= OverloadedOperator::Or; break;
+		case Lexem::Type::Caret: overloaded_operator= OverloadedOperator::Xor; break;
+		case Lexem::Type::DoubleLess: overloaded_operator= OverloadedOperator::ShiftLeft; break;
+		case Lexem::Type::DoubleGreater: overloaded_operator= OverloadedOperator::ShiftRight; break;
+		case Lexem::Type::PlusEqual: overloaded_operator= OverloadedOperator::AssignAdd; break;
+		case Lexem::Type::MinusEqual: overloaded_operator= OverloadedOperator::AssignSub; break;
+		case Lexem::Type::AsteriskEqual: overloaded_operator= OverloadedOperator::AssignMul; break;
+		case Lexem::Type::SlashEqual: overloaded_operator= OverloadedOperator::AssignDiv; break;
+		case Lexem::Type::PercentEqual: overloaded_operator= OverloadedOperator::AssignRem; break;
+		case Lexem::Type::AmpersandEqual: overloaded_operator= OverloadedOperator::AssignAnd; break;
+		case Lexem::Type::PipeEqual: overloaded_operator= OverloadedOperator::AssignOr; break;
+		case Lexem::Type::CaretEqual: overloaded_operator= OverloadedOperator::AssignXor; break;
+		case Lexem::Type::DoubleLessEqual: overloaded_operator= OverloadedOperator::AssignShiftLeft; break;
+		case Lexem::Type::DoubleGreaterEqual: overloaded_operator= OverloadedOperator::AssignShiftRight; break;
+		case Lexem::Type::Exclamation: overloaded_operator= OverloadedOperator::LogicalNot; break;
+		case Lexem::Type::Tilde: overloaded_operator= OverloadedOperator::BitwiseNot; break;
+		case Lexem::Type::Equal: overloaded_operator= OverloadedOperator::Assign; break;
+		case Lexem::Type::DoublePlus: overloaded_operator= OverloadedOperator::Increment; break;
+		case Lexem::Type::DoubleMinus: overloaded_operator= OverloadedOperator::Decrement; break;
 
 		case Lexem::Type::SquareBracketLeft:
 			NextLexem();
@@ -3899,7 +3899,7 @@ Function SyntaxAnalyzer::ParseFunction()
 		// function prototype
 		NextLexem();
 	}
-	else if( it_->type == Lexem::Type::Assignment )
+	else if( it_->type == Lexem::Type::Equal )
 	{
 		// =default;
 
@@ -4118,7 +4118,7 @@ ClassElementsList SyntaxAnalyzer::ParseClassBodyElementsImpl( const Lexem::Type 
 				field.inner_reference_tags_expression= ParseExpressionInBrackets();
 			}
 
-			if( it_->type == Lexem::Type::And )
+			if( it_->type == Lexem::Type::Ampersand )
 			{
 				NextLexem();
 				field.reference_modifier= ReferenceModifier::Reference;
@@ -4358,7 +4358,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			signature_params.emplace_back();
 			signature_params.back().name= ParseExpression();
 
-			if( it_->type == Lexem::Type::Assignment )
+			if( it_->type == Lexem::Type::Equal )
 			{
 				NextLexem();
 				signature_params.back().default_value= ParseExpression();

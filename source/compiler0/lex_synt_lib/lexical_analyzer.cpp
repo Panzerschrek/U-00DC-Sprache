@@ -34,25 +34,25 @@ const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ ";", Lexem::Type::Semicolon },
 		{ "?", Lexem::Type::Question },
 
-		{ "=", Lexem::Type::Assignment },
+		{ "=", Lexem::Type::Equal },
 		{ "+", Lexem::Type::Plus },
 		{ "-", Lexem::Type::Minus },
-		{ "*", Lexem::Type::Star },
+		{ "*", Lexem::Type::Asterisk },
 		{ "/", Lexem::Type::Slash },
 		{ "%", Lexem::Type::Percent },
 
-		{ "<", Lexem::Type::CompareLess },
-		{ ">", Lexem::Type::CompareGreater },
+		{ "<", Lexem::Type::Less },
+		{ ">", Lexem::Type::Greater },
 
-		{ "&", Lexem::Type::And },
-		{ "|", Lexem::Type::Or },
-		{ "^", Lexem::Type::Xor },
-		{ "~", Lexem::Type::Tilda },
-		{ "!", Lexem::Type::Not },
+		{ "&", Lexem::Type::Ampersand },
+		{ "|", Lexem::Type::Pipe },
+		{ "^", Lexem::Type::Caret },
+		{ "~", Lexem::Type::Tilde },
+		{ "!", Lexem::Type::Exclamation },
 
 		{ "@", Lexem::Type::At },
 
-		{ "$", Lexem::Type::PointerTypeMark },
+		{ "$", Lexem::Type::Dollar },
 	},
 	FixedLexemsMap
 	{ // Two symbol lexems.
@@ -62,41 +62,41 @@ const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 		{ "<?", Lexem::Type::MacroBracketLeft  },
 		{ "?>", Lexem::Type::MacroBracketRight },
 
-		{ "::", Lexem::Type::Scope },
+		{ "::", Lexem::Type::DoubleColon },
 
-		{ "++", Lexem::Type::Increment },
-		{ "--", Lexem::Type::Decrement },
+		{ "++", Lexem::Type::DoublePlus },
+		{ "--", Lexem::Type::DoubleMinus },
 
-		{ "==", Lexem::Type::CompareEqual },
-		{ "!=", Lexem::Type::CompareNotEqual },
-		{ "<=", Lexem::Type::CompareLessOrEqual },
-		{ ">=", Lexem::Type::CompareGreaterOrEqual },
+		{ "==", Lexem::Type::DoubleEqual },
+		{ "!=", Lexem::Type::ExclamationEqual },
+		{ "<=", Lexem::Type::LessEqual },
+		{ ">=", Lexem::Type::GreaterEqual },
 
-		{ "&&", Lexem::Type::Conjunction },
-		{ "||", Lexem::Type::Disjunction },
+		{ "&&", Lexem::Type::DoubleAmpersand },
+		{ "||", Lexem::Type::DoublePipe },
 
-		{ "+=", Lexem::Type::AssignAdd },
-		{ "-=", Lexem::Type::AssignSub },
-		{ "*=", Lexem::Type::AssignMul },
-		{ "/=", Lexem::Type::AssignDiv },
-		{ "%=", Lexem::Type::AssignRem },
-		{ "&=", Lexem::Type::AssignAnd },
-		{ "|=", Lexem::Type::AssignOr  },
-		{ "^=", Lexem::Type::AssignXor },
+		{ "+=", Lexem::Type::PlusEqual },
+		{ "-=", Lexem::Type::MinusEqual },
+		{ "*=", Lexem::Type::AsteriskEqual },
+		{ "/=", Lexem::Type::SlashEqual },
+		{ "%=", Lexem::Type::PercentEqual },
+		{ "&=", Lexem::Type::AmpersandEqual },
+		{ "|=", Lexem::Type::PipeEqual },
+		{ "^=", Lexem::Type::CaretEqual },
 
-		{ "<<", Lexem::Type::ShiftLeft  },
-		{ ">>", Lexem::Type::ShiftRight },
+		{ "<<", Lexem::Type::DoubleLess },
+		{ ">>", Lexem::Type::DoubleGreater },
 
-		{ "->", Lexem::Type::RightArrow },
+		{ "->", Lexem::Type::MinusGreater },
 
-		{ "$<", Lexem::Type::ReferenceToPointer },
-		{ "$>", Lexem::Type::PointerToReference },
+		{ "$<", Lexem::Type::DollarLess },
+		{ "$>", Lexem::Type::DollarGreater },
 	},
 	FixedLexemsMap
 	{ // Three symbol lexems.
-		{ "<=>", Lexem::Type::CompareOrder },
-		{ "<<=", Lexem::Type::AssignShiftLeft  },
-		{ ">>=", Lexem::Type::AssignShiftRight },
+		{ "<=>", Lexem::Type::LessEqualGreater },
+		{ "<<=", Lexem::Type::DoubleLessEqual },
+		{ ">>=", Lexem::Type::DoubleGreaterEqual },
 		{ "...", Lexem::Type::Ellipsis },
 	},
 };

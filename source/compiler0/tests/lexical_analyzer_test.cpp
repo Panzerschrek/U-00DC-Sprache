@@ -41,13 +41,13 @@ auto x= "str"; var i32 y= 0x666;
 	{
 		{ "auto"  , SrcLoc( 0, 2,  0 ), Lexem::Type::Identifier },
 		{ "x"     , SrcLoc( 0, 2,  5 ), Lexem::Type::Identifier },
-		{ "="     , SrcLoc( 0, 2,  6 ), Lexem::Type::Assignment },
+		{ "="     , SrcLoc( 0, 2,  6 ), Lexem::Type::Equal      },
 		{ "str"   , SrcLoc( 0, 2,  8 ), Lexem::Type::String     },
 		{ ";"     , SrcLoc( 0, 2, 13 ), Lexem::Type::Semicolon  },
 		{ "var"   , SrcLoc( 0, 2, 15 ), Lexem::Type::Identifier },
 		{ "i32"   , SrcLoc( 0, 2, 19 ), Lexem::Type::Identifier },
 		{ "y"     , SrcLoc( 0, 2, 23 ), Lexem::Type::Identifier },
-		{ "="     , SrcLoc( 0, 2, 24 ), Lexem::Type::Assignment },
+		{ "="     , SrcLoc( 0, 2, 24 ), Lexem::Type::Equal      },
 		{ "0x666" , SrcLoc( 0, 2, 26 ), Lexem::Type::Number     },
 		{ ";"     , SrcLoc( 0, 2, 31 ), Lexem::Type::Semicolon  },
 	};
@@ -93,9 +93,9 @@ auto& str= "киррилическая строка"; fn Große_Lüge();
 	const Lexems expected_result
 	{
 		{ "auto"                , SrcLoc( 0, 2,  0 ), Lexem::Type::Identifier   },
-		{ "&"                   , SrcLoc( 0, 2,  4 ), Lexem::Type::And          },
+		{ "&"                   , SrcLoc( 0, 2,  4 ), Lexem::Type::Ampersand    },
 		{ "str"                 , SrcLoc( 0, 2,  6 ), Lexem::Type::Identifier   },
-		{ "="                   , SrcLoc( 0, 2,  9 ), Lexem::Type::Assignment   },
+		{ "="                   , SrcLoc( 0, 2,  9 ), Lexem::Type::Equal        },
 		{ "киррилическая строка", SrcLoc( 0, 2, 11 ), Lexem::Type::String       },
 		{ ";"                   , SrcLoc( 0, 2, 33 ), Lexem::Type::Semicolon    },
 		{ "fn"                  , SrcLoc( 0, 2, 35 ), Lexem::Type::Identifier   },
@@ -120,9 +120,9 @@ auto& str= "str"u16; static_assert(true);
 	const Lexems expected_result
 	{
 		{ "auto"            , SrcLoc( 0, 2,  0 ), Lexem::Type::Identifier    },
-		{ "&"               , SrcLoc( 0, 2,  4 ), Lexem::Type::And           },
+		{ "&"               , SrcLoc( 0, 2,  4 ), Lexem::Type::Ampersand     },
 		{ "str"             , SrcLoc( 0, 2,  6 ), Lexem::Type::Identifier    },
-		{ "="               , SrcLoc( 0, 2,  9 ), Lexem::Type::Assignment    },
+		{ "="               , SrcLoc( 0, 2,  9 ), Lexem::Type::Equal         },
 		{ "str"             , SrcLoc( 0, 2, 11 ), Lexem::Type::String        },
 		{ "u16"             , SrcLoc( 0, 2, 16 ), Lexem::Type::LiteralSuffix },
 		{ ";"               , SrcLoc( 0, 2, 19 ), Lexem::Type::Semicolon     },

@@ -524,7 +524,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		}
 		src_loc= SrcLoc( 0, line, *column );
 
-		if( !FindAndChangeLexem( lexems, src_loc, Lexem::Type::Scope, Lexem::Type::CompletionScope ) )
+		if( !FindAndChangeLexem( lexems, src_loc, Lexem::Type::DoubleColon, Lexem::Type::CompletionScope ) )
 		{
 			log_() << "Can't find :: lexem" << std::endl;
 			return {};

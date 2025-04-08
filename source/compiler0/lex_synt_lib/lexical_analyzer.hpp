@@ -46,7 +46,7 @@ struct Lexem
 		MacroBracketLeft,  // <?
 		MacroBracketRight, // ?>
 
-		Scope, // ::
+		DoubleColon, // ::
 
 		Comma, // ,
 		Dot, // .
@@ -54,55 +54,55 @@ struct Lexem
 		Semicolon, // ;
 		Question, // ?
 
-		Assignment, // =
+		Equal, // =
 		Plus, // +
 		Minus, // -
-		Star, // *
+		Asterisk, // *
 		Slash, // /
 		Percent, // %
 
-		And, // &
-		Or, // |
-		Xor, // ^
-		Tilda, // ~
-		Not, // !
+		Ampersand, // &
+		Pipe, // |
+		Caret, // ^
+		Tilde, // ~
+		Exclamation, // !
 
 		At, // @
 
-		Increment, // ++
-		Decrement, // --
+		DoublePlus, // ++
+		DoubleMinus, // --
 
-		CompareLess, // <
-		CompareGreater, // >
-		CompareEqual, // ==
-		CompareNotEqual, // !=
-		CompareLessOrEqual, // <=
-		CompareGreaterOrEqual, // >=
-		CompareOrder, // <=>
+		Less, // <
+		Greater, // >
+		DoubleEqual, // ==
+		ExclamationEqual, // !=
+		LessEqual, // <=
+		GreaterEqual, // >=
+		LessEqualGreater, // <=>
 
-		Conjunction, // &&
-		Disjunction, // ||
+		DoubleAmpersand, // &&
+		DoublePipe, // ||
 
-		AssignAdd, // +=
-		AssignSub, // -=
-		AssignMul, // *=
-		AssignDiv, // /=
-		AssignRem, // %=
-		AssignAnd, // &=
-		AssignOr,  // |=
-		AssignXor, // ^=
+		PlusEqual, // +=
+		MinusEqual, // -=
+		AsteriskEqual, // *=
+		SlashEqual, // /=
+		PercentEqual, // %=
+		AmpersandEqual, // &=
+		PipeEqual,  // |=
+		CaretEqual, // ^=
 
-		ShiftLeft , // <<
-		ShiftRight, // >>
+		DoubleLess , // <<
+		DoubleGreater, // >>
 
-		AssignShiftLeft , // <<=
-		AssignShiftRight, // >>=
+		DoubleLessEqual , // <<=
+		DoubleGreaterEqual, // >>=
 
-		RightArrow, // ->
+		MinusGreater, // ->
 
-		PointerTypeMark, // $
-		ReferenceToPointer, // $<
-		PointerToReference, // $>
+		Dollar, // $
+		DollarLess, // $<
+		DollarGreater, // $>
 
 		Ellipsis, // ...
 
