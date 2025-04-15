@@ -221,7 +221,13 @@ fn do_sort( $(T) mut start, $(T) mut end, Compare& comp ) unsafe
 
 			// Avoid deep recursion. Perform recursive call for smaller range, perform next loop interation for larger range.
 			// In both cases process subranges excluding "hi" position, since it now contains the middle element.
-			auto hi1= hi + 1s;
+			auto mut hi1= hi + 1s;
+
+			while(hi1 < end && !safe( comp( unsafe( $>(hi) ), unsafe( $>(hi1) ) ) ) )
+			{
+				++hi1;
+			}
+
 			if( hi - start < end - hi1 )
 			{
 				do_sort( start, hi, comp );
