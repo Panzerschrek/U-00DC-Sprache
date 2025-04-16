@@ -59,10 +59,14 @@ template</type T, type Compare/>
 fn push_heap( array_view_mut</T/> range, Compare& comp )
 {
 	halt if( range.empty() );
+	if( range.size() == 1s )
+	{
+		return; // Nothing to do.
+	}
 	unsafe( push_heap_unchecked( range, comp ) );
 }
 
-// Given range shouldn't be empty.
+// Given range shouldn contain at least two elements.
 template</type T, type Compare/>
 fn push_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 {
@@ -73,22 +77,39 @@ fn push_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 		var $(T) ptr= range.data();
 		auto mut index= range.size() - 1s;
 
-		while( index > 0s )
+		auto first_parent_index= (index - 1s) >> 1s;
+		if( safe( comp( unsafe( $>(ptr + first_parent_index ) ), unsafe( $>( ptr + index ) ) ) ) )
 		{
-			auto parent_index= (index - 1s) >> 1s;
+			// Move new element into temporary stack storage.
+			auto constexpr element_size= typeinfo</T/>.size_of;
+			auto constexpr element_alignment= typeinfo</T/>.align_of;
+			var aligned_storage</ element_size, element_alignment /> mut new_element_storage= uninitialized;
+			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( $<(new_element_storage) ), ptr_cast_to_byte8( ptr + index ), element_size );
+			var T& new_element_ref= cast_ref_unsafe</T/>( new_element_storage );
 
-			var T &mut el_parent= $>(ptr + parent_index);
-			var T &mut el= $>(ptr + index);
+			// Move last parent to the position of last element.
+			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + first_parent_index ), element_size );
 
-			if( safe( comp( el_parent, el ) ) )
+			// Move parents down, until they are greater than new element.
+
+			index= first_parent_index;
+			while( index > 0s )
 			{
-				swap( el_parent, el ); // It's fine to call this function, since elements are at different address.
-				index= parent_index;
+				auto parent_index= (index - 1s) >> 1s;
+
+				if( safe( comp( unsafe( $>(ptr + parent_index) ), new_element_ref ) ) )
+				{
+					memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + parent_index ), element_size );
+					index= parent_index;
+				}
+				else
+				{
+					break;
+				}
 			}
-			else
-			{
-				break;
-			}
+
+			// Move new element into its final position.
+			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( $<(new_element_storage) ), element_size );
 		}
 	}
 }
@@ -192,7 +213,7 @@ fn make_heap( array_view_mut</T/> range, Compare& comp )
 {
 	for( auto mut i= 1s; i < range.size(); ++i )
 	{
-		// We ensure here that passed range isn't empty.
+		// We ensure here that passed range has size at least 2.
 		unsafe( push_heap_unchecked( range.subrange_end( i + 1s ), comp ) );
 	}
 }
