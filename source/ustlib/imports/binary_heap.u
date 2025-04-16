@@ -1,3 +1,4 @@
+import "compare.u"
 import "random_access_range.u"
 
 namespace ust
@@ -9,7 +10,7 @@ namespace binary_heap
 template</type T, size_type S/>
 fn sort( [ T, S ] &mut arr )
 {
-	sort( array_view_mut</T/>( arr ) );
+	sort( array_view_mut</T/>( arr ), default_compare</T/>() );
 }
 
 // Generic sort overloading for types other than "random_access_range".
@@ -23,6 +24,12 @@ fn sort( T &mut container )
 template</type T/>
 fn sort( array_view_mut</T/> range )
 {
+	sort( range, default_compare</T/>() );
+}
+
+template</type T, type Compare/>
+fn sort( array_view_mut</T/> range, Compare& comp )
+{
 	// TODO - optimize this, use raw pointers.
 
 	// Build heap
@@ -33,8 +40,8 @@ fn sort( array_view_mut</T/> range )
 		{
 			auto parent_index= (index - 1s) >> 1s;
 
-			var array_view_mut</T/> mut range_copy= range;
-			if( range_copy[ parent_index ] < range_copy[ index ] )
+			var array_view_imut</T/> mut range_copy= range;
+			if( comp( range_copy[ parent_index ], range_copy[ index ] ) )
 			{
 				move(range_copy);
 				range.swap( parent_index, index );
@@ -64,8 +71,8 @@ fn sort( array_view_mut</T/> range )
 			}
 			if( child1_index >= last )
 			{
-				var array_view_mut</T/> mut range_copy= range;
-				if( range_copy[child0_index] > range_copy[index] )
+				var array_view_imut</T/> mut range_copy= range;
+				if( comp( range_copy[index], range_copy[child0_index] ) )
 				{
 					move(range_copy);
 					range.swap( index, child0_index );
@@ -78,14 +85,14 @@ fn sort( array_view_mut</T/> range )
 				break;
 			}
 
-			var array_view_mut</T/> mut range_copy= range;
-			if( !( range_copy[index] < range_copy[child0_index] ) &&
-				!( range_copy[index] < range_copy[child1_index] ) )
+			var array_view_imut</T/> mut range_copy= range;
+			if( !comp( range_copy[index], range_copy[child0_index] ) &&
+				!comp( range_copy[index], range_copy[child1_index] ) )
 			{
 				break;
 			}
 
-			if( range_copy[child0_index] < range_copy[child1_index] )
+			if( comp( range_copy[child0_index], range_copy[child1_index] ) )
 			{
 				move(range_copy);
 				range.swap( index, child1_index );
