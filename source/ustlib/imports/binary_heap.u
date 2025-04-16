@@ -116,7 +116,10 @@ fn pop_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 		var $(T) ptr= range.data();
 		auto last= range.size() - 1s;
 
-		swap( $>(ptr), $>(ptr + last) ); // It's fine to call this function, since elements are at different address.
+		auto constexpr element_size= typeinfo</T/>.size_of;
+		auto constexpr element_alignment= typeinfo</T/>.align_of;
+		var aligned_storage</ element_size, element_alignment /> mut top_element_storage= uninitialized;
+		memory_copy_aligned( element_alignment, ptr_cast_to_byte8( $<(top_element_storage) ), ptr_cast_to_byte8( ptr ), element_size );
 
 		auto mut index= 0s;
 
@@ -130,37 +133,49 @@ fn pop_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 				break;
 			}
 
-			var T &mut el= $>(ptr + index);
-			var T &mut el_child0= $>(ptr + child0_index);
-
 			if( child1_index >= last )
 			{
 				// Single child.
-				if( safe( comp( el, el_child0 ) ) )
-				{
-					swap( el, el_child0 ); // It's fine to call this function, since elements are at different address.
-				}
+				memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + child0_index ), element_size );
+				index= child0_index;
 				break;
 			}
 
-			var T &mut el_child1= $>(ptr + child1_index);
-
-			if( safe( !comp( el, el_child0 ) && !comp( el, el_child1 ) ) )
+			if( safe( comp( unsafe( $>(ptr + child0_index) ), unsafe( $>(ptr + child1_index) ) ) ) )
 			{
-				break;
-			}
-
-			if( safe( comp( el_child0, el_child1 ) ) )
-			{
-				swap( el, el_child1 ); // It's fine to call this function, since elements are at different address.
+				memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + child1_index ), element_size );
 				index= child1_index;
 			}
 			else
 			{
-				swap( el, el_child0 ); // It's fine to call this function, since elements are at different address.
+				memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + child0_index ), element_size );
 				index= child0_index;
 			}
 		}
+
+		if( index != last )
+		{
+			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + last ), element_size );
+			while( index > 0s )
+			{
+				auto parent_index= (index - 1s) >> 1s;
+
+				var T &mut el_parent= $>(ptr + parent_index);
+				var T &mut el= $>(ptr + index);
+
+				if( safe( comp( el_parent, el ) ) )
+				{
+					swap( el_parent, el ); // It's fine to call this function, since elements are at different address.
+					index= parent_index;
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+
+		memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + last ), ptr_cast_to_byte8( $<(top_element_storage) ), element_size );
 	}
 }
 
