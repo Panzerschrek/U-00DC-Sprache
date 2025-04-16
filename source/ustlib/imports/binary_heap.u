@@ -116,23 +116,26 @@ fn pop_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 		var $(T) ptr= range.data();
 		auto last= range.size() - 1s;
 
+		// Move top element into a stack storage first.
 		auto constexpr element_size= typeinfo</T/>.size_of;
 		auto constexpr element_alignment= typeinfo</T/>.align_of;
 		var aligned_storage</ element_size, element_alignment /> mut top_element_storage= uninitialized;
 		memory_copy_aligned( element_alignment, ptr_cast_to_byte8( $<(top_element_storage) ), ptr_cast_to_byte8( ptr ), element_size );
+
+		// Propagate hole down to the lowest level.
 
 		auto mut index= 0s;
 
 		loop
 		{
 			auto child0_index= (index << 1s) + 1s;
-			auto child1_index= (index << 1s) + 2s;
 			if( child0_index >= last )
 			{
 				// No children at all.
 				break;
 			}
 
+			auto child1_index= child0_index + 1s;
 			if( child1_index >= last )
 			{
 				// Single child.
@@ -155,7 +158,11 @@ fn pop_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 
 		if( index != last )
 		{
+			// Move last element into the hole.
 			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + last ), element_size );
+
+			// Adjust heap if last element moved into new position isn't ordered properly.
+
 			while( index > 0s )
 			{
 				auto parent_index= (index - 1s) >> 1s;
@@ -175,6 +182,7 @@ fn pop_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 			}
 		}
 
+		// Move top element previously stored on stack into the last position.
 		memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + last ), ptr_cast_to_byte8( $<(top_element_storage) ), element_size );
 	}
 }
