@@ -296,6 +296,22 @@ fn nomangle main() : i32
 		ust::binary_heap::sort( IntRange(arr), CompareAbs );
 		halt if( !ust::is_sorted( IntRangeImut(arr), CompareAbs ) );
 	}
+	{ // Sort by key, using custom key provider in form of function pointer.
+		auto num= 113;
+		var[ i32, num ] mut arr= zero_init;
+
+		var RandGenerator mut gen;
+		foreach( &mut i : arr )
+		{
+			i= i32( gen.Next() - 16384u );
+		}
+
+		var ( fn( i32 x ) : i32 ) abs_func= ust::abs</i32/>;
+		var ( fn( i32 l, i32 r ) : bool ) comp= CompareAbs;
+
+		ust::binary_heap::sort_by_key( IntRange(arr), abs_func );
+		halt if( !ust::is_sorted( IntRangeImut(arr), CompareAbs ) );
+	}
 	{ // Sort, using custom comparator in form of functional object.
 		auto num= 99;
 		var[ i32, num ] mut arr= zero_init;
