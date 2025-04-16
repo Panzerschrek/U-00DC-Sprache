@@ -6,9 +6,92 @@ namespace ust
 namespace binary_heap
 {
 
-template</type T/>
-fn sort( array_view_imut</T/> range )
+template</type T, size_type S/>
+fn sort( [ T, S ] &mut arr )
 {
+	sort( array_view_mut</T/>( arr ) );
+}
+
+template</type T/>
+fn sort( array_view_mut</T/> range )
+{
+	// TODO - optimize this, use raw pointers.
+
+	// Build heap
+	for( auto mut i= 0s; i < range.size(); ++i )
+	{
+		auto mut index= i;
+		while( index > 0s )
+		{
+			auto parent_index= (index - 1s) >> 1s;
+
+			var array_view_mut</T/> mut range_copy= range;
+			if( range_copy[ parent_index ] < range_copy[ index ] )
+			{
+				move(range_copy);
+				range.swap( parent_index, index );
+				index= parent_index;
+			}
+			else
+			{
+				break;
+			}
+		}
+	}
+
+	for( auto mut s= range.size(); s > 1s; --s )
+	{
+		auto last= s - 1s;
+		range.swap( 0s, last );
+
+		auto mut index= 0s;
+		while( index < last )
+		{
+			auto child0_index= (index << 1s) + 1s;
+			auto child1_index= (index << 1s) + 2s;
+			if( child0_index >= last )
+			{
+				// No children at all.
+				break;
+			}
+			if( child1_index >= last )
+			{
+				var array_view_mut</T/> mut range_copy= range;
+				if( range_copy[child0_index] > range_copy[index] )
+				{
+					move(range_copy);
+					range.swap( index, child0_index );
+				}
+				else
+				{
+					move(range_copy);
+				}
+				// Single child.
+				break;
+			}
+
+			var array_view_mut</T/> mut range_copy= range;
+			var bool ordered0= range_copy[index] >= range_copy[child0_index];
+			var bool ordered1= range_copy[index] >= range_copy[child1_index];
+			if( ordered0 && ordered1 )
+			{
+				break;
+			}
+
+			if( range_copy[child0_index] >= range_copy[child1_index] )
+			{
+				move(range_copy);
+				range.swap( index, child0_index );
+				index= child0_index;
+			}
+			else
+			{
+				move(range_copy);
+				range.swap( index, child1_index );
+				index= child1_index;
+			}
+		}
+	}
 }
 
 } // namespace binary_heap

@@ -1,7 +1,130 @@
 //##success_test
 import "../imports/binary_heap.u"
+import "../imports/sort.u"
 
 fn nomangle main() : i32
 {
+	{ // Sort empty array.
+		var [ i32, 0 ] mut arr[ ];
+		ust::binary_heap::sort( arr );
+		halt if( !ust::is_sorted( arr ) );
+	}
+	{ // Sort array from one element.
+		var [ i32, 1 ] mut arr[ 45254 ];
+		ust::binary_heap::sort( arr );
+		halt if( !ust::is_sorted( arr ) );
+	}
+
+	// All combinations of 2 elements.
+	for( auto mut i0= 0; i0 < 2; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 2; ++i1 )
+		{
+			var [ i32, 2 ] mut arr[ i0, i1 ];
+			ust::binary_heap::sort( arr );
+			halt if( !ust::is_sorted( arr ) );
+		}
+	}
+
+	// All combinations of 3 elements.
+	for( auto mut i0= 0; i0 < 3; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 3; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 3; ++i2 )
+			{
+				var [ i32, 3 ] mut arr[ i0, i1, i2 ];
+				ust::binary_heap::sort( arr );
+				halt if( !ust::is_sorted( arr ) );
+			}
+		}
+	}
+
+	// All combinations of 4 elements.
+	for( auto mut i0= 0; i0 < 4; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 4; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 4; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 4; ++i3 )
+				{
+					var [ i32, 4 ] mut arr[ i0, i1, i2, i3 ];
+					ust::binary_heap::sort( arr );
+					halt if( !ust::is_sorted( arr ) );
+				}
+			}
+		}
+	}
+
+	// All combinations of 5 elements.
+	for( auto mut i0= 0; i0 < 5; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 5; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 5; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 5; ++i3 )
+				{
+					for( auto mut i4= 0; i4 < 5; ++i4 )
+					{
+						var [ i32, 5 ] mut arr[ i0, i1, i2, i3, i4 ];
+						ust::binary_heap::sort( arr );
+						halt if( !ust::is_sorted( arr ) );
+					}
+				}
+			}
+		}
+	}
+
+	// All combinations of 6 elements.
+	for( auto mut i0= 0; i0 < 6; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 6; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 6; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 6; ++i3 )
+				{
+					for( auto mut i4= 0; i4 < 6; ++i4 )
+					{
+						for( auto mut i5= 0; i5 < 6; ++i5 )
+						{
+							var [ i32, 6 ] mut arr[ i0, i1, i2, i3, i4, i5 ];
+							ust::binary_heap::sort( arr );
+							halt if( !ust::is_sorted( arr ) );
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// All combinations of 7 elements.
+	for( auto mut i0= 0; i0 < 7; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 7; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 7; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 7; ++i3 )
+				{
+					for( auto mut i4= 0; i4 < 7; ++i4 )
+					{
+						for( auto mut i5= 0; i5 < 7; ++i5 )
+						{
+							for( auto mut i6= 0; i6 < 7; ++i6 )
+							{
+								var [ i32, 7 ] mut arr[ i0, i1, i2, i3, i4, i5, i6 ];
+								ust::binary_heap::sort( arr );
+								halt if( !ust::is_sorted( arr ) );
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	return 0;
 }
