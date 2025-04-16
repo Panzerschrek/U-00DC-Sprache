@@ -2,6 +2,7 @@
 import "../imports/binary_heap.u"
 import "../imports/math.u"
 import "../imports/sort.u"
+import "../imports/string.u"
 import "../imports/vector.u"
 
 type IntRange= ust::random_access_range_mut</i32/>;
@@ -31,6 +32,11 @@ struct CompareGreater
 	{
 		return l > r;
 	}
+}
+
+fn CompareStringSize( ust::string8& l, ust::string8& r ) : bool
+{
+	return l.size() < r.size();
 }
 
 fn nomangle main() : i32
@@ -284,7 +290,7 @@ fn nomangle main() : i32
 			i= f64(gen.Next());
 		}
 
-		ust::sort( vec );
+		ust::binary_heap::sort( vec );
 		halt if( !ust::is_sorted( vec ) );
 	}
 	{ // Test for complexity. Sort already sorted array.
@@ -360,6 +366,46 @@ fn nomangle main() : i32
 
 		ust::binary_heap::sort( IntRange(arr), CompareGreater() );
 		halt if( !ust::is_sorted( IntRangeImut(arr), CompareGreater() ) );
+	}
+	{ // Sort, using custom comparator in form of lambda.
+		auto num= 99;
+		var[ i32, num ] mut arr= zero_init;
+
+		var RandGenerator mut gen;
+		foreach( &mut i : arr )
+		{
+			i= i32(gen.Next());
+		}
+
+		auto greater= lambda( i32 x, i32 y ) : bool { return x > y; };
+		ust::binary_heap::sort( IntRange(arr), greater );
+		halt if( !ust::is_sorted( IntRangeImut(arr), greater ) );
+	}
+	{
+		var [ ust::string8, 6 ] mut arr[ "aqwsd", "", "1", "n6Y", "4R", "dawghawfaw" ];
+
+		ust::binary_heap::sort( ust::array_view_mut</ ust::string8 />( arr ), CompareStringSize );
+		halt if( !ust::is_sorted( ust::array_view_imut</ ust::string8 />( arr ), CompareStringSize ) );
+	}
+	{
+		var [ ust::string8, 6 ] mut arr[ "aqwsd", "", "1", "n6Y", "4R", "dawghawfaw" ];
+
+		// The same as above, but use "sort_by_key" version of sorting algorithm.
+		ust::binary_heap::sort_by_key( ust::array_view_mut</ ust::string8 />( arr ), ust::string8::size );
+		halt if( !ust::is_sorted_by_key( ust::array_view_imut</ ust::string8 />( arr ), ust::string8::size ) );
+	}
+	{ // Sort strings using default (<) comparator
+		auto num= 23s;
+		var [ ust::string8, num ]
+			 mut arr[ "4", "8", "15", "16", "23", "42", "quck", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "Bc", "Ba", "A", "Af", "L", "lolwat", "Zy", "XXX", "" ],
+			imut res[ "", "15", "16", "23", "4", "42", "8", "A", "Af", "Ba", "Bc", "L", "XXX", "Zy", "brown", "dog", "fox", "jumps", "lazy", "lolwat", "over", "quck", "the" ];
+		ust::binary_heap::sort( arr );
+		halt if( !ust::is_sorted( arr ) );
+
+		for( auto mut i= 0s; i < num; ++i )
+		{
+			halt if( arr[i] != res[i] );
+		}
 	}
 
 	return 0;
