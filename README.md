@@ -59,6 +59,20 @@ For more information/examples see build scripts in *ci* directory.
 [examples](source/examples/README.md)
 
 
+### IDE support
+
+[Ecode](https://github.com/SpartanJ/ecode/) has built-in Ü syntax highlighting, Ü language server support, debugging support.
+It's recommeded at least to try using it.
+
+[QtCreator](https://www.qt.io/product/development-tools) may be used as Ü IDE.
+There is a [syntax highlighting file](source/syntax_highlighting/README.md) for it.
+Also it supports cutom language servers, which allows using Ü language server.
+
+Many other IDEs may be used too.
+Any IDE with possibility to specify custom language server may be used for Ü code writing.
+Some IDEs allow also creating custom syntax highlighting rules, one can create it themselves.
+
+
 ### Downloads
 
 The compiler downloads are available on the actions page - as action artifacts.
