@@ -1,6 +1,20 @@
 //##success_test
 import "../imports/binary_heap.u"
 import "../imports/sort.u"
+import "../imports/vector.u"
+
+class RandGenerator
+{
+public:
+	fn Next( mut this ) : u32
+	{
+		state_= ( 22695477u * state_ + 1u ) & 0x7FFFFFFFu;
+		return state_ >> 16u;
+	}
+
+private:
+	u32 state_= 0u;
+}
 
 fn nomangle main() : i32
 {
@@ -124,6 +138,133 @@ fn nomangle main() : i32
 				}
 			}
 		}
+	}
+
+	{ // All elements are same.
+		var [ i32, 50 ] mut arr= zero_init;
+		ust::binary_heap::sort( arr );
+		halt if( !ust::is_sorted( arr ) );
+	}
+	{ // Cases, where all elements are same, except one element which is greater than others.
+		auto num= 100;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			var [ i32, num ] mut arr= zero_init;
+			arr[ u32(i) ]= 1;
+			ust::binary_heap::sort( arr );
+			halt if( !ust::is_sorted( arr ) );
+		}
+	}
+	{ // Cases, where all elements are same, except one element which is less than others.
+		auto num= 100;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			var [ i32, num ] mut arr= zero_init;
+			arr[ u32(i) ]= -1;
+			ust::binary_heap::sort( arr );
+			halt if( !ust::is_sorted( arr ) );
+		}
+	}
+	{ // Sort sorted array.
+		auto num= 150;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= i;
+		}
+		halt if( !ust::is_sorted( arr ) );
+		ust::binary_heap::sort( arr );
+		halt if( !ust::is_sorted( arr ) );
+	}
+
+	{ // Sort reverse-sorted array.
+		auto num= 133;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= num - i;
+		}
+
+		ust::binary_heap::sort( arr );
+		halt if( !ust::is_sorted( arr ) );
+	}
+	{ // Sort array with only two values - 0 or 1.
+		auto num= 107;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= i & 1;
+		}
+
+		ust::binary_heap::sort( arr );
+		halt if( !ust::is_sorted( arr ) );
+	}
+	{ // Sort sorted array with only two values - 0 or 1.
+		auto num= 120;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= i * 2 / num;
+		}
+
+		ust::binary_heap::sort( arr );
+		halt if( !ust::is_sorted( arr ) );
+	}
+	{ // Sort reverse-sorted array with only two values - 0 or 1.
+		auto num= 106;
+		var [ i32, num ] mut arr= zero_init;
+		for( auto mut i= 0; i < num; ++i )
+		{
+			arr[ u32(i) ]= ( num - 1 - i ) * 2 / num;
+		}
+
+		ust::binary_heap::sort( arr );
+		halt if( !ust::is_sorted( arr ) );
+	}
+	{ // Test for complexity. Sort array of million pseudo-random numbers.
+		var ust::vector</i32/> mut vec;
+		vec.resize( size_type( 1024 * 1024 ), 0 );
+
+		var RandGenerator mut gen;
+		foreach( &mut i : vec )
+		{
+			i= i32(gen.Next());
+		}
+
+		ust::binary_heap::sort( vec );
+		halt if( !ust::is_sorted( vec ) );
+	}
+	{ // Test for complexity. Sort already sorted array.
+		var ust::vector</i32/> mut vec;
+		vec.resize( 1024s * 256s, 0 );
+
+		{
+			auto mut n= 0;
+			foreach( &mut i : vec )
+			{
+				i= n;
+				++n;
+			}
+		}
+
+		ust::binary_heap::sort( vec );
+		halt if( !ust::is_sorted( vec ) );
+	}
+	{ // Test for complexity. Sort reverse-sorted array.
+		var ust::vector</i32/> mut vec;
+		vec.resize( 1024s * 256s, 0 );
+
+		{
+			auto mut n= i32(vec.size());
+			foreach( &mut i : vec )
+			{
+				i= n;
+				--n;
+			}
+		}
+
+		ust::binary_heap::sort( vec );
+		halt if( !ust::is_sorted( vec ) );
 	}
 
 	return 0;
