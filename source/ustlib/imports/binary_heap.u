@@ -26,7 +26,7 @@ fn sort( array_view_mut</T/> range )
 	// TODO - optimize this, use raw pointers.
 
 	// Build heap
-	for( auto mut i= 0s; i < range.size(); ++i )
+	for( auto mut i= 1s; i < range.size(); ++i )
 	{
 		auto mut index= i;
 		while( index > 0s )
@@ -53,7 +53,7 @@ fn sort( array_view_mut</T/> range )
 		range.swap( 0s, last );
 
 		auto mut index= 0s;
-		while( index < last )
+		loop
 		{
 			auto child0_index= (index << 1s) + 1s;
 			auto child1_index= (index << 1s) + 2s;
@@ -79,24 +79,23 @@ fn sort( array_view_mut</T/> range )
 			}
 
 			var array_view_mut</T/> mut range_copy= range;
-			var bool ordered0= range_copy[index] >= range_copy[child0_index];
-			var bool ordered1= range_copy[index] >= range_copy[child1_index];
-			if( ordered0 && ordered1 )
+			if( !( range_copy[index] < range_copy[child0_index] ) &&
+				!( range_copy[index] < range_copy[child1_index] ) )
 			{
 				break;
 			}
 
-			if( range_copy[child0_index] >= range_copy[child1_index] )
-			{
-				move(range_copy);
-				range.swap( index, child0_index );
-				index= child0_index;
-			}
-			else
+			if( range_copy[child0_index] < range_copy[child1_index] )
 			{
 				move(range_copy);
 				range.swap( index, child1_index );
 				index= child1_index;
+			}
+			else
+			{
+				move(range_copy);
+				range.swap( index, child0_index );
+				index= child0_index;
 			}
 		}
 	}
