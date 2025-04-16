@@ -30,81 +30,100 @@ fn sort( array_view_mut</T/> range )
 template</type T, type Compare/>
 fn sort( array_view_mut</T/> range, Compare& comp )
 {
-	// TODO - optimize this, use raw pointers.
-
-	// Build heap
-	for( auto mut i= 1s; i < range.size(); ++i )
-	{
-		auto mut index= i;
-		while( index > 0s )
-		{
-			auto parent_index= (index - 1s) >> 1s;
-
-			var array_view_imut</T/> mut range_copy= range;
-			if( comp( range_copy[ parent_index ], range_copy[ index ] ) )
-			{
-				move(range_copy);
-				range.swap( parent_index, index );
-				index= parent_index;
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
+	make_heap( range, comp );
 
 	for( auto mut s= range.size(); s > 1s; --s )
 	{
-		auto last= s - 1s;
-		range.swap( 0s, last );
+		pop_heap( range.subrange_end(s), comp );
+	}
+}
 
-		auto mut index= 0s;
-		loop
+template</type T, type Compare/>
+fn push_heap( array_view_mut</T/> range, Compare& comp )
+{
+	halt if( range.empty() );
+
+	auto mut index= range.size() - 1s;
+	while( index > 0s )
+	{
+		auto parent_index= (index - 1s) >> 1s;
+
+		var array_view_imut</T/> mut range_copy= range;
+		if( comp( range_copy[ parent_index ], range_copy[ index ] ) )
 		{
-			auto child0_index= (index << 1s) + 1s;
-			auto child1_index= (index << 1s) + 2s;
-			if( child0_index >= last )
-			{
-				// No children at all.
-				break;
-			}
-			if( child1_index >= last )
-			{
-				var array_view_imut</T/> mut range_copy= range;
-				if( comp( range_copy[index], range_copy[child0_index] ) )
-				{
-					move(range_copy);
-					range.swap( index, child0_index );
-				}
-				else
-				{
-					move(range_copy);
-				}
-				// Single child.
-				break;
-			}
+			move(range_copy);
+			range.swap( parent_index, index );
+			index= parent_index;
+		}
+		else
+		{
+			break;
+		}
+	}
+}
 
+template</type T, type Compare/>
+fn pop_heap( array_view_mut</T/> range, Compare& comp )
+{
+	halt if( range.empty() );
+
+	auto last= range.size() - 1s;
+	range.swap( 0s, last );
+
+	auto mut index= 0s;
+	loop
+	{
+		auto child0_index= (index << 1s) + 1s;
+		auto child1_index= (index << 1s) + 2s;
+		if( child0_index >= last )
+		{
+			// No children at all.
+			break;
+		}
+		if( child1_index >= last )
+		{
 			var array_view_imut</T/> mut range_copy= range;
-			if( !comp( range_copy[index], range_copy[child0_index] ) &&
-				!comp( range_copy[index], range_copy[child1_index] ) )
-			{
-				break;
-			}
-
-			if( comp( range_copy[child0_index], range_copy[child1_index] ) )
+			if( comp( range_copy[index], range_copy[child0_index] ) )
 			{
 				move(range_copy);
-				range.swap( index, child1_index );
-				index= child1_index;
+				range.swap( index, child0_index );
 			}
 			else
 			{
 				move(range_copy);
-				range.swap( index, child0_index );
-				index= child0_index;
 			}
+			// Single child.
+			break;
 		}
+
+		var array_view_imut</T/> mut range_copy= range;
+		if( !comp( range_copy[index], range_copy[child0_index] ) &&
+			!comp( range_copy[index], range_copy[child1_index] ) )
+		{
+			break;
+		}
+
+		if( comp( range_copy[child0_index], range_copy[child1_index] ) )
+		{
+			move(range_copy);
+			range.swap( index, child1_index );
+			index= child1_index;
+		}
+		else
+		{
+			move(range_copy);
+			range.swap( index, child0_index );
+			index= child0_index;
+		}
+	}
+}
+
+template</type T, type Compare/>
+fn make_heap( array_view_mut</T/> range, Compare& comp )
+{
+	for( auto mut i= 1s; i < range.size(); ++i )
+	{
+		push_heap( range.subrange_end( i + 1s ), comp );
 	}
 }
 
