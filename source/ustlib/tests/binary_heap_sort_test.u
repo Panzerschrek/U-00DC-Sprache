@@ -157,6 +157,29 @@ fn nomangle main() : i32
 		}
 	}
 
+	// All combinations of 6 elements for floats.
+	for( auto mut i0= 0; i0 < 6; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 6; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 6; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 6; ++i3 )
+				{
+					for( auto mut i4= 0; i4 < 6; ++i4 )
+					{
+						for( auto mut i5= 0; i5 < 6; ++i5 )
+						{
+							var [ f32, 6 ] mut arr[ f32(i0), f32(i1), f32(i2), f32(i3), f32(i4), f32(i5) ];
+							ust::binary_heap::sort( arr );
+							halt if( !ust::is_sorted( arr ) );
+						}
+					}
+				}
+			}
+		}
+	}
+
 	{ // All elements are same.
 		var [ i32, 50 ] mut arr= zero_init;
 		ust::binary_heap::sort( arr );
@@ -249,6 +272,19 @@ fn nomangle main() : i32
 		}
 
 		ust::binary_heap::sort( vec );
+		halt if( !ust::is_sorted( vec ) );
+	}
+	{ // Test for complexity. Sort array of million pseudo-random f64 numbers.
+		var ust::vector</f64/> mut vec;
+		vec.resize( size_type( 1024 * 1024 ), 0.0 );
+
+		var RandGenerator mut gen;
+		foreach( &mut i : vec )
+		{
+			i= f64(gen.Next());
+		}
+
+		ust::sort( vec );
 		halt if( !ust::is_sorted( vec ) );
 	}
 	{ // Test for complexity. Sort already sorted array.
