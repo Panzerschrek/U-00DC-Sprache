@@ -1,0 +1,7 @@
+//##success_test
+import "../imports/binary_heap.u"
+
+fn nomangle main() : i32
+{
+	return 0;
+}

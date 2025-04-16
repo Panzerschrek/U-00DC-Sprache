@@ -1,0 +1,16 @@
+import "random_access_range.u"
+
+namespace ust
+{
+
+namespace binary_heap
+{
+
+template</type T/>
+fn sort( array_view_imut</T/> range )
+{
+}
+
+} // namespace binary_heap
+
+} // namespace ust
