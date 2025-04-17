@@ -45,7 +45,7 @@ fn sort( array_view_mut</T/> range )
 
 // Perform heapsort.
 // Sorting is performed in-place, no additional space is used.
-// Time complexity is n * O(log(n)) in all cases.
+// Time complexity is O(n * log(n)) in all cases.
 // Order of equal elements may not be preserved.
 template</type T, type Compare/>
 fn sort( array_view_mut</T/> range, Compare& comp )
@@ -265,7 +265,7 @@ fn make_heap( array_view_mut</T/> range )
 }
 
 // Makes heap from given range.
-// Time complexity is n * O(log(n)) in all cases.
+// Time complexity is O(n * log(n)) in all cases.
 template</type T, type Compare/>
 fn make_heap( array_view_mut</T/> range, Compare& comp )
 {
