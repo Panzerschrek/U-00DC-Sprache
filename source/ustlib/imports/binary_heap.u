@@ -179,21 +179,14 @@ fn pop_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 
 		if( index != last )
 		{
-			// Move last element into the hole.
-			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + last ), element_size );
-
-			// Adjust heap if last element moved into new position isn't ordered properly.
-
+			// Propagate hole up, assuming last element will be placed in it.
 			while( index > 0s )
 			{
 				auto parent_index= (index - 1s) >> 1s;
 
-				var T &mut el_parent= $>(ptr + parent_index);
-				var T &mut el= $>(ptr + index);
-
-				if( safe( comp( el_parent, el ) ) )
+				if( safe( comp( unsafe( $>( ptr + parent_index ) ), unsafe( $>( ptr + last ) ) ) ) )
 				{
-					swap( el_parent, el ); // It's fine to call this function, since elements are at different address.
+					memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + parent_index ), element_size );
 					index= parent_index;
 				}
 				else
@@ -201,6 +194,9 @@ fn pop_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 					break;
 				}
 			}
+
+			// Move last element into its final position.
+			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + last ), element_size );
 		}
 
 		// Move top element previously stored on stack into the last position.
