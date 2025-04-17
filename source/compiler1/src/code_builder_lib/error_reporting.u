@@ -1,4 +1,4 @@
-import "/sort.u"
+import "/binary_heap.u"
 import "/CodeBuilderLib/keywords.uh"
 import "error_reporting.uh"
 
@@ -177,7 +177,9 @@ fn SortErrorsAndRemoveDuplicates( ErrorsContainer &mut errors )
 		}
 	}
 
-	ust::sort( errors );
+	// Since we may have a lot of errors use heap-sorting, in order to avoid possible quadratic time complexity in bad cases.
+	ust::binary_heap::sort( errors );
+
 	errors.remove_adjacent_duplicates();
 }
 

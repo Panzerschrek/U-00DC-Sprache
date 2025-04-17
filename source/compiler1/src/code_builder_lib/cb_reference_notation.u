@@ -1,5 +1,5 @@
 import "/scoped_array.u"
-import "/sort.u"
+import "/binary_heap.u"
 import "error_reporting.uh"
 import "code_builder.uh"
 
@@ -385,7 +385,9 @@ fn ParseEvaluatedParamReference( LLVMValueRef constant, size_type num_params, Na
 template</type T/>
 fn NormalizeList( ust::vector</T/> &mut v )
 {
-	ust::sort( v );
+	// Use heap-sorting, in case if someone tries to trigger worst-case quadratic time complexity of regular sort (quicksort)
+	// by providing specially-crafted reference notation list.
+	ust::binary_heap::sort( v );
 	v.remove_adjacent_duplicates();
 }
 
