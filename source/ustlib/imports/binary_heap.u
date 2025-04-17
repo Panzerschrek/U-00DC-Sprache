@@ -36,12 +36,17 @@ fn sort( T &mut container )
 	sort( container.range() );
 }
 
+// Perform heapsort using default compare function.
 template</type T/>
 fn sort( array_view_mut</T/> range )
 {
 	sort( range, default_compare</T/>() );
 }
 
+// Perform heapsort.
+// Sorting is performed in-place, no additional space is used.
+// Time complexity is n * O(log(n)) in all cases.
+// Order of equal elements may not be preserved.
 template</type T, type Compare/>
 fn sort( array_view_mut</T/> range, Compare& comp )
 {
@@ -72,6 +77,8 @@ fn is_heap( array_view_mut</T/> range, Compare& comp ) : bool
 	return is_heap( array_view_imut</T/>( range ), comp );
 }
 
+// Check if given range is heap according to given compare function.
+// Time complexity is linear.
 template</type T, type Compare/>
 fn is_heap( array_view_imut</T/> range, Compare& comp ) : bool
 {
@@ -93,6 +100,9 @@ fn push_heap( array_view_mut</T/> range )
 	push_heap( range, default_compare</T/>() );
 }
 
+// Assuming all elements except the last build a heap push the last element to the heap, making the whole range heap.
+// Time complexity is O(log(n)).
+// Does nothing if size is less than 2.
 template</type T, type Compare/>
 fn push_heap( array_view_mut</T/> range, Compare& comp )
 {
@@ -156,6 +166,10 @@ fn pop_heap( array_view_mut</T/> range )
 	pop_heap( range, default_compare</T/>() );
 }
 
+// Pop top element from the heap, move it into the last position.
+// After that all elements in the range except the last are heap-ordered.
+// Time complexity is O(log(n)).
+// Does nothing if size is less than 2.
 template</type T, type Compare/>
 fn pop_heap( array_view_mut</T/> range, Compare& comp )
 {
@@ -250,6 +264,8 @@ fn make_heap( array_view_mut</T/> range )
 	make_heap( range, default_compare</T/>() );
 }
 
+// Makes heap from given range.
+// Time complexity is n * O(log(n)) in all cases.
 template</type T, type Compare/>
 fn make_heap( array_view_mut</T/> range, Compare& comp )
 {

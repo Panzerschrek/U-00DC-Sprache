@@ -119,7 +119,7 @@ namespace sort_impl
 {
 
 /*
-Simple quicksort implementation. Average complexity - O(log(n)), worst case complexity - O(n^2).
+Simple quicksort implementation. Average complexity - n * O(log(n)), worst case complexity - O(n^2).
  TODO:
  * Use more simple sorting algorithm for small number of elements.
  * Select median element wisely.
