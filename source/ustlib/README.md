@@ -25,6 +25,7 @@ Other functionality:
 * Allocation/deallocation (alloc.u)
 * Asserts (assert.u)
 * Atomic operations support (atomic.u)
+* Binary heap routines and heap sorting (binary_heap.u)
 * Binary search routines (binary_seach.u)
 * Math functions with overflow checks (checked_math.u)
 * Comparators for sorting and binary search (compare.u)
