@@ -150,6 +150,12 @@ fn push_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 	}
 }
 
+template</type T/>
+fn pop_heap( array_view_mut</T/> range )
+{
+	pop_heap( range, default_compare</T/>() );
+}
+
 template</type T, type Compare/>
 fn pop_heap( array_view_mut</T/> range, Compare& comp )
 {
@@ -236,6 +242,12 @@ fn pop_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 		// Move top element previously stored on stack into the last position.
 		memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + last ), ptr_cast_to_byte8( $<(top_element_storage) ), element_size );
 	}
+}
+
+template</type T/>
+fn make_heap( array_view_mut</T/> range )
+{
+	make_heap( range, default_compare</T/>() );
 }
 
 template</type T, type Compare/>
