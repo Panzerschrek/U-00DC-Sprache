@@ -54,19 +54,16 @@ fn sort( array_view_mut</T/> range, Compare& comp )
 	}
 }
 
-// Given range shouldn't be empty, otherwise this function halts.
 template</type T, type Compare/>
 fn push_heap( array_view_mut</T/> range, Compare& comp )
 {
-	halt if( range.empty() );
-	if( range.size() == 1s )
+	if( range.size() <= 1s )
 	{
 		return; // Nothing to do.
 	}
 	unsafe( push_heap_unchecked( range, comp ) );
 }
 
-// Given range shouldn contain at least two elements.
 template</type T, type Compare/>
 fn push_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 {
@@ -114,12 +111,10 @@ fn push_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 	}
 }
 
-// Given range shouldn't be empty, otherwise this function halts.
 template</type T, type Compare/>
 fn pop_heap( array_view_mut</T/> range, Compare& comp )
 {
-	halt if( range.empty() );
-	if( range.size() == 1s )
+	if( range.size() <= 1s )
 	{
 		return; // Nothing to do.
 	}
