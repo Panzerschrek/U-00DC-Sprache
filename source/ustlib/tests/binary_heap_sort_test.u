@@ -59,10 +59,13 @@ fn nomangle main() : i32
 								var [ i32, 7 ] mut arr[ i0, i1, i2, i3, i4, i5, i6 ];
 								var IntRange range= arr;
 
-								for( auto mut s= 0s; s <= 7s; ++s )
+								var i32 mut max= -1000000;
+								for( auto mut s= 1s; s <= 7s; ++s )
 								{
+									ust::max_assign( max, range[s - 1s] );
 									ust::binary_heap::push_heap( range.subrange_end(s) );
 									halt if( !ust::binary_heap::is_heap( range.subrange_end(s) ) );
+									halt if( range.front() != max ); // Top element should be maximum of all elements previously pushed.
 								}
 							}
 						}
@@ -98,6 +101,9 @@ fn nomangle main() : i32
 									ust::binary_heap::pop_heap( range.subrange_end(s) );
 									halt if( !ust::binary_heap::is_heap( range.subrange_end(s - 1s) ) );
 								}
+
+								// After making a heap and popping all elements result array should be sorted.
+								halt if( !ust::is_sorted( range ) );
 							}
 						}
 					}
