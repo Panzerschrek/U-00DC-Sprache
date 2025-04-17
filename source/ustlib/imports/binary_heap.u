@@ -54,6 +54,45 @@ fn sort( array_view_mut</T/> range, Compare& comp )
 	}
 }
 
+template</type T/>
+fn is_heap( array_view_imut</T/> range ) : bool
+{
+	return is_heap( range, default_compare</T/>() );
+}
+
+template</type T/>
+fn is_heap( array_view_mut</T/> range ) : bool
+{
+	return is_heap( array_view_imut</T/>( range ) );
+}
+
+template</type T, type Compare/>
+fn is_heap( array_view_mut</T/> range, Compare& comp ) : bool
+{
+	return is_heap( array_view_imut</T/>( range ), comp );
+}
+
+template</type T, type Compare/>
+fn is_heap( array_view_imut</T/> range, Compare& comp ) : bool
+{
+	for( auto mut i= 1s; i < range.size(); ++i )
+	{
+		auto parent_index= (i - 1s) >> 1s;
+		if( comp( unsafe( range.index_unchecked( parent_index ) ), unsafe( range.index_unchecked( i ) ) ) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+template</type T/>
+fn push_heap( array_view_mut</T/> range )
+{
+	push_heap( range, default_compare</T/>() );
+}
+
 template</type T, type Compare/>
 fn push_heap( array_view_mut</T/> range, Compare& comp )
 {

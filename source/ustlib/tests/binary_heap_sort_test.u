@@ -41,6 +41,37 @@ fn CompareStringSize( ust::string8& l, ust::string8& r ) : bool
 
 fn nomangle main() : i32
 {
+	// "push_heap" for all combinations of 7 elements.
+	for( auto mut i0= 0; i0 < 7; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 7; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 7; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 7; ++i3 )
+				{
+					for( auto mut i4= 0; i4 < 7; ++i4 )
+					{
+						for( auto mut i5= 0; i5 < 7; ++i5 )
+						{
+							for( auto mut i6= 0; i6 < 7; ++i6 )
+							{
+								var [ i32, 7 ] mut arr[ i0, i1, i2, i3, i4, i5, i6 ];
+								var IntRange range= arr;
+
+								for( auto mut s= 0s; s <= 7s; ++s )
+								{
+									ust::binary_heap::push_heap( range.subrange_end(s) );
+									halt if( !ust::binary_heap::is_heap( range.subrange_end(s) ) );
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	{ // Sort empty array.
 		var [ i32, 0 ] mut arr[ ];
 		ust::binary_heap::sort( arr );
