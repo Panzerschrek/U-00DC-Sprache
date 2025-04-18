@@ -377,6 +377,11 @@ fn nomangle main() : i32
 		ust::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 	}
+	{ // Test for complexity. Sort lage array of equal elements.
+		var ust::vector</i32/> mut vec( size_type( 1024 * 1024 ), 0 );
+		ust::sort( vec );
+		halt if( !ust::is_sorted( vec ) );
+	}
 	{ // Test for complexity. Sort array of million pseudo-random numbers.
 		var ust::vector</i32/> mut vec;
 		vec.resize( size_type( 1024 * 1024 ), 0 );
