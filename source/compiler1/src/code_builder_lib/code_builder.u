@@ -408,6 +408,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 		auto names_scope= generated_template_things_[generated_template_things_sequence_[i]];
 		NamesScopeBuild( names_scope );
 	}
+	// Clear tempate things sequence in order to avoid processing already processed template things again for different source graph node.
 	generated_template_things_sequence_.clear();
 
 	var SourceGraphNodeBuildResult mut out_node_build_result{ .names_scope= move(global_names_scope) };

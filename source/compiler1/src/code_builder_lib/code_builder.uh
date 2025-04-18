@@ -1393,7 +1393,7 @@ private:
 
 	// Store template things in global container to use same things for same template arguments.
 	ust::unordered_map</ TemplateKey, NamesScopePtr /> generated_template_things_;
-	// Template things for current source graph node added sequentialy into this vector too.
+	// Template things for current source graph node are added sequentialy into this vector too.
 	ust::vector</ TemplateKey /> generated_template_things_sequence_;
 
 	ust::unordered_map</ ParameterizedFunctionTemplateKey, FunctionsSetPtr /> parameterized_template_functions_cache_;

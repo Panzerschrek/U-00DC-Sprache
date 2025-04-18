@@ -393,6 +393,7 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 			GlobalThingBuildNamespace( *namespace_ );
 		}
 	}
+	// Clear tempate things sequence in order to avoid processing already processed template things again for different source graph node.
 	generated_template_things_sequence_.clear();
 
 	// Fill result classes members namespaces table.

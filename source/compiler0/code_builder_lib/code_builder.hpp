@@ -1566,7 +1566,7 @@ private:
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
 	std::unordered_map<TemplateKey, NamesScopePtr, TemplateKeyHasher> generated_template_things_storage_;
-	// Template things for current source graph node added sequentialy into this vector too.
+	// Template things for current source graph node are added sequentialy into this vector too.
 	std::vector<TemplateKey> generated_template_things_sequence_;
 
 	// Cache results of template functions parameterization.
