@@ -1,4 +1,5 @@
 //##success_test
+import "../imports/binary_heap.u"
 import "../imports/math.u"
 import "../imports/sort.u"
 import "../imports/string.u"
@@ -6,16 +7,6 @@ import "../imports/vector.u"
 
 type IntRange= ust::random_access_range_mut</i32/>;
 type IntRangeImut= ust::random_access_range_imut</i32/>;
-
-template</ type T, size_type S />
-fn ArrayEq( [ T, S ]& l, [ T, S ]& r ) : bool
-{
-	for( auto mut i= 0s; i < S; ++i )
-	{
-		if( l[i] != r[i] ){ return false; }
-	}
-	return true;
-}
 
 class RandGenerator
 {
@@ -48,117 +39,87 @@ fn CompareStringSize( ust::string8& l, ust::string8& r ) : bool
 	return l.size() < r.size();
 }
 
-fn GetNegative( i32 x ) : i32
-{
-	return -x;
-}
-
 fn nomangle main() : i32
 {
-	{ // "is_sorted" for empty array.
-		var [ i32, 0 ] arr[ ];
-		halt if( !ust::is_sorted( arr ) );
-		halt if( !ust::is_sorted( IntRangeImut(arr), CompareGreater() ) );
-		halt if( !ust::is_sorted_by_key( IntRangeImut(arr), GetNegative ) );
-	}
-
-	{ // "is_sorted" for array consisting of single element.
-		var [ i32, 1 ]  arr[ 55 ];
-		halt if( !ust::is_sorted( arr ) );
-		halt if( !ust::is_sorted( IntRangeImut(arr), CompareGreater() ) );
-		halt if( !ust::is_sorted_by_key( IntRangeImut(arr), GetNegative ) );
-	}
-
-	{ // "is_sorted" for array consisting of two elements.
-		var [ i32, 2 ] arr_sorted[ 1, 6 ], arr_unsorted[ 67, 8 ], arr_equal[ -78, -78 ];
-		halt if( !ust::is_sorted( arr_sorted ) );
-		halt if(  ust::is_sorted( arr_unsorted ) );
-		halt if( !ust::is_sorted( arr_equal ) );
-		halt if(  ust::is_sorted( IntRangeImut(arr_sorted), CompareGreater() ) );
-		halt if( !ust::is_sorted( IntRangeImut(arr_unsorted), CompareGreater() ) );
-		halt if( !ust::is_sorted( IntRangeImut(arr_equal), CompareGreater() ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(arr_sorted), GetNegative ) );
-		halt if( !ust::is_sorted_by_key( IntRangeImut(arr_unsorted), GetNegative ) );
-		halt if( !ust::is_sorted_by_key( IntRangeImut(arr_equal), GetNegative ) );
-	}
-
-	{ // "is_sorted" for array consisting of three elements.
-		// All combinations of three different elements. Only one of them is sorted.
-		var [ i32, 3 ] a[ 1, 2, 3 ], b[ 1, 3, 2 ], c[ 2, 1, 3 ], d[ 2, 3, 1 ], e[ 3, 1, 2 ], f[ 3, 2, 1 ];
-		halt if( !ust::is_sorted( a ) );
-		halt if(  ust::is_sorted( b ) );
-		halt if(  ust::is_sorted( c ) );
-		halt if(  ust::is_sorted( d ) );
-		halt if(  ust::is_sorted( e ) );
-		halt if(  ust::is_sorted( f ) );
-		halt if(  ust::is_sorted( IntRangeImut(a), CompareGreater() ) );
-		halt if(  ust::is_sorted( IntRangeImut(b), CompareGreater() ) );
-		halt if(  ust::is_sorted( IntRangeImut(c), CompareGreater() ) );
-		halt if(  ust::is_sorted( IntRangeImut(d), CompareGreater() ) );
-		halt if(  ust::is_sorted( IntRangeImut(e), CompareGreater() ) );
-		halt if( !ust::is_sorted( IntRangeImut(f), CompareGreater() ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(a), GetNegative ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(b), GetNegative ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(c), GetNegative ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(d), GetNegative ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(e), GetNegative ) );
-		halt if( !ust::is_sorted_by_key( IntRangeImut(f), GetNegative ) );
-	}
-	{ // "is_sorted" for array consisting of three elements, two of them are equal.
-		var [ i32, 3 ]
-			a[ 1, 1, 2 ], b[ 1, 2, 1 ], c[ 2, 1, 1 ],
-			d[ 2, 2, 3 ], e[ 2, 3, 2 ], f[ 3, 2, 2 ],
-			g[ 1, 3, 3 ], h[ 3, 1, 3 ], i[ 3, 3, 1 ];
-		halt if( !ust::is_sorted( a ) );
-		halt if(  ust::is_sorted( b ) );
-		halt if(  ust::is_sorted( c ) );
-		halt if( !ust::is_sorted( d ) );
-		halt if(  ust::is_sorted( e ) );
-		halt if(  ust::is_sorted( f ) );
-		halt if( !ust::is_sorted( g ) );
-		halt if(  ust::is_sorted( h ) );
-		halt if(  ust::is_sorted( i ) );
-		halt if(  ust::is_sorted( IntRangeImut(a), CompareGreater() ) );
-		halt if(  ust::is_sorted( IntRangeImut(b), CompareGreater() ) );
-		halt if( !ust::is_sorted( IntRangeImut(c), CompareGreater() ) );
-		halt if(  ust::is_sorted( IntRangeImut(d), CompareGreater() ) );
-		halt if(  ust::is_sorted( IntRangeImut(e), CompareGreater() ) );
-		halt if( !ust::is_sorted( IntRangeImut(f), CompareGreater() ) );
-		halt if(  ust::is_sorted( IntRangeImut(g), CompareGreater() ) );
-		halt if(  ust::is_sorted( IntRangeImut(h), CompareGreater() ) );
-		halt if( !ust::is_sorted( IntRangeImut(i), CompareGreater() ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(a), GetNegative ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(b), GetNegative ) );
-		halt if( !ust::is_sorted_by_key( IntRangeImut(c), GetNegative ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(d), GetNegative ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(e), GetNegative ) );
-		halt if( !ust::is_sorted_by_key( IntRangeImut(f), GetNegative ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(g), GetNegative ) );
-		halt if(  ust::is_sorted_by_key( IntRangeImut(h), GetNegative ) );
-		halt if( !ust::is_sorted_by_key( IntRangeImut(i), GetNegative ) );
-	}
+	// "push_heap" for all combinations of 7 elements.
+	for( auto mut i0= 0; i0 < 7; ++i0 )
 	{
-		var [ i32, 2 ] mut arr_sorted[ 1, 6 ], mut arr_unsorted[ 67, 8 ], mut arr_equal[ -78, -78 ];
-		// "is_sorted" for mutable arrays.
-		halt if( !ust::is_sorted( arr_sorted ) );
-		halt if(  ust::is_sorted( arr_unsorted ) );
-		halt if( !ust::is_sorted( arr_equal ) );
-		// "is_sorted" for mutable ranges.
-		var IntRange arr_sorted_range= arr_sorted, arr_unsorted_range= arr_unsorted, arr_equal_range= arr_equal;
-		halt if( !ust::is_sorted( arr_sorted_range ) );
-		halt if(  ust::is_sorted( arr_unsorted_range ) );
-		halt if( !ust::is_sorted( arr_equal_range ) );
+		for( auto mut i1= 0; i1 < 7; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 7; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 7; ++i3 )
+				{
+					for( auto mut i4= 0; i4 < 7; ++i4 )
+					{
+						for( auto mut i5= 0; i5 < 7; ++i5 )
+						{
+							for( auto mut i6= 0; i6 < 7; ++i6 )
+							{
+								var [ i32, 7 ] mut arr[ i0, i1, i2, i3, i4, i5, i6 ];
+								var IntRange range= arr;
+
+								var i32 mut max= -1000000;
+								for( auto mut s= 1s; s <= 7s; ++s )
+								{
+									ust::max_assign( max, range[s - 1s] );
+									ust::binary_heap::push_heap( range.subrange_end(s) );
+									halt if( !ust::binary_heap::is_heap( range.subrange_end(s) ) );
+									halt if( range.front() != max ); // Top element should be maximum of all elements previously pushed.
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// "pop_heap" for all combinations of 7 elements.
+	for( auto mut i0= 0; i0 < 7; ++i0 )
+	{
+		for( auto mut i1= 0; i1 < 7; ++i1 )
+		{
+			for( auto mut i2= 0; i2 < 7; ++i2 )
+			{
+				for( auto mut i3= 0; i3 < 7; ++i3 )
+				{
+					for( auto mut i4= 0; i4 < 7; ++i4 )
+					{
+						for( auto mut i5= 0; i5 < 7; ++i5 )
+						{
+							for( auto mut i6= 0; i6 < 7; ++i6 )
+							{
+								var [ i32, 7 ] mut arr[ i0, i1, i2, i3, i4, i5, i6 ];
+								var IntRange range= arr;
+								ust::binary_heap::make_heap( range );
+
+								halt if( !ust::binary_heap::is_heap( range ) );
+
+								for( auto mut s= 7s; s > 0s; --s )
+								{
+									ust::binary_heap::pop_heap( range.subrange_end(s) );
+									halt if( !ust::binary_heap::is_heap( range.subrange_end(s - 1s) ) );
+								}
+
+								// After making a heap and popping all elements result array should be sorted.
+								halt if( !ust::is_sorted( range ) );
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	{ // Sort empty array.
 		var [ i32, 0 ] mut arr[ ];
-		ust::sort( arr );
+		ust::binary_heap::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 	}
-
-	{
+	{ // Sort array from one element.
 		var [ i32, 1 ] mut arr[ 45254 ];
-		ust::sort( arr );
+		ust::binary_heap::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 	}
 
@@ -168,7 +129,7 @@ fn nomangle main() : i32
 		for( auto mut i1= 0; i1 < 2; ++i1 )
 		{
 			var [ i32, 2 ] mut arr[ i0, i1 ];
-			ust::sort( arr );
+			ust::binary_heap::sort( arr );
 			halt if( !ust::is_sorted( arr ) );
 		}
 	}
@@ -181,7 +142,7 @@ fn nomangle main() : i32
 			for( auto mut i2= 0; i2 < 3; ++i2 )
 			{
 				var [ i32, 3 ] mut arr[ i0, i1, i2 ];
-				ust::sort( arr );
+				ust::binary_heap::sort( arr );
 				halt if( !ust::is_sorted( arr ) );
 			}
 		}
@@ -197,7 +158,7 @@ fn nomangle main() : i32
 				for( auto mut i3= 0; i3 < 4; ++i3 )
 				{
 					var [ i32, 4 ] mut arr[ i0, i1, i2, i3 ];
-					ust::sort( arr );
+					ust::binary_heap::sort( arr );
 					halt if( !ust::is_sorted( arr ) );
 				}
 			}
@@ -216,7 +177,7 @@ fn nomangle main() : i32
 					for( auto mut i4= 0; i4 < 5; ++i4 )
 					{
 						var [ i32, 5 ] mut arr[ i0, i1, i2, i3, i4 ];
-						ust::sort( arr );
+						ust::binary_heap::sort( arr );
 						halt if( !ust::is_sorted( arr ) );
 					}
 				}
@@ -238,7 +199,7 @@ fn nomangle main() : i32
 						for( auto mut i5= 0; i5 < 6; ++i5 )
 						{
 							var [ i32, 6 ] mut arr[ i0, i1, i2, i3, i4, i5 ];
-							ust::sort( arr );
+							ust::binary_heap::sort( arr );
 							halt if( !ust::is_sorted( arr ) );
 						}
 					}
@@ -263,7 +224,7 @@ fn nomangle main() : i32
 							for( auto mut i6= 0; i6 < 7; ++i6 )
 							{
 								var [ i32, 7 ] mut arr[ i0, i1, i2, i3, i4, i5, i6 ];
-								ust::sort( arr );
+								ust::binary_heap::sort( arr );
 								halt if( !ust::is_sorted( arr ) );
 							}
 						}
@@ -287,7 +248,7 @@ fn nomangle main() : i32
 						for( auto mut i5= 0; i5 < 6; ++i5 )
 						{
 							var [ f32, 6 ] mut arr[ f32(i0), f32(i1), f32(i2), f32(i3), f32(i4), f32(i5) ];
-							ust::sort( arr );
+							ust::binary_heap::sort( arr );
 							halt if( !ust::is_sorted( arr ) );
 						}
 					}
@@ -298,7 +259,7 @@ fn nomangle main() : i32
 
 	{ // All elements are same.
 		var [ i32, 50 ] mut arr= zero_init;
-		ust::sort( arr );
+		ust::binary_heap::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Cases, where all elements are same, except one element which is greater than others.
@@ -307,7 +268,7 @@ fn nomangle main() : i32
 		{
 			var [ i32, num ] mut arr= zero_init;
 			arr[ u32(i) ]= 1;
-			ust::sort( arr );
+			ust::binary_heap::sort( arr );
 			halt if( !ust::is_sorted( arr ) );
 		}
 	}
@@ -317,7 +278,7 @@ fn nomangle main() : i32
 		{
 			var [ i32, num ] mut arr= zero_init;
 			arr[ u32(i) ]= -1;
-			ust::sort( arr );
+			ust::binary_heap::sort( arr );
 			halt if( !ust::is_sorted( arr ) );
 		}
 	}
@@ -329,7 +290,7 @@ fn nomangle main() : i32
 			arr[ u32(i) ]= i;
 		}
 		halt if( !ust::is_sorted( arr ) );
-		ust::sort( arr );
+		ust::binary_heap::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 	}
 
@@ -341,7 +302,7 @@ fn nomangle main() : i32
 			arr[ u32(i) ]= num - i;
 		}
 
-		ust::sort( arr );
+		ust::binary_heap::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Sort array with only two values - 0 or 1.
@@ -352,7 +313,7 @@ fn nomangle main() : i32
 			arr[ u32(i) ]= i & 1;
 		}
 
-		ust::sort( arr );
+		ust::binary_heap::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Sort sorted array with only two values - 0 or 1.
@@ -363,7 +324,7 @@ fn nomangle main() : i32
 			arr[ u32(i) ]= i * 2 / num;
 		}
 
-		ust::sort( arr );
+		ust::binary_heap::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Sort reverse-sorted array with only two values - 0 or 1.
@@ -374,12 +335,12 @@ fn nomangle main() : i32
 			arr[ u32(i) ]= ( num - 1 - i ) * 2 / num;
 		}
 
-		ust::sort( arr );
+		ust::binary_heap::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 	}
 	{ // Test for complexity. Sort lage array of equal elements.
 		var ust::vector</i32/> mut vec( size_type( 1024 * 1024 ), 0 );
-		ust::sort( vec );
+		ust::binary_heap::sort( vec );
 		halt if( !ust::is_sorted( vec ) );
 	}
 	{ // Test for complexity. Sort array of million pseudo-random numbers.
@@ -392,7 +353,7 @@ fn nomangle main() : i32
 			i= i32(gen.Next());
 		}
 
-		ust::sort( vec );
+		ust::binary_heap::sort( vec );
 		halt if( !ust::is_sorted( vec ) );
 	}
 	{ // Test for complexity. Sort array of million pseudo-random f64 numbers.
@@ -405,7 +366,7 @@ fn nomangle main() : i32
 			i= f64(gen.Next());
 		}
 
-		ust::sort( vec );
+		ust::binary_heap::sort( vec );
 		halt if( !ust::is_sorted( vec ) );
 	}
 	{ // Test for complexity. Sort already sorted array.
@@ -421,7 +382,7 @@ fn nomangle main() : i32
 			}
 		}
 
-		ust::sort( vec );
+		ust::binary_heap::sort( vec );
 		halt if( !ust::is_sorted( vec ) );
 	}
 	{ // Test for complexity. Sort reverse-sorted array.
@@ -437,7 +398,7 @@ fn nomangle main() : i32
 			}
 		}
 
-		ust::sort( vec );
+		ust::binary_heap::sort( vec );
 		halt if( !ust::is_sorted( vec ) );
 	}
 	{ // Sort, using custom comparator in form of function pointer.
@@ -450,7 +411,7 @@ fn nomangle main() : i32
 			i= i32( gen.Next() - 16384u );
 		}
 
-		ust::sort( IntRange(arr), CompareAbs );
+		ust::binary_heap::sort( IntRange(arr), CompareAbs );
 		halt if( !ust::is_sorted( IntRangeImut(arr), CompareAbs ) );
 	}
 	{ // Sort by key, using custom key provider in form of function pointer.
@@ -466,7 +427,7 @@ fn nomangle main() : i32
 		var ( fn( i32 x ) : i32 ) abs_func= ust::abs</i32/>;
 		var ( fn( i32 l, i32 r ) : bool ) comp= CompareAbs;
 
-		ust::sort_by_key( IntRange(arr), abs_func );
+		ust::binary_heap::sort_by_key( IntRange(arr), abs_func );
 		halt if( !ust::is_sorted( IntRangeImut(arr), CompareAbs ) );
 	}
 	{ // Sort, using custom comparator in form of functional object.
@@ -479,7 +440,7 @@ fn nomangle main() : i32
 			i= i32(gen.Next());
 		}
 
-		ust::sort( IntRange(arr), CompareGreater() );
+		ust::binary_heap::sort( IntRange(arr), CompareGreater() );
 		halt if( !ust::is_sorted( IntRangeImut(arr), CompareGreater() ) );
 	}
 	{ // Sort, using custom comparator in form of lambda.
@@ -493,20 +454,20 @@ fn nomangle main() : i32
 		}
 
 		auto greater= lambda( i32 x, i32 y ) : bool { return x > y; };
-		ust::sort( IntRange(arr), greater );
+		ust::binary_heap::sort( IntRange(arr), greater );
 		halt if( !ust::is_sorted( IntRangeImut(arr), greater ) );
 	}
 	{
 		var [ ust::string8, 6 ] mut arr[ "aqwsd", "", "1", "n6Y", "4R", "dawghawfaw" ];
 
-		ust::sort( ust::array_view_mut</ ust::string8 />( arr ), CompareStringSize );
+		ust::binary_heap::sort( ust::array_view_mut</ ust::string8 />( arr ), CompareStringSize );
 		halt if( !ust::is_sorted( ust::array_view_imut</ ust::string8 />( arr ), CompareStringSize ) );
 	}
 	{
 		var [ ust::string8, 6 ] mut arr[ "aqwsd", "", "1", "n6Y", "4R", "dawghawfaw" ];
 
 		// The same as above, but use "sort_by_key" version of sorting algorithm.
-		ust::sort_by_key( ust::array_view_mut</ ust::string8 />( arr ), ust::string8::size );
+		ust::binary_heap::sort_by_key( ust::array_view_mut</ ust::string8 />( arr ), ust::string8::size );
 		halt if( !ust::is_sorted_by_key( ust::array_view_imut</ ust::string8 />( arr ), ust::string8::size ) );
 	}
 	{ // Sort strings using default (<) comparator
@@ -514,7 +475,7 @@ fn nomangle main() : i32
 		var [ ust::string8, num ]
 			 mut arr[ "4", "8", "15", "16", "23", "42", "quck", "brown", "fox", "jumps", "over", "the", "lazy", "dog", "Bc", "Ba", "A", "Af", "L", "lolwat", "Zy", "XXX", "" ],
 			imut res[ "", "15", "16", "23", "4", "42", "8", "A", "Af", "Ba", "Bc", "L", "XXX", "Zy", "brown", "dog", "fox", "jumps", "lazy", "lolwat", "over", "quck", "the" ];
-		ust::sort( arr );
+		ust::binary_heap::sort( arr );
 		halt if( !ust::is_sorted( arr ) );
 
 		for( auto mut i= 0s; i < num; ++i )

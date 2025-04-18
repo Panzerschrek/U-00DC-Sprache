@@ -113,7 +113,6 @@ Standart library:
 *) Compact vector-like container - with size/capacity stored in allocated memory block
 *) Optimize sorting - use faster algorithm for small number of elements, select median element wisely
 *) Priority heap support
-*) Implement heap-sorting (which has guaranted logolinear time complexity)
 *) Detachable thread
 *) More binary search functions - index of last element less than given (or equal to it), index of given element,
 	range partition

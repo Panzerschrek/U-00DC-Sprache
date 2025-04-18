@@ -119,7 +119,7 @@ namespace sort_impl
 {
 
 /*
-Simple quicksort implementation. Average complexity - O(log(n)), worst case complexity - O(n^2).
+Simple quicksort implementation. Average time complexity - O(n * log(n)), worst case complexity - O(n^2).
  TODO:
  * Use more simple sorting algorithm for small number of elements.
  * Select median element wisely.
@@ -216,12 +216,24 @@ fn do_sort( $(T) mut start, $(T) mut end, Compare& comp ) unsafe
 				swap( $>(hi), $>(last) );
 			}
 
-			// TODO - expand middle subrange by cheking if all element are the same.
-			// This should speed-up cases with ranges containing a lot of identical elements.
+			auto mut hi1= hi + 1s;
+
+			// Expand middle subrange to perform recursion only for numbers stricly less and strictly greater than middle element.
+			// This speed-ups sorting in some cases (lots of identical elements).
+			{
+				auto& middle= $>(hi);
+				while( hi > start && !safe( comp( unsafe( $>(hi - ssize_type(1)) ), middle ) ) )
+				{
+					--hi;
+				}
+				while(hi1 < end && !safe( comp( middle, unsafe( $>(hi1) ) ) ) )
+				{
+					++hi1;
+				}
+			}
 
 			// Avoid deep recursion. Perform recursive call for smaller range, perform next loop interation for larger range.
 			// In both cases process subranges excluding "hi" position, since it now contains the middle element.
-			auto hi1= hi + 1s;
 			if( hi - start < end - hi1 )
 			{
 				do_sort( start, hi, comp );

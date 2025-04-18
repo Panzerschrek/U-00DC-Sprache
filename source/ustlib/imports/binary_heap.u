@@ -1,0 +1,281 @@
+import "compare.u"
+import "random_access_range.u"
+
+namespace ust
+{
+
+namespace binary_heap
+{
+
+// sort_by_key overloading for containers
+template</type T, type KeyProvider/>
+fn sort_by_key( T &mut container, KeyProvider mut key_provider )
+{
+	sort_by_key( container.range(), move(key_provider) );
+}
+
+// Sort by key obtained via given key provider function.
+// This function accepts a single value and should return a value or a reference with operator <=> defined for its type.
+template</type T, type KeyProvider/>
+fn sort_by_key( random_access_range</T, true/> range, KeyProvider mut key_provider )
+{
+	sort( range, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
+}
+
+template</type T, size_type S/>
+fn sort( [ T, S ] &mut arr )
+{
+	sort( array_view_mut</T/>( arr ), default_compare</T/>() );
+}
+
+// Generic sort overloading for types other than "random_access_range".
+// It works only for types with "range" method returing proper "random_access_range" - like "vector" or "string".
+template</type T/>
+fn sort( T &mut container )
+{
+	sort( container.range() );
+}
+
+// Perform heapsort using default compare function.
+template</type T/>
+fn sort( array_view_mut</T/> range )
+{
+	sort( range, default_compare</T/>() );
+}
+
+// Perform heapsort.
+// Sorting is performed in-place, no additional space is used.
+// Time complexity is O(n * log(n)) in all cases.
+// Order of equal elements may not be preserved.
+template</type T, type Compare/>
+fn sort( array_view_mut</T/> range, Compare& comp )
+{
+	make_heap( range, comp );
+
+	for( auto mut s= range.size(); s > 1s; --s )
+	{
+		// We ensure here that range passed to this function contains at least two elements.
+		unsafe( pop_heap_unchecked( range.subrange_end(s), comp ) );
+	}
+}
+
+template</type T/>
+fn is_heap( array_view_imut</T/> range ) : bool
+{
+	return is_heap( range, default_compare</T/>() );
+}
+
+template</type T/>
+fn is_heap( array_view_mut</T/> range ) : bool
+{
+	return is_heap( array_view_imut</T/>( range ) );
+}
+
+template</type T, type Compare/>
+fn is_heap( array_view_mut</T/> range, Compare& comp ) : bool
+{
+	return is_heap( array_view_imut</T/>( range ), comp );
+}
+
+// Check if given range is heap according to given compare function.
+// Time complexity is linear.
+template</type T, type Compare/>
+fn is_heap( array_view_imut</T/> range, Compare& comp ) : bool
+{
+	for( auto mut i= 1s; i < range.size(); ++i )
+	{
+		auto parent_index= (i - 1s) >> 1s;
+		if( comp( unsafe( range.index_unchecked( parent_index ) ), unsafe( range.index_unchecked( i ) ) ) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+template</type T/>
+fn push_heap( array_view_mut</T/> range )
+{
+	push_heap( range, default_compare</T/>() );
+}
+
+// Assuming all elements except the last build a heap push the last element to the heap, making the whole range heap.
+// Time complexity is O(log(n)).
+// Does nothing if size is less than 2.
+template</type T, type Compare/>
+fn push_heap( array_view_mut</T/> range, Compare& comp )
+{
+	if( range.size() <= 1s )
+	{
+		return; // Nothing to do.
+	}
+	unsafe( push_heap_unchecked( range, comp ) );
+}
+
+template</type T, type Compare/>
+fn push_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
+{
+	unsafe
+	{
+		// Use here raw pointer operations for better performance.
+
+		var $(T) ptr= range.data();
+		auto mut index= range.size() - 1s;
+
+		auto first_parent_index= (index - 1s) >> 1s;
+		if( safe( comp( unsafe( $>(ptr + first_parent_index ) ), unsafe( $>( ptr + index ) ) ) ) )
+		{
+			// Move new element into temporary stack storage.
+			auto constexpr element_size= typeinfo</T/>.size_of;
+			auto constexpr element_alignment= typeinfo</T/>.align_of;
+			var aligned_storage</ element_size, element_alignment /> mut new_element_storage= uninitialized;
+			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( $<(new_element_storage) ), ptr_cast_to_byte8( ptr + index ), element_size );
+			var T& new_element_ref= cast_ref_unsafe</T/>( new_element_storage );
+
+			// Move last parent to the position of last element.
+			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + first_parent_index ), element_size );
+
+			// Move parents down, until they are greater than new element.
+
+			index= first_parent_index;
+			while( index > 0s )
+			{
+				auto parent_index= (index - 1s) >> 1s;
+
+				if( safe( comp( unsafe( $>(ptr + parent_index) ), new_element_ref ) ) )
+				{
+					memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + parent_index ), element_size );
+					index= parent_index;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			// Move new element into its final position.
+			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( $<(new_element_storage) ), element_size );
+		}
+	}
+}
+
+template</type T/>
+fn pop_heap( array_view_mut</T/> range )
+{
+	pop_heap( range, default_compare</T/>() );
+}
+
+// Pop top element from the heap, move it into the last position.
+// After that all elements in the range except the last are heap-ordered.
+// Time complexity is O(log(n)).
+// Does nothing if size is less than 2.
+template</type T, type Compare/>
+fn pop_heap( array_view_mut</T/> range, Compare& comp )
+{
+	if( range.size() <= 1s )
+	{
+		return; // Nothing to do.
+	}
+	unsafe( pop_heap_unchecked( range, comp ) );
+}
+
+// Given range shouldn contain at least two elements.
+template</type T, type Compare/>
+fn pop_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
+{
+	unsafe
+	{
+		// Use here raw pointer operations for better performance.
+
+		var $(T) ptr= range.data();
+		auto last= range.size() - 1s;
+
+		// Move top element into a stack storage first.
+		auto constexpr element_size= typeinfo</T/>.size_of;
+		auto constexpr element_alignment= typeinfo</T/>.align_of;
+		var aligned_storage</ element_size, element_alignment /> mut top_element_storage= uninitialized;
+		memory_copy_aligned( element_alignment, ptr_cast_to_byte8( $<(top_element_storage) ), ptr_cast_to_byte8( ptr ), element_size );
+
+		// Propagate hole down to the lowest level.
+
+		auto mut index= 0s;
+
+		loop
+		{
+			auto child0_index= (index << 1s) + 1s;
+			if( child0_index >= last )
+			{
+				// No children at all.
+				break;
+			}
+
+			auto child1_index= child0_index + 1s;
+			if( child1_index >= last )
+			{
+				// Single child.
+				memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + child0_index ), element_size );
+				index= child0_index;
+				break;
+			}
+
+			if( safe( comp( unsafe( $>(ptr + child0_index) ), unsafe( $>(ptr + child1_index) ) ) ) )
+			{
+				memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + child1_index ), element_size );
+				index= child1_index;
+			}
+			else
+			{
+				memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + child0_index ), element_size );
+				index= child0_index;
+			}
+		}
+
+		if( index != last )
+		{
+			// Propagate hole up, assuming last element will be placed in it.
+			while( index > 0s )
+			{
+				auto parent_index= (index - 1s) >> 1s;
+
+				if( safe( comp( unsafe( $>( ptr + parent_index ) ), unsafe( $>( ptr + last ) ) ) ) )
+				{
+					memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + parent_index ), element_size );
+					index= parent_index;
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			// Move last element into its final position.
+			memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + index ), ptr_cast_to_byte8( ptr + last ), element_size );
+		}
+
+		// Move top element previously stored on stack into the last position.
+		memory_copy_aligned( element_alignment, ptr_cast_to_byte8( ptr + last ), ptr_cast_to_byte8( $<(top_element_storage) ), element_size );
+	}
+}
+
+template</type T/>
+fn make_heap( array_view_mut</T/> range )
+{
+	make_heap( range, default_compare</T/>() );
+}
+
+// Makes heap from given range.
+// Time complexity is O(n * log(n)) in all cases.
+template</type T, type Compare/>
+fn make_heap( array_view_mut</T/> range, Compare& comp )
+{
+	for( auto mut i= 1s; i < range.size(); ++i )
+	{
+		// We ensure here that passed range has size at least 2.
+		unsafe( push_heap_unchecked( range.subrange_end( i + 1s ), comp ) );
+	}
+}
+
+} // namespace binary_heap
+
+} // namespace ust
