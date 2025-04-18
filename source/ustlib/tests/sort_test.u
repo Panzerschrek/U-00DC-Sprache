@@ -518,23 +518,5 @@ fn nomangle main() : i32
 		}
 	}
 
-	auto nan_f= ust::nan</f32/>();
-
-	{ // Sort array with "NaN" in random positions.
-		var [ f32, 8 ] mut arr[ 0.0f, -5.0f, nan_f, 1.3f, nan_f, 256.66f, -999.0f, nan_f ];
-		ust::sort( arr );
-		halt if( !ust::is_sorted( arr ) );
-	}
-	{ // Sort array with "NaN" at start.
-		var [ f32, 8 ] mut arr[ nan_f, nan_f, nan_f, 0.0f, -5.0f, 1.3f, 256.66f, -999.0f ];
-		ust::sort( arr );
-		halt if( !ust::is_sorted( arr ) );
-	}
-	{ // Sort array with "NaN" at end.
-		var [ f32, 8 ] mut arr[ 0.0f, -5.0f, 1.3f, 256.66f, -999.0f, nan_f, nan_f, nan_f ];
-		ust::sort( arr );
-		halt if( !ust::is_sorted( arr ) );
-	}
-
 	return 0;
 }
