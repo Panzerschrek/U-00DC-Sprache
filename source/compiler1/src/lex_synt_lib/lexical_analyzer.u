@@ -200,26 +200,20 @@ fn ParseMacroIdentifier( Iterator &mut it ) : Lexem
 
 fn PowI( u64 base_, u64 pow ) : f64
 {
-	if( pow == 0u64 )
+	var f64 mut res= 1.0, mut p(base_);
+
+	for( var u64 mut i(1); ; i <<= 1u, p*= p )
 	{
-		return 1.0;
-	}
-	if( pow == 1u64 )
-	{
-		return f64(base_);
-	}
-	if( pow == 2u64 )
-	{
-		return f64(base_ * base_);
+		if( (i & pow ) != 0u64 )
+		{
+			res*= p;
+		}
+		if( i >= pow )
+		{
+			break;
+		}
 	}
 
-	auto half_pow= pow >> 1u;
-	auto mut res= PowI( base_, half_pow );
-	res= res * res;
-	if( half_pow * 2u64 != pow )
-	{
-		res*= f64(base_);
-	}
 	return res;
 }
 

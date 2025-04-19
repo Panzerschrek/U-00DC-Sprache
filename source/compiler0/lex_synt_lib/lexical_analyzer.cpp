@@ -383,21 +383,18 @@ Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 	return result;
 }
 
-
 double PowI( const uint64_t base, const uint64_t pow )
 {
-	if( pow == 0u )
-		return 1.0;
-	if( pow == 1u )
-		return double(base);
-	if( pow == 2u )
-		return double(base * base);
+	double res= 1.0, p= double(base);
 
-	const uint64_t half_pow= pow / 2u;
-	double res= PowI( base, half_pow );
-	res= res * res;
-	if( half_pow * 2u != pow )
-		res*= double(base);
+	for( uint64_t i= 1; ; i <<= 1, p*= p )
+	{
+		if( (i & pow ) != 0 )
+			res*= p;
+		if( i >= pow )
+			break;
+	}
+
 	return res;
 }
 
