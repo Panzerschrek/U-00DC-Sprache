@@ -68,13 +68,13 @@ fn polymorph_is_instance_of( B& b ) : bool
 }
 
 template</ type To, type From />
-fn polymorph_cast( From & mut from ) : optional_ref</ To, true  /> @( reference_notation::return_inner_references::param0 )
+fn polymorph_cast( From & mut from ) : optional_ref_mut</ To /> @( reference_notation::return_inner_references::param0 )
 {
 	polymorph_impl::polymorph_cast_impl</To/>(from);
 }
 
 template</ type To, type From />
-fn polymorph_cast( From &imut from ) : optional_ref</ To, false /> @( reference_notation::return_inner_references::param0 )
+fn polymorph_cast( From &imut from ) : optional_ref_imut</ To /> @( reference_notation::return_inner_references::param0 )
 {
 	return unsafe( polymorph_impl::polymorph_cast_impl</To/>( cast_mut(from) ) );
 }
@@ -115,7 +115,7 @@ fn constexpr is_polymorph() : bool
 
 // TODO - fix this. Now "polymorph_cast" for types with references inside is completely broken because of "optional_ref".
 template</ type To, type From />
-fn polymorph_cast_impl( From &mut from ) : optional_ref</ To, true /> @( reference_notation::return_inner_references::param0 )
+fn polymorph_cast_impl( From &mut from ) : optional_ref_mut</ To /> @( reference_notation::return_inner_references::param0 )
 {
 	// Disable cast where it can produce internal reference out of nowhere.
 	static_assert( typeinfo</To/>.reference_tag_count <= typeinfo</From/>.reference_tag_count );
@@ -139,7 +139,7 @@ fn polymorph_cast_impl( From &mut from ) : optional_ref</ To, true /> @( referen
 				var $(type_id_table_element) type_id_table= virtual_table.type_id_table;
 				// Obtain pointer to allocated object.
 				var $(byte8) ptr= $<( cast_ref_unsafe</byte8/>( from ) ) - virtual_table.offset_of_allocated_object;
-				return optional_ref</ To, true />( polymorph_cast_r</To/>( ptr, type_id_table ) );
+				return optional_ref_mut</ To />( polymorph_cast_r</To/>( ptr, type_id_table ) );
 			}
 		}
 	}

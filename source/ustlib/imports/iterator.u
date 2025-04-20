@@ -849,10 +849,10 @@ private:
 template</type T/> struct is_optional</ optional</T/> /> { var bool value= true; }
 template</type T/> struct is_optional</T/> { var bool value= false; }
 
-template</type T/> struct is_optional_ref_mut </ optional_ref</T, true /> /> { var bool value= true; }
+template</type T/> struct is_optional_ref_mut </ optional_ref_mut</T /> /> { var bool value= true; }
 template</type T/> struct is_optional_ref_mut </T/> { var bool value= false; }
 
-template</type T/> struct is_optional_ref_imut</ optional_ref</T, false/> /> { var bool value= true; }
+template</type T/> struct is_optional_ref_imut</ optional_ref_imut</T /> /> { var bool value= true; }
 template</type T/> struct is_optional_ref_imut</T/> { var bool value= false; }
 
 } // namespace iterator_impl

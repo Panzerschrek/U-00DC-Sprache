@@ -153,9 +153,8 @@ public:
 
 	template</ type T />
 	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
-	get( this ) : optional_ref</ T, false />  @( reference_notation::return_inner_references::param0 )
+	get( this ) : optional_ref_imut</ T />  @( reference_notation::return_inner_references::param0 )
 	{
-		var optional_ref</ T, false /> mut res;
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
@@ -163,7 +162,7 @@ public:
 			{
 				if( cur_index == size_type(index_) )
 				{
-					res.reset( unsafe( cast_ref_unsafe</T/>(storage_) ) );
+					return unsafe( cast_ref_unsafe</T/>(storage_) );
 				}
 			}
 			else
@@ -171,14 +170,13 @@ public:
 				++cur_index;
 			}
 		}
-		return res;
+		return null_optional_ref;
 	}
 
 	template</ type T />
 	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
-	get(mut this) : optional_ref</ T, true />  @( reference_notation::return_inner_references::param0 )
+	get(mut this) : optional_ref_mut</ T />  @( reference_notation::return_inner_references::param0 )
 	{
-		var optional_ref</ T, true /> mut res;
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
@@ -186,7 +184,7 @@ public:
 			{
 				if( cur_index == size_type(index_) )
 				{
-					res.reset( unsafe( cast_ref_unsafe</T/>(storage_) ) );
+					return unsafe( cast_ref_unsafe</T/>(storage_) );
 				}
 			}
 			else
@@ -194,7 +192,7 @@ public:
 				++cur_index;
 			}
 		}
-		return res;
+		return null_optional_ref;
 	}
 
 	// try_get - return a reference to given type or halt, if variant doesn't contain type specified.

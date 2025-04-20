@@ -29,7 +29,7 @@ static_assert( non_sync</IntPtrWeakImut/> );
 static_assert( non_sync</ ust::box</ IntPtrMut /> /> );
 static_assert( non_sync</ ust::box_nullable</ IntPtrMut /> /> );
 static_assert( non_sync</ ust::optional</ IntPtrMut /> /> );
-static_assert( non_sync</ ust::optional_ref</ IntPtrMut, true /> /> );
+static_assert( non_sync</ ust::optional_ref_mut</ IntPtrMut /> /> );
 static_assert( non_sync</ ust::random_access_range</ IntPtrMut, true /> /> );
 static_assert( non_sync</ ust::unordered_map</ i32, IntPtrMut /> /> );
 static_assert( non_sync</ ust::vector</ IntPtrMut /> /> );

@@ -151,17 +151,12 @@ public:
 		return !is_nullptr( unsafe( cast_mut(this).find_key( key ) ) );
 	}
 
-	fn find( imut this, key_type& key ) : optional_ref</ value_type, false /> @( reference_notation::return_inner_references::param0 )
+	fn find( imut this, key_type& key ) : optional_ref_imut</ value_type /> @( reference_notation::return_inner_references::param0 )
 	{
-		unsafe
-		{
-			var optional_ref</ value_type, false /> mut r;
-			r= cast_mut(this).find(key);
-			return r;
-		}
+		return unsafe( cast_mut(this).find(key) );
 	}
 
-	fn find(  mut this, key_type& key ) : optional_ref</ value_type, true  /> @( reference_notation::return_inner_references::param0 )
+	fn find(  mut this, key_type& key ) : optional_ref_mut</ value_type /> @( reference_notation::return_inner_references::param0 )
 	{
 		unsafe
 		{

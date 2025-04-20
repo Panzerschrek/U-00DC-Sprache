@@ -1,8 +1,8 @@
 //##fail_test
 import "../imports/optional_ref.u"
 
-type IntRefImut= ust::optional_ref</ i32, false />;
-type IntRefMut = ust::optional_ref</ i32, true  />;
+type IntRefImut= ust::optional_ref_imut</ i32 />;
+type IntRefMut = ust::optional_ref_mut</ i32 />;
 
 fn nomangle main() : i32
 {
