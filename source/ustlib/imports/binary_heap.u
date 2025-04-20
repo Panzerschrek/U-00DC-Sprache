@@ -17,7 +17,7 @@ fn sort_by_key( T &mut container, KeyProvider mut key_provider )
 // Sort by key obtained via given key provider function.
 // This function accepts a single value and should return a value or a reference with operator <=> defined for its type.
 template</type T, type KeyProvider/>
-fn sort_by_key( random_access_range</T, true/> range, KeyProvider mut key_provider )
+fn sort_by_key( array_view_mut</T/> range, KeyProvider mut key_provider )
 {
 	sort( range, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
 }

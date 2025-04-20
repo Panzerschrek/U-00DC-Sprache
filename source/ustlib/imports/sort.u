@@ -17,26 +17,26 @@ fn is_sorted( T& container ) : bool
 template</type T, size_type S/>
 fn is_sorted( [ T, S ] & arr ) : bool
 {
-	return is_sorted( random_access_range</T, false/>( arr ) );
+	return is_sorted( array_view_imut</T/>( arr ) );
 }
 
 template</type T/>
-fn is_sorted( random_access_range</T, false/> range ) : bool
+fn is_sorted( array_view_imut</T/> range ) : bool
 {
 	return is_sorted( range, default_compare</T/>() );
 }
 
 // "is_sorted" overloading for mutable ranges.
 template</type T/>
-fn is_sorted( random_access_range</T, true/> range ) : bool
+fn is_sorted( array_view_mut</T/> range ) : bool
 {
-	return is_sorted( random_access_range</T, false/>( range ), default_compare</T/>() );
+	return is_sorted( array_view_imut</T/>( range ), default_compare</T/>() );
 }
 
 // This function checks if given range is sorted according to given comparator.
 // Time complexity is linear.
 template</type T, type Compare/>
-fn is_sorted( random_access_range</T, false/> range, Compare& comp ) : bool
+fn is_sorted( array_view_imut</T/> range, Compare& comp ) : bool
 {
 	if( range.size() <= 1s )
 	{
@@ -65,7 +65,7 @@ fn is_sorted_by_key( T& container, KeyProvider mut key_provider ) : bool
 // Check if given range is sorted by key obtained via given key provider function.
 // This function accepts a single value and should return a value or a reference with operator <=> defined for its type.
 template</type T, type KeyProvider/>
-fn is_sorted_by_key( random_access_range</T, false/> range, KeyProvider mut key_provider ) : bool
+fn is_sorted_by_key( array_view_imut</T/> range, KeyProvider mut key_provider ) : bool
 {
 	return is_sorted( range, compare_by_key</T, KeyProvider/>{ .key_provider= move(key_provider) } );
 }
@@ -82,17 +82,17 @@ fn sort( T &mut container )
 template</type T, size_type S/>
 fn sort( [ T, S ] &mut arr )
 {
-	sort( random_access_range</T, true/>( arr ) );
+	sort( array_view_mut</T/>( arr ) );
 }
 
 template</type T/>
-fn sort( random_access_range</T, true/> range )
+fn sort( array_view_mut</T/> range )
 {
 	unsafe( sort_impl::do_sort( range.data(), range.data() + range.size(), default_compare</T/>() ) );
 }
 
 template</type T, type Compare/>
-fn sort( random_access_range</T, true/> range, Compare& comp )
+fn sort( array_view_mut</T/> range, Compare& comp )
 {
 	unsafe( sort_impl::do_sort( range.data(), range.data() + range.size(), comp ) );
 }
@@ -107,7 +107,7 @@ fn sort_by_key( T &mut container, KeyProvider mut key_provider )
 // Sort by key obtained via given key provider function.
 // This function accepts a single value and should return a value or a reference with operator <=> defined for its type.
 template</type T, type KeyProvider/>
-fn sort_by_key( random_access_range</T, true/> range, KeyProvider mut key_provider )
+fn sort_by_key( array_view_mut</T/> range, KeyProvider mut key_provider )
 {
 	unsafe( sort_impl::do_sort(
 		range.data(),
