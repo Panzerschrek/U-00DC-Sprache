@@ -7,8 +7,6 @@ fn nomangle U1_ConstantTokenNone( LLVMContextRef C ) unsafe : LLVMValueRef;
 
 fn nomangle U1_GetFunctionType(LLVMValueRef f) unsafe : LLVMTypeRef;
 
-fn nomangle U1_SetStructName(LLVMTypeRef t, NullTerminatedString& name) unsafe;
-
 fn nomangle U1_BasicBlockHasPredecessors(LLVMBasicBlockRef basic_block) unsafe : bool;
 
 fn nomangle nodiscard U1_CreateOrphanInBoundsGEP( LLVMTypeRef t, LLVMValueRef pointer, $(LLVMValueRef) indices, u32 num_indices ) unsafe : LLVMValueRef;

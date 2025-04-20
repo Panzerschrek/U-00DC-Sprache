@@ -22,11 +22,6 @@ LLVMTypeRef U1_GetFunctionType(const LLVMValueRef f)
 	return llvm::wrap(llvm::dyn_cast<llvm::Function>(llvm::unwrap(f))->getFunctionType());
 }
 
-void U1_SetStructName(const LLVMTypeRef t, const char* const name)
-{
-	llvm::dyn_cast<llvm::StructType>(llvm::unwrap(t))->setName(name);
-}
-
 bool U1_BasicBlockHasPredecessors(const LLVMBasicBlockRef basic_block)
 {
 	return llvm::unwrap(basic_block)->hasNPredecessorsOrMore(1);
