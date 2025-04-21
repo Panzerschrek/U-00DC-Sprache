@@ -1,21 +1,21 @@
-import "source_file_contents_hash_wrapper.uh"
+import "long_stable_hash_wrapper.uh"
 
 // If contents of this file changed, source_file_contents_hash_wrapper.cpp must be changed too!
 
 type UserHandle= size_type;
 
-type U1_CalculateSourceFileContentsHashCallback= fn( UserHandle data, $(char8) hash_data, size_type hash_size );
+type U1_CalculateLongStableHashCallback= fn( UserHandle data, $(char8) hash_data, size_type hash_size );
 
-fn nomangle U1_CalculateSourceFileContentsHash(
+fn nomangle U1_CalculateLongStableHash(
 	$(char8) data,
 	size_type size,
-	U1_CalculateSourceFileContentsHashCallback callback,
+	U1_CalculateLongStableHashCallback callback,
 	UserHandle callback_data ) unsafe;
 
 namespace U1
 {
 
-fn CalculateSourceFileContentsHashCallbackFunc( UserHandle data, $(char8) hash_data, size_type hash_size )
+fn CalculateLongStableHashCallbackFunc( UserHandle data, $(char8) hash_data, size_type hash_size )
 {
 	unsafe
 	{
@@ -25,7 +25,7 @@ fn CalculateSourceFileContentsHashCallbackFunc( UserHandle data, $(char8) hash_d
 	}
 }
 
-fn CalculateSourceFileContentsHash( ust::string_view8 source_file_contents ) : ust::string8
+fn CalculateLongStableHash( ust::string_view8 source_file_contents ) : ust::string8
 {
 	unsafe
 	{
@@ -33,10 +33,10 @@ fn CalculateSourceFileContentsHash( ust::string_view8 source_file_contents ) : u
 		var $(ust::string8) result_ptr= $<(result);
 		auto result_handle= cast_ref_unsafe</UserHandle/>(result_ptr);
 
-		U1_CalculateSourceFileContentsHash(
+		U1_CalculateLongStableHash(
 			source_file_contents.data(),
 			source_file_contents.size(),
-			CalculateSourceFileContentsHashCallbackFunc,
+			CalculateLongStableHashCallbackFunc,
 			result_handle );
 
 		return result;

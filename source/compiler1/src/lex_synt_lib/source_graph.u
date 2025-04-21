@@ -6,19 +6,19 @@ namespace U1
 
 fn LoadSourceGraph(
 	IVfsSharedPtr& vfs_ptr,
-	SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	SourceFilePathHashigFunction source_file_path_hashing_function,
 	ust::string8& root_file_path,
 	ust::string_view8 prelude_code ) : SourceGraph
 {
 	with( mut vfs_lock : vfs_ptr.lock_mut() )
 	{
-		return LoadSourceGraph( vfs_lock.deref(), source_file_contents_hashing_function, root_file_path, prelude_code );
+		return LoadSourceGraph( vfs_lock.deref(), source_file_path_hashing_function, root_file_path, prelude_code );
 	}
 }
 
 fn LoadSourceGraph(
 	IVfs &mut vfs,
-	SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	SourceFilePathHashigFunction source_file_contents_hashing_function,
 	ust::string8& root_file_path,
 	ust::string_view8 prelude_code ) : SourceGraph
 {
@@ -82,7 +82,7 @@ fn LoadSourceGraph(
 // Returns node index or ~0 in case of error.
 fn LoadSourceGraph_r(
 	IVfs &mut vfs,
-	SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	SourceFilePathHashigFunction source_file_path_hashing_function,
 	ust::string8& file_path,
 	ust::string8& parent_file_path,
 	SrcLoc& import_src_loc,
@@ -171,7 +171,7 @@ fn LoadSourceGraph_r(
 		auto child=
 			LoadSourceGraph_r(
 				vfs,
-				source_file_contents_hashing_function,
+				source_file_path_hashing_function,
 				import_.name,
 				file_path_normalized,
 				import_.src_loc,
@@ -217,7 +217,7 @@ fn LoadSourceGraph_r(
 		}
 	}
 
-	auto mut file_path_hash= source_file_contents_hashing_function( file_path_normalized );
+	auto mut file_path_hash= source_file_path_hashing_function( file_path_normalized );
 
 	auto mut synt_result=
 		Synt::SyntaxAnalysis(

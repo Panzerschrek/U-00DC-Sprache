@@ -4,7 +4,7 @@ import "/scoped_array.u"
 import "/utf.u"
 import "/CodeBuilderLib/keywords.uh"
 import "error_reporting.uh"
-import "source_file_contents_hash_wrapper.uh"
+import "long_stable_hash_wrapper.uh"
 import "code_builder.uh"
 
 namespace U1
@@ -852,7 +852,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	var LLVMTypeRef element_llvm_type= GetFundamentalLLVMType( element_type );
 
 	// Use contents hash-based names for embed arrays.
-	var ust::string8 mut name= "_embed_array_" + CalculateSourceFileContentsHash( loaded_file );
+	var ust::string8 mut name= "_embed_array_" + CalculateLongStableHash( loaded_file );
 	name.push_back( '\0' );
 
 	var LLVMValueRef constexpr_value= unsafe( LLVMConstStringInContext( llvm_context_, cast_mut(loaded_file).data(), u32(array_size), LLVMBool::True ) );
