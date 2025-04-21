@@ -12,7 +12,7 @@ namespace
 
 size_t LoadNode_r(
 	IVfs& vfs,
-	const SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	const SourceFilePathHashigFunction source_file_path_hashing_function,
 	const IVfs::Path& file_path,
 	const IVfs::Path& parent_file_path,
 	std::vector<std::string>& processed_files_stack,
@@ -94,7 +94,7 @@ size_t LoadNode_r(
 		const size_t child_node_index=
 			LoadNode_r(
 				vfs,
-				source_file_contents_hashing_function,
+				source_file_path_hashing_function,
 				import.import_name,
 				full_file_path,
 				processed_files_stack,
@@ -131,7 +131,7 @@ size_t LoadNode_r(
 		}
 	}
 
-	std::string contents_hash= source_file_contents_hashing_function( *loaded_file );
+	std::string file_path_hash= source_file_path_hashing_function( full_file_path );
 
 	// Make syntax analysis, using imported macroses.
 	Synt::SyntaxAnalysisResult synt_result=
@@ -139,13 +139,12 @@ size_t LoadNode_r(
 		lex_result.lexems,
 		std::move(merged_macroses),
 		result.macro_expansion_contexts,
-		contents_hash );
+		file_path_hash );
 
 	result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );
-	result.nodes_storage[node_index].contents_hash= std::move(contents_hash);
-	result.nodes_storage[node_index].file_path_hash= source_file_contents_hashing_function( full_file_path );
+	result.nodes_storage[node_index].file_path_hash= std::move(file_path_hash);
 	return node_index;
 }
 
@@ -153,7 +152,7 @@ size_t LoadNode_r(
 
 SourceGraph LoadSourceGraph(
 	IVfs& vfs,
-	const SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	const SourceFilePathHashigFunction source_file_path_hashing_function,
 	const IVfs::Path& root_file_path,
 	const std::string_view prelude_code )
 {
@@ -163,7 +162,7 @@ SourceGraph LoadSourceGraph(
 	std::vector<std::string> processed_files_stack;
 	LoadNode_r(
 		vfs,
-		source_file_contents_hashing_function,
+		source_file_path_hashing_function,
 		root_file_path,
 		"",
 		processed_files_stack,
@@ -184,14 +183,17 @@ SourceGraph LoadSourceGraph(
 		for( Lexem& lexem :lex_result.lexems )
 			lexem.src_loc.SetFileIndex(uint32_t(prelude_node_index));
 
-		auto contents_hash= source_file_contents_hashing_function( prelude_code );
+		// Use non-normalized path, to avoid name collisions with real files.
+		std::string file_path= "compiler_generated_prelude";
+
+		std::string file_path_hash= source_file_path_hashing_function( file_path );
 
 		Synt::SyntaxAnalysisResult synt_result=
 			Synt::SyntaxAnalysis(
 				lex_result.lexems,
 				Synt::MacrosByContextMap(),
 				result.macro_expansion_contexts,
-				contents_hash );
+				file_path_hash );
 
 		result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
@@ -202,8 +204,8 @@ SourceGraph LoadSourceGraph(
 				other_node.child_nodes_indices.push_back( prelude_node_index );
 
 		SourceGraph::Node prelude_node;
-		prelude_node.file_path= "compiler_generated_prelude";
-		prelude_node.contents_hash= std::move(contents_hash);
+		prelude_node.file_path= std::move(file_path);
+		prelude_node.file_path_hash= std::move(file_path_hash);
 		prelude_node.ast= std::move(synt_result);
 		prelude_node.category= SourceGraph::Node::Category::BuiltInPrelude;
 

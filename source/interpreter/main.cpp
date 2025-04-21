@@ -13,7 +13,7 @@
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../sprache_version/sprache_version.hpp"
-#include "../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../code_builder_lib_common/long_stable_hash.hpp"
 #include "../code_builder_lib_common/interpreter.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
@@ -337,7 +337,7 @@ int Main( int argc, const char* argv[] )
 	bool have_some_errors= false;
 	for( const std::string& input_file : input_files )
 	{
-		SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
+		SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, input_file, prelude_code );
 
 		std::vector<IVfs::Path> dependent_files;
 		dependent_files.reserve( source_graph.nodes_storage.size() );

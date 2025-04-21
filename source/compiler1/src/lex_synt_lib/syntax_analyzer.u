@@ -4788,13 +4788,13 @@ fn SyntaxAnalysis(
 	Lexems& lexems,
 	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts /*in-out param*/,
-	ust::string8 mut source_file_contents_hash ) : SyntaxAnalysisResult
+	ust::string8 mut file_path_hash ) : SyntaxAnalysisResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
 		move(macros),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash),
+		move(file_path_hash),
 		0s );
 
 	return analyzer.DoAnalyzis();
@@ -4804,13 +4804,13 @@ fn ParseNamespaceElements(
 	Lexems& lexems,
 	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
-	ust::string8 mut source_file_contents_hash ) : NamespaceParsingResult
+	ust::string8 mut file_path_hash ) : NamespaceParsingResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
 		MacrosPtr( move(macros) ),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash),
+		move(file_path_hash),
 		0s );
 
 	return analyzer.ParseStandaloneNamespaceElements();
@@ -4820,13 +4820,13 @@ fn ParseClassElements(
 	Lexems& lexems,
 	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
-	ust::string8 mut source_file_contents_hash ) : ClassElementsParsingResult
+	ust::string8 mut file_path_hash ) : ClassElementsParsingResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
 		move(macros),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash),
+		move(file_path_hash),
 		0s );
 
 	return analyzer.ParseStandaloneClassElements();
@@ -4836,13 +4836,13 @@ fn ParseBlockElements(
 	Lexems& lexems,
 	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
-	ust::string8 mut source_file_contents_hash ) : BlockElementsParsingResult
+	ust::string8 mut file_path_hash ) : BlockElementsParsingResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
 		move(macros),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash),
+		move(file_path_hash),
 		0s );
 
 	return analyzer.ParseStandaloneBlockElements();
@@ -4852,13 +4852,13 @@ fn ParseTypeName(
 	Lexems& lexems,
 	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
-	ust::string8 mut source_file_contents_hash ) : TypeNameParsingResult
+	ust::string8 mut file_path_hash ) : TypeNameParsingResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
 		move(macros),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash),
+		move(file_path_hash),
 		0s );
 
 	return analyzer.ParseStandaloneTypeName();
@@ -4868,13 +4868,13 @@ fn ParseExpression(
 	Lexems& lexems,
 	MacrosPtr mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
-	ust::string8 mut source_file_contents_hash ) : ExpressionParsingResult
+	ust::string8 mut file_path_hash ) : ExpressionParsingResult
 {
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
 		move(macros),
 		move(macro_expansion_contexts),
-		move(source_file_contents_hash),
+		move(file_path_hash),
 		0s );
 
 	return analyzer.ParseStandaloneExpression();

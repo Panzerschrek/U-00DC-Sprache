@@ -770,8 +770,8 @@ std::string CodeBuilder::GetLambdaBaseName( const Synt::Lambda& lambda, const ll
 		// Encode file.
 		U_ASSERT( source_graph_ != nullptr );
 		U_ASSERT( src_loc.GetFileIndex() < source_graph_->nodes_storage.size() );
-		// Use file contenst hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
-		name+= source_graph_->nodes_storage[ src_loc.GetFileIndex() ].contents_hash;
+		// Use file path hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
+		name+= source_graph_->nodes_storage[ src_loc.GetFileIndex() ].file_path_hash;
 		name+= "_";
 
 		// Encode line and column into the name to produce different names for different lambdas in the same file.

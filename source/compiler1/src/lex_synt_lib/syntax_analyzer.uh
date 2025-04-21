@@ -62,37 +62,37 @@ fn SyntaxAnalysis(
 	Lexems& lexems,
 	MacrosPtr macros,
 	MacroExpansionContextsPtr macro_expansion_contexts /*in-out param*/,
-	ust::string8 source_file_contents_hash ) : SyntaxAnalysisResult;
+	ust::string8 file_path_hash ) : SyntaxAnalysisResult;
 
 fn ParseNamespaceElements(
 	Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	ust::string8 source_file_contents_hash ) : NamespaceParsingResult;
+	ust::string8 file_path_hash ) : NamespaceParsingResult;
 
 fn ParseClassElements(
 	Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	ust::string8 source_file_contents_hash ) : ClassElementsParsingResult;
+	ust::string8 file_path_hash ) : ClassElementsParsingResult;
 
 fn ParseBlockElements(
 	Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	ust::string8 source_file_contents_hash ) : BlockElementsParsingResult;
+	ust::string8 file_path_hash ) : BlockElementsParsingResult;
 
 fn ParseTypeName(
 	Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	ust::string8 source_file_contents_hash ) : TypeNameParsingResult;
+	ust::string8 file_path_hash ) : TypeNameParsingResult;
 
 fn ParseExpression(
 	Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	ust::string8 source_file_contents_hash ) : ExpressionParsingResult;
+	ust::string8 file_path_hash ) : ExpressionParsingResult;
 
 fn ParseImports( Lexems& lexems ) : ImportsList;
 

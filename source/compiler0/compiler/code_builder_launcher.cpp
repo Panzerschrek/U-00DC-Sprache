@@ -1,4 +1,4 @@
-#include "../../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../../code_builder_lib_common/long_stable_hash.hpp"
 #include "../../compilers_common_lib/code_builder_launcher.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../code_builder_lib/code_builder.hpp"
@@ -20,7 +20,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 {
 	CodeBuilderLaunchResult result;
 
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, input_file, prelude_code );
 
 	result.dependent_files.reserve( source_graph.nodes_storage.size() );
 	for( const SourceGraph::Node& node : source_graph.nodes_storage )

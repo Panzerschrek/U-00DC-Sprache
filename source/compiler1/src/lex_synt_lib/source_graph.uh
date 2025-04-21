@@ -35,7 +35,6 @@ struct SourceGraph
 
 		ust::string8 file_path_normalized;
 		ust::string8 file_path_hash;
-		ust::string8 contents_hash;
 		Synt::SyntaxAnalysisResult synt_result;
 		ust::vector</size_type/> children;
 		Category category;
@@ -46,11 +45,11 @@ struct SourceGraph
 	LexSyntErrors errors;
 }
 
-type SourceFileContentsHashigFunction= fn( ust::string_view8 source_file_contents ) : ust::string8;
+type SourceFilePathHashigFunction= fn( ust::string_view8 source_file_contents ) : ust::string8;
 
 fn LoadSourceGraph(
 	IVfsSharedPtr& vfs,
-	SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	SourceFilePathHashigFunction source_file_path_hashing_function,
 	ust::string8& root_file_path,
 	ust::string_view8 prelude_code ) : SourceGraph;
 

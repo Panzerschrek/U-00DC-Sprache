@@ -7,7 +7,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../lex_synt_lib_common/assert.hpp"
-#include "../../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../../code_builder_lib_common/long_stable_hash.hpp"
 #include "keywords.hpp"
 #include "error_reporting.hpp"
 
@@ -1809,7 +1809,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		ValueType::ReferenceImut,
 		Variable::Location::Pointer,
 		// Use contents hash-based names for embed arrays.
-		"_embed_array_" + CalculateSourceFileContentsHash( *loaded_file ),
+		"_embed_array_" + CalculateLongStableHash( *loaded_file ),
 		nullptr,
 		llvm::ConstantDataArray::getString( llvm_context_, *loaded_file, false /* not null terminated */ ) );
 

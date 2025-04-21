@@ -1,7 +1,7 @@
 #include "../../tests/py_tests_common.hpp"
 
 #include "../code_builder_lib/code_builder.hpp"
-#include "../../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../../code_builder_lib_common/long_stable_hash.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
@@ -79,7 +79,7 @@ std::unique_ptr<llvm::Module> BuildProgramImpl( const char* const text, const bo
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<SingeFileVfs>( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 
@@ -161,7 +161,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<SingeFileVfs>( file_path, program_text );
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 
@@ -189,7 +189,7 @@ PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const ar
 	const std::string file_path= "_";
 
 	SingeFileVfs vfs( file_path, program_text );
-	const SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, CalculateLongStableHash, file_path );
 
 	std::vector<CodeBuilderError> errors_converted;
 	errors_converted.reserve( source_graph.errors.size() );

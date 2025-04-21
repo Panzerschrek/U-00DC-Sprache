@@ -177,7 +177,7 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin )
 				*lexems,
 				source_graph_node.ast.macros, // Macros should not be modified.
 				source_graph_->macro_expansion_contexts, // Populate contexts, if necessary.
-				source_graph_node.contents_hash );
+				source_graph_node.file_path_hash );
 
 		if( !synt_result.error_messages.empty() )
 		{
@@ -222,7 +222,7 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 				*lexems,
 				source_graph_node.ast.macros, // Macros should not be modified.
 				source_graph_->macro_expansion_contexts, // Populate contexts, if necessary.
-				source_graph_node.contents_hash );
+				source_graph_node.file_path_hash );
 
 		if( !synt_result.error_messages.empty() )
 		{
@@ -279,7 +279,7 @@ const Synt::BlockElementsList* CodeBuilder::ExpandBlockMixin( NamesScope& names_
 				*lexems,
 				source_graph_node.ast.macros, // Macros should not be modified.
 				source_graph_->macro_expansion_contexts, // Populate contexts, if necessary.
-				source_graph_node.contents_hash );
+				source_graph_node.file_path_hash );
 
 		if( !synt_result.error_messages.empty() )
 		{
@@ -326,7 +326,7 @@ const Synt::TypeName* CodeBuilder::ExpandTypeNameMixin( NamesScope& names_scope,
 				*lexems,
 				source_graph_node.ast.macros, // Macros should not be modified.
 				source_graph_->macro_expansion_contexts, // Populate contexts, if necessary.
-				source_graph_node.contents_hash );
+				source_graph_node.file_path_hash );
 
 		if( !synt_result.error_messages.empty() )
 		{
@@ -373,7 +373,7 @@ const Synt::Expression* CodeBuilder::ExpandExpressionMixin( NamesScope& names_sc
 				*lexems,
 				source_graph_node.ast.macros, // Macros should not be modified.
 				source_graph_->macro_expansion_contexts, // Populate contexts, if necessary.
-				source_graph_node.contents_hash );
+				source_graph_node.file_path_hash );
 
 		if( !synt_result.error_messages.empty() )
 		{

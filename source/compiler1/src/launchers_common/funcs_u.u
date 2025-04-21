@@ -2,7 +2,7 @@ import "/stdout.u"
 import "/string_conversions.u"
 import "../lex_synt_lib/source_graph.uh"
 import "../code_builder_lib/code_builder.uh"
-import "../code_builder_lib/source_file_contents_hash_wrapper.uh"
+import "../code_builder_lib/long_stable_hash_wrapper.uh"
 import "../../imports/funcs_u.uh"
 
 fn nomangle nodiscard U1_BuildProgram(
@@ -12,7 +12,7 @@ fn nomangle nodiscard U1_BuildProgram(
 	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
 
 	U1::PrintLexSyntErrors( source_graph );
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -42,7 +42,7 @@ fn nomangle U1_BuildProgramWithErrors(
 	U1_UserHandle data ) unsafe : bool
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
 
 	U1::PrintLexSyntErrors( source_graph );
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -66,7 +66,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 	U1_UserHandle data ) unsafe
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
 
 	foreach( &node : source_graph.nodes )
 	{
@@ -104,7 +104,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	auto source_graph=
 		U1::LoadSourceGraph(
 			vfs,
-			U1::CalculateSourceFileContentsHash,
+			U1::CalculateLongStableHash,
 			unsafe( U1::StringToArrayView( root_file_path ) ),
 			unsafe( U1::StringToArrayView( prelude_code ) ) );
 
@@ -176,7 +176,7 @@ fn nomangle nodiscard U1_BuildMultisourceProgram(
 	auto source_graph=
 		U1::LoadSourceGraph(
 			test_vfs,
-			U1::CalculateSourceFileContentsHash,
+			U1::CalculateLongStableHash,
 			unsafe( U1::StringToArrayView( root_file_path ) ),
 			"" );
 
@@ -211,7 +211,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	auto source_graph=
 		U1::LoadSourceGraph(
 			test_vfs,
-			U1::CalculateSourceFileContentsHash,
+			U1::CalculateLongStableHash,
 			unsafe( U1::StringToArrayView( root_file_path ) ),
 			"" );
 
@@ -237,7 +237,7 @@ fn nomangle nodiscard U1_BuildProgramForLifetimesTest(
 	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
 
 	U1::PrintLexSyntErrors( source_graph );
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -272,7 +272,7 @@ fn nomangle nodiscard U1_BuildProgramForMSVCManglingTest(
 	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateSourceFileContentsHash, "_", "" );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
 
 	U1::PrintLexSyntErrors( source_graph );
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
