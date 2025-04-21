@@ -964,8 +964,8 @@ fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_
 	loop
 	{
 		// Encode file.
-		// Use file contenst hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
-		name+= source_graph_.try_deref().nodes[ size_type( src_loc.GetFileIndex() ) ].contents_hash;
+		// Use file path hash instead of file index, because we need to use stable identifier independent on from which main file this file is imported.
+		name+= source_graph_.try_deref().nodes[ size_type( src_loc.GetFileIndex() ) ].file_path_hash;
 		name+= "_";
 
 		// Encode line and column into the name to produce different names for different lambdas in the same file.
