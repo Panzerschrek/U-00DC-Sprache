@@ -32,11 +32,11 @@ struct SourceGraph
 	LexSyntErrors errors;
 };
 
-using SourceFileContentsHashigFunction= std::string(*)( std::string_view );
+using SourceFilePathHashigFunction= std::string(*)( std::string_view );
 
 SourceGraph LoadSourceGraph(
 	IVfs& vfs,
-	SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	SourceFilePathHashigFunction source_file_path_hashing_function,
 	const IVfs::Path& root_file_path,
 	std::string_view prelude_code = "" );
 

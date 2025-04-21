@@ -12,7 +12,7 @@ namespace
 
 size_t LoadNode_r(
 	IVfs& vfs,
-	const SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	const SourceFilePathHashigFunction source_file_path_hashing_function,
 	const IVfs::Path& file_path,
 	const IVfs::Path& parent_file_path,
 	std::vector<std::string>& processed_files_stack,
@@ -94,7 +94,7 @@ size_t LoadNode_r(
 		const size_t child_node_index=
 			LoadNode_r(
 				vfs,
-				source_file_contents_hashing_function,
+				source_file_path_hashing_function,
 				import.import_name,
 				full_file_path,
 				processed_files_stack,
@@ -131,7 +131,7 @@ size_t LoadNode_r(
 		}
 	}
 
-	std::string file_path_hash= source_file_contents_hashing_function( full_file_path );
+	std::string file_path_hash= source_file_path_hashing_function( full_file_path );
 
 	// Make syntax analysis, using imported macroses.
 	Synt::SyntaxAnalysisResult synt_result=
@@ -152,7 +152,7 @@ size_t LoadNode_r(
 
 SourceGraph LoadSourceGraph(
 	IVfs& vfs,
-	const SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	const SourceFilePathHashigFunction source_file_path_hashing_function,
 	const IVfs::Path& root_file_path,
 	const std::string_view prelude_code )
 {
@@ -162,7 +162,7 @@ SourceGraph LoadSourceGraph(
 	std::vector<std::string> processed_files_stack;
 	LoadNode_r(
 		vfs,
-		source_file_contents_hashing_function,
+		source_file_path_hashing_function,
 		root_file_path,
 		"",
 		processed_files_stack,
@@ -183,7 +183,7 @@ SourceGraph LoadSourceGraph(
 		for( Lexem& lexem :lex_result.lexems )
 			lexem.src_loc.SetFileIndex(uint32_t(prelude_node_index));
 
-		std::string file_path_hash= source_file_contents_hashing_function( prelude_code ); // HACK! Use for prelude contents hash instead of file path hash.
+		std::string file_path_hash= source_file_path_hashing_function( prelude_code ); // HACK! Use for prelude contents hash instead of file path hash.
 
 		Synt::SyntaxAnalysisResult synt_result=
 			Synt::SyntaxAnalysis(
