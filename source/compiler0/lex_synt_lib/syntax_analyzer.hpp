@@ -65,37 +65,37 @@ SyntaxAnalysisResult SyntaxAnalysis(
 	const Lexems& lexems,
 	MacrosByContextMap macros,
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	std::string source_file_contents_hash );
+	std::string file_path_hash );
 
 NamespaceParsingResult ParseNamespaceElements(
 	const Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	std::string source_file_contents_hash );
+	std::string file_path_hash );
 
 ClassElementsParsingResult ParseClassElements(
 	const Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	std::string source_file_contents_hash );
+	std::string file_path_hash );
 
 BlockElementsParsingResult ParseBlockElements(
 	const Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	std::string source_file_contents_hash );
+	std::string file_path_hash );
 
 TypeNameParsingResult ParseTypeName(
 	const Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	std::string source_file_contents_hash );
+	std::string file_path_hash );
 
 ExpressionParsingResult ParseExpression(
 	const Lexems& lexems,
 	MacrosPtr macros, // Contents does not changed, because no macros can be parsed.
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	std::string source_file_contents_hash );
+	std::string file_path_hash );
 
 } // namespace Synt
 

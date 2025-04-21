@@ -4971,26 +4971,26 @@ SyntaxAnalysisResult SyntaxAnalysis(
 	const Lexems& lexems,
 	MacrosByContextMap macros,
 	MacroExpansionContextsPtr macro_expansion_contexts,
-	std::string source_file_contents_hash )
+	std::string file_path_hash )
 {
 	return SyntaxAnalyzer(
 		lexems,
 		std::make_shared<MacrosByContextMap>( std::move(macros) ),
 		std::move(macro_expansion_contexts),
-		std::move(source_file_contents_hash) ).DoAnalyzis();
+		std::move(file_path_hash) ).DoAnalyzis();
 }
 
 NamespaceParsingResult ParseNamespaceElements(
 	const Lexems& lexems,
 	MacrosPtr macros,
 	MacroExpansionContextsPtr macro_expansion_contexts,
-	std::string source_file_contents_hash )
+	std::string file_path_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		lexems,
 		std::move(macros),
 		std::move(macro_expansion_contexts),
-		std::move(source_file_contents_hash) );
+		std::move(file_path_hash) );
 
 	return syntax_analyzer.ParseStandaloneNamespaceElements();
 }
@@ -4999,13 +4999,13 @@ ClassElementsParsingResult ParseClassElements(
 	const Lexems& lexems,
 	MacrosPtr macros,
 	MacroExpansionContextsPtr macro_expansion_contexts, /* in-out contexts */
-	std::string source_file_contents_hash )
+	std::string file_path_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		lexems,
 		std::move(macros),
 		std::move(macro_expansion_contexts),
-		std::move(source_file_contents_hash) );
+		std::move(file_path_hash) );
 
 	return syntax_analyzer.ParseStandaloneClassElements();
 }
@@ -5014,13 +5014,13 @@ BlockElementsParsingResult ParseBlockElements(
 	const Lexems& lexems,
 	MacrosPtr macros,
 	MacroExpansionContextsPtr macro_expansion_contexts,
-	std::string source_file_contents_hash )
+	std::string file_path_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		lexems,
 		std::move(macros),
 		std::move(macro_expansion_contexts),
-		std::move(source_file_contents_hash) );
+		std::move(file_path_hash) );
 
 	return syntax_analyzer.ParseStandaloneBlockElements();
 }
@@ -5029,13 +5029,13 @@ TypeNameParsingResult ParseTypeName(
 	const Lexems& lexems,
 	MacrosPtr macros,
 	MacroExpansionContextsPtr macro_expansion_contexts,
-	std::string source_file_contents_hash )
+	std::string file_path_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		lexems,
 		std::move(macros),
 		std::move(macro_expansion_contexts),
-		std::move(source_file_contents_hash) );
+		std::move(file_path_hash) );
 
 	return syntax_analyzer.ParseStandaloneTypeName();
 }
@@ -5044,13 +5044,13 @@ ExpressionParsingResult ParseExpression(
 	const Lexems& lexems,
 	MacrosPtr macros,
 	MacroExpansionContextsPtr macro_expansion_contexts,
-	std::string source_file_contents_hash )
+	std::string file_path_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		lexems,
 		std::move(macros),
 		std::move(macro_expansion_contexts),
-		std::move(source_file_contents_hash) );
+		std::move(file_path_hash) );
 
 	return syntax_analyzer.ParseStandaloneExpression();
 }

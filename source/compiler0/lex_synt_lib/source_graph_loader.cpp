@@ -131,7 +131,7 @@ size_t LoadNode_r(
 		}
 	}
 
-	std::string contents_hash= source_file_contents_hashing_function( *loaded_file );
+	std::string file_path_hash= source_file_contents_hashing_function( full_file_path );
 
 	// Make syntax analysis, using imported macroses.
 	Synt::SyntaxAnalysisResult synt_result=
@@ -139,13 +139,13 @@ size_t LoadNode_r(
 		lex_result.lexems,
 		std::move(merged_macroses),
 		result.macro_expansion_contexts,
-		contents_hash );
+		file_path_hash );
 
 	result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );
-	result.nodes_storage[node_index].contents_hash= std::move(contents_hash);
-	result.nodes_storage[node_index].file_path_hash= source_file_contents_hashing_function( full_file_path );
+	result.nodes_storage[node_index].contents_hash= source_file_contents_hashing_function( *loaded_file );
+	result.nodes_storage[node_index].file_path_hash= std::move(file_path_hash);
 	return node_index;
 }
 
@@ -184,14 +184,15 @@ SourceGraph LoadSourceGraph(
 		for( Lexem& lexem :lex_result.lexems )
 			lexem.src_loc.SetFileIndex(uint32_t(prelude_node_index));
 
-		auto contents_hash= source_file_contents_hashing_function( prelude_code );
+		std::string contents_hash= source_file_contents_hashing_function( prelude_code );
+		std::string file_path_hash= contents_hash; // HACK! Use for prelude contents hash instead of file path hash.
 
 		Synt::SyntaxAnalysisResult synt_result=
 			Synt::SyntaxAnalysis(
 				lex_result.lexems,
 				Synt::MacrosByContextMap(),
 				result.macro_expansion_contexts,
-				contents_hash );
+				file_path_hash );
 
 		result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
@@ -204,6 +205,7 @@ SourceGraph LoadSourceGraph(
 		SourceGraph::Node prelude_node;
 		prelude_node.file_path= "compiler_generated_prelude";
 		prelude_node.contents_hash= std::move(contents_hash);
+		prelude_node.file_path_hash= std::move(file_path_hash);
 		prelude_node.ast= std::move(synt_result);
 		prelude_node.category= SourceGraph::Node::Category::BuiltInPrelude;
 
