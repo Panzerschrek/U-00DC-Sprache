@@ -144,7 +144,6 @@ size_t LoadNode_r(
 	result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );
-	result.nodes_storage[node_index].contents_hash= source_file_contents_hashing_function( *loaded_file );
 	result.nodes_storage[node_index].file_path_hash= std::move(file_path_hash);
 	return node_index;
 }
@@ -184,8 +183,7 @@ SourceGraph LoadSourceGraph(
 		for( Lexem& lexem :lex_result.lexems )
 			lexem.src_loc.SetFileIndex(uint32_t(prelude_node_index));
 
-		std::string contents_hash= source_file_contents_hashing_function( prelude_code );
-		std::string file_path_hash= contents_hash; // HACK! Use for prelude contents hash instead of file path hash.
+		std::string file_path_hash= source_file_contents_hashing_function( prelude_code ); // HACK! Use for prelude contents hash instead of file path hash.
 
 		Synt::SyntaxAnalysisResult synt_result=
 			Synt::SyntaxAnalysis(
@@ -204,7 +202,6 @@ SourceGraph LoadSourceGraph(
 
 		SourceGraph::Node prelude_node;
 		prelude_node.file_path= "compiler_generated_prelude";
-		prelude_node.contents_hash= std::move(contents_hash);
 		prelude_node.file_path_hash= std::move(file_path_hash);
 		prelude_node.ast= std::move(synt_result);
 		prelude_node.category= SourceGraph::Node::Category::BuiltInPrelude;
