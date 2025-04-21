@@ -47,7 +47,10 @@ fn LoadSourceGraph(
 			lexem.src_loc.SetFileIndex( u32(prelude_node_index) );
 		}
 
-		auto mut file_path_hash= source_file_contents_hashing_function( prelude_code ); // HACK! Use for prelude contents hash instead of file path hash.
+		// Use non-normalized path, to avoid name collisions with real files.
+		var ust::string8 mut file_path_normalized= "compiler_generated_prelude";
+
+		auto mut file_path_hash= source_file_contents_hashing_function( file_path_normalized );
 
 		var Synt::SyntaxAnalysisResult mut synt_result=
 			Synt::SyntaxAnalysis(
@@ -69,7 +72,7 @@ fn LoadSourceGraph(
 		source_graph.nodes.push_back(
 			SourceGraph::Node
 			{
-				.file_path_normalized= "compiler_generated_prelude",
+				.file_path_normalized= move(file_path_normalized),
 				.file_path_hash= move(file_path_hash),
 				.synt_result= move(synt_result),
 				.category= SourceGraph::Node::Category::BuiltInPrelude,

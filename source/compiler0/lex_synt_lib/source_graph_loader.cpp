@@ -183,7 +183,10 @@ SourceGraph LoadSourceGraph(
 		for( Lexem& lexem :lex_result.lexems )
 			lexem.src_loc.SetFileIndex(uint32_t(prelude_node_index));
 
-		std::string file_path_hash= source_file_path_hashing_function( prelude_code ); // HACK! Use for prelude contents hash instead of file path hash.
+		// Use non-normalized path, to avoid name collisions with real files.
+		std::string file_path= "compiler_generated_prelude";
+
+		std::string file_path_hash= source_file_path_hashing_function( file_path );
 
 		Synt::SyntaxAnalysisResult synt_result=
 			Synt::SyntaxAnalysis(
@@ -201,7 +204,7 @@ SourceGraph LoadSourceGraph(
 				other_node.child_nodes_indices.push_back( prelude_node_index );
 
 		SourceGraph::Node prelude_node;
-		prelude_node.file_path= "compiler_generated_prelude";
+		prelude_node.file_path= std::move(file_path);
 		prelude_node.file_path_hash= std::move(file_path_hash);
 		prelude_node.ast= std::move(synt_result);
 		prelude_node.category= SourceGraph::Node::Category::BuiltInPrelude;
