@@ -6,7 +6,7 @@
 
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../../code_builder_lib_common/async_calls_inlining.hpp"
-#include "../../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../../code_builder_lib_common/long_stable_hash.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
@@ -112,7 +112,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const std::string_view text )
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -136,7 +136,7 @@ ErrorTestBuildResult BuildProgramWithErrors( const std::string_view text )
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -154,7 +154,7 @@ ErrorTestBuildResult BuildProgramWithErrors( const std::string_view text )
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path, const bool report_about_unused_names )
 {
 	const auto vfs= std::make_shared<MultiFileVfs>( std::move(sources) );
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, root_file_path );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, root_file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -180,7 +180,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path )
 {
 	const auto vfs= std::make_shared<MultiFileVfs>( std::move(sources) );
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, root_file_path );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, root_file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -199,7 +199,7 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const std::string_vi
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -226,7 +226,7 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const std::string
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
@@ -274,7 +274,7 @@ std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const std::string_vi
 {
 	const std::string file_path= "_";
 	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
-	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, file_path );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, file_path );
 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
