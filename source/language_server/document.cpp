@@ -1,4 +1,4 @@
-#include "../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../code_builder_lib_common/long_stable_hash.hpp"
 #include "../code_builder_lib_common/string_ref.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
@@ -450,7 +450,7 @@ Symbols Document::GetSymbols()
 
 	// Backup for cases when document is not compiled yet.
 	// Since first document build may be delayed we need to provide symbols just after document was opened.
-	const SourceGraph source_graph= LoadSourceGraph( *vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
+	const SourceGraph source_graph= LoadSourceGraph( *vfs_, CalculateLongStableHash, path_, build_options_.prelude );
 
 	if( source_graph.nodes_storage.empty() )
 		return {};
@@ -563,7 +563,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 			lexems,
 			TakeMacrosFromImports( *compiled_state_->source_graph ),
 			std::make_shared<Synt::MacroExpansionContexts>(),
-			CalculateSourceFileContentsHash( text_ ) );
+			CalculateLongStableHash( path_ ) );
 
 	// Lookup global thing, where element with "completion*" lexem is located, together with path to it.
 	const SyntaxTreeLookupResultOpt lookup_result=
@@ -693,7 +693,7 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 			lexems,
 			TakeMacrosFromImports( *compiled_state_->source_graph ),
 			std::make_shared<Synt::MacroExpansionContexts>(),
-			CalculateSourceFileContentsHash( text_ ) );
+			CalculateLongStableHash( path_ ) );
 
 	// Lookup global thing, where element with SignatureHelpBracketLeft lexem is located, together with path to it.
 	const SyntaxTreeLookupResultOpt lookup_result=
@@ -798,7 +798,7 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 
 	U_ASSERT( !in_rebuild_call_ );
 	in_rebuild_call_= true;
-	SourceGraph source_graph= LoadSourceGraph( *vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
+	SourceGraph source_graph= LoadSourceGraph( *vfs_, CalculateLongStableHash, path_, build_options_.prelude );
 	in_rebuild_call_= false;
 
 	if( !source_graph.errors.empty() )
