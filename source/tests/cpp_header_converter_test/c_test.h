@@ -356,7 +356,7 @@ MY_NODISCARD int CNoDiscardFunc();
 
 struct EmptyStruct{};
 
-#ifdef __GNUC__
+#ifdef __clang__
 	#pragma GCC diagnostic pop
 #endif
 
