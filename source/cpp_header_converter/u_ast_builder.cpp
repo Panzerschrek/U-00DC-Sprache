@@ -881,6 +881,12 @@ void CppAstConsumer::EmitRecord(
 				// So, for now just create stub struct.
 				class_.elements= MakeOpaqueRecordElements( record_declaration, "struct_with_bitfields" );
 			}
+			else if( record_declaration.fields().empty() )
+			{
+				// If struct has no fields we may still need to create some fields for it.
+				// It may be necessary in C++ mode, where empty structs have size 1.
+				class_.elements= MakeOpaqueRecordElements( record_declaration, "empty_struct" );
+			}
 			else
 			{
 				Synt::ClassElementsList::Builder class_elements;
@@ -952,8 +958,8 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 	const clang::RecordDecl& record_declaration,
 	const std::string_view kind_name )
 {
-	const auto size= ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) / 8u;
-	const auto byte_size= ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) / 8u;
+	const auto size= ( ast_context_.getTypeSize( record_declaration.getTypeForDecl() ) + 7u ) / 8u;
+	const auto byte_size= ( ast_context_.getTypeAlign( record_declaration.getTypeForDecl() ) + 7u ) / 8u;
 	const auto num_elements= ( size + byte_size - 1u ) / byte_size;
 
 	std::string_view byte_name;

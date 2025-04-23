@@ -347,3 +347,22 @@ enum MY_NODISCARD SomeNoDiscardEnum
 };
 
 MY_NODISCARD int CNoDiscardFunc();
+
+
+#ifdef __clang__
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wextern-c-compat"
+#endif
+
+struct EmptyStruct{};
+
+#ifdef __clang__
+	#pragma GCC diagnostic pop
+#endif
+
+struct StructOfEmptyStructs
+{
+	struct EmptyStruct a;
+	struct EmptyStruct b;
+	struct EmptyStruct c[3];
+};
