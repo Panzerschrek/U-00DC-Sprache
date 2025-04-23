@@ -176,4 +176,7 @@ MY_NODISCARD int CNoDiscardFunc()
 	return 321;
 }
 
+static_assert( sizeof(EmptyStruct) == 1, "Invalid size!" );
+static_assert( sizeof(StructOfEmptyStructs) == 5, "Invalid size!" );
+
 } // extern "C"

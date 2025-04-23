@@ -347,3 +347,13 @@ enum MY_NODISCARD SomeNoDiscardEnum
 };
 
 MY_NODISCARD int CNoDiscardFunc();
+
+struct EmptyStruct
+{} ;
+
+struct StructOfEmptyStructs
+{
+	struct EmptyStruct a;
+	struct EmptyStruct b;
+	struct EmptyStruct c[3];
+};

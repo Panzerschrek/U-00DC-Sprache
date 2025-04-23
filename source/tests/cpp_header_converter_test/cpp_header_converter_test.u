@@ -268,5 +268,9 @@ fn nomangle main() : i32
 
 	var i32 nodiscard_res= unsafe( CNoDiscardFunc() );
 
+	// C empty struct aren't really empty. At least on some compilers.
+	static_assert( typeinfo</EmptyStruct/>.size_of > 0s );
+	static_assert( typeinfo</StructOfEmptyStructs/>.size_of == 5s * typeinfo</EmptyStruct/>.size_of );
+
 	return 0;
 }
