@@ -208,6 +208,7 @@ def NumericConstantsExtendedType_Test0():
 		// Even larger constants may be extended to i128.
 		static_assert( same_type</ typeof(9223512774343262318), i128 /> );
 		static_assert( 9223512774343262318 == i128(922351277) * i128(10000000000) + i128(4343262318) );
+		static_assert( 9223512774343262318 == i128(9223512774343262318u) );
 	"""
 	tests_lib.build_program( c_program_text )
 
