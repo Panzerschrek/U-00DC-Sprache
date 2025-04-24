@@ -1204,9 +1204,27 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const std::string type_suffix= num.type_suffix.data();
 
 	if( type_suffix.empty() )
-		type= num.has_fractional_point ? U_FundamentalType::f64_ : U_FundamentalType::i32_;
+	{
+		if( num.has_fractional_point )
+			type = U_FundamentalType::f64_;
+		else
+		{
+			// Constants with fractional point are integers.
+			// Select "i32", unless given constant doesn't fit inside it.
+			if( num.value_int <= 2147483647u )
+				type= U_FundamentalType::i32_;
+			else
+				type= U_FundamentalType::i64_;
+		}
+	}
 	else if( type_suffix == "u" )
-		type= U_FundamentalType::u32_;
+	{
+		// Select "u32", unless given constant doesn't fit inside it.
+		if( num.value_int <= 4294967295u )
+			type= U_FundamentalType::u32_;
+		else
+			type= U_FundamentalType::u64_;
+	}
 	// Suffix for size_type
 	else if( type_suffix == "s" )
 		type= U_FundamentalType::size_type_;
