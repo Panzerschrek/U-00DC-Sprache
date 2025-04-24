@@ -892,13 +892,15 @@ fn CodeBuilder::ApplyConstructorInitializer( mut this, NamesScopePtr& names_scop
 					// int to int
 					if( src_size < dst_size )
 					{
-						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
-						if( IsUnsignedInteger( dst_type.fundamental_type ) )
+						if( IsUnsignedInteger( src_type.fundamental_type ) )
 						{
+							// Extend unsigned integers with zero.
 							llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 						}
 						else
 						{
+							// Extend signed integers with sign.
+							// We lost here some values in conversions, such i16 => u32, if source value is negative.
 							llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 						}
 					}
@@ -962,15 +964,8 @@ fn CodeBuilder::ApplyConstructorInitializer( mut this, NamesScopePtr& names_scop
 					// char to int
 					if( src_size < dst_size )
 					{
-						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
-						if( IsUnsignedInteger( dst_type.fundamental_type ) )
-						{
-							llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
-						}
-						else
-						{
-							llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
-						}
+						// Extend chars with zero.
+						llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
 					else if( src_size > dst_size )
 					{
