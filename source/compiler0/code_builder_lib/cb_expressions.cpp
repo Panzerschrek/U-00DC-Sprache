@@ -1209,9 +1209,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			type = U_FundamentalType::f64_;
 		else
 		{
-			// Constants with fractional point are integers.
-			// Select "i32", unless given constant doesn't fit inside it.
-			// For values greater than 2^63-1 use 128-bit integer.
+			// Constants without fractional point are integers.
+			// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
 			if( num.value_int <= 2147483647u )
 				type= U_FundamentalType::i32_;
 			else if( num.value_int <= 9223372036854775807ULL )
@@ -1222,11 +1221,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else if( type_suffix == "u" )
 	{
-		// Select "u32", unless given constant doesn't fit inside it.
-		if( num.value_int <= 4294967295u )
-			type= U_FundamentalType::u32_;
-		else
-			type= U_FundamentalType::u64_;
+		// Select "i32", if given constant fits inside it. Otherwise use "u64".
+		type = num.value_int <= 4294967295u ? U_FundamentalType::u32_ : U_FundamentalType::u64_;
 	}
 	// Suffix for size_type
 	else if( type_suffix == "s" )
