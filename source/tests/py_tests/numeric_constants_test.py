@@ -204,6 +204,10 @@ def NumericConstantsExtendedType_Test0():
 		static_assert( 2147483648 == 1i64 << 31u );
 		static_assert( 1234567891011 == 12345i64 * 100000000i64 + 67891011i64 );
 		static_assert( same_type</ typeof( 1234567891011 ), i64 /> );
+
+		// Even larger constants may be extended to i128.
+		static_assert( same_type</ typeof(9223512774343262318), i128 /> );
+		static_assert( 9223512774343262318 == i128(922351277) * i128(10000000000) + i128(4343262318) );
 	"""
 	tests_lib.build_program( c_program_text )
 

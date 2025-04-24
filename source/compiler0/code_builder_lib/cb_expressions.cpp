@@ -1211,10 +1211,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			// Constants with fractional point are integers.
 			// Select "i32", unless given constant doesn't fit inside it.
+			// For values greater than 2^63-1 use 128-bit integer.
 			if( num.value_int <= 2147483647u )
 				type= U_FundamentalType::i32_;
-			else
+			else if( num.value_int <= 9223372036854775807ULL )
 				type= U_FundamentalType::i64_;
+			else
+				type= U_FundamentalType::i128_;
 		}
 	}
 	else if( type_suffix == "u" )
