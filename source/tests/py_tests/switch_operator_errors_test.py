@@ -206,7 +206,7 @@ def SwitchInvalidRange_Test3():
 			switch(x)
 			{
 				80u ... 79u -> {}, // Invalid unsigned range
-				3000000000u ... 2500000000u -> {}, // Invalid unsigned large range
+				u32(3000000000) ... u32(2500000000) -> {}, // Invalid unsigned large range
 			}
 		}
 	"""

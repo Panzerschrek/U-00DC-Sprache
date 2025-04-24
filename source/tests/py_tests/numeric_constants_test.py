@@ -26,7 +26,7 @@ def NumericConstants_DecimalConstants_Test1():
 	c_program_text= """
 		// Limits
 		static_assert( 2147483647 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
-		static_assert( -2147483648 == ( (-1)<<31u ) ); // min i32
+		static_assert( i32(-2147483648) == ( (-1)<<31u ) ); // min i32
 		static_assert( 9223372036854775807i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
 		static_assert( -9223372036854775808i64 == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 4294967295u == ~0u ); // max u32
@@ -56,7 +56,7 @@ def NumericConstants_BinaryConstants_Test1():
 	c_program_text= """
 		// Limits
 		static_assert( 0b01111111111111111111111111111111 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
-		static_assert( 0b10000000000000000000000000000000 == ( (-1)<<31u ) ); // min i32
+		static_assert( i32(0b10000000000000000000000000000000) == ( (-1)<<31u ) ); // min i32
 		static_assert( 0b0111111111111111111111111111111111111111111111111111111111111111i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
 		static_assert( 0b1000000000000000000000000000000000000000000000000000000000000000i64 == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 0b11111111111111111111111111111111u == ~0u ); // max u32
@@ -83,7 +83,7 @@ def NumericConstants_OctalConstants_Test1():
 	c_program_text= """
 		// Limits
 		static_assert( 0o17777777777 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
-		static_assert( 0o20000000000 == ( (-1)<<31u ) ); // min i32
+		static_assert( i32(0o20000000000) == ( (-1)<<31u ) ); // min i32
 		static_assert( 0o777777777777777777777i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
 		static_assert( 0o1000000000000000000000i64 == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 0o37777777777u == ~0u ); // max u32
@@ -113,7 +113,7 @@ def NumericConstants_HexadecimalConstants_Test1():
 	c_program_text= """
 		// Limits
 		static_assert( 0x7fffffff == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
-		static_assert( 0x80000000 == ( (-1)<<31u ) ); // min i32
+		static_assert( i32(0x80000000) == ( (-1)<<31u ) ); // min i32
 		static_assert( 0x7fffffffffffffffi64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
 		static_assert( 0x8000000000000000i64 == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 0xffffffffu == ~0u ); // max u32
@@ -132,8 +132,8 @@ def NumericConstants_TypeSuffix_Test0():
 			// No suffix and no fractional part - is signed 32bit integer.
 			check_type( 23, i32(0) );
 			check_type( 9652412, i32(0) );
-			check_type( 1e10, i32(0) );
-			check_type( 0xDEADC0DE, i32(0) );
+			check_type( 1e5, i32(0) );
+			check_type( 0x0DEADC0D, i32(0) );
 			check_type( 0b101, i32(0) );
 			check_type( 0o52147, i32(0) );
 

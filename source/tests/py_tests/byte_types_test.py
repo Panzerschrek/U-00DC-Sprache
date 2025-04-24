@@ -117,7 +117,7 @@ def ByteTypesBitCast_Test0():
 		static_assert( u8(byte8(-17i8)) == 239u8 );
 		static_assert( u16(byte16(-30567i16)) == 34969u16 );
 		static_assert( u32( byte32( 11.5f ) ) == 0x41380000u );
-		static_assert( byte32( 0xC0490FDB ) == byte32( -3.1415926535f ) );
+		static_assert( byte32( 0xC0490FDBu ) == byte32( -3.1415926535f ) );
 		static_assert( byte64( 2.718281828 ) == byte64( 0x4005BF0A8B04919Bu64 ) );
 	"""
 	tests_lib.build_program( c_program_text )
