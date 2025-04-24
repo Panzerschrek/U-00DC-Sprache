@@ -191,3 +191,36 @@ def NumericConstants_TypeSuffix_Test0():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def NumericConstantsExtendedType_Test0():
+	c_program_text= """
+		// Small constants have type i32.
+		static_assert( same_type</ typeof(98765), i32 /> );
+		static_assert( same_type</ typeof(2147483647), i32 /> );
+
+		// Large constants are extended to i64.
+		static_assert( same_type</ typeof(2147483648), i64 /> );
+		static_assert( 2147483648 == 1i64 << 31u );
+		static_assert( 1234567891011 == 12345i64 * 100000000i64 + 67891011i64 );
+		static_assert( same_type</ typeof( 1234567891011 ), i64 /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NumericConstantsExtendedType_Test1():
+	c_program_text= """
+		// Small constants with suffix "u" have type u32.
+		static_assert( same_type</ typeof(98765u), u32 /> );
+		static_assert( same_type</ typeof(2147483647u), u32 /> );
+		static_assert( same_type</ typeof(2147483648u), u32 /> );
+		static_assert( same_type</ typeof(4294967295u), u32 /> );
+
+		// Large constants with suffix "u" are extended to u64.
+		static_assert( same_type</ typeof(4294967296u), u64 /> );
+		static_assert( 4294967296u == 1u64 << 32u );
+		static_assert( 1234567891011u == 12345u64 * 100000000u64 + 67891011u64 );
+		static_assert( same_type</ typeof( 1234567891011u ), u64 /> );
+
+	"""
+	tests_lib.build_program( c_program_text )
