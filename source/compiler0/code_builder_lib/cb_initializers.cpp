@@ -830,11 +830,17 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 					// int to int
 					if( src_size < dst_size )
 					{
-						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
-						if( IsUnsignedInteger( dst_type->fundamental_type ) )
+						if( IsUnsignedInteger( src_type->fundamental_type ) )
+						{
+							// Extend unsigned integers with zero.
 							value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
+						}
 						else
+						{
+							// Extend signed integers with sign.
+							// We lost here some values in conversions, such i16 => u32, if source value is negative.
 							value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
+						}
 					}
 					else if( src_size > dst_size )
 						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
@@ -878,11 +884,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 					// char to int
 					if( src_size < dst_size )
 					{
-						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
-						if( IsUnsignedInteger( dst_type->fundamental_type ) )
-							value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
-						else
-							value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
+						// Extend chars with zero.
+						value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
 					}
 					else if( src_size > dst_size )
 						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );

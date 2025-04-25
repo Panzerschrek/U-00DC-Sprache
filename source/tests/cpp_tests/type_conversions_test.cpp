@@ -110,7 +110,8 @@ U_TEST( TypeConversionTest3 )
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
 
-		U_TEST_ASSERT( static_cast<uint8_t>(i) == static_cast<uint32_t>( result_value.IntVal.getLimitedValue()) );
+		// Casting i8 => u32 in Ü should work identical to casting int8_t to uint32_t in C++.
+		U_TEST_ASSERT( static_cast<uint32_t>(i) == static_cast<uint32_t>( result_value.IntVal.getLimitedValue()) );
 	}
 }
 

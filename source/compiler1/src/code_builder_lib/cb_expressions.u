@@ -227,11 +227,32 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	auto mut t= U_FundamentalType::InvalidType;
 	if( type_suffix.empty() )
 	{
-		t= ( numeric_constant.num.has_fractional_point ? U_FundamentalType::f64_ : U_FundamentalType::i32_ );
+		if( numeric_constant.num.has_fractional_point )
+		{
+			t= U_FundamentalType::f64_;
+		}
+		else
+		{
+			// Constants without fractional point are integers.
+			// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
+			if( numeric_constant.num.value_int <= 2147483647u64 )
+			{
+				t= U_FundamentalType::i32_;
+			}
+			else if( numeric_constant.num.value_int <= 9223372036854775807u )
+			{
+				t= U_FundamentalType::i64_;
+			}
+			else
+			{
+				t= U_FundamentalType::i128_;
+			}
+		}
 	}
 	else if( type_suffix == "u" )
 	{
-		t= U_FundamentalType::u32_;
+		// Select "i32", if given constant fits inside it. Otherwise use "u64".
+		t= ( numeric_constant.num.value_int <= 4294967295u64 ? U_FundamentalType::u32_ : U_FundamentalType::u64_ );
 	}
 	else if( type_suffix == "s" )
 	{
@@ -278,15 +299,10 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		{
 			result.constexpr_value= LLVMConstReal( result.t.GetLLVMType(), numeric_constant.num.value_double );
 		}
-		else if( IsSignedInteger( t ) )
-		{
-			result.constexpr_value= LLVMConstInt( result.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::True  );
-		}
-		else if( IsUnsignedInteger( t ) || IsChar( t ) )
+		else
 		{
 			result.constexpr_value= LLVMConstInt( result.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::False );
 		}
-		else{ halt; }
 	}
 	result.llvm_value= result.constexpr_value;
 
