@@ -242,6 +242,18 @@ public:
 		return unsafe( drop_and_get_front_unchecked() );
 	}
 
+	fn nodiscard enable_if(is_mutable) drop_and_get_back( mut this ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( empty() );
+		return unsafe( drop_and_get_back_unchecked() );
+	}
+
+	fn nodiscard enable_if(!is_mutable) drop_and_get_back( mut this ) : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		halt if( empty() );
+		return unsafe( drop_and_get_back_unchecked() );
+	}
+
 	// Precondition - range is nonempty.
 	fn nodiscard enable_if(is_mutable) drop_and_get_front_unchecked( mut this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
@@ -260,12 +272,32 @@ public:
 		return res;
 	}
 
-	// "iter" method is declared as zero-param template to instantiate it lazily and thus avoid instantiation of iterator classes where it isn't necessary.
+	// Precondition - range is nonempty.
+	fn nodiscard enable_if(is_mutable) drop_and_get_back_unchecked( mut this ) unsafe : T & mut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		--size_;
+		return unsafe( $>( begin_ + size_ ) );
+	}
+
+	// Precondition - range is nonempty.
+	fn nodiscard enable_if(!is_mutable) drop_and_get_back_unchecked( mut this ) unsafe : T &imut @( reference_notation::return_references::param0_inner_reference0 )
+	{
+		--size_;
+		return unsafe( $>( begin_ + size_ ) );
+	}
+
+	// "iter" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of iterator classes where it isn't necessary.
 
 	template<//>
 	fn iter( byval mut this ) : auto
 	{
 		return wrap_raw_iterator( random_access_range_raw_iterator</T, is_mutable/>( move(this) ) );
+	}
+
+	template<//>
+	fn iter_reverse( byval mut this ) : auto
+	{
+		return wrap_raw_iterator( random_access_range_reverse_raw_iterator</T, is_mutable/>( move(this) ) );
 	}
 
 	// Access raw data.
@@ -334,6 +366,35 @@ private:
 private:
 	random_access_range</ T, is_mutable /> range_;
 }
+
+// Reverse iterator over range.
+template</type T, bool is_mutable/>
+class random_access_range_reverse_raw_iterator
+{
+public:
+	fn constructor( random_access_range</ T, is_mutable /> mut range ) @( reference_notation::pollution::param0_param_1_inner_reference )
+		( range_= move(range) )
+	{}
+
+	fn constructor( mut this, this_type& other )= default;
+	op=( mut this, this_type& other )= default;
+
+	fn nodiscard next( mut this ) : auto
+	{
+		if( range_.empty() )
+		{
+			return optional_ref</ T, is_mutable />();
+		}
+		return optional_ref</ T, is_mutable />( range_.drop_and_get_back() );
+	}
+
+private:
+	type this_type= random_access_range_reverse_raw_iterator</T, is_mutable/>;
+
+private:
+	random_access_range</ T, is_mutable /> range_;
+}
+
 
 template</ type T />
 type random_access_range_mut = random_access_range</ T, true  />;
