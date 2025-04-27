@@ -832,5 +832,23 @@ fn nomangle main() : i32
 		halt if( vec[2s] != "ABC" );
 		halt if( vec[3s] != "ABC" );
 	}
+	{ // Reverse iterator.
+
+		var ust::vector</i32/> v= ust::make_array( 1, 2, 3, 4, 5 );
+		auto v_reversed= v.iter_reverse().collect</ ust::vector />();
+		halt if( v_reversed.range() != ust::make_array( 5, 4, 3, 2, 1 ) );
+	}
+	{ // Reverse iterator which modifies values.
+
+		var ust::vector</i32/> mut v= ust::make_array( 1, 2, 3, 4, 5 );
+		var ust::vector</i32/> mut v_reversed;
+		foreach( &mut el : v.iter_reverse() )
+		{
+			el+= 3;
+			v_reversed.push_back(el);
+		}
+		halt if( cast_imut(v).range() != ust::make_array( 4, 5, 6, 7, 8 ) );
+		halt if( cast_imut(v_reversed).range() != ust::make_array( 8, 7, 6, 5, 4 ) );
+	}
 	return 0;
 }
