@@ -364,13 +364,11 @@ fn nomangle main() : i32
 		halt if( c5 != "SchlafmeinFreundundträume"u32 );
 	}
 	{ // Reverse iterator.
-
 		var ust::string8 s= "ABCDE";
 		auto s_reversed= ust::string8::from_iterator( s.iter_reverse() );
 		halt if( s_reversed != "EDCBA" );
 	}
 	{ // Reverse iterator which modifies values.
-
 		var ust::string8 mut s= "ABCDE";
 		var ust::string8 mut s_reversed;
 		foreach( &mut el : s.iter_reverse() )

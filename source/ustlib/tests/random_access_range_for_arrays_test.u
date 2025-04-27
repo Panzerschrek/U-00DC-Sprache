@@ -266,7 +266,6 @@ fn nomangle main() : i32
 		halt if( single_row[2] != 999 );
 	}
 	{ // Reverse iterator.
-
 		var [ i32, 4 ] arr[ 5, 7, 9, 11 ];
 		var [ i32, 4 ] mut dst= zero_init;
 		var size_type mut index= 0s;
@@ -282,7 +281,6 @@ fn nomangle main() : i32
 		halt if( dst[3] != 5 );
 	}
 	{ // Reverse mutable iterator.
-
 		var [ i32, 3 ] mut arr[ 55, 66, 77 ];
 		var [ i32, 3 ] mut dst= zero_init;
 		var size_type mut index= 0s;
@@ -302,7 +300,6 @@ fn nomangle main() : i32
 		halt if( dst[2] != 55 );
 	}
 	{ // Reverse iterator for empty range.
-
 		var [ i32, 0 ] arr[];
 		foreach( el : IntRangeImut(arr).iter_reverse() )
 		{
