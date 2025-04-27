@@ -363,5 +363,23 @@ fn nomangle main() : i32
 		var ust::string32 c5= ust::concat( "Schlaf"u32, "mein"u32, "Freund"u32, "und"u32, "träume"u32 );
 		halt if( c5 != "SchlafmeinFreundundträume"u32 );
 	}
+	{ // Reverse iterator.
+
+		var ust::string8 s= "ABCDE";
+		auto s_reversed= ust::string8::from_iterator( s.iter_reverse() );
+		halt if( s_reversed != "EDCBA" );
+	}
+	{ // Reverse iterator which modifies values.
+
+		var ust::string8 mut s= "ABCDE";
+		var ust::string8 mut s_reversed;
+		foreach( &mut el : s.iter_reverse() )
+		{
+			el= char8( u32(el) + 3u );
+			s_reversed.push_back(el);
+		}
+		halt if( s != "DEFGH" );
+		halt if( s_reversed != "HGFED" );
+	}
 	return 0;
 }
