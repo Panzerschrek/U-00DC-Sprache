@@ -541,6 +541,20 @@ public:
 		return range().iter();
 	}
 
+	template<//>
+	fn enable_if( c_enable_range )
+	iter_reverse(  mut this ) : auto
+	{
+		return range().iter_reverse();
+	}
+
+	template<//>
+	fn enable_if( c_enable_range )
+	iter_reverse( imut this ) : auto
+	{
+		return range().iter_reverse();
+	}
+
 	// Access raw data.
 	fn data( mut this ) unsafe : $(T)
 	{

@@ -80,7 +80,7 @@ Standart library:
 *) Functions for conversion of floating-point numbers into string
 *) Functions for floating-point numbers parsing
 *) Support 128-bit integer types stringification/parsing
-*) Reverse iterators for random_access_range, unordered_map, unordered_set, etc.
+*) Reverse iterators for unordered_map and unordered_set. They are mostly useless, but should exist for completeness.
 *) shared_ptr - store single pointer for non-polymorph types
 *) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
 	time, perform conversions to human-readable format
@@ -112,10 +112,10 @@ Standart library:
 *) String/vector-like containers with limited number of elements (32-bit or 16-bit sizes)
 *) Compact vector-like container - with size/capacity stored in allocated memory block
 *) Optimize sorting - use faster algorithm for small number of elements, select median element wisely
-*) Priority heap support
 *) Detachable thread
 *) More binary search functions - index of last element less than given (or equal to it), index of given element,
 	range partition
+*) Adapter-container for binary heap (min_heap/max_heap)
 
 Compiler:
 *) Fix possible overflows in numeric literals

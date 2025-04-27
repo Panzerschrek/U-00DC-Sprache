@@ -284,6 +284,18 @@ public:
 		return range().iter();
 	}
 
+	template<//>
+	fn iter_reverse(  mut this ) : auto
+	{
+		return range().iter_reverse();
+	}
+
+	template<//>
+	fn iter_reverse( imut this ) : auto
+	{
+		return range().iter_reverse();
+	}
+
 	// Access raw data.
 	fn data( mut this ) unsafe : $(char_type)
 	{
