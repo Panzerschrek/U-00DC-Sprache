@@ -4701,16 +4701,13 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 fn SyntaxAnalyzer::FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>
 {
 	// Search variable from top to bottom.
-	for( auto mut i= 0s; i < macro_variables_maps_stack.size(); ++i )
+	foreach( &macro_variables_map_ptr : macro_variables_maps_stack.iter_reverse() )
 	{
-		auto j= macro_variables_maps_stack.size() - i - 1s;
-		var MacroVariablesMap& macro_variables_map= macro_variables_maps_stack[j].deref();
-		if_var( &ref : macro_variables_map.find( variable_name ) )
+		if_var( &ref : macro_variables_map_ptr.deref().find( variable_name ) )
 		{
 			return ref;
 		}
 	}
-
 	return ust::null_optional;
 }
 

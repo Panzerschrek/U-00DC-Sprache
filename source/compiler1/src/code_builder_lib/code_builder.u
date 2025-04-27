@@ -2090,10 +2090,8 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names
 	{
 		// Free memory allocated for "alloca" declarations.
 		// It's important to do this in reverse order, since allocations are made mostly by manipulation of the program stack.
-		for( auto mut i= function_context.variables_frames[variables_frame_index].allocas.size(); i > 0s; --i )
+		foreach( &alloca_info : function_context.variables_frames[variables_frame_index].allocas.iter_reverse() )
 		{
-			var AllocaInfo& alloca_info= function_context.variables_frames[variables_frame_index].allocas[ i - 1s ];
-
 			var LLVMValueRef mut ptr_for_free= alloca_info.ptr_for_free;
 
 			unsafe // Because of LLVM callse
