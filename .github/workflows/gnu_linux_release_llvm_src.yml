@@ -1,0 +1,13 @@
+name: GNU/Linux release LLVM src
+
+on: [push]
+
+jobs:
+  build_release_llvm_bin:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: build project
+      run: |
+        sudo apt-get update && sudo apt-get install ninja-build python3-sphinx sphinx-doc sphinx-common python3-stemmer
+        ./ci/build_release_llvm_src.sh
