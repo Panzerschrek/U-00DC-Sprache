@@ -1,6 +1,6 @@
 name: GNU/Linux release LLVM src
 
-on: [push]
+on: [workflow_dispatch]
 
 jobs:
   build_release_llvm_bin:
