@@ -1933,17 +1933,14 @@ void CodeBuilder::BuildFuncCode(
 		U_ASSERT( function_context.this_ != nullptr );
 
 		if( syntax_element.constructor_initialization_list == nullptr )
-		{
-			// Create dummy initialization list for constructors without explicit initialization list.
-			const Synt::StructNamedInitializer dumy_initialization_list( block.src_loc );
 
 			BuildConstructorInitialization(
 				function_context.this_,
 				*base_class,
 				function_names,
 				function_context,
-				dumy_initialization_list );
-		}
+				// Create dummy initialization list for constructors without explicit initialization list.
+				Synt::StructNamedInitializer( block.src_loc ) );
 		else
 			BuildConstructorInitialization(
 				function_context.this_,

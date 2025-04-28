@@ -1621,11 +1621,11 @@ fn CodeBuilder::BuildFuncCode(
 					}
 					else
 					{
-						var Synt::StructNamedInitializer dummy_initializer{ .src_loc= block.src_loc };
 						self.BuildConstructorInitialization(
 							args_names_scope_ptr,
 							function_context,
-							dummy_initializer );
+							// Create dummy initialization list for constructors without explicit initialization list.
+							Synt::StructNamedInitializer{ .src_loc= block.src_loc } );
 					}
 				} );
 		}
