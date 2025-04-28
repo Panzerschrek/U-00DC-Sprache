@@ -1951,6 +1951,8 @@ void CodeBuilder::BuildFuncCode(
 				function_names,
 				function_context,
 				*syntax_element.constructor_initialization_list );
+
+		SetupVirtualTablePointers( function_context.this_->llvm_value, *base_class, function_context );
 	}
 
 	if( ( is_constructor || is_destructor ) && ( base_class->kind == Class::Kind::Abstract || base_class->kind == Class::Kind::Interface ) )

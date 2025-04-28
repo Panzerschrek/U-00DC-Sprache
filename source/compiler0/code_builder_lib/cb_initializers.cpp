@@ -1278,7 +1278,6 @@ void CodeBuilder::BuildConstructorInitialization(
 	function_context.initialized_this_fields.clear();
 
 	CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc );
-	SetupVirtualTablePointers( this_->llvm_value, base_class, function_context );
 }
 
 llvm::Constant* CodeBuilder::InitializeReferenceField(
