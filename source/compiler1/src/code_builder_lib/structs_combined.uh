@@ -816,7 +816,7 @@ public:
 		ValueType return_value_type;
 
 		bool is_unsafe;
-		LLVMCallConvID calling_convention = LLVMCallConv::C;
+		LLVMCallConvID calling_convention;
 
 		struct Param
 		{
