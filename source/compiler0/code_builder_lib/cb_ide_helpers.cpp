@@ -1054,7 +1054,10 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 			// Ignore functions set with no functions (for example, if they are disabled via "enable_if").
 			// Some template functions may be not completed, because we avoid building stuff inside templates in language server.
 			// So, check also presence of syntax elements.
-			if( functions_set->functions.empty() && functions_set->template_functions.empty() && functions_set->syntax_elements.empty() )
+			if( functions_set->functions.empty() &&
+				functions_set->template_functions.empty() &&
+				functions_set->syntax_elements.empty() &&
+				functions_set->template_syntax_elements.empty() )
 				return;
 		}
 

@@ -1228,6 +1228,27 @@ U_TEST( DocumentCompletion_Test35 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test36 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "template</type T/> struct S{ template<//> fn Bar(){} } fn Foo( S</i32/> s ) {    }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should suggest zero-params template method in template class.
+	document.UpdateText( DocumentRange{ { 1, 80 }, { 1, 80 } }, "s.B" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 83 } );
+	const CompletionItemsNormalized expected_completion_result{ "Bar" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;
