@@ -417,6 +417,11 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			if( char_literal.type_suffix[0] != 0 )
 				stream << char_literal.type_suffix.data();
 		}
+		void operator()( const SourceLocation& source_location ) const
+		{
+			// TODO
+			(void)source_location;
+		}
 		void operator()( const BooleanConstant& boolean_constant ) const
 		{
 			stream << ( boolean_constant.value ? Keyword( Keywords::true_ ) : Keyword( Keywords::false_ ) );

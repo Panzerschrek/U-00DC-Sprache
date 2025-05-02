@@ -56,6 +56,7 @@ struct MoveOperator;
 struct MoveOperatorCompletion;
 struct StringLiteral;
 struct CharLiteral;
+struct SourceLocation;
 struct TypeInfo;
 struct SameType;
 struct NonSyncExpression;
@@ -183,6 +184,7 @@ using Expression= std::variant<
 	MoveOperatorCompletion,
 	std::unique_ptr<const StringLiteral>, // Terminal, but too heavy, to store by-value.
 	CharLiteral,
+	SourceLocation,
 	// Non-terminal nodes (with Expression or TypeName containing inside).
 	std::unique_ptr<const TypeInfo>,
 	std::unique_ptr<const SameType>,
@@ -461,6 +463,14 @@ struct CharLiteral
 	SrcLoc src_loc;
 	uint32_t code_point= 0;
 	std::array<char, 8> type_suffix{0};
+};
+
+struct SourceLocation
+{
+	explicit SourceLocation( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
 };
 
 struct NamesScopeNameFetch

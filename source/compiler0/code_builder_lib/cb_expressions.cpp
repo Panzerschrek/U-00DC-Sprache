@@ -1445,6 +1445,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
+	const Synt::SourceLocation& source_location )
+{
+	// TODO
+	U_UNUSED( names_scope );
+	U_UNUSED( function_context );
+	U_UNUSED( source_location );
+	return ErrorValue();
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
 	VariablePtr resolved_variable;
