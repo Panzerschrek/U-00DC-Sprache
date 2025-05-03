@@ -1123,28 +1123,26 @@ void CppAstConsumer::EmitEnum(
 	{
 		auto it= enumerators_range.begin();
 		llvm::APSInt prev_val= it->getInitVal();
-		if( prev_val.getLimitedValue() != 0 )
+		if( prev_val.getLimitedValue() == 0 )
 		{
-			can_be_u_enum= false;
-			goto end_check;
-		}
-
-		++it;
-		for(; it != enumerators_range.end(); ++it )
-		{
-			const llvm::APSInt cur_val= it->getInitVal();
-			if( (cur_val - prev_val).getLimitedValue() != 1u )
+			++it;
+			for(; it != enumerators_range.end(); ++it )
 			{
-				can_be_u_enum= false;
-				goto end_check;
+				const llvm::APSInt cur_val= it->getInitVal();
+				if( (cur_val - prev_val).getLimitedValue() != 1u )
+				{
+					can_be_u_enum= false;
+					break;
+				}
+				prev_val= cur_val;
 			}
-			prev_val= cur_val;
 		}
+		else
+			can_be_u_enum= false;
 	}
 	else
 		can_be_u_enum= false;
 
-	end_check:
 	if( can_be_u_enum )
 	{
 		Synt::Enum enum_( g_dummy_src_loc );
