@@ -765,19 +765,21 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text )
 					// It's not expensive to store lexem text, since std::string (usually) has small string optimization - without heap usage.
 					// So, store text even for fixed lexems in order to simplify working with parsed lexems.
 					lexem.text= fixed_lexem_str;
-					goto push_lexem;
+					break;
 				}
 				fixed_lexem_str.pop_back();
 			}
 
-			result.errors.emplace_back(
-				"Lexical error: unrecognized character: " + std::to_string(c),
-				SrcLoc( 0u, line, column ) );
-			++it;
-			continue;
+			if( lexem.type == Lexem::Type::None )
+			{
+				result.errors.emplace_back(
+					"Lexical error: unrecognized character: " + std::to_string(c),
+					SrcLoc( 0u, line, column ) );
+				++it;
+				continue;
+			}
 		}
 
-	push_lexem:
 		lexem.src_loc= SrcLoc( 0u, line, column );
 
 		advance_column();
