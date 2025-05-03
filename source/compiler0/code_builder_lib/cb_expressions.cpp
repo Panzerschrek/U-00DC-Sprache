@@ -146,16 +146,20 @@ VariablePtr CodeBuilder::BuildExpressionCodeForValueReturn(
 				{
 					bool found_in_variables= false;
 					for( const auto& stack_frame : function_context.stack_variables_stack )
-					for( const VariablePtr& arg : stack_frame->variables_ )
 					{
-						if( arg == variable_for_move )
+						for( const VariablePtr& arg : stack_frame->variables_ )
 						{
-							found_in_variables= true;
-							goto end_variable_search;
+							if( arg == variable_for_move )
+							{
+								found_in_variables= true;
+								break;
+							}
 						}
+
+						if( found_in_variables )
+							break;
 					}
 
-					end_variable_search:
 					if( found_in_variables )
 					{
 						U_ASSERT( !function_context.variables_state.NodeMoved( variable_for_move ) );
@@ -1522,15 +1526,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	bool found_in_variables= false;
 	for( const auto& stack_frame : function_context.stack_variables_stack )
-	for( const VariablePtr& arg : stack_frame->variables_ )
 	{
-		if( arg == variable_for_move )
+		for( const VariablePtr& arg : stack_frame->variables_ )
 		{
-			found_in_variables= true;
-			goto end_variable_search;
+			if( arg == variable_for_move )
+			{
+				found_in_variables= true;
+				break;
+			}
 		}
+
+		if( found_in_variables )
+			break;
 	}
-	end_variable_search:
+
 	if( !found_in_variables )
 	{
 		REPORT_ERROR( ExpectedVariable, names_scope.GetErrors(), move_operator.src_loc, kind_name );
