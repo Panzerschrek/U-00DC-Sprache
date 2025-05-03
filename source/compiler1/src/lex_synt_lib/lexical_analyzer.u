@@ -834,39 +834,38 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		}
 		else
 		{
-			foreach( &lexem_size_group : c_fixed_lexems_table ) label size_groups_loop
 			{
-				auto s= typeinfo</ typeof(lexem_size_group) />.element_type.elements_list[0s].type.element_count;
-				if( s > it.size() )
+				foreach( &lexem_size_group : c_fixed_lexems_table ) label size_groups_loop
 				{
-					continue;
-				}
-				auto check_range= it.subrange_end( s );
-
-				foreach( &l : lexem_size_group )
-				{
-					if( check_range == l[0] )
+					auto s= typeinfo</ typeof(lexem_size_group) />.element_type.elements_list[0s].type.element_count;
+					if( s > it.size() )
 					{
-						// Do not store text for trivial lexems (for performance reasons).
-						lexem.lexem_type= l[1];
-						it= it.subrange_start( s );
-						break label size_groups_loop;
+						continue;
+					}
+					auto check_range= it.subrange_end( s );
+
+					foreach( &l : lexem_size_group )
+					{
+						if( check_range == l[0] )
+						{
+							// Do not store text for trivial lexems (for performance reasons).
+							lexem.lexem_type= l[1];
+							it= it.subrange_start( s );
+							break label fixed_lexem_processing;
+						}
 					}
 				}
-			}
+
+				// This code is reachable only if we failed to process a fixed lexem.
+				result.errors.push_back( LexSyntError( src_loc, "Lexical error: unrecognized character: " + ust::to_string8( u32(c) ) ) );
+				it.drop_front();
+				continue;
+
+			} label fixed_lexem_processing
 		}
 
-		if( lexem.lexem_type != Lexem::Type::None )
-		{
-			lexem.src_loc= src_loc;
-			result.lexems.push_back(move(lexem));
-		}
-		else
-		{
-			move(lexem);
-			result.errors.push_back( LexSyntError( src_loc, "Lexical error: unexpected lexem" ) );
-			it.drop_front();
-		}
+		lexem.src_loc= src_loc;
+		result.lexems.push_back(move(lexem));
 	}
 
 	result.lexems.push_back( Lexem{ .src_loc( 0u, line, column ), .lexem_type= Lexem::Type::EndOfFile, .text= "EOF" } );
