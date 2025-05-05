@@ -955,8 +955,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						}
 						else if( inner_reference.second_order_kind != second_order_kind )
 						{
-							var ust::string8 mut s;
-							s.push_back( char8( size_type('a') + i ) );
+							var [ char8, 1s ] s[ char8( size_type('a') + i ) ];
 							REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
 						}
 					}
@@ -980,8 +979,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						}
 						else if( inner_reference.second_order_kind != second_order_kind )
 						{
-							var ust::string8 mut s;
-							s.push_back( char8( size_type('a') + i ) );
+							var [ char8, 1 ] s[ char8( size_type('a') + i ) ];
 							REPORT_ERROR( MixingMutableAndImmutableSecondOrderReferencesInSameReferenceTag, class_.members, syntax_element.src_loc, s )
 						}
 					}
