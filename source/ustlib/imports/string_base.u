@@ -33,6 +33,55 @@ public:
 		return result;
 	}
 
+	// Construct string from given range by mapping all elements using given function.
+	// This is the most effective way to create string with fixed size, compared to methods like "from_iterator" or "push_back",
+	// since this function allocates memory in one call and has no capacity check on each insertion.
+	// Mapping function should accept single argument of type "ElementT" (value or immutable reference) and return value or immutable reference of type "T".
+	// Mapping function shouldn't be unsafe.
+	// Mapping function is immutable in order to encourage pure mapping (without modifying internal state in process).
+	template</type ElementT, type Func/>
+	fn from_mapped_range( array_view_imut</ElementT/> r, Func& func ) : this_type
+	{
+		var this_type mut result;
+		unsafe
+		{
+			var size_type size= r.size();
+			result.ensure_capacity( size );
+			for( var size_type mut i= 0s; i < size; ++i )
+			{
+				// Access range element via unsafe indexing (since we know that index is valid),
+				// call mapping function for this element,
+				// move call result directly into string memory.
+				$>( result.ptr_ + i ) = safe( func( unsafe( r.index_unchecked(i) ) ) );
+			}
+			result.size_= size;
+		}
+		return result;
+	}
+
+	// Construct string with given size and fill it with elements obtained via given filler function.
+	// This is the most effective way to create string with fixed size, compared to methods like "from_iterator" or "push_back",
+	// since this function allocates memory in one call and has no capacity check on each insertion.
+	// Filler function should return value or immutable reference of type "T".
+	// Filler function shouldn't be unsafe.
+	// Filler function may mutate itself, in order to have possibility to fill different values.
+	template</type Func/>
+	fn from_filler_function( size_type size, Func mut func ) : this_type
+	{
+		var this_type mut result;
+		unsafe
+		{
+			result.ensure_capacity( size );
+			for( var size_type mut i= 0s; i < size; ++i )
+			{
+				// Call passed function and move call result directly into string memory.
+				$>( result.ptr_ + i ) = safe( func() );
+			}
+			result.size_= size;
+		}
+		return result;
+	}
+
 	// A method for constructing a string by concatenating several other strings.
 	// It's faster compared to chained concatenation via op+.
 	fn concat( array_view_imut</range_imut/> parts ) : this_type

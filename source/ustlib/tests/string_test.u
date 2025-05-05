@@ -379,5 +379,27 @@ fn nomangle main() : i32
 		halt if( s != "DEFGH" );
 		halt if( s_reversed != "HGFED" );
 	}
+	{ // from_mapped_range
+		var [ i32, 3 ] ints[ 0x71, 0x77, 0x65 ];
+
+		var ust::string8 s=
+			ust::string8::from_mapped_range(
+				ust::array_view_imut</i32/>( ints ),
+				lambda( i32 x ) : char8 { return char8(x); } );
+
+		halt if( s != "qwe" );
+	}
+	{ // from_filler_function
+		var ust::string16 s= ust::string16::from_filler_function(
+			26s,
+			lambda[i= 0s] mut () : char16
+			{
+				var char16 res( size_type('a') + i );
+				++i;
+				return res;
+			});
+
+		halt if( s != "abcdefghijklmnopqrstuvwxyz"u16 );
+	}
 	return 0;
 }
