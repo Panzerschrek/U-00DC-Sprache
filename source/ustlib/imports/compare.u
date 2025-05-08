@@ -3,6 +3,7 @@
 namespace ust
 {
 
+// Comparator used for sorting in non-decreasing order.
 template</type T/>
 struct default_compare
 {
@@ -12,6 +13,17 @@ struct default_compare
 	}
 }
 
+// Comparator used for sorting in non-increasing order, which produces order reverse to default comparator.
+template</type T/>
+struct reverse_compare
+{
+	op()( this, T& a, T& b ) : bool
+	{
+		return a > b;
+	}
+}
+
+// Comparator used for sorting in non-decreasing order using a key, provided by mapping of a value with given function.
 template</type T, type KeyProvider/>
 struct compare_by_key
 {

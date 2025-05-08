@@ -138,7 +138,7 @@ fn nomangle main() : i32
 	// Test all possible combinations of numbers 0-7.
 	// Even the most of these combinations aren't valid for binary search (not sorted), we still should ensure that binary search doesn't crash or loop forever.
 
-	auto compare_reverse= lambda[]( i32 l, i32 r ) : bool { return l > r; };
+	var ust::reverse_compare</i32/> compare_reverse;
 	auto key_provider_reverse= lambda[]( i32 x ) : i32 { return -x; }; // Comparing reversed values is identical to use > instead of <.
 
 	for( auto mut a= 0; a < 7; ++a )
