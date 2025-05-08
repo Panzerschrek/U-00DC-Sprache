@@ -116,7 +116,7 @@ fn ManglerMSVC::MangleVirtualTable( mut this, Type& t ) : ust::string8
 	mangler_state.PushElement( "?_7" ); // Special name for virtual functions table.
 	EncodeNamespacePostfix_r( mangler_state, t.GetClassType().try_deref().lock_imut().deref().members.lock_imut().deref() );
 	mangler_state.PushElement( g_terminator ); // Finish list of name components
-	mangler_state.PushElement( "6" ); // "6" for "vftable"
+	mangler_state.PushElement( '6' ); // "6" for "vftable"
 	mangler_state.PushElement( g_imut_prefix );
 	mangler_state.PushElement( g_terminator );
 
@@ -175,7 +175,7 @@ fn ManglerMSVC::MangleFunctionImpl(
 	mangler_state.PushElement( g_terminator );
 
 	// Access label. Use global access modifier. There is no reason to use real access modifiers for class members
-	mangler_state.PushElement( "Y" );
+	mangler_state.PushElement( 'Y' );
 
 	// No need to encode full function type, like "unsafe" flag or return references/references pollution,
 	// since it's not possible to overload function unsing only such data.
@@ -213,7 +213,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 			}
 		}
 
-		mangler_state.PushElement( "Y" );
+		mangler_state.PushElement( 'Y' );
 		EncodeNumber( mangler_state, u64(dimensions.size()) );
 		foreach( dimension_size : dimensions )
 		{
@@ -300,8 +300,8 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 	}
 	else if_var( &enum_type : t.GetEnumType() )
 	{
-		mangler_state.PushElement( "W" );
-		mangler_state.PushElement( "4" ); // Underlying type. Modern MSVC uses "4" for all enums independent on underlying type.
+		mangler_state.PushElement( 'W' );
+		mangler_state.PushElement( '4' ); // Underlying type. Modern MSVC uses "4" for all enums independent on underlying type.
 
 		auto enum_members= enum_type.lock_imut().deref().names_scope;
 		auto enum_members_lock= enum_members.lock_imut();
@@ -318,7 +318,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 	else if_var( &function_pointer_type : t.GetFunctionPointerType() )
 	{
 		mangler_state.PushElement( g_pointer_prefix );
-		mangler_state.PushElement( "6" );
+		mangler_state.PushElement( '6' );
 		EncodeFunctionType( mangler_state, function_pointer_type.function_type, true );
 	}
 	else { halt; }
@@ -339,7 +339,7 @@ fn ManglerMSVC::EncodeFunctionType( this, ManglerState &mut mangler_state, Funct
 		!function_type.return_type.GetEnumType().empty() ||
 		!function_type.return_type.GetTupleType().empty() )
 	{
-		mangler_state.PushElement( "?" );
+		mangler_state.PushElement( '?' );
 		mangler_state.PushElement( g_mut_prefix ); // Return value is mutable
 	}
 
@@ -390,7 +390,7 @@ fn ManglerMSVC::EncodeFunctionType( this, ManglerState &mut mangler_state, Funct
 		mangler_state.PushElement( g_terminator ); // Finish list of params.
 	}
 
-	mangler_state.PushElement( "Z" );
+	mangler_state.PushElement( 'Z' );
 }
 
 fn ManglerMSVC::EncodeFunctionParams( this, ManglerState &mut mangler_state, ust::array_view_imut</FunctionType::Param/> params )
@@ -466,7 +466,7 @@ fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Va
 
 	if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
 	{
-		mangler_state.PushElement( "$" );
+		mangler_state.PushElement( '$' );
 		EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
 	}
 	else
@@ -523,7 +523,7 @@ fn ManglerMSVC::EncodeConstexprValue( this, ManglerState &mut mangler_state, Typ
 {
 	if_var( &array_type : t.GetArrayType() )
 	{
-		mangler_state.PushElement( "2" );
+		mangler_state.PushElement( '2' );
 
 		mangler_state.PushElement( g_array_type_name_in_templates_prefix ); // Prefix array type names in templates.
 		EncodeType( mangler_state, t );
@@ -537,7 +537,7 @@ fn ManglerMSVC::EncodeConstexprValue( this, ManglerState &mut mangler_state, Typ
 	}
 	else if_var( &tuple_type : t.GetTupleType() )
 	{
-		mangler_state.PushElement( "2" );
+		mangler_state.PushElement( '2' );
 
 		EncodeType( mangler_state, t );
 
@@ -552,7 +552,7 @@ fn ManglerMSVC::EncodeConstexprValue( this, ManglerState &mut mangler_state, Typ
 	{
 		EncodeType( mangler_state, t );
 
-		mangler_state.PushElement( "0" );
+		mangler_state.PushElement( '0' );
 
 		auto mut is_signed= false;
 		if_var( fundamental_type : t.GetFundamentalType() )
@@ -718,7 +718,7 @@ fn ManglerMSVC::EncodeNumber( this, ManglerState &mut mangler_state, i64 num )
 {
 	if( num < 0i64 )
 	{
-		mangler_state.PushElement( "?" );
+		mangler_state.PushElement( '?' );
 		EncodeNumber( mangler_state, u64(-num) );
 	}
 	else
@@ -769,8 +769,8 @@ fn ManglerMSVC::EncodeReferencePollution( this, ManglerState &mut mangler_state,
 		template_mangler_state.PushElement( g_template_prefix );
 		template_mangler_state.EncodeName( "_RP" );
 
-		template_mangler_state.PushElement( "$" );
-		template_mangler_state.PushElement( "2" );
+		template_mangler_state.PushElement( '$' );
+		template_mangler_state.PushElement( '2' );
 		template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
 		template_mangler_state.PushElement( "Y2" );
 		EncodeNumber( template_mangler_state, u64( references_pollution.size() ) );
@@ -780,7 +780,7 @@ fn ManglerMSVC::EncodeReferencePollution( this, ManglerState &mut mangler_state,
 
 		foreach( &pollution_element : references_pollution )
 		{
-			template_mangler_state.PushElement( "2" );
+			template_mangler_state.PushElement( '2' );
 			template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
 			template_mangler_state.PushElement( "Y1" );
 			EncodeNumber( template_mangler_state, 2u64 );
@@ -790,10 +790,10 @@ fn ManglerMSVC::EncodeReferencePollution( this, ManglerState &mut mangler_state,
 			EncodeParamReference( template_mangler_state, pollution_element.dst );
 			EncodeParamReference( template_mangler_state, pollution_element.src );
 
-			template_mangler_state.PushElement( "@" );
+			template_mangler_state.PushElement( '@' );
 		}
 
-		template_mangler_state.PushElement( "@" );
+		template_mangler_state.PushElement( '@' );
 
 		// Finish list of template args.
 		template_mangler_state.PushElement( g_terminator );
@@ -817,8 +817,8 @@ fn ManglerMSVC::EncodeReturnReferences( this, ManglerState &mut mangler_state, F
 		template_mangler_state.PushElement( g_template_prefix );
 		template_mangler_state.EncodeName( "_RR" );
 
-		template_mangler_state.PushElement( "$" );
-		template_mangler_state.PushElement( "2" );
+		template_mangler_state.PushElement( '$' );
+		template_mangler_state.PushElement( '2' );
 		template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
 		template_mangler_state.PushElement( "Y1" );
 		EncodeNumber( template_mangler_state, u64(return_references.size()) );
@@ -853,19 +853,19 @@ fn ManglerMSVC::EncodeReturnInnerReferences( this, ManglerState &mut mangler_sta
 		template_mangler_state.PushElement( g_template_prefix );
 		template_mangler_state.EncodeName( "_RIR" );
 
-		template_mangler_state.PushElement( "$" );
+		template_mangler_state.PushElement( '$' );
 
-		template_mangler_state.PushElement( "2" );
+		template_mangler_state.PushElement( '2' );
 
 		// Hack! Just use "tup" as type name, without specifying exact values.
-		template_mangler_state.PushElement( "U" );
+		template_mangler_state.PushElement( 'U' );
 		template_mangler_state.PushElement( KeywordToString( Keyword::tup_ ) );
 		template_mangler_state.PushElement( g_terminator );
 		template_mangler_state.PushElement( g_terminator );
 
 		foreach( &return_references : return_inner_references )
 		{
-			template_mangler_state.PushElement( "2" );
+			template_mangler_state.PushElement( '2' );
 			template_mangler_state.PushElement( g_array_type_name_in_templates_prefix );
 			template_mangler_state.PushElement( "Y1" );
 			EncodeNumber( template_mangler_state, u64(return_references.size()) );
@@ -894,18 +894,18 @@ fn ManglerMSVC::EncodeReturnInnerReferences( this, ManglerState &mut mangler_sta
 fn ManglerMSVC::EncodeParamReference( this, ManglerState &mut mangler_state, FunctionType::ParamReference& param_reference )
 {
 	// HACK! Use encoding as for structs, instead as for arrays, because old versions of "undname.exe" can't parse arrays.
-	mangler_state.PushElement( "2" );
+	mangler_state.PushElement( '2' );
 	mangler_state.PushElement( g_array_type_name_in_templates_prefix );
 	mangler_state.PushElement( "Y0" );
 	EncodeNumber( mangler_state, 2u64 );
 	mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
 
 	mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
-	mangler_state.PushElement( "0" );
+	mangler_state.PushElement( '0' );
 	EncodeNumber( mangler_state, u64('0') + u64(param_reference.param_index) );
 
 	mangler_state.PushElement( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
-	mangler_state.PushElement( "0" );
+	mangler_state.PushElement( '0' );
 	var u64 param_reference_char= ( param_reference.reference_index == FunctionType::c_param_reference_number ? u64('_') : ( u64('a') + u64(param_reference.reference_index)) );
 	EncodeNumber( mangler_state, param_reference_char );
 
