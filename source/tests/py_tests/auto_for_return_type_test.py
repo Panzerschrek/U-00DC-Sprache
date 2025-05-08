@@ -118,6 +118,29 @@ def AutoForReturnType_Test7():
 	tests_lib.build_program( c_program_text )
 
 
+def AutoForReturnType_Test8():
+	c_program_text= """
+		// Auto-return function returns lambda.
+		fn GetDivider( i32 x ) : auto
+		{
+			return lambda[=]( i32 y ) : i32 { return y / x; };
+		}
+		fn Foo()
+		{
+			auto mut d7= GetDivider( 7 );
+			halt if( d7( 51 ) != 51 / 7 );
+			halt if( d7( 144 ) != 144 / 7 );
+			halt if( d7( -12 ) != -12 / 7 );
+
+			auto mut d_neg11= GetDivider( -11 );
+			halt if( d_neg11( 51 ) != 51 / -11 );
+			halt if( d_neg11( 144 ) != 144 / -11 );
+			halt if( d_neg11( -12 ) != -12 / -11 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def AutoForFunctionTemplate_Test0():
 	c_program_text= """
 		template</ type T />
