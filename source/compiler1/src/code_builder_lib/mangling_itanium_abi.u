@@ -128,7 +128,7 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 		{
 			if( !parent_scope.GetParent().empty() )
 			{
-				state_.Push( "N" );
+				state_.Push( 'N' );
 				ADD_NODE( state_ )
 				{
 					EncodeNamespacePrefix_r( state_, parent_scope );
@@ -146,7 +146,7 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 				}
 
 				EncodeTemplateArgs( state_, template_args );
-				state_.Push( "v" );
+				state_.Push( 'v' );
 			}
 		}
 	}
@@ -154,10 +154,10 @@ fn ManglerItaniumABI::MangleFunctionImpl(
 	{
 		if( !parent_scope.GetParent().empty() )
 		{
-			state_.Push( "N" );
+			state_.Push( 'N' );
 			EncodeNamespacePrefix_r( state_, parent_scope );
 			state_.Push( name_prefixed );
-			state_.Push( "E" );
+			state_.Push( 'E' );
 		}
 		else
 		{
@@ -330,10 +330,10 @@ fn EncodeNestedName( ManglerState &mut mangler_state, ust::string_view8 name, Na
 	{
 		if( !parent_scope.GetParent().empty() )
 		{
-			mangler_state.Push( "N" );
+			mangler_state.Push( 'N' );
 			EncodeNamespacePrefix_r( mangler_state, parent_scope );
 			mangler_state.PushLengthPrefixed( name );
-			mangler_state.Push( "E" );
+			mangler_state.Push( 'E' );
 		}
 		else
 		{
@@ -385,7 +385,7 @@ fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& pa
 	{
 		ADD_NODE( mangler_state )
 		{
-			mangler_state.Push( "R" );
+			mangler_state.Push( 'R' );
 			if( param.value_type == ValueType::ReferenceMut )
 			{
 				EncodeTypeName( mangler_state, param.t );
@@ -394,7 +394,7 @@ fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& pa
 			{
 				ADD_NODE( mangler_state )
 				{
-					mangler_state.Push( "K" );
+					mangler_state.Push( 'K' );
 					EncodeTypeName( mangler_state, param.t );
 				}
 			}
@@ -418,11 +418,11 @@ fn EncodeFunctionParams( ManglerState& mut mangler_state, ust::array_view_imut</
 		if( is_void_param )
 		{
 			// We need to distinguish between function with no params (with "v" for params) and function with single "void" param.
-			// So, mark real "void: params with "const".
+			// So, mark real "void" params with "const".
 			// Normaly we do not use "konst" prefix for value params, so, "void" type is single exception.
 			ADD_NODE( mangler_state )
 			{
-				mangler_state.Push( "K" );
+				mangler_state.Push( 'K' );
 				EncodeTypeName( mangler_state, param.t );
 			}
 		}
@@ -434,7 +434,7 @@ fn EncodeFunctionParams( ManglerState& mut mangler_state, ust::array_view_imut</
 
 	if( params.empty() )
 	{
-		mangler_state.Push( "v" );
+		mangler_state.Push( 'v' );
 	}
 }
 
@@ -442,12 +442,12 @@ fn EncodeParamReference( ManglerState &mut mangler_state, FunctionType::ParamRef
 {
 	mangler_state.Push( "il" );
 
-	mangler_state.Push( "L" );
+	mangler_state.Push( 'L' );
 	mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
 	mangler_state.PushDecimalNumber( u64(param_reference.param_index) + u64('0') );
-	mangler_state.Push( "E" );
+	mangler_state.Push( 'E' );
 
-	mangler_state.Push( "L" );
+	mangler_state.Push( 'L' );
 	mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::char8_ ) );
 	if( param_reference.reference_index == FunctionType::c_param_reference_number )
 	{
@@ -457,9 +457,9 @@ fn EncodeParamReference( ManglerState &mut mangler_state, FunctionType::ParamRef
 	{
 		mangler_state.PushDecimalNumber( u64(param_reference.reference_index) + u64('a') );
 	}
-	mangler_state.Push( "E" );
+	mangler_state.Push( 'E' );
 
-	mangler_state.Push( "E" );
+	mangler_state.Push( 'E' );
 }
 
 fn EncodeReferencePollutionAsType( ManglerState& mut mangler_state, FunctionType::ReferencesPollution& reference_pollution )
@@ -471,9 +471,9 @@ fn EncodeReferencePollutionAsType( ManglerState& mut mangler_state, FunctionType
 			mangler_state.PushLengthPrefixed( "_RP" );
 		}
 
-		mangler_state.Push( "I" );
+		mangler_state.Push( 'I' );
 		{
-			mangler_state.Push( "X" );
+			mangler_state.Push( 'X' );
 
 			mangler_state.Push( "il" );
 			foreach( &pollution_element : reference_pollution )
@@ -481,13 +481,13 @@ fn EncodeReferencePollutionAsType( ManglerState& mut mangler_state, FunctionType
 				mangler_state.Push( "il" );
 				EncodeParamReference( mangler_state, pollution_element.dst );
 				EncodeParamReference( mangler_state, pollution_element.src );
-				mangler_state.Push( "E" );
+				mangler_state.Push( 'E' );
 			}
-			mangler_state.Push( "E" );
+			mangler_state.Push( 'E' );
 
-			mangler_state.Push( "E" );
+			mangler_state.Push( 'E' );
 		}
-		mangler_state.Push( "E" );
+		mangler_state.Push( 'E' );
 	}
 }
 
@@ -500,20 +500,20 @@ fn EncodeReturnReferencesAsType( ManglerState& mut mangler_state, FunctionType::
 			mangler_state.PushLengthPrefixed( "_RR" );
 		}
 
-		mangler_state.Push( "I" );
+		mangler_state.Push( 'I' );
 		{
-			mangler_state.Push( "X" );
+			mangler_state.Push( 'X' );
 
 			mangler_state.Push( "il" );
 			foreach( &param_reference : return_references )
 			{
 				EncodeParamReference( mangler_state, param_reference );
 			}
-			mangler_state.Push( "E" );
+			mangler_state.Push( 'E' );
 
-			mangler_state.Push( "E" );
+			mangler_state.Push( 'E' );
 		}
-		mangler_state.Push( "E" );
+		mangler_state.Push( 'E' );
 	}
 }
 
@@ -526,9 +526,9 @@ fn EncodeReturnInnerReferencesAsType( ManglerState& mut mangler_state, FunctionT
 			mangler_state.PushLengthPrefixed( "_RIR" );
 		}
 
-		mangler_state.Push( "I" );
+		mangler_state.Push( 'I' );
 		{
-			mangler_state.Push( "X" );
+			mangler_state.Push( 'X' );
 
 			mangler_state.Push( "il" );
 			foreach( &return_references : return_inner_references )
@@ -538,13 +538,13 @@ fn EncodeReturnInnerReferencesAsType( ManglerState& mut mangler_state, FunctionT
 				{
 					EncodeParamReference( mangler_state, param_reference );
 				}
-				mangler_state.Push( "E" );
+				mangler_state.Push( 'E' );
 			}
-			mangler_state.Push( "E" );
+			mangler_state.Push( 'E' );
 
-			mangler_state.Push( "E" );
+			mangler_state.Push( 'E' );
 		}
-		mangler_state.Push( "E" );
+		mangler_state.Push( 'E' );
 	}
 }
 
@@ -631,7 +631,7 @@ fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_t
 		}
 
 		// Encode coroutine type as template with several arguments.
-		mangler_state.Push( "I" );
+		mangler_state.Push( 'I' );
 
 		if( coroutine_type_description.return_value_type == ValueType::Value )
 		{
@@ -641,7 +641,7 @@ fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_t
 		{
 			ADD_NODE( mangler_state )
 			{
-				mangler_state.Push( "R" );
+				mangler_state.Push( 'R' );
 				if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
 				{
 					EncodeTypeName( mangler_state, coroutine_type_description.return_type );
@@ -650,7 +650,7 @@ fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_t
 				{
 					ADD_NODE( mangler_state )
 					{
-						mangler_state.Push( "K" );
+						mangler_state.Push( 'K' );
 						EncodeTypeName( mangler_state, coroutine_type_description.return_type );
 					}
 				}
@@ -660,19 +660,19 @@ fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_t
 		// Encode non-sync tag, if it exists.
 		if( coroutine_type_description.non_sync_ )
 		{
-			mangler_state.Push( "L" );
+			mangler_state.Push( 'L' );
 			mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::bool_ ) );
-			mangler_state.Push( "1" );
-			mangler_state.Push( "E" );
+			mangler_state.Push( '1' );
+			mangler_state.Push( 'E' );
 		}
 
 		// Encode inner reference kind as variable template parameter.
 		foreach( inner_reference_kind : coroutine_type_description.inner_references )
 		{
-			mangler_state.Push( "L" );
+			mangler_state.Push( 'L' );
 			mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::u32_ ) );
 			mangler_state.PushDecimalNumber( u64(inner_reference_kind) );
-			mangler_state.Push( "E" );
+			mangler_state.Push( 'E' );
 		}
 
 		if( !coroutine_type_description.return_references.empty() )
@@ -686,7 +686,7 @@ fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_t
 
 		// Do not encode coroutine kind here, because coroutine class name contains kind.
 
-		mangler_state.Push( "E" );
+		mangler_state.Push( 'E' );
 	}
 }
 
@@ -700,9 +700,9 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 	{
 		ADD_NODE( mangler_state )
 		{
-			mangler_state.Push( "A" );
+			mangler_state.Push( 'A' );
 			mangler_state.PushDecimalNumber( array_type.element_count );
-			mangler_state.Push( "_" );
+			mangler_state.Push( '_' );
 			EncodeTypeName( mangler_state, array_type.element_type );
 		}
 	}
@@ -715,12 +715,12 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 				mangler_state.PushLengthPrefixed( KeywordToString( Keyword::tup_ ) );
 			}
 
-			mangler_state.Push( "I" );
+			mangler_state.Push( 'I' );
 			foreach( &element_type : tuple_type.element_types )
 			{
 				EncodeTypeName( mangler_state, element_type );
 			}
-			mangler_state.Push( "E" );
+			mangler_state.Push( 'E' );
 		}
 	}
 	else if_var( &class_type_ptr : t.GetClassType() )
@@ -754,9 +754,9 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 				auto t_namespace= t.lock_imut().deref().parent_names_scope.lock();
 				if( !t_namespace.empty() && !t_namespace.try_lock_imut().deref().GetParent().empty() )
 				{
-					mangler_state.Push( "N" );
+					mangler_state.Push( 'N' );
 					EncodeTemplateClassName( mangler_state, class_type );
-					mangler_state.Push( "E" );
+					mangler_state.Push( 'E' );
 				}
 				else
 				{
@@ -789,7 +789,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 	{
 		ADD_NODE( mangler_state )
 		{
-			mangler_state.Push( "P" );
+			mangler_state.Push( 'P' );
 			EncodeTypeName( mangler_state, raw_poiter_type.element_type );
 		}
 	}
@@ -797,7 +797,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 	{
 		ADD_NODE( mangler_state )
 		{
-			mangler_state.Push( "P" );
+			mangler_state.Push( 'P' );
 			EncodeFunctionTypeName( mangler_state, function_pointer_type.function_type );
 		}
 	}
@@ -813,23 +813,23 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 			LLVMCallConv::C -> {},
 			LLVMCallConv::Cold ->
 			{
-				mangler_state.Push( "U" );
+				mangler_state.Push( 'U' );
 				mangler_state.PushLengthPrefixed( "cold" );
 			},
 			LLVMCallConv::Fast ->
 			{
-				mangler_state.Push( "U" );
+				mangler_state.Push( 'U' );
 				mangler_state.PushLengthPrefixed( "fast" );
 			},
 			LLVMCallConv::X86Stdcall ->
 			{
-				mangler_state.Push( "U" );
+				mangler_state.Push( 'U' );
 				mangler_state.PushLengthPrefixed( "stdcall" );
 			},
 			default -> { /* Unhandled convention */ halt; },
 		}
 
-		mangler_state.Push( "F" );
+		mangler_state.Push( 'F' );
 
 		EncodeFunctionParam(
 			mangler_state,
@@ -855,7 +855,7 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 			mangler_state.PushLengthPrefixed( "unsafe" );
 		}
 
-		mangler_state.Push( "E" );
+		mangler_state.Push( 'E' );
 	}
 }
 
@@ -906,7 +906,7 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 
 fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& template_args )
 {
-	mangler_state.Push( "I" );
+	mangler_state.Push( 'I' );
 
 	foreach( &arg : template_args )
 	{
@@ -916,7 +916,7 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 		}
 	}
 
-	mangler_state.Push( "E" );
+	mangler_state.Push( 'E' );
 }
 
 fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, Type& t )
@@ -931,9 +931,9 @@ fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, VariablePtr& v_ptr )
 		if( !v.t.GetArrayType().empty() || !v.t.GetTupleType().empty() )
 		{
 			// Encode composite template args as expressions.
-			mangler_state.Push( "X" );
+			mangler_state.Push( 'X' );
 			EncodeConstexprValue( mangler_state, v.t, v.constexpr_value );
-			mangler_state.Push( "E" );
+			mangler_state.Push( 'E' );
 		}
 		else
 		{
@@ -969,7 +969,7 @@ fn EncodeConstexprValue( ManglerState &mut mangler_state, Type& t, LLVMValueRef 
 			EncodeConstexprValue( mangler_state, array_type.element_type, unsafe( LLVMGetAggregateElement( constexpr_value, u32(i) ) ) );
 		}
 
-		mangler_state.Push( "E" );
+		mangler_state.Push( 'E' );
 	}
 	else if_var( &tuple_type : t.GetTupleType() )
 	{
@@ -984,11 +984,11 @@ fn EncodeConstexprValue( ManglerState &mut mangler_state, Type& t, LLVMValueRef 
 			EncodeConstexprValue( mangler_state, tuple_type.element_types[i], unsafe( LLVMGetAggregateElement( constexpr_value, u32(i) ) ) );
 		}
 
-		mangler_state.Push( "E" );
+		mangler_state.Push( 'E' );
 	}
 	else
 	{
-		mangler_state.Push( "L" );
+		mangler_state.Push( 'L' );
 		EncodeTypeName( mangler_state, t );
 
 		auto mut is_signed= false;
@@ -1012,7 +1012,7 @@ fn EncodeConstexprValue( ManglerState &mut mangler_state, Type& t, LLVMValueRef 
 				}
 				else
 				{
-					mangler_state.Push( "n" );
+					mangler_state.Push( 'n' );
 					mangler_state.PushDecimalNumber( u64(-num) );
 				}
 			}
@@ -1022,7 +1022,7 @@ fn EncodeConstexprValue( ManglerState &mut mangler_state, Type& t, LLVMValueRef 
 			}
 		}
 
-		mangler_state.Push( "E" );
+		mangler_state.Push( 'E' );
 	}
 }
 
