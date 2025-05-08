@@ -196,27 +196,51 @@ fn to_string32( size_type x ) : string32
 }
 
 template</type C/>
-fn to_string( i8 x ) :string_base</C/>
+fn to_string( i8 x ) : string_base</C/>
 {
-	return to_string</C/>( i32(x) );
+	var string_base</C/> mut result;
+	if( i32(x) >= 0 )
+	{
+		to_string_impl</C/>( u8( x), result );
+	}
+	else
+	{
+		result.push_back( C('-') );
+		to_string_impl</C/>( u8(-x), result );
+	}
+	return result;
 }
 
 template</type C/>
 fn to_string( u8 x ) : string_base</C/>
 {
-	return to_string</C/>( u32(x) );
+	var string_base</C/> mut result;
+	to_string_impl</C/>( x, result );
+	return result;
 }
 
 template</type C/>
 fn to_string( i16 x ) : string_base</C/>
 {
-	return to_string</C/>( i32(x) );
+	var string_base</C/> mut result;
+	if( i32(x) >= 0 )
+	{
+		to_string_impl</C/>( u16( x), result );
+	}
+	else
+	{
+		result.push_back( C('-') );
+		to_string_impl</C/>( u16(-x), result );
+	}
+	return result;
 }
 
 template</type C/>
 fn to_string( u16 x ) : string_base</C/>
 {
-	return to_string</C/>( u32(x) );
+	var string_base</C/> mut result;
+	to_string_impl</C/>( x, result );
+	return result;
 }
 
 template</type C/>
@@ -265,6 +289,58 @@ fn to_string( u64 x ) : string_base</C/>
 	var string_base</C/> mut result;
 	to_string_impl</C/>( x, result );
 	return result;
+}
+
+// 8-bit version.
+template</type C/>
+fn to_string_impl( u8 in_x, string_base</C/>& mut result )
+{
+	auto constexpr zero_char= C('0');
+
+	var u32 x(in_x);
+
+	if( x >= 100u )
+	{
+		result.push_back( C( u32(zero_char) + x / 100u ) );
+		result.push_back( C( u32(zero_char) + x / 10u % 10u ) );
+	}
+	else if( x >= 10u )
+	{
+		result.push_back( C( u32(zero_char) + x / 10u ) );
+	}
+
+	result.push_back( C( u32(zero_char) + x % 10u ) );
+}
+
+// 16-bit version.
+template</type C/>
+fn to_string_impl( u16 in_x, string_base</C/>& mut result )
+{
+	auto constexpr zero_char= C('0');
+
+	var u32 x(in_x);
+
+	if( x == 0u )
+	{
+		result.push_back(zero_char);
+	}
+	else
+	{
+		var u32 mut div= 10000u;
+		while( div > x )
+		{
+			div/= 10u;
+		}
+
+		var u32 mut rem= x;
+		while( div > 0u )
+		{
+			auto digit= rem / div;
+			result.push_back( C( digit + u32(zero_char) ) );
+			rem-= digit * div;
+			div/= 10u;
+		}
+	}
 }
 
 // 32-bit version.
