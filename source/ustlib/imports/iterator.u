@@ -846,14 +846,17 @@ private:
 
 // Use template overloading and template signature params matching to detect if given type is optional or optional_ref.
 
-template</type T/> struct is_optional</ optional</T/> /> { var bool value= true; }
-template</type T/> struct is_optional</T/> { var bool value= false; }
+template</type T/> type is_optional</ optional</T/> /> = true_value_struct;
+template</type T/> type is_optional</T/> = false_value_struct;
 
-template</type T/> struct is_optional_ref_mut </ optional_ref_mut</T /> /> { var bool value= true; }
-template</type T/> struct is_optional_ref_mut </T/> { var bool value= false; }
+template</type T/> type is_optional_ref_mut </ optional_ref_mut </T /> /> = true_value_struct;
+template</type T/> type is_optional_ref_mut </T/> = false_value_struct;
 
-template</type T/> struct is_optional_ref_imut</ optional_ref_imut</T /> /> { var bool value= true; }
-template</type T/> struct is_optional_ref_imut</T/> { var bool value= false; }
+template</type T/> type is_optional_ref_imut</ optional_ref_imut</T /> /> = true_value_struct;
+template</type T/> type is_optional_ref_imut</T/> = false_value_struct;
+
+struct false_value_struct{ var bool value= false; }
+struct  true_value_struct{ var bool value=  true; }
 
 } // namespace iterator_impl
 
