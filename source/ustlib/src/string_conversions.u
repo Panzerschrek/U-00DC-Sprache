@@ -198,25 +198,25 @@ fn to_string32( size_type x ) : string32
 template</type C/>
 fn to_string( i8 x ) :string_base</C/>
 {
-	return to_string</C/>( i64(x) );
+	return to_string</C/>( i32(x) );
 }
 
 template</type C/>
 fn to_string( u8 x ) : string_base</C/>
 {
-	return to_string</C/>( u64(x) );
+	return to_string</C/>( u32(x) );
 }
 
 template</type C/>
 fn to_string( i16 x ) : string_base</C/>
 {
-	return to_string</C/>( i64(x) );
+	return to_string</C/>( i32(x) );
 }
 
 template</type C/>
 fn to_string( u16 x ) : string_base</C/>
 {
-	return to_string</C/>( u64(x) );
+	return to_string</C/>( u32(x) );
 }
 
 template</type C/>
