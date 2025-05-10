@@ -297,7 +297,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			( index->constexpr_value != nullptr && IsInteger( index_fundamental_type->fundamental_type ) ) ||
 			( index->constexpr_value == nullptr && IsUnsignedInteger( index_fundamental_type->fundamental_type ) ) ) ) )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), indexation_operator.src_loc, "any integer", index->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), indexation_operator.src_loc, "any unsigned integer", index->type );
 			return ErrorValue();
 		}
 
