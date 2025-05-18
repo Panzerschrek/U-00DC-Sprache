@@ -140,7 +140,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 				options.sysroot,
 				// Build in specified build directory or in current directory if it's empty.
 				MakePathAbsolute( options.build_directory ),
-				options.build_configuration,
+				options.build_configuration_extended,
 				target_triple );
 		return ( ok ? 0 : -1 );
 	}
@@ -160,7 +160,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 	}
 
 	// Create a subdirectory for configuration specified.
-	ust::path::append( root_package_build_directory, BuildConfigurationToString( options.build_configuration ) );
+	ust::path::append( root_package_build_directory, BuildConfigurationToString( options.build_configuration_extended.build_configuration ) );
 
 	if( !EnsureDirectoryExists( logger, root_package_build_directory ) )
 	{
@@ -197,7 +197,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 
 	var BuildSystemInterfaceImplementation mut bsi(
 		move(logger),
-		options.build_configuration,
+		options.build_configuration_extended,
 		move(configuration_options),
 		move(build_system_paths) );
 
@@ -377,7 +377,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		bsi.build_system_paths_,
 		options.sysroot,
 		root_package_build_directory,
-		bsi.build_configuration_,
+		bsi.build_configuration_extended_,
 		target_triple,
 		target_workspace,
 		build_graph );
@@ -392,7 +392,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		bsi.build_system_paths_,
 		options.host_sysroot,
 		host_packages_root_build_directory,
-		bsi.build_configuration_,
+		bsi.build_configuration_extended_,
 		host_target_triple,
 		host_workspace,
 		build_graph );
@@ -861,7 +861,7 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::filesystem_path_view sysroot,
 	ust::filesystem_path_view root_package_build_directory,
-	BuildConfiguration build_configuration,
+	BuildConfigurationExtended& build_configuration_extended,
 	TargetTriple& target_triple,
 	WorkspaceInfo& workspace,
 	BuildGraph &mut build_graph )
@@ -873,7 +873,7 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 			build_system_paths,
 			sysroot,
 			root_package_build_directory,
-			build_configuration,
+			build_configuration_extended,
 			target_triple,
 			build_graph );
 	}
@@ -893,7 +893,7 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 			build_system_paths,
 			sysroot,
 			root_package_build_directory,
-			build_configuration,
+			build_configuration_extended,
 			target_triple,
 			workspace,
 			build_target_name,
@@ -905,7 +905,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::filesystem_path_view sysroot,
 	ust::filesystem_path_view root_package_build_directory,
-	BuildConfiguration build_configuration,
+	BuildConfigurationExtended& build_configuration_extended,
 	TargetTriple& target_triple,
 	WorkspaceInfo& workspace,
 	BuildTargetAbsoluteName& target_name,
@@ -1071,7 +1071,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		node.command_line.push_back( "pic" );
 
 		// Build configuration-dependent options.
-		switch( build_configuration )
+		switch( build_configuration_extended.build_configuration )
 		{
 			BuildConfiguration::Debug ->
 			{
@@ -1083,8 +1083,12 @@ fn CreatePackageTargetBuildGraphNodes(
 			},
 			BuildConfiguration::Release ->
 			{
-				// Run full optimization, but not by using O3 - it isn't much better than O2.
-				node.command_line.push_back( "-O2" );
+				// Run full optimization.
+				switch( build_configuration_extended.release_optimization_level )
+				{
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O2 -> { node.command_line.push_back( "-O2" ); },
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O3 -> { node.command_line.push_back( "-O3" ); },
+				}
 				// Prepare for LTO.
 				node.command_line.push_back( "--lto-mode=prelink" );
 			},
@@ -1412,7 +1416,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	node.command_line.push_back( "pic" );
 
 	// Build configuration-dependent options.
-	switch( build_configuration )
+	switch( build_configuration_extended.build_configuration )
 	{
 		BuildConfiguration::Debug ->
 		{
@@ -1432,8 +1436,12 @@ fn CreatePackageTargetBuildGraphNodes(
 			}
 			else
 			{
-				// Run full optimization, but not by using O3 - it isn't much better than O2.
-				node.command_line.push_back( "-O2" );
+				// Run full optimization.
+				switch( build_configuration_extended.release_optimization_level )
+				{
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O2 -> { node.command_line.push_back( "-O2" ); },
+					BuildConfigurationExtended::ReleaseOptimisationLevel::O3 -> { node.command_line.push_back( "-O3" ); },
+				}
 				// Also run LTO.
 				node.command_line.push_back( "--lto-mode=link" );
 
@@ -1561,7 +1569,7 @@ fn CreateUstlibBuildGraphNodes(
 	BuildSystemPaths& build_system_paths,
 	ust::filesystem_path_view sysroot,
 	ust::filesystem_path_view root_package_build_directory,
-	BuildConfiguration build_configuration,
+	BuildConfigurationExtended& build_configuration_extended,
 	TargetTriple& target_triple,
 	BuildGraph &mut build_graph )
 {
@@ -1602,7 +1610,7 @@ fn CreateUstlibBuildGraphNodes(
 	node.command_line.push_back( "pic" );
 
 	// Build configuration-dependent options.
-	switch( build_configuration )
+	switch( build_configuration_extended.build_configuration )
 	{
 		BuildConfiguration::Debug ->
 		{
@@ -1614,8 +1622,12 @@ fn CreateUstlibBuildGraphNodes(
 		},
 		BuildConfiguration::Release ->
 		{
-			// Run full optimizations, but not by using O3 - it isn't much better than O2.
-			node.command_line.push_back( "-O2" );
+			// Run full optimizations.
+			switch( build_configuration_extended.release_optimization_level )
+			{
+				BuildConfigurationExtended::ReleaseOptimisationLevel::O2 -> { node.command_line.push_back( "-O2" ); },
+				BuildConfigurationExtended::ReleaseOptimisationLevel::O3 -> { node.command_line.push_back( "-O3" ); },
+			}
 			// Also prepare for further LTO.
 			node.command_line.push_back( "--lto-mode=prelink" );
 		},
@@ -1862,7 +1874,7 @@ fn nodiscard BuildSingleFileProgram(
 	BuildSystemPaths& build_system_paths,
 	ust::filesystem_path_view sysroot,
 	ust::filesystem_path_view build_directory,
-	BuildConfiguration build_configuration,
+	BuildConfigurationExtended& build_configuration_extended,
 	TargetTriple& target_triple ) : bool
 {
 	var bool target_is_windows = target_triple.operating_system == g_os_windows;
@@ -1925,7 +1937,7 @@ fn nodiscard BuildSingleFileProgram(
 
 	AddTargetTripleCompilerFlags( target_triple, compiler_args );
 
-	switch( build_configuration )
+	switch( build_configuration_extended.build_configuration )
 	{
 		BuildConfiguration::Debug ->
 		{
@@ -1934,7 +1946,11 @@ fn nodiscard BuildSingleFileProgram(
 		},
 		BuildConfiguration::Release ->
 		{
-			compiler_args.push_back( "-O2" );
+			switch( build_configuration_extended.release_optimization_level )
+			{
+				BuildConfigurationExtended::ReleaseOptimisationLevel::O2 -> { compiler_args.push_back( "-O2" ); },
+				BuildConfigurationExtended::ReleaseOptimisationLevel::O3 -> { compiler_args.push_back( "-O3" ); },
+			}
 		},
 		BuildConfiguration::MinSizeRelease ->
 		{
@@ -1956,12 +1972,12 @@ class BuildSystemInterfaceImplementation final : BuildSystemInterface
 public:
 	fn constructor(
 		Logger mut logger,
-		BuildConfiguration build_configuration,
+		BuildConfigurationExtended build_configuration_extended,
 		ConfigurationOptions mut configuration_options,
 		BuildSystemPaths mut build_system_paths )
 			(
 				logger_= move(logger),
-				build_configuration_= build_configuration,
+				build_configuration_extended_= build_configuration_extended,
 				configuration_options_= move(configuration_options),
 				build_system_paths_= move(build_system_paths),
 			)
@@ -1985,7 +2001,7 @@ public:
 public: // BuildSystemInterface
 	fn virtual final GetBuildConfiguration(this) : BuildConfiguration
 	{
-		return build_configuration_;
+		return build_configuration_extended_.build_configuration;
 	}
 
 	fn virtual final GetTargetTriple(this) : TargetTriple
@@ -2056,7 +2072,7 @@ public: // BuildSystemInterface
 public: // Provide direct access for some fields where it's safe to use them directly.
 	Logger logger_;
 
-	BuildConfiguration imut build_configuration_;
+	BuildConfigurationExtended imut build_configuration_extended_;
 	BuildSystemPaths imut build_system_paths_;
 
 private:

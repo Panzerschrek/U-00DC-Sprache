@@ -153,14 +153,14 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 			ust::stderr_print( ust::concat( "Error, unknown build configuration \"", build_configuration, "\".\n" ) );
 			return ust::null_optional;
 		}
-		res.build_configuration= conf.try_deref();
+		res.build_configuration_extended.build_configuration= conf.try_deref();
 	}
 
 	if( !release_optimization_level.empty() )
 	{
-		if_var( o : ust::string_to_enum</Options::ReleaseOptimisationLevel/>( release_optimization_level ) )
+		if_var( o : ust::string_to_enum</BuildConfigurationExtended::ReleaseOptimisationLevel/>( release_optimization_level ) )
 		{
-			res.release_optimization_level= o;
+			res.build_configuration_extended.release_optimization_level= o;
 		}
 		else
 		{

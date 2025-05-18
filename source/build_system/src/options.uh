@@ -31,8 +31,7 @@ struct Options
 	bool verbose = false;
 	u32 number_of_jobs= 0u;
 	Command command = Command::Help;
-	ReleaseOptimisationLevel release_optimization_level= ReleaseOptimisationLevel::O2;
-	BuildConfiguration build_configuration= BuildConfiguration::Release;
+	BuildConfigurationExtended build_configuration_extended;
 	ust::filesystem_path single_file_to_build;
 	ust::filesystem_path configuration_options_file;
 	ust::string8 target_triple;
@@ -44,6 +43,18 @@ struct Options
 	ust::filesystem_path packages_repository_directory;
 	ust::filesystem_path sysroot;
 	ust::filesystem_path host_sysroot;
+}
+
+struct BuildConfigurationExtended
+{
+	enum ReleaseOptimisationLevel
+	{
+		O2,
+		O3,
+	}
+
+	BuildConfiguration build_configuration= BuildConfiguration::Release;
+	ReleaseOptimisationLevel release_optimization_level= ReleaseOptimisationLevel::O2;
 }
 
 fn StringToBuildConfiguration( ust::string_view8 s ) : ust::optional</BuildConfiguration/>;
