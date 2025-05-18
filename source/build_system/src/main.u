@@ -1843,7 +1843,7 @@ fn nodiscard BuildUstlibForBuildScripts(
 
 		// Use "abort-based" halt mode - in order to handle halts in build scripts gracefully.
 		// It's fine if this mode differs from halt mode in build system executable.
-		compiler_args.push_back( "--halt-mode=abort" );
+		SetHaltMode( BuildConfigurationExtended::HaltMode::abort, compiler_args );
 
 		// Use optimization level which was used to compile the build system executable.
 		compiler_args.push_back( ust::concat( "-O", ust::single_element_array_view( compiler::options::optimization_level ) ) );
