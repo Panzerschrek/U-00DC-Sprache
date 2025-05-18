@@ -1095,7 +1095,11 @@ fn CreatePackageTargetBuildGraphNodes(
 			BuildConfiguration::MinSizeRelease ->
 			{
 				// Run full optimization for size.
-				node.command_line.push_back( "-Os" );
+				switch( build_configuration_extended.min_size_release_optimization_level )
+				{
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Os -> { node.command_line.push_back( "-Os" ); },
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz -> { node.command_line.push_back( "-Oz" ); },
+				}
 				// Prepare for LTO.
 				node.command_line.push_back( "--lto-mode=prelink" );
 			},
@@ -1460,7 +1464,11 @@ fn CreatePackageTargetBuildGraphNodes(
 			else
 			{
 				// Run full optimization for size.
-				node.command_line.push_back( "-Os" );
+				switch( build_configuration_extended.min_size_release_optimization_level )
+				{
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Os -> { node.command_line.push_back( "-Os" ); },
+					BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz -> { node.command_line.push_back( "-Oz" ); },
+				}
 				// Also run LTO.
 				node.command_line.push_back( "--lto-mode=link" );
 
@@ -1634,7 +1642,11 @@ fn CreateUstlibBuildGraphNodes(
 		BuildConfiguration::MinSizeRelease ->
 		{
 			// Run full optimization for size.
-			node.command_line.push_back( "-Os" );
+			switch( build_configuration_extended.min_size_release_optimization_level )
+			{
+				BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Os -> { node.command_line.push_back( "-Os" ); },
+				BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz -> { node.command_line.push_back( "-Oz" ); },
+			}
 			// Also prepare for further LTO.
 			node.command_line.push_back( "--lto-mode=prelink" );
 		},
@@ -1954,7 +1966,11 @@ fn nodiscard BuildSingleFileProgram(
 		},
 		BuildConfiguration::MinSizeRelease ->
 		{
-			compiler_args.push_back( "-Os" );
+			switch( build_configuration_extended.min_size_release_optimization_level )
+			{
+				BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Os -> { compiler_args.push_back( "-Os" ); },
+				BuildConfigurationExtended::MinSizeReleaseOptimizationLevel::Oz -> { compiler_args.push_back( "-Oz" ); },
+			}
 		},
 	}
 

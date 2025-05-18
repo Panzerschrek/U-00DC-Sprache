@@ -53,8 +53,15 @@ struct BuildConfigurationExtended
 		O3,
 	}
 
+	enum MinSizeReleaseOptimizationLevel
+	{
+		Os,
+		Oz,
+	}
+
 	BuildConfiguration build_configuration= BuildConfiguration::Release;
 	ReleaseOptimisationLevel release_optimization_level= ReleaseOptimisationLevel::O2;
+	MinSizeReleaseOptimizationLevel min_size_release_optimization_level= MinSizeReleaseOptimizationLevel::Os;
 }
 
 fn StringToBuildConfiguration( ust::string_view8 s ) : ust::optional</BuildConfiguration/>;
