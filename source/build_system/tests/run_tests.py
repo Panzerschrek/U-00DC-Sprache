@@ -721,6 +721,24 @@ def GlobalMutableVariablesDeduplication1Test():
 	RunExecutable( test_dir, "exe" )
 
 
+def CustomHaltModeTest():
+	test_name_base= "single_file_program3"
+	build_system_args= [
+		g_build_system_executable,
+		"build_single", os.path.join( g_tests_path, test_name_base + ".u" ),
+		"-q",
+		"--build-configuration", "min_size_release",
+		"--compiler-executable", g_compiler_executable,
+		"--ustlib-path", g_ustlib_path,
+		"--build-directory", g_tests_build_root_path,
+		"--halt-mode", "unreachable",
+		"-v"
+		]
+
+	subprocess.check_call( build_system_args )
+	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_name_base ) ], stdout= subprocess.DEVNULL )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1443,6 +1461,7 @@ def main():
 		SingleFileProgram2Test,
 		GlobalMutableVariablesDeduplication0Test,
 		GlobalMutableVariablesDeduplication1Test,
+		CustomHaltModeTest,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
