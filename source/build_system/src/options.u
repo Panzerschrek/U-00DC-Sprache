@@ -1,5 +1,6 @@
 import "/integer_parsing.u"
 import "/stdout.u"
+import "/enum_string_conversions.u"
 import "/vector.u"
 import "/unordered_set.u"
 import "options.uh"
@@ -43,7 +44,8 @@ auto constexpr g_help_message=
 	"  --build-system-imports-path <path>     - custom path to the build system imports directory\n" +
 	"  --packages-repository-directory <path> - provide path to packages repository directory\n" +
 	"  --sysroot <path>                       - provide sysroot directory for the compiler (in order to find system libraries for linking)\n" +
-	"  --host-sysroot <path>                  - provide sysroot directory for the compiler while compiling for host target triple (in order to find system libraries for linking)\n"
+	"  --host-sysroot <path>                  - provide sysroot directory for the compiler while compiling for host target triple (in order to find system libraries for linking)\n" +
+	"  --release-optimization-level <level>   - specify optimization level for release builds. Available values are \"O2\" and \"O3\". Default value is \"O2\".\n"
 	;
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::optional</Options/>
@@ -99,6 +101,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 	var bool mut help_short= false, mut help_long= false;
 	var ust::string8 mut num_jobs;
 	var ust::string8 mut build_configuration;
+	var ust::string8 mut release_optimization_level;
 
 	{
 		var OptionsParser mut options_parser;
@@ -119,6 +122,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 		options_parser.AddOption( "--packages-repository-directory", res.packages_repository_directory );
 		options_parser.AddOption( "--sysroot", res.sysroot );
 		options_parser.AddOption( "--host-sysroot", res.host_sysroot );
+		options_parser.AddOption( "--release-optimization-level", release_optimization_level );
 
 		if( !options_parser.Parse( args ) )
 		{
@@ -150,6 +154,19 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 			return ust::null_optional;
 		}
 		res.build_configuration= conf.try_deref();
+	}
+
+	if( !release_optimization_level.empty() )
+	{
+		if_var( o : ust::string_to_enum</Options::ReleaseOptimisationLevel/>( release_optimization_level ) )
+		{
+			res.release_optimization_level= o;
+		}
+		else
+		{
+			ust::stderr_print( ust::concat( "Error, unknown release optimization level \"", release_optimization_level, "\".\n" ) );
+			return ust::null_optional;
+		}
 	}
 
 	return res;

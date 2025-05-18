@@ -20,11 +20,18 @@ struct Options
 		Init,
 	}
 
+	enum ReleaseOptimisationLevel
+	{
+		O2,
+		O3,
+	}
+
 	bool help = false;
 	bool quiet = false;
 	bool verbose = false;
 	u32 number_of_jobs= 0u;
 	Command command = Command::Help;
+	ReleaseOptimisationLevel release_optimization_level= ReleaseOptimisationLevel::O2;
 	BuildConfiguration build_configuration= BuildConfiguration::Release;
 	ust::filesystem_path single_file_to_build;
 	ust::filesystem_path configuration_options_file;
