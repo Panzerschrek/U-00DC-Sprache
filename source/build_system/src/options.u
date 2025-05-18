@@ -46,7 +46,8 @@ auto constexpr g_help_message=
 	"  --sysroot <path>                       - provide sysroot directory for the compiler (in order to find system libraries for linking)\n" +
 	"  --host-sysroot <path>                  - provide sysroot directory for the compiler while compiling for host target triple (in order to find system libraries for linking)\n" +
 	"  --release-optimization-level <level>   - specify optimization level for release builds. Available values are \"O2\" and \"O3\". Default value is \"O2\".\n" +
-	"  --min-size-release-optimization-level <level> \n      - specify optimization level for min size release builds. Available values are \"Os\" and \"Oz\". Default value is \"Os\".\n"
+	"  --min-size-release-optimization-level <level> \n      - specify optimization level for min size release builds. Available values are \"Os\" and \"Oz\". Default value is \"Os\".\n" +
+	" --halt-mode <mode>                      - specify halt mode. See compiler's help for more information.\n"
 	;
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::optional</Options/>
@@ -104,6 +105,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 	var ust::string8 mut build_configuration;
 	var ust::string8 mut release_optimization_level;
 	var ust::string8 mut min_size_release_optimization_level;
+	var ust::string8 mut halt_mode;
 
 	{
 		var OptionsParser mut options_parser;
@@ -126,6 +128,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 		options_parser.AddOption( "--host-sysroot", res.host_sysroot );
 		options_parser.AddOption( "--release-optimization-level", release_optimization_level );
 		options_parser.AddOption( "--min-size-release-optimization-level", min_size_release_optimization_level );
+		options_parser.AddOption( "--halt-mode", halt_mode );
 
 		if( !options_parser.Parse( args ) )
 		{
@@ -171,6 +174,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 			return ust::null_optional;
 		}
 	}
+
 	if( !min_size_release_optimization_level.empty() )
 	{
 		if_var( o : ust::string_to_enum</BuildConfigurationExtended::MinSizeReleaseOptimizationLevel/>( min_size_release_optimization_level ) )
@@ -180,6 +184,19 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 		else
 		{
 			ust::stderr_print( ust::concat( "Error, unknown min size release optimization level \"", min_size_release_optimization_level, "\".\n" ) );
+			return ust::null_optional;
+		}
+	}
+
+	if( !halt_mode.empty() )
+	{
+		if_var( h : ust::string_to_enum</BuildConfigurationExtended::HaltMode/>( halt_mode ) )
+		{
+			res.build_configuration_extended.halt_mode= h;
+		}
+		else
+		{
+			ust::stderr_print( ust::concat( "Error, unknown halt mode \"", halt_mode, "\".\n" ) );
 			return ust::null_optional;
 		}
 	}

@@ -220,6 +220,7 @@ cl::opt<bool> print_prelude_code(
 	cl::init(false),
 	cl::cat(options_category) );
 
+// If this is changed, corresponding compiler option of the build system should be changed too!
 cl::opt< HaltMode > halt_mode(
 	"halt-mode",
 	cl::init(HaltMode::Trap),

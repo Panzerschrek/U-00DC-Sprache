@@ -1106,6 +1106,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 
 		AddTargetTripleCompilerFlags( target_triple, node.command_line );
+		SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
 
 		// Perform verification just to be sure nothing is broken.
 		node.command_line.push_back( "--verify-module" );
@@ -1479,6 +1480,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	}
 
 	AddTargetTripleCompilerFlags( target_triple, node.command_line );
+	SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
 
 	// Perform verification just to be sure nothing is broken.
 	node.command_line.push_back( "--verify-module" );
@@ -1659,6 +1661,7 @@ fn CreateUstlibBuildGraphNodes(
 	}
 
 	AddTargetTripleCompilerFlags( target_triple, node.command_line );
+	SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
 
 	// Perform verification just to be sure nothing is broken.
 	node.command_line.push_back( "--verify-module" );
@@ -1679,6 +1682,17 @@ fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::
 
 	compiler_flags.push_back( "--target-environment" );
 	compiler_flags.push_back( target_triple.environment );
+}
+
+fn SetHaltMode( BuildConfigurationExtended::HaltMode halt_mode, ust::vector</ust::string8/> &mut compiler_flags )
+{
+	switch( halt_mode )
+	{
+		BuildConfigurationExtended::HaltMode::trap -> { compiler_flags.push_back( "--halt-mode=trap" ); },
+		BuildConfigurationExtended::HaltMode::abort -> { compiler_flags.push_back( "--halt-mode=abort" ); },
+		BuildConfigurationExtended::HaltMode::configurable_handler -> { compiler_flags.push_back( "--halt-mode=configurable_handler" ); },
+		BuildConfigurationExtended::HaltMode::unreachable -> { compiler_flags.push_back( "--halt-mode=unreachable" ); },
+	}
 }
 
 fn AddGCSectionsCompilerFlags( TargetTriple& target_triple, ust::vector</ust::string8/> &mut compiler_flags )
@@ -1948,6 +1962,7 @@ fn nodiscard BuildSingleFileProgram(
 	compiler_args.push_back( "--internalize" );
 
 	AddTargetTripleCompilerFlags( target_triple, compiler_args );
+	SetHaltMode( build_configuration_extended.halt_mode, compiler_args );
 
 	switch( build_configuration_extended.build_configuration )
 	{

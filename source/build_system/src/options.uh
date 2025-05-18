@@ -59,9 +59,19 @@ struct BuildConfigurationExtended
 		Oz,
 	}
 
+	// Keep this in sync with compiler code!
+	enum HaltMode
+	{
+		trap,
+		abort,
+		configurable_handler,
+		unreachable,
+	}
+
 	BuildConfiguration build_configuration= BuildConfiguration::Release;
 	ReleaseOptimisationLevel release_optimization_level= ReleaseOptimisationLevel::O2;
 	MinSizeReleaseOptimizationLevel min_size_release_optimization_level= MinSizeReleaseOptimizationLevel::Os;
+	HaltMode halt_mode= HaltMode::trap;
 }
 
 fn StringToBuildConfiguration( ust::string_view8 s ) : ust::optional</BuildConfiguration/>;
