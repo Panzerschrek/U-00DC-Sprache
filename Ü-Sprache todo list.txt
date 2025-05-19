@@ -206,9 +206,6 @@ CPP Header converter:
 
 Ü Build system:
 *) Support building "ustlib" into a shared library (dll/so)
-*) Add an option to tweak optimization level for release builds - use -O3 instead of -O2
-*) Add an option to tweak optimization level for minimum size release builds - use -Oz instead of -Os
-*) Add possibility to specify halt mode (trap/abort/unreachable/custom)
 *) Fix JSON floats serialization
 *) Simplify structs to/from JSON conversion by using template code with typeinfo and mixins usage
 *) Add possibility to mark a library build target as "force public" and thus make it public dependency even for build
@@ -240,6 +237,8 @@ CPP Header converter:
 	to avoid building unused build targets of dependencies and unified-out build targets (where they were replaced with
 	a newer version).
 *) Support overriding "rpath" for executables
+*) Add an option to specify target CPU for host build targets
+*) Add an option to specify exact CPU flags and floating point behavior
 *) Centralized packages repository
 
 Documentation:
