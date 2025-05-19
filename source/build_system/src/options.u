@@ -1,5 +1,6 @@
 import "/integer_parsing.u"
 import "/stdout.u"
+import "/enum_string_conversions.u"
 import "/vector.u"
 import "/unordered_set.u"
 import "options.uh"
@@ -36,6 +37,7 @@ auto constexpr g_help_message=
 	"  --build-configuration                  - select build configuration. Available configuarations are \"debug\", \"release\", \"min_size_release\". Default configuration is \"release\".\n" +
 	"  --configuration-options                - provide path to configuration options JSON file\n" +
 	"  --target-triple                        - select target triple in form of architecture-vendor-operating_system or architecture-vendor-operating_system-environment.\n" +
+	"  --target-cpu                           - select target CPU. See Compiler's \"-mcpu\" option for more details.\n" +
 	"  --project-directory <path>             - path to the root package directory. Default is current directory.\n" +
 	"  --build-directory <path>               - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
 	"  --compiler-executable <path>           - custom path to the compiler executable\n" +
@@ -43,7 +45,10 @@ auto constexpr g_help_message=
 	"  --build-system-imports-path <path>     - custom path to the build system imports directory\n" +
 	"  --packages-repository-directory <path> - provide path to packages repository directory\n" +
 	"  --sysroot <path>                       - provide sysroot directory for the compiler (in order to find system libraries for linking)\n" +
-	"  --host-sysroot <path>                  - provide sysroot directory for the compiler while compiling for host target triple (in order to find system libraries for linking)\n"
+	"  --host-sysroot <path>                  - provide sysroot directory for the compiler while compiling for host target triple (in order to find system libraries for linking)\n" +
+	"  --release-optimization-level <level>   - specify optimization level for release builds. Available values are \"O2\" and \"O3\". Default value is \"O2\".\n" +
+	"  --min-size-release-optimization-level <level> \n      - specify optimization level for min size release builds. Available values are \"Os\" and \"Oz\". Default value is \"Os\".\n" +
+	" --halt-mode <mode>                      - specify halt mode. See compiler's help for more information.\n"
 	;
 
 fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::optional</Options/>
@@ -99,6 +104,9 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 	var bool mut help_short= false, mut help_long= false;
 	var ust::string8 mut num_jobs;
 	var ust::string8 mut build_configuration;
+	var ust::string8 mut release_optimization_level;
+	var ust::string8 mut min_size_release_optimization_level;
+	var ust::string8 mut halt_mode;
 
 	{
 		var OptionsParser mut options_parser;
@@ -111,6 +119,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 		options_parser.AddOption( "--build-configuration", build_configuration );
 		options_parser.AddOption( "--configuration-options", res.configuration_options_file );
 		options_parser.AddOption( "--target-triple", res.target_triple );
+		options_parser.AddOption( "--target-cpu", res.target_cpu );
 		options_parser.AddOption( "--compiler-executable", res.compiler_executable_path );
 		options_parser.AddOption( "--build-directory", res.build_directory );
 		options_parser.AddOption( "--project-directory", res.root_package_directory );
@@ -119,6 +128,9 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 		options_parser.AddOption( "--packages-repository-directory", res.packages_repository_directory );
 		options_parser.AddOption( "--sysroot", res.sysroot );
 		options_parser.AddOption( "--host-sysroot", res.host_sysroot );
+		options_parser.AddOption( "--release-optimization-level", release_optimization_level );
+		options_parser.AddOption( "--min-size-release-optimization-level", min_size_release_optimization_level );
+		options_parser.AddOption( "--halt-mode", halt_mode );
 
 		if( !options_parser.Parse( args ) )
 		{
@@ -149,7 +161,46 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 			ust::stderr_print( ust::concat( "Error, unknown build configuration \"", build_configuration, "\".\n" ) );
 			return ust::null_optional;
 		}
-		res.build_configuration= conf.try_deref();
+		res.build_configuration_extended.build_configuration= conf.try_deref();
+	}
+
+	if( !release_optimization_level.empty() )
+	{
+		if_var( o : ust::string_to_enum</BuildConfigurationExtended::ReleaseOptimisationLevel/>( release_optimization_level ) )
+		{
+			res.build_configuration_extended.release_optimization_level= o;
+		}
+		else
+		{
+			ust::stderr_print( ust::concat( "Error, unknown release optimization level \"", release_optimization_level, "\".\n" ) );
+			return ust::null_optional;
+		}
+	}
+
+	if( !min_size_release_optimization_level.empty() )
+	{
+		if_var( o : ust::string_to_enum</BuildConfigurationExtended::MinSizeReleaseOptimizationLevel/>( min_size_release_optimization_level ) )
+		{
+			res.build_configuration_extended.min_size_release_optimization_level= o;
+		}
+		else
+		{
+			ust::stderr_print( ust::concat( "Error, unknown min size release optimization level \"", min_size_release_optimization_level, "\".\n" ) );
+			return ust::null_optional;
+		}
+	}
+
+	if( !halt_mode.empty() )
+	{
+		if_var( h : ust::string_to_enum</BuildConfigurationExtended::HaltMode/>( halt_mode ) )
+		{
+			res.build_configuration_extended.halt_mode= h;
+		}
+		else
+		{
+			ust::stderr_print( ust::concat( "Error, unknown halt mode \"", halt_mode, "\".\n" ) );
+			return ust::null_optional;
+		}
 	}
 
 	return res;

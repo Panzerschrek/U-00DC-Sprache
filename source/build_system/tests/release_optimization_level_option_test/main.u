@@ -1,0 +1,10 @@
+import "/stdout.u"
+import "/string.u"
+
+fn nomangle main() : i32
+{
+	var [ char8, 2 ] opt_level[ 'O', compiler::options::optimization_level ];
+	halt if( opt_level != "O3" );
+	ust::stdout_print( ust::concat( "Release optimization level option test: ", opt_level, "\n" ) );
+	return 0;
+}

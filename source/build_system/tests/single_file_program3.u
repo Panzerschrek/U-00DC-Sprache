@@ -1,0 +1,9 @@
+import "/stdout.u"
+import "/main_wrapper.u"
+
+pretty_main
+{
+	halt if( ! args.front().empty() ); // This condition is always false, but halt isn't triggered, since "--halt-mode=unreachable" is used.
+	ust::stdout_print( ust::concat( "Single file program 3 not halted: ", args.front(), "!\n" ) );
+	return 0;
+}

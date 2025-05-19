@@ -20,15 +20,22 @@ struct Options
 		Init,
 	}
 
+	enum ReleaseOptimisationLevel
+	{
+		O2,
+		O3,
+	}
+
 	bool help = false;
 	bool quiet = false;
 	bool verbose = false;
 	u32 number_of_jobs= 0u;
 	Command command = Command::Help;
-	BuildConfiguration build_configuration= BuildConfiguration::Release;
+	BuildConfigurationExtended build_configuration_extended;
 	ust::filesystem_path single_file_to_build;
 	ust::filesystem_path configuration_options_file;
 	ust::string8 target_triple;
+	ust::string8 target_cpu;
 	ust::filesystem_path compiler_executable_path;
 	ust::filesystem_path build_directory;
 	ust::filesystem_path root_package_directory;
@@ -37,6 +44,35 @@ struct Options
 	ust::filesystem_path packages_repository_directory;
 	ust::filesystem_path sysroot;
 	ust::filesystem_path host_sysroot;
+}
+
+struct BuildConfigurationExtended
+{
+	enum ReleaseOptimisationLevel
+	{
+		O2,
+		O3,
+	}
+
+	enum MinSizeReleaseOptimizationLevel
+	{
+		Os,
+		Oz,
+	}
+
+	// Keep this in sync with compiler code!
+	enum HaltMode
+	{
+		trap,
+		abort,
+		configurable_handler,
+		unreachable,
+	}
+
+	BuildConfiguration build_configuration= BuildConfiguration::Release;
+	ReleaseOptimisationLevel release_optimization_level= ReleaseOptimisationLevel::O2;
+	MinSizeReleaseOptimizationLevel min_size_release_optimization_level= MinSizeReleaseOptimizationLevel::Os;
+	HaltMode halt_mode= HaltMode::trap;
 }
 
 fn StringToBuildConfiguration( ust::string_view8 s ) : ust::optional</BuildConfiguration/>;
