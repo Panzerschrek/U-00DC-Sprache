@@ -141,7 +141,8 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 				// Build in specified build directory or in current directory if it's empty.
 				MakePathAbsolute( options.build_directory ),
 				options.build_configuration_extended,
-				target_triple );
+				target_triple,
+				options.target_cpu );
 		return ( ok ? 0 : -1 );
 	}
 
@@ -379,6 +380,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		root_package_build_directory,
 		bsi.build_configuration_extended_,
 		target_triple,
+		options.target_cpu,
 		target_workspace,
 		build_graph );
 
@@ -394,6 +396,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		host_packages_root_build_directory,
 		bsi.build_configuration_extended_,
 		host_target_triple,
+		"", // Set no target CPU for host build targets.
 		host_workspace,
 		build_graph );
 
@@ -863,6 +866,7 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 	ust::filesystem_path_view root_package_build_directory,
 	BuildConfigurationExtended& build_configuration_extended,
 	TargetTriple& target_triple,
+	ust::string_view8 target_cpu,
 	WorkspaceInfo& workspace,
 	BuildGraph &mut build_graph )
 {
@@ -875,6 +879,7 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 			root_package_build_directory,
 			build_configuration_extended,
 			target_triple,
+			target_cpu,
 			build_graph );
 	}
 
@@ -895,6 +900,7 @@ fn CreateWorkspaceBuildTargetsGraphNodes(
 			root_package_build_directory,
 			build_configuration_extended,
 			target_triple,
+			target_cpu,
 			workspace,
 			build_target_name,
 			build_graph );
@@ -907,6 +913,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	ust::filesystem_path_view root_package_build_directory,
 	BuildConfigurationExtended& build_configuration_extended,
 	TargetTriple& target_triple,
+	ust::string_view8 target_cpu,
 	WorkspaceInfo& workspace,
 	BuildTargetAbsoluteName& target_name,
 	BuildGraph &mut build_graph )
@@ -1106,6 +1113,7 @@ fn CreatePackageTargetBuildGraphNodes(
 		}
 
 		AddTargetTripleCompilerFlags( target_triple, node.command_line );
+		SetTargetCPU( target_cpu, node.command_line );
 		SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
 
 		// Perform verification just to be sure nothing is broken.
@@ -1480,6 +1488,7 @@ fn CreatePackageTargetBuildGraphNodes(
 	}
 
 	AddTargetTripleCompilerFlags( target_triple, node.command_line );
+	SetTargetCPU( target_cpu, node.command_line );
 	SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
 
 	// Perform verification just to be sure nothing is broken.
@@ -1581,6 +1590,7 @@ fn CreateUstlibBuildGraphNodes(
 	ust::filesystem_path_view root_package_build_directory,
 	BuildConfigurationExtended& build_configuration_extended,
 	TargetTriple& target_triple,
+	ust::string_view8 target_cpu,
 	BuildGraph &mut build_graph )
 {
 	var ust::filesystem_path out_file= GetCompiledUstlibPath( root_package_build_directory );
@@ -1661,6 +1671,7 @@ fn CreateUstlibBuildGraphNodes(
 	}
 
 	AddTargetTripleCompilerFlags( target_triple, node.command_line );
+	SetTargetCPU( target_cpu, node.command_line );
 	SetHaltMode( build_configuration_extended.halt_mode, node.command_line );
 
 	// Perform verification just to be sure nothing is broken.
@@ -1682,6 +1693,14 @@ fn AddTargetTripleCompilerFlags( TargetTriple& target_triple, ust::vector</ust::
 
 	compiler_flags.push_back( "--target-environment" );
 	compiler_flags.push_back( target_triple.environment );
+}
+
+fn SetTargetCPU( ust::string_view8 target_cpu, ust::vector</ust::string8/> &mut compiler_flags )
+{
+	if( !target_cpu.empty() )
+	{
+		compiler_flags.push_back( ust::concat( "-mcpu=", target_cpu ) );
+	}
 }
 
 fn SetHaltMode( BuildConfigurationExtended::HaltMode halt_mode, ust::vector</ust::string8/> &mut compiler_flags )
@@ -1901,7 +1920,8 @@ fn nodiscard BuildSingleFileProgram(
 	ust::filesystem_path_view sysroot,
 	ust::filesystem_path_view build_directory,
 	BuildConfigurationExtended& build_configuration_extended,
-	TargetTriple& target_triple ) : bool
+	TargetTriple& target_triple,
+	ust::string_view8 target_cpu ) : bool
 {
 	var bool target_is_windows = target_triple.operating_system == g_os_windows;
 
@@ -1962,6 +1982,7 @@ fn nodiscard BuildSingleFileProgram(
 	compiler_args.push_back( "--internalize" );
 
 	AddTargetTripleCompilerFlags( target_triple, compiler_args );
+	SetTargetCPU( target_cpu, compiler_args );
 	SetHaltMode( build_configuration_extended.halt_mode, compiler_args );
 
 	switch( build_configuration_extended.build_configuration )

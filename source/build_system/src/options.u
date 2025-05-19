@@ -37,6 +37,7 @@ auto constexpr g_help_message=
 	"  --build-configuration                  - select build configuration. Available configuarations are \"debug\", \"release\", \"min_size_release\". Default configuration is \"release\".\n" +
 	"  --configuration-options                - provide path to configuration options JSON file\n" +
 	"  --target-triple                        - select target triple in form of architecture-vendor-operating_system or architecture-vendor-operating_system-environment.\n" +
+	"  --target-cpu                           - select target CPU. See Compiler's \"-mcpu\" option for more details.\n" +
 	"  --project-directory <path>             - path to the root package directory. Default is current directory.\n" +
 	"  --build-directory <path>               - custom path to the build directory. Default value is \"build\" subdirectory of the root package.\n" +
 	"  --compiler-executable <path>           - custom path to the compiler executable\n" +
@@ -118,6 +119,7 @@ fn ParseOptions( ust::array_view_imut</ust::string_view8/> mut args ) : ust::opt
 		options_parser.AddOption( "--build-configuration", build_configuration );
 		options_parser.AddOption( "--configuration-options", res.configuration_options_file );
 		options_parser.AddOption( "--target-triple", res.target_triple );
+		options_parser.AddOption( "--target-cpu", res.target_cpu );
 		options_parser.AddOption( "--compiler-executable", res.compiler_executable_path );
 		options_parser.AddOption( "--build-directory", res.build_directory );
 		options_parser.AddOption( "--project-directory", res.root_package_directory );

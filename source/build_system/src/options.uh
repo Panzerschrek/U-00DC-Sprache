@@ -35,6 +35,7 @@ struct Options
 	ust::filesystem_path single_file_to_build;
 	ust::filesystem_path configuration_options_file;
 	ust::string8 target_triple;
+	ust::string8 target_cpu;
 	ust::filesystem_path compiler_executable_path;
 	ust::filesystem_path build_directory;
 	ust::filesystem_path root_package_directory;
