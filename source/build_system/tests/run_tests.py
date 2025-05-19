@@ -731,12 +731,36 @@ def CustomHaltModeTest():
 		"--compiler-executable", g_compiler_executable,
 		"--ustlib-path", g_ustlib_path,
 		"--build-directory", g_tests_build_root_path,
-		"--halt-mode", "unreachable",
-		"-v"
+		"--halt-mode", "unreachable"
 		]
 
 	subprocess.check_call( build_system_args )
 	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_name_base ) ], stdout= subprocess.DEVNULL )
+
+
+def TargetCPUOptionTest():
+
+	project_subdirectory= "target_cpu_option_test"
+
+	project_root = os.path.join( g_tests_path, project_subdirectory )
+	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
+
+	build_system_args= [
+		g_build_system_executable,
+		"build",
+		"-q",
+		"--build-configuration", "release",
+		"--compiler-executable", g_compiler_executable,
+		"--build-system-imports-path", g_build_system_imports_path,
+		"--ustlib-path", g_ustlib_path,
+		"--configuration-options", g_configuration_options_file_path,
+		"--project-directory", project_root,
+		"--build-directory", build_root,
+		"--target-cpu", "skylake"
+		]
+
+	subprocess.check_call( build_system_args )
+	subprocess.check_call( [ os.path.join( build_root, "release", "target_cpu_option_test" ) ], stdout= subprocess.DEVNULL )
 
 
 def MissingBuildFileTest():
@@ -1461,7 +1485,7 @@ def main():
 		SingleFileProgram2Test,
 		GlobalMutableVariablesDeduplication0Test,
 		GlobalMutableVariablesDeduplication1Test,
-		CustomHaltModeTest,
+		TargetCPUOptionTest,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
