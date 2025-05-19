@@ -763,6 +763,31 @@ def TargetCPUOptionTest():
 	subprocess.check_call( [ os.path.join( build_root, "release", "target_cpu_option_test" ) ], stdout= subprocess.DEVNULL )
 
 
+def ReleaseOptimizationLevelOptionTest():
+
+	project_subdirectory= "release_optimization_level_option_test"
+
+	project_root = os.path.join( g_tests_path, project_subdirectory )
+	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
+
+	build_system_args= [
+		g_build_system_executable,
+		"build",
+		"-q",
+		"--build-configuration", "release",
+		"--compiler-executable", g_compiler_executable,
+		"--build-system-imports-path", g_build_system_imports_path,
+		"--ustlib-path", g_ustlib_path,
+		"--configuration-options", g_configuration_options_file_path,
+		"--project-directory", project_root,
+		"--build-directory", build_root,
+		"--release-optimization-level", "O3",
+		]
+
+	subprocess.check_call( build_system_args )
+	subprocess.check_call( [ os.path.join( build_root, "release", "release_optimization_level_option_test" ) ] )
+
+
 def MissingBuildFileTest():
 	# A directory with no build file.
 	res = RunBuildSystemWithErrors( "missing_build_file" )
@@ -1486,6 +1511,7 @@ def main():
 		GlobalMutableVariablesDeduplication0Test,
 		GlobalMutableVariablesDeduplication1Test,
 		TargetCPUOptionTest,
+		ReleaseOptimizationLevelOptionTest,
 		MissingBuildFileTest,
 		MissingPackage0Test,
 		MissingPackage1Test,
