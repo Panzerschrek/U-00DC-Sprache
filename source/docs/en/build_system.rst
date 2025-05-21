@@ -196,9 +196,18 @@ These values are available for reading by package build scripts.
 Examples are *x86_64-unknown-linux-gnu* or *i686-pc-windows-msvc*.
 The build system will perform the build for target triple specified.
 
+``--target-cpu`` option allows to tune Ü compiler for some specific CPU.
+
 ``--sysroot`` option allows to specify path to the toolchain root directory for selected target system.
 This may be necessary for cross-compilation.
 ``--host-sysroot`` may be used to specify path to the toolchain root directory used for host build targets building.
+
+``--release-optimization-level`` option allows to specify optimization level for release builds - ``O2`` or ``O3``.
+
+``--min-size-release-optimization-level`` option allows to specify optimization level for min size release builds - ``Os`` or ``Oz``.
+
+``--halt-mode`` option can be used to tune ``halt`` language operator behavior.
+See compiler's doculemtation for more details.
 
 ``-q`` option makes the build system executable quiet - it prints only error messages.
 ``-v`` option has an opposite meaning - the build system executable prints a lot of messages.
