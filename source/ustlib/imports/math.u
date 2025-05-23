@@ -202,6 +202,84 @@ fn constexpr swap_bytes( size_type x ) : size_type
 	}
 }
 
+fn constexpr count_set_bits( u32 mut x ) : u32
+{
+	// LLVM optimizer is smart enough to replace this loop with native "popcnt" instruction, if it's available.
+	// See "LoopIdeomRecognize.cpp".
+	var u32 mut res= 0u;
+	while( x != 0u )
+	{
+		++res;
+		x&= x - 1u;
+	}
+	return res;
+}
+
+fn constexpr count_set_bits( i32 x ) : i32
+{
+	return i32( count_set_bits( u32(x) ) );
+}
+
+fn constexpr count_set_bits( u64 mut x ) : u64
+{
+	// LLVM optimizer is smart enough to replace this loop with native "popcnt" instruction, if it's available.
+	// See "LoopIdeomRecognize.cpp".
+	var u64 mut res= 0u64;
+	while( x != 0u64 )
+	{
+		++res;
+		x&= x - 1u64;
+	}
+	return res;
+}
+
+fn constexpr count_set_bits( i64 x ) : i64
+{
+	return i64( count_set_bits( u64(x) ) );
+}
+
+fn constexpr count_set_bits( u128 mut x ) : u128
+{
+	// LLVM optimizer is smart enough to replace this loop with native "popcnt" instruction, if it's available.
+	// See "LoopIdeomRecognize.cpp".
+	var u128 mut res(0);
+	while( x != u128(0) )
+	{
+		++res;
+		x&= x - u128(1);
+	}
+	return res;
+}
+
+fn constexpr count_set_bits( i128 x ) : i128
+{
+	return i128( count_set_bits( u128(x) ) );
+}
+
+fn constexpr count_set_bits( ssize_type x ) : ssize_type
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return ssize_type( count_set_bits( u32(x) ) );
+	}
+	else
+	{
+		return ssize_type( count_set_bits( u64(x) ) );
+	}
+}
+
+fn constexpr count_set_bits( size_type x ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( count_set_bits( u32(x) ) );
+	}
+	else
+	{
+		return size_type( count_set_bits( u64(x) ) );
+	}
+}
+
 // TODO:
 // * add hyperbolic trigonometric functions
 // * add more classification functions - is_finite, is_infinity, is_normal, etc.
