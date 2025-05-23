@@ -158,7 +158,7 @@ fn constexpr reverse_bits( size_type x ) : size_type
 fn constexpr count_set_bits( u32 mut x ) : u32
 {
 	// LLVM optimizer is smart enough to replace this loop with native "popcnt" instruction, if it's available.
-	// See "LoopIdeomRecognize.cpp".
+	// See "LoopIdiomRecognize.cpp".
 	var u32 mut res= 0u;
 	while( x != 0u )
 	{
@@ -176,7 +176,7 @@ fn constexpr count_set_bits( i32 x ) : i32
 fn constexpr count_set_bits( u64 mut x ) : u64
 {
 	// LLVM optimizer is smart enough to replace this loop with native "popcnt" instruction, if it's available.
-	// See "LoopIdeomRecognize.cpp".
+	// See "LoopIdiomRecognize.cpp".
 	var u64 mut res= 0u64;
 	while( x != 0u64 )
 	{
@@ -194,7 +194,7 @@ fn constexpr count_set_bits( i64 x ) : i64
 fn constexpr count_set_bits( u128 mut x ) : u128
 {
 	// LLVM optimizer is smart enough to replace this loop with native "popcnt" instruction, if it's available.
-	// See "LoopIdeomRecognize.cpp".
+	// See "LoopIdiomRecognize.cpp".
 	var u128 mut res(0);
 	while( x != u128(0) )
 	{
@@ -236,7 +236,7 @@ fn constexpr count_set_bits( size_type x ) : size_type
 fn constexpr count_leading_zeros( u32 mut x ) : u32
 {
 	// LLVM optimizer is smart enough to replace this loop with native "ctlz" instruction, if it's available.
-	// See "LoopIdeomRecognize.cpp".
+	// See "LoopIdiomRecognize.cpp".
 	var u32 mut res= 0u;
 	while( x != 0u )
 	{
@@ -250,7 +250,7 @@ fn constexpr count_leading_zeros( u32 mut x ) : u32
 fn constexpr count_leading_zeros( u64 mut x ) : u64
 {
 	// LLVM optimizer is smart enough to replace this loop with native "ctlz" instruction, if it's available.
-	// See "LoopIdeomRecognize.cpp".
+	// See "LoopIdiomRecognize.cpp".
 	var u64 mut res= 0u64;
 	while( x != 0u64 )
 	{
