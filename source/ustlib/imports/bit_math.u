@@ -285,4 +285,52 @@ fn constexpr count_leading_zeros( size_type x ) : size_type
 	}
 }
 
+fn constexpr rotate_bits_left( u32 x, u32 shift ) : u32
+{
+	// LLVM optimizer is smart enough to use native bits rotation instruction here.
+	return ( x << shift ) | ( x >> ( 32u - shift ) );
+}
+
+fn constexpr rotate_bits_right( u32 x, u32 shift ) : u32
+{
+	// LLVM optimizer is smart enough to use native bits rotation instruction here.
+	return ( x >> shift ) | ( x << ( 32u - shift ) );
+}
+
+fn constexpr rotate_bits_left( u64 x, u32 shift ) : u64
+{
+	// LLVM optimizer is smart enough to use native bits rotation instruction here.
+	return ( x << shift ) | ( x >> ( 64u - shift ) );
+}
+
+fn constexpr rotate_bits_right( u64 x, u32 shift ) : u64
+{
+	// LLVM optimizer is smart enough to use native bits rotation instruction here.
+	return ( x >> shift ) | ( x << ( 64u - shift ) );
+}
+
+fn constexpr rotate_bits_left( size_type x, u32 shift ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( rotate_bits_left( u32(x), shift ) );
+	}
+	else
+	{
+		return size_type( rotate_bits_left( u64(x), shift ) );
+	}
+}
+
+fn constexpr rotate_bits_right( size_type x, u32 shift ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( rotate_bits_right( u32(x), shift ) );
+	}
+	else
+	{
+		return size_type( rotate_bits_right( u64(x), shift ) );
+	}
+}
+
 } // namespace ust
