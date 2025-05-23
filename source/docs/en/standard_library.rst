@@ -18,6 +18,7 @@ if you want to learn more, read its sources yourself.
 * Atomic operations support (atomic.u).
 * Binary heap routines and heap sorting (binary_heap.u).
 * Binary search routines (binary_seach.u).
+* Bit math functions (bit_math.u).
 * Math functions with overflow checks (checked_math.u).
 * Comparators for sorting and binary search (compare.u).
 * Helpers for arrays and tuples construction (composite.u).
