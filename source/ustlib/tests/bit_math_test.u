@@ -37,5 +37,35 @@ fn nomangle main() : i32
 	static_assert( ust::count_set_bits( 9223372036854775808u64 ) == 1u64 );
 	static_assert( ust::count_set_bits( 18446744073709551615u64 ) == 64u64 );
 
+	// count_leading_zeros
+	static_assert( ust::count_leading_zeros( 0u ) == 32u );
+	static_assert( ust::count_leading_zeros( 1u ) == 31u );
+	static_assert( ust::count_leading_zeros( 2u ) == 30u );
+	static_assert( ust::count_leading_zeros( 3u ) == 30u );
+	static_assert( ust::count_leading_zeros( 4u ) == 29u );
+	static_assert( ust::count_leading_zeros( 5u ) == 29u );
+	static_assert( ust::count_leading_zeros( 6u ) == 29u );
+	static_assert( ust::count_leading_zeros( 7u ) == 29u );
+	static_assert( ust::count_leading_zeros( 65535u ) == 16u );
+	static_assert( ust::count_leading_zeros( 65536u ) == 15u );
+	static_assert( ust::count_leading_zeros( 2147483647u ) == 1u );
+	static_assert( ust::count_leading_zeros( 2147483648u ) == 0u );
+
+	static_assert( ust::count_leading_zeros( 0u64 ) == 64u64 );
+	static_assert( ust::count_leading_zeros( 1u64 ) == 63u64 );
+	static_assert( ust::count_leading_zeros( 2u64 ) == 62u64 );
+	static_assert( ust::count_leading_zeros( 3u64 ) == 62u64 );
+	static_assert( ust::count_leading_zeros( 4u64 ) == 61u64 );
+	static_assert( ust::count_leading_zeros( 5u64 ) == 61u64 );
+	static_assert( ust::count_leading_zeros( 6u64 ) == 61u64 );
+	static_assert( ust::count_leading_zeros( 7u64 ) == 61u64 );
+	static_assert( ust::count_leading_zeros( 65535u64 ) == 48u64 );
+	static_assert( ust::count_leading_zeros( 65536u64 ) == 47u64 );
+	static_assert( ust::count_leading_zeros( 2147483647u64 ) == 33u64 );
+	static_assert( ust::count_leading_zeros( 2147483648u64 ) == 32u64 );
+	static_assert( ust::count_leading_zeros( 36028797018963968u64 ) == 8u64 );
+	static_assert( ust::count_leading_zeros( 9223372036854775807u64 ) == 1u64 );
+	static_assert( ust::count_leading_zeros( 9223372036854775808u64 ) == 0u64 );
+
 	return 0;
 }
