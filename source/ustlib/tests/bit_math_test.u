@@ -96,6 +96,25 @@ fn nomangle main() : i32
 	static_assert( ust::count_leading_zeros( 9223372036854775807u64 ) == 1u64 );
 	static_assert( ust::count_leading_zeros( 9223372036854775808u64 ) == 0u64 );
 
+	// count_trailing_zeros
+
+	static_assert( ust::count_trailing_zeros( 0u ) == 32u );
+	static_assert( ust::count_trailing_zeros( 1u ) == 0u );
+	static_assert( ust::count_trailing_zeros( 2u ) == 1u );
+	static_assert( ust::count_trailing_zeros( 3u ) == 0u );
+	static_assert( ust::count_trailing_zeros( 4u ) == 2u );
+	static_assert( ust::count_trailing_zeros( 5u ) == 0u );
+	static_assert( ust::count_trailing_zeros( 6u ) == 1u );
+	static_assert( ust::count_trailing_zeros( 7u ) == 0u );
+	static_assert( ust::count_trailing_zeros( 8u ) == 3u );
+	static_assert( ust::count_trailing_zeros( 65536u ) == 16u );
+	static_assert( ust::count_trailing_zeros( 8u ) == 3u );
+	static_assert( ust::count_trailing_zeros( 2147483648u ) == 31u );
+	static_assert( ust::count_trailing_zeros( 140737488355328u64 ) == 47u64 );
+	static_assert( ust::count_trailing_zeros( 140737488355329u64 ) == 0u64 );
+	static_assert( ust::count_trailing_zeros( 140737488355330u64 ) == 1u64 );
+	static_assert( ust::count_trailing_zeros( 9223372036854775808u64 ) == 63u64 );
+
 	// rotate_bits_left
 	static_assert( ust::rotate_bits_left( 0b01110111110010110111110011100111u,  7u ) == 0b11100101101111100111001110111011u );
 	static_assert( ust::rotate_bits_left( 0b01100011101101000101111010010111u,  0u ) == 0b01100011101101000101111010010111u );

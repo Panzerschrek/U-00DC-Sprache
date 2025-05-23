@@ -285,6 +285,55 @@ fn constexpr count_leading_zeros( size_type x ) : size_type
 	}
 }
 
+fn constexpr count_trailing_zeros( u32 mut x ) : u32
+{
+	// LLVM optimizer is smart enough to replace this loop with native "cttz" instruction, if it's available.
+	// See "LoopIdeomRecognize.cpp".
+	var u32 mut res= 0u;
+	while( x != 0u )
+	{
+		++res;
+		x <<= 1u;
+	}
+	return 32u - res;
+}
+
+fn constexpr count_trailing_zeros( u64 mut x ) : u64
+{
+	// LLVM optimizer is smart enough to replace this loop with native "cttz" instruction, if it's available.
+	// See "LoopIdeomRecognize.cpp".
+	var u64 mut res= 0u64;
+	while( x != 0u64 )
+	{
+		++res;
+		x <<= 1u;
+	}
+	return 64u64 - res;
+}
+
+fn constexpr count_trailing_zeros( u128 mut x ) : u128
+{
+	var u128 mut res(0);
+	while( x != u128(0) )
+	{
+		++res;
+		x <<= 1u;
+	}
+	return u128(128) - res;
+}
+
+fn constexpr count_trailing_zeros( size_type x ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( count_trailing_zeros( u32(x) ) );
+	}
+	else
+	{
+		return size_type( count_trailing_zeros( u64(x) ) );
+	}
+}
+
 fn constexpr rotate_bits_left( u32 x, u32 shift ) : u32
 {
 	// LLVM optimizer is smart enough to use native bits rotation instruction here.
