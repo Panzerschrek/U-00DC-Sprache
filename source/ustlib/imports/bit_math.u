@@ -101,8 +101,8 @@ fn constexpr reverse_bits( u8 in_x ) : u8
 	// See "llvm::recognizeBSwapOrBitReverseIdiom".
 	var u32 mut x( in_x );
 	x= ( x >> 4u ) | ( x << 4u );
-	x= ( ( x & 0xCCu ) >> 2u ) | ( (x & 0x33u ) << 2u );
-	x= ( ( x & 0xAAu ) >> 1u ) | ( (x & 0x55u ) << 1u );
+	x= ( ( x & 0xCCu ) >> 2u ) | ( ( x & 0x33u ) << 2u );
+	x= ( ( x & 0xAAu ) >> 1u ) | ( ( x & 0x55u ) << 1u );
 	return u8(x);
 }
 
@@ -112,9 +112,9 @@ fn constexpr reverse_bits( u16 in_x ) : u16
 	// See "llvm::recognizeBSwapOrBitReverseIdiom".
 	var u32 mut x( in_x );
 	x= ( x >> 8u ) | ( x << 8u );
-	x= ( ( x & 0xF0F0u ) >> 4u ) | ( (x & 0x0F0Fu ) << 4u );
-	x= ( ( x & 0xCCCCu ) >> 2u ) | ( (x & 0x3333u ) << 2u );
-	x= ( ( x & 0xAAAAu ) >> 1u ) | ( (x & 0x5555u ) << 1u );
+	x= ( ( x & 0xF0F0u ) >> 4u ) | ( ( x & 0x0F0Fu ) << 4u );
+	x= ( ( x & 0xCCCCu ) >> 2u ) | ( ( x & 0x3333u ) << 2u );
+	x= ( ( x & 0xAAAAu ) >> 1u ) | ( ( x & 0x5555u ) << 1u );
 	return u16(x);
 }
 
@@ -122,11 +122,11 @@ fn constexpr reverse_bits( u32 mut x ) : u32
 {
 	// LLVM optimizer is smart enough to detect bit reverse pattern and use special CPU instructions if they are available.
 	// See "llvm::recognizeBSwapOrBitReverseIdiom".
-	x= ( x << 16u ) | ( x >> 16u );
-	x= ( ( x & 0xFF00FF00u ) >> 8u ) | ( (x & 0x00FF00FFu ) << 8u );
-	x= ( ( x & 0xF0F0F0F0u ) >> 4u ) | ( (x & 0x0F0F0F0Fu ) << 4u );
-	x= ( ( x & 0xCCCCCCCCu ) >> 2u ) | ( (x & 0x33333333u ) << 2u );
-	x= ( ( x & 0xAAAAAAAAu ) >> 1u ) | ( (x & 0x55555555u ) << 1u );
+	x= ( x >> 16u ) | ( x << 16u );
+	x= ( ( x & 0xFF00FF00u ) >> 8u ) | ( ( x & 0x00FF00FFu ) << 8u );
+	x= ( ( x & 0xF0F0F0F0u ) >> 4u ) | ( ( x & 0x0F0F0F0Fu ) << 4u );
+	x= ( ( x & 0xCCCCCCCCu ) >> 2u ) | ( ( x & 0x33333333u ) << 2u );
+	x= ( ( x & 0xAAAAAAAAu ) >> 1u ) | ( ( x & 0x55555555u ) << 1u );
 	return x;
 }
 
@@ -134,7 +134,7 @@ fn constexpr reverse_bits( u64 mut x ) : u64
 {
 	// LLVM optimizer is smart enough to detect bit reverse pattern and use special CPU instructions if they are available.
 	// See "llvm::recognizeBSwapOrBitReverseIdiom".
-	x= ( x << 32u64 ) | ( x >> 32u64 );
+	x= ( x >> 32u ) | ( x << 32u );
 	x= ( ( x & 0xFFFF0000FFFF0000u64 ) >> 16u ) | ( ( x & 0x0000FFFF0000FFFFu64 ) << 16u );
 	x= ( ( x & 0xFF00FF00FF00FF00u64 ) >>  8u ) | ( ( x & 0x00FF00FF00FF00FFu64 ) <<  8u );
 	x= ( ( x & 0xF0F0F0F0F0F0F0F0u64 ) >>  4u ) | ( ( x & 0x0F0F0F0F0F0F0F0Fu64 ) <<  4u );
