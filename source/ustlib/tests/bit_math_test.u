@@ -1,0 +1,131 @@
+//##success_test
+import "../imports/bit_math.u"
+
+fn nomangle main() : i32
+{
+	// swap_bytes
+	static_assert( ust::swap_bytes( 0x5A6Bu16 ) == 0x6B5Au16 );
+	static_assert( ust::swap_bytes( 0xC7F1i16 ) == 0xF1C7i16 );
+	static_assert( ust::swap_bytes( byte16( 0x67D9u16 ) ) == byte16( 0xD967u16 ) );
+	static_assert( ust::swap_bytes( 0xA1B2C3D4u ) == 0xD4C3B2A1u );
+	static_assert( ust::swap_bytes( 0x0542F239 ) == 0x39F24205 );
+	static_assert( ust::swap_bytes( byte32( 0x01234567 ) ) == byte32( 0x67452301 ) );
+	static_assert( ust::swap_bytes( 0x0123456789ABCDEFu64 ) == 0xEFCDAB8967452301u64 );
+	static_assert( ust::swap_bytes( 0x168CF6983AF71234i64 ) == 0x3412F73A98F68C16i64 );
+	static_assert( ust::swap_bytes( byte64( 0xEFCDAB8967452301u64 ) ) == byte64( 0x0123456789ABCDEFu64 ) );
+
+	// reverse_bits
+	static_assert( ust::reverse_bits( 0b00000000u8 ) == 0b00000000u8 );
+	static_assert( ust::reverse_bits( 0b00000001u8 ) == 0b10000000u8 );
+	static_assert( ust::reverse_bits( 0b11000001u8 ) == 0b10000011u8 );
+	static_assert( ust::reverse_bits( 0b11101000u8 ) == 0b00010111u8 );
+	static_assert( ust::reverse_bits( 0b10101010u8 ) == 0b01010101u8 );
+	static_assert( ust::reverse_bits( 0b11111111u8 ) == 0b11111111u8 );
+
+	static_assert( ust::reverse_bits( 0b0000000000000000u16 ) == 0b0000000000000000u16 );
+	static_assert( ust::reverse_bits( 0b0000000000000001u16 ) == 0b1000000000000000u16 );
+	static_assert( ust::reverse_bits( 0b0000000000000101u16 ) == 0b1010000000000000u16 );
+	static_assert( ust::reverse_bits( 0b1111000000000011u16 ) == 0b1100000000001111u16 );
+	static_assert( ust::reverse_bits( 0b0011101000011110u16 ) == 0b0111100001011100u16 );
+	static_assert( ust::reverse_bits( 0b1010101010101010u16 ) == 0b0101010101010101u16 );
+	static_assert( ust::reverse_bits( 0b1111111111111111u16 ) == 0b1111111111111111u16 );
+
+	static_assert( ust::reverse_bits( 0b00000000000000000000000000000000u ) == 0b00000000000000000000000000000000u );
+	static_assert( ust::reverse_bits( 0b10000000000000000000000000000000u ) == 0b00000000000000000000000000000001u );
+	static_assert( ust::reverse_bits( 0b00000000000000000000000000100011u ) == 0b11000100000000000000000000000000u );
+	static_assert( ust::reverse_bits( 0b11111110000011000000000000000111u ) == 0b11100000000000000011000001111111u );
+	static_assert( ust::reverse_bits( 0b11111110011111111111111111111111u ) == 0b11111111111111111111111001111111u );
+	static_assert( ust::reverse_bits( 0b11111111111111111111111111111111u ) == 0b11111111111111111111111111111111u );
+
+	static_assert( ust::reverse_bits( 0b0000000000000000000000000000000000000000000000000000000000000000u64 ) == 0b0000000000000000000000000000000000000000000000000000000000000000u64 );
+	static_assert( ust::reverse_bits( 0b0000000000000000000000000000000000000000000000000000000000000001u64 ) == 0b1000000000000000000000000000000000000000000000000000000000000000u64 );
+	static_assert( ust::reverse_bits( 0b0000000000000000000000000000000000000000000000000000000000010101u64 ) == 0b1010100000000000000000000000000000000000000000000000000000000000u64 );
+	static_assert( ust::reverse_bits( 0b1011011101111011111011111101111111011111111011111111100000000000u64 ) == 0b0000000000011111111101111111101111111011111101111101111011101101u64 );
+	static_assert( ust::reverse_bits( 0b1111111111111111111111111111111111111111111111111111111111111111u64 ) == 0b1111111111111111111111111111111111111111111111111111111111111111u64 );
+
+	// count_set_bits
+	static_assert( ust::count_set_bits( 0u ) == 0u );
+	static_assert( ust::count_set_bits( 1u ) == 1u );
+	static_assert( ust::count_set_bits( 2u ) == 1u );
+	static_assert( ust::count_set_bits( 3u ) == 2u );
+	static_assert( ust::count_set_bits( 4u ) == 1u );
+	static_assert( ust::count_set_bits( 5u ) == 2u );
+	static_assert( ust::count_set_bits( 6u ) == 2u );
+	static_assert( ust::count_set_bits( 7u ) == 3u );
+	static_assert( ust::count_set_bits( 8u ) == 1u );
+	static_assert( ust::count_set_bits( 16u ) == 1u );
+	static_assert( ust::count_set_bits( 64u ) == 1u );
+	static_assert( ust::count_set_bits( 65535u ) == 16u );
+	static_assert( ust::count_set_bits( 65536u ) == 1u );
+	static_assert( ust::count_set_bits( 65537u ) == 2u );
+	static_assert( ust::count_set_bits( 2147483648u ) == 1u );
+	static_assert( ust::count_set_bits( 4294967295u ) == 32u );
+
+	static_assert( ust::count_set_bits( 8589934592u64 ) == 1u64 );
+	static_assert( ust::count_set_bits( 35184372088831u64 ) == 45u64 );
+	static_assert( ust::count_set_bits( 9223372036854775808u64 ) == 1u64 );
+	static_assert( ust::count_set_bits( 18446744073709551615u64 ) == 64u64 );
+
+	// count_leading_zeros
+	static_assert( ust::count_leading_zeros( 0u ) == 32u );
+	static_assert( ust::count_leading_zeros( 1u ) == 31u );
+	static_assert( ust::count_leading_zeros( 2u ) == 30u );
+	static_assert( ust::count_leading_zeros( 3u ) == 30u );
+	static_assert( ust::count_leading_zeros( 4u ) == 29u );
+	static_assert( ust::count_leading_zeros( 5u ) == 29u );
+	static_assert( ust::count_leading_zeros( 6u ) == 29u );
+	static_assert( ust::count_leading_zeros( 7u ) == 29u );
+	static_assert( ust::count_leading_zeros( 65535u ) == 16u );
+	static_assert( ust::count_leading_zeros( 65536u ) == 15u );
+	static_assert( ust::count_leading_zeros( 2147483647u ) == 1u );
+	static_assert( ust::count_leading_zeros( 2147483648u ) == 0u );
+
+	static_assert( ust::count_leading_zeros( 0u64 ) == 64u64 );
+	static_assert( ust::count_leading_zeros( 1u64 ) == 63u64 );
+	static_assert( ust::count_leading_zeros( 2u64 ) == 62u64 );
+	static_assert( ust::count_leading_zeros( 3u64 ) == 62u64 );
+	static_assert( ust::count_leading_zeros( 4u64 ) == 61u64 );
+	static_assert( ust::count_leading_zeros( 5u64 ) == 61u64 );
+	static_assert( ust::count_leading_zeros( 6u64 ) == 61u64 );
+	static_assert( ust::count_leading_zeros( 7u64 ) == 61u64 );
+	static_assert( ust::count_leading_zeros( 65535u64 ) == 48u64 );
+	static_assert( ust::count_leading_zeros( 65536u64 ) == 47u64 );
+	static_assert( ust::count_leading_zeros( 2147483647u64 ) == 33u64 );
+	static_assert( ust::count_leading_zeros( 2147483648u64 ) == 32u64 );
+	static_assert( ust::count_leading_zeros( 36028797018963968u64 ) == 8u64 );
+	static_assert( ust::count_leading_zeros( 9223372036854775807u64 ) == 1u64 );
+	static_assert( ust::count_leading_zeros( 9223372036854775808u64 ) == 0u64 );
+
+	// count_trailing_zeros
+
+	static_assert( ust::count_trailing_zeros( 0u ) == 32u );
+	static_assert( ust::count_trailing_zeros( 1u ) == 0u );
+	static_assert( ust::count_trailing_zeros( 2u ) == 1u );
+	static_assert( ust::count_trailing_zeros( 3u ) == 0u );
+	static_assert( ust::count_trailing_zeros( 4u ) == 2u );
+	static_assert( ust::count_trailing_zeros( 5u ) == 0u );
+	static_assert( ust::count_trailing_zeros( 6u ) == 1u );
+	static_assert( ust::count_trailing_zeros( 7u ) == 0u );
+	static_assert( ust::count_trailing_zeros( 8u ) == 3u );
+	static_assert( ust::count_trailing_zeros( 65536u ) == 16u );
+	static_assert( ust::count_trailing_zeros( 8u ) == 3u );
+	static_assert( ust::count_trailing_zeros( 2147483648u ) == 31u );
+	static_assert( ust::count_trailing_zeros( 140737488355328u64 ) == 47u64 );
+	static_assert( ust::count_trailing_zeros( 140737488355329u64 ) == 0u64 );
+	static_assert( ust::count_trailing_zeros( 140737488355330u64 ) == 1u64 );
+	static_assert( ust::count_trailing_zeros( 9223372036854775808u64 ) == 63u64 );
+
+	// rotate_bits_left
+	static_assert( ust::rotate_bits_left( 0b01110111110010110111110011100111u,  7u ) == 0b11100101101111100111001110111011u );
+	static_assert( ust::rotate_bits_left( 0b01100011101101000101111010010111u,  0u ) == 0b01100011101101000101111010010111u );
+	static_assert( ust::rotate_bits_left( 0b11010000001100111100111111100101u, 19u ) == 0b01111111001011101000000110011110u );
+	static_assert( ust::rotate_bits_left( 0b1101000000110011110011111110010101100011101101000101111010010111u64, 47u ) == 0b0010111101001011111010000001100111100111111100101011000111011010u64 );
+
+	// rotate_bits_right
+	static_assert( ust::rotate_bits_right( 0b01110111110010110111110011100111u,  7u ) == 0b11001110111011111001011011111001u );
+	static_assert( ust::rotate_bits_right( 0b01100011101101000101111010010111u,  0u ) == 0b01100011101101000101111010010111u );
+	static_assert( ust::rotate_bits_right( 0b11010000001100111100111111100101u, 19u ) == 0b01111001111111001011101000000110u );
+	static_assert( ust::rotate_bits_right( 0b1101000000110011110011111110010101100011101101000101111010010111u64, 47u ) == 0b1001111111001010110001110110100010111101001011111010000001100111u64 );
+
+	return 0;
+}

@@ -366,16 +366,5 @@ fn nomangle main() : i32
 	DoFloatsTest</f32/>();
 	DoFloatsTest</f64/>();
 
-	// swap_bytes
-	static_assert( ust::swap_bytes( 0x5A6Bu16 ) == 0x6B5Au16 );
-	static_assert( ust::swap_bytes( 0xC7F1i16 ) == 0xF1C7i16 );
-	static_assert( ust::swap_bytes( byte16( 0x67D9u16 ) ) == byte16( 0xD967u16 ) );
-	static_assert( ust::swap_bytes( 0xA1B2C3D4u ) == 0xD4C3B2A1u );
-	static_assert( ust::swap_bytes( 0x0542F239 ) == 0x39F24205 );
-	static_assert( ust::swap_bytes( byte32( 0x01234567 ) ) == byte32( 0x67452301 ) );
-	static_assert( ust::swap_bytes( 0x0123456789ABCDEFu64 ) == 0xEFCDAB8967452301u64 );
-	static_assert( ust::swap_bytes( 0x168CF6983AF71234i64 ) == 0x3412F73A98F68C16i64 );
-	static_assert( ust::swap_bytes( byte64( 0xEFCDAB8967452301u64 ) ) == byte64( 0x0123456789ABCDEFu64 ) );
-
 	return 0;
 }

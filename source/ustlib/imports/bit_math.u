@@ -1,0 +1,385 @@
+namespace ust
+{
+
+fn constexpr swap_bytes( u8 x ) : u8
+{
+	return x;
+}
+
+fn constexpr swap_bytes( i8 x ) : i8
+{
+	return x;
+}
+
+fn constexpr swap_bytes( byte8 x ) : byte8
+{
+	return x;
+}
+
+fn constexpr swap_bytes( u16 x ) : u16
+{
+	// LLVM optimizer is smart enough to replace this code with native byte swapping instruction, if it's available.
+	return u16( ( u32(x) >> 8u ) | ( u32(x) << 8u ) );
+}
+
+fn constexpr swap_bytes( i16 x ) : i16
+{
+	return i16( swap_bytes( u16(x) ) );
+}
+
+fn constexpr swap_bytes( byte16 x ) : byte16
+{
+	return byte16( swap_bytes( u16(x) ) );
+}
+
+fn constexpr swap_bytes( u32 x ) : u32
+{
+	// LLVM optimizer is smart enough to replace this code with native byte swapping instruction, if it's available.
+	return ( x >> 24u ) | ( ( x >> 8u ) & 0x0000FF00u ) | ( ( x << 8u ) & 0x00FF0000u ) | ( x << 24u );
+}
+
+fn constexpr swap_bytes( i32 x ) : i32
+{
+	return i32( swap_bytes( u32(x) ) );
+}
+
+fn constexpr swap_bytes( byte32 x ) : byte32
+{
+	return byte32( swap_bytes( u32(x) ) );
+}
+
+fn constexpr swap_bytes( u64 x ) : u64
+{
+	return
+		( ( x >> 56u ) & 0x00000000000000FFu64 ) |
+		( ( x >> 40u ) & 0x000000000000FF00u64 ) |
+		( ( x >> 24u ) & 0x0000000000FF0000u64 ) |
+		( ( x >>  8u ) & 0x00000000FF000000u64 ) |
+		( ( x <<  8u ) & 0x000000FF00000000u64 ) |
+		( ( x << 24u ) & 0x0000FF0000000000u64 ) |
+		( ( x << 40u ) & 0x00FF000000000000u64 ) |
+		( ( x << 56u ) & 0xFF00000000000000u64 );
+}
+
+fn constexpr swap_bytes( i64 x ) : i64
+{
+	return i64( swap_bytes( u64(x) ) );
+}
+
+fn constexpr swap_bytes( byte64 x ) : byte64
+{
+	return byte64( swap_bytes( u64(x) ) );
+}
+
+fn constexpr swap_bytes( ssize_type x ) : ssize_type
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
+	{
+		return ssize_type( swap_bytes( i32(x) ) );
+	}
+	else
+	{
+		return ssize_type( swap_bytes( i64(x) ) );
+	}
+}
+
+fn constexpr swap_bytes( size_type x ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( swap_bytes( u32(x) ) );
+	}
+	else
+	{
+		return size_type( swap_bytes( u64(x) ) );
+	}
+}
+
+fn constexpr reverse_bits( u8 in_x ) : u8
+{
+	// LLVM optimizer is smart enough to detect bit reverse pattern and use special CPU instructions if they are available.
+	// See "llvm::recognizeBSwapOrBitReverseIdiom".
+	var u32 mut x( in_x );
+	x= ( x >> 4u ) | ( x << 4u );
+	x= ( ( x & 0xCCu ) >> 2u ) | ( ( x & 0x33u ) << 2u );
+	x= ( ( x & 0xAAu ) >> 1u ) | ( ( x & 0x55u ) << 1u );
+	return u8(x);
+}
+
+fn constexpr reverse_bits( u16 in_x ) : u16
+{
+	// LLVM optimizer is smart enough to detect bit reverse pattern and use special CPU instructions if they are available.
+	// See "llvm::recognizeBSwapOrBitReverseIdiom".
+	var u32 mut x( in_x );
+	x= ( x >> 8u ) | ( x << 8u );
+	x= ( ( x & 0xF0F0u ) >> 4u ) | ( ( x & 0x0F0Fu ) << 4u );
+	x= ( ( x & 0xCCCCu ) >> 2u ) | ( ( x & 0x3333u ) << 2u );
+	x= ( ( x & 0xAAAAu ) >> 1u ) | ( ( x & 0x5555u ) << 1u );
+	return u16(x);
+}
+
+fn constexpr reverse_bits( u32 mut x ) : u32
+{
+	// LLVM optimizer is smart enough to detect bit reverse pattern and use special CPU instructions if they are available.
+	// See "llvm::recognizeBSwapOrBitReverseIdiom".
+	x= ( x >> 16u ) | ( x << 16u );
+	x= ( ( x & 0xFF00FF00u ) >> 8u ) | ( ( x & 0x00FF00FFu ) << 8u );
+	x= ( ( x & 0xF0F0F0F0u ) >> 4u ) | ( ( x & 0x0F0F0F0Fu ) << 4u );
+	x= ( ( x & 0xCCCCCCCCu ) >> 2u ) | ( ( x & 0x33333333u ) << 2u );
+	x= ( ( x & 0xAAAAAAAAu ) >> 1u ) | ( ( x & 0x55555555u ) << 1u );
+	return x;
+}
+
+fn constexpr reverse_bits( u64 mut x ) : u64
+{
+	// LLVM optimizer is smart enough to detect bit reverse pattern and use special CPU instructions if they are available.
+	// See "llvm::recognizeBSwapOrBitReverseIdiom".
+	x= ( x >> 32u ) | ( x << 32u );
+	x= ( ( x & 0xFFFF0000FFFF0000u64 ) >> 16u ) | ( ( x & 0x0000FFFF0000FFFFu64 ) << 16u );
+	x= ( ( x & 0xFF00FF00FF00FF00u64 ) >>  8u ) | ( ( x & 0x00FF00FF00FF00FFu64 ) <<  8u );
+	x= ( ( x & 0xF0F0F0F0F0F0F0F0u64 ) >>  4u ) | ( ( x & 0x0F0F0F0F0F0F0F0Fu64 ) <<  4u );
+	x= ( ( x & 0xCCCCCCCCCCCCCCCCu64 ) >>  2u ) | ( ( x & 0x3333333333333333u64 ) <<  2u );
+	x= ( ( x & 0xAAAAAAAAAAAAAAAAu64 ) >>  1u ) | ( ( x & 0x5555555555555555u64 ) <<  1u );
+	return x;
+}
+
+fn constexpr reverse_bits( size_type x ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( reverse_bits( u32(x) ) );
+	}
+	else
+	{
+		return size_type( reverse_bits( u64(x) ) );
+	}
+}
+
+fn constexpr count_set_bits( u32 mut x ) : u32
+{
+	// LLVM optimizer is smart enough to replace this loop with native "popcnt" instruction, if it's available.
+	// See "LoopIdiomRecognize.cpp".
+	var u32 mut res= 0u;
+	while( x != 0u )
+	{
+		++res;
+		x&= x - 1u;
+	}
+	return res;
+}
+
+fn constexpr count_set_bits( i32 x ) : i32
+{
+	return i32( count_set_bits( u32(x) ) );
+}
+
+fn constexpr count_set_bits( u64 mut x ) : u64
+{
+	// LLVM optimizer is smart enough to replace this loop with native "popcnt" instruction, if it's available.
+	// See "LoopIdiomRecognize.cpp".
+	var u64 mut res= 0u64;
+	while( x != 0u64 )
+	{
+		++res;
+		x&= x - 1u64;
+	}
+	return res;
+}
+
+fn constexpr count_set_bits( i64 x ) : i64
+{
+	return i64( count_set_bits( u64(x) ) );
+}
+
+fn constexpr count_set_bits( u128 mut x ) : u128
+{
+	// LLVM optimizer is smart enough to replace this loop with native "popcnt" instruction, if it's available.
+	// See "LoopIdiomRecognize.cpp".
+	var u128 mut res(0);
+	while( x != u128(0) )
+	{
+		++res;
+		x&= x - u128(1);
+	}
+	return res;
+}
+
+fn constexpr count_set_bits( i128 x ) : i128
+{
+	return i128( count_set_bits( u128(x) ) );
+}
+
+fn constexpr count_set_bits( ssize_type x ) : ssize_type
+{
+	static_if( typeinfo</ssize_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return ssize_type( count_set_bits( u32(x) ) );
+	}
+	else
+	{
+		return ssize_type( count_set_bits( u64(x) ) );
+	}
+}
+
+fn constexpr count_set_bits( size_type x ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( count_set_bits( u32(x) ) );
+	}
+	else
+	{
+		return size_type( count_set_bits( u64(x) ) );
+	}
+}
+
+fn constexpr count_leading_zeros( u32 mut x ) : u32
+{
+	// LLVM optimizer is smart enough to replace this loop with native "ctlz" instruction, if it's available.
+	// See "LoopIdiomRecognize.cpp".
+	var u32 mut res= 0u;
+	while( x != 0u )
+	{
+		++res;
+		x >>= 1u;
+	}
+
+	return 32u - res;
+}
+
+fn constexpr count_leading_zeros( u64 mut x ) : u64
+{
+	// LLVM optimizer is smart enough to replace this loop with native "ctlz" instruction, if it's available.
+	// See "LoopIdiomRecognize.cpp".
+	var u64 mut res= 0u64;
+	while( x != 0u64 )
+	{
+		++res;
+		x >>= 1u;
+	}
+
+	return 64u64 - res;
+}
+
+fn constexpr count_leading_zeros( u128 mut x ) : u128
+{
+	var u128 mut res(0);
+	while( x != u128(0) )
+	{
+		++res;
+		x >>= 1u;
+	}
+
+	return u128(128) - res;
+}
+
+fn constexpr count_leading_zeros( size_type x ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( count_leading_zeros( u32(x) ) );
+	}
+	else
+	{
+		return size_type( count_leading_zeros( u64(x) ) );
+	}
+}
+
+fn constexpr count_trailing_zeros( u32 mut x ) : u32
+{
+	// LLVM optimizer is smart enough to replace this loop with native "cttz" instruction, if it's available.
+	// See "LoopIdeomRecognize.cpp".
+	var u32 mut res= 0u;
+	while( x != 0u )
+	{
+		++res;
+		x <<= 1u;
+	}
+	return 32u - res;
+}
+
+fn constexpr count_trailing_zeros( u64 mut x ) : u64
+{
+	// LLVM optimizer is smart enough to replace this loop with native "cttz" instruction, if it's available.
+	// See "LoopIdeomRecognize.cpp".
+	var u64 mut res= 0u64;
+	while( x != 0u64 )
+	{
+		++res;
+		x <<= 1u;
+	}
+	return 64u64 - res;
+}
+
+fn constexpr count_trailing_zeros( u128 mut x ) : u128
+{
+	var u128 mut res(0);
+	while( x != u128(0) )
+	{
+		++res;
+		x <<= 1u;
+	}
+	return u128(128) - res;
+}
+
+fn constexpr count_trailing_zeros( size_type x ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( count_trailing_zeros( u32(x) ) );
+	}
+	else
+	{
+		return size_type( count_trailing_zeros( u64(x) ) );
+	}
+}
+
+fn constexpr rotate_bits_left( u32 x, u32 shift ) : u32
+{
+	// LLVM optimizer is smart enough to use native bits rotation instruction here.
+	return ( x << shift ) | ( x >> ( 32u - shift ) );
+}
+
+fn constexpr rotate_bits_right( u32 x, u32 shift ) : u32
+{
+	// LLVM optimizer is smart enough to use native bits rotation instruction here.
+	return ( x >> shift ) | ( x << ( 32u - shift ) );
+}
+
+fn constexpr rotate_bits_left( u64 x, u32 shift ) : u64
+{
+	// LLVM optimizer is smart enough to use native bits rotation instruction here.
+	return ( x << shift ) | ( x >> ( 64u - shift ) );
+}
+
+fn constexpr rotate_bits_right( u64 x, u32 shift ) : u64
+{
+	// LLVM optimizer is smart enough to use native bits rotation instruction here.
+	return ( x >> shift ) | ( x << ( 64u - shift ) );
+}
+
+fn constexpr rotate_bits_left( size_type x, u32 shift ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( rotate_bits_left( u32(x), shift ) );
+	}
+	else
+	{
+		return size_type( rotate_bits_left( u64(x), shift ) );
+	}
+}
+
+fn constexpr rotate_bits_right( size_type x, u32 shift ) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == typeinfo</u32/>.size_of )
+	{
+		return size_type( rotate_bits_right( u32(x), shift ) );
+	}
+	else
+	{
+		return size_type( rotate_bits_right( u64(x), shift ) );
+	}
+}
+
+} // namespace ust
