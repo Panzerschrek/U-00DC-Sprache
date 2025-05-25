@@ -57,6 +57,40 @@ def MemberAccesOperator_AccessType_Test2():
 	assert( HasError( errors_list, "AccessingNonpublicClassMember", 10 ) )
 
 
+def MemberAccesOperator_AccessType_Test3():
+	c_program_text= """
+		struct S
+		{
+			enum E { A, B, C }
+		}
+		fn Foo()
+		{
+			var S s;
+			auto x= s.E( S::E::B ); // Access an enum via ".".
+			static_assert( same_type</ typeof(x), S::E /> );
+			static_assert( x == S::E::B );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MemberAccesOperator_AccessType_Test4():
+	c_program_text= """
+		template</type T/> struct Box{ T t; }
+		struct S
+		{
+			type Some= char16;
+		}
+		fn Foo()
+		{
+			var S s;
+			var Box</ s.Some /* Access a type alias via "." and use it for template type argument. */ /> box{ .t= 'я'c16 };
+			static_assert( box.t == 'я'c16 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def MemberAccesOperator_AccessGlobalVariable_Test0():
 	c_program_text= """
 		struct S
