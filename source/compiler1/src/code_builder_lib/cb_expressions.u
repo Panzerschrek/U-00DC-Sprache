@@ -2182,6 +2182,54 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		}
 	}
 
+	{
+		auto type_alias_ptr= class_member[0].Get</TypeAlias/>();
+		if( !type_alias_ptr.empty() )
+		{
+			// Can access inner type alias via "." operator.
+			with( &type_alias : type_alias_ptr.try_lock_imut().deref() )
+			{
+				if( !type_alias.t.empty() )
+				{
+					if( !member_access_operator.template_args.empty() )
+					{
+						REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
+					}
+
+					return type_alias.t.try_deref();
+				}
+			}
+		}
+	}
+	{
+		auto enum_ptr= class_member[0].Get</Enum/>();
+		if( !enum_ptr.empty() )
+		{
+			// Can access inner enum via "." operator.
+
+			if( !member_access_operator.template_args.empty() )
+			{
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
+			}
+
+			return Type( enum_ptr.try_to_non_nullable() );
+		}
+	}
+	{
+		auto inner_class_ptr= class_member[0].Get</ClassType/>();
+		if( !inner_class_ptr.empty() )
+		{
+			// Can access inner class via "." operator.
+
+			if( !member_access_operator.template_args.empty() )
+			{
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
+			}
+
+			return Type( inner_class_ptr.try_to_non_nullable() );
+		}
+	}
+
 	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, "class members, except fields or methods" )
 	return ErrorValue();
 }
