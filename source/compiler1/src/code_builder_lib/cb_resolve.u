@@ -176,63 +176,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto global_variable_ptr= names_scope_value.Get</GlobalVariable/>();
 	if( !global_variable_ptr.empty() )
 	{
-		auto global_variable_ptr_non_null= global_variable_ptr.try_to_non_nullable();
-		with( mut lock : global_variable_ptr_non_null.lock_mut() )
-		{
-			lock.deref().referenced= true;
-		}
-
-		var VariableNullablePtr v_ptr= global_variable_ptr_non_null.lock_imut().deref().variable;
-		if( !v_ptr.empty() )
-		{
-			var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();
-			if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
-			{
-				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
-			}
-
-			function_context.references_graph.AddNodeIfNotExists( v_ptr_non_null );
-
-			// On each access to a thread-local variable replace its address with a call to "llvm.threadlocal.address".
-			if( !function_context.is_functionless_context )
-			{
-				var VariablePtr var_ptr_copy= v_ptr_non_null;
-				with( &variable : var_ptr_copy.lock_imut().deref() )
-				{
-					if( variable.llvm_value != LLVMValueRef::Null &&
-						variable.location == Variable::Location::Pointer &&
-						unsafe( LLVMIsAGlobalVariable( variable.llvm_value ) ) != LLVMValueRef::Null &&
-						unsafe( LLVMIsThreadLocal( variable.llvm_value ) ) == LLVMBool::True )
-					{
-						var LLVMValueRef call_result=
-							unsafe( LLVMBuildCall2(
-								function_context.llvm_ir_builder,
-								U1_GetFunctionType(threadlocal_address_intrinsic_),
-								threadlocal_address_intrinsic_,
-								$<( cast_mut(variable.llvm_value) ),
-								1u,
-								g_null_string ) );
-
-						v_ptr_non_null=
-							Variable
-							{
-								.t= variable.t,
-								.value_type= variable.value_type,
-								.location= variable.location,
-								.llvm_value= call_result,
-								.constexpr_value= variable.constexpr_value,
-								.name= variable.name,
-								.src_loc= variable.src_loc,
-							}.CreatePtr();
-
-						function_context.references_graph.AddNode( v_ptr_non_null );
-						RegisterTemporaryVariable( function_context, v_ptr_non_null );
-					}
-				}
-			}
-
-			return v_ptr_non_null;
-		}
+		return ContextualizeGlobalVariable( names_scope, function_context, global_variable_ptr.try_to_non_nullable(), src_loc );
 	}
 
 	auto global_auto_variable_ptr= names_scope_value.Get</GlobalAutoVariable/>();
@@ -284,6 +228,68 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	if( !type_templates_set_ptr.empty() )
 	{
 		return ust::shared_ptr_imut</TypeTemplatesSet/>( type_templates_set_ptr.try_to_non_nullable() );
+	}
+
+	return ErrorValue();
+}
+
+fn CodeBuilder::ContextualizeGlobalVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr, SrcLoc& src_loc ) : Value
+{
+	with( mut lock : global_variable_ptr.lock_mut() )
+	{
+		lock.deref().referenced= true;
+	}
+
+	var VariableNullablePtr v_ptr= global_variable_ptr.lock_imut().deref().variable;
+	if( !v_ptr.empty() )
+	{
+		var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();
+		if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
+		}
+
+		function_context.references_graph.AddNodeIfNotExists( v_ptr_non_null );
+
+		// On each access to a thread-local variable replace its address with a call to "llvm.threadlocal.address".
+		if( !function_context.is_functionless_context )
+		{
+			var VariablePtr var_ptr_copy= v_ptr_non_null;
+			with( &variable : var_ptr_copy.lock_imut().deref() )
+			{
+				if( variable.llvm_value != LLVMValueRef::Null &&
+					variable.location == Variable::Location::Pointer &&
+					unsafe( LLVMIsAGlobalVariable( variable.llvm_value ) ) != LLVMValueRef::Null &&
+					unsafe( LLVMIsThreadLocal( variable.llvm_value ) ) == LLVMBool::True )
+				{
+					var LLVMValueRef call_result=
+						unsafe( LLVMBuildCall2(
+							function_context.llvm_ir_builder,
+							U1_GetFunctionType(threadlocal_address_intrinsic_),
+							threadlocal_address_intrinsic_,
+							$<( cast_mut(variable.llvm_value) ),
+							1u,
+							g_null_string ) );
+
+					v_ptr_non_null=
+						Variable
+						{
+							.t= variable.t,
+							.value_type= variable.value_type,
+							.location= variable.location,
+							.llvm_value= call_result,
+							.constexpr_value= variable.constexpr_value,
+							.name= variable.name,
+							.src_loc= variable.src_loc,
+						}.CreatePtr();
+
+					function_context.references_graph.AddNode( v_ptr_non_null );
+					RegisterTemporaryVariable( function_context, v_ptr_non_null );
+				}
+			}
+		}
+
+		return v_ptr_non_null;
 	}
 
 	return ErrorValue();

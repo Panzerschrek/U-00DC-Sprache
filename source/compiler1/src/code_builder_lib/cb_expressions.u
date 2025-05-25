@@ -2229,6 +2229,20 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			return Type( inner_class_ptr.try_to_non_nullable() );
 		}
 	}
+	{
+		auto global_variable_ptr= class_member[0].Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			// Can access inner global variable via "." operator.
+
+			if( !member_access_operator.template_args.empty() )
+			{
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
+			}
+
+			return ContextualizeGlobalVariable( names_scope, function_context, global_variable_ptr.try_to_non_nullable(), member_access_operator.src_loc );
+		}
+	}
 
 	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, "class members, except fields or methods" )
 	return ErrorValue();
