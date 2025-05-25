@@ -597,7 +597,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ContextualizeVariableInResolve( names_scope, function_context, variable, member_access_operator.src_loc );
 	}
 
-	REPORT_ERROR( NotImplemented, names_scope.GetErrors(), member_access_operator.src_loc, "class members, except fields, methods, types" );
+	REPORT_ERROR( NotImplemented, names_scope.GetErrors(), member_access_operator.src_loc, "class members, except fields, methods, types, global variables" );
 	return ErrorValue();
 }
 
