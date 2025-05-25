@@ -2243,8 +2243,22 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			return ContextualizeGlobalVariable( names_scope, function_context, global_variable_ptr.try_to_non_nullable(), member_access_operator.src_loc );
 		}
 	}
+	{
+		auto global_auto_variable_ptr= class_member[0].Get</GlobalAutoVariable/>();
+		if( !global_auto_variable_ptr.empty() )
+		{
+			// Can access inner global auto variable via "." operator.
 
-	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, "class members, except fields or methods" )
+			if( !member_access_operator.template_args.empty() )
+			{
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
+			}
+
+			return ContextualizeGlobalAutoVariable( names_scope, function_context, global_auto_variable_ptr.try_to_non_nullable(), member_access_operator.src_loc );
+		}
+	}
+
+	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, "class members, except fields, methods, types, global variables" )
 	return ErrorValue();
 }
 

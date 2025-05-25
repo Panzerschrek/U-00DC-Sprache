@@ -182,25 +182,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto global_auto_variable_ptr= names_scope_value.Get</GlobalAutoVariable/>();
 	if( !global_auto_variable_ptr.empty() )
 	{
-		auto global_auto_variable_ptr_non_null= global_auto_variable_ptr.try_to_non_nullable();
-		with( mut lock : global_auto_variable_ptr_non_null.lock_mut() )
-		{
-			lock.deref().referenced= true;
-		}
-
-		var VariableNullablePtr v_ptr= global_auto_variable_ptr_non_null.lock_imut().deref().variable;
-		if( !v_ptr.empty() )
-		{
-			var VariablePtr v_ptr_non_null= v_ptr.try_to_non_nullable();
-			if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
-			{
-				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
-			}
-
-			function_context.references_graph.AddNodeIfNotExists( v_ptr_non_null );
-
-			return v_ptr_non_null;
-		}
+		return ContextualizeGlobalAutoVariable( names_scope, function_context, global_auto_variable_ptr.try_to_non_nullable(), src_loc );
 	}
 
 	auto template_arg_ptr= names_scope_value.Get</TemplateArg/>();
@@ -292,6 +274,32 @@ fn CodeBuilder::ContextualizeGlobalVariable( mut this, NamesScopePtr& names_scop
 		return v_ptr_non_null;
 	}
 
+	// An error should be generated previously.
+	return ErrorValue();
+}
+
+fn CodeBuilder::ContextualizeGlobalAutoVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr, SrcLoc& src_loc ) : Value
+{
+	with( mut lock : global_auto_variable_ptr.lock_mut() )
+	{
+		lock.deref().referenced= true;
+	}
+
+	var VariableNullablePtr v_ptr= global_auto_variable_ptr.lock_imut().deref().variable;
+	if( !v_ptr.empty() )
+	{
+		var VariablePtr v_ptr_non_null= v_ptr.try_to_non_nullable();
+		if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
+		{
+			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
+		}
+
+		function_context.references_graph.AddNodeIfNotExists( v_ptr_non_null );
+
+		return v_ptr_non_null;
+	}
+
+	// An error should be generated previously.
 	return ErrorValue();
 }
 
