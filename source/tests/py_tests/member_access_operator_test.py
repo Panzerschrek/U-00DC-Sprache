@@ -39,6 +39,24 @@ def MemberAccesOperator_AccessType_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def MemberAccesOperator_AccessType_Test2():
+	c_program_text= """
+		class C
+		{
+		private:
+			type T= f64;
+		}
+		fn Foo()
+		{
+			var C c;
+			auto x= c.T( 13.7 ); // Access a type alias via ".". It's an error, since it's private.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingNonpublicClassMember", 10 ) )
+
+
 def MemberAccesOperator_AccessGlobalVariable_Test0():
 	c_program_text= """
 		struct S
@@ -123,3 +141,21 @@ def MemberAccesOperator_AccessGlobalVariable_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 9 ) )
+
+
+def MemberAccesOperator_AccessGlobalVariable_Test5():
+	c_program_text= """
+		class C
+		{
+		private:
+			auto some_val= 123;
+		}
+		fn Foo()
+		{
+			var C c;
+			auto x= c.some_val == 123; // Access a global auto variable via "." operator. It's an error, since it's private.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "AccessingNonpublicClassMember", 10 ) )
