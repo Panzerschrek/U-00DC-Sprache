@@ -591,6 +591,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// Can access inner types via "." operator.
 		return class_member->value;
 	}
+	if( class_member->value.GetVariable() != nullptr )
+	{
+		// Can access global member variable via "." operator.
+		return class_member->value;
+	}
 
 	REPORT_ERROR( NotImplemented, names_scope.GetErrors(), member_access_operator.src_loc, "class members, except fields, methods, types" );
 	return ErrorValue();

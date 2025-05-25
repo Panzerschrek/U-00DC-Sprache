@@ -37,3 +37,35 @@ def MemberAccesOperator_AccessType_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def MemberAccesOperator_AccessGlobalVariable_Test0():
+	c_program_text= """
+		struct S
+		{
+			auto some_val= 123;
+		}
+		fn Foo()
+		{
+			var S s;
+			static_assert( s.some_val == 123 ); // Access a global auto variable via "." operator.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MemberAccesOperator_AccessGlobalVariable_Test1():
+	c_program_text= """
+		struct S
+		{
+			var tup[ f64, bool, char8 ] some_val[ 7.8, false, 'H' ];
+		}
+		fn Foo()
+		{
+			var S s;
+			static_assert( s.some_val[0] == 7.8 ); // Access a global variable via "." operator.
+			static_assert( s.some_val[1] == false ); // Access a global variable via "." operator.
+			static_assert( s.some_val[2] == 'H' ); // Access a global variable via "." operator.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
