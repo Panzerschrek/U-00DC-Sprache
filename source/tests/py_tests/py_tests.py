@@ -69,6 +69,7 @@ def run_tests():
 		"lambdas_test",
 		"macro_errors_test",
 		"macro_test",
+		"member_access_operator_test",
 		"methods_generation_test",
 		"mixins_errors_test",
 		"mixins_test",

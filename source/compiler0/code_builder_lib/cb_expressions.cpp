@@ -586,7 +586,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return AccessClassField( names_scope, function_context, variable, *field, member_access_operator.member_name, member_access_operator.src_loc );
 	}
 
-	REPORT_ERROR( NotImplemented, names_scope.GetErrors(), member_access_operator.src_loc, "class members, except fields or methods" );
+	if( class_member->value.GetTypeName() != nullptr )
+	{
+		// Can access inner types via "." operator.
+		return class_member->value;
+	}
+
+	REPORT_ERROR( NotImplemented, names_scope.GetErrors(), member_access_operator.src_loc, "class members, except fields, methods, types" );
 	return ErrorValue();
 }
 
