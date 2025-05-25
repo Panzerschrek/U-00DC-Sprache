@@ -91,6 +91,23 @@ def MemberAccesOperator_AccessType_Test4():
 	tests_lib.build_program( c_program_text )
 
 
+def MemberAccesOperator_AccessType_Test5():
+	c_program_text= """
+		struct S
+		{
+			type Some= i32;
+		}
+		fn Foo()
+		{
+			var S s;
+			auto x= s.Some</ f32 />( 17 ); // Access type alias via ".". It's error, since template arguments list is provided and it's not template.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ValueIsNotTemplate", 9 ) )
+
+
 def MemberAccesOperator_AccessGlobalVariable_Test0():
 	c_program_text= """
 		struct S
@@ -193,3 +210,20 @@ def MemberAccesOperator_AccessGlobalVariable_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "AccessingNonpublicClassMember", 10 ) )
+
+
+def MemberAccesOperator_AccessGlobalVariable_Test6():
+	c_program_text= """
+		struct S
+		{
+			var i32 x= 0;
+		}
+		fn Foo()
+		{
+			var S s;
+			auto x= s.x</ f32 />( 17 ); // Access global variable via ".". It's error, since template arguments list is provided and it's not template.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ValueIsNotTemplate", 9 ) )
