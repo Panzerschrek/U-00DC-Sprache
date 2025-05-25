@@ -2183,6 +2183,20 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 
 	{
+		auto type_ptr= class_member[0].Get</Type/>();
+		if( !type_ptr.empty() )
+		{
+			// Can access inner type via "." operator.
+
+			if( !member_access_operator.template_args.empty() )
+			{
+				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
+			}
+
+			return type_ptr.try_lock_imut().deref();
+		}
+	}
+	{
 		auto type_alias_ptr= class_member[0].Get</TypeAlias/>();
 		if( !type_alias_ptr.empty() )
 		{

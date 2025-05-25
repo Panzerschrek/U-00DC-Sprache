@@ -108,6 +108,18 @@ def MemberAccesOperator_AccessType_Test5():
 	assert( HasError( errors_list, "ValueIsNotTemplate", 9 ) )
 
 
+def MemberAccesOperator_AccessType_Test6():
+	c_program_text= """
+		enum E{ A, B, C }
+		fn Foo()
+		{
+			// Access inner type of a typeinfo class via ".".
+			static_assert( typeinfo</E/>.underlying_type.src_type( E::C ) == 2u8 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def MemberAccesOperator_AccessGlobalVariable_Test0():
 	c_program_text= """
 		struct S
