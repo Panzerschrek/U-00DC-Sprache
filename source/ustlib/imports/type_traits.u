@@ -62,14 +62,14 @@ fn is_abstract() : bool
 	}
 	else static_if( typeinfo</T/>.is_array )
 	{
-		return is_abstract</ typeof(typeinfo</T/>.element_type)::src_type />();
+		return is_abstract</ typeinfo</T/>.element_type.src_type />();
 	}
 	else static_if( typeinfo</T/>.is_tuple )
 	{
 		var bool mut res= false;
 		for( &el : typeinfo</T/>.elements_list )
 		{
-			res|= is_abstract</ typeof(el.type)::src_type />();
+			res|= is_abstract</ el.type.src_type />();
 		}
 		return res;
 	}
