@@ -743,6 +743,31 @@ fn CodeBuilder::ResolveClassValueImpl(
 			EnsureTypeComplete( class_type );
 		}
 
+		{
+			// Build type alias when accessing it.
+			auto type_alias_ptr= value.Get</TypeAlias/>();
+			if( !type_alias_ptr.empty() )
+			{
+				BuildTypeAlias( class_members, type_alias_ptr.try_to_non_nullable() );
+			}
+		}
+		{
+			// Build global variable when accessing it.
+			auto global_variable_ptr= value.Get</GlobalVariable/>();
+			if( !global_variable_ptr.empty() )
+			{
+				BuildGlobalVariable( class_members, global_variable_ptr.try_to_non_nullable() );
+			}
+		}
+		{
+			// Build global auto variable when accessing it.
+			auto global_auto_variable_ptr= value.Get</GlobalAutoVariable/>();
+			if( !global_auto_variable_ptr.empty() )
+			{
+				BuildGlobalAutoVariable( class_members, global_auto_variable_ptr.try_to_non_nullable() );
+			}
+		}
+
 		return ust::make_tuple( value, visibility, class_members );
 	}
 
