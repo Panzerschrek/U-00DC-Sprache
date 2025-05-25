@@ -1070,6 +1070,7 @@ private:
 
 	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* value );
 	Value ContextualizeValueInResolve( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc );
+	VariablePtr ContextualizeVariableInResolve( NamesScope& names, FunctionContext& function_context, VariablePtr variable, const SrcLoc& src_loc );
 
 	struct NameLookupResult
 	{

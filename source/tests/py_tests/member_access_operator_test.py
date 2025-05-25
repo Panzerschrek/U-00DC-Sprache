@@ -69,3 +69,57 @@ def MemberAccesOperator_AccessGlobalVariable_Test1():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def MemberAccesOperator_AccessGlobalVariable_Test2():
+	c_program_text= """
+		struct S
+		{
+			var i32 mut x= 0;
+		}
+		fn Foo()
+		{
+			var S s;
+			auto x= s.x; // Access a global mutable variable via "." operator. It's an error, because it happens outside unsafe block.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 9 ) )
+
+
+def MemberAccesOperator_AccessGlobalVariable_Test3():
+	c_program_text= """
+		struct S
+		{
+			thread_local i32 x= 13;
+		}
+		fn Foo()
+		{
+			var S s;
+			unsafe
+			{
+				s.x+= 25; // Access a global mutable thread-local variable via "." operator.
+			}
+			halt if( unsafe( S::x ) != 13 + 25 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def MemberAccesOperator_AccessGlobalVariable_Test4():
+	c_program_text= """
+		struct S
+		{
+			thread_local i32 x= 0;
+		}
+		fn Foo()
+		{
+			var S s;
+			auto x= s.x; // Access a global mutable thread-local variable via "." operator. It's an error, because it happens outside unsafe block.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "GlobalMutableVariableAccessOutsideUnsafeBlock", 9 ) )
