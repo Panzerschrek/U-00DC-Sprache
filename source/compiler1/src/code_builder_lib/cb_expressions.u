@@ -2182,17 +2182,16 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		}
 	}
 
+	if( !member_access_operator.template_args.empty() && class_member[0].Get</TypeTemplatesSet/>().empty() )
+	{
+		REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
+	}
+
 	{
 		auto type_ptr= class_member[0].Get</Type/>();
 		if( !type_ptr.empty() )
 		{
 			// Can access inner type via "." operator.
-
-			if( !member_access_operator.template_args.empty() )
-			{
-				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
-			}
-
 			return type_ptr.try_lock_imut().deref();
 		}
 	}
@@ -2205,11 +2204,6 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			{
 				if( !type_alias.t.empty() )
 				{
-					if( !member_access_operator.template_args.empty() )
-					{
-						REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
-					}
-
 					return type_alias.t.try_deref();
 				}
 			}
@@ -2220,12 +2214,6 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		if( !enum_ptr.empty() )
 		{
 			// Can access inner enum via "." operator.
-
-			if( !member_access_operator.template_args.empty() )
-			{
-				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
-			}
-
 			return Type( enum_ptr.try_to_non_nullable() );
 		}
 	}
@@ -2234,12 +2222,6 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		if( !inner_class_ptr.empty() )
 		{
 			// Can access inner class via "." operator.
-
-			if( !member_access_operator.template_args.empty() )
-			{
-				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
-			}
-
 			return Type( inner_class_ptr.try_to_non_nullable() );
 		}
 	}
@@ -2248,12 +2230,6 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		if( !global_variable_ptr.empty() )
 		{
 			// Can access inner global variable via "." operator.
-
-			if( !member_access_operator.template_args.empty() )
-			{
-				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
-			}
-
 			return ContextualizeGlobalVariable( names_scope, function_context, global_variable_ptr.try_to_non_nullable(), member_access_operator.src_loc );
 		}
 	}
@@ -2262,12 +2238,6 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		if( !global_auto_variable_ptr.empty() )
 		{
 			// Can access inner global auto variable via "." operator.
-
-			if( !member_access_operator.template_args.empty() )
-			{
-				REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
-			}
-
 			return ContextualizeGlobalAutoVariable( names_scope, function_context, global_auto_variable_ptr.try_to_non_nullable(), member_access_operator.src_loc );
 		}
 	}

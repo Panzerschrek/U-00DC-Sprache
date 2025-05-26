@@ -577,7 +577,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return std::move(this_overloaded_methods_set);
 	}
 
-	if( member_access_operator.has_template_args )
+	if( member_access_operator.has_template_args && class_member->value.GetTypeTemplatesSet() == nullptr )
 		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), member_access_operator.src_loc );
 
 	if( const ClassFieldPtr field= class_member->value.GetClassField() )
