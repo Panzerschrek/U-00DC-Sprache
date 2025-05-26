@@ -124,6 +124,9 @@ private:
 	//
 
 	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, SrcLoc& src_loc ) : Value;
+	fn ContextualizeGlobalVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_mut</GlobalVariable/>& global_variable_ptr, SrcLoc& src_loc ) : Value;
+	fn ContextualizeGlobalAutoVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable_ptr, SrcLoc& src_loc ) : Value;
+
 	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
 
 	fn ResolveValueInternal( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : ust::optional</NamesScopeValue/>;

@@ -577,7 +577,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return std::move(this_overloaded_methods_set);
 	}
 
-	if( member_access_operator.has_template_args )
+	if( member_access_operator.has_template_args && class_member->value.GetTypeTemplatesSet() == nullptr )
 		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), member_access_operator.src_loc );
 
 	if( const ClassFieldPtr field= class_member->value.GetClassField() )
@@ -586,7 +586,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return AccessClassField( names_scope, function_context, variable, *field, member_access_operator.member_name, member_access_operator.src_loc );
 	}
 
-	REPORT_ERROR( NotImplemented, names_scope.GetErrors(), member_access_operator.src_loc, "class members, except fields or methods" );
+	if( class_member->value.GetTypeName() != nullptr )
+	{
+		// Can access inner types via "." operator.
+		return class_member->value;
+	}
+	if( const VariablePtr variable= class_member->value.GetVariable() )
+	{
+		// Can access global member variable via "." operator.
+		return ContextualizeVariableInResolve( names_scope, function_context, variable, member_access_operator.src_loc );
+	}
+
+	REPORT_ERROR( NotImplemented, names_scope.GetErrors(), member_access_operator.src_loc, "class members, except fields, methods, types, global variables" );
 	return ErrorValue();
 }
 

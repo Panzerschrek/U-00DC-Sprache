@@ -359,52 +359,55 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 		}
 	}
 	else if( VariablePtr variable= value.GetVariable() )
+		return ContextualizeVariableInResolve( names, function_context, std::move(variable), src_loc );
+
+	return value;
+}
+
+VariablePtr CodeBuilder::ContextualizeVariableInResolve( NamesScope& names, FunctionContext& function_context, VariablePtr variable, const SrcLoc& src_loc )
+{
+	if( function_context.variables_state.NodeMoved( variable ) )
+		REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, variable->name );
+
+	// Forbid mutable global variables access outside unsafe block.
+	// Detect global variable by checking dynamic type of variable's LLVM value.
+	// TODO - what if variable is constant GEP result with global variable base?
+	if( variable->value_type == ValueType::ReferenceMut &&
+		llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) != nullptr &&
+		!function_context.is_in_unsafe_block )
+		REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), src_loc );
+
+	if( IsGlobalVariable(variable) )
 	{
-		if( function_context.variables_state.NodeMoved( variable ) )
-			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, variable->name );
+		// Add global variable nodes lazily.
+		function_context.variables_state.AddNodeIfNotExists( variable );
 
-		// Forbid mutable global variables access outside unsafe block.
-		// Detect global variable by checking dynamic type of variable's LLVM value.
-		// TODO - what if variable is constant GEP result with global variable base?
-		if( variable->value_type == ValueType::ReferenceMut &&
-			llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) != nullptr &&
-			!function_context.is_in_unsafe_block )
-			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), src_loc );
-
-		if( IsGlobalVariable(variable) )
+		// On each access to a thread-local variable replace its address with a call to "llvm.threadlocal.address".
+		if( !function_context.is_functionless_context &&
+			variable->llvm_value != nullptr && variable->location == Variable::Location::Pointer )
 		{
-			// Add global variable nodes lazily.
-			function_context.variables_state.AddNodeIfNotExists( variable );
-
-			// On each access to a thread-local variable replace its address with a call to "llvm.threadlocal.address".
-			if( !function_context.is_functionless_context &&
-				variable->llvm_value != nullptr && variable->location == Variable::Location::Pointer )
+			if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) )
 			{
-				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) )
+				if( global_variable->isThreadLocal() )
 				{
-					if( global_variable->isThreadLocal() )
-					{
-						VariablePtr variable_with_corrected_address=
-							Variable::Create(
-								variable->type,
-								variable->value_type,
-								variable->location,
-								variable->name,
-								function_context.llvm_ir_builder.CreateThreadLocalAddress( variable->llvm_value ),
-								variable->constexpr_value );
-						variable= std::move( variable_with_corrected_address );
+					VariablePtr variable_with_corrected_address=
+						Variable::Create(
+							variable->type,
+							variable->value_type,
+							variable->location,
+							variable->name,
+							function_context.llvm_ir_builder.CreateThreadLocalAddress( variable->llvm_value ),
+							variable->constexpr_value );
+					variable= std::move( variable_with_corrected_address );
 
-						function_context.variables_state.AddNode( variable );
-						RegisterTemporaryVariable( function_context, variable );
-					}
+					function_context.variables_state.AddNode( variable );
+					RegisterTemporaryVariable( function_context, variable );
 				}
 			}
 		}
-
-		return variable;
 	}
 
-	return value;
+	return variable;
 }
 
 CodeBuilder::NameLookupResult CodeBuilder::LookupName( NamesScope& names_scope, const std::string_view name, const SrcLoc& src_loc )

@@ -10,7 +10,7 @@ fn enum_to_string( T t ) : array_view_imut</char8/>
 	static_assert( typeinfo</T/>.is_enum );
 	for( &el : typeinfo</T/>.elements_list )
 	{
-		if( el.value == typeof( typeinfo</T/>.underlying_type )::src_type( t ) )
+		if( el.value == typeinfo</T/>.underlying_type.src_type( t ) )
 		{
 			return el.name;
 		}

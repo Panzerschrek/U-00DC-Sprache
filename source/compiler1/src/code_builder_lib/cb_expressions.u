@@ -2182,7 +2182,67 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		}
 	}
 
-	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, "class members, except fields or methods" )
+	if( !member_access_operator.template_args.empty() && class_member[0].Get</TypeTemplatesSet/>().empty() )
+	{
+		REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
+	}
+
+	{
+		auto type_ptr= class_member[0].Get</Type/>();
+		if( !type_ptr.empty() )
+		{
+			// Can access inner type via "." operator.
+			return type_ptr.try_lock_imut().deref();
+		}
+	}
+	{
+		auto type_alias_ptr= class_member[0].Get</TypeAlias/>();
+		if( !type_alias_ptr.empty() )
+		{
+			// Can access inner type alias via "." operator.
+			with( &type_alias : type_alias_ptr.try_lock_imut().deref() )
+			{
+				if( !type_alias.t.empty() )
+				{
+					return type_alias.t.try_deref();
+				}
+			}
+		}
+	}
+	{
+		auto enum_ptr= class_member[0].Get</Enum/>();
+		if( !enum_ptr.empty() )
+		{
+			// Can access inner enum via "." operator.
+			return Type( enum_ptr.try_to_non_nullable() );
+		}
+	}
+	{
+		auto inner_class_ptr= class_member[0].Get</ClassType/>();
+		if( !inner_class_ptr.empty() )
+		{
+			// Can access inner class via "." operator.
+			return Type( inner_class_ptr.try_to_non_nullable() );
+		}
+	}
+	{
+		auto global_variable_ptr= class_member[0].Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			// Can access inner global variable via "." operator.
+			return ContextualizeGlobalVariable( names_scope, function_context, global_variable_ptr.try_to_non_nullable(), member_access_operator.src_loc );
+		}
+	}
+	{
+		auto global_auto_variable_ptr= class_member[0].Get</GlobalAutoVariable/>();
+		if( !global_auto_variable_ptr.empty() )
+		{
+			// Can access inner global auto variable via "." operator.
+			return ContextualizeGlobalAutoVariable( names_scope, function_context, global_auto_variable_ptr.try_to_non_nullable(), member_access_operator.src_loc );
+		}
+	}
+
+	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, "class members, except fields, methods, types, global variables" )
 	return ErrorValue();
 }
 
