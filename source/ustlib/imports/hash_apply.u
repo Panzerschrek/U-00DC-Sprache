@@ -165,7 +165,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, T& t )
 	else static_if( typeinfo</T/>.is_function_pointer )
 	{
 		// For function pointers just take value of function pointer.
-		hash( unsafe( cast_ref_unsafe</size_type/>(t) ) );
+		hasher( unsafe( cast_ref_unsafe</size_type/>(t) ) );
 	}
 	else static_if( typeinfo</T/>.is_class )
 	{

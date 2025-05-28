@@ -247,9 +247,28 @@ fn nomangle main() : i32
 
 		halt if( res0 == res1 );
 	}
+	{ // Hasher for function pointer.
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, Foo );
+		auto res_foo= hasher.get();
+		halt if( res_foo == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, Bar );
+		auto res_bar= hasher.get();
+		halt if( res_bar == 0s );
+
+		halt if( res_foo == res_bar );
+	}
 
 	return 0;
 }
+
+fn Foo(){}
+fn Bar(){}
 
 enum SomeEnum
 {
