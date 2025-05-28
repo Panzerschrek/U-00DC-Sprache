@@ -1,0 +1,178 @@
+namespace ust
+{
+
+// Some sort of hasher.
+// All alternative implementations must have the same interface (implement the same functions).
+// TODO - improve it.
+class default_hasher
+{
+public:
+	// Get current accumulated state.
+	fn get( this ) : size_type
+	{
+		return state_;
+	}
+
+	// Reset internal state (discarding all previously accumulated values).
+	fn reset( mut this )
+	{
+		state_= 0s;
+	}
+
+	// op() overloading for applying and accumulating scalars.
+
+	op()( mut this, void v )
+	{
+		write( 0s );
+		return v;
+	}
+
+	op()( mut this, bool b )
+	{
+		write( ( b ? 1s : 0s ) );
+	}
+
+	op()( mut this, i8 x )
+	{
+		write( size_type(x) );
+	}
+
+	op()( mut this, u8 x )
+	{
+		write( size_type(x) );
+	}
+
+	op()( mut this, i16 x )
+	{
+		write( size_type(x) );
+	}
+
+	op()( mut this, u16 x )
+	{
+		write( size_type(x) );
+	}
+
+	op()( mut this, i32 x )
+	{
+		write( size_type(x) );
+	}
+
+	op()( mut this, u32 x )
+	{
+		write( size_type(x) );
+	}
+
+	op()( mut this, i64 x )
+	{
+		this( u64(x) );
+	}
+
+	op()( mut this, u64 x )
+	{
+		static_if( typeinfo</i64/>.size_of == typeinfo</size_type/>.size_of )
+		{
+			write( size_type(x) );
+		}
+		else
+		{
+			// Write low and high parts separatly if size_type is 32-bit.
+			write( size_type(x) );
+			write( size_type( x >> 32u ) );
+		}
+	}
+
+	op()( mut this, i128 x )
+	{
+		this( u128(x) );
+	}
+
+	op()( mut this, u128 x )
+	{
+		// Write 128-bit values as pair of 64-bit values.
+		this( u64(x) );
+		this( u64( x >> 64u ) );
+	}
+
+	op()( mut this, size_type x )
+	{
+		write( x );
+	}
+
+	op()( mut this, ssize_type x )
+	{
+		write( size_type(x) );
+	}
+
+	op()( mut this, char8 x )
+	{
+		write( size_type(x) );
+	}
+
+	op()( mut this, char16 x )
+	{
+		write( size_type(x) );
+	}
+
+	op()( mut this, char32 x )
+	{
+		write( size_type(x) );
+	}
+
+	op()( mut this, byte8 x )
+	{
+		write( size_type(u8(x)) );
+	}
+
+	op()( mut this, byte16 x )
+	{
+		write( size_type(u16(x)) );
+	}
+
+	op()( mut this, byte32 x )
+	{
+		write( size_type(u32(x)) );
+	}
+
+	op()( mut this, byte64 x )
+	{
+		static_if( typeinfo</byte64/>.size_of == typeinfo</size_type/>.size_of )
+		{
+			write( size_type(x) );
+		}
+		else
+		{
+			write( size_type(x) );
+			write( size_type( x >> 32u ) );
+		}
+	}
+
+	op()( mut this, byte128 x )
+	{
+		this( u128(x) );
+	}
+
+	op()( mut this, f32 x )
+	{
+		// TODO - hash floats.
+		// Using bitcasts isn't correct, since different bit representations may be equal (+-0).
+	}
+
+	op()( mut this, f64 x )
+	{
+		// TODO - hash floats.
+		// Using bitcasts isn't correct, since different bit representations may be equal (+-0).
+	}
+
+private:
+	fn write( mut this, size_type x )
+	{
+		// Same, as 'boost::hash_range'.
+		// TODO - check correctness for 32bit/64bit.
+		state_^= x + size_type(0x9e3779b9u) + (state_ << 6u ) + (state_ >> 2u );
+	}
+
+private:
+	size_type state_= 0s;
+}
+
+} // namespace ust
