@@ -1,0 +1,209 @@
+//##success_test
+import "../imports/hash_apply.u"
+import "../imports/hasher.u"
+
+fn nomangle main() : i32
+{
+	{ // Initial default hasher value is zero.
+		var ust::default_hasher hasher;
+		halt if( hasher.get() != 0s );
+	}
+	{
+		var ust::default_hasher mut hasher;
+		hasher( 17 );
+		halt if( hasher.get() == 0s );
+	}
+	{
+		var ust::default_hasher mut hasher;
+		hasher( 12345u );
+		halt if( hasher.get() == 0s );
+	}
+	{
+		var ust::default_hasher mut hasher;
+		hasher( '7' );
+		halt if( hasher.get() == 0s );
+	}
+	{
+		var ust::default_hasher mut hasher;
+		hasher( 'Ё'c16 );
+		halt if( hasher.get() == 0s );
+	}
+	{
+		var ust::default_hasher mut hasher;
+		hasher( byte64(123456789u64) );
+		halt if( hasher.get() == 0s );
+	}
+	{ // Hash for the same sequence should be the same.
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		hasher( 123u );
+		hasher( '$'c8 );
+		hasher( -678 );
+		auto res0= hasher.get();
+
+		hasher.reset();
+		hasher( 123u );
+		hasher( '$'c8 );
+		hasher( -678 );
+		auto res1= hasher.get();
+
+		halt if( res0 != res1 );
+	}
+	{ // Hash for the different sequence should usually be different.
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		hasher( 123u );
+		hasher( '$'c8 );
+		hasher( -678 );
+		auto res0= hasher.get();
+
+		hasher.reset();
+		hasher( 124u );
+		hasher( '&'c8 );
+		hasher( -1348 );
+		auto res1= hasher.get();
+
+		halt if( res0 == res1 );
+	}
+	{ // Order may change hash.
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		hasher( 123u );
+		hasher( '$'c8 );
+		hasher( -678 );
+		auto res0= hasher.get();
+
+		hasher.reset();
+		hasher( -678 );
+		hasher( '$'c8 );
+		hasher( 123u );
+		auto res1= hasher.get();
+
+		halt if( res0 == res1 );
+	}
+	{ // Combination of two values is usually not equal to separate hashes of these values.
+		var [ i32, 2 ] arr[ 78, 93672 ];
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		hasher( arr[0] );
+		auto res0= hasher.get();
+
+		hasher.reset();
+		hasher( arr[1] );
+		auto res1= hasher.get();
+
+		hasher.reset();
+		hasher( arr[0] );
+		hasher( arr[1] );
+		auto res_combined= hasher.get();
+
+		halt if( res0 == res1 );
+		halt if( res_combined == res0 );
+		halt if( res_combined == res1 );
+	}
+	{ // Hash for array includes size.
+		var [ i32, 2 ] a[ 447, 371 ];
+		var [ i32, 3 ] b[ 78923, 12, 5781 ];
+		var [ i32, 3 ] c[ 447, 371, 78923 ];
+		var [ i32, 2 ] d[ 12, 5781 ];
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, a );
+		ust::apply_value_to_hasher( hasher, b );
+		auto res_ab= hasher.get();
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, c );
+		ust::apply_value_to_hasher( hasher, d );
+		auto res_cd= hasher.get();
+
+		halt if( res_ab == res_cd );
+	}
+	{ // Hash for empty tuple - should include zero.
+		var tup[] t;
+
+		var ust::default_hasher mut hasher;
+		ust::apply_value_to_hasher( hasher, t );
+
+		halt if( hasher.get() == 0s );
+	}
+	{ // Hash for tuple includes size.
+		var tup[ u64, bool ] a[ 7533u64, true ];
+		var tup[ char8, i16, u8 ] b[ 'J', -88i16, 67u8 ];
+		var tup[ u64, bool, char8 ] c[ 7533u64, true, 'J' ];
+		var tup[ i16, u8 ] d[ -88i16, 67u8 ];
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, a );
+		ust::apply_value_to_hasher( hasher, b );
+		auto res_ab= hasher.get();
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, c );
+		ust::apply_value_to_hasher( hasher, d );
+		auto res_cd= hasher.get();
+
+		halt if( res_ab == res_cd );
+	}
+	{ // Hasher for raw pointer.
+		var i32 mut x= 0, mut y= 0;
+		var $(i32) x_ptr= $<(x), y_ptr= $<(y);
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, x_ptr );
+		auto x_ptr_hash= hasher.get();
+		halt if( x_ptr_hash == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, y_ptr );
+		auto y_ptr_hash= hasher.get();
+		halt if( y_ptr_hash == 0s );
+
+		halt if( x_ptr_hash == y_ptr_hash ); // Should usually produce different results for different inputs.
+	}
+	{ // Hash for enum. Usually should produce different results.
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, SomeEnum::A );
+		auto a_hash= hasher.get();
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, SomeEnum::B );
+		auto b_hash= hasher.get();
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, SomeEnum::C );
+		auto c_hash= hasher.get();
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, SomeEnum::D );
+		auto d_hash= hasher.get();
+
+		halt if( a_hash == b_hash );
+		halt if( a_hash == c_hash );
+		halt if( a_hash == d_hash );
+		halt if( b_hash == c_hash );
+		halt if( b_hash == d_hash );
+		halt if( c_hash == d_hash );
+	}
+
+	return 0;
+}
+
+enum SomeEnum
+{
+	A, B, C, D, E
+}

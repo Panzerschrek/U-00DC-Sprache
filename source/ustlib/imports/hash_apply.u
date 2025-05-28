@@ -149,7 +149,7 @@ template</type Hasher, type T/>
 fn apply_value_to_hasher( Hasher &mut hasher, $(T) ptr )
 {
 	// Hash raw pointers as integer type with address value.
-	hash( ptr_to_int( ptr ) );
+	hasher( ptr_to_int( ptr ) );
 }
 
 // Overloading for other type kinds.
