@@ -2,6 +2,7 @@ import "aligned_storage.u"
 import "alloc.u"
 import "checked_math.u"
 import "container_utils.u"
+import "hash_apply.u"
 import "minmax.u"
 import "random_access_range.u"
 
@@ -13,7 +14,6 @@ class vector
 {
 public:
 	type this_type= vector</T/>;
-	type hasher= range_hasher;
 
 public:
 
@@ -343,6 +343,21 @@ public:
 		}
 
 		return true;
+	}
+
+	// hashing
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// This algorithm should match hash claculation for range of T elements!
+
+		// Hash size in order to produce different hashes for pairs of strings like "ab", "cde" and "abc", "de".
+		apply_value_to_hasher( hasher, size_ );
+
+		for( var size_type mut i= 0s; i < size_; ++i )
+		{
+			apply_value_to_hasher( hasher, unsafe( $>( ptr_ + i ) ) );
+		}
 	}
 
 	// modificators
