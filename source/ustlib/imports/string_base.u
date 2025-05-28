@@ -1,5 +1,6 @@
 import "alloc.u"
 import "checked_math.u"
+import "hash_apply.u"
 import "minmax.u"
 import "random_access_range.u"
 
@@ -13,7 +14,6 @@ class string_base
 
 public:
 	type this_type= string_base</char_type/>;
-	type hasher= string_base_hasher;
 
 public:
 	// Factory method for creating string from given iterator.
@@ -401,6 +401,21 @@ public:
 		return l.size() <=> r.size();
 	}
 
+	// hashing
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// This algorithm should match hash claculation for range of chars!
+
+		// Hash size in order to produce different hashes for pairs of strings like "ab", "cde" and "abc", "de".
+		apply_value_to_hasher( hasher, size_ );
+
+		for( var size_type mut i= 0s; i < size_; ++i )
+		{
+			apply_value_to_hasher( hasher, unsafe( $>( ptr_ + i ) ) );
+		}
+	}
+
 	// modificators
 
 	fn swap( mut this, size_type i0, size_type i1 )
@@ -621,22 +636,6 @@ private:
 	$(char_type) ptr_= zero_init;
 	size_type size_(0);
 	size_type capacity_(0);
-}
-
-struct string_base_hasher
-{
-
-template</ type char_type />
-fn hash( string_base</char_type/>& str ) : size_type
-{
-	var size_type mut r(0);
-	foreach( c : str )
-	{
-		r= r * 33s + size_type(c);
-	}
-	return r;
-}
-
 }
 
 } // namespace ust
