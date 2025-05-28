@@ -211,7 +211,6 @@ public:
 	{
 		// This algorithm should match hash claculation for strings and vectors!
 
-		// Hash size in order to produce different hashes for pairs of strings like "ab", "cde" and "abc", "de".
 		apply_value_to_hasher( hasher, size_ );
 
 		for( var size_type mut i= 0s; i < size_; ++i )
