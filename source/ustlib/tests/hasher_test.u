@@ -126,6 +126,13 @@ fn nomangle main() : i32
 
 		halt if( res_ab == res_cd );
 	}
+	{ // Hash for two-dimentional array.
+		var [ [ i32, 3 ], 2 ] mat [ [ 1, 2, 3 ], [ 4, 5, 6 ] ];
+
+		var ust::default_hasher mut hasher;
+		ust::apply_value_to_hasher( hasher, mat );
+		halt if( hasher.get() == 0s );
+	}
 	{ // Hash for empty tuple - should include zero.
 		var tup[] t;
 
@@ -153,6 +160,13 @@ fn nomangle main() : i32
 		auto res_cd= hasher.get();
 
 		halt if( res_ab == res_cd );
+	}
+	{ // Tuple with composite elements.
+		var tup[ u32, tup[ i64, char16 ], [ u16, 2 ], SomeEnum, SomeStruct ] t[ 8934u, [ -42467587543554i64, 'Ю'c16 ], [ 16u16, 1234u16 ], SomeEnum::D, { .x= 12689, .y= zero_init } ];
+
+		var ust::default_hasher mut hasher;
+		ust::apply_value_to_hasher( hasher, t );
+		halt if( hasher.get() == 0s );
 	}
 	{ // Hasher for raw pointer.
 		var i32 mut x= 0, mut y= 0;

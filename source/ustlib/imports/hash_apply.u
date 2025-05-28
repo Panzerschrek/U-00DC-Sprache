@@ -42,7 +42,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, [ T, S ]& arr )
 
 	for( auto mut i= 0s; i < S; ++i )
 	{
-		hasher( arr[i] );
+		apply_value_to_hasher( hasher, arr[i] );
 	}
 }
 
@@ -53,7 +53,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[]& t )
 	hasher( 0s ); // Apply size first, in order to produce different hashes for sequences of sequences.
 	for( &el : t )
 	{
-		hasher( el );
+		apply_value_to_hasher( hasher, el );
 	}
 }
 
@@ -64,7 +64,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A ]& t )
 	hasher( 1s ); // Apply size first, in order to produce different hashes for sequences of sequences.
 	for( &el : t )
 	{
-		hasher( el );
+		apply_value_to_hasher( hasher, el );
 	}
 }
 
@@ -75,7 +75,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B ]& t )
 	hasher( 2s ); // Apply size first, in order to produce different hashes for sequences of sequences.
 	for( &el : t )
 	{
-		hasher( el );
+		apply_value_to_hasher( hasher, el );
 	}
 }
 
@@ -86,7 +86,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C ]& t )
 	hasher( 3s ); // Apply size first, in order to produce different hashes for sequences of sequences.
 	for( &el : t )
 	{
-		hasher( el );
+		apply_value_to_hasher( hasher, el );
 	}
 }
 
@@ -97,7 +97,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D ]& t )
 	hasher( 4s ); // Apply size first, in order to produce different hashes for sequences of sequences.
 	for( &el : t )
 	{
-		hasher( el );
+		apply_value_to_hasher( hasher, el );
 	}
 }
 
@@ -108,7 +108,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E ]& t )
 	hasher( 5s ); // Apply size first, in order to produce different hashes for sequences of sequences.
 	for( &el : t )
 	{
-		hasher( el );
+		apply_value_to_hasher( hasher, el );
 	}
 }
 
@@ -119,7 +119,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F ]& t )
 	hasher( 6s ); // Apply size first, in order to produce different hashes for sequences of sequences.
 	for( &el : t )
 	{
-		hasher( el );
+		apply_value_to_hasher( hasher, el );
 	}
 }
 
@@ -130,7 +130,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F, G ]& t )
 	hasher( 7s ); // Apply size first, in order to produce different hashes for sequences of sequences.
 	for( &el : t )
 	{
-		hasher( el );
+		apply_value_to_hasher( hasher, el );
 	}
 }
 
@@ -141,7 +141,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F, G, H ]& t )
 	hasher( 8s ); // Apply size first, in order to produce different hashes for sequences of sequences.
 	for( &el : t )
 	{
-		hasher( el );
+		apply_value_to_hasher( hasher, el );
 	}
 }
 
@@ -209,6 +209,7 @@ fn constexpr class_has_hash_method() : bool
 {
 	auto& ti= typeinfo</T/>;
 	auto& name= "hash";
+
 	for( &list_element : ti.functions_list )
 	{
 		if( constexpr_string_equals( list_element.name, name ) )
