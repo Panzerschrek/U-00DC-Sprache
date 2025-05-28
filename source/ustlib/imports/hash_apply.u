@@ -178,12 +178,19 @@ fn apply_value_to_hasher( Hasher &mut hasher, T& t )
 		}
 		else static_if( hash_apply_impl::class_has_hash_method</T/>() )
 		{
+			// Call existing "hash" method.
 			return t.hash( hasher );
 		}
 		else
 		{
-			// TODO - call "hash" method on T or perform per-field hashing if it doesn't exist.
-			static_assert( false, "Unsupported class type for hashing!" );
+			// Perform per-field hashing (if possible).
+			for( &el : typeinfo</T/>.fields_list )
+			{
+				static_assert( !el.is_reference, "can't automatically hash a class with reference fields" );
+				static_assert( el.is_public, "can't automatically hash a class with non-public fields" );
+
+				apply_value_to_hasher( hasher, mixin( "t." + el.name ) );
+			}
 		}
 	}
 	else
