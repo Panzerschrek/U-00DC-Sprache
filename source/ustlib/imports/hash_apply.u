@@ -1,4 +1,5 @@
 import "memory.u"
+import "helpers.u"
 import "type_traits.u"
 
 namespace ust
@@ -190,6 +191,13 @@ fn apply_value_to_hasher( Hasher &mut hasher, T& t )
 				static_assert( el.is_public, "can't automatically hash a class with non-public fields" );
 
 				apply_value_to_hasher( hasher, mixin( "t." + el.name ) );
+			}
+
+			if( typeinfo</T/>.field_count == 0s )
+			{
+				// It's necessary for empty structs.
+				ignore_unused(hasher);
+				ignore_unused(t);
 			}
 		}
 	}

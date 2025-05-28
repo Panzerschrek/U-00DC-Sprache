@@ -247,6 +247,14 @@ fn nomangle main() : i32
 
 		halt if( res0 == res1 );
 	}
+	{ // Hash for empty struct.
+		var EmptyStruct s;
+
+		var ust::default_hasher mut hasher;
+
+		ust::apply_value_to_hasher( hasher, s );
+		halt if( hasher.get() != 0s );
+	}
 	{ // Hasher for function pointer.
 
 		var ust::default_hasher mut hasher;
@@ -293,3 +301,5 @@ struct StructWithoutHashMethod
 	i32 x;
 	u64 y;
 }
+
+struct EmptyStruct{}
