@@ -362,7 +362,46 @@ public:
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
-		ust::apply_value_to_hasher( hasher, something_ );
+		ust::apply_value_to_hasher( hasher, something_.index() );
+
+		if_var( &fundamental_type : GetFundamentalType() )
+		{
+			ust::apply_value_to_hasher( hasher, fundamental_type );
+			return;
+		}
+		if_var( &array_type : GetArrayType() )
+		{
+			ust::apply_value_to_hasher( hasher, array_type );
+			return;
+		}
+		if_var( &tuple_type : GetTupleType() )
+		{
+			ust::apply_value_to_hasher( hasher, tuple_type );
+			return;
+		}
+		if_var( &raw_pointer_type : GetRawPointerType() )
+		{
+			ust::apply_value_to_hasher( hasher, raw_pointer_type );
+			return;
+		}
+		if_var( &function_pointer_type : GetFunctionPointerType() )
+		{
+			ust::apply_value_to_hasher( hasher, function_pointer_type );
+			return;
+		}
+		if_var( &class_type : GetClassType() )
+		{
+			ust::apply_value_to_hasher( hasher, class_type );
+			return;
+		}
+		if_var( &enum_type : GetEnumType() )
+		{
+			ust::apply_value_to_hasher( hasher, enum_type );
+			return;
+		}
+
+		// Unhandled type kind.
+		halt;
 	}
 
 private:
