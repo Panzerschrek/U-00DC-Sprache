@@ -1,4 +1,5 @@
 import "memory.u"
+import "type_traits.u"
 
 namespace ust
 {
@@ -175,6 +176,10 @@ fn apply_value_to_hasher( Hasher &mut hasher, T& t )
 			// Change this, if internal representation of coroutine will be changed.
 			hasher( unsafe( cast_ref_unsafe</size_type/>(x) ) );
 		}
+		else static_if( hash_apply_impl::class_has_hash_method</T/>() )
+		{
+			return t.hash( hasher );
+		}
 		else
 		{
 			// TODO - call "hash" method on T or perform per-field hashing if it doesn't exist.
@@ -187,5 +192,35 @@ fn apply_value_to_hasher( Hasher &mut hasher, T& t )
 	}
 }
 
+namespace hash_apply_impl
+{
+
+// Checks if given class has "hash" method (regular or template).
+// Signature, return type and other properties are not checked.
+template</type T/>
+fn constexpr class_has_hash_method() : bool
+{
+	auto& ti= typeinfo</T/>;
+	auto& name= "hash";
+	for( &list_element : ti.functions_list )
+	{
+		if( constexpr_string_equals( list_element.name, name ) )
+		{
+			return true;
+		}
+	}
+
+	for( &list_element : ti.function_templates_list )
+	{
+		if( constexpr_string_equals( list_element.name, name ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+} // namespace hash_apply_impl
 
 } // namespace ust

@@ -199,6 +199,23 @@ fn nomangle main() : i32
 		halt if( b_hash == d_hash );
 		halt if( c_hash == d_hash );
 	}
+	{ // Hasher for a type with "hash" method.
+		var SomeStruct s0{ .x= -633361, .y= 78881641785223u64 }, s1{ .x= 78, .y= 3673u64 };
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, s0 );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, s1 );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		halt if( res0 == res1 );
+	}
 
 	return 0;
 }
@@ -206,4 +223,17 @@ fn nomangle main() : i32
 enum SomeEnum
 {
 	A, B, C, D, E
+}
+
+struct SomeStruct
+{
+	i32 x;
+	u64 y;
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, x );
+		ust::apply_value_to_hasher( hasher, y );
+	}
 }
