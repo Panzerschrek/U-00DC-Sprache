@@ -22,13 +22,6 @@ struct MixinExpansionKey
 {
 	SrcLoc mixin_src_loc;
 	ust::string8 mixin_text;
-
-	type hasher= MixinExpansionKeyHasher;
-}
-
-struct MixinExpansionKeyHasher
-{
-	fn hash(MixinExpansionKey& k) : size_type;
 }
 
 } // namespace U1

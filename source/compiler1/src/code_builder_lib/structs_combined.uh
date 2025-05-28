@@ -52,6 +52,13 @@ struct FundamentalType
 	fn constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type );
 
 	op==( FundamentalType& l, FundamentalType& r ) : bool;
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, fundamental_type );
+		// Ignore LLVM type.
+	}
 }
 
 struct ArrayType
@@ -61,6 +68,14 @@ struct ArrayType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	op==( ArrayType& l, ArrayType& r ) : bool;
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, element_type );
+		ust::apply_value_to_hasher( hasher, element_count );
+		// Ignore LLVM type.
+	}
 }
 
 struct TupleType
@@ -69,6 +84,13 @@ struct TupleType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	op==( TupleType& l, TupleType& r ) : bool;
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, element_types );
+		// Ignore LLVM type.
+	}
 }
 
 struct RawPointerType
@@ -77,6 +99,13 @@ struct RawPointerType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	op==( RawPointerType& l, RawPointerType& r ) : bool;
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, element_type );
+		// Ignore LLVM type.
+	}
 }
 
 struct FunctionType
@@ -140,6 +169,13 @@ struct FunctionPointerType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	op==( FunctionPointerType& l, FunctionPointerType& r ) : bool;
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, function_type );
+		// Ignore LLVM type.
+	}
 }
 
 //
@@ -278,9 +314,6 @@ type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
 class Type
 {
 public:
-	type hasher= TypeHasher;
-
-public:
 	fn constructor() = default;
 	fn constructor( mut this, Type &imut other )= default;
 	op=( mut this, Type &imut other )= default;
@@ -326,6 +359,12 @@ public:
 
 	op==( Type& l, Type& r ) : bool;
 
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, something_ );
+	}
+
 private:
 	auto ret_tags= ust::reference_notation::return_inner_references::param0;
 
@@ -339,26 +378,6 @@ private:
 		ClassTypePtr,
 		EnumTypePtr
 	] /> something_;
-}
-
-class TypeHasher
-{
-
-public:
-	fn hash( Type& t ) : size_type;
-
-	fn hash( FundamentalType& t ) : size_type;
-	fn hash( ArrayType& t ) : size_type;
-	fn hash( TupleType& t ) : size_type;
-	fn hash( RawPointerType& t ) : size_type;
-	fn hash( FunctionType& t ) : size_type;
-	fn hash( FunctionPointerType& t ) : size_type;
-	fn hash( ClassTypePtr& t ) : size_type;
-	fn hash( EnumTypePtr& t ) : size_type;
-
-public:
-	// TODO - move it into standard library.
-	fn hash_combine( size_type x, size_type y ) : size_type;
 }
 
 //
@@ -616,13 +635,6 @@ struct CoroutineTypeDescription
 
 	FunctionType::ParamReferences return_references;
 	FunctionType::ReturnInnerReferences return_inner_references;
-
-	type hasher= CoroutineTypeDescriptionHasher;
-}
-
-struct CoroutineTypeDescriptionHasher
-{
-	fn hash(CoroutineTypeDescription& d) : size_type;
 }
 
 // Lambdas
@@ -636,13 +648,6 @@ struct LambdaKey
 
 	// We need to create distinct lambdas on each iteration of tuple-for.
 	ust::vector</u32/> tuple_for_indices;
-
-	type hasher= LambdaKeyHasher;
-}
-
-struct LambdaKeyHasher
-{
-	fn hash(LambdaKey& k) : size_type;
 }
 
 struct LambdaClassData
@@ -905,14 +910,7 @@ struct TemplateKey
 	ust::shared_ptr_imut</ TemplateBase /> template_;
 	TemplateArgsFinished template_args;
 
-	type hasher= TemplateKeyHasher;
-
 	op==( TemplateKey& l, TemplateKey& r ) : bool;
-}
-
-struct TemplateKeyHasher
-{
-	fn hash( TemplateKey& k ) : size_type;
 }
 
 struct ParameterizedFunctionTemplateKey
@@ -920,14 +918,7 @@ struct ParameterizedFunctionTemplateKey
 	FunctionsSetPtr functions_set;
 	TemplateArgsFinished template_args;
 
-	type hasher= ParameterizedFunctionTemplateKeyHasher;
-
 	op==( ParameterizedFunctionTemplateKey& l, ParameterizedFunctionTemplateKey& r ) : bool;
-}
-
-struct ParameterizedFunctionTemplateKeyHasher
-{
-	fn hash( ParameterizedFunctionTemplateKey& k ) : size_type;
 }
 
 //
