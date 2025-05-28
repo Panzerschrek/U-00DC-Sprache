@@ -1,6 +1,5 @@
 import "alloc.u"
 import "container_utils.u"
-import "hash.u"
 import "polymorph.u"
 
 namespace ust

@@ -1,4 +1,3 @@
-import "hash.u"
 import "type_traits.u"
 
 namespace ust

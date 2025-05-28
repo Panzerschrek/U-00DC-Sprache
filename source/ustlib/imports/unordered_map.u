@@ -1,8 +1,9 @@
 import "alloc.u"
 import "container_utils.u"
 import "iterator.u"
+import "hasher.u"
+import "hash_apply.u"
 import "minmax.u"
-import "hash.u"
 import "optional.u"
 import "optional_ref.u"
 
@@ -16,7 +17,7 @@ public:
 	type key_type= K;
 	type value_type= V;
 	type this_type= unordered_map</ key_type, value_type />;
-	type hasher= default_hasher;
+	type hasher= default_hasher; // TODO - allow to change it via a template parameter.
 
 	static_assert( typeinfo</K/>.is_copy_constructible, "key type should be copyable" );
 	static_assert( typeinfo</K/>.is_copy_assignable, "key type should be copyable" );
@@ -78,7 +79,7 @@ public:
 		{
 			rehash( size_ + 1s );
 			auto capacity_mask= capacity_ - 1s;
-			auto key_hash= hash(key);
+			auto key_hash= calculate_hash(key);
 			auto initial_key_hash_wrapped= key_hash & capacity_mask;
 			auto mut key_hash_wrapped= initial_key_hash_wrapped;
 			auto mut insert_index= ~0s;
@@ -249,7 +250,7 @@ private:
 					else if( old_value.cell_content == unordered_map_impl::CellContent::HaveValue )
 					{
 						// Insert value into new table.
-						auto key_hash= hash( old_value.key_storage );
+						auto key_hash= calculate_hash( old_value.key_storage );
 						auto mut key_hash_wrapped= key_hash & new_capacity_mask;
 						loop
 						{
@@ -283,7 +284,7 @@ private:
 		unsafe
 		{
 			auto capacity_mask= capacity_ - 1s;
-			auto key_hash= hash(key);
+			auto key_hash= calculate_hash(key);
 			auto mut key_hash_wrapped= key_hash & capacity_mask;
 			auto key_hash_wrapped_finish= key_hash_wrapped;
 			loop
@@ -306,9 +307,11 @@ private:
 		return nullptr</TableValue/>();
 	}
 
-	fn hash( key_type& key ) : size_type
+	fn calculate_hash( key_type& key ) : size_type
 	{
-		return default_hasher::hash(key);
+		var hasher mut hasher;
+		apply_value_to_hasher( hasher, key );
+		return hasher.get();
 	}
 
 public:
