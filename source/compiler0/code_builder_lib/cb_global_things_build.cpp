@@ -421,7 +421,7 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 					class_type->parents.emplace_back();
 					class_type->parents.back().class_= parent_class;
 
-					GlobalThingPrepareClassParentsList( parent_class );
+					GlobalThingPrepareClassParentsList( parent_class ); // It's necessary to prepare parents of parent - in order to setup access rights properly.
 					AddAncestorsAccessRights_r( *class_type, parent_class );
 
 				} // for parents

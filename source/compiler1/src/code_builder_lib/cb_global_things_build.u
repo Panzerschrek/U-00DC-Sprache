@@ -417,6 +417,8 @@ fn CodeBuilder::PrepareClassParentsList( mut this, ClassTypePtr& class_type )
 				continue;
 			}
 
+			PrepareClassParentsList( parent_class ); // It's necessary to prepare parents of parent - in order to setup access rights properly.
+
 			{ // Give access from this class to protected members of all ancestor classes.
 				auto mut members_lock= class_members.lock_mut();
 				AddAncestorsAccessRights_r( members_lock.deref(), parent_class );
