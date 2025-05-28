@@ -12,8 +12,6 @@ struct PackageAbsoluteName
 
 	struct RootPackage{}
 
-	type hasher= PackageAbsoluteNameHasher;
-
 	op<=>( PackageAbsoluteName& l, PackageAbsoluteName& r ) : i32
 	{
 		if( l.name_base != r.name_base )
@@ -41,8 +39,6 @@ struct BuildTargetAbsoluteName
 	PackageAbsoluteName package_name;
 	ust::string8 name;
 
-	type hasher= PackageAbsoluteNameHasher;
-
 	op<=>( BuildTargetAbsoluteName& l, BuildTargetAbsoluteName& r ) : i32
 	{
 		if( l.package_name != r.package_name )
@@ -50,19 +46,6 @@ struct BuildTargetAbsoluteName
 			return l.package_name <=> r.package_name;
 		}
 		return l.name <=> r.name;
-	}
-}
-
-struct PackageAbsoluteNameHasher
-{
-	fn hash( PackageAbsoluteName& n ) : size_type
-	{
-		return ust::default_hasher::hash( n.path );
-	}
-	fn hash( BuildTargetAbsoluteName& n ) : size_type
-	{
-		// TODO - imporove this.
-		return ust::default_hasher::hash( n.package_name ) ^ ust::default_hasher::hash( n.name );
 	}
 }
 
