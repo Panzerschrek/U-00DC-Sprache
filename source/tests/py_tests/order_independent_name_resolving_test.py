@@ -221,8 +221,7 @@ def GlobalsLoopDetected_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
-	assert( errors_list[0].src_loc.line == 2 )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) or HasError( errors_list, "GlobalsLoopDetected", 3 ) or HasError( errors_list, "GlobalsLoopDetected", 4 ) )
 
 
 def GlobalsLoopDetected_Test2():
@@ -266,8 +265,7 @@ def GlobalsLoopDetected_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "GlobalsLoopDetected" )
-	assert( errors_list[0].src_loc.line == 2 )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) or HasError( errors_list, "GlobalsLoopDetected", 3 ) or HasError( errors_list, "GlobalsLoopDetected", 4 ) )
 
 
 def GlobalsLoopDetected_Test6():

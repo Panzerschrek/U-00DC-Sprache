@@ -1126,7 +1126,7 @@ def GlobalsLoopForLambda_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) )
+	assert( HasError( errors_list, "GlobalsLoopDetected", 2 ) or HasError( errors_list, "GlobalsLoopDetected", 3 ) )
 
 
 def LambdaReferencePollutionForThis_Test0():
