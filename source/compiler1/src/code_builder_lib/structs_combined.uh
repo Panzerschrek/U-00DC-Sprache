@@ -911,6 +911,14 @@ struct TemplateKey
 	TemplateArgsFinished template_args;
 
 	op==( TemplateKey& l, TemplateKey& r ) : bool;
+
+	// Override hash, since we can't just compare hash template args as is.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, template_ );
+		ApplyTemplateArgsToHasher( hasher, template_args );
+	}
 }
 
 struct ParameterizedFunctionTemplateKey
@@ -919,6 +927,48 @@ struct ParameterizedFunctionTemplateKey
 	TemplateArgsFinished template_args;
 
 	op==( ParameterizedFunctionTemplateKey& l, ParameterizedFunctionTemplateKey& r ) : bool;
+
+	// Override hash, since we can't just compare hash template args as is.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, functions_set );
+		ApplyTemplateArgsToHasher( hasher, template_args );
+	}
+}
+
+template</type Hasher/>
+fn ApplyTemplateArgsToHasher( Hasher &mut hasher, TemplateArgsFinished& template_args )
+{
+	ust::apply_value_to_hasher( hasher, template_args.size() );
+	foreach( & arg : template_args )
+	{
+		ApplyTemplateArgToHasher( hasher, arg );
+	}
+}
+
+template</type Hasher/>
+fn ApplyTemplateArgToHasher( Hasher &mut hasher, TemplateArgFinished& arg )
+{
+	if_var( &t : arg.get</Type/>() )
+	{
+		ust::apply_value_to_hasher( hasher, t );
+	}
+	else if_var( &varible_ptr : arg.get</VariablePtr/>() )
+	{
+		with( & variable : varible_ptr.lock_imut().deref() )
+		{
+			ust::apply_value_to_hasher(
+				hasher,
+				// LLVM constants are deduplicated, so, hashing pointers should work.
+				unsafe( cast_ref_unsafe</size_type/>( variable.constexpr_value ) ) );
+		}
+	}
+	else if_var( &type_template : arg.get</TypeTemplatePtr/>() )
+	{
+		ust::apply_value_to_hasher( hasher, type_template );
+	}
+	else{ halt; }
 }
 
 //
