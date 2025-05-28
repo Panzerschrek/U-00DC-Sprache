@@ -153,14 +153,16 @@ public:
 
 	op()( mut this, f32 x )
 	{
-		// TODO - hash floats.
+		// TODO - fix this.
 		// Using bitcasts isn't correct, since different bit representations may be equal (+-0).
+		this( byte32(x) );
 	}
 
 	op()( mut this, f64 x )
 	{
-		// TODO - hash floats.
+		// TODO - fix this.
 		// Using bitcasts isn't correct, since different bit representations may be equal (+-0).
+		this( byte64(x) );
 	}
 
 private:
