@@ -1,3 +1,5 @@
+import "random_access_range.u"
+
 namespace ust
 {
 
@@ -163,6 +165,53 @@ public:
 		// TODO - fix this.
 		// Using bitcasts isn't correct, since different bit representations may be equal (+-0).
 		this( byte64(x) );
+	}
+
+	// It's necessary to implement methods for byte-ranges, since it may be more effective to hash the whole range, instead to hashing values one by one.
+
+	op()( mut this, array_view_imut</byte8/> range )
+	{
+		// For now just perform dumb calculation.
+		foreach( b : range )
+		{
+			this( b );
+		}
+	}
+
+	op()( mut this, array_view_imut</byte16/> range )
+	{
+		// For now just perform dumb calculation.
+		foreach( b : range )
+		{
+			this( b );
+		}
+	}
+
+	op()( mut this, array_view_imut</byte32/> range )
+	{
+		// For now just perform dumb calculation.
+		foreach( b : range )
+		{
+			this( b );
+		}
+	}
+
+	op()( mut this, array_view_imut</byte64/> range )
+	{
+		// For now just perform dumb calculation.
+		foreach( b : range )
+		{
+			this( b );
+		}
+	}
+
+	op()( mut this, array_view_imut</byte128/> range )
+	{
+		// For now just perform dumb calculation.
+		foreach( b : range )
+		{
+			this( b );
+		}
 	}
 
 private:
