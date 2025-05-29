@@ -2,6 +2,7 @@
 import "../imports/hash_apply.u"
 import "../imports/hasher.u"
 import "../imports/string.u"
+import "../imports/shared_ptr.u"
 import "../imports/variant.u"
 import "../imports/vector.u"
 
@@ -383,6 +384,99 @@ fn nomangle main() : i32
 		halt if( res0 == res1 );
 		halt if( res0 == res2 );
 		halt if( res1 == res2 );
+	}
+	{ // "shared_ptr" hashing.
+		var ust::shared_ptr_nullable_imut</i32/> null;
+		var ust::shared_ptr_mut</i32/> p0( 783 ), p1( 675 ), p2( 675 );
+		var ust::shared_ptr_nullable_mut</i32/> p0_copy= p0;
+		var ust::shared_ptr_nullable_imut</i32/> p1_copy= p1;
+		var ust::shared_ptr_imut</i32/> p2_copy= p2;
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, null );
+		auto null_res= hasher.get();
+		halt if( null_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p0 );
+		auto p0_res= hasher.get();
+		halt if( p0_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p1 );
+		auto p1_res= hasher.get();
+		halt if( p1_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p2 );
+		auto p2_res= hasher.get();
+		halt if( p2_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p0_copy );
+		auto p0_copy_res= hasher.get();
+		halt if( p0_copy_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p1_copy );
+		auto p1_copy_res= hasher.get();
+		halt if( p1_copy_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p2_copy );
+		auto p2_copy_res= hasher.get();
+		halt if( p2_copy_res == 0s );
+
+		halt if( null_res == p0_res );
+		halt if( null_res == p1_res );
+		halt if( null_res == p2_res );
+		halt if( null_res == p0_copy_res );
+		halt if( null_res == p1_copy_res );
+		halt if( null_res == p2_copy_res );
+
+		halt if( p0_res == null_res );
+		halt if( p0_res == p1_res );
+		halt if( p0_res == p2_res );
+		halt if( p0_res != p0_copy_res );
+		halt if( p0_res == p1_copy_res );
+		halt if( p0_res == p2_copy_res );
+
+		halt if( p1_res == null_res );
+		halt if( p1_res == p0_res );
+		halt if( p1_res == p2_res );
+		halt if( p1_res == p0_copy_res );
+		halt if( p1_res != p1_copy_res );
+		halt if( p1_res == p2_copy_res );
+
+		halt if( p2_res == null_res );
+		halt if( p2_res == p0_res );
+		halt if( p2_res == p1_res );
+		halt if( p2_res == p0_copy_res );
+		halt if( p2_res == p1_copy_res );
+		halt if( p2_res != p2_copy_res );
+
+		halt if( p0_copy_res == null_res );
+		halt if( p0_copy_res != p0_res );
+		halt if( p0_copy_res == p1_res );
+		halt if( p0_copy_res == p2_res );
+		halt if( p0_copy_res == p1_copy_res );
+		halt if( p0_copy_res == p2_copy_res );
+
+		halt if( p1_copy_res == null_res );
+		halt if( p1_copy_res == p0_res );
+		halt if( p1_copy_res != p1_res );
+		halt if( p1_copy_res == p2_res );
+		halt if( p1_copy_res == p0_copy_res );
+		halt if( p1_copy_res == p2_copy_res );
+
+		halt if( p2_copy_res == null_res );
+		halt if( p2_copy_res == p0_res );
+		halt if( p2_copy_res == p1_res );
+		halt if( p2_copy_res != p2_res );
+		halt if( p2_copy_res == p0_copy_res );
+		halt if( p2_copy_res == p1_copy_res );
 	}
 
 	return 0;
