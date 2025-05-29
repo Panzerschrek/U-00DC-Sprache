@@ -293,9 +293,9 @@ public:
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
+		apply_value_to_hasher( has_value_ );
 		if( !empty() )
 		{
-			// Just hash stored value.
 			apply_value_to_hasher( hasher, try_deref() );
 		}
 	}
