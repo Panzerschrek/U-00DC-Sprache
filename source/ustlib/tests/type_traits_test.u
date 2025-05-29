@@ -127,10 +127,10 @@ static_assert( ust::is_abstract</ tup[ A, L, B ] />() );
 // Have field
 //
 
-static_assert( !ust::class_have_field( typeinfo</ EmptyStruct />.fields_list, "some_field" ) );
-static_assert(  ust::class_have_field( typeinfo</ NonEmptyStruct />.fields_list, "x" )  );
-static_assert(  ust::class_have_field( typeinfo</ NonEmptyStruct />.fields_list, "y" ) );
-static_assert( !ust::class_have_field( typeinfo</ NonEmptyStruct />.fields_list, "z" ) );
+static_assert( !ust::class_has_field( typeinfo</ EmptyStruct />.fields_list, "some_field" ) );
+static_assert(  ust::class_has_field( typeinfo</ NonEmptyStruct />.fields_list, "x" )  );
+static_assert(  ust::class_has_field( typeinfo</ NonEmptyStruct />.fields_list, "y" ) );
+static_assert( !ust::class_has_field( typeinfo</ NonEmptyStruct />.fields_list, "z" ) );
 
 //
 // is_typeinfo_type
@@ -159,15 +159,15 @@ static_assert( ust::is_tuple_typeinfo_type</ typeof( typeinfo</ tup[ [ i32, 2 ],
 // HaveMethod
 //
 
-static_assert( !ust::class_have_method</ LargeClassWithMethods, fn() />( "Foo" ) );
-static_assert( !ust::class_have_method</ LargeClassWithMethods, fn( i32 x ) />( "Bar" ) );
-static_assert(  ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &mut c ) />( "Bar" ) );
-static_assert(  ust::class_have_method</ LargeClassWithMethods, fn() />( "EmptyStatic" ) );
-static_assert( !ust::class_have_method</ LargeClassWithMethods, fn( i32 x ) />( "EmptyStatic" ) );
-static_assert( !ust::class_have_method</ LargeClassWithMethods, fn() unsafe />( "EmptyStatic" ) );
-static_assert(  ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &imut c ) unsafe />( "SomeUnsafe" ) );
-static_assert( !ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &imut c ) />( "SomeUnsafe" ) );
-static_assert(  ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &mut c ) />( "destructor" ) );
+static_assert( !ust::class_has_method</ LargeClassWithMethods, fn() />( "Foo" ) );
+static_assert( !ust::class_has_method</ LargeClassWithMethods, fn( i32 x ) />( "Bar" ) );
+static_assert(  ust::class_has_method</ LargeClassWithMethods, fn( LargeClassWithMethods &mut c ) />( "Bar" ) );
+static_assert(  ust::class_has_method</ LargeClassWithMethods, fn() />( "EmptyStatic" ) );
+static_assert( !ust::class_has_method</ LargeClassWithMethods, fn( i32 x ) />( "EmptyStatic" ) );
+static_assert( !ust::class_has_method</ LargeClassWithMethods, fn() unsafe />( "EmptyStatic" ) );
+static_assert(  ust::class_has_method</ LargeClassWithMethods, fn( LargeClassWithMethods &imut c ) unsafe />( "SomeUnsafe" ) );
+static_assert( !ust::class_has_method</ LargeClassWithMethods, fn( LargeClassWithMethods &imut c ) />( "SomeUnsafe" ) );
+static_assert(  ust::class_has_method</ LargeClassWithMethods, fn( LargeClassWithMethods &mut c ) />( "destructor" ) );
 
 fn nomangle main() : i32
 {

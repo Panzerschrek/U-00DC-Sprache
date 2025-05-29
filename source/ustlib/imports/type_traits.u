@@ -93,7 +93,7 @@ fn constexpr is_polymorph_non_final_class() : bool
 }
 
 template</ type ListType, size_type name_size />
-fn constexpr class_have_field( ListType& fields_list, [ char8, name_size ]& name ) : bool
+fn constexpr class_has_field( ListType& fields_list, [ char8, name_size ]& name ) : bool
 {
 	for( &list_element : fields_list )
 	{
@@ -150,7 +150,7 @@ fn constexpr is_tuple_typeinfo_type() : bool
 }
 
 template</ type T, type FnT, size_type name_size />
-fn constexpr class_have_method( [ char8, name_size ]& name ) : bool
+fn constexpr class_has_method( [ char8, name_size ]& name ) : bool
 {
 	static_assert( typeinfo</FnT/>.is_function_pointer, "expected function type" );
 	static_if( typeinfo</T/>.is_class )
