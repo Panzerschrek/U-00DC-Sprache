@@ -1,5 +1,6 @@
 import "alloc.u"
 import "container_utils.u"
+import "hash_apply.u"
 import "polymorph.u"
 
 namespace ust
@@ -9,8 +10,6 @@ template</ type T, bool is_nullable, bool is_mutable />
 class shared_ptr_base non_sync
 {
 	static_assert( typeinfo</T/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
-
-	type hasher= shared_ptr_base_hasher;
 
 public:
 	// Default constructor. Exists only for nullable shared_ptr.
@@ -219,6 +218,14 @@ public:
 		return l.value_ == r.value_;
 	}
 
+	// Hashing.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// Just hash pointer value.
+		apply_value_to_hasher( hasher, value_ );
+	}
+
 public: // Methods for internal usage.
 	fn get_value_ptr( this ) unsafe : $(T)
 	{
@@ -245,15 +252,6 @@ private:
 private:
 	value_ptr value_= zero_init;
 	counter_ptr counter_= zero_init;
-}
-
-struct shared_ptr_base_hasher
-{
-	template</type T, bool is_nullable, bool is_mutable/>
-	fn hash( shared_ptr_base</T, is_nullable, is_mutable/>& ptr ) : size_type
-	{
-		return ptr_to_int( unsafe( ptr.get_value_ptr() ) );
-	}
 }
 
 template</ type T, bool is_mutable />

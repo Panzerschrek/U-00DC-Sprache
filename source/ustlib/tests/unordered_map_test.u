@@ -2,19 +2,19 @@
 import "../imports/string.u"
 import "../imports/unordered_map.u"
 
-struct OneBitHashHasher
-{
-	fn hash( OneBitHash& s ) : size_type { return size_type( s.x & 1 ); }
-}
 
 struct OneBitHash
 {
-	type hasher= OneBitHashHasher;
-
 	i32 x;
 	fn constructor( i32 in_x ) ( x= in_x ) {}
 
 	op==( OneBitHash& a, OneBitHash& b ) : bool { return a.x == b.x; }
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, size_type( x & 1 ) );
+	}
 }
 
 class C

@@ -1,6 +1,6 @@
 import "alloc.u"
 import "container_utils.u"
-import "hash.u"
+import "hash_apply.u"
 import "polymorph.u"
 
 namespace ust
@@ -10,9 +10,6 @@ template</ type T />
 class box non_sync( non_sync</T/> )
 {
 	static_assert( typeinfo</T/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
-
-public:
-	type hasher= box_hasher;
 
 public:
 	fn constructor()= delete;
@@ -81,17 +78,16 @@ public:
 		}
 	}
 
+	// Hashing.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// Just hash stored value.
+		apply_value_to_hasher( hasher, deref() );
+	}
+
 private:
 	$(T) ptr_;
-}
-
-struct box_hasher
-{
-	template</ type T />
-	fn hash( box</T/>& b ) : size_type
-	{
-		return default_hasher::hash(b.deref());
-	}
 }
 
 // Constructor helper.

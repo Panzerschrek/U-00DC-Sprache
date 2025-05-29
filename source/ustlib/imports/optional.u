@@ -1,7 +1,8 @@
 import "aligned_storage.u"
 import "container_utils.u"
+import "hash_apply.u"
 import "optional_ref.u"
-import "hash.u"
+import "ustlib_macros.u"
 
 namespace ust
 {
@@ -12,9 +13,6 @@ var null_optional_type constexpr null_optional{};
 template</ type T />
 class optional
 {
-public:
-	type hasher= optional_hasher;
-
 public:
 	fn constructor()
 	( storage_= unsafe(get_uninitialized_value</storage_type/>()), has_value_= false )
@@ -291,6 +289,17 @@ public:
 		return false;
 	}
 
+	// Hashing.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		apply_value_to_hasher( has_value_ );
+		if( !empty() )
+		{
+			apply_value_to_hasher( hasher, try_deref() );
+		}
+	}
+
 private:
 	type this_type= optional</T/>;
 	type storage_type= aligned_storage</ typeinfo</T/>.size_of, typeinfo</T/>.align_of />;
@@ -305,19 +314,6 @@ private:
 	ContainerTag</ T /> container_tag_;
 	storage_type storage_;
 	bool has_value_;
-}
-
-struct optional_hasher
-{
-	template</ type T />
-	fn hash( optional</T/>& opt ) : size_type
-	{
-		if_var( &value : opt )
-		{
-			return default_hasher::hash(value);
-		}
-		return 0s;
-	}
 }
 
 } // namespace ust

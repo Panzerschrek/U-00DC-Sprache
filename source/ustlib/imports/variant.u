@@ -1,5 +1,6 @@
 import "aligned_storage.u"
 import "container_utils.u"
+import "hash_apply.u"
 import "minmax.u"
 import "optional_ref.u"
 import "ustlib_macros.u"
@@ -318,6 +319,25 @@ public:
 			return l == r_value;
 		}
 		return false;
+	}
+
+	// Hashing.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// Hash kind index.
+		apply_value_to_hasher( hasher, index_ );
+
+		// Hash contents of currenly-stored type.
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			if( cur_index == size_type(index_) )
+			{
+				apply_value_to_hasher( hasher, unsafe( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_) ) );
+			}
+			++cur_index;
+		}
 	}
 
 private:

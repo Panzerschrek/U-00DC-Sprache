@@ -1,5 +1,6 @@
 import "alloc.u"
 import "atomic.u"
+import "hash_apply.u"
 import "container_utils.u"
 import "reference_notation.u"
 
@@ -14,8 +15,6 @@ class shared_ptr_mt_final_base
 	// It has no sense to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
 	// Use singlethreaded shared pointer instead.
 	static_assert( !non_sync</T/>, "using non_sync types inside multithreaded shared pointers is not allowed" );
-
-	type hasher= shared_ptr_mt_final_base_hasher;
 
 public:
 	// Default constructor. Exists only for nullable shared_ptr_mt_final.
@@ -135,6 +134,14 @@ public:
 		return l.ptr_ == r.ptr_;
 	}
 
+	// Hashing.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// Just hash pointer value.
+		apply_value_to_hasher( hasher, ptr_ );
+	}
+
 public: // Methods for internal usage.
 	fn get_ptr( this ) unsafe : $(storage)
 	{
@@ -152,15 +159,6 @@ private:
 
 private:
 	$(storage) ptr_= zero_init;
-}
-
-struct shared_ptr_mt_final_base_hasher
-{
-	template</type T, bool is_nullable/>
-	fn hash( shared_ptr_mt_final_base</T, is_nullable/>& ptr ) : size_type
-	{
-		return ptr_to_int( unsafe( ptr.get_ptr() ) );
-	}
 }
 
 // All necessary type aliases.

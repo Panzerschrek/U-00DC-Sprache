@@ -1,0 +1,264 @@
+import "memory.u"
+import "helpers.u"
+import "type_traits.u"
+
+namespace ust
+{
+
+// Helper functions for hashing.
+// Use them in your "hash" method implementation for your class for members needed to be hashed.
+
+// Basic scalars - execute hasher directly, since it should implement hashing methods for them.
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, void v ) { hasher(v); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, bool b ) { hasher(b); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, i8 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, u8 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, i16 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, u16 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, i32 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, u32 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, i64 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, u64 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, i128 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, u128 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, ssize_type x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, size_type x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, char8 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, char16 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, char32 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, byte8 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, byte16 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, byte32 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, byte64 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, byte128 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, f32 x ) { hasher(x); }
+template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, f64 x ) { hasher(x); }
+
+// Overloading for arrays.
+template</type Hasher, type T, size_type S/>
+fn apply_value_to_hasher( Hasher &mut hasher, [ T, S ]& arr )
+{
+	// Apply size first, in order to produce different hashes for sequences like [ a, b ], [ c, d, e ] and [ a, b, c ], [ d, e ]
+	hasher( S );
+
+	for( auto mut i= 0s; i < S; ++i )
+	{
+		apply_value_to_hasher( hasher, arr[i] );
+	}
+}
+
+// Overloading for 0-sized tuples.
+template</type Hasher/>
+fn apply_value_to_hasher( Hasher &mut hasher, tup[]& t )
+{
+	hasher( 0s ); // Apply size first, in order to produce different hashes for sequences of sequences.
+	for( &el : t )
+	{
+		apply_value_to_hasher( hasher, el );
+	}
+}
+
+// Overloading for 1-sized tuples.
+template</type Hasher, type A/>
+fn apply_value_to_hasher( Hasher &mut hasher, tup[ A ]& t )
+{
+	hasher( 1s ); // Apply size first, in order to produce different hashes for sequences of sequences.
+	for( &el : t )
+	{
+		apply_value_to_hasher( hasher, el );
+	}
+}
+
+// Overloading for 2-sized tuples.
+template</type Hasher, type A, type B/>
+fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B ]& t )
+{
+	hasher( 2s ); // Apply size first, in order to produce different hashes for sequences of sequences.
+	for( &el : t )
+	{
+		apply_value_to_hasher( hasher, el );
+	}
+}
+
+// Overloading for 3-sized tuples.
+template</type Hasher, type A, type B, type C/>
+fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C ]& t )
+{
+	hasher( 3s ); // Apply size first, in order to produce different hashes for sequences of sequences.
+	for( &el : t )
+	{
+		apply_value_to_hasher( hasher, el );
+	}
+}
+
+// Overloading for 4-sized tuples.
+template</type Hasher, type A, type B, type C, type D/>
+fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D ]& t )
+{
+	hasher( 4s ); // Apply size first, in order to produce different hashes for sequences of sequences.
+	for( &el : t )
+	{
+		apply_value_to_hasher( hasher, el );
+	}
+}
+
+// Overloading for 5-sized tuples.
+template</type Hasher, type A, type B, type C, type D, type E/>
+fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E ]& t )
+{
+	hasher( 5s ); // Apply size first, in order to produce different hashes for sequences of sequences.
+	for( &el : t )
+	{
+		apply_value_to_hasher( hasher, el );
+	}
+}
+
+// Overloading for 6-sized tuples.
+template</type Hasher, type A, type B, type C, type D, type E, type F/>
+fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F ]& t )
+{
+	hasher( 6s ); // Apply size first, in order to produce different hashes for sequences of sequences.
+	for( &el : t )
+	{
+		apply_value_to_hasher( hasher, el );
+	}
+}
+
+// Overloading for 7-sized tuples.
+template</type Hasher, type A, type B, type C, type D, type E, type F, type G/>
+fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F, G ]& t )
+{
+	hasher( 7s ); // Apply size first, in order to produce different hashes for sequences of sequences.
+	for( &el : t )
+	{
+		apply_value_to_hasher( hasher, el );
+	}
+}
+
+// Overloading for 8-sized tuples.
+template</type Hasher, type A, type B, type C, type D, type E, type F, type G, type H/>
+fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F, G, H ]& t )
+{
+	hasher( 8s ); // Apply size first, in order to produce different hashes for sequences of sequences.
+	for( &el : t )
+	{
+		apply_value_to_hasher( hasher, el );
+	}
+}
+
+// Overloading for raw pointers.
+template</type Hasher, type T/>
+fn apply_value_to_hasher( Hasher &mut hasher, $(T) ptr )
+{
+	// Hash raw pointers as integer type with address value.
+	hasher( ptr_to_int( ptr ) );
+}
+
+// Overloading for other type kinds.
+template</type Hasher, type T/>
+fn apply_value_to_hasher( Hasher &mut hasher, T& t )
+{
+	static_if( typeinfo</T/>.is_enum )
+	{
+		// Hash enums as their underlying type.
+		hasher( typeinfo</T/>.underlying_type.src_type( t ) );
+	}
+	else static_if( typeinfo</T/>.is_function_pointer )
+	{
+		// For function pointers just take value of function pointer.
+		hasher( unsafe( cast_ref_unsafe</size_type/>(t) ) );
+	}
+	else static_if( typeinfo</T/>.is_class )
+	{
+		static_if( typeinfo</T/>.is_coroutine )
+		{
+			// Now coroutine classes contain only single pointer field.
+			// Just hash this pointer.
+			// Change this, if internal representation of coroutine will be changed.
+			static_assert( typeinfo</T/>.size_of == typeinfo</size_type/>.size_of);
+			hasher( unsafe( cast_ref_unsafe</size_type/>(t) ) );
+		}
+		else static_if( typeinfo</T/>.is_lambda )
+		{
+			// Can't use per-field lambdas hashing, since lambda fields are private.
+			static_assert( false, "Can't hash lambdas!" );
+		}
+		else static_if( typeinfo</T/>.is_typeinfo )
+		{
+			// There is no reason to hash typeinfo.
+			static_assert( false, "Can't hash typeinfo!" );
+		}
+		else static_if( hash_apply_impl::class_has_hash_method</T/>() )
+		{
+			// Call existing "hash" method.
+			return t.hash( hasher );
+		}
+		else
+		{
+			// Hash parents (if has parents).
+			for( &el : typeinfo</T/>.parents_list )
+			{
+				apply_value_to_hasher( hasher, cast_ref</ typeof(el.type)::src_type />(t) );
+			}
+
+			// Perform per-field hashing (if possible).
+			for( &el : typeinfo</T/>.fields_list )
+			{
+				static_assert( !el.is_reference, "can't automatically hash a class with reference fields" );
+				static_assert( el.is_public, "can't automatically hash a class with non-public fields" );
+
+				apply_value_to_hasher( hasher, mixin( "t." + el.name ) );
+			}
+
+			if( typeinfo</T/>.field_count == 0s )
+			{
+				// It's necessary for empty structs.
+				ignore_unused(hasher);
+				ignore_unused(t);
+			}
+		}
+	}
+	else
+	{
+		static_assert( false, "Unsupported type for hashing!" );
+	}
+}
+
+namespace hash_apply_impl
+{
+
+// Checks if given class has "hash" method (regular or template).
+// Signature, return type and other properties are not checked.
+template</type T/>
+fn constexpr class_has_hash_method() : bool
+{
+	// TODO - fix this function for polymorph classes.
+	// We should ignore inherited regular and template "hash" functions of polymorph classes.
+	// If parent class hashing method is called on a child instance, child own fields are not hashed.
+	// It's not incorrect, but unoptimal and may cause many hash-collisions.
+
+	auto& ti= typeinfo</T/>;
+	auto& name= "hash";
+
+	for( &list_element : ti.functions_list )
+	{
+		if( constexpr_string_equals( list_element.name, name ) )
+		{
+			return true;
+		}
+	}
+
+	for( &list_element : ti.function_templates_list )
+	{
+		if( constexpr_string_equals( list_element.name, name ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+} // namespace hash_apply_impl
+
+} // namespace ust

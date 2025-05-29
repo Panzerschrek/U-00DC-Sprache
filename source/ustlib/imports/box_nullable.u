@@ -1,6 +1,6 @@
 import "box.u"
+import "hash_apply.u"
 import "container_utils.u"
-import "hash.u"
 import "polymorph.u"
 
 namespace ust
@@ -10,9 +10,6 @@ template</ type T />
 class box_nullable non_sync( non_sync</T/> )
 {
 	static_assert( typeinfo</T/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
-
-public:
-	type hasher= box_nullable_hasher;
 
 public:
 	// Default initializer = set to zero.
@@ -177,21 +174,19 @@ public:
 		}
 	}
 
+	// Hashing.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		if( !empty() )
+		{
+			// Just hash stored value.
+			apply_value_to_hasher( hasher, try_deref() );
+		}
+	}
+
 private:
 	$(T) ptr_= zero_init;
-}
-
-struct box_nullable_hasher
-{
-	template</ type T />
-	fn hash( box_nullable</T/>& b ) : size_type
-	{
-		if_var( &value : b )
-		{
-			return default_hasher::hash(value);
-		}
-		return 0s;
-	}
 }
 
 } // namespace ust

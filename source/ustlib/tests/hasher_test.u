@@ -1,0 +1,648 @@
+//##success_test
+import "../imports/hash_apply.u"
+import "../imports/hasher.u"
+import "../imports/string.u"
+import "../imports/shared_ptr.u"
+import "../imports/shared_ptr_final.u"
+import "../imports/variant.u"
+import "../imports/vector.u"
+
+fn nomangle main() : i32
+{
+	{ // Initial default hasher value is zero.
+		var ust::default_hasher hasher;
+		halt if( hasher.get() != 0s );
+	}
+	{
+		var ust::default_hasher mut hasher;
+		hasher( 17 );
+		halt if( hasher.get() == 0s );
+	}
+	{
+		var ust::default_hasher mut hasher;
+		hasher( 12345u );
+		halt if( hasher.get() == 0s );
+	}
+	{
+		var ust::default_hasher mut hasher;
+		hasher( '7' );
+		halt if( hasher.get() == 0s );
+	}
+	{
+		var ust::default_hasher mut hasher;
+		hasher( 'Ё'c16 );
+		halt if( hasher.get() == 0s );
+	}
+	{
+		var ust::default_hasher mut hasher;
+		hasher( byte64(123456789u64) );
+		halt if( hasher.get() == 0s );
+	}
+	{ // Hash for the same sequence should be the same.
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		hasher( 123u );
+		hasher( '$'c8 );
+		hasher( -678 );
+		auto res0= hasher.get();
+
+		hasher.reset();
+		hasher( 123u );
+		hasher( '$'c8 );
+		hasher( -678 );
+		auto res1= hasher.get();
+
+		halt if( res0 != res1 );
+	}
+	{ // Hash for the different sequence should usually be different.
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		hasher( 123u );
+		hasher( '$'c8 );
+		hasher( -678 );
+		auto res0= hasher.get();
+
+		hasher.reset();
+		hasher( 124u );
+		hasher( '&'c8 );
+		hasher( -1348 );
+		auto res1= hasher.get();
+
+		halt if( res0 == res1 );
+	}
+	{ // Order may change hash.
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		hasher( 123u );
+		hasher( '$'c8 );
+		hasher( -678 );
+		auto res0= hasher.get();
+
+		hasher.reset();
+		hasher( -678 );
+		hasher( '$'c8 );
+		hasher( 123u );
+		auto res1= hasher.get();
+
+		halt if( res0 == res1 );
+	}
+	{ // Combination of two values is usually not equal to separate hashes of these values.
+		var [ i32, 2 ] arr[ 78, 93672 ];
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		hasher( arr[0] );
+		auto res0= hasher.get();
+
+		hasher.reset();
+		hasher( arr[1] );
+		auto res1= hasher.get();
+
+		hasher.reset();
+		hasher( arr[0] );
+		hasher( arr[1] );
+		auto res_combined= hasher.get();
+
+		halt if( res0 == res1 );
+		halt if( res_combined == res0 );
+		halt if( res_combined == res1 );
+	}
+	{ // Hash for array includes size.
+		var [ i32, 2 ] a[ 447, 371 ];
+		var [ i32, 3 ] b[ 78923, 12, 5781 ];
+		var [ i32, 3 ] c[ 447, 371, 78923 ];
+		var [ i32, 2 ] d[ 12, 5781 ];
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, a );
+		ust::apply_value_to_hasher( hasher, b );
+		auto res_ab= hasher.get();
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, c );
+		ust::apply_value_to_hasher( hasher, d );
+		auto res_cd= hasher.get();
+
+		halt if( res_ab == res_cd );
+	}
+	{ // Hash for two-dimentional array.
+		var [ [ i32, 3 ], 2 ] mat [ [ 1, 2, 3 ], [ 4, 5, 6 ] ];
+
+		var ust::default_hasher mut hasher;
+		ust::apply_value_to_hasher( hasher, mat );
+		halt if( hasher.get() == 0s );
+	}
+	{ // Hash for empty tuple - should include zero.
+		var tup[] t;
+
+		var ust::default_hasher mut hasher;
+		ust::apply_value_to_hasher( hasher, t );
+
+		halt if( hasher.get() == 0s );
+	}
+	{ // Hash for tuple includes size.
+		var tup[ u64, bool ] a[ 7533u64, true ];
+		var tup[ char8, i16, u8 ] b[ 'J', -88i16, 67u8 ];
+		var tup[ u64, bool, char8 ] c[ 7533u64, true, 'J' ];
+		var tup[ i16, u8 ] d[ -88i16, 67u8 ];
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, a );
+		ust::apply_value_to_hasher( hasher, b );
+		auto res_ab= hasher.get();
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, c );
+		ust::apply_value_to_hasher( hasher, d );
+		auto res_cd= hasher.get();
+
+		halt if( res_ab == res_cd );
+	}
+	{ // Tuple with composite elements.
+		var tup[ u32, tup[ i64, char16 ], [ u16, 2 ], SomeEnum, SomeStruct ] t[ 8934u, [ -42467587543554i64, 'Ю'c16 ], [ 16u16, 1234u16 ], SomeEnum::D, { .x= 12689, .y= zero_init } ];
+
+		var ust::default_hasher mut hasher;
+		ust::apply_value_to_hasher( hasher, t );
+		halt if( hasher.get() == 0s );
+	}
+	{ // Hasher for raw pointer.
+		var i32 mut x= 0, mut y= 0;
+		var $(i32) x_ptr= $<(x), y_ptr= $<(y);
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, x_ptr );
+		auto x_ptr_hash= hasher.get();
+		halt if( x_ptr_hash == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, y_ptr );
+		auto y_ptr_hash= hasher.get();
+		halt if( y_ptr_hash == 0s );
+
+		halt if( x_ptr_hash == y_ptr_hash ); // Should usually produce different results for different inputs.
+	}
+	{ // Hash for enum. Usually should produce different results.
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, SomeEnum::A );
+		auto a_hash= hasher.get();
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, SomeEnum::B );
+		auto b_hash= hasher.get();
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, SomeEnum::C );
+		auto c_hash= hasher.get();
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, SomeEnum::D );
+		auto d_hash= hasher.get();
+
+		halt if( a_hash == b_hash );
+		halt if( a_hash == c_hash );
+		halt if( a_hash == d_hash );
+		halt if( b_hash == c_hash );
+		halt if( b_hash == d_hash );
+		halt if( c_hash == d_hash );
+	}
+	{ // Hasher for a type with "hash" method.
+		var SomeStruct s0{ .x= -633361, .y= 78881641785223u64 }, s1{ .x= 78, .y= 3673u64 };
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, s0 );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, s1 );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		halt if( res0 == res1 );
+	}
+	{ // Hasher for a struct without "hash" method - still should hash it.
+		var StructWithoutHashMethod s0{ .x= -633361, .y= 78881641785223u64 }, s1{ .x= 78, .y= 3673u64 };
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, s0 );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, s1 );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		halt if( res0 == res1 );
+	}
+	{ // Struct for class with parents and no "hash" method.
+		var PolymorphA a( 123 );
+		var PolymorphB b( 123 );
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, a );
+		auto a_hash= hasher.get();
+		halt if( a_hash == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, b );
+		auto b_hash= hasher.get();
+		halt if( b_hash == 0s );
+
+		halt if( a_hash != b_hash );
+	}
+	{ // Hash for empty struct.
+		var EmptyStruct s;
+
+		var ust::default_hasher mut hasher;
+
+		ust::apply_value_to_hasher( hasher, s );
+		halt if( hasher.get() != 0s );
+	}
+	{ // Hasher for function pointer.
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, Foo );
+		auto res_foo= hasher.get();
+		halt if( res_foo == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, Bar );
+		auto res_bar= hasher.get();
+		halt if( res_bar == 0s );
+
+		halt if( res_foo == res_bar );
+	}
+	{ // Hashing strings. Hashes for string and string_view should be the same.
+
+		var ust::string8 s0= "tr8", s1= "8tgfdeWWё";
+		var ust::string_view8 sv0= "tr8", sv1= "8tgfdeWWё";
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, s0 );
+		auto res_s0= hasher.get();
+		halt if( res_s0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, s1 );
+		auto res_s1= hasher.get();
+		halt if( res_s1 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, sv0 );
+		auto res_sv0= hasher.get();
+		halt if( res_sv0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, sv1 );
+		auto res_sv1= hasher.get();
+		halt if( res_sv1 == 0s );
+
+		halt if( res_s0 == res_s1 );
+		halt if( res_sv0 == res_sv1 );
+		halt if( res_s0 != res_sv0 );
+		halt if( res_s1 != res_sv1 );
+	}
+	{ // Hashing vector. Hashes for vector and array_view should be the same.
+
+		var [ i32, 3 ] a0[ 856, 127, -56 ];
+		var [ i32, 2 ] a1[ 783233, 74 ];
+
+		var ust::vector</i32/> v0= a0, v1= a1;
+		var ust::array_view_imut</i32/> av0= a0, av1= a1;
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, v0 );
+		auto res_v0= hasher.get();
+		halt if( res_v0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, v1 );
+		auto res_v1= hasher.get();
+		halt if( res_v1 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, av0 );
+		auto res_av0= hasher.get();
+		halt if( res_av0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, av1 );
+		auto res_av1= hasher.get();
+		halt if( res_av1 == 0s );
+
+		halt if( res_v0 == res_v1 );
+		halt if( res_av0 == res_av1 );
+		halt if( res_v0 != res_av0 );
+		halt if( res_v1 != res_av1 );
+	}
+	{ // Hashing variant. Should produce different results for different stored types (even if their internal representation is identical).
+
+		var ust::variant</ tup[ u32, i32 ] /> v0( 56u ), v1( 56 ), v2( 372 );
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, v0 );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, v1 );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, v2 );
+		auto res2= hasher.get();
+		halt if( res2 == 0s );
+
+		halt if( res0 == res1 );
+		halt if( res0 == res2 );
+		halt if( res1 == res2 );
+	}
+	{ // "shared_ptr" hashing.
+		var ust::shared_ptr_nullable_imut</i32/> null;
+		var ust::shared_ptr_mut</i32/> p0( 783 ), p1( 675 ), p2( 675 );
+		var ust::shared_ptr_nullable_mut</i32/> p0_copy= p0;
+		var ust::shared_ptr_nullable_imut</i32/> p1_copy= p1;
+		var ust::shared_ptr_imut</i32/> p2_copy= p2;
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, null );
+		auto null_res= hasher.get();
+		halt if( null_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p0 );
+		auto p0_res= hasher.get();
+		halt if( p0_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p1 );
+		auto p1_res= hasher.get();
+		halt if( p1_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p2 );
+		auto p2_res= hasher.get();
+		halt if( p2_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p0_copy );
+		auto p0_copy_res= hasher.get();
+		halt if( p0_copy_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p1_copy );
+		auto p1_copy_res= hasher.get();
+		halt if( p1_copy_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p2_copy );
+		auto p2_copy_res= hasher.get();
+		halt if( p2_copy_res == 0s );
+
+		halt if( null_res == p0_res );
+		halt if( null_res == p1_res );
+		halt if( null_res == p2_res );
+		halt if( null_res == p0_copy_res );
+		halt if( null_res == p1_copy_res );
+		halt if( null_res == p2_copy_res );
+
+		halt if( p0_res == null_res );
+		halt if( p0_res == p1_res );
+		halt if( p0_res == p2_res );
+		halt if( p0_res != p0_copy_res );
+		halt if( p0_res == p1_copy_res );
+		halt if( p0_res == p2_copy_res );
+
+		halt if( p1_res == null_res );
+		halt if( p1_res == p0_res );
+		halt if( p1_res == p2_res );
+		halt if( p1_res == p0_copy_res );
+		halt if( p1_res != p1_copy_res );
+		halt if( p1_res == p2_copy_res );
+
+		halt if( p2_res == null_res );
+		halt if( p2_res == p0_res );
+		halt if( p2_res == p1_res );
+		halt if( p2_res == p0_copy_res );
+		halt if( p2_res == p1_copy_res );
+		halt if( p2_res != p2_copy_res );
+
+		halt if( p0_copy_res == null_res );
+		halt if( p0_copy_res != p0_res );
+		halt if( p0_copy_res == p1_res );
+		halt if( p0_copy_res == p2_res );
+		halt if( p0_copy_res == p1_copy_res );
+		halt if( p0_copy_res == p2_copy_res );
+
+		halt if( p1_copy_res == null_res );
+		halt if( p1_copy_res == p0_res );
+		halt if( p1_copy_res != p1_res );
+		halt if( p1_copy_res == p2_res );
+		halt if( p1_copy_res == p0_copy_res );
+		halt if( p1_copy_res == p2_copy_res );
+
+		halt if( p2_copy_res == null_res );
+		halt if( p2_copy_res == p0_res );
+		halt if( p2_copy_res == p1_res );
+		halt if( p2_copy_res != p2_res );
+		halt if( p2_copy_res == p0_copy_res );
+		halt if( p2_copy_res == p1_copy_res );
+	}
+	{ // "shared_ptr_final" hashing.
+		var ust::shared_ptr_final_nullable</i32/> null;
+		var ust::shared_ptr_final</i32/> p0( 783 ), p1( 675 ), p2( 675 );
+		var ust::shared_ptr_final_nullable</i32/> p0_copy= p0;
+		var ust::shared_ptr_final_nullable</i32/> p1_copy= p1;
+		var ust::shared_ptr_final</i32/> p2_copy= p2;
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, null );
+		auto null_res= hasher.get();
+		halt if( null_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p0 );
+		auto p0_res= hasher.get();
+		halt if( p0_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p1 );
+		auto p1_res= hasher.get();
+		halt if( p1_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p2 );
+		auto p2_res= hasher.get();
+		halt if( p2_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p0_copy );
+		auto p0_copy_res= hasher.get();
+		halt if( p0_copy_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p1_copy );
+		auto p1_copy_res= hasher.get();
+		halt if( p1_copy_res == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, p2_copy );
+		auto p2_copy_res= hasher.get();
+		halt if( p2_copy_res == 0s );
+
+		halt if( null_res == p0_res );
+		halt if( null_res == p1_res );
+		halt if( null_res == p2_res );
+		halt if( null_res == p0_copy_res );
+		halt if( null_res == p1_copy_res );
+		halt if( null_res == p2_copy_res );
+
+		halt if( p0_res == null_res );
+		halt if( p0_res == p1_res );
+		halt if( p0_res == p2_res );
+		halt if( p0_res != p0_copy_res );
+		halt if( p0_res == p1_copy_res );
+		halt if( p0_res == p2_copy_res );
+
+		halt if( p1_res == null_res );
+		halt if( p1_res == p0_res );
+		halt if( p1_res == p2_res );
+		halt if( p1_res == p0_copy_res );
+		halt if( p1_res != p1_copy_res );
+		halt if( p1_res == p2_copy_res );
+
+		halt if( p2_res == null_res );
+		halt if( p2_res == p0_res );
+		halt if( p2_res == p1_res );
+		halt if( p2_res == p0_copy_res );
+		halt if( p2_res == p1_copy_res );
+		halt if( p2_res != p2_copy_res );
+
+		halt if( p0_copy_res == null_res );
+		halt if( p0_copy_res != p0_res );
+		halt if( p0_copy_res == p1_res );
+		halt if( p0_copy_res == p2_res );
+		halt if( p0_copy_res == p1_copy_res );
+		halt if( p0_copy_res == p2_copy_res );
+
+		halt if( p1_copy_res == null_res );
+		halt if( p1_copy_res == p0_res );
+		halt if( p1_copy_res != p1_res );
+		halt if( p1_copy_res == p2_res );
+		halt if( p1_copy_res == p0_copy_res );
+		halt if( p1_copy_res == p2_copy_res );
+
+		halt if( p2_copy_res == null_res );
+		halt if( p2_copy_res == p0_res );
+		halt if( p2_copy_res == p1_res );
+		halt if( p2_copy_res != p2_res );
+		halt if( p2_copy_res == p0_copy_res );
+		halt if( p2_copy_res == p1_copy_res );
+	}
+	{ // Hash generators. Two different instances of generators are always different.
+
+		var ( generator : u32 ) g0= SomeGen(), g1= SomeGen();
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, g0 );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, g1 );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		halt if( res0 == res1 );
+	}
+
+	return 0;
+}
+
+fn Foo(){}
+fn Bar(){}
+
+enum SomeEnum
+{
+	A, B, C, D, E
+}
+
+struct SomeStruct
+{
+	i32 x;
+	u64 y;
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		ust::apply_value_to_hasher( hasher, x );
+		ust::apply_value_to_hasher( hasher, y );
+	}
+}
+
+struct StructWithoutHashMethod
+{
+	i32 x;
+	u64 y;
+}
+
+struct EmptyStruct{}
+
+class PolymorphA polymorph
+{
+	fn constructor( i32 in_x )
+		( x= in_x )
+	{}
+
+	i32 x;
+}
+
+class PolymorphB : PolymorphA
+{
+	fn constructor( i32 in_x )
+		( base(in_x) )
+	{}
+}
+
+fn generator SomeGen() : u32
+{
+	for( var u32 mut x= 0u; x < 10u; ++x )
+	{
+		yield x * x;
+	}
+}

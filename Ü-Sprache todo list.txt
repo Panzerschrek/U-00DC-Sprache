@@ -70,7 +70,11 @@ Standart library:
 *) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method,
 	reduce iteration time for cases where unordered_map was fileld and then mostly emptied,
 	add more methods for elements access, etc.
-*) Fix/improve hasing functions and hash combine functions to minimize possibility of hash-collisions in common cases
+*) Allow to specify hashing function for unordered_map
+*) Allow to use per-instance randomized hash function for unordered_map
+*) Fix hashing of floating-point values
+*) Improve default hashing function - use some well-known hashing algorithm, make it faster for hashing of ranges,
+	make different implementations optimized for 32-bit/64-bit hashes.
 *) Support types with references inside in some containers (variant, result, unordered_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
 *) Support Unix-systems other than 64-bit Linux - 32-bit Linux, x32 ABI Linux, FreeBSD, OS X, Hurd, etc.

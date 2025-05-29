@@ -2,7 +2,7 @@ import "aligned_storage.u"
 import "alloc.u"
 import "checked_math.u"
 import "container_utils.u"
-import "hash.u"
+import "hash_apply.u"
 import "minmax.u"
 import "random_access_range.u"
 
@@ -14,7 +14,6 @@ class vector
 {
 public:
 	type this_type= vector</T/>;
-	type hasher= range_hasher;
 
 public:
 
@@ -344,6 +343,27 @@ public:
 		}
 
 		return true;
+	}
+
+	// hashing
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		static_if( c_enable_range )
+		{
+			// Usually hash range for vectors.
+			range().hash( hasher );
+		}
+		else
+		{
+			// Backup hashing if "range" isn't available.
+			apply_value_to_hasher( hasher, size_ );
+
+			for( var size_type mut i= 0s; i < size_; ++i )
+			{
+				apply_value_to_hasher( hasher, unsafe( $>( ptr_ + i ) ) );
+			}
+		}
 	}
 
 	// modificators
