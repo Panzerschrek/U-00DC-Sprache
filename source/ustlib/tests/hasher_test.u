@@ -3,6 +3,7 @@ import "../imports/hash_apply.u"
 import "../imports/hasher.u"
 import "../imports/string.u"
 import "../imports/variant.u"
+import "../imports/vector.u"
 
 fn nomangle main() : i32
 {
@@ -322,6 +323,41 @@ fn nomangle main() : i32
 		halt if( res_sv0 == res_sv1 );
 		halt if( res_s0 != res_sv0 );
 		halt if( res_s1 != res_sv1 );
+	}
+	{ // Hashing vector. Hashes for vector and array_view should be the same.
+
+		var [ i32, 3 ] a0[ 856, 127, -56 ];
+		var [ i32, 2 ] a1[ 783233, 74 ];
+
+		var ust::vector</i32/> v0= a0, v1= a1;
+		var ust::array_view_imut</i32/> av0= a0, av1= a1;
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, v0 );
+		auto res_v0= hasher.get();
+		halt if( res_v0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, v1 );
+		auto res_v1= hasher.get();
+		halt if( res_v1 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, av0 );
+		auto res_av0= hasher.get();
+		halt if( res_av0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, av1 );
+		auto res_av1= hasher.get();
+		halt if( res_av1 == 0s );
+
+		halt if( res_v0 == res_v1 );
+		halt if( res_av0 == res_av1 );
+		halt if( res_v0 != res_av0 );
+		halt if( res_v1 != res_av1 );
 	}
 	{ // Hashing variant. Should produce different results for different stored types (even if their internal representation is identical).
 
