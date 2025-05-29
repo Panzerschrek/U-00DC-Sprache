@@ -4,7 +4,6 @@ import "llvm_ext.uh"
 namespace U1
 {
 
-
 struct Mixin
 {
 	SrcLoc src_loc;

@@ -64,7 +64,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 		.generated_private_header_files= ust::make_array</ust::filesystem_path/>( keywords_file, code_builder_error_code_file ),
 	};
 
-	var [ ust::filesystem_path_view, 41 ] source_files
+	var [ ust::filesystem_path_view, 40 ] source_files
 	[
 		"code_builder_lib/cb_block_elements.u",
 		"code_builder_lib/cb_coroutines.u",
@@ -95,7 +95,6 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : ust:
 		"code_builder_lib/long_stable_hash_wrapper.u",
 		"code_builder_lib/mangling_itanium_abi.u",
 		"code_builder_lib/mangling_msvc.u",
-		"code_builder_lib/mixins.u",
 		"code_builder_lib/references_graph.u",
 		"code_builder_lib/structs_combined.u",
 		"code_builder_lib/tbaa_metadata_builder.u",
