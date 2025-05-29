@@ -221,6 +221,10 @@ namespace hash_apply_impl
 template</type T/>
 fn constexpr class_has_hash_method() : bool
 {
+	// TODO - fix this function for polymorph classes.
+	// We should ignore inherited regular and template "hash" functions of polymorph classes.
+	// It's incorrect to use hashing of parent class to hash child class.
+
 	auto& ti= typeinfo</T/>;
 	auto& name= "hash";
 
