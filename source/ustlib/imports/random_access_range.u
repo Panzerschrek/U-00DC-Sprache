@@ -215,7 +215,7 @@ public:
 
 		for( var size_type mut i= 0s; i < size_; ++i )
 		{
-			apply_value_to_hasher( hasher, unsafe( $>( ptr_ + i ) ) );
+			apply_value_to_hasher( hasher, unsafe( $>( begin_ + i ) ) );
 		}
 	}
 

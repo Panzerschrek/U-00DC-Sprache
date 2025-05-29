@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/hash_apply.u"
 import "../imports/hasher.u"
+import "../imports/string.u"
 import "../imports/variant.u"
 
 fn nomangle main() : i32
@@ -289,6 +290,38 @@ fn nomangle main() : i32
 		halt if( res_bar == 0s );
 
 		halt if( res_foo == res_bar );
+	}
+	{ // Hashing strings. Hashes for string and string_view should be the same.
+
+		var ust::string8 s0= "tr8", s1= "8tgfdeWWё";
+		var ust::string_view8 sv0= "tr8", sv1= "8tgfdeWWё";
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, s0 );
+		auto res_s0= hasher.get();
+		halt if( res_s0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, s1 );
+		auto res_s1= hasher.get();
+		halt if( res_s1 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, sv0 );
+		auto res_sv0= hasher.get();
+		halt if( res_sv0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, sv1 );
+		auto res_sv1= hasher.get();
+		halt if( res_sv1 == 0s );
+
+		halt if( res_s0 == res_s1 );
+		halt if( res_sv0 == res_sv1 );
+		halt if( res_s0 != res_sv0 );
+		halt if( res_s1 != res_sv1 );
 	}
 	{ // Hashing variant. Should produce different results for different stored types (even if their internal representation is identical).
 
