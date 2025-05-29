@@ -572,6 +572,24 @@ fn nomangle main() : i32
 		halt if( p2_copy_res == p0_copy_res );
 		halt if( p2_copy_res == p1_copy_res );
 	}
+	{ // Hash generators. Two different instances of generators are always different.
+
+		var ( generator : u32 ) g0= SomeGen(), g1= SomeGen();
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, g0 );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, g1 );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		halt if( res0 == res1 );
+	}
 
 	return 0;
 }
@@ -619,4 +637,12 @@ class PolymorphB : PolymorphA
 	fn constructor( i32 in_x )
 		( base(in_x) )
 	{}
+}
+
+fn generator SomeGen() : u32
+{
+	for( var u32 mut x= 0u; x < 10u; ++x )
+	{
+		yield x * x;
+	}
 }

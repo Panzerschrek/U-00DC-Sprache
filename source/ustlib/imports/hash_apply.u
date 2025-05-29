@@ -175,7 +175,8 @@ fn apply_value_to_hasher( Hasher &mut hasher, T& t )
 			// Now coroutine classes contain only single pointer field.
 			// Just hash this pointer.
 			// Change this, if internal representation of coroutine will be changed.
-			hasher( unsafe( cast_ref_unsafe</size_type/>(x) ) );
+			static_assert( typeinfo</T/>.size_of == typeinfo</size_type/>.size_of);
+			hasher( unsafe( cast_ref_unsafe</size_type/>(t) ) );
 		}
 		else static_if( typeinfo</T/>.is_lambda )
 		{
