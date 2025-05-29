@@ -4,8 +4,12 @@ namespace ust
 {
 
 // Some sort of hasher.
-// All alternative implementations must have the same interface (implement the same functions).
-// TODO - improve it.
+// All alternative implementations must have the same interface (implement the same methods).
+// The hashing algorithm implemented by this class is determenistic, but isn't portable and may be changed.
+// If one needs portable stable hashing, some other hasher implementation should be used instead.
+//
+// TODO - speed-up and improve this implementation.
+//
 class default_hasher
 {
 public:

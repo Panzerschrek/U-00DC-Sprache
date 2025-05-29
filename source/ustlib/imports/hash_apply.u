@@ -47,7 +47,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, [ T, S ]& arr )
 	}
 }
 
-// Overloading 0-sized tuples.
+// Overloading for 0-sized tuples.
 template</type Hasher/>
 fn apply_value_to_hasher( Hasher &mut hasher, tup[]& t )
 {
@@ -58,7 +58,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[]& t )
 	}
 }
 
-// Overloading 1-sized tuples.
+// Overloading for 1-sized tuples.
 template</type Hasher, type A/>
 fn apply_value_to_hasher( Hasher &mut hasher, tup[ A ]& t )
 {
@@ -69,7 +69,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A ]& t )
 	}
 }
 
-// Overloading 2-sized tuples.
+// Overloading for 2-sized tuples.
 template</type Hasher, type A, type B/>
 fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B ]& t )
 {
@@ -80,7 +80,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B ]& t )
 	}
 }
 
-// Overloading 3-sized tuples.
+// Overloading for 3-sized tuples.
 template</type Hasher, type A, type B, type C/>
 fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C ]& t )
 {
@@ -91,7 +91,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C ]& t )
 	}
 }
 
-// Overloading 4-sized tuples.
+// Overloading for 4-sized tuples.
 template</type Hasher, type A, type B, type C, type D/>
 fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D ]& t )
 {
@@ -102,7 +102,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D ]& t )
 	}
 }
 
-// Overloading 5-sized tuples.
+// Overloading for 5-sized tuples.
 template</type Hasher, type A, type B, type C, type D, type E/>
 fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E ]& t )
 {
@@ -113,7 +113,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E ]& t )
 	}
 }
 
-// Overloading 6-sized tuples.
+// Overloading for 6-sized tuples.
 template</type Hasher, type A, type B, type C, type D, type E, type F/>
 fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F ]& t )
 {
@@ -124,7 +124,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F ]& t )
 	}
 }
 
-// Overloading 7-sized tuples.
+// Overloading for 7-sized tuples.
 template</type Hasher, type A, type B, type C, type D, type E, type F, type G/>
 fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F, G ]& t )
 {
@@ -135,7 +135,7 @@ fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F, G ]& t )
 	}
 }
 
-// Overloading 8-sized tuples.
+// Overloading for 8-sized tuples.
 template</type Hasher, type A, type B, type C, type D, type E, type F, type G, type H/>
 fn apply_value_to_hasher( Hasher &mut hasher, tup[ A, B, C, D, E, F, G, H ]& t )
 {
@@ -234,7 +234,8 @@ fn constexpr class_has_hash_method() : bool
 {
 	// TODO - fix this function for polymorph classes.
 	// We should ignore inherited regular and template "hash" functions of polymorph classes.
-	// It's incorrect to use hashing of parent class to hash child class.
+	// If parent class hashing method is called on a child instance, child own fields are not hashed.
+	// It's not incorrect, but unoptimal and may cause many hash-collisions.
 
 	auto& ti= typeinfo</T/>;
 	auto& name= "hash";

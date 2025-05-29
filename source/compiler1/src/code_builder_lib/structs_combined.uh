@@ -949,9 +949,10 @@ struct TemplateKey
 	ust::shared_ptr_imut</ TemplateBase /> template_;
 	TemplateArgsFinished template_args;
 
+	// Override comparing, since we can't just compare template args as is.
 	op==( TemplateKey& l, TemplateKey& r ) : bool;
 
-	// Override hash, since we can't just compare hash template args as is.
+	// Override hash, since we can't just hash template args as is.
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
@@ -965,9 +966,10 @@ struct ParameterizedFunctionTemplateKey
 	FunctionsSetPtr functions_set;
 	TemplateArgsFinished template_args;
 
+	// Override comparing, since we can't just compare template args as is.
 	op==( ParameterizedFunctionTemplateKey& l, ParameterizedFunctionTemplateKey& r ) : bool;
 
-	// Override hash, since we can't just compare hash template args as is.
+	// Override hash, since we can't just hash template args as is.
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
