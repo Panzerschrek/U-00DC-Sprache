@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/hash_apply.u"
 import "../imports/hasher.u"
+import "../imports/variant.u"
 
 fn nomangle main() : i32
 {
@@ -288,6 +289,31 @@ fn nomangle main() : i32
 		halt if( res_bar == 0s );
 
 		halt if( res_foo == res_bar );
+	}
+	{ // Hashing variant. Should produce different results for different stored types (even if their internal representation is identical).
+
+		var ust::variant</ tup[ u32, i32 ] /> v0( 56u ), v1( 56 ), v2( 372 );
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, v0 );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, v1 );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, v2 );
+		auto res2= hasher.get();
+		halt if( res2 == 0s );
+
+		halt if( res0 == res1 );
+		halt if( res0 == res2 );
+		halt if( res1 == res2 );
 	}
 
 	return 0;
