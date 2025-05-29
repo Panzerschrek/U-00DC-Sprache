@@ -349,13 +349,20 @@ public:
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
-		// This algorithm should match hash claculation for range of T elements!
-
-		apply_value_to_hasher( hasher, size_ );
-
-		for( var size_type mut i= 0s; i < size_; ++i )
+		static_if( c_enable_range )
 		{
-			apply_value_to_hasher( hasher, unsafe( $>( ptr_ + i ) ) );
+			// Usually hash range for vectors.
+			range().hash( hasher );
+		}
+		else
+		{
+			// Backup hashing if "range" isn't available.
+			apply_value_to_hasher( hasher, size_ );
+
+			for( var size_type mut i= 0s; i < size_; ++i )
+			{
+				apply_value_to_hasher( hasher, unsafe( $>( ptr_ + i ) ) );
+			}
 		}
 	}
 
