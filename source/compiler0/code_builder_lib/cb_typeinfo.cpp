@@ -760,6 +760,12 @@ VariablePtr CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_t
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_deleted ) ) );
 
 				node_type_class.members->AddName(
+					"is_inherited",
+					NamesScopeValue( std::make_shared<ClassField>( "is_inherited", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
+				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_inherited ) ) );
+
+				node_type_class.members->AddName(
 					"is_virtual",
 					NamesScopeValue( std::make_shared<ClassField>( "is_virtual", node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );

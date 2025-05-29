@@ -801,6 +801,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 		ADD_BOOL_FIELD( "is_this_call" , function.is_this_call )
 		ADD_BOOL_FIELD( "is_generated" , function.is_generated )
 		ADD_BOOL_FIELD( "is_deleted"   , function.is_deleted   )
+		ADD_BOOL_FIELD( "is_inherited" , function.is_inherited )
 		ADD_BOOL_FIELD( "is_virtual"   , function.virtual_table_index != ~0u )
 
 		ADD_CLASS_MEMBER_COMMON_FIELDS( class_function.name )
