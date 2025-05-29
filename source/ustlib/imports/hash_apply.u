@@ -184,6 +184,12 @@ fn apply_value_to_hasher( Hasher &mut hasher, T& t )
 		}
 		else
 		{
+			// Hash parents (if has parents).
+			for( &el : typeinfo</T/>.parents_list )
+			{
+				apply_value_to_hasher( hasher, cast_ref</ typeof(el.type)::src_type />(t) );
+			}
+
 			// Perform per-field hashing (if possible).
 			for( &el : typeinfo</T/>.fields_list )
 			{

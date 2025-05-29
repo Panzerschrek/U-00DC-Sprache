@@ -247,6 +247,24 @@ fn nomangle main() : i32
 
 		halt if( res0 == res1 );
 	}
+	{ // Struct for class with parents and no "hash" method.
+		var PolymorphA a( 123 );
+		var PolymorphB b( 123 );
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, a );
+		auto a_hash= hasher.get();
+		halt if( a_hash == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, b );
+		auto b_hash= hasher.get();
+		halt if( b_hash == 0s );
+
+		halt if( a_hash != b_hash );
+	}
 	{ // Hash for empty struct.
 		var EmptyStruct s;
 
@@ -303,3 +321,19 @@ struct StructWithoutHashMethod
 }
 
 struct EmptyStruct{}
+
+class PolymorphA polymorph
+{
+	fn constructor( i32 in_x )
+		( x= in_x )
+	{}
+
+	i32 x;
+}
+
+class PolymorphB : PolymorphA
+{
+	fn constructor( i32 in_x )
+		( base(in_x) )
+	{}
+}
