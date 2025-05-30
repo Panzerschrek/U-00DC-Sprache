@@ -53,7 +53,7 @@ public:
 			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
 				auto &mut table_value= $>(other.table_ + i);
-				if( table_value.cell_content == unordered_map_impl::CellContent::HaveValue )
+				if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
 				{
 					this.insert( table_value.key_storage, table_value.value_storage );
 				}
@@ -118,7 +118,7 @@ public:
 
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
-					dst_value.cell_content= unordered_map_impl::CellContent::HaveValue;
+					dst_value.cell_content= unordered_map_impl::CellContent::HasValue;
 					return dst_value.value_storage;
 				}
 				else if( cell_content == unordered_map_impl::CellContent::ValueRemoved )
@@ -130,7 +130,7 @@ public:
 						insert_index= key_hash_wrapped;
 					}
 				}
-				else if( cell_content == unordered_map_impl::CellContent::HaveValue )
+				else if( cell_content == unordered_map_impl::CellContent::HasValue )
 				{
 					auto &mut dst_value= $>(table_ + key_hash_wrapped);
 					if( key == dst_value.key_storage )
@@ -225,7 +225,7 @@ public:
 			for( auto mut i= 0s; i < capacity_; ++i )
 			{
 				auto &mut table_value= $>(table_ + i);
-				if( table_value.cell_content == unordered_map_impl::CellContent::HaveValue )
+				if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
 				{
 					table_value.cell_content= unordered_map_impl::CellContent::ValueRemoved;
 					call_destructor( table_value.key_storage );
@@ -295,7 +295,7 @@ private:
 					auto &mut old_value= $>(table_ + i);
 					if( old_value.cell_content == unordered_map_impl::CellContent::Empty || old_value.cell_content == unordered_map_impl::CellContent::ValueRemoved )
 					{}
-					else if( old_value.cell_content == unordered_map_impl::CellContent::HaveValue )
+					else if( old_value.cell_content == unordered_map_impl::CellContent::HasValue )
 					{
 						// Insert value into new table.
 						auto key_hash= calculate_hash( old_value.key_storage );
@@ -305,7 +305,7 @@ private:
 							auto &mut new_value= $>(new_table + key_hash_wrapped);
 							if( new_value.cell_content == unordered_map_impl::CellContent::Empty )
 							{
-								new_value.cell_content= unordered_map_impl::CellContent::HaveValue;
+								new_value.cell_content= unordered_map_impl::CellContent::HasValue;
 								memory_copy_aligned( typeinfo</ key_type   />.align_of, ptr_cast_to_byte8( $<(new_value.key_storage   ) ), ptr_cast_to_byte8( $<( old_value.key_storage   ) ), typeinfo</ key_type   />.size_of );
 								memory_copy_aligned( typeinfo</ value_type />.align_of, ptr_cast_to_byte8( $<(new_value.value_storage ) ), ptr_cast_to_byte8( $<( old_value.value_storage ) ), typeinfo</ value_type />.size_of );
 								break; // We must find value, bacause new_capacity >= size_
@@ -341,7 +341,7 @@ private:
 				auto &mut table_value= $>(table_ + key_hash_wrapped);
 				if( table_value.cell_content == unordered_map_impl::CellContent::Empty ) { break; }
 				else if( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved ) {}
-				else if( table_value.cell_content == unordered_map_impl::CellContent::HaveValue )
+				else if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
 				{
 					if( key == table_value.key_storage )
 					{
@@ -470,7 +470,7 @@ public:
 	private:
 		fn advance_to_next_element( mut this )
 		{
-			while( capacity_ > 0s && unsafe( $>(table_) ).cell_content != unordered_map_impl::CellContent::HaveValue )
+			while( capacity_ > 0s && unsafe( $>(table_) ).cell_content != unordered_map_impl::CellContent::HasValue )
 			{
 				unsafe{ ++table_; }
 				--capacity_;
@@ -516,7 +516,7 @@ namespace unordered_map_impl
 enum CellContent
 {
 	Empty,
-	HaveValue,
+	HasValue,
 	ValueRemoved
 }
 
