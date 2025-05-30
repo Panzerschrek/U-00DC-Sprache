@@ -139,6 +139,16 @@ public:
 	// TODO - maybe add method, like "erase_if_exists"?
 	fn erase( mut this, key_type& key ) : value_type
 	{
+		// A workaround for cases where "unordered_map" contained many elements but now almost all of them are removed.
+		// In such case iteration may be very slow.
+		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
+		// TODO - handle possible overflow.
+		// TODO - tune load factor for schrinking.
+		if( size_ * 16s < capacity_ )
+		{
+			rehash( size_ + 1s );
+		}
+
 		unsafe
 		{
 			var ptr_type table_value_ptr= find_key( key );
