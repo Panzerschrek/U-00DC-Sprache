@@ -223,6 +223,17 @@ public:
 			}
 		}
 		size_= 0s;
+
+		// A workaround for cases where "unordered_map" contained many elements.
+		// In such case iteration may be very slow.
+		// So, free internal storage to prevent this.
+		// TODO - add a possibility to clear map with preserving its storage.
+		unsafe
+		{
+			memory_free( ptr_cast_to_byte8( table_ ) );
+			table_= ust::nullptr</TableValue/>();
+			capacity_= 0s;
+		}
 	}
 
 	// "iter" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of iterator classes where it isn't necessary.
