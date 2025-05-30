@@ -108,19 +108,19 @@ public:
 
 			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= calculate_hash(key);
-			auto initial_key_hash_wrapped= key_hash & capacity_mask;
-			auto mut key_hash_wrapped= initial_key_hash_wrapped;
+			auto mut key_hash_wrapped= key_hash & capacity_mask;
 			auto mut insert_index= ~0s;
 			loop
 			{
 				auto cell_content= $>(table_ + key_hash_wrapped).cell_content;
-				auto next_key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
-				if( cell_content == unordered_map_impl::CellContent::Empty || next_key_hash_wrapped == initial_key_hash_wrapped )
+				if( cell_content == unordered_map_impl::CellContent::Empty )
 				{
+					// Finally reached an empty cell. This means that we insert new value.
+
 					++size_;
 					++num_occupied_slots_;
 
-					// Insert new value into place of tombstone (if it exists) or in first empty cell.
+					// Insert new value into place of tombstone (if it exists) or in this empty cell.
 					if( insert_index == ~0s ){ insert_index= key_hash_wrapped; }
 
 					auto &mut dst_value= $>(table_ + insert_index);
@@ -149,8 +149,9 @@ public:
 					}
 				}
 
-				key_hash_wrapped= next_key_hash_wrapped;
-				// We must finish loop, bacause capacity_ >= size_.
+				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
+
+				// Eventually we should finish this loop, since we should have at least one empty cell.
 			}
 		}
 	}
@@ -354,12 +355,18 @@ private:
 			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= calculate_hash(key);
 			auto mut key_hash_wrapped= key_hash & capacity_mask;
-			auto key_hash_wrapped_finish= key_hash_wrapped;
 			loop
 			{
 				auto &mut table_value= $>(table_ + key_hash_wrapped);
-				if( table_value.cell_content == unordered_map_impl::CellContent::Empty ) { break; }
-				else if( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved ) {}
+				if( table_value.cell_content == unordered_map_impl::CellContent::Empty )
+				{
+					// End search if reached an empty cell.
+					return nullptr</TableValue/>();
+				}
+				else if( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved )
+				{
+					// Ignore a tombstone.
+				}
 				else if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
 				{
 					if( key == table_value.key_storage )
@@ -369,10 +376,10 @@ private:
 				}
 
 				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
-				if( key_hash_wrapped == key_hash_wrapped_finish ){ break; } // Value not found in whole table.
+
+				// Eventually we should finish this loop, since we should have at least one empty cell.
 			}
 		}
-		return nullptr</TableValue/>();
 	}
 
 	fn calculate_hash( key_type& key ) : size_type
