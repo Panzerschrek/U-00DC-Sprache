@@ -92,7 +92,11 @@ public:
 		// Size overflow is inpossible here - previous container size can't be greater than half of address space.
 		unsafe
 		{
-			rehash( size_ + 1s );
+			// Trigger rehashing using not size, but the number of occupied slots, considering one more slot is needed for new value.
+			// Do this in order to have not so many occupied slots (values and tombstones),
+			// since having too many of them slows-down lookup/insertion.
+			rehash( num_occupied_slots_ + 1s );
+
 			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= calculate_hash(key);
 			auto initial_key_hash_wrapped= key_hash & capacity_mask;
@@ -105,6 +109,7 @@ public:
 				if( cell_content == unordered_map_impl::CellContent::Empty || next_key_hash_wrapped == initial_key_hash_wrapped )
 				{
 					++size_;
+					++num_occupied_slots_;
 
 					// Insert new value into place of tombstone (if it exists) or in first empty cell.
 					if( insert_index == ~0s ){ insert_index= key_hash_wrapped; }
@@ -161,6 +166,7 @@ public:
 			{
 				auto &mut table_value= $>(table_value_ptr);
 				--size_;
+				// Do not decrement "num_occupied_slots_" here. Still count a position with tombstone as occupied.
 				table_value.cell_content= unordered_map_impl::CellContent::ValueRemoved;
 				call_destructor( table_value.key_storage );
 				var value_type mut r= uninitialized;
@@ -238,6 +244,7 @@ public:
 			memory_free( ptr_cast_to_byte8( table_ ) );
 			table_= ust::nullptr</TableValue/>();
 			capacity_= 0s;
+			num_occupied_slots_= 0s;
 		}
 	}
 
@@ -314,6 +321,7 @@ private:
 			}
 			capacity_= new_capacity;
 			table_= new_table;
+			num_occupied_slots_= size_; // After rehashing we have no tombstones, so the number of occupied slots is equal to number of stored elements.
 		}
 	}
 
@@ -498,6 +506,7 @@ private:
 
 	ptr_type table_= zero_init;
 	size_type size_(0);
+	size_type num_occupied_slots_(0); // size + number of tombstones.
 	size_type capacity_(0); // Always must be power of two.
 }
 
