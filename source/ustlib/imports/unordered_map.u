@@ -130,15 +130,6 @@ public:
 					dst_value.cell_content= unordered_map_impl::CellContent::HasValue;
 					return dst_value.value_storage;
 				}
-				else if( cell_content == unordered_map_impl::CellContent::ValueRemoved )
-				{
-					// Remember first tombstone position in order to perform insertion into it.
-					// We need to select the first one in order to minimize probing sequence on lookup.
-					if( insert_index == ~0s )
-					{
-						insert_index= key_hash_wrapped;
-					}
-				}
 				else if( cell_content == unordered_map_impl::CellContent::HasValue )
 				{
 					auto &mut dst_value= $>(table_ + key_hash_wrapped);
@@ -146,6 +137,16 @@ public:
 					{
 						dst_value.value_storage= move(value);
 						return dst_value.value_storage;
+					}
+				}
+				else
+				{
+					debug_assert( cell_content == unordered_map_impl::CellContent::ValueRemoved );
+					// Remember first tombstone position in order to perform insertion into it.
+					// We need to select the first one in order to minimize probing sequence on lookup.
+					if( insert_index == ~0s )
+					{
+						insert_index= key_hash_wrapped;
 					}
 				}
 
@@ -187,10 +188,6 @@ public:
 					// End search if reached an empty cell.
 					halt;
 				}
-				else if( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved )
-				{
-					// Ignore a tombstone.
-				}
 				else if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
 				{
 					if( key == table_value.key_storage )
@@ -216,6 +213,11 @@ public:
 
 						return r;
 					}
+				}
+				else
+				{
+					// Ignore a tombstone.
+					debug_assert( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved );
 				}
 
 				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
@@ -352,9 +354,7 @@ private:
 				for( auto mut i= 0s; i < capacity_; ++i )
 				{
 					auto &mut old_value= $>(table_ + i);
-					if( old_value.cell_content == unordered_map_impl::CellContent::Empty || old_value.cell_content == unordered_map_impl::CellContent::ValueRemoved )
-					{}
-					else if( old_value.cell_content == unordered_map_impl::CellContent::HasValue )
+					if( old_value.cell_content == unordered_map_impl::CellContent::HasValue )
 					{
 						// Insert value into new table.
 						auto key_hash= calculate_hash( old_value.key_storage );
@@ -372,7 +372,6 @@ private:
 							key_hash_wrapped= ( key_hash_wrapped + 1s ) & new_capacity_mask;
 						}
 					}
-					else{ halt; }
 				} // for all old table.
 
 				// All value moved, so, we can free old memory.
@@ -402,16 +401,17 @@ private:
 					// End search if reached an empty cell.
 					return nullptr</TableValue/>();
 				}
-				else if( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved )
-				{
-					// Ignore a tombstone.
-				}
 				else if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
 				{
 					if( key == table_value.key_storage )
 					{
 						return $<( table_value );
 					}
+				}
+				else
+				{
+					// Ignore a tombstone.
+					debug_assert( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved );
 				}
 
 				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
