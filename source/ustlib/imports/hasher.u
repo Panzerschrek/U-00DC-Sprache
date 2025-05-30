@@ -221,9 +221,20 @@ public:
 private:
 	fn write( mut this, size_type x )
 	{
-		// Same, as 'boost::hash_range'.
-		// TODO - check correctness for 32bit/64bit.
-		state_^= x + size_type(0x9e3779b9u) + (state_ << 6u ) + (state_ >> 2u );
+		// Some sort of MurmurHash3.
+		// TODO - use 64-bit version if can.
+
+		var u32 mut k( x );
+		k*= 0xcc9e2d51u;
+		k= (k << 15u ) | (k >> 17u);
+		k*= 0x1b873593u;
+
+		var u32 mut s( state_ );
+		s ^= u32( k );
+		s= (s << 13u ) | (s >> 19u);
+		s= s * 5u + 0xe6546b64u;
+
+		state_= size_type(s);
 	}
 
 private:
