@@ -97,6 +97,9 @@ public:
 			// since having too many of them slows-down lookup/insertion.
 			rehash( num_occupied_slots_ + 1s );
 
+			// TODO - fix this, calculate load factor here and rehash with target size calculated only based on number of stored elements.
+			// Basically we need to have possibility to rehash into a table with capacity equal or less than current.
+
 			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= calculate_hash(key);
 			auto initial_key_hash_wrapped= key_hash & capacity_mask;
