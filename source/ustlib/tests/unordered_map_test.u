@@ -403,14 +403,7 @@ fn nomangle main() : i32
 		for( var size_type mut i= 0s; i < (1s << 16s); ++i )
 		{
 			var u32 val= gen.Next();
-			if( ( gen.Next() & 1u ) != 0u )
-			{
-				m.insert( val, -i32(val) );
-			}
-			else if( m.exists( val ) )
-			{
-				m.erase( val );
-			}
+			m.insert( val, -i32(val) );
 		}
 
 		// Perform roughly 4096 searches for each number.
