@@ -270,7 +270,7 @@ private:
 	{
 		if( expected_size <= size_ ) { return; }
 
-		auto mut new_capacity= max( capacity_, 2s );
+		auto mut new_capacity= max( capacity_, 8s ); // Usi minimum non-zero capacity 8 in order to simplify some calculations.
 		while( !( ( expected_size << 1u ) <= new_capacity ) ) { new_capacity<<= 1u; }
 		while( !( ( expected_size << 2u ) >  new_capacity ) ) { new_capacity>>= 1u; }
 
