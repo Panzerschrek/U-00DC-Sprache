@@ -159,6 +159,11 @@ public:
 	// TODO - maybe add method, like "erase_if_exists"?
 	fn erase( mut this, key_type& key ) : value_type
 	{
+		if( empty() )
+		{
+			halt;
+		}
+
 		// A workaround for cases where "unordered_map" contained many elements but now almost all of them are removed.
 		// In such case iteration may be very slow.
 		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
@@ -171,20 +176,53 @@ public:
 
 		unsafe
 		{
-			var ptr_type table_value_ptr= find_key( key );
-			if( !is_nullptr(table_value_ptr) )
+			auto capacity_mask= capacity_ - 1s;
+			auto key_hash= calculate_hash(key);
+			auto mut key_hash_wrapped= key_hash & capacity_mask;
+			loop
 			{
-				auto &mut table_value= $>(table_value_ptr);
-				--size_;
-				// Do not decrement "num_occupied_slots_" here. Still count a position with tombstone as occupied.
-				table_value.cell_content= unordered_map_impl::CellContent::ValueRemoved;
-				call_destructor( table_value.key_storage );
-				var value_type mut r= uninitialized;
-				memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, ptr_cast_to_byte8( $<(r) ), ptr_cast_to_byte8( $<(table_value.value_storage) ), typeinfo</ typeof(table_value.value_storage) />.size_of );
-				return r;
+				auto &mut table_value= $>(table_ + key_hash_wrapped);
+				if( table_value.cell_content == unordered_map_impl::CellContent::Empty )
+				{
+					// End search if reached an empty cell.
+					halt;
+				}
+				else if( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved )
+				{
+					// Ignore a tombstone.
+				}
+				else if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
+				{
+					if( key == table_value.key_storage )
+					{
+						--size_;
+						if( $>( table_ + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ).cell_content == unordered_map_impl::CellContent::Empty )
+						{
+							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
+							// TODO - try to remove also tombstones prior to this cell.
+							--num_occupied_slots_;
+							table_value.cell_content= unordered_map_impl::CellContent::Empty;
+						}
+						else
+						{
+							// Place a tombstone here to preserve probing chain.
+							table_value.cell_content= unordered_map_impl::CellContent::ValueRemoved;
+						}
+
+						call_destructor( table_value.key_storage );
+
+						var value_type mut r= uninitialized;
+						memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, ptr_cast_to_byte8( $<(r) ), ptr_cast_to_byte8( $<(table_value.value_storage) ), typeinfo</ typeof(table_value.value_storage) />.size_of );
+
+						return r;
+					}
+				}
+
+				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
+
+				// Eventually we should finish this loop, since we should have at least one empty cell.
 			}
 		}
-		halt;
 	}
 
 	fn drop( mut this, key_type& key )
