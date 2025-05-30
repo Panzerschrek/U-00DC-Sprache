@@ -1,4 +1,5 @@
 import "alloc.u"
+import "assert.u"
 import "container_utils.u"
 import "iterator.u"
 import "hasher.u"
@@ -95,10 +96,15 @@ public:
 			// Trigger rehashing using not size, but the number of occupied slots, considering one more slot is needed for new value.
 			// Do this in order to have not so many occupied slots (values and tombstones),
 			// since having too many of them slows-down lookup/insertion.
-			rehash( num_occupied_slots_ + 1s );
 
-			// TODO - fix this, calculate load factor here and rehash with target size calculated only based on number of stored elements.
-			// Basically we need to have possibility to rehash into a table with capacity equal or less than current.
+			// TODO - tune load factor.
+			if( (num_occupied_slots_ + 1s) >
+				capacity_ * c_max_loading_factor_numerator / c_max_loading_factor_denominator )
+			{
+				// Rehashing is required, since load factor is exceeded.
+				// Trigger it, requesting size for all current elements plus newly-inserted element.
+				trigger_rehash( size_ + 1s );
+			}
 
 			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= calculate_hash(key);
@@ -159,7 +165,7 @@ public:
 		// TODO - tune load factor for schrinking.
 		if( size_ * 16s < capacity_ )
 		{
-			rehash( size_ + 1s );
+			unsafe( trigger_rehash( size_ ) );
 		}
 
 		unsafe
@@ -266,15 +272,25 @@ public:
 	}
 
 private:
-	fn rehash( mut this, size_type expected_size )
+	// New size must be not less, than current size.
+	fn trigger_rehash( mut this, size_type new_size ) unsafe
 	{
-		if( expected_size <= size_ ) { return; }
+		debug_assert( new_size >= size_ );
 
-		auto mut new_capacity= max( capacity_, 8s ); // Usi minimum non-zero capacity 8 in order to simplify some calculations.
-		while( !( ( expected_size << 1u ) <= new_capacity ) ) { new_capacity<<= 1u; }
-		while( !( ( expected_size << 2u ) >  new_capacity ) ) { new_capacity>>= 1u; }
+		// We require size for "new_size" elements plus at least one empty slot.
+		// We also need to allocate twice more space compared to amount determined by the load factor, in order to have some space for growing.
+		var size_type capacity_with_halved_loading_factor= ( new_size + 1s ) * 2s * c_max_loading_factor_denominator / c_max_loading_factor_numerator;
+		var size_type new_capacity= get_nearest_power_of_two_size( capacity_with_halved_loading_factor );
+		unsafe( rehash( new_capacity ) );
+	}
 
-		if( new_capacity == capacity_ ) { return; }
+	// Performs unconditional rehashing.
+	// new capacity should be power of two and be enough to store at least all currently stored values plus one free slot.
+	fn rehash( mut this, size_type mut new_capacity ) unsafe
+	{
+		debug_assert( new_capacity >= size_ + 1s );
+
+		max_assign( new_capacity, 8s ); // Use minimum non-zero capacity 8 in order to simplify some calculations.
 
 		unsafe // reallocate table and rehash.
 		{
@@ -365,6 +381,18 @@ private:
 		var default_hasher mut hasher;
 		apply_value_to_hasher( hasher, key );
 		return hasher.get();
+	}
+
+	// Round up to nearest power of two.
+	fn get_nearest_power_of_two_size( size_type s ) : size_type
+	{
+		// TODO - optimize this.
+		var size_type mut res= 1s;
+		while( res < s )
+		{
+			res <<= 1u;
+		}
+		return res;
 	}
 
 public:
@@ -503,6 +531,11 @@ private:
 	}
 
 	type ptr_type= $(TableValue);
+
+private:
+	// Loading factor representing in form numerator/denominator.
+	var size_type constexpr c_max_loading_factor_numerator= 3s;
+	var size_type constexpr c_max_loading_factor_denominator= 4s;
 
 private:
 	ContainerTag</ tup[ K, V ] /> key_value_tag_;
