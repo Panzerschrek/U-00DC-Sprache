@@ -341,7 +341,6 @@ fn nomangle main() : i32
 
 		var RandGenerator mut gen;
 
-
 		for( var size_type mut i= 0s; i < (1s << 20u); ++i )
 		{
 			var u32 val= gen.Next() | ( gen.Next() << 16u );
@@ -358,6 +357,70 @@ fn nomangle main() : i32
 			{
 				combination*= el.value();
 				combination+= el.value();
+			}
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Test insertion/removal of many elements with somewhat intermediate chance of identical elements.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		// Since we have 16-bit random values and 24-bit of iterations we process each number 256 times in average.
+		for( var size_type mut i= 0s; i < (1s << 24u); ++i )
+		{
+			var u32 val= gen.Next();
+			if( ( gen.Next() & 1u ) != 0u )
+			{
+				m.insert( val, -i32(val) );
+			}
+			else if( m.exists( val ) )
+			{
+				m.erase( val );
+			}
+		}
+
+		var i32 mut combination= 0;
+		foreach( &el : m )
+		{
+			combination*= el.value();
+			combination+= el.value();
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Test with many searches for not so many elements.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		// Since we have 16-bit random values and 16-bit of iterations we should roughly have any number in the table.
+		for( var size_type mut i= 0s; i < (1s << 16s); ++i )
+		{
+			var u32 val= gen.Next();
+			if( ( gen.Next() & 1u ) != 0u )
+			{
+				m.insert( val, -i32(val) );
+			}
+			else if( m.exists( val ) )
+			{
+				m.erase( val );
+			}
+		}
+
+		// Perform roughly 4096 searches for each number.
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < (1s << 28s); ++i )
+		{
+			if_var( &val : m.find( gen.Next() ) )
+			{
+				combination*= val;
+				combination+= val;
 			}
 		}
 
