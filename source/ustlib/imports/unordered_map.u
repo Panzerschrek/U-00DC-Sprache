@@ -118,7 +118,12 @@ public:
 				}
 				else if( cell_content == unordered_map_impl::CellContent::ValueRemoved )
 				{
-					insert_index= key_hash_wrapped; // Insert new value into place of tombstone.
+					// Remember first tombstone position in order to perform insertion into it.
+					// We need to select the first one in order to minimize probing sequence on lookup.
+					if( insert_index == ~0s )
+					{
+						insert_index= key_hash_wrapped;
+					}
 				}
 				else if( cell_content == unordered_map_impl::CellContent::HaveValue )
 				{
