@@ -163,7 +163,7 @@ public:
 		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
 		// TODO - handle possible overflow.
 		// TODO - tune load factor for schrinking.
-		if( size_ * 16s < capacity_ )
+		if( size_ * c_min_loading_factor_denominator < capacity_ * c_min_loading_factor_numerator )
 		{
 			unsafe( trigger_rehash( size_ ) );
 		}
@@ -536,6 +536,9 @@ private:
 	// Loading factor representing in form numerator/denominator.
 	var size_type constexpr c_max_loading_factor_numerator= 3s;
 	var size_type constexpr c_max_loading_factor_denominator= 4s;
+
+	var size_type constexpr c_min_loading_factor_numerator= 1s;
+	var size_type constexpr c_min_loading_factor_denominator= 16s;
 
 private:
 	ContainerTag</ tup[ K, V ] /> key_value_tag_;
