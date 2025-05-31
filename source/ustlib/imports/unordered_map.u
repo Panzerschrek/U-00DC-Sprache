@@ -120,7 +120,7 @@ public:
 			{
 				// Rehashing is required, since load factor is exceeded.
 				// Trigger it, requesting size for all current elements plus newly-inserted element.
-				trigger_rehash( size_ + 1s );
+				rehash( size_ + 1s );
 			}
 
 			var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
@@ -194,7 +194,7 @@ public:
 		// TODO - tune load factor for schrinking.
 		if( size_ * unordered_map_impl::c_min_loading_factor_denominator < capacity_ * unordered_map_impl::c_min_loading_factor_numerator )
 		{
-			unsafe( trigger_rehash( size_ ) );
+			unsafe( rehash( size_ ) );
 		}
 
 		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
@@ -351,23 +351,14 @@ public:
 	}
 
 private:
-	// New size must be not less, than current size.
-	fn trigger_rehash( mut this, size_type new_size ) unsafe
+	// Performs unconditional rehashing.
+	// new size should not be less than current size.
+	fn rehash( mut this,size_type new_size ) unsafe
 	{
 		debug_assert( new_size >= size_ );
 
-		// We require size for "new_size" elements plus at least one empty slot.
-		// Also we shouldn't exceed maximum load factor.
-		// Since we perform rounding to nearest power of two, result loading factor is usually less than maximum, which gives some space for further grow.
-		var size_type capacity_with_halved_loading_factor= ( new_size + 1s ) * unordered_map_impl::c_max_loading_factor_denominator / unordered_map_impl::c_max_loading_factor_numerator;
-		var size_type new_capacity= unordered_map_impl::get_nearest_power_of_two_size( capacity_with_halved_loading_factor );
-		unsafe( rehash( new_capacity ) );
-	}
+		var size_type mut new_capacity= unordered_map_impl::calculate_capacity_for_given_size( new_size );
 
-	// Performs unconditional rehashing.
-	// new capacity should be power of two and be enough to store at least all currently stored values plus one free slot.
-	fn rehash( mut this, size_type mut new_capacity ) unsafe
-	{
 		debug_assert( new_capacity >= size_ + 1s );
 
 		max_assign(
@@ -711,6 +702,15 @@ fn enable_if( typeinfo</size_type/>.size_of == 4s ) get_hash1( size_type h ) : s
 fn enable_if( typeinfo</size_type/>.size_of == 4s ) get_hash2( size_type h ) : size_type
 {
 	return h  >> 25u;
+}
+
+fn calculate_capacity_for_given_size( size_type size ) : size_type
+{
+	// We require size for "size" elements plus at least one empty slot.
+	// Also we shouldn't exceed maximum load factor.
+	// Since we perform rounding to nearest power of two, result loading factor is usually less than maximum, which gives some space for further grow.
+	var size_type capacity_with_halved_loading_factor= ( size + 1s ) * c_max_loading_factor_denominator / c_max_loading_factor_numerator;
+	return get_nearest_power_of_two_size( capacity_with_halved_loading_factor );
 }
 
 // Used for capacity calculation.
