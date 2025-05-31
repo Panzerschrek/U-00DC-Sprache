@@ -51,7 +51,7 @@ public:
 	{
 		unsafe
 		{
-			var $(TableValue) other_table= other.get_table();
+			var $(TableValue) other_table= other.get_data_table();
 			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
 				auto &mut table_value= $>(other_table + i);
@@ -107,7 +107,7 @@ public:
 				trigger_rehash( size_ + 1s );
 			}
 
-			var $(TableValue) table= get_table();
+			var $(TableValue) table= get_data_table();
 
 			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= calculate_hash(key);
@@ -178,7 +178,7 @@ public:
 			unsafe( trigger_rehash( size_ ) );
 		}
 
-		var $(TableValue) table= get_table();
+		var $(TableValue) table= get_data_table();
 
 		unsafe
 		{
@@ -276,7 +276,7 @@ public:
 	{
 		if( is_nullptr(ptr_) ) { return; }
 
-		var $(TableValue) table= get_table();
+		var $(TableValue) table= get_data_table();
 
 		unsafe
 		{
@@ -366,7 +366,7 @@ private:
 			// Move content of old table into new table.
 			if( !is_nullptr(ptr_) )
 			{
-				var $(TableValue) table= get_table();
+				var $(TableValue) table= get_data_table();
 
 				for( auto mut i= 0s; i < capacity_; ++i )
 				{
@@ -406,7 +406,7 @@ private:
 	{
 		if( empty() ){ return nullptr</TableValue/>(); }
 
-		var $(TableValue) table= get_table();
+		var $(TableValue) table= get_data_table();
 
 		unsafe
 		{
@@ -441,7 +441,13 @@ private:
 		}
 	}
 
-	fn get_table( this ) : $(TableValue)
+	fn get_control_table( this ) : $(unordered_map_impl::ControlTableElement)
+	{
+		// Control table goes first.
+		return unsafe( byte_ptr_cast</ unordered_map_impl::ControlTableElement />( ptr_ ) );
+	}
+
+	fn get_data_table( this ) : $(TableValue)
 	{
 		// Data table follows after control table.
 		// Each element of the control table is just a byte.
@@ -527,12 +533,12 @@ public:
 
 		fn enable_if( is_mutable )
 		constructor( this_type & mut m ) @( reference_notation::pollution::param0_param_1_reference )
-			( control_table_( m.ptr_ ), table_( m.get_table() ), capacity_(m.capacity_) )
+			( control_table_( m.get_control_table() ), table_( m.get_data_table() ), capacity_(m.capacity_) )
 		{}
 
 		fn enable_if( !is_mutable )
 		constructor( this_type &imut m ) @( reference_notation::pollution::param0_param_1_reference )
-			( control_table_( m.ptr_ ), table_( m.get_table() ), capacity_(m.capacity_) )
+			( control_table_( m.get_control_table() ), table_( m.get_data_table() ), capacity_(m.capacity_) )
 		{}
 
 		fn constructor( mut this, raw_iterator</is_mutable/>& other )= default;
@@ -594,7 +600,7 @@ public:
 
 	private:
 		ReferenceContainerTag</ this_type, is_mutable /> reference_tag_; // Logically hold a reference to the source container.
-		$(byte8) control_table_;
+		$(unordered_map_impl::ControlTableElement) control_table_;
 		ptr_type table_;
 		size_type capacity_;
 	}
@@ -602,7 +608,7 @@ public:
 private:
 	struct TableValue
 	{
-		byte8 cell_content;
+		unordered_map_impl::ControlTableElement cell_content;
 		// Actually, destructors and constructors not called.
 		key_type key_storage;
 		value_type value_storage;
@@ -633,9 +639,11 @@ private:
 namespace unordered_map_impl
 {
 
-var byte8 c_contents_empty( u8(0) );
-var byte8 c_contents_has_value( u8(1) );
-var byte8 c_contents_value_removed( u8(2) );
+type ControlTableElement= u8;
+
+var ControlTableElement c_contents_empty( 0 );
+var ControlTableElement c_contents_has_value( 1 );
+var ControlTableElement c_contents_value_removed( 2 );
 
 } // namespace unordered_map_impl
 
