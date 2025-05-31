@@ -143,10 +143,13 @@ public:
 					// Finally reached an empty cell. This means that we insert new value.
 
 					++size_;
-					++num_occupied_slots_;
 
 					// Insert new value into place of tombstone (if it exists) or in this empty cell.
-					if( insert_index == ~0s ){ insert_index= key_hash_wrapped; }
+					if( insert_index == ~0s )
+					{
+						insert_index= key_hash_wrapped;
+						++num_occupied_slots_;
+					}
 
 					$>( control_table + insert_index )= unordered_map_impl::ControlTableElement( hash2 );
 
