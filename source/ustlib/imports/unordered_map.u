@@ -27,6 +27,15 @@ namespace ust
 // Iteration order is unspecified and may be different for different instances of the same unordered_map type or even
 // for the same instance.
 //
+// Internally it's implemented as an open-addressing hash-table with linear probing.
+// It uses two different tables - control table and storage table.
+// Control table element is single byte indicated table slot state and (sometimes) containing a small portion of hash.
+// Storage table stores just pairs of keys and values.
+// Using separate control table reduces cache-locality of unordered_map operations and saves sometimes some memory for padding.
+// Overall overhead is only 1 byte per hash-table slot (ignoring, of course, unoccupied slots).
+//
+// TODO - speed-up probing on insertion, deletion and search using SIMD instructions or something similar.
+//
 template</ type K, type V />
 class unordered_map
 {
