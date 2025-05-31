@@ -219,10 +219,6 @@ public:
 					// End search if reached an empty cell.
 					halt;
 				}
-				else if( cell_content == unordered_map_impl::c_contents_value_removed )
-				{
-					// Ignore a tombstone.
-				}
 				else if( size_type(cell_content) == hash2 )
 				{
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
@@ -450,10 +446,6 @@ private:
 				{
 					// End search if reached an empty cell.
 					return nullptr</TableValue/>();
-				}
-				else if( cell_content == unordered_map_impl::c_contents_value_removed )
-				{
-					// Ignore a tombstone.
 				}
 				else if( size_type(cell_content) == hash2 )
 				{
