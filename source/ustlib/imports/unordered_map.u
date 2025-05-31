@@ -82,10 +82,9 @@ public:
 	fn destructor()
 	{
 		clear();
-		if( !is_nullptr( ptr_ ) )
-		{
-			unsafe( memory_free( ptr_ ) );
-		}
+		// "clear" call should free memory.
+		debug_assert( is_nullptr( ptr_ ) );
+		debug_assert( capacity_ == 0s );
 	}
 
 	// Copy assignment operator.
@@ -306,6 +305,10 @@ public:
 			return;
 		}
 
+		// In case of "clear" operation not olny destroy stored elements but also free table memory.
+		// It's necessary in case if someone tries to iterate this "unordered_map" instance after clearing.
+		// It may be very slow, if table is still there.
+
 		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
@@ -313,28 +316,18 @@ public:
 		{
 			for( auto mut i= 0s; i < capacity_; ++i )
 			{
-				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + i );
-				if( ( size_type(cell_content) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
+				if( ( size_type( $>( control_table + i ) ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
 				{
-					cell_content= unordered_map_impl::c_contents_value_removed;
-
 					auto &mut table_value= $>( data_table + i );
 					call_destructor( table_value.key_storage );
 					call_destructor( table_value.value_storage );
 				}
 			}
-		}
-		size_= 0s;
 
-		// A workaround for cases where "unordered_map" contained many elements.
-		// In such case iteration may be very slow.
-		// So, free internal storage to prevent this.
-		// TODO - add a possibility to clear map with preserving its storage.
-		unsafe
-		{
 			memory_free( ptr_ );
 			ptr_= ust::nullptr</byte8/>();
 			capacity_= 0s;
+			size_= 0s;
 			num_occupied_slots_= 0s;
 		}
 	}
