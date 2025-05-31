@@ -107,32 +107,34 @@ public:
 	fn insert( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
 		// Size overflow is inpossible here - previous container size can't be greater than half of address space.
+
+		// Trigger rehashing using not size, but the number of occupied slots, considering one more slot is needed for new value.
+		// Do this in order to have not so many occupied slots (values and tombstones),
+		// since having too many of them slows-down lookup/insertion.
+
+		// TODO - tune load factor.
+		if( (num_occupied_slots_ + 1s) >
+			capacity_ * unordered_map_impl::c_max_loading_factor_numerator / unordered_map_impl::c_max_loading_factor_denominator )
+		{
+			// Rehashing is required, since load factor is exceeded.
+			// Trigger it, requesting size for all current elements plus newly-inserted element.
+			// Additionaly add extra place for some tombstones, if current table contains them, this may be needed in cases
+			// when values are added and removed.
+			var size_type num_tombstones= num_occupied_slots_ - size_;
+			unsafe( rehash( size_ + 1s + ( num_tombstones >> 1u ) ) );
+		}
+
+		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(TableValue) data_table= get_data_table();
+
+		auto capacity_mask= capacity_ - 1s;
+		auto key_hash= calculate_hash(key);
+		auto hash2= unordered_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+		auto mut insert_index= ~0s;
+
 		unsafe
 		{
-			// Trigger rehashing using not size, but the number of occupied slots, considering one more slot is needed for new value.
-			// Do this in order to have not so many occupied slots (values and tombstones),
-			// since having too many of them slows-down lookup/insertion.
-
-			// TODO - tune load factor.
-			if( (num_occupied_slots_ + 1s) >
-				capacity_ * unordered_map_impl::c_max_loading_factor_numerator / unordered_map_impl::c_max_loading_factor_denominator )
-			{
-				// Rehashing is required, since load factor is exceeded.
-				// Trigger it, requesting size for all current elements plus newly-inserted element.
-				// Additionaly add extra place for some tombstones, if current table contains them, this may be needed in cases
-				// when values are added and removed.
-				var size_type num_tombstones= num_occupied_slots_ - size_;
-				rehash( size_ + 1s + ( num_tombstones >> 1u ) );
-			}
-
-			var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
-			var $(TableValue) data_table= get_data_table();
-
-			auto capacity_mask= capacity_ - 1s;
-			auto key_hash= calculate_hash(key);
-			auto hash2= unordered_map_impl::get_hash2( key_hash );
-			auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
-			auto mut insert_index= ~0s;
 			loop
 			{
 				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
@@ -202,12 +204,13 @@ public:
 		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
+		auto capacity_mask= capacity_ - 1s;
+		auto key_hash= calculate_hash(key);
+		auto hash2= unordered_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+
 		unsafe
 		{
-			auto capacity_mask= capacity_ - 1s;
-			auto key_hash= calculate_hash(key);
-			auto hash2= unordered_map_impl::get_hash2( key_hash );
-			auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
 			loop
 			{
 				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
@@ -433,12 +436,13 @@ private:
 		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
+		auto capacity_mask= capacity_ - 1s;
+		auto key_hash= calculate_hash(key);
+		auto hash2= unordered_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+
 		unsafe
 		{
-			auto capacity_mask= capacity_ - 1s;
-			auto key_hash= calculate_hash(key);
-			auto hash2= unordered_map_impl::get_hash2( key_hash );
-			auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
 			loop
 			{
 				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
