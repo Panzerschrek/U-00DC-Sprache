@@ -55,7 +55,7 @@ public:
 			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
 				auto &mut table_value= $>(other_table + i);
-				if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
+				if( table_value.cell_content == unordered_map_impl::c_contents_has_value )
 				{
 					this.insert( table_value.key_storage, table_value.value_storage );
 				}
@@ -116,7 +116,7 @@ public:
 			loop
 			{
 				auto cell_content= $>(table + key_hash_wrapped).cell_content;
-				if( cell_content == unordered_map_impl::CellContent::Empty )
+				if( cell_content == unordered_map_impl::c_contents_empty )
 				{
 					// Finally reached an empty cell. This means that we insert new value.
 
@@ -130,10 +130,10 @@ public:
 
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
-					dst_value.cell_content= unordered_map_impl::CellContent::HasValue;
+					dst_value.cell_content= unordered_map_impl::c_contents_has_value;
 					return dst_value.value_storage;
 				}
-				else if( cell_content == unordered_map_impl::CellContent::HasValue )
+				else if( cell_content == unordered_map_impl::c_contents_has_value )
 				{
 					auto &mut dst_value= $>(table + key_hash_wrapped);
 					if( key == dst_value.key_storage )
@@ -144,7 +144,7 @@ public:
 				}
 				else
 				{
-					debug_assert( cell_content == unordered_map_impl::CellContent::ValueRemoved );
+					debug_assert( cell_content == unordered_map_impl::c_contents_value_removed );
 					// Remember first tombstone position in order to perform insertion into it.
 					// We need to select the first one in order to minimize probing sequence on lookup.
 					if( insert_index == ~0s )
@@ -188,27 +188,27 @@ public:
 			loop
 			{
 				auto &mut table_value= $>(table + key_hash_wrapped);
-				if( table_value.cell_content == unordered_map_impl::CellContent::Empty )
+				if( table_value.cell_content == unordered_map_impl::c_contents_empty )
 				{
 					// End search if reached an empty cell.
 					halt;
 				}
-				else if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
+				else if( table_value.cell_content == unordered_map_impl::c_contents_has_value )
 				{
 					if( key == table_value.key_storage )
 					{
 						--size_;
-						if( $>( table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ).cell_content == unordered_map_impl::CellContent::Empty )
+						if( $>( table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ).cell_content == unordered_map_impl::c_contents_empty )
 						{
 							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
 							// TODO - try to remove also tombstones prior to this cell.
 							--num_occupied_slots_;
-							table_value.cell_content= unordered_map_impl::CellContent::Empty;
+							table_value.cell_content= unordered_map_impl::c_contents_empty;
 						}
 						else
 						{
 							// Place a tombstone here to preserve probing chain.
-							table_value.cell_content= unordered_map_impl::CellContent::ValueRemoved;
+							table_value.cell_content= unordered_map_impl::c_contents_value_removed;
 						}
 
 						call_destructor( table_value.key_storage );
@@ -222,7 +222,7 @@ public:
 				else
 				{
 					// Ignore a tombstone.
-					debug_assert( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved );
+					debug_assert( table_value.cell_content == unordered_map_impl::c_contents_value_removed );
 				}
 
 				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
@@ -283,9 +283,9 @@ public:
 			for( auto mut i= 0s; i < capacity_; ++i )
 			{
 				auto &mut table_value= $>(table + i);
-				if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
+				if( table_value.cell_content == unordered_map_impl::c_contents_has_value )
 				{
-					table_value.cell_content= unordered_map_impl::CellContent::ValueRemoved;
+					table_value.cell_content= unordered_map_impl::c_contents_value_removed;
 					call_destructor( table_value.key_storage );
 					call_destructor( table_value.value_storage );
 				}
@@ -360,7 +360,7 @@ private:
 
 			for( auto mut i= 0s; i < new_capacity; ++i )
 			{
-				$>(new_table + i).cell_content= unordered_map_impl::CellContent::Empty;
+				$>(new_table + i).cell_content= unordered_map_impl::c_contents_empty;
 			}
 
 			// Move content of old table into new table.
@@ -371,7 +371,7 @@ private:
 				for( auto mut i= 0s; i < capacity_; ++i )
 				{
 					auto &mut old_value= $>(table + i);
-					if( old_value.cell_content == unordered_map_impl::CellContent::HasValue )
+					if( old_value.cell_content == unordered_map_impl::c_contents_has_value )
 					{
 						// Insert value into new table.
 						auto key_hash= calculate_hash( old_value.key_storage );
@@ -379,9 +379,9 @@ private:
 						loop
 						{
 							auto &mut new_value= $>(new_table + key_hash_wrapped);
-							if( new_value.cell_content == unordered_map_impl::CellContent::Empty )
+							if( new_value.cell_content == unordered_map_impl::c_contents_empty )
 							{
-								new_value.cell_content= unordered_map_impl::CellContent::HasValue;
+								new_value.cell_content= unordered_map_impl::c_contents_has_value;
 								memory_copy_aligned( typeinfo</ key_type   />.align_of, ptr_cast_to_byte8( $<(new_value.key_storage   ) ), ptr_cast_to_byte8( $<( old_value.key_storage   ) ), typeinfo</ key_type   />.size_of );
 								memory_copy_aligned( typeinfo</ value_type />.align_of, ptr_cast_to_byte8( $<(new_value.value_storage ) ), ptr_cast_to_byte8( $<( old_value.value_storage ) ), typeinfo</ value_type />.size_of );
 								break; // We must find value, bacause new_capacity >= size_
@@ -416,12 +416,12 @@ private:
 			loop
 			{
 				auto &mut table_value= $>(table + key_hash_wrapped);
-				if( table_value.cell_content == unordered_map_impl::CellContent::Empty )
+				if( table_value.cell_content == unordered_map_impl::c_contents_empty )
 				{
 					// End search if reached an empty cell.
 					return nullptr</TableValue/>();
 				}
-				else if( table_value.cell_content == unordered_map_impl::CellContent::HasValue )
+				else if( table_value.cell_content == unordered_map_impl::c_contents_has_value )
 				{
 					if( key == table_value.key_storage )
 					{
@@ -431,7 +431,7 @@ private:
 				else
 				{
 					// Ignore a tombstone.
-					debug_assert( table_value.cell_content == unordered_map_impl::CellContent::ValueRemoved );
+					debug_assert( table_value.cell_content == unordered_map_impl::c_contents_value_removed );
 				}
 
 				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
@@ -574,7 +574,7 @@ public:
 	private:
 		fn advance_to_next_element( mut this )
 		{
-			while( capacity_ > 0s && unsafe( $>(table_) ).cell_content != unordered_map_impl::CellContent::HasValue )
+			while( capacity_ > 0s && unsafe( $>(table_) ).cell_content != unordered_map_impl::c_contents_has_value )
 			{
 				unsafe{ ++table_; }
 				--capacity_;
@@ -597,7 +597,7 @@ public:
 private:
 	struct TableValue
 	{
-		unordered_map_impl::CellContent cell_content;
+		byte8 cell_content;
 		// Actually, destructors and constructors not called.
 		key_type key_storage;
 		value_type value_storage;
@@ -628,12 +628,9 @@ private:
 namespace unordered_map_impl
 {
 
-enum CellContent
-{
-	Empty,
-	HasValue,
-	ValueRemoved
-}
+var byte8 c_contents_empty( u8(0) );
+var byte8 c_contents_has_value( u8(1) );
+var byte8 c_contents_value_removed( u8(2) );
 
 } // namespace unordered_map_impl
 
