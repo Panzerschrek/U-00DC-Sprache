@@ -144,11 +144,14 @@ public:
 				}
 				else if( ( size_type(cell_content) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
 				{
-					auto &mut dst_value= $>(data_table + key_hash_wrapped);
-					if( key == dst_value.key_storage )
+					if( size_type(cell_content) == hash2 )
 					{
-						dst_value.value_storage= move(value);
-						return dst_value.value_storage;
+						auto &mut dst_value= $>(data_table + key_hash_wrapped);
+						if( key == dst_value.key_storage )
+						{
+							dst_value.value_storage= move(value);
+							return dst_value.value_storage;
+						}
 					}
 				}
 				else
@@ -206,29 +209,32 @@ public:
 				}
 				else if( ( size_type(cell_content) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
 				{
-					auto &mut table_value= $>(data_table + key_hash_wrapped);
-					if( key == table_value.key_storage )
+					if( size_type(cell_content) == hash2 )
 					{
-						--size_;
-						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
+						auto &mut table_value= $>(data_table + key_hash_wrapped);
+						if( key == table_value.key_storage )
 						{
-							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
-							// TODO - try to remove also tombstones prior to this cell.
-							--num_occupied_slots_;
-							cell_content= unordered_map_impl::c_contents_empty;
+							--size_;
+							if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
+							{
+								// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
+								// TODO - try to remove also tombstones prior to this cell.
+								--num_occupied_slots_;
+								cell_content= unordered_map_impl::c_contents_empty;
+							}
+							else
+							{
+								// Place a tombstone here to preserve probing chain.
+								cell_content= unordered_map_impl::c_contents_value_removed;
+							}
+
+							call_destructor( table_value.key_storage );
+
+							var value_type mut r= uninitialized;
+							memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, ptr_cast_to_byte8( $<(r) ), ptr_cast_to_byte8( $<(table_value.value_storage) ), typeinfo</ typeof(table_value.value_storage) />.size_of );
+
+							return r;
 						}
-						else
-						{
-							// Place a tombstone here to preserve probing chain.
-							cell_content= unordered_map_impl::c_contents_value_removed;
-						}
-
-						call_destructor( table_value.key_storage );
-
-						var value_type mut r= uninitialized;
-						memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, ptr_cast_to_byte8( $<(r) ), ptr_cast_to_byte8( $<(table_value.value_storage) ), typeinfo</ typeof(table_value.value_storage) />.size_of );
-
-						return r;
 					}
 				}
 				else
@@ -446,10 +452,13 @@ private:
 				}
 				else if( ( size_type(cell_content) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
 				{
-					auto &mut table_value= $>( data_table + key_hash_wrapped );
-					if( key == table_value.key_storage )
+					if( size_type(cell_content) == hash2 )
 					{
-						return $<( table_value );
+						auto &mut table_value= $>( data_table + key_hash_wrapped );
+						if( key == table_value.key_storage )
+						{
+							return $<( table_value );
+						}
 					}
 				}
 				else
