@@ -664,20 +664,41 @@ private:
 namespace unordered_map_impl
 {
 
+// Each element of the control table is a byte.
+// It's most significant bit is 0 if a table slot stores a value and 1 otherwise.
+// For slots storing a value lower 7 bits are used to store some small hash portion.
+
 type ControlTableElement= u8;
 
 var ControlTableElement c_contents_empty		( 0b10000000u );
 var ControlTableElement c_contents_value_removed( 0b11111111u );
 var size_type c_control_element_non_value_bit	( 0b10000000u );
 
-fn get_hash1( size_type h ) : size_type
+// On 64-bit systems use upper 57 bits to identify hash-table slot (H1).
+// Use lower 7 bits (H2) as extra hash and store it in a control table slot, which helps speeding-up probing by minimizing necessity of proper key comparison.
+//
+// On 32-bit systems we can't just use upper 25 bits for hash-table slot identifying - it's not enough for large tables.
+// So, we use here a different approach - use the whole hash value for hash-table slot identifying and upper 7 bits of it store in a control table slot.
+// This effectively reduces number of unqieue bits stored in a control table slot for large tables, but it's still mostly fine.
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) get_hash1( size_type h ) : size_type
 {
 	return h >> 7u;
 }
 
-fn get_hash2( size_type h ) : size_type
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) get_hash2( size_type h ) : size_type
 {
 	return h & size_type(0x7F);
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 4s ) get_hash1( size_type h ) : size_type
+{
+	return h;
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 4s ) get_hash2( size_type h ) : size_type
+{
+	return h  >> 25u;
 }
 
 } // namespace unordered_map_impl
