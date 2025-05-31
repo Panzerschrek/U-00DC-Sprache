@@ -120,7 +120,10 @@ public:
 			{
 				// Rehashing is required, since load factor is exceeded.
 				// Trigger it, requesting size for all current elements plus newly-inserted element.
-				rehash( size_ + 1s );
+				// Additionaly add extra place for some tombstones, if current table contains them, this may be needed in cases
+				// when values are added and removed.
+				var size_type num_tombstones= num_occupied_slots_ - size_;
+				rehash( size_ + 1s + ( num_tombstones >> 1u ) );
 			}
 
 			var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
