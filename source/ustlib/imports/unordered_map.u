@@ -61,7 +61,7 @@ public:
 
 			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
-				if( $>( other_control_table + i ) == unordered_map_impl::c_contents_has_value )
+				if( ( size_type( $>( other_control_table + i ) ) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
 				{
 					auto &mut table_value= $>( other_data_table + i );
 					this.insert( table_value.key_storage, table_value.value_storage );
@@ -119,7 +119,8 @@ public:
 
 			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= calculate_hash(key);
-			auto mut key_hash_wrapped= key_hash & capacity_mask;
+			auto hash2= unordered_map_impl::get_hash2( key_hash );
+			auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
 			auto mut insert_index= ~0s;
 			loop
 			{
@@ -138,10 +139,10 @@ public:
 
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
-					$>( control_table + insert_index )= unordered_map_impl::c_contents_has_value;
+					$>( control_table + insert_index )= unordered_map_impl::ControlTableElement( hash2 );
 					return dst_value.value_storage;
 				}
-				else if( cell_content == unordered_map_impl::c_contents_has_value )
+				else if( ( size_type(cell_content) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
 				{
 					auto &mut dst_value= $>(data_table + key_hash_wrapped);
 					if( key == dst_value.key_storage )
@@ -193,7 +194,8 @@ public:
 		{
 			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= calculate_hash(key);
-			auto mut key_hash_wrapped= key_hash & capacity_mask;
+			auto hash2= unordered_map_impl::get_hash2( key_hash );
+			auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
 			loop
 			{
 				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
@@ -202,7 +204,7 @@ public:
 					// End search if reached an empty cell.
 					halt;
 				}
-				else if( cell_content == unordered_map_impl::c_contents_has_value )
+				else if( ( size_type(cell_content) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
 				{
 					auto &mut table_value= $>(data_table + key_hash_wrapped);
 					if( key == table_value.key_storage )
@@ -294,7 +296,7 @@ public:
 			for( auto mut i= 0s; i < capacity_; ++i )
 			{
 				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + i );
-				if( cell_content == unordered_map_impl::c_contents_has_value )
+				if( ( size_type(cell_content) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
 				{
 					cell_content= unordered_map_impl::c_contents_value_removed;
 
@@ -385,19 +387,20 @@ private:
 
 				for( auto mut i= 0s; i < capacity_; ++i )
 				{
-					if( $>(control_table + i) == unordered_map_impl::c_contents_has_value )
+					if( ( size_type( $>(control_table + i) ) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
 					{
 						auto &mut old_value= $>(data_table + i);
 
 						// Insert value into new table.
 						auto key_hash= calculate_hash( old_value.key_storage );
-						auto mut key_hash_wrapped= key_hash & new_capacity_mask;
+						auto hash2= unordered_map_impl::get_hash2( key_hash );
+						auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & new_capacity_mask;
 						loop
 						{
 							var unordered_map_impl::ControlTableElement &mut cell_content= $>( new_control_table + key_hash_wrapped );
 							if( cell_content == unordered_map_impl::c_contents_empty )
 							{
-								cell_content= unordered_map_impl::c_contents_has_value;
+								cell_content= unordered_map_impl::ControlTableElement( hash2 );
 
 								auto &mut new_value= $>( new_data_table + key_hash_wrapped );
 								memory_copy_aligned( typeinfo</ key_type   />.align_of, ptr_cast_to_byte8( $<(new_value.key_storage   ) ), ptr_cast_to_byte8( $<( old_value.key_storage   ) ), typeinfo</ key_type   />.size_of );
@@ -431,7 +434,8 @@ private:
 		{
 			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= calculate_hash(key);
-			auto mut key_hash_wrapped= key_hash & capacity_mask;
+			auto hash2= unordered_map_impl::get_hash2( key_hash );
+			auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
 			loop
 			{
 				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
@@ -440,7 +444,7 @@ private:
 					// End search if reached an empty cell.
 					return nullptr</TableValue/>();
 				}
-				else if( cell_content == unordered_map_impl::c_contents_has_value )
+				else if( ( size_type(cell_content) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
 				{
 					auto &mut table_value= $>( data_table + key_hash_wrapped );
 					if( key == table_value.key_storage )
@@ -600,7 +604,8 @@ public:
 	private:
 		fn advance_to_next_element( mut this )
 		{
-			while( capacity_ > 0s && unsafe( $>(control_table_) ) != unordered_map_impl::c_contents_has_value )
+			while( capacity_ > 0s &&
+				( size_type( unsafe( $>(control_table_) ) ) & unordered_map_impl::c_control_element_hash_mask ) != 0s )
 			{
 				unsafe
 				{
@@ -664,9 +669,19 @@ namespace unordered_map_impl
 
 type ControlTableElement= u8;
 
-var ControlTableElement c_contents_empty( 0 );
-var ControlTableElement c_contents_has_value( 1 );
-var ControlTableElement c_contents_value_removed( 2 );
+var ControlTableElement c_contents_empty		( 0b10000000u );
+var ControlTableElement c_contents_value_removed( 0b11111111u );
+var size_type c_control_element_hash_mask		( 0b10000000u );
+
+fn get_hash1( size_type h ) : size_type
+{
+	return h >> 7u;
+}
+
+fn get_hash2( size_type h ) : size_type
+{
+	return h & size_type(0x7F);
+}
 
 } // namespace unordered_map_impl
 
