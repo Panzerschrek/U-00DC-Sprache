@@ -123,7 +123,7 @@ public:
 			auto mut insert_index= ~0s;
 			loop
 			{
-				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
+				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
 				if( cell_content == unordered_map_impl::c_contents_empty )
 				{
 					// Finally reached an empty cell. This means that we insert new value.
@@ -138,7 +138,7 @@ public:
 
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
-					cell_content= unordered_map_impl::c_contents_has_value;
+					$>( control_table + insert_index )= unordered_map_impl::c_contents_has_value;
 					return dst_value.value_storage;
 				}
 				else if( cell_content == unordered_map_impl::c_contents_has_value )
