@@ -116,7 +116,7 @@ public:
 
 			// TODO - tune load factor.
 			if( (num_occupied_slots_ + 1s) >
-				capacity_ * c_max_loading_factor_numerator / c_max_loading_factor_denominator )
+				capacity_ * unordered_map_impl::c_max_loading_factor_numerator / unordered_map_impl::c_max_loading_factor_denominator )
 			{
 				// Rehashing is required, since load factor is exceeded.
 				// Trigger it, requesting size for all current elements plus newly-inserted element.
@@ -192,7 +192,7 @@ public:
 		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
 		// TODO - handle possible overflow.
 		// TODO - tune load factor for schrinking.
-		if( size_ * c_min_loading_factor_denominator < capacity_ * c_min_loading_factor_numerator )
+		if( size_ * unordered_map_impl::c_min_loading_factor_denominator < capacity_ * unordered_map_impl::c_min_loading_factor_numerator )
 		{
 			unsafe( trigger_rehash( size_ ) );
 		}
@@ -359,7 +359,7 @@ private:
 		// We require size for "new_size" elements plus at least one empty slot.
 		// Also we shouldn't exceed maximum load factor.
 		// Since we perform rounding to nearest power of two, result loading factor is usually less than maximum, which gives some space for further grow.
-		var size_type capacity_with_halved_loading_factor= ( new_size + 1s ) * c_max_loading_factor_denominator / c_max_loading_factor_numerator;
+		var size_type capacity_with_halved_loading_factor= ( new_size + 1s ) * unordered_map_impl::c_max_loading_factor_denominator / unordered_map_impl::c_max_loading_factor_numerator;
 		var size_type new_capacity= get_nearest_power_of_two_size( capacity_with_halved_loading_factor );
 		unsafe( rehash( new_capacity ) );
 	}
@@ -664,17 +664,6 @@ private:
 	type TableValuePtr= $(TableValue);
 
 private:
-	// Loading factor representing in form numerator/denominator.
-	// Greater loading factor means longer lookup chains and thus longer lookup times.
-	// Smaller loading factor means faster lookups but more memory consumption.
-	// It can be increased if lookup algorithm is optimized.
-	var size_type constexpr c_max_loading_factor_numerator= 5s;
-	var size_type constexpr c_max_loading_factor_denominator= 8s;
-
-	var size_type constexpr c_min_loading_factor_numerator= 1s;
-	var size_type constexpr c_min_loading_factor_denominator= 16s;
-
-private:
 	ContainerTag</ tup[ K, V ] /> key_value_tag_;
 
 	// Control table following by data table.
@@ -688,6 +677,16 @@ private:
 
 namespace unordered_map_impl
 {
+
+// Loading factor representing in form numerator/denominator.
+// Greater loading factor means longer lookup chains and thus longer lookup times.
+// Smaller loading factor means faster lookups but more memory consumption.
+// It can be increased if lookup algorithm is optimized.
+var size_type constexpr c_max_loading_factor_numerator= 5s;
+var size_type constexpr c_max_loading_factor_denominator= 8s;
+
+var size_type constexpr c_min_loading_factor_numerator= 1s;
+var size_type constexpr c_min_loading_factor_denominator= 16s;
 
 // Each element of the control table is a byte.
 // Its most significant bit is 0 if a table slot stores a value and 1 otherwise.
