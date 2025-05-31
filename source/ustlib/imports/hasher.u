@@ -191,7 +191,7 @@ public:
 						( size_type( u8( range.index_unchecked( i + 2s ) ) ) << 16u ) |
 						( size_type( u8( range.index_unchecked( i + 3s ) ) ) << 24u );
 
-					safe( this( word ) );
+					safe( write( word ) );
 				}
 			}
 
@@ -208,14 +208,14 @@ public:
 					}
 				}
 
-				this( word );
+				write( word );
 			}
 		}
 		else
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~7s);
-			unsafe  // Because of unchecked indexing.
+			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 8s )
 				{
@@ -230,7 +230,7 @@ public:
 						( size_type( u8( range.index_unchecked( i + 6s ) ) ) << 48u ) |
 						( size_type( u8( range.index_unchecked( i + 7s ) ) ) << 56u );
 
-					safe( this( word ) );
+					safe( write( word ) );
 				}
 			}
 
@@ -247,32 +247,109 @@ public:
 					}
 				}
 
-				this( word );
+				write( word );
 			}
 		}
 	}
 
 	op()( mut this, array_view_imut</byte16/> range )
 	{
-		// For now just perform dumb calculation.
-		foreach( b : range )
+		static_if( typeinfo</size_type/>.size_of == 4s )
 		{
-			this( b );
+			// Read and hash whole words.
+			var size_type size_rounded= range.size() & (~1s);
+			unsafe // Because of unchecked indexing.
+			{
+				for( var size_type mut i= 0s; i < size_rounded; i+= 2s )
+				{
+					// Perform reading of each byte16 element individually, because they may be unaligned in order to be able to perform whole word readings.
+					var size_type word=
+						( size_type( u16( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
+						( size_type( u16( range.index_unchecked( i + 1s ) ) ) << 16u );
+
+					safe( write( word ) );
+				}
+			}
+
+			// Read and hash tail.
+			if( size_rounded < range.size() )
+			{
+				write( size_type( u16( range.back() ) ) );
+			}
+		}
+		else
+		{
+			// Read and hash whole words.
+			var size_type size_rounded= range.size() & (~3s);
+			unsafe // Because of unchecked indexing.
+			{
+				for( var size_type mut i= 0s; i < size_rounded; i+= 4s )
+				{
+					// Perform reading of each byte16 element individually, because they may be unaligned in order to be able to perform whole word readings.
+					var size_type word=
+						( size_type( u16( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
+						( size_type( u16( range.index_unchecked( i + 1s ) ) ) << 16u ) |
+						( size_type( u16( range.index_unchecked( i + 2s ) ) ) << 32u ) |
+						( size_type( u16( range.index_unchecked( i + 3s ) ) ) << 48u );
+
+					safe( write( word ) );
+				}
+			}
+
+			// Read and hash tail.
+			if( size_rounded < range.size() )
+			{
+				var size_type mut word= 0s;
+				unsafe // Because of unchecked indexing.
+				{
+					for( var size_type mut i= size_rounded; i < range.size(); ++i )
+					{
+						word <<= 16u;
+						word |= size_type( u16( range.index_unchecked( i ) ) );
+					}
+				}
+
+				write( word );
+			}
 		}
 	}
 
 	op()( mut this, array_view_imut</byte32/> range )
 	{
-		// For now just perform dumb calculation.
-		foreach( b : range )
+		static_if( typeinfo</size_type/>.size_of == 4s )
 		{
-			this( b );
+			foreach( b : range )
+			{
+				write( b );
+			}
+		}
+		else
+		{
+			// Read and hash whole words.
+			var size_type size_rounded= range.size() & (~1s);
+			unsafe // Because of unchecked indexing.
+			{
+				for( var size_type mut i= 0s; i < size_rounded; i+= 2s )
+				{
+					// Perform reading of each byte32 element individually, because they may be unaligned in order to be able to perform whole word readings.
+					var size_type word=
+						( size_type( u32( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
+						( size_type( u32( range.index_unchecked( i + 1s ) ) ) << 32u );
+
+					safe( write( word ) );
+				}
+			}
+
+			// Read and hash tail.
+			if( size_rounded < range.size() )
+			{
+				write( size_type( u32( range.back() ) ) );
+			}
 		}
 	}
 
 	op()( mut this, array_view_imut</byte64/> range )
 	{
-		// For now just perform dumb calculation.
 		foreach( b : range )
 		{
 			this( b );
@@ -281,7 +358,6 @@ public:
 
 	op()( mut this, array_view_imut</byte128/> range )
 	{
-		// For now just perform dumb calculation.
 		foreach( b : range )
 		{
 			this( b );
