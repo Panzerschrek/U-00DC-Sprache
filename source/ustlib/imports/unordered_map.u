@@ -61,7 +61,7 @@ public:
 
 			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
-				if( ( size_type( $>( other_control_table + i ) ) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
+				if( ( size_type( $>( other_control_table + i ) ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
 				{
 					auto &mut table_value= $>( other_data_table + i );
 					this.insert( table_value.key_storage, table_value.value_storage );
@@ -294,7 +294,7 @@ public:
 			for( auto mut i= 0s; i < capacity_; ++i )
 			{
 				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + i );
-				if( ( size_type(cell_content) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
+				if( ( size_type(cell_content) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
 				{
 					cell_content= unordered_map_impl::c_contents_value_removed;
 
@@ -385,7 +385,7 @@ private:
 
 				for( auto mut i= 0s; i < capacity_; ++i )
 				{
-					if( ( size_type( $>(control_table + i) ) & unordered_map_impl::c_control_element_hash_mask ) == 0s )
+					if( ( size_type( $>(control_table + i) ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
 					{
 						auto &mut old_value= $>(data_table + i);
 
@@ -602,7 +602,7 @@ public:
 		fn advance_to_next_element( mut this )
 		{
 			while( capacity_ > 0s &&
-				( size_type( unsafe( $>(control_table_) ) ) & unordered_map_impl::c_control_element_hash_mask ) != 0s )
+				( size_type( unsafe( $>(control_table_) ) ) & unordered_map_impl::c_control_element_non_value_bit ) != 0s )
 			{
 				unsafe
 				{
@@ -668,7 +668,7 @@ type ControlTableElement= u8;
 
 var ControlTableElement c_contents_empty		( 0b10000000u );
 var ControlTableElement c_contents_value_removed( 0b11111111u );
-var size_type c_control_element_hash_mask		( 0b10000000u );
+var size_type c_control_element_non_value_bit	( 0b10000000u );
 
 fn get_hash1( size_type h ) : size_type
 {
