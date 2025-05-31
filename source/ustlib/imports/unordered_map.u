@@ -73,7 +73,7 @@ public:
 				if( ( size_type( $>( other_control_table + i ) ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
 				{
 					auto &mut table_value= $>( other_data_table + i );
-					this.insert( table_value.key_storage, table_value.value_storage );
+					safe( this.insert( table_value.key_storage, table_value.value_storage ) );
 				}
 			}
 		}
@@ -169,7 +169,7 @@ public:
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
 					// Compare keys to be sure.
 					auto &mut dst_value= $>( data_table + key_hash_wrapped );
-					if( key == dst_value.key_storage )
+					if( safe( key == dst_value.key_storage ) )
 					{
 						dst_value.value_storage= move(value);
 						return dst_value.value_storage;
@@ -228,7 +228,7 @@ public:
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
 					// Compare keys to be sure.
 					auto &mut table_value= $>(data_table + key_hash_wrapped);
-					if( key == table_value.key_storage )
+					if( safe( key == table_value.key_storage ) )
 					{
 						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
 						{
@@ -398,8 +398,8 @@ private:
 						auto &mut old_value= $>(data_table + i);
 
 						// Insert value into new table.
-						auto key_hash= calculate_hash( old_value.key_storage );
-						auto hash2= unordered_map_impl::get_hash2( key_hash );
+						auto key_hash= safe( calculate_hash( old_value.key_storage ) );
+						auto hash2= safe( unordered_map_impl::get_hash2( key_hash ) );
 						auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & new_capacity_mask;
 						loop
 						{
@@ -460,7 +460,7 @@ private:
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
 					// Compare keys to be sure.
 					auto &mut table_value= $>( data_table + key_hash_wrapped );
-					if( key == table_value.key_storage )
+					if( safe( key == table_value.key_storage ) )
 					{
 						return $<( table_value );
 					}
