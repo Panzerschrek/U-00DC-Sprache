@@ -646,8 +646,8 @@ private:
 	// Greater loading factor means longer lookup chains and thus longer lookup times.
 	// Smaller loading factor means faster lookups but more memory consumption.
 	// It can be increased if lookup algorithm is optimized.
-	var size_type constexpr c_max_loading_factor_numerator= 1s;
-	var size_type constexpr c_max_loading_factor_denominator= 2s;
+	var size_type constexpr c_max_loading_factor_numerator= 5s;
+	var size_type constexpr c_max_loading_factor_denominator= 8s;
 
 	var size_type constexpr c_min_loading_factor_numerator= 1s;
 	var size_type constexpr c_min_loading_factor_denominator= 16s;
