@@ -16,6 +16,7 @@ public:
 	// Get current accumulated state.
 	fn get( this ) : size_type
 	{
+		// TODO - maybe finalize this hash somehow?
 		return state_;
 	}
 
@@ -219,22 +220,37 @@ public:
 	}
 
 private:
-	fn write( mut this, size_type x )
+	fn write( mut this, size_type mut x )
 	{
-		// Some sort of MurmurHash3.
-		// TODO - use 64-bit version if can.
+		static_if( typeinfo</size_type/>.size_of == 4s )
+		{
+			// Some sort of MurmurHash3.
+			// Strictly-speaking it's not MurmurHash3, but only its inner loop.
 
-		var u32 mut k( x );
-		k*= 0xcc9e2d51u;
-		k= (k << 15u ) | (k >> 17u);
-		k*= 0x1b873593u;
+			x*= size_type( 0xcc9e2d51u );
+			x= ( x << 15u ) | ( x >> 17u );
+			x*= size_type(0x1b873593u);
 
-		var u32 mut s( state_ );
-		s ^= u32( k );
-		s= (s << 13u ) | (s >> 19u);
-		s= s * 5u + 0xe6546b64u;
+			state_ ^= x;
+			state_= ( state_ << 13u ) | ( state_ >> 19u );
+			state_= state_ * 5s + size_type( 0xe6546b64u );
+		}
+		else
+		{
+			// MurmurHash2, 64-bit version, slightly modified.
+			// Strictly-speaking it's not MurmurHash2, but only its inner loop.
 
-		state_= size_type(s);
+			var size_type m( 0xc6a4a7935bd1e995u );
+			var u32 r = 47u;
+
+			x *= m;
+			x ^= x >> r;
+			x *= m;
+
+			state_ ^= x;
+			state_ *= m;
+			state_ += size_type( 0xe6546b64 );
+		}
 	}
 
 private:
