@@ -49,7 +49,7 @@ public:
 	fn enable_if( typeinfo</V/>.is_copy_constructible )
 	constructor( mut this, this_type &imut other )
 	{
-		if( other.empty() )
+		if( other.capacity_ == 0s )
 		{
 			return;
 		}
@@ -135,11 +135,11 @@ public:
 					// Insert new value into place of tombstone (if it exists) or in this empty cell.
 					if( insert_index == ~0s ){ insert_index= key_hash_wrapped; }
 
-					auto &mut dst_value= $>(data_table + insert_index);
+					$>( control_table + insert_index )= unordered_map_impl::ControlTableElement( hash2 );
 
+					auto &mut dst_value= $>( data_table + insert_index );
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
-					$>( control_table + insert_index )= unordered_map_impl::ControlTableElement( hash2 );
 					return dst_value.value_storage;
 				}
 				else if( cell_content == unordered_map_impl::c_contents_value_removed )
@@ -153,7 +153,9 @@ public:
 				}
 				else if( size_type(cell_content) == hash2 )
 				{
-					auto &mut dst_value= $>(data_table + key_hash_wrapped);
+					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
+					// Compare keys to be sure.
+					auto &mut dst_value= $>( data_table + key_hash_wrapped );
 					if( key == dst_value.key_storage )
 					{
 						dst_value.value_storage= move(value);
@@ -209,28 +211,31 @@ public:
 				}
 				else if( size_type(cell_content) == hash2 )
 				{
+					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
+					// Compare keys to be sure.
 					auto &mut table_value= $>(data_table + key_hash_wrapped);
 					if( key == table_value.key_storage )
 					{
-						--size_;
 						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
 						{
 							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
 							// TODO - try to remove also tombstones prior to this cell.
-							--num_occupied_slots_;
 							cell_content= unordered_map_impl::c_contents_empty;
+							--num_occupied_slots_;
 						}
 						else
 						{
 							// Place a tombstone here to preserve probing chain.
 							cell_content= unordered_map_impl::c_contents_value_removed;
 						}
+						--size_;
 
+						// Destroy stored key.
 						call_destructor( table_value.key_storage );
 
+						// Take and return stored value.
 						var value_type mut r= uninitialized;
 						memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, ptr_cast_to_byte8( $<(r) ), ptr_cast_to_byte8( $<(table_value.value_storage) ), typeinfo</ typeof(table_value.value_storage) />.size_of );
-
 						return r;
 					}
 				}
@@ -284,7 +289,10 @@ public:
 
 	fn clear( mut this )
 	{
-		if( is_nullptr(ptr_) ) { return; }
+		if( is_nullptr(ptr_) )
+		{
+			return;
+		}
 
 		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
@@ -356,7 +364,8 @@ private:
 		max_assign(
 			new_capacity,
 			// Use minimum non-zero capacity 8 in order to simplify some calculations.
-			// If alignment of the table value is bigger than 8, require capacity equal to this alignment - in order to calculate data table pointer porperly.
+			// If alignment of the table value is bigger than 8, require capacity equal to this alignment - in order to calculate data table pointer porperly,
+			// using simple formula "ptr_ + capacity_".
 			max( 8s, typeinfo</TableValue/>.align_of ) );
 
 		unsafe // reallocate table and rehash.
@@ -448,6 +457,8 @@ private:
 				}
 				else if( size_type(cell_content) == hash2 )
 				{
+					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
+					// Compare keys to be sure.
 					auto &mut table_value= $>( data_table + key_hash_wrapped );
 					if( key == table_value.key_storage )
 					{
@@ -472,6 +483,7 @@ private:
 	{
 		// Data table follows after control table.
 		// Each element of the control table is just a byte.
+		// It's ensured that capacity_ is selected so that result values table is properly aligned.
 		return unsafe( byte_ptr_cast</TableValue/>( ptr_ + capacity_ ) );
 	}
 
@@ -655,7 +667,10 @@ private:
 private:
 	ContainerTag</ tup[ K, V ] /> key_value_tag_;
 
-	$(byte8) ptr_= zero_init; // Control table following by data table.
+	// Control table following by data table.
+	// Store it as raw byte8 pointer to avoid possible TBAA mistakes, cast it to proper pointer types later.
+	$(byte8) ptr_= zero_init;
+
 	size_type size_(0);
 	size_type num_occupied_slots_(0); // size + number of tombstones.
 	size_type capacity_(0); // Always must be power of two.
@@ -665,7 +680,7 @@ namespace unordered_map_impl
 {
 
 // Each element of the control table is a byte.
-// It's most significant bit is 0 if a table slot stores a value and 1 otherwise.
+// Its most significant bit is 0 if a table slot stores a value and 1 otherwise.
 // For slots storing a value lower 7 bits are used to store some small hash portion.
 
 type ControlTableElement= u8;
