@@ -176,10 +176,79 @@ public:
 
 	op()( mut this, array_view_imut</byte8/> range )
 	{
-		// For now just perform dumb calculation.
-		foreach( b : range )
+		static_if( typeinfo</size_type/>.size_of == 4s )
 		{
-			this( b );
+			// Read and hash whole words.
+			var size_type size_rounded= range.size() & (~3s);
+			unsafe  // Because of unchecked indexing.
+			{
+				for( var size_type mut i= 0s; i < size_rounded; i+= 4s )
+				{
+					// Perform reading of each byte individually, because they may be unaligned in order to be able to perform whole word readings.
+					var size_type word=
+						( size_type( u8( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
+						( size_type( u8( range.index_unchecked( i + 1s ) ) ) <<  8u ) |
+						( size_type( u8( range.index_unchecked( i + 2s ) ) ) << 16u ) |
+						( size_type( u8( range.index_unchecked( i + 3s ) ) ) << 24u );
+
+					safe( this( word ) );
+				}
+			}
+
+			// Read and hash tail.
+			if( size_rounded < range.size() )
+			{
+				var size_type mut word= 0s;
+				unsafe // Because of unchecked indexing.
+				{
+					for( var size_type mut i= size_rounded; i < range.size(); ++i )
+					{
+						word <<= 8u;
+						word |= size_type( u8( range.index_unchecked( i ) ) );
+					}
+				}
+
+				this( word );
+			}
+		}
+		else
+		{
+			// Read and hash whole words.
+			var size_type size_rounded= range.size() & (~7s);
+			unsafe  // Because of unchecked indexing.
+			{
+				for( var size_type mut i= 0s; i < size_rounded; i+= 8s )
+				{
+					// Perform reading of each byte individually, because they may be unaligned in order to be able to perform whole word readings.
+					var size_type word=
+						( size_type( u8( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
+						( size_type( u8( range.index_unchecked( i + 1s ) ) ) <<  8u ) |
+						( size_type( u8( range.index_unchecked( i + 2s ) ) ) << 16u ) |
+						( size_type( u8( range.index_unchecked( i + 3s ) ) ) << 24u ) |
+						( size_type( u8( range.index_unchecked( i + 4s ) ) ) << 32u ) |
+						( size_type( u8( range.index_unchecked( i + 5s ) ) ) << 40u ) |
+						( size_type( u8( range.index_unchecked( i + 6s ) ) ) << 48u ) |
+						( size_type( u8( range.index_unchecked( i + 7s ) ) ) << 56u );
+
+					safe( this( word ) );
+				}
+			}
+
+			// Read and hash tail.
+			if( size_rounded < range.size() )
+			{
+				var size_type mut word= 0s;
+				unsafe // Because of unchecked indexing.
+				{
+					for( var size_type mut i= size_rounded; i < range.size(); ++i )
+					{
+						word <<= 8u;
+						word |= size_type( u8( range.index_unchecked( i ) ) );
+					}
+				}
+
+				this( word );
+			}
 		}
 	}
 
