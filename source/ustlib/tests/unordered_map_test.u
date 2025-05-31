@@ -420,6 +420,50 @@ fn nomangle main() : i32
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
 		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
 	}
+	{ // Insert a lot of random strings.
+		var ust::unordered_map</ust::string8, u32/> mut m;
+
+		var RandGenerator mut gen;
+
+		var ust::vector</ust::string8/> keys=
+			ust::make_vector_from_filler_function(
+				1s << 20s,
+				lambda[&]() : ust::string8
+				{
+					auto &mut inner_gen= gen;
+
+					var u32 len= 1u + ( inner_gen.Next() & 127u );
+
+					var ust::string8 s=
+						ust::string8::from_filler_function(
+							size_type(len),
+							lambda [&]() : char8
+							{
+								return char8(inner_gen.Next() & 255u);
+							} );
+
+					return s;
+				} );
+
+		foreach( &key : keys )
+		{
+			m.insert( key, gen.Next() );
+		}
+
+		var u32 mut combination= 0u;
+		foreach( &key : keys )
+		{
+			if_var( &val : m.find( key ) )
+			{
+				combination*= val;
+				combination+= val;
+			}
+			else { halt; }
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
 
 	return 0;
 }
