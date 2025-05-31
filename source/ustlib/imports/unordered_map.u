@@ -709,8 +709,10 @@ fn calculate_capacity_for_given_size( size_type size ) : size_type
 	// We require size for "size" elements plus at least one empty slot.
 	// Also we shouldn't exceed maximum load factor.
 	// Since we perform rounding to nearest power of two, result loading factor is usually less than maximum, which gives some space for further grow.
-	var size_type capacity_with_halved_loading_factor= ( size + 1s ) * c_max_loading_factor_denominator / c_max_loading_factor_numerator;
-	return get_nearest_power_of_two_size( capacity_with_halved_loading_factor );
+	// Also perform integer division with rounding-up.
+	var size_type capacity=
+		( ( size + 1s ) * c_max_loading_factor_denominator + c_max_loading_factor_numerator - 1s ) / c_max_loading_factor_numerator;
+	return get_nearest_power_of_two_size( capacity );
 }
 
 // Used for capacity calculation.
