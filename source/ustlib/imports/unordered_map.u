@@ -360,7 +360,7 @@ private:
 		// Also we shouldn't exceed maximum load factor.
 		// Since we perform rounding to nearest power of two, result loading factor is usually less than maximum, which gives some space for further grow.
 		var size_type capacity_with_halved_loading_factor= ( new_size + 1s ) * unordered_map_impl::c_max_loading_factor_denominator / unordered_map_impl::c_max_loading_factor_numerator;
-		var size_type new_capacity= get_nearest_power_of_two_size( capacity_with_halved_loading_factor );
+		var size_type new_capacity= unordered_map_impl::get_nearest_power_of_two_size( capacity_with_halved_loading_factor );
 		unsafe( rehash( new_capacity ) );
 	}
 
@@ -502,18 +502,6 @@ private:
 		var default_hasher mut hasher;
 		apply_value_to_hasher( hasher, key );
 		return hasher.get();
-	}
-
-	// Round up to nearest power of two.
-	fn get_nearest_power_of_two_size( size_type s ) : size_type
-	{
-		// TODO - optimize this.
-		var size_type mut res= 1s;
-		while( res < s )
-		{
-			res <<= 1u;
-		}
-		return res;
 	}
 
 public:
@@ -723,6 +711,19 @@ fn enable_if( typeinfo</size_type/>.size_of == 4s ) get_hash1( size_type h ) : s
 fn enable_if( typeinfo</size_type/>.size_of == 4s ) get_hash2( size_type h ) : size_type
 {
 	return h  >> 25u;
+}
+
+// Used for capacity calculation.
+// Round up to nearest power of two.
+fn get_nearest_power_of_two_size( size_type s ) : size_type
+{
+	// TODO - optimize this.
+	var size_type mut res= 1s;
+	while( res < s )
+	{
+		res <<= 1u;
+	}
+	return res;
 }
 
 } // namespace unordered_map_impl
