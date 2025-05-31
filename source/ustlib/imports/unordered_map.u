@@ -267,7 +267,7 @@ public:
 	{
 		unsafe
 		{
-			var ptr_type table_value_ptr= find_key( key );
+			var TableValuePtr table_value_ptr= find_key( key );
 			if( !is_nullptr(table_value_ptr) )
 			{
 				return $>(table_value_ptr).value_storage;
@@ -430,7 +430,7 @@ private:
 	}
 
 	// Returns bucket for specific key. Returns 'null', if key not found.
-	fn find_key( mut this, key_type& key ) : ptr_type
+	fn find_key( mut this, key_type& key ) : TableValuePtr
 	{
 		if( empty() ){ return nullptr</TableValue/>(); }
 
@@ -639,19 +639,20 @@ public:
 	private:
 		ReferenceContainerTag</ this_type, is_mutable /> reference_tag_; // Logically hold a reference to the source container.
 		$(unordered_map_impl::ControlTableElement) control_table_;
-		ptr_type table_;
+		TableValuePtr table_;
 		size_type capacity_;
 	}
 
 private:
+	// Storage array value.
+	// Constructors and destructors are usually called manually.
 	struct TableValue
 	{
-		// Actually, destructors and constructors not called.
 		key_type key_storage;
 		value_type value_storage;
 	}
 
-	type ptr_type= $(TableValue);
+	type TableValuePtr= $(TableValue);
 
 private:
 	// Loading factor representing in form numerator/denominator.
