@@ -49,14 +49,21 @@ public:
 	fn enable_if( typeinfo</V/>.is_copy_constructible )
 	constructor( mut this, this_type &imut other )
 	{
+		if( other.empty() )
+		{
+			return;
+		}
+
 		unsafe
 		{
-			var $(TableValue) other_table= other.get_data_table();
+			var $(unordered_map_impl::ControlTableElement) other_control_table= other.get_control_table();
+			var $(TableValue) other_data_table= other.get_data_table();
+
 			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
-				auto &mut table_value= $>(other_table + i);
-				if( table_value.cell_content == unordered_map_impl::c_contents_has_value )
+				if( $>( other_control_table + i ) == unordered_map_impl::c_contents_has_value )
 				{
+					auto &mut table_value= $>( other_data_table + i );
 					this.insert( table_value.key_storage, table_value.value_storage );
 				}
 			}
@@ -107,7 +114,8 @@ public:
 				trigger_rehash( size_ + 1s );
 			}
 
-			var $(TableValue) table= get_data_table();
+			var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+			var $(TableValue) data_table= get_data_table();
 
 			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= calculate_hash(key);
@@ -115,7 +123,7 @@ public:
 			auto mut insert_index= ~0s;
 			loop
 			{
-				auto cell_content= $>(table + key_hash_wrapped).cell_content;
+				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
 				if( cell_content == unordered_map_impl::c_contents_empty )
 				{
 					// Finally reached an empty cell. This means that we insert new value.
@@ -126,16 +134,16 @@ public:
 					// Insert new value into place of tombstone (if it exists) or in this empty cell.
 					if( insert_index == ~0s ){ insert_index= key_hash_wrapped; }
 
-					auto &mut dst_value= $>(table + insert_index);
+					auto &mut dst_value= $>(data_table + insert_index);
 
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
-					dst_value.cell_content= unordered_map_impl::c_contents_has_value;
+					cell_content= unordered_map_impl::c_contents_has_value;
 					return dst_value.value_storage;
 				}
 				else if( cell_content == unordered_map_impl::c_contents_has_value )
 				{
-					auto &mut dst_value= $>(table + key_hash_wrapped);
+					auto &mut dst_value= $>(data_table + key_hash_wrapped);
 					if( key == dst_value.key_storage )
 					{
 						dst_value.value_storage= move(value);
@@ -178,7 +186,8 @@ public:
 			unsafe( trigger_rehash( size_ ) );
 		}
 
-		var $(TableValue) table= get_data_table();
+		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(TableValue) data_table= get_data_table();
 
 		unsafe
 		{
@@ -187,28 +196,29 @@ public:
 			auto mut key_hash_wrapped= key_hash & capacity_mask;
 			loop
 			{
-				auto &mut table_value= $>(table + key_hash_wrapped);
-				if( table_value.cell_content == unordered_map_impl::c_contents_empty )
+				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == unordered_map_impl::c_contents_empty )
 				{
 					// End search if reached an empty cell.
 					halt;
 				}
-				else if( table_value.cell_content == unordered_map_impl::c_contents_has_value )
+				else if( cell_content == unordered_map_impl::c_contents_has_value )
 				{
+					auto &mut table_value= $>(data_table + key_hash_wrapped);
 					if( key == table_value.key_storage )
 					{
 						--size_;
-						if( $>( table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ).cell_content == unordered_map_impl::c_contents_empty )
+						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
 						{
 							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
 							// TODO - try to remove also tombstones prior to this cell.
 							--num_occupied_slots_;
-							table_value.cell_content= unordered_map_impl::c_contents_empty;
+							cell_content= unordered_map_impl::c_contents_empty;
 						}
 						else
 						{
 							// Place a tombstone here to preserve probing chain.
-							table_value.cell_content= unordered_map_impl::c_contents_value_removed;
+							cell_content= unordered_map_impl::c_contents_value_removed;
 						}
 
 						call_destructor( table_value.key_storage );
@@ -222,7 +232,7 @@ public:
 				else
 				{
 					// Ignore a tombstone.
-					debug_assert( table_value.cell_content == unordered_map_impl::c_contents_value_removed );
+					debug_assert( cell_content == unordered_map_impl::c_contents_value_removed );
 				}
 
 				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
@@ -276,16 +286,19 @@ public:
 	{
 		if( is_nullptr(ptr_) ) { return; }
 
-		var $(TableValue) table= get_data_table();
+		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(TableValue) data_table= get_data_table();
 
 		unsafe
 		{
 			for( auto mut i= 0s; i < capacity_; ++i )
 			{
-				auto &mut table_value= $>(table + i);
-				if( table_value.cell_content == unordered_map_impl::c_contents_has_value )
+				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + i );
+				if( cell_content == unordered_map_impl::c_contents_has_value )
 				{
-					table_value.cell_content= unordered_map_impl::c_contents_value_removed;
+					cell_content= unordered_map_impl::c_contents_value_removed;
+
+					auto &mut table_value= $>( data_table + i );
 					call_destructor( table_value.key_storage );
 					call_destructor( table_value.value_storage );
 				}
@@ -356,32 +369,37 @@ private:
 			// Because of that it's impossible to get sizeof * capacity multiplication overflow here.
 			// Maximum allocation limit will be reached first.
 			auto new_ptr= memory_allocate( new_capacity + new_capacity * typeinfo</TableValue/>.size_of );
-			auto new_table= byte_ptr_cast</TableValue/>( new_ptr + new_capacity );
+			auto new_control_table= byte_ptr_cast</ unordered_map_impl::ControlTableElement />( new_ptr );
+			auto new_data_table= byte_ptr_cast</TableValue/>( new_ptr + new_capacity );
 
 			for( auto mut i= 0s; i < new_capacity; ++i )
 			{
-				$>(new_table + i).cell_content= unordered_map_impl::c_contents_empty;
+				$>( new_control_table + i )= unordered_map_impl::c_contents_empty;
 			}
 
 			// Move content of old table into new table.
 			if( !is_nullptr(ptr_) )
 			{
-				var $(TableValue) table= get_data_table();
+				var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+				var $(TableValue) data_table= get_data_table();
 
 				for( auto mut i= 0s; i < capacity_; ++i )
 				{
-					auto &mut old_value= $>(table + i);
-					if( old_value.cell_content == unordered_map_impl::c_contents_has_value )
+					if( $>(control_table + i) == unordered_map_impl::c_contents_has_value )
 					{
+						auto &mut old_value= $>(data_table + i);
+
 						// Insert value into new table.
 						auto key_hash= calculate_hash( old_value.key_storage );
 						auto mut key_hash_wrapped= key_hash & new_capacity_mask;
 						loop
 						{
-							auto &mut new_value= $>(new_table + key_hash_wrapped);
-							if( new_value.cell_content == unordered_map_impl::c_contents_empty )
+							var unordered_map_impl::ControlTableElement &mut cell_content= $>( new_control_table + key_hash_wrapped );
+							if( cell_content == unordered_map_impl::c_contents_empty )
 							{
-								new_value.cell_content= unordered_map_impl::c_contents_has_value;
+								cell_content= unordered_map_impl::c_contents_has_value;
+
+								auto &mut new_value= $>( new_data_table + key_hash_wrapped );
 								memory_copy_aligned( typeinfo</ key_type   />.align_of, ptr_cast_to_byte8( $<(new_value.key_storage   ) ), ptr_cast_to_byte8( $<( old_value.key_storage   ) ), typeinfo</ key_type   />.size_of );
 								memory_copy_aligned( typeinfo</ value_type />.align_of, ptr_cast_to_byte8( $<(new_value.value_storage ) ), ptr_cast_to_byte8( $<( old_value.value_storage ) ), typeinfo</ value_type />.size_of );
 								break; // We must find value, bacause new_capacity >= size_
@@ -406,7 +424,8 @@ private:
 	{
 		if( empty() ){ return nullptr</TableValue/>(); }
 
-		var $(TableValue) table= get_data_table();
+		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(TableValue) data_table= get_data_table();
 
 		unsafe
 		{
@@ -415,14 +434,15 @@ private:
 			auto mut key_hash_wrapped= key_hash & capacity_mask;
 			loop
 			{
-				auto &mut table_value= $>(table + key_hash_wrapped);
-				if( table_value.cell_content == unordered_map_impl::c_contents_empty )
+				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == unordered_map_impl::c_contents_empty )
 				{
 					// End search if reached an empty cell.
 					return nullptr</TableValue/>();
 				}
-				else if( table_value.cell_content == unordered_map_impl::c_contents_has_value )
+				else if( cell_content == unordered_map_impl::c_contents_has_value )
 				{
+					auto &mut table_value= $>( data_table + key_hash_wrapped );
 					if( key == table_value.key_storage )
 					{
 						return $<( table_value );
@@ -431,7 +451,7 @@ private:
 				else
 				{
 					// Ignore a tombstone.
-					debug_assert( table_value.cell_content == unordered_map_impl::c_contents_value_removed );
+					debug_assert( cell_content == unordered_map_impl::c_contents_value_removed );
 				}
 
 				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
@@ -580,7 +600,7 @@ public:
 	private:
 		fn advance_to_next_element( mut this )
 		{
-			while( capacity_ > 0s && unsafe( $>(table_) ).cell_content != unordered_map_impl::c_contents_has_value )
+			while( capacity_ > 0s && unsafe( $>(control_table_) ) != unordered_map_impl::c_contents_has_value )
 			{
 				unsafe
 				{
@@ -594,7 +614,11 @@ public:
 		// Precondition - end is not reached.
 		fn drop_front_unchecked( mut this ) unsafe
 		{
-			unsafe{ ++table_; }
+			unsafe
+			{
+				++control_table_;
+				++table_;
+			}
 			--capacity_;
 		}
 
@@ -608,7 +632,6 @@ public:
 private:
 	struct TableValue
 	{
-		unordered_map_impl::ControlTableElement cell_content;
 		// Actually, destructors and constructors not called.
 		key_type key_storage;
 		value_type value_storage;
