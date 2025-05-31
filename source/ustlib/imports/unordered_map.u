@@ -527,12 +527,12 @@ public:
 
 		fn enable_if( is_mutable )
 		constructor( this_type & mut m ) @( reference_notation::pollution::param0_param_1_reference )
-			( table_( m.get_table() ), capacity_(m.capacity_) )
+			( control_table_( m.ptr_ ), table_( m.get_table() ), capacity_(m.capacity_) )
 		{}
 
 		fn enable_if( !is_mutable )
 		constructor( this_type &imut m ) @( reference_notation::pollution::param0_param_1_reference )
-			( table_( m.get_table() ), capacity_(m.capacity_) )
+			( control_table_( m.ptr_ ), table_( m.get_table() ), capacity_(m.capacity_) )
 		{}
 
 		fn constructor( mut this, raw_iterator</is_mutable/>& other )= default;
@@ -576,7 +576,11 @@ public:
 		{
 			while( capacity_ > 0s && unsafe( $>(table_) ).cell_content != unordered_map_impl::c_contents_has_value )
 			{
-				unsafe{ ++table_; }
+				unsafe
+				{
+					++control_table_;
+					++table_;
+				}
 				--capacity_;
 			}
 		}
@@ -590,6 +594,7 @@ public:
 
 	private:
 		ReferenceContainerTag</ this_type, is_mutable /> reference_tag_; // Logically hold a reference to the source container.
+		$(byte8) control_table_;
 		ptr_type table_;
 		size_type capacity_;
 	}
