@@ -1,6 +1,9 @@
 //##success_test
+import "../imports/stdout.u"
 import "../imports/string.u"
+import "../imports/string_conversions.u"
 import "../imports/unordered_map.u"
+import "../imports/vector.u"
 
 
 struct OneBitHash
@@ -23,6 +26,19 @@ class C
 	fn constructor( i32 in_x ) ( x= in_x ) {}
 
 	i32 x;
+}
+
+class RandGenerator
+{
+public:
+	fn Next( mut this ) : u32
+	{
+		state_= ( 22695477u * state_ + 1u ) & 0x7FFFFFFFu;
+		return state_ >> 16u;
+	}
+
+private:
+	u32 state_= 0u;
 }
 
 fn nomangle main() : i32
@@ -244,6 +260,333 @@ fn nomangle main() : i32
 
 		m[777]= C(777);
 		halt if( m[777].x != 777 );
+	}
+	{ // Test insertion/removal of many identical numbers.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		for( var size_type mut i= 0s; i < (1s << 24u); ++i )
+		{
+			// Randomly insert or remove numbers in range [0;256)
+			var u32 val= gen.Next();
+			var u32 num= val & 255u;
+			if( ( val & 512u ) != 0u )
+			{
+				m.insert( num, -i32(num) );
+			}
+			else if( m.exists( num ) )
+			{
+				m.erase( num );
+			}
+		}
+
+		var i32 mut combination= 0;
+		foreach( &el : m )
+		{
+			combination*= el.value();
+			combination+= el.value();
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{
+		// Fill map, then remove most of the elements, then iterate it many times.
+		// Iteration time should be reasonable.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		var ust::vector</u32/> mut keys;
+
+		for( var size_type mut i= 0s; i < (1s << 20u); ++i )
+		{
+			var u32 val= gen.Next() | ( gen.Next() << 16u );
+			keys.push_back(val);
+
+			m.insert( val, -3 * i32(val) );
+		}
+
+		// Remove all elements except first 16.
+		for( var size_type mut i= 16s; i < keys.size() && m.size() > 16s; ++i )
+		{
+			if( m.exists( keys[i] ) )
+			{
+				m.erase( keys[i] );
+			}
+		}
+
+		// Iterate map many times. It should be fast, since map contains only few elements.
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < (1s << 16u); ++i )
+		{
+			foreach( &el : m )
+			{
+				combination*= el.value();
+				combination+= el.value();
+			}
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{
+		// Fill map, then clear, then iterate it many times.
+		// Iteration time should be reasonable.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		for( var size_type mut i= 0s; i < (1s << 20u); ++i )
+		{
+			var u32 val= gen.Next() | ( gen.Next() << 16u );
+			m.insert( val, -3 * i32(val) );
+		}
+
+		m.clear();
+
+		// Iterate map many times. It should be fast, since map is empty.
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < (1s << 16u); ++i )
+		{
+			foreach( &el : m )
+			{
+				combination*= el.value();
+				combination+= el.value();
+			}
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Test insertion/removal of many elements with somewhat intermediate chance of identical elements.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		// Since we have 16-bit random values and 24-bit of iterations we process each number 256 times in average.
+		for( var size_type mut i= 0s; i < (1s << 24u); ++i )
+		{
+			var u32 val= gen.Next();
+			if( ( gen.Next() & 1u ) != 0u )
+			{
+				m.insert( val, -i32(val) );
+			}
+			else if( m.exists( val ) )
+			{
+				m.erase( val );
+			}
+		}
+
+		var i32 mut combination= 0;
+		foreach( &el : m )
+		{
+			combination*= el.value();
+			combination+= el.value();
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Test with many searches for not so many elements.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		// Since we have 16-bit random values and 16-bit of iterations we should roughly have any number in the table.
+		for( var size_type mut i= 0s; i < (1s << 16s); ++i )
+		{
+			var u32 val= gen.Next();
+			m.insert( val, -i32(val) );
+		}
+
+		// Perform roughly 4096 searches for each number.
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < (1s << 28s); ++i )
+		{
+			if_var( &val : m.find( gen.Next() ) )
+			{
+				combination*= val;
+				combination+= val;
+			}
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Insert sequential integers. Performance should not degrade.
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var size_type count= 1s << 22u;
+
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			m.insert( u32(i), i32(i) * 34 );
+		}
+
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			var i32 val= m[u32(i)];
+			combination*= val;
+			combination+= val;
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Insert sequential integers shifted by several bits. Performance should not degrade.
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var size_type count= 1s << 22u;
+		var u32 shift= 10u;
+
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			m.insert( u32(i) << shift, i32(i) * 34 );
+		}
+
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			var i32 val= m[ u32(i) << shift ];
+			combination*= val;
+			combination+= val;
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Insert a lot of random strings.
+		var ust::unordered_map</ust::string8, u32/> mut m;
+
+		var RandGenerator mut gen;
+
+		var ust::vector</ust::string8/> keys=
+			ust::make_vector_from_filler_function(
+				1s << 20s,
+				lambda[&]() : ust::string8
+				{
+					auto &mut inner_gen= gen;
+
+					var u32 len= 1u + ( inner_gen.Next() & 127u );
+
+					var ust::string8 s=
+						ust::string8::from_filler_function(
+							size_type(len),
+							lambda [&]() : char8
+							{
+								return char8(inner_gen.Next() & 255u);
+							} );
+
+					return s;
+				} );
+
+		foreach( &key : keys )
+		{
+			m.insert( key, gen.Next() );
+		}
+
+		var u32 mut combination= 0u;
+		foreach( &key : keys )
+		{
+			if_var( &val : m.find( key ) )
+			{
+				combination*= val;
+				combination+= val;
+			}
+			else { halt; }
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Insert and remove the same value a lot of times.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		var i32 mut combination= 0;
+
+		for( var size_type mut i= 0s; i < (1s << 24s); ++i )
+		{
+			var u32 key= gen.Next();
+			var i32 value( gen.Next() );
+
+			m.insert( key, value );
+			var i32 erased_value= m.erase( key );
+			halt if( erased_value != value );
+
+			combination*= erased_value;
+			combination+= erased_value;
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{
+		// Fill map and then remove all elements.
+		// Then add and immediately remove single elements.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		var ust::vector</u32/> mut keys;
+
+		for( var size_type mut i= 0s; i < (1s << 22u); ++i )
+		{
+			var u32 val= gen.Next() | ( gen.Next() << 16u );
+			keys.push_back(val);
+
+			m.insert( val, -3 * i32(val) );
+		}
+
+		// Remove all elements.
+		foreach( key : keys )
+		{
+			if( m.exists( key ) )
+			{
+				m.erase( key );
+			}
+		}
+
+		halt if( !m.empty() );
+
+		{
+			var i32 mut combination= 0;
+			for( var size_type mut i= 0s; i < (1s << 22s); ++i )
+			{
+				var u32 key= gen.Next();
+				var i32 value( gen.Next() );
+
+				m.insert( key, value );
+				var i32 erased_value= m.erase( key );
+				halt if( erased_value != value );
+
+				combination*= erased_value;
+				combination+= erased_value;
+			}
+
+			// Print result of iteration in order to prevent iteration loop to be optimized-out.
+			ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		}
+
+		// Iterate map many times. It should be fast, since map is empty.
+		for( var size_type mut i= 0s; i < (1s << 16u); ++i )
+		{
+			foreach( &el : m )
+			{
+				halt; // Should not reach this code.
+			}
+		}
 	}
 
 	return 0;

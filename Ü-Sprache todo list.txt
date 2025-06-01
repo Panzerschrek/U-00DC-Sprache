@@ -67,9 +67,7 @@ Lambdas:
 Standart library:
 *) Optimize template functions and classes in order to minimize number of things being compiling and thus speed-up
 	compilation of user programs using ustlib.
-*) Improve/fix unordered_map - fix tombstones fill-up after removing many elements, add equality-compare method,
-	reduce iteration time for cases where unordered_map was fileld and then mostly emptied,
-	add more methods for elements access, etc.
+*) Improve unordered_map - add equality-compare method, add more methods for elements access, erase, insertion, etc.
 *) Allow to specify hashing function for unordered_map
 *) Allow to use per-instance randomized hash function for unordered_map
 *) Fix hashing of floating-point values
