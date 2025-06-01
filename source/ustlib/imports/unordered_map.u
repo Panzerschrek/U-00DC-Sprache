@@ -192,12 +192,15 @@ public:
 			halt;
 		}
 
+		// Calculate minimum occupancy.
+		// Perform division first to avoid overflow.
+		// Result may be rounded down and be even 0, which is mostly fine.
+		var size_type min_occupancy= capacity_ / unordered_map_impl::c_min_loading_factor_denominator * unordered_map_impl::c_min_loading_factor_numerator;
+
 		// A workaround for cases where "unordered_map" contained many elements but now almost all of them are removed.
 		// In such case iteration may be very slow.
 		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
-		// TODO - handle possible overflow.
-		// TODO - tune load factor for schrinking.
-		if( size_ * unordered_map_impl::c_min_loading_factor_denominator < capacity_ * unordered_map_impl::c_min_loading_factor_numerator &&
+		if( size_ < min_occupancy && // Use "<" here in to avoid rehashing if size_ == 0 and min_occupancy == 0.
 			capacity_ > c_min_non_zero_capacity )
 		{
 			unsafe( rehash( size_ ) );
