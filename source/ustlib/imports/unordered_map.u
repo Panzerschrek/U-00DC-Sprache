@@ -199,7 +199,8 @@ public:
 		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
 		// TODO - handle possible overflow.
 		// TODO - tune load factor for schrinking.
-		if( size_ * unordered_map_impl::c_min_loading_factor_denominator < capacity_ * unordered_map_impl::c_min_loading_factor_numerator )
+		if( size_ * unordered_map_impl::c_min_loading_factor_denominator < capacity_ * unordered_map_impl::c_min_loading_factor_numerator &&
+			capacity_ > c_min_non_zero_capacity )
 		{
 			unsafe( rehash( size_ ) );
 		}
@@ -359,12 +360,7 @@ private:
 
 		debug_assert( new_capacity >= size_ + 1s );
 
-		max_assign(
-			new_capacity,
-			// Use minimum non-zero capacity 8 in order to simplify some calculations.
-			// If alignment of the table value is bigger than 8, require capacity equal to this alignment - in order to calculate data table pointer porperly,
-			// using simple formula "ptr_ + capacity_".
-			max( 8s, typeinfo</TableValue/>.align_of ) );
+		max_assign( new_capacity, c_min_non_zero_capacity );
 
 		unsafe // reallocate table and rehash.
 		{
@@ -636,6 +632,11 @@ private:
 	}
 
 	type TableValuePtr= $(TableValue);
+
+	// Use minimum non-zero capacity 8 in order to simplify some calculations.
+	// If alignment of the table value is bigger than 8, require capacity equal to this alignment - in order to calculate data table pointer porperly,
+	// using simple formula "ptr_ + capacity_".
+	var size_type constexpr c_min_non_zero_capacity= ( typeinfo</TableValue/>.align_of > 8s ? typeinfo</TableValue/>.align_of : 8s );
 
 private:
 	ContainerTag</ tup[ K, V ] /> key_value_tag_;
