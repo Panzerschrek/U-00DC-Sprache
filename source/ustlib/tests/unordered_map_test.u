@@ -420,6 +420,49 @@ fn nomangle main() : i32
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
 		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
 	}
+	{ // Insert sequential integers. Performance should not degrade.
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var size_type count= 1s << 22u;
+
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			m.insert( u32(i), i32(i) * 34 );
+		}
+
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			var i32 val= m[u32(i)];
+			combination*= val;
+			combination+= val;
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Insert sequential integers shifted by several bits. Performance should not degrade.
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var size_type count= 1s << 22u;
+		var u32 shift= 10u;
+
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			m.insert( u32(i) << shift, i32(i) * 34 );
+		}
+
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			var i32 val= m[ u32(i) << shift ];
+			combination*= val;
+			combination+= val;
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
 	{ // Insert a lot of random strings.
 		var ust::unordered_map</ust::string8, u32/> mut m;
 
