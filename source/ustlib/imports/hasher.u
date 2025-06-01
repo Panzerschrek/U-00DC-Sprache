@@ -158,17 +158,25 @@ public:
 		this( u128(x) );
 	}
 
-	op()( mut this, f32 x )
+	op()( mut this, f32 mut x )
 	{
-		// TODO - fix this.
-		// Using bitcasts isn't correct, since different bit representations may be equal (+-0).
+		// Fix hashing of negative signed zero - hash it as positive zero.
+		if( x == 0.0f )
+		{
+			x= 0.0f;
+		}
+		// Hash just bits of a floating point value. It's mostly fine, except NaNs, but they can't work normally anyway.
 		this( byte32(x) );
 	}
 
-	op()( mut this, f64 x )
+	op()( mut this, f64 mut x )
 	{
-		// TODO - fix this.
-		// Using bitcasts isn't correct, since different bit representations may be equal (+-0).
+		// Fix hashing of negative signed zero - hash it as positive zero.
+		if( x == 0.0 )
+		{
+			x= 0.0;
+		}
+		// Hash just bits of a floating point value. It's mostly fine, except NaNs, but they can't work normally anyway.
 		this( byte64(x) );
 	}
 

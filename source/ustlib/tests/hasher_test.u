@@ -55,6 +55,39 @@ fn nomangle main() : i32
 
 		halt if( res0 != res1 );
 	}
+	{ // Hash for +0.0 and -0.0 should be identical.
+		var f32 positive_zero= 0.0f, negative_zero= -0.0f;
+		static_assert( positive_zero == negative_zero );
+		static_assert( byte32(positive_zero) != byte32(negative_zero) );
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		hasher( positive_zero );
+		auto positive_zero_res= hasher.get();
+
+		hasher.reset();
+		hasher( negative_zero );
+		auto negative_zero_res= hasher.get();
+
+		halt if( positive_zero_res != negative_zero_res );
+	}
+	{ // Hashes for positive and negative float values shouldn't be generally identical.
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		hasher( 0.1f );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		hasher( -0.1f );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		halt if( res0 == res1 );
+	}
 	{ // Hash for the different sequence should usually be different.
 		var ust::default_hasher mut hasher;
 
