@@ -188,11 +188,13 @@ public:
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~3s);
-			unsafe  // Because of unchecked indexing.
+
+			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 4s )
 				{
-					// Perform reading of each byte individually, because they may be unaligned in order to be able to perform whole word readings.
+					// Perform reading of each byte individually.
+					// We can't just cast byte8 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
 						( size_type( u8( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
 						( size_type( u8( range.index_unchecked( i + 1s ) ) ) <<  8u ) |
@@ -207,6 +209,7 @@ public:
 			if( size_rounded < range.size() )
 			{
 				var size_type mut word= 0s;
+
 				unsafe // Because of unchecked indexing.
 				{
 					for( var size_type mut i= size_rounded; i < range.size(); ++i )
@@ -223,11 +226,13 @@ public:
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~7s);
+
 			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 8s )
 				{
-					// Perform reading of each byte individually, because they may be unaligned in order to be able to perform whole word readings.
+					// Perform reading of each byte individually.
+					// We can't just cast byte8 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
 						( size_type( u8( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
 						( size_type( u8( range.index_unchecked( i + 1s ) ) ) <<  8u ) |
@@ -246,6 +251,7 @@ public:
 			if( size_rounded < range.size() )
 			{
 				var size_type mut word= 0s;
+
 				unsafe // Because of unchecked indexing.
 				{
 					for( var size_type mut i= size_rounded; i < range.size(); ++i )
@@ -266,11 +272,13 @@ public:
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~1s);
+
 			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 2s )
 				{
-					// Perform reading of each byte16 element individually, because they may be unaligned in order to be able to perform whole word readings.
+					// Perform reading of each byte16 element individually.
+					// We can't just cast byte16 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
 						( size_type( u16( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
 						( size_type( u16( range.index_unchecked( i + 1s ) ) ) << 16u );
@@ -289,11 +297,13 @@ public:
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~3s);
+
 			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 4s )
 				{
-					// Perform reading of each byte16 element individually, because they may be unaligned in order to be able to perform whole word readings.
+					// Perform reading of each byte16 element individually.
+					// We can't just cast byte16 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
 						( size_type( u16( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
 						( size_type( u16( range.index_unchecked( i + 1s ) ) ) << 16u ) |
@@ -308,6 +318,7 @@ public:
 			if( size_rounded < range.size() )
 			{
 				var size_type mut word= 0s;
+
 				unsafe // Because of unchecked indexing.
 				{
 					for( var size_type mut i= size_rounded; i < range.size(); ++i )
@@ -335,11 +346,13 @@ public:
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~1s);
+
 			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 2s )
 				{
-					// Perform reading of each byte32 element individually, because they may be unaligned in order to be able to perform whole word readings.
+					// Perform reading of each byte32 element individually.
+					// We can't just cast byte16 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
 						( size_type( u32( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
 						( size_type( u32( range.index_unchecked( i + 1s ) ) ) << 32u );
