@@ -705,6 +705,7 @@ fn calculate_capacity_for_given_size( size_type size ) : size_type
 	// Also we shouldn't exceed maximum load factor.
 	// Since we perform rounding to nearest power of two, result loading factor is usually less than maximum, which gives some space for further grow.
 	// Also perform integer division with rounding-up.
+	// Integer overflow on 64-bit platforms is here near impossible, on 32-bit platforms it's impossible considering address space limitation.
 	var size_type capacity=
 		( ( size + 1s ) * c_max_loading_factor_denominator + c_max_loading_factor_numerator - 1s ) / c_max_loading_factor_numerator;
 	return get_nearest_power_of_two_size( capacity );
