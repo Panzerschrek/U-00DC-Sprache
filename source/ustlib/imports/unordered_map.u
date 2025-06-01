@@ -103,15 +103,16 @@ public:
 
 	fn insert( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
-		// Size overflow is inpossible here - previous container size can't be greater than half of address space.
+		// Perform division first while multiplying capacity by fracional loading factor.
+		// Do this to prevent possible overflow.
+		// We can do this, as soon capacity is power of two and min non-zero capacity is not less than this fractional number denominator.
+		static_assert( c_min_non_zero_capacity % unordered_map_impl::c_max_loading_factor_denominator == 0s );
+		var size_type max_occupancy= capacity_ / unordered_map_impl::c_max_loading_factor_denominator * unordered_map_impl::c_max_loading_factor_numerator;
 
 		// Trigger rehashing using not size, but the number of occupied slots, considering one more slot is needed for new value.
 		// Do this in order to have not so many occupied slots (values and tombstones),
 		// since having too many of them slows-down lookup/insertion.
-
-		// TODO - tune load factor.
-		if( (num_occupied_slots_ + 1s) >
-			capacity_ * unordered_map_impl::c_max_loading_factor_numerator / unordered_map_impl::c_max_loading_factor_denominator )
+		if( (num_occupied_slots_ + 1s) > max_occupancy )
 		{
 			// Rehashing is required, since load factor is exceeded.
 			// Trigger it, requesting size for all current elements plus newly-inserted element.
@@ -139,7 +140,7 @@ public:
 				{
 					// Finally reached an empty cell. This means that we insert new value.
 
-					++size_;
+					++size_; // Size overflow is inpossible here - previous container size can't be greater than half of address space.
 
 					// Insert new value into place of tombstone (if it exists) or in this empty cell.
 					if( insert_index == ~0s )
@@ -652,9 +653,11 @@ namespace unordered_map_impl
 // It can be increased if lookup algorithm is optimized.
 var size_type constexpr c_max_loading_factor_numerator= 5s;
 var size_type constexpr c_max_loading_factor_denominator= 8s;
+static_assert( ( c_max_loading_factor_denominator & ( c_max_loading_factor_denominator - 1s ) ) == 0s, "Denominator should be power of two!" );
 
 var size_type constexpr c_min_loading_factor_numerator= 1s;
 var size_type constexpr c_min_loading_factor_denominator= 16s;
+static_assert( ( c_min_loading_factor_denominator & ( c_min_loading_factor_denominator - 1s ) ) == 0s, "Denominator should be power of two!" );
 
 // Each element of the control table is a byte.
 // Its most significant bit is 0 if a table slot stores a value and 1 otherwise.
