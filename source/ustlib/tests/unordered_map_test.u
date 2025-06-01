@@ -507,6 +507,87 @@ fn nomangle main() : i32
 		// Print result of iteration in order to prevent iteration loop to be optimized-out.
 		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
 	}
+	{ // Insert and remove the same value a lot of times.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		var i32 mut combination= 0;
+
+		for( var size_type mut i= 0s; i < (1s << 24s); ++i )
+		{
+			var u32 key= gen.Next();
+			var i32 value( gen.Next() );
+
+			m.insert( key, value );
+			var i32 erased_value= m.erase( key );
+			halt if( erased_value != value );
+
+			combination*= erased_value;
+			combination+= erased_value;
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{
+		// Fill map and then remove all elements.
+		// Then add and immediately remove single elements.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		var ust::vector</u32/> mut keys;
+
+		for( var size_type mut i= 0s; i < (1s << 22u); ++i )
+		{
+			var u32 val= gen.Next() | ( gen.Next() << 16u );
+			keys.push_back(val);
+
+			m.insert( val, -3 * i32(val) );
+		}
+
+		// Remove all elements.
+		foreach( key : keys )
+		{
+			if( m.exists( key ) )
+			{
+				m.erase( key );
+			}
+		}
+
+		halt if( !m.empty() );
+
+		{
+			var i32 mut combination= 0;
+			for( var size_type mut i= 0s; i < (1s << 22s); ++i )
+			{
+				var u32 key= gen.Next();
+				var i32 value( gen.Next() );
+
+				m.insert( key, value );
+				var i32 erased_value= m.erase( key );
+				halt if( erased_value != value );
+
+				combination*= erased_value;
+				combination+= erased_value;
+			}
+
+			// Print result of iteration in order to prevent iteration loop to be optimized-out.
+			ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+		}
+
+		// Iterate map many times. It should be fast, since map is empty.
+		for( var size_type mut i= 0s; i < (1s << 16u); ++i )
+		{
+			foreach( &el : m )
+			{
+				halt; // Should not reach this code.
+			}
+		}
+	}
 
 	return 0;
 }
