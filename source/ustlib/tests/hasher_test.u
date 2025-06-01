@@ -627,8 +627,8 @@ fn nomangle main() : i32
 	return 0;
 }
 
-fn Foo(){}
-fn Bar(){}
+fn Foo() : i32 { return 1; }
+fn Bar() : i32 { return 2; }
 
 enum SomeEnum
 {
