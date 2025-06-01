@@ -148,8 +148,8 @@ public:
 		}
 		else
 		{
-			write( size_type(x) );
-			write( size_type( x >> 32u ) );
+			write( size_type( u64(x) ) );
+			write( size_type( u64(x) >> 32u ) );
 		}
 	}
 
@@ -320,7 +320,7 @@ public:
 		{
 			foreach( b : range )
 			{
-				write( b );
+				write( size_type(b) );
 			}
 		}
 		else
