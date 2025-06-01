@@ -16,6 +16,9 @@ build*/
 *.pro.user
 CMakeLists.txt.user
 
+# Ecode settings
+*.ecode/
+
 # Python cache
 __pycache__
 
