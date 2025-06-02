@@ -134,5 +134,15 @@ fn nomangle main() : i32
 		// Filler function is unsafe, which isn't allowed in "from_filler_function" function.
 		ust::make_vector_from_filler_function( 4s, lambda() unsafe : i32 { return 0; } ); //##expect_error TemplateContext
 	}
+	{
+		// Filler function performs reference pollution, which isn't supported by filler creation function.
+		auto mut func=
+			lambda[ r= ust::optional_ref_imut</i32/>(), x= 0 ] mut () : i32
+			{
+				r.reset( x ); // Save reference to "x" in "r" lambda field.
+				return 0;
+			};
+		ust::make_vector_from_filler_function( 4s, move(func) ); //##expect_error TemplateContext
+	}
 	return 0;
 }
