@@ -147,6 +147,90 @@ public:
 	}
 
 	// Insert a value for given key.
+	// If there is already a value for given key, preserve it and discard new value.
+	fn insert_new( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
+	{
+		// Perform division first while multiplying capacity by fracional loading factor.
+		// Do this to prevent possible overflow.
+		// We can do this, as soon capacity is power of two and min non-zero capacity is not less than this fractional number denominator.
+		static_assert( c_min_non_zero_capacity % unordered_map_impl::c_max_loading_factor_denominator == 0s );
+		var size_type max_occupancy= capacity_ / unordered_map_impl::c_max_loading_factor_denominator * unordered_map_impl::c_max_loading_factor_numerator;
+
+		// Trigger rehashing using not size, but the number of occupied slots, considering one more slot is needed for new value.
+		// Do this in order to have not so many occupied slots (values and tombstones),
+		// since having too many of them slows-down lookup/insertion.
+		if( (num_occupied_slots_ + 1s) > max_occupancy )
+		{
+			// Rehashing is required, since load factor is exceeded.
+			// Trigger it, requesting size for all current elements plus newly-inserted element.
+			// Additionaly add extra place for some tombstones, if current table contains them, this may be needed in cases
+			// when values are added and removed.
+			var size_type num_tombstones= num_occupied_slots_ - size_;
+			unsafe( rehash( size_ + 1s + ( num_tombstones >> 1u ) ) );
+		}
+
+		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(TableValue) data_table= get_data_table();
+
+		auto capacity_mask= capacity_ - 1s;
+		auto key_hash= calculate_hash(key);
+		auto hash2= unordered_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+		auto mut insert_index= ~0s;
+
+		unsafe
+		{
+			loop
+			{
+				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == unordered_map_impl::c_contents_empty )
+				{
+					// Finally reached an empty cell. This means that we insert new value.
+
+					++size_; // Size overflow is inpossible here - previous container size can't be greater than half of address space.
+
+					// Insert new value into place of tombstone (if it exists) or in this empty cell.
+					if( insert_index == ~0s )
+					{
+						insert_index= key_hash_wrapped;
+						++num_occupied_slots_;
+					}
+
+					$>( control_table + insert_index )= unordered_map_impl::ControlTableElement( hash2 );
+
+					auto &mut dst_value= $>( data_table + insert_index );
+					move_into_uninitialized( dst_value.key_storage, key );
+					move_into_uninitialized( dst_value.value_storage, move(value) );
+					return dst_value.value_storage;
+				}
+				else if( cell_content == unordered_map_impl::c_contents_value_removed )
+				{
+					// Remember first tombstone position in order to perform insertion into it.
+					// We need to select the first one in order to minimize probing sequence on lookup.
+					if( insert_index == ~0s )
+					{
+						insert_index= key_hash_wrapped;
+					}
+				}
+				else if( size_type(cell_content) == hash2 )
+				{
+					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
+					// Compare keys to be sure.
+					auto &mut dst_value= $>( data_table + key_hash_wrapped );
+					if( safe( key == dst_value.key_storage ) )
+					{
+						return dst_value.value_storage;
+					}
+				}
+
+				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
+
+				// Eventually we should finish this loop, since we should have at least one empty cell.
+			}
+		}
+	}
+
+	// Insert a value for given key.
 	// If there is already a value for given key, replace it with new value.
 	fn insert_or_update( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
