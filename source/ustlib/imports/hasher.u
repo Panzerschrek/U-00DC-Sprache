@@ -158,17 +158,25 @@ public:
 		this( u128(x) );
 	}
 
-	op()( mut this, f32 x )
+	op()( mut this, f32 mut x )
 	{
-		// TODO - fix this.
-		// Using bitcasts isn't correct, since different bit representations may be equal (+-0).
+		// Fix hashing of negative signed zero - hash it as positive zero.
+		if( x == 0.0f )
+		{
+			x= 0.0f;
+		}
+		// Hash just bits of a floating point value. It's mostly fine, except NaNs, but they can't work normally anyway.
 		this( byte32(x) );
 	}
 
-	op()( mut this, f64 x )
+	op()( mut this, f64 mut x )
 	{
-		// TODO - fix this.
-		// Using bitcasts isn't correct, since different bit representations may be equal (+-0).
+		// Fix hashing of negative signed zero - hash it as positive zero.
+		if( x == 0.0 )
+		{
+			x= 0.0;
+		}
+		// Hash just bits of a floating point value. It's mostly fine, except NaNs, but they can't work normally anyway.
 		this( byte64(x) );
 	}
 
@@ -180,11 +188,13 @@ public:
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~3s);
-			unsafe  // Because of unchecked indexing.
+
+			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 4s )
 				{
-					// Perform reading of each byte individually, because they may be unaligned in order to be able to perform whole word readings.
+					// Perform reading of each byte individually.
+					// We can't just cast byte8 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
 						( size_type( u8( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
 						( size_type( u8( range.index_unchecked( i + 1s ) ) ) <<  8u ) |
@@ -199,6 +209,7 @@ public:
 			if( size_rounded < range.size() )
 			{
 				var size_type mut word= 0s;
+
 				unsafe // Because of unchecked indexing.
 				{
 					for( var size_type mut i= size_rounded; i < range.size(); ++i )
@@ -215,11 +226,13 @@ public:
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~7s);
+
 			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 8s )
 				{
-					// Perform reading of each byte individually, because they may be unaligned in order to be able to perform whole word readings.
+					// Perform reading of each byte individually.
+					// We can't just cast byte8 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
 						( size_type( u8( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
 						( size_type( u8( range.index_unchecked( i + 1s ) ) ) <<  8u ) |
@@ -238,6 +251,7 @@ public:
 			if( size_rounded < range.size() )
 			{
 				var size_type mut word= 0s;
+
 				unsafe // Because of unchecked indexing.
 				{
 					for( var size_type mut i= size_rounded; i < range.size(); ++i )
@@ -258,11 +272,13 @@ public:
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~1s);
+
 			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 2s )
 				{
-					// Perform reading of each byte16 element individually, because they may be unaligned in order to be able to perform whole word readings.
+					// Perform reading of each byte16 element individually.
+					// We can't just cast byte16 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
 						( size_type( u16( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
 						( size_type( u16( range.index_unchecked( i + 1s ) ) ) << 16u );
@@ -281,11 +297,13 @@ public:
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~3s);
+
 			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 4s )
 				{
-					// Perform reading of each byte16 element individually, because they may be unaligned in order to be able to perform whole word readings.
+					// Perform reading of each byte16 element individually.
+					// We can't just cast byte16 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
 						( size_type( u16( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
 						( size_type( u16( range.index_unchecked( i + 1s ) ) ) << 16u ) |
@@ -300,6 +318,7 @@ public:
 			if( size_rounded < range.size() )
 			{
 				var size_type mut word= 0s;
+
 				unsafe // Because of unchecked indexing.
 				{
 					for( var size_type mut i= size_rounded; i < range.size(); ++i )
@@ -327,11 +346,13 @@ public:
 		{
 			// Read and hash whole words.
 			var size_type size_rounded= range.size() & (~1s);
+
 			unsafe // Because of unchecked indexing.
 			{
 				for( var size_type mut i= 0s; i < size_rounded; i+= 2s )
 				{
-					// Perform reading of each byte32 element individually, because they may be unaligned in order to be able to perform whole word readings.
+					// Perform reading of each byte32 element individually.
+					// We can't just cast byte16 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
 						( size_type( u32( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
 						( size_type( u32( range.index_unchecked( i + 1s ) ) ) << 32u );
@@ -400,6 +421,22 @@ private:
 
 private:
 	size_type state_= 0s;
+}
+
+// Hasher factory is used in hash-based containers.
+// An instance of such factory is created per-container.
+// The main purpose of such class is to allow changing hash function on per-container basis.
+//
+// All alternative implementations should support interface of this class.
+//
+struct default_hasher_factory
+{
+	// Create a hasher instance.
+	// "this" is constant in order to prevent modifying internal state and thus creating different hashers for different invocations.
+	op()( this ) : default_hasher
+	{
+		return default_hasher();
+	}
 }
 
 } // namespace ust

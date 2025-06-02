@@ -26,7 +26,11 @@ namespace ust
 // Iteration order is unspecified and may be different for different instances of the same unordered_map type or even
 // for the same instance.
 //
-// Internally it's implemented as an open-addressing hash-table with linear probing.
+// The third optional template argument is a hasher factory class.
+// It's needed mainly to allow to tune hash-function on per-container basis.
+// If it's not specified, default hasher factory is used, which creates "default_hasher" instances.
+//
+// Internally this container is implemented as an open-addressing hash-table with linear probing.
 // It uses two different tables - control table and storage table.
 // Control table element is single byte indicated table slot state and (sometimes) containing a small portion of hash.
 // Storage table stores just pairs of keys and values.
@@ -35,8 +39,8 @@ namespace ust
 //
 // TODO - speed-up probing on insertion, deletion and search using SIMD instructions or something similar.
 //
-template</ type K, type V />
-class unordered_map
+template</ type K, type V, type HF />
+class unordered_map</ K, V, HF= default_hasher_factory />
 {
 public:
 	type key_type= K;
@@ -475,10 +479,9 @@ private:
 		return unsafe( byte_ptr_cast</TableValue/>( ptr_ + capacity_ ) );
 	}
 
-	fn calculate_hash( key_type& key ) : size_type
+	fn calculate_hash( this, key_type& key ) : size_type
 	{
-		// TODO - allow to change hasher implementation via a template parameter.
-		var default_hasher mut hasher;
+		auto mut hasher= hasher_factory_();
 		apply_value_to_hasher( hasher, key );
 		return hasher.get();
 	}
@@ -637,6 +640,8 @@ private:
 
 private:
 	ContainerTag</ tup[ K, V ] /> key_value_tag_;
+
+	HF hasher_factory_;
 
 	// Control table following by data table.
 	// Store it as raw byte8 pointer to avoid possible TBAA mistakes, cast it to proper pointer types later.

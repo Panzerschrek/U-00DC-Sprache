@@ -209,6 +209,8 @@ public:
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
+		// This code should match code of the function "apply_value_to_hasher" for arrays!
+
 		// Hash size in order to produce different hashes for pairs of sequences like "ab", "cde" and "abc", "de".
 		apply_value_to_hasher( hasher, size_ );
 
@@ -217,9 +219,9 @@ public:
 		static_if( ti.is_fundamental )
 		{
 			// Hash fundamentals except voids and floats as sequence of byte-elements.
+			// Floats are exceptions since they require extra handling of some special values.
 			static_if( ti.is_void | ti.is_float )
 			{
-				// Can't hash floats via
 				for( var size_type mut i= 0s; i < size_; ++i )
 				{
 					hasher( unsafe( $>( begin_ + i ) ) );
@@ -227,13 +229,13 @@ public:
 			}
 			else
 			{
-				hash_as_bytes( hasher );
+				unsafe( hash_as_bytes( hasher ) );
 			}
 		}
 		else static_if( ti.is_enum | ti.is_raw_pointer | ti.is_function_pointer )
 		{
 			// Hash enums, raw pointers, function pointers as sequence of byte-elements.
-			hash_as_bytes( hasher );
+			unsafe( hash_as_bytes( hasher ) );
 		}
 		else
 		{
@@ -368,12 +370,13 @@ public:
 	}
 
 private:
-
 	// Call this only if elements may be correctly casted into sequence of byte8, byte16, byte32, byte64, byte128 elements!
 	// We treat types which can be represented as such sequences in order to speed-up hash calculation for them.
 	template</type Hasher/>
-	fn hash_as_bytes( this, Hasher &mut hasher )
+	fn hash_as_bytes( this, Hasher &mut hasher ) unsafe
 	{
+		// This code should match code of the function "hash_apply_impl::hash_array_as_bytes"!
+
 		auto& ti= typeinfo</T/>;
 
 		type byte_type= byte_type_for_alignment</ ti.align_of />;
