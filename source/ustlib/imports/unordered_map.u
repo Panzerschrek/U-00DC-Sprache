@@ -150,24 +150,7 @@ public:
 	// If there is already a value for given key, preserve it and discard new value.
 	fn insert_new( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
-		// Perform division first while multiplying capacity by fracional loading factor.
-		// Do this to prevent possible overflow.
-		// We can do this, as soon capacity is power of two and min non-zero capacity is not less than this fractional number denominator.
-		static_assert( c_min_non_zero_capacity % unordered_map_impl::c_max_loading_factor_denominator == 0s );
-		var size_type max_occupancy= capacity_ / unordered_map_impl::c_max_loading_factor_denominator * unordered_map_impl::c_max_loading_factor_numerator;
-
-		// Trigger rehashing using not size, but the number of occupied slots, considering one more slot is needed for new value.
-		// Do this in order to have not so many occupied slots (values and tombstones),
-		// since having too many of them slows-down lookup/insertion.
-		if( (num_occupied_slots_ + 1s) > max_occupancy )
-		{
-			// Rehashing is required, since load factor is exceeded.
-			// Trigger it, requesting size for all current elements plus newly-inserted element.
-			// Additionaly add extra place for some tombstones, if current table contains them, this may be needed in cases
-			// when values are added and removed.
-			var size_type num_tombstones= num_occupied_slots_ - size_;
-			unsafe( rehash( size_ + 1s + ( num_tombstones >> 1u ) ) );
-		}
+		unsafe( try_rehash_on_insert() );
 
 		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
@@ -234,24 +217,7 @@ public:
 	// If there is already a value for given key, replace it with new value.
 	fn insert_or_update( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
-		// Perform division first while multiplying capacity by fracional loading factor.
-		// Do this to prevent possible overflow.
-		// We can do this, as soon capacity is power of two and min non-zero capacity is not less than this fractional number denominator.
-		static_assert( c_min_non_zero_capacity % unordered_map_impl::c_max_loading_factor_denominator == 0s );
-		var size_type max_occupancy= capacity_ / unordered_map_impl::c_max_loading_factor_denominator * unordered_map_impl::c_max_loading_factor_numerator;
-
-		// Trigger rehashing using not size, but the number of occupied slots, considering one more slot is needed for new value.
-		// Do this in order to have not so many occupied slots (values and tombstones),
-		// since having too many of them slows-down lookup/insertion.
-		if( (num_occupied_slots_ + 1s) > max_occupancy )
-		{
-			// Rehashing is required, since load factor is exceeded.
-			// Trigger it, requesting size for all current elements plus newly-inserted element.
-			// Additionaly add extra place for some tombstones, if current table contains them, this may be needed in cases
-			// when values are added and removed.
-			var size_type num_tombstones= num_occupied_slots_ - size_;
-			unsafe( rehash( size_ + 1s + ( num_tombstones >> 1u ) ) );
-		}
+		unsafe( try_rehash_on_insert() );
 
 		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
@@ -482,6 +448,27 @@ public:
 	}
 
 private:
+
+	// Call this function only from "insert_*" methods.
+	fn try_rehash_on_insert( mut this ) unsafe
+	{
+		static_assert( c_min_non_zero_capacity % unordered_map_impl::c_max_loading_factor_denominator == 0s );
+		var size_type max_occupancy= capacity_ / unordered_map_impl::c_max_loading_factor_denominator * unordered_map_impl::c_max_loading_factor_numerator;
+
+		// Trigger rehashing using not size, but the number of occupied slots, considering one more slot is needed for new value.
+		// Do this in order to have not so many occupied slots (values and tombstones),
+		// since having too many of them slows-down lookup/insertion.
+		if( (num_occupied_slots_ + 1s) > max_occupancy )
+		{
+			// Rehashing is required, since load factor is exceeded.
+			// Trigger it, requesting size for all current elements plus newly-inserted element.
+			// Additionaly add extra place for some tombstones, if current table contains them, this may be needed in cases
+			// when values are added and removed.
+			var size_type num_tombstones= num_occupied_slots_ - size_;
+			unsafe( rehash( size_ + 1s + ( num_tombstones >> 1u ) ) );
+		}
+	}
+
 	// Performs unconditional rehashing.
 	// New size should not be less than current size.
 	fn rehash( mut this,size_type new_size ) unsafe
