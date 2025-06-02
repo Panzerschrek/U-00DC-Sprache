@@ -261,6 +261,40 @@ fn nomangle main() : i32
 		m[777]= C(777);
 		halt if( m[777].x != 777 );
 	}
+	{ // Equality compare.
+		var ust::unordered_map</ u32, i32 /> mut m0, mut m1, mut m2, mut m3;
+
+		m0.insert( 78u, 55 );
+		m0.insert( 31u, 843 );
+
+		m1.insert( 31u, 843 );
+		m1.insert( 78u, 55 );
+
+		m2.insert( 78u,-55 );
+		m2.insert( 31u, 843 );
+
+		m3.insert( 31u, 843 );
+
+		halt if( m0 != m0 );
+		halt if( m0 != m1 );
+		halt if( m0 == m2 );
+		halt if( m0 == m3 );
+
+		halt if( m1 != m0 );
+		halt if( m1 != m1 );
+		halt if( m1 == m2 );
+		halt if( m1 == m3 );
+
+		halt if( m2 == m0 );
+		halt if( m2 == m1 );
+		halt if( m2 != m2 );
+		halt if( m2 == m3 );
+
+		halt if( m3 == m0 );
+		halt if( m3 == m1 );
+		halt if( m3 == m2 );
+		halt if( m3 != m3 );
+	}
 	{ // f64 as key - should work properly.
 		var ust::unordered_map</ f64, i32 /> mut m;
 

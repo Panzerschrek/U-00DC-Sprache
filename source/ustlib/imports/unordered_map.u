@@ -105,6 +105,47 @@ public:
 		return size_ == 0s;
 	}
 
+	// Equality compare - returns true if both maps contains the same values.
+	op enable_if( typeinfo</V/>.is_equality_comparable )
+	==( this_type& l, this_type& r ) : bool
+	{
+		if( l.size() != r.size() )
+		{
+			return false;
+		}
+		if( l.empty() )
+		{
+			return true;
+		}
+
+		// Iterate over "l" table and check if all elements present are also present in "r".
+
+		var $(unordered_map_impl::ControlTableElement) control_table_l= l.get_control_table();
+		var $(TableValue) data_table_l= l.get_data_table();
+
+		unsafe
+		{
+			for( auto mut i= 0s; i < l.capacity_; ++i )
+			{
+				if( ( size_type( $>( control_table_l + i ) ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
+				{
+					var TableValue& table_value_l= $>( data_table_l + i );
+					var TableValuePtr table_value_ptr_r= cast_mut(r).find_key( table_value_l.key_storage );
+					if( is_nullptr( table_value_ptr_r ) )
+					{
+						return false;
+					}
+					if( safe( table_value_l.value_storage != unsafe( $>(table_value_ptr_r).value_storage ) ) )
+					{
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
+	}
+
 	fn insert( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
 		// Perform division first while multiplying capacity by fracional loading factor.
