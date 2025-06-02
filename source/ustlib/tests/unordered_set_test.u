@@ -101,6 +101,43 @@ fn nomangle main() : i32
 		halt if(  s1.exists( -54 ) );
 		halt if(  s1.exists( 100 ) );
 	}
+	{ // Equality compare.
+		var ust::unordered_set</ u32 /> mut s0, mut s1, mut s2, mut s3;
+
+		s0.insert( 1u );
+		s0.insert( 6567u );
+		s0.insert( 6753u );
+		s0.insert( 12568u );
+
+		s1.insert( 12568u );
+		s1.insert( 6753u );
+		s1.insert( 6567u );
+		s1.insert( 1u );
+
+		s2.insert( 6567u );
+		s2.insert( 6753u );
+		s2.insert( 12568u );
+
+		halt if( s0 != s0 );
+		halt if( s0 != s1 );
+		halt if( s0 == s2 );
+		halt if( s0 == s3 );
+
+		halt if( s1 != s0 );
+		halt if( s1 != s1 );
+		halt if( s1 == s2 );
+		halt if( s1 == s3 );
+
+		halt if( s2 == s0 );
+		halt if( s2 == s1 );
+		halt if( s2 != s2 );
+		halt if( s2 == s3 );
+
+		halt if( s3 == s0 );
+		halt if( s3 == s1 );
+		halt if( s3 == s2 );
+		halt if( s3 != s3 );
+	}
 	{ // Iteration for empty set
 
 		var IntSet s;
@@ -167,7 +204,6 @@ fn nomangle main() : i32
 		halt if( i != 2s );
 		halt if( sum != 100 + 300 );
 	}
-
 
 	return 0;
 }

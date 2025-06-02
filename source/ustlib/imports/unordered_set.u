@@ -49,6 +49,11 @@ public:
 		return impl_.empty();
 	}
 
+	op==( this_type& l, this_type& r ) : bool
+	{
+		return l.impl_ == r.impl_;
+	}
+
 	fn insert( mut this, T& key )
 	{
 		impl_.insert( key, void() );
