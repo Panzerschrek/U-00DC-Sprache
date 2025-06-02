@@ -233,7 +233,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 	}
 
 	var VariablePtr v_ptr= move(v).CreatePtr();
-	typeinfo_cache_.insert_or_update( t, TypeinfoCacheElement{ .variable= v_ptr } );
+	typeinfo_cache_.insert_new( t, TypeinfoCacheElement{ .variable= v_ptr } );
 
 	// Add type as type alias into class members namespace.
 	// This allows us to get typename itself, using typeinfo variable and use such type as normal.

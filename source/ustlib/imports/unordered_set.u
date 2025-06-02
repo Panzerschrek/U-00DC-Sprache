@@ -56,7 +56,7 @@ public:
 
 	fn insert( mut this, T& key )
 	{
-		impl_.insert_or_update( key, void() );
+		impl_.insert_new( key, void() );
 	}
 
 	fn exists( this, T& key ) : bool

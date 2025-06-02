@@ -211,7 +211,7 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 		NamesScopeFill( names_scope_ptr, namespace_elements );
 		NamesScopeFillOutOfLineElements( names_scope_ptr, namespace_elements );
 
-		namespace_mixin_expansions_.insert_or_update( key, ust::make_shared_ptr_final( move(namespace_elements) ) );
+		namespace_mixin_expansions_.insert_new( key, ust::make_shared_ptr_final( move(namespace_elements) ) );
 	}
 }
 
@@ -271,7 +271,7 @@ fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut
 
 		NamesScopeFillClass( class_members, class_elements, class_type, mixin_.visibility );
 
-		class_mixin_expansions_.insert_or_update( key, ust::make_shared_ptr_final( move(class_elements) ) );
+		class_mixin_expansions_.insert_new( key, ust::make_shared_ptr_final( move(class_elements) ) );
 	}
 }
 
@@ -326,7 +326,7 @@ fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, Func
 
 	// Cache the syntax element.
 	auto result_ptr= ust::make_shared_ptr_final( move( block_elements ) );
-	block_mixin_expansions_.insert_or_update( key, result_ptr );
+	block_mixin_expansions_.insert_new( key, result_ptr );
 	return result_ptr;
 }
 
@@ -380,7 +380,7 @@ fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, F
 
 	// Cache the syntax element.
 	auto result_ptr= ust::make_shared_ptr_final( move( type_name ) );
-	type_name_mixin_expansions_.insert_or_update( key, result_ptr );
+	type_name_mixin_expansions_.insert_new( key, result_ptr );
 	return result_ptr;
 }
 
@@ -434,7 +434,7 @@ fn CodeBuilder::ExpandExpressionMixin( mut this, NamesScopePtr& names_scope_ptr,
 
 	// Cache syntax elements.
 	auto result_ptr= ust::make_shared_ptr_final( move( expression ) );
-	expression_mixin_expansions_.insert_or_update( key, result_ptr );
+	expression_mixin_expansions_.insert_new( key, result_ptr );
 	return result_ptr;
 }
 

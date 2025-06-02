@@ -198,7 +198,7 @@ fn LoadSourceGraph_r(
 			{
 				if( !macros.exists( context_and_macro.key() ) )
 				{
-					macros.insert_or_update( context_and_macro.key(), context_and_macro.value() );
+					macros.insert_new( context_and_macro.key(), context_and_macro.value() );
 					continue;
 				}
 
@@ -207,7 +207,7 @@ fn LoadSourceGraph_r(
 				{
 					if( !dst_map.exists( macro.key() ) )
 					{
-						dst_map.insert_or_update( macro.key(), macro.value() );
+						dst_map.insert_new( macro.key(), macro.value() );
 					}
 					else if( dst_map[ macro.key() ].deref().src_loc != macro.value().deref().src_loc )
 					{

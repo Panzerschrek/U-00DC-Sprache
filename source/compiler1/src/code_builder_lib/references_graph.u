@@ -9,7 +9,7 @@ fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 {
 	debug_assert( !nodes_.exists( node ), "Node is already registered!" );
 
-	nodes_.insert_or_update( node, NodeState{ .moved= false } );
+	nodes_.insert_new( node, NodeState{ .moved= false } );
 
 	with( &node_val : node.lock_imut().deref() )
 	{
@@ -348,7 +348,7 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 
 			if( !result.nodes_.exists( node ) )
 			{
-				result.nodes_.insert_or_update( node, src_node );
+				result.nodes_.insert_new( node, src_node );
 			}
 
 			var NodeState& dst_node= result.nodes_[ node ];

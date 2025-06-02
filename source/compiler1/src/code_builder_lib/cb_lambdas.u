@@ -351,7 +351,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 			.generated_class_data= LambdaClassData{ .template_args= move(template_args) }
 		} );
 
-	lambda_classes_table_.insert_or_update( move(key), class_type_ptr );
+	lambda_classes_table_.insert_new( move(key), class_type_ptr );
 
 	with( mut members_lock : class_members.lock_mut() )
 	{
@@ -495,7 +495,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 
 						lambda_preprocessing_context.external_variables.insert( captured_variable_ptr );
 
-						explicit_captures.insert_or_update( captured_variable_ptr, LambdaPreprocessingContext::ExplicitCapture{ .capture_by_reference= capture.by_reference } );
+						explicit_captures.insert_new( captured_variable_ptr, LambdaPreprocessingContext::ExplicitCapture{ .capture_by_reference= capture.by_reference } );
 					}
 				}
 				else
@@ -529,7 +529,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 							}
 							else
 							{
-								explicit_captures.insert_or_update( variable_ptr, LambdaPreprocessingContext::ExplicitCapture{ .capture_by_reference= capture.by_reference } );
+								explicit_captures.insert_new( variable_ptr, LambdaPreprocessingContext::ExplicitCapture{ .capture_by_reference= capture.by_reference } );
 							}
 						}
 						else
@@ -691,12 +691,12 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					class_type.inner_references.push_back( move(inner_reference) );
 
 					// Captured by reference variable points to one of inner the reference tags of lambda this.
-					captured_variable_to_lambda_inner_reference_tag.insert_or_update( captured_variable.data.variable_node, field.reference_tag );
+					captured_variable_to_lambda_inner_reference_tag.insert_new( captured_variable.data.variable_node, field.reference_tag );
 				}
 				else
 				{
 					// Captured by value variable points to lambda this param ptself.
-					captured_variable_to_lambda_inner_reference_tag.insert_or_update( captured_variable.data.variable_node, FunctionType::c_param_reference_number );
+					captured_variable_to_lambda_inner_reference_tag.insert_new( captured_variable.data.variable_node, FunctionType::c_param_reference_number );
 
 					// Each reference tag of each captured variable get its own reference tag in result lambda class.
 					for( auto mut i= 0s; i < reference_tag_count; ++i )
@@ -708,7 +708,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 								.kind= source_variable.t.GetInnerReferenceKind(i),
 								.second_order_kind= source_variable.t.GetSecondOrderInnerReferenceKind(i) } );
 
-						captured_variable_to_lambda_inner_reference_tag.insert_or_update( captured_variable.data.accessible_variables[i], reference_tag );
+						captured_variable_to_lambda_inner_reference_tag.insert_new( captured_variable.data.accessible_variables[i], reference_tag );
 					}
 				}
 
@@ -1118,7 +1118,7 @@ fn CodeBuilder::LambdaPreprocessingAccessExternalVariable( mut this, FunctionCon
 			.llvm_value= v.llvm_value,
 		};
 
-		lambda_preprocessing_context.captured_external_variables.insert_or_update(
+		lambda_preprocessing_context.captured_external_variables.insert_new(
 			name,
 			LambdaPreprocessingContext::CapturedVariableData
 			{

@@ -1440,7 +1440,7 @@ fn CodeBuilder::ParameterizeTemplateFunctions(
 	}
 
 	var ust::shared_ptr_mut</FunctionsSet/> result( move(result_functions_set) );
-	parameterized_template_functions_cache_.insert_or_update( move(cache_key), result );
+	parameterized_template_functions_cache_.insert_new( move(cache_key), result );
 	return result;
 }
 
@@ -2033,7 +2033,7 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 
 fn CodeBuilder::AddNewTemplateThing( mut this, TemplateKey mut key, NamesScopePtr mut thing )
 {
-	generated_template_things_.insert_or_update( key, move(thing) );
+	generated_template_things_.insert_new( key, move(thing) );
 	generated_template_things_sequence_.push_back( move(key) );
 }
 

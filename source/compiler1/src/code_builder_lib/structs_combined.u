@@ -1551,7 +1551,7 @@ fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut val
 		return ust::null_optional_ref;
 	}
 
-	return names_map_.insert_or_update(move(name), move(value) );
+	return names_map_.insert_new(move(name), move(value) );
 }
 
 fn NamesScope::GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>

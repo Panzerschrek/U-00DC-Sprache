@@ -76,7 +76,7 @@ fn PopulateWorkspaceDirectoryGroups(
 			{
 				directories_json.push_back( ust::path::normalize( ust::path::join( package_source_directory, directory ) ) );
 			}
-			file_group_json.insert_or_update( "directories", move(directories_json) );
+			file_group_json.insert_new( "directories", move(directories_json) );
 		}
 
 		auto mut includes=
@@ -119,7 +119,7 @@ fn PopulateWorkspaceDirectoryGroups(
 				ust::concat( generated_public_headers_dir, g_include_dir_prefix_separator, build_target_name.name ) );
 		}
 
-		file_group_json.insert_or_update( "includes", includes.iter().collect</ JsonValue::Array />() );
+		file_group_json.insert_new( "includes", includes.iter().collect</ JsonValue::Array />() );
 
 		json_root.push_back( move(file_group_json) );
 	}

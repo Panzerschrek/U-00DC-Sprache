@@ -286,7 +286,7 @@ fn nodiscard TransformAndValidatePackageInfo(
 		}
 		NormalizeList( out_build_target.external_libraries );
 
-		workspace.build_targets.insert_or_update( target_absolute_name, move( out_build_target ) );
+		workspace.build_targets.insert_new( target_absolute_name, move( out_build_target ) );
 	}
 
 	foreach( &custom_build_step : package_info.custom_build_steps )
