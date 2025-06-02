@@ -101,30 +101,7 @@ op JsonValue::==( JsonValue& l, JsonValue& r ) : bool
 	}
 	else if_var( &l_object_value : l.AsObject() )
 	{
-		// TODO - implement proper ust::unordered_map::op==
-
-		var Object& r_object_value= r.AsObject().try_deref();
-		if( l_object_value.size() != r_object_value.size() )
-		{
-			return false; // Different size - maps aren't equal.
-		}
-
-		foreach( &l_pair : l_object_value )
-		{
-			if_var( r_value : r_object_value.find( l_pair.key() ) )
-			{
-				if( l_pair.value() != r_value )
-				{
-					return false; // Values with the same key different - maps aren't equal.
-				}
-			}
-			else
-			{
-				return false; // No value in the right map - maps aren't equal.
-			}
-		}
-
-		return true;
+		return l_object_value == r.AsObject().try_deref();
 	}
 	else
 	{
