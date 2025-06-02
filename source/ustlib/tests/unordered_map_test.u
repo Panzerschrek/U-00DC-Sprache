@@ -261,6 +261,41 @@ fn nomangle main() : i32
 		m[777]= C(777);
 		halt if( m[777].x != 777 );
 	}
+	{ // f64 as key - should work properly.
+		var ust::unordered_map</ f64, i32 /> mut m;
+
+		m.insert( 0.0, 77 );
+		m.insert( 1.1, 894 );
+		m.insert( -1.1, 475 );
+
+		halt if( !m.exists( 0.0 ) );
+		halt if( m.find( 0.0 ).empty() );
+		halt if( m[ 0.0 ] != 77 );
+
+		// Minus zero is actually zero.
+		halt if( !m.exists( -0.0 ) );
+		halt if( m.find( -0.0 ).empty() );
+		halt if( m[ -0.0 ] != 77 );
+
+		halt if( !m.exists( 1.1 ) );
+		halt if( m.find( 1.1 ).empty() );
+		halt if( m[ 1.1 ] != 894 );
+
+		halt if( !m.exists( -1.1 ) );
+		halt if( m.find( -1.1 ).empty() );
+		halt if( m[ -1.1 ] != 475 );
+	}
+	{ // NaN as key.
+		var ust::unordered_map</ f32, i32 /> mut m;
+
+		auto nan= 0.0f / 0.0f;
+		static_assert( nan != nan );
+
+		m.insert( nan, 77 );
+		halt if( m.size() != 1s );
+
+		halt if( m.exists( nan ) ); // Can't fetch NaN, since it isn't equal to itself.
+	}
 	{ // Test insertion/removal of many identical numbers.
 
 		var ust::unordered_map</u32, i32/> mut m;
@@ -456,6 +491,69 @@ fn nomangle main() : i32
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
 			var i32 val= m[ u32(i) << shift ];
+			combination*= val;
+			combination+= val;
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Insert sequential floats. Performance should not degrade.
+		var ust::unordered_map</f32, i32/> mut m;
+
+		var size_type count= 1s << 22u;
+
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			m.insert( f32(i), i32(i) * 34 );
+		}
+
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			var i32 val= m[f32(i)];
+			combination*= val;
+			combination+= val;
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Insert sequential scaled down floats. Performance should not degrade.
+		var ust::unordered_map</f32, i32/> mut m;
+
+		var size_type count= 1s << 22u;
+
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			m.insert( f32(i) * 0.01f, i32(i) * 34 );
+		}
+
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			var i32 val= m[ f32(i) * 0.01f ];
+			combination*= val;
+			combination+= val;
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{ // Insert sequential scaled up floats. Performance should not degrade.
+		var ust::unordered_map</f32, i32/> mut m;
+
+		var size_type count= 1s << 22u;
+
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			m.insert( f32(i) * 1024.0f, i32(i) * 34 );
+		}
+
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < count; ++i )
+		{
+			var i32 val= m[ f32(i) * 1024.0f ];
 			combination*= val;
 			combination+= val;
 		}
