@@ -459,15 +459,15 @@ fn CollectFilesModificationTime(
 	{
 		foreach( &file : node.input_files )
 		{
-			files_with_modification_time.insert( file, ust::null_optional );
+			files_with_modification_time.insert_or_update( file, ust::null_optional );
 		}
 		foreach( &file : node.output_files )
 		{
-			files_with_modification_time.insert( file, ust::null_optional );
+			files_with_modification_time.insert_or_update( file, ust::null_optional );
 		}
 		if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
 		{
-			files_with_modification_time.insert( node.program, ust::null_optional );
+			files_with_modification_time.insert_or_update( node.program, ust::null_optional );
 		}
 	}
 
@@ -475,10 +475,10 @@ fn CollectFilesModificationTime(
 	{
 		if_var( &dep_file : dep_file_opt )
 		{
-			files_with_modification_time.insert( dep_file.destination, ust::null_optional );
+			files_with_modification_time.insert_or_update( dep_file.destination, ust::null_optional );
 			foreach( &dependency : dep_file.dependencies )
 			{
-				files_with_modification_time.insert( dependency, ust::null_optional );
+				files_with_modification_time.insert_or_update( dependency, ust::null_optional );
 			}
 		}
 	}
@@ -515,7 +515,7 @@ fn BuildInputFileToNodeIndexMap(
 			}
 			else
 			{
-				input_file_to_node_id_map.insert( input_file, ust::make_array(i) );
+				input_file_to_node_id_map.insert_or_update( input_file, ust::make_array(i) );
 			}
 		}
 
@@ -527,7 +527,7 @@ fn BuildInputFileToNodeIndexMap(
 			}
 			else
 			{
-				input_file_to_node_id_map.insert( node.program, ust::make_array(i) );
+				input_file_to_node_id_map.insert_or_update( node.program, ust::make_array(i) );
 			}
 		}
 
@@ -541,7 +541,7 @@ fn BuildInputFileToNodeIndexMap(
 				}
 				else
 				{
-					input_file_to_node_id_map.insert( dependency, ust::make_array(i) );
+					input_file_to_node_id_map.insert_or_update( dependency, ust::make_array(i) );
 				}
 			}
 		}
@@ -570,7 +570,7 @@ fn BuildOutputFileToNodeIndexMap(
 			}
 			else
 			{
-				output_file_to_node_id_map.insert( output_file, ust::make_array(i) );
+				output_file_to_node_id_map.insert_or_update( output_file, ust::make_array(i) );
 			}
 		}
 
@@ -582,7 +582,7 @@ fn BuildOutputFileToNodeIndexMap(
 			}
 			else
 			{
-				output_file_to_node_id_map.insert( dep_file.destination, ust::make_array(i) );
+				output_file_to_node_id_map.insert_or_update( dep_file.destination, ust::make_array(i) );
 			}
 		}
 	}

@@ -266,7 +266,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 			}
 		}
 
-		target_packages_map.insert( package_name, package_info_opt.try_take() );
+		target_packages_map.insert_or_update( package_name, package_info_opt.try_take() );
 	}
 
 	// Process host packages queue.
@@ -311,7 +311,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 			host_packages_queue.push_back( dependency_package_absolute_name.try_take() );
 		}
 
-		host_packages_map.insert( package_name, package_info_opt.try_take() );
+		host_packages_map.insert_or_update( package_name, package_info_opt.try_take() );
 	}
 
 	auto target_workspace_opt= CreateWorkspace( bsi.logger_, target_packages_map, root_package_build_directory );

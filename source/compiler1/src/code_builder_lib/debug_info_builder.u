@@ -459,7 +459,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadat
 			ust::nullptr</char8/>(), 0s ) );
 
 	// Insert stub first to prevent loops.
-	classes_di_types_.insert( t, forward_declaration );
+	classes_di_types_.insert_or_update( t, forward_declaration );
 	classes_order_.push_back( t );
 	return forward_declaration;
 }
@@ -506,7 +506,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadata
 		elements.data(), u32(elements.size()),
 		CreateDITypeImpl(enum_.underlying_type) ) );
 
-	enums_di_types_.insert( t, di_type );
+	enums_di_types_.insert_or_update( t, di_type );
 	return di_type;
 }
 

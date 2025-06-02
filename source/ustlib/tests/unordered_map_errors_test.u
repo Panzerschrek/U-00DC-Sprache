@@ -37,7 +37,7 @@ fn nomangle main() : i32
 	{ // Iterator has reference to map.
 		var ust::unordered_map</i32, i32/> mut m;
 		auto i= m.iter();
-		m.insert( 0, 5 ); //##expect_error ReferenceProtectionError
+		m.insert_or_update( 0, 5 ); //##expect_error ReferenceProtectionError
 	}
 
 	return 0;

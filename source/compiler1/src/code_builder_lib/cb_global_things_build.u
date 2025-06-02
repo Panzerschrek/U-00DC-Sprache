@@ -1607,7 +1607,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		out_element.constexpr_value= unsafe( LLVMConstInt( underlying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False ) );
 		out_element.llvm_value= AddGlobalConstantVariable( name_mangled, underlying_type.llvm_type, out_element.constexpr_value );
 
-		enum_elements.insert( element.name, move(out_element) );
+		enum_elements.insert_or_update( element.name, move(out_element) );
 	}
 
 	// Finally, update enum itself.

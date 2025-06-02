@@ -295,7 +295,7 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 		}
 	}
 
-	coroutine_classes_.insert( coroutine_type_description, class_type_ptr );
+	coroutine_classes_.insert_or_update( coroutine_type_description, class_type_ptr );
 	return class_type_ptr;
 }
 

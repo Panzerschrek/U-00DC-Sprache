@@ -76,7 +76,7 @@ public:
 				if( ( size_type( $>( other_control_table + i ) ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
 				{
 					auto &mut table_value= $>( other_data_table + i );
-					safe( this.insert( table_value.key_storage, table_value.value_storage ) );
+					safe( this.insert_or_update( table_value.key_storage, table_value.value_storage ) );
 				}
 			}
 		}
@@ -146,7 +146,9 @@ public:
 		return true;
 	}
 
-	fn insert( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
+	// Insert a value for given key.
+	// If there is already a value for given key, replace it with new value.
+	fn insert_or_update( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
 		// Perform division first while multiplying capacity by fracional loading factor.
 		// Do this to prevent possible overflow.

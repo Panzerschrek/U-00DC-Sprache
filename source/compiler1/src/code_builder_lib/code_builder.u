@@ -416,7 +416,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	// Fill result classes members namespaces table.
 	foreach( &class_type : class_table_ )
 	{
-		out_node_build_result.classes_members_namespaces_table.insert( class_type, class_type.lock_imut().deref().members );
+		out_node_build_result.classes_members_namespaces_table.insert_or_update( class_type, class_type.lock_imut().deref().members );
 	}
 
 	source_graph_nodes_build_results_[node_index] = move(out_node_build_result);

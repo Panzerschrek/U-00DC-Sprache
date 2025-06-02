@@ -36,7 +36,7 @@ fn LoadConfigurationOptions(
 		if_var( &string_value : pair.value().AsString() )
 		{
 			// For now support only string options, but not other values.
-			result.insert( pair.key(), string_value );
+			result.insert_or_update( pair.key(), string_value );
 		}
 		else
 		{

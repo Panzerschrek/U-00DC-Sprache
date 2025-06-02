@@ -379,7 +379,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			if( !string_literals_cache_[0].exists( string_literal_value ) )
 			{
 				global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
-				string_literals_cache_[0].insert( string_literal_value, global_value );
+				string_literals_cache_[0].insert_or_update( string_literal_value, global_value );
 			}
 			else
 			{
@@ -397,7 +397,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			if( !string_literals_cache_[1].exists( buff ) )
 			{
 				global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
-				string_literals_cache_[1].insert( buff, global_value );
+				string_literals_cache_[1].insert_or_update( buff, global_value );
 			}
 			else
 			{
@@ -415,7 +415,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			if( !string_literals_cache_[2].exists( buff ) )
 			{
 				global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
-				string_literals_cache_[2].insert( buff, global_value );
+				string_literals_cache_[2].insert_or_update( buff, global_value );
 			}
 			else
 			{
@@ -832,7 +832,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			}
 
 			loaded_file_opt= vfs.LoadFile( full_file_path );
-			embed_cache_.insert( full_file_path, loaded_file_opt );
+			embed_cache_.insert_or_update( full_file_path, loaded_file_opt );
 		}
 		else
 		{
@@ -3637,7 +3637,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 				{
 					with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
 					{
-						function_context.args_preevaluation_cache.insert( in_arg, VariableTypeExtended{ .t(arg.t), .value_type= arg.value_type } );
+						function_context.args_preevaluation_cache.insert_or_update( in_arg, VariableTypeExtended{ .t(arg.t), .value_type= arg.value_type } );
 					}
 					self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 				}
@@ -4214,7 +4214,7 @@ fn CodeBuilder::CallFunctionsSet(
 					{
 						with( &arg_variable : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.deref() ).lock_imut().deref() )
 						{
-							function_context.args_preevaluation_cache.insert( arg, VariableTypeExtended{ .t( arg_variable.t ), .value_type= arg_variable.value_type } );
+							function_context.args_preevaluation_cache.insert_or_update( arg, VariableTypeExtended{ .t( arg_variable.t ), .value_type= arg_variable.value_type } );
 						}
 						self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 					}

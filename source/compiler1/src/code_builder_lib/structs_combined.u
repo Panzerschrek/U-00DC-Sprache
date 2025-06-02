@@ -840,7 +840,7 @@ fn ClassType::SetMemberVisibility( mut this, ust::string8& member_name, Synt::Cl
 	}
 	else
 	{
-		members_visibility.insert( member_name, visibility );
+		members_visibility.insert_or_update( member_name, visibility );
 	}
 }
 
@@ -1551,7 +1551,7 @@ fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut val
 		return ust::null_optional_ref;
 	}
 
-	return names_map_.insert(move(name), move(value) );
+	return names_map_.insert_or_update(move(name), move(value) );
 }
 
 fn NamesScope::GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>
@@ -1713,7 +1713,7 @@ fn NamesScope::GetClass( this ) : ust::shared_ptr_nullable_mut</ClassType/>
 
 fn NamesScope::AddAccessRightsFor( mut this, ClassTypePtr& class_type, Synt::ClassVisibility visibility )
 {
-	access_rights_.insert( class_type, visibility );
+	access_rights_.insert_or_update( class_type, visibility );
 }
 
 fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisibility

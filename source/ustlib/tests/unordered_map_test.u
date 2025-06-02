@@ -47,7 +47,7 @@ fn nomangle main() : i32
 		var ust::unordered_map</ i32, i32 /> mut m;
 		halt if( ! m.empty() );
 
-		m.insert( 55, -7 );
+		m.insert_or_update( 55, -7 );
 		halt if( m.size() != 1s );
 
 		{
@@ -66,11 +66,11 @@ fn nomangle main() : i32
 	{
 		var ust::unordered_map</ i32, ust::string8 /> mut m;
 
-		m.insert(   58, "foo" );
-		m.insert(    1, "wtf" );
-		m.insert(   45, "45" );
-		m.insert( 1256, "ArT" );
-		m.insert( 1997, "InEx" );
+		m.insert_or_update(   58, "foo" );
+		m.insert_or_update(    1, "wtf" );
+		m.insert_or_update(   45, "45" );
+		m.insert_or_update( 1256, "ArT" );
+		m.insert_or_update( 1997, "InEx" );
 
 		halt if( m.find(   58 ).empty() ); halt if( m[  58] != "foo" );
 		halt if( m.find(    1 ).empty() ); halt if( m[   1] != "wtf" );
@@ -89,16 +89,16 @@ fn nomangle main() : i32
 		var ust::unordered_map</ i32, f32 /> mut m;
 
 		halt if( m.exists( 55 ) );
-		m.insert( 55, 0.25f );
+		m.insert_or_update( 55, 0.25f );
 		halt if( !m.exists( 55 ) );
 
 		halt if( m.exists( -24 ) );
-		m.insert( -24, 789.0f );
+		m.insert_or_update( -24, 789.0f );
 		halt if( !m.exists( -24 ) );
 		halt if( !m.exists( 55 ) );
 
 		halt if( m.exists( 79110 ) );
-		m.insert( 79110, -0.33f );
+		m.insert_or_update( 79110, -0.33f );
 		halt if( !m.exists( 79110 ) );
 		halt if( !m.exists( -24 ) );
 		halt if( !m.exists( 55 ) );
@@ -118,7 +118,7 @@ fn nomangle main() : i32
 		var i32 mut i(0);
 		while( i < 256 )
 		{
-			m.insert( OneBitHash(i), i * i );
+			m.insert_or_update( OneBitHash(i), i * i );
 			++i;
 		}
 		i= 0;
@@ -142,7 +142,7 @@ fn nomangle main() : i32
 	}
 	{ // Can modify map value.
 		var ust::unordered_map</ i32, ust::string8 /> mut m;
-		m.insert( 17, "abc" );
+		m.insert_or_update( 17, "abc" );
 		halt if( m.find(17).try_deref() != "abc" );
 
 		m[17]+= "DEF";
@@ -156,9 +156,9 @@ fn nomangle main() : i32
 	{ // Iteration
 
 		var ust::unordered_map</ i32, ust::string8 /> mut m;
-		m.insert( 11, "A" );
-		m.insert( 22, "B" );
-		m.insert( 33, "C" );
+		m.insert_or_update( 11, "A" );
+		m.insert_or_update( 22, "B" );
+		m.insert_or_update( 33, "C" );
 
 		var size_type mut iterations(0);
 		foreach( mut e : m )
@@ -175,11 +175,11 @@ fn nomangle main() : i32
 	{ // Iteration with one-bit hash.
 
 		var ust::unordered_map</ OneBitHash, ust::string8 /> mut m;
-		m.insert( OneBitHash(0), "A" );
-		m.insert( OneBitHash(1), "B" );
-		m.insert( OneBitHash(2), "C" );
-		m.insert( OneBitHash(3), "D" );
-		m.insert( OneBitHash(4), "E" );
+		m.insert_or_update( OneBitHash(0), "A" );
+		m.insert_or_update( OneBitHash(1), "B" );
+		m.insert_or_update( OneBitHash(2), "C" );
+		m.insert_or_update( OneBitHash(3), "D" );
+		m.insert_or_update( OneBitHash(4), "E" );
 
 		var size_type mut iterations(0);
 		foreach( mut e : m )
@@ -198,9 +198,9 @@ fn nomangle main() : i32
 	{ // Iteration with continue
 
 		var ust::unordered_map</ i32, ust::string8 /> mut m;
-		m.insert( 7, "A" );
-		m.insert( 2, "B" );
-		m.insert( 5, "C" );
+		m.insert_or_update( 7, "A" );
+		m.insert_or_update( 2, "B" );
+		m.insert_or_update( 5, "C" );
 
 		auto mut res= 0;
 		auto mut iterations= 0s;
@@ -213,49 +213,49 @@ fn nomangle main() : i32
 		halt if( iterations != m.size() );
 		halt if( res != 7 + 5 );
 	}
-	{ // "insert" may replace value.
+	{ // "insert_or_update" may replace value.
 		var ust::unordered_map</ ust::string8, i32 /> mut m;
-		m.insert( "a", 22 );
+		m.insert_or_update( "a", 22 );
 		halt if( m["a"] != 22 );
 
-		m.insert( "a", 55 );
+		m.insert_or_update( "a", 55 );
 		halt if( m["a"] != 55 );
 
 		m.erase( "a" );
 		halt if( !m.find("a").empty() );
 
-		m.insert( "a", 666 );
+		m.insert_or_update( "a", 666 );
 		halt if( m["a"] != 666 );
 	}
 	{ // obtain value as "erase" result
 		var ust::unordered_map</ i32, i32 /> mut m;
-		m.insert( 66, 88888 );
+		m.insert_or_update( 66, 88888 );
 		halt if( m.erase( 66 ) != 88888 );
 	}
 	{ // "drop" method
 		var ust::unordered_map</ i32, i32 /> mut m;
-		m.insert( 10, 1024 );
+		m.insert_or_update( 10, 1024 );
 		halt if( m.empty() );
 
 		m.drop(10);
 		halt if( !m.empty() );
 
-		m.insert( 5, 32 );
+		m.insert_or_update( 5, 32 );
 		halt if( m.size() != 1s );
 	}
 	{ // noncopyable value
 
 		var ust::unordered_map</i32, C/> mut m;
 
-		m.insert( 66, C(6) );
-		m.insert( 777, C(7) );
-		m.insert( 1, C(1) );
+		m.insert_or_update( 66, C(6) );
+		m.insert_or_update( 777, C(7) );
+		m.insert_or_update( 1, C(1) );
 
 		halt if( m[66].x != 6 );
 		halt if( m[777].x != 7 );
 		halt if( m[1].x != 1 );
 
-		m.insert( 66, C(0) );
+		m.insert_or_update( 66, C(0) );
 		halt if( m[66].x != 0 );
 
 		m[777]= C(777);
@@ -298,9 +298,9 @@ fn nomangle main() : i32
 	{ // f64 as key - should work properly.
 		var ust::unordered_map</ f64, i32 /> mut m;
 
-		m.insert( 0.0, 77 );
-		m.insert( 1.1, 894 );
-		m.insert( -1.1, 475 );
+		m.insert_or_update( 0.0, 77 );
+		m.insert_or_update( 1.1, 894 );
+		m.insert_or_update( -1.1, 475 );
 
 		halt if( !m.exists( 0.0 ) );
 		halt if( m.find( 0.0 ).empty() );
@@ -325,7 +325,7 @@ fn nomangle main() : i32
 		auto nan= 0.0f / 0.0f;
 		static_assert( nan != nan );
 
-		m.insert( nan, 77 );
+		m.insert_or_update( nan, 77 );
 		halt if( m.size() != 1s );
 
 		halt if( m.exists( nan ) ); // Can't fetch NaN, since it isn't equal to itself.
@@ -343,7 +343,7 @@ fn nomangle main() : i32
 			var u32 num= val & 255u;
 			if( ( val & 512u ) != 0u )
 			{
-				m.insert( num, -i32(num) );
+				m.insert_or_update( num, -i32(num) );
 			}
 			else if( m.exists( num ) )
 			{
@@ -376,7 +376,7 @@ fn nomangle main() : i32
 			var u32 val= gen.Next() | ( gen.Next() << 16u );
 			keys.push_back(val);
 
-			m.insert( val, -3 * i32(val) );
+			m.insert_or_update( val, -3 * i32(val) );
 		}
 
 		// Remove all elements except first 16.
@@ -413,7 +413,7 @@ fn nomangle main() : i32
 		for( var size_type mut i= 0s; i < (1s << 20u); ++i )
 		{
 			var u32 val= gen.Next() | ( gen.Next() << 16u );
-			m.insert( val, -3 * i32(val) );
+			m.insert_or_update( val, -3 * i32(val) );
 		}
 
 		m.clear();
@@ -444,7 +444,7 @@ fn nomangle main() : i32
 			var u32 val= gen.Next();
 			if( ( gen.Next() & 1u ) != 0u )
 			{
-				m.insert( val, -i32(val) );
+				m.insert_or_update( val, -i32(val) );
 			}
 			else if( m.exists( val ) )
 			{
@@ -472,7 +472,7 @@ fn nomangle main() : i32
 		for( var size_type mut i= 0s; i < (1s << 16s); ++i )
 		{
 			var u32 val= gen.Next();
-			m.insert( val, -i32(val) );
+			m.insert_or_update( val, -i32(val) );
 		}
 
 		// Perform roughly 4096 searches for each number.
@@ -496,7 +496,7 @@ fn nomangle main() : i32
 
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
-			m.insert( u32(i), i32(i) * 34 );
+			m.insert_or_update( u32(i), i32(i) * 34 );
 		}
 
 		var i32 mut combination= 0;
@@ -518,7 +518,7 @@ fn nomangle main() : i32
 
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
-			m.insert( u32(i) << shift, i32(i) * 34 );
+			m.insert_or_update( u32(i) << shift, i32(i) * 34 );
 		}
 
 		var i32 mut combination= 0;
@@ -539,7 +539,7 @@ fn nomangle main() : i32
 
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
-			m.insert( f32(i), i32(i) * 34 );
+			m.insert_or_update( f32(i), i32(i) * 34 );
 		}
 
 		var i32 mut combination= 0;
@@ -560,7 +560,7 @@ fn nomangle main() : i32
 
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
-			m.insert( f32(i) * 0.01f, i32(i) * 34 );
+			m.insert_or_update( f32(i) * 0.01f, i32(i) * 34 );
 		}
 
 		var i32 mut combination= 0;
@@ -581,7 +581,7 @@ fn nomangle main() : i32
 
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
-			m.insert( f32(i) * 1024.0f, i32(i) * 34 );
+			m.insert_or_update( f32(i) * 1024.0f, i32(i) * 34 );
 		}
 
 		var i32 mut combination= 0;
@@ -622,7 +622,7 @@ fn nomangle main() : i32
 
 		foreach( &key : keys )
 		{
-			m.insert( key, gen.Next() );
+			m.insert_or_update( key, gen.Next() );
 		}
 
 		var u32 mut combination= 0u;
@@ -652,7 +652,7 @@ fn nomangle main() : i32
 			var u32 key= gen.Next();
 			var i32 value( gen.Next() );
 
-			m.insert( key, value );
+			m.insert_or_update( key, value );
 			var i32 erased_value= m.erase( key );
 			halt if( erased_value != value );
 
@@ -678,7 +678,7 @@ fn nomangle main() : i32
 			var u32 val= gen.Next() | ( gen.Next() << 16u );
 			keys.push_back(val);
 
-			m.insert( val, -3 * i32(val) );
+			m.insert_or_update( val, -3 * i32(val) );
 		}
 
 		// Remove all elements.
@@ -699,7 +699,7 @@ fn nomangle main() : i32
 				var u32 key= gen.Next();
 				var i32 value( gen.Next() );
 
-				m.insert( key, value );
+				m.insert_or_update( key, value );
 				var i32 erased_value= m.erase( key );
 				halt if( erased_value != value );
 
