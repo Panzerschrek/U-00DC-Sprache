@@ -1,3 +1,4 @@
+import "aligned_storage.u"
 import "memory.u"
 import "helpers.u"
 import "type_traits.u"
@@ -38,12 +39,41 @@ template</type Hasher/> fn apply_value_to_hasher( Hasher &mut hasher, f64 x ) { 
 template</type Hasher, type T, size_type S/>
 fn apply_value_to_hasher( Hasher &mut hasher, [ T, S ]& arr )
 {
+	// This code should match code of the method "random_access_range::hash"!
+
 	// Apply size first, in order to produce different hashes for sequences like [ a, b ], [ c, d, e ] and [ a, b, c ], [ d, e ]
 	hasher( S );
 
-	for( auto mut i= 0s; i < S; ++i )
+	auto& ti= typeinfo</T/>;
+
+	static_if( ti.is_fundamental )
 	{
-		apply_value_to_hasher( hasher, arr[i] );
+		// Hash fundamentals except voids and floats as sequence of byte-elements.
+		// Floats are exceptions since they require extra handling of some special values.
+		static_if( ti.is_void | ti.is_float )
+		{
+			for( auto mut i= 0s; i < S; ++i )
+			{
+				apply_value_to_hasher( hasher, arr[i] );
+			}
+		}
+		else
+		{
+			unsafe( hash_apply_impl::hash_array_as_bytes( hasher, arr ) );
+		}
+	}
+	else static_if( ti.is_enum | ti.is_raw_pointer | ti.is_function_pointer )
+	{
+		// Hash enums, raw pointers, function pointers as sequence of byte-elements.
+		unsafe( hash_apply_impl::hash_array_as_bytes( hasher, arr ) );
+	}
+	else
+	{
+		// Hash composites properly.
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			apply_value_to_hasher( hasher, arr[i] );
+		}
 	}
 }
 
@@ -226,6 +256,26 @@ fn apply_value_to_hasher( Hasher &mut hasher, T& t )
 
 namespace hash_apply_impl
 {
+
+// Call this only if elements may be correctly casted into sequence of byte8, byte16, byte32, byte64, byte128 elements!
+// We treat types which can be represented as such sequences in order to speed-up hash calculation for them.
+template</type Hasher, type T, size_type S/>
+fn hash_array_as_bytes( Hasher &mut hasher, [ T, S ]& arr ) unsafe
+{
+	// This code should match code of the method "random_access_range::hash_as_bytes"!
+
+	auto& ti= typeinfo</T/>;
+
+	type byte_type= byte_type_for_alignment</ ti.align_of />;
+	static_assert( ti.size_of % typeinfo</byte_type/>.size_of == 0s, "Invalid size for given alignment!" );
+
+	auto size_corrected= S * ti.size_of / typeinfo</byte_type/>.size_of;
+
+	// It should be fine to cast array of scalars to array of "byte*"-elements.
+	auto& byte_array_ref= unsafe( cast_ref_unsafe</ [ byte_type, size_corrected ] /> ( arr ) );
+
+	hasher( byte_array_ref ); // Call here implicit argument conversion from [ byte_type, size ] to array_view_imut</byte_type/>.
+}
 
 // Checks if given class has "hash" method (regular or template).
 // Signature, return type and other properties are not checked.

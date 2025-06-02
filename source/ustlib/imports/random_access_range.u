@@ -209,6 +209,8 @@ public:
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
+		// This code should match code of the function "apply_value_to_hasher" for arrays!
+
 		// Hash size in order to produce different hashes for pairs of sequences like "ab", "cde" and "abc", "de".
 		apply_value_to_hasher( hasher, size_ );
 
@@ -373,6 +375,8 @@ private:
 	template</type Hasher/>
 	fn hash_as_bytes( this, Hasher &mut hasher ) unsafe
 	{
+		// This code should match code of the function "hash_apply_impl::hash_array_as_bytes"!
+
 		auto& ti= typeinfo</T/>;
 
 		type byte_type= byte_type_for_alignment</ ti.align_of />;

@@ -394,6 +394,42 @@ fn nomangle main() : i32
 		halt if( res_v0 != res_av0 );
 		halt if( res_v1 != res_av1 );
 	}
+	{ // Hashing of char arrays und string views should produce the same result.
+		var [ char8, 21 ] ca= "NDH - bis zum Erguss!";
+		var ust::string_view8 sv= ca;
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ca );
+		auto res_ca= hasher.get();
+		halt if( res_ca == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, sv );
+		auto res_sv= hasher.get();
+		halt if( res_sv == 0s );
+
+		halt if( res_ca != res_sv );
+	}
+	{ // Hashing of int arrays und array views should produce the same result.
+		var [ i32, 9 ] arr[ 773, -7423, 647, 768672, 99737, 21675, 66533, 116234, 65656 ];
+		var ust::array_view_imut</i32/> av= arr;
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, arr );
+		auto res_arr= hasher.get();
+		halt if( res_arr == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, av );
+		auto res_av= hasher.get();
+		halt if( res_av == 0s );
+
+		halt if( res_arr != res_av );
+	}
 	{ // Hashing variant. Should produce different results for different stored types (even if their internal representation is identical).
 
 		var ust::variant</ tup[ u32, i32 ] /> v0( 56u ), v1( 56 ), v2( 372 );
