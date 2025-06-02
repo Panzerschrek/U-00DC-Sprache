@@ -423,4 +423,20 @@ private:
 	size_type state_= 0s;
 }
 
+// Hasher factory is used in hash-based containers.
+// An instance of such factory is created per-container.
+// The main purpose of such class is to allow changing hash function on per-container basis.
+//
+// All alternative implementations should support interface of this class.
+//
+struct default_hasher_factory
+{
+	// Create a hasher instance.
+	// "this" is constant in order to prevent modifying internal state and thus creating different hashers for different invocations.
+	op()( this ) : default_hasher
+	{
+		return default_hasher();
+	}
+}
+
 } // namespace ust
