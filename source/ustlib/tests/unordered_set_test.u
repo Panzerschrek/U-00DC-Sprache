@@ -14,11 +14,11 @@ fn nomangle main() : i32
 		halt if( !s.exists( 666 ) );
 		halt if(  s.exists( 999 ) );
 
-		s.drop( 999 );
+		halt if( s.drop_if_exists( 999 ) );
 		halt if( s.empty() );
 		halt if( s.size() != 1s );
 
-		s.drop( 666 );
+		halt if( !s.drop_if_exists( 666 ) );
 		halt if( !s.empty() );
 		halt if( s.size() != 0s );
 		halt if( s.exists( 666 ) );
@@ -38,7 +38,7 @@ fn nomangle main() : i32
 		halt if( !s.exists( 4 ) );
 		halt if( !s.exists( 22 ) );
 
-		s.drop( 4 );
+		halt if( !s.drop_if_exists( 4 ) );
 		halt if( s.empty() );
 		halt if( s.size() != 2s );
 		halt if( !s.exists( 555 ) );
@@ -190,7 +190,7 @@ fn nomangle main() : i32
 		s.insert( 100 );
 		s.insert( 200 );
 		s.insert( 300 );
-		s.drop( 200 );
+		halt if( !s.drop_if_exists( 200 ) );
 
 		auto mut i= 0s;
 		var i32 mut sum= 0;
