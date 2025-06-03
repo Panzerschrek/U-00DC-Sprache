@@ -242,6 +242,70 @@ fn nomangle main() : i32
 		m.insert_or_update( "a", 666 );
 		halt if( m["a"] != 666 );
 	}
+	{ // "find_or_construct_new".
+
+		var ust::unordered_map</u32, ust::string8/> mut m;
+
+		m.insert_new( 30u, "  30  " );
+		halt if( m.size() != 1s );
+
+		// Shuld obtain existing value.
+		var bool mut construction_called0= false;
+		halt if(
+			m.find_or_construct_new(
+				30u,
+				lambda[&]() : ust::string8
+				{
+					construction_called0= true;
+					return "not 300";
+				} ) != "  30  " );
+		halt if( construction_called0 );
+		halt if( m.size() != 1s );
+
+		// Should construct new value.
+		var bool mut construction_called1= false;
+		halt if(
+			m.find_or_construct_new(
+				78u,
+				lambda[&]() : ust::string8
+				{
+					construction_called1= true;
+					return "stub";
+				} ) != "stub" );
+		halt if( !construction_called1 );
+		halt if( m.size() != 2s );
+		halt if( m[78u] != "stub" );
+
+		// Shuld obtain existing value.
+		var bool mut construction_called2= false;
+		halt if(
+			m.find_or_construct_new(
+				78u,
+				lambda[&]() : ust::string8
+				{
+					construction_called2= true;
+					return "NOWAY";
+				} ) != "stub" );
+		halt if( construction_called2 );
+		halt if( m.size() != 2s );
+		halt if( m[78u] != "stub" );
+
+		m.erase( 30u );
+		halt if( m.size() != 1s );
+
+		var bool mut construction_called3= false;
+		halt if(
+			m.find_or_construct_new(
+				30u,
+				lambda[&]() : ust::string8
+				{
+					construction_called3= true;
+					return "new 30";
+				} ) != "new 30" );
+		halt if( !construction_called3 );
+		halt if( m.size() != 2s );
+		halt if( m[30u] != "new 30" );
+	}
 	{ // obtain value as "erase" result
 		var ust::unordered_map</ i32, i32 /> mut m;
 		m.insert_new( 66, 88888 );

@@ -281,6 +281,76 @@ public:
 		}
 	}
 
+	// Find a value for given key.
+	// If there is no such value, call the given function to construct it and insert it into the container.
+	template</type Func/>
+	fn find_or_construct_new( mut this, key_type& key, Func mut construction_func ) : value_type &mut @( reference_notation::return_references::param0 )
+	{
+		unsafe( try_rehash_on_insert() );
+
+		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(TableValue) data_table= get_data_table();
+
+		auto capacity_mask= capacity_ - 1s;
+		auto key_hash= calculate_hash(key);
+		auto hash2= unordered_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+		auto mut insert_index= ~0s;
+
+		unsafe
+		{
+			loop
+			{
+				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == unordered_map_impl::c_contents_empty )
+				{
+					// Finally reached an empty cell. This means that we insert new value.
+
+					++size_; // Size overflow is inpossible here - previous container size can't be greater than half of address space.
+
+					// Insert new value into place of tombstone (if it exists) or in this empty cell.
+					if( insert_index == ~0s )
+					{
+						insert_index= key_hash_wrapped;
+						++num_occupied_slots_;
+					}
+
+					$>( control_table + insert_index )= unordered_map_impl::ControlTableElement( hash2 );
+
+					var value_type mut value= safe( construction_func() ); // Call given function to create new value.
+
+					auto &mut dst_value= $>( data_table + insert_index );
+					move_into_uninitialized( dst_value.key_storage, key );
+					move_into_uninitialized( dst_value.value_storage, move(value) );
+					return dst_value.value_storage;
+				}
+				else if( cell_content == unordered_map_impl::c_contents_value_removed )
+				{
+					// Remember first tombstone position in order to perform insertion into it.
+					// We need to select the first one in order to minimize probing sequence on lookup.
+					if( insert_index == ~0s )
+					{
+						insert_index= key_hash_wrapped;
+					}
+				}
+				else if( size_type(cell_content) == hash2 )
+				{
+					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
+					// Compare keys to be sure.
+					auto &mut dst_value= $>( data_table + key_hash_wrapped );
+					if( safe( key == dst_value.key_storage ) )
+					{
+						return dst_value.value_storage;
+					}
+				}
+
+				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
+
+				// Eventually we should finish this loop, since we should have at least one empty cell.
+			}
+		}
+	}
+
 	// TODO - maybe add method, like "erase_if_exists"?
 	fn erase( mut this, key_type& key ) : value_type
 	{
