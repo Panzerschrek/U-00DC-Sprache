@@ -172,7 +172,7 @@ public:
 				{
 					// Finally reached an empty cell. This means that we insert new value.
 
-					++size_; // Size overflow is inpossible here - previous container size can't be greater than half of address space.
+					++size_; // Size overflow is impossible here - previous container size can't be greater than half of address space.
 
 					// Insert new value into place of tombstone (if it exists) or in this empty cell.
 					if( insert_index == ~0s )
@@ -239,7 +239,7 @@ public:
 				{
 					// Finally reached an empty cell. This means that we insert new value.
 
-					++size_; // Size overflow is inpossible here - previous container size can't be greater than half of address space.
+					++size_; // Size overflow is impossible here - previous container size can't be greater than half of address space.
 
 					// Insert new value into place of tombstone (if it exists) or in this empty cell.
 					if( insert_index == ~0s )
@@ -284,7 +284,7 @@ public:
 	}
 
 	// Find a value for given key.
-	// If there is no such value, call the given function to construct it and insert it into the container.
+	// If there is no such key, call the given function to construct new value and insert it into the container.
 	template</type Func/>
 	fn find_or_construct_new( mut this, key_type& key, Func mut construction_func ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
@@ -308,7 +308,7 @@ public:
 				{
 					// Finally reached an empty cell. This means that we insert new value.
 
-					++size_; // Size overflow is inpossible here - previous container size can't be greater than half of address space.
+					++size_; // Size overflow is impossible here - previous container size can't be greater than half of address space.
 
 					// Insert new value into place of tombstone (if it exists) or in this empty cell.
 					if( insert_index == ~0s )
@@ -354,7 +354,7 @@ public:
 	}
 
 	// Find a value for given key.
-	// If there is no such value, construct new value ising default constructor.
+	// If there is no such key, construct new value using default constructor.
 	fn enable_if( typeinfo</value_type/>.is_default_constructible )
 	find_or_construct_default( mut this, key_type& key ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
