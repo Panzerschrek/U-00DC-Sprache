@@ -351,6 +351,14 @@ public:
 		}
 	}
 
+	// Find a value for given key.
+	// If there is no such value, construct new value ising default constructor.
+	fn enable_if( typeinfo</value_type/>.is_default_constructible )
+	find_or_construct_default( mut this, key_type& key ) : value_type &mut @( reference_notation::return_references::param0 )
+	{
+		return find_or_construct_new( key, lambda() : value_type { return value_type(); } );
+	}
+
 	// TODO - maybe add method, like "erase_if_exists"?
 	fn erase( mut this, key_type& key ) : value_type
 	{

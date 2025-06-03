@@ -306,6 +306,37 @@ fn nomangle main() : i32
 		halt if( m.size() != 2s );
 		halt if( m[30u] != "new 30" );
 	}
+	{ // "find_or_construct_default".
+
+		var ust::unordered_map</u32, ust::string8/> mut m;
+
+		m.insert_new( 30u, "thirty" );
+		halt if( m.size() != 1s );
+
+		// Shuld obtain existing value.
+		halt if( m.find_or_construct_default( 30u ) != "thirty" );
+		halt if( m.size() != 1s );
+
+		// Should construct new value.
+		halt if( m.find_or_construct_default( 78u ) != "" );
+		halt if( m.size() != 2s );
+		halt if( m[78u] != "" );
+
+		// Shuld obtain existing value.
+		var bool mut construction_called2= false;
+		halt if( m.find_or_construct_default( 78u ) != "" );
+		halt if( construction_called2 );
+		halt if( m.size() != 2s );
+		halt if( m[78u] != "" );
+
+		m.erase( 30u );
+		halt if( m.size() != 1s );
+
+		// Should construct new value.
+		halt if( m.find_or_construct_default( 30u ) != "" );
+		halt if( m.size() != 2s );
+		halt if( m[30u] != "" );
+	}
 	{ // obtain value as "erase" result
 		var ust::unordered_map</ i32, i32 /> mut m;
 		m.insert_new( 66, 88888 );
