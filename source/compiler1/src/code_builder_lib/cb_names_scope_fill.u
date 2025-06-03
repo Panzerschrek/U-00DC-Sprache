@@ -235,15 +235,15 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var bool mut insert_not_ok= false;
+	var bool mut insert_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName(
+		insert_ok= lock.deref().AddName(
 			name,
-			Enum{ .syntax_element= enum_, .names_scope( NamesScope( name, names_scope_ptr ) ) } ).empty();
+			Enum{ .syntax_element= enum_, .names_scope( NamesScope( name, names_scope_ptr ) ) } );
 	}
 
-	if( insert_not_ok )
+	if( !insert_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope_ptr, enum_.deref().src_loc, name )
 	}
@@ -268,13 +268,13 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var bool mut insert_not_ok= false;
+	var bool mut insert_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( name, TypeAlias{ .syntax_element= type_alias } ).empty();
+		insert_ok= lock.deref().AddName( name, TypeAlias{ .syntax_element= type_alias } );
 	}
 
-	if( insert_not_ok )
+	if( !insert_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope_ptr, type_alias.deref().src_loc, name )
 	}
@@ -352,19 +352,19 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 			continue;
 		}
 
-		var bool mut insert_not_ok= false;
+		var bool mut insert_ok= false;
 		with( mut lock : names_scope_ptr.lock_mut() )
 		{
-			insert_not_ok= lock.deref().AddName(
+			insert_ok= lock.deref().AddName(
 				variable_declaration.name,
 				GlobalVariable
 				{
 					.syntax_element= variables_declaration,
 					.variable_index= u32(i),
-				} ).empty();
+				} );
 		}
 
-		if( insert_not_ok )
+		if( !insert_ok )
 		{
 			REPORT_ERROR( Redefinition, names_scope_ptr, variable_declaration.src_loc, variable_declaration.name )
 		}
@@ -393,15 +393,15 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	}
 
 
-	var bool mut insert_not_ok= false;
+	var bool mut insert_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName(
+		insert_ok= lock.deref().AddName(
 			auto_variable_declaration.deref().name,
-			GlobalAutoVariable{ .syntax_element= auto_variable_declaration } ).empty();
+			GlobalAutoVariable{ .syntax_element= auto_variable_declaration } );
 	}
 
-	if( insert_not_ok )
+	if( !insert_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope_ptr, auto_variable_declaration.deref().src_loc, auto_variable_declaration.deref().name )
 	}
@@ -541,13 +541,13 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 			class_field.deref().mutability_modifier == Synt::MutabilityModifier::Mutable;
 	}
 
-	var bool mut insert_not_ok= false;
+	var bool mut insert_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( field_name, move(field) ).empty();
+		insert_ok= lock.deref().AddName( field_name, move(field) );
 	}
 
-	if( insert_not_ok )
+	if( !insert_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope_ptr, class_field.deref().src_loc, field_name )
 	}
@@ -730,13 +730,13 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 
 	NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr, Synt::ClassVisibility::Public );
 
-	var bool mut insert_not_ok= false;
+	var bool mut insert_ok= false;
 	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( class_name, class_type_ptr ).empty();
+		insert_ok= lock.deref().AddName( class_name, class_type_ptr );
 	}
 
-	if( insert_not_ok )
+	if( !insert_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope_ptr, class_.deref().src_loc, class_name )
 		return ust::shared_ptr_nullable_mut</ClassType/>();

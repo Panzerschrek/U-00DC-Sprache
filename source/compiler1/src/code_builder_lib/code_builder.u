@@ -1428,7 +1428,7 @@ fn CodeBuilder::BuildFuncCode(
 			}
 			else
 			{
-				var bool insert_ok= !args_names_scope.AddName( in_param.name, move(variable_reference_ptr) ).empty();
+				var bool insert_ok= args_names_scope.AddName( in_param.name, move(variable_reference_ptr) );
 				if( !insert_ok )
 				{
 					REPORT_ERROR( Redefinition, names_scope, in_param.src_loc, in_param.name )

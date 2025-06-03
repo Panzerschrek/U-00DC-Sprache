@@ -351,12 +351,12 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 	// Register variable for destruction and reference checking.
 	RegisterFrameVariable( function_context, variable_reference, 1s );
 
-	var bool mut insert_not_ok= false;
+	var bool mut insert_ok= false;
 	with( mut lock : names_scope.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( variable_declaration.name, move(variable_reference) ).empty();
+		insert_ok= lock.deref().AddName( variable_declaration.name, move(variable_reference) );
 	}
-	if( insert_not_ok )
+	if( !insert_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope, variable_declaration.src_loc, variable_declaration.name )
 	}
@@ -536,12 +536,12 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 		REPORT_ERROR( UsingKeywordAsName, names_scope, auto_variable_declaration.src_loc )
 	}
 
-	var bool mut insert_not_ok= false;
+	var bool mut insert_ok= false;
 	with( mut lock : names_scope.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( auto_variable_declaration.name, move(variable_reference) ).empty();
+		insert_ok= lock.deref().AddName( auto_variable_declaration.name, move(variable_reference) );
 	}
-	if( insert_not_ok )
+	if( !insert_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope, auto_variable_declaration.src_loc, auto_variable_declaration.name )
 	}
@@ -739,12 +739,12 @@ fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_sc
 
 	function_context.references_graph.AddLink( variable_ptr, variable_reference );
 
-	var bool mut insert_not_ok= false;
+	var bool mut insert_ok= false;
 	with( mut lock : names_scope.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( alloca_declaration.name, move(variable_reference) ).empty();
+		insert_ok= lock.deref().AddName( alloca_declaration.name, move(variable_reference) );
 	}
-	if( insert_not_ok )
+	if( !insert_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope, alloca_declaration.src_loc, alloca_declaration.name )
 	}
@@ -2586,7 +2586,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 
 					with( mut lock : names_scope.lock_mut() )
 					{
-						lock.deref().AddName( range_for_operator.loop_variable_name, move(variable_reference) ).empty();
+						lock.deref().AddName( range_for_operator.loop_variable_name, move(variable_reference) );
 
 						// Add internal (inaccessible) name for current loop index to use it later to encode lambda names.
 						// TODO - maybe make this counter available for a programmer?
@@ -2602,7 +2602,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 								.llvm_value= index_value,
 								.constexpr_value= index_value,
 								.referenced= true,
-							}.CreatePtr() ).empty();
+							}.CreatePtr() );
 					}
 
 					self.AddLoopFrame( names_scope, function_context, finish_basic_block, next_basic_block, range_for_operator.label_ );
@@ -3066,7 +3066,7 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 	var NamesScopeMutPtr variable_names_scope( NamesScope( "", names_scope ) );
 	with( mut lock : variable_names_scope.lock_mut() )
 	{
-		lock.deref().AddName( with_operator.variable_name, move(variable_reference) ).empty();
+		lock.deref().AddName( with_operator.variable_name, move(variable_reference) );
 	}
 
 	// Build block. Reuse scope of with variable for this block.
@@ -3148,12 +3148,12 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, 
 		.syntax_element= type_alias_ptr,
 	};
 
-	var bool mut insert_not_ok= false;
+	var bool mut insert_ok= false;
 	with( mut lock : names_scope.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( type_alias.name, NamesScopeValue( move(out_type_alias) ) ).empty();
+		insert_ok= lock.deref().AddName( type_alias.name, NamesScopeValue( move(out_type_alias) ) );
 	}
-	if( insert_not_ok )
+	if( !insert_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope, type_alias.src_loc, type_alias.name )
 	}
@@ -3544,12 +3544,12 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 	function_context.references_graph.AddLink( variable_ptr, variable_reference );
 	function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_reference, names_scope, component.src_loc );
 
-	var bool mut insert_not_ok= false;
+	var bool mut insert_ok= false;
 	with( mut lock : names_scope.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( component.name, move(variable_reference) ).empty();
+		insert_ok= lock.deref().AddName( component.name, move(variable_reference) );
 	}
-	if( insert_not_ok )
+	if( !insert_ok )
 	{
 		REPORT_ERROR( Redefinition, names_scope, component.src_loc, component.name )
 	}
@@ -3842,12 +3842,12 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 				}
 			}
 
-			var bool mut insert_not_ok= false;
+			var bool mut insert_ok= false;
 			with( mut lock : names_scope.lock_mut() )
 			{
-				insert_not_ok= lock.deref().AddName( named_component.name, move(result_reference) ).empty();
+				insert_ok= lock.deref().AddName( named_component.name, move(result_reference) );
 			}
-			if( insert_not_ok )
+			if( !insert_ok )
 			{
 				REPORT_ERROR( Redefinition, names_scope, named_component.src_loc, named_component.name )
 			}

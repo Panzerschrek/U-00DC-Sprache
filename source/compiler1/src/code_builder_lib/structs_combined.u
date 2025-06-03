@@ -1541,14 +1541,15 @@ fn NamesScope::IsInsideTemplate( this ) : bool
 	return false;
 }
 
-fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue /> @(ret_tags)
+fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : bool
 {
 	if( names_map_.exists(name) )
 	{
-		return ust::null_optional_ref;
+		return false;
 	}
 
-	return names_map_.insert_new( move(name), move(value) );
+	names_map_.insert_new( move(name), move(value) );
+	return true;
 }
 
 fn NamesScope::GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>

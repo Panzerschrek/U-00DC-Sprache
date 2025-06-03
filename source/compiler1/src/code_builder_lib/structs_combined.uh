@@ -1106,7 +1106,8 @@ public:
 
 	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue /> @(ret_tags);
 
-	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : ust::optional_ref_mut</ NamesScopeValue /> @(ret_tags);
+	// Returns false if failed to add (due to redefinition).
+	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : bool;
 
 	fn GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>;
 
