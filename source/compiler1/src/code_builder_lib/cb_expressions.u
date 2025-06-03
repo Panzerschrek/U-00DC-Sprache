@@ -820,6 +820,11 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 		full_file_path= vfs.NormalizeFilePath( file_path, parent_file_path );
 
+		if( !vfs.IsImportingFileAllowed( full_file_path ) )
+		{
+			REPORT_ERROR( EmbeddingThisFileIsNotAllowed, names_scope, embed_.src_loc, full_file_path )
+		}
+
 		// Cache result.
 		auto& full_file_path_ref= full_file_path;
 
@@ -828,11 +833,6 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				full_file_path_ref,
 				lambda[&]() : ust::optional</ust::string8/>
 				{
-					if( !vfs.IsImportingFileAllowed( full_file_path_ref ) )
-					{
-						REPORT_ERROR( EmbeddingThisFileIsNotAllowed, names_scope, embed_.src_loc, full_file_path_ref )
-					}
-
 					return vfs.LoadFile( full_file_path_ref );
 				} );
 	}
@@ -3633,7 +3633,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 				{
 					with( &arg : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() ).lock_imut().deref() )
 					{
-						function_context.args_preevaluation_cache.insert_or_update( in_arg, VariableTypeExtended{ .t(arg.t), .value_type= arg.value_type } );
+						function_context.args_preevaluation_cache.insert_new( in_arg, VariableTypeExtended{ .t(arg.t), .value_type= arg.value_type } );
 					}
 					self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 				}
@@ -4210,7 +4210,7 @@ fn CodeBuilder::CallFunctionsSet(
 					{
 						with( &arg_variable : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.deref() ).lock_imut().deref() )
 						{
-							function_context.args_preevaluation_cache.insert_or_update( arg, VariableTypeExtended{ .t( arg_variable.t ), .value_type= arg_variable.value_type } );
+							function_context.args_preevaluation_cache.insert_new( arg, VariableTypeExtended{ .t( arg_variable.t ), .value_type= arg_variable.value_type } );
 						}
 						self.DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 					}
