@@ -4138,8 +4138,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	auto mut macros_lock= macros_copy.lock_mut();
 	var MacrosByContextMap &mut macros_by_context= macros_lock.deref();
 
-	var MacroMap &mut macro_map=
-		macros_by_context.find_or_construct_new( macro_context, lambda() : auto { return MacroMap(); } );
+	var MacroMap &mut macro_map= macros_by_context.find_or_construct_default( macro_context );
 
 	if( !macro_map.exists( macro.name ) )
 	{
