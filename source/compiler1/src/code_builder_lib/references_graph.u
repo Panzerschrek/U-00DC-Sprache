@@ -62,7 +62,7 @@ fn ReferencesGraph::RemoveNode( mut this, VariablePtr& node )
 	RemoveNodeLinks( node );
 
 	// Erase node.
-	nodes_.remove_existing( node );
+	nodes_.drop_if_exists( node );
 }
 
 fn ReferencesGraph::AddLink( mut this, VariablePtr& from, VariablePtr& to )

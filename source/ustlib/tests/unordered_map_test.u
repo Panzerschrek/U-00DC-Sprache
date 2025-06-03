@@ -78,11 +78,11 @@ fn nomangle main() : i32
 		halt if( m.find( 1256 ).empty() ); halt if( m[1256] != "ArT" );
 		halt if( m.find( 1997 ).empty() ); halt if( m[1997] != "InEx" );
 
-		m.remove_existing(    1 ); halt if( !m.find(    1 ).empty() );
-		m.remove_existing(   45 ); halt if( !m.find(   45 ).empty() );
-		m.remove_existing( 1997 ); halt if( !m.find( 1997 ).empty() );
-		m.remove_existing( 1256 ); halt if( !m.find( 1256 ).empty() );
-		m.remove_existing(   58 ); halt if( !m.find(   58 ).empty() );
+		halt if( m.remove_existing(    1 ) != "wtf" ); halt if( !m.find(    1 ).empty() );
+		halt if( m.remove_existing(   45 ) != "45" ); halt if( !m.find(   45 ).empty() );
+		halt if( m.remove_existing( 1997 ) != "InEx" ); halt if( !m.find( 1997 ).empty() );
+		halt if( m.remove_existing( 1256 ) != "ArT" ); halt if( !m.find( 1256 ).empty() );
+		halt if( m.remove_existing(   58 ) != "foo" ); halt if( !m.find(   58 ).empty() );
 	}
 	{ // There is "exists" method.
 
@@ -103,13 +103,13 @@ fn nomangle main() : i32
 		halt if( !m.exists( -24 ) );
 		halt if( !m.exists( 55 ) );
 
-		m.remove_existing( -24 );
+		halt if( m.remove_existing( -24 ) != 789.0f );
 		halt if( m.exists( -24 ) );
 
-		m.remove_existing( 79110 );
+		halt if( m.remove_existing( 79110 ) !=  -0.33f );
 		halt if( m.exists( 79110 ) );
 
-		m.remove_existing( 55 );
+		halt if( m.remove_existing( 55 ) != 0.25f );
 		halt if( m.exists( 55 ) );
 	}
 	{ // Test for hash collisions. Key type 'OneBitHash' have only 1 bit for hash.
@@ -130,12 +130,12 @@ fn nomangle main() : i32
 			++i;
 		}
 
-		m.remove_existing( OneBitHash(66) );
+		m.drop_if_exists( OneBitHash(66) );
 		halt if( !m.find( OneBitHash(66) ).empty() );
 		halt if(  m.find( OneBitHash(65) ).empty() );
 		halt if(  m.find( OneBitHash(67) ).empty() );
 
-		m.remove_existing( OneBitHash(101) );
+		m.drop_if_exists( OneBitHash(101) );
 		halt if( !m.find( OneBitHash(101) ).empty() );
 		halt if(  m.find( OneBitHash(100) ).empty() );
 		halt if(  m.find( OneBitHash(102) ).empty() );
@@ -236,7 +236,7 @@ fn nomangle main() : i32
 		m.insert_or_update( "a", 55 );
 		halt if( m["a"] != 55 );
 
-		m.remove_existing( "a" );
+		halt if( m.remove_existing( "a" ) != 55 );
 		halt if( !m.find("a").empty() );
 
 		m.insert_or_update( "a", 666 );
@@ -290,7 +290,7 @@ fn nomangle main() : i32
 		halt if( m.size() != 2s );
 		halt if( m[78u] != "stub" );
 
-		m.remove_existing( 30u );
+		halt if( m.remove_existing( 30u ) != "  30  " );
 		halt if( m.size() != 1s );
 
 		var bool mut construction_called3= false;
@@ -329,7 +329,7 @@ fn nomangle main() : i32
 		halt if( m.size() != 2s );
 		halt if( m[78u] != "" );
 
-		m.remove_existing( 30u );
+		halt if( m.remove_existing( 30u ) != "thirty" );
 		halt if( m.size() != 1s );
 
 		// Should construct new value.
@@ -458,9 +458,9 @@ fn nomangle main() : i32
 			{
 				m.insert_or_update( num, -i32(num) );
 			}
-			else if( m.exists( num ) )
+			else
 			{
-				m.remove_existing( num );
+				m.drop_if_exists( num );
 			}
 		}
 
@@ -495,10 +495,7 @@ fn nomangle main() : i32
 		// Remove all elements except first 16.
 		for( var size_type mut i= 16s; i < keys.size() && m.size() > 16s; ++i )
 		{
-			if( m.exists( keys[i] ) )
-			{
-				m.remove_existing( keys[i] );
-			}
+			m.drop_if_exists( keys[i] );
 		}
 
 		// Iterate map many times. It should be fast, since map contains only few elements.
@@ -559,9 +556,9 @@ fn nomangle main() : i32
 			{
 				m.insert_or_update( val, -i32(val) );
 			}
-			else if( m.exists( val ) )
+			else
 			{
-				m.remove_existing( val );
+				m.drop_if_exists( val );
 			}
 		}
 
@@ -797,10 +794,7 @@ fn nomangle main() : i32
 		// Remove all elements.
 		foreach( key : keys )
 		{
-			if( m.exists( key ) )
-			{
-				m.remove_existing( key );
-			}
+			m.drop_if_exists( key );
 		}
 
 		halt if( !m.empty() );
