@@ -64,13 +64,11 @@ public:
 		return impl_.exists(key);
 	}
 
-	fn drop( mut this, T& key )
+	// Removes given key, if it existis.
+	// Returns "true" if key was removed and "false" otherwise.
+	fn drop_if_exists( mut this, T& key ) : bool
 	{
-		// TODO - optimize this, do not perform search twice.
-		if( exists( key ) )
-		{
-			impl_.drop(key);
-		}
+		return impl_.drop_if_exists(key);
 	}
 
 	fn clear( mut this )

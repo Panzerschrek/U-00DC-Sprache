@@ -833,10 +833,7 @@ fn ClassType::SetMemberVisibility( mut this, ust::string8& member_name, Synt::Cl
 {
 	if( visibility == Synt::ClassVisibility::Public )
 	{
-		if( members_visibility.exists( member_name ) )
-		{
-			members_visibility.drop( member_name );
-		}
+		members_visibility.drop_if_exists( member_name );
 	}
 	else
 	{

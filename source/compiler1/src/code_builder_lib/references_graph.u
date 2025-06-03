@@ -401,7 +401,7 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 					var NodesSet mut nodes_after= state_after.GetNodeInputLinks( inner_reference_node  );
 					foreach( & prev_link_node : nodes_before )
 					{
-						nodes_after.drop(prev_link_node);
+						nodes_after.drop_if_exists(prev_link_node);
 					}
 
 					foreach( & newly_linked_node : nodes_after )

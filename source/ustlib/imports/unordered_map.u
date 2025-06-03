@@ -438,9 +438,81 @@ public:
 		}
 	}
 
-	fn drop( mut this, key_type& key )
+	// Removes given key, if it existis.
+	// Returns "true" if value was removed and "false" otherwise.
+	fn drop_if_exists( mut this, key_type& key ) : bool
 	{
-		remove_existing(key);
+		if( empty() )
+		{
+			return false;
+		}
+
+		// Calculate minimum occupancy.
+		// Perform division first to avoid overflow.
+		// Result may be rounded down and be even 0, which is mostly fine.
+		var size_type min_occupancy= capacity_ / unordered_map_impl::c_min_loading_factor_denominator * unordered_map_impl::c_min_loading_factor_numerator;
+
+		// A workaround for cases where "unordered_map" contained many elements but now almost all of them are removed.
+		// In such case iteration may be very slow.
+		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
+		if( size_ < min_occupancy && // Use "<" here in to avoid rehashing if size_ == 0 and min_occupancy == 0.
+			capacity_ > c_min_non_zero_capacity )
+		{
+			unsafe( rehash( size_ ) );
+		}
+
+		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(TableValue) data_table= get_data_table();
+
+		auto capacity_mask= capacity_ - 1s;
+		auto key_hash= calculate_hash(key);
+		auto hash2= unordered_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+
+		unsafe
+		{
+			loop
+			{
+				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == unordered_map_impl::c_contents_empty )
+				{
+					// End search if reached an empty cell.
+					return false;
+				}
+				else if( size_type(cell_content) == hash2 )
+				{
+					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
+					// Compare keys to be sure.
+					auto &mut table_value= $>(data_table + key_hash_wrapped);
+					if( safe( key == table_value.key_storage ) )
+					{
+						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
+						{
+							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
+							// TODO - try to remove also tombstones prior to this cell.
+							cell_content= unordered_map_impl::c_contents_empty;
+							--num_occupied_slots_;
+						}
+						else
+						{
+							// Place a tombstone here to preserve probing chain.
+							cell_content= unordered_map_impl::c_contents_value_removed;
+						}
+						--size_;
+
+						// Destroy both key and value
+						call_destructor( table_value.key_storage );
+						call_destructor( table_value.value_storage );
+
+						return true;
+					}
+				}
+
+				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
+
+				// Eventually we should finish this loop, since we should have at least one empty cell.
+			}
+		}
 	}
 
 	// Check if given key exists in this unordered_map.

@@ -342,16 +342,19 @@ fn nomangle main() : i32
 		m.insert_new( 66, 88888 );
 		halt if( m.remove_existing( 66 ) != 88888 );
 	}
-	{ // "drop" method
+	{ // "drop_if_exists" method
 		var ust::unordered_map</ i32, i32 /> mut m;
 		m.insert_new( 10, 1024 );
 		halt if( m.empty() );
 
-		m.drop(10);
+		halt if( !m.drop_if_exists(10) );
 		halt if( !m.empty() );
 
 		m.insert_new( 5, 32 );
 		halt if( m.size() != 1s );
+
+		// Should return "false" if given value doesn't exist.
+		halt if( m.drop_if_exists( 12345 ) );
 	}
 	{ // noncopyable value
 
