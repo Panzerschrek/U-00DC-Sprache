@@ -543,7 +543,7 @@ public:
 						}
 						--size_;
 
-						// Destroy both key and value
+						// Destroy both key and value.
 						call_destructor( table_value.key_storage );
 						call_destructor( table_value.value_storage );
 
@@ -604,6 +604,10 @@ public:
 						}
 
 						--size_;
+
+						// Destroy both key and value.
+						call_destructor( table_value.key_storage );
+						call_destructor( table_value.value_storage );
 					}
 				}
 			}
