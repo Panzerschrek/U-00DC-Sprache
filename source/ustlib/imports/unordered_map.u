@@ -202,7 +202,7 @@ public:
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
 					// Compare keys to be sure.
 					auto &mut dst_value= $>( data_table + key_hash_wrapped );
-					if( safe( key == dst_value.key_storage ) )
+					if( safe( key == cast_imut(dst_value).key_storage ) )
 					{
 						return dst_value.value_storage;
 					}
@@ -269,7 +269,7 @@ public:
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
 					// Compare keys to be sure.
 					auto &mut dst_value= $>( data_table + key_hash_wrapped );
-					if( safe( key == dst_value.key_storage ) )
+					if( safe( key == cast_imut(dst_value).key_storage ) )
 					{
 						dst_value.value_storage= move(value);
 						return dst_value.value_storage;
@@ -340,7 +340,7 @@ public:
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
 					// Compare keys to be sure.
 					auto &mut dst_value= $>( data_table + key_hash_wrapped );
-					if( safe( key == dst_value.key_storage ) )
+					if( safe( key == cast_imut(dst_value).key_storage ) )
 					{
 						return dst_value.value_storage;
 					}
@@ -395,7 +395,7 @@ public:
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
 					// Compare keys to be sure.
 					auto &mut table_value= $>(data_table + key_hash_wrapped);
-					if( safe( key == table_value.key_storage ) )
+					if( safe( key == cast_imut(table_value).key_storage ) )
 					{
 						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
 						{
@@ -462,7 +462,7 @@ public:
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
 					// Compare keys to be sure.
 					auto &mut table_value= $>(data_table + key_hash_wrapped);
-					if( safe( key == table_value.key_storage ) )
+					if( safe( key == cast_imut(table_value).key_storage ) )
 					{
 						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
 						{
@@ -529,7 +529,7 @@ public:
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
 					// Compare keys to be sure.
 					auto &mut table_value= $>(data_table + key_hash_wrapped);
-					if( safe( key == table_value.key_storage ) )
+					if( safe( key == cast_imut(table_value).key_storage ) )
 					{
 						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
 						{
@@ -839,7 +839,7 @@ private:
 					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
 					// Compare keys to be sure.
 					auto &mut table_value= $>( data_table + key_hash_wrapped );
-					if( safe( key == table_value.key_storage ) )
+					if( safe( key == cast_imut(table_value).key_storage ) )
 					{
 						return $<( table_value );
 					}
