@@ -39,6 +39,30 @@ fn nomangle main() : i32
 		auto i= m.iter();
 		m.insert_or_update( 0, 5 ); //##expect_error ReferenceProtectionError
 	}
+	{ // Holding a reference to map element prevents its modification.
+		var ust::unordered_map</i32, i32/> mut m;
+		auto opt_ref= m.find( 123 );
+		m.clear(); //##expect_error ReferenceProtectionError
+	}
+	{ // Holding a reference to map element prevents its modification.
+		var ust::unordered_map</i32, i32/> mut m;
+		auto opt_ref= m.find( 123 );
+		m.find_or_construct_new( 567, lambda() : i32 { return 0; } ); //##expect_error ReferenceProtectionError
+	}
+	{ // Holding a reference to map element prevents its modification.
+		var ust::unordered_map</i32, i32/> mut m;
+		m.insert_new( 123, 7777 );
+		var i32& ref= m.find_or_construct_new( 123, lambda() : i32 { return 0; } );
+		m.drop_if_exists( 567 ); //##expect_error ReferenceProtectionError
+	}
+	{ // Function given for "find_or_construct_new" doesn't return result compatible with value type.
+		var ust::unordered_map</u32, f32/> mut m;
+		m.find_or_construct_new( 87u, lambda() : char8{ return 'a'; } ); //##expect_error TemplateContext
+	}
+	{ // Function given for "find_or_construct_new" is unsafe.
+		var ust::unordered_map</u32, f32/> mut m;
+		m.find_or_construct_new( 87u, lambda() unsafe : f32{ return 0.0f ; } ); //##expect_error TemplateContext
+	}
 	{ // "retain" method doesn't allow to use "unsafe" function.
 		var ust::unordered_map</u32, f32/> mut m;
 		m.retain( lambda( u32& k, f32& v ) unsafe : bool { return true; } ); //##expect_error TemplateContext
