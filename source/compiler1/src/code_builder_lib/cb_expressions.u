@@ -821,24 +821,20 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		full_file_path= vfs.NormalizeFilePath( file_path, parent_file_path );
 
 		// Cache result.
-		auto mut prev_cache_value= embed_cache_.find( full_file_path );
-		if( prev_cache_value.empty() )
-		{
-			move(prev_cache_value);
+		auto& full_file_path_ref= full_file_path;
 
-			if( !vfs.IsImportingFileAllowed( full_file_path ) )
-			{
-				REPORT_ERROR( EmbeddingThisFileIsNotAllowed, names_scope, embed_.src_loc, full_file_path )
-			}
+		loaded_file_opt=
+			embed_cache_.find_or_construct_new(
+				full_file_path_ref,
+				lambda[&]() : ust::optional</ust::string8/>
+				{
+					if( !vfs.IsImportingFileAllowed( full_file_path_ref ) )
+					{
+						REPORT_ERROR( EmbeddingThisFileIsNotAllowed, names_scope, embed_.src_loc, full_file_path_ref )
+					}
 
-			loaded_file_opt= vfs.LoadFile( full_file_path );
-			embed_cache_.insert_new( full_file_path, loaded_file_opt );
-		}
-		else
-		{
-			loaded_file_opt= prev_cache_value.try_deref();
-			move(prev_cache_value);
-		}
+					return vfs.LoadFile( full_file_path_ref );
+				} );
 	}
 
 	if( loaded_file_opt.empty() )

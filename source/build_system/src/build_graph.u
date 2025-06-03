@@ -493,7 +493,13 @@ fn CollectFilesModificationTime(
 	return files_with_modification_time;
 }
 
-type FileToNodesMap= ust::unordered_map</ust::filesystem_path, ust::vector</size_type/>/>;
+type FileToNodesMap= ust::unordered_map</ust::filesystem_path, NodesList/>;
+type NodesList= ust::vector</size_type/>;
+
+fn MakeEmptyNodesList() : NodesList
+{
+	return NodesList();
+}
 
 fn BuildInputFileToNodeIndexMap(
 	BuildGraph& build_graph,
@@ -509,40 +515,19 @@ fn BuildInputFileToNodeIndexMap(
 
 		foreach( &input_file : node.input_files )
 		{
-			if( input_file_to_node_id_map.exists( input_file ) )
-			{
-				input_file_to_node_id_map[input_file].push_back(i);
-			}
-			else
-			{
-				input_file_to_node_id_map.insert_new( input_file, ust::make_array(i) );
-			}
+			input_file_to_node_id_map.find_or_construct_new( input_file, MakeEmptyNodesList ).push_back(i);
 		}
 
 		if( !IsSpecialBuildCommand( node.program ) ) // Program file is also input file.
 		{
-			if( input_file_to_node_id_map.exists( node.program ) )
-			{
-				input_file_to_node_id_map[node.program].push_back(i);
-			}
-			else
-			{
-				input_file_to_node_id_map.insert_new( node.program, ust::make_array(i) );
-			}
+			input_file_to_node_id_map.find_or_construct_new( node.program, MakeEmptyNodesList ).push_back(i);
 		}
 
 		if_var( &dep_file : dep_file_opt )
 		{
 			foreach( &dependency : dep_file.dependencies )
 			{
-				if( input_file_to_node_id_map.exists( dependency ) )
-				{
-					input_file_to_node_id_map[dependency].push_back(i);
-				}
-				else
-				{
-					input_file_to_node_id_map.insert_new( dependency, ust::make_array(i) );
-				}
+				input_file_to_node_id_map.find_or_construct_new( dependency, MakeEmptyNodesList ).push_back(i);
 			}
 		}
 	}
@@ -564,26 +549,12 @@ fn BuildOutputFileToNodeIndexMap(
 
 		foreach( &output_file : node.output_files )
 		{
-			if( output_file_to_node_id_map.exists( output_file ) )
-			{
-				output_file_to_node_id_map[output_file].push_back(i);
-			}
-			else
-			{
-				output_file_to_node_id_map.insert_new( output_file, ust::make_array(i) );
-			}
+			output_file_to_node_id_map.find_or_construct_new( output_file, MakeEmptyNodesList ).push_back(i);
 		}
 
 		if_var( &dep_file : dep_file_opt )
 		{
-			if( output_file_to_node_id_map.exists( dep_file.destination ) )
-			{
-				output_file_to_node_id_map[dep_file.destination].push_back(i);
-			}
-			else
-			{
-				output_file_to_node_id_map.insert_new( dep_file.destination, ust::make_array(i) );
-			}
+			output_file_to_node_id_map.find_or_construct_new( dep_file.destination, MakeEmptyNodesList ).push_back(i);
 		}
 	}
 

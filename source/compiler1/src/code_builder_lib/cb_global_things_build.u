@@ -1598,7 +1598,8 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 		if( enum_elements.exists( element.name ) )
 		{
-			REPORT_ERROR( Redefinition,  names_scope_ptr, element.src_loc, element.name )
+			REPORT_ERROR( Redefinition, names_scope_ptr, element.src_loc, element.name )
+			continue;
 		}
 
 		var Enum::Element mut out_element;

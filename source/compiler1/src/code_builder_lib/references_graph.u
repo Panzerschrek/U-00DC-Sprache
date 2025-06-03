@@ -346,10 +346,7 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 			var VariablePtr& node= node_pair.key();
 			var NodeState& src_node= node_pair.value();
 
-			if( !result.nodes_.exists( node ) )
-			{
-				result.nodes_.insert_new( node, src_node );
-			}
+			result.nodes_.insert_new( node, src_node );
 
 			var NodeState& dst_node= result.nodes_[ node ];
 			if( src_node.moved != dst_node.moved )
