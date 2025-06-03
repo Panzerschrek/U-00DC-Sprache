@@ -39,6 +39,38 @@ fn nomangle main() : i32
 		auto i= m.iter();
 		m.insert_or_update( 0, 5 ); //##expect_error ReferenceProtectionError
 	}
+	{ // "retain" method doesn't allow to use "unsafe" function.
+		var ust::unordered_map</u32, f32/> mut m;
+		m.retain( lambda( u32& k, f32& v ) unsafe : bool { return true; } ); //##expect_error TemplateContext
+	}
+	{ // Function given for "retain" method modifies itself.
+		var ust::unordered_map</u32, f32/> mut m;
+		m.retain( lambda mut ( u32& k, f32& v ) : bool { return true; } ); //##expect_error TemplateContext
+	}
+	{ // Function given for "retain" method tries to modify given key.
+		var ust::unordered_map</u32, f32/> mut m;
+		m.retain( lambda( u32 &mut k, f32& v ) : bool { return true; } ); //##expect_error TemplateContext
+	}
+	{ // Function given for "retain" has invalid signature.
+		var ust::unordered_map</u32, f32/> mut m;
+		m.retain( lambda( f32& v ) : bool { return true; } ); //##expect_error TemplateContext
+	}
+	{ // Function given for "retain" has invalid signature.
+		var ust::unordered_map</u32, f32/> mut m;
+		m.retain( lambda( u32& k ) : bool { return true; } ); //##expect_error TemplateContext
+	}
+	{ // Function given for "retain" has invalid signature.
+		var ust::unordered_map</u32, f32/> mut m;
+		m.retain( lambda( u32& k, f32& v, char8 c ) : bool { return true; } ); //##expect_error TemplateContext
+	}
+	{ // Function given for "retain" doesn't return "bool".
+		var ust::unordered_map</u32, f32/> mut m;
+		m.retain( lambda( u32& k, f32& v ) {} ); //##expect_error TemplateContext
+	}
+	{ // A value given to "retain" method is not a function.
+		var ust::unordered_map</u32, f32/> mut m;
+		m.retain( 76u ); //##expect_error TemplateContext
+	}
 
 	return 0;
 }
