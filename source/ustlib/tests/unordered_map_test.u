@@ -342,6 +342,43 @@ fn nomangle main() : i32
 		m.insert_new( 66, 88888 );
 		halt if( m.remove_existing( 66 ) != 88888 );
 	}
+	{ // "remove_if_exists" method
+		var ust::unordered_map</ u32, ust::string8 /> mut m;
+
+		m.insert_new( 44u, "some" );
+		m.insert_new( 123u, "other" );
+		m.insert_new( 723456u, "VaL" );
+		halt if( m.size() != 3s );
+
+		{
+			var ust::optional</ust::string8/> v= m.remove_if_exists( 78u );
+			halt if( !v.empty() );
+			halt if( m.size() != 3s );
+		}
+		{
+			var ust::optional</ust::string8/> v= m.remove_if_exists( 123u );
+			halt if( v.empty() );
+			halt if( v.try_deref() != "other" );
+			halt if( m.size() != 2s );
+		}
+		{
+			var ust::optional</ust::string8/> v= m.remove_if_exists( 44u );
+			halt if( v.empty() );
+			halt if( v.try_deref() != "some" );
+			halt if( m.size() != 1s );
+		}
+		{
+			var ust::optional</ust::string8/> v= m.remove_if_exists( 123u );
+			halt if( !v.empty() );
+			halt if( m.size() != 1s );
+		}
+		{
+			var ust::optional</ust::string8/> v= m.remove_if_exists( 723456u );
+			halt if( v.empty() );
+			halt if( v.try_deref() != "VaL" );
+			halt if( m.size() != 0s );
+		}
+	}
 	{ // "drop_if_exists" method
 		var ust::unordered_map</ i32, i32 /> mut m;
 		m.insert_new( 10, 1024 );

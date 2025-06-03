@@ -426,6 +426,73 @@ public:
 		}
 	}
 
+	// Removes value for given key and returns it, if it exists.
+	// Returns empty optional if value not found.
+	fn nodiscard remove_if_exists( mut this, key_type& key ) : optional</value_type/>
+	{
+		if( empty() )
+		{
+			return null_optional;
+		}
+
+		unsafe( try_rehash_on_remove() );
+
+		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(TableValue) data_table= get_data_table();
+
+		auto capacity_mask= capacity_ - 1s;
+		auto key_hash= calculate_hash(key);
+		auto hash2= unordered_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+
+		unsafe
+		{
+			loop
+			{
+				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == unordered_map_impl::c_contents_empty )
+				{
+					// End search if reached an empty cell.
+					return null_optional;
+				}
+				else if( size_type(cell_content) == hash2 )
+				{
+					// If hash2 is equal to stored hash2 value, we are likely found a matching value.
+					// Compare keys to be sure.
+					auto &mut table_value= $>(data_table + key_hash_wrapped);
+					if( safe( key == table_value.key_storage ) )
+					{
+						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
+						{
+							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
+							// TODO - try to remove also tombstones prior to this cell.
+							cell_content= unordered_map_impl::c_contents_empty;
+							--num_occupied_slots_;
+						}
+						else
+						{
+							// Place a tombstone here to preserve probing chain.
+							cell_content= unordered_map_impl::c_contents_value_removed;
+						}
+						--size_;
+
+						// Destroy stored key.
+						call_destructor( table_value.key_storage );
+
+						// Take and return stored value.
+						var value_type mut r= uninitialized;
+						memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, ptr_cast_to_byte8( $<(r) ), ptr_cast_to_byte8( $<(table_value.value_storage) ), typeinfo</ typeof(table_value.value_storage) />.size_of );
+						return optional</value_type/>( move(r) );
+					}
+				}
+
+				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
+
+				// Eventually we should finish this loop, since we should have at least one empty cell.
+			}
+		}
+	}
+
 	// Removes given key, if it existis.
 	// Returns "true" if value was removed and "false" otherwise.
 	fn drop_if_exists( mut this, key_type& key ) : bool
