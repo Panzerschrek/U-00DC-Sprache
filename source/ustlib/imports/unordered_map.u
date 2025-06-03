@@ -368,19 +368,7 @@ public:
 			halt;
 		}
 
-		// Calculate minimum occupancy.
-		// Perform division first to avoid overflow.
-		// Result may be rounded down and be even 0, which is mostly fine.
-		var size_type min_occupancy= capacity_ / unordered_map_impl::c_min_loading_factor_denominator * unordered_map_impl::c_min_loading_factor_numerator;
-
-		// A workaround for cases where "unordered_map" contained many elements but now almost all of them are removed.
-		// In such case iteration may be very slow.
-		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
-		if( size_ < min_occupancy && // Use "<" here in to avoid rehashing if size_ == 0 and min_occupancy == 0.
-			capacity_ > c_min_non_zero_capacity )
-		{
-			unsafe( rehash( size_ ) );
-		}
+		unsafe( try_rehash_on_remove() );
 
 		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
@@ -447,19 +435,7 @@ public:
 			return false;
 		}
 
-		// Calculate minimum occupancy.
-		// Perform division first to avoid overflow.
-		// Result may be rounded down and be even 0, which is mostly fine.
-		var size_type min_occupancy= capacity_ / unordered_map_impl::c_min_loading_factor_denominator * unordered_map_impl::c_min_loading_factor_numerator;
-
-		// A workaround for cases where "unordered_map" contained many elements but now almost all of them are removed.
-		// In such case iteration may be very slow.
-		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
-		if( size_ < min_occupancy && // Use "<" here in to avoid rehashing if size_ == 0 and min_occupancy == 0.
-			capacity_ > c_min_non_zero_capacity )
-		{
-			unsafe( rehash( size_ ) );
-		}
+		unsafe( try_rehash_on_remove() );
 
 		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
@@ -617,6 +593,24 @@ private:
 			// when values are added and removed.
 			var size_type num_tombstones= num_occupied_slots_ - size_;
 			unsafe( rehash( size_ + 1s + ( num_tombstones >> 1u ) ) );
+		}
+	}
+
+	// Call this function only from "remove*" and "drop_*" methods.
+	fn try_rehash_on_remove( mut this ) unsafe
+	{
+		// Calculate minimum occupancy.
+		// Perform division first to avoid overflow.
+		// Result may be rounded down and be even 0, which is mostly fine.
+		var size_type min_occupancy= capacity_ / unordered_map_impl::c_min_loading_factor_denominator * unordered_map_impl::c_min_loading_factor_numerator;
+
+		// A workaround for cases where "unordered_map" contained many elements but now almost all of them are removed.
+		// In such case iteration may be very slow.
+		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
+		if( size_ < min_occupancy && // Use "<" here in to avoid rehashing if size_ == 0 and min_occupancy == 0.
+			capacity_ > c_min_non_zero_capacity )
+		{
+			unsafe( rehash( size_ ) );
 		}
 	}
 
