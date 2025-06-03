@@ -317,7 +317,7 @@ public:
 
 					$>( control_table + insert_index )= unordered_map_impl::ControlTableElement( hash2 );
 
-					var value_type mut value= safe( construction_func() ); // Call given function to create new value.
+					var value_type mut value= safe( move(construction_func)() ); // Call given function to create new value.
 
 					auto &mut dst_value= $>( data_table + insert_index );
 					move_into_uninitialized( dst_value.key_storage, key );
