@@ -359,8 +359,9 @@ public:
 		return find_or_construct_new( key, lambda() : value_type { return value_type(); } );
 	}
 
-	// TODO - maybe add method, like "erase_if_exists"?
-	fn erase( mut this, key_type& key ) : value_type
+	// Removes value for given key and returns it.
+	// Halts if value not found.
+	fn remove_existing( mut this, key_type& key ) : value_type
 	{
 		if( empty() )
 		{
@@ -439,7 +440,7 @@ public:
 
 	fn drop( mut this, key_type& key )
 	{
-		erase(key);
+		remove_existing(key);
 	}
 
 	// Check if given key exists in this unordered_map.
