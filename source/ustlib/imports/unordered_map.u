@@ -558,6 +558,61 @@ public:
 		}
 	}
 
+	// Run given function for all present elements.
+	// Given function should have two arguments - immutable reference to key and mutable reference to value.
+	// Elements for which given function returned "false" are removed.
+	template</type Func/>
+	fn retain( mut this, Func& func )
+	{
+		if( empty() )
+		{
+			return;
+		}
+
+		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(TableValue) data_table= get_data_table();
+		auto capacity_mask= capacity_ - 1s;
+
+		unsafe
+		{
+			for( auto mut i= 0s; i < capacity_; ++i )
+			{
+				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + i );
+				if( ( size_type( cell_content ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
+				{
+					auto &mut table_value= $>( data_table + i );
+
+					// TODO - prevent possible reference pollution in such call.
+					var bool should_preserve=
+						safe( func(
+							cast_imut(table_value.key_storage), // Make sure given function doesn't modify the key.
+							table_value.value_storage ) );
+
+					if( !should_preserve )
+					{
+						if( $>( control_table + ( ( i + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
+						{
+							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
+							// TODO - try to remove also tombstones prior to this cell.
+							cell_content= unordered_map_impl::c_contents_empty;
+							--num_occupied_slots_;
+						}
+						else
+						{
+							// Place a tombstone here to preserve probing chain.
+							cell_content= unordered_map_impl::c_contents_value_removed;
+						}
+
+						--size_;
+					}
+				}
+			}
+
+			// If many elements were removed, it makes sense to reduce table size.
+			try_rehash_on_remove();
+		}
+	}
+
 	// Check if given key exists in this unordered_map.
 	fn exists( this, key_type& key ) : bool
 	{

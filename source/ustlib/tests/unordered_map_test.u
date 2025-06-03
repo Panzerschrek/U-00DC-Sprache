@@ -393,6 +393,41 @@ fn nomangle main() : i32
 		// Should return "false" if given value doesn't exist.
 		halt if( m.drop_if_exists( 12345 ) );
 	}
+	{ // "retain" method.
+
+		var ust::unordered_map</ u32, ust::string8 /> mut m;
+
+		m.insert_new( 77777u, "zero" );
+		m.insert_new( 76u, "one" );
+		m.insert_new( 13u, "two" );
+		m.insert_new( 783u, "three" );
+		m.insert_new( 45u, "four" );
+		m.insert_new( 3775u, "aaa" );
+		halt if( m.size() != 6s );
+
+		var size_type mut num_iterations= 0s;
+
+		m.retain(
+			lambda[&]( u32& k, ust::string8& mut val ) : bool
+			{
+				++num_iterations;
+
+				val+= "_visited";
+
+				return k < 100u || val.front() == 'a';
+			} );
+
+		halt if( num_iterations != 6s );
+
+		halt if( m.size() != 4s );
+
+		halt if( m.exists( 77777u ) );
+		halt if( m[76u] != "one_visited" );
+		halt if( m[13u] != "two_visited" );
+		halt if( m.exists( 783u ) );
+		halt if( m[45u] != "four_visited" );
+		halt if( m[3775u] != "aaa_visited" );
+	}
 	{ // noncopyable value
 
 		var ust::unordered_map</i32, C/> mut m;
