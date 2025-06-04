@@ -47,7 +47,7 @@ fn nomangle main() : i32
 		var ust::unordered_map</ i32, i32 /> mut m;
 		halt if( ! m.empty() );
 
-		m.insert( 55, -7 );
+		m.insert_new( 55, -7 );
 		halt if( m.size() != 1s );
 
 		{
@@ -66,11 +66,11 @@ fn nomangle main() : i32
 	{
 		var ust::unordered_map</ i32, ust::string8 /> mut m;
 
-		m.insert(   58, "foo" );
-		m.insert(    1, "wtf" );
-		m.insert(   45, "45" );
-		m.insert( 1256, "ArT" );
-		m.insert( 1997, "InEx" );
+		m.insert_new(   58, "foo" );
+		m.insert_new(    1, "wtf" );
+		m.insert_new(   45, "45" );
+		m.insert_new( 1256, "ArT" );
+		m.insert_new( 1997, "InEx" );
 
 		halt if( m.find(   58 ).empty() ); halt if( m[  58] != "foo" );
 		halt if( m.find(    1 ).empty() ); halt if( m[   1] != "wtf" );
@@ -78,38 +78,38 @@ fn nomangle main() : i32
 		halt if( m.find( 1256 ).empty() ); halt if( m[1256] != "ArT" );
 		halt if( m.find( 1997 ).empty() ); halt if( m[1997] != "InEx" );
 
-		m.erase(    1 ); halt if( !m.find(    1 ).empty() );
-		m.erase(   45 ); halt if( !m.find(   45 ).empty() );
-		m.erase( 1997 ); halt if( !m.find( 1997 ).empty() );
-		m.erase( 1256 ); halt if( !m.find( 1256 ).empty() );
-		m.erase(   58 ); halt if( !m.find(   58 ).empty() );
+		halt if( m.remove_existing(    1 ) != "wtf" ); halt if( !m.find(    1 ).empty() );
+		halt if( m.remove_existing(   45 ) != "45" ); halt if( !m.find(   45 ).empty() );
+		halt if( m.remove_existing( 1997 ) != "InEx" ); halt if( !m.find( 1997 ).empty() );
+		halt if( m.remove_existing( 1256 ) != "ArT" ); halt if( !m.find( 1256 ).empty() );
+		halt if( m.remove_existing(   58 ) != "foo" ); halt if( !m.find(   58 ).empty() );
 	}
 	{ // There is "exists" method.
 
 		var ust::unordered_map</ i32, f32 /> mut m;
 
 		halt if( m.exists( 55 ) );
-		m.insert( 55, 0.25f );
+		m.insert_new( 55, 0.25f );
 		halt if( !m.exists( 55 ) );
 
 		halt if( m.exists( -24 ) );
-		m.insert( -24, 789.0f );
+		m.insert_new( -24, 789.0f );
 		halt if( !m.exists( -24 ) );
 		halt if( !m.exists( 55 ) );
 
 		halt if( m.exists( 79110 ) );
-		m.insert( 79110, -0.33f );
+		m.insert_new( 79110, -0.33f );
 		halt if( !m.exists( 79110 ) );
 		halt if( !m.exists( -24 ) );
 		halt if( !m.exists( 55 ) );
 
-		m.erase( -24 );
+		halt if( m.remove_existing( -24 ) != 789.0f );
 		halt if( m.exists( -24 ) );
 
-		m.erase( 79110 );
+		halt if( m.remove_existing( 79110 ) !=  -0.33f );
 		halt if( m.exists( 79110 ) );
 
-		m.erase( 55 );
+		halt if( m.remove_existing( 55 ) != 0.25f );
 		halt if( m.exists( 55 ) );
 	}
 	{ // Test for hash collisions. Key type 'OneBitHash' have only 1 bit for hash.
@@ -118,7 +118,7 @@ fn nomangle main() : i32
 		var i32 mut i(0);
 		while( i < 256 )
 		{
-			m.insert( OneBitHash(i), i * i );
+			m.insert_new( OneBitHash(i), i * i );
 			++i;
 		}
 		i= 0;
@@ -130,19 +130,19 @@ fn nomangle main() : i32
 			++i;
 		}
 
-		m.erase( OneBitHash(66) );
+		m.drop_if_exists( OneBitHash(66) );
 		halt if( !m.find( OneBitHash(66) ).empty() );
 		halt if(  m.find( OneBitHash(65) ).empty() );
 		halt if(  m.find( OneBitHash(67) ).empty() );
 
-		m.erase( OneBitHash(101) );
+		m.drop_if_exists( OneBitHash(101) );
 		halt if( !m.find( OneBitHash(101) ).empty() );
 		halt if(  m.find( OneBitHash(100) ).empty() );
 		halt if(  m.find( OneBitHash(102) ).empty() );
 	}
 	{ // Can modify map value.
 		var ust::unordered_map</ i32, ust::string8 /> mut m;
-		m.insert( 17, "abc" );
+		m.insert_new( 17, "abc" );
 		halt if( m.find(17).try_deref() != "abc" );
 
 		m[17]+= "DEF";
@@ -156,9 +156,9 @@ fn nomangle main() : i32
 	{ // Iteration
 
 		var ust::unordered_map</ i32, ust::string8 /> mut m;
-		m.insert( 11, "A" );
-		m.insert( 22, "B" );
-		m.insert( 33, "C" );
+		m.insert_new( 11, "A" );
+		m.insert_new( 22, "B" );
+		m.insert_new( 33, "C" );
 
 		var size_type mut iterations(0);
 		foreach( mut e : m )
@@ -175,11 +175,11 @@ fn nomangle main() : i32
 	{ // Iteration with one-bit hash.
 
 		var ust::unordered_map</ OneBitHash, ust::string8 /> mut m;
-		m.insert( OneBitHash(0), "A" );
-		m.insert( OneBitHash(1), "B" );
-		m.insert( OneBitHash(2), "C" );
-		m.insert( OneBitHash(3), "D" );
-		m.insert( OneBitHash(4), "E" );
+		m.insert_new( OneBitHash(0), "A" );
+		m.insert_new( OneBitHash(1), "B" );
+		m.insert_new( OneBitHash(2), "C" );
+		m.insert_new( OneBitHash(3), "D" );
+		m.insert_new( OneBitHash(4), "E" );
 
 		var size_type mut iterations(0);
 		foreach( mut e : m )
@@ -198,9 +198,9 @@ fn nomangle main() : i32
 	{ // Iteration with continue
 
 		var ust::unordered_map</ i32, ust::string8 /> mut m;
-		m.insert( 7, "A" );
-		m.insert( 2, "B" );
-		m.insert( 5, "C" );
+		m.insert_new( 7, "A" );
+		m.insert_new( 2, "B" );
+		m.insert_new( 5, "C" );
 
 		auto mut res= 0;
 		auto mut iterations= 0s;
@@ -213,60 +213,279 @@ fn nomangle main() : i32
 		halt if( iterations != m.size() );
 		halt if( res != 7 + 5 );
 	}
-	{ // "insert" may replace value.
+	{ // "insert_new" will ignore new value of old one exists.
+		var ust::unordered_map</ u32, i32 /> mut m;
+
+		halt if( !m.insert_new( 777u, 6 ) );
+		halt if( !m.insert_new( 111u, 2 ) );
+
+		halt if( m[777u] != 6 );
+		halt if( m[111u] != 2 );
+
+		halt if( m.insert_new( 777u, -66 ) );
+		halt if( m.insert_new( 111u, -22 ) );
+
+		halt if( m[777u] != 6 );
+		halt if( m[111u] != 2 );
+	}
+	{ // "insert_or_update" may replace value.
 		var ust::unordered_map</ ust::string8, i32 /> mut m;
-		m.insert( "a", 22 );
+		halt if( !m.insert_or_update( "a", 22 ) );
 		halt if( m["a"] != 22 );
 
-		m.insert( "a", 55 );
+		halt if( m.insert_or_update( "a", 55 ) );
 		halt if( m["a"] != 55 );
 
-		m.erase( "a" );
+		halt if( m.remove_existing( "a" ) != 55 );
 		halt if( !m.find("a").empty() );
 
-		m.insert( "a", 666 );
+		halt if( !m.insert_or_update( "a", 666 ) );
 		halt if( m["a"] != 666 );
+	}
+	{ // "find_or_construct_new".
+
+		var ust::unordered_map</u32, ust::string8/> mut m;
+
+		m.insert_new( 30u, "  30  " );
+		halt if( m.size() != 1s );
+
+		// Shuld obtain existing value.
+		var bool mut construction_called0= false;
+		halt if(
+			m.find_or_construct_new(
+				30u,
+				lambda[&]() : ust::string8
+				{
+					construction_called0= true;
+					return "not 300";
+				} ) != "  30  " );
+		halt if( construction_called0 );
+		halt if( m.size() != 1s );
+
+		// Should construct new value.
+		var bool mut construction_called1= false;
+		halt if(
+			m.find_or_construct_new(
+				78u,
+				lambda[&]() : ust::string8
+				{
+					construction_called1= true;
+					return "stub";
+				} ) != "stub" );
+		halt if( !construction_called1 );
+		halt if( m.size() != 2s );
+		halt if( m[78u] != "stub" );
+
+		// Shuld obtain existing value.
+		var bool mut construction_called2= false;
+		halt if(
+			m.find_or_construct_new(
+				78u,
+				lambda[&]() : ust::string8
+				{
+					construction_called2= true;
+					return "NOWAY";
+				} ) != "stub" );
+		halt if( construction_called2 );
+		halt if( m.size() != 2s );
+		halt if( m[78u] != "stub" );
+
+		halt if( m.remove_existing( 30u ) != "  30  " );
+		halt if( m.size() != 1s );
+
+		var bool mut construction_called3= false;
+		halt if(
+			m.find_or_construct_new(
+				30u,
+				lambda[&]() : ust::string8
+				{
+					construction_called3= true;
+					return "new 30";
+				} ) != "new 30" );
+		halt if( !construction_called3 );
+		halt if( m.size() != 2s );
+		halt if( m[30u] != "new 30" );
+	}
+	{ // "find_or_construct_default".
+
+		var ust::unordered_map</u32, ust::string8/> mut m;
+
+		m.insert_new( 30u, "thirty" );
+		halt if( m.size() != 1s );
+
+		// Shuld obtain existing value.
+		halt if( m.find_or_construct_default( 30u ) != "thirty" );
+		halt if( m.size() != 1s );
+
+		// Should construct new value.
+		halt if( m.find_or_construct_default( 78u ) != "" );
+		halt if( m.size() != 2s );
+		halt if( m[78u] != "" );
+
+		// Shuld obtain existing value.
+		var bool mut construction_called2= false;
+		halt if( m.find_or_construct_default( 78u ) != "" );
+		halt if( construction_called2 );
+		halt if( m.size() != 2s );
+		halt if( m[78u] != "" );
+
+		halt if( m.remove_existing( 30u ) != "thirty" );
+		halt if( m.size() != 1s );
+
+		// Should construct new value.
+		halt if( m.find_or_construct_default( 30u ) != "" );
+		halt if( m.size() != 2s );
+		halt if( m[30u] != "" );
 	}
 	{ // obtain value as "erase" result
 		var ust::unordered_map</ i32, i32 /> mut m;
-		m.insert( 66, 88888 );
-		halt if( m.erase( 66 ) != 88888 );
+		m.insert_new( 66, 88888 );
+		halt if( m.remove_existing( 66 ) != 88888 );
 	}
-	{ // "drop" method
+	{ // "remove_if_exists" method
+		var ust::unordered_map</ u32, ust::string8 /> mut m;
+
+		m.insert_new( 44u, "some" );
+		m.insert_new( 123u, "other" );
+		m.insert_new( 723456u, "VaL" );
+		halt if( m.size() != 3s );
+
+		{
+			var ust::optional</ust::string8/> v= m.remove_if_exists( 78u );
+			halt if( !v.empty() );
+			halt if( m.size() != 3s );
+		}
+		{
+			var ust::optional</ust::string8/> v= m.remove_if_exists( 123u );
+			halt if( v.empty() );
+			halt if( v.try_deref() != "other" );
+			halt if( m.size() != 2s );
+		}
+		{
+			var ust::optional</ust::string8/> v= m.remove_if_exists( 44u );
+			halt if( v.empty() );
+			halt if( v.try_deref() != "some" );
+			halt if( m.size() != 1s );
+		}
+		{
+			var ust::optional</ust::string8/> v= m.remove_if_exists( 123u );
+			halt if( !v.empty() );
+			halt if( m.size() != 1s );
+		}
+		{
+			var ust::optional</ust::string8/> v= m.remove_if_exists( 723456u );
+			halt if( v.empty() );
+			halt if( v.try_deref() != "VaL" );
+			halt if( m.size() != 0s );
+		}
+	}
+	{ // "drop_if_exists" method
 		var ust::unordered_map</ i32, i32 /> mut m;
-		m.insert( 10, 1024 );
+		m.insert_new( 10, 1024 );
 		halt if( m.empty() );
 
-		m.drop(10);
+		halt if( !m.drop_if_exists(10) );
 		halt if( !m.empty() );
 
-		m.insert( 5, 32 );
+		m.insert_new( 5, 32 );
 		halt if( m.size() != 1s );
+
+		// Should return "false" if given value doesn't exist.
+		halt if( m.drop_if_exists( 12345 ) );
+	}
+	{ // "retain" method.
+
+		var ust::unordered_map</ u32, ust::string8 /> mut m;
+
+		m.insert_new( 77777u, "zero" );
+		m.insert_new( 76u, "one" );
+		m.insert_new( 13u, "two" );
+		m.insert_new( 783u, "three" );
+		m.insert_new( 45u, "four" );
+		m.insert_new( 3775u, "aaa" );
+		halt if( m.size() != 6s );
+
+		var size_type mut num_iterations= 0s;
+
+		m.retain(
+			lambda[&]( u32& k, ust::string8& mut val ) : bool
+			{
+				++num_iterations;
+
+				val+= "_visited";
+
+				return k < 100u || val.front() == 'a';
+			} );
+
+		halt if( num_iterations != 6s );
+
+		halt if( m.size() != 4s );
+
+		halt if( m.exists( 77777u ) );
+		halt if( m[76u] != "one_visited" );
+		halt if( m[13u] != "two_visited" );
+		halt if( m.exists( 783u ) );
+		halt if( m[45u] != "four_visited" );
+		halt if( m[3775u] != "aaa_visited" );
 	}
 	{ // noncopyable value
 
 		var ust::unordered_map</i32, C/> mut m;
 
-		m.insert( 66, C(6) );
-		m.insert( 777, C(7) );
-		m.insert( 1, C(1) );
+		m.insert_new( 66, C(6) );
+		m.insert_new( 777, C(7) );
+		m.insert_new( 1, C(1) );
 
 		halt if( m[66].x != 6 );
 		halt if( m[777].x != 7 );
 		halt if( m[1].x != 1 );
 
-		m.insert( 66, C(0) );
+		m.insert_or_update( 66, C(0) );
 		halt if( m[66].x != 0 );
 
 		m[777]= C(777);
 		halt if( m[777].x != 777 );
 	}
+	{ // Equality compare.
+		var ust::unordered_map</ u32, i32 /> mut m0, mut m1, mut m2, mut m3;
+
+		m0.insert_new( 78u, 55 );
+		m0.insert_new( 31u, 843 );
+
+		m1.insert_new( 31u, 843 );
+		m1.insert_new( 78u, 55 );
+
+		m2.insert_new( 78u,-55 );
+		m2.insert_new( 31u, 843 );
+
+		m3.insert_new( 31u, 843 );
+
+		halt if( m0 != m0 );
+		halt if( m0 != m1 );
+		halt if( m0 == m2 );
+		halt if( m0 == m3 );
+
+		halt if( m1 != m0 );
+		halt if( m1 != m1 );
+		halt if( m1 == m2 );
+		halt if( m1 == m3 );
+
+		halt if( m2 == m0 );
+		halt if( m2 == m1 );
+		halt if( m2 != m2 );
+		halt if( m2 == m3 );
+
+		halt if( m3 == m0 );
+		halt if( m3 == m1 );
+		halt if( m3 == m2 );
+		halt if( m3 != m3 );
+	}
 	{ // f64 as key - should work properly.
 		var ust::unordered_map</ f64, i32 /> mut m;
 
-		m.insert( 0.0, 77 );
-		m.insert( 1.1, 894 );
-		m.insert( -1.1, 475 );
+		m.insert_new( 0.0, 77 );
+		m.insert_new( 1.1, 894 );
+		m.insert_new( -1.1, 475 );
 
 		halt if( !m.exists( 0.0 ) );
 		halt if( m.find( 0.0 ).empty() );
@@ -291,7 +510,7 @@ fn nomangle main() : i32
 		auto nan= 0.0f / 0.0f;
 		static_assert( nan != nan );
 
-		m.insert( nan, 77 );
+		m.insert_new( nan, 77 );
 		halt if( m.size() != 1s );
 
 		halt if( m.exists( nan ) ); // Can't fetch NaN, since it isn't equal to itself.
@@ -309,11 +528,11 @@ fn nomangle main() : i32
 			var u32 num= val & 255u;
 			if( ( val & 512u ) != 0u )
 			{
-				m.insert( num, -i32(num) );
+				m.insert_or_update( num, -i32(num) );
 			}
-			else if( m.exists( num ) )
+			else
 			{
-				m.erase( num );
+				m.drop_if_exists( num );
 			}
 		}
 
@@ -342,16 +561,13 @@ fn nomangle main() : i32
 			var u32 val= gen.Next() | ( gen.Next() << 16u );
 			keys.push_back(val);
 
-			m.insert( val, -3 * i32(val) );
+			m.insert_or_update( val, -3 * i32(val) );
 		}
 
 		// Remove all elements except first 16.
 		for( var size_type mut i= 16s; i < keys.size() && m.size() > 16s; ++i )
 		{
-			if( m.exists( keys[i] ) )
-			{
-				m.erase( keys[i] );
-			}
+			m.drop_if_exists( keys[i] );
 		}
 
 		// Iterate map many times. It should be fast, since map contains only few elements.
@@ -379,12 +595,52 @@ fn nomangle main() : i32
 		for( var size_type mut i= 0s; i < (1s << 20u); ++i )
 		{
 			var u32 val= gen.Next() | ( gen.Next() << 16u );
-			m.insert( val, -3 * i32(val) );
+			m.insert_or_update( val, -3 * i32(val) );
 		}
 
 		m.clear();
 
 		// Iterate map many times. It should be fast, since map is empty.
+		var i32 mut combination= 0;
+		for( var size_type mut i= 0s; i < (1s << 16u); ++i )
+		{
+			foreach( &el : m )
+			{
+				combination*= el.value();
+				combination+= el.value();
+			}
+		}
+
+		// Print result of iteration in order to prevent iteration loop to be optimized-out.
+		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
+	}
+	{
+		// Fill map, then clear it using "retain" method, then iterate it many times.
+		// Iteration time should be reasonable.
+
+		var ust::unordered_map</u32, i32/> mut m;
+
+		var RandGenerator mut gen;
+
+		var u32 mut last_key= 0u;
+
+		for( var size_type mut i= 0s; i < (1s << 20u); ++i )
+		{
+			var u32 val= gen.Next() | ( gen.Next() << 16u );
+			m.insert_or_update( val, -3 * i32(val) );
+			last_key= val;
+		}
+
+		// Retain all elements except one.
+		m.retain(
+			lambda[=]( u32& k, i32& v ) : bool
+			{
+				return k == last_key;
+			} );
+
+		halt if( m.size() != 1s );
+
+		// Iterate map many times. It should be fast, since map is alsmost empty.
 		var i32 mut combination= 0;
 		for( var size_type mut i= 0s; i < (1s << 16u); ++i )
 		{
@@ -410,11 +666,11 @@ fn nomangle main() : i32
 			var u32 val= gen.Next();
 			if( ( gen.Next() & 1u ) != 0u )
 			{
-				m.insert( val, -i32(val) );
+				m.insert_or_update( val, -i32(val) );
 			}
-			else if( m.exists( val ) )
+			else
 			{
-				m.erase( val );
+				m.drop_if_exists( val );
 			}
 		}
 
@@ -438,7 +694,7 @@ fn nomangle main() : i32
 		for( var size_type mut i= 0s; i < (1s << 16s); ++i )
 		{
 			var u32 val= gen.Next();
-			m.insert( val, -i32(val) );
+			m.insert_or_update( val, -i32(val) );
 		}
 
 		// Perform roughly 4096 searches for each number.
@@ -462,7 +718,7 @@ fn nomangle main() : i32
 
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
-			m.insert( u32(i), i32(i) * 34 );
+			m.insert_new( u32(i), i32(i) * 34 );
 		}
 
 		var i32 mut combination= 0;
@@ -484,7 +740,7 @@ fn nomangle main() : i32
 
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
-			m.insert( u32(i) << shift, i32(i) * 34 );
+			m.insert_new( u32(i) << shift, i32(i) * 34 );
 		}
 
 		var i32 mut combination= 0;
@@ -505,7 +761,7 @@ fn nomangle main() : i32
 
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
-			m.insert( f32(i), i32(i) * 34 );
+			m.insert_new( f32(i), i32(i) * 34 );
 		}
 
 		var i32 mut combination= 0;
@@ -526,7 +782,7 @@ fn nomangle main() : i32
 
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
-			m.insert( f32(i) * 0.01f, i32(i) * 34 );
+			m.insert_new( f32(i) * 0.01f, i32(i) * 34 );
 		}
 
 		var i32 mut combination= 0;
@@ -547,7 +803,7 @@ fn nomangle main() : i32
 
 		for( var size_type mut i= 0s; i < count; ++i )
 		{
-			m.insert( f32(i) * 1024.0f, i32(i) * 34 );
+			m.insert_new( f32(i) * 1024.0f, i32(i) * 34 );
 		}
 
 		var i32 mut combination= 0;
@@ -588,7 +844,7 @@ fn nomangle main() : i32
 
 		foreach( &key : keys )
 		{
-			m.insert( key, gen.Next() );
+			m.insert_or_update( key, gen.Next() );
 		}
 
 		var u32 mut combination= 0u;
@@ -618,8 +874,8 @@ fn nomangle main() : i32
 			var u32 key= gen.Next();
 			var i32 value( gen.Next() );
 
-			m.insert( key, value );
-			var i32 erased_value= m.erase( key );
+			m.insert_new( key, value );
+			var i32 erased_value= m.remove_existing( key );
 			halt if( erased_value != value );
 
 			combination*= erased_value;
@@ -644,16 +900,13 @@ fn nomangle main() : i32
 			var u32 val= gen.Next() | ( gen.Next() << 16u );
 			keys.push_back(val);
 
-			m.insert( val, -3 * i32(val) );
+			m.insert_or_update( val, -3 * i32(val) );
 		}
 
 		// Remove all elements.
 		foreach( key : keys )
 		{
-			if( m.exists( key ) )
-			{
-				m.erase( key );
-			}
+			m.drop_if_exists( key );
 		}
 
 		halt if( !m.empty() );
@@ -665,8 +918,8 @@ fn nomangle main() : i32
 				var u32 key= gen.Next();
 				var i32 value( gen.Next() );
 
-				m.insert( key, value );
-				var i32 erased_value= m.erase( key );
+				m.insert_or_update( key, value );
+				var i32 erased_value= m.remove_existing( key );
 				halt if( erased_value != value );
 
 				combination*= erased_value;

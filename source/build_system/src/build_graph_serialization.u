@@ -17,7 +17,7 @@ fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8
 		{
 			var JsonValue::Object mut node_value;
 
-			node_value.insert( "program", node.program );
+			node_value.insert_new( "program", node.program );
 
 			{
 				var JsonValue::Array mut command_line_array;
@@ -25,12 +25,12 @@ fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8
 				{
 					command_line_array.push_back( command_line_argument );
 				}
-				node_value.insert( "command_line", move(command_line_array) );
+				node_value.insert_new( "command_line", move(command_line_array) );
 			}
 
-			node_value.insert( "comment", node.comment );
+			node_value.insert_new( "comment", node.comment );
 
-			node_value.insert( "dep_file", node.dep_file );
+			node_value.insert_new( "dep_file", node.dep_file );
 
 			{
 				var JsonValue::Array mut input_files_array;
@@ -38,7 +38,7 @@ fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8
 				{
 					input_files_array.push_back( input_file );
 				}
-				node_value.insert( "input_files", move(input_files_array) );
+				node_value.insert_new( "input_files", move(input_files_array) );
 			}
 
 			{
@@ -47,13 +47,13 @@ fn SerializeBuildGraph( BuildGraph& build_graph ) : ust::string8
 				{
 					output_files_array.push_back( output_file );
 				}
-				node_value.insert( "output_files", move(output_files_array) );
+				node_value.insert_new( "output_files", move(output_files_array) );
 			}
 
 			nodes_array.push_back( move(node_value) );
 		}
 
-		build_graph_object.insert( "nodes", move(nodes_array) );
+		build_graph_object.insert_new( "nodes", move(nodes_array) );
 	}
 
 	// TODO - compress result string somohow.

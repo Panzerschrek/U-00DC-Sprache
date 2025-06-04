@@ -163,7 +163,7 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 					{
 						return ust::null_optional;
 					}
-					object.insert( key.try_take(), value.try_take() );
+					object.insert_or_update( key.try_take(), value.try_take() );
 
 					SkipWhitespaces( text );
 					if( text.empty() )

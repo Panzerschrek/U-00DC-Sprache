@@ -117,7 +117,7 @@ fn TBAAMetadataBuilder::GetTypeDescriptor( mut this, Type& t ) : LLVMMetadataRef
 	}
 
 	auto descriptor= CreateTypeDescriptor(t);
-	types_descriptors_cache_.insert( t, descriptor );
+	types_descriptors_cache_.insert_new( t, descriptor );
 	return descriptor;
 }
 

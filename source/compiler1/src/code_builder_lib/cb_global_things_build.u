@@ -1596,18 +1596,16 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 			REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, element.src_loc )
 		}
 
-		if( enum_elements.exists( element.name ) )
-		{
-			REPORT_ERROR( Redefinition,  names_scope_ptr, element.src_loc, element.name )
-		}
-
 		var Enum::Element mut out_element;
 
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( enum_inernal_names_scope.lock_imut().deref(), element.name, enum_type, true );
 		out_element.constexpr_value= unsafe( LLVMConstInt( underlying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False ) );
 		out_element.llvm_value= AddGlobalConstantVariable( name_mangled, underlying_type.llvm_type, out_element.constexpr_value );
 
-		enum_elements.insert( element.name, move(out_element) );
+		if( !enum_elements.insert_new( element.name, move(out_element) ) )
+		{
+			REPORT_ERROR( Redefinition, names_scope_ptr, element.src_loc, element.name )
+		}
 	}
 
 	// Finally, update enum itself.

@@ -9,7 +9,7 @@ fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 {
 	debug_assert( !nodes_.exists( node ), "Node is already registered!" );
 
-	nodes_.insert( node, NodeState{ .moved= false } );
+	nodes_.insert_new( node, NodeState{ .moved= false } );
 
 	with( &node_val : node.lock_imut().deref() )
 	{
@@ -25,7 +25,7 @@ fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 
 fn ReferencesGraph::AddNodeIfNotExists( mut this, VariablePtr& node )
 {
-	nodes_.insert( node, NodeState{ .moved= false } );
+	nodes_.insert_or_update( node, NodeState{ .moved= false } );
 
 	foreach( &inner_reference_node : node.lock_imut().deref().inner_reference_nodes )
 	{
@@ -62,7 +62,7 @@ fn ReferencesGraph::RemoveNode( mut this, VariablePtr& node )
 	RemoveNodeLinks( node );
 
 	// Erase node.
-	nodes_.erase( node );
+	nodes_.drop_if_exists( node );
 }
 
 fn ReferencesGraph::AddLink( mut this, VariablePtr& from, VariablePtr& to )
@@ -346,10 +346,7 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 			var VariablePtr& node= node_pair.key();
 			var NodeState& src_node= node_pair.value();
 
-			if( !result.nodes_.exists( node ) )
-			{
-				result.nodes_.insert( node, src_node );
-			}
+			result.nodes_.insert_new( node, src_node );
 
 			var NodeState& dst_node= result.nodes_[ node ];
 			if( src_node.moved != dst_node.moved )
@@ -404,7 +401,7 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 					var NodesSet mut nodes_after= state_after.GetNodeInputLinks( inner_reference_node  );
 					foreach( & prev_link_node : nodes_before )
 					{
-						nodes_after.drop(prev_link_node);
+						nodes_after.drop_if_exists(prev_link_node);
 					}
 
 					foreach( & newly_linked_node : nodes_after )
@@ -419,11 +416,10 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 
 fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut visited_nodes, NodesSet &mut out_nodes )
 {
-	if( visited_nodes.exists( node ) )
+	if( !visited_nodes.insert( node ) )
 	{
 		return; // Already visited
 	}
-	visited_nodes.insert( node );
 
 	if( node.lock_imut().deref().value_type == ValueType::Value )
 	{
@@ -520,11 +516,10 @@ fn ReferencesGraph::HasOutgoingMutableNodesIncludingChildrenNodes_r( this, Varia
 
 fn ReferencesGraph::GetAllAccessibleNonInnerNodes_r( this VariablePtr& node, NodesSet &mut visited_nodes, NodesSet &mut result_set )
 {
-	if( visited_nodes.exists( node ) )
+	if( !visited_nodes.insert( node ) )
 	{
 		return; // Already visited
 	}
-	visited_nodes.insert( node );
 
 	foreach( &link : links_ )
 	{
@@ -627,12 +622,10 @@ fn ReferencesGraph::IsNodeReachable_r( this, VariablePtr& from, VariablePtr& to,
 		return true;
 	}
 
-	if( visited_nodes_set.exists(to) )
+	if( !visited_nodes_set.insert(to) )
 	{
 		return false; // Already visited
 	}
-
-	visited_nodes_set.insert(to);
 
 	foreach( &link : links_ )
 	{

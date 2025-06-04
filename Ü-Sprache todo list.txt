@@ -67,7 +67,6 @@ Lambdas:
 Standart library:
 *) Optimize template functions and classes in order to minimize number of things being compiling and thus speed-up
 	compilation of user programs using ustlib.
-*) Improve unordered_map - add equality-compare method, add more methods for elements access, erase, insertion, etc.
 *) Support types with references inside in some containers (variant, result, unordered_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
 *) Support Unix-systems other than 64-bit Linux - 32-bit Linux, x32 ABI Linux, FreeBSD, OS X, Hurd, etc.

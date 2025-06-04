@@ -416,7 +416,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	// Fill result classes members namespaces table.
 	foreach( &class_type : class_table_ )
 	{
-		out_node_build_result.classes_members_namespaces_table.insert( class_type, class_type.lock_imut().deref().members );
+		out_node_build_result.classes_members_namespaces_table.insert_new( class_type, class_type.lock_imut().deref().members );
 	}
 
 	source_graph_nodes_build_results_[node_index] = move(out_node_build_result);
@@ -1428,7 +1428,7 @@ fn CodeBuilder::BuildFuncCode(
 			}
 			else
 			{
-				var bool insert_ok= !args_names_scope.AddName( in_param.name, move(variable_reference_ptr) ).empty();
+				var bool insert_ok= args_names_scope.AddName( in_param.name, move(variable_reference_ptr) );
 				if( !insert_ok )
 				{
 					REPORT_ERROR( Redefinition, names_scope, in_param.src_loc, in_param.name )

@@ -188,7 +188,7 @@ fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildT
 	// Create hash-map entries first.
 	foreach( &pair : workspace.build_targets )
 	{
-		result.insert( pair.key(), BuildTargetUsers{} );
+		result.insert_new( pair.key(), BuildTargetUsers{} );
 	}
 
 	foreach( &pair : workspace.build_targets )
@@ -261,11 +261,10 @@ fn BuildBuildTargetUsersSet(
 fn BuildBuildTargetUsersSet_r(
 	WorkspaceBuildTargetsUsers& build_target_users, BuildTargetAbsoluteName& user, BuildTargetUsersSet &mut out_set )
 {
-	if( out_set.exists( user ) )
+	if( !out_set.insert( user ) )
 	{
 		return;
 	}
-	out_set.insert( user );
 
 	foreach( &public_user : build_target_users[ user ].public_users )
 	{
@@ -324,12 +323,10 @@ fn FindBuildTargetUsersGraphConnectedComponents(
 	while( !search_stack.empty() )
 	{
 		auto [ name, index ] = search_stack.pop_back();
-		if( component_index_map.exists( name ) )
+		if( !component_index_map.insert_new( name, index ) )
 		{
 			continue; // Already visited this build target.
 		}
-
-		component_index_map.insert( name, index );
 
 		// Process graph upwards, but only if current build target is a public user (direct or indirect) of the given build target.
 		if( build_target_public_users_set.exists( name ) )
@@ -369,14 +366,7 @@ fn FindBuildTargetUsersGraphConnectedComponents(
 	{
 		var BuildTargetAbsoluteName& built_target_name= pair.key();
 		var GraphComponentIndex component_index= pair.value();
-		if( !build_targets_by_components.exists( component_index ) )
-		{
-			build_targets_by_components.insert( component_index, ust::make_array( built_target_name ) );
-		}
-		else
-		{
-			build_targets_by_components[component_index].push_back( built_target_name );
-		}
+		build_targets_by_components.find_or_construct_default( component_index ).push_back( built_target_name );
 	}
 
 	return build_targets_by_components;

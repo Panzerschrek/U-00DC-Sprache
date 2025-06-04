@@ -4138,15 +4138,11 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	auto mut macros_lock= macros_copy.lock_mut();
 	var MacrosByContextMap &mut macros_by_context= macros_lock.deref();
 
-	if( !macros_by_context.exists( macro_context ) )
-	{
-		macros_by_context.insert( macro_context, MacroMap() );
-	}
-	var MacroMap &mut macro_map= macros_by_context[ macro_context ];
+	var MacroMap &mut macro_map= macros_by_context.find_or_construct_default( macro_context );
 
 	if( !macro_map.exists( macro.name ) )
 	{
-		macro_map.insert( ust::string8(macro.name), ust::make_shared_ptr_final( move(macro) ) );
+		macro_map.insert_new( ust::string8(macro.name), ust::make_shared_ptr_final( move(macro) ) );
 	}
 	else
 	{
@@ -4237,11 +4233,10 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 			{
 				PushMacroErrorMessage( match_element_src_loc, "Using keyword as macro element name." );
 			}
-			if( elements_set.exists( match_element.name ) )
+			if( !elements_set.insert( match_element.name ) )
 			{
 				PushMacroErrorMessage( match_element_src_loc, ust::concat( "\"", match_element.name, "\" macro parameter redefinition." ) );
 			}
-			elements_set.insert( match_element.name );
 
 			match_elements.push_back( move(match_element) );
 		}
@@ -4595,7 +4590,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, Macro::MatchElements& match_elemen
 		element.lexems.append( range_before.subrange_end( range_size ).iter() );
 
 		// Redefinition checked before, while parsing macro itself.
-		macro_variables_map.insert( match_element.name, move(element) );
+		macro_variables_map.insert_or_update( match_element.name, move(element) );
 	}
 
 	return ust::make_shared_ptr_final( move(macro_variables_map) );
@@ -4616,24 +4611,28 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 		{
 			if( result_element.lexem.lexem_type == Lexem::Type::MacroUniqueIdentifier )
 			{
-				if( !unique_macro_indentifiers_map.exists( result_element.lexem.text ) )
-				{
-					var ust::string8 mut name= ust::concat(
-						"_macro_ident_",
+				auto map_size= unique_macro_indentifiers_map.size();
+
+				var ust::string8& text=
+					unique_macro_indentifiers_map.find_or_construct_new(
 						result_element.lexem.text,
-						"_",
-						 macro_unique_identifiers_base_name,
-						"_",
-						ust::to_string8(unique_macro_indentifiers_map.size()) );
-					unique_macro_indentifiers_map.insert( result_element.lexem.text, move(name) );
-				}
+						lambda[&]() : ust::string8
+						{
+							return ust::concat(
+								"_macro_ident_",
+								result_element.lexem.text,
+								"_",
+								 macro_unique_identifiers_base_name,
+								"_",
+								ust::to_string8(map_size) );
+						} );
 
 				lexems_expanded.push_back(
 					Lexem
 					{
 						.lexem_type= Lexem::Type::Identifier,
 						.src_loc= result_element.lexem.src_loc,
-						.text= unique_macro_indentifiers_map[ result_element.lexem.text ],
+						.text= text,
 					} );
 			}
 			else
