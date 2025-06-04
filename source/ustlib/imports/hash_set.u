@@ -92,7 +92,7 @@ private:
 	Impl impl_;
 }
 
-// Iterator over unordered set.
+// Iterator over hash set.
 // Internally it is just a wrapper over hash_map iterator.
 template</type T/>
 class hash_set_raw_iterator

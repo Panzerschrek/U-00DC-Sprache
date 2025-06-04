@@ -87,7 +87,7 @@ private:
 private:
 	ust::hash_map</VariablePtr, NodeState/> nodes_;
 
-	// Should NOT contain duplicates. // TODO - use sometthing like unordered_set.
+	// Should NOT contain duplicates. // TODO - use sometthing like hash_set.
 	ust::vector</Link/> links_;
 }
 

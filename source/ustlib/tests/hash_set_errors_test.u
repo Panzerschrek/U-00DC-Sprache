@@ -11,7 +11,7 @@ class NonCopyableKey
 	op==( NonCopyableKey& a, NonCopyableKey& b ) : bool { return true; }
 }
 
-type BrokenUnorderedSet= ust::hash_set</NonCopyableKey/>; //##expect_error TemplateContext
+type BrokenHashSet= ust::hash_set</NonCopyableKey/>; //##expect_error TemplateContext
 
 fn nomangle main() : i32
 {

@@ -20,7 +20,7 @@ class NonCopyableKey
 	op==( NonCopyableKey& a, NonCopyableKey& b ) : bool { return true; }
 }
 
-type BrokenUnorderedMap= ust::hash_map</NonCopyableKey, i32/>; //##expect_error TemplateContext
+type BrokenHashMap= ust::hash_map</NonCopyableKey, i32/>; //##expect_error TemplateContext
 
 fn nomangle main() : i32
 {

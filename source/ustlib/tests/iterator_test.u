@@ -382,7 +382,7 @@ fn nomangle main() : i32
 			halt if( vec[i].x != i32(i) );
 		}
 	}
-	{ // Collect into unordered set. Result should be deduplicated.
+	{ // Collect into hash set. Result should be deduplicated.
 		var [ i32, 6 ] ints[ 15, 23, -5, 15, 23, 125 ];
 		auto ints_set= IntRangeImut(ints).iter().collect</ ust::hash_set</i32/> />();
 		halt if( ints_set.size() != 4s );
@@ -412,7 +412,7 @@ fn nomangle main() : i32
 		halt if( vec[2s] != 22 );
 		halt if( vec[3s] != 11 );
 	}
-	{ // Collect into unordered set, using only type template name.
+	{ // Collect into hash set, using only type template name.
 		var [ i32, 6 ] ints[ 15, 23, -5, 15, 23, 125 ];
 		auto ints_set= IntRangeImut(ints).iter().collect</ ust::hash_set />();
 		halt if( ints_set.size() != 4s );
