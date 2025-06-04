@@ -683,7 +683,7 @@ public:
 			}
 
 			memory_free( ptr_ );
-			ptr_= ust::nullptr</byte8/>();
+			ptr_= nullptr</byte8/>();
 			capacity_= 0s;
 			size_= 0s;
 			num_occupied_slots_= 0s;
