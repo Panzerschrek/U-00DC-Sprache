@@ -416,11 +416,10 @@ fn ReferencesGraph::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before
 
 fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut visited_nodes, NodesSet &mut out_nodes )
 {
-	if( visited_nodes.exists( node ) )
+	if( !visited_nodes.insert( node ) )
 	{
 		return; // Already visited
 	}
-	visited_nodes.insert( node );
 
 	if( node.lock_imut().deref().value_type == ValueType::Value )
 	{
@@ -517,11 +516,10 @@ fn ReferencesGraph::HasOutgoingMutableNodesIncludingChildrenNodes_r( this, Varia
 
 fn ReferencesGraph::GetAllAccessibleNonInnerNodes_r( this VariablePtr& node, NodesSet &mut visited_nodes, NodesSet &mut result_set )
 {
-	if( visited_nodes.exists( node ) )
+	if( !visited_nodes.insert( node ) )
 	{
 		return; // Already visited
 	}
-	visited_nodes.insert( node );
 
 	foreach( &link : links_ )
 	{
@@ -624,12 +622,10 @@ fn ReferencesGraph::IsNodeReachable_r( this, VariablePtr& from, VariablePtr& to,
 		return true;
 	}
 
-	if( visited_nodes_set.exists(to) )
+	if( !visited_nodes_set.insert(to) )
 	{
 		return false; // Already visited
 	}
-
-	visited_nodes_set.insert(to);
 
 	foreach( &link : links_ )
 	{

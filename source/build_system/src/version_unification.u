@@ -261,11 +261,10 @@ fn BuildBuildTargetUsersSet(
 fn BuildBuildTargetUsersSet_r(
 	WorkspaceBuildTargetsUsers& build_target_users, BuildTargetAbsoluteName& user, BuildTargetUsersSet &mut out_set )
 {
-	if( out_set.exists( user ) )
+	if( !out_set.insert( user ) )
 	{
 		return;
 	}
-	out_set.insert( user );
 
 	foreach( &public_user : build_target_users[ user ].public_users )
 	{
@@ -324,12 +323,10 @@ fn FindBuildTargetUsersGraphConnectedComponents(
 	while( !search_stack.empty() )
 	{
 		auto [ name, index ] = search_stack.pop_back();
-		if( component_index_map.exists( name ) )
+		if( !component_index_map.insert_new( name, index ) )
 		{
 			continue; // Already visited this build target.
 		}
-
-		component_index_map.insert_new( name, index );
 
 		// Process graph upwards, but only if current build target is a public user (direct or indirect) of the given build target.
 		if( build_target_public_users_set.exists( name ) )

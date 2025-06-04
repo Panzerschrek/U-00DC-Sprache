@@ -1543,13 +1543,7 @@ fn NamesScope::IsInsideTemplate( this ) : bool
 
 fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : bool
 {
-	if( names_map_.exists(name) )
-	{
-		return false;
-	}
-
-	names_map_.insert_new( move(name), move(value) );
-	return true;
+	return names_map_.insert_new( move(name), move(value) );
 }
 
 fn NamesScope::GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>

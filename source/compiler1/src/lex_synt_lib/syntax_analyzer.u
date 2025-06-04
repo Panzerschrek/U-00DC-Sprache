@@ -4233,11 +4233,10 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 			{
 				PushMacroErrorMessage( match_element_src_loc, "Using keyword as macro element name." );
 			}
-			if( elements_set.exists( match_element.name ) )
+			if( !elements_set.insert( match_element.name ) )
 			{
 				PushMacroErrorMessage( match_element_src_loc, ust::concat( "\"", match_element.name, "\" macro parameter redefinition." ) );
 			}
-			elements_set.insert( match_element.name );
 
 			match_elements.push_back( move(match_element) );
 		}

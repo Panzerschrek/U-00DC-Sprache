@@ -257,12 +257,11 @@ public:
 			var ust::string8 arg= args.drop_and_get_front();
 
 			// Ensure no args are duplicated.
-			if( prev_args.exists( arg ) )
+			if( !prev_args.insert( arg ) )
 			{
 				ust::stderr_print( ust::concat( "Error, duplicated argument \"", arg, "\".\n" ) );
 				return false;
 			}
-			prev_args.insert( arg );
 
 			// Search this arg in options of different kinds. If found it - continue to next iteration of the outer loop.
 
