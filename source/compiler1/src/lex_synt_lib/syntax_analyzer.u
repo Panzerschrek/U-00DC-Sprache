@@ -1,7 +1,7 @@
 import "/assert.u"
+import "/hash_set.u"
 import "/shared_ptr.u"
 import "/string_conversions.u"
-import "/unordered_set.u"
 import "/utf.u"
 import "/CodeBuilderLib/keywords.uh"
 import "syntax_analyzer.uh"
@@ -253,7 +253,7 @@ private:
 		ust::vector</ ust::shared_ptr_final</ MacroVariablesMap /> /> sub_elements; // 0 for simple macro variables, 0 or 1 for optionals, 0-many for sequences
 	}
 
-	type MacroVariablesMap= ust::unordered_map</ ust::string8, ParsedMacroElement />;
+	type MacroVariablesMap= ust::hash_map</ ust::string8, ParsedMacroElement />;
 	type MacroVariablesMapsStack= ust::vector</ ust::shared_ptr_final</MacroVariablesMap/> />;
 
 	fn FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>;
@@ -321,7 +321,7 @@ private:
 	fn ExpandMacroImpl( mut this, Macro& macro, ust::string8& macro_unique_identifiers_base_name ) : Lexems;
 	fn MatchMacroBlock( mut this, Macro::MatchElements& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>;
 
-	type UniqueMacroIdentifiersMap= ust::unordered_map</ ust::string8, ust::string8 />;
+	type UniqueMacroIdentifiersMap= ust::hash_map</ ust::string8, ust::string8 />;
 
 	fn ExpandMacroBlock(
 		mut this,
@@ -4155,7 +4155,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 {
 	var Macro::MatchElements mut match_elements;
 
-	var ust::unordered_set</ ust::string8 /> mut elements_set;
+	var ust::hash_set</ ust::string8 /> mut elements_set;
 	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::MacroBracketRight )
 	{
 		if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft ||

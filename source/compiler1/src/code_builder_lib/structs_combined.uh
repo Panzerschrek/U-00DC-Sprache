@@ -1,7 +1,7 @@
 import "/box.u"
+import "/hash_map.u"
 import "/shared_ptr.u"
 import "/shared_ptr_final.u"
-import "/unordered_map.u"
 import "/variant.u"
 import "/vector.u"
 import "../lex_synt_lib/syntax_elements.uh"
@@ -306,7 +306,7 @@ struct ClassType
 	GeneratedClassData generated_class_data;
 
 	// Contains only "protected" and "private" members. If ther is no entry for member - it has "public" visibility
-	ust::unordered_map</ust::string8, Synt::ClassVisibility/> members_visibility;
+	ust::hash_map</ust::string8, Synt::ClassVisibility/> members_visibility;
 }
 
 type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
@@ -644,7 +644,7 @@ struct Enum
 		LLVMValueRef llvm_value= LLVMValueRef::Null; // Pointer to global variable
 		LLVMValueRef constexpr_value= LLVMValueRef::Null;
 	}
-	ust::unordered_map</ ust::string8, Element /> elements;
+	ust::hash_map</ ust::string8, Element /> elements;
 
 	ust::shared_ptr_final</ Synt::Enum /> syntax_element;
 
@@ -1142,9 +1142,9 @@ private:
 private:
 	ust::string8 name_;
 	ust::weak_ptr_imut</NamesScope/> parent_;
-	ust::unordered_map</ ust::string8, NamesScopeValue /> names_map_;
+	ust::hash_map</ ust::string8, NamesScopeValue /> names_map_;
 	ust::shared_ptr_nullable_mut</ClassType/> class_;
-	ust::unordered_map</ClassTypePtr, Synt::ClassVisibility/> access_rights_;
+	ust::hash_map</ClassTypePtr, Synt::ClassVisibility/> access_rights_;
 	ErrorsContainerPtr errors_container_;
 }
 

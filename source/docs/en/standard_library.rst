@@ -66,6 +66,8 @@ if you want to learn more, read its sources yourself.
 
 * Heap-allocated box (box.u) and its nullable version (box_nullabe.u).
   Designed to store a value indirectly, which allows creating recursive data structures.
+* Hash map - hash-based key-value container (hash_map.u).
+* Hash set (adapter for hash map) (hash_set.u).
 * Optional class that optionally stores in-place a value of specified type or no value (optional.u).
 * Optional reference, that stores a reference to a value (mutable or immutable) or null (optional_ref.u).
 * View for continuous sequence of single type values (mutable or immutable) (random_access_range.u).
@@ -81,8 +83,6 @@ if you want to learn more, read its sources yourself.
   Allow sharing the same piece of constant data across multiple owners and threads.
 * Strings (string.u, string_base.u) and helper utilities.
   Strings are like vectors, but support only ``char`` types as elements and allow concatenation via overloaded ``+`` operators.
-* Unordered map - hash-based key-value container (unordered_map.u).
-* Unordered set (adapter for unordered map) (unordered_set.u)
 * Variant container, that can store in-place a value of one of specified types (variant.u).
 * Vector - growable sequential container (vector.u).
 
@@ -104,6 +104,6 @@ So, it's strictly recommended to use *ustlib* shipped together with Ü compiler,
 Some functionality of *ustlib* is allocation-free and can be used in environment without heap.
 
 But some functionality uses heap.
-This includes containers like *box*, *box_nullable* *string*, *vector*, *unordered_map* and all *shared_ptr* containers.
+This includes containers like *box*, *box_nullable* *string*, *vector*, *hash_map* and all *shared_ptr* containers.
 Also thread class uses heap allocation for its internal state.
 So, you need to avoid usage of these functionality in a heapless environment.

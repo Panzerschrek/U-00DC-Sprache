@@ -68,7 +68,7 @@ private:
 
 	TypeDescriptors type_descriptors_= zero_init;
 
-	ust::unordered_map</Type, LLVMMetadataRef/> types_descriptors_cache_;
+	ust::hash_map</Type, LLVMMetadataRef/> types_descriptors_cache_;
 }
 
 } // namespace U1

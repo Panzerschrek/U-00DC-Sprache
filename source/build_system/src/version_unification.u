@@ -1,6 +1,6 @@
+import "/hash_set.u"
 import "/sort.u"
 import "/string_conversions.u"
-import "/unordered_set.u"
 import "version_unification.uh"
 
 namespace BK
@@ -179,7 +179,7 @@ struct BuildTargetUsers
 	ust::vector</BuildTargetAbsoluteName/> private_users;
 }
 
-type WorkspaceBuildTargetsUsers= ust::unordered_map</BuildTargetAbsoluteName, BuildTargetUsers/>;
+type WorkspaceBuildTargetsUsers= ust::hash_map</BuildTargetAbsoluteName, BuildTargetUsers/>;
 
 fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildTargetsUsers
 {
@@ -228,7 +228,7 @@ fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildT
 	return result;
 }
 
-type BuildTargetUsersSet= ust::unordered_set</BuildTargetAbsoluteName/>;
+type BuildTargetUsersSet= ust::hash_set</BuildTargetAbsoluteName/>;
 
 // Build set of all build targets which depend on given build target as public dependency or as transitive public depenency.
 fn BuildBuildTargetUsersSet(
@@ -276,7 +276,7 @@ type GraphComponentIndex= u32;
 type GraphConnectedComponentBuildTargets= ust::vector</BuildTargetAbsoluteName/>;
 
 // Each element is a connected component. Each component is a list of build targets.
-type BuildTargetsInConnectedComponents= ust::unordered_map</ GraphComponentIndex, GraphConnectedComponentBuildTargets />;
+type BuildTargetsInConnectedComponents= ust::hash_map</ GraphComponentIndex, GraphConnectedComponentBuildTargets />;
 
 // For given build target find connected components of dependency graph of the workspace,
 // where each component should share given build target as common public or private dependency.
@@ -286,7 +286,7 @@ fn FindBuildTargetUsersGraphConnectedComponents(
 	BuildTargetUsersSet& build_target_public_users_set,
 	GlobalPackageBuildTargetName& build_target_name ) : BuildTargetsInConnectedComponents
 {
-	var ust::unordered_map</BuildTargetAbsoluteName, GraphComponentIndex/> mut component_index_map;
+	var ust::hash_map</BuildTargetAbsoluteName, GraphComponentIndex/> mut component_index_map;
 
 	var ust::vector</ tup[ BuildTargetAbsoluteName, GraphComponentIndex ] /> mut search_stack;
 

@@ -50,12 +50,12 @@ private:
 	LLVMMetadataRef stub_type_= LLVMMetadataRef::Null;
 
 	// Cache of debug info types for classes and enums.
-	ust::unordered_map</ ClassTypePtr, LLVMMetadataRef /> classes_di_types_;
+	ust::hash_map</ ClassTypePtr, LLVMMetadataRef /> classes_di_types_;
 	// Populate this vector in order to perform full debug info building for classes properly.
 	ust::vector</ ClassTypePtr /> classes_order_;
 
 	// Cache of debug info types for enums.
-	ust::unordered_map</ EnumTypePtr, LLVMMetadataRef /> enums_di_types_;
+	ust::hash_map</ EnumTypePtr, LLVMMetadataRef /> enums_di_types_;
 }
 
 } // namespace U1

@@ -1,4 +1,4 @@
-import "/unordered_set.u"
+import "/hash_set.u"
 import "code_builder_errors.uh"
 import "structs_combined.uh"
 
@@ -41,7 +41,7 @@ public:
 	fn EnsureHasNoOutgoingLinks( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
 	fn EnsureHasNoOutgoingMutableNodes( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
-	type NodesSet= ust::unordered_set</VariablePtr/>;
+	type NodesSet= ust::hash_set</VariablePtr/>;
 	fn GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet;
 	fn GetNodeInputLinks( this, VariablePtr& node ) : NodesSet;
 
@@ -85,9 +85,9 @@ private:
 	}
 
 private:
-	ust::unordered_map</VariablePtr, NodeState/> nodes_;
+	ust::hash_map</VariablePtr, NodeState/> nodes_;
 
-	// Should NOT contain duplicates. // TODO - use sometthing like unordered_set.
+	// Should NOT contain duplicates. // TODO - use sometthing like hash_set.
 	ust::vector</Link/> links_;
 }
 

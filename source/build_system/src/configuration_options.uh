@@ -1,12 +1,12 @@
+import "/hash_map.u"
 import "/path.u"
-import "/unordered_map.u"
 import "logger.uh"
 
 namespace BK
 {
 
 // Simple options in form of key-value pairs.
-type ConfigurationOptions= ust::unordered_map</ust::string8, ust::string8/>;
+type ConfigurationOptions= ust::hash_map</ust::string8, ust::string8/>;
 
 // Input file should be a JSON with root object.
 fn LoadConfigurationOptions(

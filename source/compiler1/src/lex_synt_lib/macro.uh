@@ -1,7 +1,7 @@
 import "/box_nullable.u"
+import "/hash_map.u"
 import "/shared_ptr_final.u"
 import "/shared_ptr.u"
-import "/unordered_map.u"
 import "lexical_analyzer.uh"
 
 namespace U1
@@ -72,8 +72,8 @@ struct Macro
 	ResultElements result_template_elements;
 }
 
-type MacroMap= ust::unordered_map</ ust::string8, ust::shared_ptr_final</Macro/> />;
-type MacrosByContextMap= ust::unordered_map</ Macro::Context, MacroMap />;
+type MacroMap= ust::hash_map</ ust::string8, ust::shared_ptr_final</Macro/> />;
+type MacrosByContextMap= ust::hash_map</ Macro::Context, MacroMap />;
 
 type MacrosPtr= ust::shared_ptr_mut</MacrosByContextMap/>;
 

@@ -1,11 +1,11 @@
 //##success_test
+import "../imports/hash_set.u"
 import "../imports/math.u"
 import "../imports/optional.u"
 import "../imports/optional_ref.u"
 import "../imports/random_access_range.u"
 import "../imports/string.u"
 import "../imports/vector.u"
-import "../imports/unordered_set.u"
 
 type IntRangeMut = ust::random_access_range_mut </i32/>;
 type IntRangeImut= ust::random_access_range_imut</i32/>;
@@ -382,9 +382,9 @@ fn nomangle main() : i32
 			halt if( vec[i].x != i32(i) );
 		}
 	}
-	{ // Collect into unordered set. Result should be deduplicated.
+	{ // Collect into hash set. Result should be deduplicated.
 		var [ i32, 6 ] ints[ 15, 23, -5, 15, 23, 125 ];
-		auto ints_set= IntRangeImut(ints).iter().collect</ ust::unordered_set</i32/> />();
+		auto ints_set= IntRangeImut(ints).iter().collect</ ust::hash_set</i32/> />();
 		halt if( ints_set.size() != 4s );
 		halt if( !ints_set.exists( 15 ) );
 		halt if( !ints_set.exists( 23 ) );
@@ -412,9 +412,9 @@ fn nomangle main() : i32
 		halt if( vec[2s] != 22 );
 		halt if( vec[3s] != 11 );
 	}
-	{ // Collect into unordered set, using only type template name.
+	{ // Collect into hash set, using only type template name.
 		var [ i32, 6 ] ints[ 15, 23, -5, 15, 23, 125 ];
-		auto ints_set= IntRangeImut(ints).iter().collect</ ust::unordered_set />();
+		auto ints_set= IntRangeImut(ints).iter().collect</ ust::hash_set />();
 		halt if( ints_set.size() != 4s );
 		halt if( !ints_set.exists( 15 ) );
 		halt if( !ints_set.exists( 23 ) );

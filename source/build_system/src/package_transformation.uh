@@ -1,4 +1,4 @@
-import "/unordered_map.u"
+import "/hash_map.u"
 import "../imports/package_info.uh"
 import "logger.uh"
 
@@ -124,7 +124,7 @@ struct WorkspaceInfo
 		ust::string8 comment;
 	}
 
-	ust::unordered_map</BuildTargetAbsoluteName, BuildTarget/> build_targets;
+	ust::hash_map</BuildTargetAbsoluteName, BuildTarget/> build_targets;
 
 	// Same as PackageInfo::custom_build_steps, but with normalization - file lists are deduplicated, paths are normalized.
 	ust::vector</CustomBuildStep/> custom_build_steps;

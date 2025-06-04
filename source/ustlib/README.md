@@ -5,6 +5,8 @@ This directory contains Ü standard library files.
 Containers:
 
 * Heap-allocated box (box.u) and its nullable version (box_nullabe.u)
+* Hash map (key-value container) (hash_map.u)
+* Hash set (adapter for hash map) (hash_set.u)
 * Optional class that optionally stores in-place a value of specified type (optional.u)
 * Optional reference, that stores a reference to value (mutable or immutable) or null (optional_ref.u)
 * View for continuous sequence of single type values (mutable or immutable) (random_access_range.u)
@@ -14,8 +16,6 @@ Containers:
 * Multi-threaded shared pointers (shared_ptr_mt.u)
 * Multi-threaded shared pointers for immutable data (shared_ptr_mt_final.u)
 * Strings (string.u, string_base.u)
-* Unordered map (key-value container) (unordered_map.u)
-* Unordered set (adapter for unordered map) (unordered_set.u)
 * Variant container, that can store in-place a value of one of specified types (variant.u)
 * Vector - growable sequential container (vector.u)
 
@@ -103,7 +103,7 @@ Thus you need to link against C standard library in order to use them.
 Some functionality of ustlib is allocation-free and can be used in environment without a heap.
 
 But some functionality uses heap.
-This includes containers like *box*, *box_nullable* *string*, *vector*, *unordered_map* and all *shared_ptr* containers.
+This includes containers like *box*, *box_nullable* *string*, *vector*, *hash_map* and all *shared_ptr* containers.
 Also thread class uses heap allocation for its internal state.
 So, you need to avoid usage of these functionality in heapless environment.
 

@@ -1,11 +1,11 @@
 //##success_test
-import "../imports/unordered_set.u"
+import "../imports/hash_set.u"
 
-type IntSet = ust::unordered_set</i32/>;
+type IntSet = ust::hash_set</i32/>;
 
 fn nomangle main() : i32
 {
-	{ // Basic "unordered_set" operations.
+	{ // Basic "hash_set" operations.
 		var IntSet mut s;
 
 		s.insert( 666 );
@@ -102,7 +102,7 @@ fn nomangle main() : i32
 		halt if(  s1.exists( 100 ) );
 	}
 	{ // Equality compare.
-		var ust::unordered_set</ u32 /> mut s0, mut s1, mut s2, mut s3;
+		var ust::hash_set</ u32 /> mut s0, mut s1, mut s2, mut s3;
 
 		s0.insert( 1u );
 		s0.insert( 6567u );

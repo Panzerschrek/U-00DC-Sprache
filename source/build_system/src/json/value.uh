@@ -1,6 +1,6 @@
 import "/box.u"
+import "/hash_map.u"
 import "/string.u"
-import "/unordered_map.u"
 import "/variant.u"
 import "/vector.u"
 
@@ -20,7 +20,7 @@ public:
 
 	type Array= ust::vector</JsonValue/>;
 
-	type Object= ust::unordered_map</String, JsonValue/>;
+	type Object= ust::hash_map</String, JsonValue/>;
 
 public:
 	fn constructor() = delete; // Prevent default construction. If needed, construct a null value instead.

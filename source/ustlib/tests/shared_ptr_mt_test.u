@@ -3,10 +3,10 @@ import "../imports/shared_ptr_mt.u"
 
 import "../imports/box.u"
 import "../imports/box_nullable.u"
+import "../imports/hash_map.u"
 import "../imports/optional.u"
 import "../imports/optional_ref.u"
 import "../imports/random_access_range.u"
-import "../imports/unordered_map.u"
 import "../imports/vector.u"
 
 type IntPtrMut=  ust::shared_ptr_mt_mut </i32/>;
@@ -28,7 +28,7 @@ static_assert( !non_sync</ ust::box_nullable</ IntPtrMut /> /> );
 static_assert( !non_sync</ ust::optional</ IntPtrMut /> /> );
 static_assert( !non_sync</ ust::optional_ref_mut</ IntPtrMut /> /> );
 static_assert( !non_sync</ ust::array_view_mut</ IntPtrMut /> /> );
-static_assert( !non_sync</ ust::unordered_map</ i32, IntPtrMut /> /> );
+static_assert( !non_sync</ ust::hash_map</ i32, IntPtrMut /> /> );
 static_assert( !non_sync</ ust::vector</ IntPtrMut /> /> );
 
 struct RecursiveSharedPtr
@@ -426,7 +426,7 @@ fn nomangle main() : i32
 	}
 	{
 		// Shared pointer ican be used as key in hash map.
-		var ust::unordered_map</ IntPtrNullableMut, i32 /> mut m;
+		var ust::hash_map</ IntPtrNullableMut, i32 /> mut m;
 
 		var IntPtrNullableMut ptr0(33);
 		var IntPtrNullableMut ptr1(ptr0);

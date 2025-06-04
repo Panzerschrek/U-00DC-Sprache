@@ -634,7 +634,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 		// There should be no equal elements here, because this can prevent sorting to be stable.
 		ust::sort( captured_variables );
 
-		var ust::unordered_map</ VariablePtr, u8 /> mut captured_variable_to_lambda_inner_reference_tag;
+		var ust::hash_map</ VariablePtr, u8 /> mut captured_variable_to_lambda_inner_reference_tag;
 
 		with( mut class_lock : class_type_ptr.lock_mut() )
 		{
@@ -1002,9 +1002,9 @@ fn CodeBuilder::GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_
 	return name;
 }
 
-fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::unordered_set</VariablePtr/>
+fn CodeBuilder::CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::hash_set</VariablePtr/>
 {
-	var ust::unordered_set</VariablePtr/> mut result;
+	var ust::hash_set</VariablePtr/> mut result;
 	foreach( &variables_frame : function_context.variables_frames )
 	{
 		foreach( &variable : variables_frame.variables )
