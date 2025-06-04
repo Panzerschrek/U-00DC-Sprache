@@ -1,5 +1,5 @@
 //##success_test
-import "../imports/unordered_set.u"
+import "../imports/hash_set.u"
 
 type IntSet = ust::hash_set</i32/>;
 

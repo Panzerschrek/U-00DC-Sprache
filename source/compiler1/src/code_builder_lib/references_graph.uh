@@ -1,4 +1,4 @@
-import "/unordered_set.u"
+import "/hash_set.u"
 import "code_builder_errors.uh"
 import "structs_combined.uh"
 
