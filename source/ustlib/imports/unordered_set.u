@@ -54,9 +54,10 @@ public:
 		return l.impl_ == r.impl_;
 	}
 
-	fn insert( mut this, T& key )
+	// Returns "true" if new value was inserted.
+	fn insert( mut this, T& key ) : bool
 	{
-		impl_.insert_new( key, void() );
+		return impl_.insert_new( key, void() );
 	}
 
 	fn exists( this, T& key ) : bool

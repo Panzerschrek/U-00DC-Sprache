@@ -28,10 +28,10 @@ fn nomangle main() : i32
 
 		var IntSet mut s;
 
-		s.insert( 555 );
-		s.insert( 4 );
-		s.insert( 22 );
-		s.insert( 4 );
+		halt if( !s.insert( 555 ) );
+		halt if( !s.insert( 4 ) );
+		halt if( !s.insert( 22 ) );
+		halt if(  s.insert( 4 ) );
 		halt if( s.empty() );
 		halt if( s.size() != 3s );
 		halt if( !s.exists( 555 ) );
