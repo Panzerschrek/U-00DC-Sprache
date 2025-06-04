@@ -150,7 +150,8 @@ public:
 
 	// Insert a value for given key.
 	// If there is already a value for given key, preserve it and discard new value.
-	fn insert_new( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
+	// Returns "true" if value was inserted and "false" if it was discarded.
+	fn insert_new( mut this, key_type& key, value_type mut value ) : bool
 	{
 		unsafe( try_rehash_on_insert() );
 
@@ -186,7 +187,7 @@ public:
 					auto &mut dst_value= $>( data_table + insert_index );
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
-					return dst_value.value_storage;
+					return true;
 				}
 				else if( cell_content == unordered_map_impl::c_contents_value_removed )
 				{
@@ -204,7 +205,7 @@ public:
 					auto &mut dst_value= $>( data_table + key_hash_wrapped );
 					if( safe( key == cast_imut(dst_value).key_storage ) )
 					{
-						return dst_value.value_storage;
+						return false;
 					}
 				}
 
@@ -217,7 +218,8 @@ public:
 
 	// Insert a value for given key.
 	// If there is already a value for given key, replace it with new value.
-	fn insert_or_update( mut this, key_type& key, value_type mut value ) : value_type &mut @( reference_notation::return_references::param0 )
+	// Returns "true" if value was inserted and "false" if existing value was updated.
+	fn insert_or_update( mut this, key_type& key, value_type mut value ) : bool
 	{
 		unsafe( try_rehash_on_insert() );
 
@@ -253,7 +255,7 @@ public:
 					auto &mut dst_value= $>( data_table + insert_index );
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
-					return dst_value.value_storage;
+					return true;
 				}
 				else if( cell_content == unordered_map_impl::c_contents_value_removed )
 				{
@@ -272,7 +274,7 @@ public:
 					if( safe( key == cast_imut(dst_value).key_storage ) )
 					{
 						dst_value.value_storage= move(value);
-						return dst_value.value_storage;
+						return false;
 					}
 				}
 

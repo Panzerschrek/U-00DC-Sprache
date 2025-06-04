@@ -216,30 +216,30 @@ fn nomangle main() : i32
 	{ // "insert_new" will ignore new value of old one exists.
 		var ust::unordered_map</ u32, i32 /> mut m;
 
-		m.insert_new( 777u, 6 );
-		m.insert_new( 111u, 2 );
+		halt if( !m.insert_new( 777u, 6 ) );
+		halt if( !m.insert_new( 111u, 2 ) );
 
 		halt if( m[777u] != 6 );
 		halt if( m[111u] != 2 );
 
-		m.insert_new( 777u, -66 );
-		m.insert_new( 111u, -22 );
+		halt if( m.insert_new( 777u, -66 ) );
+		halt if( m.insert_new( 111u, -22 ) );
 
 		halt if( m[777u] != 6 );
 		halt if( m[111u] != 2 );
 	}
 	{ // "insert_or_update" may replace value.
 		var ust::unordered_map</ ust::string8, i32 /> mut m;
-		m.insert_or_update( "a", 22 );
+		halt if( !m.insert_or_update( "a", 22 ) );
 		halt if( m["a"] != 22 );
 
-		m.insert_or_update( "a", 55 );
+		halt if( m.insert_or_update( "a", 55 ) );
 		halt if( m["a"] != 55 );
 
 		halt if( m.remove_existing( "a" ) != 55 );
 		halt if( !m.find("a").empty() );
 
-		m.insert_or_update( "a", 666 );
+		halt if( !m.insert_or_update( "a", 666 ) );
 		halt if( m["a"] != 666 );
 	}
 	{ // "find_or_construct_new".
