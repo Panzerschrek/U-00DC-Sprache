@@ -23,7 +23,7 @@ namespace ust
 //     // call here "ust::apply_value_to_hasher" for fields needed to be hashed
 // }
 //
-// Iteration order is unspecified and may be different for different instances of the same unordered_map type or even
+// Iteration order is unspecified and may be different for different instances of the same hash_map type or even
 // for the same instance.
 //
 // The third optional template argument is a hasher factory class.
@@ -34,18 +34,18 @@ namespace ust
 // It uses two different tables - control table and storage table.
 // Control table element is single byte indicated table slot state and (sometimes) containing a small portion of hash.
 // Storage table stores just pairs of keys and values.
-// Using separate control table reduces cache-locality of unordered_map operations and saves sometimes some memory for padding.
+// Using separate control table reduces cache-locality of hash_map operations and saves sometimes some memory for padding.
 // Overall overhead is only 1 byte per hash-table slot (ignoring, of course, unoccupied slots).
 //
 // TODO - speed-up probing on insertion, deletion and search using SIMD instructions or something similar.
 //
 template</ type K, type V, type HF />
-class unordered_map</ K, V, HF= default_hasher_factory />
+class hash_map</ K, V, HF= default_hasher_factory />
 {
 public:
 	type key_type= K;
 	type value_type= V;
-	type this_type= unordered_map</ key_type, value_type />;
+	type this_type= hash_map</ key_type, value_type />;
 
 	static_assert( typeinfo</K/>.is_copy_constructible, "key type should be copyable" );
 	static_assert( typeinfo</K/>.is_copy_assignable, "key type should be copyable" );
@@ -68,12 +68,12 @@ public:
 
 		unsafe
 		{
-			var $(unordered_map_impl::ControlTableElement) other_control_table= other.get_control_table();
+			var $(hash_map_impl::ControlTableElement) other_control_table= other.get_control_table();
 			var $(TableValue) other_data_table= other.get_data_table();
 
 			for( var size_type mut i(0); i < other.capacity_; ++i )
 			{
-				if( ( size_type( $>( other_control_table + i ) ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
+				if( ( size_type( $>( other_control_table + i ) ) & hash_map_impl::c_control_element_non_value_bit ) == 0s )
 				{
 					auto &mut table_value= $>( other_data_table + i );
 					safe( this.insert_or_update( table_value.key_storage, table_value.value_storage ) );
@@ -120,14 +120,14 @@ public:
 
 		// Iterate over "l" table and check if all elements present are also present in "r".
 
-		var $(unordered_map_impl::ControlTableElement) control_table_l= l.get_control_table();
+		var $(hash_map_impl::ControlTableElement) control_table_l= l.get_control_table();
 		var $(TableValue) data_table_l= l.get_data_table();
 
 		unsafe
 		{
 			for( auto mut i= 0s; i < l.capacity_; ++i )
 			{
-				if( ( size_type( $>( control_table_l + i ) ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
+				if( ( size_type( $>( control_table_l + i ) ) & hash_map_impl::c_control_element_non_value_bit ) == 0s )
 				{
 					var TableValue& table_value_l= $>( data_table_l + i );
 					var TableValuePtr table_value_ptr_r= cast_mut(r).find_key( table_value_l.key_storage );
@@ -155,21 +155,21 @@ public:
 	{
 		unsafe( try_rehash_on_insert() );
 
-		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(hash_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
 		auto capacity_mask= capacity_ - 1s;
 		auto key_hash= calculate_hash(key);
-		auto hash2= unordered_map_impl::get_hash2( key_hash );
-		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+		auto hash2= hash_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= hash_map_impl::get_hash1( key_hash ) & capacity_mask;
 		auto mut insert_index= ~0s;
 
 		unsafe
 		{
 			loop
 			{
-				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
-				if( cell_content == unordered_map_impl::c_contents_empty )
+				var hash_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == hash_map_impl::c_contents_empty )
 				{
 					// Finally reached an empty cell. This means that we insert new value.
 
@@ -182,14 +182,14 @@ public:
 						++num_occupied_slots_;
 					}
 
-					$>( control_table + insert_index )= unordered_map_impl::ControlTableElement( hash2 );
+					$>( control_table + insert_index )= hash_map_impl::ControlTableElement( hash2 );
 
 					auto &mut dst_value= $>( data_table + insert_index );
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
 					return true;
 				}
-				else if( cell_content == unordered_map_impl::c_contents_value_removed )
+				else if( cell_content == hash_map_impl::c_contents_value_removed )
 				{
 					// Remember first tombstone position in order to perform insertion into it.
 					// We need to select the first one in order to minimize probing sequence on lookup.
@@ -223,21 +223,21 @@ public:
 	{
 		unsafe( try_rehash_on_insert() );
 
-		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(hash_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
 		auto capacity_mask= capacity_ - 1s;
 		auto key_hash= calculate_hash(key);
-		auto hash2= unordered_map_impl::get_hash2( key_hash );
-		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+		auto hash2= hash_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= hash_map_impl::get_hash1( key_hash ) & capacity_mask;
 		auto mut insert_index= ~0s;
 
 		unsafe
 		{
 			loop
 			{
-				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
-				if( cell_content == unordered_map_impl::c_contents_empty )
+				var hash_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == hash_map_impl::c_contents_empty )
 				{
 					// Finally reached an empty cell. This means that we insert new value.
 
@@ -250,14 +250,14 @@ public:
 						++num_occupied_slots_;
 					}
 
-					$>( control_table + insert_index )= unordered_map_impl::ControlTableElement( hash2 );
+					$>( control_table + insert_index )= hash_map_impl::ControlTableElement( hash2 );
 
 					auto &mut dst_value= $>( data_table + insert_index );
 					move_into_uninitialized( dst_value.key_storage, key );
 					move_into_uninitialized( dst_value.value_storage, move(value) );
 					return true;
 				}
-				else if( cell_content == unordered_map_impl::c_contents_value_removed )
+				else if( cell_content == hash_map_impl::c_contents_value_removed )
 				{
 					// Remember first tombstone position in order to perform insertion into it.
 					// We need to select the first one in order to minimize probing sequence on lookup.
@@ -292,21 +292,21 @@ public:
 	{
 		unsafe( try_rehash_on_insert() );
 
-		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(hash_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
 		auto capacity_mask= capacity_ - 1s;
 		auto key_hash= calculate_hash(key);
-		auto hash2= unordered_map_impl::get_hash2( key_hash );
-		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+		auto hash2= hash_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= hash_map_impl::get_hash1( key_hash ) & capacity_mask;
 		auto mut insert_index= ~0s;
 
 		unsafe
 		{
 			loop
 			{
-				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
-				if( cell_content == unordered_map_impl::c_contents_empty )
+				var hash_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == hash_map_impl::c_contents_empty )
 				{
 					// Finally reached an empty cell. This means that we insert new value.
 
@@ -319,7 +319,7 @@ public:
 						++num_occupied_slots_;
 					}
 
-					$>( control_table + insert_index )= unordered_map_impl::ControlTableElement( hash2 );
+					$>( control_table + insert_index )= hash_map_impl::ControlTableElement( hash2 );
 
 					var value_type mut value= safe( move(construction_func)() ); // Call given function to create new value.
 
@@ -328,7 +328,7 @@ public:
 					move_into_uninitialized( dst_value.value_storage, move(value) );
 					return dst_value.value_storage;
 				}
-				else if( cell_content == unordered_map_impl::c_contents_value_removed )
+				else if( cell_content == hash_map_impl::c_contents_value_removed )
 				{
 					// Remember first tombstone position in order to perform insertion into it.
 					// We need to select the first one in order to minimize probing sequence on lookup.
@@ -374,20 +374,20 @@ public:
 
 		unsafe( try_rehash_on_remove() );
 
-		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(hash_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
 		auto capacity_mask= capacity_ - 1s;
 		auto key_hash= calculate_hash(key);
-		auto hash2= unordered_map_impl::get_hash2( key_hash );
-		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+		auto hash2= hash_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= hash_map_impl::get_hash1( key_hash ) & capacity_mask;
 
 		unsafe
 		{
 			loop
 			{
-				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
-				if( cell_content == unordered_map_impl::c_contents_empty )
+				var hash_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == hash_map_impl::c_contents_empty )
 				{
 					// End search if reached an empty cell.
 					halt;
@@ -399,17 +399,17 @@ public:
 					auto &mut table_value= $>(data_table + key_hash_wrapped);
 					if( safe( key == cast_imut(table_value).key_storage ) )
 					{
-						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
+						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == hash_map_impl::c_contents_empty )
 						{
 							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
 							// TODO - try to remove also tombstones prior to this cell.
-							cell_content= unordered_map_impl::c_contents_empty;
+							cell_content= hash_map_impl::c_contents_empty;
 							--num_occupied_slots_;
 						}
 						else
 						{
 							// Place a tombstone here to preserve probing chain.
-							cell_content= unordered_map_impl::c_contents_value_removed;
+							cell_content= hash_map_impl::c_contents_value_removed;
 						}
 						--size_;
 
@@ -441,20 +441,20 @@ public:
 
 		unsafe( try_rehash_on_remove() );
 
-		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(hash_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
 		auto capacity_mask= capacity_ - 1s;
 		auto key_hash= calculate_hash(key);
-		auto hash2= unordered_map_impl::get_hash2( key_hash );
-		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+		auto hash2= hash_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= hash_map_impl::get_hash1( key_hash ) & capacity_mask;
 
 		unsafe
 		{
 			loop
 			{
-				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
-				if( cell_content == unordered_map_impl::c_contents_empty )
+				var hash_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == hash_map_impl::c_contents_empty )
 				{
 					// End search if reached an empty cell.
 					return null_optional;
@@ -466,17 +466,17 @@ public:
 					auto &mut table_value= $>(data_table + key_hash_wrapped);
 					if( safe( key == cast_imut(table_value).key_storage ) )
 					{
-						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
+						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == hash_map_impl::c_contents_empty )
 						{
 							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
 							// TODO - try to remove also tombstones prior to this cell.
-							cell_content= unordered_map_impl::c_contents_empty;
+							cell_content= hash_map_impl::c_contents_empty;
 							--num_occupied_slots_;
 						}
 						else
 						{
 							// Place a tombstone here to preserve probing chain.
-							cell_content= unordered_map_impl::c_contents_value_removed;
+							cell_content= hash_map_impl::c_contents_value_removed;
 						}
 						--size_;
 
@@ -508,20 +508,20 @@ public:
 
 		unsafe( try_rehash_on_remove() );
 
-		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(hash_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
 		auto capacity_mask= capacity_ - 1s;
 		auto key_hash= calculate_hash(key);
-		auto hash2= unordered_map_impl::get_hash2( key_hash );
-		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+		auto hash2= hash_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= hash_map_impl::get_hash1( key_hash ) & capacity_mask;
 
 		unsafe
 		{
 			loop
 			{
-				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
-				if( cell_content == unordered_map_impl::c_contents_empty )
+				var hash_map_impl::ControlTableElement &mut cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == hash_map_impl::c_contents_empty )
 				{
 					// End search if reached an empty cell.
 					return false;
@@ -533,17 +533,17 @@ public:
 					auto &mut table_value= $>(data_table + key_hash_wrapped);
 					if( safe( key == cast_imut(table_value).key_storage ) )
 					{
-						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
+						if( $>( control_table + ( ( key_hash_wrapped + 1s ) & capacity_mask ) ) == hash_map_impl::c_contents_empty )
 						{
 							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
 							// TODO - try to remove also tombstones prior to this cell.
-							cell_content= unordered_map_impl::c_contents_empty;
+							cell_content= hash_map_impl::c_contents_empty;
 							--num_occupied_slots_;
 						}
 						else
 						{
 							// Place a tombstone here to preserve probing chain.
-							cell_content= unordered_map_impl::c_contents_value_removed;
+							cell_content= hash_map_impl::c_contents_value_removed;
 						}
 						--size_;
 
@@ -573,7 +573,7 @@ public:
 			return;
 		}
 
-		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(hash_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 		auto capacity_mask= capacity_ - 1s;
 
@@ -581,8 +581,8 @@ public:
 		{
 			for( auto mut i= 0s; i < capacity_; ++i )
 			{
-				var unordered_map_impl::ControlTableElement &mut cell_content= $>( control_table + i );
-				if( ( size_type( cell_content ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
+				var hash_map_impl::ControlTableElement &mut cell_content= $>( control_table + i );
+				if( ( size_type( cell_content ) & hash_map_impl::c_control_element_non_value_bit ) == 0s )
 				{
 					auto &mut table_value= $>( data_table + i );
 
@@ -594,17 +594,17 @@ public:
 
 					if( !should_preserve )
 					{
-						if( $>( control_table + ( ( i + 1s ) & capacity_mask ) ) == unordered_map_impl::c_contents_empty )
+						if( $>( control_table + ( ( i + 1s ) & capacity_mask ) ) == hash_map_impl::c_contents_empty )
 						{
 							// If next cell is empty, we can mark this cell as empty too without breaking any probing chain.
 							// TODO - try to remove also tombstones prior to this cell.
-							cell_content= unordered_map_impl::c_contents_empty;
+							cell_content= hash_map_impl::c_contents_empty;
 							--num_occupied_slots_;
 						}
 						else
 						{
 							// Place a tombstone here to preserve probing chain.
-							cell_content= unordered_map_impl::c_contents_value_removed;
+							cell_content= hash_map_impl::c_contents_value_removed;
 						}
 
 						--size_;
@@ -621,7 +621,7 @@ public:
 		}
 	}
 
-	// Check if given key exists in this unordered_map.
+	// Check if given key exists in this hash_map.
 	fn exists( this, key_type& key ) : bool
 	{
 		return !is_nullptr( unsafe( cast_mut(this).find_key( key ) ) );
@@ -664,17 +664,17 @@ public:
 		}
 
 		// In case of "clear" operation not olny destroy stored elements but also free table memory.
-		// It's necessary in case if someone tries to iterate this "unordered_map" instance after clearing.
+		// It's necessary in case if someone tries to iterate this "hash_map" instance after clearing.
 		// It may be very slow, if table is still there.
 
-		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(hash_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
 		unsafe
 		{
 			for( auto mut i= 0s; i < capacity_; ++i )
 			{
-				if( ( size_type( $>( control_table + i ) ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
+				if( ( size_type( $>( control_table + i ) ) & hash_map_impl::c_control_element_non_value_bit ) == 0s )
 				{
 					auto &mut table_value= $>( data_table + i );
 					call_destructor( table_value.key_storage );
@@ -709,8 +709,8 @@ private:
 	// Call this function only from "insert_*" methods.
 	fn try_rehash_on_insert( mut this ) unsafe
 	{
-		static_assert( c_min_non_zero_capacity % unordered_map_impl::c_max_loading_factor_denominator == 0s );
-		var size_type max_occupancy= capacity_ / unordered_map_impl::c_max_loading_factor_denominator * unordered_map_impl::c_max_loading_factor_numerator;
+		static_assert( c_min_non_zero_capacity % hash_map_impl::c_max_loading_factor_denominator == 0s );
+		var size_type max_occupancy= capacity_ / hash_map_impl::c_max_loading_factor_denominator * hash_map_impl::c_max_loading_factor_numerator;
 
 		// Trigger rehashing using not size, but the number of occupied slots, considering one more slot is needed for new value.
 		// Do this in order to have not so many occupied slots (values and tombstones),
@@ -732,9 +732,9 @@ private:
 		// Calculate minimum occupancy.
 		// Perform division first to avoid overflow.
 		// Result may be rounded down and be even 0, which is mostly fine.
-		var size_type min_occupancy= capacity_ / unordered_map_impl::c_min_loading_factor_denominator * unordered_map_impl::c_min_loading_factor_numerator;
+		var size_type min_occupancy= capacity_ / hash_map_impl::c_min_loading_factor_denominator * hash_map_impl::c_min_loading_factor_numerator;
 
-		// A workaround for cases where "unordered_map" contained many elements but now almost all of them are removed.
+		// A workaround for cases where "hash_map" contained many elements but now almost all of them are removed.
 		// In such case iteration may be very slow.
 		// Perform rehash on erase if size is several times less than capacity, in order to prevent such performance drops.
 		if( size_ < min_occupancy && // Use "<" here in to avoid rehashing if size_ == 0 and min_occupancy == 0.
@@ -748,7 +748,7 @@ private:
 	// New size should not be less than current size.
 	fn rehash( mut this,size_type new_size ) unsafe
 	{
-		var size_type mut new_capacity= unordered_map_impl::calculate_capacity_for_given_size( new_size );
+		var size_type mut new_capacity= hash_map_impl::calculate_capacity_for_given_size( new_size );
 
 		max_assign( new_capacity, c_min_non_zero_capacity );
 
@@ -762,36 +762,36 @@ private:
 			// Because of that it's impossible to get sizeof * capacity multiplication overflow here.
 			// Maximum allocation limit will be reached first.
 			auto new_ptr= memory_allocate( new_capacity + new_capacity * typeinfo</TableValue/>.size_of );
-			auto new_control_table= byte_ptr_cast</ unordered_map_impl::ControlTableElement />( new_ptr );
+			auto new_control_table= byte_ptr_cast</ hash_map_impl::ControlTableElement />( new_ptr );
 			auto new_data_table= byte_ptr_cast</TableValue/>( new_ptr + new_capacity );
 
 			for( auto mut i= 0s; i < new_capacity; ++i )
 			{
-				$>( new_control_table + i )= unordered_map_impl::c_contents_empty;
+				$>( new_control_table + i )= hash_map_impl::c_contents_empty;
 			}
 
 			// Move content of old table into new table.
 			if( !is_nullptr(ptr_) )
 			{
-				var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+				var $(hash_map_impl::ControlTableElement) control_table= get_control_table();
 				var $(TableValue) data_table= get_data_table();
 
 				for( auto mut i= 0s; i < capacity_; ++i )
 				{
-					if( ( size_type( $>(control_table + i) ) & unordered_map_impl::c_control_element_non_value_bit ) == 0s )
+					if( ( size_type( $>(control_table + i) ) & hash_map_impl::c_control_element_non_value_bit ) == 0s )
 					{
 						auto &mut old_value= $>(data_table + i);
 
 						// Insert value into new table.
 						auto key_hash= safe( calculate_hash( old_value.key_storage ) );
-						auto hash2= safe( unordered_map_impl::get_hash2( key_hash ) );
-						auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & new_capacity_mask;
+						auto hash2= safe( hash_map_impl::get_hash2( key_hash ) );
+						auto mut key_hash_wrapped= hash_map_impl::get_hash1( key_hash ) & new_capacity_mask;
 						loop
 						{
-							var unordered_map_impl::ControlTableElement &mut cell_content= $>( new_control_table + key_hash_wrapped );
-							if( cell_content == unordered_map_impl::c_contents_empty )
+							var hash_map_impl::ControlTableElement &mut cell_content= $>( new_control_table + key_hash_wrapped );
+							if( cell_content == hash_map_impl::c_contents_empty )
 							{
-								cell_content= unordered_map_impl::ControlTableElement( hash2 );
+								cell_content= hash_map_impl::ControlTableElement( hash2 );
 
 								auto &mut new_value= $>( new_data_table + key_hash_wrapped );
 								memory_copy_aligned( typeinfo</ key_type   />.align_of, ptr_cast_to_byte8( $<(new_value.key_storage   ) ), ptr_cast_to_byte8( $<( old_value.key_storage   ) ), typeinfo</ key_type   />.size_of );
@@ -818,20 +818,20 @@ private:
 	{
 		if( empty() ){ return nullptr</TableValue/>(); }
 
-		var $(unordered_map_impl::ControlTableElement) control_table= get_control_table();
+		var $(hash_map_impl::ControlTableElement) control_table= get_control_table();
 		var $(TableValue) data_table= get_data_table();
 
 		auto capacity_mask= capacity_ - 1s;
 		auto key_hash= calculate_hash(key);
-		auto hash2= unordered_map_impl::get_hash2( key_hash );
-		auto mut key_hash_wrapped= unordered_map_impl::get_hash1( key_hash ) & capacity_mask;
+		auto hash2= hash_map_impl::get_hash2( key_hash );
+		auto mut key_hash_wrapped= hash_map_impl::get_hash1( key_hash ) & capacity_mask;
 
 		unsafe
 		{
 			loop
 			{
-				var unordered_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
-				if( cell_content == unordered_map_impl::c_contents_empty )
+				var hash_map_impl::ControlTableElement cell_content= $>( control_table + key_hash_wrapped );
+				if( cell_content == hash_map_impl::c_contents_empty )
 				{
 					// End search if reached an empty cell.
 					return nullptr</TableValue/>();
@@ -854,10 +854,10 @@ private:
 		}
 	}
 
-	fn get_control_table( this ) : $(unordered_map_impl::ControlTableElement)
+	fn get_control_table( this ) : $(hash_map_impl::ControlTableElement)
 	{
 		// Control table goes first.
-		return unsafe( byte_ptr_cast</ unordered_map_impl::ControlTableElement />( ptr_ ) );
+		return unsafe( byte_ptr_cast</ hash_map_impl::ControlTableElement />( ptr_ ) );
 	}
 
 	fn get_data_table( this ) : $(TableValue)
@@ -923,14 +923,14 @@ public:
 		TableValue & mut table_value_;
 	}
 
-	// Iterator for unordered_map.
+	// Iterator for hash_map.
 	// Internally this iterator basically scans hash table and returns contents of non-empty cells.
 	// It finishes when it reaches the table end.
 	template</ bool is_mutable />
 	class raw_iterator
 	{
 	public:
-		// These constructors are safe, since they assume that passed "unordered_map" is always in valid state.
+		// These constructors are safe, since they assume that passed "hash_map" is always in valid state.
 
 		fn enable_if( is_mutable )
 		constructor( this_type & mut m ) @( reference_notation::pollution::param0_param_1_reference )
@@ -982,7 +982,7 @@ public:
 		fn advance_to_next_element( mut this )
 		{
 			while( capacity_ > 0s &&
-				( size_type( unsafe( $>(control_table_) ) ) & unordered_map_impl::c_control_element_non_value_bit ) != 0s )
+				( size_type( unsafe( $>(control_table_) ) ) & hash_map_impl::c_control_element_non_value_bit ) != 0s )
 			{
 				unsafe
 				{
@@ -1006,7 +1006,7 @@ public:
 
 	private:
 		ReferenceContainerTag</ this_type, is_mutable /> reference_tag_; // Logically hold a reference to the source container.
-		$(unordered_map_impl::ControlTableElement) control_table_;
+		$(hash_map_impl::ControlTableElement) control_table_;
 		TableValuePtr table_;
 		size_type capacity_;
 	}
@@ -1041,7 +1041,7 @@ private:
 	size_type capacity_(0); // Always must be power of two.
 }
 
-namespace unordered_map_impl
+namespace hash_map_impl
 {
 
 // Loading factor representing in form numerator/denominator.
@@ -1118,6 +1118,6 @@ fn get_nearest_power_of_two_size( size_type s ) : size_type
 	return res;
 }
 
-} // namespace unordered_map_impl
+} // namespace hash_map_impl
 
 } // namespace ust

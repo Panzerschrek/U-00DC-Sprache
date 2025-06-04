@@ -1588,7 +1588,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 	var NamesScopePtr enum_inernal_names_scope= enum_type.lock_imut().deref().names_scope;
 
-	var ust::unordered_map</ ust::string8, Enum::Element /> mut enum_elements;
+	var ust::hash_map</ ust::string8, Enum::Element /> mut enum_elements;
 	foreach( &element : enum_declaration.elements )
 	{
 		if( IsKeyword( element.name ) )

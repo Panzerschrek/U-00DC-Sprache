@@ -46,7 +46,7 @@ struct ReferenceNotationDeductionContext
 
 struct LambdaPreprocessingContext
 {
-	type ExplicitCaptures= ust::unordered_map</ VariablePtr, ExplicitCapture />;
+	type ExplicitCaptures= ust::hash_map</ VariablePtr, ExplicitCapture />;
 
 	struct ExplicitCapture
 	{
@@ -81,7 +81,7 @@ struct LambdaPreprocessingContext
 
 	// Outputs (filled during lambda preprocessing).
 
-	ust::unordered_map</ust::string8, CapturedVariableData/> captured_external_variables;
+	ust::hash_map</ust::string8, CapturedVariableData/> captured_external_variables;
 
 	ust::vector</ReferencePollution/> references_pollution;
 
@@ -144,7 +144,7 @@ public:
 
 	// Cache result of arguments pre-evaluation for selection of overloaded functions and operators.
 	// This needed for reducing exponential expression evaluation complexity.
-	ust::unordered_map</ ust::shared_ptr_final</Synt::Expression/>, VariableTypeExtended /> args_preevaluation_cache;
+	ust::hash_map</ ust::shared_ptr_final</Synt::Expression/>, VariableTypeExtended /> args_preevaluation_cache;
 
 	LLVMMetadataRef current_debug_info_scope= LLVMMetadataRef::Null;
 

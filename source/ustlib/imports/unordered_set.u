@@ -86,14 +86,14 @@ public:
 	}
 
 private:
-	type Impl = unordered_map</T, void/>;
+	type Impl = hash_map</T, void/>;
 
 private:
 	Impl impl_;
 }
 
 // Iterator over unordered set.
-// Internally it is just a wrapper over unordered_map iterator.
+// Internally it is just a wrapper over hash_map iterator.
 template</type T/>
 class unordered_set_raw_iterator
 {
@@ -114,7 +114,7 @@ public:
 	}
 
 private:
-	type ImplIter= iterator</ unordered_map</T, void/>::raw_iterator</false/> />;
+	type ImplIter= iterator</ hash_map</T, void/>::raw_iterator</false/> />;
 
 private:
 	ImplIter impl_;

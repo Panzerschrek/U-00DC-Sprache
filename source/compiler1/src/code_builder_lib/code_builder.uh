@@ -1381,7 +1381,7 @@ private:
 
 	ust::optional_ref_imut</SourceGraph/> source_graph_; // Current source graph.
 
-	type ClassesMembersNamespacesTable= ust::unordered_map</ ClassTypePtr, ust::shared_ptr_imut</ NamesScope /> />;
+	type ClassesMembersNamespacesTable= ust::hash_map</ ClassTypePtr, ust::shared_ptr_imut</ NamesScope /> />;
 	struct SourceGraphNodeBuildResult
 	{
 		ust::shared_ptr_nullable_imut</NamesScope/> names_scope;
@@ -1395,20 +1395,20 @@ private:
 	ust::vector</ ClassTypePtr /> class_table_;
 
 	// Store template things in global container to use same things for same template arguments.
-	ust::unordered_map</ TemplateKey, NamesScopePtr /> generated_template_things_;
+	ust::hash_map</ TemplateKey, NamesScopePtr /> generated_template_things_;
 	// Template things for current source graph node are added sequentialy into this vector too.
 	ust::vector</ TemplateKey /> generated_template_things_sequence_;
 
-	ust::unordered_map</ ParameterizedFunctionTemplateKey, FunctionsSetPtr /> parameterized_template_functions_cache_;
+	ust::hash_map</ ParameterizedFunctionTemplateKey, FunctionsSetPtr /> parameterized_template_functions_cache_;
 
-	ust::unordered_map</Type, TypeinfoCacheElement /> typeinfo_cache_;
+	ust::hash_map</Type, TypeinfoCacheElement /> typeinfo_cache_;
 	ust::vector</ ClassTypePtr /> typeinfo_class_table_;
 
 	// Maps string -> llvm::GlobalVariable
 	tup[
-		ust::unordered_map</ust::string8 , LLVMValueRef/>,
-		ust::unordered_map</ust::string16, LLVMValueRef/>,
-		ust::unordered_map</ust::string32, LLVMValueRef/> ]
+		ust::hash_map</ust::string8 , LLVMValueRef/>,
+		ust::hash_map</ust::string16, LLVMValueRef/>,
+		ust::hash_map</ust::string32, LLVMValueRef/> ]
 		string_literals_cache_;
 
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
@@ -1426,7 +1426,7 @@ private:
 
 	// Store here mixin expansion results.
 	// It's useful to reuse expansions of same mixins in different templates if result text is identical.
-	template</type T/> type MixinExpansionsMap</T/> = ust::unordered_map</ MixinExpansionKey, ust::shared_ptr_final</T/> />;
+	template</type T/> type MixinExpansionsMap</T/> = ust::hash_map</ MixinExpansionKey, ust::shared_ptr_final</T/> />;
 	MixinExpansionsMap</Synt::NamespaceElements/> namespace_mixin_expansions_;
 	MixinExpansionsMap</Synt::ClassElements/> class_mixin_expansions_;
 	MixinExpansionsMap</Synt::BlockElements/> block_mixin_expansions_;
@@ -1434,7 +1434,7 @@ private:
 	MixinExpansionsMap</Synt::Expression/> expression_mixin_expansions_;
 
 	// Normalized file path to contents mapping.
-	ust::unordered_map</ ust::string8, ust::optional</ust::string8/> /> embed_cache_;
+	ust::hash_map</ ust::string8, ust::optional</ust::string8/> /> embed_cache_;
 
 	// Debug info
 	bool imut build_debug_info_;
@@ -1469,9 +1469,9 @@ private:
 	}
 	Coro coro_;
 
-	ust::unordered_map</ CoroutineTypeDescription, ClassTypePtr /> coroutine_classes_;
+	ust::hash_map</ CoroutineTypeDescription, ClassTypePtr /> coroutine_classes_;
 
-	ust::unordered_map</ LambdaKey, ClassTypePtr /> lambda_classes_table_;
+	ust::hash_map</ LambdaKey, ClassTypePtr /> lambda_classes_table_;
 	ust::shared_ptr_nullable_mut</ ClassType /> lambda_preprocessing_dummy_class_;  // Lazily created.
 }
 

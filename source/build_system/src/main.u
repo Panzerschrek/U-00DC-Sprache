@@ -793,7 +793,7 @@ fn GetDependencyFilePath( ust::filesystem_path_view path ) : ust::filesystem_pat
 	return ust::concat( path, ".d" );
 }
 
-type PackagesMap= ust::unordered_map</PackageAbsoluteName, PackageInfo/>;
+type PackagesMap= ust::hash_map</PackageAbsoluteName, PackageInfo/>;
 
 // Returns empty optional on error.
 fn CreateWorkspace(

@@ -44,7 +44,7 @@ private:
 fn nomangle main() : i32
 {
 	{
-		var ust::unordered_map</ i32, i32 /> mut m;
+		var ust::hash_map</ i32, i32 /> mut m;
 		halt if( ! m.empty() );
 
 		m.insert_new( 55, -7 );
@@ -64,7 +64,7 @@ fn nomangle main() : i32
 		halt if( !m.find( 55 ).empty() );
 	}
 	{
-		var ust::unordered_map</ i32, ust::string8 /> mut m;
+		var ust::hash_map</ i32, ust::string8 /> mut m;
 
 		m.insert_new(   58, "foo" );
 		m.insert_new(    1, "wtf" );
@@ -86,7 +86,7 @@ fn nomangle main() : i32
 	}
 	{ // There is "exists" method.
 
-		var ust::unordered_map</ i32, f32 /> mut m;
+		var ust::hash_map</ i32, f32 /> mut m;
 
 		halt if( m.exists( 55 ) );
 		m.insert_new( 55, 0.25f );
@@ -113,7 +113,7 @@ fn nomangle main() : i32
 		halt if( m.exists( 55 ) );
 	}
 	{ // Test for hash collisions. Key type 'OneBitHash' have only 1 bit for hash.
-		var ust::unordered_map</ OneBitHash, i32 /> mut m;
+		var ust::hash_map</ OneBitHash, i32 /> mut m;
 
 		var i32 mut i(0);
 		while( i < 256 )
@@ -141,7 +141,7 @@ fn nomangle main() : i32
 		halt if(  m.find( OneBitHash(102) ).empty() );
 	}
 	{ // Can modify map value.
-		var ust::unordered_map</ i32, ust::string8 /> mut m;
+		var ust::hash_map</ i32, ust::string8 /> mut m;
 		m.insert_new( 17, "abc" );
 		halt if( m.find(17).try_deref() != "abc" );
 
@@ -155,7 +155,7 @@ fn nomangle main() : i32
 	}
 	{ // Iteration
 
-		var ust::unordered_map</ i32, ust::string8 /> mut m;
+		var ust::hash_map</ i32, ust::string8 /> mut m;
 		m.insert_new( 11, "A" );
 		m.insert_new( 22, "B" );
 		m.insert_new( 33, "C" );
@@ -174,7 +174,7 @@ fn nomangle main() : i32
 	}
 	{ // Iteration with one-bit hash.
 
-		var ust::unordered_map</ OneBitHash, ust::string8 /> mut m;
+		var ust::hash_map</ OneBitHash, ust::string8 /> mut m;
 		m.insert_new( OneBitHash(0), "A" );
 		m.insert_new( OneBitHash(1), "B" );
 		m.insert_new( OneBitHash(2), "C" );
@@ -197,7 +197,7 @@ fn nomangle main() : i32
 	}
 	{ // Iteration with continue
 
-		var ust::unordered_map</ i32, ust::string8 /> mut m;
+		var ust::hash_map</ i32, ust::string8 /> mut m;
 		m.insert_new( 7, "A" );
 		m.insert_new( 2, "B" );
 		m.insert_new( 5, "C" );
@@ -214,7 +214,7 @@ fn nomangle main() : i32
 		halt if( res != 7 + 5 );
 	}
 	{ // "insert_new" will ignore new value of old one exists.
-		var ust::unordered_map</ u32, i32 /> mut m;
+		var ust::hash_map</ u32, i32 /> mut m;
 
 		halt if( !m.insert_new( 777u, 6 ) );
 		halt if( !m.insert_new( 111u, 2 ) );
@@ -229,7 +229,7 @@ fn nomangle main() : i32
 		halt if( m[111u] != 2 );
 	}
 	{ // "insert_or_update" may replace value.
-		var ust::unordered_map</ ust::string8, i32 /> mut m;
+		var ust::hash_map</ ust::string8, i32 /> mut m;
 		halt if( !m.insert_or_update( "a", 22 ) );
 		halt if( m["a"] != 22 );
 
@@ -244,7 +244,7 @@ fn nomangle main() : i32
 	}
 	{ // "find_or_construct_new".
 
-		var ust::unordered_map</u32, ust::string8/> mut m;
+		var ust::hash_map</u32, ust::string8/> mut m;
 
 		m.insert_new( 30u, "  30  " );
 		halt if( m.size() != 1s );
@@ -308,7 +308,7 @@ fn nomangle main() : i32
 	}
 	{ // "find_or_construct_default".
 
-		var ust::unordered_map</u32, ust::string8/> mut m;
+		var ust::hash_map</u32, ust::string8/> mut m;
 
 		m.insert_new( 30u, "thirty" );
 		halt if( m.size() != 1s );
@@ -338,12 +338,12 @@ fn nomangle main() : i32
 		halt if( m[30u] != "" );
 	}
 	{ // obtain value as "erase" result
-		var ust::unordered_map</ i32, i32 /> mut m;
+		var ust::hash_map</ i32, i32 /> mut m;
 		m.insert_new( 66, 88888 );
 		halt if( m.remove_existing( 66 ) != 88888 );
 	}
 	{ // "remove_if_exists" method
-		var ust::unordered_map</ u32, ust::string8 /> mut m;
+		var ust::hash_map</ u32, ust::string8 /> mut m;
 
 		m.insert_new( 44u, "some" );
 		m.insert_new( 123u, "other" );
@@ -380,7 +380,7 @@ fn nomangle main() : i32
 		}
 	}
 	{ // "drop_if_exists" method
-		var ust::unordered_map</ i32, i32 /> mut m;
+		var ust::hash_map</ i32, i32 /> mut m;
 		m.insert_new( 10, 1024 );
 		halt if( m.empty() );
 
@@ -395,7 +395,7 @@ fn nomangle main() : i32
 	}
 	{ // "retain" method.
 
-		var ust::unordered_map</ u32, ust::string8 /> mut m;
+		var ust::hash_map</ u32, ust::string8 /> mut m;
 
 		m.insert_new( 77777u, "zero" );
 		m.insert_new( 76u, "one" );
@@ -430,7 +430,7 @@ fn nomangle main() : i32
 	}
 	{ // noncopyable value
 
-		var ust::unordered_map</i32, C/> mut m;
+		var ust::hash_map</i32, C/> mut m;
 
 		m.insert_new( 66, C(6) );
 		m.insert_new( 777, C(7) );
@@ -447,7 +447,7 @@ fn nomangle main() : i32
 		halt if( m[777].x != 777 );
 	}
 	{ // Equality compare.
-		var ust::unordered_map</ u32, i32 /> mut m0, mut m1, mut m2, mut m3;
+		var ust::hash_map</ u32, i32 /> mut m0, mut m1, mut m2, mut m3;
 
 		m0.insert_new( 78u, 55 );
 		m0.insert_new( 31u, 843 );
@@ -481,7 +481,7 @@ fn nomangle main() : i32
 		halt if( m3 != m3 );
 	}
 	{ // f64 as key - should work properly.
-		var ust::unordered_map</ f64, i32 /> mut m;
+		var ust::hash_map</ f64, i32 /> mut m;
 
 		m.insert_new( 0.0, 77 );
 		m.insert_new( 1.1, 894 );
@@ -505,7 +505,7 @@ fn nomangle main() : i32
 		halt if( m[ -1.1 ] != 475 );
 	}
 	{ // NaN as key.
-		var ust::unordered_map</ f32, i32 /> mut m;
+		var ust::hash_map</ f32, i32 /> mut m;
 
 		auto nan= 0.0f / 0.0f;
 		static_assert( nan != nan );
@@ -517,7 +517,7 @@ fn nomangle main() : i32
 	}
 	{ // Test insertion/removal of many identical numbers.
 
-		var ust::unordered_map</u32, i32/> mut m;
+		var ust::hash_map</u32, i32/> mut m;
 
 		var RandGenerator mut gen;
 
@@ -550,7 +550,7 @@ fn nomangle main() : i32
 		// Fill map, then remove most of the elements, then iterate it many times.
 		// Iteration time should be reasonable.
 
-		var ust::unordered_map</u32, i32/> mut m;
+		var ust::hash_map</u32, i32/> mut m;
 
 		var RandGenerator mut gen;
 
@@ -588,7 +588,7 @@ fn nomangle main() : i32
 		// Fill map, then clear, then iterate it many times.
 		// Iteration time should be reasonable.
 
-		var ust::unordered_map</u32, i32/> mut m;
+		var ust::hash_map</u32, i32/> mut m;
 
 		var RandGenerator mut gen;
 
@@ -618,7 +618,7 @@ fn nomangle main() : i32
 		// Fill map, then clear it using "retain" method, then iterate it many times.
 		// Iteration time should be reasonable.
 
-		var ust::unordered_map</u32, i32/> mut m;
+		var ust::hash_map</u32, i32/> mut m;
 
 		var RandGenerator mut gen;
 
@@ -656,7 +656,7 @@ fn nomangle main() : i32
 	}
 	{ // Test insertion/removal of many elements with somewhat intermediate chance of identical elements.
 
-		var ust::unordered_map</u32, i32/> mut m;
+		var ust::hash_map</u32, i32/> mut m;
 
 		var RandGenerator mut gen;
 
@@ -686,7 +686,7 @@ fn nomangle main() : i32
 	}
 	{ // Test with many searches for not so many elements.
 
-		var ust::unordered_map</u32, i32/> mut m;
+		var ust::hash_map</u32, i32/> mut m;
 
 		var RandGenerator mut gen;
 
@@ -712,7 +712,7 @@ fn nomangle main() : i32
 		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
 	}
 	{ // Insert sequential integers. Performance should not degrade.
-		var ust::unordered_map</u32, i32/> mut m;
+		var ust::hash_map</u32, i32/> mut m;
 
 		var size_type count= 1s << 22u;
 
@@ -733,7 +733,7 @@ fn nomangle main() : i32
 		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
 	}
 	{ // Insert sequential integers shifted by several bits. Performance should not degrade.
-		var ust::unordered_map</u32, i32/> mut m;
+		var ust::hash_map</u32, i32/> mut m;
 
 		var size_type count= 1s << 22u;
 		var u32 shift= 10u;
@@ -755,7 +755,7 @@ fn nomangle main() : i32
 		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
 	}
 	{ // Insert sequential floats. Performance should not degrade.
-		var ust::unordered_map</f32, i32/> mut m;
+		var ust::hash_map</f32, i32/> mut m;
 
 		var size_type count= 1s << 22u;
 
@@ -776,7 +776,7 @@ fn nomangle main() : i32
 		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
 	}
 	{ // Insert sequential scaled down floats. Performance should not degrade.
-		var ust::unordered_map</f32, i32/> mut m;
+		var ust::hash_map</f32, i32/> mut m;
 
 		var size_type count= 1s << 22u;
 
@@ -797,7 +797,7 @@ fn nomangle main() : i32
 		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
 	}
 	{ // Insert sequential scaled up floats. Performance should not degrade.
-		var ust::unordered_map</f32, i32/> mut m;
+		var ust::hash_map</f32, i32/> mut m;
 
 		var size_type count= 1s << 22u;
 
@@ -818,7 +818,7 @@ fn nomangle main() : i32
 		ust::stdout_print( ust::concat( "Result combination: ", ust::to_string8(combination), "\n" ) );
 	}
 	{ // Insert a lot of random strings.
-		var ust::unordered_map</ust::string8, u32/> mut m;
+		var ust::hash_map</ust::string8, u32/> mut m;
 
 		var RandGenerator mut gen;
 
@@ -863,7 +863,7 @@ fn nomangle main() : i32
 	}
 	{ // Insert and remove the same value a lot of times.
 
-		var ust::unordered_map</u32, i32/> mut m;
+		var ust::hash_map</u32, i32/> mut m;
 
 		var RandGenerator mut gen;
 
@@ -889,7 +889,7 @@ fn nomangle main() : i32
 		// Fill map and then remove all elements.
 		// Then add and immediately remove single elements.
 
-		var ust::unordered_map</u32, i32/> mut m;
+		var ust::hash_map</u32, i32/> mut m;
 
 		var RandGenerator mut gen;
 

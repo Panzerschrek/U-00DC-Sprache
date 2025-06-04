@@ -93,7 +93,7 @@ fn nomangle main() : i32
 		halt if(ptr3 != ptr3);
 	}
 	{ // Shared pointer can be used as key in hash map.
-		var ust::unordered_map</ IntPtrNullable, i32 /> mut m;
+		var ust::hash_map</ IntPtrNullable, i32 /> mut m;
 
 		var IntPtrNullable ptr0(33);
 		var IntPtrNullable ptr1(ptr0);
