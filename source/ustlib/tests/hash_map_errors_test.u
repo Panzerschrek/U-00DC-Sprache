@@ -1,6 +1,6 @@
 //##fail_test
+import "../imports/hash_map.u"
 import "../imports/string.u"
-import "../imports/unordered_map.u"
 
 class C
 {

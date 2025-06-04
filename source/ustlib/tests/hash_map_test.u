@@ -1,8 +1,8 @@
 //##success_test
+import "../imports/hash_map.u"
 import "../imports/stdout.u"
 import "../imports/string.u"
 import "../imports/string_conversions.u"
-import "../imports/unordered_map.u"
 import "../imports/vector.u"
 
 

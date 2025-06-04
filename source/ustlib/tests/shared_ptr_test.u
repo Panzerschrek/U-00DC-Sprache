@@ -3,12 +3,12 @@ import "../imports/shared_ptr.u"
 
 import "../imports/box.u"
 import "../imports/box_nullable.u"
+import "../imports/hash_map.u"
 import "../imports/optional.u"
 import "../imports/optional_ref.u"
 import "../imports/random_access_range.u"
 import "../imports/result.u"
 import "../imports/string.u"
-import "../imports/unordered_map.u"
 import "../imports/variant.u"
 import "../imports/vector.u"
 

@@ -1,6 +1,6 @@
 import "/box.u"
+import "/hash_map.u"
 import "/string.u"
-import "/unordered_map.u"
 import "/variant.u"
 import "/vector.u"
 

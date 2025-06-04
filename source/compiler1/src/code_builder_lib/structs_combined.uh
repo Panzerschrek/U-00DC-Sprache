@@ -1,7 +1,7 @@
 import "/box.u"
+import "/hash_map.u"
 import "/shared_ptr.u"
 import "/shared_ptr_final.u"
-import "/unordered_map.u"
 import "/variant.u"
 import "/vector.u"
 import "../lex_synt_lib/syntax_elements.uh"
