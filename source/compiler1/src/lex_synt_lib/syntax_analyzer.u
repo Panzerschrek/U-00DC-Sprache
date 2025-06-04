@@ -4155,7 +4155,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 {
 	var Macro::MatchElements mut match_elements;
 
-	var ust::unordered_set</ ust::string8 /> mut elements_set;
+	var ust::hash_set</ ust::string8 /> mut elements_set;
 	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::MacroBracketRight )
 	{
 		if( it_.front().lexem_type == Lexem::Type::MacroBracketLeft ||

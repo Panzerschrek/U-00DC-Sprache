@@ -4,17 +4,17 @@ namespace ust
 {
 
 template</ type T />
-class unordered_set
+class hash_set
 {
 public:
-	type this_type= unordered_set</ T />;
+	type this_type= hash_set</ T />;
 	type key_type= T;
 	type value_type= T;
 
 	static_assert( typeinfo</T/>.is_copy_constructible , "set type should be copyable" );
 	static_assert( typeinfo</T/>.is_copy_assignable , "set type should be copyable" );
 
-	// Factory method for creating unordered_set from given iterator.
+	// Factory method for creating hash_set from given iterator.
 	template</type Iterator/>
 	fn from_iterator( Iterator mut it ) : auto
 	{
@@ -82,7 +82,7 @@ public:
 	template<//>
 	fn iter( this ) : auto
 	{
-		return wrap_raw_iterator( unordered_set_raw_iterator</T/>( impl_.iter() ) );
+		return wrap_raw_iterator( hash_set_raw_iterator</T/>( impl_.iter() ) );
 	}
 
 private:
@@ -95,7 +95,7 @@ private:
 // Iterator over unordered set.
 // Internally it is just a wrapper over hash_map iterator.
 template</type T/>
-class unordered_set_raw_iterator
+class hash_set_raw_iterator
 {
 public:
 	fn constructor( mut this, ImplIter mut impl ) @( reference_notation::pollution::param0_param_1_inner_reference )

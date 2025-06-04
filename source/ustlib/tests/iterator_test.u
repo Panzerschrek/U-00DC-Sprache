@@ -384,7 +384,7 @@ fn nomangle main() : i32
 	}
 	{ // Collect into unordered set. Result should be deduplicated.
 		var [ i32, 6 ] ints[ 15, 23, -5, 15, 23, 125 ];
-		auto ints_set= IntRangeImut(ints).iter().collect</ ust::unordered_set</i32/> />();
+		auto ints_set= IntRangeImut(ints).iter().collect</ ust::hash_set</i32/> />();
 		halt if( ints_set.size() != 4s );
 		halt if( !ints_set.exists( 15 ) );
 		halt if( !ints_set.exists( 23 ) );
@@ -414,7 +414,7 @@ fn nomangle main() : i32
 	}
 	{ // Collect into unordered set, using only type template name.
 		var [ i32, 6 ] ints[ 15, 23, -5, 15, 23, 125 ];
-		auto ints_set= IntRangeImut(ints).iter().collect</ ust::unordered_set />();
+		auto ints_set= IntRangeImut(ints).iter().collect</ ust::hash_set />();
 		halt if( ints_set.size() != 4s );
 		halt if( !ints_set.exists( 15 ) );
 		halt if( !ints_set.exists( 23 ) );

@@ -228,7 +228,7 @@ fn BuildWorkspaceBuildTargetsUsers( WorkspaceInfo& workspace ) : WorkspaceBuildT
 	return result;
 }
 
-type BuildTargetUsersSet= ust::unordered_set</BuildTargetAbsoluteName/>;
+type BuildTargetUsersSet= ust::hash_set</BuildTargetAbsoluteName/>;
 
 // Build set of all build targets which depend on given build target as public dependency or as transitive public depenency.
 fn BuildBuildTargetUsersSet(

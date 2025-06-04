@@ -74,7 +74,7 @@ struct LambdaPreprocessingContext
 
 	// Inputs (filled before lambda preprocessing).
 	ust::weak_ptr_imut</ LambdaPreprocessingContext /> parent;
-	ust::unordered_set</VariablePtr/> external_variables;
+	ust::hash_set</VariablePtr/> external_variables;
 	ust::optional</ExplicitCaptures/> explicit_captures; // If none - all variables are allowed for captured.
 	bool capture_by_reference;
 	bool lambda_this_is_mutable;

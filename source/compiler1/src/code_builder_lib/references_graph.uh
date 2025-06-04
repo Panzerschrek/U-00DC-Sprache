@@ -41,7 +41,7 @@ public:
 	fn EnsureHasNoOutgoingLinks( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
 	fn EnsureHasNoOutgoingMutableNodes( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
-	type NodesSet= ust::unordered_set</VariablePtr/>;
+	type NodesSet= ust::hash_set</VariablePtr/>;
 	fn GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet;
 	fn GetNodeInputLinks( this, VariablePtr& node ) : NodesSet;
 
