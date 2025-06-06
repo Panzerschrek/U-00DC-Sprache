@@ -335,7 +335,7 @@ Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionConte
 			if( field->is_reference && ( field->is_mutable || field->type.ContainsMutableReferences() ) )
 				REPORT_ERROR( MutableReferenceFieldAccessInDestructor, names.GetErrors(), src_loc );
 			if( !field->is_reference && field->type.ContainsMutableReferences() )
-				REPORT_ERROR( AccessingFieldWithMutableReferencesInsideInDestructor, names.GetErrors(), src_loc );
+				REPORT_ERROR( AccessingFieldWithMutableReferencesInDestructor, names.GetErrors(), src_loc );
 		}
 		if( function_context.variables_state.NodeMoved( function_context.this_ ) )
 			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, Keyword( Keywords::this_ ) );

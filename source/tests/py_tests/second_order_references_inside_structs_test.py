@@ -3033,7 +3033,7 @@ def PreventNonOwningMutationInDestructor_ForfStructWithSecondOrderReferenceInsid
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 10 ) )
+	assert( HasError( errors_list, "AccessingFieldWithMutableReferencesInDestructor", 10 ) )
 
 
 def InnerReferenceTagsForReferenceField_Test0():

@@ -831,7 +831,7 @@ def MutableReferenceFieldAccessInDestructor_ForBaseField_Test1():
 	assert( HasError( errors_list, "MutableReferenceFieldAccessInDestructor", 10 ) )
 
 
-def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test0():
+def AccessingFieldWithMutableReferencesInDestructor_ForBaseField_Test0():
 	c_program_text= """
 		struct S
 		{
@@ -851,10 +851,10 @@ def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 14 ) )
+	assert( HasError( errors_list, "AccessingFieldWithMutableReferencesInDestructor", 14 ) )
 
 
-def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test1():
+def AccessingFieldWithMutableReferencesInDestructor_ForBaseField_Test1():
 	c_program_text= """
 		struct S
 		{
@@ -875,7 +875,7 @@ def AccessingFieldWithMutableReferencesInsideInDestructor_ForBaseField_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "AccessingFieldWithMutableReferencesInsideInDestructor", 14 ) )
+	assert( HasError( errors_list, "AccessingFieldWithMutableReferencesInDestructor", 14 ) )
 
 
 def ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_ForBase_Test0():

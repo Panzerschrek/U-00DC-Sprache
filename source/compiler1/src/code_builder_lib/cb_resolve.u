@@ -128,7 +128,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			}
 			else if( field.t.ContainsMutableReferences() )
 			{
-				REPORT_ERROR( AccessingFieldWithMutableReferencesInsideInDestructor, names_scope, src_loc )
+				REPORT_ERROR( AccessingFieldWithMutableReferencesInDestructor, names_scope, src_loc )
 			}
 		}
 

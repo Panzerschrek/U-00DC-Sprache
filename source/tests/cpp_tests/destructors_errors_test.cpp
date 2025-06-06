@@ -134,7 +134,7 @@ U_TEST( MutableReferenceFieldAccessInDestructor_Test2 )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::MutableReferenceFieldAccessInDestructor, 7u ) );
 }
 
-U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test0 )
+U_TEST( AccessingFieldWithMutableReferencesInDestructor_Test0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -154,10 +154,10 @@ U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test0 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInsideInDestructor, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInDestructor, 11u ) );
 }
 
-U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test1 )
+U_TEST( AccessingFieldWithMutableReferencesInDestructor_Test1 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -177,10 +177,10 @@ U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test1 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInsideInDestructor, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInDestructor, 11u ) );
 }
 
-U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test2 )
+U_TEST( AccessingFieldWithMutableReferencesInDestructor_Test2 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -201,7 +201,7 @@ U_TEST( AccessingFieldWithMutableReferencesInsideInDestructor_Test2 )
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInsideInDestructor, 11u ) );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::AccessingFieldWithMutableReferencesInDestructor, 11u ) );
 }
 
 U_TEST( ThisUnavailable_InDestructorOfStructWithMutableReferencesInside_Test0 )
