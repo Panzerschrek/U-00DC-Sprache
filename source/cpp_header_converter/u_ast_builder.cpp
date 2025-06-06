@@ -33,7 +33,7 @@ static Synt::Function GetDeletedDefaultConstructor()
 	return func;
 }
 
-class CppAstConsumer : public clang::ASTConsumer
+class CppAstConsumer final : public clang::ASTConsumer
 {
 public:
 	CppAstConsumer(
@@ -165,7 +165,7 @@ private:
 	size_t unique_name_index_= 0u;
 };
 
-class CppAstProcessor : public clang::ASTFrontendAction
+class CppAstProcessor final : public clang::ASTFrontendAction
 {
 public:
 	CppAstProcessor( ParsedUnitsPtr out_result, bool skip_declarations_from_includes );

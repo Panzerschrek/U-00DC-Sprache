@@ -13,7 +13,7 @@ namespace U
 using ParsedUnits= std::unordered_map< std::string, Synt::ProgramElementsList::Builder >;
 using ParsedUnitsPtr= std::shared_ptr<ParsedUnits>;
 
-class FrontendActionFactory : public clang::tooling::FrontendActionFactory
+class FrontendActionFactory final : public clang::tooling::FrontendActionFactory
 {
 public:
 	FrontendActionFactory( ParsedUnitsPtr out_result, bool skip_declarations_from_includes );
