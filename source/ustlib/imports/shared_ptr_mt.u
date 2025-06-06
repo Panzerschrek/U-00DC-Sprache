@@ -114,7 +114,7 @@ public:
 			{
 				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) );
 				counter_= ptr.get_counter_ptr();
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+				// It's almost impossible to get counter overflow here - so, ignore such possibility.
 				atomic_inc( $>(counter_).use_count_total  );
 				atomic_inc( $>(counter_).use_count_strong );
 			}

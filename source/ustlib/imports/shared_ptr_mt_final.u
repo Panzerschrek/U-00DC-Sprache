@@ -186,7 +186,7 @@ struct storage
 
 fn counter_inc( u32& mut c ) : u32
 {
-	// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+	// It's almost impossible to get counter overflow here - so, ignore such possibility.
 	return atomic_inc(c);
 }
 

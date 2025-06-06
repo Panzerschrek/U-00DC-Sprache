@@ -170,7 +170,7 @@ public:
 
 		unsafe
 		{
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+			// It's almost impossible to get counter overflow here - so, ignore such possibility.
 			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
 			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
 			return shared_ptr_base</T, false, is_mutable/>( value_, counter_ );
@@ -433,7 +433,7 @@ struct counter
 
 fn counter_inc( u32& mut c )
 {
-	// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+	// It's almost impossible to get counter overflow here - so, ignore such possibility.
 	++c;
 }
 
@@ -487,7 +487,7 @@ public:
 		unsafe
 		{
 			halt if( $>(counter_).lock_count < 0 ); // halt if have mutable locks
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+			// It's almost impossible to get counter overflow here - so, ignore such possibility.
 			++$>(counter_).lock_count;
 		}
 	}
