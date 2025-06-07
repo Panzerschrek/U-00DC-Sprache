@@ -498,20 +498,29 @@ public:
 	enable_if( typeinfo</T/>.is_copy_constructible && !typeinfo</T/>.contains_mutable_references )
 	resize( mut this, size_type new_size, T& val ) @( c_param2_pollution )
 	{
-		// TODO - optimize. Calls to public methods contain unnecessary checks.
 		if( new_size > size_ )
 		{
-			push_back( new_size - size_, val );
+			unsafe
+			{
+				ensure_capacity( new_size );
+
+				for( var size_type mut i= size_; i < new_size; ++i )
+				{
+					move_into_uninitialized( $>(ptr_ + i), val ); // Copy-constructor called here.
+				}
+
+				size_= new_size;
+			}
 		}
 		else if( new_size < size_ )
 		{
+			// TODO - optimize. Calls to public methods contain unnecessary checks.
 			drop_back( size_ - new_size );
 		}
 	}
 
 	fn enable_if( typeinfo</T/>.is_default_constructible ) resize( mut this, size_type new_size )
 	{
-		// TODO - optimize. Calls to public methods contain unnecessary checks.
 		if( new_size > size_ )
 		{
 			unsafe
@@ -522,11 +531,13 @@ public:
 				{
 					call_default_constructor( $>(ptr_ + i) );
 				}
+
 				size_= new_size;
 			}
 		}
 		else if( new_size < size_ )
 		{
+			// TODO - optimize. Calls to public methods contain unnecessary checks.
 			drop_back( size_ - new_size );
 		}
 	}
