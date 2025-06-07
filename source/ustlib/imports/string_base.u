@@ -479,14 +479,23 @@ public:
 
 	fn resize( mut this, size_type new_size, char_type val )
 	{
-		// TODO - optimize. Calls to public methods contain unnecessary checks.
 		if( new_size > size_ )
 		{
-			push_back( new_size - size_, val );
+			unsafe
+			{
+				ensure_capacity( new_size );
+
+				for( var size_type mut i= size_; i < new_size; ++i )
+				{
+					$>(ptr_ + i)= val;
+				}
+
+				size_= new_size;
+			}
 		}
 		else if( new_size < size_ )
 		{
-			drop_back( size_ - new_size );
+			size_= new_size;
 		}
 	}
 
