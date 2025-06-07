@@ -107,12 +107,17 @@ fn nomangle main() : i32
 		var ust::string16 mut s;
 		halt if( s != ""u16 );
 
-		s.resize( 4s, ","u16[0u] );
+		s.resize( 4s, ','c16 );
 		halt if( s != ",,,,"u16 );
-		s.resize( 6s, "r"u16[0u] );
+		halt if( s.size() != 4s );
+
+		s.resize( 6s, 'r'c16 );
 		halt if( s != ",,,,rr"u16 );
-		s.resize( 1s, " "u16[0u] );
+		halt if( s.size() != 6s );
+
+		s.resize( 1s, ' 'c16 );
 		halt if( s != ","u16 );
+		halt if( s.size() != 1s );
 	}
 	{ // swap
 		var ust::string8 mut s("0123456789");
