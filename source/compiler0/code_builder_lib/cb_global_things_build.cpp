@@ -848,16 +848,22 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				[&]( const Value& value )
 				{
 					if( const auto field= value.GetClassField() )
-						fields_left.push_back( field );
+					{
+						if( field->is_reference || field->type.GetLLVMType()->isSized() )
+							fields_left.push_back( field );
+					}
 				} );
 
 			// Calculate start offset, include parents fields, virtual table pointer.
 			uint64_t current_offset= 0u;
 			for( llvm::Type* type : fields_llvm_types )
 			{
-				const uint64_t alignment= data_layout_.getABITypeAlign( type ).value();
-				const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
-				current_offset+= padding + data_layout_.getTypeAllocSize( type );
+				if( type->isSized() )
+				{
+					const uint64_t alignment= data_layout_.getABITypeAlign( type ).value();
+					const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
+					current_offset+= padding + data_layout_.getTypeAllocSize( type );
+				}
 			}
 
 			// On each iteration try to find a field with minimal padding relative to current offset.
@@ -872,7 +878,11 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				{
 					const ClassField& field= *fields_left[i];
 
-					const uint64_t alignment= data_layout_.getABITypeAlign( field.is_reference ? field.type.GetLLVMType()->getPointerTo() : field.type.GetLLVMType() ).value();
+					llvm::Type* llvm_type= field.type.GetLLVMType();
+					if( field.is_reference )
+						llvm_type= llvm_type->getPointerTo();
+
+					const uint64_t alignment= data_layout_.getABITypeAlign( llvm_type ).value();
 					U_ASSERT( alignment != 0u );
 
 					const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
