@@ -184,7 +184,7 @@ FunctionType::ReferencesPollution CodeBuilder::EvaluateFunctionReferencePollutio
 		result.push_back( pollution );
 	}
 
-	NormalizeReferenceNotationList( result );
+	NormalizeReferencesPollution( result );
 
 	return result;
 }
