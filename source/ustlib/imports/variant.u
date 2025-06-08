@@ -347,8 +347,8 @@ private:
 
 private:
 	ContainerTag</ Y /> container_tag_;
-	storage_type storage_;
 	u8 index_;
+	storage_type storage_;
 }
 
 namespace variant_impl
