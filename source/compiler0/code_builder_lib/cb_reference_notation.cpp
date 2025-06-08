@@ -223,7 +223,7 @@ FunctionType::ReturnReferences CodeBuilder::EvaluateFunctionReturnReferences(
 			result.push_back( *param_reference );
 	}
 
-	NormalizeReferenceNotationList( result );
+	NormalizeParamReferencesList( result );
 
 	return result;
 }
@@ -272,7 +272,7 @@ FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerRefe
 			if( const auto param_reference= ParseEvaluatedParamReference( tag_constant->getAggregateElement( uint32_t(j) ), num_params, names_scope, src_loc ) )
 				result[i].push_back( *param_reference );
 		}
-		NormalizeReferenceNotationList( result[i] );
+		NormalizeParamReferencesList( result[i] );
 	}
 
 	return result;

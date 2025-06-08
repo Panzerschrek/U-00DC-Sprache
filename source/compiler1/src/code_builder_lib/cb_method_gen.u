@@ -315,6 +315,8 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 					} )
 		};
 
+		NormalizeReferencesPollution( function_type.references_pollution );
+
 		// Prepare function variable.
 		constructor_index= constructors.functions.size();
 		constructors.functions.push_back(
@@ -487,6 +489,8 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 							};
 					} )
 		};
+
+		NormalizeReferencesPollution( function_type.references_pollution );
 
 		// Prepare function variable.
 		operator_index= operators.functions.size();

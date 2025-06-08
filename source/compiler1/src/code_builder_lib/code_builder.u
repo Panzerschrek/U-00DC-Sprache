@@ -741,6 +741,8 @@ fn CodeBuilder::PrepareFunction(
 								.src{ .param_index= 1u8, .reference_index= index },
 							};
 					} );
+
+			NormalizeReferencesPollution( function_variable.t.references_pollution );
 		}
 
 		if( function_declaration.operator == OverloadedOperator::CompareEqual &&
