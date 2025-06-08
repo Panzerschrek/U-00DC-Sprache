@@ -345,8 +345,8 @@ private:
 
 private:
 	ContainerTag</ tup[ OkT, ErrorT ] /> container_tag_;
-	storage_type storage_;
 	bool is_ok_;
+	storage_type storage_;
 }
 
 } // namespace ust
