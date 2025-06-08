@@ -210,8 +210,10 @@ FunctionType::ReturnReferences CodeBuilder::EvaluateFunctionReturnReferences(
 	for( uint64_t i= 0; i < array_type->element_count; ++i )
 	{
 		if( const auto param_reference= ParseEvaluatedParamReference( variable->constexpr_value->getAggregateElement( uint32_t(i) ), num_params, names_scope, src_loc ) )
-			result.insert( *param_reference );
+			result.push_back( *param_reference );
 	}
+
+	NormalizeReferenceNotationList( result );
 
 	return result;
 }
@@ -258,8 +260,9 @@ FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerRefe
 		for( uint64_t j= 0; j < array_type->element_count; ++j )
 		{
 			if( const auto param_reference= ParseEvaluatedParamReference( tag_constant->getAggregateElement( uint32_t(j) ), num_params, names_scope, src_loc ) )
-				result[i].insert( *param_reference );
+				result[i].push_back( *param_reference );
 		}
+		NormalizeReferenceNotationList( result[i] );
 	}
 
 	return result;

@@ -339,7 +339,10 @@ void CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 		const auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
 
 		if( coroutine_inner_reference == std::nullopt ||
-			coroutine_type_description.return_references.count( *coroutine_inner_reference ) == 0 )
+			! std::binary_search(
+				coroutine_type_description.return_references.begin(),
+				coroutine_type_description.return_references.end(),
+				*coroutine_inner_reference ) )
 			REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, var_node->name );
 	}
 }
@@ -359,7 +362,10 @@ void CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
 
 			if( coroutine_inner_reference == std::nullopt ||
 				i >= coroutine_type_description.return_inner_references.size() ||
-				coroutine_type_description.return_inner_references[i].count( *coroutine_inner_reference ) == 0 )
+				! std::binary_search(
+					coroutine_type_description.return_inner_references[i].begin(),
+					coroutine_type_description.return_inner_references[i].end(),
+					*coroutine_inner_reference ) )
 				REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, var_node->name );
 		}
 	}
@@ -484,13 +490,13 @@ void CodeBuilder::CollectReturnReferences( FunctionContext& function_context, co
 		{
 			const size_t arg_n= size_t( &arg_node_pair - &function_context.args_nodes.front() );
 			if( var_node == arg_node_pair.first )
-				reference_notation_deduction_context.return_references.emplace( uint8_t(arg_n), FunctionType::c_param_reference_number );
+				reference_notation_deduction_context.return_references.emplace_back( uint8_t(arg_n), FunctionType::c_param_reference_number );
 
 			for( const VariablePtr& inner_node : arg_node_pair.second )
 			{
 				const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
 				if( var_node == inner_node )
-					reference_notation_deduction_context.return_references.emplace( uint8_t(arg_n), uint8_t(tag_n) );
+					reference_notation_deduction_context.return_references.emplace_back( uint8_t(arg_n), uint8_t(tag_n) );
 			}
 		}
 
@@ -539,13 +545,13 @@ void CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_contex
 			{
 				const size_t arg_n= size_t( &arg_node_pair - &function_context.args_nodes.front() );
 				if( var_node == arg_node_pair.first )
-					reference_notation_deduction_context.return_inner_references[i].emplace( uint8_t(arg_n), FunctionType::c_param_reference_number );
+					reference_notation_deduction_context.return_inner_references[i].emplace_back( uint8_t(arg_n), FunctionType::c_param_reference_number );
 
 				for( const VariablePtr& inner_node : arg_node_pair.second )
 				{
 					const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
 					if( var_node == inner_node )
-						reference_notation_deduction_context.return_inner_references[i].emplace( uint8_t(arg_n), uint8_t(tag_n) );
+						reference_notation_deduction_context.return_inner_references[i].emplace_back( uint8_t(arg_n), uint8_t(tag_n) );
 				}
 			}
 

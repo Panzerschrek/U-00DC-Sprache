@@ -223,8 +223,14 @@ void CodeBuilder::PrepareFunctionsSet( NamesScope& names_scope, OverloadedFuncti
 
 			// Update function type.
 			function_variable.type.return_type= return_type_deduction_context.return_type.value_or( void_type_ );
+
 			function_variable.type.return_references= std::move(reference_notation_deduction_context.return_references);
+			NormalizeReferenceNotationList( function_variable.type.return_references );
+
 			function_variable.type.return_inner_references= std::move(reference_notation_deduction_context.return_inner_references);
+			for( auto& list : function_variable.type.return_inner_references )
+				NormalizeReferenceNotationList( list );
+
 			function_variable.type.references_pollution= std::move(reference_notation_deduction_context.references_pollution);
 
 			function_variable.has_body= false;

@@ -195,7 +195,7 @@ public:
 	static constexpr uint8_t c_param_reference_number= 255u;
 	using ParamReference= std::pair< uint8_t, uint8_t >;
 
-	using ReturnReferences= std::set<ParamReference>;
+	using ReturnReferences= std::vector<ParamReference>; // Sorted.
 	using ReturnInnerReferences= std::vector<ReturnReferences>;
 
 	struct ReferencePollution

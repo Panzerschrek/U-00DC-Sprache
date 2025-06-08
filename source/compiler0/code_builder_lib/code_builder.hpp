@@ -1307,6 +1307,13 @@ private:
 	ReferenceNotationConstant GetReferencesPollutionConstant( const FunctionType::ReferencesPollution& references_pollution );
 	llvm::Constant* GetParamReferenceConstant( const FunctionType::ParamReference& param_reference ); // Type is reference_notation_param_reference_description_type_
 
+	template<typename T>
+	static void NormalizeReferenceNotationList( std::vector<T>& list )
+	{
+		std::sort( list.begin(), list.end() );
+		list.erase( std::unique( list.begin(), list.end() ), list.end() );
+	}
+
 	// Coroutines
 
 	// Call this before transforming function type.
