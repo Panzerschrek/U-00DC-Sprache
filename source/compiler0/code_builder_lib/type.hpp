@@ -196,7 +196,7 @@ public:
 	using ParamReference= std::pair< uint8_t, uint8_t >;
 
 	using ReturnReferences= std::vector<ParamReference>; // Sorted.
-	using ReturnInnerReferences= std::vector<ReturnReferences>;
+	using ReturnInnerReferences= std::vector<ReturnReferences>; // Return references for each inner tag of the return type.
 
 	struct ReferencePollution
 	{
@@ -206,8 +206,9 @@ public:
 		bool operator<( const ReferencePollution& other ) const;
 	};
 
-	using ReferencesPollution= std::vector<ReferencePollution>; // Sorted
+	using ReferencesPollution= std::vector<ReferencePollution>; // Sorted.
 
+public:
 	bool PointerCanBeConvertedTo( const FunctionType& other ) const;
 	bool ReturnsCompositeValue() const;
 
@@ -218,8 +219,6 @@ public:
 	ValueType return_value_type= ValueType::Value;
 	bool unsafe= false;
 	llvm::CallingConv::ID calling_convention= llvm::CallingConv::C;
-
-	// Use "std::set" for references description, because we needs stable order for function type mangling.
 
 	// Tags of returned reference.
 	ReturnReferences return_references;
