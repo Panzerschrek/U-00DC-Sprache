@@ -223,9 +223,16 @@ void CodeBuilder::PrepareFunctionsSet( NamesScope& names_scope, OverloadedFuncti
 
 			// Update function type.
 			function_variable.type.return_type= return_type_deduction_context.return_type.value_or( void_type_ );
+
 			function_variable.type.return_references= std::move(reference_notation_deduction_context.return_references);
+			NormalizeParamReferencesList( function_variable.type.return_references );
+
 			function_variable.type.return_inner_references= std::move(reference_notation_deduction_context.return_inner_references);
+			for( auto& list : function_variable.type.return_inner_references )
+				NormalizeParamReferencesList( list );
+
 			function_variable.type.references_pollution= std::move(reference_notation_deduction_context.references_pollution);
+			NormalizeReferencesPollution( function_variable.type.references_pollution );
 
 			function_variable.has_body= false;
 			// Remove old LLVM function and create new one (with name based on exact deduced function type).

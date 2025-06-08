@@ -851,7 +851,10 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 	for( const ReferencePollution& src_pollution : src_function_type.references_pollution )
 	{
 		 // TODO - maybe compare with mutability conversion possibility?
-		if( dst_function_type.references_pollution.count(src_pollution) == 0u )
+		if( !std::binary_search( // Use binary search, since this list should be sorted.
+				dst_function_type.references_pollution.begin(),
+				dst_function_type.references_pollution.end(),
+				src_pollution ) )
 			return false;
 	}
 

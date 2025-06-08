@@ -119,8 +119,10 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		else
 			out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + param_reference.second );
 
-		coroutine_type_description.return_references.insert( out_reference );
+		coroutine_type_description.return_references.push_back( out_reference );
 	}
+
+	NormalizeParamReferencesList( coroutine_type_description.return_references );
 
 	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
 	for( size_t i= 0u; i < coroutine_function_type.return_inner_references.size(); ++i )
@@ -137,8 +139,9 @@ void CodeBuilder::TransformCoroutineFunctionType(
 			else
 				out_reference.second= uint8_t( param_to_first_inner_reference_tag[ param_reference.first ] + out_reference.second );
 
-			coroutine_type_description.return_inner_references[i].insert( out_reference );
+			coroutine_type_description.return_inner_references[i].push_back( out_reference );
 		}
+		NormalizeParamReferencesList( coroutine_type_description.return_inner_references[i] );
 	}
 
 	// Coroutine function returns value of coroutine type.

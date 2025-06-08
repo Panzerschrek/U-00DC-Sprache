@@ -42,6 +42,13 @@ std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference(
 	return param_reference;
 }
 
+template<typename T>
+static void NormalizeReferenceNotationList( std::vector<T>& list )
+{
+	std::sort( list.begin(), list.end() );
+	list.erase( std::unique( list.begin(), list.end() ), list.end() );
+}
+
 } // namespace
 
 std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression )
@@ -174,8 +181,11 @@ FunctionType::ReferencesPollution CodeBuilder::EvaluateFunctionReferencePollutio
 			continue;
 		}
 
-		result.insert( pollution );
+		result.push_back( pollution );
 	}
+
+	NormalizeReferencesPollution( result );
+
 	return result;
 }
 
@@ -210,8 +220,10 @@ FunctionType::ReturnReferences CodeBuilder::EvaluateFunctionReturnReferences(
 	for( uint64_t i= 0; i < array_type->element_count; ++i )
 	{
 		if( const auto param_reference= ParseEvaluatedParamReference( variable->constexpr_value->getAggregateElement( uint32_t(i) ), num_params, names_scope, src_loc ) )
-			result.insert( *param_reference );
+			result.push_back( *param_reference );
 	}
+
+	NormalizeParamReferencesList( result );
 
 	return result;
 }
@@ -258,8 +270,9 @@ FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerRefe
 		for( uint64_t j= 0; j < array_type->element_count; ++j )
 		{
 			if( const auto param_reference= ParseEvaluatedParamReference( tag_constant->getAggregateElement( uint32_t(j) ), num_params, names_scope, src_loc ) )
-				result[i].insert( *param_reference );
+				result[i].push_back( *param_reference );
 		}
+		NormalizeParamReferencesList( result[i] );
 	}
 
 	return result;
@@ -269,6 +282,16 @@ VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_
 {
 	const StackVariablesStorage dummy_stack_variables_storage( function_context );
 	return BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
+}
+
+void CodeBuilder::NormalizeParamReferencesList( std::vector<FunctionType::ParamReference>& param_references )
+{
+	NormalizeReferenceNotationList( param_references );
+}
+
+void CodeBuilder::NormalizeReferencesPollution( std::vector<FunctionType::ReferencePollution>& references_pollution )
+{
+	NormalizeReferenceNotationList( references_pollution );
 }
 
 CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnReferencesConstant( const FunctionType::ReturnReferences& return_references )

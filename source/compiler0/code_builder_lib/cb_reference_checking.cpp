@@ -36,8 +36,9 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			ref_pollution.dst.second= uint8_t(i);
 			ref_pollution.src.first= 1u;
 			ref_pollution.src.second= uint8_t(i);
-			function_type.references_pollution.insert(ref_pollution);
+			function_type.references_pollution.push_back(ref_pollution);
 		}
+		NormalizeReferencesPollution( function_type.references_pollution );
 	};
 
 	if( func_name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
@@ -339,7 +340,10 @@ void CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 		const auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
 
 		if( coroutine_inner_reference == std::nullopt ||
-			coroutine_type_description.return_references.count( *coroutine_inner_reference ) == 0 )
+			! std::binary_search( // Use binary search, since this list should be sorted.
+				coroutine_type_description.return_references.begin(),
+				coroutine_type_description.return_references.end(),
+				*coroutine_inner_reference ) )
 			REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, var_node->name );
 	}
 }
@@ -359,7 +363,10 @@ void CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
 
 			if( coroutine_inner_reference == std::nullopt ||
 				i >= coroutine_type_description.return_inner_references.size() ||
-				coroutine_type_description.return_inner_references[i].count( *coroutine_inner_reference ) == 0 )
+				! std::binary_search( // Use binary search, since this list should be sorted.
+					coroutine_type_description.return_inner_references[i].begin(),
+					coroutine_type_description.return_inner_references[i].end(),
+					*coroutine_inner_reference ) )
 				REPORT_ERROR( ReturningUnallowedReference, names_scope.GetErrors(), src_loc, var_node->name );
 		}
 	}
@@ -434,7 +441,10 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 					pollution.src= *src_reference;
 					pollution.dst.first= uint8_t(dst_param_index);
 					pollution.dst.second= uint8_t(dst_tag);
-					if( function_context.function_type.references_pollution.count( pollution ) != 0u )
+					if( std::binary_search( // Use binary search, since this list should be sorted.
+						function_context.function_type.references_pollution.begin(),
+						function_context.function_type.references_pollution.end(),
+						pollution ) )
 						continue;
 				}
 				REPORT_ERROR( UnallowedReferencePollution, errors_container, src_loc, dst_tag, node_pair.first->name, accesible_variable->name );
@@ -484,13 +494,13 @@ void CodeBuilder::CollectReturnReferences( FunctionContext& function_context, co
 		{
 			const size_t arg_n= size_t( &arg_node_pair - &function_context.args_nodes.front() );
 			if( var_node == arg_node_pair.first )
-				reference_notation_deduction_context.return_references.emplace( uint8_t(arg_n), FunctionType::c_param_reference_number );
+				reference_notation_deduction_context.return_references.emplace_back( uint8_t(arg_n), FunctionType::c_param_reference_number );
 
 			for( const VariablePtr& inner_node : arg_node_pair.second )
 			{
 				const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
 				if( var_node == inner_node )
-					reference_notation_deduction_context.return_references.emplace( uint8_t(arg_n), uint8_t(tag_n) );
+					reference_notation_deduction_context.return_references.emplace_back( uint8_t(arg_n), uint8_t(tag_n) );
 			}
 		}
 
@@ -539,13 +549,13 @@ void CodeBuilder::CollectReturnInnerReferences( FunctionContext& function_contex
 			{
 				const size_t arg_n= size_t( &arg_node_pair - &function_context.args_nodes.front() );
 				if( var_node == arg_node_pair.first )
-					reference_notation_deduction_context.return_inner_references[i].emplace( uint8_t(arg_n), FunctionType::c_param_reference_number );
+					reference_notation_deduction_context.return_inner_references[i].emplace_back( uint8_t(arg_n), FunctionType::c_param_reference_number );
 
 				for( const VariablePtr& inner_node : arg_node_pair.second )
 				{
 					const size_t tag_n= size_t( &inner_node - &arg_node_pair.second.front() );
 					if( var_node == inner_node )
-						reference_notation_deduction_context.return_inner_references[i].emplace( uint8_t(arg_n), uint8_t(tag_n) );
+						reference_notation_deduction_context.return_inner_references[i].emplace_back( uint8_t(arg_n), uint8_t(tag_n) );
 				}
 			}
 
@@ -628,7 +638,7 @@ void CodeBuilder::CollectReferencePollution( FunctionContext& function_context )
 					FunctionType::ReferencePollution pollution;
 					pollution.src= *param_reference;
 					pollution.dst= FunctionType::ParamReference( uint8_t(dst_param_index), uint8_t(dst_tag) );
-					reference_notation_deduction_context.references_pollution.insert( std::move(pollution) );
+					reference_notation_deduction_context.references_pollution.push_back( std::move(pollution) );
 				}
 				else if( lambda_preprocessing_context != nullptr )
 				{

@@ -295,8 +295,9 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 		{
 			if( ( function_type.return_value_type == ValueType::ReferenceImut && function_type.params[i].value_type != ValueType::Value ) ||
 				( function_type.return_value_type == ValueType::ReferenceMut  && function_type.params[i].value_type == ValueType::ReferenceMut ) )
-				function_type.return_references.emplace( i, FunctionType::c_param_reference_number );
+				function_type.return_references.emplace_back( i, FunctionType::c_param_reference_number );
 		}
+		NormalizeParamReferencesList( function_type.return_references );
 	}
 
 	return function_type;

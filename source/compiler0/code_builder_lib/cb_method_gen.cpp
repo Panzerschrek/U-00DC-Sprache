@@ -263,8 +263,9 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 			pollution.dst.second= uint8_t(i);
 			pollution.src.first= 1u;
 			pollution.src.second= uint8_t(i);
-			constructor_type.references_pollution.emplace(pollution);
+			constructor_type.references_pollution.push_back( pollution );
 		}
+		NormalizeReferencesPollution( constructor_type.references_pollution );
 
 		// Add generated constructor
 		FunctionVariable new_constructor_variable;
@@ -523,8 +524,9 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 			pollution.dst.second= uint8_t(i);
 			pollution.src.first= 1u;
 			pollution.src.second= uint8_t(i);
-			op_type.references_pollution.emplace(pollution);
+			op_type.references_pollution.push_back( pollution );
 		}
+		NormalizeReferencesPollution( op_type.references_pollution );
 
 		// Add generated assignment operator
 		FunctionVariable new_op_variable;

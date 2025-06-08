@@ -134,10 +134,12 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 						: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
 			} );
 	}
+	NormalizeParamReferencesList( coroutine_type_description.return_references );
 
 	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
 	for( auto mut i= 0s; i < coroutine_function_type.return_inner_references.size(); ++i )
 	{
+		var FunctionType::ParamReferences &mut out_list= coroutine_type_description.return_inner_references[i];
 		foreach( &param_reference : coroutine_function_type.return_inner_references[i] )
 		{
 			if( size_type( param_reference.param_index) >= coroutine_function_type.params.size() )
@@ -145,7 +147,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 				continue;
 			}
 
-			coroutine_type_description.return_inner_references[i].push_back(
+			out_list.push_back(
 				FunctionType::ParamReference
 				{
 					.param_index(0),
@@ -155,6 +157,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 							: u8( param_to_first_inner_reference_tag[ size_type( param_reference.param_index) ] + size_type(param_reference.reference_index) ) )
 				} );
 		}
+		NormalizeParamReferencesList( out_list );
 	}
 
 	// Coroutine function returns value of coroutine type.

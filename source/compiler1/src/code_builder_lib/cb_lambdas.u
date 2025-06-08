@@ -753,11 +753,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					pair.first.push_back( FunctionType::ParamReference{ .param_index= this_param_index, .reference_index= tag } );
 				}
 			}
-		}
-
-		foreach( &mut list : return_inner_references )
-		{
-			NormalizeParamReferencesList( list );
+			NormalizeParamReferencesList( pair.first );
 		}
 
 		// Process pollution.

@@ -611,8 +611,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 		for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_references )
 		{
 			if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ); it != captured_variable_to_lambda_inner_reference_tag.end() )
-				return_references.emplace( this_param_index, it->second );
+				return_references.emplace_back( this_param_index, it->second );
 		}
+		NormalizeParamReferencesList( return_references );
 
 		// Process return inner references.
 		return_inner_references= std::move(reference_notation_deduction_context.return_inner_references);
@@ -623,8 +624,9 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 			for( const VariablePtr& captured_variable_return_reference : lambda_preprocessing_context.captured_variables_return_inner_references[ tag_n ] )
 			{
 				if( const auto it= captured_variable_to_lambda_inner_reference_tag.find( captured_variable_return_reference ); it != captured_variable_to_lambda_inner_reference_tag.end() )
-					return_inner_references[tag_n].emplace( this_param_index, it->second );
+					return_inner_references[tag_n].emplace_back( this_param_index, it->second );
 			}
+			NormalizeParamReferencesList( return_inner_references[tag_n] );
 		}
 
 		// Process pollution.
@@ -654,8 +656,10 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 			}
 			else U_ASSERT(false);
 
-			references_pollution.insert( result_pollution );
+			references_pollution.push_back( result_pollution );
 		}
+
+		NormalizeReferencesPollution( references_pollution );
 	}
 
 	{

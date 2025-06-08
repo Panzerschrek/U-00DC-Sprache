@@ -1300,6 +1300,8 @@ private:
 	FunctionType::ReturnReferences EvaluateFunctionReturnReferences( NamesScope& names_scope,FunctionContext& function_context,  const Synt::Expression& expression, size_t num_params );
 	FunctionType::ReturnInnerReferences EvaluateFunctionReturnInnerReferences( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, size_t num_params );
 	VariablePtr EvaluateReferenceNotationExpression( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression );
+	static void NormalizeParamReferencesList( std::vector<FunctionType::ParamReference>& param_references );
+	static void NormalizeReferencesPollution( std::vector<FunctionType::ReferencePollution>& references_pollution );
 
 	using ReferenceNotationConstant= std::pair<Type, llvm::Constant*>;
 	ReferenceNotationConstant GetReturnReferencesConstant( const FunctionType::ReturnReferences& return_references );
