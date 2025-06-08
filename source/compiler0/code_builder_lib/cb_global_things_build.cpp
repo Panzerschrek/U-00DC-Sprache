@@ -781,11 +781,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	}
 
 	// Fill llvm struct type fields
-	ClassFieldsVector<llvm::Type*> fields_llvm_types;
+	llvm::SmallVector<llvm::Type*, 16> fields_llvm_types;
 
 	// Base must be always first field.
 	if( the_class.base_class != nullptr )
 		fields_llvm_types.push_back( the_class.base_class->llvm_type );
+
 	// Add non-base (interface) fields.
 	for( Class::Parent& parent : the_class.parents )
 	{
