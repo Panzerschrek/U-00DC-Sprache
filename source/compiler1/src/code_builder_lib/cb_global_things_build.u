@@ -579,19 +579,17 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
-	// Allocate virtual table pointer, if class has no parents.
-	// If class has at least one parent, reuse it's virtual table pointer.
-	auto allocate_virtual_table_pointer= syntax_element.parents.empty() && (
-		syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract ||
-		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
-		syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface );
-
 	// Determine class data layout.
 	var ust::vector</ LLVMTypeRef /> mut fields_llvm_types;
 
-	if( allocate_virtual_table_pointer )
+	if( syntax_element.parents.empty() && (
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface ) )
 	{
-		fields_llvm_types.push_back( unsafe( LLVMPointerType( fundamental_llvm_types_.size_type_, 0u ) ) );// set exact type later.
+		// Allocate virtual table pointer, if class has no parents.
+		// If class has at least one parent, reuse it's virtual table pointer.
+		fields_llvm_types.push_back( unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) ) );
 	}
 
 	with( mut lock : class_type.lock_mut() )
@@ -1142,10 +1140,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	{
 		PrepareClassVirtualTable( class_type );
 		PrepareClassVirtualTableType( class_type );
-		if( allocate_virtual_table_pointer )
-		{
-			fields_llvm_types.front()= unsafe( LLVMPointerType( class_type.lock_imut().deref().virtual_table_llvm_type, 0u ) );
-		}
 	}
 
 	with( mut lock : class_type.lock_mut() )
