@@ -850,7 +850,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		}
 		else
 		{
-			std::vector<ClassFieldPtr> fields_left;
+			llvm::SmallVector<ClassFieldPtr, 8> fields_left;
 
 			the_class.members->ForEachValueInThisScope(
 				[&]( const Value& value )
