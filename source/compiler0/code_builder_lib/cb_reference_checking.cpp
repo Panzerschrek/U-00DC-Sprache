@@ -340,7 +340,7 @@ void CodeBuilder::CheckAsyncReturnReferenceIsAllowed(
 		const auto coroutine_inner_reference= GetCoroutineInnerReferenceForParamNode( function_context, var_node );
 
 		if( coroutine_inner_reference == std::nullopt ||
-			! std::binary_search(
+			! std::binary_search( // Use binary search, since this list should be sorted.
 				coroutine_type_description.return_references.begin(),
 				coroutine_type_description.return_references.end(),
 				*coroutine_inner_reference ) )
@@ -363,7 +363,7 @@ void CodeBuilder::CheckAsyncReturnInnerReferencesAreAllowed(
 
 			if( coroutine_inner_reference == std::nullopt ||
 				i >= coroutine_type_description.return_inner_references.size() ||
-				! std::binary_search(
+				! std::binary_search( // Use binary search, since this list should be sorted.
 					coroutine_type_description.return_inner_references[i].begin(),
 					coroutine_type_description.return_inner_references[i].end(),
 					*coroutine_inner_reference ) )
@@ -441,7 +441,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 					pollution.src= *src_reference;
 					pollution.dst.first= uint8_t(dst_param_index);
 					pollution.dst.second= uint8_t(dst_tag);
-					if( std::binary_search(
+					if( std::binary_search( // Use binary search, since this list should be sorted.
 						function_context.function_type.references_pollution.begin(),
 						function_context.function_type.references_pollution.end(),
 						pollution ) )
