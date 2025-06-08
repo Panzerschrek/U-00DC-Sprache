@@ -206,7 +206,7 @@ public:
 		bool operator<( const ReferencePollution& other ) const;
 	};
 
-	using ReferencesPollution= std::set<ReferencePollution>;
+	using ReferencesPollution= std::vector<ReferencePollution>; // Sorted
 
 	bool PointerCanBeConvertedTo( const FunctionType& other ) const;
 	bool ReturnsCompositeValue() const;

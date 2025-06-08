@@ -232,6 +232,7 @@ void CodeBuilder::PrepareFunctionsSet( NamesScope& names_scope, OverloadedFuncti
 				NormalizeReferenceNotationList( list );
 
 			function_variable.type.references_pollution= std::move(reference_notation_deduction_context.references_pollution);
+			NormalizeReferenceNotationList( function_variable.type.references_pollution );
 
 			function_variable.has_body= false;
 			// Remove old LLVM function and create new one (with name based on exact deduced function type).

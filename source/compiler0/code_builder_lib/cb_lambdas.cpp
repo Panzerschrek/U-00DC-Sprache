@@ -656,8 +656,10 @@ ClassPtr CodeBuilder::PrepareLambdaClass( NamesScope& names_scope, FunctionConte
 			}
 			else U_ASSERT(false);
 
-			references_pollution.insert( result_pollution );
+			references_pollution.push_back( result_pollution );
 		}
+
+		NormalizeReferenceNotationList( references_pollution );
 	}
 
 	{
