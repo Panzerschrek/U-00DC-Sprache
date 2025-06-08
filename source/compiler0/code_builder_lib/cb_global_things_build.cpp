@@ -42,72 +42,6 @@ private:
 	} \
 	GlobalsLoopsDetectorGuard globals_loop_detector_guard( [this]{ global_things_stack_.pop_back(); } );
 
-void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm_types, const llvm::DataLayout& data_layout )
-{
-	// Fields in original order
-	using FieldsMap= std::map< uint32_t, ClassFieldPtr >;
-	FieldsMap fields;
-
-	bool fields_are_ok= true;
-	class_.members->ForEachValueInThisScope(
-		[&]( const Value& value )
-		{
-			if( const ClassFieldPtr field= value.GetClassField() )
-			{
-				fields[field->index]= field;
-				if( !field->is_reference && !field->type.GetLLVMType()->isSized() )
-					fields_are_ok= false;
-			}
-		} );
-
-	if( fields.empty() || !fields_are_ok )
-		return;
-
-	uint32_t field_index= fields.begin()->first;
-
-	fields_llvm_types.resize( field_index ); // Remove all fields ( parent classes and virtual table pointers are not in fields list ).
-
-	// Calculate start offset, include parents fields, virtual table pointer.
-	uint64_t current_offset= 0u;
-	for( llvm::Type* type : fields_llvm_types )
-	{
-		const uint64_t alignment= data_layout.getABITypeAlign( type ).value();
-		const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
-		current_offset+= padding + data_layout.getTypeAllocSize( type );
-	}
-
-	// Sort fields, minimize paddings and minimize fields reordering.
-	while( !fields.empty() )
-	{
-		FieldsMap::iterator best_field_it= fields.begin();
-		uint64_t best_field_padding= ~0u;
-		for( auto it= fields.begin(); it != fields.end(); ++it )
-		{
-			const uint64_t alignment= data_layout.getABITypeAlign( best_field_it->second->is_reference ? it->second->type.GetLLVMType()->getPointerTo() : it->second->type.GetLLVMType() ).value();
-			U_ASSERT( alignment != 0u );
-
-			const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
-			if( padding < best_field_padding )
-			{
-				best_field_padding= padding;
-				best_field_it= it;
-				if( padding == 0 )
-					break;
-			}
-		}
-
-		llvm::Type* best_field_llvm_type= best_field_it->second->type.GetLLVMType();
-		if( best_field_it->second->is_reference )
-			best_field_llvm_type= best_field_llvm_type->getPointerTo();
-
-		best_field_it->second->index= field_index;
-		++field_index;
-		fields_llvm_types.push_back( best_field_llvm_type );
-		current_offset+= best_field_padding + data_layout.getTypeAllocSize( best_field_llvm_type );
-		fields.erase( best_field_it );
-	}
-}
-
 } // namespace
 
 //
@@ -877,45 +811,102 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	}
 
 	{ // Create fields.
-		ClassFieldsVector< ClassFieldPtr > class_fields_in_original_order;
 
-		the_class.members->ForEachValueInThisScope(
-			[&]( const Value& value )
-			{
-				if( const ClassFieldPtr class_field= value.GetClassField() )
-					class_fields_in_original_order.push_back( class_field );
-			});
-
-		std::sort(
-			class_fields_in_original_order.begin(), class_fields_in_original_order.end(),
-			[](const ClassFieldPtr& l, const ClassFieldPtr& r) { return l->original_index < r->original_index; } );
-
-		for( const ClassFieldPtr& class_field : class_fields_in_original_order )
+		if( class_declaration.keep_fields_order )
 		{
-			class_field->index= uint32_t(fields_llvm_types.size());
-			if( class_field->is_reference )
-				fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
-			else
+			the_class.members->ForEachValueInThisScope(
+				[&]( const Value& value )
+				{
+					if( const auto field= value.GetClassField() )
+						the_class.fields_order.push_back( field );
+				} );
+
+			std::sort(
+				the_class.fields_order.begin(), the_class.fields_order.end(),
+				[](const ClassFieldPtr& l, const ClassFieldPtr& r) { return l->original_index < r->original_index; } );
+
+			for( const ClassFieldPtr& class_field : the_class.fields_order )
 			{
-				if( !class_field->type.GetLLVMType()->isSized() )
-					fields_llvm_types.emplace_back( fundamental_llvm_types_.i8_ );// May be in case of error (such dependency loop )
+				class_field->index= uint32_t(fields_llvm_types.size());
+
+				if( class_field->is_reference )
+					fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
 				else
-					fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
+				{
+					if( !class_field->type.GetLLVMType()->isSized() )
+						fields_llvm_types.emplace_back( fundamental_llvm_types_.i8_ );// May be in case of error (such dependency loop )
+					else
+						fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
+				}
 			}
 		}
-
-		if( !class_declaration.keep_fields_order )
-			SortClassFields( the_class, fields_llvm_types, data_layout_ );
-	}
-
-	// Fill container with fields names.
-	the_class.fields_order.resize( fields_llvm_types.size() );
-	the_class.members->ForEachValueInThisScope(
-		[&]( const Value& value )
+		else
 		{
-			if( const auto field= value.GetClassField() )
-				the_class.fields_order[field->index]= field;
-		} );
+			std::vector<ClassFieldPtr> fields_left;
+
+			the_class.members->ForEachValueInThisScope(
+				[&]( const Value& value )
+				{
+					if( const auto field= value.GetClassField() )
+						fields_left.push_back( field );
+				} );
+
+			// Calculate start offset, include parents fields, virtual table pointer.
+			uint64_t current_offset= 0u;
+			for( llvm::Type* type : fields_llvm_types )
+			{
+				const uint64_t alignment= data_layout_.getABITypeAlign( type ).value();
+				const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
+				current_offset+= padding + data_layout_.getTypeAllocSize( type );
+			}
+
+			// On each iteration try to find a field with minimal padding relative to current offset.
+			// In case of tie prefer a field with smaller original index (try to keep original fields order).
+			// This algorithm has quadratic time complexity, but it's fine, since usually there are not so many fields in a class.
+			while( !fields_left.empty() )
+			{
+				uint64_t best_field_padding= ~0u;
+				size_t best_padding_field_index= 0;
+
+				for( size_t i= 0; i < fields_left.size(); ++i )
+				{
+					const ClassField& field= *fields_left[i];
+
+					const uint64_t alignment= data_layout_.getABITypeAlign( field.is_reference ? field.type.GetLLVMType()->getPointerTo() : field.type.GetLLVMType() ).value();
+					U_ASSERT( alignment != 0u );
+
+					const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
+					if( padding < best_field_padding )
+					{
+						best_field_padding= padding;
+						best_padding_field_index= i;
+					}
+					else if( padding == best_field_padding )
+					{
+						// Prefer first field with same padding.
+						if( field.original_index < fields_left[ best_padding_field_index ]->original_index )
+							best_padding_field_index= i;
+					}
+				}
+
+				const ClassFieldPtr field= fields_left[ best_padding_field_index ];
+
+				if( best_padding_field_index != fields_left.size() - 1 )
+					std::swap( fields_left[ best_padding_field_index ], fields_left.back() );
+				fields_left.pop_back();
+
+				llvm::Type* llvm_type= field->type.GetLLVMType();
+				if( field->is_reference )
+					llvm_type= llvm_type->getPointerTo();
+
+				field->index= uint32_t( fields_llvm_types.size() );
+				fields_llvm_types.push_back( llvm_type );
+				the_class.fields_order.push_back( field );
+
+				current_offset+= best_field_padding + data_layout_.getTypeAllocSize( llvm_type );
+			}
+		}
+	}
 
 	// Build declarations for some necessary methods.
 	the_class.members->ForEachInThisScope(
