@@ -659,7 +659,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 		else
 		{
-			var ust::vector</ ust::shared_ptr_mut</ClassField/> /> mut fields_left;
+			var ust::vector</ ClassFieldPtr /> mut fields_left;
 			foreach( &member : class_members.lock_imut().deref() )
 			{
 				auto field_ptr= member.value().Get</ ClassField />();
@@ -679,15 +679,19 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				current_offset+= u32( unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) ) );
 			}
 
+			// On each iteration try to find a field with minimal padding relative to current offset.
+			// In case of tie prefer a field with smaller original index (try to keep original fields order).
+			// This algorithm has quadratic time complexity, but it's fine, since usually there are not so many fields in a class.
 			while( !fields_left.empty() )
 			{
-				// Find best fit field with minimal original index (try to keep original fields order).
 				var u32 mut best_field_padding= ~0u;
 				auto mut best_padding_field_index= 0s;
+
 				for( auto mut i= 0s; i < fields_left.size(); ++i )
 				{
 					auto field_lock= fields_left[i].lock_imut();
 					var ClassField& field= field_lock.deref();
+
 					auto mut llvm_type= field.t.GetLLVMType();
 					if( field.is_reference ) { llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) ); }
 
@@ -710,7 +714,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				auto fields_left_size= fields_left.size();
 				fields_left.swap( best_padding_field_index, fields_left_size - 1s );
-				auto field_ptr= fields_left.pop_back();
+				var ClassFieldPtr field_ptr= fields_left.pop_back();
 
 				auto mut field_lock= field_ptr.lock_mut();
 				var ClassField &mut field= field_lock.deref();
