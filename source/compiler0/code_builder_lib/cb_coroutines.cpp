@@ -122,7 +122,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		coroutine_type_description.return_references.push_back( out_reference );
 	}
 
-	NormalizeReferenceNotationList( coroutine_type_description.return_references );
+	NormalizeParamReferencesList( coroutine_type_description.return_references );
 
 	coroutine_type_description.return_inner_references.resize( coroutine_function_type.return_inner_references.size() );
 	for( size_t i= 0u; i < coroutine_function_type.return_inner_references.size(); ++i )
@@ -141,7 +141,7 @@ void CodeBuilder::TransformCoroutineFunctionType(
 
 			coroutine_type_description.return_inner_references[i].push_back( out_reference );
 		}
-		NormalizeReferenceNotationList( coroutine_type_description.return_inner_references[i] );
+		NormalizeParamReferencesList( coroutine_type_description.return_inner_references[i] );
 	}
 
 	// Coroutine function returns value of coroutine type.

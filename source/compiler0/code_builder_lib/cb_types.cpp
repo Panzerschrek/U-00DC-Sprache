@@ -297,7 +297,7 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 				( function_type.return_value_type == ValueType::ReferenceMut  && function_type.params[i].value_type == ValueType::ReferenceMut ) )
 				function_type.return_references.emplace_back( i, FunctionType::c_param_reference_number );
 		}
-		NormalizeReferenceNotationList( function_type.return_references );
+		NormalizeParamReferencesList( function_type.return_references );
 	}
 
 	return function_type;

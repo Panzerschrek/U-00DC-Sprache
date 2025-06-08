@@ -42,6 +42,13 @@ std::optional<FunctionType::ParamReference> ParseEvaluatedParamReference(
 	return param_reference;
 }
 
+template<typename T>
+static void NormalizeReferenceNotationList( std::vector<T>& list )
+{
+	std::sort( list.begin(), list.end() );
+	list.erase( std::unique( list.begin(), list.end() ), list.end() );
+}
+
 } // namespace
 
 std::optional<uint8_t> CodeBuilder::EvaluateReferenceFieldTag( NamesScope& names_scope, const Synt::Expression& expression )
@@ -275,6 +282,16 @@ VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_
 {
 	const StackVariablesStorage dummy_stack_variables_storage( function_context );
 	return BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
+}
+
+void CodeBuilder::NormalizeParamReferencesList( std::vector<FunctionType::ParamReference>& param_references )
+{
+	NormalizeReferenceNotationList( param_references );
+}
+
+void CodeBuilder::NormalizeReferencesPollution( std::vector<FunctionType::ReferencePollution>& references_pollution )
+{
+	NormalizeReferenceNotationList( references_pollution );
 }
 
 CodeBuilder::ReferenceNotationConstant CodeBuilder::GetReturnReferencesConstant( const FunctionType::ReturnReferences& return_references )

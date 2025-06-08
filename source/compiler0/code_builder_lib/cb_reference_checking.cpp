@@ -38,7 +38,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			ref_pollution.src.second= uint8_t(i);
 			function_type.references_pollution.push_back(ref_pollution);
 		}
-		NormalizeReferenceNotationList( function_type.references_pollution );
+		NormalizeReferencesPollution( function_type.references_pollution );
 	};
 
 	if( func_name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
