@@ -1,5 +1,6 @@
 import "/assert.u"
 import "/scoped_array.u"
+import "/sort.u"
 import "/CodeBuilderLib/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -579,19 +580,17 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
-	// Allocate virtual table pointer, if class has no parents.
-	// If class has at least one parent, reuse it's virtual table pointer.
-	auto allocate_virtual_table_pointer= syntax_element.parents.empty() && (
-		syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract ||
-		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
-		syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface );
-
 	// Determine class data layout.
 	var ust::vector</ LLVMTypeRef /> mut fields_llvm_types;
 
-	if( allocate_virtual_table_pointer )
+	if( syntax_element.parents.empty() && (
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Abstract ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
+		syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface ) )
 	{
-		fields_llvm_types.push_back( unsafe( LLVMPointerType( fundamental_llvm_types_.size_type_, 0u ) ) );// set exact type later.
+		// Allocate virtual table pointer, if class has no parents.
+		// If class has at least one parent, reuse it's virtual table pointer.
+		fields_llvm_types.push_back( unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) ) );
 	}
 
 	with( mut lock : class_type.lock_mut() )
@@ -618,51 +617,37 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			}
 		}
 	}
+
 	{
-		var ust::vector</ ust::shared_ptr_mut</ClassField/> /> mut fields_left;
-		foreach( &member : class_members.lock_imut().deref() )
-		{
-			auto field_ptr= member.value().Get</ ClassField />();
-			if( !field_ptr.empty() )
-			{
-				fields_left.push_back( field_ptr.try_to_non_nullable() );
-			}
-		}
-
-		// Calculate start offset, include parents fields, virtual table pointer.
-		var u32 mut current_offset= 0u;
-		foreach( llvm_type : fields_llvm_types )
-		{
-			var u32 alignment= unsafe( LLVMABIAlignmentOfType( data_layout_, llvm_type ) );
-			var u32 padding= ( alignment - current_offset % alignment ) % alignment;
-			current_offset+= padding;
-			current_offset+= u32( unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) ) );
-		}
-
 		var ust::vector</ClassType::FieldOrdered/> mut fields_order;
+
 		if( syntax_element.keep_fields_order )
 		{
 			// Sort fields by original index.
-			// TODO - use libary sorting function?
-			while( !fields_left.empty() )
+
+			foreach( &member : class_members.lock_imut().deref() )
 			{
-				var u32 mut min_original_index= ~0u;
-				var size_type mut min_index_index= ~0s;
-				for( auto mut i= 0s; i < fields_left.size(); ++i )
+				auto field_ptr= member.value().Get</ ClassField />();
+				if( !field_ptr.empty() )
 				{
-					var u32 original_index= fields_left[i].lock_imut().deref().original_index;
-					if( original_index < min_original_index )
-					{
-						min_original_index= original_index;
-						min_index_index= i;
-					}
+					auto mut field_ptr_non_null= field_ptr.try_to_non_nullable();
+					fields_order.push_back(
+						ust::make_tuple(
+							field_ptr_non_null.lock_imut().deref().syntax_element.deref().name,
+							move(field_ptr_non_null) ) );
 				}
+			}
 
-				auto fields_left_size= fields_left.size();
-				fields_left.swap( min_index_index, fields_left_size - 1s );
-				auto field_ptr= fields_left.pop_back();
+			ust::sort_by_key(
+				fields_order,
+				lambda( ClassType::FieldOrdered& f ) : u32
+				{
+					return f[1].lock_imut().deref().original_index;
+				} );
 
-				auto mut field_lock= field_ptr.lock_mut();
+			foreach( &f : fields_order )
+			{
+				auto mut field_lock= f[1].lock_mut();
 				var ClassField &mut field= field_lock.deref();
 
 				auto mut llvm_type= field.t.GetLLVMType();
@@ -670,20 +655,43 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				field.index= u32(fields_llvm_types.size());
 				fields_llvm_types.push_back( llvm_type );
-				fields_order.push_back( ust::make_tuple( field.syntax_element.deref().name, field_ptr ) );
 			}
 		}
 		else
 		{
+			var ust::vector</ ClassFieldPtr /> mut fields_left;
+			foreach( &member : class_members.lock_imut().deref() )
+			{
+				auto field_ptr= member.value().Get</ ClassField />();
+				if( !field_ptr.empty() )
+				{
+					fields_left.push_back( field_ptr.try_to_non_nullable() );
+				}
+			}
+
+			// Calculate start offset, include parents fields or virtual table pointer.
+			var u32 mut current_offset= 0u;
+			foreach( llvm_type : fields_llvm_types )
+			{
+				var u32 alignment= unsafe( LLVMABIAlignmentOfType( data_layout_, llvm_type ) );
+				var u32 padding= ( alignment - current_offset % alignment ) % alignment;
+				current_offset+= padding;
+				current_offset+= u32( unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) ) );
+			}
+
+			// On each iteration try to find a field with minimal padding relative to current offset.
+			// In case of tie prefer a field with smaller original index (try to keep original fields order).
+			// This algorithm has quadratic time complexity, but it's fine, since usually there are not so many fields in a class.
 			while( !fields_left.empty() )
 			{
-				// Find best fit field with minimal original index (try to keep original fields order).
 				var u32 mut best_field_padding= ~0u;
 				auto mut best_padding_field_index= 0s;
+
 				for( auto mut i= 0s; i < fields_left.size(); ++i )
 				{
 					auto field_lock= fields_left[i].lock_imut();
 					var ClassField& field= field_lock.deref();
+
 					auto mut llvm_type= field.t.GetLLVMType();
 					if( field.is_reference ) { llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) ); }
 
@@ -706,7 +714,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				auto fields_left_size= fields_left.size();
 				fields_left.swap( best_padding_field_index, fields_left_size - 1s );
-				auto field_ptr= fields_left.pop_back();
+				var ClassFieldPtr field_ptr= fields_left.pop_back();
 
 				auto mut field_lock= field_ptr.lock_mut();
 				var ClassField &mut field= field_lock.deref();
@@ -1142,10 +1150,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	{
 		PrepareClassVirtualTable( class_type );
 		PrepareClassVirtualTableType( class_type );
-		if( allocate_virtual_table_pointer )
-		{
-			fields_llvm_types.front()= unsafe( LLVMPointerType( class_type.lock_imut().deref().virtual_table_llvm_type, 0u ) );
-		}
 	}
 
 	with( mut lock : class_type.lock_mut() )
