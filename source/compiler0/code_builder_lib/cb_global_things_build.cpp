@@ -1186,7 +1186,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 								}
 							} // for parent functions
 
-							// TODO - merge function templates smarter.
+							// For now can't perform smarter merging of function templates, so, just copy all of them.
 							for( const FunctionTemplatePtr& function_template : functions->template_functions )
 								result_class_functions->template_functions.push_back(function_template);
 						}

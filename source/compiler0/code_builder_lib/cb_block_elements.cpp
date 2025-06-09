@@ -323,7 +323,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				continue;
 			}
 
-			// TODO - maybe make copy of variable address in new llvm register?
 			variable_reference->llvm_value=
 				CreateReferenceCast( expression_result->llvm_value, expression_result->type, variable_reference->type, function_context );
 			variable_reference->constexpr_value= expression_result->constexpr_value;
@@ -2730,7 +2729,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Destruction frame for temporary variables of expressions.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	if( // TODO - create temp variables frame here.
+	if(
 		TryCallOverloadedBinaryOperator(
 			GetOverloadedOperatorForCompoundAssignmentOperator( compound_assignment_operator.compound_operation ),
 			compound_assignment_operator.l_value,
@@ -3500,7 +3499,7 @@ void CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 					constexpr_value= global_variable->getInitializer();
 				else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
 				{
-					// TODO - what first operand is constant GEP too?
+					// TODO - what if first operand is constant GEP too?
 					llvm::Constant* value= llvm::dyn_cast<llvm::GlobalVariable>(constant_expression->getOperand(0u))->getInitializer();
 
 					// Skip first zero index.

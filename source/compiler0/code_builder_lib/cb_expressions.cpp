@@ -393,7 +393,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		if( variable->location != Variable::Location::Pointer )
 		{
-			// TODO - Strange variable location.
+			// Strange variable location, may be (only) in case of error.
 			return ErrorValue();
 		}
 
@@ -691,7 +691,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), unary_minus.src_loc, variable->type );
 		return ErrorValue();
 	}
-	// TODO - maybe not support unary minus for 8 and 16 bit integer types?
+	// Support unary minus for 8-bit and 16-bit types primary in order to allow negative constants of such types (like -35i8 ).
 
 	const VariableMutPtr result=
 		Variable::Create(
@@ -1192,7 +1192,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		}
 	}
 
-	// Create mutable reference node without any links. TODO - check if this is correct.
+	// Create mutable reference node without any links.
 	const VariablePtr result=
 		Variable::Create(
 			raw_pointer_type->element_type,
@@ -2073,7 +2073,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.is_in_unsafe_block= prev_unsafe;
 
 	// Avoid passing constexpr values trough unsafe expression.
-	// TODO - do we really needs this?
 	if( const VariablePtr variable_ptr= result.GetVariable() )
 	{
 		if( variable_ptr->constexpr_value != nullptr )
@@ -2731,7 +2730,7 @@ Value CodeBuilder::ConcatenateCharArrays(
 	U_ASSERT( l_array_type->element_type == r_array_type->element_type );
 
 	ArrayType result_array_type;
-	// TODO - handle overflow?
+	// TODO - maybe handle size overflow?
 	result_array_type.element_count= l_array_type->element_count + r_array_type->element_count;
 	result_array_type.element_type= l_array_type->element_type;
 	result_array_type.llvm_type= llvm::ArrayType::get( result_array_type.element_type.GetLLVMType(), result_array_type.element_count );
@@ -3811,8 +3810,6 @@ Value CodeBuilder::CallFunctionValue(
 			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, names_scope.GetErrors(), call_src_loc );
 	}
 
-	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
-	// We must support static functions call using "this".
 	if( function_ptr == nullptr )
 	{
 		if( function_value_src_loc != std::nullopt && !functions_set->functions.empty() )
@@ -3920,7 +3917,6 @@ Value CodeBuilder::DoCallFunction(
 	llvm::SmallVector<llvm::Constant*, 16> constant_llvm_args;
 	llvm_args.resize( arg_count, nullptr );
 
-	// TODO - use vector of pairs instead.
 	llvm::SmallVector< VariablePtr, 16 > args_nodes;
 	args_nodes.resize( arg_count, nullptr );
 
