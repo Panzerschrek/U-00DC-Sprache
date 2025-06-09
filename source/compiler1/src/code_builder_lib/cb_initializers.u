@@ -1064,7 +1064,14 @@ fn CodeBuilder::ApplyConstructorInitializer( mut this, NamesScopePtr& names_scop
 	{
 		if( args.size() != 1s )
 		{
-			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, src_loc )
+			if( !variable.t.GetEnumType().empty() )
+			{
+				REPORT_ERROR( EnumsHaveConstructorsWithExactlyOneParameter, names_scope, src_loc )
+			}
+			if( !variable.t.GetRawPointerType().empty() )
+			{
+				REPORT_ERROR( RawPointersHaveConstructorsWithExactlyOneParameter, names_scope, src_loc )
+			}
 			return LLVMValueRef::Null;
 		}
 
@@ -1090,7 +1097,7 @@ fn CodeBuilder::ApplyConstructorInitializer( mut this, NamesScopePtr& names_scop
 	{
 		if( args.size() != 1s )
 		{
-			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope, src_loc )
+			REPORT_ERROR( FunctionPointersHaveConstructorsWithExactlyOneParameter, names_scope, src_loc )
 			return LLVMValueRef::Null;
 		}
 

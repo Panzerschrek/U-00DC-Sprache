@@ -932,8 +932,10 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	{
 		if( synt_args.size() != 1u )
 		{
-			// TODO - generate separate error for enums.
-			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), src_loc );
+			if( variable->type.GetEnumType() != nullptr )
+				REPORT_ERROR( EnumsHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), src_loc );
+			if( variable->type.GetRawPointerType() != nullptr )
+				REPORT_ERROR( RawPointersHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), src_loc );
 			return nullptr;
 		}
 
@@ -958,8 +960,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	{
 		if( synt_args.size() != 1u )
 		{
-			// TODO - generate separate error for function pointers.
-			REPORT_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), src_loc );
+			REPORT_ERROR( FunctionPointersHaveConstructorsWithExactlyOneParameter, names_scope.GetErrors(), src_loc );
 			return nullptr;
 		}
 

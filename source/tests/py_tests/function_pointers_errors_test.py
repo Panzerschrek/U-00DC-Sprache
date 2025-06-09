@@ -481,3 +481,26 @@ def ImplicitFunctionsSetToPointerConversionErrors_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "CouldNotSelectOverloadedFunction", 7 ) )
+
+
+def FunctionPointersHaveConstructorsWithExactlyOneParameter_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var (fn()) ptr( Bar, Bar ); // Too many arguments.
+		}
+		fn Bar();
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "FunctionPointersHaveConstructorsWithExactlyOneParameter", 4 ) )
+
+
+def FunctionPointersHaveConstructorsWithExactlyOneParameter_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var (fn()) ptr(); // Too few arguments.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "FunctionPointersHaveConstructorsWithExactlyOneParameter", 4 ) )

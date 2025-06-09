@@ -569,3 +569,26 @@ def PointerDifferenceForUnrelatedTypes_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 4 ) )
+
+
+def RawPointersHaveConstructorsWithExactlyOneParameter_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut a= 0, b= 0;
+			var $(i32) ptr( $<(a), $<(b) ); // Too many arguments.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "RawPointersHaveConstructorsWithExactlyOneParameter", 5 ) )
+
+
+def RawPointersHaveConstructorsWithExactlyOneParameter_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr(); // Too few arguments.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "RawPointersHaveConstructorsWithExactlyOneParameter", 4 ) )

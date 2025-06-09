@@ -243,6 +243,38 @@ U_TEST( UnderlyingTypeIsTooSmall_Test )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
 
+U_TEST( EnumsHaveConstructorsWithExactlyOneParameter_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		enum E{ A, B, C }
+		fn Foo()
+		{
+			var E e( E::A, E::B ); // Too many constructor arguments.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::EnumsHaveConstructorsWithExactlyOneParameter, 5u ) );
+}
+
+U_TEST( EnumsHaveConstructorsWithExactlyOneParameter_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		enum E{ A, B, C }
+		fn Foo()
+		{
+			var E e(); // Too few constructor arguments.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::EnumsHaveConstructorsWithExactlyOneParameter, 5u ) );
+}
+
 } // namespace
 
 } // namespace U
