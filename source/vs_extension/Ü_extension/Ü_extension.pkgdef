@@ -1,15 +1,15 @@
 ﻿[$RootKey$\TextMate\Repositories]
-"AspNetCoreRazor="$PackageFolder$\Grammars
+"Ü="$PackageFolder$\Grammars
 
 // Defines where the language configuration file for a given
 // grammar name is (value of the ScopeName tag in the tmlanguage file).
 [$RootKey$\TextMate\LanguageConfiguration\GrammarMapping]
-"text.aspnetcorerazor"="$PackageFolder$\language-configuration.json"
+"Ü"="$PackageFolder$\language-configuration.json"
 
 // Defines where the language configuration file for a given
 // language name is (partial value of the content type name).
 [$RootKey$\TextMate\LanguageConfiguration\ContentTypeMapping]
-"RazorLSP"="$PackageFolder$\language-configuration.json"
+"Ü"="$PackageFolder$\language-configuration.json"
 
 [$RootKey$\TextMate\LanguageConfiguration\GrammarMapping]
-"Ü"="$PackageFolder$\html-language-configuration.json"
+"Ü"="$PackageFolder$\language-configuration.json"
