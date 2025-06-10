@@ -45,6 +45,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="EditorClassifier1.cs" />
+    <Compile Include="EditorClassifier1ClassificationDefinition.cs" />
+    <Compile Include="EditorClassifier1Format.cs" />
+    <Compile Include="EditorClassifier1Provider.cs" />
     <Compile Include="LanguageInfoCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Ü_extensionPackage.cs" />
@@ -56,12 +60,18 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Design" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
     <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.SDK" Version="16.0.206" ExcludeAssets="runtime" />
