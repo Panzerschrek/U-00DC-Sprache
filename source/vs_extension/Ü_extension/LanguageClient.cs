@@ -29,11 +29,6 @@ namespace Ü_extension
 		public event AsyncEventHandler<EventArgs> StartAsync;
 		public event AsyncEventHandler<EventArgs> StopAsync;
 
-		private Process process_ = null;
-		Connection connection_ = null;
-		Stream read_stream_ = null;
-		Stream write_stream_ = null;
-
 		public async Task<Connection> ActivateAsync(CancellationToken token)
 		{
 			await Task.Yield();
@@ -46,19 +41,13 @@ namespace Ü_extension
 			info.RedirectStandardError = true;
 			info.UseShellExecute = false;
 			info.CreateNoWindow = true;
-			//info.StandardOutputEncoding = Encoding.UTF8;
-			//info.StandardErrorEncoding = Encoding.UTF8;
 
-			process_ = new Process();
-			process_.StartInfo = info;
+			Process process = new Process();
+			process.StartInfo = info;
 
-			if (process_.Start())
+			if (process.Start())
 			{
-				read_stream_ = process_.StandardOutput.BaseStream;
-				write_stream_ = process_.StandardInput.BaseStream;
-
-				connection_ = new Connection(read_stream_, write_stream_);
-				return connection_;
+				return new Connection(process.StandardOutput.BaseStream, process.StandardInput.BaseStream);
 			}
 
 			return null;
