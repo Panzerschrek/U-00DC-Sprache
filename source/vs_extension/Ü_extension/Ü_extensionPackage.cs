@@ -1,5 +1,7 @@
 ﻿using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Utilities;
 using System;
+using System.ComponentModel.Composition;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Task = System.Threading.Tasks.Task;
@@ -23,6 +25,8 @@ namespace Ü_extension
 	/// To get loaded into VS, the package must be referred by &lt;Asset Type="Microsoft.VisualStudio.VsPackage" ...&gt; in .vsixmanifest file.
 	/// </para>
 	/// </remarks>
+	[Export]
+	[ContentType("Ü")]
 	[PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
 	[Guid(Ü_extensionPackage.PackageGuidString)]
 	[ProvideMenuResource("Menus.ctmenu", 1)]

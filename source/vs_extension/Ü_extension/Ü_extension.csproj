@@ -45,6 +45,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="FileAndContentTypeDefinitions.cs" />
     <Compile Include="EditorClassifier1.cs" />
     <Compile Include="EditorClassifier1ClassificationDefinition.cs" />
     <Compile Include="EditorClassifier1Format.cs" />
