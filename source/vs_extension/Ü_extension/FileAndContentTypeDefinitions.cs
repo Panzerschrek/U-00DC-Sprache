@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.Composition;
+using Microsoft.VisualStudio.LanguageServer.Client;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Utilities;
 namespace Ü_extension
@@ -7,7 +8,7 @@ namespace Ü_extension
 	{
 		[Export]
 		[Name("Ü")]
-		[BaseDefinition("text")]
+		[BaseDefinition(CodeRemoteContentDefinition.CodeRemoteContentTypeName)]
 		internal static ContentTypeDefinition ü_content_file_definition;
 
 		[Export]

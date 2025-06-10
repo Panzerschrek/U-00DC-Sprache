@@ -50,6 +50,7 @@
     <Compile Include="EditorClassifier1ClassificationDefinition.cs" />
     <Compile Include="EditorClassifier1Format.cs" />
     <Compile Include="EditorClassifier1Provider.cs" />
+    <Compile Include="LanguageClient.cs" />
     <Compile Include="LanguageInfoCommand.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tagger.cs" />
