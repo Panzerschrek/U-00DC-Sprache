@@ -13,6 +13,16 @@ namespace Ü_extension
 		[Export]
 		[FileExtension(".u")]
 		[ContentType("Ü")]
-		internal static FileExtensionToContentTypeDefinition ü_file_extension_definition;
+		internal static FileExtensionToContentTypeDefinition ü_source_file_extension_definition;
+
+		[Export]
+		[FileExtension(".uh")]
+		[ContentType("Ü")]
+		internal static FileExtensionToContentTypeDefinition ü_geader_file_extension_definition;
+
+		[Export]
+		[FileExtension(".ü")]
+		[ContentType("Ü")]
+		internal static FileExtensionToContentTypeDefinition ü_alternative_source_file_extension_definition;
 	}
 }
