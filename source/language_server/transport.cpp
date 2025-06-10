@@ -98,11 +98,11 @@ public:
 		stream << value;
 		stream.flush();
 
-		out_
+		llvm::outs()
 			<< ( "Content-Length: " + std::to_string(str_.length()) )
 			<< "\r\n\r\n"
-			<< str_
-			<< std::flush;
+			<< str_;
+		llvm::outs().flush();
 	}
 
 private:
@@ -115,7 +115,7 @@ private:
 std::pair<IJsonMessageReadPtr, IJsonMessageWritePtr> OpenJSONStdioTransport( Logger& log )
 {
 	llvm::sys::ChangeStdinToBinary();
-	llvm::sys::ChangeStdoutToBinary();
+	//llvm::sys::ChangeStdoutToBinary();
 	return std::make_pair( std::make_unique<JsonMessageRead>( std::cin, log ), std::make_unique<JsonMessageWrite>( std::cout ) );
 }
 

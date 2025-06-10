@@ -35,11 +35,12 @@ namespace Ü_extension
 
 			ProcessStartInfo info = new ProcessStartInfo();
 			info.FileName = "C:/Users/user/Documents/Projects/other/U-00DC-Sprache/other/install/bin/u.._language_server.exe";
-			info.Arguments = "";
+			info.Arguments = "--log-file C:/Users/user/Documents/Projects/other/U-00DC-Sprache/other/vs_extension_language_server.log";
 			info.RedirectStandardInput = true;
 			info.RedirectStandardOutput = true;
 			info.UseShellExecute = false;
 			info.CreateNoWindow = true;
+			info.StandardOutputEncoding = Encoding.UTF8;
 
 			Process process = new Process();
 			process.StartInfo = info;
