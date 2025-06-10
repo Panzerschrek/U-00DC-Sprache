@@ -112,6 +112,7 @@ void ServerProcessor::HandleMessageImpl( const Request& request )
 	ServerResponse response= HandleRequest( request );
 
 	Json::Object response_obj;
+	response_obj["jsonrpc"]= "2.0";
 	response_obj["id"]= RequestIdToJson(request.id);
 	response_obj["result"]= std::move(response.result);
 	if( response.error.kind() != Json::Value::Null )
@@ -510,6 +511,7 @@ void ServerProcessor::PublishNotification( const std::string_view method, Json::
 	llvm::json::Object notification_obj;
 	notification_obj["method"]= StringViewToStringRef(method);
 	notification_obj["params"]= std::move(params);
+	notification_obj["jsonrpc"]= "2.0";
 
 	out_.Write( Json::Value( std::move(notification_obj) ) );
 }
