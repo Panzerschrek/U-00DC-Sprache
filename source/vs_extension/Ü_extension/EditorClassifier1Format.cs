@@ -22,8 +22,8 @@ namespace Ü_extension
 		public EditorClassifier1Format()
 		{
 			this.DisplayName = "EditorClassifier1"; // Human readable version of the name
-			this.BackgroundColor = Colors.BlueViolet;
-			this.TextDecorations = System.Windows.TextDecorations.Underline;
+			//this.BackgroundColor = Colors.BlueViolet;
+			//this.TextDecorations = System.Windows.TextDecorations.Underline;
 		}
 	}
 }
