@@ -30,6 +30,7 @@ namespace Ü_extension
 	[PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
 	[Guid(Ü_extensionPackage.PackageGuidString)]
 	[ProvideMenuResource("Menus.ctmenu", 1)]
+	[ProvideOptionPage(typeof(LanguageServerSettingsPage), "Ü extension", "Language server", 0, 0, true)]
 	public sealed class Ü_extensionPackage : AsyncPackage
 	{
 		/// <summary>
