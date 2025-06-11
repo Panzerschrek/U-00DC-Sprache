@@ -1,4 +1,6 @@
-﻿using Microsoft.VisualStudio.LanguageServer.Client;
+﻿using Microsoft.VisualStudio.ComponentModelHost;
+using Microsoft.VisualStudio.LanguageServer.Client;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
 using System;
@@ -20,7 +22,7 @@ namespace Ü_extension
 	{
 		public string Name => "Ü_extension";
 
-		public IEnumerable<string> ConfigurationSections => null;
+		public IEnumerable<string> ConfigurationSections => new List<string> { "My_option0_path", "My_option1_command_line" };
 
 		public object InitializationOptions => null;
 
@@ -29,13 +31,21 @@ namespace Ü_extension
 		public event AsyncEventHandler<EventArgs> StartAsync;
 		public event AsyncEventHandler<EventArgs> StopAsync;
 
+		LanguageServerSettingsModel settings_model_;
+
+		[ImportingConstructor]
+		public LanguageClient( [Import] LanguageServerSettingsModel settings_model)
+		{
+			this.settings_model_ = settings_model;
+		}
+
 		public async Task<Connection> ActivateAsync(CancellationToken token)
 		{
 			await Task.Yield();
 
 			ProcessStartInfo info = new ProcessStartInfo();
-			info.FileName = "C:/Users/user/Documents/Projects/other/U-00DC-Sprache/other/install/bin/u.._language_server.exe";
-			info.Arguments = "--log-file C:/Users/user/Documents/Projects/other/U-00DC-Sprache/other/vs_extension_language_server.log";
+			info.FileName = this.settings_model_.executable_path;
+			info.Arguments = this.settings_model_.command_line;
 			info.RedirectStandardInput = true;
 			info.RedirectStandardOutput = true;
 			info.RedirectStandardError = true;

@@ -89,6 +89,9 @@
       <Version>16.0.2264</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.SDK" Version="16.0.206" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.Interop">
+      <Version>16.10.31320.204</Version>
+    </PackageReference>
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="16.8.3038" />
   </ItemGroup>
   <ItemGroup>
