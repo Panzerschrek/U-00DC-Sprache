@@ -26,9 +26,14 @@ public:
 		std::optional<size_t> content_length;
 		while(true)
 		{
-			if( in_.eof() || in_.fail() )
+			if( in_.eof() )
 			{
-				log_() << "Transport close or fail" << std::endl;
+				log_() << "Transport eof" << std::endl;
+				return std::nullopt;
+			}
+			if( in_.fail() )
+			{
+				log_() << "Transport fail" << std::endl;
 				return std::nullopt;
 			}
 
