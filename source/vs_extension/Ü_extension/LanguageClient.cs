@@ -1,16 +1,10 @@
-﻿using Microsoft.VisualStudio.ComponentModelHost;
-using Microsoft.VisualStudio.LanguageServer.Client;
-using Microsoft.VisualStudio.Shell.Interop;
+﻿using Microsoft.VisualStudio.LanguageServer.Client;
 using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,7 +16,7 @@ namespace Ü_extension
 	{
 		public string Name => "Ü_extension";
 
-		public IEnumerable<string> ConfigurationSections => new List<string> { "My_option0_path", "My_option1_command_line" };
+		public IEnumerable<string> ConfigurationSections => null;
 
 		public object InitializationOptions => null;
 
