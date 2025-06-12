@@ -38,8 +38,8 @@ namespace Ü_extension
 			await Task.Yield();
 
 			ProcessStartInfo info = new ProcessStartInfo();
-			info.FileName = this.settings_model_.executable_path;
-			info.Arguments = this.settings_model_.command_line;
+			info.FileName = this.settings_model_.ExecutablePath;
+			info.Arguments = this.settings_model_.CommandLine;
 			info.RedirectStandardInput = true;
 			info.RedirectStandardOutput = true;
 			info.RedirectStandardError = true;

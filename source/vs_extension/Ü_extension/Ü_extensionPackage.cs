@@ -63,10 +63,6 @@ namespace Ü_extension
 			// Do any initialization that requires the UI thread after switching to the UI thread.
 			await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 			await LanguageInfoCommand.InitializeAsync(this);
-
-			// HACK! Access settings page to update settings model.
-			// TODO - use permanent storage instead.
-			GetDialogPage(typeof(LanguageServerSettingsPage));
 		}
 
 		#endregion
