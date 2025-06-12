@@ -66,6 +66,10 @@
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="Grammars\Ü.tmTheme">
+      <IncludeInVSIX>true</IncludeInVSIX>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
@@ -102,7 +106,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\LanguageInfoCommand.png" />
-    <Content Include="Ü_extension.pkgdef">
+    <Content Include="Ü_extension_extra.pkgdef">
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

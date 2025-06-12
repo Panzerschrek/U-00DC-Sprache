@@ -1,5 +1,5 @@
 ﻿[$RootKey$\TextMate\Repositories]
-"Ü="$PackageFolder$\Grammars
+"Ü="$PackageFolder$\Grammars"
 
 // Defines where the language configuration file for a given
 // grammar name is (value of the ScopeName tag in the tmlanguage file).
