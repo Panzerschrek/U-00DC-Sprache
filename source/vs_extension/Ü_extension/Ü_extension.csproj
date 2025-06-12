@@ -53,8 +53,6 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tagger.cs" />
-    <Compile Include="TaggerProvider.cs" />
     <Compile Include="Ü_extensionPackage.cs" />
   </ItemGroup>
   <ItemGroup>
