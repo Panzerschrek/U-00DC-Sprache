@@ -464,10 +464,16 @@ void ProcessMessages( IJsonMessageRead& in, MessageQueue& message_queue, Logger&
 	{
 		const std::optional<Json::Value> message= in.Read();
 		if( message == std::nullopt )
+		{
+			log() << "End processing messages - input channel was closed" << std::endl;
+			message_queue.Close();
 			return;
+		}
 
 		HandleMessage( *message, message_queue, log );
 	}
+
+	log() << "End processing messages - message queue was closed" << std::endl;
 }
 
 } // namespace LangServer
