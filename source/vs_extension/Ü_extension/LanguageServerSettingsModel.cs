@@ -15,7 +15,6 @@ namespace Ü_extension
 		private bool data_loaded_ = false;
 
 		private readonly Microsoft.VisualStudio.Settings.WritableSettingsStore user_settings_store_;
-
 		public String ExecutablePath
 		{
 			get
@@ -58,7 +57,6 @@ namespace Ü_extension
 			executable_path_ = user_settings_store_.GetString(c_settings_category, c_execitable_path_setting_name, "u.._language_server.exe");
 			command_line_ = user_settings_store_.GetString(c_settings_category, c_command_line_setting_name, "");
 		}
-
 		public void SaveData()
 		{
 			user_settings_store_.SetString(c_settings_category, c_execitable_path_setting_name, executable_path_);

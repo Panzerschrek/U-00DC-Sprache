@@ -25,7 +25,7 @@ namespace Ü_extension
 		public event AsyncEventHandler<EventArgs> StartAsync;
 		public event AsyncEventHandler<EventArgs> StopAsync;
 
-		LanguageServerSettingsModel settings_model_;
+		private readonly LanguageServerSettingsModel settings_model_;
 
 		[ImportingConstructor]
 		public LanguageClient( [Import] LanguageServerSettingsModel settings_model)
