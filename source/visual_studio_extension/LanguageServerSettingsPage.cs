@@ -13,6 +13,7 @@ namespace Ü_extension
 
 		public LanguageServerSettingsPage()
 		{
+			ThreadHelper.ThrowIfNotOnUIThread();
 			var component_model = ServiceProvider.GlobalProvider.GetService(typeof(SComponentModel)) as IComponentModel;
 
 			this.settings_model_ = component_model.GetService<LanguageServerSettingsModel>();

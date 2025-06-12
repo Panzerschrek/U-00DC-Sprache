@@ -9,6 +9,8 @@ namespace Ü_extension
 	{
 		public const string c_content_type = "Ü";
 
+#pragma warning disable CS0649
+
 		[Export]
 		[Name(c_content_type)]
 		[BaseDefinition(CodeRemoteContentDefinition.CodeRemoteContentTypeName)]
@@ -28,5 +30,7 @@ namespace Ü_extension
 		[FileExtension(".ü")]
 		[ContentType(c_content_type)]
 		internal static FileExtensionToContentTypeDefinition ü_alternative_source_file_extension_definition;
+
+#pragma warning restore CS0649
 	}
 }
