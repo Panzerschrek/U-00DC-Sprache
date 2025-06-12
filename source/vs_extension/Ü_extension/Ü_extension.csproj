@@ -52,6 +52,7 @@
     <Compile Include="EditorClassifier1Provider.cs" />
     <Compile Include="LanguageClient.cs" />
     <Compile Include="LanguageInfoCommand.cs" />
+    <Compile Include="LanguageServerSettingsModel.cs" />
     <Compile Include="LanguageServerSettingsPage.cs">
       <SubType>Component</SubType>
     </Compile>
