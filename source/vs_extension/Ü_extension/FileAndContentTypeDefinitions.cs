@@ -2,28 +2,31 @@
 using Microsoft.VisualStudio.LanguageServer.Client;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Utilities;
+
 namespace Ü_extension
 {
 	internal static class FileAndContentTypeDefinitions
 	{
+		public const string c_content_type = "Ü";
+
 		[Export]
-		[Name("Ü")]
+		[Name(c_content_type)]
 		[BaseDefinition(CodeRemoteContentDefinition.CodeRemoteContentTypeName)]
 		internal static ContentTypeDefinition ü_content_file_definition;
 
 		[Export]
 		[FileExtension(".u")]
-		[ContentType("Ü")]
+		[ContentType(c_content_type)]
 		internal static FileExtensionToContentTypeDefinition ü_source_file_extension_definition;
 
 		[Export]
 		[FileExtension(".uh")]
-		[ContentType("Ü")]
-		internal static FileExtensionToContentTypeDefinition ü_geader_file_extension_definition;
+		[ContentType(c_content_type)]
+		internal static FileExtensionToContentTypeDefinition ü_header_file_extension_definition;
 
 		[Export]
 		[FileExtension(".ü")]
-		[ContentType("Ü")]
+		[ContentType(c_content_type)]
 		internal static FileExtensionToContentTypeDefinition ü_alternative_source_file_extension_definition;
 	}
 }

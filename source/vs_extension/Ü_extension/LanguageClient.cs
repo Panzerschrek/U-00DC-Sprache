@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Ü_extension
 {
-	[ContentType("Ü")]
+	[ContentType(FileAndContentTypeDefinitions.c_content_type)]
 	[Export(typeof(ILanguageClient))]
 	class LanguageClient : ILanguageClient
 	{
