@@ -39,7 +39,6 @@ namespace Ü_extension
 	[ProvideAutoLoad(UIContextGuids80.NoSolution, PackageAutoLoadFlags.BackgroundLoad)]
 	[ProvideAutoLoad(UIContextGuids80.SolutionExists, PackageAutoLoadFlags.BackgroundLoad)]
 	[ProvideAutoLoad(UIContextGuids80.ToolboxInitialized, PackageAutoLoadFlags.BackgroundLoad)]
-	[ProvideMenuResource("Menus.ctmenu", 1)]
 	[ProvideOptionPage(typeof(LanguageServerSettingsPage), "Ü extension", "Language server", 0, 0, true)]
 	public sealed class Ü_extensionPackage : AsyncPackage
 	{
@@ -62,7 +61,6 @@ namespace Ü_extension
 			// When initialized asynchronously, the current thread may be a background thread at this point.
 			// Do any initialization that requires the UI thread after switching to the UI thread.
 			await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-			await LanguageInfoCommand.InitializeAsync(this);
 		}
 
 		#endregion
