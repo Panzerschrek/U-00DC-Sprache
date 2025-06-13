@@ -13,6 +13,9 @@
 	<key>name</key>
 	<string>Ü</string>
 
+	<key>scopeName</key>
+	<string>source.u</string>
+
 	<key>patterns</key>
 	<array>
 		<dict>
@@ -106,9 +109,6 @@
 	<key>repository</key>
 	<dict>
 	</dict>
-
-	<key>scopeName</key>
-	<string>source.u</string>
 
 	<key>uuid</key>
 	<string>967BA31E-0B7A-42D5-839B-7A2F737CE99D</string>
