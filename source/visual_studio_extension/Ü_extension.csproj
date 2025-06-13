@@ -94,7 +94,7 @@
     </VSCTCompile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="U_extension_extra.pkgdef">
+    <Content Include="Ü_extension_extra.pkgdef">
       <IncludeInVSIX>true</IncludeInVSIX>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
