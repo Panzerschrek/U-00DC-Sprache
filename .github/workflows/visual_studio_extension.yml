@@ -1,0 +1,11 @@
+name: VisualStudioExtension
+
+on: [workflow_dispatch]
+
+jobs:
+  build_windows:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v1
+    - name: build Visual Studio extension
+      run: ./ci/build_visual_studio_extension.ps1
