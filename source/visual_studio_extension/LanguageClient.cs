@@ -37,17 +37,18 @@ namespace Ü_extension
 		{
 			await Task.Yield();
 
-			ProcessStartInfo info = new ProcessStartInfo();
-			info.FileName = settings_model_.ExecutablePath;
-			info.Arguments = settings_model_.CommandLine;
-			info.RedirectStandardInput = true;
-			info.RedirectStandardOutput = true;
-			info.RedirectStandardError = true;
-			info.UseShellExecute = false;
-			info.CreateNoWindow = true;
-
 			Process process = new Process();
-			process.StartInfo = info;
+			process.StartInfo =
+				new ProcessStartInfo
+				{
+					FileName = settings_model_.ExecutablePath,
+					Arguments = settings_model_.CommandLine,
+					RedirectStandardInput = true,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true,
+					UseShellExecute = false,
+					CreateNoWindow = true
+				};
 
 			if (process.Start())
 			{
