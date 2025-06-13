@@ -164,6 +164,7 @@ QtCreator plugin:
 
 Visual Studio extension:
 *) Test Visual Studio Ü extension with newer Visual Studio versions, like 2022
+*) Support building Ü projects via "Build" menu using Ü build system
 *) Add editor behavior tuning via "language-configuration.json" file
 *) Stop language server process if necessary
 *) Add possibility to restart language server process if settings are changed

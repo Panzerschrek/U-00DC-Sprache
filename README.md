@@ -70,6 +70,9 @@ It's recommeded at least to try using it.
 There is a [syntax highlighting file](source/syntax_highlighting/README.md) for it.
 Also it supports cutom language servers, which allows using Ü language server.
 
+There is Ü extension for Microsoft Visual Studio.
+See [corresponding readme](source/visual_studio_extension/README.md) for details.
+
 Many other IDEs may be used too.
 Any IDE with possibility to specify custom language server may be used for Ü code writing.
 Some IDEs allow also creating custom syntax highlighting rules, one can create it themselves.
