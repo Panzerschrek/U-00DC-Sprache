@@ -162,6 +162,12 @@ Compiler1:
 QtCreator plugin:
 *) Language server features support
 
+Visual Studio extension:
+*) Test Visual Studio Ü extension with newer Visual Studio versions, like 2022
+*) Add editor behavior tuning via "language-configuration.json" file
+*) Stop language server process if necessary
+*) Add possibility to restart language server process if settings are changed
+
 Language server:
 *) Fix crashes occuring sometimes during editing (possible because of broken code)
 *) Fix possible crashes due to accessing source graph instance stored within CodeBuilder class instance while
