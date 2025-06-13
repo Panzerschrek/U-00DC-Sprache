@@ -12,6 +12,12 @@
 	#pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
 
+#ifdef __clang__
+	#if __clang_major__ >= 21
+		#pragma GCC diagnostic ignored "-Wunnecessary-virtual-specifier"
+	#endif
+#endif
+
 #endif // __GNUC__
 
 #ifdef _MSC_VER
