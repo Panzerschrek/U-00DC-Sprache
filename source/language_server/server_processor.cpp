@@ -76,6 +76,11 @@ llvm::ThreadPoolStrategy CreateThreadPoolStrategy( Logger& log )
 	return llvm::hardware_concurrency( Options::num_threads );
 }
 
+void AddMessageJsonrpcVersion( Json::Object& value )
+{
+	value["jsonrpc"]= "2.0";
+}
+
 } // namespace
 
 ServerProcessor::ServerProcessor( Logger& log, IJsonMessageWrite& out, std::string installation_directory )
@@ -112,6 +117,7 @@ void ServerProcessor::HandleMessageImpl( const Request& request )
 	ServerResponse response= HandleRequest( request );
 
 	Json::Object response_obj;
+	AddMessageJsonrpcVersion( response_obj );
 	response_obj["id"]= RequestIdToJson(request.id);
 	response_obj["result"]= std::move(response.result);
 	if( response.error.kind() != Json::Value::Null )
@@ -508,6 +514,7 @@ void ServerProcessor::GenerateDiagnosticsNotifications( const DiagnosticsByDocum
 void ServerProcessor::PublishNotification( const std::string_view method, Json::Value params )
 {
 	llvm::json::Object notification_obj;
+	AddMessageJsonrpcVersion( notification_obj );
 	notification_obj["method"]= StringViewToStringRef(method);
 	notification_obj["params"]= std::move(params);
 

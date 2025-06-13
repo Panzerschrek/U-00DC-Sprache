@@ -54,6 +54,8 @@ For more information/examples see build scripts in *ci* directory.
 
 [plugin for QtCreator](source/qt_creator_plugin/README.md)
 
+[extension for Visual Studio](source/visual_studio_extension/README.md)
+
 [documentation](source/docs/README.md)
 
 [examples](source/examples/README.md)
@@ -67,6 +69,9 @@ It's recommeded at least to try using it.
 [QtCreator](https://www.qt.io/product/development-tools) may be used as Ü IDE.
 There is a [syntax highlighting file](source/syntax_highlighting/README.md) for it.
 Also it supports cutom language servers, which allows using Ü language server.
+
+There is Ü extension for Microsoft Visual Studio.
+See [corresponding readme](source/visual_studio_extension/README.md) for details.
 
 Many other IDEs may be used too.
 Any IDE with possibility to specify custom language server may be used for Ü code writing.

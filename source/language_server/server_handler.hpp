@@ -10,7 +10,7 @@ namespace LangServer
 {
 
 // Process messages and populate message queue until input channel is open.
-// Can also close message queue at exit message.
+// Can also close message queue at exit message or if input channel was closed.
 void ProcessMessages( IJsonMessageRead& in, MessageQueue& message_queue, Logger& log );
 
 } // namespace LangServer

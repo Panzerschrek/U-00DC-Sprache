@@ -1,0 +1,11 @@
+﻿[$RootKey$\TextMate\Repositories]
+"Ü"="$PackageFolder$\Grammars"
+
+[$RootKey$\ShellFileAssociations\.u]
+"DefaultIconMoniker"="KnownMonikers.ClassFile"
+
+[$RootKey$\ShellFileAssociations\.uh]
+"DefaultIconMoniker"="KnownMonikers.ClassFile"
+
+[$RootKey$\ShellFileAssociations\.ü]
+"DefaultIconMoniker"="KnownMonikers.ClassFile"

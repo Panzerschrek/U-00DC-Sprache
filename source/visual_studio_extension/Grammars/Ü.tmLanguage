@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+
+	<key>fileTypes</key>
+	<array>
+		<string>u</string>
+		<string>uh</string>
+		<string>ü</string>
+	</array>
+
+	<key>name</key>
+	<string>Ü</string>
+
+	<key>scopeName</key>
+	<string>source.u</string>
+
+	<key>patterns</key>
+	<array>
+		<dict>
+			<key>begin</key>
+			<string>/\*</string>
+			<key>end</key>
+			<string>\*/</string>
+			<key>name</key>
+			<string>comment.block</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>//.*(?=\n)</string>
+			<key>name</key>
+			<string>comment.line.double-dash</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\"([^\\\"]|(\\n)|(\\r)|(\\t)|(\\b)|(\\f)|(\\\")|(\\\')|(\\0)|(\\\\)|(\\u[0-9a-fA-F]{4,4}))*\"</string>
+			<key>name</key>
+			<string>string.quoted.double</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\'(([^\'\\\n\r\t\b\f])|(\\")|(\\\')|(\\\\)|(\\\/)|(\\b)|(\\f)|(\\n)|(\\r)|(\\t)|(\\0)|(\\u[0-9a-fA-F]{4,4}))\'</string>
+			<key>name</key>
+			<string>string.quoted.single</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>0b[0-1]+(\.[0-1]+)?</string>
+			<key>name</key>
+			<string>constant.numeric</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>0o[0-7]+(\.[0-7]+)?</string>
+			<key>name</key>
+			<string>constant.numeric</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>0x[0-9a-fA-F]+(\.[0-9a-fA-F]+)?</string>
+			<key>name</key>
+			<string>constant.numeric</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>[0-9]+(\.[0-9]+)?(e[0-9]+)?</string>
+			<key>name</key>
+			<string>constant.numeric</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>(?&lt;![A-Za-z_0-9_])(fn|op|var|auto|return|yield|label|while|loop|break|continue|if|static_if|enable_if|if_coro_advance|else|move|take|byval|tup|struct|class|final|polymorph|interface|abstract|non_sync|ordered|nodiscard|nomangle|call_conv|virtual|override|pure|generator|async|await|namespace|public|private|protected|true|false|mut|imut|constexpr|const|zero_init|this|base|constructor|destructor|conversion_constructor|static_assert|halt|safe|type|typeinfo|same_type|typeof|template|enum|cast_ref|cast_imut|alloca|as|is|import|export|embed|default|delete|for|with|do|switch|case|typename|lambda|static|package|module|mixin|thread_local)(?![A-Za-z_0-9_])</string>
+			<key>name</key>
+			<string>keyword</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>(?&lt;![A-Za-z_0-9_])(void|bool|i8|u8|i16|u16|i32|u32|i64|u64|i128|u128|i256|u256|i512|u512|i1024|u1024|i2048|u2048|i4096|u4096|f16|f32|f80|f64|f128|char8|char16|char32|byte8|byte16|byte32|byte64|byte128|byte256|byte512|byte1024|byte2048|byte4096|size_type|ssize_type)(?![A-Za-z_0-9_])</string>
+			<key>name</key>
+			<string>support.type</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>(?&lt;![A-Za-z_0-9_])(unsafe|uninitialized|cast_mut|cast_ref_unsafe)(?![A-Za-z_0-9_])</string>
+			<key>name</key>
+			<string>keyword</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>[A-Za-z][A-Za-z0-9_]*</string>
+			<key>name</key>
+			<string>variable.other</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\?\?[A-Za-z][A-Za-z0-9_]*</string>
+			<key>name</key>
+			<string>meta.preprocessor</string>
+		</dict>
+		<dict>
+			<key>match</key>
+			<string>\?[A-Za-z][A-Za-z0-9_]*</string>
+			<key>name</key>
+			<string>meta.preprocessor</string>
+		</dict>
+	</array>
+
+	<key>repository</key>
+	<dict>
+	</dict>
+
+	<key>uuid</key>
+	<string>967BA31E-0B7A-42D5-839B-7A2F737CE99D</string>
+</dict>
+</plist>
