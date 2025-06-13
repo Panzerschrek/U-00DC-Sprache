@@ -22,7 +22,7 @@ namespace Ü_extension
 		[Category("Ü extension")]
 		[DisplayName("Language server executable path")]
 		[Description("Where Ü language server executable is located")]
-		public String OptionLanguageServerExecutablePath
+		public string OptionLanguageServerExecutablePath
 		{
 			get { return settings_model_.ExecutablePath; }
 			set { settings_model_.ExecutablePath = value; }
@@ -31,7 +31,7 @@ namespace Ü_extension
 		[Category("Ü extension")]
 		[DisplayName("Language server command line")]
 		[Description("Command line for the language server. See its help for more details.")]
-		public String OptionLanguageServerCommandLine
+		public string OptionLanguageServerCommandLine
 		{
 			get { return settings_model_.CommandLine; }
 			set { settings_model_.CommandLine = value; }

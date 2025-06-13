@@ -10,12 +10,12 @@ namespace Ü_extension
 		private const string c_execitable_path_setting_name = "executable_path";
 		private const string c_command_line_setting_name = "command_line";
 
-		private String executable_path_;
-		private String command_line_;
+		private string executable_path_;
+		private string command_line_;
 		private bool data_loaded_ = false;
 
 		private readonly Microsoft.VisualStudio.Settings.WritableSettingsStore user_settings_store_;
-		public String ExecutablePath
+		public string ExecutablePath
 		{
 			get
 			{
@@ -25,7 +25,7 @@ namespace Ü_extension
 			set { executable_path_ = value; }
 		}
 
-		public String CommandLine
+		public string CommandLine
 		{
 			get
 			{
