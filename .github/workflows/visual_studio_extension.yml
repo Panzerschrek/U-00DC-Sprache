@@ -8,4 +8,8 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - name: build Visual Studio extension
-      run: ./ci/build_visual_studio_extension.ps1
+      run: ./ci/build_visual_studio_extension.bat
+    - uses: actions/upload-artifact@v4
+      with:
+        name: VisualStudioExtension
+        path: source/visual_studio_extension/bin/Release/Ü_extension.vsix
