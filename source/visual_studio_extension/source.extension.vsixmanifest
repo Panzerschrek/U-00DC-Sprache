@@ -17,6 +17,6 @@
     <Assets>
         <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
         <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
-        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="File" Path="Ü_extension_extra.pkgdef" />
+        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="File" Path="U_extension_extra.pkgdef" />
     </Assets>
 </PackageManifest>
