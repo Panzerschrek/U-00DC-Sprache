@@ -1,12 +1,11 @@
-﻿; Registers the language grammar files with Visual Studio
-; Replace "TextmateSample" with a name of your choice.
-[$RootKey$\TextMate\Repositories]
-"TextmateSample"="$PackageFolder$\Grammars"
+﻿[$RootKey$\TextMate\Repositories]
+"Ü"="$PackageFolder$\Grammars"
 
-; Associate icons with file extensions in Solution Explorer
-; Find more icons at http://glyphlist.azurewebsites.net/knownmonikers/
-[$RootKey$\ShellFileAssociations\.dart]
+[$RootKey$\ShellFileAssociations\.u]
 "DefaultIconMoniker"="KnownMonikers.ClassFile"
-; Add an icon for each file extension supported by the .tmLanguage grammar file
-[$RootKey$\ShellFileAssociations\.dart6]
+
+[$RootKey$\ShellFileAssociations\.uh]
+"DefaultIconMoniker"="KnownMonikers.ClassFile"
+
+[$RootKey$\ShellFileAssociations\.ü]
 "DefaultIconMoniker"="KnownMonikers.ClassFile"

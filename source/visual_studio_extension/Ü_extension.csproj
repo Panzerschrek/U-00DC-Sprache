@@ -55,7 +55,7 @@
     <Compile Include="Ü_extensionPackage.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Grammars\Dart.tmLanguage">
+    <Content Include="Grammars\Ü.tmLanguage">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
