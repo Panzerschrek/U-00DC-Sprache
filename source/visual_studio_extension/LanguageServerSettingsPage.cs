@@ -16,7 +16,7 @@ namespace Ü_extension
 			ThreadHelper.ThrowIfNotOnUIThread();
 			var component_model = ServiceProvider.GlobalProvider.GetService(typeof(SComponentModel)) as IComponentModel;
 
-			this.settings_model_ = component_model.GetService<LanguageServerSettingsModel>();
+			settings_model_ = component_model.GetService<LanguageServerSettingsModel>();
 		}
 
 		[Category("Ü extension")]

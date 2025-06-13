@@ -30,7 +30,7 @@ namespace Ü_extension
 		[ImportingConstructor]
 		public LanguageClient( [Import] LanguageServerSettingsModel settings_model)
 		{
-			this.settings_model_ = settings_model;
+			settings_model_ = settings_model;
 		}
 
 		public async Task<Connection> ActivateAsync(CancellationToken token)
@@ -38,8 +38,8 @@ namespace Ü_extension
 			await Task.Yield();
 
 			ProcessStartInfo info = new ProcessStartInfo();
-			info.FileName = this.settings_model_.ExecutablePath;
-			info.Arguments = this.settings_model_.CommandLine;
+			info.FileName = settings_model_.ExecutablePath;
+			info.Arguments = settings_model_.CommandLine;
 			info.RedirectStandardInput = true;
 			info.RedirectStandardOutput = true;
 			info.RedirectStandardError = true;
