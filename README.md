@@ -54,6 +54,8 @@ For more information/examples see build scripts in *ci* directory.
 
 [plugin for QtCreator](source/qt_creator_plugin/README.md)
 
+[extension for Visual Studio](source/visual_studio_extension/README.md)
+
 [documentation](source/docs/README.md)
 
 [examples](source/examples/README.md)
