@@ -205,6 +205,12 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 				completion_options["triggerCharacters"]= std::move(trigger_characters);
 			}
+			{
+				Json::Array commit_characters;
+				commit_characters.push_back( Json::Value( "." ) );
+				commit_characters.push_back( Json::Value( ":" ) );
+				completion_options["allCommitCharacters"]= std::move(commit_characters);
+			}
 			capabilities["completionProvider"]= std::move(completion_options);
 		}
 		{
