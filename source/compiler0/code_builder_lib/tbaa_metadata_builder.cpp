@@ -1,6 +1,5 @@
 #include "tbaa_metadata_builder.hpp"
 
-#include "../../code_builder_lib_common/string_ref.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
 

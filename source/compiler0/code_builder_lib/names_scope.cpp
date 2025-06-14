@@ -1,5 +1,4 @@
 #include "../../lex_synt_lib_common/assert.hpp"
-#include "../../code_builder_lib_common/string_ref.hpp"
 #include "class.hpp"
 #include "template_signature_param.hpp"
 #include "enum.hpp"

@@ -1,6 +1,5 @@
 #include <sstream>
 #include "keywords.hpp"
-#include "../../code_builder_lib_common/string_ref.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../lex_synt_lib/program_writer.hpp"
 #include "code_builder.hpp"

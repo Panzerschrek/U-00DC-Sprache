@@ -36,7 +36,6 @@
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../code_builder_lib_common/async_calls_inlining.hpp"
-#include "../code_builder_lib_common/string_ref.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/ustlib.hpp"

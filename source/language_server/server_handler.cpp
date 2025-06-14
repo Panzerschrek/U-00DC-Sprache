@@ -1,4 +1,3 @@
-#include "../code_builder_lib_common/string_ref.hpp"
 #include "server_handler.hpp"
 
 namespace U

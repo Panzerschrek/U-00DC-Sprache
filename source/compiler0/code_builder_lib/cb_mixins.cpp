@@ -1,7 +1,6 @@
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/ConvertUTF.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
-#include "../../code_builder_lib_common/string_ref.hpp"
 
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"

@@ -1,5 +1,4 @@
 #include "../code_builder_lib_common/long_stable_hash.hpp"
-#include "../code_builder_lib_common/string_ref.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib_common/assert.hpp"

@@ -1,5 +1,4 @@
 #include "../lex_synt_lib_common/assert.hpp"
-#include "../code_builder_lib_common/string_ref.hpp"
 #include "options.hpp"
 #include "server_processor.hpp"
 

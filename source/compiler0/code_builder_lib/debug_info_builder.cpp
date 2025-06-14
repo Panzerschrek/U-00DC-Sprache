@@ -1,6 +1,5 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../../sprache_version/sprache_version.hpp"
-#include "../../code_builder_lib_common/string_ref.hpp"
 #include "class.hpp"
 #include "enum.hpp"
 #include "debug_info_builder.hpp"
