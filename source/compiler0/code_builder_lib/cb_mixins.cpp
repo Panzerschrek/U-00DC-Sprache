@@ -157,7 +157,7 @@ void CodeBuilder::ExpandNamespaceMixin( NamesScope& names_scope, Mixin& mixin )
 	if( mixin.string_constant == nullptr )
 		return;
 
-	const std::string_view mixin_text= StringRefToStringView( mixin.string_constant->getRawDataValues() );
+	const std::string_view mixin_text= mixin.string_constant->getRawDataValues();
 	mixin.string_constant= nullptr;
 
 	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
@@ -202,7 +202,7 @@ void CodeBuilder::ExpandClassMixin( const ClassPtr class_type, Mixin& mixin )
 	if( mixin.string_constant == nullptr )
 		return;
 
-	const std::string_view mixin_text= StringRefToStringView( mixin.string_constant->getRawDataValues() );
+	const std::string_view mixin_text= mixin.string_constant->getRawDataValues();
 	mixin.string_constant= nullptr;
 
 	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
@@ -260,7 +260,7 @@ const Synt::BlockElementsList* CodeBuilder::ExpandBlockMixin( NamesScope& names_
 	if( temp_mixin.string_constant == nullptr )
 		return nullptr;
 
-	const std::string_view mixin_text= StringRefToStringView( temp_mixin.string_constant->getRawDataValues() );
+	const std::string_view mixin_text= temp_mixin.string_constant->getRawDataValues();
 
 	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
 	auto it= block_mixin_expansions_.find(key);
@@ -307,7 +307,7 @@ const Synt::TypeName* CodeBuilder::ExpandTypeNameMixin( NamesScope& names_scope,
 	const std::string_view mixin_text=
 		temp_mixin.string_constant == nullptr
 			? std::string_view()
-			: StringRefToStringView( temp_mixin.string_constant->getRawDataValues() );
+			: std::string_view( temp_mixin.string_constant->getRawDataValues() );
 
 	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
 	auto it= type_name_mixin_expansions_.find(key);
@@ -354,7 +354,7 @@ const Synt::Expression* CodeBuilder::ExpandExpressionMixin( NamesScope& names_sc
 	const std::string_view mixin_text=
 		temp_mixin.string_constant == nullptr
 			? std::string_view()
-			: StringRefToStringView( temp_mixin.string_constant->getRawDataValues() );
+			: std::string_view( temp_mixin.string_constant->getRawDataValues() );
 
 	MixinExpansionKey key{ mixin.src_loc, std::string(mixin_text) };
 	auto it= expression_mixin_expansions_.find(key);

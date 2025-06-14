@@ -521,7 +521,7 @@ void ServerProcessor::PublishNotification( const std::string_view method, Json::
 {
 	llvm::json::Object notification_obj;
 	AddMessageJsonrpcVersion( notification_obj );
-	notification_obj["method"]= StringViewToStringRef(method);
+	notification_obj["method"]= llvm::StringRef(method);
 	notification_obj["params"]= std::move(params);
 
 	out_.Write( Json::Value( std::move(notification_obj) ) );

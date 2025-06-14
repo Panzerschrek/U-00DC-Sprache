@@ -2402,7 +2402,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	llvm::Constant* const initializer )
 {
 	// Try to reuse global variable.
-	if( llvm::GlobalVariable* const prev_literal_name= module_->getNamedGlobal( StringViewToStringRef(mangled_name) ) )
+	if( llvm::GlobalVariable* const prev_literal_name= module_->getNamedGlobal( mangled_name ) )
 		if( prev_literal_name->getInitializer() == initializer ) // llvm reuses constants, so, for equal constants pointers will be same.
 			return prev_literal_name;
 	
@@ -2413,7 +2413,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 			true, // is constant
 			llvm::GlobalValue::PrivateLinkage, // We have no external variables, so, use private linkage.
 			initializer,
-			StringViewToStringRef(mangled_name) );
+			mangled_name );
 
 	val->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
@@ -2442,7 +2442,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
 			// Add suffix based on file path hash.
 			// This is needed to avoid merging global mutable variables which share same name, but are defined in different files.
 			// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
-			StringViewToStringRef(mangled_name) + "." + file_path_hash );
+			llvm::StringRef(mangled_name) + "." + file_path_hash );
 
 	// Use external linkage and comdat for global mutable variables to guarantee address uniqueness and enforce deduplication.
 	llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );

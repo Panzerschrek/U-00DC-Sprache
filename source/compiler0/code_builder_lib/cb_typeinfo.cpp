@@ -518,7 +518,7 @@ VariablePtr CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type,
 
 				node_type_class.members->AddName( g_name_field_name, NamesScopeValue( std::make_shared<ClassField>( g_name_field_name, node_type, name_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( name_type.llvm_type );
-				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, StringViewToStringRef(name), false /* not null terminated */ ) );
+				fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, name, false /* not null terminated */ ) );
 			}
 
 			FinishTypeinfoClass( node_type, fields_llvm_types );
@@ -550,7 +550,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 			g_name_field_name,
 			NamesScopeValue( std::make_shared<ClassField>( g_name_field_name, node_class_type, name_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( name_type.llvm_type );
-		fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, StringViewToStringRef(member_name), false /* not null terminated */ ) );
+		fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, member_name, false /* not null terminated */ ) );
 	}
 
 	const ClassMemberVisibility member_visibility= class_.GetMemberVisibility( member_name );

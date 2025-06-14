@@ -1030,15 +1030,15 @@ void CodeBuilder::ComleteClassOwnFields( const Class* class_, const std::string_
 
 void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, const std::string_view value_name, const NamesScopeValue& names_scope_value )
 {
-	const llvm::StringRef completion_name_ref= StringViewToStringRef(completion_name);
-	const llvm::StringRef value_name_ref= StringViewToStringRef( value_name );
+	const llvm::StringRef completion_name_ref= completion_name;
+	const llvm::StringRef value_name_ref= value_name;
 
 	// Use this name if given name is substring (ignoring case) of provided name.
 	// TODO - support Unicode names.
 	const auto pos=value_name_ref.find_insensitive( completion_name_ref );
 	if( completion_name_ref.empty() || pos != llvm::StringRef::npos )
 	{
-		if( value_name_ref.startswith( StringViewToStringRef( Keyword(Keywords::static_assert_) ) ) || // static_assert name may exist inside namespace, but we should ignore it.
+		if( value_name_ref.startswith( Keyword(Keywords::static_assert_) ) || // static_assert name may exist inside namespace, but we should ignore it.
 			value_name == Keyword( Keywords::mixin_ ) || // Ignore mixins, which are inserted into namespaces.
 			StringToOverloadedOperator( value_name ) != std::nullopt // Ignore all overloaded operators. There is no reason and no possibility to access overloaded operator by name.
 			// Still allow to access constructors and destructors, even if it is needed very rarely.

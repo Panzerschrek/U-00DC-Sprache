@@ -26,7 +26,7 @@ const char* GetErrorMessagePattern( CodeBuilderErrorCode code );
 
 std::string PreprocessArg( const Type& type );
 inline const char* PreprocessArg( const char* const s ) { return s; }
-inline llvm::StringRef PreprocessArg( const std::string_view arg ) { return StringViewToStringRef(arg); }
+inline llvm::StringRef PreprocessArg( const std::string_view arg ) { return arg; }
 template<class T> const T& PreprocessArg( const T& t ) { return t; }
 
 template<class T> void PreprocessArg( const T* const ptr )

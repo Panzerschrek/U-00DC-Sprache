@@ -35,7 +35,7 @@ std::string NamesScope::ToString() const
 NamesScopeValue* NamesScope::AddName( const std::string_view name, NamesScopeValue value )
 {
 	U_ASSERT( iterating_ == 0u );
-	auto it_bool_pair= names_map_.insert( std::make_pair( StringViewToStringRef(name), std::move( value ) ) );
+	auto it_bool_pair= names_map_.insert( std::make_pair( llvm::StringRef(name), std::move( value ) ) );
 
 	if( it_bool_pair.second )
 		return &it_bool_pair.first->second;
@@ -45,7 +45,7 @@ NamesScopeValue* NamesScope::AddName( const std::string_view name, NamesScopeVal
 
 NamesScopeValue* NamesScope::GetThisScopeValue( const std::string_view name )
 {
-	const auto it= names_map_.find( StringViewToStringRef(name) );
+	const auto it= names_map_.find( name );
 	if( it != names_map_.end() )
 		return &it->second;
 	return nullptr;
