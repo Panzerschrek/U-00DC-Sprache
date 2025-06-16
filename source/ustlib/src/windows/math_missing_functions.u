@@ -7,16 +7,6 @@ var bool enable_missing_funcs=
 	typeinfo</size_type/>.size_of == 4s &&
 	ust::constexpr_string_equals( compiler::target::environment, "msvc" );
 
-fn nomangle enable_if( enable_missing_funcs ) expm1f( f32 x ) : f32
-{
-	return f32( expm1( f64(x) ) );
-}
-
-fn nomangle enable_if( enable_missing_funcs ) log1pf( f32 x ) : f32
-{
-	return f32( log1p( f64(x) ) );
-}
-
 fn nomangle enable_if( enable_missing_funcs ) tanf( f32 x ) : f32
 {
 	return f32( tan( f64(x) ) );
@@ -42,8 +32,6 @@ fn nomangle enable_if( enable_missing_funcs ) atan2f( f32 y, f32 x ) : f32
 	return f32( atan2( f64(y), f64(x) ) );
 }
 
-fn nomangle enable_if( enable_missing_funcs ) expm1( f64 x ) : f64;
-fn nomangle enable_if( enable_missing_funcs ) log1p( f64 x ) : f64;
 fn nomangle enable_if( enable_missing_funcs ) tan( f64 x ) : f64;
 fn nomangle enable_if( enable_missing_funcs ) asin( f64 x ) : f64;
 fn nomangle enable_if( enable_missing_funcs ) acos( f64 x ) : f64;
