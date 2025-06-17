@@ -50,7 +50,7 @@ public:
 
 	// Constructor for immutable nullable ptr from mutable non-nullable ptr.
 	fn enable_if( is_nullable && !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, false, true/>& ptr )
-		( storage_= ptr.get_storage() )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		unsafe
 		{
@@ -209,7 +209,7 @@ public:
 	fn hash( this, Hasher &mut hasher )
 	{
 		// Just hash counter pointer value.
-		apply_value_to_hasher( hasher, storage_.get_counter_ptr() );
+		apply_value_to_hasher( hasher, unsafe( storage_.get_counter_ptr() ) );
 	}
 
 public: // Methods for internal usage.
@@ -254,62 +254,62 @@ public:
 
 	// Construct from non-nullable immutable shared_ptr.
 	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, false, false/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		unsafe
 		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total );
 		}
 	}
 
 	// Construct from non-nullable mutable shared_ptr.
 	fn conversion_constructor( shared_ptr_base</ T, false, true/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		unsafe
 		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total );
 		}
 	}
 
 	// Construct from nullable immutable shared_ptr.
 	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, true, false/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		unsafe
 		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			if( !is_nullptr(counter_) )
+			auto counter_ptr= storage_.get_counter_ptr();
+			if( !is_nullptr(counter_ptr) )
 			{
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
 			}
 		}
 	}
 
 	// Construct from nullable mutable shared_ptr.
 	fn conversion_constructor( shared_ptr_base</ T, true, true/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		unsafe
 		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			if( !is_nullptr(counter_) )
+			auto counter_ptr= storage_.get_counter_ptr();
+			if( !is_nullptr(counter_ptr) )
 			{
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
 			}
 		}
 	}
 
 	// Construct from weak_ptr of compatible type.
+	/*
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, weak_ptr_base</U, is_mutable/>& ptr )
 	{
 		unsafe
 		{
-			if( !is_nullptr(ptr.get_value_ptr()) )
+			auto counter_ptr= storage_.get_counter_ptr();
+			if( !is_nullptr(counter_ptr) )
 			{
 				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) ); // Convert reference here.
 				counter_= ptr.get_counter_ptr();
@@ -317,17 +317,18 @@ public:
 			}
 		}
 	}
+	*/
 
 	// Copy constructor.
 	fn constructor( mut this, this_type &imut other )
+		( storage_= unsafe( other.get_storage() ) )
 	{
 		unsafe
 		{
-			value_= other.get_value_ptr();
-			counter_= other.get_counter_ptr();
-			if( !is_nullptr(counter_) )
+			auto counter_ptr= storage_.get_counter_ptr();
+			if( !is_nullptr(counter_ptr) )
 			{
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
 			}
 		}
 	}
@@ -336,12 +337,13 @@ public:
 	{
 		unsafe
 		{
-			if( !is_nullptr(counter_) )
+			auto counter_ptr= storage_.get_counter_ptr();
+			if( !is_nullptr(counter_ptr) )
 			{
-				shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
-				if( $>(counter_).use_count_total == 0u )
+				shared_ptr_impl::counter_dec( $>(counter_ptr).use_count_total );
+				if( $>(counter_ptr).use_count_total == 0u )
 				{
-					memory_free( ptr_cast_to_byte8( counter_ ) );
+					memory_free( ptr_cast_to_byte8( counter_ptr ) );
 				}
 			}
 		}
@@ -363,25 +365,26 @@ public:
 	{
 		unsafe
 		{
-			if( is_nullptr(counter_) || $>(counter_).use_count_strong == 0u )
+			auto counter_ptr= storage_.get_counter_ptr();
+			if( is_nullptr(counter_ptr) || $>(counter_ptr).use_count_strong == 0u )
 			{
 				return shared_ptr_type();
 			}
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
-			return shared_ptr_type( value_, counter_ );
+			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
+			return shared_ptr_type( storage_ );
 		}
 	}
 
 public: // Methods for internal usage.
 	fn get_value_ptr( this ) unsafe : $(T)
 	{
-		return value_;
+		return unsafe( storage_.get_value_ptr() );
 	}
 
 	fn get_counter_ptr( this ) unsafe : $(shared_ptr_impl::counter)
 	{
-		return counter_;
+		return unsafe( storage_.get_counter_ptr() );
 	}
 
 	fn get_storage( this ) unsafe : storage_type
