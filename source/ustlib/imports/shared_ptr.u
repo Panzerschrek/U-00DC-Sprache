@@ -211,16 +211,6 @@ public:
 	}
 
 public: // Methods for internal usage.
-	fn get_value_ptr( this ) unsafe : $(T)
-	{
-		return unsafe( storage_.get_value_ptr() );
-	}
-
-	fn get_counter_ptr( this ) unsafe : $(shared_ptr_impl::counter)
-	{
-		return unsafe( storage_.get_counter_ptr() );
-	}
-
 	fn get_storage( this ) unsafe : storage_type
 	{
 		return storage_;
@@ -305,7 +295,7 @@ public:
 	{
 		unsafe
 		{
-			auto counter_ptr= ptr.get_counter_ptr();
+			auto counter_ptr= ptr.get_storage().get_counter_ptr();
 			if( !is_nullptr(counter_ptr) )
 			{
 				storage_= storage_type( ptr.get_storage() );
@@ -372,16 +362,6 @@ public:
 	}
 
 public: // Methods for internal usage.
-	fn get_value_ptr( this ) unsafe : $(T)
-	{
-		return unsafe( storage_.get_value_ptr() );
-	}
-
-	fn get_counter_ptr( this ) unsafe : $(shared_ptr_impl::counter)
-	{
-		return unsafe( storage_.get_counter_ptr() );
-	}
-
 	fn get_storage( this ) unsafe : storage_type
 	{
 		return storage_;
