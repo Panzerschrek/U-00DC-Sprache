@@ -495,10 +495,69 @@ private:
 	storage_type imut storage_;
 }
 
+template</type T/>
+type shared_ptr_storage= share_ptr_storage_selector</T, is_polymorph_class</T/>() />;
+
+template</type T/> type share_ptr_storage_selector</T, false/> = shared_ptr_storage_simple</T/>;
+template</type T/> type share_ptr_storage_selector</T,  true/> = shared_ptr_storage_polymorph</T/>;
+
 // Storage class for control block and value pointer of a shared_ptr.
 // Generally it's unsafe to use, it doesn't free memory on itself.
 template</type T/>
-class shared_ptr_storage
+class shared_ptr_storage_simple
+{
+public:
+	fn constructor()= default;
+
+	// Allocate control block and value memory.
+	// Sets initial use strong/total counters to 1.
+	fn constructor( T mut value ) unsafe
+	{
+		unsafe
+		{
+			contents_= byte_ptr_cast</contents_type/>( memory_allocate( typeinfo</contents_type/>.size_of ) );
+
+			auto &mut counter= $>(contents_)[0];
+			counter.use_count_total= 1u;
+			counter.use_count_strong= 1u;
+			counter.lock_count= 0;
+
+			move_into_uninitialized( $>(contents_)[1], move(value) );
+		}
+	}
+
+
+	// Copy constructor.
+	// Counters are not altered.
+	fn constructor( shared_ptr_storage_simple</T/>& other )= default;
+
+	// Copy assignment.
+	// Counters are not altered for both old and new values.
+	op=( mut this, shared_ptr_storage_simple</T/>& other )= default;
+
+	// May return nullptr.
+	fn get_counter_ptr(this) unsafe : $(counter)
+	{
+		return unsafe( byte_ptr_cast</counter/>( ptr_cast_to_byte8( contents_ ) ) );
+	}
+
+	// Call this only if counter is not nullptr.
+	fn get_value_ptr(this) unsafe : $(T)
+	{
+		return unsafe( $<( $>(contents_)[1] ) );
+	}
+
+private:
+	type contents_type= tup[ counter, T ];
+
+private:
+	$(contents_type) contents_= zero_init;
+}
+
+// Storage class for control block and value pointer of a shared_ptr.
+// Generally it's unsafe to use, it doesn't free memory on itself.
+template</type T/>
+class shared_ptr_storage_polymorph
 {
 public:
 	fn constructor()= default;
@@ -535,7 +594,7 @@ public:
 	// Counters are not altered.
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
-	constructor( mut this, shared_ptr_storage</U/>& storage ) unsafe
+	constructor( mut this, shared_ptr_storage_polymorph</U/>& storage ) unsafe
 	{
 		unsafe
 		{
@@ -550,11 +609,11 @@ public:
 
 	// Copy constructor.
 	// Counters are not altered.
-	fn constructor( shared_ptr_storage</T/>& other )= default;
+	fn constructor( shared_ptr_storage_polymorph</T/>& other )= default;
 
 	// Copy assignment.
 	// Counters are not altered for both old and new values.
-	op=( mut this, shared_ptr_storage</T/>& other )= default;
+	op=( mut this, shared_ptr_storage_polymorph</T/>& other )= default;
 
 	// May return nullptr.
 	fn get_counter_ptr(this) unsafe : $(counter)
