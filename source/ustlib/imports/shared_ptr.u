@@ -186,12 +186,12 @@ public:
 
 	fn enable_if(is_mutable) lock_mut_unchecked( this ) unsafe : lock_mut_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_mut_t ( storage_.get_value_ptr(), storage_.get_counter_ptr() ) );
+		return unsafe( lock_mut_t ( storage_ ) );
 	}
 
 	fn lock_imut_unchecked( this ) unsafe : lock_imut_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_imut_t( storage_.get_value_ptr(), storage_.get_counter_ptr() ) );
+		return unsafe( lock_imut_t( storage_ ) );
 	}
 
 	// Compare.
@@ -424,69 +424,75 @@ template</ type T />
 class lock_mut nodiscard
 {
 public:
-	fn constructor( mut this, $(T) v, $(counter) c ) unsafe
-		( value_(v), counter_(c) )
+	fn constructor( mut this, storage_type storage ) unsafe
+		( storage_= storage )
 	{
 		unsafe
 		{
-			halt if( $>(counter_).lock_count != 0 ); // halt if have any locks
-			$>(counter_).lock_count= -1;
+			auto counter_ptr= storage_.get_counter_ptr();
+			halt if( $>(counter_ptr).lock_count != 0 ); // halt if have any locks
+			$>(counter_ptr).lock_count= -1;
 		}
 	}
 
 	fn destructor()
 	{
-		unsafe{  $>(counter_).lock_count= 0;  }
+		unsafe{  $>(storage_.get_counter_ptr()).lock_count= 0;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
 	fn deref( mut this ) : T & mut @( reference_notation::return_references::param0 )
 	{
-		return unsafe( $>( value_ ) );
+		return unsafe( $>( storage_.get_value_ptr() ) );
 	}
+
+private:
+	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
 
 private:
 	// Use this tag in order to mark lock class as reference-contained.
 	// It contains actually a logical reference to source shared_ptr - "counter".
 	ReferenceContainerTag</ counter, false /> shared_ptr_ref_tag_;
 
-	$(T) value_;
-	$(counter) counter_;
+	storage_type imut storage_;
 }
 
 template</ type T />
 class lock_imut nodiscard
 {
 public:
-	fn constructor( mut this, $(T) v, $(counter) c ) unsafe
-		( value_(v), counter_(c) )
+	fn constructor( mut this, storage_type storage ) unsafe
+		( storage_= storage )
 	{
 		unsafe
 		{
-			halt if( $>(counter_).lock_count < 0 ); // halt if have mutable locks
+			auto counter_ptr= storage_.get_counter_ptr();
+			halt if( $>(counter_ptr).lock_count < 0 ); // halt if have mutable locks
 			// It's almost impossible to get counter overflow here - so, ignore such possibility.
-			++$>(counter_).lock_count;
+			++$>(counter_ptr).lock_count;
 		}
 	}
 
 	fn destructor()
 	{
-		unsafe{  --$>(counter_).lock_count;  }
+		unsafe{  --$>(storage_.get_counter_ptr()).lock_count;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
 	fn deref( this ) : T &imut @( reference_notation::return_references::param0 )
 	{
-		return unsafe( $>( value_ ) );
+		return unsafe( $>( storage_.get_value_ptr() ) );
 	}
+
+private:
+	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
 
 private:
 	// Use this tag in order to mark lock class as reference-contained.
 	// It contains actually a logical reference to source shared_ptr - "counter".
 	ReferenceContainerTag</ counter, false /> shared_ptr_ref_tag_;
 
-	$(T) value_;
-	$(counter) counter_;
+	storage_type imut storage_;
 }
 
 // Storage class for control block and value pointer of a shared_ptr.
