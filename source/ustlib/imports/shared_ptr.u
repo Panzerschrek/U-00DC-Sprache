@@ -76,23 +76,21 @@ public:
 	}
 
 	// Construct from shared_ptr of compatible type.
-	/*
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, shared_ptr_base</U, is_nullable, is_mutable/>& ptr )
 	{
-		if( !ptr.empty() )
+		unsafe
 		{
-			unsafe
+			if( !ptr.empty() )
 			{
-				value_= $<( cast_ref</T/>( $>(ptr.get_value_ptr() ) ) );
-				counter_= ptr.get_counter_ptr();
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+				storage_= storage_type( ptr.get_storage() );
+				auto counter_ptr= storage_.get_counter_ptr();
+				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
 			}
 		}
 	}
-	*/
 
 	fn destructor()
 	{
@@ -301,23 +299,20 @@ public:
 	}
 
 	// Construct from weak_ptr of compatible type.
-	/*
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, weak_ptr_base</U, is_mutable/>& ptr )
 	{
 		unsafe
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
+			auto counter_ptr= ptr.get_counter_ptr();
 			if( !is_nullptr(counter_ptr) )
 			{
-				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) ); // Convert reference here.
-				counter_= ptr.get_counter_ptr();
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+				storage_= storage_type( ptr.get_storage() );
+				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
 			}
 		}
 	}
-	*/
 
 	// Copy constructor.
 	fn constructor( mut this, this_type &imut other )
@@ -543,6 +538,22 @@ public:
 
 			value_= byte_ptr_cast</T/>( mem + object_offset );
 			move_into_uninitialized( $>(value_), move(value) );
+		}
+	}
+
+	// Construct from storage for compatible type.
+	template</ type U />
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
+	constructor( mut this, shared_ptr_storage</U/>& storage ) unsafe
+	{
+		unsafe
+		{
+			auto counter_ptr= storage.get_counter_ptr();
+			if( !is_nullptr( counter_ptr ) )
+			{
+				counter_= counter_ptr;
+				value_= $<( cast_ref</T/>( $>( storage.get_value_ptr() ) ) );
+			}
 		}
 	}
 
