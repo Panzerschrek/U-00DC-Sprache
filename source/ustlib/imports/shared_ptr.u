@@ -18,78 +18,57 @@ public:
 	// Construct with value.
 	fn constructor( T mut value )
 	{
-		unsafe
-		{
-			// Allocate counter and object in single allocation.
-			// Counter goes first, than goes the object itself (with proper alignment).
-			// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
-			auto constexpr counter_size= typeinfo</ shared_ptr_impl::counter />.size_of;
-			auto constexpr object_size= typeinfo</T/>.size_of;
-			auto constexpr object_alignment= typeinfo</T/>.align_of;
-			auto constexpr object_offset= (counter_size + (object_alignment - 1s)) / object_alignment * object_alignment;
-			static_assert(object_offset % object_alignment == 0s);
-			auto constexpr allocation_size= object_offset + object_size;
-
-			var $(byte8) mem= memory_allocate( allocation_size );
-
-			counter_= byte_ptr_cast</ shared_ptr_impl::counter />( mem );
-			$>(counter_).use_count_total= 1u;
-			$>(counter_).use_count_strong= 1u;
-			$>(counter_).lock_count= 0;
-
-			value_= byte_ptr_cast</T/>( mem + object_offset );
-			move_into_uninitialized( $>(value_), move(value) );
-		}
+		storage_= unsafe( storage_type( move(value) ) );
 	}
 
 	// Constructor for nullable ptr from non-nullable ptr.
 	fn enable_if( is_nullable ) conversion_constructor( mut this, shared_ptr_base</T, false, is_mutable/>& ptr )
+		( storage_= ptr.get_storage() )
 	{
 		unsafe
 		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+			auto counter_ptr= storage_.get_counter_ptr();
+			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
 		}
 	}
 
 	// Constructor for immutable ptr from mutable ptr.
 	fn enable_if( !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, is_nullable, true/>& ptr )
+		( storage_= ptr.get_storage() )
 	{
-		if( !ptr.empty() )
+		if( !other.empty() )
 		{
 			unsafe
 			{
-				value_= ptr.get_value_ptr();
-				counter_= ptr.get_counter_ptr();
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+				auto counter_ptr= storage_.get_counter_ptr();
+				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
 			}
 		}
 	}
 
 	// Constructor for immutable nullable ptr from mutable non-nullable ptr.
 	fn enable_if( is_nullable && !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, false, true/>& ptr )
+		( storage_= ptr.get_storage() )
 	{
 		unsafe
 		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+			auto counter_ptr= storage_.get_counter_ptr();
+			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
 		}
 	}
 
 	// Copy constructor.
 	fn constructor( mut this, this_type &imut other )
+		( storage_= ptr.get_storage() )
 	{
 		if( !other.empty() )
 		{
 			unsafe
 			{
-				value_= other.value_;
-				counter_= other.counter_;
+				auto counter_ptr= storage_.get_counter_ptr();
 				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
 				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
 			}
@@ -155,7 +134,7 @@ public:
 	{
 		static_if( is_nullable )
 		{
-			return is_nullptr(value_);
+			return is_nullptr(storage_.get_counter_ptr());
 		}
 		else
 		{
@@ -237,6 +216,11 @@ public: // Methods for internal usage.
 		return counter_;
 	}
 
+	fn get_storage( this ) unsafe : storage_type
+	{
+		return storage_;
+	}
+
 	// Counter must be incremented before this constructor call.
 	fn constructor( $(T) value_ptr, $(shared_ptr_impl::counter) counter_ptr ) unsafe
 	( value_(value_ptr), counter_(counter_ptr) )
@@ -249,9 +233,10 @@ private:
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
 
+	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
+
 private:
-	value_ptr value_= zero_init;
-	counter_ptr counter_= zero_init;
+	storage_type storage_;
 }
 
 template</ type T, bool is_mutable />
@@ -510,6 +495,57 @@ private:
 
 	$(T) value_;
 	$(counter) counter_;
+}
+
+template</type T/>
+class shared_ptr_storage
+{
+public:
+	fn constructor()= default;
+
+	fn constructor( T mut t ) unsafe
+	{
+		unsafe
+		{
+			// Allocate counter and object in single allocation.
+			// Counter goes first, than goes the object itself (with proper alignment).
+			// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
+			auto constexpr counter_size= typeinfo</ shared_ptr_impl::counter />.size_of;
+			auto constexpr object_size= typeinfo</T/>.size_of;
+			auto constexpr object_alignment= typeinfo</T/>.align_of;
+			auto constexpr object_offset= (counter_size + (object_alignment - 1s)) / object_alignment * object_alignment;
+			static_assert(object_offset % object_alignment == 0s);
+			auto constexpr allocation_size= object_offset + object_size;
+
+			var $(byte8) mem= memory_allocate( allocation_size );
+
+			counter_= byte_ptr_cast</ shared_ptr_impl::counter />( mem );
+			$>(counter_).use_count_total= 1u;
+			$>(counter_).use_count_strong= 1u;
+			$>(counter_).lock_count= 0;
+
+			value_= byte_ptr_cast</T/>( mem + object_offset );
+			move_into_uninitialized( $>(value_), move(value) );
+		}
+	}
+
+	fn constructor( shared_ptr_storage</T/>& other )= default;
+
+	op=( shared_ptr_storage</T/>& other )= default;
+
+	fn get_counter_ptr(this) unsafe : $(counter)
+	{
+		return counter_;
+	}
+
+	fn get_value_ptr(this) unsafe : $(T)
+	{
+		return value_;
+	}
+
+private:
+	$(counter) counter_= zero_init;
+	$(T) value_= zero_init;
 }
 
 } // namespace shared_ptr_impl
