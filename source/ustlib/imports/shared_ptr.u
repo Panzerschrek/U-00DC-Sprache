@@ -489,12 +489,16 @@ private:
 	$(counter) counter_;
 }
 
+// Storage class for control block and value pointer of a shared_ptr.
+// Generally it's unsafe to use, it doesn't free memory on itself.
 template</type T/>
 class shared_ptr_storage
 {
 public:
 	fn constructor()= default;
 
+	// Allocate control block and value memory.
+	// Sets initial use strong/total counters to 1.
 	fn constructor( T mut value ) unsafe
 	{
 		unsafe
@@ -522,6 +526,7 @@ public:
 	}
 
 	// Construct from storage for compatible type.
+	// Counters are not altered.
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	constructor( mut this, shared_ptr_storage</U/>& storage ) unsafe
@@ -537,15 +542,21 @@ public:
 		}
 	}
 
+	// Copy constructor.
+	// Counters are not altered.
 	fn constructor( shared_ptr_storage</T/>& other )= default;
 
+	// Copy assignment.
+	// Counters are not altered for both old and new values.
 	op=( mut this, shared_ptr_storage</T/>& other )= default;
 
+	// May return nullptr.
 	fn get_counter_ptr(this) unsafe : $(counter)
 	{
 		return counter_;
 	}
 
+	// Call this only if counter is not nullptr.
 	fn get_value_ptr(this) unsafe : $(T)
 	{
 		return value_;
