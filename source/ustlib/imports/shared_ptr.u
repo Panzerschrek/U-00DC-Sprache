@@ -23,7 +23,7 @@ public:
 
 	// Constructor for nullable ptr from non-nullable ptr.
 	fn enable_if( is_nullable ) conversion_constructor( mut this, shared_ptr_base</T, false, is_mutable/>& ptr )
-		( storage_= ptr.get_storage() )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		unsafe
 		{
@@ -35,9 +35,9 @@ public:
 
 	// Constructor for immutable ptr from mutable ptr.
 	fn enable_if( !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, is_nullable, true/>& ptr )
-		( storage_= ptr.get_storage() )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		if( !other.empty() )
+		if( !ptr.empty() )
 		{
 			unsafe
 			{
@@ -62,20 +62,21 @@ public:
 
 	// Copy constructor.
 	fn constructor( mut this, this_type &imut other )
-		( storage_= ptr.get_storage() )
+		( storage_= unsafe( other.get_storage() ) )
 	{
-		if( !other.empty() )
+		if( !empty() )
 		{
 			unsafe
 			{
 				auto counter_ptr= storage_.get_counter_ptr();
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
 			}
 		}
 	}
 
 	// Construct from shared_ptr of compatible type.
+	/*
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, shared_ptr_base</U, is_nullable, is_mutable/>& ptr )
@@ -91,23 +92,26 @@ public:
 			}
 		}
 	}
+	*/
 
 	fn destructor()
 	{
 		if( empty() ) { return; }
 		unsafe
 		{
-			shared_ptr_impl::counter_dec( $>(counter_).use_count_strong );
-			if( $>(counter_).use_count_strong == 0u )
+			auto counter_ptr= storage_.get_counter_ptr();
+
+			shared_ptr_impl::counter_dec( $>(counter_ptr).use_count_strong );
+			if( $>(counter_ptr).use_count_strong == 0u )
 			{
-				call_destructor( $>(value_) );
+				call_destructor( $>( storage_.get_value_ptr() ) );
 			}
 
-			shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
-			if( $>(counter_).use_count_total == 0u )
+			shared_ptr_impl::counter_dec( $>(counter_ptr).use_count_total );
+			if( $>(counter_ptr).use_count_total == 0u )
 			{
 				// Free counter together with initial allocated object.
-				memory_free( ptr_cast_to_byte8( counter_ ) );
+				memory_free( ptr_cast_to_byte8( counter_ptr ) );
 			}
 		}
 	}
@@ -134,7 +138,7 @@ public:
 	{
 		static_if( is_nullable )
 		{
-			return is_nullptr(storage_.get_counter_ptr());
+			return is_nullptr( unsafe( storage_.get_counter_ptr() ) );
 		}
 		else
 		{
@@ -149,10 +153,12 @@ public:
 
 		unsafe
 		{
+			auto counter_ptr= storage_.get_counter_ptr();
+
 			// It's almost impossible to get counter overflow here - so, ignore such possibility.
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
-			return shared_ptr_base</T, false, is_mutable/>( value_, counter_ );
+			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
+			return shared_ptr_base</T, false, is_mutable/>( storage_ );
 		}
 	}
 
@@ -182,38 +188,39 @@ public:
 
 	fn enable_if(is_mutable) lock_mut_unchecked( this ) unsafe : lock_mut_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_mut_t ( value_, counter_ ) );
+		return unsafe( lock_mut_t ( storage_.get_value_ptr(), storage_.get_counter_ptr() ) );
 	}
 
 	fn lock_imut_unchecked( this ) unsafe : lock_imut_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_imut_t( value_, counter_ ) );
+		return unsafe( lock_imut_t( storage_.get_value_ptr(), storage_.get_counter_ptr() ) );
 	}
 
 	// Compare.
 
 	op==( this_type& l, this_type& r ) : bool
 	{
-		return l.value_ == r.value_;
+		// Just compare counter pointers.
+		return unsafe( l.storage_.get_counter_ptr() ) == unsafe( r.storage_.get_counter_ptr() );
 	}
 
 	// Hashing.
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
-		// Just hash pointer value.
-		apply_value_to_hasher( hasher, value_ );
+		// Just hash counter pointer value.
+		apply_value_to_hasher( hasher, storage_.get_counter_ptr() );
 	}
 
 public: // Methods for internal usage.
 	fn get_value_ptr( this ) unsafe : $(T)
 	{
-		return value_;
+		return unsafe( storage_.get_value_ptr() );
 	}
 
 	fn get_counter_ptr( this ) unsafe : $(shared_ptr_impl::counter)
 	{
-		return counter_;
+		return unsafe( storage_.get_counter_ptr() );
 	}
 
 	fn get_storage( this ) unsafe : storage_type
@@ -222,8 +229,8 @@ public: // Methods for internal usage.
 	}
 
 	// Counter must be incremented before this constructor call.
-	fn constructor( $(T) value_ptr, $(shared_ptr_impl::counter) counter_ptr ) unsafe
-	( value_(value_ptr), counter_(counter_ptr) )
+	fn constructor( storage_type storage ) unsafe
+	( storage_(storage) )
 	{}
 
 private:
@@ -377,6 +384,11 @@ public: // Methods for internal usage.
 		return counter_;
 	}
 
+	fn get_storage( this ) unsafe : storage_type
+	{
+		return storage_;
+	}
+
 private:
 	type this_type= weak_ptr_base</ T, is_mutable />;
 	type shared_ptr_type= shared_ptr_base</ T, true, is_mutable />;
@@ -385,9 +397,10 @@ private:
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
 
+	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
+
 private:
-	value_ptr value_= zero_init;
-	counter_ptr counter_= zero_init;
+	storage_type storage_;
 }
 
 // All necessary type aliases.
@@ -409,6 +422,7 @@ fn make_shared_ptr( T mut value ) : shared_ptr_mut</T/>
 namespace shared_ptr_impl
 {
 
+// TODO - rename counter to control block.
 struct counter
 {
 	u32 use_count_total;
@@ -503,7 +517,7 @@ class shared_ptr_storage
 public:
 	fn constructor()= default;
 
-	fn constructor( T mut t ) unsafe
+	fn constructor( T mut value ) unsafe
 	{
 		unsafe
 		{
@@ -531,7 +545,7 @@ public:
 
 	fn constructor( shared_ptr_storage</T/>& other )= default;
 
-	op=( shared_ptr_storage</T/>& other )= default;
+	op=( mut this, shared_ptr_storage</T/>& other )= default;
 
 	fn get_counter_ptr(this) unsafe : $(counter)
 	{
