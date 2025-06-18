@@ -27,9 +27,9 @@ public:
 	{
 		unsafe
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
-			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
+			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 		}
 	}
 
@@ -41,9 +41,9 @@ public:
 		{
 			unsafe
 			{
-				auto counter_ptr= storage_.get_counter_ptr();
-				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
+				auto control_block_ptr= storage_.getcontrol_block_ptr();
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			}
 		}
 	}
@@ -54,9 +54,9 @@ public:
 	{
 		unsafe
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
-			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
+			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 		}
 	}
 
@@ -68,9 +68,9 @@ public:
 		{
 			unsafe
 			{
-				auto counter_ptr= storage_.get_counter_ptr();
-				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
+				auto control_block_ptr= storage_.getcontrol_block_ptr();
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			}
 		}
 	}
@@ -85,9 +85,9 @@ public:
 		{
 			unsafe
 			{
-				auto counter_ptr= storage_.get_counter_ptr();
-				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
+				auto control_block_ptr= storage_.getcontrol_block_ptr();
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			}
 		}
 	}
@@ -97,19 +97,19 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
+			auto control_block_ptr= storage_.getcontrol_block_ptr();
 
-			shared_ptr_impl::counter_dec( $>(counter_ptr).use_count_strong );
-			if( $>(counter_ptr).use_count_strong == 0u )
+			shared_ptr_impl::counter_dec( $>(control_block_ptr).use_count_strong );
+			if( $>(control_block_ptr).use_count_strong == 0u )
 			{
 				call_destructor( $>( storage_.get_value_ptr() ) );
 			}
 
-			shared_ptr_impl::counter_dec( $>(counter_ptr).use_count_total );
-			if( $>(counter_ptr).use_count_total == 0u )
+			shared_ptr_impl::counter_dec( $>(control_block_ptr).use_count_total );
+			if( $>(control_block_ptr).use_count_total == 0u )
 			{
 				// Free counter together with initial allocated object.
-				memory_free( ptr_cast_to_byte8( counter_ptr ) );
+				memory_free( ptr_cast_to_byte8( control_block_ptr ) );
 			}
 		}
 	}
@@ -151,11 +151,11 @@ public:
 
 		unsafe
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
+			auto control_block_ptr= storage_.getcontrol_block_ptr();
 
 			// It's almost impossible to get counter overflow here - so, ignore such possibility.
-			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			return shared_ptr_base</T, false, is_mutable/>( storage_ );
 		}
 	}
@@ -216,15 +216,13 @@ public: // Methods for internal usage.
 		return storage_;
 	}
 
-	// Counter must be incremented before this constructor call.
+	// Counters must be incremented before this constructor call.
 	fn constructor( storage_type storage ) unsafe
 	( storage_(storage) )
 	{}
 
 private:
 	type this_type= shared_ptr_base</ T, is_nullable, is_mutable />;
-	type value_ptr= $(T);
-	type counter_ptr= $(shared_ptr_impl::counter);
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
 
@@ -244,14 +242,14 @@ public:
 	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, false, false/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
+		unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
 	}
 
 	// Construct from non-nullable mutable shared_ptr.
 	fn conversion_constructor( shared_ptr_base</ T, false, true/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
+		unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
 	}
 
 	// Construct from nullable immutable shared_ptr.
@@ -260,7 +258,7 @@ public:
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -270,7 +268,7 @@ public:
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -282,7 +280,7 @@ public:
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -292,7 +290,7 @@ public:
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -302,11 +300,11 @@ public:
 		{
 			unsafe
 			{
-				auto counter_ptr= storage_.get_counter_ptr();
-				shared_ptr_impl::counter_dec( $>(counter_ptr).use_count_total );
-				if( $>(counter_ptr).use_count_total == 0u )
+				auto control_block_ptr= storage_.getcontrol_block_ptr();
+				shared_ptr_impl::counter_dec( $>(control_block_ptr).use_count_total );
+				if( $>(control_block_ptr).use_count_total == 0u )
 				{
-					memory_free( ptr_cast_to_byte8( counter_ptr ) );
+					memory_free( ptr_cast_to_byte8( control_block_ptr ) );
 				}
 			}
 		}
@@ -333,13 +331,13 @@ public:
 
 		unsafe
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
-			if( $>(counter_ptr).use_count_strong == 0u )
+			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			if( $>(control_block_ptr).use_count_strong == 0u )
 			{
 				return shared_ptr_type();
 			}
-			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			return shared_ptr_type( storage_ );
 		}
 	}
@@ -353,8 +351,6 @@ public: // Methods for internal usage.
 private:
 	type this_type= weak_ptr_base</ T, is_mutable />;
 	type shared_ptr_type= shared_ptr_base</ T, true, is_mutable />;
-	type value_ptr= $(T);
-	type counter_ptr= $(shared_ptr_impl::counter);
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
 
@@ -383,8 +379,7 @@ fn make_shared_ptr( T mut value ) : shared_ptr_mut</T/>
 namespace shared_ptr_impl
 {
 
-// TODO - rename counter to control block.
-struct counter
+struct control_block
 {
 	u32 use_count_total;
 	u32 use_count_strong; // always <= use_count_total
@@ -412,15 +407,15 @@ public:
 	{
 		unsafe
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
-			halt if( $>(counter_ptr).lock_count != 0 ); // halt if have any locks
-			$>(counter_ptr).lock_count= -1;
+			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			halt if( $>(control_block_ptr).lock_count != 0 ); // halt if have any locks
+			$>(control_block_ptr).lock_count= -1;
 		}
 	}
 
 	fn destructor()
 	{
-		unsafe{  $>(storage_.get_counter_ptr()).lock_count= 0;  }
+		unsafe{  $>(storage_.getcontrol_block_ptr()).lock_count= 0;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -434,8 +429,8 @@ private:
 
 private:
 	// Use this tag in order to mark lock class as reference-contained.
-	// It contains actually a logical reference to source shared_ptr - "counter".
-	ReferenceContainerTag</ counter, false /> shared_ptr_ref_tag_;
+	// It contains actually a logical reference to source shared_ptr - "control_block".
+	ReferenceContainerTag</ control_block, false /> shared_ptr_ref_tag_;
 
 	storage_type imut storage_;
 }
@@ -449,16 +444,16 @@ public:
 	{
 		unsafe
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
-			halt if( $>(counter_ptr).lock_count < 0 ); // halt if have mutable locks
+			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			halt if( $>(control_block_ptr).lock_count < 0 ); // halt if have mutable locks
 			// It's almost impossible to get counter overflow here - so, ignore such possibility.
-			++$>(counter_ptr).lock_count;
+			++$>(control_block_ptr).lock_count;
 		}
 	}
 
 	fn destructor()
 	{
-		unsafe{  --$>(storage_.get_counter_ptr()).lock_count;  }
+		unsafe{  --$>(storage_.getcontrol_block_ptr()).lock_count;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -472,8 +467,8 @@ private:
 
 private:
 	// Use this tag in order to mark lock class as reference-contained.
-	// It contains actually a logical reference to source shared_ptr - "counter".
-	ReferenceContainerTag</ counter, false /> shared_ptr_ref_tag_;
+	// It contains actually a logical reference to source shared_ptr - "control_block".
+	ReferenceContainerTag</ control_block, false /> shared_ptr_ref_tag_;
 
 	storage_type imut storage_;
 }
@@ -494,7 +489,7 @@ public:
 		{
 			var $(byte8) mem= memory_allocate( c_allocation_size );
 
-			var counter &mut c= $>( byte_ptr_cast</ shared_ptr_impl::counter />( mem ) );
+			var control_block &mut c= $>( byte_ptr_cast</ control_block />( mem ) );
 			c.use_count_total= 1u;
 			c.use_count_strong= 1u;
 			c.lock_count= 0;
@@ -543,19 +538,19 @@ public:
 
 	// Call this only if non-empty!
 	// Use this pointer for "memory_free" call.
-	fn get_counter_ptr(this) unsafe : $(counter)
+	fn getcontrol_block_ptr(this) unsafe : $(control_block)
 	{
 		static_if( c_is_polymorph )
 		{
 			unsafe
 			{
 				var byte8 &mut original_ref= polymorph_restore_original_ref( $>( byte_ptr_cast</T/>( ptr_ ) ) );
-				return byte_ptr_cast</counter/>( $<( original_ref ) - c_object_offset );
+				return byte_ptr_cast</control_block/>( $<( original_ref ) - c_object_offset );
 			}
 		}
 		else
 		{
-			return unsafe( byte_ptr_cast</counter/>( ptr_ ) );
+			return unsafe( byte_ptr_cast</control_block/>( ptr_ ) );
 		}
 	}
 
@@ -580,13 +575,13 @@ public:
 private:
 	var bool constexpr c_is_polymorph= is_polymorph_class</T/>();
 
-	// Allocate counter and object in single allocation.
-	// Counter goes first, than goes the object itself (with proper alignment).
+	// Allocate control block and object in single allocation.
+	// Control block goes first, than goes the object itself (with proper alignment).
 	// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
-	var size_type constexpr c_counter_size= typeinfo</ shared_ptr_impl::counter />.size_of;
+	var size_type constexpr c_control_block_size= typeinfo</ control_block />.size_of;
 	var size_type constexpr c_object_size= typeinfo</T/>.size_of;
 	var size_type constexpr c_object_alignment= typeinfo</T/>.align_of;
-	var size_type constexpr c_object_offset= (c_counter_size + (c_object_alignment - 1s)) / c_object_alignment * c_object_alignment;
+	var size_type constexpr c_object_offset= (c_control_block_size + (c_object_alignment - 1s)) / c_object_alignment * c_object_alignment;
 	static_assert( c_object_offset % c_object_alignment == 0s );
 	var size_type constexpr c_allocation_size= c_object_offset + c_object_size;
 
