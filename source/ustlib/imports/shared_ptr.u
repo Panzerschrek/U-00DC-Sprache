@@ -509,25 +509,23 @@ public:
 	{
 		unsafe
 		{
-			// Allocate counter and object in single allocation.
-			// Counter goes first, than goes the object itself (with proper alignment).
-			// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
-			auto constexpr counter_size= typeinfo</ shared_ptr_impl::counter />.size_of;
-			auto constexpr object_size= typeinfo</T/>.size_of;
-			auto constexpr object_alignment= typeinfo</T/>.align_of;
-			auto constexpr object_offset= (counter_size + (object_alignment - 1s)) / object_alignment * object_alignment;
-			static_assert(object_offset % object_alignment == 0s);
-			auto constexpr allocation_size= object_offset + object_size;
+			var $(byte8) mem= memory_allocate( c_allocation_size );
 
-			var $(byte8) mem= memory_allocate( allocation_size );
+			var counter &mut c= $>( byte_ptr_cast</ shared_ptr_impl::counter />( mem ) );
+			c.use_count_total= 1u;
+			c.use_count_strong= 1u;
+			c.lock_count= 0;
 
-			counter_= byte_ptr_cast</ shared_ptr_impl::counter />( mem );
-			$>(counter_).use_count_total= 1u;
-			$>(counter_).use_count_strong= 1u;
-			$>(counter_).lock_count= 0;
+			move_into_uninitialized( $>( byte_ptr_cast</T/>( mem + c_object_offset ) ), move(value) );
 
-			value_= byte_ptr_cast</T/>( mem + object_offset );
-			move_into_uninitialized( $>(value_), move(value) );
+			static_if( c_is_polymorph )
+			{
+				ptr_= mem + c_object_offset;
+			}
+			else
+			{
+				ptr_= mem;
+			}
 		}
 	}
 
@@ -539,11 +537,9 @@ public:
 	{
 		unsafe
 		{
-			auto counter_ptr= storage.get_counter_ptr();
-			if( !is_nullptr( counter_ptr ) )
+			if( !is_nullptr( storage.get_ptr() ) )
 			{
-				counter_= counter_ptr;
-				value_= $<( cast_ref</T/>( $>( storage.get_value_ptr() ) ) );
+				ptr_= ptr_cast_to_byte8( $<( cast_ref</T/>( $>( storage.get_value_ptr() ) ) ) );
 			}
 		}
 	}
@@ -559,18 +555,60 @@ public:
 	// May return nullptr.
 	fn get_counter_ptr(this) unsafe : $(counter)
 	{
-		return counter_;
+		static_if( c_is_polymorph )
+		{
+			if( is_nullptr( ptr_ ) )
+			{
+				return nullptr</counter/>();
+			}
+
+			unsafe
+			{
+				var byte8 &mut original_ref= polymorph_restore_original_ref( $>( byte_ptr_cast</T/>( ptr_ ) ) );
+				return byte_ptr_cast</counter/>( $<( original_ref ) - c_object_offset );
+			}
+		}
+		else
+		{
+			return unsafe( byte_ptr_cast</counter/>( ptr_ ) );
+		}
 	}
 
 	// Call this only if counter is not nullptr.
 	fn get_value_ptr(this) unsafe : $(T)
 	{
-		return value_;
+		static_if( c_is_polymorph )
+		{
+			return unsafe( byte_ptr_cast</T/>( ptr_ ) );
+		}
+		else
+		{
+			return unsafe( byte_ptr_cast</T/>( ptr_ + c_object_offset ) );
+		}
+	}
+
+	fn get_ptr(this) unsafe : $(byte8)
+	{
+		return ptr_;
 	}
 
 private:
-	$(counter) counter_= zero_init;
-	$(T) value_= zero_init;
+	var bool constexpr c_is_polymorph= is_polymorph_class</T/>();
+
+	// Allocate counter and object in single allocation.
+	// Counter goes first, than goes the object itself (with proper alignment).
+	// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
+	var size_type constexpr c_counter_size= typeinfo</ shared_ptr_impl::counter />.size_of;
+	var size_type constexpr c_object_size= typeinfo</T/>.size_of;
+	var size_type constexpr c_object_alignment= typeinfo</T/>.align_of;
+	var size_type constexpr c_object_offset= (c_counter_size + (c_object_alignment - 1s)) / c_object_alignment * c_object_alignment;
+	static_assert( c_object_offset % c_object_alignment == 0s );
+	var size_type constexpr c_allocation_size= c_object_offset + c_object_size;
+
+private:
+	// For non-polymorph types it's a pointer to control block with object stored after it.
+	// For polymorph type it's a pointer to object itself, control block address is calculated by restoring original object reference and then subtracting its offset.
+	$(byte8) ptr_= zero_init;
 }
 
 } // namespace shared_ptr_impl
