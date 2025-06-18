@@ -8,8 +8,8 @@ namespace U1
 
 // Sizes for 8-bit pointers.
 static_assert( typeinfo</Type/>.size_of <= 24s, "size of Type is too big" ); // 1 pointer for variant, 2 pointers for variant contents
-static_assert( typeinfo</Value/>.size_of <= 40s, "size of Value is too big" );
-static_assert( typeinfo</NamesScopeValue/>.size_of <= 24s, "size of NamesScopeValue is too big" ); // 1 pointer for variant and 2 pointers for contents.
+static_assert( typeinfo</Value/>.size_of <= 32s, "size of Value is too big" );
+static_assert( typeinfo</NamesScopeValue/>.size_of <= 16s, "size of NamesScopeValue is too big" ); // 1 pointer for variant and 1 pointer for contents.
 
 //
 // Type

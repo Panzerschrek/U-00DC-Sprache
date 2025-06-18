@@ -18,80 +18,59 @@ public:
 	// Construct with value.
 	fn constructor( T mut value )
 	{
-		unsafe
-		{
-			// Allocate counter and object in single allocation.
-			// Counter goes first, than goes the object itself (with proper alignment).
-			// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
-			auto constexpr counter_size= typeinfo</ shared_ptr_impl::counter />.size_of;
-			auto constexpr object_size= typeinfo</T/>.size_of;
-			auto constexpr object_alignment= typeinfo</T/>.align_of;
-			auto constexpr object_offset= (counter_size + (object_alignment - 1s)) / object_alignment * object_alignment;
-			static_assert(object_offset % object_alignment == 0s);
-			auto constexpr allocation_size= object_offset + object_size;
-
-			var $(byte8) mem= memory_allocate( allocation_size );
-
-			counter_= byte_ptr_cast</ shared_ptr_impl::counter />( mem );
-			$>(counter_).use_count_total= 1u;
-			$>(counter_).use_count_strong= 1u;
-			$>(counter_).lock_count= 0;
-
-			value_= byte_ptr_cast</T/>( mem + object_offset );
-			move_into_uninitialized( $>(value_), move(value) );
-		}
+		storage_= unsafe( storage_type( move(value) ) );
 	}
 
 	// Constructor for nullable ptr from non-nullable ptr.
 	fn enable_if( is_nullable ) conversion_constructor( mut this, shared_ptr_base</T, false, is_mutable/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		unsafe
 		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+			auto control_block_ptr= storage_.get_control_block_ptr();
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 		}
 	}
 
 	// Constructor for immutable ptr from mutable ptr.
 	fn enable_if( !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, is_nullable, true/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		if( !ptr.empty() )
+		if( !empty() )
 		{
 			unsafe
 			{
-				value_= ptr.get_value_ptr();
-				counter_= ptr.get_counter_ptr();
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+				auto control_block_ptr= storage_.get_control_block_ptr();
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			}
 		}
 	}
 
 	// Constructor for immutable nullable ptr from mutable non-nullable ptr.
 	fn enable_if( is_nullable && !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, false, true/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		unsafe
 		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+			auto control_block_ptr= storage_.get_control_block_ptr();
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 		}
 	}
 
 	// Copy constructor.
 	fn constructor( mut this, this_type &imut other )
+		( storage_= unsafe( other.get_storage() ) )
 	{
-		if( !other.empty() )
+		if( !empty() )
 		{
 			unsafe
 			{
-				value_= other.value_;
-				counter_= other.counter_;
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+				auto control_block_ptr= storage_.get_control_block_ptr();
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			}
 		}
 	}
@@ -100,15 +79,15 @@ public:
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, shared_ptr_base</U, is_nullable, is_mutable/>& ptr )
+		( storage_= unsafe( storage_type( ptr.get_storage() ) ) )
 	{
-		if( !ptr.empty() )
+		if( !empty() )
 		{
 			unsafe
 			{
-				value_= $<( cast_ref</T/>( $>(ptr.get_value_ptr() ) ) );
-				counter_= ptr.get_counter_ptr();
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+				auto control_block_ptr= storage_.get_control_block_ptr();
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			}
 		}
 	}
@@ -118,17 +97,19 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			shared_ptr_impl::counter_dec( $>(counter_).use_count_strong );
-			if( $>(counter_).use_count_strong == 0u )
+			auto control_block_ptr= storage_.get_control_block_ptr();
+
+			shared_ptr_impl::counter_dec( $>(control_block_ptr).use_count_strong );
+			if( $>(control_block_ptr).use_count_strong == 0u )
 			{
-				call_destructor( $>(value_) );
+				call_destructor( $>( storage_.get_value_ptr() ) );
 			}
 
-			shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
-			if( $>(counter_).use_count_total == 0u )
+			shared_ptr_impl::counter_dec( $>(control_block_ptr).use_count_total );
+			if( $>(control_block_ptr).use_count_total == 0u )
 			{
 				// Free counter together with initial allocated object.
-				memory_free( ptr_cast_to_byte8( counter_ ) );
+				memory_free( ptr_cast_to_byte8( control_block_ptr ) );
 			}
 		}
 	}
@@ -155,7 +136,7 @@ public:
 	{
 		static_if( is_nullable )
 		{
-			return is_nullptr(value_);
+			return storage_.empty();
 		}
 		else
 		{
@@ -170,10 +151,11 @@ public:
 
 		unsafe
 		{
-			// It's almost impossible to get counter overflow here - so, ignore such possibility.
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
-			return shared_ptr_base</T, false, is_mutable/>( value_, counter_ );
+			auto control_block_ptr= storage_.get_control_block_ptr();
+
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
+			return shared_ptr_base</T, false, is_mutable/>( storage_ );
 		}
 	}
 
@@ -203,55 +185,49 @@ public:
 
 	fn enable_if(is_mutable) lock_mut_unchecked( this ) unsafe : lock_mut_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_mut_t ( value_, counter_ ) );
+		return unsafe( lock_mut_t ( storage_ ) );
 	}
 
 	fn lock_imut_unchecked( this ) unsafe : lock_imut_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_imut_t( value_, counter_ ) );
+		return unsafe( lock_imut_t( storage_ ) );
 	}
 
 	// Compare.
 
 	op==( this_type& l, this_type& r ) : bool
 	{
-		return l.value_ == r.value_;
+		// Just compare stored pointers.
+		return unsafe( l.storage_.get_ptr() ) == unsafe( r.storage_.get_ptr() );
 	}
 
 	// Hashing.
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
-		// Just hash pointer value.
-		apply_value_to_hasher( hasher, value_ );
+		// Just hash stored pointer value.
+		apply_value_to_hasher( hasher, unsafe( storage_.get_ptr() ) );
 	}
 
 public: // Methods for internal usage.
-	fn get_value_ptr( this ) unsafe : $(T)
+	fn get_storage( this ) unsafe : storage_type
 	{
-		return value_;
+		return storage_;
 	}
 
-	fn get_counter_ptr( this ) unsafe : $(shared_ptr_impl::counter)
-	{
-		return counter_;
-	}
-
-	// Counter must be incremented before this constructor call.
-	fn constructor( $(T) value_ptr, $(shared_ptr_impl::counter) counter_ptr ) unsafe
-	( value_(value_ptr), counter_(counter_ptr) )
+	// Counters must be incremented before this constructor call!
+	fn constructor( storage_type storage ) unsafe
+		( storage_(storage) )
 	{}
 
 private:
 	type this_type= shared_ptr_base</ T, is_nullable, is_mutable />;
-	type value_ptr= $(T);
-	type counter_ptr= $(shared_ptr_impl::counter);
+	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
 
 private:
-	value_ptr value_= zero_init;
-	counter_ptr counter_= zero_init;
+	storage_type storage_;
 }
 
 template</ type T, bool is_mutable />
@@ -262,51 +238,35 @@ public:
 
 	// Construct from non-nullable immutable shared_ptr.
 	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, false, false/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe
-		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-		}
+		unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 	}
 
 	// Construct from non-nullable mutable shared_ptr.
 	fn conversion_constructor( shared_ptr_base</ T, false, true/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe
-		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-		}
+		unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 	}
 
 	// Construct from nullable immutable shared_ptr.
 	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, true, false/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe
+		if( !storage_.empty() )
 		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			if( !is_nullptr(counter_) )
-			{
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			}
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
 	// Construct from nullable mutable shared_ptr.
 	fn conversion_constructor( shared_ptr_base</ T, true, true/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe
+		if( !storage_.empty() )
 		{
-			value_= ptr.get_value_ptr();
-			counter_= ptr.get_counter_ptr();
-			if( !is_nullptr(counter_) )
-			{
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			}
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -314,42 +274,35 @@ public:
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, weak_ptr_base</U, is_mutable/>& ptr )
+		( storage_= unsafe( storage_type( ptr.get_storage() ) ) )
 	{
-		unsafe
+		if( !storage_.empty() )
 		{
-			if( !is_nullptr(ptr.get_value_ptr()) )
-			{
-				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) ); // Convert reference here.
-				counter_= ptr.get_counter_ptr();
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			}
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
 	// Copy constructor.
 	fn constructor( mut this, this_type &imut other )
+		( storage_= unsafe( other.get_storage() ) )
 	{
-		unsafe
+		if( !storage_.empty() )
 		{
-			value_= other.get_value_ptr();
-			counter_= other.get_counter_ptr();
-			if( !is_nullptr(counter_) )
-			{
-				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			}
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
 	fn destructor()
 	{
-		unsafe
+		if( !storage_.empty() )
 		{
-			if( !is_nullptr(counter_) )
+			unsafe
 			{
-				shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
-				if( $>(counter_).use_count_total == 0u )
+				auto control_block_ptr= storage_.get_control_block_ptr();
+				shared_ptr_impl::counter_dec( $>(control_block_ptr).use_count_total );
+				if( $>(control_block_ptr).use_count_total == 0u )
 				{
-					memory_free( ptr_cast_to_byte8( counter_ ) );
+					memory_free( ptr_cast_to_byte8( control_block_ptr ) );
 				}
 			}
 		}
@@ -369,40 +322,39 @@ public:
 
 	fn lock( this ) : shared_ptr_type
 	{
+		if( storage_.empty() )
+		{
+			return shared_ptr_type();
+		}
+
 		unsafe
 		{
-			if( is_nullptr(counter_) || $>(counter_).use_count_strong == 0u )
+			auto control_block_ptr= storage_.get_control_block_ptr();
+			if( $>(control_block_ptr).use_count_strong == 0u )
 			{
 				return shared_ptr_type();
 			}
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
-			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
-			return shared_ptr_type( value_, counter_ );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
+			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
+			return shared_ptr_type( storage_ );
 		}
 	}
 
 public: // Methods for internal usage.
-	fn get_value_ptr( this ) unsafe : $(T)
+	fn get_storage( this ) unsafe : storage_type
 	{
-		return value_;
-	}
-
-	fn get_counter_ptr( this ) unsafe : $(shared_ptr_impl::counter)
-	{
-		return counter_;
+		return storage_;
 	}
 
 private:
 	type this_type= weak_ptr_base</ T, is_mutable />;
 	type shared_ptr_type= shared_ptr_base</ T, true, is_mutable />;
-	type value_ptr= $(T);
-	type counter_ptr= $(shared_ptr_impl::counter);
+	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
 
 private:
-	value_ptr value_= zero_init;
-	counter_ptr counter_= zero_init;
+	storage_type storage_;
 }
 
 // All necessary type aliases.
@@ -424,7 +376,7 @@ fn make_shared_ptr( T mut value ) : shared_ptr_mut</T/>
 namespace shared_ptr_impl
 {
 
-struct counter
+struct control_block
 {
 	u32 use_count_total;
 	u32 use_count_strong; // always <= use_count_total
@@ -447,69 +399,202 @@ template</ type T />
 class lock_mut nodiscard
 {
 public:
-	fn constructor( mut this, $(T) v, $(counter) c ) unsafe
-		( value_(v), counter_(c) )
+	fn constructor( mut this, storage_type storage ) unsafe
+		( storage_= storage )
 	{
 		unsafe
 		{
-			halt if( $>(counter_).lock_count != 0 ); // halt if have any locks
-			$>(counter_).lock_count= -1;
+			auto control_block_ptr= storage_.get_control_block_ptr();
+			halt if( $>(control_block_ptr).lock_count != 0 ); // halt if has any locks
+			$>(control_block_ptr).lock_count= -1;
 		}
 	}
 
 	fn destructor()
 	{
-		unsafe{  $>(counter_).lock_count= 0;  }
+		unsafe{  $>( storage_.get_control_block_ptr() ).lock_count= 0;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
 	fn deref( mut this ) : T & mut @( reference_notation::return_references::param0 )
 	{
-		return unsafe( $>( value_ ) );
+		return unsafe( $>( storage_.get_value_ptr() ) );
 	}
 
 private:
-	// Use this tag in order to mark lock class as reference-contained.
-	// It contains actually a logical reference to source shared_ptr - "counter".
-	ReferenceContainerTag</ counter, false /> shared_ptr_ref_tag_;
+	type storage_type= shared_ptr_storage</T/>;
 
-	$(T) value_;
-	$(counter) counter_;
+private:
+	// Use this tag in order to mark lock class as reference-contained.
+	// It contains actually a logical reference to source shared_ptr - its storage.
+	ReferenceContainerTag</ storage_type, false /> shared_ptr_ref_tag_;
+
+	storage_type imut storage_;
 }
 
 template</ type T />
 class lock_imut nodiscard
 {
 public:
-	fn constructor( mut this, $(T) v, $(counter) c ) unsafe
-		( value_(v), counter_(c) )
+	fn constructor( mut this, storage_type storage ) unsafe
+		( storage_= storage )
 	{
 		unsafe
 		{
-			halt if( $>(counter_).lock_count < 0 ); // halt if have mutable locks
-			// It's almost impossible to get counter overflow here - so, ignore such possibility.
-			++$>(counter_).lock_count;
+			auto control_block_ptr= storage_.get_control_block_ptr();
+			halt if( $>(control_block_ptr).lock_count < 0 ); // halt if has mutable locks
+			++$>(control_block_ptr).lock_count;
 		}
 	}
 
 	fn destructor()
 	{
-		unsafe{  --$>(counter_).lock_count;  }
+		unsafe{  --$>( storage_.get_control_block_ptr() ).lock_count;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
 	fn deref( this ) : T &imut @( reference_notation::return_references::param0 )
 	{
-		return unsafe( $>( value_ ) );
+		return unsafe( $>( storage_.get_value_ptr() ) );
 	}
 
 private:
-	// Use this tag in order to mark lock class as reference-contained.
-	// It contains actually a logical reference to source shared_ptr - "counter".
-	ReferenceContainerTag</ counter, false /> shared_ptr_ref_tag_;
+	type storage_type= shared_ptr_storage</T/>;
 
-	$(T) value_;
-	$(counter) counter_;
+private:
+	// Use this tag in order to mark lock class as reference-contained.
+	// It contains actually a logical reference to source shared_ptr - its storage.
+	ReferenceContainerTag</ storage_type, false /> shared_ptr_ref_tag_;
+
+	storage_type imut storage_;
+}
+
+// Storage class for control block and value pointer of a shared_ptr.
+// Generally it's unsafe to use, it doesn't free memory on itself and doesn't increment/decrement counters.
+template</type T/>
+class shared_ptr_storage
+{
+public:
+	// Initialize empty storage (with null pointer).
+	fn constructor()= default;
+
+	// Allocate control block and value memory.
+	// Sets initial use strong/total counters to 1.
+	// Allocated control block should be freed manually.
+	fn constructor( T mut value ) unsafe
+	{
+		unsafe
+		{
+			var $(byte8) mem= memory_allocate( c_object_offset + typeinfo</T/>.size_of );
+
+			var control_block &mut c= $>( byte_ptr_cast</ control_block />( mem ) );
+			c.use_count_total= 1u;
+			c.use_count_strong= 1u;
+			c.lock_count= 0;
+
+			move_into_uninitialized( $>( byte_ptr_cast</T/>( mem + c_object_offset ) ), move(value) );
+
+			static_if( c_is_polymorph )
+			{
+				ptr_= mem + c_object_offset;
+			}
+			else
+			{
+				ptr_= mem;
+			}
+		}
+	}
+
+	// Construct from storage of compatible type.
+	// Counters are not altered.
+	template</ type U />
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
+	constructor( mut this, shared_ptr_storage</U/>& storage ) unsafe
+	{
+		static_assert( c_is_polymorph, "This constructor may be executed only for \"shared_ptr_storage\" for a polymorph type!" );
+		if( !storage.empty() )
+		{
+			unsafe
+			{
+				ptr_= ptr_cast_to_byte8( $<( cast_ref</T/>( $>( storage.get_value_ptr() ) ) ) );
+			}
+		}
+	}
+
+	// Copy constructor.
+	// Counters are not altered.
+	fn constructor( shared_ptr_storage</T/>& other )= default;
+
+	// Copy assignment.
+	// Counters are not altered for both old and new values.
+	op=( mut this, shared_ptr_storage</T/>& other )= default;
+
+	// Check if stored pointer isn't null.
+	fn empty( this ) : bool
+	{
+		return is_nullptr( ptr_ );
+	}
+
+	// Call this only if non-empty!
+	// Use this pointer for "memory_free" call.
+	fn get_control_block_ptr( this ) unsafe : $(control_block)
+	{
+		static_if( c_is_polymorph )
+		{
+			unsafe
+			{
+				// We store pointer to stored object.
+				// Calculate original object reference (based on offset field in virtual table),
+				// then subtract object offset to get pointer to control block.
+				var byte8 &mut original_ref= polymorph_restore_original_ref( $>( byte_ptr_cast</T/>( ptr_ ) ) );
+				return byte_ptr_cast</control_block/>( $<( original_ref ) - c_object_offset );
+			}
+		}
+		else
+		{
+			// We store pointer to control block.
+			return unsafe( byte_ptr_cast</control_block/>( ptr_ ) );
+		}
+	}
+
+	// Call this only if non-empty!
+	fn get_value_ptr( this ) unsafe : $(T)
+	{
+		static_if( c_is_polymorph )
+		{
+			// We store pointer to stored object.
+			return unsafe( byte_ptr_cast</T/>( ptr_ ) );
+		}
+		else
+		{
+			// We store pointer to control block. Object follows after it.
+			return unsafe( byte_ptr_cast</T/>( ptr_ + c_object_offset ) );
+		}
+	}
+
+	// Get raw stored pointer. It may be used for comparison and hashing.
+	fn get_ptr( this ) unsafe : $(byte8)
+	{
+		return ptr_;
+	}
+
+private:
+	var bool constexpr c_is_polymorph= is_polymorph_class</T/>();
+
+	// Allocate control block and object in single allocation.
+	// Control block goes first, than goes the object itself (with proper alignment).
+	// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
+	var size_type constexpr c_control_block_size= typeinfo</ control_block />.size_of;
+	// Use maximum possible alignment for polymorph types, because we don't know here exact stored type and its actual alignment.
+	var size_type constexpr c_object_alignment= ( c_is_polymorph ? typeinfo</byte128/>.size_of : typeinfo</T/>.align_of );
+	var size_type constexpr c_object_offset= (c_control_block_size + (c_object_alignment - 1s)) / c_object_alignment * c_object_alignment;
+	static_assert( c_object_offset >= c_control_block_size );
+	static_assert( c_object_offset % c_object_alignment == 0s );
+
+private:
+	// For non-polymorph types it's a pointer to control block with object stored after it.
+	// For polymorph type it's a pointer to object itself, control block address is calculated by restoring original object reference and then subtracting object offset.
+	$(byte8) ptr_= zero_init;
 }
 
 } // namespace shared_ptr_impl

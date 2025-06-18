@@ -13,7 +13,7 @@ fn polymorph_restore_original_ref( T &imut ref ) : byte8 &imut
 template</type T/>
 fn polymorph_restore_original_ref( T &mut ref ) : byte8 &mut
 {
-	static_if( polymorph_impl::is_polymorph</T/>() )
+	static_if( is_polymorph_class</T/>() )
 	{
 		unsafe
 		{
@@ -33,7 +33,7 @@ fn polymorph_restore_original_ref( T &mut ref ) : byte8 &mut
 template</type A, type B/>
 fn polymorph_is_same_type( A& a, B& b ) : bool
 {
-	static_if( polymorph_impl::is_polymorph</A/>() && polymorph_impl::is_polymorph</B/>() )
+	static_if( is_polymorph_class</A/>() && is_polymorph_class</B/>() )
 	{
 		// Virtual table pointer is always first field in class.
 		// Types are same if "type_id_table" address is same.
@@ -50,7 +50,7 @@ fn polymorph_is_same_type( A& a, B& b ) : bool
 template</ type A, type B />
 fn polymorph_is_instance_of( B& b ) : bool
 {
-	static_if( polymorph_impl::is_polymorph</A/>() && polymorph_impl::is_polymorph</B/>() )
+	static_if( is_polymorph_class</A/>() && is_polymorph_class</B/>() )
 	{
 		unsafe
 		{
@@ -100,19 +100,6 @@ struct virtual_class
 	virtual_table& vptr;
 }
 
-template</type T/>
-fn constexpr is_polymorph() : bool
-{
-	static_if( typeinfo</T/>.is_class )
-	{
-		return typeinfo</T/>.is_polymorph;
-	}
-	else
-	{
-		return false;
-	}
-}
-
 // TODO - fix this. Now "polymorph_cast" for types with references inside is completely broken because of "optional_ref".
 template</ type To, type From />
 fn polymorph_cast_impl( From &mut from ) : optional_ref_mut</ To /> @( reference_notation::return_inner_references::param0 )
@@ -122,7 +109,7 @@ fn polymorph_cast_impl( From &mut from ) : optional_ref_mut</ To /> @( reference
 	// Disable cast where it produces type with  mutable reference inside out of nowhere.
 	static_assert( !( typeinfo</To/>.contains_mutable_references && !typeinfo</From/>.contains_mutable_references ) );
 
-	static_if( is_polymorph</From/>() && is_polymorph</To/>() )
+	static_if( is_polymorph_class</From/>() && is_polymorph_class</To/>() )
 	{
 		static_if( same_type</ From, To /> || is_ancestor_for</ To, From />() )
 		{
