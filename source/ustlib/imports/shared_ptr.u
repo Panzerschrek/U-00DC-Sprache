@@ -27,7 +27,7 @@ public:
 	{
 		unsafe
 		{
-			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			auto control_block_ptr= storage_.get_control_block_ptr();
 			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
 			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 		}
@@ -41,7 +41,7 @@ public:
 		{
 			unsafe
 			{
-				auto control_block_ptr= storage_.getcontrol_block_ptr();
+				auto control_block_ptr= storage_.get_control_block_ptr();
 				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
 				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			}
@@ -54,7 +54,7 @@ public:
 	{
 		unsafe
 		{
-			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			auto control_block_ptr= storage_.get_control_block_ptr();
 			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
 			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 		}
@@ -68,7 +68,7 @@ public:
 		{
 			unsafe
 			{
-				auto control_block_ptr= storage_.getcontrol_block_ptr();
+				auto control_block_ptr= storage_.get_control_block_ptr();
 				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
 				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			}
@@ -85,7 +85,7 @@ public:
 		{
 			unsafe
 			{
-				auto control_block_ptr= storage_.getcontrol_block_ptr();
+				auto control_block_ptr= storage_.get_control_block_ptr();
 				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
 				shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			}
@@ -97,7 +97,7 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			auto control_block_ptr= storage_.get_control_block_ptr();
 
 			shared_ptr_impl::counter_dec( $>(control_block_ptr).use_count_strong );
 			if( $>(control_block_ptr).use_count_strong == 0u )
@@ -151,7 +151,7 @@ public:
 
 		unsafe
 		{
-			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			auto control_block_ptr= storage_.get_control_block_ptr();
 
 			// It's almost impossible to get counter overflow here - so, ignore such possibility.
 			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
@@ -242,14 +242,14 @@ public:
 	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, false, false/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
+		unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 	}
 
 	// Construct from non-nullable mutable shared_ptr.
 	fn conversion_constructor( shared_ptr_base</ T, false, true/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
+		unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 	}
 
 	// Construct from nullable immutable shared_ptr.
@@ -258,7 +258,7 @@ public:
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -268,7 +268,7 @@ public:
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -280,7 +280,7 @@ public:
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -290,7 +290,7 @@ public:
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( shared_ptr_impl::counter_inc( $>( storage_.getcontrol_block_ptr() ).use_count_total ) );
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -300,7 +300,7 @@ public:
 		{
 			unsafe
 			{
-				auto control_block_ptr= storage_.getcontrol_block_ptr();
+				auto control_block_ptr= storage_.get_control_block_ptr();
 				shared_ptr_impl::counter_dec( $>(control_block_ptr).use_count_total );
 				if( $>(control_block_ptr).use_count_total == 0u )
 				{
@@ -331,7 +331,7 @@ public:
 
 		unsafe
 		{
-			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			auto control_block_ptr= storage_.get_control_block_ptr();
 			if( $>(control_block_ptr).use_count_strong == 0u )
 			{
 				return shared_ptr_type();
@@ -407,7 +407,7 @@ public:
 	{
 		unsafe
 		{
-			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			auto control_block_ptr= storage_.get_control_block_ptr();
 			halt if( $>(control_block_ptr).lock_count != 0 ); // halt if have any locks
 			$>(control_block_ptr).lock_count= -1;
 		}
@@ -415,7 +415,7 @@ public:
 
 	fn destructor()
 	{
-		unsafe{  $>( storage_.getcontrol_block_ptr() ).lock_count= 0;  }
+		unsafe{  $>( storage_.get_control_block_ptr() ).lock_count= 0;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -444,7 +444,7 @@ public:
 	{
 		unsafe
 		{
-			auto control_block_ptr= storage_.getcontrol_block_ptr();
+			auto control_block_ptr= storage_.get_control_block_ptr();
 			halt if( $>(control_block_ptr).lock_count < 0 ); // halt if have mutable locks
 			// It's almost impossible to get counter overflow here - so, ignore such possibility.
 			++$>(control_block_ptr).lock_count;
@@ -453,7 +453,7 @@ public:
 
 	fn destructor()
 	{
-		unsafe{  --$>( storage_.getcontrol_block_ptr() ).lock_count;  }
+		unsafe{  --$>( storage_.get_control_block_ptr() ).lock_count;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -539,7 +539,7 @@ public:
 
 	// Call this only if non-empty!
 	// Use this pointer for "memory_free" call.
-	fn getcontrol_block_ptr( this ) unsafe : $(control_block)
+	fn get_control_block_ptr( this ) unsafe : $(control_block)
 	{
 		static_if( c_is_polymorph )
 		{
