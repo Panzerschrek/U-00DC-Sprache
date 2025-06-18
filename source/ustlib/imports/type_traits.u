@@ -80,19 +80,6 @@ fn is_abstract() : bool
 }
 
 template</type T/>
-fn constexpr is_polymorph_class() : bool
-{
-	static_if( typeinfo</T/>.is_class )
-	{
-		return typeinfo</T/>.is_polymorph;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-template</type T/>
 fn constexpr is_polymorph_non_final_class() : bool
 {
 	static_if( typeinfo</T/>.is_class )
