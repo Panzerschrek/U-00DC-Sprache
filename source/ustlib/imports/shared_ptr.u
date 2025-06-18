@@ -153,7 +153,6 @@ public:
 		{
 			auto control_block_ptr= storage_.get_control_block_ptr();
 
-			// It's almost impossible to get counter overflow here - so, ignore such possibility.
 			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_total );
 			shared_ptr_impl::counter_inc( $>(control_block_ptr).use_count_strong );
 			return shared_ptr_base</T, false, is_mutable/>( storage_ );
@@ -216,17 +215,16 @@ public: // Methods for internal usage.
 		return storage_;
 	}
 
-	// Counters must be incremented before this constructor call.
+	// Counters must be incremented before this constructor call!
 	fn constructor( storage_type storage ) unsafe
-	( storage_(storage) )
+		( storage_(storage) )
 	{}
 
 private:
 	type this_type= shared_ptr_base</ T, is_nullable, is_mutable />;
+	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
-
-	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
 
 private:
 	storage_type storage_;
@@ -351,10 +349,9 @@ public: // Methods for internal usage.
 private:
 	type this_type= weak_ptr_base</ T, is_mutable />;
 	type shared_ptr_type= shared_ptr_base</ T, true, is_mutable />;
+	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
-
-	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
 
 private:
 	storage_type storage_;
@@ -479,6 +476,7 @@ template</type T/>
 class shared_ptr_storage
 {
 public:
+	// Initialize empty storage (with null pointer).
 	fn constructor()= default;
 
 	// Allocate control block and value memory.
@@ -508,15 +506,16 @@ public:
 		}
 	}
 
-	// Construct from storage for compatible type.
+	// Construct from storage of compatible type.
 	// Counters are not altered.
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	constructor( mut this, shared_ptr_storage</U/>& storage ) unsafe
 	{
-		unsafe
+		static_assert( c_is_polymorph, "This constructor may be executed only for \"shared_ptr_storage\" for a polymorph type!" );
+		if( !storage.empty() )
 		{
-			if( !storage.empty() )
+			unsafe
 			{
 				ptr_= ptr_cast_to_byte8( $<( cast_ref</T/>( $>( storage.get_value_ptr() ) ) ) );
 			}
@@ -575,7 +574,7 @@ public:
 	}
 
 	// Get raw stored pointer. It may be used for comparison and hashing.
-	fn get_ptr(this) unsafe : $(byte8)
+	fn get_ptr( this ) unsafe : $(byte8)
 	{
 		return ptr_;
 	}
