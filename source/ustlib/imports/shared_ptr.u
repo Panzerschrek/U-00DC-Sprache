@@ -486,7 +486,7 @@ public:
 	{
 		unsafe
 		{
-			var $(byte8) mem= memory_allocate( c_allocation_size );
+			var $(byte8) mem= memory_allocate( c_object_offset + typeinfo</T/>.size_of );
 
 			var control_block &mut c= $>( byte_ptr_cast</ control_block />( mem ) );
 			c.use_count_total= 1u;
@@ -586,11 +586,11 @@ private:
 	// Control block goes first, than goes the object itself (with proper alignment).
 	// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
 	var size_type constexpr c_control_block_size= typeinfo</ control_block />.size_of;
-	var size_type constexpr c_object_size= typeinfo</T/>.size_of;
-	var size_type constexpr c_object_alignment= typeinfo</T/>.align_of;
+	// Use maximum possible alignment for polymorph types, because we don't know here exact stored type and its actual alignment.
+	var size_type constexpr c_object_alignment= ( c_is_polymorph ? typeinfo</byte128/>.size_of : typeinfo</T/>.align_of );
 	var size_type constexpr c_object_offset= (c_control_block_size + (c_object_alignment - 1s)) / c_object_alignment * c_object_alignment;
+	static_assert( c_object_offset >= c_control_block_size );
 	static_assert( c_object_offset % c_object_alignment == 0s );
-	var size_type constexpr c_allocation_size= c_object_offset + c_object_size;
 
 private:
 	// For non-polymorph types it's a pointer to control block with object stored after it.
