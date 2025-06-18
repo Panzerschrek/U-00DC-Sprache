@@ -405,7 +405,7 @@ public:
 		unsafe
 		{
 			auto control_block_ptr= storage_.get_control_block_ptr();
-			halt if( $>(control_block_ptr).lock_count != 0 ); // halt if have any locks
+			halt if( $>(control_block_ptr).lock_count != 0 ); // halt if has any locks
 			$>(control_block_ptr).lock_count= -1;
 		}
 	}
@@ -442,8 +442,7 @@ public:
 		unsafe
 		{
 			auto control_block_ptr= storage_.get_control_block_ptr();
-			halt if( $>(control_block_ptr).lock_count < 0 ); // halt if have mutable locks
-			// It's almost impossible to get counter overflow here - so, ignore such possibility.
+			halt if( $>(control_block_ptr).lock_count < 0 ); // halt if has mutable locks
 			++$>(control_block_ptr).lock_count;
 		}
 	}
