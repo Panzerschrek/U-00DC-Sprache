@@ -16,6 +16,17 @@ type IntPtrNullableImut= ust::shared_ptr_mt_nullable_imut</i32/>;
 type IntPtrWeakMut = ust::weak_ptr_mt_mut </i32/>;
 type IntPtrWeakImut= ust::weak_ptr_mt_imut</i32/>;
 
+// Size of "shared_ptr_mt" and "weak_ptr_mt" is single pointer.
+static_assert( typeinfo</IntPtrMut/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</IntPtrImut/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</IntPtrNullableMut/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</IntPtrNullableImut/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</IntPtrWeakMut/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</IntPtrWeakImut/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::shared_ptr_mt_mut</I0/> />.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::shared_ptr_mt_mut</I1/> />.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::shared_ptr_mt_mut</Impl/> />.size_of == typeinfo</size_type/>.size_of );
+
 static_assert( !non_sync</IntPtrMut /> );
 static_assert( !non_sync</IntPtrImut/> );
 static_assert( !non_sync</IntPtrNullableMut /> );
@@ -475,6 +486,11 @@ fn nomangle main() : i32
 		halt if( ptr1.lock_imut().deref() != 66 );
 		halt if( ptr2.try_lock_imut().deref() != 85 );
 		halt if( ptr3.try_lock_imut().deref() != 58 );
+	}
+	{ // Lock classes contain only single pointer.
+		var IntPtrMut ptr= ust::make_shared_ptr_mt( 66 );
+		static_assert( typeinfo</ typeof( ptr.lock_imut() ) />.size_of == typeinfo</size_type/>.size_of );
+		static_assert( typeinfo</ typeof( ptr.lock_mut () ) />.size_of == typeinfo</size_type/>.size_of );
 	}
 	return 0;
 }
