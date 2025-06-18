@@ -79,10 +79,10 @@ Standart library:
 *) Functions for floating-point numbers parsing
 *) Support 128-bit integer types stringification/parsing
 *) Reverse iterators for unordered_map and unordered_set. They are mostly useless, but should exist for completeness.
-*) shared_ptr - store single pointer for non-polymorph types
 *) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
 	time, perform conversions to human-readable format
 *) String formatting library
+*) Support casting "shared_ptr_final</A/>" to "shared_ptr_final</B/>" if A and B are polymorph related types
 *) Formatted console output functions
 *) Executor for async functions, possible multithreaded
 *) More type traits
