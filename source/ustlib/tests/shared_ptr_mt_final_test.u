@@ -5,6 +5,10 @@ import "../imports/shared_ptr_mt_final.u"
 type IntPtr= ust::shared_ptr_mt_final</i32/>;
 type IntPtrNullable= ust::shared_ptr_mt_final_nullable</i32/>;
 
+// Size of "shared_ptr_final" is just single pointer.
+static_assert( typeinfo</IntPtr/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</IntPtrNullable/>.size_of == typeinfo</size_type/>.size_of );
+
 static_assert( !non_sync</IntPtr/> );
 static_assert( !non_sync</IntPtrNullable/> );
 
