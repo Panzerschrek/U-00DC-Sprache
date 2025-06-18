@@ -37,7 +37,7 @@ public:
 	fn enable_if( !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, is_nullable, true/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		if( !ptr.empty() )
+		if( !empty() )
 		{
 			unsafe
 			{
@@ -79,12 +79,12 @@ public:
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, shared_ptr_base</U, is_nullable, is_mutable/>& ptr )
+		( storage_= unsafe( storage_type( ptr.get_storage() ) ) )
 	{
-		unsafe
+		if( !empty() )
 		{
-			if( !ptr.empty() )
+			unsafe
 			{
-				storage_= storage_type( ptr.get_storage() );
 				auto counter_ptr= storage_.get_counter_ptr();
 				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
 				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_strong );
@@ -136,7 +136,7 @@ public:
 	{
 		static_if( is_nullable )
 		{
-			return is_nullptr( unsafe( storage_.get_counter_ptr() ) );
+			return storage_.empty();
 		}
 		else
 		{
@@ -198,16 +198,16 @@ public:
 
 	op==( this_type& l, this_type& r ) : bool
 	{
-		// Just compare counter pointers.
-		return unsafe( l.storage_.get_counter_ptr() ) == unsafe( r.storage_.get_counter_ptr() );
+		// Just compare stored pointers.
+		return unsafe( l.storage_.get_ptr() ) == unsafe( r.storage_.get_ptr() );
 	}
 
 	// Hashing.
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
 	{
-		// Just hash counter pointer value.
-		apply_value_to_hasher( hasher, unsafe( storage_.get_counter_ptr() ) );
+		// Just hash stored pointer value.
+		apply_value_to_hasher( hasher, unsafe( storage_.get_ptr() ) );
 	}
 
 public: // Methods for internal usage.
@@ -244,33 +244,23 @@ public:
 	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, false, false/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe
-		{
-			shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total );
-		}
+		unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
 	}
 
 	// Construct from non-nullable mutable shared_ptr.
 	fn conversion_constructor( shared_ptr_base</ T, false, true/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe
-		{
-			shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total );
-		}
+		unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
 	}
 
 	// Construct from nullable immutable shared_ptr.
 	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, true, false/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe
+		if( !storage_.empty() )
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
-			if( !is_nullptr(counter_ptr) )
-			{
-				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-			}
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -278,13 +268,9 @@ public:
 	fn conversion_constructor( shared_ptr_base</ T, true, true/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe
+		if( !storage_.empty() )
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
-			if( !is_nullptr(counter_ptr) )
-			{
-				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-			}
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -292,15 +278,11 @@ public:
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, weak_ptr_base</U, is_mutable/>& ptr )
+		( storage_= unsafe( storage_type( ptr.get_storage() ) ) )
 	{
-		unsafe
+		if( !storage_.empty() )
 		{
-			auto counter_ptr= ptr.get_storage().get_counter_ptr();
-			if( !is_nullptr(counter_ptr) )
-			{
-				storage_= storage_type( ptr.get_storage() );
-				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-			}
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -308,23 +290,19 @@ public:
 	fn constructor( mut this, this_type &imut other )
 		( storage_= unsafe( other.get_storage() ) )
 	{
-		unsafe
+		if( !storage_.empty() )
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
-			if( !is_nullptr(counter_ptr) )
-			{
-				shared_ptr_impl::counter_inc( $>(counter_ptr).use_count_total );
-			}
+			unsafe( shared_ptr_impl::counter_inc( $>( storage_.get_counter_ptr() ).use_count_total ) );
 		}
 	}
 
 	fn destructor()
 	{
-		unsafe
+		if( !storage_.empty() )
 		{
-			auto counter_ptr= storage_.get_counter_ptr();
-			if( !is_nullptr(counter_ptr) )
+			unsafe
 			{
+				auto counter_ptr= storage_.get_counter_ptr();
 				shared_ptr_impl::counter_dec( $>(counter_ptr).use_count_total );
 				if( $>(counter_ptr).use_count_total == 0u )
 				{
@@ -348,10 +326,15 @@ public:
 
 	fn lock( this ) : shared_ptr_type
 	{
+		if( storage_.empty() )
+		{
+			return shared_ptr_type();
+		}
+
 		unsafe
 		{
 			auto counter_ptr= storage_.get_counter_ptr();
-			if( is_nullptr(counter_ptr) || $>(counter_ptr).use_count_strong == 0u )
+			if( $>(counter_ptr).use_count_strong == 0u )
 			{
 				return shared_ptr_type();
 			}
@@ -537,7 +520,7 @@ public:
 	{
 		unsafe
 		{
-			if( !is_nullptr( storage.get_ptr() ) )
+			if( !storage.empty() )
 			{
 				ptr_= ptr_cast_to_byte8( $<( cast_ref</T/>( $>( storage.get_value_ptr() ) ) ) );
 			}
@@ -552,16 +535,18 @@ public:
 	// Counters are not altered for both old and new values.
 	op=( mut this, shared_ptr_storage</T/>& other )= default;
 
-	// May return nullptr.
+
+	fn empty( this ) : bool
+	{
+		return is_nullptr( ptr_ );
+	}
+
+	// Call this only if non-empty!
+	// Use this pointer for "memory_free" call.
 	fn get_counter_ptr(this) unsafe : $(counter)
 	{
 		static_if( c_is_polymorph )
 		{
-			if( is_nullptr( ptr_ ) )
-			{
-				return nullptr</counter/>();
-			}
-
 			unsafe
 			{
 				var byte8 &mut original_ref= polymorph_restore_original_ref( $>( byte_ptr_cast</T/>( ptr_ ) ) );
@@ -574,7 +559,7 @@ public:
 		}
 	}
 
-	// Call this only if counter is not nullptr.
+	// Call this only if non-empty!
 	fn get_value_ptr(this) unsafe : $(T)
 	{
 		static_if( c_is_polymorph )
