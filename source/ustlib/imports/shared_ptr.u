@@ -415,7 +415,7 @@ public:
 
 	fn destructor()
 	{
-		unsafe{  $>(storage_.getcontrol_block_ptr()).lock_count= 0;  }
+		unsafe{  $>( storage_.getcontrol_block_ptr() ).lock_count= 0;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -425,7 +425,7 @@ public:
 	}
 
 private:
-	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
+	type storage_type= shared_ptr_storage</T/>;
 
 private:
 	// Use this tag in order to mark lock class as reference-contained.
@@ -453,7 +453,7 @@ public:
 
 	fn destructor()
 	{
-		unsafe{  --$>(storage_.getcontrol_block_ptr()).lock_count;  }
+		unsafe{  --$>( storage_.getcontrol_block_ptr() ).lock_count;  }
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -463,7 +463,7 @@ public:
 	}
 
 private:
-	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
+	type storage_type= shared_ptr_storage</T/>;
 
 private:
 	// Use this tag in order to mark lock class as reference-contained.
@@ -474,7 +474,7 @@ private:
 }
 
 // Storage class for control block and value pointer of a shared_ptr.
-// Generally it's unsafe to use, it doesn't free memory on itself.
+// Generally it's unsafe to use, it doesn't free memory on itself and doesn't increment/decrement counters.
 template</type T/>
 class shared_ptr_storage
 {
@@ -483,6 +483,7 @@ public:
 
 	// Allocate control block and value memory.
 	// Sets initial use strong/total counters to 1.
+	// Allocated control block should be freed manually.
 	fn constructor( T mut value ) unsafe
 	{
 		unsafe
