@@ -426,8 +426,8 @@ private:
 
 private:
 	// Use this tag in order to mark lock class as reference-contained.
-	// It contains actually a logical reference to source shared_ptr - "control_block".
-	ReferenceContainerTag</ control_block, false /> shared_ptr_ref_tag_;
+	// It contains actually a logical reference to source shared_ptr - its storage.
+	ReferenceContainerTag</ storage_type, false /> shared_ptr_ref_tag_;
 
 	storage_type imut storage_;
 }
@@ -464,8 +464,8 @@ private:
 
 private:
 	// Use this tag in order to mark lock class as reference-contained.
-	// It contains actually a logical reference to source shared_ptr - "control_block".
-	ReferenceContainerTag</ control_block, false /> shared_ptr_ref_tag_;
+	// It contains actually a logical reference to source shared_ptr - its storage.
+	ReferenceContainerTag</ storage_type, false /> shared_ptr_ref_tag_;
 
 	storage_type imut storage_;
 }
