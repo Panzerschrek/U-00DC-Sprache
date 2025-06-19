@@ -1599,6 +1599,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 	else if( with_operator.reference_modifier == ReferenceModifier::None )
 	{
+		if( function_context.variables_state.HasOutgoingMutableNodes( expr ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), with_operator.src_loc, expr->name );
+
 		const VariableMutPtr variable=
 			Variable::Create(
 				expr->type,

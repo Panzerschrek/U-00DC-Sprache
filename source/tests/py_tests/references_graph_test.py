@@ -2762,3 +2762,140 @@ def AccessingVariableHavingMutableReference_Test89():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def AccessingVariableHavingMutableReference_Test90():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref= x;
+			with( x_copy : x )  // Reading variable having a mutable reference in "with" operator.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test91():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref= x;
+			with( &another_x_ref : x ) // Creating a reference to a variable having a mutable reference in "with" operator.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test92():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref= x;
+			with( &mut another_x_ref : x ) // Creating a mutable reference to a variable having a mutable reference in "with" operator.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test93():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			var S &mut s_ref= s;
+			with( s_copy : s ) // Reading variable having a mutable reference in "with" operator.
+			{}
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
+
+
+def AccessingVariableHavingMutableReference_Test94():
+	c_program_text= """
+		fn Foo( S mut s )
+		{
+			var S &mut s_ref= s;
+			with( &another_s_ref : s ) // Creating a reference to a variable having a mutable reference in "with" operator.
+			{}
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
+
+
+def AccessingVariableHavingMutableReference_Test95():
+	c_program_text= """
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			var S &mut s_ref= s;
+			with( &mut another_s_ref : s ) // Creating a mutable reference to a variable having a mutable reference in "with" operator.
+			{}
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test96():
+	c_program_text= """
+		fn Foo( A mut a )
+		{
+			var A &mut a_ref= a;
+			with( a_copy : a ) // Reading variable having a mutable reference in "with" operator.
+			{}
+		}
+		type A= [ tup[ f32, f64, bool, char16 ], 16 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
+
+
+def AccessingVariableHavingMutableReference_Test97():
+	c_program_text= """
+		fn Foo( A mut a )
+		{
+			var A &mut a_ref= a;
+			with( &another_a_ref : a ) // Creating a reference to a variable having a mutable reference in "with" operator.
+			{}
+		}
+		type A= [ tup[ f32, f64, bool, char16 ], 16 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
+
+
+def AccessingVariableHavingMutableReference_Test98():
+	c_program_text= """
+		fn Foo()
+		{
+			var A mut a= zero_init;
+			var A &mut a_ref= a;
+			with( &mut another_a_ref : a ) // Creating a mutable reference to a variable having a mutable reference in "with" operator.
+			{}
+		}
+		type A= [ tup[ f32, f64, bool, char16 ], 16 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
