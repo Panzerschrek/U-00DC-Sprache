@@ -3015,3 +3015,93 @@ def AccessingVariableHavingMutableReference_Test106():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AccessingVariableHavingMutableReference_Test108():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut t= zero_init;
+			auto &mut t_ref= t;
+			for( el : t ) // Reading members of tuple in "for" operator for a variable having a mutable reference.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test109():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut t= zero_init;
+			auto &mut t_ref= t;
+			for( &el : t ) // Creating a reference for members of tuple in "for" operator for a variable having a mutable reference.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test110():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut t= zero_init;
+			auto &mut t_ref= t;
+			for( &mut el : t ) // Creating a reference for members of tuple in "for" operator for a variable having a mutable reference.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test111():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, tup[ f32, bool ] ] mut t= zero_init;
+			var bool &mut b_ref= t[1][1];
+			for( el : t ) // Reading members of tuple in "for" operator for a variable having a mutable reference to one of its members.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test112():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, tup[ f32, bool ] ] mut t= zero_init;
+			var bool &mut b_ref= t[1][1];
+			for( &el : t ) // Creating a reference for members of tuple in "for" operator for a mutable reference to one of its members.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test113():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, tup[ f32, bool ] ] mut t= zero_init;
+			var bool &mut b_ref= t[1][1];
+			for( &mut el : t ) // Creating a reference for members of tuple in "for" operator for a mutable reference to one of its members.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
