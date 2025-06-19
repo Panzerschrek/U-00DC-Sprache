@@ -92,6 +92,7 @@ fn RaceConditionInt() : u32
 	var u32 negative_x= -x;
 	var u32 mut y= 0u;
 	y+= x;
+	halt if( x == 99999u );
 
 	// Error here - reading is executed while a mutable reference to source exists and this source is actively mutated by another thread.
 	// We have race condition here.
@@ -159,11 +160,9 @@ fn RaceConditionTuple() : ust::string8
 	auto l= lambda[capture= tup_var]() : tup[ u32, ust::string8 ] { return capture; };
 
 	// Should have error here too
-	/*
 	for( val : tup_var )
 	{
 	}
-	*/
 
 	// We have race condition here too. Return value is read and copied before destruction of the thread, which modifies source value.
 	return tup_var[1];
@@ -269,6 +268,7 @@ fn RaceConditionBool()
 	var bool not_0= !b0;
 	var bool lazy_and= b0 && b1;
 	var bool lazy_or= b1 || b0;
+	halt if( b1 );
 
 	// Error here - reading is executed while a mutable reference to source exists and this source is actively mutated by another thread.
 	// We have race condition here.
