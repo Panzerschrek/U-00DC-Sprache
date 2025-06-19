@@ -2794,9 +2794,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				names_scope,
 				function_context );
 
-		if( function_context.variables_state.HasOutgoingMutableNodes( l_var ) )
-			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), compound_assignment_operator.src_loc, l_var->name );
-
 		if( l_var->type == invalid_type_ || r_var->type == invalid_type_ )
 			return BlockBuildInfo();
 
