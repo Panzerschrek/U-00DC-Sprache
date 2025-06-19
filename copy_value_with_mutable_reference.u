@@ -1,0 +1,70 @@
+import "/string.u"
+import "/thread.u"
+
+fn nomangle main() : i32
+{
+	var ust::string8 mut s;
+
+	// This thread modifies "s" variable.
+	auto t=
+		ust::make_thread(
+			lambda[&]()
+			{
+				for( auto mut i= 0s; i < 1024s * 1024s; ++i )
+				{
+					s.push_back( 'a' );
+				}
+			}
+		);
+
+	// Error here - copy constructor is executed while  a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	var ust::string8 s_copy= s;
+
+	return 0;
+}
+
+/*
+
+fn Foo()
+{
+	var ust::string8 mut s;
+	auto &mut s_ref= s;
+
+	auto s_copy0= s; // Should generate error here.
+
+	Baz( s ); // Should generate error here.
+
+	var ust::string8 s_copy1(s); // Should generate error here.
+	var ust::string8 s_copy2= s; // Should generate error here.
+
+	with( s_copy3 : s ) // Should generate error here.
+	{
+	}
+
+	var ust::string8 s_copy4= ( true ? s : ust::string8("some") ); // Should generate error here.
+}
+
+fn Baz( ust::string8 s );
+
+fn Bar( ust::optional_ref_mut</i32/> r )
+{
+	var i32 &mut x= r.try_deref();
+
+	auto r_copy0= r; // Should generate error here.
+
+	Lol( r ); // Should generate error here.
+
+	var ust::optional_ref_mut</i32/> r_copy1(r); // Should generate error here.
+	var ust::optional_ref_mut</i32/> r_copy2= r; // Should generate error here.
+
+	with( r_copy3 : r ) // Should generate error here.
+	{
+	}
+
+	var ust::optional_ref_mut</i32/> r_copy4= ( true ? r : ust::optional_ref_mut</i32/>() ); // Should generate error here.
+}
+
+fn Lol( ust::optional_ref_mut</i32/> r );
+
+*/
