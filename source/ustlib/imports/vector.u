@@ -515,7 +515,8 @@ public:
 		else if( new_size < size_ )
 		{
 			// TODO - optimize. Calls to public methods contain unnecessary checks.
-			drop_back( size_ - new_size );
+			var size_type num_elements_to_remove= size_ - new_size;
+			drop_back( num_elements_to_remove );
 		}
 	}
 
@@ -538,7 +539,8 @@ public:
 		else if( new_size < size_ )
 		{
 			// TODO - optimize. Calls to public methods contain unnecessary checks.
-			drop_back( size_ - new_size );
+			var size_type num_elements_to_remove= size_ - new_size;
+			drop_back( num_elements_to_remove );
 		}
 	}
 
