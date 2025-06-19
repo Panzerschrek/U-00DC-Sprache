@@ -400,6 +400,10 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		variable->type.GetEnumType() != nullptr )
 	{
 		const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( initializer, names_scope, function_context );
+
+		if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expression_result->name );
+
 		if( expression_result->type != variable->type )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, variable->type, expression_result->type );
@@ -419,6 +423,10 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	else if( variable->type.GetArrayType() != nullptr || variable->type.GetTupleType() != nullptr )
 	{
 		const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( initializer, names_scope, function_context );
+
+		if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expression_result->name );
+
 		if( expression_result->type != variable->type )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, variable->type, expression_result->type );
@@ -467,6 +475,10 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		// Currently we support "=" initializer for copying and moving of structs.
 
 		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( initializer, names_scope, function_context );
+
+		if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expression_result->name );
+
 		if( ReferenceIsConvertible( expression_result->type, variable->type, names_scope.GetErrors(), src_loc ) )
 		{
 			SetupReferencesInCopyOrMove( function_context, variable, expression_result, names_scope.GetErrors(), src_loc );

@@ -433,6 +433,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
+		if( function_context.variables_state.HasOutgoingMutableNodes( initializer_experrsion ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), auto_variable_declaration.src_loc, initializer_experrsion->name );
+
 		if( !initializer_experrsion->type.CanBeConstexpr() )
 			function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
