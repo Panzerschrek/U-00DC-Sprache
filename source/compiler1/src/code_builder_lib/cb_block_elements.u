@@ -960,7 +960,8 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 				else if( single_scalar_type == LLVMTypeRef::Null )
 				{
 					// Copy into "s_ret".
-					BuildCopyConstructorPart( names_scope, function_context, function_context.s_ret, expr_reference_converted, ret_type, return_operator.src_loc );
+					var LLVMValueRef s_ret= function_context.s_ret;
+					BuildCopyConstructorPart( names_scope, function_context, s_ret, expr_reference_converted, ret_type, return_operator.src_loc );
 				}
 				else
 				{
