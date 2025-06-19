@@ -2899,3 +2899,119 @@ def AccessingVariableHavingMutableReference_Test98():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test99():
+	c_program_text= """
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			var S &mut s_ref= s;
+			auto x= s.x; // Reading a struct field while having a mutable reference to the whole struct.
+			auto y= s.y; // Reading a struct field while having a mutable reference to the whole struct.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def AccessingVariableHavingMutableReference_Test100():
+	c_program_text= """
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			var i32 &mut x_ref= s.x;
+			auto s_copy= s; // Reading the whole struct while having a mutable reference to one of its fields.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test101():
+	c_program_text= """
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			var f32 &mut y_ref= s.y;
+			auto y= s.y; // Reading struct field while having a mutable reference to it.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test102():
+	c_program_text= """
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			var f32 &mut y_ref= s.y;
+			auto x= s.x; // Reading struct field while having a mutable reference to anoter field - this should be fine.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def AccessingVariableHavingMutableReference_Test103():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut t= zero_init;
+			var tup[ i32, f32 ] &mut t_ref= t;
+			auto x= t[0]; // Reading a tuple member while having a mutable reference to the whole tuple.
+			auto y= t[1]; // Reading a tuple member while having a mutable reference to the whole tuple.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def AccessingVariableHavingMutableReference_Test104():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut t= zero_init;
+			var i32 &mut x_ref= t[0];
+			auto t_copy= t; // Reading the whole tuple while having a mutable reference to one of its members.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test105():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut t= zero_init;
+			var f32 &mut y_ref= t[1];
+			auto y= t[1]; // Reading tuple member while having a mutable reference to it.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test106():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut t= zero_init;
+			var f32 &mut y_ref= t[1];
+			auto x= t[0]; // Reading tuple member while having a mutable reference to anoter member - this should be fine.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
