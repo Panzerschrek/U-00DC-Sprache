@@ -76,6 +76,16 @@ fn nomangle main() : i32
 		auto l= ptr.try_lock_mut();
 		ptr.reset(); //##expect_error ReferenceProtectionError
 	}
+	{ //Immutable lock isn't copyable.
+		var IntPtrImut ptr(0);
+		auto lock0= ptr.lock_imut();
+		auto lock1= lock0; //##expect_error CopyConstructValueOfNoncopyableType
+	}
+	{ //Mutable lock isn't copyable.
+		var IntPtrMut ptr(0);
+		auto lock0= ptr.lock_mut();
+		auto lock1= lock0; //##expect_error CopyConstructValueOfNoncopyableType
+	}
 	{ // Weak pointers have no lock_mut/lock_imut methods.
 		var IntPtrWeakMut  weak_ptr_mut ;
 		var IntPtrWeakImut weak_ptr_imut;
