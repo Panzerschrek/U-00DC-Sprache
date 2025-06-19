@@ -2287,3 +2287,35 @@ def AccessingVariableHavingMutableReference_Test58():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test59():
+	c_program_text= """
+		fn Foo()
+		{
+			var ( generator : i32 ) mut g= Gen();
+			auto &mut g_ref= g;
+			if_coro_advance( res : g ) // Reading generator variable having a mutable reference in "if_coro_advance" operator.
+			{}
+		}
+		fn generator Gen() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test60():
+	c_program_text= """
+		fn Foo()
+		{
+			var ( async : i32 ) mut f= AsyncFunc();
+			auto &mut f_ref= f;
+			if_coro_advance( res : f ) // Reading async function variable having a mutable reference in "if_coro_advance" operator.
+			{}
+		}
+		fn async AsyncFunc() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
