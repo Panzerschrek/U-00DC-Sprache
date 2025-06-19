@@ -3105,3 +3105,16 @@ def AccessingVariableHavingMutableReference_Test113():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test114():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref= x;
+			type T= typeof(x); // Fine, "typeof" doesn't perform memory access, so it's safe even if "x" has a mutable reference.
+			static_assert( same_type</T, i32/> );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
