@@ -2583,3 +2583,182 @@ def AccessingVariableHavingMutableReference_Test78():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test79():
+	c_program_text= """
+		fn Foo()
+		{
+			var (fn()) mut fn_ptr= Bar;
+			auto &mut fn_ptr_ref= fn_ptr;
+			var S s{ .fn_ptr= fn_ptr }; // Reading variable having a mutable reference in function pointer field initialization via expression initializer.
+		}
+		fn Bar();
+		struct S{ (fn()) fn_ptr; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test80():
+	c_program_text= """
+		fn Foo()
+		{
+			var (fn()) mut fn_ptr= Bar;
+			auto &mut fn_ptr_ref= fn_ptr;
+			var S s{ .fn_ptr( fn_ptr ) }; // Reading variable having a mutable reference in function pointer field initialization via constructor initializer.
+		}
+		fn Bar();
+		struct S{ (fn()) fn_ptr; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test81():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto &mut x_ref= x;
+			var S s{ .x= x }; // Reading variable having a mutable reference in field initialization via expression initializer.
+		}
+		struct S{ i32 x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test82():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto &mut x_ref= x;
+			var S s{ .x( x ) }; // Reading variable having a mutable reference in field initialization via constructor initializer with type conversion.
+		}
+		struct S{ f32 x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test83():
+	c_program_text= """
+		fn Foo()
+		{
+			var E mut e= E::B;
+			auto &mut e_ref= e;
+			var S s{ .e= e }; // Reading variable having a mutable reference in field initialization via expression initializer.
+		}
+		struct S{ E e; }
+		enum E{ A, B, C }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test84():
+	c_program_text= """
+		fn Foo()
+		{
+			var E mut e= E::B;
+			auto &mut e_ref= e;
+			var S s{ .e= e }; // Reading variable having a mutable reference in field initialization via constructor initializer.
+		}
+		struct S{ E e; }
+		enum E{ A, B, C }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test85():
+	c_program_text= """
+		fn Foo()
+		{
+			var T mut t= zero_init;
+			auto &mut t_ref= t;
+			var S s{ .t= t }; // Reading variable having a mutable reference in field initialization via expression initializer.
+		}
+		struct S{ T t; }
+		type T= [ tup[ f32, bool, [ i32, 3 ], S ], 4 ];
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test86():
+	c_program_text= """
+		fn Foo()
+		{
+			var T mut t= zero_init;
+			auto &mut t_ref= t;
+			var S s{ .t( t ) }; // Reading variable having a mutable reference in field initialization via constructor initializer.
+		}
+		struct S{ T t; }
+		type T= [ tup[ f32, bool, [ i32, 3 ], S ], 4 ];
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test87():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref= x;
+			auto y= f32(x); //  Reading variable having a mutable reference in type conversion.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test88():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref= x;
+			auto s= S(x); // Reading variable having a mutable reference in temp variable construction.
+		}
+		struct S
+		{
+			i32 x;
+			fn constructor( i32 in_x )
+				( x= in_x )
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test89():
+	c_program_text= """
+		class A
+		{
+			i32 &mut x;
+			i32 y;
+			fn constructor( i32 &mut in_x )
+				( x= in_x, y= in_x ) // Reading variable having a mutable reference in field initializer.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
