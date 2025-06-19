@@ -2155,3 +2155,135 @@ def AccessingVariableHavingMutableReference_Test49():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test50():
+	c_program_text= """
+		fn generator Foo() : i32
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref= x;
+			yield x; // Reading variable having a mutable reference in "yield" operator for a generator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test51():
+	c_program_text= """
+		fn generator Foo() : i32
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref= x;
+			return x; // Reading variable having a mutable reference in "return" operator for a generator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test52():
+	c_program_text= """
+		fn generator Foo() : S
+		{
+			var S mut s= zero_init;
+			var S &mut s_ref= s;
+			yield s; // Reading variable having a mutable reference in "yield" operator for a generator.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test53():
+	c_program_text= """
+		fn generator Foo() : S
+		{
+			var S mut s= zero_init;
+			var S &mut s_ref= s;
+			return s; // Reading variable having a mutable reference in "return" operator for a generator.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test54():
+	c_program_text= """
+		fn generator Foo() : A
+		{
+			var A mut a= zero_init;
+			var A &mut a_ref= a;
+			yield a; // Reading variable having a mutable reference in "yield" operator for a generator.
+		}
+		type A= [ tup[ bool, u64 ], 13 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test55():
+	c_program_text= """
+		fn generator Foo() : A
+		{
+			var A mut a= zero_init;
+			var A &mut a_ref= a;
+			return a; // Reading variable having a mutable reference in "return" operator for a generator.
+		}
+		type A= [ tup[ bool, u64 ], 13 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test56():
+	c_program_text= """
+		fn async Foo() : i32
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref= x;
+			return x; // Reading variable having a mutable reference in "return" operator for an async function.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test57():
+	c_program_text= """
+		fn async Foo() : S
+		{
+			var S mut s= zero_init;
+			var S &mut s_ref= s;
+			return s; // Reading variable having a mutable reference in "return" operator for an async function.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def AccessingVariableHavingMutableReference_Test58():
+	c_program_text= """
+		fn async Foo() : A
+		{
+			var A mut a= zero_init;
+			var A &mut a_ref= a;
+			return a; // Reading variable having a mutable reference in "return" operator for an async function.
+		}
+		type A= [ tup[ bool, u64 ], 13 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )

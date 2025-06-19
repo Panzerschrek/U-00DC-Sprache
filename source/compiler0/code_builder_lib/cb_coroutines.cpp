@@ -579,6 +579,9 @@ void CodeBuilder::AsyncReturn( NamesScope& names_scope, FunctionContext& functio
 	if( expression_result->type == invalid_type_ )
 		return;
 
+	if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expression_result->name );
+
 	const VariablePtr return_value_node=
 		Variable::Create(
 			return_type,
