@@ -800,6 +800,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		const VariablePtr src_var= BuildExpressionCodeEnsureVariable( synt_args.front(), names_scope, function_context );
 
+		if( function_context.variables_state.HasOutgoingMutableNodes( src_var ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, src_var->name );
+
 		const FundamentalType* src_type= src_var->type.GetFundamentalType();
 		if( src_type == nullptr )
 		{
@@ -946,6 +949,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
+		if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expression_result->name );
+
 		CreateTypedStore(
 			function_context,
 			variable->type,
@@ -980,6 +986,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, variable->type, expression_result->type );
 			return nullptr;
 		}
+
+		if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expression_result->name );
 
 		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names_scope.GetErrors(), src_loc );
 
@@ -1382,6 +1391,9 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 			return nullptr;
 		}
 		U_ASSERT( initializer_variable->type.GetFunctionPointerType() != nullptr );
+
+		if( function_context.variables_state.HasOutgoingMutableNodes( initializer_variable ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), initializer_expression_src_loc, initializer_variable->name );
 
 		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *initializer_variable, function_context );
 		if( initializer_variable->type != variable->type )

@@ -165,6 +165,9 @@ std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
 	}
 	else
 	{
+		if( function_context.variables_state.HasOutgoingMutableNodes( variable ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, variable->name );
+
 		// Link references (before performing potential move).
 		const size_t reference_tag_count= field.type.ReferenceTagCount();
 		U_ASSERT( field.inner_reference_tags.size() == reference_tag_count );

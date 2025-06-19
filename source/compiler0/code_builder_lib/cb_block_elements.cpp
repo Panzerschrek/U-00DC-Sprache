@@ -584,6 +584,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return BlockBuildInfo();
 	}
 
+	if( function_context.variables_state.HasOutgoingMutableNodes( size_variable ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), alloca_declaration.src_loc, size_variable->name );
+
 	llvm::Type* const element_llvm_type= type.GetLLVMType();
 	llvm::PointerType* const ptr_llvm_type= element_llvm_type->getPointerTo();
 
@@ -795,6 +798,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.CreateRetVoid();
 		return block_info;
 	}
+
+	if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), return_operator.src_loc, expression_result->name );
 
 	// For functions with "auto" on return type use type of first return expression.
 	if( function_context.return_type_deduction_context != nullptr )
@@ -1271,6 +1277,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 		{
+			if( function_context.variables_state.HasOutgoingMutableNodes( condition_expression ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), c_style_for_operator.src_loc, condition_expression->name );
+
 			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
 			CallDestructors( temp_variables_storage, names_scope, function_context, condition_src_loc );
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, loop_block, block_after_loop );
@@ -1372,6 +1381,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 		{
+			if( function_context.variables_state.HasOutgoingMutableNodes( condition_expression ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), while_operator.src_loc, condition_expression->name );
+
 			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
 			CallDestructors( temp_variables_storage, names_scope, function_context, condition_src_loc );
 
@@ -1706,6 +1718,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 		{
+			if( function_context.variables_state.HasOutgoingMutableNodes( condition_expression ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), if_operator.src_loc, condition_expression->name );
+
 			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
 			CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetSrcLoc( if_operator.condition ) );
 
@@ -2179,6 +2194,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				expression->type );
 			return BlockBuildInfo();
 		}
+
+		if( function_context.variables_state.HasOutgoingMutableNodes( expression ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expression->name );
 
 		switch_type= expression->type;
 		switch_value= CreateMoveToLLVMRegisterInstruction( *expression, function_context );
@@ -2672,6 +2690,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Evaluate right part
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value, names_scope, function_context );
 
+		if( function_context.variables_state.HasOutgoingMutableNodes( r_var ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), assignment_operator.src_loc, r_var->name );
+
 		const auto r_var_in_register= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
 
 		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), assignment_operator.src_loc ); // Destroy temporaries of right expression.
@@ -2745,6 +2766,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				names_scope,
 				function_context );
 
+		if( function_context.variables_state.HasOutgoingMutableNodes( r_var ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), compound_assignment_operator.src_loc, r_var->name );
+
 		if( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetRawPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
@@ -2766,6 +2790,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				compound_assignment_operator.l_value,
 				names_scope,
 				function_context );
+
+		if( function_context.variables_state.HasOutgoingMutableNodes( l_var ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), compound_assignment_operator.src_loc, l_var->name );
 
 		if( l_var->type == invalid_type_ || r_var->type == invalid_type_ )
 			return BlockBuildInfo();
@@ -2942,6 +2969,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			condition_expression->type );
 		return block_info;
 	}
+
+	if( function_context.variables_state.HasOutgoingMutableNodes( condition_expression ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), halt_if.src_loc, condition_expression->name );
 
 	llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
 	CallDestructors( temp_variables_storage, names_scope, function_context, condition_expression_src_loc );

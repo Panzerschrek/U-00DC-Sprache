@@ -292,6 +292,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		const VariablePtr index= BuildExpressionCodeEnsureVariable( indexation_operator.index, names_scope, function_context );
 
+		if( function_context.variables_state.HasOutgoingMutableNodes( index ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), indexation_operator.src_loc, variable->name );
+
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
 		if( !( index_fundamental_type != nullptr && (
 			( index->constexpr_value != nullptr && IsInteger( index_fundamental_type->fundamental_type ) ) ||
@@ -678,6 +681,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::Sub, unary_minus.src_loc, names_scope, function_context ) )
 		return std::move(*res);
 
+	if( function_context.variables_state.HasOutgoingMutableNodes( variable ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), unary_minus.src_loc, variable->name );
+
 	const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
@@ -725,6 +731,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::LogicalNot, logical_not.src_loc, names_scope, function_context ) )
 		return std::move(*res);
 
+	if( function_context.variables_state.HasOutgoingMutableNodes( variable ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), logical_not.src_loc, variable->name );
+
 	if( variable->type != bool_type_ )
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), logical_not.src_loc, variable->type );
@@ -759,6 +768,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::BitwiseNot, bitwise_not.src_loc, names_scope, function_context ) )
 		return std::move(*res);
+
+	if( function_context.variables_state.HasOutgoingMutableNodes( variable ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), bitwise_not.src_loc, variable->name );
 
 	const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
 	if( fundamental_type == nullptr )
@@ -887,6 +899,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			names_scope,
 			function_context );
 
+	if( function_context.variables_state.HasOutgoingMutableNodes( l_var ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), binary_operator.src_loc, l_var->name );
+
 	if( l_var->type.GetFundamentalType() != nullptr ||
 		l_var->type.GetEnumType() != nullptr ||
 		l_var->type.GetRawPointerType() != nullptr ||
@@ -918,6 +933,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			names_scope,
 			function_context );
 
+	if( function_context.variables_state.HasOutgoingMutableNodes( r_var ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), binary_operator.src_loc, r_var->name );
+
 	return BuildBinaryOperator( *l_var, *r_var, binary_operator.operator_type, binary_operator.src_loc, names_scope, function_context );
 }
 
@@ -927,6 +945,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::TernaryOperator& ternary_operator )
 {
 	const VariablePtr condition= BuildExpressionCodeEnsureVariable( ternary_operator.condition, names_scope, function_context );
+
+	if( function_context.variables_state.HasOutgoingMutableNodes( condition ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), ternary_operator.src_loc, condition->name );
+
 	if( condition->type != bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), ternary_operator.src_loc, bool_type_, condition->type );
@@ -1030,6 +1052,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			if( result->value_type == ValueType::Value )
 			{
+				if( function_context.variables_state.HasOutgoingMutableNodes( branch_result ) )
+					REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), ternary_operator.src_loc, branch_result->name );
+
 				// Move or create copy.
 				if(
 					result->type.GetFundamentalType() != nullptr ||
@@ -1157,6 +1182,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, names_scope.GetErrors(), raw_pointer_to_reference_operator.src_loc );
 
 	const VariablePtr v= BuildExpressionCodeEnsureVariable( raw_pointer_to_reference_operator.expression, names_scope, function_context );
+
+	if( function_context.variables_state.HasOutgoingMutableNodes( v ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), raw_pointer_to_reference_operator.src_loc, v->name );
+
 	const RawPointerType* const raw_pointer_type= v->type.GetRawPointerType();
 
 	if( raw_pointer_type == nullptr )
@@ -3541,6 +3570,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	// TODO - maybe create separate variables stack frame for right expression evaluation and call destructors?
 	const VariablePtr l_var= BuildExpressionCodeEnsureVariable( l_expression, names_scope, function_context );
 
+	if( function_context.variables_state.HasOutgoingMutableNodes( l_var ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, l_var->name );
+
 	if( l_var->type != bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), binary_operator.src_loc, bool_type_, l_var->type );
@@ -3578,6 +3610,10 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		const StackVariablesStorage r_var_temp_variables_storage( function_context );
 
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( r_expression, names_scope, function_context );
+
+		if( function_context.variables_state.HasOutgoingMutableNodes( r_var ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, r_var->name );
+
 		if( r_var->type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), binary_operator.src_loc, bool_type_, r_var->type );
@@ -3746,12 +3782,15 @@ Value CodeBuilder::CallFunctionValue(
 				return ErrorValue();
 			}
 
+			if( function_context.variables_state.HasOutgoingMutableNodes( callable_variable ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), call_src_loc, callable_variable->name );
+
+			llvm::Value* const func_itself= CreateMoveToLLVMRegisterInstruction( *callable_variable, function_context );
+
 			llvm::SmallVector<const Synt::Expression*, 16> args;
 			args.reserve( synt_args.size() );
 			for( const Synt::Expression& arg : synt_args )
 				args.push_back( &arg );
-
-			llvm::Value* const func_itself= CreateMoveToLLVMRegisterInstruction( *callable_variable, function_context );
 
 			return
 				DoCallFunction(
@@ -4057,6 +4096,9 @@ Value CodeBuilder::DoCallFunction(
 					expr= ConvertVariable( expr, param.type, *conversion_constructor, names_scope, function_context, src_loc );
 				}
 			}
+
+			if( function_context.variables_state.HasOutgoingMutableNodes( expr ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expr->name );
 
 			if( param.type.GetFundamentalType() != nullptr ||
 				param.type.GetEnumType() != nullptr ||
