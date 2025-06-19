@@ -1,12 +1,12 @@
 import "/string.u"
 import "/thread.u"
 
-fn nomangle main() : i32
+fn RaceConditionString()
 {
 	var ust::string8 mut s;
 
 	// This thread modifies "s" variable.
-	auto t=
+	auto mut t=
 		ust::make_thread(
 			lambda[&]()
 			{
@@ -17,54 +17,130 @@ fn nomangle main() : i32
 			}
 		);
 
-	// Error here - copy constructor is executed while  a mutable reference to source exists and this source is actively mutated by another thread.
+	// Error here - copy constructor is executed while a mutable reference to source exists and this source is actively mutated by another thread.
 	// We have race condition here.
-	var ust::string8 s_copy= s;
+	auto s_copy0= s;
+	var ust::string8 s_copy1= s;
 
-	return 0;
-}
+	// Error here - copy constructor is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	FuncWithStringArg( s );
 
-/*
-
-fn Foo()
-{
-	var ust::string8 mut s;
-	auto &mut s_ref= s;
-
-	auto s_copy0= s; // Should generate error here.
-
-	Baz( s ); // Should generate error here.
-
-	var ust::string8 s_copy1(s); // Should generate error here.
-	var ust::string8 s_copy2= s; // Should generate error here.
-
-	with( s_copy3 : s ) // Should generate error here.
+	// Error here - copy constructor is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	with( s_copy2 : s )
 	{
 	}
 
-	var ust::string8 s_copy4= ( true ? s : ust::string8("some") ); // Should generate error here.
+	// Error here - copy constructor is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	var ust::string8 some= ( true ? s : ust::string8("abc") );
+
+	// Error here - copy constructor is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	auto l= lambda[s]() : ust::string8 { return s; };
+
+	move(t).join();
 }
 
-fn Baz( ust::string8 s );
+fn FuncWithStringArg( ust::string8 s );
 
-fn Bar( ust::optional_ref_mut</i32/> r )
+fn RaceConditionInt() : u32
 {
-	var i32 &mut x= r.try_deref();
+	var u32 mut x= 0u;
 
-	auto r_copy0= r; // Should generate error here.
+	// This thread modifies "s" variable.
+	auto mut t=
+		ust::make_thread(
+			lambda[&]()
+			{
+				for( auto mut i= 0s; i < 1024s * 1024s; ++i )
+				{
+					++x;
+				}
+			}
+		);
 
-	Lol( r ); // Should generate error here.
+	// Error here - copying is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	auto x_copy0= x;
+	var u32 x_copy1= x;
+	var u32 x_copy2(x);
 
-	var ust::optional_ref_mut</i32/> r_copy1(r); // Should generate error here.
-	var ust::optional_ref_mut</i32/> r_copy2= r; // Should generate error here.
+	// Error here - copying is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	FuncWithUintArg( x );
 
-	with( r_copy3 : r ) // Should generate error here.
+	// Error here - copying is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	with( x_copy3 : x )
 	{
 	}
 
-	var ust::optional_ref_mut</i32/> r_copy4= ( true ? r : ust::optional_ref_mut</i32/>() ); // Should generate error here.
+	// Error here - copying is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	var u32 some= ( true ? x : 45u );
+
+	// Error here - copying is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	auto l= lambda[=]() : u32 { return x; };
+
+	// We have race condition here too. Return value is read and copied before destruction of the thread, which modifies source value.
+	return x;
 }
 
-fn Lol( ust::optional_ref_mut</i32/> r );
+fn FuncWithUintArg( u32 x );
 
-*/
+fn RaceConditionTuple() : ust::string8
+{
+	var tup[ u32, ust::string8 ] mut tup_var[ 0u, "" ];
+
+	// This thread modifies "s" variable.
+	auto mut t=
+		ust::make_thread(
+			lambda[&]()
+			{
+				for( auto mut i= 0s; i < 1024s * 1024s; ++i )
+				{
+					++tup_var[0];
+					tup_var[1].push_back( 'Q' );
+				}
+			}
+		);
+
+	// Error here - copying is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	auto tup_var_copy0= tup_var;
+	var tup[ u32, ust::string8 ] tup_var_copy1= tup_var;
+	var tup[ u32, ust::string8 ] tup_var_copy2(tup_var);
+
+	// Error here - copying is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	FuncWithTupArg( tup_var );
+
+	// Error here - copying is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	with( tup_var_copy3 : tup_var )
+	{
+	}
+
+	// Error here - copying is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	var tup[ u32, ust::string8 ] some= ( true ? tup_var : ust::make_tuple( 78u, ust::string8() ) );
+
+	// Error here - copying is executed while a mutable reference to source exists and this source is actively mutated by another thread.
+	// We have race condition here.
+	auto l= lambda[capture= tup_var]() : tup[ u32, ust::string8 ] { return capture; };
+
+	// Should have error here too
+	/*
+	for( val : tup_var )
+	{
+	}
+	*/
+
+	// We have race condition here too. Return value is read and copied before destruction of the thread, which modifies source value.
+	return tup_var[1];
+}
+
+fn FuncWithTupArg( tup[ u32, ust::string8 ] t );
