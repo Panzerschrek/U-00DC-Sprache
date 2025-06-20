@@ -3118,3 +3118,75 @@ def AccessingVariableHavingMutableReference_Test114():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AccessingVariableHavingMutableReference_Test115():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+			fn Foo( mut this )
+			{
+				auto &mut this_ref= this;
+				auto x_copy= x; // Reading a struct field while having a mutable reference to the whole struct.
+				auto y_copy= y; // Reading a struct field while having a mutable reference to the whole struct.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError",  9 ) )
+	assert( HasError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def AccessingVariableHavingMutableReference_Test116():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+			fn Foo( mut this )
+			{
+				var i32 &mut x_ref= x;
+				auto this_copy= this; // Reading the whole struct while having a mutable reference to one of its fields.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def AccessingVariableHavingMutableReference_Test117():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+			fn Foo( mut this )
+			{
+				var f32 &mut y_ref= y;
+				auto y_copy= y; // Reading struct field while having a mutable reference to it.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def AccessingVariableHavingMutableReference_Test118():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+			fn Foo( mut this )
+			{
+				var f32 &mut y_ref= y;
+				auto x_copy= x; // Reading struct field while having a mutable reference to anoter field - this should be fine.
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
