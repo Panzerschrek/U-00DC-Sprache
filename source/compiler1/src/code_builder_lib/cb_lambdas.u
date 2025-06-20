@@ -200,6 +200,8 @@ fn CodeBuilder::InitializeLambdaField(
 	}
 	else
 	{
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( variable, names_scope, src_loc );
+
 		// Link references (before performing potential move).
 		foreach( pair : v.inner_reference_nodes.iter().zip( result.lock_imut().deref().inner_reference_nodes.iter() ) )
 		{

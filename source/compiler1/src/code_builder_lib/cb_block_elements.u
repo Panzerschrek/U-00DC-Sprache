@@ -433,6 +433,8 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( expr_ptr, names_scope, auto_variable_declaration.src_loc );
+
 		if( expr.t.IsAbstract() )
 		{
 			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, auto_variable_declaration.src_loc, expr.t )
@@ -604,7 +606,10 @@ fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_sc
 		return;
 	}
 
-	var VariableLite size_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, alloca_declaration.size );
+	var VariablePtr size_variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, alloca_declaration.size );
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( size_variable_ptr, names_scope, alloca_declaration.src_loc );
+
+	var VariableLite size_variable= size_variable_ptr;
 	if( size_variable.t != size_type_ )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, alloca_declaration.src_loc, size_type_, size_variable.t )
@@ -892,6 +897,8 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( function_context.function_type.return_value_type == ValueType::Value )
 	{
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( expr_ptr, names_scope, return_operator.src_loc );
+
 		var Type ret_type= function_context.function_type.return_type;
 		var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
 		if( expr_initial_type.ReferenceIsConvertibleTo( ret_type ) )
@@ -1080,7 +1087,10 @@ fn CodeBuilder::BuildAssignmentOperatorImpl( mut this, NamesScopePtr& names_scop
 	{}
 	else
 	{
-		var VariableLite r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r.deref() );
+		var VariablePtr r_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r.deref() );
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( r_ptr, names_scope, assignment_operator.src_loc );
+
+		var VariableLite r= r_ptr;
 		if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() && r.t.GetRawPointerType().empty() && r.t.GetFunctionPointerType().empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, assignment_operator.src_loc, r.t )
@@ -1138,7 +1148,11 @@ fn CodeBuilder::BuildCompoundAssignmentOperatorImpl( mut this, NamesScopePtr& na
 	{}
 	else
 	{
-		var VariableLite mut r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, compound_assignment_operator.r.deref() );
+		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, compound_assignment_operator.r.deref() );
+
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( r_var_ptr, names_scope, compound_assignment_operator.src_loc );
+
+		var VariableLite mut r_var= r_var_ptr;
 		// Save r_var in register, prevent its modification during l_var calculation.
 		r_var.llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 		r_var.location= Variable::Location::LLVMRegister;
@@ -1260,7 +1274,10 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		function_context,
 		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			var VariableLite condition_expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, if_operator.condition );
+			var VariablePtr condition_expression_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, if_operator.condition );
+			function_context.references_graph.EnsureHasNoOutgoingMutableNodes( condition_expression_ptr, names_scope, if_operator.src_loc );
+
+			var VariableLite condition_expression= condition_expression_ptr;
 			if( condition_expression.t != self.bool_type_ )
 			{
 				REPORT_ERROR( TypesMismatch,
@@ -1763,7 +1780,10 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		function_context,
 		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			var VariableLite expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, switch_operator.value );
+			var VariablePtr expression_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, switch_operator.value );
+			function_context.references_graph.EnsureHasNoOutgoingMutableNodes( expression_ptr, names_scope, switch_operator.src_loc );
+
+			var VariableLite expression= expression_ptr;
 			var bool mut type_ok= false;
 			if( !expression.t.GetEnumType().empty() )
 			{
@@ -2330,7 +2350,10 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		function_context,
 		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			var VariableLite condition_expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition );
+			var VariablePtr condition_expression_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition );
+			function_context.references_graph.EnsureHasNoOutgoingMutableNodes( condition_expression_ptr, names_scope, while_operator.src_loc );
+
+			var VariableLite condition_expression= condition_expression_ptr;
 			var SrcLoc condition_src_loc= Synt::GetSrcLoc( while_operator.condition );
 			if( condition_expression.t != self.bool_type_ )
 			{
@@ -2753,7 +2776,10 @@ fn CodeBuilder::BuildCStyleForOperatorImpl( mut this, NamesScopePtr& in_names_sc
 			function_context,
 			lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 			{
-				var VariableLite condition_expression= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, c_style_for_operator.loop_condition );
+				var VariablePtr condition_expression_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, c_style_for_operator.loop_condition );
+				function_context.references_graph.EnsureHasNoOutgoingMutableNodes( condition_expression_ptr, names_scope, c_style_for_operator.src_loc );
+
+				var VariableLite condition_expression= condition_expression_ptr;
 				var SrcLoc condition_src_loc= Synt::GetSrcLoc( c_style_for_operator.loop_condition );
 				if( condition_expression.t != self.bool_type_ )
 				{
@@ -2960,6 +2986,8 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 	}
 	else if( with_operator.reference_modifier == Synt::ReferenceModifier::None )
 	{
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( expr_ptr, names_scope, with_operator.src_loc );
+
 		if( expr.t.IsAbstract() )
 		{
 			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, with_operator.src_loc, expr.t )
@@ -3183,7 +3211,10 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		function_context,
 		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			var VariableLite condition= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, halt_if.condition );
+			var VariablePtr condition_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, halt_if.condition );
+			function_context.references_graph.EnsureHasNoOutgoingMutableNodes( condition_ptr, names_scope, halt_if.src_loc );
+
+			var VariableLite condition= condition_ptr;
 			if( condition.t != self.bool_type_ )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( halt_if.condition ), self.bool_type_, condition.t )
