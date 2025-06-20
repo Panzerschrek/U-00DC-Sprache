@@ -1150,6 +1150,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
+	if( function_context.variables_state.HasOutgoingMutableNodes( v ) )
+		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), reference_to_raw_pointer_operator.src_loc, v->name );
+
 	U_ASSERT( v->location == Variable::Location::Pointer );
 
 	// Reference to pointer conversion can break functional purity, so, disable such conversions in constexpr functions.

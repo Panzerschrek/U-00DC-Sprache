@@ -1533,6 +1533,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		return ErrorValue();
 	}
 
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( v_ptr, names_scope, reference_to_raw_pointer_operator.src_loc );
+
 	// Reference to pointer conversion can break functional purity, so, disable such conversions in constexpr functions.
 	// For example:
 	/*

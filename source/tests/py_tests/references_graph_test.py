@@ -3291,3 +3291,17 @@ def AccessingVariableHavingMutableReference_Test125():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def AccessingVariableHavingMutableReference_Test126():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref= x;
+			auto x_ptr= $<(x); // Even creating a raw pointer for a variable having mutable references is vorbidden.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 6 ) )
