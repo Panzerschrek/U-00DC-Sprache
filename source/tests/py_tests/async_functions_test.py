@@ -231,20 +231,17 @@ def ReturnForAsyncFunction_Test5():
 			{
 				var i32 mut first= pairs[i][0], mut second= pairs[i][1];
 				var i32 own_max= ( first > second ? first : second );
-				auto mut f= AsyncMax( first, second );
-				if_coro_advance( &mut x : f )
 				{
-					halt if( x != own_max );
-					x= 0;
+					auto mut f= AsyncMax( first, second );
+					if_coro_advance( &mut x : f )
+					{
+						halt if( x != own_max );
+						x= 0;
+					}
+					else { halt; }
 				}
-				else { halt; }
 
 				halt if( !( first == 0 || second == 0 ) );
-
-				if_coro_advance( &mut x : f )
-				{
-					halt;
-				}
 			}
 		}
 	"""

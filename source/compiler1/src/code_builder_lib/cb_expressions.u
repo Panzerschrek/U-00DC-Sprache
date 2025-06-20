@@ -1286,7 +1286,11 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 {
 	auto mut condition_in_register= LLVMValueRef::Null;
 	auto mut condition_constexpr_value= LLVMValueRef::Null;
-	with( &condition: BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.condition ).lock_imut().deref() )
+
+	var VariablePtr condition_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.condition );
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( condition_ptr, names_scope, ternary_operator.src_loc );
+
+	with( &condition : condition_ptr.lock_imut().deref() )
 	{
 		if( condition.t != bool_type_ )
 		{
@@ -1311,7 +1315,10 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 				auto state= SaveFunctionContextState( function_context );
 
-				with( &branch_value : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i] ).lock_imut().deref() )
+				var VariablePtr branch_value_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i] );
+				function_context.references_graph.EnsureHasNoOutgoingMutableNodes( branch_value_ptr, names_scope, ternary_operator.src_loc );
+
+				with( &branch_value : branch_value_ptr.lock_imut().deref() )
 				{
 					branches_types[i].t= branch_value.t;
 					branches_types[i].value_type= branch_value.value_type;
@@ -1526,6 +1533,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		return ErrorValue();
 	}
 
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( v_ptr, names_scope, reference_to_raw_pointer_operator.src_loc );
+
 	// Reference to pointer conversion can break functional purity, so, disable such conversions in constexpr functions.
 	// For example:
 	/*
@@ -1565,6 +1574,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 
 	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, raw_pointer_to_reference_operator.expression );
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( v_ptr, names_scope, raw_pointer_to_reference_operator.src_loc );
+
 	auto v_lock= v_ptr.lock_imut();
 	var Variable& v= v_lock.deref();
 
@@ -1720,7 +1731,10 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		return res;
 	}
 
-	var VariableLite mut l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.deref() );
+	var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.deref() );
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( l_var_ptr, names_scope, binary_operator.src_loc );
+
+	var VariableLite mut l_var= l_var_ptr;
 	// Save l_var in register, prevent its modification during r_var calculation.
 	l_var.llvm_value= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	l_var.location= Variable::Location::LLVMRegister;
@@ -1729,7 +1743,10 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	// Destroy temporaries of left part.
 	DestroyUnusedTemporaryVariables( names_scope, function_context, binary_operator.src_loc );
 
-	var VariableLite r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.deref() );
+	var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.deref() );
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( r_var_ptr, names_scope, binary_operator.src_loc );
+
+	var VariableLite r_var= r_var_ptr;
 
 	return BuildBinaryOperator( names_scope, function_context, l_var, r_var, binary_operator.operator, binary_operator.src_loc );
 }
@@ -1769,7 +1786,10 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		function_context.references_graph.TryAddInnerLinks( variable_ptr, variable_lock_node, names_scope, indexation_operator.src_loc );
 		RegisterTemporaryVariable( function_context, variable_lock_node );
 
-		var VariableLite index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() );
+		var VariablePtr index_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() );
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( index_ptr, names_scope, indexation_operator.src_loc );
+
+		var VariableLite index= index_ptr;
 
 		if_var( &index_fundamental_type : index.t.GetFundamentalType() )
 		{
@@ -1990,6 +2010,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 		if_var( &function_pointer_type : variable.t.GetFunctionPointerType() )
 		{
+			function_context.references_graph.EnsureHasNoOutgoingMutableNodes( variable_ptr, names_scope, call_operator.src_loc );
+
 			var LLVMValueRef function_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 
 			function_context.has_non_constexpr_operations_inside= true; // Call via pointer is not constexpr.
@@ -2325,6 +2347,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnaryMinus& unary_minus ) : Value
 {
 	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, unary_minus.expr );
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( variable_ptr, names_scope, unary_minus.src_loc );
+
 	var VariableLite variable= variable_ptr;
 
 	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::Sub, variable_ptr, unary_minus.src_loc ) )
@@ -2386,6 +2410,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LogicalNot& logical_not ) : Value
 {
 	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, logical_not.expr );
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( variable_ptr, names_scope, logical_not.src_loc );
+
 	var VariableLite variable= variable_ptr;
 
 	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::LogicalNot, variable_ptr, logical_not.src_loc ) )
@@ -2429,6 +2455,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BitwiseNot& bitwise_not ) : Value
 {
 	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, bitwise_not.expr );
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( variable_ptr, names_scope, bitwise_not.src_loc );
+
 	var VariableLite variable= variable_ptr;
 
 	if_var( &mut res : TryCallOverloadedUnaryOperator( names_scope, function_context, OverloadedOperator::BitwiseNot, variable_ptr, bitwise_not.src_loc ) )
@@ -2674,6 +2702,9 @@ fn CodeBuilder::AccessDirectClassField(
 
 	if( field.is_reference )
 	{
+		// Prevent loading reference for variables which have mutable references.
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( variable_ptr, names_scope, src_loc );
+
 		var Variable mut result
 		{
 			.t= field.t,
@@ -3489,7 +3520,10 @@ fn CodeBuilder::BuildBinaryOperator(
 
 fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
 {
-	var VariableLite l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.deref() );
+	var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.l.deref() );
+	function_context.references_graph.EnsureHasNoOutgoingMutableNodes( l_var_ptr, names_scope, binary_operator.src_loc );
+
+	var VariableLite l_var= l_var_ptr;
 	if( l_var.t != bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, binary_operator.src_loc, bool_type_, l_var.t )
@@ -3531,7 +3565,10 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 		function_context,
 		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context )
 		{
-			with( &r_var : self.BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.deref() ).lock_imut().deref() )
+			var VariablePtr r_var_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, binary_operator.r.deref() );
+			function_context.references_graph.EnsureHasNoOutgoingMutableNodes( r_var_ptr, names_scope, binary_operator.src_loc );
+
+			with( &r_var : r_var_ptr.lock_imut().deref() )
 			{
 				if( r_var.t != self.bool_type_ )
 				{
@@ -4397,6 +4434,8 @@ fn CodeBuilder::DoCallFunction(
 			( arg_n < preevaluated_args.size()
 				? preevaluated_args[arg_n]
 				: BuildExpressionCodeEnsureVariable( names_scope, function_context, args[ arg_n - preevaluated_args.size() ].deref() ) );
+
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( arg_ptr, names_scope, src_loc );
 
 		// Convert variable in function call.
 

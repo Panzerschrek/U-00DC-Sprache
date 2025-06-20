@@ -722,7 +722,8 @@ private:
 			// Additionaly add extra place for some tombstones, if current table contains them, this may be needed in cases
 			// when values are added and removed.
 			var size_type num_tombstones= num_occupied_slots_ - size_;
-			unsafe( rehash( size_ + 1s + ( num_tombstones >> 1u ) ) );
+			var size_type new_size= size_ + 1s + ( num_tombstones >> 1u );
+			unsafe( rehash( new_size ) );
 		}
 	}
 
@@ -740,7 +741,8 @@ private:
 		if( size_ < min_occupancy && // Use "<" here in to avoid rehashing if size_ == 0 and min_occupancy == 0.
 			capacity_ > c_min_non_zero_capacity )
 		{
-			unsafe( rehash( size_ ) );
+			var size_type size= size_;
+			unsafe( rehash( size ) );
 		}
 	}
 

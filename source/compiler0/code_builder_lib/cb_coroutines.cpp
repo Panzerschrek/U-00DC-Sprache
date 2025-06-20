@@ -470,6 +470,9 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 		if( coroutine_type_description->return_value_type == ValueType::Value )
 		{
+			if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expression_result->name );
+
 			if( expression_result->type.ReferenceIsConvertibleTo( yield_type ) )
 			{}
 			else if( const auto conversion_contructor=
@@ -586,6 +589,9 @@ void CodeBuilder::AsyncReturn( NamesScope& names_scope, FunctionContext& functio
 
 	if( coroutine_type_description->return_value_type == ValueType::Value )
 	{
+		if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expression_result->name );
+
 		if( expression_result->type.ReferenceIsConvertibleTo( return_type ) )
 		{}
 		else if( const auto conversion_contructor=

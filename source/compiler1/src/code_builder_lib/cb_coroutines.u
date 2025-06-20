@@ -488,6 +488,8 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 			var VariablePtr mut expr_ptr= self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
 			if( return_value_type == ValueType::Value )
 			{
+				function_context.references_graph.EnsureHasNoOutgoingMutableNodes( expr_ptr, names_scope, src_loc );
+
 				var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
 				if( expr_initial_type.ReferenceIsConvertibleTo( yield_type ) )
 				{}
@@ -612,6 +614,8 @@ fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionConte
 			: BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ) );
 	if( return_value_type == ValueType::Value )
 	{
+		function_context.references_graph.EnsureHasNoOutgoingMutableNodes( expr_ptr, names_scope, src_loc );
+
 		var Type expr_initial_type= expr_ptr.lock_imut().deref().t;
 		if( expr_initial_type.ReferenceIsConvertibleTo( return_type ) )
 		{}

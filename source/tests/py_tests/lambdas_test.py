@@ -442,14 +442,15 @@ def LambdaCaptureAllByReference_Test1():
 		fn Foo()
 		{
 			var f32 mut k= 0.0f;
+			var $(f32) k_ptr= $<(k);
 			// Capture mutable reference.
 			auto f= lambda [&] () { k+= 133.5f; };
 			static_assert( typeinfo</ typeof(f) />.reference_tag_count == 1s );
-			halt if( k != 0.0f );
+			halt if( unsafe( $>(k_ptr) ) != 0.0f );
 			f();
-			halt if( k != 133.5f );
+			halt if( unsafe( $>(k_ptr) ) != 133.5f );
 			f();
-			halt if( k != 267.0f );
+			halt if( unsafe( $>(k_ptr) ) != 267.0f );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -461,6 +462,7 @@ def LambdaCaptureAllByReference_Test2():
 		fn Foo()
 		{
 			var i32 mut x= 5, mut y= 7;
+			var $(i32) x_ptr= $<(x), y_ptr= $<(y);
 			// Capture two mutable references.
 			auto f= lambda [&] ()
 				{
@@ -469,14 +471,14 @@ def LambdaCaptureAllByReference_Test2():
 					y= tmp;
 				};
 			static_assert( typeinfo</ typeof(f) />.reference_tag_count == 2s );
-			halt if( x != 5 );
-			halt if( y != 7 );
+			halt if( unsafe( $>(x_ptr) ) != 5 );
+			halt if( unsafe( $>(y_ptr) ) != 7 );
 			f();
-			halt if( x != 7 );
-			halt if( y != 5 );
+			halt if( unsafe( $>(x_ptr) ) != 7 );
+			halt if( unsafe( $>(y_ptr) ) != 5 );
 			f();
-			halt if( x != 5 );
-			halt if( y != 7 );
+			halt if( unsafe( $>(x_ptr) ) != 5 );
+			halt if( unsafe( $>(y_ptr) ) != 7 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -2010,12 +2012,14 @@ def CaptureListExpression_Test8():
 		{
 			auto mut x= 77;
 			// Capture by mutuable reference with expression initializer.
-			auto f=
-				lambda[ &x_ref= x ] ()
-				{
-					x_ref= 52;
-				};
-			f();
+			{
+				auto f=
+					lambda[ &x_ref= x ] ()
+					{
+						x_ref= 52;
+					};
+				f();
+			}
 			halt if( x != 52 );
 		}
 	"""
@@ -2046,13 +2050,15 @@ def CaptureListExpression_Test10():
 		fn Foo()
 		{
 			var u32 mut num(66);
-			// May use same name for by referene capture.
-			auto f=
-				lambda[ &num= num ] ()
-				{
-					num /= 3u;
-				};
-			f();
+			{
+				// May use same name for by referene capture.
+				auto f=
+					lambda[ &num= num ] ()
+					{
+						num /= 3u;
+					};
+				f();
+			}
 			halt if( num != 22u );
 		}
 	"""
@@ -2235,12 +2241,14 @@ def ByValLambda_Test1():
 		fn Foo()
 		{
 			var i32 mut x= 0;
-			auto f=
-				lambda[&] byval ( i32 a )
-				{
-					x= a;
-				};
-			f( 334433 );
+			{
+				auto f=
+					lambda[&] byval ( i32 a )
+					{
+						x= a;
+					};
+				f( 334433 );
+			}
 			halt if( x != 334433 );
 		}
 	"""
@@ -2561,19 +2569,21 @@ def AutoReturnTypeLambda_Test3():
 		fn Foo()
 		{
 			var f32 mut x= 0.0f;
-			var R mut r{ .r= x };
-			// Should deduce return references properly.
-			auto f=
-				lambda[r= move(r)]( f32 &mut arg ) : auto &mut // Deduced to "f32"
-				{
-					if( arg <= 0.0f ) { return r.r; }
-					return arg;
-				};
-			var f32 mut y= 7.0f;
-			f( y )= 34.0f;
-			halt if( y != 34.0f );
-			y= -1.0f;
-			f( y ) = 77.1f;
+			{
+				var R mut r{ .r= x };
+				// Should deduce return references properly.
+				auto f=
+					lambda[r= move(r)]( f32 &mut arg ) : auto &mut // Deduced to "f32"
+					{
+						if( arg <= 0.0f ) { return r.r; }
+						return arg;
+					};
+				var f32 mut y= 7.0f;
+				f( y )= 34.0f;
+				halt if( y != 34.0f );
+				y= -1.0f;
+				f( y ) = 77.1f;
+			}
 			halt if( x != 77.1f );
 		}
 	"""
