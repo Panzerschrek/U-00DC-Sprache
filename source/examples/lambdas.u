@@ -67,17 +67,18 @@ pretty_main
 	// Lambda with two captured mutable references returns these references.
 	{
 		var i32 mut x= 0, mut y= 0;
-		auto f=
-			lambda[&]( bool cond ) : i32 &mut
-			{
-				return ( cond ? x : y );
-			};
 
-		f( true )= 16;
-		assert( x == 16 );
-		assert( y == 0 );
+		{
+			auto f=
+				lambda[&]( bool cond ) : i32 &mut
+				{
+					return ( cond ? x : y );
+				};
 
-		f( false )= 100;
+			f( true )= 16;
+			f( false )= 100;
+		}
+
 		assert( x == 16 );
 		assert( y == 100 );
 	}
@@ -104,14 +105,16 @@ pretty_main
 		auto x= 675;
 		auto y= 33;
 		auto mut z= 0;
-		// Arbitrary expressions may be used to initialize lambda captures.
-		// It may be usefull for move-initialization of captures.
-		auto f=
-			lambda[ x_scaled= x * 4, y, &z= z, w= -5 ]()
-			{
-				z= x_scaled + y + w;
-			};
-		f();
+		{
+			// Arbitrary expressions may be used to initialize lambda captures.
+			// It may be usefull for move-initialization of captures.
+			auto f=
+				lambda[ x_scaled= x * 4, y, &z= z, w= -5 ]()
+				{
+					z= x_scaled + y + w;
+				};
+			f();
+		}
 		assert( z == 675 * 4 + 33 - 5 );
 	}
 
