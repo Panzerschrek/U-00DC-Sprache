@@ -2097,7 +2097,7 @@ def AccessingVariableHavingMutableReference_Test46():
 	c_program_text= """
 		fn Foo()
 		{
-			var S mut s= 0;
+			var S mut s= zero_init;
 			var S &mut s_ref= s;
 			Bar( s ); // Reading variable having a mutable reference while reading argument for function call.
 		}
@@ -2113,7 +2113,7 @@ def AccessingVariableHavingMutableReference_Test47():
 	c_program_text= """
 		fn Foo()
 		{
-			var S mut s= 0;
+			var S mut s= zero_init;
 			var S &mut s_ref= s;
 			Bar( s ); // Reading variable having a mutable reference while taking reference for argument for function call.
 		}
@@ -2129,7 +2129,7 @@ def AccessingVariableHavingMutableReference_Test48():
 	c_program_text= """
 		fn Foo()
 		{
-			var T mut t= 0;
+			var T mut t= zero_init;
 			var T &mut t_ref= t;
 			Bar( t ); // Reading variable having a mutable reference while reading argument for function call.
 		}
@@ -2688,8 +2688,8 @@ def AccessingVariableHavingMutableReference_Test85():
 			var S s{ .t= t }; // Reading variable having a mutable reference in field initialization via expression initializer.
 		}
 		struct S{ T t; }
-		type T= [ tup[ f32, bool, [ i32, 3 ], S ], 4 ];
-		struct S{ i32 x; f32 y; }
+		type T= [ tup[ f32, bool, [ i32, 3 ], U ], 4 ];
+		struct U{ i32 x; f32 y; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -2705,8 +2705,8 @@ def AccessingVariableHavingMutableReference_Test86():
 			var S s{ .t( t ) }; // Reading variable having a mutable reference in field initialization via constructor initializer.
 		}
 		struct S{ T t; }
-		type T= [ tup[ f32, bool, [ i32, 3 ], S ], 4 ];
-		struct S{ i32 x; f32 y; }
+		type T= [ tup[ f32, bool, [ i32, 3 ], U ], 4 ];
+		struct U{ i32 x; f32 y; }
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
