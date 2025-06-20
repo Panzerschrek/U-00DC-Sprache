@@ -3190,3 +3190,73 @@ def AccessingVariableHavingMutableReference_Test118():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AccessingVariableHavingMutableReference_Test119():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var i32 &mut x_ref0= x;
+			var i32 &mut x_ref1= x_ref0;
+			var i32 y= x_ref0; // Reading reference having a mutable reference in variable expression initializer.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def AccessingVariableHavingMutableReference_Test120():
+	c_program_text= """
+		fn Foo( i32 &mut x )
+		{
+			var i32 &mut x_ref= x;
+			var i32 y= x; // Reading reference having a mutable reference in variable expression initializer.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
+
+
+def AccessingVariableHavingMutableReference_Test121():
+	c_program_text= """
+		fn Foo( i32 &mut x )
+		{
+			var R r{ .r= x };
+			var i32 y= x; // Reading reference having a mutable reference in variable expression initializer.
+		}
+		struct R{ i32 &mut r; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
+
+
+def AccessingVariableHavingMutableReference_Test122():
+	c_program_text= """
+		fn Foo( R r )
+		{
+			auto &mut r_ref= r.r;
+			var i32 y= r.r; // Reading reference having a mutable reference in variable expression initializer.
+		}
+		struct R{ i32 &mut r; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
+
+
+def AccessingVariableHavingMutableReference_Test123():
+	c_program_text= """
+		fn Foo( R& r )
+		{
+			auto &mut r_ref= r.r;
+			var i32 y= r.r; // Reading reference having a mutable reference in variable expression initializer.
+		}
+		struct R{ i32 &mut r; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
