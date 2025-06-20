@@ -2317,6 +2317,10 @@ Value CodeBuilder::AccessClassField(
 
 	if( field.is_reference )
 	{
+		// Prevent loading reference for variables which have mutable references.
+		if( function_context.variables_state.HasOutgoingMutableNodes( variable ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, variable->name );
+
 		const VariableMutPtr result=
 			Variable::Create(
 				field.type,

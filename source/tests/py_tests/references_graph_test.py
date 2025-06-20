@@ -3260,3 +3260,34 @@ def AccessingVariableHavingMutableReference_Test123():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
+
+
+def AccessingVariableHavingMutableReference_Test124():
+	c_program_text= """
+		fn Foo( R mut r )
+		{
+			var R &mut r_ref= r;
+			var i32& int_ref= r.r; // Reading reference field of a variable having a mutable reference.
+		}
+		struct R{ i32 &imut r; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 5 ) )
+
+
+def AccessingVariableHavingMutableReference_Test125():
+	c_program_text= """
+		struct R
+		{
+			i32 &imut r;
+			fn Foo( mut this )
+			{
+				var R &mut this_ref= this;
+				var i32& int_ref= r; // Reading reference field of a variable having a mutable reference.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "ReferenceProtectionError", 8 ) )
