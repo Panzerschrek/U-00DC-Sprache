@@ -802,9 +802,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return block_info;
 	}
 
-	if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
-		REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), return_operator.src_loc, expression_result->name );
-
 	// For functions with "auto" on return type use type of first return expression.
 	if( function_context.return_type_deduction_context != nullptr )
 	{
@@ -842,6 +839,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	llvm::Value* ret= nullptr;
 	if( function_context.function_type.return_value_type == ValueType::Value )
 	{
+		if( function_context.variables_state.HasOutgoingMutableNodes( expression_result ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), return_operator.src_loc, expression_result->name );
+
 		if( expression_result->type.ReferenceIsConvertibleTo( return_type ) )
 		{}
 		else if( const auto conversion_contructor=

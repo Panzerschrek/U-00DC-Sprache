@@ -4084,6 +4084,9 @@ Value CodeBuilder::DoCallFunction(
 				continue;
 			}
 
+			if( function_context.variables_state.HasOutgoingMutableNodes( expr ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expr->name );
+
 			if( expr->type != param.type )
 			{
 				if( expr->type.ReferenceIsConvertibleTo( param.type ) ){}
@@ -4100,9 +4103,6 @@ Value CodeBuilder::DoCallFunction(
 					expr= ConvertVariable( expr, param.type, *conversion_constructor, names_scope, function_context, src_loc );
 				}
 			}
-
-			if( function_context.variables_state.HasOutgoingMutableNodes( expr ) )
-				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), src_loc, expr->name );
 
 			if( param.type.GetFundamentalType() != nullptr ||
 				param.type.GetEnumType() != nullptr ||
