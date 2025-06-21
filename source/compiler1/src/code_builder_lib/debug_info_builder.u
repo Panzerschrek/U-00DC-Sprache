@@ -1,4 +1,5 @@
 import "/scoped_array.u"
+import "/sort.u"
 import "/string_conversions.u"
 import "debug_info_builder.uh"
 
@@ -474,20 +475,29 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadata
 	auto enum_lock= t.lock_imut();
 	var Enum& enum_= enum_lock.deref();
 
-	var bool is_unsigned= IsUnsignedInteger( enum_.underlying_type.fundamental_type );
+	// Collect enum elements and sort them by enum numeric value.
+	// Avoid emitting debug info in hashmap order.
 
-	var ust::vector</LLVMMetadataRef/> mut elements;
-	foreach( &element_pair : enum_.elements )
+	type NamedEnumElement = tup[ ust::string8, u64 ];
+
+	scoped_array NamedEnumElement mut raw_elements[ enum_.elements.size() ]( ust::make_tuple( ust::string8(), 0u64 ) );
+	foreach( pair : enum_.elements.iter().zip( raw_elements.iter() ) )
 	{
-		var ust::string8& name= element_pair.key();
-		var LLVMValueRef constexpr_value= element_pair.value().constexpr_value;
+		var LLVMValueRef constexpr_value= pair.first.value().constexpr_value;
+		pair.second= ust::make_tuple( pair.first.key(), unsafe( LLVMConstIntGetZExtValue(constexpr_value ) ) );
+	}
 
-		elements.push_back(
+	ust::sort_by_key( raw_elements, lambda[]( NamedEnumElement& el ) : u64 { return el[1]; } );
+
+	scoped_array LLVMMetadataRef mut elements[ raw_elements.size() ]( LLVMMetadataRef::Null );
+	foreach( pair : raw_elements.iter().zip( elements.iter() ) )
+	{
+		pair.second=
 			unsafe( LLVMDIBuilderCreateEnumerator(
 				builder_,
-				cast_mut(name).data(), name.size(),
-				( is_unsigned ? i64(LLVMConstIntGetZExtValue(constexpr_value)) : LLVMConstIntGetSExtValue(constexpr_value) ),
-				( is_unsigned ? LLVMBool::True : LLVMBool::False ) ) ) );
+				cast_mut(pair.first[0]).data(), pair.first[0].size(),
+				i64(pair.first[1]),
+				LLVMBool::False ) );
 	}
 
 	var SrcLoc& src_loc= enum_.syntax_element.deref().src_loc;
