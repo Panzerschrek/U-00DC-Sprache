@@ -13,11 +13,13 @@ fn nomangle main() : i32
 	{
 		var ust::mixin_utils::static_string</32s/> mut s;
 		s+= "foo";
+		s+= '^';
 		s+= "66";
-		halt if( s != "foo66" );
+		s+= 'Q';
+		halt if( s != "foo^66Q" );
 		halt if( s == "foo" );
 		halt if( s == "66" );
-		halt if( "foo66" != s );
+		halt if( "foo^66Q" != s );
 		halt if( "foo" == s );
 		halt if( "66" == s );
 	}

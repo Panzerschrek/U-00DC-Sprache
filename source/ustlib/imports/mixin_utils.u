@@ -26,6 +26,14 @@ struct static_string
 		current_size+= src_size;
 	}
 
+	// Append single char.
+	// Halts if no space is left.
+	op constexpr +=( mut this, char8 c )
+	{
+		buffer[ current_size ]= c;
+		++current_size;
+	}
+
 	// Append decimal number.
 	// Negative sign may be written, but no type suffix is added.
 	template</type int_type/>
