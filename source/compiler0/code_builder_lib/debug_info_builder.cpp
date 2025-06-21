@@ -363,7 +363,12 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 	if( const auto it= enums_di_cache_.find(type); it != enums_di_cache_.end() )
 		return it->second;
 
-	llvm::SmallVector<llvm::Metadata*, 16> elements;
+	// Collect enum elements and sort them by enum numeric value.
+	// Avoid emitting debug info in hashmap order.
+
+	using NamedEnumElement= std::pair<std::string_view, uint64_t>;
+	llvm::SmallVector<NamedEnumElement, 16> raw_elements;
+
 	type->members.ForEachInThisScope(
 		[&]( const std::string_view name, const NamesScopeValue& value )
 		{
@@ -373,12 +378,18 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 
 			U_ASSERT( variable->constexpr_value != nullptr );
 
-			elements.push_back(
-				builder_->createEnumerator(
-					name,
-					variable->constexpr_value->getUniqueInteger().getLimitedValue(),
-					true ) );
+			raw_elements.emplace_back( name, variable->constexpr_value->getUniqueInteger().getLimitedValue() );
 		} );
+
+	std::sort(
+		raw_elements.begin(),
+		raw_elements.end(),
+		[]( const NamedEnumElement& l, const NamedEnumElement& r ) { return l.second < r.second; } );
+
+	llvm::SmallVector<llvm::Metadata*, 16> elements;
+	elements.reserve( raw_elements.size() );
+	for( const NamedEnumElement& named_element : raw_elements )
+		elements.push_back( builder_->createEnumerator( named_element.first, named_element.second, true ) );
 
 	// TODO - get SrcLoc for enum
 	const auto di_file= GetRootDIFile();
