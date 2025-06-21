@@ -495,14 +495,14 @@ struct zip_iterator_pair
 			if( first_num_reference_tags > 0s )
 			{
 				// Add inner reference tags.
-				s+= "@('";
+				s+= "@(\"";
 				for( auto mut i= 0s; i < first_num_reference_tags; ++i )
 				{
 					var [ char8, 1 ] mut reference_tag= zero_init;
 					reference_tag[0]= char8( size_type('a') + i );
 					s+= reference_tag;
 				}
-				s+= "')";
+				s+= "\")";
 			}
 
 			if( first_is_mutable )
@@ -537,14 +537,14 @@ struct zip_iterator_pair
 			if( second_num_reference_tags > 0s )
 			{
 				// Add inner reference tags starting from first tag after "first" field tags.
-				s+= "@('";
+				s+= "@(\"";
 				for( auto mut i= 0s; i < second_num_reference_tags; ++i )
 				{
 					var [ char8, 1 ] mut reference_tag= zero_init;
 					reference_tag[0]= char8( size_type('a') + i + first_num_reference_tags );
 					s+= reference_tag;
 				}
-				s+= "')";
+				s+= "\")";
 			}
 
 			if( second_is_mutable )
