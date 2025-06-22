@@ -125,9 +125,8 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 	}
 
 	var ErrorsContainer mut out_errors;
-	foreach( &in_error : in_errors )
+	foreach( &error : in_errors )
 	{
-		var CodeBuilderError mut error= in_error;
 		if( !error.errors_context.empty() )
 		{
 			auto sub_errors_ptr= error.errors_context.try_lock_imut().deref().errors;
@@ -140,11 +139,11 @@ fn ExpandErrorsInMacros( ErrorsContainer& in_errors, Synt::MacroExpansionContext
 		if( macro_expansion_index < macro_contexts_errors_internals.size() )
 		{
 			auto mut lock= macro_contexts_errors_internals[ macro_expansion_index ].lock_mut();
-			lock.deref().push_back( move(error) );
+			lock.deref().push_back( error );
 		}
 		else
 		{
-			out_errors.push_back( move(error) );
+			out_errors.push_back( error );
 		}
 	}
 
