@@ -458,11 +458,16 @@ fn nomangle main() : i32
 		halt if( ptr2.try_lock_imut().deref() != 85 );
 		halt if( ptr3.try_lock_imut().deref() != 58 );
 	}
-	{ // Lock classes contain only single pointer.
+	{
 		var IntPtrMut ptr= ust::make_shared_ptr( 66 );
-		static_assert( typeinfo</ typeof( ptr.lock_imut() ) />.size_of == typeinfo</size_type/>.size_of );
-		static_assert( typeinfo</ typeof( ptr.lock_mut () ) />.size_of == typeinfo</size_type/>.size_of );
+		type imut_lock_type= typeof( ptr.lock_imut() );
+		type mut_lock_type= typeof( ptr.lock_mut () );
+		// Lock classes contain only single pointer.
+		static_assert( typeinfo</ imut_lock_type />.size_of == typeinfo</size_type/>.size_of );
+		static_assert( typeinfo</ mut_lock_type />.size_of == typeinfo</size_type/>.size_of );
+		// Lock types are "non_sync" - in order to avoid moving them to another thread and causing unsynchronized data access.
+		static_assert( non_sync</ imut_lock_type /> );
+		static_assert( non_sync</ mut_lock_type /> );
 	}
-
 	return 0;
 }
