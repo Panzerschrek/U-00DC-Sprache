@@ -1,5 +1,6 @@
 //##fail_test
 import "../imports/shared_ptr_mt.u"
+import "../imports/thread.u"
 
 type IntPtrMut=  ust::shared_ptr_mt_mut </i32/>;
 type IntPtrImut= ust::shared_ptr_mt_imut</i32/>;
@@ -90,6 +91,15 @@ fn nomangle main() : i32
 	//
 	// shared_ptr_mt-sepcific tests.
 	//
+
+	{ // Can't pass immutable lock object to another thread.
+		var IntPtrImut p(0);
+		ust::make_thread( lambda [l= p.lock_imut()]() : i32 { return l.deref(); } ); //##expect_error TemplateContext
+	}
+	{ // Can't pass mutable lock object to another thread.
+		var IntPtrMut p(0);
+		ust::make_thread( lambda [l= p.lock_mut()] byval mut () { l.deref()= 33; } ); //##expect_error TemplateContext
+	}
 
 	return 0;
 }

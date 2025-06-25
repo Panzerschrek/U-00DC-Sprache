@@ -404,8 +404,10 @@ struct control_block
 	rwlock_impl::rwlock rwlock;
 }
 
+// This class is non_sync in order to avoid moving it into another thread.
+// It's necessary, since locking and unlocking should happen on the same thread.
 template</ type T />
-class lock_mut nodiscard
+class lock_mut non_sync nodiscard
 {
 public:
 	fn constructor( mut this, storage_type storage ) unsafe
@@ -436,8 +438,10 @@ private:
 	storage_type imut storage_;
 }
 
+// This class is non_sync in order to avoid moving it into another thread.
+// It's necessary, since locking and unlocking should happen on the same thread.
 template</ type T />
-class lock_imut nodiscard
+class lock_imut non_sync nodiscard
 {
 public:
 	fn constructor( mut this, storage_type storage )  unsafe
