@@ -1,0 +1,20 @@
+// This file is used internally for low-level barrier manipulations.
+// Do not use types/functions from this file directly!
+
+
+namespace ust
+{
+
+namespace barrier_impl
+{
+
+type barrier_t= [ byte64, 8 ];
+
+fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe;
+fn destroy_barrier( barrier_t &mut b ) unsafe;
+
+fn wait_barrier( barrier_t &mut b ) unsafe;
+
+} // namespace barrier_impl
+
+} // namespace ust

@@ -1,0 +1,35 @@
+import "alloc.u"
+import "barrier_impl.u"
+import "memory.u"
+
+namespace ust
+{
+
+class barrier
+{
+public:
+	fn constructor( u32 num_threads )
+		( barrier_= unsafe(
+			byte_ptr_cast</ barrier_impl::barrier_t />(
+				memory_allocate( typeinfo</barrier_impl::barrier_t/>.size_of ) ) ) )
+	{
+		unsafe( barrier_impl::initialize_barrier( $>(barrier_), num_threads ) );
+	}
+
+	fn destructor()
+	{
+		unsafe( barrier_impl::destroy_barrier( $>(barrier_) ) );
+		unsafe( memory_free( ptr_cast_to_byte8( barrier_ ) ) );
+	}
+
+	fn wait( this )
+	{
+		unsafe( barrier_impl::wait_barrier( $>(barrier_) ) );
+	}
+
+private:
+	// Allocate barrier instance on heap, since we need to perform mutation of underlying barrier structure in "imut" methods.
+	$(barrier_impl::barrier_t) imut barrier_;
+}
+
+} // namespace ust
