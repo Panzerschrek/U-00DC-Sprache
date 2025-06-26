@@ -7,7 +7,7 @@ namespace ust
 namespace barrier_impl
 {
 
-// Opaque struct representing OS-specific barrier object.
+// Opaque type representing OS-specific barrier object.
 // It's not relocable!
 type barrier_t= [ byte64, 4 ]; // _RTL_BARRIER on Windows, pthread_barrier_t on Unix.
 
@@ -17,7 +17,7 @@ fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe;
 // Destroy given barrier.
 fn destroy_barrier( barrier_t &mut b ) unsafe;
 
-// Perform threads synchronisation using given barrier, possibly waiting until other threads aren't reached this barrier yet.
+// Perform threads synchronisation using given barrier, possibly waiting until other threads didn't reach this barrier yet.
 fn wait_barrier( barrier_t &mut b ) unsafe;
 
 } // namespace barrier_impl

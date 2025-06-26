@@ -5,13 +5,13 @@ import "memory.u"
 namespace ust
 {
 
-// Barrier synchronisation promitive.
+// Barrier synchronization promitive.
 // See https://en.wikipedia.org/wiki/Barrier_(computer_science) for more details.
 // This class is safe to pass by reference to another thread.
 class barrier
 {
 public:
-	// Construct barrier for synchronising given number of threads.
+	// Construct barrier for synchronizing given number of threads.
 	fn constructor( u32 num_threads )
 		( barrier_= unsafe(
 			byte_ptr_cast</ barrier_impl::barrier_t />(
@@ -26,14 +26,16 @@ public:
 		unsafe( memory_free( ptr_cast_to_byte8( barrier_ ) ) );
 	}
 
-	// Wait until all other threads aren't called "wait" too.
+	// Wait until all other threads didn't call "wait" too.
 	fn wait( this )
 	{
 		unsafe( barrier_impl::wait_barrier( $>(barrier_) ) );
 	}
 
 private:
-	// Allocate barrier instance on heap, since we need to perform mutation of underlying barrier structure in "imut" methods.
+	// Allocate barrier instance on heap,
+	// because we need to perform mutation of underlying barrier structure in "imut" methods
+	// and because underlyin barrier struct isn't relocable.
 	$(barrier_impl::barrier_t) imut barrier_;
 }
 
