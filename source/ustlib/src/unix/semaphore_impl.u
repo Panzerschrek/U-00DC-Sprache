@@ -1,0 +1,10 @@
+import "../../imports/semaphore_impl.u"
+
+namespace ust
+{
+
+namespace semaphore_impl
+{
+} // namespace semaphore_impl
+
+} // namespace ust

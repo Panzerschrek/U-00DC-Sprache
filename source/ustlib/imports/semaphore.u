@@ -1,0 +1,32 @@
+import "semaphore_impl.u"
+
+namespace ust
+{
+
+class semaphore
+{
+public:
+	fn constructor( u32 initial_value )
+		( impl_= unsafe( semaphore_impl::create_semaphore( initial_value ) ) )
+	{}
+
+	fn destructor()
+	{
+		unsafe( semaphore_impl::destroy_semaphore( impl_ ) );
+	}
+
+	fn acquire( this )
+	{
+		unsafe( semaphore_impl::acquire_semaphore( impl_ ) );
+	}
+
+	fn release( this )
+	{
+		unsafe( semaphore_impl::release_semaphore( impl_ ) );
+	}
+
+private:
+	semaphore_impl::semaphore_handle_t imut impl_;
+}
+
+} // namespace ust
