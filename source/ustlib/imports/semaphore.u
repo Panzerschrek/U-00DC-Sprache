@@ -8,12 +8,12 @@ class semaphore
 public:
 	// Create semaphore with initial value.
 	fn constructor( u32 initial_value )
-		( impl_= unsafe( semaphore_impl::create_semaphore( initial_value ) ) )
+		( handle_= unsafe( semaphore_impl::create_semaphore( initial_value ) ) )
 	{}
 
 	fn destructor()
 	{
-		unsafe( semaphore_impl::destroy_semaphore( impl_ ) );
+		unsafe( semaphore_impl::destroy_semaphore( handle_ ) );
 	}
 
 	// "acquire" and "release" methods accept immutable "this".
@@ -23,17 +23,17 @@ public:
 	// Decrease internal counter by 1. If it's zero - wait until someone else releases this semaphore.
 	fn acquire( this )
 	{
-		unsafe( semaphore_impl::acquire_semaphore( impl_ ) );
+		unsafe( semaphore_impl::acquire_semaphore( handle_ ) );
 	}
 
 	// Increase internal counter by 1, potentially allowing other waiting threads to continue their execution.
 	fn release( this )
 	{
-		unsafe( semaphore_impl::release_semaphore( impl_ ) );
+		unsafe( semaphore_impl::release_semaphore( handle_ ) );
 	}
 
 private:
-	semaphore_impl::semaphore_handle_t imut impl_;
+	semaphore_impl::semaphore_handle_t imut handle_;
 }
 
 } // namespace ust
