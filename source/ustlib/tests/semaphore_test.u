@@ -13,6 +13,8 @@ fn nomangle main() : i32
 
 	var u32 count= 1024u;
 
+	// Instances of semaphore objects are immutable, since acquire/release methods are immutable.
+	// Immutable references to semaphore instances can be shared across threads.
 	var ust::semaphore sem_even(1u); // Set initial value to 1 to start even thread without waiting.
 	var ust::semaphore sem_odd(0u);
 
@@ -58,3 +60,7 @@ fn nomangle main() : i32
 
 	return 0;
 }
+
+static_assert( !non_sync</ ust::semaphore /> ); // Semaphore class is not non-sync, which allow sharing it across threads.
+static_assert( !typeinfo</ ust::semaphore/>.is_copy_constructible ); // Can't copy a semaphore.
+static_assert( !typeinfo</ ust::semaphore/>.is_copy_assignable ); // Can't copy a semaphore.
