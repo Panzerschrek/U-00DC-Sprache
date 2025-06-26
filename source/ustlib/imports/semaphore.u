@@ -3,6 +3,10 @@ import "semaphore_impl.u"
 namespace ust
 {
 
+// Semaphore synchronisation primitive.
+// Has internal counter, which is decreased/increased by "acquire"/"release" methods.
+// If decreasing this counter right now isn't possible, current thread is blocked until this counter isn't increased by some other thread.
+// See https://en.wikipedia.org/wiki/Semaphore_(programming) for more details.
 class semaphore
 {
 public:
