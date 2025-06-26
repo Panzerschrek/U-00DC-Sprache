@@ -1,0 +1,55 @@
+import "../../imports/memory.u"
+import "../../imports/alloc.u"
+import "../../imports/semaphore_impl.u"
+import "semaphore.uh"
+
+namespace ust
+{
+
+namespace semaphore_impl
+{
+
+static_assert( same_type</ semaphore_handle_t, $(byte8) />, "Invalid type for semaphore handle!" );
+
+fn create_semaphore( u32 initial_value ) unsafe : semaphore_handle_t
+{
+	unsafe
+	{
+		// We need stable address of the semaphore object, so, allocate it on heap.
+		var $(byte8) mem= memory_allocate( typeinfo</sem_t/>.size_of );
+		var i32 res= ::sem_init( byte_ptr_cast</sem_t/>( mem ), 0, initial_value );
+		halt if( res != 0 );
+		return mem;
+	}
+}
+
+fn destroy_semaphore( semaphore_handle_t s ) unsafe
+{
+	unsafe
+	{
+		::sem_destroy( byte_ptr_cast</sem_t/>( s ) );
+		memory_free( s );
+	}
+}
+
+fn acquire_semaphore( semaphore_handle_t s ) unsafe
+{
+	unsafe
+	{
+		var i32 res= ::sem_wait( byte_ptr_cast</sem_t/>( s ) );
+		halt if( res != 0 );
+	}
+}
+
+fn release_semaphore( semaphore_handle_t s ) unsafe
+{
+	unsafe
+	{
+		var i32 res= ::sem_post( byte_ptr_cast</sem_t/>( s ) );
+		halt if( res != 0 );
+	}
+}
+
+} // namespace semaphore_impl
+
+} // namespace ust

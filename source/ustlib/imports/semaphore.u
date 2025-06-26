@@ -1,0 +1,43 @@
+import "semaphore_impl.u"
+
+namespace ust
+{
+
+// Semaphore synchronization primitive.
+// Has internal counter, which is decreased/increased by "acquire"/"release" methods.
+// If decreasing this counter right now isn't possible, current thread is blocked until this counter isn't increased by some other thread.
+// See https://en.wikipedia.org/wiki/Semaphore_(programming) for more details.
+class semaphore
+{
+public:
+	// Create semaphore with initial value.
+	fn constructor( u32 initial_value )
+		( handle_= unsafe( semaphore_impl::create_semaphore( initial_value ) ) )
+	{}
+
+	fn destructor()
+	{
+		unsafe( semaphore_impl::destroy_semaphore( handle_ ) );
+	}
+
+	// "acquire" and "release" methods accept immutable "this".
+	// This is fine, since only an OS semaphore object allocated somewhere else is modified, not this class instance.
+	// This allows sharing references to a semaphore across threads.
+
+	// Decrease internal counter by 1. If it's already zero - wait until someone else releases this semaphore.
+	fn acquire( this )
+	{
+		unsafe( semaphore_impl::acquire_semaphore( handle_ ) );
+	}
+
+	// Increase internal counter by 1, potentially allowing other waiting threads to continue their execution.
+	fn release( this )
+	{
+		unsafe( semaphore_impl::release_semaphore( handle_ ) );
+	}
+
+private:
+	semaphore_impl::semaphore_handle_t imut handle_;
+}
+
+} // namespace ust

@@ -1,0 +1,27 @@
+// This file is used internally for low-level semaphore manipulations.
+// Do not use types/functions from this file directly!
+
+namespace ust
+{
+
+namespace semaphore_impl
+{
+
+// HANDLE on Windows.
+type semaphore_handle_t= $(byte8);
+
+// Create a semaphore with (almost) unbounded upper value.
+fn create_semaphore( u32 initial_value ) unsafe : semaphore_handle_t;
+
+// Destroy a semaphore created previously.
+fn destroy_semaphore( semaphore_handle_t s ) unsafe;
+
+// Acquire a semaphore (decrease its internal counter by 1), potentially wait until it isn't released by some other thread.
+fn acquire_semaphore( semaphore_handle_t s ) unsafe;
+
+// Release semaphore (increase its internal counter by 1), potentially unblocking other threads waiting on this semaphore.
+fn release_semaphore( semaphore_handle_t s ) unsafe;
+
+} // namespace semaphore_impl
+
+} // namespace ust

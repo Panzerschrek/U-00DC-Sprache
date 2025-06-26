@@ -1,0 +1,40 @@
+import "../../imports/barrier_impl.u"
+import "pthread.uh"
+
+namespace ust
+{
+
+namespace barrier_impl
+{
+
+static_assert( typeinfo</barrier_t/>.size_of >= typeinfo</pthread_barrier_t/>.size_of );
+static_assert( typeinfo</barrier_t/>.align_of >= typeinfo</pthread_barrier_t/>.align_of );
+
+fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe
+{
+	unsafe
+	{
+		var pthread_barrierattr_t mut attr= zero_init;
+
+		::pthread_barrierattr_init( attr );
+
+		var i32 res= ::pthread_barrier_init( cast_ref_unsafe</ pthread_barrier_t />( b ), attr, num_threads );
+		halt if( res != 0 );
+
+		::pthread_barrierattr_destroy( attr );
+	}
+}
+
+fn destroy_barrier( barrier_t &mut b ) unsafe
+{
+	unsafe( ::pthread_barrier_destroy( cast_ref_unsafe</ pthread_barrier_t />( b ) ) );
+}
+
+fn wait_barrier( barrier_t &mut b ) unsafe
+{
+	unsafe( ::pthread_barrier_wait( cast_ref_unsafe</ pthread_barrier_t />( b ) ) );
+}
+
+} // namespace barrier_impl
+
+} // namespace ust

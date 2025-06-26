@@ -1,0 +1,25 @@
+// This file is used internally for low-level barrier manipulations.
+// Do not use types/functions from this file directly!
+
+namespace ust
+{
+
+namespace barrier_impl
+{
+
+// Opaque type representing OS-specific barrier object.
+// It's not relocable!
+type barrier_t= [ byte64, 4 ]; // _RTL_BARRIER on Windows, pthread_barrier_t on Unix.
+
+// Initialize barrier at given address for given number of threads.
+fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe;
+
+// Destroy given barrier.
+fn destroy_barrier( barrier_t &mut b ) unsafe;
+
+// Perform threads synchronisation using given barrier, possibly waiting until other threads didn't reach this barrier yet.
+fn wait_barrier( barrier_t &mut b ) unsafe;
+
+} // namespace barrier_impl
+
+} // namespace ust

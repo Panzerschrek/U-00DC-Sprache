@@ -6,6 +6,8 @@ type pthread_t= size_type;
 type pthread_attr_t  = [ byte64, 8 ];
 type pthread_rwlock_t= [ byte64, 8 ];
 type pthread_rwlockattr_t= [ byte64, 8 ];
+type pthread_barrier_t= [ byte64, 4 ];
+type pthread_barrierattr_t= [ byte32, 1 ];
 
 type pthread_start_function= fn( $(byte8) arg ) unsafe : $(byte8);
 
@@ -28,3 +30,9 @@ fn nomangle pthread_rwlock_rdlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
 fn nomangle pthread_rwlock_wrlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
 fn nomangle pthread_rwlock_unlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
 fn nomangle pthread_self() unsafe : pthread_t;
+
+fn nomangle pthread_barrier_destroy( pthread_barrier_t &mut barrier ) unsafe : i32;
+fn nomangle pthread_barrier_init( pthread_barrier_t &mut barrier, pthread_barrierattr_t & attr, u32 count ) unsafe : i32;
+fn nomangle pthread_barrier_wait( pthread_barrier_t &mut barrier ) unsafe : i32;
+fn nomangle pthread_barrierattr_destroy( pthread_barrierattr_t &mut attr ) unsafe : i32;
+fn nomangle pthread_barrierattr_init( pthread_barrierattr_t &mut attr ) unsafe : i32;
