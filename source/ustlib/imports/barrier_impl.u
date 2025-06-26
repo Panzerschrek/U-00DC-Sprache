@@ -1,14 +1,13 @@
 // This file is used internally for low-level barrier manipulations.
 // Do not use types/functions from this file directly!
 
-
 namespace ust
 {
 
 namespace barrier_impl
 {
 
-type barrier_t= [ byte64, 8 ];
+type barrier_t= [ byte64, 4 ]; // _RTL_BARRIER on Windows.
 
 fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe;
 fn destroy_barrier( barrier_t &mut b ) unsafe;

@@ -1,0 +1,38 @@
+import "../../imports/barrier_impl.u"
+import "windows.uh"
+
+namespace ust
+{
+
+namespace barrier_impl
+{
+
+static_assert( typeinfo</barrier_t/>.size_of >= typeinfo</ü_RTL_BARRIER/>.size_of );
+static_assert( typeinfo</barrier_t/>.align_of >= typeinfo</ü_RTL_BARRIER/>.align_of );
+
+fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe
+{
+	unsafe
+	{
+		var BOOL res=
+			::InitializeSynchronizationBarrier(
+				$<( cast_ref_unsafe</ü_RTL_BARRIER/>(b) ),
+				LONG(num_threads),
+				LONG(-1) );
+		halt if( res != 1 );
+	}
+}
+
+fn destroy_barrier( barrier_t &mut b ) unsafe
+{
+	unsafe( ::DeleteSynchronizationBarrier( $<( cast_ref_unsafe</ü_RTL_BARRIER/>(b) ) ) );
+}
+
+fn wait_barrier( barrier_t &mut b ) unsafe
+{
+	unsafe( ::EnterSynchronizationBarrier( $<( cast_ref_unsafe</ü_RTL_BARRIER/>(b) ), DWORD(0) ) );
+}
+
+} // namespace barrier_impl
+
+} // namespace ust

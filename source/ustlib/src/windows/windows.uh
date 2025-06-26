@@ -9,6 +9,8 @@ fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShar
 fn nomangle CreateThread( LPSECURITY_ATTRIBUTES lpThreadAttributes, SIZE_T dwStackSize, ( fn( LPVOID arg0 ) unsafe call_conv( "system" ) : DWORD ) lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle DeleteFileW( LPCWSTR lpFileName ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle DeleteSynchronizationBarrier( LPSYNCHRONIZATION_BARRIER lpBarrier ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle EnterSynchronizationBarrier( LPSYNCHRONIZATION_BARRIER lpBarrier, DWORD dwFlags ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle FindClose( HANDLE hFindFile ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle FindFirstFileW( LPCWSTR lpFileName, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle FindNextFileW( HANDLE hFindFile, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : BOOL;
@@ -22,6 +24,7 @@ fn nomangle GetFileInformationByHandleEx( HANDLE hFile, FILE_INFO_BY_HANDLE_CLAS
 fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetSystemTimePreciseAsFileTime( LPFILETIME lpSystemTimeAsFileTime ) unsafe call_conv( "system" ) : void;
+fn nomangle InitializeSynchronizationBarrier( LPSYNCHRONIZATION_BARRIER lpBarrier, LONG lTotalThreads, LONG lSpinCount ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle InitializeSRWLock( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle MoveFileExW( LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, DWORD dwFlags ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
@@ -88,6 +91,15 @@ struct ü_OVERLAPPED ordered
 	ü_anon_record_190 ü_anon_field_636;
 
 	HANDLE hEvent;
+}
+
+struct ü_RTL_BARRIER ordered
+{
+	DWORD Reserved1;
+	DWORD Reserved2;
+	[ ULONG_PTR, 2u ] Reserved3;
+	DWORD Reserved4;
+	DWORD Reserved5;
 }
 
 struct ü_RTL_SRWLOCK ordered
@@ -173,6 +185,7 @@ type FILE_INFO_BY_HANDLE_CLASS = ü_FILE_INFO_BY_HANDLE_CLASS;
 type FILETIME = ü_FILETIME;
 type HANDLE = $(byte8);
 type LARGE_INTEGER = ü_LARGE_INTEGER;
+type LONG = i32;
 type LPBY_HANDLE_FILE_INFORMATION = $(ü_BY_HANDLE_FILE_INFORMATION);
 type LPCVOID = $(byte8);
 type LPCWSTR = $(WCHAR);
@@ -180,11 +193,13 @@ type LPDWORD = $(DWORD);
 type LPFILETIME = $(ü_FILETIME);
 type LPOVERLAPPED = $(ü_OVERLAPPED);
 type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
+type LPSYNCHRONIZATION_BARRIER = PRTL_BARRIER;
 type LPVOID = $(byte8);
 type LPWIN32_FIND_DATAW = $(ü_WIN32_FIND_DATAW);
 type LPWSTR = $(WCHAR);
 type OVERLAPPED = ü_OVERLAPPED;
 type PLARGE_INTEGER = $(LARGE_INTEGER);
+type PRTL_BARRIER = $(ü_RTL_BARRIER);
 type PSRWLOCK = $(RTL_SRWLOCK);
 type PVOID = $(byte8);
 type RTL_SRWLOCK = ü_RTL_SRWLOCK;
