@@ -1,0 +1,60 @@
+//##success_test
+import "../imports/semaphore.u"
+import "../imports/shared_ptr_mt.u"
+import "../imports/thread.u"
+import "../imports/vector.u"
+
+
+fn nomangle main() : i32
+{
+	// Use semaphores to create interleaving even-odd threads execution.
+
+	auto vec_ptr= ust::make_shared_ptr_mt( ust::vector</u32/>() );
+
+	var u32 count= 1024u;
+
+	var ust::semaphore sem_even(1u); // Set initial value to 1 to start even thread without waiting.
+	var ust::semaphore sem_odd(0u);
+
+	auto mut t_odd= ust::make_thread(
+		lambda[&]()
+		{
+			for( auto mut i= 1u; i < count; i+= 2u )
+			{
+				sem_odd.acquire();
+				with( mut lock : vec_ptr.lock_mut() )
+				{
+					lock.deref().push_back(i);
+				}
+				sem_even.release();
+			}
+		} );
+
+	auto mut t_even= ust::make_thread(
+		lambda[&]()
+		{
+			for( auto mut i= 0u; i < count; i+= 2u )
+			{
+				sem_even.acquire();
+				with( mut lock : vec_ptr.lock_mut() )
+				{
+					lock.deref().push_back(i);
+				}
+				sem_odd.release();
+			}
+		} );
+
+	move(t_odd).join();
+	move(t_even).join();
+
+	// Result vector should contain elements in exact order.
+	var u32 mut cur= 0u;
+	foreach( v : vec_ptr.lock_imut().deref() )
+	{
+		halt if( v != cur );
+		++cur;
+	}
+	halt if( cur != count );
+
+	return 0;
+}
