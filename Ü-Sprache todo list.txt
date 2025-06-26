@@ -114,6 +114,8 @@ Standart library:
 *) More binary search functions - index of last element less than given (or equal to it), index of given element,
 	range partition
 *) Adapter-container for binary heap (min_heap/max_heap)
+*) Shared barrier - copyable variation of the barrier class with reference counting. It should be more effective
+	compared to "shared_ptr_mut</barrier/>".
 
 Compiler:
 *) Fix possible overflows in numeric literals
