@@ -9,7 +9,7 @@ namespace barrier_impl
 
 // Opaque struct representing OS-specific barrier object.
 // It's not relocable!
-type barrier_t= [ byte64, 4 ]; // _RTL_BARRIER on Windows.
+type barrier_t= [ byte64, 4 ]; // _RTL_BARRIER on Windows, pthread_barrier_t on Unix.
 
 // Initialize barrier at given address for given number of threads.
 fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe;
