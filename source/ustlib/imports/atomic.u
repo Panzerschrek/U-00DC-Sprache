@@ -215,7 +215,7 @@ fn atomic_swap( $(T) &mut addr, $(T) x ) : $(T)
 		unsafe
 		{
 			// Cast reference to pointer type to reference to byte type. It should be fine both times.
-			var byte32 res= ust_atomic_swap_byte64_impl( cast_ref_unsafe</byte32/>( addr ), cast_ref_unsafe</byte32/>(x) );
+			var byte32 res= ust_atomic_swap_byte32_impl( cast_ref_unsafe</byte32/>( addr ), cast_ref_unsafe</byte32/>(x) );
 			// Cast reference to byte type to reference to pointer type. It should be fine.
 			return cast_ref_unsafe</ $(T) />( res );
 		}
