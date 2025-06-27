@@ -148,6 +148,16 @@ fn atomic_swap( size_type &mut addr, size_type x ) : size_type
 	return ust_atomic_swap_size_type_impl( addr, x );
 }
 
+fn atomic_swap( f32 &mut addr, f32 x ) : f32
+{
+	return ust_atomic_swap_f32_impl( addr, x );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_swap( f64 &mut addr, f64 x ) : f64
+{
+	return ust_atomic_swap_f64_impl( addr, x );
+}
+
 fn atomic_swap( byte32 &mut addr, byte32 x ) : byte32
 {
 	return ust_atomic_swap_byte32_impl( addr, x );
@@ -337,6 +347,8 @@ fn nomangle ust_atomic_swap_i32_impl( i32 &mut addr, i32 x ) : i32;
 fn nomangle ust_atomic_swap_u32_impl( u32 &mut addr, u32 x ) : u32;
 fn nomangle ust_atomic_swap_ssize_type_impl( ssize_type &mut addr, ssize_type x ) : ssize_type;
 fn nomangle ust_atomic_swap_size_type_impl( size_type &mut addr, size_type x ) : size_type;
+fn nomangle ust_atomic_swap_f32_impl( f32 &mut addr, f32 x ) : f32;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_swap_f64_impl( f64 &mut addr, f64 x ) : f64;
 fn nomangle ust_atomic_swap_byte32_impl( byte32 &mut addr, byte32 x ) : byte32;
 fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_swap_byte64_impl( byte64 &mut addr, byte64 x ) : byte64;
 

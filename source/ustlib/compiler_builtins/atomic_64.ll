@@ -28,6 +28,13 @@ define linkonce_odr hidden void @ust_atomic_write_byte64_impl( i64* %addr, i64 %
 	ret void
 }
 
+$ust_atomic_swap_f64_impl = comdat any
+define linkonce_odr hidden double @ust_atomic_swap_f64_impl( double* %addr, double %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg float* %addr, double %x seq_cst
+	ret double %1
+}
+
 $ust_atomic_swap_byte64_impl = comdat any
 define linkonce_odr hidden i64 @ust_atomic_swap_byte64_impl( i64* %addr, i64 %x ) unnamed_addr comdat
 {
