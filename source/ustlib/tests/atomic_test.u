@@ -21,7 +21,7 @@ fn nomangle main() : i32
 		ust::atomic_write( x, -12345.6f );
 		halt if( ust::atomic_read( x ) != -12345.6f );
 	}
-	static_if( typeinfo</size_type/>.size_of == 8s )
+	static_if( c_enable_64bit_atomics )
 	{
 		var f64 mut x= -464333.3468;
 		halt if( ust::atomic_read( x ) != -464333.3468 );
@@ -67,7 +67,7 @@ fn nomangle main() : i32
 		halt if( ust::atomic_swap( x, -6437733.125f ) != 1.37e24f );
 		halt if( ust::atomic_read( x ) != -6437733.125f );
 	}
-	static_if( typeinfo</size_type/>.size_of == 8s )
+	static_if( c_enable_64bit_atomics )
 	{
 		var f64 mut x= 0.0;
 		halt if( ust::atomic_swap( x, 12453.0363 ) != 0.0 );
@@ -83,7 +83,7 @@ fn nomangle main() : i32
 		halt if( ust::atomic_swap( x, byte32(32u) ) != byte32(1789u) );
 		halt if( ust::atomic_read( x ) != byte32(32u) );
 	}
-	static_if( typeinfo</size_type/>.size_of == 8s )
+	static_if( c_enable_64bit_atomics )
 	{
 		var byte64 mut x(0u64);
 		halt if( ust::atomic_swap( x, byte64(83424u64) ) != byte64(0u64) );
@@ -204,14 +204,14 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read(x) != byte32(521) );
 		halt if( ust::atomic_read(y) != byte32(521) );
 	}
-	static_if( typeinfo</size_type/>.size_of == 8s )
+	static_if( c_enable_64bit_atomics )
 	{
 		var byte64 mut x= byte64(14u64), mut y= byte64(14u64);
 		halt if( ust::atomic_compare_exchange_strong( x, y, byte64(85u64) ) != true );
 		halt if( ust::atomic_read(x) != byte64(85u64) );
 		halt if( ust::atomic_read(y) != byte64(14u64) );
 	}
-	static_if( typeinfo</size_type/>.size_of == 8s )
+	static_if( c_enable_64bit_atomics )
 	{
 		var byte64 mut x= byte64(521u64), mut y= byte64(66u64);
 		halt if( ust::atomic_compare_exchange_strong( x, y, byte64(55524u64) ) != false );
@@ -262,7 +262,7 @@ fn nomangle main() : i32
 		ust::atomic_write( b, byte32(54) );
 		halt if( ust::atomic_read( b ) != byte32(54) );
 	}
-	static_if( typeinfo</size_type/>.size_of == 8s )
+	static_if( c_enable_64bit_atomics )
 	{
 		var byte64 mut b(12345678910u64);
 		halt if( ust::atomic_read( b ) != byte64(12345678910u64) );
