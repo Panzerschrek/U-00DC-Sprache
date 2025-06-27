@@ -57,7 +57,7 @@ std::optional<Message> MessageQueue::TryPop( const std::chrono::milliseconds wai
 
 	// Check if queue is non-empty again.
 	// It may be non-empty if new message was pushed.
-	// But is also may be empty if timeout has expired or in case of spurious wakeup.
+	// But is also may be empty if timeout has expired or in case of spurious wakeup or if message queue was closed.
 	if( !queue_.empty() )
 	{
 		Message result= queue_.front();
@@ -71,7 +71,7 @@ std::optional<Message> MessageQueue::TryPop( const std::chrono::milliseconds wai
 void  MessageQueue::Close()
 {
 	closed_.store(true);
-	condition_variable_.notify_one();
+	condition_variable_.notify_all();
 }
 
 bool MessageQueue::IsClosed() const
