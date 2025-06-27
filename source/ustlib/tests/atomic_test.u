@@ -192,6 +192,34 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read(x) != 521u );
 		halt if( ust::atomic_read(y) != 521u );
 	}
+	static_if( c_enable_64bit_atomics )
+	{
+		var i64 mut x= 22i64, mut y= 22i64;
+		halt if( ust::atomic_compare_exchange_strong( x, y, 7i64 ) != true );
+		halt if( ust::atomic_read(x) !=  7i64 );
+		halt if( ust::atomic_read(y) != 22i64 );
+	}
+	static_if( c_enable_64bit_atomics )
+	{
+		var i64 mut x= 111i64, mut y= 77i64;
+		halt if( ust::atomic_compare_exchange_strong( x, y, 7i64 ) != false );
+		halt if( ust::atomic_read(x) != 111i64 );
+		halt if( ust::atomic_read(y) != 111i64 );
+	}
+	static_if( c_enable_64bit_atomics )
+	{
+		var u64 mut x= 14u64, mut y= 14u64;
+		halt if( ust::atomic_compare_exchange_strong( x, y, 85u64 ) != true );
+		halt if( ust::atomic_read(x) != 85u64 );
+		halt if( ust::atomic_read(y) != 14u64 );
+	}
+	static_if( c_enable_64bit_atomics )
+	{
+		var u64 mut x= 521u64, mut y= 66u64;
+		halt if( ust::atomic_compare_exchange_strong( x, y, 55524u64 ) != false );
+		halt if( ust::atomic_read(x) != 521u64 );
+		halt if( ust::atomic_read(y) != 521u64 );
+	}
 	{
 		var byte32 mut x= byte32(14), mut y= byte32(14);
 		halt if( ust::atomic_compare_exchange_strong( x, y, byte32(85) ) != true );

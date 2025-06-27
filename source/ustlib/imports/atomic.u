@@ -269,6 +269,16 @@ fn nodiscard atomic_compare_exchange_strong( u32 &mut dst, u32 &mut expected, u3
 	return ust_atomic_compare_exchange_strong_u32_impl( dst, expected, new );
 }
 
+fn nodiscard enable_if( c_enable_64bit_atomics ) atomic_compare_exchange_strong( i64 &mut dst, i64 &mut expected, i64 new ) : bool
+{
+	return ust_atomic_compare_exchange_strong_i64_impl( dst, expected, new );
+}
+
+fn nodiscard enable_if( c_enable_64bit_atomics ) atomic_compare_exchange_strong( u64 &mut dst, u64 &mut expected, u64 new ) : bool
+{
+	return ust_atomic_compare_exchange_strong_u64_impl( dst, expected, new );
+}
+
 fn nodiscard atomic_compare_exchange_strong( ssize_type &mut dst, ssize_type &mut expected, ssize_type new ) : bool
 {
 	return ust_atomic_compare_exchange_strong_ssize_type_impl( dst, expected, new );
@@ -319,6 +329,16 @@ fn nodiscard atomic_compare_exchange_weak( i32 &mut dst, i32 &mut expected, i32 
 fn nodiscard atomic_compare_exchange_weak( u32 &mut dst, u32 &mut expected, u32 new ) : bool
 {
 	return ust_atomic_compare_exchange_weak_u32_impl( dst, expected, new );
+}
+
+fn nodiscard enable_if( c_enable_64bit_atomics ) atomic_compare_exchange_weak( i64 &mut dst, i64 &mut expected, i64 new ) : bool
+{
+	return ust_atomic_compare_exchange_weak_i64_impl( dst, expected, new );
+}
+
+fn nodiscard enable_if( c_enable_64bit_atomics ) atomic_compare_exchange_weak( u64 &mut dst, u64 &mut expected, u64 new ) : bool
+{
+	return ust_atomic_compare_exchange_weak_u64_impl( dst, expected, new );
 }
 
 fn nodiscard atomic_compare_exchange_weak( ssize_type &mut dst, ssize_type &mut expected, ssize_type new ) : bool
@@ -422,6 +442,8 @@ fn nomangle ust_atomic_xor_size_type_impl( size_type &mut x, size_type y ) : siz
 
 fn nomangle ust_atomic_compare_exchange_strong_i32_impl( i32 &mut dst, i32 &mut expected, i32 new ) : bool;
 fn nomangle ust_atomic_compare_exchange_strong_u32_impl( u32 &mut dst, u32 &mut expected, u32 new ) : bool;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_compare_exchange_strong_i64_impl( i64 &mut dst, i64 &mut expected, i64 new ) : bool;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_compare_exchange_strong_u64_impl( u64 &mut dst, u64 &mut expected, u64 new ) : bool;
 fn nomangle ust_atomic_compare_exchange_strong_ssize_type_impl( ssize_type &mut dst, ssize_type &mut expected, ssize_type new ) : bool;
 fn nomangle ust_atomic_compare_exchange_strong_size_type_impl( size_type &mut dst, size_type &mut expected, size_type new ) : bool;
 fn nomangle ust_atomic_compare_exchange_strong_byte32_impl( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool;
@@ -429,6 +451,8 @@ fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_compare_exchange_stro
 
 fn nomangle ust_atomic_compare_exchange_weak_i32_impl( i32 &mut dst, i32 &mut expected, i32 new ) : bool;
 fn nomangle ust_atomic_compare_exchange_weak_u32_impl( u32 &mut dst, u32 &mut expected, u32 new ) : bool;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_compare_exchange_weak_i64_impl( i64 &mut dst, i64 &mut expected, i64 new ) : bool;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_compare_exchange_weak_u64_impl( u64 &mut dst, u64 &mut expected, u64 new ) : bool;
 fn nomangle ust_atomic_compare_exchange_weak_ssize_type_impl( ssize_type &mut dst, ssize_type &mut expected, ssize_type new ) : bool;
 fn nomangle ust_atomic_compare_exchange_weak_size_type_impl( size_type &mut dst, size_type &mut expected, size_type new ) : bool;
 fn nomangle ust_atomic_compare_exchange_weak_byte32_impl( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool;
