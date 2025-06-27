@@ -108,6 +108,61 @@ fn atomic_write( $(T) &mut addr, $(T) x )
 	}
 }
 
+fn atomic_swap( i32 &mut addr, i32 x ) : i32
+{
+	return ust_atomic_swap_i32_impl( addr, x );
+}
+
+fn atomic_swap( u32 &mut addr, u32 x ) : u32
+{
+	return ust_atomic_swap_u32_impl( addr, x );
+}
+
+fn atomic_swap( ssize_type &mut addr, ssize_type x ) : ssize_type
+{
+	return ust_atomic_swap_ssize_type_impl( addr, x );
+}
+
+fn atomic_swap( size_type &mut addr, size_type x ) : size_type
+{
+	return ust_atomic_swap_size_type_impl( addr, x );
+}
+
+fn atomic_swap( byte32 &mut addr, byte32 x ) : byte32
+{
+	return ust_atomic_swap_byte32_impl( addr, x );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_swap( byte64 &mut addr, byte64 x ) : byte64
+{
+	return ust_atomic_swap_byte64_impl( addr, x );
+}
+
+template</type T/>
+fn atomic_swap( $(T) &mut addr, $(T) x ) : $(T)
+{
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		unsafe
+		{
+			// Cast reference to pointer type to reference to byte type. It should be fine both times.
+			var byte64 res= ust_atomic_swap_byte64_impl( cast_ref_unsafe</byte64/>( addr ), cast_ref_unsafe</byte64/>(x) );
+			// Cast reference to byte type to reference to pointer type. It should be fine.
+			return cast_ref_unsafe</ $(T) />( res );
+		}
+	}
+	else
+	{
+		unsafe
+		{
+			// Cast reference to pointer type to reference to byte type. It should be fine both times.
+			var byte32 res= ust_atomic_swap_byte64_impl( cast_ref_unsafe</byte32/>( addr ), cast_ref_unsafe</byte32/>(x) );
+			// Cast reference to byte type to reference to pointer type. It should be fine.
+			return cast_ref_unsafe</ $(T) />( res );
+		}
+	}
+}
+
 // Functions returns old value of 'x'.
 fn atomic_add( i32 &mut x, i32 y ) : i32 { return ust_atomic_add_i32_impl( x, y ); }
 fn atomic_sub( i32 &mut x, i32 y ) : i32 { return atomic_add( x, -y ); }
@@ -253,6 +308,13 @@ fn nomangle ust_atomic_write_ssize_type_impl( ssize_type &mut addr, ssize_type x
 fn nomangle ust_atomic_write_size_type_impl( size_type &mut addr, size_type x );
 fn nomangle ust_atomic_write_byte32_impl( byte32 &mut addr, byte32 x );
 fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_write_byte64_impl( byte64 &mut addr, byte64 x );
+
+fn nomangle ust_atomic_swap_i32_impl( i32 &mut addr, i32 x ) : i32;
+fn nomangle ust_atomic_swap_u32_impl( u32 &mut addr, u32 x ) : u32;
+fn nomangle ust_atomic_swap_ssize_type_impl( ssize_type &mut addr, ssize_type x ) : ssize_type;
+fn nomangle ust_atomic_swap_size_type_impl( size_type &mut addr, size_type x ) : size_type;
+fn nomangle ust_atomic_swap_byte32_impl( byte32 &mut addr, byte32 x ) : byte32;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_swap_byte64_impl( byte64 &mut addr, byte64 x ) : byte64;
 
 fn nomangle ust_atomic_add_i32_impl( i32 &mut x, i32 y ) : i32;
 fn nomangle ust_atomic_add_u32_impl( u32 &mut x, u32 y ) : u32;

@@ -14,6 +14,13 @@ define linkonce_odr hidden void @ust_atomic_write_byte64_impl( i64* %addr, i64 %
 	ret void
 }
 
+$ust_atomic_swap_byte64_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_swap_byte64_impl( i64* %addr, i64 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i64* %addr, i64 %x seq_cst
+	ret i64 %1
+}
+
 $ust_atomic_compare_exchange_strong_byte64_impl = comdat any
 define linkonce_odr hidden i1 @ust_atomic_compare_exchange_strong_byte64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
 {
@@ -70,6 +77,20 @@ define linkonce_odr hidden void @ust_atomic_write_size_type_impl( i64* %addr, i6
 {
 	store atomic volatile i64 %x, i64* %addr seq_cst, align 8
 	ret void
+}
+
+$ust_atomic_swap_ssize_type_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_swap_ssize_type_impl( i64* %addr, i64 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i64* %addr, i64 %x seq_cst
+	ret i64 %1
+}
+
+$ust_atomic_swap_size_type_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_swap_size_type_impl( i64* %addr, i64 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i64* %addr, i64 %x seq_cst
+	ret i64 %1
 }
 
 $ust_atomic_add_ssize_type_impl = comdat any

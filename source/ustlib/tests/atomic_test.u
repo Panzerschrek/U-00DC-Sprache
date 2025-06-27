@@ -16,6 +16,61 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read( x ) != 99999999u );
 	}
 	{
+		var i32 mut x= 0;
+		halt if( ust::atomic_swap( x, 77 ) != 0 );
+		halt if( ust::atomic_swap( x, 451 ) != 77 );
+		halt if( ust::atomic_swap( x, -75 ) != 451 );
+		halt if( ust::atomic_swap( x, 3 ) != -75 );
+		halt if( ust::atomic_read( x ) != 3 );
+	}
+	{
+		var u32 mut x= 0u;
+		halt if( ust::atomic_swap( x, 741u ) != 0u );
+		halt if( ust::atomic_swap( x, 66679u ) != 741u );
+		halt if( ust::atomic_swap( x, 1u ) != 66679u );
+		halt if( ust::atomic_swap( x, 0u ) != 1u );
+		halt if( ust::atomic_swap( x, 894444u ) != 0u );
+		halt if( ust::atomic_read( x ) != 894444u );
+	}
+	{
+		var ssize_type mut x(0);
+		halt if( ust::atomic_swap( x, ssize_type(722) ) != ssize_type(0) );
+		halt if( ust::atomic_swap( x, ssize_type(11) ) != ssize_type(722) );
+		halt if( ust::atomic_swap( x, ssize_type(843356) ) != ssize_type(11) );
+		halt if( ust::atomic_read( x ) != ssize_type(843356) );
+	}
+	{
+		var size_type mut x= 0s;
+		halt if( ust::atomic_swap( x, 37s ) != 0s );
+		halt if( ust::atomic_swap( x, 986s ) != 37s );
+		halt if( ust::atomic_swap( x, 7776s ) != 986s );
+		halt if( ust::atomic_read( x ) != 7776s );
+	}
+	{
+		var byte32 mut x(0u);
+		halt if( ust::atomic_swap( x, byte32(78u) ) != byte32(0u) );
+		halt if( ust::atomic_swap( x, byte32(1789u) ) != byte32(78u) );
+		halt if( ust::atomic_swap( x, byte32(32u) ) != byte32(1789u) );
+		halt if( ust::atomic_read( x ) != byte32(32u) );
+	}
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		var byte64 mut x(0u64);
+		halt if( ust::atomic_swap( x, byte64(83424u64) ) != byte64(0u64) );
+		halt if( ust::atomic_swap( x, byte64(123563474344u) ) != byte64(83424u64) );
+		halt if( ust::atomic_swap( x, byte64(9742312u64) ) != byte64(123563474344u) );
+		halt if( ust::atomic_read( x ) != byte64(9742312u64) );
+	}
+	{
+		var i32 mut x= 0, mut y= 0, mut z= 0, mut w= 0;
+		var $(i32) null= zero_init, mut ptr= null;
+		halt if( ust::atomic_swap( ptr, $<(x) ) != null );
+		halt if( ust::atomic_swap( ptr, $<(w) ) != $<(x) );
+		halt if( ust::atomic_swap( ptr, $<(y) ) != $<(w) );
+		halt if( ust::atomic_swap( ptr, $<(z) ) != $<(y) );
+		halt if( ust::atomic_read( ptr ) != $<(z) );
+	}
+	{
 		var u32 mut x= 0u;
 		halt if( ust::atomic_add( x, 56u ) !=  0u );
 		halt if( ust::atomic_sub( x,  6u ) != 56u );

@@ -42,6 +42,27 @@ define linkonce_odr hidden void @ust_atomic_write_byte32_impl( i32* %addr, i32 %
 	ret void
 }
 
+$ust_atomic_swap_i32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_swap_i32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i32* %addr, i32 %x seq_cst
+	ret i32 %1
+}
+
+$ust_atomic_swap_u32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_swap_u32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i32* %addr, i32 %x seq_cst
+	ret i32 %1
+}
+
+$ust_atomic_swap_byte32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_swap_byte32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i32* %addr, i32 %x seq_cst
+	ret i32 %1
+}
+
 $ust_atomic_add_i32_impl = comdat any
 define linkonce_odr hidden i32 @ust_atomic_add_i32_impl( i32* %x, i32 %y ) unnamed_addr comdat
 {
