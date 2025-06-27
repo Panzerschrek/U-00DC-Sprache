@@ -116,6 +116,28 @@ fn nomangle main() : i32
 		halt if( ust::atomic_dec( x ) != - 9 );
 		halt if( ust::atomic_read(x) != -10 );
 	}
+	static_if( c_enable_64bit_atomics )
+	{
+		var u64 mut x= 0u64;
+		halt if( ust::atomic_add( x, 56u64 ) !=  0u64 );
+		halt if( ust::atomic_sub( x,  6u64 ) != 56u64 );
+		halt if( ust::atomic_inc( x ) != 50u64 );
+		halt if( ust::atomic_dec( x ) != 51u64 );
+		halt if( ust::atomic_read(x) != 50u64 );
+		halt if( ust::atomic_add( x, 6464647547474u64 ) != 50u64 );
+		halt if( ust::atomic_read(x) != 6464647547524u64 );
+	}
+	static_if( c_enable_64bit_atomics )
+	{
+		var i64 mut x= 0i64;
+		halt if( ust::atomic_add( x, 56i64 ) != 0i64 );
+		halt if( ust::atomic_sub( x, 66i64 ) != 56i64 );
+		halt if( ust::atomic_inc( x ) != -10i64 );
+		halt if( ust::atomic_dec( x ) != - 9i64 );
+		halt if( ust::atomic_read(x) != -10i64 );
+		halt if( ust::atomic_add( x, 6433743111727i64 ) != -10i64 );
+		halt if( ust::atomic_read(x) != 6433743111717i64 );
+	}
 	{
 		var size_type mut x= 0s;
 		halt if( ust::atomic_add( x, 56s ) !=  0s );

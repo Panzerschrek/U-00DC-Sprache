@@ -216,6 +216,62 @@ define linkonce_odr hidden i64 @ust_atomic_swap_size_type_impl( i64* %addr, i64 
 	ret i64 %1
 }
 
+$ust_atomic_add_i64_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_add_i64_impl( i64* %x, i64 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile add i64* %x, i64 %y seq_cst
+	ret i64 %1
+}
+
+$ust_atomic_add_u64_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_add_u64_impl( i64* %x, i64 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile add i64* %x, i64 %y seq_cst
+	ret i64 %1
+}
+
+$ust_atomic_and_i64_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_and_i64_impl( i64* %x, i64 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile and i64* %x, i64 %y seq_cst
+	ret i64 %1
+}
+
+$ust_atomic_and_u64_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_and_u64_impl( i64* %x, i64 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile and i64* %x, i64 %y seq_cst
+	ret i64 %1
+}
+
+$ust_atomic_or_i64_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_or_i64_impl( i64* %x, i64 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile or i64* %x, i64 %y seq_cst
+	ret i64 %1
+}
+
+$ust_atomic_or_u64_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_or_u64_impl( i64* %x, i64 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile or i64* %x, i64 %y seq_cst
+	ret i64 %1
+}
+
+$ust_atomic_xor_i64_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_xor_i64_impl( i64* %x, i64 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xor i64* %x, i64 %y seq_cst
+	ret i64 %1
+}
+
+$ust_atomic_xor_u64_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_xor_u64_impl( i64* %x, i64 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xor i64* %x, i64 %y seq_cst
+	ret i64 %1
+}
+
 $ust_atomic_add_ssize_type_impl = comdat any
 define linkonce_odr hidden i64 @ust_atomic_add_ssize_type_impl( i64* %x, i64 %y ) unnamed_addr comdat
 {

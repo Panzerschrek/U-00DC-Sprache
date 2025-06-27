@@ -6,7 +6,6 @@ namespace ust
 // 64-bit atomic operations are supported only on 64-bit platforms.
 // But operations on ssize_type and size_type are possible, which are 64-bit on 64-bit platforms.
 // Operations on raw pointer types are available on all platforms.
-// Operations on "byte64" are available only on 64-bit platforms.
 
 fn atomic_read( i32& addr ) : i32
 {
@@ -240,6 +239,22 @@ fn atomic_and( u32 &mut x, u32 y ) : u32 { return ust_atomic_and_u32_impl( x, y 
 fn atomic_or( u32 &mut x, u32 y ) : u32 { return ust_atomic_or_u32_impl( x, y ); }
 fn atomic_xor( u32 &mut x, u32 y ) : u32 { return ust_atomic_xor_u32_impl( x, y ); }
 
+fn enable_if( c_enable_64bit_atomics ) atomic_add( i64 &mut x, i64 y ) : i64 { return ust_atomic_add_i64_impl( x, y ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_sub( i64 &mut x, i64 y ) : i64 { return atomic_add( x, -y ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_inc( i64 &mut x ) : i64 { return atomic_add( x,  1i64 ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_dec( i64 &mut x ) : i64 { return atomic_add( x, -1i64 ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_and( i64 &mut x, i64 y ) : i64 { return ust_atomic_and_i64_impl( x, y ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_or( i64 &mut x, i64 y ) : i64 { return ust_atomic_or_i64_impl( x, y ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_xor( i64 &mut x, i64 y ) : i64 { return ust_atomic_xor_i64_impl( x, y ); }
+
+fn enable_if( c_enable_64bit_atomics ) atomic_add( u64 &mut x, u64 y ) : u64 { return ust_atomic_add_u64_impl( x, y ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_sub( u64 &mut x, u64 y ) : u64 { return atomic_add( x, -y ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_inc( u64 &mut x ) : u64 { return atomic_add( x,  1u64 ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_dec( u64 &mut x ) : u64 { return atomic_add( x, ~0u64 ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_and( u64 &mut x, u64 y ) : u64 { return ust_atomic_and_u64_impl( x, y ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_or( u64 &mut x, u64 y ) : u64 { return ust_atomic_or_u64_impl( x, y ); }
+fn enable_if( c_enable_64bit_atomics ) atomic_xor( u64 &mut x, u64 y ) : u64 { return ust_atomic_xor_u64_impl( x, y ); }
+
 fn atomic_add( ssize_type &mut x, ssize_type y ) : ssize_type { return ust_atomic_add_ssize_type_impl( x, y ); }
 fn atomic_sub( ssize_type &mut x, ssize_type y ) : ssize_type { return atomic_add( x, -y ); }
 fn atomic_inc( ssize_type &mut x ) : ssize_type { return atomic_add( x, ssize_type(1) ); }
@@ -422,21 +437,29 @@ fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_swap_byte64_impl( byt
 
 fn nomangle ust_atomic_add_i32_impl( i32 &mut x, i32 y ) : i32;
 fn nomangle ust_atomic_add_u32_impl( u32 &mut x, u32 y ) : u32;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_add_i64_impl( i64 &mut x, i64 y ) : i64;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_add_u64_impl( u64 &mut x, u64 y ) : u64;
 fn nomangle ust_atomic_add_ssize_type_impl( ssize_type &mut x, ssize_type y ) : ssize_type;
 fn nomangle ust_atomic_add_size_type_impl( size_type &mut x, size_type y ) : size_type;
 
 fn nomangle ust_atomic_and_i32_impl( i32 &mut x, i32 y ) : i32;
 fn nomangle ust_atomic_and_u32_impl( u32 &mut x, u32 y ) : u32;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_and_i64_impl( i64 &mut x, i64 y ) : i64;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_and_u64_impl( u64 &mut x, u64 y ) : u64;
 fn nomangle ust_atomic_and_ssize_type_impl( ssize_type &mut x, ssize_type y ) : ssize_type;
 fn nomangle ust_atomic_and_size_type_impl( size_type &mut x, size_type y ) : size_type;
 
 fn nomangle ust_atomic_or_i32_impl( i32 &mut x, i32 y ) : i32;
 fn nomangle ust_atomic_or_u32_impl( u32 &mut x, u32 y ) : u32;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_or_i64_impl( i64 &mut x, i64 y ) : i64;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_or_u64_impl( u64 &mut x, u64 y ) : u64;
 fn nomangle ust_atomic_or_ssize_type_impl( ssize_type &mut x, ssize_type y ) : ssize_type;
 fn nomangle ust_atomic_or_size_type_impl( size_type &mut x, size_type y ) : size_type;
 
 fn nomangle ust_atomic_xor_i32_impl( i32 &mut x, i32 y ) : i32;
 fn nomangle ust_atomic_xor_u32_impl( u32 &mut x, u32 y ) : u32;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_xor_i64_impl( i64 &mut x, i64 y ) : i64;
+fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_xor_u64_impl( u64 &mut x, u64 y ) : u64;
 fn nomangle ust_atomic_xor_ssize_type_impl( ssize_type &mut x, ssize_type y ) : ssize_type;
 fn nomangle ust_atomic_xor_size_type_impl( size_type &mut x, size_type y ) : size_type;
 
