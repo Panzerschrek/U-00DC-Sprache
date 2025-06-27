@@ -16,6 +16,19 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read( x ) != 99999999u );
 	}
 	{
+		var f32 mut x= 0.67f;
+		halt if( ust::atomic_read( x ) != 0.67f );
+		ust::atomic_write( x, -12345.6f );
+		halt if( ust::atomic_read( x ) != -12345.6f );
+	}
+	static_if( typeinfo</size_type/>.size_of == 8s )
+	{
+		var f64 mut x= -464333.3468;
+		halt if( ust::atomic_read( x ) != -464333.3468 );
+		ust::atomic_write( x, 0.06537854 );
+		halt if( ust::atomic_read( x ) != 0.06537854 );
+	}
+	{
 		var i32 mut x= 0;
 		halt if( ust::atomic_swap( x, 77 ) != 0 );
 		halt if( ust::atomic_swap( x, 451 ) != 77 );

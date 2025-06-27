@@ -1,10 +1,24 @@
 ; Use strictest memory order - "seq_cst" for all atomic operations.
 
+$ust_atomic_read_f64_impl = comdat any
+define linkonce_odr hidden double @ust_atomic_read_f64_impl( double* %addr ) unnamed_addr comdat
+{
+	%1= load atomic volatile double, double* %addr seq_cst, align 8
+	ret double %1
+}
+
 $ust_atomic_read_byte64_impl = comdat any
 define linkonce_odr hidden i64 @ust_atomic_read_byte64_impl( i64* %addr ) unnamed_addr comdat
 {
 	%1= load atomic volatile i64, i64* %addr seq_cst, align 8
 	ret i64 %1
+}
+
+$ust_atomic_write_f64_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_f64_impl( double* %addr, double %x ) unnamed_addr comdat
+{
+	store atomic volatile double %x, double* %addr seq_cst, align 8
+	ret void
 }
 
 $ust_atomic_write_byte64_impl = comdat any

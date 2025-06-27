@@ -28,6 +28,16 @@ fn atomic_read( size_type& addr ) : size_type
 	return ust_atomic_read_size_type_impl( addr );
 }
 
+fn atomic_read( f32& addr ) : f32
+{
+	return ust_atomic_read_f32_impl( addr );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_read( f64& addr ) : f64
+{
+	return ust_atomic_read_f64_impl( addr );
+}
+
 fn atomic_read( byte32& addr ) : byte32
 {
 	return ust_atomic_read_byte32_impl( addr );
@@ -71,6 +81,16 @@ fn atomic_write( i32 &mut addr, i32 x )
 fn atomic_write( u32 &mut addr, u32 x )
 {
 	return ust_atomic_write_u32_impl( addr, x );
+}
+
+fn atomic_write( f32 &mut addr, f32 x )
+{
+	return ust_atomic_write_f32_impl( addr, x );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_write( f64 &mut addr, f64 x )
+{
+	return ust_atomic_write_f64_impl( addr, x );
 }
 
 fn atomic_write( ssize_type &mut addr, ssize_type x )
@@ -299,6 +319,8 @@ fn nomangle ust_atomic_read_i32_impl( i32& addr ) : i32;
 fn nomangle ust_atomic_read_u32_impl( u32& addr ) : u32;
 fn nomangle ust_atomic_read_ssize_type_impl( ssize_type& addr ) : ssize_type;
 fn nomangle ust_atomic_read_size_type_impl( size_type& addr ) : size_type;
+fn nomangle ust_atomic_read_f32_impl( f32& addr ) : f32;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_read_f64_impl( f64& addr ) : f64;
 fn nomangle ust_atomic_read_byte32_impl( byte32& addr ) : byte32;
 fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_read_byte64_impl( byte64& addr ) : byte64;
 
@@ -306,6 +328,8 @@ fn nomangle ust_atomic_write_i32_impl( i32 &mut addr, i32 x );
 fn nomangle ust_atomic_write_u32_impl( u32 &mut addr, u32 x );
 fn nomangle ust_atomic_write_ssize_type_impl( ssize_type &mut addr, ssize_type x );
 fn nomangle ust_atomic_write_size_type_impl( size_type &mut addr, size_type x );
+fn nomangle ust_atomic_write_f32_impl( f32 &mut addr, f32 x );
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_write_f64_impl( f64 &mut addr, f64 x );
 fn nomangle ust_atomic_write_byte32_impl( byte32 &mut addr, byte32 x );
 fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_write_byte64_impl( byte64 &mut addr, byte64 x );
 
