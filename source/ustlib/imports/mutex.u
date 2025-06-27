@@ -1,0 +1,381 @@
+import "alloc.u"
+import "atomic.u"
+import "container_utils.u"
+import "mutex_impl.u"
+import "hash_apply.u"
+import "polymorph.u"
+
+namespace ust
+{
+
+template</ type T, bool is_nullable />
+class mutex_base
+{
+	static_assert( typeinfo</T/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
+
+	// It has no sense to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
+	// Use singlethreaded shared pointer instead.
+	static_assert( !non_sync</T/>, "using non_sync types inside multithreaded shared pointers is not allowed" );
+
+public:
+	// Default constructor. Exists only for nullable shared_ptr_mt.
+	fn enable_if(is_nullable) constructor()= default;
+
+	// Construct with value.
+	fn constructor( T mut value )
+	{
+		storage_= unsafe( storage_type( move(value) ) );
+	}
+
+	// Constructor for nullable ptr from non-nullable ptr.
+	fn enable_if( is_nullable ) conversion_constructor( mut this, mutex_base</T, false/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
+	{
+		unsafe
+		{
+			auto control_block_ptr= storage_.get_control_block_ptr();
+			atomic_inc( $>(control_block_ptr).use_count_total  );
+			atomic_inc( $>(control_block_ptr).use_count_strong );
+		}
+	}
+
+	// Copy constructor.
+	fn constructor( mut this, this_type &imut other )
+		( storage_= unsafe( other.get_storage() ) )
+	{
+		if( !empty() )
+		{
+			unsafe
+			{
+				auto control_block_ptr= storage_.get_control_block_ptr();
+				atomic_inc( $>(control_block_ptr).use_count_total  );
+				atomic_inc( $>(control_block_ptr).use_count_strong );
+			}
+		}
+	}
+
+	// Construct from shared_ptr_mt of compatible type.
+	template</ type U />
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
+	conversion_constructor( mut this, mutex_base</U, is_nullable/>& ptr )
+		( storage_= unsafe( storage_type( ptr.get_storage() ) ) )
+	{
+		if( !empty() )
+		{
+			unsafe
+			{
+				auto control_block_ptr= storage_.get_control_block_ptr();
+				atomic_inc( $>(control_block_ptr).use_count_total  );
+				atomic_inc( $>(control_block_ptr).use_count_strong );
+			}
+		}
+	}
+
+	fn destructor()
+	{
+		if( empty() ) { return; }
+		unsafe
+		{
+			auto control_block_ptr= storage_.get_control_block_ptr();
+
+			if( atomic_dec( $>(control_block_ptr).use_count_strong ) == 1u )
+			{
+				call_destructor( $>( storage_.get_value_ptr() ) );
+			}
+			if( atomic_dec( $>(control_block_ptr).use_count_total ) == 1u )
+			{
+				mutex_impl::destroy_mutex( $>(control_block_ptr).mutex );
+				// Free counter together with control_block_ptr allocated object.
+				memory_free( ptr_cast_to_byte8( control_block_ptr ) );
+			}
+		}
+	}
+
+	// Copy-assignment operator.
+	op=( mut this, this_type &imut other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= this_type(other);
+	}
+
+	fn enable_if(is_nullable) reset( mut this )
+	{
+		// Move value ot out "this", call destructor for it, construct default value in place of "this".
+		take(this);
+	}
+
+	fn reset( mut this, T mut value )
+	{
+		this= this_type( move(value) );
+	}
+
+	fn empty( this ) : bool
+	{
+		static_if( is_nullable )
+		{
+			return storage_.empty();
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	// Checked conversion to non-nullable from nullable.
+	fn enable_if(is_nullable) try_to_non_nullable( this ) : mutex_base</T, false/>
+	{
+		halt if(empty());
+
+		unsafe
+		{
+			auto control_block_ptr= storage_.get_control_block_ptr();
+
+			atomic_inc( $>(control_block_ptr).use_count_total  );
+			atomic_inc( $>(control_block_ptr).use_count_strong );
+			return mutex_base</T, false/>( storage_ );
+		}
+	}
+
+	// Lock operations.
+
+	fn enable_if(is_nullable) try_lock_mut( this ) : lock_mut_t  @( reference_notation::return_inner_references::param0 )
+	{
+		halt if( empty() );
+		return unsafe( lock_mut_unchecked() );
+	}
+
+	fn enable_if(!is_nullable) lock_mut( this ) : lock_mut_t @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( lock_mut_unchecked() );
+	}
+
+	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( lock_mut_t ( storage_ ) );
+	}
+
+	// Compare.
+
+	op==( this_type& l, this_type& r ) : bool
+	{
+		// Just compare stored pointers.
+		return unsafe( l.storage_.get_ptr() ) == unsafe( r.storage_.get_ptr() );
+	}
+
+	// Hashing.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// Just hash stored pointer value.
+		apply_value_to_hasher( hasher, unsafe( storage_.get_ptr() ) );
+	}
+
+public: // Methods for internal usage.
+
+	fn get_storage( this ) unsafe : storage_type
+	{
+		return storage_;
+	}
+
+	// Counter must be incremented before this constructor call.
+	fn constructor( storage_type storage ) unsafe
+		( storage_= storage )
+	{}
+
+private:
+	type this_type= mutex_base</ T, is_nullable />;
+	type storage_type= mutex_impl::shared_ptr_storage</T/>;
+	type lock_mut_t = mutex_impl::lock_mut </T/>;
+
+private:
+	storage_type storage_;
+}
+
+// All necessary type aliases.
+
+template</type T/> type mutex= mutex_base</T, false/>;
+template</type T/> type mutex_nullable= mutex_base</T, true/>;
+
+// Helper function for shared_ptr_mt construction.
+template</type T/>
+fn make_mutex( T mut value ) : shared_ptr_mt_mut</T/>
+{
+	return mutex</T/>( move(value) );
+}
+
+namespace mutex_impl
+{
+
+struct control_block
+{
+	u32 use_count_total;
+	u32 use_count_strong; // always <= use_count_total
+	mutex_impl::mutex_t mutex;
+}
+
+// This class is non_sync in order to avoid moving it into another thread.
+// It's necessary, since locking and unlocking should happen on the same thread.
+template</ type T />
+class lock_mut non_sync nodiscard
+{
+public:
+	fn constructor( mut this, storage_type storage ) unsafe
+		( storage_= storage )
+	{
+		unsafe( mutex_impl::lock_mutex( $>( storage_.get_control_block_ptr() ).mutex ) );
+	}
+
+	fn destructor()
+	{
+		unsafe( mutex_impl::unlock_mutex( $>( storage_.get_control_block_ptr() ).mutex ) );
+	}
+
+	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
+	fn deref( mut this ) : T & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>( storage_.get_value_ptr() ) );
+	}
+
+private:
+	type storage_type= shared_ptr_storage</T/>;
+
+private:
+	// Use this tag in order to mark lock class as reference-contained.
+	// It contains actually a logical reference to source shared_ptr - its storage.
+	ReferenceContainerTag</ storage_type, false /> shared_ptr_ref_tag_;
+
+	storage_type imut storage_;
+}
+
+// Storage class for control block and value pointer of a shared_ptr.
+// Generally it's unsafe to use, it doesn't free memory on itself and doesn't increment/decrement counters.
+template</type T/>
+class shared_ptr_storage
+{
+public:
+	// Initialize empty storage (with null pointer).
+	fn constructor()= default;
+
+	// Allocate control block and value memory.
+	// Sets initial use strong/total counters to 1.
+	// Allocated control block should be freed manually.
+	fn constructor( T mut value ) unsafe
+	{
+		unsafe
+		{
+			var $(byte8) mem= memory_allocate( c_object_offset + typeinfo</T/>.size_of );
+
+			var control_block &mut c= $>( byte_ptr_cast</ control_block />( mem ) );
+			c.use_count_total= 1u;
+			c.use_count_strong= 1u;
+
+			mutex_impl::initialize_mutex( c.mutex );
+
+			move_into_uninitialized( $>( byte_ptr_cast</T/>( mem + c_object_offset ) ), move(value) );
+
+			static_if( c_is_polymorph )
+			{
+				ptr_= mem + c_object_offset;
+			}
+			else
+			{
+				ptr_= mem;
+			}
+		}
+	}
+
+	// Construct from storage of compatible type.
+	// Counters are not altered.
+	template</ type U />
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
+	constructor( mut this, shared_ptr_storage</U/>& storage ) unsafe
+	{
+		static_assert( c_is_polymorph, "This constructor may be executed only for \"shared_ptr_storage\" for a polymorph type!" );
+		if( !storage.empty() )
+		{
+			unsafe
+			{
+				ptr_= ptr_cast_to_byte8( $<( cast_ref</T/>( $>( storage.get_value_ptr() ) ) ) );
+			}
+		}
+	}
+
+	// Copy constructor.
+	// Counters are not altered.
+	fn constructor( shared_ptr_storage</T/>& other )= default;
+
+	// Copy assignment.
+	// Counters are not altered for both old and new values.
+	op=( mut this, shared_ptr_storage</T/>& other )= default;
+
+	// Check if stored pointer isn't null.
+	fn empty( this ) : bool
+	{
+		return is_nullptr( ptr_ );
+	}
+
+	// Call this only if non-empty!
+	// Use this pointer for "memory_free" call.
+	fn get_control_block_ptr( this ) unsafe : $(control_block)
+	{
+		static_if( c_is_polymorph )
+		{
+			unsafe
+			{
+				// We store pointer to stored object.
+				// Calculate original object reference (based on offset field in virtual table),
+				// then subtract object offset to get pointer to control block.
+				var byte8 &mut original_ref= polymorph_restore_original_ref( $>( byte_ptr_cast</T/>( ptr_ ) ) );
+				return byte_ptr_cast</control_block/>( $<( original_ref ) - c_object_offset );
+			}
+		}
+		else
+		{
+			// We store pointer to control block.
+			return unsafe( byte_ptr_cast</control_block/>( ptr_ ) );
+		}
+	}
+
+	// Call this only if non-empty!
+	fn get_value_ptr( this ) unsafe : $(T)
+	{
+		static_if( c_is_polymorph )
+		{
+			// We store pointer to stored object.
+			return unsafe( byte_ptr_cast</T/>( ptr_ ) );
+		}
+		else
+		{
+			// We store pointer to control block. Object follows after it.
+			return unsafe( byte_ptr_cast</T/>( ptr_ + c_object_offset ) );
+		}
+	}
+
+	// Get raw stored pointer. It may be used for comparison and hashing.
+	fn get_ptr( this ) unsafe : $(byte8)
+	{
+		return ptr_;
+	}
+
+private:
+	var bool constexpr c_is_polymorph= is_polymorph_class</T/>();
+
+	// Allocate control block and object in single allocation.
+	// Control block goes first, than goes the object itself (with proper alignment).
+	// The only disadvantage of this approach is that memory isn't freed if a weak_ptr instance is still alive.
+	var size_type constexpr c_control_block_size= typeinfo</ control_block />.size_of;
+	// Use maximum possible alignment for polymorph types, because we don't know here exact stored type and its actual alignment.
+	var size_type constexpr c_object_alignment= ( c_is_polymorph ? typeinfo</byte128/>.size_of : typeinfo</T/>.align_of );
+	var size_type constexpr c_object_offset= (c_control_block_size + (c_object_alignment - 1s)) / c_object_alignment * c_object_alignment;
+	static_assert( c_object_offset >= c_control_block_size );
+	static_assert( c_object_offset % c_object_alignment == 0s );
+
+private:
+	// For non-polymorph types it's a pointer to control block with object stored after it.
+	// For polymorph type it's a pointer to object itself, control block address is calculated by restoring original object reference and then subtracting object offset.
+	$(byte8) ptr_= zero_init;
+}
+
+} // namespace mutex_impl
+
+} // namespace ust

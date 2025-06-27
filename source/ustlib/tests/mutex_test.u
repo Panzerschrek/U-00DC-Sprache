@@ -1,0 +1,16 @@
+//##success_test
+import "../imports/mutex.u"
+
+type IntMutex= ust::mutex</i32/>;
+
+fn nomangle main() : i32
+{
+	{
+		var IntMutex m( 563 );
+		with( mut lock : m.lock_mut() )
+		{
+			halt if( lock.deref() != 563 );
+		}
+	}
+	return 0;
+}
