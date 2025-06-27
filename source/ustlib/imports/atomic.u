@@ -3,7 +3,7 @@ namespace ust
 
 // All atomic operations have strickest memory order - "sequentially consistent".
 // Atomic operations for i32 and u32 supported on all platforms.
-// There are no atomic operations for i64 and u64, since not all platforms support them.
+// 64-bit atomic operations are supported only on 64-bit platforms.
 // But operations on ssize_type and size_type are possible, which are 64-bit on 64-bit platforms.
 // Operations on raw pointer types are available on all platforms.
 // Operations on "byte64" are available only on 64-bit platforms.
@@ -16,6 +16,16 @@ fn atomic_read( i32& addr ) : i32
 fn atomic_read( u32& addr ) : u32
 {
 	return ust_atomic_read_u32_impl( addr );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_read( i64& addr ) : i64
+{
+	return ust_atomic_read_i64_impl( addr );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_read( u64& addr ) : u64
+{
+	return ust_atomic_read_u64_impl( addr );
 }
 
 fn atomic_read( ssize_type& addr ) : ssize_type
@@ -83,14 +93,14 @@ fn atomic_write( u32 &mut addr, u32 x )
 	return ust_atomic_write_u32_impl( addr, x );
 }
 
-fn atomic_write( f32 &mut addr, f32 x )
+fn enable_if( typeinfo</size_type/>.size_of == 8s )atomic_write( i64 &mut addr, i64 x )
 {
-	return ust_atomic_write_f32_impl( addr, x );
+	return ust_atomic_write_i64_impl( addr, x );
 }
 
-fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_write( f64 &mut addr, f64 x )
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_write( u64 &mut addr, u64 x )
 {
-	return ust_atomic_write_f64_impl( addr, x );
+	return ust_atomic_write_u64_impl( addr, x );
 }
 
 fn atomic_write( ssize_type &mut addr, ssize_type x )
@@ -101,6 +111,16 @@ fn atomic_write( ssize_type &mut addr, ssize_type x )
 fn atomic_write( size_type &mut addr, size_type x )
 {
 	return ust_atomic_write_size_type_impl( addr, x );
+}
+
+fn atomic_write( f32 &mut addr, f32 x )
+{
+	return ust_atomic_write_f32_impl( addr, x );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_write( f64 &mut addr, f64 x )
+{
+	return ust_atomic_write_f64_impl( addr, x );
 }
 
 fn atomic_write( byte32 &mut addr, byte32 x )
@@ -136,6 +156,16 @@ fn atomic_swap( i32 &mut addr, i32 x ) : i32
 fn atomic_swap( u32 &mut addr, u32 x ) : u32
 {
 	return ust_atomic_swap_u32_impl( addr, x );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_swap( i64 &mut addr, i64 x ) : i64
+{
+	return ust_atomic_swap_i64_impl( addr, x );
+}
+
+fn enable_if( typeinfo</size_type/>.size_of == 8s ) atomic_swap( u64 &mut addr, u64 x ) : u64
+{
+	return ust_atomic_swap_u64_impl( addr, x );
 }
 
 fn atomic_swap( ssize_type &mut addr, ssize_type x ) : ssize_type
@@ -339,6 +369,8 @@ fn nodiscard atomic_compare_exchange_weak( $(T) &mut dst, $(T) &mut expected, $(
 
 fn nomangle ust_atomic_read_i32_impl( i32& addr ) : i32;
 fn nomangle ust_atomic_read_u32_impl( u32& addr ) : u32;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_read_i64_impl( i64& addr ) : i64;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_read_u64_impl( u64& addr ) : u64;
 fn nomangle ust_atomic_read_ssize_type_impl( ssize_type& addr ) : ssize_type;
 fn nomangle ust_atomic_read_size_type_impl( size_type& addr ) : size_type;
 fn nomangle ust_atomic_read_f32_impl( f32& addr ) : f32;
@@ -348,6 +380,8 @@ fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_read_byt
 
 fn nomangle ust_atomic_write_i32_impl( i32 &mut addr, i32 x );
 fn nomangle ust_atomic_write_u32_impl( u32 &mut addr, u32 x );
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_write_i64_impl( i64 &mut addr, i64 x );
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_write_u64_impl( u64 &mut addr, u64 x );
 fn nomangle ust_atomic_write_ssize_type_impl( ssize_type &mut addr, ssize_type x );
 fn nomangle ust_atomic_write_size_type_impl( size_type &mut addr, size_type x );
 fn nomangle ust_atomic_write_f32_impl( f32 &mut addr, f32 x );
@@ -357,6 +391,8 @@ fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_write_by
 
 fn nomangle ust_atomic_swap_i32_impl( i32 &mut addr, i32 x ) : i32;
 fn nomangle ust_atomic_swap_u32_impl( u32 &mut addr, u32 x ) : u32;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_swap_i64_impl( i64 &mut addr, i64 x ) : i64;
+fn nomangle enable_if( typeinfo</size_type/>.size_of == 8s ) ust_atomic_swap_u64_impl( u64 &mut addr, u64 x ) : u64;
 fn nomangle ust_atomic_swap_ssize_type_impl( ssize_type &mut addr, ssize_type x ) : ssize_type;
 fn nomangle ust_atomic_swap_size_type_impl( size_type &mut addr, size_type x ) : size_type;
 fn nomangle ust_atomic_swap_f32_impl( f32 &mut addr, f32 x ) : f32;
