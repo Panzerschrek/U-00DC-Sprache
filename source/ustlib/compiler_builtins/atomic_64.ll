@@ -14,6 +14,20 @@ define linkonce_odr hidden i64 @ust_atomic_read_u64_impl( i64* %addr ) unnamed_a
 	ret i64 %1
 }
 
+$ust_atomic_read_ssize_type_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_read_ssize_type_impl( i64* %addr ) unnamed_addr comdat
+{
+	%1= load atomic volatile i64, i64* %addr seq_cst, align 8
+	ret i64 %1
+}
+
+$ust_atomic_read_size_type_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_read_size_type_impl( i64* %addr ) unnamed_addr comdat
+{
+	%1= load atomic volatile i64, i64* %addr seq_cst, align 8
+	ret i64 %1
+}
+
 $ust_atomic_read_f64_impl = comdat any
 define linkonce_odr hidden double @ust_atomic_read_f64_impl( double* %addr ) unnamed_addr comdat
 {
@@ -37,6 +51,20 @@ define linkonce_odr hidden void @ust_atomic_write_i64_impl( i64* %addr, i64 %x )
 
 $ust_atomic_write_u64_impl = comdat any
 define linkonce_odr hidden void @ust_atomic_write_u64_impl( i64* %addr, i64 %x ) unnamed_addr comdat
+{
+	store atomic volatile i64 %x, i64* %addr seq_cst, align 8
+	ret void
+}
+
+$ust_atomic_write_ssize_type_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_ssize_type_impl( i64* %addr, i64 %x ) unnamed_addr comdat
+{
+	store atomic volatile i64 %x, i64* %addr seq_cst, align 8
+	ret void
+}
+
+$ust_atomic_write_size_type_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_size_type_impl( i64* %addr, i64 %x ) unnamed_addr comdat
 {
 	store atomic volatile i64 %x, i64* %addr seq_cst, align 8
 	ret void
@@ -70,138 +98,6 @@ define linkonce_odr hidden i64 @ust_atomic_swap_u64_impl( i64* %addr, i64 %x ) u
 	ret i64 %1
 }
 
-$ust_atomic_swap_f64_impl = comdat any
-define linkonce_odr hidden double @ust_atomic_swap_f64_impl( double* %addr, double %x ) unnamed_addr comdat
-{
-	%1= atomicrmw volatile xchg float* %addr, double %x seq_cst
-	ret double %1
-}
-
-$ust_atomic_swap_byte64_impl = comdat any
-define linkonce_odr hidden i64 @ust_atomic_swap_byte64_impl( i64* %addr, i64 %x ) unnamed_addr comdat
-{
-	%1= atomicrmw volatile xchg i64* %addr, i64 %x seq_cst
-	ret i64 %1
-}
-
-$ust_atomic_compare_exchange_strong_i64_impl = comdat any
-define linkonce_odr hidden i1 @ust_atomic_compare_exchange_strong_i64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
-{
-	%expected_read= load i64, i64* %expected
-	%res= cmpxchg volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
-	%success = extractvalue { i64, i1 } %res, 1
-	br i1 %success, label %ok, label %not_ok
-ok:
-	ret i1 true
-not_ok:
-	%val = extractvalue { i64, i1 } %res, 0
-	store i64 %val, i64* %expected
-	ret i1 false
-}
-
-$ust_atomic_compare_exchange_strong_u64_impl = comdat any
-define linkonce_odr hidden i1 @ust_atomic_compare_exchange_strong_u64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
-{
-	%expected_read= load i64, i64* %expected
-	%res= cmpxchg volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
-	%success = extractvalue { i64, i1 } %res, 1
-	br i1 %success, label %ok, label %not_ok
-ok:
-	ret i1 true
-not_ok:
-	%val = extractvalue { i64, i1 } %res, 0
-	store i64 %val, i64* %expected
-	ret i1 false
-}
-
-$ust_atomic_compare_exchange_strong_byte64_impl = comdat any
-define linkonce_odr hidden i1 @ust_atomic_compare_exchange_strong_byte64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
-{
-	%expected_read= load i64, i64* %expected
-	%res= cmpxchg volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
-	%success = extractvalue { i64, i1 } %res, 1
-	br i1 %success, label %ok, label %not_ok
-ok:
-	ret i1 true
-not_ok:
-	%val = extractvalue { i64, i1 } %res, 0
-	store i64 %val, i64* %expected
-	ret i1 false
-}
-
-$ust_atomic_compare_exchange_weak_i64_impl = comdat any
-define linkonce_odr hidden i1 @ust_atomic_compare_exchange_weak_i64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
-{
-	%expected_read= load i64, i64* %expected
-	%res= cmpxchg weak volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
-	%success = extractvalue { i64, i1 } %res, 1
-	br i1 %success, label %ok, label %not_ok
-ok:
-	ret i1 true
-not_ok:
-	%val = extractvalue { i64, i1 } %res, 0
-	store i64 %val, i64* %expected
-	ret i1 false
-}
-
-$ust_atomic_compare_exchange_weak_u64_impl = comdat any
-define linkonce_odr hidden i1 @ust_atomic_compare_exchange_weak_u64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
-{
-	%expected_read= load i64, i64* %expected
-	%res= cmpxchg weak volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
-	%success = extractvalue { i64, i1 } %res, 1
-	br i1 %success, label %ok, label %not_ok
-ok:
-	ret i1 true
-not_ok:
-	%val = extractvalue { i64, i1 } %res, 0
-	store i64 %val, i64* %expected
-	ret i1 false
-}
-
-$ust_atomic_compare_exchange_weak_byte64_impl = comdat any
-define linkonce_odr hidden i1 @ust_atomic_compare_exchange_weak_byte64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
-{
-	%expected_read= load i64, i64* %expected
-	%res= cmpxchg weak volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
-	%success = extractvalue { i64, i1 } %res, 1
-	br i1 %success, label %ok, label %not_ok
-ok:
-	ret i1 true
-not_ok:
-	%val = extractvalue { i64, i1 } %res, 0
-	store i64 %val, i64* %expected
-	ret i1 false
-}
-
-$ust_atomic_read_ssize_type_impl = comdat any
-define linkonce_odr hidden i64 @ust_atomic_read_ssize_type_impl( i64* %addr ) unnamed_addr comdat
-{
-	%1= load atomic volatile i64, i64* %addr seq_cst, align 8
-	ret i64 %1
-}
-
-$ust_atomic_read_size_type_impl = comdat any
-define linkonce_odr hidden i64 @ust_atomic_read_size_type_impl( i64* %addr ) unnamed_addr comdat
-{
-	%1= load atomic volatile i64, i64* %addr seq_cst, align 8
-	ret i64 %1
-}
-
-$ust_atomic_write_ssize_type_impl = comdat any
-define linkonce_odr hidden void @ust_atomic_write_ssize_type_impl( i64* %addr, i64 %x ) unnamed_addr comdat
-{
-	store atomic volatile i64 %x, i64* %addr seq_cst, align 8
-	ret void
-}
-
-$ust_atomic_write_size_type_impl = comdat any
-define linkonce_odr hidden void @ust_atomic_write_size_type_impl( i64* %addr, i64 %x ) unnamed_addr comdat
-{
-	store atomic volatile i64 %x, i64* %addr seq_cst, align 8
-	ret void
-}
-
 $ust_atomic_swap_ssize_type_impl = comdat any
 define linkonce_odr hidden i64 @ust_atomic_swap_ssize_type_impl( i64* %addr, i64 %x ) unnamed_addr comdat
 {
@@ -211,6 +107,20 @@ define linkonce_odr hidden i64 @ust_atomic_swap_ssize_type_impl( i64* %addr, i64
 
 $ust_atomic_swap_size_type_impl = comdat any
 define linkonce_odr hidden i64 @ust_atomic_swap_size_type_impl( i64* %addr, i64 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i64* %addr, i64 %x seq_cst
+	ret i64 %1
+}
+
+$ust_atomic_swap_f64_impl = comdat any
+define linkonce_odr hidden double @ust_atomic_swap_f64_impl( double* %addr, double %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg float* %addr, double %x seq_cst
+	ret double %1
+}
+
+$ust_atomic_swap_byte64_impl = comdat any
+define linkonce_odr hidden i64 @ust_atomic_swap_byte64_impl( i64* %addr, i64 %x ) unnamed_addr comdat
 {
 	%1= atomicrmw volatile xchg i64* %addr, i64 %x seq_cst
 	ret i64 %1
@@ -326,6 +236,96 @@ define linkonce_odr hidden i64 @ust_atomic_xor_size_type_impl( i64* %x, i64 %y )
 {
 	%1= atomicrmw volatile xor i64* %x, i64 %y seq_cst
 	ret i64 %1
+}
+
+$ust_atomic_compare_exchange_strong_i64_impl = comdat any
+define linkonce_odr hidden i1 @ust_atomic_compare_exchange_strong_i64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
+{
+	%expected_read= load i64, i64* %expected
+	%res= cmpxchg volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
+	%success = extractvalue { i64, i1 } %res, 1
+	br i1 %success, label %ok, label %not_ok
+ok:
+	ret i1 true
+not_ok:
+	%val = extractvalue { i64, i1 } %res, 0
+	store i64 %val, i64* %expected
+	ret i1 false
+}
+
+$ust_atomic_compare_exchange_strong_u64_impl = comdat any
+define linkonce_odr hidden i1 @ust_atomic_compare_exchange_strong_u64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
+{
+	%expected_read= load i64, i64* %expected
+	%res= cmpxchg volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
+	%success = extractvalue { i64, i1 } %res, 1
+	br i1 %success, label %ok, label %not_ok
+ok:
+	ret i1 true
+not_ok:
+	%val = extractvalue { i64, i1 } %res, 0
+	store i64 %val, i64* %expected
+	ret i1 false
+}
+
+$ust_atomic_compare_exchange_strong_byte64_impl = comdat any
+define linkonce_odr hidden i1 @ust_atomic_compare_exchange_strong_byte64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
+{
+	%expected_read= load i64, i64* %expected
+	%res= cmpxchg volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
+	%success = extractvalue { i64, i1 } %res, 1
+	br i1 %success, label %ok, label %not_ok
+ok:
+	ret i1 true
+not_ok:
+	%val = extractvalue { i64, i1 } %res, 0
+	store i64 %val, i64* %expected
+	ret i1 false
+}
+
+$ust_atomic_compare_exchange_weak_i64_impl = comdat any
+define linkonce_odr hidden i1 @ust_atomic_compare_exchange_weak_i64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
+{
+	%expected_read= load i64, i64* %expected
+	%res= cmpxchg weak volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
+	%success = extractvalue { i64, i1 } %res, 1
+	br i1 %success, label %ok, label %not_ok
+ok:
+	ret i1 true
+not_ok:
+	%val = extractvalue { i64, i1 } %res, 0
+	store i64 %val, i64* %expected
+	ret i1 false
+}
+
+$ust_atomic_compare_exchange_weak_u64_impl = comdat any
+define linkonce_odr hidden i1 @ust_atomic_compare_exchange_weak_u64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
+{
+	%expected_read= load i64, i64* %expected
+	%res= cmpxchg weak volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
+	%success = extractvalue { i64, i1 } %res, 1
+	br i1 %success, label %ok, label %not_ok
+ok:
+	ret i1 true
+not_ok:
+	%val = extractvalue { i64, i1 } %res, 0
+	store i64 %val, i64* %expected
+	ret i1 false
+}
+
+$ust_atomic_compare_exchange_weak_byte64_impl = comdat any
+define linkonce_odr hidden i1 @ust_atomic_compare_exchange_weak_byte64_impl( i64* %addr, i64* %expected, i64 %new ) unnamed_addr comdat
+{
+	%expected_read= load i64, i64* %expected
+	%res= cmpxchg weak volatile i64* %addr, i64 %expected_read, i64 %new seq_cst monotonic
+	%success = extractvalue { i64, i1 } %res, 1
+	br i1 %success, label %ok, label %not_ok
+ok:
+	ret i1 true
+not_ok:
+	%val = extractvalue { i64, i1 } %res, 0
+	store i64 %val, i64* %expected
+	ret i1 false
 }
 
 $ust_atomic_compare_exchange_strong_ssize_type_impl = comdat any
