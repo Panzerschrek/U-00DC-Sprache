@@ -4,6 +4,8 @@ type pthread_t= size_type;
 
 // This structs have different size on diffrerent platforms. Use maximum size and maximum alignment.
 type pthread_attr_t  = [ byte64, 8 ];
+type pthread_mutexattr_t = [ byte32, 1 ];
+type pthread_mutex_t = [ byte64, 5 ];
 type pthread_rwlock_t= [ byte64, 8 ];
 type pthread_rwlockattr_t= [ byte64, 8 ];
 type pthread_barrier_t= [ byte64, 4 ];
@@ -21,6 +23,13 @@ fn nomangle pthread_create(
 fn nomangle pthread_join(
 	pthread_t thread_id,
 	$($(byte8)) ret_val ) unsafe : i32;
+
+fn nomangle pthread_mutexattr_init( pthread_mutexattr_t &mut attr ) unsafe : i32;
+fn nomangle pthread_mutexattr_destroy( pthread_mutexattr_t &mut attr ) unsafe : i32;
+fn nomangle pthread_mutex_init( pthread_mutex_t &mut mutex, pthread_mutexattr_t & attr ) unsafe : i32;
+fn nomangle pthread_mutex_destroy( pthread_mutex_t &mut mutex ) unsafe : i32;
+fn nomangle pthread_mutex_lock( pthread_mutex_t &mut mutex ) unsafe : i32;
+fn nomangle pthread_mutex_unlock( pthread_mutex_t &mut mutex ) unsafe : i32;
 
 fn nomangle pthread_rwlockattr_init( pthread_rwlockattr_t& mut attr ) unsafe : i32;
 fn nomangle pthread_rwlockattr_destroy( pthread_rwlockattr_t& mut attr ) unsafe : i32;

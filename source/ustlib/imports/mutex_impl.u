@@ -1,0 +1,23 @@
+// This file is used internally for low-level mutex manipulations.
+// Do not use types/functions from this file directly!
+
+namespace ust
+{
+
+namespace mutex_impl
+{
+
+// This type is not relocable!
+type mutex_t= [ byte64, 5 ];
+
+fn initialize_mutex( mutex_t &mut m ) unsafe;
+
+fn destroy_mutex( mutex_t &mut m ) unsafe;
+
+fn lock_mutex( mutex_t &mut m ) unsafe;
+
+fn unlock_mutex( mutex_t &mut m ) unsafe;
+
+} // namespace mutex_impl
+
+} // namespace ust
