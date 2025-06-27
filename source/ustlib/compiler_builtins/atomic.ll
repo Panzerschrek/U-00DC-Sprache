@@ -14,6 +14,13 @@ define linkonce_odr hidden i32 @ust_atomic_read_u32_impl( i32* %addr ) unnamed_a
 	ret i32 %1
 }
 
+$ust_atomic_read_f32_impl = comdat any
+define linkonce_odr hidden float @ust_atomic_read_f32_impl( float* %addr ) unnamed_addr comdat
+{
+	%1= load atomic volatile float, float* %addr seq_cst, align 4
+	ret float %1
+}
+
 $ust_atomic_read_byte32_impl = comdat any
 define linkonce_odr hidden i32 @ust_atomic_read_byte32_impl( i32* %addr ) unnamed_addr comdat
 {
@@ -35,11 +42,46 @@ define linkonce_odr hidden void @ust_atomic_write_u32_impl( i32* %addr, i32 %x )
 	ret void
 }
 
+$ust_atomic_write_f32_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_f32_impl( float* %addr, float %x ) unnamed_addr comdat
+{
+	store atomic volatile float %x, float* %addr seq_cst, align 4
+	ret void
+}
+
 $ust_atomic_write_byte32_impl = comdat any
 define linkonce_odr hidden void @ust_atomic_write_byte32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
 {
 	store atomic volatile i32 %x, i32* %addr seq_cst, align 4
 	ret void
+}
+
+$ust_atomic_swap_i32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_swap_i32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i32* %addr, i32 %x seq_cst
+	ret i32 %1
+}
+
+$ust_atomic_swap_u32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_swap_u32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i32* %addr, i32 %x seq_cst
+	ret i32 %1
+}
+
+$ust_atomic_swap_f32_impl = comdat any
+define linkonce_odr hidden float @ust_atomic_swap_f32_impl( float* %addr, float %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg float* %addr, float %x seq_cst
+	ret float %1
+}
+
+$ust_atomic_swap_byte32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_swap_byte32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i32* %addr, i32 %x seq_cst
+	ret i32 %1
 }
 
 $ust_atomic_add_i32_impl = comdat any
@@ -53,6 +95,48 @@ $ust_atomic_add_u32_impl = comdat any
 define linkonce_odr hidden i32 @ust_atomic_add_u32_impl( i32* %x, i32 %y ) unnamed_addr comdat
 {
 	%1= atomicrmw volatile add i32* %x, i32 %y seq_cst
+	ret i32 %1
+}
+
+$ust_atomic_and_i32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_and_i32_impl( i32* %x, i32 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile and i32* %x, i32 %y seq_cst
+	ret i32 %1
+}
+
+$ust_atomic_and_u32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_and_u32_impl( i32* %x, i32 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile and i32* %x, i32 %y seq_cst
+	ret i32 %1
+}
+
+$ust_atomic_or_i32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_or_i32_impl( i32* %x, i32 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile or i32* %x, i32 %y seq_cst
+	ret i32 %1
+}
+
+$ust_atomic_or_u32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_or_u32_impl( i32* %x, i32 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile or i32* %x, i32 %y seq_cst
+	ret i32 %1
+}
+
+$ust_atomic_xor_i32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_xor_i32_impl( i32* %x, i32 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xor i32* %x, i32 %y seq_cst
+	ret i32 %1
+}
+
+$ust_atomic_xor_u32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_xor_u32_impl( i32* %x, i32 %y ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xor i32* %x, i32 %y seq_cst
 	ret i32 %1
 }
 
