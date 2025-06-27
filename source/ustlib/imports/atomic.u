@@ -92,7 +92,7 @@ fn atomic_write( u32 &mut addr, u32 x )
 	return ust_atomic_write_u32_impl( addr, x );
 }
 
-fn enable_if( c_enable_64bit_atomics )atomic_write( i64 &mut addr, i64 x )
+fn enable_if( c_enable_64bit_atomics ) atomic_write( i64 &mut addr, i64 x )
 {
 	return ust_atomic_write_i64_impl( addr, x );
 }
