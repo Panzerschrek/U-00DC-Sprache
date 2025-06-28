@@ -1,16 +1,156 @@
 //##success_test
 import "../imports/shared_ptr_mt_mutex.u"
 
-type IntMutex= ust::shared_ptr_mt_mutex</i32/>;
+type IntPtr= ust::shared_ptr_mt_mutex</i32/>;
+type IntPtrNullable= ust::shared_ptr_mt_mutex_nullable</i32/>;
 
 fn nomangle main() : i32
 {
-	{
-		var IntMutex m( 563 );
-		with( mut lock : m.lock_mut() )
+	{ // Has "empty" method. For non-nullable "shared_ptr_mt_mutex" it always returns "true".
+		var IntPtr m( 23535 );
+		halt if( m.empty() );
+	}
+	{ // Nullable "shared_ptr_mt_mutex" has "empty" method, which may return "false".
+		var IntPtrNullable m0( 23535 ), m1;
+		halt if( m0.empty() );
+		halt if( !m1.empty() );
+	}
+	{ // Can be modified using "lock" method.
+		var IntPtr m( 563 );
+		with( mut lock : m.lock() )
 		{
 			halt if( lock.deref() != 563 );
 		}
+	}
+	{ // Has "lock_mut" method - as alias for "lock".
+		var IntPtr m( 434 );
+		with( mut lock : m.lock_mut() )
+		{
+			halt if( lock.deref() != 434 );
+			lock.deref()= 44223;
+		}
+		with( mut lock : m.lock_mut() )
+		{
+			halt if( lock.deref() != 44223 );
+		}
+	}
+	{ // Copying "shared_ptr_mt_mutex" just copies pointer to shared object.
+		var IntPtr m0( -363123 );
+		var IntPtr m1( m0 );
+		var IntPtr m2= m0;
+		auto m3= m0;
+
+		halt if( m0 != m0 );
+		halt if( m0 != m1 );
+		halt if( m0 != m2 );
+		halt if( m0 != m3 );
+		halt if( m1 != m0 );
+		halt if( m1 != m1 );
+		halt if( m1 != m2 );
+		halt if( m1 != m3 );
+		halt if( m2 != m0 );
+		halt if( m2 != m1 );
+		halt if( m2 != m2 );
+		halt if( m2 != m3 );
+		halt if( m3 != m0 );
+		halt if( m3 != m1 );
+		halt if( m3 != m2 );
+		halt if( m3 != m3 );
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != -363123 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != -363123 ); }
+		with( mut lock : m2.lock() ) { halt if( lock.deref() != -363123 ); }
+		with( mut lock : m3.lock() ) { halt if( lock.deref() != -363123 ); }
+
+		// After changing value using one instance of "shared_ptr_mt_mutex", this changes should be ovservable by others.
+		with( mut lock : m1.lock() ) { lock.deref()= 7341; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 7341 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 7341 ); }
+		with( mut lock : m2.lock() ) { halt if( lock.deref() != 7341 ); }
+		with( mut lock : m3.lock() ) { halt if( lock.deref() != 7341 ); }
+	}
+	{ // "reset" method creates new shared object.
+		var IntPtr m0( 664 ), mut m1= m0;
+		halt if( m0 != m1 );
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 664 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 664 ); }
+
+		with( mut lock : m0.lock() ) { lock.deref()= 99952; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 99952 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 99952 ); }
+
+		// Now "m0" and "m1" point to different stored objects.
+		m1.reset( 9999777 );
+		halt if( m0 == m1 );
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 99952 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 9999777 ); }
+
+		with( mut lock : m0.lock() ) { lock.deref()= -333; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != -333 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 9999777 ); }
+
+		with( mut lock : m1.lock() ) { lock.deref()= 435421; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != -333 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 435421 ); }
+	}
+	{ // Nullable pointer can be constructed from non-nullable.
+		var IntPtr m0( 12311 );
+		var IntPtrNullable m1( m0 );
+		var IntPtrNullable m2= m0;
+
+		halt if( m1.empty() );
+		halt if( m2.empty() );
+		halt if( m1 != m0 );
+		halt if( m2 != m0 );
+		halt if( m2 != m1 );
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 12311 ); }
+		with( mut lock : m1.try_lock() ) { halt if( lock.deref() != 12311 ); }
+		with( mut lock : m2.try_lock() ) { halt if( lock.deref() != 12311 ); }
+
+		with( mut lock : m0.lock() ) { lock.deref() = 66667; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 66667 ); }
+		with( mut lock : m1.try_lock() ) { halt if( lock.deref() != 66667 ); }
+		with( mut lock : m2.try_lock() ) { halt if( lock.deref() != 66667 ); }
+
+		with( mut lock : m1.try_lock() ) { lock.deref() = -338881; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != -338881 ); }
+		with( mut lock : m1.try_lock() ) { halt if( lock.deref() != -338881 ); }
+		with( mut lock : m2.try_lock() ) { halt if( lock.deref() != -338881 ); }
+
+		with( mut lock : m2.try_lock() ) { lock.deref() = 37; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 37 ); }
+		with( mut lock : m1.try_lock() ) { halt if( lock.deref() != 37 ); }
+		with( mut lock : m2.try_lock() ) { halt if( lock.deref() != 37 ); }
+	}
+	{ // There is a checked conversion from nullable to non-nullable pointer.
+		var IntPtrNullable m0( 66554433 );
+		var IntPtr m1= m0.try_to_non_nullable();
+
+		halt if( m1.empty() );
+		halt if( m1 != m0 );
+
+		with( mut lock : m0.try_lock() ) { halt if( lock.deref() != 66554433 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 66554433 ); }
+
+		with( mut lock : m0.try_lock() ) { lock.deref() = 22; }
+
+		with( mut lock : m0.try_lock() ) { halt if( lock.deref() != 22 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 22 ); }
+
+		with( mut lock : m1.lock() ) { lock.deref() = 99044; }
+
+		with( mut lock : m0.try_lock() ) { halt if( lock.deref() != 99044 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 99044 ); }
 	}
 	return 0;
 }
