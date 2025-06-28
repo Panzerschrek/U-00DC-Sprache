@@ -4,6 +4,46 @@ import "../imports/shared_ptr_mt_mutex.u"
 type IntPtr= ust::shared_ptr_mt_mutex</i32/>;
 type IntPtrNullable= ust::shared_ptr_mt_mutex_nullable</i32/>;
 
+class A interface
+{
+	fn virtual pure FooA( this ) : u32;
+	fn virtual pure SetA( mut this, u32 a );
+}
+
+class B interface
+{
+	fn virtual pure FooB( this ) : u32;
+	fn virtual pure SetB( mut this, u32 b );
+}
+
+class Impl : A, B
+{
+public:
+	fn virtual override FooA( this ) : u32
+	{
+		return a_;
+	}
+
+	fn virtual override SetA( mut this, u32 a )
+	{
+		a_= a;
+	}
+
+	fn virtual override FooB( this ) : u32
+	{
+		return b_;
+	}
+
+	fn virtual override SetB( mut this, u32 b )
+	{
+		b_= b;
+	}
+
+private:
+	u32 a_= 123u;
+	u32 b_= 456u;
+}
+
 fn nomangle main() : i32
 {
 	{ // Has "empty" method. For non-nullable "shared_ptr_mt_mutex" it always returns "true".
@@ -151,6 +191,40 @@ fn nomangle main() : i32
 
 		with( mut lock : m0.try_lock() ) { halt if( lock.deref() != 99044 ); }
 		with( mut lock : m1.lock() ) { halt if( lock.deref() != 99044 ); }
+	}
+	{ // Can convert "shared_ptr_mt_mutex" storing derived class to "shared_ptr_mt_mutex" storing base class.
+		var ust::shared_ptr_mt_mutex</Impl/> m_impl( Impl() );
+		var ust::shared_ptr_mt_mutex</A/> m_a= m_impl;
+		var ust::shared_ptr_mt_mutex</B/> m_b( m_impl );
+
+		with( mut lock : m_impl.lock() )
+		{
+			halt if( lock.deref().FooA() != 123u );
+			halt if( lock.deref().FooB() != 456u );
+		}
+		with( mut lock : m_a.lock() )
+		{
+			halt if( lock.deref().FooA() != 123u );
+			lock.deref().SetA( 33333u );
+		}
+		with( mut lock : m_b.lock() )
+		{
+			halt if( lock.deref().FooB() != 456u );
+			lock.deref().SetB( 77777u );
+		}
+		with( mut lock : m_impl.lock() )
+		{
+			halt if( lock.deref().FooA() != 33333u );
+			halt if( lock.deref().FooB() != 77777u );
+		}
+		with( mut lock : m_a.lock() )
+		{
+			halt if( lock.deref().FooA() != 33333u );
+		}
+		with( mut lock : m_b.lock() )
+		{
+			halt if( lock.deref().FooB() != 77777u );
+		}
 	}
 	return 0;
 }
