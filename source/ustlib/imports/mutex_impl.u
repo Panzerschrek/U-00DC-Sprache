@@ -9,14 +9,20 @@ namespace mutex_impl
 
 // Opaque type representing underlying Mutex.
 // This type is not relocable!
-type mutex_t= [ byte64, 5 ];
+type mutex_t= [ byte64, 5 ]; // RTL_SRWLOCK on Windows, pthread_mutex_t on Unix.
 
+// Initialize mutex at given address.
 fn initialize_mutex( mutex_t &mut m ) unsafe;
 
+// Destroy mutex at given address.
 fn destroy_mutex( mutex_t &mut m ) unsafe;
 
+// Lock mutex and potentially wait if it's already locked.
+// Unlocking should happen on the same thread which previously performed locking.
 fn lock_mutex( mutex_t &mut m ) unsafe;
 
+// Unlock mutex previously blocked.
+// Unlocking should happen on the same thread which previously performed locking.
 fn unlock_mutex( mutex_t &mut m ) unsafe;
 
 } // namespace mutex_impl

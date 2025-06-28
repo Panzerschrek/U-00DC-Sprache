@@ -8,6 +8,10 @@ import "polymorph.u"
 namespace ust
 {
 
+// Multithreaded shared pointer.
+// Uses a mutex to synchronize access to stored value.
+// Prefer using "shared_ptr_mt" if requiring a mutex isn't strictly necessary,
+// since "shared_ptr_mt" uses RW-lock inside and blocks less in case of many concurrent read operations.
 template</ type T, bool is_nullable />
 class shared_ptr_mt_mutex_base
 {
@@ -137,6 +141,8 @@ public:
 	}
 
 	// Lock operations.
+	// Locking may block current thread if another lock on some other thread exists.
+	// In case if current thread already owns a lock object, deadlock or "halt" is caused.
 
 	fn enable_if(is_nullable) try_lock( this ) : lock_t  @( reference_notation::return_inner_references::param0 )
 	{

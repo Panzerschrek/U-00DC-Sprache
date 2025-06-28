@@ -8,6 +8,8 @@ import "rwlock_impl.u"
 namespace ust
 {
 
+// Multithreaded shared pointer.
+// Uses a RW-lock to synchronize access to stored value.
 template</ type T, bool is_nullable, bool is_mutable />
 class shared_ptr_mt_base
 {
@@ -164,6 +166,9 @@ public:
 	}
 
 	// Lock operations.
+	// Immutable locking may block current thread if at this moment a mutable lock on some other thread exists.
+	// Mutable locking may block current thread if at least one other lock on some other thread exists.
+	// In case if current thread owns a lock object, which prevents further locking call, deadlock or "halt" is caused.
 
 	fn enable_if(is_nullable && is_mutable) try_lock_mut( this ) : lock_mut_t  @( reference_notation::return_inner_references::param0 )
 	{
