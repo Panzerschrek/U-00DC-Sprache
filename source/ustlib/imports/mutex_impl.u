@@ -1,6 +1,8 @@
 // This file is used internally for low-level mutex manipulations.
 // Do not use types/functions from this file directly!
 
+import "type_traits.u"
+
 namespace ust
 {
 
@@ -9,7 +11,12 @@ namespace mutex_impl
 
 // Opaque type representing underlying Mutex.
 // This type is not relocable!
-type mutex_t= [ byte64, 5 ]; // RTL_SRWLOCK on Windows, pthread_mutex_t on Unix.
+type mutex_t=
+	type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		$(byte8), // RTL_SRWLOCK
+		[ byte64, 5 ] // pthread_mutex_t
+	/>;
 
 // Initialize mutex at given address.
 fn initialize_mutex( mutex_t &mut m ) unsafe;

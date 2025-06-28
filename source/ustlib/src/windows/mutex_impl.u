@@ -11,8 +11,8 @@ namespace mutex_impl
 // Use SRW locks to implement Mutex, since they support condition variables (even with timed waiting)
 // and since they deadlock on acquire on same thread.
 
-static_assert( typeinfo</mutex_t/>.size_of >= typeinfo</RTL_SRWLOCK/>.size_of );
-static_assert( typeinfo</mutex_t/>.align_of >= typeinfo</RTL_SRWLOCK/>.align_of );
+static_assert( typeinfo</mutex_t/>.size_of == typeinfo</RTL_SRWLOCK/>.size_of, "Types mismatch!" );
+static_assert( typeinfo</mutex_t/>.align_of >= typeinfo</RTL_SRWLOCK/>.align_of, "Types mismatch!" );
 
 fn initialize_mutex( mutex_t &mut m ) unsafe
 {
