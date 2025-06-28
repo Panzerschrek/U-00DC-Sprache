@@ -8,7 +8,7 @@ namespace ust
 namespace mutex_impl
 {
 
-// Use SRW locks to implement Mutex, since they support condition variables (even with timed waiting)
+// Use SRW locks to implement mutex, since they support condition variables (even with timed waiting)
 // and since they deadlock on acquire on same thread.
 
 static_assert( typeinfo</mutex_t/>.size_of == typeinfo</RTL_SRWLOCK/>.size_of, "Types mismatch!" );

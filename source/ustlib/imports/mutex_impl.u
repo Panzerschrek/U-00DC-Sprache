@@ -9,7 +9,7 @@ namespace ust
 namespace mutex_impl
 {
 
-// Opaque type representing underlying Mutex.
+// Opaque type representing underlying (OS-specific) mutex.
 // This type is not relocable!
 type mutex_t=
 	type_select</
@@ -28,7 +28,7 @@ fn destroy_mutex( mutex_t &mut m ) unsafe;
 // Unlocking should happen on the same thread which previously performed locking.
 fn lock_mutex( mutex_t &mut m ) unsafe;
 
-// Unlock mutex previously blocked.
+// Unlock mutex previously locked.
 // Unlocking should happen on the same thread which previously performed locking.
 fn unlock_mutex( mutex_t &mut m ) unsafe;
 

@@ -1,8 +1,8 @@
 import "alloc.u"
 import "atomic.u"
 import "container_utils.u"
-import "mutex_impl.u"
 import "hash_apply.u"
+import "mutex_impl.u"
 import "polymorph.u"
 
 namespace ust
@@ -22,7 +22,7 @@ class shared_ptr_mt_mutex_base
 	static_assert( !non_sync</T/>, "using non_sync types inside shared_ptr_mt_mutex is not allowed" );
 
 public:
-	// Default constructor. Exists only for nullable mutex.
+	// Default constructor. Exists only for nullable shared_ptr_mt_mutex.
 	fn enable_if(is_nullable) constructor()= default;
 
 	// Construct with value.
@@ -147,12 +147,12 @@ public:
 	fn enable_if(is_nullable) try_lock( this ) : lock_t  @( reference_notation::return_inner_references::param0 )
 	{
 		halt if( empty() );
-		return unsafe( lock_mut_unchecked() );
+		return unsafe( lock_unchecked() );
 	}
 
 	fn enable_if(!is_nullable) lock( this ) : lock_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_mut_unchecked() );
+		return unsafe( lock_unchecked() );
 	}
 
 	fn lock_unchecked( this ) unsafe : lock_t @( reference_notation::return_inner_references::param0 )
@@ -207,7 +207,7 @@ public: // Methods for internal usage.
 
 private:
 	type this_type= shared_ptr_mt_mutex_base</ T, is_nullable />;
-	type storage_type= shared_ptr_mt_mutex_impl::mutext_storage</T/>;
+	type storage_type= shared_ptr_mt_mutex_impl::shared_ptr_storage</T/>;
 	type lock_t = shared_ptr_mt_mutex_impl::lock</T/>;
 
 private:
@@ -333,7 +333,7 @@ public: // Methods for internal usage.
 
 private:
 	type this_type= weak_ptr_mt_mutex</ T />;
-	type storage_type= shared_ptr_mt_mutex_impl::mutext_storage</T/>;
+	type storage_type= shared_ptr_mt_mutex_impl::shared_ptr_storage</T/>;
 
 private:
 	storage_type storage_;
@@ -385,11 +385,11 @@ public:
 	}
 
 private:
-	type storage_type= mutext_storage</T/>;
+	type storage_type= shared_ptr_storage</T/>;
 
 private:
 	// Use this tag in order to mark lock class as reference-contained.
-	// It contains actually a logical reference to source mutex - its storage.
+	// It contains actually a logical reference to source shared_ptr_mt_mutex - its storage.
 	ReferenceContainerTag</ storage_type, false /> mutex_ref_tag_;
 
 	storage_type imut storage_;
@@ -398,7 +398,7 @@ private:
 // Storage class for control block and value pointer of a mutex.
 // Generally it's unsafe to use, it doesn't free memory on itself and doesn't increment/decrement counters.
 template</type T/>
-class mutext_storage
+class shared_ptr_storage
 {
 public:
 	// Initialize empty storage (with null pointer).
@@ -436,9 +436,9 @@ public:
 	// Counters are not altered.
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
-	constructor( mut this, mutext_storage</U/>& storage ) unsafe
+	constructor( mut this, shared_ptr_storage</U/>& storage ) unsafe
 	{
-		static_assert( c_is_polymorph, "This constructor may be executed only for \"mutext_storage\" for a polymorph type!" );
+		static_assert( c_is_polymorph, "This constructor may be executed only for \"shared_ptr_storage\" for a polymorph type!" );
 		if( !storage.empty() )
 		{
 			unsafe
@@ -450,11 +450,11 @@ public:
 
 	// Copy constructor.
 	// Counters are not altered.
-	fn constructor( mutext_storage</T/>& other )= default;
+	fn constructor( shared_ptr_storage</T/>& other )= default;
 
 	// Copy assignment.
 	// Counters are not altered for both old and new values.
-	op=( mut this, mutext_storage</T/>& other )= default;
+	op=( mut this, shared_ptr_storage</T/>& other )= default;
 
 	// Check if stored pointer isn't null.
 	fn empty( this ) : bool
