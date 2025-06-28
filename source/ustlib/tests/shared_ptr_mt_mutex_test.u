@@ -8,6 +8,28 @@ type IntPtr= ust::shared_ptr_mt_mutex</i32/>;
 type IntPtrNullable= ust::shared_ptr_mt_mutex_nullable</i32/>;
 type IntWeakPtr= ust::weak_ptr_mt_mutex</i32/>;
 
+// Size of "shared_ptr_mt_mutex" and "weak_ptr_mt_mutex" is single pointer.
+static_assert( typeinfo</IntPtr/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</IntPtrNullable/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</IntWeakPtr/>.size_of == typeinfo</size_type/>.size_of );
+
+// "shared_ptr_mt_mutex" doesn't contain unsynchronized interrior mutability.
+static_assert( !non_sync</IntPtr /> );
+static_assert( !non_sync</IntPtrNullable/> );
+static_assert( !non_sync</IntWeakPtr /> );
+
+// "shared_ptr_mut_mutex" can be used to create recursive data structures.
+struct RecursiveSharedPtr
+{
+	ust::shared_ptr_mt_mutex_nullable</ RecursiveSharedPtr /> parent;
+}
+
+// "weak_ptr_mt_mutex" can be used to create recursive data structures.
+struct RecursiveWeakPtr
+{
+	ust::weak_ptr_mt_mutex</ RecursiveWeakPtr /> parent;
+}
+
 class A interface
 {
 	fn virtual pure FooA( this ) : u32;
@@ -385,6 +407,14 @@ fn nomangle main() : i32
 		halt if( !mw_impl.upgrade().empty() );
 		halt if( !mw_a.upgrade().empty() );
 		halt if( !mw_b.upgrade().empty() );
+	}
+	{
+		var IntPtr ptr= ust::make_shared_ptr_mt_mutex( 66 );
+		type lock_type= typeof( ptr.lock() );
+		// Lock class contains only single pointer.
+		static_assert( typeinfo</ lock_type />.size_of == typeinfo</size_type/>.size_of );
+		// Lock class is "non_sync" - in order to avoid move itto another thread and performing unlocking on a thread different from a thread which performed locking.
+		static_assert( non_sync</ lock_type /> );
 	}
 	return 0;
 }
