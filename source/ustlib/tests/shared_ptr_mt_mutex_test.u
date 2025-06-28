@@ -1,5 +1,8 @@
 //##success_test
+import "../imports/binary_heap.u"
 import "../imports/shared_ptr_mt_mutex.u"
+import "../imports/thread.u"
+import "../imports/vector.u"
 
 type IntPtr= ust::shared_ptr_mt_mutex</i32/>;
 type IntPtrNullable= ust::shared_ptr_mt_mutex_nullable</i32/>;
@@ -224,6 +227,56 @@ fn nomangle main() : i32
 		with( mut lock : m_b.lock() )
 		{
 			halt if( lock.deref().FooB() != 77777u );
+		}
+	}
+	{ // Test concurrent access from different threads.
+		auto ptr= ust::make_shared_ptr_mt_mutex( ust::vector</u32/>() );
+
+		// One thread pushes to the vector squared even numbers, other pushes squared odd numbers.
+
+		auto mut t0=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					for( auto mut i= 0u; i < 65536u; i+= 2u )
+					{
+						with( mut lock : ptr.lock_mut() )
+						{
+							lock.deref().push_back( i * i );
+						}
+					}
+				} );
+
+		auto mut t1=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					for( auto mut i= 1u; i < 65536u; i+= 2u )
+					{
+						with( mut lock : ptr.lock_mut() )
+						{
+							lock.deref().push_back( i * i );
+						}
+					}
+				} );
+
+		move(t0).join();
+		move(t1).join();
+
+		with( mut lock : ptr.lock_mut() )
+		{
+			auto &mut vec= lock.deref();
+
+			// Should push necessary number of elements.
+			halt if( vec.size() != 65536s );
+
+			// Order of numbers in result vector is unstable, so, sort it.
+			// But numbers itself should be the same.
+			ust::binary_heap::sort( vec );
+			for( auto mut i= 0u; i < 65536u; ++i )
+			{
+				halt if( vec[ size_type(i) ] != i * i );
+			}
 		}
 	}
 	return 0;
