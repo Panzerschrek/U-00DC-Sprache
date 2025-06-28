@@ -9,13 +9,13 @@ namespace ust
 {
 
 template</ type T, bool is_nullable />
-class mutex_base
+class shared_ptr_mt_mutex_base
 {
 	static_assert( typeinfo</T/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
 
-	// It has no sense to use mutex for types, with singlethreaded shared pointers inside.
+	// It has no sense to use shared_ptr_mt_mutex for types, with singlethreaded shared pointers inside.
 	// Use singlethreaded shared pointer instead.
-	static_assert( !non_sync</T/>, "using non_sync types inside mutex is not allowed" );
+	static_assert( !non_sync</T/>, "using non_sync types inside shared_ptr_mt_mutex is not allowed" );
 
 public:
 	// Default constructor. Exists only for nullable mutex.
@@ -28,7 +28,7 @@ public:
 	}
 
 	// Constructor for nullable ptr from non-nullable ptr.
-	fn enable_if( is_nullable ) conversion_constructor( mut this, mutex_base</T, false/>& ptr )
+	fn enable_if( is_nullable ) conversion_constructor( mut this, shared_ptr_mt_mutex_base</T, false/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		unsafe
@@ -57,7 +57,7 @@ public:
 	// Construct from mutex of compatible type.
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
-	conversion_constructor( mut this, mutex_base</U, is_nullable/>& ptr )
+	conversion_constructor( mut this, shared_ptr_mt_mutex_base</U, is_nullable/>& ptr )
 		( storage_= unsafe( storage_type( ptr.get_storage() ) ) )
 	{
 		if( !empty() )
@@ -122,7 +122,7 @@ public:
 	}
 
 	// Checked conversion to non-nullable from nullable.
-	fn enable_if(is_nullable) try_to_non_nullable( this ) : mutex_base</T, false/>
+	fn enable_if(is_nullable) try_to_non_nullable( this ) : shared_ptr_mt_mutex_base</T, false/>
 	{
 		halt if(empty());
 
@@ -132,7 +132,7 @@ public:
 
 			atomic_inc( $>(control_block_ptr).use_count_total  );
 			atomic_inc( $>(control_block_ptr).use_count_strong );
-			return mutex_base</T, false/>( storage_ );
+			return shared_ptr_mt_mutex_base</T, false/>( storage_ );
 		}
 	}
 
@@ -200,9 +200,9 @@ public: // Methods for internal usage.
 	{}
 
 private:
-	type this_type= mutex_base</ T, is_nullable />;
-	type storage_type= mutex_impl::mutext_storage</T/>;
-	type lock_t = mutex_impl::lock</T/>;
+	type this_type= shared_ptr_mt_mutex_base</ T, is_nullable />;
+	type storage_type= shared_ptr_mt_mutex_impl::mutext_storage</T/>;
+	type lock_t = shared_ptr_mt_mutex_impl::lock</T/>;
 
 private:
 	storage_type storage_;
@@ -210,17 +210,17 @@ private:
 
 // All necessary type aliases.
 
-template</type T/> type mutex= mutex_base</T, false/>;
-template</type T/> type mutex_nullable= mutex_base</T, true/>;
+template</type T/> type shared_ptr_mt_mutex= shared_ptr_mt_mutex_base</T, false/>;
+template</type T/> type shared_ptr_mt_mutex_nullable= shared_ptr_mt_mutex_base</T, true/>;
 
-// Helper function for mutex construction.
+// Helper function for shared_ptr_mt_mutex construction.
 template</type T/>
-fn make_mutex( T mut value ) : mutex</T/>
+fn make_shared_ptr_mt_mutex( T mut value ) : shared_ptr_mt_mutex</T/>
 {
-	return mutex</T/>( move(value) );
+	return shared_ptr_mt_mutex</T/>( move(value) );
 }
 
-namespace mutex_impl
+namespace shared_ptr_mt_mutex_impl
 {
 
 struct control_block
@@ -393,6 +393,6 @@ private:
 	$(byte8) ptr_= zero_init;
 }
 
-} // namespace mutex_impl
+} // namespace shared_ptr_mt_mutex_impl
 
 } // namespace ust

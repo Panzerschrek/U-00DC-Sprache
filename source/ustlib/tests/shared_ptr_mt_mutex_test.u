@@ -1,7 +1,7 @@
 //##success_test
-import "../imports/mutex.u"
+import "../imports/shared_ptr_mt_mutex.u"
 
-type IntMutex= ust::mutex</i32/>;
+type IntMutex= ust::shared_ptr_mt_mutex</i32/>;
 
 fn nomangle main() : i32
 {
