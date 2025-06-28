@@ -350,8 +350,6 @@ private:
 	type this_type= weak_ptr_base</ T, is_mutable />;
 	type shared_ptr_type= shared_ptr_base</ T, true, is_mutable />;
 	type storage_type= shared_ptr_impl::shared_ptr_storage</T/>;
-	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
-	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
 
 private:
 	storage_type storage_;
