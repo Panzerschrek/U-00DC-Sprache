@@ -1,0 +1,40 @@
+import "../../imports/helpers.u"
+import "../../imports/mutex_impl.u"
+import "windows.uh"
+
+namespace ust
+{
+
+namespace mutex_impl
+{
+
+// Use SRW locks to implement Mutex, since they support condition variables (even with timed waiting)
+// and since they deadlock on acquire on same thread.
+
+static_assert( typeinfo</mutex_t/>.size_of >= typeinfo</RTL_SRWLOCK/>.size_of );
+static_assert( typeinfo</mutex_t/>.align_of >= typeinfo</RTL_SRWLOCK/>.align_of );
+
+fn initialize_mutex( mutex_t &mut m ) unsafe
+{
+	unsafe( ::InitializeSRWLock( $<( cast_ref_unsafe</RTL_SRWLOCK/>(m) ) ) );
+}
+
+fn destroy_mutex( mutex_t &mut m ) unsafe
+{
+	// This lock doesn't require destruction.
+	ignore_unused(m);
+}
+
+fn lock_mutex( mutex_t &mut m ) unsafe
+{
+	unsafe( ::AcquireSRWLockExclusive( $<( cast_ref_unsafe</RTL_SRWLOCK/>(m) ) ) );
+}
+
+fn unlock_mutex( mutex_t &mut m ) unsafe
+{
+	unsafe( ::ReleaseSRWLockExclusive( $<( cast_ref_unsafe</RTL_SRWLOCK/>(m) ) ) );
+}
+
+} // namespace mutex_impl
+
+} // namespace ust
