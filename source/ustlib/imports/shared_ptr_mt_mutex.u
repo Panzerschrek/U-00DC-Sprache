@@ -208,6 +208,131 @@ private:
 	storage_type storage_;
 }
 
+template</ type T />
+class weak_ptr_mt_mutex
+{
+public:
+	fn constructor()= default;
+
+	// Construct from non-nullable shared_ptr_mt_mutex.
+	fn conversion_constructor( shared_ptr_mt_mutex_base</T, false/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
+	{
+		unsafe( atomic_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
+	}
+
+
+	// Construct from nullable shared_ptr_mt.
+	fn conversion_constructor( shared_ptr_mt_mutex_base</T, true/>& ptr )
+		( storage_= unsafe( ptr.get_storage() ) )
+	{
+		if( !storage_.empty() )
+		{
+			unsafe( atomic_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
+		}
+	}
+
+	// Construct from weak_ptr_mt_mutex of compatible type.
+	template</ type U />
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
+	conversion_constructor( mut this, weak_ptr_mt_mutex</U/>& ptr )
+		( storage_= unsafe( storage_type( ptr.get_storage() ) ) )
+	{
+		if( !storage_.empty() )
+		{
+			unsafe( atomic_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
+		}
+	}
+
+	// Copy constructor.
+	fn constructor( mut this, this_type &imut other )
+		( storage_= unsafe( other.get_storage() ) )
+	{
+		if( !storage_.empty() )
+		{
+			unsafe( atomic_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
+		}
+	}
+
+	fn destructor()
+	{
+		if( !storage_.empty() )
+		{
+			unsafe
+			{
+				auto control_block_ptr= storage_.get_control_block_ptr();
+				if( atomic_dec( $>(control_block_ptr).use_count_total ) == 1u )
+				{
+					mutex_impl::destroy_mutex( $>(control_block_ptr).mutex );
+					// Free counter together with initial allocated object.
+					memory_free( ptr_cast_to_byte8( control_block_ptr) );
+				}
+			}
+		}
+	}
+
+	op=( mut this, this_type &imut other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= this_type(other);
+	}
+
+	fn reset( mut this )
+	{
+		// Move value ot out "this", call destructor for it, construct default value in place of "this".
+		take(this);
+	}
+
+	fn upgrade( this ) : shared_ptr_mt_mutex_base</T, true/>
+	{
+		if( storage_.empty() )
+		{
+			return shared_ptr_mt_mutex_base</T, true/>();
+		}
+
+		unsafe
+		{
+			auto control_block_ptr= storage_.get_control_block_ptr();
+
+			atomic_inc( $>(control_block_ptr).use_count_total );
+
+			var u32 mut count= atomic_read( $>(control_block_ptr).use_count_strong );
+			loop
+			{
+				if( count == 0u )
+				{
+					atomic_dec( $>(control_block_ptr).use_count_total );
+					return shared_ptr_mt_mutex_base</T, true/>();
+				}
+
+				var u32 new_count= count + 1u;
+				if( atomic_compare_exchange_weak(
+						$>(control_block_ptr).use_count_strong,
+						count,
+						new_count ) )
+				{
+					break;
+				}
+			}
+
+			return shared_ptr_mt_mutex_base</T, true/>( storage_ );
+		}
+	}
+
+public: // Methods for internal usage.
+	fn get_storage( this ) unsafe : storage_type
+	{
+		return storage_;
+	}
+
+private:
+	type this_type= weak_ptr_mt_mutex</ T />;
+	type storage_type= shared_ptr_mt_mutex_impl::mutext_storage</T/>;
+
+private:
+	storage_type storage_;
+}
+
 // All necessary type aliases.
 
 template</type T/> type shared_ptr_mt_mutex= shared_ptr_mt_mutex_base</T, false/>;

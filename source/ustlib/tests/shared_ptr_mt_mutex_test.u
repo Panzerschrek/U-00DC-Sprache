@@ -6,6 +6,7 @@ import "../imports/vector.u"
 
 type IntPtr= ust::shared_ptr_mt_mutex</i32/>;
 type IntPtrNullable= ust::shared_ptr_mt_mutex_nullable</i32/>;
+type IntWeakPtr= ust::weak_ptr_mt_mutex</i32/>;
 
 class A interface
 {
@@ -277,6 +278,56 @@ fn nomangle main() : i32
 			{
 				halt if( vec[ size_type(i) ] != i * i );
 			}
+		}
+	}
+	{ // "weak_ptr_mt_mutex" is empty by-default.
+		var IntPtrNullable m;
+		halt if( !m.empty() );
+		var IntWeakPtr mw= m;
+
+		var IntPtrNullable m_upgraded= mw.upgrade();
+		halt if( !m_upgraded.empty() );
+		halt if( m_upgraded != m ); // Null pointer is equal to null pointer.
+	}
+	{ // "weak_ptr_mt_mutex" for alive object.
+		var IntPtr m( 654567 );
+		var IntWeakPtr mw= m;
+
+		var IntPtrNullable m_upgraded= mw.upgrade();
+
+		halt if( m_upgraded != m );
+
+		with( mut lock : m.lock() ) { halt if( lock.deref() != 654567 ); }
+		with( mut lock : m_upgraded.try_lock() ) { halt if( lock.deref() != 654567 ); }
+
+		with( mut lock : m.lock() ) { lock.deref() = 990000; }
+
+		with( mut lock : m.lock() ) { halt if( lock.deref() != 990000 ); }
+		with( mut lock : m_upgraded.try_lock() ) { halt if( lock.deref() != 990000 ); }
+
+		with( mut lock : m_upgraded.try_lock() ) { lock.deref() = 56785; }
+
+		with( mut lock : m.lock() ) { halt if( lock.deref() != 56785 ); }
+		with( mut lock : m_upgraded.try_lock() ) { halt if( lock.deref() != 56785 ); }
+	}
+	{ // "weak_ptr_mt_mutex" for dead object.
+		var IntPtr mut m0( 225 );
+		var IntPtrNullable mut m1= m0;
+		var IntWeakPtr mw= m0;
+
+		{ // Has 2 strong references - still alive.
+			var IntPtrNullable m_upgraded= mw.upgrade();
+			with( mut lock : m_upgraded.try_lock() ) { halt if( lock.deref() != 225 ); }
+		}
+		move(m0);
+		{ // Has 1 strong reference - still alive.
+			var IntPtrNullable m_upgraded= mw.upgrade();
+			with( mut lock : m_upgraded.try_lock() ) { halt if( lock.deref() != 225 ); }
+		}
+		m1.reset();
+		{ // Has no strong references - already dead.
+			var IntPtrNullable m_upgraded= mw.upgrade();
+			halt if( !m_upgraded.empty() );
 		}
 	}
 	return 0;
