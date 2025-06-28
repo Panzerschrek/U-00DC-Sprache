@@ -330,5 +330,61 @@ fn nomangle main() : i32
 			halt if( !m_upgraded.empty() );
 		}
 	}
+	{ // Can convert "weak_ptr_mt_mutex" storing derived class to "weak_ptr_mt_mutex" storing base class.
+		var ust::shared_ptr_mt_mutex</Impl/> mut m_impl( Impl() );
+		var ust::shared_ptr_mt_mutex</A/> mut m_a= m_impl;
+		var ust::shared_ptr_mt_mutex</B/> mut m_b( m_impl );
+
+		var ust::weak_ptr_mt_mutex</Impl/> mw_impl= m_impl;
+		var ust::weak_ptr_mt_mutex</A/> mw_a= m_a;
+		var ust::weak_ptr_mt_mutex</B/> mw_b( m_b );
+
+		with( mut lock : mw_impl.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooA() != 123u );
+			halt if( lock.deref().FooB() != 456u );
+		}
+		with( mut lock : mw_a.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooA() != 123u );
+			lock.deref().SetA( 33333u );
+		}
+		with( mut lock : mw_b.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooB() != 456u );
+			lock.deref().SetB( 77777u );
+		}
+		with( mut lock : mw_impl.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooA() != 33333u );
+			halt if( lock.deref().FooB() != 77777u );
+		}
+		with( mut lock : mw_a.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooA() != 33333u );
+		}
+		with( mut lock : mw_b.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooB() != 77777u );
+		}
+
+		// Remove first strong reference - should be alive.
+		move(m_a);
+		halt if( mw_impl.upgrade().empty() );
+		halt if( mw_a.upgrade().empty() );
+		halt if( mw_b.upgrade().empty() );
+
+		// Remove second strong reference - should be alive.
+		move(m_impl);
+		halt if( mw_impl.upgrade().empty() );
+		halt if( mw_a.upgrade().empty() );
+		halt if( mw_b.upgrade().empty() );
+
+		// Remove third and last strong reference - should be dead.
+		move(m_b);
+		halt if( !mw_impl.upgrade().empty() );
+		halt if( !mw_a.upgrade().empty() );
+		halt if( !mw_b.upgrade().empty() );
+	}
 	return 0;
 }
