@@ -1,0 +1,70 @@
+//##fail_test
+import "../imports/shared_ptr_mt_mutex.u"
+import "../imports/thread.u"
+
+struct S{ i32& r; }
+
+// Shared pointers disabled for types with references.
+type SPtrInvalid= ust::shared_ptr_mt_mutex</S/>; //##expect_error TemplateContext
+
+struct NonSyncStruct non_sync {}
+// Multithreaded shared pointers disabled for non_sync types.
+type InvalidNonSyncStructSharedPtr= ust::shared_ptr_mt_mutex</NonSyncStruct/>; //##expect_error TemplateContext
+type InvalidNonSyncStructWeakPtr= ust::weak_ptr_mt_mutex</NonSyncStruct/>; //##expect_error TemplateContext
+
+fn nomangle main() : i32
+{
+
+	{ // Non-nullable "shared_ptr_mt_mutex" isn't default-constructible.
+		var ust::shared_ptr_mt_mutex</i32/> m; //##expect_error ExpectedInitializer
+	}
+	{ // Non-nullable "shared_ptr_mt_mutex" hase no "reset to zero" method.
+		var ust::shared_ptr_mt_mutex</i32/> mut m( 12345 );
+		m.reset(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Can't construct "shared_ptr_mt_mutex" from "shared_ptr_mt_mutex_nullable".
+		var ust::shared_ptr_mt_mutex_nullable</i32/> m0;
+		var ust::shared_ptr_mt_mutex</i32/> m1(m0); //##expect_error CouldNotSelectOverloadedFunction
+		var ust::shared_ptr_mt_mutex</i32/> m2= m0; //##expect_error TypesMismatch
+	}
+	{ // There is no "lock" method for "shared_ptr_mt_mutex_nullable".
+		var ust::shared_ptr_mt_mutex_nullable</i32/> m;
+		m.lock();//##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // There is no "try_lock" method for "shared_ptr_mt_mutex".
+		var ust::shared_ptr_mt_mutex</i32/> m( 123 );
+		m.try_lock();//##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // There is no "lock_imut" method for "shared_ptr_mt_mutex".
+		var ust::shared_ptr_mt_mutex</i32/> m( 123 );
+		m.lock_imut();//##expect_error NameNotFound
+	}
+	{ // There is no "try_lock_imut" method for "shared_ptr_mt_mutex_nullable".
+		var ust::shared_ptr_mt_mutex_nullable</i32/> m;
+		m.try_lock_imut();//##expect_error NameNotFound
+	}
+	{ // Reference can not outlive lock.
+		var ust::shared_ptr_mt_mutex</i32/> m( 7776655 );
+		auto mut lock= m.lock();
+		auto &ref= lock.deref();
+		move(lock); //##expect_error MovedVariableHasReferences
+	}
+	{ // Lock isn't copyable.
+		var ust::shared_ptr_mt_mutex</i32/> m( 98765432 );
+		auto lock0= m.lock();
+		auto lock1= lock0; //##expect_error CopyConstructValueOfNoncopyableType
+	}
+	{ // "weak_ptr_mt_mutex" has no lock methods.
+		var ust::weak_ptr_mt_mutex</i32/> m;
+		m.lock(); //##expect_error NameNotFound
+		m.lock_mut(); //##expect_error NameNotFound
+		m.try_lock(); //##expect_error NameNotFound
+		m.try_lock_mut(); //##expect_error NameNotFound
+	}
+	{ // Can't pass lock object to another thread.
+		var ust::shared_ptr_mt_mutex</i32/> p(0);
+		ust::make_thread( lambda [l= p.lock()] byval mut () { l.deref()= 33; } ); //##expect_error TemplateContext
+	}
+
+	return 0;
+}
