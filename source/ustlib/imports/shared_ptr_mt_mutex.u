@@ -2,25 +2,27 @@ import "alloc.u"
 import "atomic.u"
 import "container_utils.u"
 import "hash_apply.u"
+import "mutex_impl.u"
 import "polymorph.u"
-import "rwlock_impl.u"
 
 namespace ust
 {
 
 // Multithreaded shared pointer.
-// Uses a RW-lock to synchronize access to stored value.
-template</ type T, bool is_nullable, bool is_mutable />
-class shared_ptr_mt_base
+// Uses a mutex to synchronize access to stored value.
+// Prefer using "shared_ptr_mt" if requiring a mutex isn't strictly necessary,
+// since "shared_ptr_mt" uses RW-lock inside and blocks less in case of many concurrent read operations.
+template</ type T, bool is_nullable />
+class shared_ptr_mt_mutex_base
 {
 	static_assert( typeinfo</T/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
 
-	// It has no sense to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
+	// It has no sense to use shared_ptr_mt_mutex for types, with singlethreaded shared pointers inside.
 	// Use singlethreaded shared pointer instead.
-	static_assert( !non_sync</T/>, "using non_sync types inside multithreaded shared pointers is not allowed" );
+	static_assert( !non_sync</T/>, "using non_sync types inside shared_ptr_mt_mutex is not allowed" );
 
 public:
-	// Default constructor. Exists only for nullable shared_ptr_mt.
+	// Default constructor. Exists only for nullable shared_ptr_mt_mutex.
 	fn enable_if(is_nullable) constructor()= default;
 
 	// Construct with value.
@@ -30,34 +32,7 @@ public:
 	}
 
 	// Constructor for nullable ptr from non-nullable ptr.
-	fn enable_if( is_nullable ) conversion_constructor( mut this, shared_ptr_mt_base</T, false, is_mutable/>& ptr )
-		( storage_= unsafe( ptr.get_storage() ) )
-	{
-		unsafe
-		{
-			auto control_block_ptr= storage_.get_control_block_ptr();
-			atomic_inc( $>(control_block_ptr).use_count_total  );
-			atomic_inc( $>(control_block_ptr).use_count_strong );
-		}
-	}
-
-	// Constructor for immutable ptr from mutable ptr.
-	fn enable_if( !is_mutable ) conversion_constructor( mut this, shared_ptr_mt_base</T, is_nullable, true/>& ptr )
-		( storage_= unsafe( ptr.get_storage() ) )
-	{
-		if( !ptr.empty() )
-		{
-			unsafe
-			{
-				auto control_block_ptr= storage_.get_control_block_ptr();
-				atomic_inc( $>(control_block_ptr).use_count_total  );
-				atomic_inc( $>(control_block_ptr).use_count_strong );
-			}
-		}
-	}
-
-	// Constructor for immutable nullable ptr from mutable non-nullable ptr.
-	fn enable_if( is_nullable && !is_mutable ) conversion_constructor( mut this, shared_ptr_mt_base</T, false, true/>& ptr )
+	fn enable_if( is_nullable ) conversion_constructor( mut this, shared_ptr_mt_mutex_base</T, false/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		unsafe
@@ -83,10 +58,10 @@ public:
 		}
 	}
 
-	// Construct from shared_ptr_mt of compatible type.
+	// Construct from mutex of compatible type.
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
-	conversion_constructor( mut this, shared_ptr_mt_base</U, is_nullable, is_mutable/>& ptr )
+	conversion_constructor( mut this, shared_ptr_mt_mutex_base</U, is_nullable/>& ptr )
 		( storage_= unsafe( storage_type( ptr.get_storage() ) ) )
 	{
 		if( !empty() )
@@ -113,7 +88,7 @@ public:
 			}
 			if( atomic_dec( $>(control_block_ptr).use_count_total ) == 1u )
 			{
-				rwlock_impl::rwlock_destroy( $>(control_block_ptr).rwlock );
+				mutex_impl::destroy_mutex( $>(control_block_ptr).mutex );
 				// Free counter together with control_block_ptr allocated object.
 				memory_free( ptr_cast_to_byte8( control_block_ptr ) );
 			}
@@ -151,7 +126,7 @@ public:
 	}
 
 	// Checked conversion to non-nullable from nullable.
-	fn enable_if(is_nullable) try_to_non_nullable( this ) : shared_ptr_mt_base</T, false, is_mutable/>
+	fn enable_if(is_nullable) try_to_non_nullable( this ) : shared_ptr_mt_mutex_base</T, false/>
 	{
 		halt if(empty());
 
@@ -161,45 +136,45 @@ public:
 
 			atomic_inc( $>(control_block_ptr).use_count_total  );
 			atomic_inc( $>(control_block_ptr).use_count_strong );
-			return shared_ptr_mt_base</T, false, is_mutable/>( storage_ );
+			return shared_ptr_mt_mutex_base</T, false/>( storage_ );
 		}
 	}
 
 	// Lock operations.
-	// Immutable locking may block current thread if at this moment a mutable lock on some other thread exists.
-	// Mutable locking may block current thread if at least one other lock on some other thread exists.
-	// In case if current thread owns a lock object, which prevents further locking call, deadlock or "halt" is caused.
+	// Locking may block current thread if another lock on some other thread exists.
+	// In case if current thread already owns a lock object, deadlock or "halt" is caused.
 
-	fn enable_if(is_nullable && is_mutable) try_lock_mut( this ) : lock_mut_t  @( reference_notation::return_inner_references::param0 )
+	fn enable_if(is_nullable) try_lock( this ) : lock_t  @( reference_notation::return_inner_references::param0 )
 	{
 		halt if( empty() );
-		return unsafe( lock_mut_unchecked() );
+		return unsafe( lock_unchecked() );
 	}
 
-	fn enable_if(is_nullable) try_lock_imut( this ) : lock_imut_t @( reference_notation::return_inner_references::param0 )
+	fn enable_if(!is_nullable) lock( this ) : lock_t @( reference_notation::return_inner_references::param0 )
 	{
-		halt if( empty() );
-		return unsafe( lock_imut_unchecked() );
+		return unsafe( lock_unchecked() );
 	}
 
-	fn enable_if(!is_nullable && is_mutable) lock_mut( this ) : lock_mut_t @( reference_notation::return_inner_references::param0 )
+	fn lock_unchecked( this ) unsafe : lock_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_mut_unchecked() );
+		return unsafe( lock_t( storage_ ) );
 	}
 
-	fn enable_if(!is_nullable) lock_imut( this ) : lock_imut_t @( reference_notation::return_inner_references::param0 )
+	// Alternative names for lock operations - to be compatible with "shared_ptr_mt".
+
+	fn enable_if(is_nullable) try_lock_mut( this ) : lock_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_imut_unchecked() );
+		return try_lock();
 	}
 
-	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t @( reference_notation::return_inner_references::param0 )
+	fn enable_if(!is_nullable) lock_mut( this ) : lock_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_mut_t ( storage_ ) );
+		return lock();
 	}
 
-	fn lock_imut_unchecked( this ) unsafe : lock_imut_t @( reference_notation::return_inner_references::param0 )
+	fn lock_mut_unchecked( this ) unsafe : lock_t @( reference_notation::return_inner_references::param0 )
 	{
-		return unsafe( lock_imut_t( storage_ ) );
+		return unsafe( lock_unchecked() );
 	}
 
 	// Compare.
@@ -231,64 +206,47 @@ public: // Methods for internal usage.
 	{}
 
 private:
-	type this_type= shared_ptr_mt_base</ T, is_nullable, is_mutable />;
-	type storage_type= shared_ptr_mt_impl::shared_ptr_storage</T/>;
-	type lock_mut_t = shared_ptr_mt_impl::lock_mut </T/>;
-	type lock_imut_t= shared_ptr_mt_impl::lock_imut</T/>;
+	type this_type= shared_ptr_mt_mutex_base</ T, is_nullable />;
+	type storage_type= shared_ptr_mt_mutex_impl::shared_ptr_storage</T/>;
+	type lock_t = shared_ptr_mt_mutex_impl::lock</T/>;
 
 private:
 	storage_type storage_;
 }
 
-template</ type T, bool is_mutable />
-class weak_ptr_mt_base
+template</ type T />
+class weak_ptr_mt_mutex
 {
 public:
 	fn constructor()= default;
 
-	// Construct from non-nullable immutable shared_ptr_mt.
-	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_mt_base</ T, false, false/>& ptr )
+	// Construct from non-nullable shared_ptr_mt_mutex.
+	fn conversion_constructor( shared_ptr_mt_mutex_base</T, false/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
-		unsafe( atomic_inc( $>(storage_.get_control_block_ptr() ).use_count_total ) );
+		unsafe( atomic_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 	}
 
-	// Construct from non-nullable mutable shared_ptr_mt.
-	fn conversion_constructor( shared_ptr_mt_base</ T, false, true/>& ptr )
-		( storage_= unsafe( ptr.get_storage() ) )
-	{
-		unsafe( atomic_inc( $>(storage_.get_control_block_ptr() ).use_count_total ) );
-	}
 
-	// Construct from nullable immutable shared_ptr_mt.
-	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_mt_base</ T, true, false/>& ptr )
+	// Construct from nullable shared_ptr_mt.
+	fn conversion_constructor( shared_ptr_mt_mutex_base</T, true/>& ptr )
 		( storage_= unsafe( ptr.get_storage() ) )
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( atomic_inc( $>(storage_.get_control_block_ptr() ).use_count_total ) );
+			unsafe( atomic_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
-	// Construct from nullable mutable shared_ptr_mt.
-	fn conversion_constructor( shared_ptr_mt_base</ T, true, true/>& ptr )
-		( storage_= unsafe( ptr.get_storage() ) )
-	{
-		if( !storage_.empty() )
-		{
-			unsafe( atomic_inc( $>(storage_.get_control_block_ptr() ).use_count_total ) );
-		}
-	}
-
-	// Construct from weak_ptr_mt of compatible type.
+	// Construct from weak_ptr_mt_mutex of compatible type.
 	template</ type U />
 	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
-	conversion_constructor( mut this, weak_ptr_mt_base</U, is_mutable/>& ptr )
+	conversion_constructor( mut this, weak_ptr_mt_mutex</U/>& ptr )
 		( storage_= unsafe( storage_type( ptr.get_storage() ) ) )
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( atomic_inc( $>(storage_.get_control_block_ptr() ).use_count_total ) );
+			unsafe( atomic_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -298,7 +256,7 @@ public:
 	{
 		if( !storage_.empty() )
 		{
-			unsafe( atomic_inc( $>(storage_.get_control_block_ptr() ).use_count_total ) );
+			unsafe( atomic_inc( $>( storage_.get_control_block_ptr() ).use_count_total ) );
 		}
 	}
 
@@ -311,7 +269,7 @@ public:
 				auto control_block_ptr= storage_.get_control_block_ptr();
 				if( atomic_dec( $>(control_block_ptr).use_count_total ) == 1u )
 				{
-					rwlock_impl::rwlock_destroy( $>(control_block_ptr).rwlock );
+					mutex_impl::destroy_mutex( $>(control_block_ptr).mutex );
 					// Free counter together with initial allocated object.
 					memory_free( ptr_cast_to_byte8( control_block_ptr) );
 				}
@@ -331,11 +289,11 @@ public:
 		take(this);
 	}
 
-	fn lock( this ) : shared_ptr_mt_base</T, true, is_mutable/>
+	fn upgrade( this ) : shared_ptr_mt_mutex_base</T, true/>
 	{
 		if( storage_.empty() )
 		{
-			return shared_ptr_mt_base</T, true, is_mutable/>();
+			return shared_ptr_mt_mutex_base</T, true/>();
 		}
 
 		unsafe
@@ -350,7 +308,7 @@ public:
 				if( count == 0u )
 				{
 					atomic_dec( $>(control_block_ptr).use_count_total );
-					return shared_ptr_mt_base</T, true, is_mutable/>();
+					return shared_ptr_mt_mutex_base</T, true/>();
 				}
 
 				var u32 new_count= count + 1u;
@@ -363,7 +321,7 @@ public:
 				}
 			}
 
-			return shared_ptr_mt_base</T, true, is_mutable/>( storage_ );
+			return shared_ptr_mt_mutex_base</T, true/>( storage_ );
 		}
 	}
 
@@ -374,8 +332,8 @@ public: // Methods for internal usage.
 	}
 
 private:
-	type this_type= weak_ptr_mt_base</ T, is_mutable />;
-	type storage_type= shared_ptr_mt_impl::shared_ptr_storage</T/>;
+	type this_type= weak_ptr_mt_mutex</ T />;
+	type storage_type= shared_ptr_mt_mutex_impl::shared_ptr_storage</T/>;
 
 private:
 	storage_type storage_;
@@ -383,45 +341,41 @@ private:
 
 // All necessary type aliases.
 
-template</type T/> type shared_ptr_mt_imut= shared_ptr_mt_base</T, false, false/>;
-template</type T/> type shared_ptr_mt_mut= shared_ptr_mt_base</T, false, true/>;
-template</type T/> type shared_ptr_mt_nullable_imut= shared_ptr_mt_base</T, true, false/>;
-template</type T/> type shared_ptr_mt_nullable_mut= shared_ptr_mt_base</T, true, true/>;
-template</type T/> type weak_ptr_mt_imut= weak_ptr_mt_base</T, false/>;
-template</type T/> type weak_ptr_mt_mut= weak_ptr_mt_base</T, true/>;
+template</type T/> type shared_ptr_mt_mutex= shared_ptr_mt_mutex_base</T, false/>;
+template</type T/> type shared_ptr_mt_mutex_nullable= shared_ptr_mt_mutex_base</T, true/>;
 
-// Helper function for shared_ptr_mt construction.
+// Helper function for shared_ptr_mt_mutex construction.
 template</type T/>
-fn make_shared_ptr_mt( T mut value ) : shared_ptr_mt_mut</T/>
+fn make_shared_ptr_mt_mutex( T mut value ) : shared_ptr_mt_mutex</T/>
 {
-	return shared_ptr_mt_mut</T/>( move(value) );
+	return shared_ptr_mt_mutex</T/>( move(value) );
 }
 
-namespace shared_ptr_mt_impl
+namespace shared_ptr_mt_mutex_impl
 {
 
 struct control_block
 {
 	u32 use_count_total;
 	u32 use_count_strong; // always <= use_count_total
-	rwlock_impl::rwlock rwlock;
+	mutex_impl::mutex_t mutex;
 }
 
 // This class is non_sync in order to avoid moving it into another thread.
 // It's necessary, since locking and unlocking should happen on the same thread.
 template</ type T />
-class lock_mut non_sync nodiscard
+class lock non_sync nodiscard
 {
 public:
 	fn constructor( mut this, storage_type storage ) unsafe
 		( storage_= storage )
 	{
-		unsafe( rwlock_impl::rwlock_lock_exclusive( $>( storage_.get_control_block_ptr() ).rwlock ) );
+		unsafe( mutex_impl::lock_mutex( $>( storage_.get_control_block_ptr() ).mutex ) );
 	}
 
 	fn destructor()
 	{
-		unsafe( rwlock_impl::rwlock_unlock_exclusive( $>( storage_.get_control_block_ptr() ).rwlock ) );
+		unsafe( mutex_impl::unlock_mutex( $>( storage_.get_control_block_ptr() ).mutex ) );
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -435,47 +389,13 @@ private:
 
 private:
 	// Use this tag in order to mark lock class as reference-contained.
-	// It contains actually a logical reference to source shared_ptr - its storage.
-	ReferenceContainerTag</ storage_type, false /> shared_ptr_ref_tag_;
+	// It contains actually a logical reference to source shared_ptr_mt_mutex - its storage.
+	ReferenceContainerTag</ storage_type, false /> mutex_ref_tag_;
 
 	storage_type imut storage_;
 }
 
-// This class is non_sync in order to avoid moving it into another thread.
-// It's necessary, since locking and unlocking should happen on the same thread.
-template</ type T />
-class lock_imut non_sync nodiscard
-{
-public:
-	fn constructor( mut this, storage_type storage )  unsafe
-		( storage_= storage )
-	{
-		unsafe( rwlock_impl::rwlock_lock_shared( $>( storage_.get_control_block_ptr() ).rwlock ) );
-	}
-
-	fn destructor()
-	{
-		unsafe( rwlock_impl::rwlock_unlock_shared( $>( storage_.get_control_block_ptr() ).rwlock ) );
-	}
-
-	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
-	fn deref( this ) : T & imut @( reference_notation::return_references::param0 )
-	{
-		return unsafe( $>( storage_.get_value_ptr() ) );
-	}
-
-private:
-	type storage_type= shared_ptr_storage</T/>;
-
-private:
-	// Use this tag in order to mark lock class as reference-contained.
-	// It contains actually a logical reference to source shared_ptr - its storage.
-	ReferenceContainerTag</ storage_type, false /> shared_ptr_ref_tag_;
-
-	storage_type imut storage_;
-}
-
-// Storage class for control block and value pointer of a shared_ptr.
+// Storage class for control block and value pointer of a mutex.
 // Generally it's unsafe to use, it doesn't free memory on itself and doesn't increment/decrement counters.
 template</type T/>
 class shared_ptr_storage
@@ -497,7 +417,7 @@ public:
 			c.use_count_total= 1u;
 			c.use_count_strong= 1u;
 
-			rwlock_impl::rwlock_init( c.rwlock );
+			mutex_impl::initialize_mutex( c.mutex );
 
 			move_into_uninitialized( $>( byte_ptr_cast</T/>( mem + c_object_offset ) ), move(value) );
 
@@ -604,6 +524,6 @@ private:
 	$(byte8) ptr_= zero_init;
 }
 
-} // namespace shared_ptr_mt_impl
+} // namespace shared_ptr_mt_mutex_impl
 
 } // namespace ust

@@ -1,0 +1,420 @@
+//##success_test
+import "../imports/binary_heap.u"
+import "../imports/shared_ptr_mt_mutex.u"
+import "../imports/thread.u"
+import "../imports/vector.u"
+
+type IntPtr= ust::shared_ptr_mt_mutex</i32/>;
+type IntPtrNullable= ust::shared_ptr_mt_mutex_nullable</i32/>;
+type IntWeakPtr= ust::weak_ptr_mt_mutex</i32/>;
+
+// Size of "shared_ptr_mt_mutex" and "weak_ptr_mt_mutex" is single pointer.
+static_assert( typeinfo</IntPtr/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</IntPtrNullable/>.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</IntWeakPtr/>.size_of == typeinfo</size_type/>.size_of );
+
+// "shared_ptr_mt_mutex" doesn't contain unsynchronized interrior mutability.
+static_assert( !non_sync</IntPtr /> );
+static_assert( !non_sync</IntPtrNullable/> );
+static_assert( !non_sync</IntWeakPtr /> );
+
+// "shared_ptr_mut_mutex" can be used to create recursive data structures.
+struct RecursiveSharedPtr
+{
+	ust::shared_ptr_mt_mutex_nullable</ RecursiveSharedPtr /> parent;
+}
+
+// "weak_ptr_mt_mutex" can be used to create recursive data structures.
+struct RecursiveWeakPtr
+{
+	ust::weak_ptr_mt_mutex</ RecursiveWeakPtr /> parent;
+}
+
+class A interface
+{
+	fn virtual pure FooA( this ) : u32;
+	fn virtual pure SetA( mut this, u32 a );
+}
+
+class B interface
+{
+	fn virtual pure FooB( this ) : u32;
+	fn virtual pure SetB( mut this, u32 b );
+}
+
+class Impl : A, B
+{
+public:
+	fn virtual override FooA( this ) : u32
+	{
+		return a_;
+	}
+
+	fn virtual override SetA( mut this, u32 a )
+	{
+		a_= a;
+	}
+
+	fn virtual override FooB( this ) : u32
+	{
+		return b_;
+	}
+
+	fn virtual override SetB( mut this, u32 b )
+	{
+		b_= b;
+	}
+
+private:
+	u32 a_= 123u;
+	u32 b_= 456u;
+}
+
+fn nomangle main() : i32
+{
+	{ // Has "empty" method. For non-nullable "shared_ptr_mt_mutex" it always returns "true".
+		var IntPtr m( 23535 );
+		halt if( m.empty() );
+	}
+	{ // Nullable "shared_ptr_mt_mutex" has "empty" method, which may return "false".
+		var IntPtrNullable m0( 23535 ), m1;
+		halt if( m0.empty() );
+		halt if( !m1.empty() );
+	}
+	{ // Can be modified using "lock" method.
+		var IntPtr m( 563 );
+		with( mut lock : m.lock() )
+		{
+			halt if( lock.deref() != 563 );
+		}
+	}
+	{ // Has "lock_mut" method - as alias for "lock".
+		var IntPtr m( 434 );
+		with( mut lock : m.lock_mut() )
+		{
+			halt if( lock.deref() != 434 );
+			lock.deref()= 44223;
+		}
+		with( mut lock : m.lock_mut() )
+		{
+			halt if( lock.deref() != 44223 );
+		}
+	}
+	{ // Copying "shared_ptr_mt_mutex" just copies pointer to shared object.
+		var IntPtr m0( -363123 );
+		var IntPtr m1( m0 );
+		var IntPtr m2= m0;
+		auto m3= m0;
+
+		halt if( m0 != m0 );
+		halt if( m0 != m1 );
+		halt if( m0 != m2 );
+		halt if( m0 != m3 );
+		halt if( m1 != m0 );
+		halt if( m1 != m1 );
+		halt if( m1 != m2 );
+		halt if( m1 != m3 );
+		halt if( m2 != m0 );
+		halt if( m2 != m1 );
+		halt if( m2 != m2 );
+		halt if( m2 != m3 );
+		halt if( m3 != m0 );
+		halt if( m3 != m1 );
+		halt if( m3 != m2 );
+		halt if( m3 != m3 );
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != -363123 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != -363123 ); }
+		with( mut lock : m2.lock() ) { halt if( lock.deref() != -363123 ); }
+		with( mut lock : m3.lock() ) { halt if( lock.deref() != -363123 ); }
+
+		// After changing value using one instance of "shared_ptr_mt_mutex", this changes should be ovservable by others.
+		with( mut lock : m1.lock() ) { lock.deref()= 7341; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 7341 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 7341 ); }
+		with( mut lock : m2.lock() ) { halt if( lock.deref() != 7341 ); }
+		with( mut lock : m3.lock() ) { halt if( lock.deref() != 7341 ); }
+	}
+	{ // "reset" method creates new shared object.
+		var IntPtr m0( 664 ), mut m1= m0;
+		halt if( m0 != m1 );
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 664 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 664 ); }
+
+		with( mut lock : m0.lock() ) { lock.deref()= 99952; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 99952 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 99952 ); }
+
+		// Now "m0" and "m1" point to different stored objects.
+		m1.reset( 9999777 );
+		halt if( m0 == m1 );
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 99952 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 9999777 ); }
+
+		with( mut lock : m0.lock() ) { lock.deref()= -333; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != -333 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 9999777 ); }
+
+		with( mut lock : m1.lock() ) { lock.deref()= 435421; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != -333 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 435421 ); }
+	}
+	{ // Nullable pointer can be constructed from non-nullable.
+		var IntPtr m0( 12311 );
+		var IntPtrNullable m1( m0 );
+		var IntPtrNullable m2= m0;
+
+		halt if( m1.empty() );
+		halt if( m2.empty() );
+		halt if( m1 != m0 );
+		halt if( m2 != m0 );
+		halt if( m2 != m1 );
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 12311 ); }
+		with( mut lock : m1.try_lock() ) { halt if( lock.deref() != 12311 ); }
+		with( mut lock : m2.try_lock() ) { halt if( lock.deref() != 12311 ); }
+
+		with( mut lock : m0.lock() ) { lock.deref() = 66667; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 66667 ); }
+		with( mut lock : m1.try_lock() ) { halt if( lock.deref() != 66667 ); }
+		with( mut lock : m2.try_lock() ) { halt if( lock.deref() != 66667 ); }
+
+		with( mut lock : m1.try_lock() ) { lock.deref() = -338881; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != -338881 ); }
+		with( mut lock : m1.try_lock() ) { halt if( lock.deref() != -338881 ); }
+		with( mut lock : m2.try_lock() ) { halt if( lock.deref() != -338881 ); }
+
+		with( mut lock : m2.try_lock() ) { lock.deref() = 37; }
+
+		with( mut lock : m0.lock() ) { halt if( lock.deref() != 37 ); }
+		with( mut lock : m1.try_lock() ) { halt if( lock.deref() != 37 ); }
+		with( mut lock : m2.try_lock() ) { halt if( lock.deref() != 37 ); }
+	}
+	{ // There is a checked conversion from nullable to non-nullable pointer.
+		var IntPtrNullable m0( 66554433 );
+		var IntPtr m1= m0.try_to_non_nullable();
+
+		halt if( m1.empty() );
+		halt if( m1 != m0 );
+
+		with( mut lock : m0.try_lock() ) { halt if( lock.deref() != 66554433 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 66554433 ); }
+
+		with( mut lock : m0.try_lock() ) { lock.deref() = 22; }
+
+		with( mut lock : m0.try_lock() ) { halt if( lock.deref() != 22 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 22 ); }
+
+		with( mut lock : m1.lock() ) { lock.deref() = 99044; }
+
+		with( mut lock : m0.try_lock() ) { halt if( lock.deref() != 99044 ); }
+		with( mut lock : m1.lock() ) { halt if( lock.deref() != 99044 ); }
+	}
+	{ // Can convert "shared_ptr_mt_mutex" storing derived class to "shared_ptr_mt_mutex" storing base class.
+		var ust::shared_ptr_mt_mutex</Impl/> m_impl( Impl() );
+		var ust::shared_ptr_mt_mutex</A/> m_a= m_impl;
+		var ust::shared_ptr_mt_mutex</B/> m_b( m_impl );
+
+		with( mut lock : m_impl.lock() )
+		{
+			halt if( lock.deref().FooA() != 123u );
+			halt if( lock.deref().FooB() != 456u );
+		}
+		with( mut lock : m_a.lock() )
+		{
+			halt if( lock.deref().FooA() != 123u );
+			lock.deref().SetA( 33333u );
+		}
+		with( mut lock : m_b.lock() )
+		{
+			halt if( lock.deref().FooB() != 456u );
+			lock.deref().SetB( 77777u );
+		}
+		with( mut lock : m_impl.lock() )
+		{
+			halt if( lock.deref().FooA() != 33333u );
+			halt if( lock.deref().FooB() != 77777u );
+		}
+		with( mut lock : m_a.lock() )
+		{
+			halt if( lock.deref().FooA() != 33333u );
+		}
+		with( mut lock : m_b.lock() )
+		{
+			halt if( lock.deref().FooB() != 77777u );
+		}
+	}
+	{ // Test concurrent access from different threads.
+		auto ptr= ust::make_shared_ptr_mt_mutex( ust::vector</u32/>() );
+
+		// One thread pushes to the vector squared even numbers, other pushes squared odd numbers.
+
+		auto mut t0=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					for( auto mut i= 0u; i < 65536u; i+= 2u )
+					{
+						with( mut lock : ptr.lock_mut() )
+						{
+							lock.deref().push_back( i * i );
+						}
+					}
+				} );
+
+		auto mut t1=
+			ust::make_thread(
+				lambda[ptr]()
+				{
+					for( auto mut i= 1u; i < 65536u; i+= 2u )
+					{
+						with( mut lock : ptr.lock_mut() )
+						{
+							lock.deref().push_back( i * i );
+						}
+					}
+				} );
+
+		move(t0).join();
+		move(t1).join();
+
+		with( mut lock : ptr.lock_mut() )
+		{
+			auto &mut vec= lock.deref();
+
+			// Should push necessary number of elements.
+			halt if( vec.size() != 65536s );
+
+			// Order of numbers in result vector is unstable, so, sort it.
+			// But numbers itself should be the same.
+			ust::binary_heap::sort( vec );
+			for( auto mut i= 0u; i < 65536u; ++i )
+			{
+				halt if( vec[ size_type(i) ] != i * i );
+			}
+		}
+	}
+	{ // "weak_ptr_mt_mutex" is empty by-default.
+		var IntPtrNullable m;
+		halt if( !m.empty() );
+		var IntWeakPtr mw= m;
+
+		var IntPtrNullable m_upgraded= mw.upgrade();
+		halt if( !m_upgraded.empty() );
+		halt if( m_upgraded != m ); // Null pointer is equal to null pointer.
+	}
+	{ // "weak_ptr_mt_mutex" for alive object.
+		var IntPtr m( 654567 );
+		var IntWeakPtr mw= m;
+
+		var IntPtrNullable m_upgraded= mw.upgrade();
+
+		halt if( m_upgraded != m );
+
+		with( mut lock : m.lock() ) { halt if( lock.deref() != 654567 ); }
+		with( mut lock : m_upgraded.try_lock() ) { halt if( lock.deref() != 654567 ); }
+
+		with( mut lock : m.lock() ) { lock.deref() = 990000; }
+
+		with( mut lock : m.lock() ) { halt if( lock.deref() != 990000 ); }
+		with( mut lock : m_upgraded.try_lock() ) { halt if( lock.deref() != 990000 ); }
+
+		with( mut lock : m_upgraded.try_lock() ) { lock.deref() = 56785; }
+
+		with( mut lock : m.lock() ) { halt if( lock.deref() != 56785 ); }
+		with( mut lock : m_upgraded.try_lock() ) { halt if( lock.deref() != 56785 ); }
+	}
+	{ // "weak_ptr_mt_mutex" for dead object.
+		var IntPtr mut m0( 225 );
+		var IntPtrNullable mut m1= m0;
+		var IntWeakPtr mw= m0;
+
+		{ // Has 2 strong references - still alive.
+			var IntPtrNullable m_upgraded= mw.upgrade();
+			with( mut lock : m_upgraded.try_lock() ) { halt if( lock.deref() != 225 ); }
+		}
+		move(m0);
+		{ // Has 1 strong reference - still alive.
+			var IntPtrNullable m_upgraded= mw.upgrade();
+			with( mut lock : m_upgraded.try_lock() ) { halt if( lock.deref() != 225 ); }
+		}
+		m1.reset();
+		{ // Has no strong references - already dead.
+			var IntPtrNullable m_upgraded= mw.upgrade();
+			halt if( !m_upgraded.empty() );
+		}
+	}
+	{ // Can convert "weak_ptr_mt_mutex" storing derived class to "weak_ptr_mt_mutex" storing base class.
+		var ust::shared_ptr_mt_mutex</Impl/> mut m_impl( Impl() );
+		var ust::shared_ptr_mt_mutex</A/> mut m_a= m_impl;
+		var ust::shared_ptr_mt_mutex</B/> mut m_b( m_impl );
+
+		var ust::weak_ptr_mt_mutex</Impl/> mw_impl= m_impl;
+		var ust::weak_ptr_mt_mutex</A/> mw_a= m_a;
+		var ust::weak_ptr_mt_mutex</B/> mw_b( m_b );
+
+		with( mut lock : mw_impl.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooA() != 123u );
+			halt if( lock.deref().FooB() != 456u );
+		}
+		with( mut lock : mw_a.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooA() != 123u );
+			lock.deref().SetA( 33333u );
+		}
+		with( mut lock : mw_b.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooB() != 456u );
+			lock.deref().SetB( 77777u );
+		}
+		with( mut lock : mw_impl.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooA() != 33333u );
+			halt if( lock.deref().FooB() != 77777u );
+		}
+		with( mut lock : mw_a.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooA() != 33333u );
+		}
+		with( mut lock : mw_b.upgrade().try_lock() )
+		{
+			halt if( lock.deref().FooB() != 77777u );
+		}
+
+		// Remove first strong reference - should be alive.
+		move(m_a);
+		halt if( mw_impl.upgrade().empty() );
+		halt if( mw_a.upgrade().empty() );
+		halt if( mw_b.upgrade().empty() );
+
+		// Remove second strong reference - should be alive.
+		move(m_impl);
+		halt if( mw_impl.upgrade().empty() );
+		halt if( mw_a.upgrade().empty() );
+		halt if( mw_b.upgrade().empty() );
+
+		// Remove third and last strong reference - should be dead.
+		move(m_b);
+		halt if( !mw_impl.upgrade().empty() );
+		halt if( !mw_a.upgrade().empty() );
+		halt if( !mw_b.upgrade().empty() );
+	}
+	{
+		var IntPtr ptr= ust::make_shared_ptr_mt_mutex( 66 );
+		type lock_type= typeof( ptr.lock() );
+		// Lock class contains only single pointer.
+		static_assert( typeinfo</ lock_type />.size_of == typeinfo</size_type/>.size_of );
+		// Lock class is "non_sync" - in order to avoid move itto another thread and performing unlocking on a thread different from a thread which performed locking.
+		static_assert( non_sync</ lock_type /> );
+	}
+	return 0;
+}
