@@ -511,7 +511,7 @@ fn ManglerMSVC::EncodeTemplateArgImpl( this, ManglerState &mut mangler_state, Ty
 	with( &t : type_template.lock_imut().deref() )
 	{
 		mangler_state.PushElement( g_class_type_prefix ); // Use here class prefix instead of template prefix - as MSVC does.
-		EncodeFullName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.lock().try_lock_imut().deref() );
+		EncodeFullName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.upgrade().try_lock_imut().deref() );
 
 		// Do not mangle template signature params to distinguish between different overloaded type templates.
 		// it's not required, since only sets with one type template may be used as template arguments.
@@ -635,7 +635,7 @@ fn ManglerMSVC::EncodeTemplateClassName( this, ManglerState &mut mangler_state, 
 		mangler_state.EncodeChildState( move(template_mangler_state) );
 	}
 
-	EncodeNamespacePostfix_r( mangler_state, type_template.parent_names_scope.lock().try_lock_imut().deref() );
+	EncodeNamespacePostfix_r( mangler_state, type_template.parent_names_scope.upgrade().try_lock_imut().deref() );
 }
 
 fn ManglerMSVC::EncodeLambdaClassName( this, ManglerState &mut mangler_state, ClassType& the_class )

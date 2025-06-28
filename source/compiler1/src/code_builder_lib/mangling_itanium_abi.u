@@ -751,7 +751,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 			ADD_NODE( mangler_state )
 			{
 				auto t= base_template.class_template;
-				auto t_namespace= t.lock_imut().deref().parent_names_scope.lock();
+				auto t_namespace= t.lock_imut().deref().parent_names_scope.upgrade();
 				if( !t_namespace.empty() && !t_namespace.try_lock_imut().deref().GetParent().empty() )
 				{
 					mangler_state.Push( 'N' );
@@ -946,7 +946,7 @@ fn EncodeTemplateArgImpl( ManglerState &mut mangler_state, TypeTemplatePtr& type
 {
 	with( &t : type_template.lock_imut().deref() )
 	{
-		EncodeNestedName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.lock().try_lock_imut().deref() );
+		EncodeNestedName( mangler_state, t.syntax_element.deref().name, t.parent_names_scope.upgrade().try_lock_imut().deref() );
 
 		// Do not mangle template signature params to distinguish between different overloaded type templates.
 		// it's not required, since only sets with one type template may be used as template arguments.

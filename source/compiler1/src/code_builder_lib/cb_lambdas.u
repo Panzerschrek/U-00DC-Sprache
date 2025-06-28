@@ -1032,7 +1032,7 @@ fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 	}
 
 	// Do not allow to capture variables through another lambda.
-	var ust::shared_ptr_nullable_imut</LambdaPreprocessingContext/> mut current_ptr= lambda_preprocessing_context.parent.lock();
+	var ust::shared_ptr_nullable_imut</LambdaPreprocessingContext/> mut current_ptr= lambda_preprocessing_context.parent.upgrade();
 	while( !current_ptr.empty() )
 	{
 		var ust::shared_ptr_nullable_imut</LambdaPreprocessingContext/> mut next;
@@ -1044,7 +1044,7 @@ fn CodeBuilder::LambdaPreprocessingCheckVariableUsage(
 				function_context.references_graph.AddNodeIfNotExists( variable ); // Prevent further errors.
 				lambda_preprocessing_context.has_preprocessing_errors= true;
 			}
-			next= current.parent.lock();
+			next= current.parent.upgrade();
 		}
 		current_ptr= move(next);
 	}

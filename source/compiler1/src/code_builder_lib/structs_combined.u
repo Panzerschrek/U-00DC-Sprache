@@ -1109,7 +1109,7 @@ fn GetValueKindName( Value& v ) : ust::string_view8
 fn TypeTemplate::ToString( this ) : ust::string8
 {
 	var ust::string8 mut result;
-	with( &n : parent_names_scope.lock().try_lock_imut().deref() )
+	with( &n : parent_names_scope.upgrade().try_lock_imut().deref() )
 	{
 		if( !n.GetParent().empty() )
 		{
@@ -1548,7 +1548,7 @@ fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut val
 
 fn NamesScope::GetParent( this ) : ust::shared_ptr_nullable_imut</NamesScope/>
 {
-	return parent_.lock();
+	return parent_.upgrade();
 }
 
 fn NamesScope::SetErrors( mut this, ErrorsContainerPtr errors_container )
@@ -1560,7 +1560,7 @@ fn NamesScope::GetErrors( this ) : ErrorsContainerPtr
 {
 	if( errors_container_.empty() )
 	{
-		return parent_.lock().try_lock_imut().deref().GetErrors();
+		return parent_.upgrade().try_lock_imut().deref().GetErrors();
 	}
 
 	return errors_container_;
@@ -1582,7 +1582,7 @@ fn NamesScope::ToString( this ) : ust::string8
 			// This is class template. So, parent namespace is arguments names scope.
 			with( &type_template : base_template.class_template.lock_imut().deref() )
 			{
-				auto parent= type_template.parent_names_scope.lock();
+				auto parent= type_template.parent_names_scope.upgrade();
 				if( !parent.empty() )
 				{
 					var ust::string8 mut res;
@@ -1678,7 +1678,7 @@ fn NamesScope::ToString( this ) : ust::string8
 
 	var ust::string8 mut res;
 
-	auto mut parent= parent_.lock();
+	auto mut parent= parent_.upgrade();
 	if( !parent.empty() )
 	{
 		auto parent_lock= parent.try_lock_imut();

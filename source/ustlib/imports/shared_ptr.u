@@ -320,7 +320,7 @@ public:
 		take(this);
 	}
 
-	fn lock( this ) : shared_ptr_type
+	fn upgrade( this ) : shared_ptr_type
 	{
 		if( storage_.empty() )
 		{

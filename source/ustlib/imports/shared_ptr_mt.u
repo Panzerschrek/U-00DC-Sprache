@@ -331,7 +331,7 @@ public:
 		take(this);
 	}
 
-	fn lock( this ) : shared_ptr_mt_base</T, true, is_mutable/>
+	fn upgrade( this ) : shared_ptr_mt_base</T, true, is_mutable/>
 	{
 		if( storage_.empty() )
 		{

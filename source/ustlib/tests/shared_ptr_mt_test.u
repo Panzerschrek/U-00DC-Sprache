@@ -187,7 +187,7 @@ fn nomangle main() : i32
 		var IntPtrMut mut ptr0(11);
 		var IntPtrWeakMut ptr_weak(ptr0);
 
-		var IntPtrNullableMut mut ptr1( ptr_weak.lock() );
+		var IntPtrNullableMut mut ptr1( ptr_weak.upgrade() );
 
 		halt if( ptr0 != ptr1 );
 		halt if( ptr1.empty() );
@@ -196,26 +196,26 @@ fn nomangle main() : i32
 	}
 	{ // Can not get shared_ptr with value for empty weak ptr.
 		var IntPtrWeakMut ptr_weak_empty;
-		auto ptr_shared= ptr_weak_empty.lock();
+		auto ptr_shared= ptr_weak_empty.upgrade();
 		halt if( !ptr_shared.empty() );
 	}
 	{ // After source ponter reset, weak_ptr becomes empty.
 		var IntPtrNullableMut mut ptr(0);
 		var IntPtrWeakMut ptr_weak(ptr);
 
-		halt if( ptr_weak.lock().empty() );
+		halt if( ptr_weak.upgrade().empty() );
 
 		ptr.reset();
-		halt if( !ptr_weak.lock().empty() );
+		halt if( !ptr_weak.upgrade().empty() );
 	}
 	{ // can reset weak_ptr.
 		var IntPtrMut mut ptr(85);
 		var IntPtrWeakMut mut ptr_weak(ptr);
 
-		halt if( ptr_weak.lock().empty() );
+		halt if( ptr_weak.upgrade().empty() );
 
 		ptr_weak.reset();
-		halt if( !ptr_weak.lock().empty() );
+		halt if( !ptr_weak.upgrade().empty() );
 	}
 	{ // Non-nullable mutable pointer can be converted to nullable mutable pointer.
 		var IntPtrMut ptr0(66);
@@ -344,7 +344,7 @@ fn nomangle main() : i32
 			var ust::shared_ptr_mt_mut</Impl/> mut ptr0( Impl() );
 			var ust::weak_ptr_mt_mut</Impl/> ptr1(ptr0);
 			var ust::weak_ptr_mt_mut</I0/> ptr2(ptr1);
-			var ust::shared_ptr_mt_nullable_mut</I0/> ptr3(ptr2.lock());
+			var ust::shared_ptr_mt_nullable_mut</I0/> ptr3(ptr2.upgrade());
 
 			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
@@ -353,7 +353,7 @@ fn nomangle main() : i32
 			var ust::shared_ptr_mt_mut</Impl/> mut ptr0( Impl() );
 			var ust::weak_ptr_mt_mut</Impl/> ptr1(ptr0);
 			var ust::weak_ptr_mt_mut</I1/> ptr2(ptr1);
-			var ust::shared_ptr_mt_nullable_mut</I1/> ptr3(ptr2.lock());
+			var ust::shared_ptr_mt_nullable_mut</I1/> ptr3(ptr2.upgrade());
 
 			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
@@ -364,7 +364,7 @@ fn nomangle main() : i32
 			var ust::shared_ptr_mt_imut</Impl/> mut ptr0( Impl() );
 			var ust::weak_ptr_mt_imut</Impl/> ptr1(ptr0);
 			var ust::weak_ptr_mt_imut</I0/> ptr2(ptr1);
-			var ust::shared_ptr_mt_nullable_imut</I0/> ptr3(ptr2.lock());
+			var ust::shared_ptr_mt_nullable_imut</I0/> ptr3(ptr2.upgrade());
 
 			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
@@ -373,7 +373,7 @@ fn nomangle main() : i32
 			var ust::shared_ptr_mt_imut</Impl/> mut ptr0( Impl() );
 			var ust::weak_ptr_mt_imut</Impl/> ptr1(ptr0);
 			var ust::weak_ptr_mt_imut</I1/> ptr2(ptr1);
-			var ust::shared_ptr_mt_nullable_imut</I1/> ptr3(ptr2.lock());
+			var ust::shared_ptr_mt_nullable_imut</I1/> ptr3(ptr2.upgrade());
 
 			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.

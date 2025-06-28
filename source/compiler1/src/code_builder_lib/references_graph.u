@@ -13,7 +13,7 @@ fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 
 	with( &node_val : node.lock_imut().deref() )
 	{
-		if( node_val.parent.lock().empty() )
+		if( node_val.parent.upgrade().empty() )
 		{
 			foreach( &inner_reference_node : node_val.inner_reference_nodes )
 			{
@@ -42,7 +42,7 @@ fn ReferencesGraph::RemoveNode( mut this, VariablePtr& node )
 
 	with( &node_val : node.lock_imut().deref() )
 	{
-		if( node_val.parent.lock().empty() )
+		if( node_val.parent.upgrade().empty() )
 		{
 			foreach( &inner_reference_node : node_val.inner_reference_nodes )
 			{
@@ -230,7 +230,7 @@ fn ReferencesGraph::HasOutgoingLinks( this, VariablePtr& from ) : bool
 		return true;
 	}
 
-	var VariableNullablePtr mut parent= from.lock_imut().deref().parent.lock();
+	var VariableNullablePtr mut parent= from.lock_imut().deref().parent.upgrade();
 	while( !parent.empty() )
 	{
 		var VariablePtr parent_non_null= parent.try_to_non_nullable();
@@ -238,7 +238,7 @@ fn ReferencesGraph::HasOutgoingLinks( this, VariablePtr& from ) : bool
 		{
 			return true;
 		}
-		parent= parent_non_null.lock_imut().deref().parent.lock();
+		parent= parent_non_null.lock_imut().deref().parent.upgrade();
 	}
 
 	return false;
@@ -256,7 +256,7 @@ fn ReferencesGraph::HasOutgoingMutableNodes( this, VariablePtr& from ) : bool
 		return true;
 	}
 
-	var VariableNullablePtr mut parent= from.lock_imut().deref().parent.lock();
+	var VariableNullablePtr mut parent= from.lock_imut().deref().parent.upgrade();
 	while( !parent.empty() )
 	{
 		var VariablePtr parent_non_null= parent.try_to_non_nullable();
@@ -264,7 +264,7 @@ fn ReferencesGraph::HasOutgoingMutableNodes( this, VariablePtr& from ) : bool
 		{
 			return true;
 		}
-		parent= parent_non_null.lock_imut().deref().parent.lock();
+		parent= parent_non_null.lock_imut().deref().parent.upgrade();
 	}
 
 	return false;
@@ -313,7 +313,7 @@ fn ReferencesGraph::GetNodeInputLinks( this, VariablePtr& node ) : NodesSet
 			}
 		}
 
-		var VariableNullablePtr parent= current_node.lock_imut().deref().parent.lock();
+		var VariableNullablePtr parent= current_node.lock_imut().deref().parent.upgrade();
 		if( parent.empty() )
 		{
 			return result;
@@ -434,7 +434,7 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes_r( this, VariablePtr& node, No
 		}
 	}
 
-	var VariableNullablePtr parent= node.lock_imut().deref().parent.lock();
+	var VariableNullablePtr parent= node.lock_imut().deref().parent.upgrade();
 	if( !parent.empty() )
 	{
 		GetAllAccessibleVariableNodes_r( parent.try_to_non_nullable(), visited_nodes, out_nodes );
@@ -596,7 +596,7 @@ fn ReferencesGraph::RemoveNodeLinks( mut this, VariablePtr& node )
 	}
 
 	// If this is a child node, replace links from it with links from parent.
-	var VariableNullablePtr parent= node.lock_imut().deref().parent.lock();
+	var VariableNullablePtr parent= node.lock_imut().deref().parent.upgrade();
 	if( !parent.empty() )
 	{
 		debug_assert( in_nodes.empty(), "Non-empty input nodes list for node with parent!" );
@@ -635,7 +635,7 @@ fn ReferencesGraph::IsNodeReachable_r( this, VariablePtr& from, VariablePtr& to,
 		}
 	}
 
-	var VariableNullablePtr parent= to.lock_imut().deref().parent.lock();
+	var VariableNullablePtr parent= to.lock_imut().deref().parent.upgrade();
 	if( !parent.empty() && IsNodeReachable_r( from, parent.try_to_non_nullable(), visited_nodes_set ) )
 	{
 		return true;
