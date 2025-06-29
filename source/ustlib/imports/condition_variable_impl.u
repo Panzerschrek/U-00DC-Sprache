@@ -1,11 +1,26 @@
 // This file is used internally for low-level condition variables manipulations.
 // Do not use types/functions from this file directly!
 
+import "mutex_impl.u"
+
 namespace ust
 {
 
 namespace condition_variable_impl
 {
+
+// This type is not relocable!
+type condition_variable_t= void;
+
+fn initialize_condition_variable( condition_variable_t &mut cv ) unsafe;
+
+fn destroy_condition_variable( condition_variable_t &mut cv ) unsafe;
+
+fn notify_one_condition_variable( condition_variable_t &mut cv ) unsafe;
+
+fn notify_all_condition_variable( condition_variable_t &mut cv ) unsafe;
+
+fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m ) unsafe;
 
 } // namespace condition_variable_impl
 
