@@ -105,6 +105,62 @@ fn nomangle main() : i32
 			}
 		}
 	}
+	{ // Create many threads. They all use single condition variable to progress.
+		auto vec_ptr= ust::make_shared_ptr_mt_mutex( ust::vector</u32/>() );
+
+		var ust::condition_variable cv;
+
+		var ust::vector</ ust::thread</OrderedVectorPusher, void/> /> mut threads;
+
+		if( false ) // Hack to prevent ReferencePollutionOfOuterLoopVariable.
+		{
+			threads.push_back( ust::make_thread( OrderedVectorPusher{ .vec_ptr= vec_ptr, .index= 0u, .cv= cv } ) );
+		}
+
+		var u32 count= 64u;
+
+		for( auto mut i= 0u; i < count; ++i )
+		{
+			threads.push_back( ust::make_thread( OrderedVectorPusher{ .vec_ptr= vec_ptr, .index= i, .cv= cv } ) );
+		}
+
+		move(threads); // Wait until all threads are done.
+
+		with( mut lock : vec_ptr.lock() )
+		{
+			auto& vec= lock.deref();
+			halt if( vec.size() != size_type(count) );
+			for( var u32 mut i= 0u; i < count; ++i )
+			{
+				halt if( vec[ size_type(i) ] != i * i + i );
+			}
+		}
+	}
 
 	return 0;
+}
+
+struct OrderedVectorPusher
+{
+	ust::shared_ptr_mt_mutex</ ust::vector</u32/> /> imut vec_ptr;
+	u32 imut index;
+	ust::condition_variable& cv;
+
+	op()( byval mut this )
+	{
+		auto mut lock= vec_ptr.lock();
+
+		// Wait until vector size isn't reached our index.
+		while( lock.deref().size() != size_type(index) )
+		{
+			cv.wait( lock );
+		}
+
+		// Push value corresponding to our index.
+		lock.deref().push_back( index * index + index );
+
+		// Awake other threads.
+		// Notifying all is suboptimal, but this is the only way to reliably notify a thread which should perform its job after this thread.
+		cv.notify_all();
+	}
 }
