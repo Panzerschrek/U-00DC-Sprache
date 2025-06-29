@@ -388,7 +388,7 @@ public: // Methods for internal usage.
 
 	fn get_mutex_ptr( this ) unsafe : mutex_impl::mutex_t &mut
 	{
-		return $>( storage_.get_control_block_ptr() ).mute;
+		return unsafe( $>( storage_.get_control_block_ptr() ).mutex );
 	}
 
 private:

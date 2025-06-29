@@ -1,7 +1,50 @@
 //##success_test
 import "../imports/condition_variable.u"
+import "../imports/thread.u"
 
 fn nomangle main() : i32
 {
+	{
+		auto m= ust::make_shared_ptr_mt_mutex( false );
+
+		var ust::condition_variable cv;
+
+		// Create a thread, which waits in loop until shared value is not "true".
+		auto t= ust::make_thread(
+			lambda[m, &cv]()
+			{
+				auto mut lock= m.lock();
+				loop
+				{
+					if( lock.deref() )
+					{
+						break;
+					}
+					else
+					{
+						cv.wait( lock );
+					}
+				}
+			} );
+
+		// Sleep a bit in order to ensure started thread reached waiting condition.
+		SleepABit();
+
+		// On current thread set shared value to "true" and notify waiting thread.
+		with( mut lock : m.lock() )
+		{
+			lock.deref()= true;
+		}
+		cv.notify_one();
+	}
+
 	return 0;
+}
+
+fn SleepABit()
+{
+	// TODO - use proper sleeping function.
+	for( auto mut i= 0u; i < (1u << 20u); ++i )
+	{
+	}
 }
