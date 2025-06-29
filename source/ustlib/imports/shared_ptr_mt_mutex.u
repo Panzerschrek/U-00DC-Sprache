@@ -10,6 +10,7 @@ namespace ust
 
 // Multithreaded shared pointer.
 // Uses a mutex to synchronize access to stored value.
+// May be used in combination with "condition_variable" class.
 // Prefer using "shared_ptr_mt" if requiring a mutex isn't strictly necessary,
 // since "shared_ptr_mt" uses RW-lock inside and blocks less in case of many concurrent read operations.
 template</ type T, bool is_nullable />
