@@ -1,0 +1,11 @@
+import "../../imports/condition_variable_impl.u"
+
+namespace ust
+{
+
+namespace condition_variable_impl
+{
+
+} // namespace condition_variable_impl
+
+} // namespace ust

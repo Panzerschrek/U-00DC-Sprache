@@ -1,0 +1,12 @@
+// This file is used internally for low-level condition variables manipulations.
+// Do not use types/functions from this file directly!
+
+namespace ust
+{
+
+namespace condition_variable_impl
+{
+
+} // namespace condition_variable_impl
+
+} // namespace ust
