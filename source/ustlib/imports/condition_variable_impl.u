@@ -10,7 +10,7 @@ namespace condition_variable_impl
 {
 
 // This type is not relocable!
-type condition_variable_t= void;
+type condition_variable_t= [ byte64, 1 ];
 
 fn initialize_condition_variable( condition_variable_t &mut cv ) unsafe;
 

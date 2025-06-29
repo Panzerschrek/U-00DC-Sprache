@@ -25,6 +25,7 @@ fn nomangle GetFileInformationByHandleEx( HANDLE hFile, FILE_INFO_BY_HANDLE_CLAS
 fn nomangle GetFileSizeEx( HANDLE hFile, PLARGE_INTEGER lpFileSize ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetSystemTimePreciseAsFileTime( LPFILETIME lpSystemTimeAsFileTime ) unsafe call_conv( "system" ) : void;
+fn nomangle InitializeConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle InitializeSynchronizationBarrier( LPSYNCHRONIZATION_BARRIER lpBarrier, LONG lTotalThreads, LONG lSpinCount ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle InitializeSRWLock( PSRWLOCK SRWLock ) unsafe call_conv( "system" ) : void;
 fn nomangle MoveFileExW( LPCWSTR lpExistingFileName, LPCWSTR lpNewFileName, DWORD dwFlags ) unsafe call_conv( "system" ) : BOOL;
@@ -39,6 +40,9 @@ fn nomangle SetEnvironmentVariableW( LPCWSTR lpName, LPCWSTR lpValue ) unsafe ca
 fn nomangle SetFileAttributesW( LPCWSTR lpFileName, DWORD dwFileAttributes ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle SetFileInformationByHandle( HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, LPVOID lpFileInformation, DWORD dwBufferSize ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle SetFilePointerEx( HANDLE hFile, LARGE_INTEGER liDistanceToMove, PLARGE_INTEGER lpNewFilePointer, DWORD dwMoveMethod ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle SleepConditionVariableSRW( PCONDITION_VARIABLE ConditionVariable, PSRWLOCK SRWLock, DWORD dwMilliseconds, ULONG Flags ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle WakeAllConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
+fn nomangle WakeConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
 
@@ -102,6 +106,11 @@ struct ü_RTL_BARRIER ordered
 	[ ULONG_PTR, 2u ] Reserved3;
 	DWORD Reserved4;
 	DWORD Reserved5;
+}
+
+struct ü_RTL_CONDITION_VARIABLE ordered
+{
+	PVOID Ptr;
 }
 
 struct ü_RTL_SRWLOCK ordered
@@ -201,13 +210,16 @@ type LPVOID = $(byte8);
 type LPWIN32_FIND_DATAW = $(ü_WIN32_FIND_DATAW);
 type LPWSTR = $(WCHAR);
 type OVERLAPPED = ü_OVERLAPPED;
+type PCONDITION_VARIABLE = $(RTL_CONDITION_VARIABLE);
 type PLARGE_INTEGER = $(LARGE_INTEGER);
 type PRTL_BARRIER = $(ü_RTL_BARRIER);
 type PSRWLOCK = $(RTL_SRWLOCK);
 type PVOID = $(byte8);
+type RTL_CONDITION_VARIABLE = ü_RTL_CONDITION_VARIABLE;
 type RTL_SRWLOCK = ü_RTL_SRWLOCK;
 type SECURITY_ATTRIBUTES = ü_SECURITY_ATTRIBUTES;
 type SIZE_T = ULONG_PTR;
+type ULONG = u32;
 type ULONG_PTR = size_type;
 type WCHAR = wchar_t;
 type WIN32_FILE_ATTRIBUTE_DATA = ü_WIN32_FILE_ATTRIBUTE_DATA;
