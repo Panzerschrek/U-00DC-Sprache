@@ -19,6 +19,7 @@ public:
 	fn destructor()
 	{
 		unsafe( condition_variable_impl::destroy_condition_variable( $>(cv_) ) );
+		unsafe( memory_free( ptr_cast_to_byte8( cv_ ) ) );
 	}
 
 	// Wake single thread waiting on this condition variable (if there is at least one waiting thread).
