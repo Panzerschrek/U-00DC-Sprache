@@ -21,16 +21,20 @@ public:
 		unsafe( condition_variable_impl::destroy_condition_variable( $>(cv_) ) );
 	}
 
+	// Wake single thread waiting on this condition variable (if there is at least one waiting thread).
 	fn notify_one( this )
 	{
 		unsafe( condition_variable_impl::notify_one_condition_variable( $>(cv_) ) );
 	}
 
+	// Wake all threads waiting on this condition variable.
 	fn notify_all( this )
 	{
 		unsafe( condition_variable_impl::notify_all_condition_variable( $>(cv_) ) );
 	}
 
+	// Atomically unlock passed mutex lock and wait until notified.
+	// Spurious wakeups are possible.
 	template</type T/>
 	fn wait( this, shared_ptr_mt_mutex_impl::lock</T/> &mut l )
 	{
@@ -38,6 +42,9 @@ public:
 	}
 
 private:
+	// Allocate condition variable instance on heap,
+	// because we need to perform mutation of underlying condition variable structure in "imut" methods
+	// and because underlyin condition variable type isn't relocable.
 	$(condition_variable_impl::condition_variable_t) imut cv_;
 }
 
