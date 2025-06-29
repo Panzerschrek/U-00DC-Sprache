@@ -15,6 +15,7 @@ if you want to learn more, read its sources yourself.
 * Aligned storage, that is used internally for some containers (aligned_storage.u).
 * Allocation/deallocation functions (alloc.u).
 * Asserts (assert.u).
+* Barrier synchronization primitive (barrier.u).
 * Atomic operations support (atomic.u).
 * Binary heap routines and heap sorting (binary_heap.u).
 * Binary search routines (binary_seach.u).
@@ -23,6 +24,7 @@ if you want to learn more, read its sources yourself.
 * Comparators for sorting and binary search (compare.u).
 * Helpers for arrays and tuples construction (composite.u).
   Contains functions which construct an array or tuple for given arguments.
+* Condition variable synchronization primitive (condition_variable.u).
 * Various container utils (container_utils.u).
 * Coroutines helpers (coro.u).
 * Directory iterator (directory_iterator.u).
@@ -48,6 +50,7 @@ if you want to learn more, read its sources yourself.
 * Reference notation helpers (reference_notation.u).
   Used to simplify specifying reference notation for functions.
 * Helper classes and macros for scoped arrays creation (scoped_array.u).
+* Semaphore synchronization primitive (semaphore.u).
 * Sorting routines (sort.u).
 * stdin support (stdin.u).
 * stdout support (stdout.u).
@@ -81,6 +84,7 @@ if you want to learn more, read its sources yourself.
   Provide interior shared mutability with thread-safety.
 * Multi-threaded shared pointers for immutable data (shared_ptr_mt_final.u).
   Allow sharing the same piece of constant data across multiple owners and threads.
+* Multi-threaded shared pointers with mutex-based synchronization (shared_ptr_mt_mutex.u).
 * Strings (string.u, string_base.u) and helper utilities.
   Strings are like vectors, but support only ``char`` types as elements and allow concatenation via overloaded ``+`` operators.
 * Variant container, that can store in-place a value of one of specified types (variant.u).
