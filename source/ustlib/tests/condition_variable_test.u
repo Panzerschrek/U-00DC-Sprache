@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/condition_variable.u"
 import "../imports/thread.u"
+import "../imports/semaphore.u"
 
 fn nomangle main() : i32
 {
@@ -9,11 +10,14 @@ fn nomangle main() : i32
 
 		var ust::condition_variable cv;
 
+		var ust::semaphore semaphore(0u);
+
 		// Create a thread, which waits in loop until shared value is not "true".
 		auto t= ust::make_thread(
-			lambda[m, &cv]()
+			lambda[m, &cv, &semaphore]()
 			{
 				auto mut lock= m.lock();
+				semaphore.release(); // Notify main thread that we are ready.
 				loop
 				{
 					if( lock.deref() )
@@ -27,8 +31,9 @@ fn nomangle main() : i32
 				}
 			} );
 
-		// Sleep a bit in order to ensure started thread reached waiting condition.
-		SleepABit();
+		// Use a semaphore to wait until created thread reaches waiting loop.
+		// This is necessary to ensure that waiting function is entered before we set value of shared variable.
+		semaphore.acquire();
 
 		// On current thread set shared value to "true" and notify waiting thread.
 		with( mut lock : m.lock() )
@@ -39,12 +44,4 @@ fn nomangle main() : i32
 	}
 
 	return 0;
-}
-
-fn SleepABit()
-{
-	// TODO - use proper sleeping function.
-	for( auto mut i= 0u; i < (1u << 20u); ++i )
-	{
-	}
 }
