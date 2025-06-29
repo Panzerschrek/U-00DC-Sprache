@@ -4,12 +4,25 @@ import "../imports/semaphore.u"
 import "../imports/thread.u"
 import "../imports/vector.u"
 
+// Condition variable has pointer size.
+static_assert( typeinfo</ ust::condition_variable />.size_of == typeinfo</size_type/>.size_of );
+
+// Condition variable doesn't contain unsynchronized interrior mutation.
+static_assert( !non_sync</ ust::condition_variable /> );
+
+// Condition variable isn't copyable.
+static_assert( !typeinfo</ ust::condition_variable />.is_copy_constructible );
+static_assert( !typeinfo</ ust::condition_variable />.is_copy_assignable );
+
+// It's also not possible to compare condition variables.
+static_assert( !typeinfo</ ust::condition_variable />.is_equality_comparable );
+
 fn nomangle main() : i32
 {
 	{
 		auto m= ust::make_shared_ptr_mt_mutex( false );
 
-		var ust::condition_variable cv;
+		var ust::condition_variable cv; // Immutable, since all its methods are immutable.
 
 		var ust::semaphore semaphore(0u);
 
