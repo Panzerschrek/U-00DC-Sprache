@@ -1,7 +1,8 @@
 //##success_test
 import "../imports/condition_variable.u"
-import "../imports/thread.u"
 import "../imports/semaphore.u"
+import "../imports/thread.u"
+import "../imports/vector.u"
 
 fn nomangle main() : i32
 {
@@ -41,6 +42,68 @@ fn nomangle main() : i32
 			lock.deref()= true;
 		}
 		cv.notify_one();
+	}
+	{ // Create two threads, which push values to shared vector in interleaving order. Two condition variables are used to guarantee this order.
+		auto vec_ptr= ust::make_shared_ptr_mt_mutex( ust::vector</u32/>() );
+
+		var ust::condition_variable cv_even, cv_odd;
+
+		var u32 count= 65536u;
+
+		// On even iterations push squared numbers.
+		auto mut t_even=
+			ust::make_thread(
+				lambda[&]()
+				{
+					auto mut lock= vec_ptr.lock();
+					for( auto mut i= 0u; i < count; i+= 2u )
+					{
+						while( ( lock.deref().size() & 1s ) != 0s )
+						{
+							cv_even.wait( lock );
+						}
+						lock.deref().push_back( i * i );
+						cv_odd.notify_one();
+					}
+				} );
+
+		// On odd iterations push numbers in power 1.
+		auto mut t_odd=
+			ust::make_thread(
+				lambda[&]()
+				{
+					auto mut lock= vec_ptr.lock();
+					for( auto mut i= 1u; i < count; i+= 2u )
+					{
+						while( ( lock.deref().size() & 1s ) != 1s )
+						{
+							cv_odd.wait( lock );
+						}
+						lock.deref().push_back( i );
+						cv_even.notify_one();
+					}
+				} );
+
+		move(t_even);
+		move(t_odd);
+
+		with( mut lock : vec_ptr.lock() )
+		{
+			auto& vec= lock.deref();
+			halt if( vec.size() != size_type(count) );
+			for( auto mut i= 0u; i < count; ++i )
+			{
+				var u32 v= vec[ size_type(i) ];
+				if( ( i & 1u ) != 0u )
+				{
+					halt if( v != i );
+				}
+				else
+				{
+					halt if( v != i * i );
+				}
+			}
+		}
 	}
 
 	return 0;
