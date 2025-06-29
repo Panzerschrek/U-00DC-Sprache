@@ -1,0 +1,40 @@
+// This file is used internally for low-level condition variables manipulations.
+// Do not use types/functions from this file directly!
+
+import "mutex_impl.u"
+
+namespace ust
+{
+
+namespace condition_variable_impl
+{
+
+// Opaque representation for OS-specific condition variable type.
+// This type is not relocable!
+type condition_variable_t=
+	type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		[ byte64, 1 ], // RTL_CONDITION_VARIABLE
+		[ byte64, 6 ] // pthread_cond_t
+		/>;
+
+// Initialize condition variable at given address.
+fn initialize_condition_variable( condition_variable_t &mut cv ) unsafe;
+
+// Destroy condition variable at given address.
+fn destroy_condition_variable( condition_variable_t &mut cv ) unsafe;
+
+// Wake single thread waiting on this condition variable (if there is at least one waiting thread).
+fn notify_one_condition_variable( condition_variable_t &mut cv ) unsafe;
+
+// Wake all threads waiting on this condition variable.
+fn notify_all_condition_variable( condition_variable_t &mut cv ) unsafe;
+
+// Atomically unlock given mutex and wait until notified.
+// Given mutex should be previously locked by current thread.
+// Spurious wakeups are possible.
+fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m ) unsafe;
+
+} // namespace condition_variable_impl
+
+} // namespace ust

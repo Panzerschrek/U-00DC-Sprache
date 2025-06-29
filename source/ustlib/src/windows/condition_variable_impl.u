@@ -1,0 +1,44 @@
+import "../../imports/condition_variable_impl.u"
+import "windows.uh"
+
+namespace ust
+{
+
+namespace condition_variable_impl
+{
+
+static_assert( typeinfo</condition_variable_t/>.size_of == typeinfo</RTL_CONDITION_VARIABLE/>.size_of );
+static_assert( typeinfo</condition_variable_t/>.align_of >= typeinfo</RTL_CONDITION_VARIABLE/>.align_of );
+
+fn initialize_condition_variable( condition_variable_t &mut cv ) unsafe
+{
+	unsafe( ::InitializeConditionVariable( $<( cast_ref_unsafe</RTL_CONDITION_VARIABLE/>( cv ) ) ) );
+}
+
+fn destroy_condition_variable( condition_variable_t &mut cv ) unsafe
+{
+	ignore_unused( cv );
+}
+
+fn notify_one_condition_variable( condition_variable_t &mut cv ) unsafe
+{
+	unsafe( ::WakeConditionVariable( $<( cast_ref_unsafe</RTL_CONDITION_VARIABLE/>( cv ) ) ) );
+}
+
+fn notify_all_condition_variable( condition_variable_t &mut cv ) unsafe
+{
+	unsafe( ::WakeAllConditionVariable( $<( cast_ref_unsafe</RTL_CONDITION_VARIABLE/>( cv ) ) ) );
+}
+
+fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m ) unsafe
+{
+	unsafe( ::SleepConditionVariableSRW(
+		$<( cast_ref_unsafe</RTL_CONDITION_VARIABLE/>( cv ) ),
+		$<( cast_ref_unsafe</RTL_SRWLOCK/>( m ) ),
+		DWORD(INFINITE),
+		DWORD(0) ) );
+}
+
+} // namespace condition_variable_impl
+
+} // namespace ust
