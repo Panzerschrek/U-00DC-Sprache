@@ -386,7 +386,8 @@ public:
 
 public: // Methods for internal usage.
 
-	fn get_mutex_ptr( this ) unsafe : mutex_impl::mutex_t &mut
+	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
+	fn get_raw_mutex( mut this ) unsafe : mutex_impl::mutex_t &mut @( reference_notation::return_references::param0 )
 	{
 		return unsafe( $>( storage_.get_control_block_ptr() ).mutex );
 	}

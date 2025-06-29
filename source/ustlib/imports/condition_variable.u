@@ -39,7 +39,7 @@ public:
 	template</type T/>
 	fn wait( this, shared_ptr_mt_mutex_impl::lock</T/> &mut l )
 	{
-		unsafe( condition_variable_impl::wait_condition_variable( $>(cv_), l.get_mutex_ptr() ) );
+		unsafe( condition_variable_impl::wait_condition_variable( $>(cv_), l.get_raw_mutex() ) );
 	}
 
 private:
