@@ -1,10 +1,48 @@
 import "../../imports/condition_variable_impl.u"
+import "pthread.uh"
 
 namespace ust
 {
 
 namespace condition_variable_impl
 {
+
+static_assert( typeinfo</condition_variable_t/>.size_of == typeinfo</pthread_cond_t/>.size_of );
+static_assert( typeinfo</condition_variable_t/>.align_of >= typeinfo</pthread_cond_t/>.align_of );
+
+fn initialize_condition_variable( condition_variable_t &mut cv ) unsafe
+{
+	unsafe
+	{
+		var pthread_condattr_t mut attr= zero_init;
+		::pthread_condattr_init( attr );
+
+		var i32 res= ::pthread_cond_init( cast_ref_unsafe</pthread_cond_t/>(cv), attr );
+		halt if( res != 0 );
+
+		::pthread_condattr_destroy( attr );
+	}
+}
+
+fn destroy_condition_variable( condition_variable_t &mut cv ) unsafe
+{
+	unsafe( ::pthread_cond_destroy( cast_ref_unsafe</pthread_cond_t/>(cv) ) );
+}
+
+fn notify_one_condition_variable( condition_variable_t &mut cv ) unsafe
+{
+	unsafe( ::pthread_cond_signal( cast_ref_unsafe</pthread_cond_t/>(cv) ) );
+}
+
+fn notify_all_condition_variable( condition_variable_t &mut cv ) unsafe
+{
+	unsafe( ::pthread_cond_broadcast( cast_ref_unsafe</pthread_cond_t/>(cv) ) );
+}
+
+fn wait_condition_variable( condition_variable_t &mut cv, mutex_impl::mutex_t &mut m ) unsafe
+{
+	unsafe( ::pthread_cond_wait( cast_ref_unsafe</pthread_cond_t/>(cv), cast_ref_unsafe</pthread_mutex_t/>(m) ) );
+}
 
 } // namespace condition_variable_impl
 

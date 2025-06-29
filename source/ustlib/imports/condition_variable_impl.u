@@ -11,7 +11,12 @@ namespace condition_variable_impl
 
 // Opaque representation for OS-specific condition variable type.
 // This type is not relocable!
-type condition_variable_t= [ byte64, 1 ];
+type condition_variable_t=
+	type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		[ byte64, 1 ], // RTL_CONDITION_VARIABLE
+		[ byte64, 6 ] // pthread_cond_t
+		/>;
 
 // Initialize condition variable at given address.
 fn initialize_condition_variable( condition_variable_t &mut cv ) unsafe;

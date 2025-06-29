@@ -8,7 +8,7 @@ namespace condition_variable_impl
 {
 
 static_assert( typeinfo</condition_variable_t/>.size_of == typeinfo</RTL_CONDITION_VARIABLE/>.size_of );
-static_assert( typeinfo</condition_variable_t/>.align_of >= typeinfo</RTL_CONDITION_VARIABLE/>.size_of );
+static_assert( typeinfo</condition_variable_t/>.align_of >= typeinfo</RTL_CONDITION_VARIABLE/>.align_of );
 
 fn initialize_condition_variable( condition_variable_t &mut cv ) unsafe
 {
