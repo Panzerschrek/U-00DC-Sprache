@@ -169,7 +169,7 @@ def DoSuccessTest( file_path ):
 	file_name= os.path.basename( file_path )
 	executable_file= file_name + "_temp.exe"
 
-	compiler_args= [ g_compiler_executable, file_path, "-o", executable_file, "--filetype", "exe", "--allow-unused-names" ]
+	compiler_args= [ g_compiler_executable, file_path, "-o", executable_file, "--filetype", "exe", "--allow-unused-names", "--verify-module" ]
 	if g_use_position_independent_code :
 		compiler_args= compiler_args + [ "--relocation-model", "pic" ]
 
