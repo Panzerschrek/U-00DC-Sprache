@@ -271,6 +271,45 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read(x) != ssize_type(-10) );
 	}
 	{
+		var bool mut b= false;
+
+		for( var i32 mut x= 0; x < 2; ++x )
+		{
+			var bool b0= x != 0;
+			for( var i32 mut y= 0; y < 2; ++y )
+			{
+				var bool b1= y != 0;
+				ust::atomic_write( b, b0 );
+				halt if( ust::atomic_and( b, b1 ) != b0 );
+				halt if( ust::atomic_read( b ) != ( b0 & b1 ) );
+			}
+		}
+
+		for( var i32 mut x= 0; x < 2; ++x )
+		{
+			var bool b0= x != 0;
+			for( var i32 mut y= 0; y < 2; ++y )
+			{
+				var bool b1= y != 0;
+				ust::atomic_write( b, b0 );
+				halt if( ust::atomic_or( b, b1 ) != b0 );
+				halt if( ust::atomic_read( b ) != ( b0 | b1 ) );
+			}
+		}
+
+		for( var i32 mut x= 0; x < 2; ++x )
+		{
+			var bool b0= x != 0;
+			for( var i32 mut y= 0; y < 2; ++y )
+			{
+				var bool b1= y != 0;
+				ust::atomic_write( b, b0 );
+				halt if( ust::atomic_xor( b, b1 ) != b0 );
+				halt if( ust::atomic_read( b ) != ( b0 ^ b1 ) );
+			}
+		}
+	}
+	{
 		var i32 mut x= 0;
 		halt if( ust::atomic_or ( x, 0b00000000000000000001001001100100 ) != 0 );
 		halt if( ust::atomic_read( x ) != 0b00000000000000000001001001100100 );
