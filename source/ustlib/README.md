@@ -57,6 +57,7 @@ Other functionality:
 * Reference notation helpers (reference_notation.u)
 * Helper classes and macros for scoped arrays creation (scoped_array.u)
 * Semaphore synchronization primitive (semaphore.u)
+* Shared version of barrier synchronization primitive (shared_barrier.u)
 * Sorting routines (sort.u)
 * stdin support (stdin.u)
 * stdout support (stdout.u)

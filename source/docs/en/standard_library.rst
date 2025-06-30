@@ -51,6 +51,7 @@ if you want to learn more, read its sources yourself.
   Used to simplify specifying reference notation for functions.
 * Helper classes and macros for scoped arrays creation (scoped_array.u).
 * Semaphore synchronization primitive (semaphore.u).
+* Shared version of barrier synchronization primitive (shared_barrier.u).
 * Sorting routines (sort.u).
 * stdin support (stdin.u).
 * stdout support (stdout.u).
