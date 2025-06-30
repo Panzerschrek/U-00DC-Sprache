@@ -114,8 +114,6 @@ Standart library:
 *) More binary search functions - index of last element less than given (or equal to it), index of given element,
 	range partition
 *) Adapter-container for binary heap (min_heap/max_heap)
-*) Support atomic bool operations - read, write, exchange, and, or, xor
-*) Support atomic read, write, exchange operations for 8-bit and 16-bit integer types, char types, byte types
 
 Compiler:
 *) Fix possible overflows in numeric literals
