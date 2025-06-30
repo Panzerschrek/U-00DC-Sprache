@@ -1,5 +1,7 @@
 //##success_test
 import "../imports/atomic_variable.u"
+import "../imports/thread.u"
+import "../imports/vector.u"
 
 // Atomic variables aren't copyable (because of heap indirection).
 static_assert( !typeinfo</ ust::atomic_variable</i32/> />.is_copy_constructible );
@@ -175,6 +177,42 @@ fn nomangle main() : i32
 		halt if( ptr_a.read() != $<(x) );
 		halt if( ptr_b != $<(x) );
 	}
+	{ // Share atomic variable across many threads.
+		var ust::atomic_variable</size_type/> v(0s);
+
+		var ust::vector</ ust::thread</ AdderFunc, void /> /> mut threads;
+
+		var size_type c_num_threads= 25s;
+
+		if( false ) // Hack to prevent ReferencePollutionOfOuterLoopVariable.
+		{
+			threads.push_back( ust::make_thread( AdderFunc{ .thread_index= 0s, .v= v } ) );
+		}
+
+		for( auto mut i= 0s; i < c_num_threads; ++i )
+		{
+			threads.push_back( ust::make_thread( AdderFunc{ .thread_index= i, .v= v } ) );
+		}
+
+		move(threads); // Move threads in order to join.
+
+		var size_type expected_result= ( 1s << c_num_threads ) - 1s;
+
+		halt if( v.read() != expected_result );
+	}
 
 	return 0;
+}
+
+struct AdderFunc
+{
+	size_type thread_index;
+	ust::atomic_variable</size_type/>& v;
+
+	op()( byval this )
+	{
+		halt if( ( v.read() & ( 1s << thread_index ) ) != 0s );
+		// Each thread sets single bit via its add operations.
+		v.add( 1s << thread_index );
+	}
 }
