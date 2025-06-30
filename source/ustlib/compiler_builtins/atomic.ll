@@ -1,5 +1,13 @@
 ; Use strictest memory order - "seq_cst" for all atomic operations.
 
+$ust_atomic_read_bool_impl = comdat any
+define linkonce_odr hidden i1 @ust_atomic_read_bool_impl( i1* %addr ) unnamed_addr comdat
+{
+	%1= load atomic i8, i8* %addr seq_cst, align 1
+	%2 = trunc i8 %1 to i1
+	ret i1 %2
+}
+
 $ust_atomic_read_i8_impl = comdat any
 define linkonce_odr hidden i8 @ust_atomic_read_i8_impl( i8* %addr ) unnamed_addr comdat
 {
@@ -68,6 +76,14 @@ define linkonce_odr hidden i32 @ust_atomic_read_byte32_impl( i32* %addr ) unname
 {
 	%1= load atomic volatile i32, i32* %addr seq_cst, align 4
 	ret i32 %1
+}
+
+$ust_atomic_write_bool_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_bool_impl( i1* %addr, i1 %x ) unnamed_addr comdat
+{
+	%1 = zext i1 %x to i8
+	store atomic volatile i8 %1, i8* %addr seq_cst, align 1
+	ret void
 }
 
 $ust_atomic_write_i8_impl = comdat any
@@ -139,6 +155,15 @@ define linkonce_odr hidden void @ust_atomic_write_byte32_impl( i32* %addr, i32 %
 {
 	store atomic volatile i32 %x, i32* %addr seq_cst, align 4
 	ret void
+}
+
+$ust_atomic_swap_bool_impl = comdat any
+define linkonce_odr hidden i1 @ust_atomic_swap_bool_impl( i1* %addr, i1 %x ) unnamed_addr comdat
+{
+	%1= zext i1 %x to i8
+	%2= atomicrmw volatile xchg i8* %addr, i8 %1 seq_cst
+	%3= trunc i8 %2 to i1
+	ret i1 %3
 }
 
 $ust_atomic_swap_i8_impl = comdat any

@@ -7,6 +7,11 @@ namespace ust
 // But operations on ssize_type and size_type are possible, which are 64-bit on 64-bit platforms.
 // Operations on raw pointer types are available on all platforms.
 
+fn atomic_read( bool& addr ) : bool
+{
+	return ust_atomic_read_bool_impl( addr );
+}
+
 fn atomic_read( i8& addr ) : i8
 {
 	return ust_atomic_read_i8_impl( addr );
@@ -112,6 +117,11 @@ fn atomic_read( $(T)& addr ) : $(T)
 	}
 }
 
+fn atomic_write( bool &mut addr, bool x )
+{
+	return ust_atomic_write_bool_impl( addr, x );
+}
+
 fn atomic_write( i8 &mut addr, i8 x )
 {
 	return ust_atomic_write_i8_impl( addr, x );
@@ -205,6 +215,11 @@ fn atomic_write( $(T) &mut addr, $(T) x )
 		// Cast reference to pointer type to reference to byte type. It should be fine both times.
 		unsafe( ust_atomic_write_byte32_impl( cast_ref_unsafe</byte32/>( addr ), cast_ref_unsafe</byte32/>(x) ) );
 	}
+}
+
+fn atomic_swap( bool &mut addr, bool x ) : bool
+{
+	return ust_atomic_swap_bool_impl( addr, x );
 }
 
 fn atomic_swap( i8 &mut addr, i8 x ) : i8
@@ -492,6 +507,7 @@ fn nodiscard atomic_compare_exchange_weak( $(T) &mut dst, $(T) &mut expected, $(
 
 // External implementation functions. Do not use directly!
 
+fn nomangle ust_atomic_read_bool_impl( bool& addr ) : bool;
 fn nomangle ust_atomic_read_i8_impl( i8& addr ) : i8;
 fn nomangle ust_atomic_read_u8_impl( u8& addr ) : u8;
 fn nomangle ust_atomic_read_i16_impl( i16& addr ) : i16;
@@ -509,6 +525,7 @@ fn nomangle ust_atomic_read_byte16_impl( byte16& addr ) : byte16;
 fn nomangle ust_atomic_read_byte32_impl( byte32& addr ) : byte32;
 fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_read_byte64_impl( byte64& addr ) : byte64;
 
+fn nomangle ust_atomic_write_bool_impl( bool &mut addr, bool x );
 fn nomangle ust_atomic_write_i8_impl( i8 &mut addr, i8 x );
 fn nomangle ust_atomic_write_u8_impl( u8 &mut addr, u8 x );
 fn nomangle ust_atomic_write_i16_impl( i16 &mut addr, i16 x );
@@ -526,6 +543,7 @@ fn nomangle ust_atomic_write_byte16_impl( byte16 &mut addr, byte16 x );
 fn nomangle ust_atomic_write_byte32_impl( byte32 &mut addr, byte32 x );
 fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_write_byte64_impl( byte64 &mut addr, byte64 x );
 
+fn nomangle ust_atomic_swap_bool_impl( bool &mut addr, bool x ) : bool;
 fn nomangle ust_atomic_swap_i8_impl( i8 &mut addr, i8 x ) : i8;
 fn nomangle ust_atomic_swap_u8_impl( u8 &mut addr, u8 x ) : u8;
 fn nomangle ust_atomic_swap_i16_impl( i16 &mut addr, i16 x ) : i16;

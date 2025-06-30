@@ -4,6 +4,22 @@ import "../imports/atomic.u"
 fn nomangle main() : i32
 {
 	{
+		var bool mut x= false;
+		halt if( ust::atomic_read( x ) != false );
+		ust::atomic_write( x, true );
+		halt if( ust::atomic_read( x ) != true );
+		ust::atomic_write( x, true );
+		halt if( ust::atomic_read( x ) != true );
+		ust::atomic_write( x, false );
+		halt if( ust::atomic_read( x ) != false );
+		ust::atomic_write( x, true );
+		halt if( ust::atomic_read( x ) != true );
+		ust::atomic_write( x, false );
+		halt if( ust::atomic_read( x ) != false );
+		ust::atomic_write( x, false );
+		halt if( ust::atomic_read( x ) != false );
+	}
+	{
 		var i8 mut x= -77i8;
 		halt if( ust::atomic_read( x ) != -77i8 );
 		ust::atomic_write( x, 55i8 );
@@ -69,6 +85,16 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read( x ) != -464333.3468 );
 		ust::atomic_write( x, 0.06537854 );
 		halt if( ust::atomic_read( x ) != 0.06537854 );
+	}
+	{
+		var bool mut x= false;
+		halt if( ust::atomic_swap( x, true ) != false );
+		halt if( ust::atomic_swap( x, false ) != true );
+		halt if( ust::atomic_swap( x, false ) != false );
+		halt if( ust::atomic_swap( x, true ) != false );
+		halt if( ust::atomic_swap( x, true ) != true );
+		halt if( ust::atomic_swap( x, false ) != true );
+		halt if( ust::atomic_read( x ) != false );
 	}
 	{
 		var i8 mut x(0);
