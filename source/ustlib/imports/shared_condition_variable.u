@@ -1,0 +1,94 @@
+import "alloc.u"
+import "atomic.u"
+import "condition_variable_impl.u"
+import "shared_ptr_mt_mutex.u"
+
+namespace ust
+{
+
+// Condition variable synchronization primitive.
+// Allows waiting for some condition and notifying about this condition.
+// Works together with "shared_ptr_mt_mutex" class.
+// See https://en.wikipedia.org/wiki/Monitor_(synchronization) for more details.
+//
+// This version has shared semantics - default constructor creates new condition variable object,
+// copy constructor creates just another reference to the same object.
+// It's more effective compared to shared_ptr_final_mt</condition_variable/>, since it uses only single pointer indirection internally.
+class shared_condition_variable
+{
+public:
+	// Create new condition variable instance.
+	fn constructor()
+		( ptr_= unsafe( byte_ptr_cast</ storage />( memory_allocate( typeinfo</storage/>.size_of ) ) ) )
+	{
+		unsafe
+		{
+			$>(ptr_).counter= 1u;
+			condition_variable_impl::initialize_condition_variable( $>(ptr_).cv );
+		}
+	}
+
+	// Create another reference to the same underlying condition variable object.
+	fn constructor( shared_condition_variable& other )
+		( ptr_= other.ptr_ )
+	{
+		unsafe( atomic_inc( $>(ptr_).counter ) );
+	}
+
+	op=( mut this, shared_condition_variable& other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= shared_condition_variable(other);
+	}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			if( atomic_dec( $>(ptr_).counter ) == 1u )
+			{
+				condition_variable_impl::destroy_condition_variable(  $>(ptr_).cv );
+				memory_free( ptr_cast_to_byte8( ptr_ ) );
+			}
+		}
+	}
+
+	// Equality compare - returns true if passed objects use the same underlying condition variable object.
+	op==( shared_condition_variable& l, shared_condition_variable& r ) : bool
+	{
+		return l.ptr_ == r.ptr_;
+	}
+
+	// Wake single thread waiting on this condition variable (if there is at least one waiting thread).
+	fn notify_one( this )
+	{
+		unsafe( condition_variable_impl::notify_one_condition_variable( $>(ptr_).cv ) );
+	}
+
+	// Wake all threads waiting on this condition variable.
+	fn notify_all( this )
+	{
+		unsafe( condition_variable_impl::notify_all_condition_variable( $>(ptr_).cv ) );
+	}
+
+	// Atomically unlock passed mutex lock and wait until notified.
+	// Upon returning passed lock is locked again, so observing it unlocked isn't possible.
+	// Spurious wakeups are possible.
+	template</type T/>
+	fn wait( this, shared_ptr_mt_mutex_impl::lock</T/> &mut l )
+	{
+		unsafe( condition_variable_impl::wait_condition_variable( $>(ptr_).cv, l.get_raw_mutex() ) );
+	}
+
+private:
+	struct storage
+	{
+		u32 counter;
+		condition_variable_impl::condition_variable_t cv;
+	}
+
+private:
+	$(storage) imut ptr_;
+}
+
+} // namespace ust
