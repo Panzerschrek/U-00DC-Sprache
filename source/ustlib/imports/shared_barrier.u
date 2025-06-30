@@ -1,0 +1,78 @@
+import "alloc.u"
+import "atomic.u"
+import "barrier_impl.u"
+import "memory.u"
+
+namespace ust
+{
+
+// Barrier synchronization promitive.
+// See https://en.wikipedia.org/wiki/Barrier_(computer_science) for more details.
+// This class is safe to pass by reference to another thread.
+//
+// This version has shared semantics - constructor with number argument creates new barrier object,
+// copy constructor creates just another reference to the same object.
+// It's more effective compared to shared_ptr_final_mt</barrier/>, since it uses only single pointer indirection internally.
+class shared_barrier
+{
+public:
+	// Construct barrier for synchronizing given number of threads.
+	fn constructor( u32 num_threads )
+		( ptr_= unsafe( byte_ptr_cast</ storage />( memory_allocate( typeinfo</storage/>.size_of ) ) ) )
+	{
+		unsafe
+		{
+			$>(ptr_).counter= 1u;
+			barrier_impl::initialize_barrier( $>(ptr_).barrier, num_threads );
+		}
+	}
+
+	// Create another reference to the same underlying barrier object.
+	fn constructor( shared_barrier& other )
+		( ptr_= other.ptr_ )
+	{
+		unsafe( atomic_inc( $>(ptr_).counter ) );
+	}
+
+	op=( mut this, shared_barrier& other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= shared_barrier(other);
+	}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			if( atomic_dec( $>(ptr_).counter ) == 1u )
+			{
+				barrier_impl::destroy_barrier( $>(ptr_).barrier );
+				memory_free( ptr_cast_to_byte8( ptr_ ) );
+			}
+		}
+	}
+
+	// Equality compare - returns true if passed objects use the same underlying barrier object.
+	op==( shared_barrier& l, shared_barrier& r ) : bool
+	{
+		return l.ptr_ == r.ptr_;
+	}
+
+	// Wait until all other threads didn't call "wait" too.
+	fn wait( this )
+	{
+		unsafe( barrier_impl::wait_barrier( $>(ptr_).barrier ) );
+	}
+
+private:
+	struct storage
+	{
+		u32 counter;
+		barrier_impl::barrier_t barrier;
+	}
+
+private:
+	$(storage) imut ptr_;
+}
+
+} // namespace ust
