@@ -1,6 +1,23 @@
 //##success_test
 import "../imports/atomic_variable.u"
 
+// Atomic variables aren't copyable (because of heap indirection).
+static_assert( !typeinfo</ ust::atomic_variable</i32/> />.is_copy_constructible );
+static_assert( !typeinfo</ ust::atomic_variable</i32/> />.is_copy_assignable );
+
+// Atomic variables aren't comparable.
+static_assert( !typeinfo</ ust::atomic_variable</f32/> />.is_equality_comparable );
+
+// Atomic variables have pointer size.
+static_assert( typeinfo</ ust::atomic_variable</u8/> />.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::atomic_variable</u16/> />.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::atomic_variable</u32/> />.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::atomic_variable</size_type/> />.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::atomic_variable</ $( tup[ f64, u64, char8, bool ] ) /> />.size_of == typeinfo</size_type/>.size_of );
+
+// Atomic variables don't contain unsynchronized interrrior mutability.
+static_assert( !non_sync</ ust::atomic_variable</char32/> /> );
+
 fn nomangle main() : i32
 {
 	{ // Should support type aliases for many fundamental types.
@@ -16,7 +33,7 @@ fn nomangle main() : i32
 		type Atomic_char8= ust::atomic_variable</char8/>;
 		type Atomic_char16= ust::atomic_variable</char16/>;
 		type Atomic_char32= ust::atomic_variable</char32/>;
-		type Atomic_byte8= ust::atomic_variable</char8/>;
+		type Atomic_byte8= ust::atomic_variable</byte8/>;
 		type Atomic_byte16= ust::atomic_variable</byte16/>;
 		type Atomic_byte32= ust::atomic_variable</byte32/>;
 		static_if( c_enable_64bit_atomics )

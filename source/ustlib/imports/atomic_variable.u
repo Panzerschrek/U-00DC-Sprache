@@ -10,6 +10,7 @@ namespace ust
 // Internally it uses indirection (allocates actual atomic variable on heap), since interrior mutability without indirection is forbidden in Ü.
 // It supports fundamental types (with some exceptions) and raw pointers as contained value.
 // Not all methods are available for all types.
+// Since it has some overhead because of indirection, prefer using raw atomic operations in unsafe code if no interrior mutability without indirection happens.
 template</type T/>
 class atomic_variable
 {
