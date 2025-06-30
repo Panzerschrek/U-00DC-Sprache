@@ -1,5 +1,33 @@
 ; Use strictest memory order - "seq_cst" for all atomic operations.
 
+$ust_atomic_read_i8_impl = comdat any
+define linkonce_odr hidden i8 @ust_atomic_read_i8_impl( i8* %addr ) unnamed_addr comdat
+{
+	%1= load atomic i8, i8* %addr seq_cst, align 1
+	ret i8 %1
+}
+
+$ust_atomic_read_u8_impl = comdat any
+define linkonce_odr hidden i8 @ust_atomic_read_u8_impl( i8* %addr ) unnamed_addr comdat
+{
+	%1= load atomic volatile i8, i8* %addr seq_cst, align 1
+	ret i8 %1
+}
+
+$ust_atomic_read_i16_impl = comdat any
+define linkonce_odr hidden i16 @ust_atomic_read_i16_impl( i16* %addr ) unnamed_addr comdat
+{
+	%1= load atomic i16, i16* %addr seq_cst, align 2
+	ret i16 %1
+}
+
+$ust_atomic_read_u16_impl = comdat any
+define linkonce_odr hidden i16 @ust_atomic_read_u16_impl( i16* %addr ) unnamed_addr comdat
+{
+	%1= load atomic volatile i16, i16* %addr seq_cst, align 2
+	ret i16 %1
+}
+
 $ust_atomic_read_i32_impl = comdat any
 define linkonce_odr hidden i32 @ust_atomic_read_i32_impl( i32* %addr ) unnamed_addr comdat
 {
@@ -21,11 +49,53 @@ define linkonce_odr hidden float @ust_atomic_read_f32_impl( float* %addr ) unnam
 	ret float %1
 }
 
+$ust_atomic_read_byte8_impl = comdat any
+define linkonce_odr hidden i8 @ust_atomic_read_byte8_impl( i8* %addr ) unnamed_addr comdat
+{
+	%1= load atomic i8, i8* %addr seq_cst, align 1
+	ret i8 %1
+}
+
+$ust_atomic_read_byte16_impl = comdat any
+define linkonce_odr hidden i16 @ust_atomic_read_byte16_impl( i16* %addr ) unnamed_addr comdat
+{
+	%1= load atomic volatile i16, i16* %addr seq_cst, align 2
+	ret i16 %1
+}
+
 $ust_atomic_read_byte32_impl = comdat any
 define linkonce_odr hidden i32 @ust_atomic_read_byte32_impl( i32* %addr ) unnamed_addr comdat
 {
 	%1= load atomic volatile i32, i32* %addr seq_cst, align 4
 	ret i32 %1
+}
+
+$ust_atomic_write_i8_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_i8_impl( i8* %addr, i8 %x ) unnamed_addr comdat
+{
+	store atomic volatile i8 %x, i8* %addr seq_cst, align 1
+	ret void
+}
+
+$ust_atomic_write_u8_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_u8_impl( i8* %addr, i8 %x ) unnamed_addr comdat
+{
+	store atomic volatile i8 %x, i8* %addr seq_cst, align 1
+	ret void
+}
+
+$ust_atomic_write_i16_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_i16_impl( i16* %addr, i16 %x ) unnamed_addr comdat
+{
+	store atomic volatile i16 %x, i16* %addr seq_cst, align 2
+	ret void
+}
+
+$ust_atomic_write_u16_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_u16_impl( i16* %addr, i16 %x ) unnamed_addr comdat
+{
+	store atomic volatile i16 %x, i16* %addr seq_cst, align 2
+	ret void
 }
 
 $ust_atomic_write_i32_impl = comdat any
@@ -48,6 +118,21 @@ define linkonce_odr hidden void @ust_atomic_write_f32_impl( float* %addr, float 
 	store atomic volatile float %x, float* %addr seq_cst, align 4
 	ret void
 }
+
+$ust_atomic_write_byte8_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_byte8_impl( i8* %addr, i8 %x ) unnamed_addr comdat
+{
+	store atomic volatile i8 %x, i8* %addr seq_cst, align 1
+	ret void
+}
+
+$ust_atomic_write_byte16_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_write_byte16_impl( i16* %addr, i16 %x ) unnamed_addr comdat
+{
+	store atomic volatile i16 %x, i16* %addr seq_cst, align 2
+	ret void
+}
+
 
 $ust_atomic_write_byte32_impl = comdat any
 define linkonce_odr hidden void @ust_atomic_write_byte32_impl( i32* %addr, i32 %x ) unnamed_addr comdat

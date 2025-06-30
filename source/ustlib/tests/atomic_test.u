@@ -4,13 +4,37 @@ import "../imports/atomic.u"
 fn nomangle main() : i32
 {
 	{
-		var i32 mut x=-77;
+		var i8 mut x= -77i8;
+		halt if( ust::atomic_read( x ) != -77i8 );
+		ust::atomic_write( x, 55i8 );
+		halt if( ust::atomic_read( x ) != 55i8 );
+	}
+	{
+		var u8 mut x=13u8;
+		halt if( ust::atomic_read( x ) != 13u8 );
+		ust::atomic_write( x, 99u8 );
+		halt if( ust::atomic_read( x ) != 99u8 );
+	}
+	{
+		var i16 mut x= -77i16;
+		halt if( ust::atomic_read( x ) != -77i16 );
+		ust::atomic_write( x, 55i16 );
+		halt if( ust::atomic_read( x ) != 55i16 );
+	}
+	{
+		var u16 mut x= 99u16;
+		halt if( ust::atomic_read( x ) != 99u16 );
+		ust::atomic_write( x, 9999u16 );
+		halt if( ust::atomic_read( x ) != 9999u16 );
+	}
+	{
+		var i32 mut x= -77;
 		halt if( ust::atomic_read( x ) != -77 );
 		ust::atomic_write( x, 55 );
 		halt if( ust::atomic_read( x ) != 55 );
 	}
 	{
-		var u32 mut x=99u;
+		var u32 mut x= 99u;
 		halt if( ust::atomic_read( x ) != 99u );
 		ust::atomic_write( x, 99999999u );
 		halt if( ust::atomic_read( x ) != 99999999u );
@@ -20,6 +44,24 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read( x ) != 0.67f );
 		ust::atomic_write( x, -12345.6f );
 		halt if( ust::atomic_read( x ) != -12345.6f );
+	}
+	{
+		var byte8 mut x(74u8);
+		halt if( ust::atomic_read( x ) != byte8(74u8) );
+		ust::atomic_write( x, byte8(199u8) );
+		halt if( ust::atomic_read( x ) != byte8(199u8) );
+	}
+	{
+		var byte16 mut x(742u16);
+		halt if( ust::atomic_read( x ) != byte16(742u16) );
+		ust::atomic_write( x, byte16(9999u16) );
+		halt if( ust::atomic_read( x ) != byte16(9999u16) );
+	}
+	{
+		var byte32 mut x(99);
+		halt if( ust::atomic_read( x ) != byte32(99) );
+		ust::atomic_write( x, byte32(99999999) );
+		halt if( ust::atomic_read( x ) != byte32(99999999) );
 	}
 	static_if( c_enable_64bit_atomics )
 	{
