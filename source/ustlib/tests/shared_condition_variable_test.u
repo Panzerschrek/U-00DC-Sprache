@@ -1,0 +1,174 @@
+//##success_test
+import "../imports/semaphore.u"
+import "../imports/shared_condition_variable.u"
+import "../imports/thread.u"
+import "../imports/vector.u"
+
+// Shared condition variable has pointer size.
+static_assert( typeinfo</ ust::shared_condition_variable />.size_of == typeinfo</size_type/>.size_of );
+
+// Shared condition variable doesn't contain unsynchronized interrior mutation.
+static_assert( !non_sync</ ust::shared_condition_variable /> );
+
+// Shared condition variable is copyable.
+static_assert( typeinfo</ ust::shared_condition_variable />.is_copy_constructible );
+static_assert( typeinfo</ ust::shared_condition_variable />.is_copy_assignable );
+
+// It's also possible to compare shared condition variables.
+static_assert( typeinfo</ ust::shared_condition_variable />.is_equality_comparable );
+
+fn nomangle main() : i32
+{
+	{
+		auto m= ust::make_shared_ptr_mt_mutex( false );
+
+		var ust::shared_condition_variable cv;
+
+		var ust::semaphore semaphore(0u);
+
+		// Create a thread, which waits in loop until shared value is not "true".
+		auto t= ust::make_thread(
+			lambda[m, cv, &semaphore]()
+			{
+				auto mut lock= m.lock();
+				semaphore.release(); // Notify main thread that we are ready.
+				loop
+				{
+					if( lock.deref() )
+					{
+						break;
+					}
+					else
+					{
+						cv.wait( lock );
+					}
+				}
+			} );
+
+		// Use a semaphore to wait until created thread reaches waiting loop.
+		// This is necessary to ensure that waiting function is entered before we set value of shared variable.
+		semaphore.acquire();
+
+		// On current thread set shared value to "true" and notify waiting thread.
+		with( mut lock : m.lock() )
+		{
+			lock.deref()= true;
+		}
+		cv.notify_one();
+	}
+	{ // Create two threads, which push values to shared vector in interleaving order. Two condition variables are used to guarantee this order.
+		auto vec_ptr= ust::make_shared_ptr_mt_mutex( ust::vector</u32/>() );
+
+		var ust::shared_condition_variable cv_even, cv_odd;
+
+		var u32 count= 65536u;
+
+		// On even iterations push squared numbers.
+		auto mut t_even=
+			ust::make_thread(
+				lambda[=]()
+				{
+					auto mut lock= vec_ptr.lock();
+					for( auto mut i= 0u; i < count; i+= 2u )
+					{
+						while( ( lock.deref().size() & 1s ) != 0s )
+						{
+							cv_even.wait( lock );
+						}
+						lock.deref().push_back( i * i );
+						cv_odd.notify_one();
+					}
+				} );
+
+		// On odd iterations push numbers in power 1.
+		auto mut t_odd=
+			ust::make_thread(
+				lambda[=]()
+				{
+					auto mut lock= vec_ptr.lock();
+					for( auto mut i= 1u; i < count; i+= 2u )
+					{
+						while( ( lock.deref().size() & 1s ) != 1s )
+						{
+							cv_odd.wait( lock );
+						}
+						lock.deref().push_back( i );
+						cv_even.notify_one();
+					}
+				} );
+
+		move(t_even);
+		move(t_odd);
+
+		with( mut lock : vec_ptr.lock() )
+		{
+			auto& vec= lock.deref();
+			halt if( vec.size() != size_type(count) );
+			for( auto mut i= 0u; i < count; ++i )
+			{
+				var u32 v= vec[ size_type(i) ];
+				if( ( i & 1u ) != 0u )
+				{
+					halt if( v != i );
+				}
+				else
+				{
+					halt if( v != i * i );
+				}
+			}
+		}
+	}
+	{ // Create many threads. They all use single condition variable to progress.
+		auto vec_ptr= ust::make_shared_ptr_mt_mutex( ust::vector</u32/>() );
+
+		var ust::shared_condition_variable cv;
+
+		var ust::vector</ ust::thread</OrderedVectorPusher, void/> /> mut threads;
+
+		var u32 count= 64u;
+
+		for( auto mut i= 0u; i < count; ++i )
+		{
+			threads.push_back( ust::make_thread( OrderedVectorPusher{ .vec_ptr= vec_ptr, .index= i, .cv= cv } ) );
+		}
+
+		move(threads); // Wait until all threads are done.
+
+		with( mut lock : vec_ptr.lock() )
+		{
+			auto& vec= lock.deref();
+			halt if( vec.size() != size_type(count) );
+			for( var u32 mut i= 0u; i < count; ++i )
+			{
+				halt if( vec[ size_type(i) ] != i * i + i );
+			}
+		}
+	}
+
+	return 0;
+}
+
+struct OrderedVectorPusher
+{
+	ust::shared_ptr_mt_mutex</ ust::vector</u32/> /> imut vec_ptr;
+	u32 imut index;
+	ust::shared_condition_variable imut cv;
+
+	op()( byval mut this )
+	{
+		auto mut lock= vec_ptr.lock();
+
+		// Wait until vector size isn't reached our index.
+		while( lock.deref().size() != size_type(index) )
+		{
+			cv.wait( lock );
+		}
+
+		// Push value corresponding to our index.
+		lock.deref().push_back( index * index + index );
+
+		// Awake other threads.
+		// Notifying all is suboptimal, but this is the only way to reliably notify a thread which should perform its job after this thread.
+		cv.notify_all();
+	}
+}
