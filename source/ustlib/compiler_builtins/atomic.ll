@@ -257,6 +257,26 @@ define linkonce_odr hidden float @ust_atomic_swap_f32_impl( float* %addr, float 
 	%1= atomicrmw volatile xchg float* %addr, float %x seq_cst
 	ret float %1
 }
+$ust_atomic_swap_char8_impl = comdat any
+define linkonce_odr hidden i8 @ust_atomic_swap_char8_impl( i8* %addr, i8 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i8* %addr, i8 %x seq_cst
+	ret i8 %1
+}
+
+$ust_atomic_swap_char16_impl = comdat any
+define linkonce_odr hidden i16 @ust_atomic_swap_char16_impl( i16* %addr, i16 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i16* %addr, i16 %x seq_cst
+	ret i16 %1
+}
+
+$ust_atomic_swap_char32_impl = comdat any
+define linkonce_odr hidden i32 @ust_atomic_swap_char32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
+{
+	%1= atomicrmw volatile xchg i32* %addr, i32 %x seq_cst
+	ret i32 %1
+}
 
 $ust_atomic_swap_byte8_impl = comdat any
 define linkonce_odr hidden i8 @ust_atomic_swap_byte8_impl( i8* %addr, i8 %x ) unnamed_addr comdat

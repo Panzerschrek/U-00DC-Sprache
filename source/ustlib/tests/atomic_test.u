@@ -197,6 +197,27 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read( x ) != 67444784.023623 );
 	}
 	{
+		var char8 mut x= '\0';
+		halt if( ust::atomic_swap( x, 'R' ) != '\0' );
+		halt if( ust::atomic_swap( x, '-' ) != 'R' );
+		halt if( ust::atomic_swap( x, '!' ) != '-' );
+		halt if( ust::atomic_read( x ) != '!' );
+	}
+	{
+		var char16 mut x= '\0'c16;
+		halt if( ust::atomic_swap( x, 'ф'c16 ) != '\0'c16 );
+		halt if( ust::atomic_swap( x, 'ß'c16 ) != 'ф'c16 );
+		halt if( ust::atomic_swap( x, 'š'c16 ) != 'ß'c16 );
+		halt if( ust::atomic_read( x ) != 'š'c16 );
+	}
+	{
+		var char32 mut x= '\0'c32;
+		halt if( ust::atomic_swap( x, '🎁'c32 ) != '\0'c32 );
+		halt if( ust::atomic_swap( x, '🛒'c32 ) != '🎁'c32 );
+		halt if( ust::atomic_swap( x, '🖤'c32 ) != '🛒'c32 );
+		halt if( ust::atomic_read( x ) != '🖤'c32 );
+	}
+	{
 		var byte8 mut x(0u8);
 		halt if( ust::atomic_swap( x, byte8(78u8) ) != byte8(0u8) );
 		halt if( ust::atomic_swap( x, byte8(178u8) ) != byte8(78u8) );
