@@ -38,46 +38,55 @@ public:
 		return atomic_swap( unsafe( $>(ptr_) ), x );
 	}
 
+	template<//>
 	fn compare_exchange_strong( this, T &mut expected, T new ) : bool
 	{
 		return atomic_compare_exchange_strong( unsafe( $>(ptr_) ), expected, new );
 	}
 
+	template<//>
 	fn compare_exchange_weak( this, T &mut expected, T new ) : bool
 	{
 		return atomic_compare_exchange_weak( unsafe( $>(ptr_) ), expected, new );
 	}
 
+	template<//>
 	fn add( this, T x ) : T
 	{
 		return atomic_add( unsafe( $>(ptr_) ), x );
 	}
 
+	template<//>
 	fn sub( this, T x ) : T
 	{
 		return atomic_sub( unsafe( $>(ptr_) ), x );
 	}
 
+	template<//>
 	fn inc( this ) : T
 	{
 		return atomic_inc( unsafe( $>(ptr_) ) );
 	}
 
+	template<//>
 	fn dec( this ) : T
 	{
 		return atomic_dec( unsafe( $>(ptr_) ) );
 	}
 
+	template<//>
 	fn and( this, T x ) : T
 	{
 		return atomic_and( unsafe( $>(ptr_) ), x );
 	}
 
+	template<//>
 	fn or( this, T x ) : T
 	{
 		return atomic_or( unsafe( $>(ptr_) ), x );
 	}
 
+	template<//>
 	fn xor( this, T x ) : T
 	{
 		return atomic_xor( unsafe( $>(ptr_) ), x );

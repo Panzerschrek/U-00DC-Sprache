@@ -1,0 +1,60 @@
+//##success_test
+import "../imports/atomic_variable.u"
+
+fn nomangle main() : i32
+{
+	{ // Should support type aliases for many fundamental types.
+		type AtomicBool= ust::atomic_variable</bool/>;
+		type Atomic_i8= ust::atomic_variable</i8/>;
+		type Atomic_u8= ust::atomic_variable</u8/>;
+		type Atomic_i16= ust::atomic_variable</i16/>;
+		type Atomic_u16= ust::atomic_variable</u16/>;
+		type Atomic_i32= ust::atomic_variable</i32/>;
+		type Atomic_u32= ust::atomic_variable</u32/>;
+		static_if( c_enable_64bit_atomics )
+		{
+			type Atomic_i64= ust::atomic_variable</i64/>;
+			type Atomic_u64= ust::atomic_variable</u64/>;
+		}
+		type Atomic_ssize_type= ust::atomic_variable</ssize_type/>;
+		type Atomic_size_type= ust::atomic_variable</size_type/>;
+		type Atomic_char8= ust::atomic_variable</char8/>;
+		type Atomic_char16= ust::atomic_variable</char16/>;
+		type Atomic_char32= ust::atomic_variable</char32/>;
+		type Atomic_byte8= ust::atomic_variable</char8/>;
+		type Atomic_byte16= ust::atomic_variable</byte16/>;
+		type Atomic_byte32= ust::atomic_variable</byte32/>;
+	}
+	{ // Read/write methods.
+		var ust::atomic_variable</u32/> v( 123u );
+		halt if( v.read() != 123u );
+		v.write( 7783u );
+		halt if( v.read() != 7783u );
+	}
+	{ // Swap.
+		var ust::atomic_variable</char8/> v( ' ' );
+		halt if( v.read() != ' ' );
+		halt if( v.swap( '&' ) != ' ' );
+		halt if( v.swap( 'Z' ) != '&' );
+		halt if( v.swap( '^' ) != 'Z' );
+		halt if( v.swap( '^' ) != '^' );
+		halt if( v.swap( 'h' ) != '^' );
+		halt if( v.read() != 'h' );
+	}
+	{ // Compare exchange strong.
+		var ust::atomic_variable</i32/> x( 22 );
+		var i32 mut y= 22;
+		halt if( x.compare_exchange_strong( y, 7 ) != true );
+		halt if( x.read() != 7 );
+		halt if( y != 22 );
+	}
+	{
+		var ust::atomic_variable</i32/> x( 111 );
+		var i32 mut y= 77;
+		halt if( x.compare_exchange_strong( y, 7 ) != false );
+		halt if( x.read() != 111 );
+		halt if( y != 111 );
+	}
+
+	return 0;
+}
