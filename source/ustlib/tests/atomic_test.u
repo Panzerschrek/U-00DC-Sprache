@@ -62,6 +62,24 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read( x ) != -12345.6f );
 	}
 	{
+		var char8 mut x= '&';
+		halt if( ust::atomic_read( x ) != '&' );
+		ust::atomic_write( x, 'J' );
+		halt if( ust::atomic_read( x ) != 'J' );
+	}
+	{
+		var char16 mut x= 'Ж'c16;
+		halt if( ust::atomic_read( x ) != 'Ж'c16 );
+		ust::atomic_write( x, 'Ü'c16 );
+		halt if( ust::atomic_read( x ) != 'Ü'c16 );
+	}
+	{
+		var char32 mut x= '🤡'c32;
+		halt if( ust::atomic_read( x ) != '🤡'c32 );
+		ust::atomic_write( x, '🎂'c32 );
+		halt if( ust::atomic_read( x ) != '🎂'c32 );
+	}
+	{
 		var byte8 mut x(74u8);
 		halt if( ust::atomic_read( x ) != byte8(74u8) );
 		ust::atomic_write( x, byte8(199u8) );

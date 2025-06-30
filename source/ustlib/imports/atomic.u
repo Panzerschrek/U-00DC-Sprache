@@ -72,6 +72,21 @@ fn enable_if( c_enable_64bit_atomics ) atomic_read( f64& addr ) : f64
 	return ust_atomic_read_f64_impl( addr );
 }
 
+fn atomic_read( char8& addr ) : char8
+{
+	return ust_atomic_read_char8_impl( addr );
+}
+
+fn atomic_read( char16& addr ) : char16
+{
+	return ust_atomic_read_char16_impl( addr );
+}
+
+fn atomic_read( char32& addr ) : char32
+{
+	return ust_atomic_read_char32_impl( addr );
+}
+
 fn atomic_read( byte8& addr ) : byte8
 {
 	return ust_atomic_read_byte8_impl( addr );
@@ -180,6 +195,21 @@ fn atomic_write( f32 &mut addr, f32 x )
 fn enable_if( c_enable_64bit_atomics ) atomic_write( f64 &mut addr, f64 x )
 {
 	return ust_atomic_write_f64_impl( addr, x );
+}
+
+fn atomic_write( char8 &mut addr, char8 x )
+{
+	return ust_atomic_write_char8_impl( addr, x );
+}
+
+fn atomic_write( char16 &mut addr, char16 x )
+{
+	return ust_atomic_write_char16_impl( addr, x );
+}
+
+fn atomic_write( char32 &mut addr, char32 x )
+{
+	return ust_atomic_write_char32_impl( addr, x );
 }
 
 fn atomic_write( byte8 &mut addr, byte8 x )
@@ -524,6 +554,9 @@ fn nomangle ust_atomic_read_ssize_type_impl( ssize_type& addr ) : ssize_type;
 fn nomangle ust_atomic_read_size_type_impl( size_type& addr ) : size_type;
 fn nomangle ust_atomic_read_f32_impl( f32& addr ) : f32;
 fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_read_f64_impl( f64& addr ) : f64;
+fn nomangle ust_atomic_read_char8_impl( char8& addr ) : char8;
+fn nomangle ust_atomic_read_char16_impl( char16& addr ) : char16;
+fn nomangle ust_atomic_read_char32_impl( char32& addr ) : char32;
 fn nomangle ust_atomic_read_byte8_impl( byte8& addr ) : byte8;
 fn nomangle ust_atomic_read_byte16_impl( byte16& addr ) : byte16;
 fn nomangle ust_atomic_read_byte32_impl( byte32& addr ) : byte32;
@@ -542,6 +575,9 @@ fn nomangle ust_atomic_write_ssize_type_impl( ssize_type &mut addr, ssize_type x
 fn nomangle ust_atomic_write_size_type_impl( size_type &mut addr, size_type x );
 fn nomangle ust_atomic_write_f32_impl( f32 &mut addr, f32 x );
 fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_write_f64_impl( f64 &mut addr, f64 x );
+fn nomangle ust_atomic_write_char8_impl( char8 &mut addr, char8 x );
+fn nomangle ust_atomic_write_char16_impl( char16 &mut addr, char16 x );
+fn nomangle ust_atomic_write_char32_impl( char32 &mut addr, char32 x );
 fn nomangle ust_atomic_write_byte8_impl( byte8 &mut addr, byte8 x );
 fn nomangle ust_atomic_write_byte16_impl( byte16 &mut addr, byte16 x );
 fn nomangle ust_atomic_write_byte32_impl( byte32 &mut addr, byte32 x );
