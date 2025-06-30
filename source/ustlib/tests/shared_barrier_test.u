@@ -1,0 +1,95 @@
+//##success_test
+import "../imports/shared_barrier.u"
+import "../imports/shared_ptr_mt.u"
+import "../imports/thread.u"
+import "../imports/vector.u"
+
+static_assert( !non_sync</ ust::shared_barrier /> ); // Shared barriers are safe to pass to another thread.
+static_assert( typeinfo</ ust::shared_barrier />.is_copy_constructible ); // Shared barriers are copyable.
+static_assert( typeinfo</ ust::shared_barrier />.is_copy_assignable ); // Shared barriers are copyable.
+static_assert( typeinfo</ ust::shared_barrier />.is_equality_comparable ); // Shared barriers are equality-comparable.
+static_assert( typeinfo</ ust::shared_barrier />.size_of == typeinfo</$(byte8)/>.size_of ); // Barrier class has size of a pointer.
+
+fn nomangle main() : i32
+{
+	// Create a bunch of threads, each of them synchronise at a couple of points.
+
+	var Arr arr_initial= zero_init;
+	auto arr_ptr= ust::make_shared_ptr_mt( arr_initial );
+
+	var ust::shared_barrier barrier( c_num_threads );
+
+	var ust::vector</ ust::thread</ ThreadFunc, void /> /> mut threads;
+
+	for( auto mut i= 0u; i < c_num_threads; ++i )
+	{
+		threads.push_back( ust::make_thread( ThreadFunc{ .thread_index= i, .arr_ptr= arr_ptr, .barrier= barrier } ) );
+	}
+
+	move(threads); // Move threads to join them.
+
+	// Check if we got expected result.
+	with( &arr : arr_ptr.lock_imut().deref() )
+	{
+		for( auto mut i= 0u; i < c_num_threads; ++i )
+		{
+			halt if( arr[i] != i * i );
+		}
+	}
+
+	return 0;
+}
+
+var u32 c_num_threads= 24u;
+
+type Arr= [ u32, c_num_threads ];
+
+struct ThreadFunc
+{
+	u32 imut thread_index;
+	ust::shared_ptr_mt_mut</Arr/> imut arr_ptr;
+	ust::shared_barrier imut barrier;
+
+	op()( byval this )
+	{
+		// Each thread checks if initial values in the array are zeros.
+		with( &arr : arr_ptr.lock_imut().deref() )
+		{
+			for( auto mut i= 0u; i < c_num_threads; ++i )
+			{
+				halt if( arr[i] != 0u );
+			}
+		}
+
+		// All threads wait until this moment.
+		barrier.wait();
+
+		// Each thread sets his value in this array.
+		with( mut lock : arr_ptr.lock_mut() )
+		{
+			lock.deref()[ thread_index ]= thread_index;
+		}
+
+		// All threads wait until this moment.
+		barrier.wait();
+
+		// Each thread squares a value in an array, but not the same value which was set by it.
+		with( mut lock : arr_ptr.lock_mut() )
+		{
+			var u32& mut n= lock.deref()[ ( thread_index + c_num_threads / 2u ) % c_num_threads ];
+			n= n * n;
+		}
+
+		// All threads wait until this moment.
+		barrier.wait();
+
+		// Each thread checks if values of other threads are squared.
+		with( &arr : arr_ptr.lock_imut().deref() )
+		{
+			for( auto mut i= 0u; i < c_num_threads; ++i )
+			{
+				halt if( arr[i] != i * i );
+			}
+		}
+	}
+}
