@@ -207,6 +207,26 @@ fn atomic_write( $(T) &mut addr, $(T) x )
 	}
 }
 
+fn atomic_swap( i8 &mut addr, i8 x ) : i8
+{
+	return ust_atomic_swap_i8_impl( addr, x );
+}
+
+fn atomic_swap( u8 &mut addr, u8 x ) : u8
+{
+	return ust_atomic_swap_u8_impl( addr, x );
+}
+
+fn atomic_swap( i16 &mut addr, i16 x ) : i16
+{
+	return ust_atomic_swap_i16_impl( addr, x );
+}
+
+fn atomic_swap( u16 &mut addr, u16 x ) : u16
+{
+	return ust_atomic_swap_u16_impl( addr, x );
+}
+
 fn atomic_swap( i32 &mut addr, i32 x ) : i32
 {
 	return ust_atomic_swap_i32_impl( addr, x );
@@ -245,6 +265,16 @@ fn atomic_swap( f32 &mut addr, f32 x ) : f32
 fn enable_if( c_enable_64bit_atomics ) atomic_swap( f64 &mut addr, f64 x ) : f64
 {
 	return ust_atomic_swap_f64_impl( addr, x );
+}
+
+fn atomic_swap( byte8 &mut addr, byte8 x ) : byte8
+{
+	return ust_atomic_swap_byte8_impl( addr, x );
+}
+
+fn atomic_swap( byte16 &mut addr, byte16 x ) : byte16
+{
+	return ust_atomic_swap_byte16_impl( addr, x );
 }
 
 fn atomic_swap( byte32 &mut addr, byte32 x ) : byte32
@@ -496,6 +526,10 @@ fn nomangle ust_atomic_write_byte16_impl( byte16 &mut addr, byte16 x );
 fn nomangle ust_atomic_write_byte32_impl( byte32 &mut addr, byte32 x );
 fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_write_byte64_impl( byte64 &mut addr, byte64 x );
 
+fn nomangle ust_atomic_swap_i8_impl( i8 &mut addr, i8 x ) : i8;
+fn nomangle ust_atomic_swap_u8_impl( u8 &mut addr, u8 x ) : u8;
+fn nomangle ust_atomic_swap_i16_impl( i16 &mut addr, i16 x ) : i16;
+fn nomangle ust_atomic_swap_u16_impl( u16 &mut addr, u16 x ) : u16;
 fn nomangle ust_atomic_swap_i32_impl( i32 &mut addr, i32 x ) : i32;
 fn nomangle ust_atomic_swap_u32_impl( u32 &mut addr, u32 x ) : u32;
 fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_swap_i64_impl( i64 &mut addr, i64 x ) : i64;
@@ -504,6 +538,8 @@ fn nomangle ust_atomic_swap_ssize_type_impl( ssize_type &mut addr, ssize_type x 
 fn nomangle ust_atomic_swap_size_type_impl( size_type &mut addr, size_type x ) : size_type;
 fn nomangle ust_atomic_swap_f32_impl( f32 &mut addr, f32 x ) : f32;
 fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_swap_f64_impl( f64 &mut addr, f64 x ) : f64;
+fn nomangle ust_atomic_swap_byte8_impl( byte8 &mut addr, byte8 x ) : byte8;
+fn nomangle ust_atomic_swap_byte16_impl( byte16 &mut addr, byte16 x ) : byte16;
 fn nomangle ust_atomic_swap_byte32_impl( byte32 &mut addr, byte32 x ) : byte32;
 fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_swap_byte64_impl( byte64 &mut addr, byte64 x ) : byte64;
 

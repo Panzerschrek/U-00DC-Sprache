@@ -71,6 +71,40 @@ fn nomangle main() : i32
 		halt if( ust::atomic_read( x ) != 0.06537854 );
 	}
 	{
+		var i8 mut x(0);
+		halt if( ust::atomic_swap( x, 77i8 ) != 0i8 );
+		halt if( ust::atomic_swap( x, 51i8 ) != 77i8 );
+		halt if( ust::atomic_swap( x, -75i8 ) != 51i8 );
+		halt if( ust::atomic_swap( x, 3i8 ) != -75i8 );
+		halt if( ust::atomic_read( x ) != 3i8 );
+	}
+	{
+		var u8 mut x(0);
+		halt if( ust::atomic_swap( x, 41u8 ) != 0u8 );
+		halt if( ust::atomic_swap( x, 69u8 ) != 41u8 );
+		halt if( ust::atomic_swap( x, 1u8 ) != 69u8 );
+		halt if( ust::atomic_swap( x, 0u8 ) != 1u8 );
+		halt if( ust::atomic_swap( x, 194u8 ) != 0u8 );
+		halt if( ust::atomic_read( x ) != 194u8 );
+	}
+	{
+		var i16 mut x(0);
+		halt if( ust::atomic_swap( x, 77i16 ) != 0i16 );
+		halt if( ust::atomic_swap( x, 451i16 ) != 77i16 );
+		halt if( ust::atomic_swap( x, -75i16 ) != 451i16 );
+		halt if( ust::atomic_swap( x, 3i16 ) != -75i16 );
+		halt if( ust::atomic_read( x ) != 3i16 );
+	}
+	{
+		var u16 mut x(0);
+		halt if( ust::atomic_swap( x, 741u16 ) != 0u16 );
+		halt if( ust::atomic_swap( x, 6669u16 ) != 741u16 );
+		halt if( ust::atomic_swap( x, 1u16 ) != 6669u16 );
+		halt if( ust::atomic_swap( x, 0u16 ) != 1u16 );
+		halt if( ust::atomic_swap( x, 8944u16 ) != 0u16 );
+		halt if( ust::atomic_read( x ) != 8944u16 );
+	}
+	{
 		var i32 mut x= 0;
 		halt if( ust::atomic_swap( x, 77 ) != 0 );
 		halt if( ust::atomic_swap( x, 451 ) != 77 );
@@ -117,6 +151,20 @@ fn nomangle main() : i32
 		halt if( ust::atomic_swap( x, -2364646464.37854247 ) != 0.0002646474315 );
 		halt if( ust::atomic_swap( x, 67444784.023623 ) != -2364646464.37854247 );
 		halt if( ust::atomic_read( x ) != 67444784.023623 );
+	}
+	{
+		var byte8 mut x(0u8);
+		halt if( ust::atomic_swap( x, byte8(78u8) ) != byte8(0u8) );
+		halt if( ust::atomic_swap( x, byte8(178u8) ) != byte8(78u8) );
+		halt if( ust::atomic_swap( x, byte8(32u8) ) != byte8(178u8) );
+		halt if( ust::atomic_read( x ) != byte8(32u8) );
+	}
+	{
+		var byte16 mut x(0u16);
+		halt if( ust::atomic_swap( x, byte16(78u16) ) != byte16(0u16) );
+		halt if( ust::atomic_swap( x, byte16(1789u16) ) != byte16(78u16) );
+		halt if( ust::atomic_swap( x, byte16(32u16) ) != byte16(1789u16) );
+		halt if( ust::atomic_read( x ) != byte16(32u16) );
 	}
 	{
 		var byte32 mut x(0u);
