@@ -5,10 +5,16 @@ import "memory.u"
 namespace ust
 {
 
+// A wrapper container for atomic operations.
+// Its methods are "imut", in order to be able to share immutable references to this class across threads and be able to perform atomic operations concurrently.
+// Internally it uses indirection (allocates actual atomic variable on heap), since interrior mutability without indirection is forbidden in Ü.
+// It supports fundamental types (with some exceptions) and raw pointers as contained value.
+// Not all methods are available for all types.
 template</type T/>
 class atomic_variable
 {
 public:
+	// Construct with given initial value.
 	fn constructor( T initial_value )
 		( ptr_= unsafe( byte_ptr_cast</T/>( memory_allocate( typeinfo</T/>.size_of ) ) ) )
 	{
@@ -37,6 +43,11 @@ public:
 	{
 		return atomic_swap( unsafe( $>(ptr_) ), x );
 	}
+
+	//
+	// Methods below are defined as zero param template functions, in order to instantiate them only if necessary.
+	// Doing so we avoid creating methods for operations unsupported for current contained type.
+	//
 
 	template<//>
 	fn compare_exchange_strong( this, T &mut expected, T new ) : bool
