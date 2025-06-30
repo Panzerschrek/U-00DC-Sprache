@@ -1,0 +1,22 @@
+//##fail_test
+import "../imports/shared_condition_variable.u"
+
+fn nomangle main() : i32
+{
+	{
+		var ust::shared_ptr_mt_mutex</i32/> m(123);
+		var ust::shared_condition_variable cv;
+		auto lock= m.lock();
+		// Waiting requires mutable lock reference.
+		cv.wait( lock ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{
+		var ust::shared_ptr_mt_mutex</i32/> m(123);
+		var ust::shared_condition_variable cv;
+		auto mut lock= m.lock();
+		var i32& val= lock.deref();
+		// Can't wait if lock has derived references.
+		cv.wait( lock ); //##expect_error ReferenceProtectionError
+	}
+	return 0;
+}
