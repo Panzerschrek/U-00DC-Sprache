@@ -170,7 +170,6 @@ define linkonce_odr hidden void @ust_atomic_write_char16_impl( i16* %addr, i16 %
 	ret void
 }
 
-
 $ust_atomic_write_char32_impl = comdat any
 define linkonce_odr hidden void @ust_atomic_write_char32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
 {
@@ -191,7 +190,6 @@ define linkonce_odr hidden void @ust_atomic_write_byte16_impl( i16* %addr, i16 %
 	store atomic volatile i16 %x, i16* %addr seq_cst, align 2
 	ret void
 }
-
 
 $ust_atomic_write_byte32_impl = comdat any
 define linkonce_odr hidden void @ust_atomic_write_byte32_impl( i32* %addr, i32 %x ) unnamed_addr comdat
