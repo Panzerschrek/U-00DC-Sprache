@@ -1,0 +1,55 @@
+//##fail_test
+import "../imports/shared_atomic_variable.u"
+
+// Unsupported types for atomic variable.
+type AtomicVoid= ust::shared_atomic_variable</void/>; //##expect_error TemplateContext
+type AtomicU128= ust::shared_atomic_variable</u128/>; //##expect_error TemplateContext
+type AtomicFnPtr= ust::shared_atomic_variable</ fn() />; //##expect_error TemplateContext
+type AtomicStruct= ust::shared_atomic_variable</ S />; //##expect_error TemplateContext
+type AtomicEnum= ust::shared_atomic_variable</ E />; //##expect_error TemplateContext
+type AtomicArray= ust::shared_atomic_variable</ [ i32, 2 ] />; //##expect_error TemplateContext
+type AtomicTuple= ust::shared_atomic_variable</ tup[ i32, u8 ] />; //##expect_error TemplateContext
+type AtomicLambda= ust::shared_atomic_variable</ typeof( lambda(){} ) />; //##expect_error TemplateContext
+
+struct S{ i32 x; }
+
+enum E { A, B, C }
+
+fn nomangle main() : i32
+{
+	{ // Can't read value from atomic variable without special method.
+		var ust::shared_atomic_variable</i32/> v( 0 );
+		var i32 contents= v; //##expect_error TypesMismatch
+	}
+	{ // Can't write value to atomic variable without special method.
+		var ust::shared_atomic_variable</i32/> v( 0 );
+		v= 17; //##expect_error ExpectedReferenceValue
+	}
+	{ // Can't add value to atomic variable without special method.
+		var ust::shared_atomic_variable</i32/> v( 0 );
+		v+= 17; //##expect_error ExpectedReferenceValue
+	}
+	{ // Can't increment/decrement atomic variable without special method.
+		var ust::shared_atomic_variable</i32/> v( 1 );
+		++v; //##expect_error ExpectedReferenceValue
+		--v; //##expect_error ExpectedReferenceValue
+	}
+	{ // Can't add unsupported types.
+		var ust::shared_atomic_variable</char8/> v( 'Y' );
+		v.add( 'v' ); //##expect_error TemplateContext
+	}
+	{ // Can't subtract unsupported types. Atomic subtraction for floats doesn't exist.
+		var ust::shared_atomic_variable</f32/> v( 0.25f );
+		v.sub( 73.98f ); //##expect_error TemplateContext
+	}
+	{ // Can't or unsupported types.
+		var ust::shared_atomic_variable</byte32/> v( byte32(64) );
+		v.or( byte32(15) ); //##expect_error TemplateContext
+	}
+	{ // Can't compare and exchange floats - only integer types are supported.
+		var ust::shared_atomic_variable</f32/> v( 0.0f );
+		var f32 mut x= 17.0f;
+		v.compare_exchange_weak( x, 12345.67f ); //##expect_error TemplateContext
+	}
+	return 0;
+}
