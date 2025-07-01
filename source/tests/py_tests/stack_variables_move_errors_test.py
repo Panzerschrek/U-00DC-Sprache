@@ -881,3 +881,26 @@ def ThisUnavailable_ForMove_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "ThisUnavailable", 6 ) )
+
+
+def ReturnAutoMove_DoesNotWorkForLambdaThisField_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn constructor( mut this, S& other )= delete;
+			i32 x;
+		}
+		static_assert( !typeinfo</S/>.is_copy_constructible );
+		fn Foo()
+		{
+			auto l= lambda[ s= S{ .x= 6742 } ] byval mut () : S
+			{
+				// Auto-move captured variable in "return" of "byval this" lambda.
+				// For now this doesn't work, since it's too complex to implement such behavior.
+				return s;
+			};
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CopyConstructValueOfNoncopyableType", 14 ) )
