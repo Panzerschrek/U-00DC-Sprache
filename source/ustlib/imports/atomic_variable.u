@@ -62,6 +62,11 @@ public:
 		return atomic_compare_exchange_weak( unsafe( $>(ptr_) ), expected, new );
 	}
 
+	//
+	// Do not use overloaded operators +=, -=, ++, --, &=, |=, ^= in methods below, since these operators can't return value.
+	// But returning such value is necessary for atomic variables, since there is no other way to observe and modify value atomically.
+	//
+
 	template<//>
 	fn add( this, T x ) : T
 	{
