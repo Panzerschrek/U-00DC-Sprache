@@ -12,6 +12,7 @@ Containers:
 * Optional reference, that stores a reference to value (mutable or immutable) or null (optional_ref.u)
 * View for continuous sequence of single type values (mutable or immutable) (random_access_range.u)
 * Result container, that stores a value of one of two provided types (result.u)
+* Shared version of atomic variable container (shared_atomic_variable.u)
 * Single-threaded shared pointers (shared_ptr.u)
 * Single-threaded shared pointers for immutable data (shared_ptr_final.u)
 * Multi-threaded shared pointers (shared_ptr_mt.u)
