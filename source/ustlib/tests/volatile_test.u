@@ -1,8 +1,23 @@
 //##success_test
 import "../imports/volatile.u"
 
+fn DoBoolTest()
+{
+	var bool mut x= false;
+	ust::volatile_write( x, true );
+	ust::volatile_write( x, true );
+	ust::volatile_read( x );
+	ust::volatile_read( x );
+	halt if( ust::volatile_read( x ) != true );
+	ust::volatile_write( x, false );
+	ust::volatile_write( x, false );
+	ust::volatile_read( x );
+	ust::volatile_read( x );
+	halt if( ust::volatile_read( x ) != false );
+}
+
 template</type T/>
-fn DoTest()
+fn DoIntsTest()
 {
 	var T mut x= zero_init;
 	ust::volatile_write( x, T(33) );
@@ -55,16 +70,18 @@ fn DoBytesTest()
 
 fn nomangle main() : i32
 {
-	DoTest</  i8/>();
-	DoTest</  u8/>();
-	DoTest</ i16/>();
-	DoTest</ u16/>();
-	DoTest</ i32/>();
-	DoTest</ u32/>();
-	DoTest</ i64/>();
-	DoTest</ u64/>();
-	DoTest</i128/>();
-	DoTest</u128/>();
+	DoBoolTest();
+
+	DoIntsTest</  i8/>();
+	DoIntsTest</  u8/>();
+	DoIntsTest</ i16/>();
+	DoIntsTest</ u16/>();
+	DoIntsTest</ i32/>();
+	DoIntsTest</ u32/>();
+	DoIntsTest</ i64/>();
+	DoIntsTest</ u64/>();
+	DoIntsTest</i128/>();
+	DoIntsTest</u128/>();
 
 	DoFloatsTest</f32/>();
 	DoFloatsTest</f64/>();

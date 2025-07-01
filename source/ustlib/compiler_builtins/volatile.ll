@@ -1,3 +1,17 @@
+$ust_volatile_read_bool_impl = comdat any
+define linkonce_odr hidden i1 @ust_volatile_read_bool_impl( i1* %addr ) unnamed_addr comdat
+{
+	%1= load volatile i1, i1* %addr
+	ret i1 %1
+}
+
+$ust_volatile_write_bool_impl = comdat any
+define linkonce_odr hidden void @ust_volatile_write_bool_impl( i1* %addr, i1 %x ) unnamed_addr comdat
+{
+	store volatile i1 %x, i1* %addr
+	ret void
+}
+
 $ust_volatile_read_i8_impl = comdat any
 define linkonce_odr hidden   i8 @ust_volatile_read_i8_impl(   i8* %addr ) unnamed_addr comdat
 {

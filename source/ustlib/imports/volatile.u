@@ -1,6 +1,9 @@
 namespace ust
 {
 
+fn volatile_read(bool& addr) : bool { return ust_volatile_read_bool_impl( addr ); }
+fn volatile_write(bool &mut addr, bool x) { ust_volatile_write_bool_impl( addr, x ); }
+
 fn volatile_read(  i8& addr) :   i8 { return ust_volatile_read_i8_impl  ( addr ); }
 fn volatile_read(  u8& addr) :   u8 { return ust_volatile_read_u8_impl  ( addr ); }
 fn volatile_read( i16& addr) :  i16 { return ust_volatile_read_i16_impl ( addr ); }
@@ -52,6 +55,9 @@ fn volatile_write(byte128 &mut addr, byte128 x) { ust_volatile_write_byte128_imp
 }
 
 // External implementation functions. Do not use directly!
+
+fn nomangle ust_volatile_read_bool_impl(bool& addr) : bool;
+fn nomangle ust_volatile_write_bool_impl(bool &mut addr, bool x);
 
 fn nomangle ust_volatile_read_i8_impl  (  i8& addr) :   i8;
 fn nomangle ust_volatile_read_u8_impl  (  u8& addr) :   u8;
