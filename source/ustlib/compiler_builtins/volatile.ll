@@ -138,6 +138,34 @@ define linkonce_odr hidden void @ust_volatile_write_u128_impl( i128* %addr, i128
 	ret void
 }
 
+$ust_volatile_read_f32_impl = comdat any
+define linkonce_odr hidden  float @ust_volatile_read_f32_impl(  float* %addr ) unnamed_addr comdat
+{
+	%1= load volatile  float,  float* %addr
+	ret  float %1
+}
+
+$ust_volatile_read_f64_impl = comdat any
+define linkonce_odr hidden  double @ust_volatile_read_f64_impl(  double* %addr ) unnamed_addr comdat
+{
+	%1= load volatile  double,  double* %addr
+	ret  double %1
+}
+
+$ust_volatile_write_f32_impl = comdat any
+define linkonce_odr hidden void @ust_volatile_write_f32_impl(  float* %addr,  float %x ) unnamed_addr comdat
+{
+	store volatile  float %x,  float* %addr
+	ret void
+}
+
+$ust_volatile_write_f64_impl = comdat any
+define linkonce_odr hidden void @ust_volatile_write_f64_impl(  double* %addr,  double %x ) unnamed_addr comdat
+{
+	store volatile  double %x,  double* %addr
+	ret void
+}
+
 $ust_volatile_read_char8_impl = comdat any
 define linkonce_odr hidden   i8 @ust_volatile_read_char8_impl(   i8* %addr ) unnamed_addr comdat
 {

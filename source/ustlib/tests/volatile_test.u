@@ -13,6 +13,17 @@ fn DoTest()
 }
 
 template</type T/>
+fn DoFloatsTest()
+{
+	var T mut x= zero_init;
+	ust::volatile_write( x, T(2.718281828) );
+	ust::volatile_write( x, T(2.718281828) );
+	ust::volatile_read( x );
+	ust::volatile_read( x );
+	halt if( ust::volatile_read( x ) != T(2.718281828) );
+}
+
+template</type T/>
 fn DoCharsTest()
 {
 	var T mut x= zero_init;
@@ -54,6 +65,9 @@ fn nomangle main() : i32
 	DoTest</ u64/>();
 	DoTest</i128/>();
 	DoTest</u128/>();
+
+	DoFloatsTest</f32/>();
+	DoFloatsTest</f64/>();
 
 	DoCharsTest</char8/>();
 	DoCharsTest</char16/>();

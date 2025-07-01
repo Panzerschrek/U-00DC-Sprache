@@ -23,6 +23,12 @@ fn volatile_write( u64 &mut addr,  u64 x) { ust_volatile_write_u64_impl ( addr, 
 fn volatile_write(i128 &mut addr, i128 x) { ust_volatile_write_i128_impl( addr, x ); }
 fn volatile_write(u128 &mut addr, u128 x) { ust_volatile_write_u128_impl( addr, x ); }
 
+fn volatile_read( f32& addr) :  f32 { return ust_volatile_read_f32_impl ( addr ); }
+fn volatile_read( f64& addr) :  f64 { return ust_volatile_read_f64_impl ( addr ); }
+
+fn volatile_write( f32 &mut addr,  f32 x) { ust_volatile_write_f32_impl ( addr, x ); }
+fn volatile_write( f64 &mut addr,  f64 x) { ust_volatile_write_f64_impl ( addr, x ); }
+
 fn volatile_read(  char8& addr) :   char8 { return ust_volatile_read_char8_impl  ( addr ); }
 fn volatile_read( char16& addr) :  char16 { return ust_volatile_read_char16_impl ( addr ); }
 fn volatile_read( char32& addr) :  char32 { return ust_volatile_read_char32_impl ( addr ); }
@@ -68,6 +74,12 @@ fn nomangle ust_volatile_write_i64_impl ( i64 &mut addr,  i64 x);
 fn nomangle ust_volatile_write_u64_impl ( u64 &mut addr,  u64 x);
 fn nomangle ust_volatile_write_i128_impl(i128 &mut addr, i128 x);
 fn nomangle ust_volatile_write_u128_impl(u128 &mut addr, u128 x);
+
+fn nomangle ust_volatile_read_f32_impl ( f32& addr) :  f32;
+fn nomangle ust_volatile_read_f64_impl ( f64& addr) :  f64;
+
+fn nomangle ust_volatile_write_f32_impl ( f32 &mut addr,  f32 x);
+fn nomangle ust_volatile_write_f64_impl ( f64 &mut addr,  f64 x);
 
 fn nomangle ust_volatile_read_char8_impl  (  char8& addr) :   char8;
 fn nomangle ust_volatile_read_char16_impl ( char16& addr) :  char16;
