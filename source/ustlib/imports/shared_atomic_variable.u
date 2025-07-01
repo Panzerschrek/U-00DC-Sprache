@@ -1,0 +1,154 @@
+import "alloc.u"
+import "atomic.u"
+import "memory.u"
+
+namespace ust
+{
+
+// A wrapper container for atomic operations.
+// Its methods are "imut", in order to be able to share immutable references to this class across threads and be able to perform atomic operations concurrently.
+// Internally it uses indirection (allocates actual atomic variable on heap), since interrior mutability without indirection is forbidden in Ü.
+// It supports fundamental types (with some exceptions) and raw pointers as contained value.
+// Not all methods are available for all types.
+// Since it has some overhead because of indirection, prefer using raw atomic operations in unsafe code if no interrior mutability without indirection happens.
+//
+// This version has shared semantics - constructor with T argument creates new atomic variable object,
+// copy constructor creates just another reference to the same object.
+// It's more effective compared to shared_ptr_final_mt</atomic_variable</T/>/>, since it uses only single pointer indirection internally.
+template</type T/>
+class shared_atomic_variable
+{
+public:
+	// Construct with given initial value.
+	fn constructor( T initial_value )
+		( ptr_= unsafe( byte_ptr_cast</storage/>( memory_allocate( typeinfo</storage/>.size_of ) ) ) )
+	{
+		unsafe
+		{
+			$>(ptr_).counter= 1u;
+			$>(ptr_).value= initial_value;
+		}
+	}
+	// Create another reference to the same underlying atomic variable object.
+	fn constructor( this_type& other )
+		( ptr_= other.ptr_ )
+	{
+		unsafe( atomic_inc( $>(ptr_).counter ) );
+	}
+
+	op=( mut this, this_type& other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= this_type(other);
+	}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			if( atomic_dec( $>(ptr_).counter ) == 1u )
+			{
+				memory_free( ptr_cast_to_byte8( ptr_ ) );
+			}
+		}
+	}
+
+	// Equality compare - returns true if passed objects use the same underlying atomic variable object.
+	op==( this_type& l, this_type& r ) : bool
+	{
+		return l.ptr_ == r.ptr_;
+	}
+
+	fn read( this ) : T
+	{
+		return atomic_read( unsafe( $>(ptr_).value ) );
+	}
+
+	fn write( this, T x )
+	{
+		atomic_write( unsafe( $>(ptr_).value ), x );
+	}
+
+	fn swap( this, T x ) : T
+	{
+		return atomic_swap( unsafe( $>(ptr_).value ), x );
+	}
+
+	//
+	// Methods below are defined as zero param template functions, in order to instantiate them only if necessary.
+	// Doing so we avoid creating methods for operations unsupported for current contained type.
+	//
+
+	template<//>
+	fn compare_exchange_strong( this, T &mut expected, T new ) : bool
+	{
+		return atomic_compare_exchange_strong( unsafe( $>(ptr_).value ), expected, new );
+	}
+
+	template<//>
+	fn compare_exchange_weak( this, T &mut expected, T new ) : bool
+	{
+		return atomic_compare_exchange_weak( unsafe( $>(ptr_).value ), expected, new );
+	}
+
+	//
+	// Do not use overloaded operators +=, -=, ++, --, &=, |=, ^= in methods below, since these operators can't return value.
+	// But returning such value is necessary for atomic variables, since there is no other way to observe and modify value atomically.
+	//
+
+	template<//>
+	fn add( this, T x ) : T
+	{
+		return atomic_add( unsafe( $>(ptr_).value ), x );
+	}
+
+	template<//>
+	fn sub( this, T x ) : T
+	{
+		return atomic_sub( unsafe( $>(ptr_).value ), x );
+	}
+
+	template<//>
+	fn inc( this ) : T
+	{
+		return atomic_inc( unsafe( $>(ptr_).value ) );
+	}
+
+	template<//>
+	fn dec( this ) : T
+	{
+		return atomic_dec( unsafe( $>(ptr_).value ) );
+	}
+
+	template<//>
+	fn and( this, T x ) : T
+	{
+		return atomic_and( unsafe( $>(ptr_).value ), x );
+	}
+
+	template<//>
+	fn or( this, T x ) : T
+	{
+		return atomic_or( unsafe( $>(ptr_).value ), x );
+	}
+
+	template<//>
+	fn xor( this, T x ) : T
+	{
+		return atomic_xor( unsafe( $>(ptr_).value ), x );
+	}
+
+private:
+	struct storage
+	{
+		u32 counter;
+		T value;
+	}
+
+	type this_type= shared_atomic_variable</T/>;
+
+private:
+	$(storage) imut ptr_;
+}
+
+} // namespace ust
