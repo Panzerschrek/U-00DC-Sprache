@@ -14,7 +14,7 @@ namespace condition_variable_impl
 type condition_variable_t=
 	type_select</
 		constexpr_string_equals( compiler::target::os, "windows" ),
-		[ byte64, 1 ], // RTL_CONDITION_VARIABLE
+		[ size_type, 1 ], // RTL_CONDITION_VARIABLE
 		[ byte64, 6 ] // pthread_cond_t
 		/>;
 
