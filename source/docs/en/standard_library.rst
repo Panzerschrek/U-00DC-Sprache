@@ -79,6 +79,7 @@ if you want to learn more, read its sources yourself.
 * View for continuous sequence of single type values (mutable or immutable) (random_access_range.u).
 * Result container, that stores a value of one of two provided types (result.u).
   Designed to be used as return value type for functions which may fail.
+* Shared version of atomic variable container (shared_atomic_variable.u).
 * Single-threaded shared pointers (shared_ptr.u).
   Provide interior shared mutability.
 * Single-threaded shared pointers for immutable data (shared_ptr_final.u).
