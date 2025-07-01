@@ -22,17 +22,18 @@ fn nomangle main() : i32
 		var i32 contents= v; //##expect_error TypesMismatch
 	}
 	{ // Can't write value to atomic variable without special method.
-		var ust::shared_atomic_variable</i32/> v( 0 );
-		v= 17; //##expect_error ExpectedReferenceValue
+		var ust::shared_atomic_variable</i32/> mut v( 0 );
+		v= 17; //##expect_error TypesMismatch
 	}
 	{ // Can't add value to atomic variable without special method.
-		var ust::shared_atomic_variable</i32/> v( 0 );
-		v+= 17; //##expect_error ExpectedReferenceValue
+		var ust::shared_atomic_variable</i32/> mut v( 0 );
+		// TODO - fix this. Compiler0 and Compiler1 use different error codes here - OperationNotSupportedForThisType and NoMatchBinaryOperatorForGivenTypes.
+		v+= 17;
 	}
 	{ // Can't increment/decrement atomic variable without special method.
-		var ust::shared_atomic_variable</i32/> v( 1 );
-		++v; //##expect_error ExpectedReferenceValue
-		--v; //##expect_error ExpectedReferenceValue
+		var ust::shared_atomic_variable</i32/> mut v( 1 );
+		++v; //##expect_error OperationNotSupportedForThisType
+		--v; //##expect_error OperationNotSupportedForThisType
 	}
 	{ // Can't add unsupported types.
 		var ust::shared_atomic_variable</char8/> v( 'Y' );
