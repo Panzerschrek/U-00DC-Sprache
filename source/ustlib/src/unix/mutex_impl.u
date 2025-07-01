@@ -14,13 +14,9 @@ fn initialize_mutex( mutex_t &mut m ) unsafe
 {
 	unsafe
 	{
-		var pthread_mutexattr_t mut attr= zero_init;
-		::pthread_mutexattr_init( attr );
-
+		var $(pthread_mutexattr_t) attr= zero_init;
 		var i32 res= ::pthread_mutex_init( cast_ref_unsafe</pthread_mutex_t/>( m ), attr );
 		halt if( res != 0 );
-
-		::pthread_mutexattr_destroy( attr );
 	}
 }
 

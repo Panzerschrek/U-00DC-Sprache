@@ -13,10 +13,8 @@ fn rwlock_init( rwlock &mut l ) unsafe
 {
 	unsafe
 	{
-		var pthread_rwlockattr_t mut attr= uninitialized;
-		halt if( ::pthread_rwlockattr_init( attr ) != 0 );
+		var $(pthread_rwlockattr_t) attr= zero_init;
 		halt if( ::pthread_rwlock_init( l, attr ) != 0 );
-		halt if( ::pthread_rwlockattr_destroy( attr ) != 0 );
 	}
 }
 

@@ -14,14 +14,9 @@ fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe
 {
 	unsafe
 	{
-		var pthread_barrierattr_t mut attr= zero_init;
-
-		::pthread_barrierattr_init( attr );
-
+		var $(pthread_barrierattr_t) attr= zero_init;
 		var i32 res= ::pthread_barrier_init( cast_ref_unsafe</ pthread_barrier_t />( b ), attr, num_threads );
 		halt if( res != 0 );
-
-		::pthread_barrierattr_destroy( attr );
 	}
 }
 

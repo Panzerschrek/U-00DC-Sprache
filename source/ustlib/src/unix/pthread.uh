@@ -19,7 +19,7 @@ fn nomangle pthread_attr_init( pthread_attr_t& mut thread_attr ) unsafe : i32;
 fn nomangle pthread_attr_destroy( pthread_attr_t& mut thread_attr ) unsafe : i32;
 fn nomangle pthread_create(
 	pthread_t& mut thread_id,
-	pthread_attr_t& imut thread_attr,
+	$(pthread_attr_t) thread_attr /* may be null */,
 	pthread_start_function start_function,
 	$(byte8) arg ) unsafe : i32;
 fn nomangle pthread_join(
@@ -28,14 +28,14 @@ fn nomangle pthread_join(
 
 fn nomangle pthread_mutexattr_init( pthread_mutexattr_t &mut attr ) unsafe : i32;
 fn nomangle pthread_mutexattr_destroy( pthread_mutexattr_t &mut attr ) unsafe : i32;
-fn nomangle pthread_mutex_init( pthread_mutex_t &mut mutex, pthread_mutexattr_t & attr ) unsafe : i32;
+fn nomangle pthread_mutex_init( pthread_mutex_t &mut mutex, $(pthread_mutexattr_t) attr /* may be null */ ) unsafe : i32;
 fn nomangle pthread_mutex_destroy( pthread_mutex_t &mut mutex ) unsafe : i32;
 fn nomangle pthread_mutex_lock( pthread_mutex_t &mut mutex ) unsafe : i32;
 fn nomangle pthread_mutex_unlock( pthread_mutex_t &mut mutex ) unsafe : i32;
 
 fn nomangle pthread_rwlockattr_init( pthread_rwlockattr_t& mut attr ) unsafe : i32;
 fn nomangle pthread_rwlockattr_destroy( pthread_rwlockattr_t& mut attr ) unsafe : i32;
-fn nomangle pthread_rwlock_init( pthread_rwlock_t &mut rwlock, pthread_rwlockattr_t & attr ) unsafe : i32;
+fn nomangle pthread_rwlock_init( pthread_rwlock_t &mut rwlock, $(pthread_rwlockattr_t) attr /* may be null */ ) unsafe : i32;
 fn nomangle pthread_rwlock_destroy( pthread_rwlock_t &mut rwlock ) unsafe : i32;
 fn nomangle pthread_rwlock_rdlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
 fn nomangle pthread_rwlock_wrlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
@@ -43,12 +43,12 @@ fn nomangle pthread_rwlock_unlock( pthread_rwlock_t &mut rwlock ) unsafe : i32;
 fn nomangle pthread_self() unsafe : pthread_t;
 
 fn nomangle pthread_barrier_destroy( pthread_barrier_t &mut barrier ) unsafe : i32;
-fn nomangle pthread_barrier_init( pthread_barrier_t &mut barrier, pthread_barrierattr_t & attr, u32 count ) unsafe : i32;
+fn nomangle pthread_barrier_init( pthread_barrier_t &mut barrier, $(pthread_barrierattr_t) attr /* may be null */, u32 count ) unsafe : i32;
 fn nomangle pthread_barrier_wait( pthread_barrier_t &mut barrier ) unsafe : i32;
 fn nomangle pthread_barrierattr_destroy( pthread_barrierattr_t &mut attr ) unsafe : i32;
 fn nomangle pthread_barrierattr_init( pthread_barrierattr_t &mut attr ) unsafe : i32;
 
-fn nomangle pthread_cond_init( pthread_cond_t &mut cond, pthread_condattr_t & attr ) unsafe : i32;
+fn nomangle pthread_cond_init( pthread_cond_t &mut cond, $(pthread_condattr_t) attr /* may be null */ ) unsafe : i32;
 fn nomangle pthread_cond_destroy( pthread_cond_t &mut cond ) unsafe : i32;
 fn nomangle pthread_cond_signal( pthread_cond_t &mut cond ) unsafe : i32;
 fn nomangle pthread_cond_broadcast( pthread_cond_t &mut cond ) unsafe : i32;

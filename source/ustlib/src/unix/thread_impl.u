@@ -15,12 +15,10 @@ fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : 
 {
 	unsafe
 	{
-		var pthread_attr_t mut attr= zero_init;
+		var $(pthread_attr_t) attr= zero_init;
 		var pthread_t mut handle(0);
 
-		halt if( ::pthread_attr_init( attr ) != 0 );
 		halt if( ::pthread_create( handle, attr, func, arg ) != 0 );
-		halt if( ::pthread_attr_destroy( attr ) != 0 );
 
 		// In "pthread" library id=handle.
 		var tup[ thread_handle, thread_id ] res[ handle, handle ];

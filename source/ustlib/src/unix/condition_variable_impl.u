@@ -14,13 +14,9 @@ fn initialize_condition_variable( condition_variable_t &mut cv ) unsafe
 {
 	unsafe
 	{
-		var pthread_condattr_t mut attr= zero_init;
-		::pthread_condattr_init( attr );
-
+		var $(pthread_condattr_t) attr= zero_init;
 		var i32 res= ::pthread_cond_init( cast_ref_unsafe</pthread_cond_t/>(cv), attr );
 		halt if( res != 0 );
-
-		::pthread_condattr_destroy( attr );
 	}
 }
 
