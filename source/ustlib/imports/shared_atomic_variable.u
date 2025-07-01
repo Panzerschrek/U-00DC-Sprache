@@ -54,6 +54,8 @@ public:
 	}
 
 	// Equality compare - returns true if passed objects use the same underlying atomic variable object.
+	// Avoid misusing it, it compares objects identity, not stored values!
+	// To compare values use "read" method with "==" on read result.
 	op==( this_type& l, this_type& r ) : bool
 	{
 		return l.ptr_ == r.ptr_;
