@@ -7,7 +7,7 @@ namespace ust
 namespace barrier_impl
 {
 
-static_assert( typeinfo</barrier_t/>.size_of >= typeinfo</ü_RTL_BARRIER/>.size_of );
+static_assert( typeinfo</barrier_t/>.size_of == typeinfo</ü_RTL_BARRIER/>.size_of );
 static_assert( typeinfo</barrier_t/>.align_of >= typeinfo</ü_RTL_BARRIER/>.align_of );
 
 fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe

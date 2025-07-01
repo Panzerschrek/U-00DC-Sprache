@@ -1,6 +1,8 @@
 // This file is used internally for low-level barrier manipulations.
 // Do not use types/functions from this file directly!
 
+import "type_traits.u"
+
 namespace ust
 {
 
@@ -9,7 +11,12 @@ namespace barrier_impl
 
 // Opaque type representing OS-specific barrier object.
 // It's not relocable!
-type barrier_t= [ byte64, 4 ]; // _RTL_BARRIER on Windows, pthread_barrier_t on Unix.
+type barrier_t=
+	type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		type_select</ typeinfo</size_type/>.size_of == 8s , [ byte64, 4 ], [ byte64, 3 ] />, // _RTL_BARRIER on Windows.
+		[ byte64, 4 ] // pthread_barrier_t on Unix.
+		/>;
 
 // Initialize barrier at given address for given number of threads.
 fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe;
