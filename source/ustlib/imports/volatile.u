@@ -15,6 +15,30 @@ fn volatile_read( u64& addr) :  u64 { return ust_volatile_read_u64_impl ( addr )
 fn volatile_read(i128& addr) : i128 { return ust_volatile_read_i128_impl( addr ); }
 fn volatile_read(u128& addr) : u128 { return ust_volatile_read_u128_impl( addr ); }
 
+fn volatile_read(ssize_type& addr) : ssize_type
+{
+	static_if( typeinfo</ssize_type/>.size_of == 4s )
+	{
+		return ssize_type( volatile_read( unsafe( cast_ref_unsafe</byte32/>(addr) ) ) );
+	}
+	else
+	{
+		return ssize_type( volatile_read( unsafe( cast_ref_unsafe</byte64/>(addr) ) ) );
+	}
+}
+
+fn volatile_read(size_type& addr) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == 4s )
+	{
+		return size_type( volatile_read( unsafe( cast_ref_unsafe</byte32/>(addr) ) ) );
+	}
+	else
+	{
+		return size_type( volatile_read( unsafe( cast_ref_unsafe</byte64/>(addr) ) ) );
+	}
+}
+
 fn volatile_write(  i8 &mut addr,   i8 x) { ust_volatile_write_i8_impl  ( addr, x ); }
 fn volatile_write(  u8 &mut addr,   u8 x) { ust_volatile_write_u8_impl  ( addr, x ); }
 fn volatile_write( i16 &mut addr,  i16 x) { ust_volatile_write_i16_impl ( addr, x ); }
@@ -25,6 +49,30 @@ fn volatile_write( i64 &mut addr,  i64 x) { ust_volatile_write_i64_impl ( addr, 
 fn volatile_write( u64 &mut addr,  u64 x) { ust_volatile_write_u64_impl ( addr, x ); }
 fn volatile_write(i128 &mut addr, i128 x) { ust_volatile_write_i128_impl( addr, x ); }
 fn volatile_write(u128 &mut addr, u128 x) { ust_volatile_write_u128_impl( addr, x ); }
+
+fn volatile_write(ssize_type &mut addr, ssize_type x)
+{
+	static_if( typeinfo</ssize_type/>.size_of == 4s )
+	{
+		volatile_write( unsafe( cast_ref_unsafe</byte32/>( addr ) ), byte32(x) );
+	}
+	else
+	{
+		volatile_write( unsafe( cast_ref_unsafe</byte64/>( addr ) ), byte64(x) );
+	}
+}
+
+fn volatile_write(size_type &mut addr, size_type x)
+{
+	static_if( typeinfo</size_type/>.size_of == 4s )
+	{
+		volatile_write( unsafe( cast_ref_unsafe</byte32/>( addr ) ), byte32(x) );
+	}
+	else
+	{
+		volatile_write( unsafe( cast_ref_unsafe</byte64/>( addr ) ), byte64(x) );
+	}
+}
 
 fn volatile_read( f32& addr) :  f32 { return ust_volatile_read_f32_impl ( addr ); }
 fn volatile_read( f64& addr) :  f64 { return ust_volatile_read_f64_impl ( addr ); }

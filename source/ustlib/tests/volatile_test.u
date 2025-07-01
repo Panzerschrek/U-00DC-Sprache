@@ -82,6 +82,8 @@ fn nomangle main() : i32
 	DoIntsTest</ u64/>();
 	DoIntsTest</i128/>();
 	DoIntsTest</u128/>();
+	DoIntsTest</ssize_type/>();
+	DoIntsTest</size_type/>();
 
 	DoFloatsTest</f32/>();
 	DoFloatsTest</f64/>();
