@@ -1,0 +1,218 @@
+//##success_test
+import "../imports/atomic_variable.u"
+import "../imports/thread.u"
+import "../imports/vector.u"
+
+// Atomic variables aren't copyable (because of heap indirection).
+static_assert( !typeinfo</ ust::atomic_variable</i32/> />.is_copy_constructible );
+static_assert( !typeinfo</ ust::atomic_variable</i32/> />.is_copy_assignable );
+
+// Atomic variables aren't comparable.
+static_assert( !typeinfo</ ust::atomic_variable</f32/> />.is_equality_comparable );
+
+// Atomic variables have pointer size.
+static_assert( typeinfo</ ust::atomic_variable</u8/> />.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::atomic_variable</u16/> />.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::atomic_variable</u32/> />.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::atomic_variable</size_type/> />.size_of == typeinfo</size_type/>.size_of );
+static_assert( typeinfo</ ust::atomic_variable</ $( tup[ f64, u64, char8, bool ] ) /> />.size_of == typeinfo</size_type/>.size_of );
+
+// Atomic variables don't contain unsynchronized interrrior mutability.
+static_assert( !non_sync</ ust::atomic_variable</char32/> /> );
+
+fn nomangle main() : i32
+{
+	{ // Should support type aliases for many fundamental types.
+		type AtomicBool= ust::atomic_variable</bool/>;
+		type Atomic_i8= ust::atomic_variable</i8/>;
+		type Atomic_u8= ust::atomic_variable</u8/>;
+		type Atomic_i16= ust::atomic_variable</i16/>;
+		type Atomic_u16= ust::atomic_variable</u16/>;
+		type Atomic_i32= ust::atomic_variable</i32/>;
+		type Atomic_u32= ust::atomic_variable</u32/>;
+		type Atomic_ssize_type= ust::atomic_variable</ssize_type/>;
+		type Atomic_size_type= ust::atomic_variable</size_type/>;
+		type Atomic_char8= ust::atomic_variable</char8/>;
+		type Atomic_char16= ust::atomic_variable</char16/>;
+		type Atomic_char32= ust::atomic_variable</char32/>;
+		type Atomic_byte8= ust::atomic_variable</byte8/>;
+		type Atomic_byte16= ust::atomic_variable</byte16/>;
+		type Atomic_byte32= ust::atomic_variable</byte32/>;
+		static_if( c_enable_64bit_atomics )
+		{
+			type Atomic_i64= ust::atomic_variable</i64/>;
+			type Atomic_u64= ust::atomic_variable</u64/>;
+			type Atomic_f64= ust::atomic_variable</f64/>;
+			type Atomic_byte64= ust::atomic_variable</byte64/>;
+		}
+	}
+	{ // Read/write methods.
+		var ust::atomic_variable</u32/> v( 123u );
+		halt if( v.read() != 123u );
+		v.write( 7783u );
+		halt if( v.read() != 7783u );
+	}
+	{ // Swap.
+		var ust::atomic_variable</char8/> v( ' ' );
+		halt if( v.read() != ' ' );
+		halt if( v.swap( '&' ) != ' ' );
+		halt if( v.swap( 'Z' ) != '&' );
+		halt if( v.swap( '^' ) != 'Z' );
+		halt if( v.swap( '^' ) != '^' );
+		halt if( v.swap( 'h' ) != '^' );
+		halt if( v.read() != 'h' );
+	}
+	{ // Compare exchange strong.
+		var ust::atomic_variable</i32/> x( 22 );
+		var i32 mut y= 22;
+		halt if( x.compare_exchange_strong( y, 7 ) != true );
+		halt if( x.read() != 7 );
+		halt if( y != 22 );
+	}
+	{
+		var ust::atomic_variable</i32/> x( 111 );
+		var i32 mut y= 77;
+		halt if( x.compare_exchange_strong( y, 7 ) != false );
+		halt if( x.read() != 111 );
+		halt if( y != 111 );
+	}
+	{ // Basic arithmetic.
+		var ust::atomic_variable</size_type/> s( 100s );
+
+		halt if( s.sub( 17s ) != 100s );
+		halt if( s.read() != 83s );
+
+		halt if( s.inc() != 83s );
+		halt if( s.read() != 84s );
+
+		halt if( s.add( 38s ) != 84s );
+		halt if( s.read() != 122s );
+
+		halt if( s.dec() != 122s );
+		halt if( s.read() != 121s );
+	}
+	{ // Bit operations.
+		var ust::atomic_variable</u32/> x(0u);
+		halt if( x.or( 0b00000000000000000001001001100100u ) != 0u );
+		halt if( x.read() != 0b00000000000000000001001001100100u );
+		halt if( x.and( 0b01000010000001100000001000100100u ) != 0b00000000000000000001001001100100u );
+		halt if( x.read() != 0b00000000000000000000001000100100u );
+		halt if( x.xor( 0b00000000000000000000000000000101u ) != 0b00000000000000000000001000100100u );
+		halt if( x.read() != 0b00000000000000000000001000100001u );
+	}
+	{ // Bool operations.
+		var ust::atomic_variable</bool/> b(false);
+
+		for( var i32 mut x= 0; x < 2; ++x )
+		{
+			var bool b0= x != 0;
+			for( var i32 mut y= 0; y < 2; ++y )
+			{
+				var bool b1= y != 0;
+				b.write( b0 );
+				halt if( b.and( b1 ) != b0 );
+				halt if( b.read() != ( b0 & b1 ) );
+			}
+		}
+
+		for( var i32 mut x= 0; x < 2; ++x )
+		{
+			var bool b0= x != 0;
+			for( var i32 mut y= 0; y < 2; ++y )
+			{
+				var bool b1= y != 0;
+				b.write( b0 );
+				halt if( b.or( b1 ) != b0 );
+				halt if( b.read() != ( b0 | b1 ) );
+			}
+		}
+
+		for( var i32 mut x= 0; x < 2; ++x )
+		{
+			var bool b0= x != 0;
+			for( var i32 mut y= 0; y < 2; ++y )
+			{
+				var bool b1= y != 0;
+				b.write( b0 );
+				halt if( b.xor( b1 ) != b0 );
+				halt if( b.read() != ( b0 ^ b1 ) );
+			}
+		}
+	}
+	{ // Should support atomic raw pointers.
+		var i32 mut x= 0, mut y= 0, mut z= 0, mut w= 0;
+		var ust::atomic_variable</ $(i32) /> ptr( ust::nullptr</i32/>() );
+		halt if( ptr.read() != ust::nullptr</i32/>() );
+		ptr.write( $<(x) );
+		halt if( ptr.read() != $<(x) );
+		ptr.write( $<(y) );
+		halt if( ptr.read() != $<(y) );
+		ptr.write( $<(z) );
+		halt if( ptr.read() != $<(z) );
+		ptr.write( $<(w) );
+		halt if( ptr.read() != $<(w) );
+	}
+	{
+		var f64 mut x= 0.0, mut y= 0.0, mut z= 0.0, mut w= 0.0;
+		var ust::atomic_variable</ $(f64) /> ptr( ust::nullptr</f64/>() );
+		halt if( ptr.swap( $<(y) ) != ust::nullptr</f64/>() );
+		halt if( ptr.swap( $<(w) ) != $<(y) );
+		halt if( ptr.swap( $<(x) ) != $<(w) );
+		halt if( ptr.swap( $<(z) ) != $<(x) );
+		halt if( ptr.read() != $<(z) );
+	}
+	{ // Should support compare-exchange for raw pointers.
+		var i32 mut x= 0, mut y= 0;
+		var ust::atomic_variable</$(i32)/> ptr_a( $<(x) );
+		var $(i32) mut ptr_b= $<(x), mut ptr_c= $<(y);
+		halt if( ptr_a.compare_exchange_strong( ptr_b, ptr_c ) != true );
+		halt if( ptr_a.read() != $<(y) );
+		halt if( ptr_b != $<(x) );
+	}
+	{
+		var i32 mut x= 0, mut y= 0, mut z= 0;
+		var ust::atomic_variable</$(i32)/> ptr_a( $<(x) );
+		var $(i32) mut ptr_b= $<(y), mut ptr_c= $<(z);
+		halt if( ptr_a.compare_exchange_strong( ptr_b, ptr_c ) != false );
+		halt if( ptr_a.read() != $<(x) );
+		halt if( ptr_b != $<(x) );
+	}
+	{ // Share atomic variable across many threads.
+		var ust::atomic_variable</size_type/> v(0s);
+
+		var ust::vector</ ust::thread</ AdderFunc, void /> /> mut threads;
+
+		var size_type c_num_threads= 25s;
+
+		if( false ) // Hack to prevent ReferencePollutionOfOuterLoopVariable.
+		{
+			threads.push_back( ust::make_thread( AdderFunc{ .thread_index= 0s, .v= v } ) );
+		}
+
+		for( auto mut i= 0s; i < c_num_threads; ++i )
+		{
+			threads.push_back( ust::make_thread( AdderFunc{ .thread_index= i, .v= v } ) );
+		}
+
+		move(threads); // Move threads in order to join.
+
+		var size_type expected_result= ( 1s << c_num_threads ) - 1s;
+
+		halt if( v.read() != expected_result );
+	}
+
+	return 0;
+}
+
+struct AdderFunc
+{
+	size_type thread_index;
+	ust::atomic_variable</size_type/>& v;
+
+	op()( byval this )
+	{
+		halt if( ( v.read() & ( 1s << thread_index ) ) != 0s );
+		// Each thread sets single bit via its add operations.
+		v.add( 1s << thread_index );
+	}
+}
