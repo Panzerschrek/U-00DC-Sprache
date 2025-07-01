@@ -177,6 +177,57 @@ fn nomangle main() : i32
 		halt if( ptr_a.read() != $<(x) );
 		halt if( ptr_b != $<(x) );
 	}
+	{ // Share atomic variables.
+		var ust::shared_atomic_variable</i32/> a( 111 ), b( 222 ), mut c= a; // Initially 'c' points to 'a'.
+		halt if( a != a );
+		halt if( a == b );
+		halt if( a != c );
+		halt if( b == a );
+		halt if( b != b );
+		halt if( b == c );
+		halt if( c != a );
+		halt if( c == b );
+		halt if( c != c );
+		halt if( a.read() != 111 );
+		halt if( b.read() != 222 );
+		halt if( c.read() != 111 );
+
+		a.write( -111 );
+		halt if( a.read() != -111 );
+		halt if( b.read() != 222 );
+		halt if( c.read() != -111 );
+
+		c.write( 77 );
+		halt if( a.read() != 77 );
+		halt if( b.read() != 222 );
+		halt if( c.read() != 77 );
+
+		// Now 'c' points to 'b'.
+		c= b;
+
+		halt if( a != a );
+		halt if( a == b );
+		halt if( a == c );
+		halt if( b == a );
+		halt if( b != b );
+		halt if( b != c );
+		halt if( c == a );
+		halt if( c != b );
+		halt if( c != c );
+		halt if( a.read() != 77 );
+		halt if( b.read() != 222 );
+		halt if( c.read() != 222 );
+
+		b.write( -22222 );
+		halt if( a.read() != 77 );
+		halt if( b.read() != -22222 );
+		halt if( c.read() != -22222 );
+
+		c.write( 54321 );
+		halt if( a.read() != 77 );
+		halt if( b.read() != 54321 );
+		halt if( c.read() != 54321 );
+	}
 	{ // Share atomic variable across many threads.
 		var ust::shared_atomic_variable</size_type/> v(0s);
 
