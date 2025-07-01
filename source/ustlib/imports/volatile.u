@@ -1,6 +1,9 @@
 namespace ust
 {
 
+fn volatile_read(bool& addr) : bool { return ust_volatile_read_bool_impl( addr ); }
+fn volatile_write(bool &mut addr, bool x) { ust_volatile_write_bool_impl( addr, x ); }
+
 fn volatile_read(  i8& addr) :   i8 { return ust_volatile_read_i8_impl  ( addr ); }
 fn volatile_read(  u8& addr) :   u8 { return ust_volatile_read_u8_impl  ( addr ); }
 fn volatile_read( i16& addr) :  i16 { return ust_volatile_read_i16_impl ( addr ); }
@@ -12,6 +15,30 @@ fn volatile_read( u64& addr) :  u64 { return ust_volatile_read_u64_impl ( addr )
 fn volatile_read(i128& addr) : i128 { return ust_volatile_read_i128_impl( addr ); }
 fn volatile_read(u128& addr) : u128 { return ust_volatile_read_u128_impl( addr ); }
 
+fn volatile_read(ssize_type& addr) : ssize_type
+{
+	static_if( typeinfo</ssize_type/>.size_of == 4s )
+	{
+		return ssize_type( volatile_read( unsafe( cast_ref_unsafe</byte32/>(addr) ) ) );
+	}
+	else
+	{
+		return ssize_type( volatile_read( unsafe( cast_ref_unsafe</byte64/>(addr) ) ) );
+	}
+}
+
+fn volatile_read(size_type& addr) : size_type
+{
+	static_if( typeinfo</size_type/>.size_of == 4s )
+	{
+		return size_type( volatile_read( unsafe( cast_ref_unsafe</byte32/>(addr) ) ) );
+	}
+	else
+	{
+		return size_type( volatile_read( unsafe( cast_ref_unsafe</byte64/>(addr) ) ) );
+	}
+}
+
 fn volatile_write(  i8 &mut addr,   i8 x) { ust_volatile_write_i8_impl  ( addr, x ); }
 fn volatile_write(  u8 &mut addr,   u8 x) { ust_volatile_write_u8_impl  ( addr, x ); }
 fn volatile_write( i16 &mut addr,  i16 x) { ust_volatile_write_i16_impl ( addr, x ); }
@@ -22,6 +49,44 @@ fn volatile_write( i64 &mut addr,  i64 x) { ust_volatile_write_i64_impl ( addr, 
 fn volatile_write( u64 &mut addr,  u64 x) { ust_volatile_write_u64_impl ( addr, x ); }
 fn volatile_write(i128 &mut addr, i128 x) { ust_volatile_write_i128_impl( addr, x ); }
 fn volatile_write(u128 &mut addr, u128 x) { ust_volatile_write_u128_impl( addr, x ); }
+
+fn volatile_write(ssize_type &mut addr, ssize_type x)
+{
+	static_if( typeinfo</ssize_type/>.size_of == 4s )
+	{
+		volatile_write( unsafe( cast_ref_unsafe</byte32/>( addr ) ), byte32(x) );
+	}
+	else
+	{
+		volatile_write( unsafe( cast_ref_unsafe</byte64/>( addr ) ), byte64(x) );
+	}
+}
+
+fn volatile_write(size_type &mut addr, size_type x)
+{
+	static_if( typeinfo</size_type/>.size_of == 4s )
+	{
+		volatile_write( unsafe( cast_ref_unsafe</byte32/>( addr ) ), byte32(x) );
+	}
+	else
+	{
+		volatile_write( unsafe( cast_ref_unsafe</byte64/>( addr ) ), byte64(x) );
+	}
+}
+
+fn volatile_read( f32& addr) :  f32 { return ust_volatile_read_f32_impl ( addr ); }
+fn volatile_read( f64& addr) :  f64 { return ust_volatile_read_f64_impl ( addr ); }
+
+fn volatile_write( f32 &mut addr,  f32 x) { ust_volatile_write_f32_impl ( addr, x ); }
+fn volatile_write( f64 &mut addr,  f64 x) { ust_volatile_write_f64_impl ( addr, x ); }
+
+fn volatile_read(  char8& addr) :   char8 { return ust_volatile_read_char8_impl  ( addr ); }
+fn volatile_read( char16& addr) :  char16 { return ust_volatile_read_char16_impl ( addr ); }
+fn volatile_read( char32& addr) :  char32 { return ust_volatile_read_char32_impl ( addr ); }
+
+fn volatile_write(  char8 &mut addr,   char8 x) { ust_volatile_write_char8_impl  ( addr, x ); }
+fn volatile_write( char16 &mut addr,  char16 x) { ust_volatile_write_char16_impl ( addr, x ); }
+fn volatile_write( char32 &mut addr,  char32 x) { ust_volatile_write_char32_impl ( addr, x ); }
 
 fn volatile_read(  byte8& addr) :   byte8 { return ust_volatile_read_byte8_impl  ( addr ); }
 fn volatile_read( byte16& addr) :  byte16 { return ust_volatile_read_byte16_impl ( addr ); }
@@ -38,6 +103,9 @@ fn volatile_write(byte128 &mut addr, byte128 x) { ust_volatile_write_byte128_imp
 }
 
 // External implementation functions. Do not use directly!
+
+fn nomangle ust_volatile_read_bool_impl(bool& addr) : bool;
+fn nomangle ust_volatile_write_bool_impl(bool &mut addr, bool x);
 
 fn nomangle ust_volatile_read_i8_impl  (  i8& addr) :   i8;
 fn nomangle ust_volatile_read_u8_impl  (  u8& addr) :   u8;
@@ -60,6 +128,20 @@ fn nomangle ust_volatile_write_i64_impl ( i64 &mut addr,  i64 x);
 fn nomangle ust_volatile_write_u64_impl ( u64 &mut addr,  u64 x);
 fn nomangle ust_volatile_write_i128_impl(i128 &mut addr, i128 x);
 fn nomangle ust_volatile_write_u128_impl(u128 &mut addr, u128 x);
+
+fn nomangle ust_volatile_read_f32_impl ( f32& addr) :  f32;
+fn nomangle ust_volatile_read_f64_impl ( f64& addr) :  f64;
+
+fn nomangle ust_volatile_write_f32_impl ( f32 &mut addr,  f32 x);
+fn nomangle ust_volatile_write_f64_impl ( f64 &mut addr,  f64 x);
+
+fn nomangle ust_volatile_read_char8_impl  (  char8& addr) :   char8;
+fn nomangle ust_volatile_read_char16_impl ( char16& addr) :  char16;
+fn nomangle ust_volatile_read_char32_impl ( char32& addr) :  char32;
+
+fn nomangle ust_volatile_write_char8_impl  (  char8 &mut addr,   char8 x);
+fn nomangle ust_volatile_write_char16_impl ( char16 &mut addr,  char16 x);
+fn nomangle ust_volatile_write_char32_impl ( char32 &mut addr,  char32 x);
 
 fn nomangle ust_volatile_read_byte8_impl  (  byte8& addr) :   byte8;
 fn nomangle ust_volatile_read_byte16_impl ( byte16& addr) :  byte16;
