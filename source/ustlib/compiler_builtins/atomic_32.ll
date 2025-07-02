@@ -102,7 +102,7 @@ $ust_atomic_compare_exchange_strong_ssize_type_impl = comdat any
 define linkonce_odr hidden i1 @ust_atomic_compare_exchange_strong_ssize_type_impl( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
 {
 	%expected_read= load i32, i32* %expected
-	%res= cmpxchg i32* %addr, i32 %expected_read, i32 %new seq_cst monotonic
+	%res= cmpxchg i32* %addr, i32 %expected_read, i32 %new seq_cst seq_cst
 	%success = extractvalue { i32, i1 } %res, 1
 	br i1 %success, label %ok, label %not_ok
 ok:
@@ -117,7 +117,7 @@ $ust_atomic_compare_exchange_strong_size_type_impl = comdat any
 define linkonce_odr hidden i1 @ust_atomic_compare_exchange_strong_size_type_impl( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
 {
 	%expected_read= load i32, i32* %expected
-	%res= cmpxchg i32* %addr, i32 %expected_read, i32 %new seq_cst monotonic
+	%res= cmpxchg i32* %addr, i32 %expected_read, i32 %new seq_cst seq_cst
 	%success = extractvalue { i32, i1 } %res, 1
 	br i1 %success, label %ok, label %not_ok
 ok:
@@ -132,7 +132,7 @@ $ust_atomic_compare_exchange_weak_ssize_type_impl = comdat any
 define linkonce_odr hidden i1 @ust_atomic_compare_exchange_weak_ssize_type_impl( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
 {
 	%expected_read= load i32, i32* %expected
-	%res= cmpxchg weak i32* %addr, i32 %expected_read, i32 %new seq_cst monotonic
+	%res= cmpxchg weak i32* %addr, i32 %expected_read, i32 %new seq_cst seq_cst
 	%success = extractvalue { i32, i1 } %res, 1
 	br i1 %success, label %ok, label %not_ok
 ok:
@@ -147,7 +147,7 @@ $ust_atomic_compare_exchange_weak_size_type_impl = comdat any
 define linkonce_odr hidden i1 @ust_atomic_compare_exchange_weak_size_type_impl( i32* %addr, i32* %expected, i32 %new ) unnamed_addr comdat
 {
 	%expected_read= load i32, i32* %expected
-	%res= cmpxchg weak i32* %addr, i32 %expected_read, i32 %new seq_cst monotonic
+	%res= cmpxchg weak i32* %addr, i32 %expected_read, i32 %new seq_cst seq_cst
 	%success = extractvalue { i32, i1 } %res, 1
 	br i1 %success, label %ok, label %not_ok
 ok:
