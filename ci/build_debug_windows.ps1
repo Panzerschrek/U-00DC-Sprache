@@ -20,7 +20,7 @@ del cmake-17.0.6.src.tar
 Rename-Item -path "cmake-17.0.6.src" -NewName "cmake"
 
 # Messy stuff. Call vcvarsall.bat, extract all environment variable prepared in this call and redefine them in context of this powershell script.
-cmd /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat`" amd64 && set > %temp%\vcvars.txt"
+cmd /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat`" amd64 && set > %temp%\vcvars.txt"
 Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
 	if ($_ -match "^(.*?)=(.*)$") {
 		Set-Content "env:\$($matches[1])" $matches[2]
