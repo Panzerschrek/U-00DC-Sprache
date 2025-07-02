@@ -554,6 +554,12 @@ fn nodiscard atomic_compare_exchange_weak( $(T) &mut dst, $(T) &mut expected, $(
 	}
 }
 
+// Add atomic fence with strongest 'seq_cst' order.
+fn atomic_fence()
+{
+	return ust_atomic_fence_impl();
+}
+
 } // namespace ust
 
 // External implementation functions. Do not use directly!
@@ -669,5 +675,7 @@ fn nomangle ust_atomic_compare_exchange_weak_ssize_type_impl( ssize_type &mut ds
 fn nomangle ust_atomic_compare_exchange_weak_size_type_impl( size_type &mut dst, size_type &mut expected, size_type new ) : bool;
 fn nomangle ust_atomic_compare_exchange_weak_byte32_impl( byte32 &mut dst, byte32 &mut expected, byte32 new ) : bool;
 fn nomangle enable_if( c_enable_64bit_atomics ) ust_atomic_compare_exchange_weak_byte64_impl( byte64 &mut dst, byte64 &mut expected, byte64 new ) : bool;
+
+fn nomangle ust_atomic_fence_impl();
 
 var bool c_enable_64bit_atomics= typeinfo</size_type/>.size_of == 8s;

@@ -469,3 +469,10 @@ not_ok:
 	store i32 %val, i32* %expected
 	ret i1 false
 }
+
+$ust_atomic_fence_impl = comdat any
+define linkonce_odr hidden void @ust_atomic_fence_impl() unnamed_addr comdat
+{
+	fence seq_cst
+	ret void
+}

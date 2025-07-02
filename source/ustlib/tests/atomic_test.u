@@ -521,6 +521,9 @@ fn nomangle main() : i32
 		ust::atomic_write( c_ptr, d_ptr );
 		halt if( ust::atomic_read( c_ptr ) != $<(d) );
 	}
+	{ // Atomic fence. In only single thread it's useless, but test if call to it works.
+		ust::atomic_fence();
+	}
 
 	return 0;
 }
