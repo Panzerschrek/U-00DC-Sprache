@@ -329,6 +329,10 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 			}
 			break;
 
+		case llvm::Instruction::Fence:
+			// Interpreter is single-threaded, memory fences aren't necessary.
+			break;
+
 		case llvm::Instruction::Unreachable:
 			ReportError( "executing Unreachable instruction", *instruction );
 			return llvm::GenericValue();
