@@ -2,10 +2,9 @@ namespace ust
 {
 
 // All atomic operations have strickest memory order - "sequentially consistent".
-// Atomic operations for i32 and u32 supported on all platforms.
+// Atomic operations for types with size less or equal to 32 bits are supported on all platforms.
 // 64-bit atomic operations are supported only on 64-bit platforms.
-// But operations on ssize_type and size_type are possible, which are 64-bit on 64-bit platforms.
-// Operations on raw pointer types are available on all platforms.
+// Operations on ssize_type, size_type, raw pointer types are available on all platforms.
 
 fn atomic_read( bool& addr ) : bool
 {
@@ -372,7 +371,10 @@ fn atomic_swap( $(T) &mut addr, $(T) x ) : $(T)
 	}
 }
 
-// Functions returns old value of 'x'.
+//
+// All bit/arithmetic functions below modify value at given address and return old value (prior to this modification).
+//
+
 fn atomic_and( bool &mut x, bool y ) : bool { return ust_atomic_and_bool_impl( x, y ); }
 fn atomic_or( bool &mut x, bool y ) : bool { return ust_atomic_or_bool_impl( x, y ); }
 fn atomic_xor( bool &mut x, bool y ) : bool { return ust_atomic_xor_bool_impl( x, y ); }
