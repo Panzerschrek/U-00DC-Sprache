@@ -9,8 +9,7 @@ declare void @abort() #0
 ; halt
 ;
 
-$__U_halt = comdat any
-define linkonce_odr hidden void @__U_halt() unnamed_addr #0 comdat
+define linkonce_odr hidden void @__U_halt() unnamed_addr #0
 {
 	call void @abort()
 	unreachable

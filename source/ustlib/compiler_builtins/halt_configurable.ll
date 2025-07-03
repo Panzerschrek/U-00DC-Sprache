@@ -15,15 +15,13 @@ declare void @llvm.trap() #0
 $_U_halt_handler = comdat any
 @_U_halt_handler = global void()* @__U_default_halt_handler, comdat
 
-$__U_default_halt_handler = comdat any
-define linkonce_odr void @__U_default_halt_handler() unnamed_addr #0 comdat
+define linkonce_odr void @__U_default_halt_handler() unnamed_addr #0
 {
 	call void @llvm.trap()
 	ret void
 }
 
-$__U_halt = comdat any
-define linkonce_odr hidden void @__U_halt() unnamed_addr #0 comdat
+define linkonce_odr hidden void @__U_halt() unnamed_addr #0
 {
 	%1 = load void ()*, void ()** @_U_halt_handler
 	call void %1()
