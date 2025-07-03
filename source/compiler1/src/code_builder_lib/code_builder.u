@@ -2400,12 +2400,7 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 	{
 		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_with_suffix.front() );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
-
-		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
-		LLVMSetLinkage( global_variable, LLVMLinkage::External );
-		auto comdat= LLVMGetOrInsertComdat( module_, name_with_suffix.front() );
-		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
-		LLVMSetComdat( global_variable, comdat );
+		LLVMSetLinkage( global_variable, LLVMLinkage::LinkOnceODR );
 
 		// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).
 		LLVMSetVisibility( global_variable, LLVMVisibility::Hidden );

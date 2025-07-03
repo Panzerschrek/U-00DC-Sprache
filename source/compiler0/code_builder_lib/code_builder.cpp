@@ -2437,17 +2437,12 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
 			*module_,
 			type.GetLLVMType(),
 			false, // is constant
-			llvm::GlobalValue::ExternalLinkage,
+			llvm::GlobalValue::LinkOnceODRLinkage,
 			nullptr,
 			// Add suffix based on file path hash.
 			// This is needed to avoid merging global mutable variables which share same name, but are defined in different files.
 			// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
 			llvm::StringRef(mangled_name) + "." + file_path_hash );
-
-	// Use external linkage and comdat for global mutable variables to guarantee address uniqueness and enforce deduplication.
-	llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
-	comdat->setSelectionKind( llvm::Comdat::Any );
-	var->setComdat( comdat );
 
 	// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).
 	var->setVisibility( llvm::GlobalValue::HiddenVisibility );

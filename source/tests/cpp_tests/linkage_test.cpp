@@ -378,26 +378,22 @@ U_TEST( VariableLinkage_Test1 )
 
 	const llvm::GlobalVariable* const x= engine->FindGlobalVariableNamed( "x.0cc175b9c0f1b6a831c399e269772661", true );
 	U_TEST_ASSERT( x != nullptr );
-	U_TEST_ASSERT( x->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( x->hasComdat() );
+	U_TEST_ASSERT( x->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( x->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::GlobalVariable* const y= engine->FindGlobalVariableNamed( "y.0cc175b9c0f1b6a831c399e269772661", true );
 	U_TEST_ASSERT( y != nullptr );
-	U_TEST_ASSERT( y->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( y->hasComdat() );
+	U_TEST_ASSERT( y->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( y->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::GlobalVariable* const z= engine->FindGlobalVariableNamed( "z.63a9f0ea7bb98050796b649e85481845", true );
 	U_TEST_ASSERT( z != nullptr );
-	U_TEST_ASSERT( z->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( z->hasComdat() );
+	U_TEST_ASSERT( z->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( z->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::GlobalVariable* const w= engine->FindGlobalVariableNamed( "w.63a9f0ea7bb98050796b649e85481845", true );
 	U_TEST_ASSERT( w != nullptr );
-	U_TEST_ASSERT( w->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( w->hasComdat() );
+	U_TEST_ASSERT( w->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( w->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
@@ -417,8 +413,7 @@ U_TEST( VariableLinkage_Test2 )
 
 	const llvm::GlobalVariable* const some_var= engine->FindGlobalVariableNamed( "some_var.63a9f0ea7bb98050796b649e85481845", true );
 	U_TEST_ASSERT( some_var != nullptr );
-	U_TEST_ASSERT( some_var->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( some_var->hasComdat() );
+	U_TEST_ASSERT( some_var->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( some_var->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
@@ -462,20 +457,17 @@ U_TEST( VariableLinkage_Test3 )
 
 	const llvm::GlobalVariable* const x_i32= engine->FindGlobalVariableNamed( "_ZN3BoxIiE19global_template_varE.0cc175b9c0f1b6a831c399e269772661", true );
 	U_TEST_ASSERT( x_i32 != nullptr );
-	U_TEST_ASSERT( x_i32->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( x_i32->hasComdat() );
+	U_TEST_ASSERT( x_i32->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( x_i32->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::GlobalVariable* const x_f64= engine->FindGlobalVariableNamed( "_ZN3BoxIdE19global_template_varE.0cc175b9c0f1b6a831c399e269772661", true );
 	U_TEST_ASSERT( x_f64 != nullptr );
-	U_TEST_ASSERT( x_f64->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( x_f64->hasComdat() );
+	U_TEST_ASSERT( x_f64->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( x_f64->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	const llvm::GlobalVariable* const x_local= engine->FindGlobalVariableNamed( "_ZN8LocalBoxIjE19global_template_varE.63a9f0ea7bb98050796b649e85481845", true );
 	U_TEST_ASSERT( x_local != nullptr );
-	U_TEST_ASSERT( x_local->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( x_local->hasComdat() );
+	U_TEST_ASSERT( x_local->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( x_local->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
@@ -491,8 +483,7 @@ U_TEST( VariableLinkage_Test4 )
 
 	const llvm::GlobalVariable* const x= engine->FindGlobalVariableNamed( "x.b14a7b8059d9c055954c92674ce60032", true );
 	U_TEST_ASSERT( x != nullptr );
-	U_TEST_ASSERT( x->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( x->hasComdat() );
+	U_TEST_ASSERT( x->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( x->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 	U_TEST_ASSERT( x->isThreadLocal() );
 }
