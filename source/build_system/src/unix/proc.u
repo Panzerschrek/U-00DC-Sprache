@@ -1,14 +1,12 @@
 import "../proc.uh"
+import "unix.uh"
 
 namespace BK
 {
 
 fn GetNumberOfCPUs() : u32
 {
-	return u32( get_nprocs() );
+	return u32( unsafe( ::sysconf( i32( ü_SC_NPROCESSORS_ONLN ) ) ) );
 }
 
 } // namespace BK
-
-// Function from "sys/sysinfo.h".
-fn nomangle get_nprocs() : i32;
