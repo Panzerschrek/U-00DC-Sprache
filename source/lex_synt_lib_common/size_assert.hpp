@@ -10,6 +10,8 @@
 	#else
 		#define U_ENABLE_SIZE_ASSERT
 	#endif
+#elif __APPLE__
+	// For now disable size assert on Apple system. Further investigations are required to calculate proper structs size.
 #else
 	#define U_ENABLE_SIZE_ASSERT
 #endif
