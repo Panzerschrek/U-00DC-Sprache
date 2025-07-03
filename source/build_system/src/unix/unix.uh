@@ -7,6 +7,7 @@ fn nomangle dlopen( $(char8) ü__file, i32 ü__mode ) unsafe : $(byte8);
 fn nomangle dlsym( $(byte8) ü__handle, $(char8) ü__name ) unsafe : $(byte8);
 fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe : i32;
 fn nomangle pipe( $(i32) ü__pipedes ) unsafe : i32;
+fn nomangle poll( $(pollfd) ü__fds, nfds_t ü__nfds, i32 ü__timeout ) unsafe : i32;
 fn nomangle posix_spawn( $(pid_t) ü__pid, $(char8) ü__path, $(posix_spawn_file_actions_t) ü__file_actions, $(posix_spawnattr_t) ü__attrp, $($(char8)) ü__argv, $($(char8)) ü__envp ) unsafe : i32;
 fn nomangle posix_spawn_file_actions_addclose( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd ) unsafe : i32;
 fn nomangle posix_spawn_file_actions_adddup2( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd, i32 ü__newfd ) unsafe : i32;

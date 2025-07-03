@@ -292,13 +292,8 @@ public: // ProcessGroupInterface
 		}
 
 		// Wait until there is at least one pipe to read.
-		auto ppoll_res=
-			unsafe( ::ppoll(
-				poll_fds.data(),
-				nfds_t(poll_fds.size()),
-				ust::nullptr</timespec/>(),
-				ust::nullptr</ü__sigset_t/>() ) );
-		if( ppoll_res < 0 )
+		auto poll_res= unsafe( ::poll( poll_fds.data(), nfds_t(poll_fds.size()), -1 ) );
+		if( poll_res < 0 )
 		{
 			logger.LogError( ust::concat( "ppoll error: ", ust::to_string8( GetErrno() ) ) );
 			return false;
