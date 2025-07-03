@@ -2445,9 +2445,15 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
 			llvm::StringRef(mangled_name) + "." + file_path_hash );
 
 	// Use external linkage and comdat for global mutable variables to guarantee address uniqueness and enforce deduplication.
-	llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
-	comdat->setSelectionKind( llvm::Comdat::Any );
-	var->setComdat( comdat );
+
+	if( target_triple_.getObjectFormat() == llvm::Triple::MachO )
+		var->setLinkage( llvm::GlobalValue::LinkOnceODRLinkage );
+	else
+	{
+		llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
+		comdat->setSelectionKind( llvm::Comdat::Any );
+		var->setComdat( comdat );
+	}
 
 	// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).
 	var->setVisibility( llvm::GlobalValue::HiddenVisibility );

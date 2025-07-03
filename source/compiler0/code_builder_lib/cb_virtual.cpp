@@ -347,9 +347,15 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 			llvm::StringRef("_type_id_for_") + mangler_->MangleType( class_type ) + "." + file_path_hash );
 
 	// Create comdat in order to ensure uniquiness of the table across different modules.
-	llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id_table->getName() );
-	type_id_comdat->setSelectionKind( llvm::Comdat::Any );
-	the_class.polymorph_type_id_table->setComdat( type_id_comdat );
+
+	if( target_triple_.getObjectFormat() == llvm::Triple::MachO )
+		the_class.polymorph_type_id_table->setLinkage( llvm::GlobalValue::LinkOnceODRLinkage );
+	else
+	{
+		llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id_table->getName() );
+		type_id_comdat->setSelectionKind( llvm::Comdat::Any );
+		the_class.polymorph_type_id_table->setComdat( type_id_comdat );
+	}
 
 	// Make type id table hidden in order to avoid exporting it.
 	the_class.polymorph_type_id_table->setVisibility( llvm::GlobalValue::HiddenVisibility );

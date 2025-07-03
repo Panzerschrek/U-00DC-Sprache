@@ -324,6 +324,31 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 	return false;
 }
 
+void RemoveAllComdats( llvm::Module& module )
+{
+	for( llvm::Function& function : module.functions() )
+	{
+		if( const auto comdat = function.getComdat() )
+		{
+			function.setComdat( nullptr );
+			// HACK! LLVM Doesn't remove unused comdat. Make this manually.
+			if( comdat->getName() == function.getName() )
+				module.getComdatSymbolTable().erase( comdat->getName() );
+		}
+	}
+
+	for( llvm::GlobalVariable& global_variable : module.globals() )
+	{
+		if( const auto comdat = global_variable.getComdat() )
+		{
+			global_variable.setComdat( nullptr );
+			// HACK! LLVM Doesn't remove unused comdat. Make this manually.
+			if( comdat->getName() == global_variable.getName() )
+				module.getComdatSymbolTable().erase( comdat->getName() );
+		}
+	}
+}
+
 void InternalizeHiddenFunctions( llvm::Module& module )
 {
 	for( llvm::Function& function : module.functions() )
@@ -810,6 +835,12 @@ int Main( int argc, const char* argv[] )
 	// Do it before optimization, to encourange inlining of internalized functions.
 	if( Options::internalize_hidden_functions )
 		InternalizeHiddenFunctions( *result_module );
+
+	if( target_triple.getObjectFormat() == llvm::Triple::MachO )
+	{
+		// Mach-O doesn't support comdats. Remove comdats in such case.
+		RemoveAllComdats( *result_module );
+	}
 
 	// Perform verification after code generation/linking and after special optimizations and internalizations, but before running LLVM optimizations pipeline.
 	if( Options::verify_module )
