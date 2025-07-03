@@ -12,7 +12,7 @@ declare void @llvm.trap() #0
 ; halt
 ;
 
-@_U_halt_handler = linkonce_odr global void()* @__U_default_halt_handler
+@_U_halt_handler = weak_odr global void()* @__U_default_halt_handler
 
 define linkonce_odr void @__U_default_halt_handler() unnamed_addr #0
 {
