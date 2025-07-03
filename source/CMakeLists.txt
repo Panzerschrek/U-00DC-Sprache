@@ -187,7 +187,12 @@ else()
 	endif()
 
 	# Avoid undefined symbols in shared libraries.
-	string( APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--no-undefined" )
+	if( APPLE )
+		string( APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,-undefined,error" )
+	else()
+		string( APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--no-undefined" )
+	endif()
+
 	# Clear garbage.
 	if( APPLE )
 		string( APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -Wl,-dead_strip" )
