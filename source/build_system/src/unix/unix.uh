@@ -108,5 +108,3 @@ auto constexpr RTLD_NODELETE = 4096;
 auto constexpr STDIN_FILENO = 0;
 auto constexpr STDOUT_FILENO = 1;
 auto constexpr STDERR_FILENO = 2;
-
-var u32 ü_SC_NPROCESSORS_ONLN = 84u;
