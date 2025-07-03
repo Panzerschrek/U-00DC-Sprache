@@ -10,7 +10,7 @@ fn GetErrno() : i32
 	{
 		unsafe
 		{
-			auto f= import fn</ fn() : $(i32) /> ( "_errno" );
+			auto f= import fn</ fn() : $(i32) /> ( "__error" );
 			var $(i32) ptr= f();
 			return $>(ptr);
 		}
