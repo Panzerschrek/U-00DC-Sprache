@@ -329,16 +329,7 @@ void InternalizeHiddenFunctions( llvm::Module& module )
 	for( llvm::Function& function : module.functions() )
 	{
 		if( !function.isDeclaration() && function.getVisibility() == llvm::GlobalValue::HiddenVisibility )
-		{
 			function.setLinkage( llvm::GlobalValue::PrivateLinkage );
-			if( const auto comdat = function.getComdat() )
-			{
-				function.setComdat( nullptr );
-				// HACK! LLVM Doesn't remove unused comdat. Make this manually.
-				if( comdat->getName() == function.getName() )
-					function.getParent()->getComdatSymbolTable().erase( comdat->getName() );
-			}
-		}
 	}
 }
 
@@ -368,16 +359,7 @@ void InternalizeCollectedFunctions( llvm::Module& module, const llvm::ArrayRef<s
 	for( const std::string& function_name : external_functions )
 	{
 		if( const auto function= module.getFunction( function_name ) )
-		{
 			function->setLinkage( llvm::GlobalValue::PrivateLinkage );
-			if( const auto comdat = function->getComdat() )
-			{
-				function->setComdat( nullptr );
-				// HACK! LLVM Doesn't remove unused comdat. Make this manually.
-				if( comdat->getName() == function->getName() )
-					function->getParent()->getComdatSymbolTable().erase( comdat->getName() );
-			}
-		}
 	}
 }
 
