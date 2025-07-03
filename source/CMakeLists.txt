@@ -225,7 +225,11 @@ add_subdirectory( tests/cpp_tests )
 # Hack! Force use static variables with initializers with tests registration
 set( CPP_TESTS_LIB_WRAPPED CppTestsLib )
 if( NOT MSVC )
-	set( CPP_TESTS_LIB_WRAPPED -Wl,--whole-archive ${CPP_TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
+	if( APPLE )
+		set( CPP_TESTS_LIB_WRAPPED -Wl,-all_load ${CPP_TESTS_LIB_WRAPPED} -Wl,-noall_load )
+	else()
+		set( CPP_TESTS_LIB_WRAPPED -Wl,--whole-archive ${CPP_TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
+	endif()
 endif()
 
 add_subdirectory( compiler0 )
