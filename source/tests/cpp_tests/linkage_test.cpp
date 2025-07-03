@@ -535,8 +535,7 @@ U_TEST( PolymorphClassesDataLinkage_Test2 )
 
 	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C.b14a7b8059d9c055954c92674ce60032", true );
 	U_TEST_ASSERT( type_id_table != nullptr );
-	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( type_id_table->hasComdat() );
+	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( type_id_table->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
@@ -555,8 +554,7 @@ U_TEST( PolymorphClassesDataLinkage_Test3 )
 
 	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C.0cc175b9c0f1b6a831c399e269772661" );
 	U_TEST_ASSERT( type_id_table != nullptr );
-	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( type_id_table->hasComdat() );
+	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( type_id_table->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 }
 
@@ -575,8 +573,7 @@ U_TEST( PolymorphClassesDataLinkage_Test4 )
 
 	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C.63a9f0ea7bb98050796b649e85481845", true );
 	U_TEST_ASSERT( type_id_table != nullptr );
-	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( type_id_table->hasComdat() );
+	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::LinkOnceODRLinkage );
 	U_TEST_ASSERT( type_id_table->getVisibility() == llvm::GlobalValue::HiddenVisibility );
 
 	// Vtable is always private, since it's constant and deduplication isn't necessary.
