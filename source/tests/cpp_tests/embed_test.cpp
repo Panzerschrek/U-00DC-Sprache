@@ -241,6 +241,46 @@ U_TEST( Embed_Test9 )
 		"root" );
 }
 
+U_TEST( Embed_Test10 )
+{
+	// Use Embed with mixin as some sort of conditional import.
+
+	static const char c_program_text_embed_a[]= "var char8 c= 'a';";
+	static const char c_program_text_embed_b[]= "var char8 c= 'b'; var i32 d= 123;";
+
+	static const char c_program_text_root[]=
+	R"(
+		auto text_a_raw= embed</char8/>( "a.txt" );
+		auto text_b_raw= embed</char8/>( "b.txt" );
+		static_assert( text_a_raw == "var char8 c= 'a';\0" );
+		static_assert( text_b_raw == "var char8 c= 'b'; var i32 d= 123;\0" );
+
+		template</bool b, size_type S0, size_type S1/>
+		fn constexpr StaticStringSelect( [ char8, S0 ]& s0, [ char8, S1 ]& s1 ) : auto
+		{
+			static_if( b ) { return s0; } else { return s1; }
+		}
+
+		static_assert( StaticStringSelect</true />( text_a_raw, text_b_raw ) == text_a_raw );
+		static_assert( StaticStringSelect</false/>( text_a_raw, text_b_raw ) == text_b_raw );
+
+		namespace A { mixin( StaticStringSelect</true />( text_a_raw, text_b_raw ) ); }
+		namespace B { mixin( StaticStringSelect</false/>( text_a_raw, text_b_raw ) ); }
+
+		static_assert( A::c == 'a' );
+		static_assert( B::c == 'b' );
+		static_assert( B::d == 123 );
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a.txt", MakeStringView(c_program_text_embed_a) },
+			{ "b.txt", MakeStringView(c_program_text_embed_b) },
+			{ "root", c_program_text_root }
+		},
+		"root" );
+}
+
 U_TEST( Embed_WithType_Test0 )
 {
 	static const char c_program_text_a[]= "fn Foo(){}";
