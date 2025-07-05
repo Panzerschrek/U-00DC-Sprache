@@ -204,6 +204,17 @@ static_assert( !ust::constexpr_string_starts_with( "very long string With Differ
 static_assert( !ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "long" ) );
 static_assert( !ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "5544" ) );
 
+//
+// constexpr_string_select
+//
+
+static_assert( ust::constexpr_string_select</true />( "a", "b" ) == "a" );
+static_assert( ust::constexpr_string_select</false/>( "a", "b" ) == "b" );
+static_assert( ust::constexpr_string_select</true />( "some", "another" ) == "some" );
+static_assert( ust::constexpr_string_select</false/>( "some", "another" ) == "another" );
+static_assert( ust::constexpr_string_select</true />( "", "non_empty" ) == "" );
+static_assert( ust::constexpr_string_select</false/>( "", "non_empty" ) == "non_empty" );
+
 fn nomangle main() : i32
 {
 	var LargeClassWithMethods mut c;

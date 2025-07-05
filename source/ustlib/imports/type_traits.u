@@ -296,6 +296,22 @@ fn constexpr constexpr_string_starts_with( [ char8, size0 ]& s0, [ char8, size1 
 	return true;
 }
 
+// Helper function for selecting one of two constexpr strings based on provided condition.
+// It's needed, since language (?:) operator doesn't support different types (char arrays of different types) in its variants.
+// It works even for strings of different size.
+template</bool b, size_type S0, size_type S1/>
+fn constexpr constexpr_string_select( [ char8, S0 ]& s0, [ char8, S1 ]& s1 ) : auto
+{
+	static_if( b )
+	{
+		return s0;
+	}
+	else
+	{
+		return s1;
+	}
+}
+
 namespace type_traits_impl
 {
 
