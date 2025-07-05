@@ -169,6 +169,41 @@ static_assert(  ust::class_has_method</ LargeClassWithMethods, fn( LargeClassWit
 static_assert( !ust::class_has_method</ LargeClassWithMethods, fn( LargeClassWithMethods &imut c ) />( "SomeUnsafe" ) );
 static_assert(  ust::class_has_method</ LargeClassWithMethods, fn( LargeClassWithMethods &mut c ) />( "destructor" ) );
 
+//
+// constexpr_string_equals
+//
+
+static_assert( ust::constexpr_string_equals( "", "" ) );
+static_assert( ust::constexpr_string_equals( "Q", "Q" ) );
+static_assert( ust::constexpr_string_equals( "some string", "some string" ) );
+static_assert( !ust::constexpr_string_equals( "lol", "wat" ) );
+static_assert( !ust::constexpr_string_equals( "lolQ", "wat" ) );
+static_assert( !ust::constexpr_string_equals( "lol", "watf" ) );
+
+//
+// constexpr_string_starts_with
+//
+
+static_assert( ust::constexpr_string_starts_with( "", "" ) );
+static_assert( ust::constexpr_string_starts_with( "abc", "" ) );
+static_assert( ust::constexpr_string_starts_with( "abc", "a" ) );
+static_assert( ust::constexpr_string_starts_with( "abc", "ab" ) );
+static_assert( ust::constexpr_string_starts_with( "abc", "abc" ) );
+static_assert( !ust::constexpr_string_starts_with( "abc", "abc " ) );
+static_assert( !ust::constexpr_string_starts_with( "abc", "b" ) );
+static_assert( !ust::constexpr_string_starts_with( "abc", "c" ) );
+static_assert( !ust::constexpr_string_starts_with( "abc", "bc" ) );
+static_assert( !ust::constexpr_string_starts_with( "Qabc", "a" ) );
+static_assert( ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "" ) );
+static_assert( ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "very" ) );
+static_assert( ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "very lo" ) );
+static_assert( ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "very long string With Different Ca" ) );
+static_assert( ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "very long string With Different Case And Numbers5544 0" ) );
+static_assert( ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "very long string With Different Case And Numbers5544 0011" ) );
+static_assert( !ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "ery" ) );
+static_assert( !ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "long" ) );
+static_assert( !ust::constexpr_string_starts_with( "very long string With Different Case And Numbers5544 0011", "5544" ) );
+
 fn nomangle main() : i32
 {
 	var LargeClassWithMethods mut c;
