@@ -418,15 +418,33 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 	}
 	var u64 src_size= move(src_size_res).try_take();
 
-	for( var off_t mut offset(0); offset < off_t(src_size); )
+	static_if( constexpr_string_equals( compiler::target::os, "linux" ) )
 	{
-		var ssize_type bytes_sent= unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) );
-		if( bytes_sent <= ssize_type(0) )
+		for( var off_t mut offset(0); offset < off_t(src_size); )
 		{
-			var i32 err= get_errno();
-			unsafe( close_file_impl( dst_handle ) );
-			unsafe( close_file_impl( src_handle ) );
-			return translate_errno( err );
+			var ssize_type bytes_sent= unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) );
+			if( bytes_sent <= ssize_type(0) )
+			{
+				var i32 err= get_errno();
+				unsafe( close_file_impl( dst_handle ) );
+				unsafe( close_file_impl( src_handle ) );
+				return translate_errno( err );
+			}
+		}
+	}
+	else
+	{
+		for( var off_t mut offset(0); offset < off_t(src_size); )
+		{
+			var ssize_type bytes_sent= unsafe( ::copy_file_range( src_handle, nullptr</off_t/>(), dst_handle, nullptr</off_t/>(), size_t( off_t(src_size) - offset ), 0u ) );
+			if( bytes_sent <= ssize_type(0) )
+			{
+				var i32 err= get_errno();
+				unsafe( close_file_impl( dst_handle ) );
+				unsafe( close_file_impl( src_handle ) );
+				return translate_errno( err );
+			}
+			offset+= off_t(bytes_sent);
 		}
 	}
 
