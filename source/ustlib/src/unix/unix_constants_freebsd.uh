@@ -1,0 +1,62 @@
+auto constexpr CLOCK_REALTIME = 0;
+auto constexpr CLOCK_MONOTONIC = 4;
+auto constexpr CLOCK_PROCESS_CPUTIME_ID = 15;
+auto constexpr CLOCK_THREAD_CPUTIME_ID = 14;
+auto constexpr CLOCK_REALTIME_COARSE = 10;
+auto constexpr CLOCK_MONOTONIC_COARSE = 12;
+auto constexpr CLOCK_BOOTTIME = 5;
+
+auto constexpr EPERM = 1;
+auto constexpr ENOENT = 2;
+auto constexpr ESRCH = 3;
+auto constexpr EINTR = 4;
+auto constexpr EIO = 5;
+auto constexpr ENXIO = 6;
+auto constexpr E2BIG = 7;
+auto constexpr ENOEXEC = 8;
+auto constexpr EBADF = 9;
+auto constexpr ECHILD = 10;
+auto constexpr EDEADLK = 11;
+auto constexpr ENOMEM = 12;
+auto constexpr EACCES = 13;
+auto constexpr EFAULT = 14;
+auto constexpr ENOTBLK = 15;
+auto constexpr EBUSY = 16;
+auto constexpr EEXIST = 17;
+auto constexpr EXDEV = 18;
+auto constexpr ENODEV = 19;
+auto constexpr ENOTDIR = 20;
+auto constexpr EISDIR = 21;
+auto constexpr EINVAL = 22;
+auto constexpr ENFILE = 23;
+auto constexpr EMFILE = 24;
+auto constexpr ENOTTY = 25;
+auto constexpr ETXTBSY = 26;
+auto constexpr EFBIG = 27;
+auto constexpr ENOSPC = 28;
+auto constexpr ESPIPE = 29;
+auto constexpr EROFS = 30;
+auto constexpr EMLINK = 31;
+auto constexpr EPIPE = 32;
+auto constexpr EDOM = 33;
+auto constexpr ERANGE = 34;
+auto constexpr ENOTEMPTY = 66;
+
+auto constexpr O_RDONLY = 0;
+auto constexpr O_WRONLY = 1;
+auto constexpr O_RDWR = 2;
+auto constexpr O_CREAT = 512;
+auto constexpr O_EXCL = 2048;
+auto constexpr O_TRUNC = 1024;
+
+auto constexpr S_IFDIR = 16384;
+auto constexpr S_IFLNK = 40960;
+auto constexpr S_IFMT = 61440;
+
+auto constexpr SEEK_SET = 0;
+auto constexpr SEEK_CUR = 1;
+auto constexpr SEEK_END = 2;
+
+auto constexpr STDIN_FILENO = 0;
+auto constexpr STDOUT_FILENO = 1;
+auto constexpr STDERR_FILENO = 2;
