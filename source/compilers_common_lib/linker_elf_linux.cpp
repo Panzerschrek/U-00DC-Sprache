@@ -147,7 +147,7 @@ std::string GetLinuxMultiarchTriple( const llvm::Triple& triple )
 
 } // namespace
 
-bool RunLinkerELF(
+bool RunLinkerELFLinux(
 	const char* const argv0,
 	const llvm::ArrayRef<std::string> additional_args,
 	const std::string& sysroot,
