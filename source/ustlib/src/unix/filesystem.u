@@ -355,6 +355,11 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 				return void();
 			}
 		}
+		else if( errno == EISDIR && path == "/" )
+		{
+			// FreeBSD bug 59739 - mkdir for "/" returns wrong error code.
+			return void();
+		}
 		return translate_errno( errno );
 	}
 
