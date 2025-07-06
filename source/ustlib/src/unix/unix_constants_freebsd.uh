@@ -1,3 +1,92 @@
+struct dirent ordered
+{
+	ino_t d_fileno;
+	off_t d_off;
+	ü__uint16_t d_reclen;
+	ü__uint8_t d_type;
+	ü__uint8_t d_pad0;
+	ü__uint16_t d_namlen;
+	ü__uint16_t d_pad1;
+	[ char8, 256u ] d_name;
+}
+
+struct timespec ordered
+{
+	time_t tv_sec;
+	i64 tv_nsec;
+}
+
+struct stat_ ordered
+{
+	dev_t st_dev;
+	ino_t st_ino;
+	nlink_t st_nlink;
+	mode_t st_mode;
+	ü__int16_t st_bsdflags;
+	uid_t st_uid;
+	gid_t st_gid;
+	ü__int32_t st_padding1;
+	dev_t st_rdev;
+	timespec st_atim;
+	timespec st_mtim;
+	timespec st_ctim;
+	timespec st_birthtim;
+	off_t st_size;
+	blkcnt_t st_blocks;
+	blksize_t st_blksize;
+	fflags_t st_flags;
+	ü__uint64_t st_gen;
+	ü__uint64_t st_filerev;
+	[ ü__uint64_t, 9u ] st_spare;
+}
+
+struct ü_dirdesc ordered
+{
+fn constructor() : void= delete;	
+}
+
+auto constexpr DT_DIR = 4;
+auto constexpr DT_LNK = 10;
+
+type DIR = ü_dirdesc;
+type blkcnt_t = ü__blkcnt_t;
+type blksize_t = ü__blksize_t;
+type clockid_t = ü__clockid_t;
+type dev_t = ü__dev_t;
+type fflags_t = ü__fflags_t;
+type gid_t = ü__gid_t;
+type ino_t = ü__ino_t;
+type mode_t = ü__mode_t;
+type nlink_t = ü__nlink_t;
+type off64_t = ü__off64_t;
+type off_t = ü__off_t;
+type size_t = ü__size_t;
+type ssize_t = ü__ssize_t;
+type time_t = ü__time_t;
+type uid_t = ü__uid_t;
+type ü__blkcnt_t = ü__int64_t;
+type ü__blksize_t = ü__int32_t;
+type ü__clockid_t = ü__int32_t;
+type ü__dev_t = ü__uint64_t;
+type ü__fflags_t = ü__uint32_t;
+type ü__gid_t = ü__uint32_t;
+type ü__ino_t = ü__uint64_t;
+type ü__int16_t = i16;
+type ü__int32_t = i32;
+type ü__int64_t = i64;
+type ü__mode_t = ü__uint16_t;
+type ü__nlink_t = ü__uint64_t;
+type ü__off64_t = ü__int64_t;
+type ü__off_t = ü__int64_t;
+type ü__size_t = size_type;
+type ü__ssize_t = ssize_type;
+type ü__time_t = ü__int64_t;
+type ü__uid_t = ü__uint32_t;
+type ü__uint16_t = u16;
+type ü__uint32_t = u32;
+type ü__uint64_t = u64;
+type ü__uint8_t = u8;
+
 auto constexpr CLOCK_REALTIME = 0;
 auto constexpr CLOCK_MONOTONIC = 4;
 auto constexpr CLOCK_PROCESS_CPUTIME_ID = 15;
