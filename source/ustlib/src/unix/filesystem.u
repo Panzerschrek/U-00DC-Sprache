@@ -986,7 +986,7 @@ fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : filesystem_re
 
 fn seek_impl( native_file_handle handle, u64 offset ) unsafe : filesystem_result</void/>
 {
-	var ü__off64_t seek_res= unsafe( ::lseek64( handle, ü__off64_t(offset), SEEK_SET ) );
+	var ü__off_t seek_res= unsafe( ::lseek( handle, ü__off64_t(offset), SEEK_SET ) );
 
 	if( seek_res < ü__off64_t(-1) )
 	{
