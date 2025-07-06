@@ -36,6 +36,14 @@ fn get_current_thread_id() : thread_id
 	return unsafe( pthread_self() );
 }
 
+fn get_number_of_available_cpus() : u32
+{
+	return u32( unsafe( get_nprocs() ) );
+}
+
 } // namespace thread_impl
 
-} // namespace us
+} // namespace ust
+
+// Function from "sys/sysinfo.h".
+fn nomangle get_nprocs() unsafe : i32;

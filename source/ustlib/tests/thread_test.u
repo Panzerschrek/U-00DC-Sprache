@@ -2,6 +2,7 @@
 import "../imports/thread.u"
 import "../imports/shared_ptr_mt.u"
 import "../imports/sort.u"
+import "../imports/string_conversions.u"
 import "../imports/vector.u"
 
 fn Bar(){}
@@ -286,6 +287,10 @@ fn nomangle main() : i32
 
 		halt if( results.size() != size_before );
 	}
+
+	var u32 number_of_available_cpus= ust::get_number_of_available_cpus();
+	ust::stdout_print( ust::concat( "Number of available CPUs: ", ust::to_string8(number_of_available_cpus), "\n" ) );
+	halt if ( number_of_available_cpus == 0u );
 
 	return 0;
 }

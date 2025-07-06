@@ -30,8 +30,6 @@ fn nomangle GetProcAddress( HMODULE hModule, LPCSTR lpProcName ) unsafe call_con
 
 fn nomangle GetQueuedCompletionStatus( HANDLE CompletionPort, LPDWORD lpNumberOfBytesTransferred, PULONG_PTR lpCompletionKey, $(LPOVERLAPPED) lpOverlapped, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : BOOL;
 
-fn nomangle GetSystemInfo( LPSYSTEM_INFO lpSystemInfo ) unsafe call_conv( "system" ) : void;
-
 fn nomangle LoadLibraryW( LPCWSTR lpLibFileName ) unsafe call_conv( "system" ) : HMODULE;
 
 fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
@@ -94,24 +92,6 @@ struct ü_STARTUPINFOW ordered
 	HANDLE hStdError;
 }
 
-struct ü_SYSTEM_INFO ordered
-{
-	struct ü_anon_record_194 ordered
-	{
-		[ byte32, 1 ] union_contents;
-	}
-	ü_anon_record_194 ü_anon_field_700;
-	DWORD dwPageSize;
-	LPVOID lpMinimumApplicationAddress;
-	LPVOID lpMaximumApplicationAddress;
-	DWORD_PTR dwActiveProcessorMask;
-	DWORD dwNumberOfProcessors;
-	DWORD dwProcessorType;
-	DWORD dwAllocationGranularity;
-	WORD wProcessorLevel;
-	WORD wProcessorRevision;
-}
-
 type wchar_t = char16; // Changed manually from "u16" in order to be able to use ust::string16.
 type BOOL = i32;
 type BYTE = u8;
@@ -132,7 +112,6 @@ type LPPROCESS_INFORMATION = $(ü_PROCESS_INFORMATION);
 type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
 type LPSTARTUPINFOW = $(ü_STARTUPINFOW);
 type LPSTR = $(CHAR);
-type LPSYSTEM_INFO = $(ü_SYSTEM_INFO);
 type LPVOID = $(byte8);
 type LPWSTR = $(WCHAR);
 type OVERLAPPED = ü_OVERLAPPED;
@@ -140,7 +119,6 @@ type PROCESS_INFORMATION = ü_PROCESS_INFORMATION;
 type PULONG_PTR = $(ULONG_PTR);
 type SECURITY_ATTRIBUTES = ü_SECURITY_ATTRIBUTES;
 type STARTUPINFOW = ü_STARTUPINFOW;
-type SYSTEM_INFO = ü_SYSTEM_INFO;
 type ULONG_PTR = size_type;
 type WCHAR = wchar_t;
 type WORD = u16;

@@ -148,4 +148,11 @@ fn get_current_thread_id() : thread_id
 	return thread_impl::get_current_thread_id();
 }
 
+// Returns approximate current number of available CPU cores.
+// It can underestimate or overestimate actual number.
+fn get_number_of_available_cpus() : u32
+{
+	return thread_impl::get_number_of_available_cpus();
+}
+
 } // namespace ust
