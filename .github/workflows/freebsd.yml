@@ -11,5 +11,5 @@ jobs:
         uses: cross-platform-actions/action@v0.26.0
         with:
           operating_system: freebsd
-          version: '14.3'
+          version: '14.2'
           run: ./ci/build_release_freebsd_llvm_src.sh
