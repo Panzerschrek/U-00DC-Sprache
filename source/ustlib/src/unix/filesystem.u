@@ -295,10 +295,10 @@ fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_
 	return file_metadata
 	{
 		.size= u64(s.st_size),
-		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) ),
+		.kind= file_flags_to_file_kind( u32(s.st_mode) & u32(S_IFMT) ),
 		.access_time= unsafe( timespec_to_system_time( s.st_atim ) ),
 		.modification_time= unsafe( timespec_to_system_time( s.st_mtim ) ),
-		.permissions{ .bits= s.st_mode & file_permissions::mask },
+		.permissions{ .bits= u32(s.st_mode) & file_permissions::mask },
 	};
 }
 
@@ -316,17 +316,17 @@ fn get_symlink_metadata_for_path( filesystem_path_view path ) : filesystem_resul
 	return file_metadata
 	{
 		.size= u64(s.st_size),
-		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) ),
+		.kind= file_flags_to_file_kind( u32(s.st_mode) & u32(S_IFMT) ),
 		.access_time= unsafe( timespec_to_system_time( s.st_atim ) ),
 		.modification_time= unsafe( timespec_to_system_time( s.st_mtim ) ),
-		.permissions{ .bits= s.st_mode & file_permissions::mask },
+		.permissions{ .bits= u32(s.st_mode) & file_permissions::mask },
 	};
 }
 
 fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : filesystem_result</void/>
 {
 	scoped_array char8 path_nt[ path.size() + 1s ]( path.iter().chain( filesystem_path_view("\0").iter() ) );
-	var i32 res= unsafe( ::chmod( path_nt.data(), permissions.bits ) );
+	var i32 res= unsafe( ::chmod( path_nt.data(), mode_t(permissions.bits) ) );
 	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
@@ -341,7 +341,7 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 
 	var u32 file_mode= 0o777u; // TODO - allow to select it.
 
-	var i32 res= unsafe( ::mkdir( path_nt.data(), file_mode ) );
+	var i32 res= unsafe( ::mkdir( path_nt.data(), mode_t(file_mode) ) );
 	if( res != 0 )
 	{
 		var i32 errno= get_errno();
@@ -350,11 +350,19 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 			// Already exists - check if it's a directory.
 			var stat_ mut s= zero_init;
 			auto res= unsafe( ::stat( path_nt.data(), $<(s) ) );
-			if( res == 0 && (s.st_mode & u32(S_IFMT)) == u32(S_IFDIR) )
+			if( res == 0 && (u32(s.st_mode) & u32(S_IFMT)) == u32(S_IFDIR) )
 			{
 				return void();
 			}
 		}
+
+		if( constexpr_string_starts_with( compiler::target::os, "freebsd" ) && errno == EISDIR && path == "/" )
+		{
+			// A workaround for FreeBSD bug https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=59739.
+			// "mkdir" for "/" returns wrong error code, so, assume creating "/" is successfull in such case.
+			return void();
+		}
+
 		return translate_errno( errno );
 	}
 
@@ -418,15 +426,35 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 	}
 	var u64 src_size= move(src_size_res).try_take();
 
-	for( var off_t mut offset(0); offset < off_t(src_size); )
+	static_if( constexpr_string_equals( compiler::target::os, "linux" ) )
 	{
-		var ssize_type bytes_sent= unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) );
-		if( bytes_sent <= ssize_type(0) )
+		// Use Linux-specific "sendfile" function.
+		for( var off_t mut offset(0); offset < off_t(src_size); )
 		{
-			var i32 err= get_errno();
-			unsafe( close_file_impl( dst_handle ) );
-			unsafe( close_file_impl( src_handle ) );
-			return translate_errno( err );
+			var ssize_type bytes_sent= unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) );
+			if( bytes_sent <= ssize_type(0) )
+			{
+				var i32 err= get_errno();
+				unsafe( close_file_impl( dst_handle ) );
+				unsafe( close_file_impl( src_handle ) );
+				return translate_errno( err );
+			}
+		}
+	}
+	else
+	{
+		// Use FreeBSD-specific "copy_file_range" function.
+		for( var off_t mut offset(0); offset < off_t(src_size); )
+		{
+			var ssize_type bytes_sent= unsafe( ::copy_file_range( src_handle, nullptr</off_t/>(), dst_handle, nullptr</off_t/>(), size_t( off_t(src_size) - offset ), 0u ) );
+			if( bytes_sent <= ssize_type(0) )
+			{
+				var i32 err= get_errno();
+				unsafe( close_file_impl( dst_handle ) );
+				unsafe( close_file_impl( src_handle ) );
+				return translate_errno( err );
+			}
+			offset+= off_t(bytes_sent);
 		}
 	}
 
@@ -517,7 +545,7 @@ fn remove_directory_recursive( filesystem_path_view p ) : filesystem_result</voi
 		{
 			return translate_errno( get_errno() );
 		}
-		if( ( (s.st_mode & u32(S_IFMT)) & u32(S_IFLNK) ) == u32(S_IFLNK) )
+		if( ( (u32(s.st_mode) & u32(S_IFMT)) & u32(S_IFLNK) ) == u32(S_IFLNK) )
 		{
 			var i32 unlink_res= unsafe( ::unlink( path_nt.data() ) );
 			if( unlink_res != 0 )
@@ -781,7 +809,7 @@ fn open_file_impl( filesystem_path_view path, open_options& options ) unsafe : f
 		open_flags|= O_EXCL;
 	}
 
-	var i32 handle= unsafe( ::open( path_nt.data(), open_flags, file_mode ) );
+	var i32 handle= unsafe( ::open( path_nt.data(), open_flags, mode_t(file_mode) ) );
 	if( handle == -1 )
 	{
 		return translate_errno( get_errno() );
@@ -807,10 +835,10 @@ fn get_metatada_impl( native_file_handle handle ) : filesystem_result</file_meta
 	return file_metadata
 	{
 		.size= u64(s.st_size),
-		.kind= file_flags_to_file_kind( s.st_mode & u32(S_IFMT) ),
+		.kind= file_flags_to_file_kind( u32(s.st_mode) & u32(S_IFMT) ),
 		.access_time= unsafe( timespec_to_system_time( s.st_atim ) ),
 		.modification_time= unsafe( timespec_to_system_time( s.st_mtim ) ),
-		.permissions{ .bits= s.st_mode & file_permissions::mask },
+		.permissions{ .bits= u32(s.st_mode) & file_permissions::mask },
 	};
 }
 
@@ -863,7 +891,7 @@ fn get_size_impl( native_file_handle handle ) : filesystem_result</u64/>
 
 fn set_permissions_impl( native_file_handle handle, file_permissions permissions ) : filesystem_result</void/>
 {
-	var i32 res= unsafe( ::fchmod( handle, permissions.bits ) );
+	var i32 res= unsafe( ::fchmod( handle, mode_t(permissions.bits) ) );
 	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
@@ -986,7 +1014,7 @@ fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : filesystem_re
 
 fn seek_impl( native_file_handle handle, u64 offset ) unsafe : filesystem_result</void/>
 {
-	var ü__off64_t seek_res= unsafe( ::lseek64( handle, ü__off64_t(offset), SEEK_SET ) );
+	var off_t seek_res= unsafe( ::lseek( handle, ü__off64_t(offset), SEEK_SET ) );
 
 	if( seek_res < ü__off64_t(-1) )
 	{
@@ -1026,10 +1054,13 @@ fn set_errno( i32 val )
 
 fn get_errno_location() : $(i32)
 {
-	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) ||
+		constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
 		unsafe
 		{
+			// "errno" in system C library is accessed via function "__error".
+			// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
 			auto f= import fn</ fn() : $(i32) /> ( "__error" );
 			var $(i32) ptr= f();
 			return ptr;

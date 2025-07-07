@@ -6,8 +6,11 @@ namespace BK
 
 fn GetErrno() : i32
 {
-	static_if( ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
+	static_if( ust::constexpr_string_equals( compiler::target::vendor, "apple" ) ||
+		ust::constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
+		// "errno" in system C library is accessed via function "__error".
+		// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
 		unsafe
 		{
 			auto f= import fn</ fn() : $(i32) /> ( "__error" );

@@ -42,6 +42,13 @@ fn get_current_thread_id() : thread_id
 	return unsafe( GetCurrentThreadId() );
 }
 
+fn get_number_of_available_cpus() : u32
+{
+	var SYSTEM_INFO mut sysinfo= zero_init;
+	unsafe( ::GetSystemInfo( $<(sysinfo) ) );
+	return sysinfo.dwNumberOfProcessors;
+}
+
 } // namespace thread_impl
 
 } // namespace us

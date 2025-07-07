@@ -3,6 +3,7 @@ import "/path_utils.u"
 import "/sort.u"
 import "/string_conversions.u"
 import "/stdout.u"
+import "/thread.u"
 import "../imports/build_system_interface.uh"
 import "abort_signal_handler.uh"
 import "build_graph_serialization.uh"
@@ -16,21 +17,20 @@ import "make_dep_file.uh"
 import "options.uh"
 import "package_transformation.uh"
 import "process.uh"
-import "proc.uh"
 import "shared_library.uh"
 import "target_triple.uh"
 import "version_unification.uh"
 
 pretty_main
 {
-	return BK::Main( args.subrange_start( 1s ) );
+	return BK::Main( args.front(), args.subrange_start( 1s ) );
 }
 
 namespace BK
 {
 
 // Place actual "main" code inside the "BK" namespace.
-fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
+fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 {
 	SetupAbortSignalHandler();
 
@@ -94,7 +94,11 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	var ust::filesystem_path current_executable= GetCurrentExecutablePath();
+	var ust::filesystem_path current_executable=
+		( ust::constexpr_string_starts_with( compiler::target::os, "freebsd" )
+			? ust::string8(first_arg) // HACK! There is no easy reliable way to obtain current executable path on FreeBSD, so, use argv[0].
+			: GetCurrentExecutablePath() );
+
 	var ust::filesystem_path exe_directory = MakePathAbsolute( ust::path::get_parent_path( current_executable ).deref_or( "" ) );
 
 	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory, "\"" ) );
@@ -409,7 +413,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 	var i32 mut main_result= 0;
 
 	var u32 max_number_of_parallel_jobs=
-		ust::max( 1u, ust::min( ( options.number_of_jobs == 0u ? GetNumberOfCPUs() : options.number_of_jobs ), 128u ) );
+		ust::max( 1u, ust::min( ( options.number_of_jobs == 0u ? ust::get_number_of_available_cpus() : options.number_of_jobs ), 128u ) );
 	bsi.LogVerbose( ust::concat( "Building using ", ust::to_string8(max_number_of_parallel_jobs), " threads." ) );
 
 	// This executes the build.

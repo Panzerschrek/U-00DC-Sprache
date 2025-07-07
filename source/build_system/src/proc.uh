@@ -1,6 +1,0 @@
-namespace BK
-{
-
-fn GetNumberOfCPUs() : u32;
-
-} // namespace BK
