@@ -1056,6 +1056,8 @@ fn get_errno_location() : $(i32)
 	{
 		unsafe
 		{
+			// "errno" in system C library is accessed via function "__error".
+			// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
 			auto f= import fn</ fn() : $(i32) /> ( "__error" );
 			var $(i32) ptr= f();
 			return ptr;

@@ -73,7 +73,7 @@ struct stat_ ordered
 
 struct ü_dirdesc ordered
 {
-fn constructor() : void= delete;	
+fn constructor() : void= delete;
 }
 
 auto constexpr DT_DIR = 4;
