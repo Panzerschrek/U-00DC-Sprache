@@ -83,6 +83,7 @@ var ü_anon_enum_56
 
 type DIR = ü__dirstream;
 type clockid_t = ü__clockid_t;
+type mode_t = ü__mode_t;
 type off_t = ü__off_t;
 type size_t = size_type;
 type ssize_t = ü__ssize_t;
