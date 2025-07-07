@@ -1,5 +1,6 @@
 import "../../imports/memory.u"
 import "../../imports/thread_impl.u"
+import "../../imports/type_traits.u"
 import "pthread.uh"
 
 namespace ust
@@ -38,12 +39,18 @@ fn get_current_thread_id() : thread_id
 
 fn get_number_of_available_cpus() : u32
 {
-	return u32( unsafe( get_nprocs() ) );
+	return u32( unsafe( ::sysconf( i32( ü_SC_NPROCESSORS_ONLN ) ) ) );
 }
 
 } // namespace thread_impl
 
 } // namespace ust
 
-// Function from "sys/sysinfo.h".
-fn nomangle get_nprocs() unsafe : i32;
+// Function from "unistd.h".
+fn nomangle sysconf( i32 ü__name ) unsafe : i64;
+
+// Numeric value of this constant is different on different Unix systems.
+var u32 ü_SC_NPROCESSORS_ONLN =
+	( ust::constexpr_string_equals( compiler::target::vendor, "apple" ) || ust::constexpr_string_starts_with( compiler::target::os, "freebsd" )
+		? 58u
+		: 84u );

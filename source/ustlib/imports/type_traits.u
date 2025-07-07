@@ -304,10 +304,12 @@ fn constexpr constexpr_string_select( [ char8, S0 ]& s0, [ char8, S1 ]& s1 ) : a
 {
 	static_if( b )
 	{
+		if( typeinfo</typeof(s1)/>.size_of != 0s ) {} // Use "s1" to silence unused variable error.
 		return s0;
 	}
 	else
 	{
+		if( typeinfo</typeof(s0)/>.size_of != 0s ) {} // Use "s0" to silence unused variable error.
 		return s1;
 	}
 }

@@ -1,3 +1,4 @@
+import "/type_traits.u"
 import "errno.uh"
 
 namespace BK
@@ -5,13 +6,28 @@ namespace BK
 
 fn GetErrno() : i32
 {
-	// "errno" in glibc is accessed via function "__errno_location".
-	// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
-	unsafe
+	static_if( ust::constexpr_string_equals( compiler::target::vendor, "apple" ) ||
+		ust::constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
-		auto f= import fn</ fn() : $(i32) /> ( "__errno_location" );
-		var $(i32) ptr= f();
-		return $>(ptr);
+		// "errno" in system C library is accessed via function "__error".
+		// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
+		unsafe
+		{
+			auto f= import fn</ fn() : $(i32) /> ( "__error" );
+			var $(i32) ptr= f();
+			return $>(ptr);
+		}
+	}
+	else
+	{
+		// "errno" in glibc is accessed via function "__errno_location".
+		// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
+		unsafe
+		{
+			auto f= import fn</ fn() : $(i32) /> ( "__errno_location" );
+			var $(i32) ptr= f();
+			return $>(ptr);
+		}
 	}
 }
 

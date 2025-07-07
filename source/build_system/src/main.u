@@ -23,14 +23,14 @@ import "version_unification.uh"
 
 pretty_main
 {
-	return BK::Main( args.subrange_start( 1s ) );
+	return BK::Main( args.front(), args.subrange_start( 1s ) );
 }
 
 namespace BK
 {
 
 // Place actual "main" code inside the "BK" namespace.
-fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
+fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::string_view8/> args_excluding_first ) : i32
 {
 	SetupAbortSignalHandler();
 
@@ -94,7 +94,11 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	var ust::filesystem_path current_executable= GetCurrentExecutablePath();
+	var ust::filesystem_path current_executable=
+		( ust::constexpr_string_starts_with( compiler::target::os, "freebsd" )
+			? ust::string8(first_arg) // HACK! There is no easy reliable way to obtain current executable path on FreeBSD, so, use argv[0].
+			: GetCurrentExecutablePath() );
+
 	var ust::filesystem_path exe_directory = MakePathAbsolute( ust::path::get_parent_path( current_executable ).deref_or( "" ) );
 
 	logger.LogVerbose( ust::concat( "Build system executable directory path: \"", exe_directory, "\"" ) );
