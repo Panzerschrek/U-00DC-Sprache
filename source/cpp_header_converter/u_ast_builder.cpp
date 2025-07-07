@@ -1275,7 +1275,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			anonymous_enum_members.count( name ) != 0 )
 			name+= "_";
 
-		const clang::Token token= macro_info->tokens().front();
+		const clang::Token& token= macro_info->getReplacementToken(0u);
 		if( token.getKind() == clang::tok::numeric_constant )
 		{
 			const std::string numeric_literal_str( token.getLiteralData(), token.getLength() );
