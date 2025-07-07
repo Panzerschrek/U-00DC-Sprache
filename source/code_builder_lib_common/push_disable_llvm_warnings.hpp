@@ -7,7 +7,6 @@
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 #if __GNUC__ >= 7
 	#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
