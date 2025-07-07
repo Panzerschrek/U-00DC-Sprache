@@ -1,1 +1,9 @@
-mixin( embed</char8/>( "unix_freebsd.uh" ) );
+import "../../imports/type_traits.u"
+
+var bool constexpr unix_is_freebsd= ust::constexpr_string_starts_with( compiler::target::os, "freebsd" );
+auto unix_impl_file_name=
+	ust::constexpr_string_select</unix_is_freebsd/>(
+		"unix_freebsd.uh",
+		"unix_linux.uh" );
+
+mixin( embed</char8/>( unix_impl_file_name ) );
