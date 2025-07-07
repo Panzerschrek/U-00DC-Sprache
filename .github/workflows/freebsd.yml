@@ -1,6 +1,6 @@
 name: FreeBSD build
 
-on: [push]
+on: [workflow_dispatch]
 
 jobs:
   build_freebsd_release_llvm_src:
