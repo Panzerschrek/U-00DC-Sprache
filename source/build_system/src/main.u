@@ -95,7 +95,7 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 	}
 
 	var ust::filesystem_path current_executable=
-		( ust::constexpr_string_starts_with( compiler::target::os, "freebsd")
+		( ust::constexpr_string_starts_with( compiler::target::os, "freebsd" )
 			? ust::string8(first_arg) // HACK! There is no easy reliable way to obtain current executable path on FreeBSD, so, use argv[0].
 			: GetCurrentExecutablePath() );
 

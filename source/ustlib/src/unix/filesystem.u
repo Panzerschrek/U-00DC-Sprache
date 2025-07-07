@@ -358,7 +358,8 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 
 		if( constexpr_string_starts_with( compiler::target::os, "freebsd" ) && errno == EISDIR && path == "/" )
 		{
-			// FreeBSD bug 59739 - mkdir for "/" returns wrong error code.
+			// A workaround for FreeBSD bug https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=59739.
+			// "mkdir" for "/" returns wrong error code, so, assume creating "/" is successfull in such case.
 			return void();
 		}
 
@@ -427,6 +428,7 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 
 	static_if( constexpr_string_equals( compiler::target::os, "linux" ) )
 	{
+		// Use Linux-specific "sendfile" function.
 		for( var off_t mut offset(0); offset < off_t(src_size); )
 		{
 			var ssize_type bytes_sent= unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) );
@@ -441,6 +443,7 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 	}
 	else
 	{
+		// Use FreeBSD-specific "copy_file_range" function.
 		for( var off_t mut offset(0); offset < off_t(src_size); )
 		{
 			var ssize_type bytes_sent= unsafe( ::copy_file_range( src_handle, nullptr</off_t/>(), dst_handle, nullptr</off_t/>(), size_t( off_t(src_size) - offset ), 0u ) );
