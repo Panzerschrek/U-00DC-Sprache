@@ -12,4 +12,4 @@ jobs:
         with:
           operating_system: freebsd
           version: '14.2'
-          run: cd /home/runner/work/U-00DC-Sprache/U-00DC-Sprache && sh ./ci/build_release_freebsd_llvm_src.sh
+          run: cd /home/runner/work/U-00DC-Sprache/U-00DC-Sprache && pkg install clang cmake gcc git wget && sh ./ci/build_release_freebsd_llvm_src.sh
