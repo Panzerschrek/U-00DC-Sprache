@@ -7,7 +7,7 @@ namespace BK
 fn GetErrno() : i32
 {
 	static_if( ust::constexpr_string_equals( compiler::target::vendor, "apple" ) ||
-		ust::constexpr_string_equals( compiler::target::os, "freebsd14.3" ) )
+		ust::constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
 		unsafe
 		{

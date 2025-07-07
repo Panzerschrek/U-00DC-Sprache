@@ -355,11 +355,13 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 				return void();
 			}
 		}
-		else if( errno == EISDIR && path == "/" )
+
+		if( constexpr_string_starts_with( compiler::target::os, "freebsd" ) && errno == EISDIR && path == "/" )
 		{
 			// FreeBSD bug 59739 - mkdir for "/" returns wrong error code.
 			return void();
 		}
+
 		return translate_errno( errno );
 	}
 
@@ -1050,7 +1052,7 @@ fn set_errno( i32 val )
 fn get_errno_location() : $(i32)
 {
 	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) ||
-		ust::constexpr_string_equals( compiler::target::os, "freebsd14.3" ) )
+		ust::constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
 		unsafe
 		{
