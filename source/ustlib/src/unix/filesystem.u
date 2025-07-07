@@ -888,7 +888,7 @@ fn get_size_impl( native_file_handle handle ) : filesystem_result</u64/>
 
 fn set_permissions_impl( native_file_handle handle, file_permissions permissions ) : filesystem_result</void/>
 {
-	var i32 res= unsafe( ::fchmod( handle, ü__mode_t(permissions.bits) ) );
+	var i32 res= unsafe( ::fchmod( handle, mode_t(permissions.bits) ) );
 	if( res != 0 )
 	{
 		return translate_errno( get_errno() );
@@ -1011,7 +1011,7 @@ fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : filesystem_re
 
 fn seek_impl( native_file_handle handle, u64 offset ) unsafe : filesystem_result</void/>
 {
-	var ü__off_t seek_res= unsafe( ::lseek( handle, ü__off64_t(offset), SEEK_SET ) );
+	var off_t seek_res= unsafe( ::lseek( handle, ü__off64_t(offset), SEEK_SET ) );
 
 	if( seek_res < ü__off64_t(-1) )
 	{
@@ -1052,7 +1052,7 @@ fn set_errno( i32 val )
 fn get_errno_location() : $(i32)
 {
 	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) ||
-		ust::constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
+		constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
 		unsafe
 		{
