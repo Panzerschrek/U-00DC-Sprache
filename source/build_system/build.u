@@ -49,10 +49,9 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 
 	if( build_system_interface.GetTargetTriple().operating_system == "windows" )
 	{
-		var [ ust::filesystem_path_view, 5 ] sources_windows
+		var [ ust::filesystem_path_view, 4 ] sources_windows
 		[
 			"filesystem.u",
-			"proc.u",
 			"process.u",
 			"shared_library.u",
 			"wide_string.u",
@@ -65,11 +64,10 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 	}
 	else
 	{
-		var [ ust::filesystem_path_view, 5 ] sources_unix
+		var [ ust::filesystem_path_view, 4 ] sources_unix
 		[
 			"errno.u",
 			"filesystem.u",
-			"proc.u",
 			"process.u",
 			"shared_library.u",
 		];

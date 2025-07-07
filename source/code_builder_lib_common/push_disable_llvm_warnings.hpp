@@ -9,6 +9,10 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
+#if __GNUC__ >= 7
+	#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 #if __GNUC__ >= 8
 	#pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif

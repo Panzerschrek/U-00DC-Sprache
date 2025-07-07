@@ -40,6 +40,8 @@ fn join_and_destroy_thread( thread_handle handle ) unsafe;
 // Get id of current (caller) thread.
 fn get_current_thread_id() : thread_id;
 
+fn get_number_of_available_cpus() : u32;
+
 } // namespace thread_impl
 
 } // namespace ust

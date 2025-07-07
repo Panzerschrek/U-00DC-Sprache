@@ -3,6 +3,7 @@ import "/path_utils.u"
 import "/sort.u"
 import "/string_conversions.u"
 import "/stdout.u"
+import "/thread.u"
 import "../imports/build_system_interface.uh"
 import "abort_signal_handler.uh"
 import "build_graph_serialization.uh"
@@ -16,7 +17,6 @@ import "make_dep_file.uh"
 import "options.uh"
 import "package_transformation.uh"
 import "process.uh"
-import "proc.uh"
 import "shared_library.uh"
 import "target_triple.uh"
 import "version_unification.uh"
@@ -409,7 +409,7 @@ fn nodiscard Main( ust::array_view_imut</ust::string_view8/> args_excluding_firs
 	var i32 mut main_result= 0;
 
 	var u32 max_number_of_parallel_jobs=
-		ust::max( 1u, ust::min( ( options.number_of_jobs == 0u ? GetNumberOfCPUs() : options.number_of_jobs ), 128u ) );
+		ust::max( 1u, ust::min( ( options.number_of_jobs == 0u ? ust::get_number_of_available_cpus() : options.number_of_jobs ), 128u ) );
 	bsi.LogVerbose( ust::concat( "Building using ", ust::to_string8(max_number_of_parallel_jobs), " threads." ) );
 
 	// This executes the build.
