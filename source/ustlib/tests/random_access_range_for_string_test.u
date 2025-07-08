@@ -35,6 +35,22 @@ fn nomangle main() : i32
 			halt if( r[size_type(7u)] != 'E' );
 		}
 	}
+	{ // starts_with
+		halt if( !ust::string_view8( "some" ).starts_with( "" ) );
+		halt if( !ust::string_view8( "some" ).starts_with( "s" ) );
+		halt if( !ust::string_view8( "some" ).starts_with( "so" ) );
+		halt if( !ust::string_view8( "some" ).starts_with( "som" ) );
+		halt if( !ust::string_view8( "some" ).starts_with( "some" ) );
+		halt if( ust::string_view8( "some" ).starts_with( "somet" ) );
+		halt if( ust::string_view8( "some" ).starts_with( "something" ) );
+		halt if( ust::string_view8( "some" ).starts_with( "o" ) );
+		halt if( ust::string_view8( "some" ).starts_with( "m" ) );
+		halt if( ust::string_view8( "some" ).starts_with( "e" ) );
+		halt if( ust::string_view8( "some" ).starts_with( "ome" ) );
+		halt if( ust::string_view8( "some" ).starts_with( "me" ) );
+		halt if( !ust::string_view8( "" ).starts_with( "" ) );
+		halt if( ust::string_view8( "" ).starts_with( "q" ) );
+	}
 
 	return 0;
 }

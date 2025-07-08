@@ -205,6 +205,26 @@ public:
 		return true;
 	}
 
+	// Returns true if "other" is prefix of "this".
+	fn enable_if( typeinfo</T/>.is_equality_comparable )
+	starts_with( this, this_type& other ) : bool
+	{
+		if( this.size() < other.size() )
+		{
+			return false;
+		}
+
+		for( auto mut i= 0s; i < other.size_; ++i )
+		{
+			if( unsafe( this.index_unchecked(i) ) != unsafe( other.index_unchecked(i) ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	// hashing
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
