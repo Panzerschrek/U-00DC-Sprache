@@ -400,6 +400,45 @@ public:
 		return l.size() <=> r.size();
 	}
 
+	// Returns true if "other" is prefix of "this".
+	fn starts_with( this, range_imut other ) : bool
+	{
+		if( this.size() < other.size() )
+		{
+			return false;
+		}
+
+		for( auto mut i= 0s; i < other.size(); ++i )
+		{
+			if( unsafe( this.index_unchecked(i) ) != unsafe( other.index_unchecked(i) ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	// Returns true if "other" is suffix of "this".
+	fn ends_with( this, range_imut other ) : bool
+	{
+		if( this.size() < other.size() )
+		{
+			return false;
+		}
+
+		auto offset= this.size() - other.size();
+		for( auto mut i= 0s; i < other.size(); ++i )
+		{
+			if( unsafe( this.index_unchecked( offset + i ) ) != unsafe( other.index_unchecked(i) ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	// hashing
 	template</type Hasher/>
 	fn hash( this, Hasher &mut hasher )
