@@ -496,7 +496,7 @@ fn CorrectExecutablePathAndMakeItWide( ust::filesystem_path_view exe_path ) : Wi
 {
 	var WideString mut exe_path_wide = UTF8ToWideString( exe_path );
 
-	if(exe_path.size() < 4s || exe_path.subrange_start( exe_path.size() - 4s ) != ".exe" )
+	if( !exe_path.ends_with( ".exe" ) )
 	{
 		exe_path_wide+= ".exe"u16;
 	}

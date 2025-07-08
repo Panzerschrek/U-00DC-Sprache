@@ -22,37 +22,34 @@ fn ParseJsonImpl( ust::string_view8 &mut text ) : ust::optional</JsonValue/>
 		'n' ->
 		{
 			// Null
-			auto &constexpr expected= "null";
-			auto s= typeinfo</typeof(expected)/>.element_count;
-			if( text.size() < s || text.subrange_end(s) != expected )
+			var ust::string_view8 expected= "null";
+			if( !text.starts_with( expected ) )
 			{
 				return ust::null_optional;
 			}
-			text= text.subrange_end(s);
+			text= text.subrange_end( expected.size() );
 			return JsonValue( JsonValue::Null() );
 		},
 		'f' ->
 		{
 			// Bool false
-			auto &constexpr expected= "false";
-			auto s= typeinfo</typeof(expected)/>.element_count;
-			if( text.size() < s || text.subrange_end(s) != expected )
+			var ust::string_view8 expected= "false";
+			if( !text.starts_with( expected ) )
 			{
 				return ust::null_optional;
 			}
-			text= text.subrange_end(s);
+			text= text.subrange_end( expected.size() );
 			return JsonValue( false );
 		},
 		't' ->
 		{
 			// Bool true
-			auto &constexpr expected= "true";
-			auto s= typeinfo</typeof(expected)/>.element_count;
-			if( text.size() < s || text.subrange_end(s) != expected )
+			var ust::string_view8 expected= "true";
+			if( !text.starts_with( expected ) )
 			{
 				return ust::null_optional;
 			}
-			text= text.subrange_end(s);
+			text= text.subrange_end( expected.size() );
 			return JsonValue( true );
 		},
 		'0' ... '9', '-' ->
