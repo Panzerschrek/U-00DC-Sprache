@@ -177,6 +177,7 @@ fn nomangle main() : i32
 		var [ i32, 1 ] a6[ 46 ];
 		var [ i32, 2 ] a7[ -64, 46 ];
 		var [ i32, 2 ] a8[ 31356, -64 ];
+		var [ i32, 5 ] a9[ 76, 31356, -64, 46, 7543 ];
 
 		var IntRangeImut r(a0);
 		halt if( !r.starts_with( IntRangeImut() ) );
@@ -189,8 +190,28 @@ fn nomangle main() : i32
 		halt if( r.starts_with( a6 ) );
 		halt if( r.starts_with( a7 ) );
 		halt if( r.starts_with( a8 ) );
+		halt if( r.starts_with( a9 ) );
 		halt if( !IntRangeImut().starts_with( IntRangeImut() ) );
 		halt if( IntRangeImut().starts_with( a1 ) );
+	}
+	{ // ends_with
+		var [ i32, 3 ] a0[ 55, 66, 77 ];
+		var [ i32, 1 ] a1[ 77 ];
+		var [ i32, 2 ] a2[ 66, 77 ];
+		var [ i32, 1 ] a3[ 66 ];
+		var [ i32, 1 ] a4[ 55 ];
+		var [ i32, 4 ] a5[ 44, 55, 66, 77 ];
+
+		var IntRangeImut r(a0);
+		halt if( !r.ends_with( IntRangeImut() ) );
+		halt if( !r.ends_with( a1 ) );
+		halt if( !r.ends_with( a2 ) );
+		halt if( !r.ends_with( a0 ) );
+		halt if( r.ends_with( a3 ) );
+		halt if( r.ends_with( a4 ) );
+		halt if( r.ends_with( a5 ) );
+		halt if( !IntRangeImut().ends_with( IntRangeImut() ) );
+		halt if( IntRangeImut().ends_with( a1 ) );
 	}
 
 	// Create range for single element.

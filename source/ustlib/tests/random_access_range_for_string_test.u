@@ -51,6 +51,20 @@ fn nomangle main() : i32
 		halt if( !ust::string_view8( "" ).starts_with( "" ) );
 		halt if( ust::string_view8( "" ).starts_with( "q" ) );
 	}
+	{ // "ends_with"
+		halt if( !ust::string_view8( "Dirnensproß" ).ends_with( "" ) );
+		halt if( !ust::string_view8( "Dirnensproß" ).ends_with( "ß" ) );
+		halt if( !ust::string_view8( "Dirnensproß" ).ends_with( "oß" ) );
+		halt if( !ust::string_view8( "Dirnensproß" ).ends_with( "sproß" ) );
+		halt if( !ust::string_view8( "Dirnensproß" ).ends_with( "nensproß" ) );
+		halt if( !ust::string_view8( "Dirnensproß" ).ends_with( "Dirnensproß" ) );
+		halt if( ust::string_view8( "Dirnensproß" ).ends_with( "ss" ) );
+		halt if( ust::string_view8( "Dirnensproß" ).ends_with( "o" ) );
+		halt if( ust::string_view8( "Dirnensproß" ).ends_with( "Dirne" ) );
+		halt if( ust::string_view8( "Dirnensproß" ).ends_with( "Mittel Alta - Dirnensproß" ) );
+		halt if( !ust::string_view8( "" ).ends_with( "" ) );
+		halt if( ust::string_view8( "" ).ends_with( "q" ) );
+	}
 
 	return 0;
 }
