@@ -23,6 +23,9 @@ if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
 		)
 	add_dependencies( DepFileTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
+	# Run the test
+	add_custom_command( TARGET DepFileTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND DepFileTest${CURRENT_COMPILER_GENERATION} )
+
 else()
 	message( STATUS "DepFileTest test disabled because it is not supported by current cmake generator" )
 endif()

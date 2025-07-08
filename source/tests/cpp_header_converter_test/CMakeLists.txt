@@ -36,6 +36,9 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			${CMAKE_CURRENT_SOURCE_DIR}/c_test.cpp )
 	add_dependencies( CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
+	# Run the test
+	add_custom_command( TARGET CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} )
+
 	if(WIN32)
 
 		#
@@ -67,6 +70,9 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 				${CMAKE_CURRENT_SOURCE_DIR}/windows_headers.h
 				../dummy.cpp )
 		add_dependencies( WindowsHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
+		# Run the test
+		add_custom_command( TARGET WindowsHeadersConversionTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND WindowsHeadersConversionTest${CURRENT_COMPILER_GENERATION} )
 
 	else()
 
@@ -103,6 +109,9 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 				../dummy.cpp )
 		add_dependencies( UnistdHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
+		# Run the test
+		add_custom_command( TARGET UnistdHeadersConversionTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND UnistdHeadersConversionTest${CURRENT_COMPILER_GENERATION} )
+
 	endif()
 
 	#
@@ -138,5 +147,8 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h
 			../dummy.cpp )
 	add_dependencies( CStandardLibraryHeadersConversionTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
+	# Run the test
+	add_custom_command( TARGET CStandardLibraryHeadersConversionTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND CStandardLibraryHeadersConversionTest${CURRENT_COMPILER_GENERATION} )
 
 endif()

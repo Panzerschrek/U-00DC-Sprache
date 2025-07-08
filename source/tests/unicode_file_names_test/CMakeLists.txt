@@ -4,4 +4,7 @@ if( U_BUILD_UNICODE_FILE_NAMES_TEST )
 
 	add_executable( UnicodeFileNamesTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${UNICODE_FILE_NAMES_SOURCES} ${UNICODE_FILE_NAMES_OBJECTS} )
 	add_dependencies( UnicodeFileNamesTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
+	# Run the test
+	add_custom_command( TARGET UnicodeFileNamesTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND UnicodeFileNamesTest${CURRENT_COMPILER_GENERATION} )
 endif()
