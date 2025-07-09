@@ -22,3 +22,6 @@ add_custom_command(
 
 add_executable( EmbedTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${CMAKE_CURRENT_SOURCE_DIR}/main.u ${CMAKE_CURRENT_BINARY_DIR}/main.o )
 add_dependencies( EmbedTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
+# Run the test
+add_custom_command( TARGET EmbedTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND EmbedTest${CURRENT_COMPILER_GENERATION} )

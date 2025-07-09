@@ -12,3 +12,6 @@ add_custom_command(
 
 add_executable( IncludeDirsTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${CMAKE_CURRENT_SOURCE_DIR}/root.u ${CMAKE_CURRENT_BINARY_DIR}/include_dirs_test.o )
 add_dependencies( IncludeDirsTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
+# Run the test
+add_custom_command( TARGET IncludeDirsTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND IncludeDirsTest${CURRENT_COMPILER_GENERATION} )

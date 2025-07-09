@@ -15,3 +15,6 @@ add_custom_command(
 
 add_executable( DebugInfoTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${DEBUG_INFO_TEST_FILE} ${DEBUG_INFO_TEST_FILE_OUT} )
 add_dependencies( DebugInfoTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
+# Run the test
+add_custom_command( TARGET DebugInfoTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND DebugInfoTest${CURRENT_COMPILER_GENERATION} )
