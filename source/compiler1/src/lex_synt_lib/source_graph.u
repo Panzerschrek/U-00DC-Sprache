@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/string_conversions.u"
 import "source_graph.uh"
 
 namespace U1
@@ -92,6 +93,17 @@ fn LoadSourceGraph_r(
 	SourceGraph& mut source_graph,
 	ust::vector</ust::string8/> &mut imports_stack ) : size_type
 {
+	ust::stdout_print( "LoadSourceGraph_r\n" );
+	ust::stdout_print(
+		ust::concat(
+			"U_vfs: ",
+			ust::to_string8( ust::ref_to_int(vfs) ),
+			", file_path: ",
+			ust::to_string8( ust::ref_to_int(file_path) ),
+			", parent_file_path: ",
+			ust::to_string8( ust::ref_to_int( parent_file_path ) ),
+			"\n" ) );
+
 	auto file_path_normalized= vfs.NormalizeFilePath( file_path, parent_file_path );
 
 	// Check for dependency loops.
