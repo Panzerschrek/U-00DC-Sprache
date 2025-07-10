@@ -494,22 +494,6 @@ public:
 		ust::string8& file_path,
 		ust::string8& parent_file_path_normalized ) : ust::string8
 	{
-		ust::stdout_print( "ExternalVfsWrapper::NormalizeFilePath\n" );
-		ust::stdout_print(
-			ust::concat(
-				"this: ",
-				ust::to_string8( ust::ref_to_int(this) ),
-				", file_path: ",
-				ust::to_string8( ust::ref_to_int(file_path) ),
-				", parent_file_path: ",
-				ust::to_string8( ust::ref_to_int( parent_file_path_normalized ) ),
-				"\n" ) );
-		ust::stdout_print(
-			ust::concat(
-				"CPP_vfs: ",
-				ust::to_string8( ust::ref_to_int(vfs_interface_.this_) ),
-				"\n" ) );
-
 		unsafe
 		{
 			var ust::string8 mut result;
@@ -517,21 +501,12 @@ public:
 			var U1_StringView file_path_view{ .data= cast_mut(file_path).data(), .size= file_path.size() };
 			var U1_StringView parent_file_path_normalized_view{ .data= cast_mut(parent_file_path_normalized).data(), .size= parent_file_path_normalized.size() };
 
-			ust::stdout_print(
-				ust::concat(
-					"file_path_view: ",
-					ust::to_string8( ust::ref_to_int(file_path_view) ),
-					", parent_file_path_normalized_view: ",
-					ust::to_string8( ust::ref_to_int(parent_file_path_normalized_view) ),
-					"\n" ) );
-
 			vfs_interface_.normalize_path_function(
 				vfs_interface_.this_,
 				file_path_view,
 				parent_file_path_normalized_view,
 				U1_IVfsInterface::FillStringCallback(FillStringCallback),
 				ust::ref_to_int( result ) );
-			ust::stdout_print( "Did normalize path\n" );
 			return result;
 		}
 	}

@@ -24,17 +24,10 @@ void GetFullFilePath(
 	const  U1_IVfsInterface::FillStringCallback result_callback,
 	const U1_UserHandle user_data )
 {
-	std::cout << "GetFullFilePath" << std::endl;
-	std::cout << "CPP_vfs: " << this_ << std::endl;
-	std::cout << "file_path: " << reinterpret_cast<size_t>(&file_path) << std::endl;
-	std::cout << "parent_file_path_normalized: " << reinterpret_cast<size_t>(&parent_file_path_normalized) << std::endl;
-
 	const std::string path=
 		reinterpret_cast<IVfs*>(this_)->GetFullFilePath(
 			StringViewToString(file_path),
 			StringViewToString(parent_file_path_normalized) );
-
-	std::cout << "Path normalized: " << path << std::endl;
 
 	result_callback( user_data, StringToStringView(path) );
 }
@@ -139,10 +132,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const ManglingScheme mangling_scheme,
 	const std::string_view prelude_code )
 {
-	std::cout << "LaunchCodeBuilder" << std::endl;
-	std::cout << "CPP_vfs: " << reinterpret_cast<size_t>(vfs.get()) << std::endl;
-	std::cout << "GetFullFilePath: " << reinterpret_cast<size_t>(&GetFullFilePath) << std::endl;
-
 	CodeBuilderLaunchResult result;
 
 	const LLVMModuleRef llvm_module=
