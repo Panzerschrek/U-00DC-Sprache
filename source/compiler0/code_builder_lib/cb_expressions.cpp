@@ -4341,6 +4341,9 @@ Value CodeBuilder::DoCallFunction(
 		if( really_function == nullptr && function_type.return_value_type != ValueType::Value )
 			call_instruction->addRetAttr( llvm::Attribute::NonNull );
 
+		if( return_value_is_sret )
+			call_instruction->addParamAttr( 0, llvm::Attribute::get( llvm_context_, llvm::Attribute::StructRet, function_type.return_type.GetLLVMType() ) );
+
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 			result->llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 		else if( return_value_is_composite )
