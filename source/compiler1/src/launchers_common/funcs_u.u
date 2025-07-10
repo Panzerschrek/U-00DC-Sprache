@@ -505,7 +505,7 @@ public:
 				vfs_interface_.this_,
 				file_path_view,
 				parent_file_path_normalized_view,
-				U1_IVfsInterface::FillStringCallback(FillStringCallback),
+				FillStringCallback,
 				ust::ref_to_int( result ) );
 			return result;
 		}
@@ -522,7 +522,7 @@ public:
 			var bool ok= vfs_interface_.load_file_content_function(
 				vfs_interface_.this_,
 				full_file_path_view,
-				U1_IVfsInterface::FillStringCallback(FillStringCallback),
+				FillStringCallback,
 				ust::ref_to_int( result ) );
 			if( ok )
 			{
@@ -547,7 +547,7 @@ public:
 	}
 
 private:
-	fn FillStringCallback( U1_UserHandle user_data, U1_StringView& result_path_normalized )
+	fn FillStringCallback( U1_UserHandle user_data, U1_StringView& result_path_normalized ) unsafe
 	{
 		unsafe
 		{
