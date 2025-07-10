@@ -433,12 +433,7 @@ U_TEST( TypeConversionTest12 )
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
 
-		const int32_t expected= static_cast<int32_t>(value);
-		const int32_t got= static_cast<int32_t>(result_value.IntVal.getLimitedValue());
-		if( expected != got )
-			std::cout << "Wrong SIToFP results: " << expected << " and " << got << std::endl;
-
-		// U_TEST_ASSERT( expected == got );
+		U_TEST_ASSERT( static_cast<int32_t>(value) == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
 	}
 }
 
@@ -479,12 +474,7 @@ U_TEST( TypeConversionTest13 )
 				function,
 				llvm::ArrayRef<llvm::GenericValue>( &arg, 1u ) );
 
-		const uint32_t expected= static_cast<uint32_t>(value);
-		const uint32_t got= static_cast<uint32_t>(result_value.IntVal.getLimitedValue());
-		if( expected != got )
-			std::cout << "Wrong UIToFP results: " << expected << " and " << got << std::endl;
-
-		// U_TEST_ASSERT( expected == got );
+		U_TEST_ASSERT( static_cast<uint32_t>(value) == static_cast<uint32_t>(result_value.IntVal.getLimitedValue()) );
 	}
 }
 
