@@ -417,12 +417,13 @@ U_TEST( TypeConversionTest12 )
 
 	static const float c_values[]=
 	{
-		float(std::numeric_limits<int32_t>::min()),
-		float(std::numeric_limits<int32_t>::max()),
+		-2147483648.0f, // Min float convertible into int32_t.
+		2147483520.0f, // Max float convertible into int32_t.
 		-0.0f, +0.0f, +1.0f, -1.0f,
 		+0.1f, +0.2f, +0.4f, +0.5f, +0.8f, +0.99f, +1.1f, +1.5f, +1.9f, +2.0f, +2.1f,
 		-0.1f, -0.2f, -0.4f, -0.5f, -0.8f, -0.99f, -1.1f, -1.5f, -1.9f, -2.0f, -2.1f,
-		528.0f, 847.3f, -854745.1f, 1694463188.1f, /*1.0e24f,*//*TODO - enable test for large number*/ 1.0e-24f
+		528.0f, 847.3f, -854745.1f, 1694463188.1f, 1.0e-24f,
+		// Avoid here numbers outside target integer range, sine it's for now UB to perform such conversion.
 	};
 	for( const float value : c_values )
 	{
@@ -464,11 +465,11 @@ U_TEST( TypeConversionTest13 )
 
 	static const float c_values[]=
 	{
-		float(std::numeric_limits<uint32_t>::min()),
-		float(std::numeric_limits<uint32_t>::max()),
+		float(4294967040), // Max float convertible into uint32_t.
 		-0.0f, +0.0f, +1.0f,
 		+0.1f, +0.2f, +0.4f, +0.5f, +0.8f, +0.99f, +1.1f, +1.5f, +1.9f, +2.0f, +2.1f,
-		528.0f, 847.3f, 854745.1f, 1694463188.1f, /*1.0e24f,*//*TODO - enable test for large number*/ 1.0e-24f
+		528.0f, 847.3f, 854745.1f, 1694463188.1f, 1.0e-24f,
+		// Avoid here numbers outside target integer range, sine it's for now UB to perform such conversion.
 	};
 	for( const float value : c_values )
 	{
