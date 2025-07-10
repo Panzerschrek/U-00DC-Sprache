@@ -4795,6 +4795,13 @@ fn CodeBuilder::DoCallFunction(
 			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
 		}
 
+		if( return_value_is_sret )
+		{
+			var LLVMTypeRef sret_type= function_type.return_type.GetLLVMType();
+			auto attr= unsafe( LLVMCreateTypeAttribute( llvm_context_, GetAttributeKindByName("sret"), sret_type ) );
+			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
+		}
+
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 		{
 			result.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.void_ ) );
