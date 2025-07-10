@@ -912,10 +912,6 @@ int Main( int argc, const char* argv[] )
 	if( file_type == FileType::Dll && target_machine->getTargetTriple().getOS() == llvm::Triple::Win32 )
 		SetupDLLExport( *result_module );
 
-	result_module->setPICLevel( llvm::PICLevel::BigPIC );
-	result_module->setPIELevel( llvm::PIELevel::Large );
-	result_module->setFramePointer( llvm::FramePointerKind::NonLeaf );
-
 	// Dump llvm code after optimization passes.
 	if( Options::print_llvm_asm )
 	{
