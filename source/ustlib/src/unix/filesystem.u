@@ -928,16 +928,7 @@ fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) uns
 			{
 				if( bytes_read == 0s )
 				{
-					stdout_print(
-							"read_exact_impl got unexpected result " +
-							to_string8(bytes_read) +
-							" for buf of size " +
-							to_string8(buf.size()) +
-							" at offset " +
-							to_string8(offset) +
-							", code is " +
-							to_string8(get_errno()) +
-							"\n" );
+					stdout_print( concat( "read_exact_impl got unexpected result ", to_string8(bytes_read), " for buf of size ", to_string8(buf.size()), ", code is ", to_string8(get_errno()), "\n" ) );
 					return io_error::unexpected_end_of_file;
 				}
 				offset+= bytes_read;
