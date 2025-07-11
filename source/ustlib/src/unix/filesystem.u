@@ -441,6 +441,26 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 			}
 		}
 	}
+	else static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
+	{
+		ignore_unused(src_size);
+		// Use MacOS-specific "fcopyfile" function.
+		// TODO - maybe use "copyfile" instead?
+		unsafe
+		{
+			var u32 COPYFILE_ALL= 15u;
+			auto fcopyfile= import fn</ fn( i32 from, i32 to, $(byte8) state, u32 flags ) : i32 />( "fcopyfile" );
+
+			var i32 res= fcopyfile( src_handle, dst_handle, nullptr</byte8/>(), COPYFILE_ALL );
+			if( res < 0 )
+			{
+				var i32 err= get_errno();
+				unsafe( close_file_impl( dst_handle ) );
+				unsafe( close_file_impl( src_handle ) );
+				return translate_errno( err );
+			}
+		}
+	}
 	else
 	{
 		// Use FreeBSD-specific "copy_file_range" function.
