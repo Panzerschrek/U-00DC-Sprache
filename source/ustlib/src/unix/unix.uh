@@ -3,6 +3,7 @@ import "../../imports/type_traits.u"
 // Use "embed" in combination with "mixin" to implement some sort of conditional import.
 mixin( embed</char8/>( unix_impl_file_name ) );
 
-auto unix_impl_file_name= ust::constexpr_string_select</unix_is_freebsd/>( "unix_freebsd.uh", "unix_linux.uh" );
+auto unix_impl_file_name= ust::constexpr_string_select</ unix_is_freebsd | unix_is_apple />( "unix_freebsd.uh", "unix_linux.uh" );
 
 var bool constexpr unix_is_freebsd= ust::constexpr_string_starts_with( compiler::target::os, "freebsd" );
+var bool constexpr unix_is_apple= ust::constexpr_string_equals( compiler::target::vendor, "apple" );
