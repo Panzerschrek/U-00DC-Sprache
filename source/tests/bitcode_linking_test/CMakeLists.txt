@@ -26,6 +26,9 @@ add_custom_command(
 add_executable( BitcodeLinkingTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${SOURCES} ${BC_OBJECT_COMBINED} )
 add_dependencies( BitcodeLinkingTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
+# Run the test
+add_custom_command( TARGET BitcodeLinkingTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND BitcodeLinkingTest${CURRENT_COMPILER_GENERATION} )
+
 set(LL_FILES)
 foreach( SOURCE ${SOURCES} )
 	file( RELATIVE_PATH source_name_rel ${CMAKE_CURRENT_SOURCE_DIR} ${SOURCE} )
@@ -52,3 +55,6 @@ add_custom_command(
 
 add_executable( LLAssebllyLinkingTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${SOURCES} ${LL_OBJECT_COMBINED} )
 add_dependencies( LLAssebllyLinkingTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+
+# Run the test
+add_custom_command( TARGET LLAssebllyLinkingTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND LLAssebllyLinkingTest${CURRENT_COMPILER_GENERATION} )

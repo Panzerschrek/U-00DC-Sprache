@@ -406,5 +406,38 @@ fn nomangle main() : i32
 
 		halt if( s != "abcdefghijklmnopqrstuvwxyz"u16 );
 	}
+	{ // starts_with
+		var ust::string8 s= "some";
+		halt if( !s.starts_with( "" ) );
+		halt if( !s.starts_with( "s" ) );
+		halt if( !s.starts_with( "so" ) );
+		halt if( !s.starts_with( "som" ) );
+		halt if( !s.starts_with( "some" ) );
+		halt if( s.starts_with( "somet" ) );
+		halt if( s.starts_with( "something" ) );
+		halt if( s.starts_with( "o" ) );
+		halt if( s.starts_with( "m" ) );
+		halt if( s.starts_with( "e" ) );
+		halt if( s.starts_with( "ome" ) );
+		halt if( s.starts_with( "me" ) );
+		halt if( !ust::string8().starts_with( "" ) );
+		halt if( ust::string8().starts_with( "q" ) );
+	}
+	{ // "ends_with"
+		var ust::string8 s= "Dirnensproß";
+		halt if( !s.ends_with( "" ) );
+		halt if( !s.ends_with( "ß" ) );
+		halt if( !s.ends_with( "oß" ) );
+		halt if( !s.ends_with( "sproß" ) );
+		halt if( !s.ends_with( "nensproß" ) );
+		halt if( !s.ends_with( "Dirnensproß" ) );
+		halt if( s.ends_with( "ss" ) );
+		halt if( s.ends_with( "o" ) );
+		halt if( s.ends_with( "Dirne" ) );
+		halt if( s.ends_with( "Mittel Alta - Dirnensproß" ) );
+		halt if( !ust::string8().ends_with( "" ) );
+		halt if( ust::string8().ends_with( "q" ) );
+	}
+
 	return 0;
 }
