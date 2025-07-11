@@ -1,0 +1,13 @@
+name: GNU/Linux AArch64 release LLVM src
+
+on: [push]
+
+jobs:
+  gnu_linux_aarch64_release_llvm_src:
+    runs-on: ubuntu-22.04-arm
+    steps:
+    - uses: actions/checkout@v1
+    - name: build project
+      run: |
+        sudo apt-get update && sudo apt-get install ninja-build
+        ./ci/build_gnu_linux_aarch64_release_llvm_src.sh
