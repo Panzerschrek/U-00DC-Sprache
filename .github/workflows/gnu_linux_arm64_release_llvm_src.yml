@@ -9,5 +9,5 @@ jobs:
     - uses: actions/checkout@v1
     - name: build project
       run: |
-        sudo apt-get update && sudo apt-get install llvm ninja-build python3-sphinx sphinx-doc sphinx-common python3-stemmer
+        sudo apt-get update && sudo apt-get install ninja-build python3-sphinx sphinx-doc sphinx-common python3-stemmer
         ./ci/build_release_arm64_llvm_src.sh
