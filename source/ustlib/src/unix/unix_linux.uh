@@ -44,8 +44,7 @@ struct timespec ordered
 	ü__syscall_slong_t tv_nsec;
 }
 
-// TODO - adopt this structure for 32-bit code.
-struct stat_ ordered
+struct stat_x86_64 ordered
 {
 	ü__dev_t st_dev;
 	ü__ino_t st_ino;
@@ -63,6 +62,29 @@ struct stat_ ordered
 	timespec st_ctim;
 	[ ü__syscall_slong_t, 3u ] ü__glibc_reserved;
 }
+
+struct stat_aarch_64 ordered
+{
+	ü__dev_t st_dev;
+	u16 ü__pad1;
+	ü__ino_t st_ino;
+	ü__mode_t st_mode;
+	ü__nlink_t st_nlink;
+	ü__uid_t st_uid;
+	ü__gid_t st_gid;
+	ü__dev_t st_rdev;
+	u16 ü__pad2;
+	ü__off_t st_size;
+	ü__blksize_t st_blksize;
+	ü__blkcnt_t st_blocks;
+	timespec st_atim;
+	timespec st_mtim;
+	timespec st_ctim;
+	u64 ü__glibc_reserved4;
+	u64 ü__glibc_reserved5;
+}
+
+type stat_= ust::type_select</ c_arch_is_aarch64, stat_aarch_64, stat_x86_64 />;
 
 struct ü__dirstream ordered
 {
@@ -94,10 +116,10 @@ type ü__dev_t = u64;
 type ü__gid_t = u32;
 type ü__ino_t = u64;
 type ü__mode_t = u32;
-type ü__nlink_t = u64;
+type ü__nlink_t = ust::type_select</ c_arch_is_aarch64, u32, u64 />;
 type ü__off64_t = i64;
 type ü__off_t = i64;
-type ü__ssize_t = ssize_type;
+type ü__ssize_t = ust::type_select</ c_arch_is_aarch64, i32, ssize_type />;
 type ü__syscall_slong_t = i64;
 type ü__time_t = i64;
 type ü__uid_t = u32;
@@ -178,3 +200,5 @@ auto constexpr SEEK_END = 2;
 auto constexpr STDIN_FILENO = 0;
 auto constexpr STDOUT_FILENO = 1;
 auto constexpr STDERR_FILENO = 2;
+
+var bool c_arch_is_aarch64= ust::constexpr_string_equals( compiler::target::arch, "aarch64" );
