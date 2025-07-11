@@ -431,7 +431,7 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 		// Use Linux-specific "sendfile" function.
 		for( var off_t mut offset(0); offset < off_t(src_size); )
 		{
-			var ssize_type bytes_sent( unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) ) );
+			var ssize_type bytes_sent= unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) );
 			if( bytes_sent <= ssize_type(0) )
 			{
 				var i32 err= get_errno();
@@ -902,7 +902,7 @@ fn set_permissions_impl( native_file_handle handle, file_permissions permissions
 
 fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : filesystem_result</size_type/>
 {
-	var ssize_type read_res( unsafe( ::read( handle, buf.data(), buf.size() ) ) );
+	var ssize_type read_res = unsafe( ::read( handle, buf.data(), buf.size() ) );
 
 	if( read_res < ssize_type(0) )
 	{
@@ -943,7 +943,7 @@ fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) uns
 
 fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe : filesystem_result</size_type/>
 {
-	var ssize_type write_res( unsafe( ::write( handle, buf.data(), buf.size() ) ) );
+	var ssize_type write_res = unsafe( ::write( handle, buf.data(), buf.size() ) );
 
 	if( write_res < ssize_type(0) )
 	{
