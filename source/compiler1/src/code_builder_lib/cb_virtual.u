@@ -421,12 +421,20 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, type_id_table_type, name_mangled_null_terminated.front() );
 		LLVMSetInitializer( global_value, initializer );
 		LLVMSetGlobalConstant( global_value, LLVMBool::True );
-		LLVMSetLinkage( global_value, LLVMLinkage::External );
 
-		// Create comdat in order to ensure uniquiness of the table across different modules, that import file with declaration of this class.
-		var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front() );
-		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
-		LLVMSetComdat( global_value, comdat );
+		if( target_triple_str_.starts_with( "arm64-apple" ) /* TODO - detect Mach-O properly */ )
+		{
+			LLVMSetLinkage( global_value, LLVMLinkage::LinkOnceODR );
+		}
+		else
+		{
+			LLVMSetLinkage( global_value, LLVMLinkage::External );
+
+			// Create comdat in order to ensure uniquiness of the table across different modules, that import file with declaration of this class.
+			var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front() );
+			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+			LLVMSetComdat( global_value, comdat );
+		}
 
 		// Make type id table hidden in order to avoid exporting it.
 		LLVMSetVisibility( global_value, LLVMVisibility::Hidden );
