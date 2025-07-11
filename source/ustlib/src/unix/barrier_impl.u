@@ -12,22 +12,48 @@ static_assert( typeinfo</barrier_t/>.align_of >= typeinfo</pthread_barrier_t/>.a
 
 fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe
 {
-	unsafe
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
-		var $(pthread_barrierattr_t) attr= zero_init;
-		var i32 res= ::pthread_barrier_init( cast_ref_unsafe</ pthread_barrier_t />( b ), attr, num_threads );
-		halt if( res != 0 );
+		// TODO - implement barriers for MacOS using other synchronization primitive, it has no native barriers support.
+		ignore_unused( b );
+		ignore_unused( num_threads );
+		halt;
+	}
+	else
+	{
+		unsafe
+		{
+			var $(pthread_barrierattr_t) attr= zero_init;
+			var i32 res= ::pthread_barrier_init( cast_ref_unsafe</ pthread_barrier_t />( b ), attr, num_threads );
+			halt if( res != 0 );
+		}
 	}
 }
 
 fn destroy_barrier( barrier_t &mut b ) unsafe
 {
-	unsafe( ::pthread_barrier_destroy( cast_ref_unsafe</ pthread_barrier_t />( b ) ) );
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
+	{
+		ignore_unused( b );
+		halt;
+	}
+	else
+	{
+		unsafe( ::pthread_barrier_destroy( cast_ref_unsafe</ pthread_barrier_t />( b ) ) );
+	}
 }
 
 fn wait_barrier( barrier_t &mut b ) unsafe
 {
-	unsafe( ::pthread_barrier_wait( cast_ref_unsafe</ pthread_barrier_t />( b ) ) );
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
+	{
+		ignore_unused( b );
+		halt;
+	}
+	else
+	{
+		unsafe( ::pthread_barrier_wait( cast_ref_unsafe</ pthread_barrier_t />( b ) ) );
+	}
 }
 
 } // namespace barrier_impl
