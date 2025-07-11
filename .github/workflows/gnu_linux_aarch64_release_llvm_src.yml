@@ -1,6 +1,6 @@
 name: GNU/Linux AArch64 release LLVM src
 
-on: [push]
+on: [workflow_dispatch]
 
 jobs:
   gnu_linux_aarch64_release_llvm_src:
