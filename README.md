@@ -17,9 +17,10 @@ The table below lists supported operating systems and architectures for Ü compi
 | Windows          | x86          |  ✅                 | ✅         |
 | Windows          | x86_64       |  ✅                 | ✅         |
 | GNU/Linux        | x86_64       |  ✅                 | ✅         |
+| GNU/Linux        | AArch64      |  ✅                 | ✅         |
 | FreeBSD          | x86_64       |  ✅                 | ✅         |
 
-CPU architectures besides x86 and x86_64 aren't tested, but they may work if Ü compiler is built with these architecture support (see *LLVM_TARGETS_TO_BUILD* option).
+CPU architectures besides x86, x86_64 and AArch64 aren't tested, but they may work if Ü compiler is built with these architecture support (see *LLVM_TARGETS_TO_BUILD* option).
 32-bit GNU/Linux versions (including x32 ABI) aren't supported yet (necessary standard library fixes aren't implemented).
 
 
