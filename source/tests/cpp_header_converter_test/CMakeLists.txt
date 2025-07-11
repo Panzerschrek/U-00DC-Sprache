@@ -77,13 +77,19 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 		# A test for convertion of <unistd.h> and its usage for a simple program.
 		#
 
+		set( CPP_HEADER_CONVERTER_SYSROOT_OPTION "" )
+		if( NOT ${CMAKE_OSX_SYSROOT} STREQUAL "" )
+			message( STATUS "Detected OSX sysroot ${CMAKE_OSX_SYSROOT}, use it for CppHeaderConverter test." )
+			set( CPP_HEADER_CONVERTER_SYSROOT_OPTION "--sysroot ${CMAKE_OSX_SYSROOT}" )
+		endif()
+
 		add_custom_command(
 			OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.u
 			DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers.h CppHeaderConverter
 			COMMAND
 				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.u
 				${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers.h --
-				-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER}
+				-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER} ${CPP_HEADER_CONVERTER_SYSROOT_OPTION}
 				)
 
 		add_custom_command(
