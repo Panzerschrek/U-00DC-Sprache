@@ -66,22 +66,21 @@ struct stat_x86_64 ordered
 struct stat_aarch_64 ordered
 {
 	ü__dev_t st_dev;
-	u16 ü__pad1;
 	ü__ino_t st_ino;
 	ü__mode_t st_mode;
 	ü__nlink_t st_nlink;
 	ü__uid_t st_uid;
 	ü__gid_t st_gid;
 	ü__dev_t st_rdev;
-	u16 ü__pad2;
+	ü__dev_t ü__pad1;
 	ü__off_t st_size;
 	ü__blksize_t st_blksize;
+	i32 ü__pad2;
 	ü__blkcnt_t st_blocks;
 	timespec st_atim;
 	timespec st_mtim;
 	timespec st_ctim;
-	u64 ü__glibc_reserved4;
-	u64 ü__glibc_reserved5;
+	[ i32, 2u ] ü__glibc_reserved;
 }
 
 type stat_= ust::type_select</ c_arch_is_aarch64, stat_aarch_64, stat_x86_64 />;
@@ -110,7 +109,7 @@ type off_t = ü__off_t;
 type size_t = size_type;
 type ssize_t = ü__ssize_t;
 type ü__blkcnt_t = i64;
-type ü__blksize_t = i64;
+type ü__blksize_t = ust::type_select</ c_arch_is_aarch64, i32, i64 />;
 type ü__clockid_t = i32;
 type ü__dev_t = u64;
 type ü__gid_t = u32;
@@ -119,7 +118,7 @@ type ü__mode_t = u32;
 type ü__nlink_t = ust::type_select</ c_arch_is_aarch64, u32, u64 />;
 type ü__off64_t = i64;
 type ü__off_t = i64;
-type ü__ssize_t = ust::type_select</ c_arch_is_aarch64, i32, ssize_type />;
+type ü__ssize_t = ssize_type;
 type ü__syscall_slong_t = i64;
 type ü__time_t = i64;
 type ü__uid_t = u32;
