@@ -1004,10 +1004,21 @@ fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) uns
 
 fn flush_impl( native_file_handle handle ) unsafe : filesystem_result</void/>
 {
-	var i32 res= unsafe( ::fdatasync( handle ) );
-	if( res != 0 )
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
-		return translate_errno( get_errno() );
+		var i32 res= unsafe( ::fcntl( handle , F_FULLFSYNC ) );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+	}
+	else
+	{
+		var i32 res= unsafe( ::fdatasync( handle ) );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
 	}
 	return void();
 }
@@ -1034,9 +1045,9 @@ fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : filesystem_re
 
 fn seek_impl( native_file_handle handle, u64 offset ) unsafe : filesystem_result</void/>
 {
-	var off_t seek_res= unsafe( ::lseek( handle, ü__off64_t(offset), SEEK_SET ) );
+	var off_t seek_res= unsafe( ::lseek( handle, off_t(offset), SEEK_SET ) );
 
-	if( seek_res < ü__off64_t(-1) )
+	if( seek_res < off_t(-1) )
 	{
 		return translate_errno( get_errno() );
 	}
