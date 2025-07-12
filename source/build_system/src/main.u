@@ -1733,7 +1733,10 @@ fn AddGCSectionsCompilerFlags( TargetTriple& target_triple, ust::vector</ust::st
 	compiler_flags.push_back( "--data-sections" );
 	if( target_triple.operating_system != g_os_windows || target_triple.environment == g_environment_gnu )
 	{
-		compiler_flags.push_back( "-Wl,--gc-sections" );
+		if( target_triple.vendor != "apple" )
+		{
+			compiler_flags.push_back( "-Wl,--gc-sections" );
+		}
 	}
 }
 
