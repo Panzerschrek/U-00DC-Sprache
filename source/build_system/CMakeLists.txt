@@ -77,6 +77,7 @@ if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 		DEPENDS ${BUILD_SYSTEM_FOR_BUILD}
 		COMMAND
 			${BUILD_SYSTEM_FOR_BUILD} build
+			-v
 			--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
 			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/imports/
