@@ -40,6 +40,17 @@ bool RunLinker(
 				remove_unreferenced_symbols,
 				debug );
 	}
+	else if( triple.getOS() == llvm::Triple::MacOSX )
+		return RunLinkerMachO(
+			argv0,
+			additional_args,
+			sysroot,
+			triple,
+			input_temp_file_path,
+			output_file_path,
+			produce_shared_library,
+			remove_unreferenced_symbols,
+			debug );
 	else if( triple.getOS() == llvm::Triple::FreeBSD )
 		return RunLinkerELFFreeBSD(
 			argv0,
