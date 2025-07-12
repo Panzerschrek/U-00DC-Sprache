@@ -18,7 +18,7 @@ if( U_BUILD_COMPILER )
 		target_include_directories( CompilersCommonLib PRIVATE ${CMAKE_BINARY_DIR}/llvm/tools/lld/include )
 
 		# TODO - use other linkers.
-		target_link_libraries( CompilersCommonLib lldCOFF lldELF lldMinGW )
+		target_link_libraries( CompilersCommonLib lldCOFF lldELF lldMachO lldMinGW )
 	endif()
 
 else()
