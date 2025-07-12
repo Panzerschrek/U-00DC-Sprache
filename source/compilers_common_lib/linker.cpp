@@ -40,7 +40,7 @@ bool RunLinker(
 				remove_unreferenced_symbols,
 				debug );
 	}
-	else if( triple.getOS() == llvm::Triple::MacOSX )
+	else if( triple.getOS() == llvm::Triple::Darwin || triple.getOS() == llvm::Triple::MacOSX )
 		return RunLinkerMachO(
 			argv0,
 			additional_args,
