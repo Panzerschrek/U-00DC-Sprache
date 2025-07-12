@@ -16,6 +16,20 @@ if( TARGET BuildSystem AND TARGET lldCommon AND ${NEXT_COMPILER_GENERATION} GREA
 		set( BUILD_SYSTEM_BUILD_CONFIGURATION "release" )
 	endif()
 
+	if( MINGW )
+		# We need to provide path to MinGW libraries for linking.
+		# Detect MinGW installation using g++ path.
+		get_filename_component( MINGW_BIN_DIR ${CMAKE_CXX_COMPILER} DIRECTORY )
+		set( MINGW_INSTALLATION_PATH ${MINGW_BIN_DIR}/../ )
+		set( SYSROOT_OPTION --sysroot \"${MINGW_INSTALLATION_PATH}\" --host-sysroot \"${MINGW_INSTALLATION_PATH}\" )
+	elseif( NOT ${CMAKE_OSX_SYSROOT} STREQUAL "" )
+		# Building for OS X may also require sysroot specifying.
+		message( STATUS "Detected OSX sysroot ${CMAKE_OSX_SYSROOT}, use it for Compiler${NEXT_COMPILER_GENERATION} building." )
+		set( SYSROOT_OPTION --sysroot \"${CMAKE_OSX_SYSROOT}\" --host-sysroot \"${CMAKE_OSX_SYSROOT}\" )
+	else()
+		set( SYSROOT_OPTION "" )
+	endif()
+
 	set( CODE_BUILDER_LIB_OBJECT_PATH ${BK_BUILD_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURATION}/CodeBuilderLib.o )
 	set( BUILD_SCRIPT_FILE ${CMAKE_CURRENT_SOURCE_DIR}/build.u )
 
@@ -34,6 +48,7 @@ if( TARGET BuildSystem AND TARGET lldCommon AND ${NEXT_COMPILER_GENERATION} GREA
 			--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 			--project-directory ${CMAKE_CURRENT_SOURCE_DIR}
 			--build-directory ${BK_BUILD_DIR}
+			${SYSROOT_OPTION}
 		USES_TERMINAL
 			)
 
