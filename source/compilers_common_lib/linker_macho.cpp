@@ -63,6 +63,12 @@ bool RunLinkerMachO(
 	args.push_back( argv0 );
 	args.push_back( input_temp_file_path.data() );
 
+	// TODO - allow to tune this.
+	args.push_back( "-platform_version" );
+	args.push_back( "macos" );
+	args.push_back( "15.0.0" ); // min_version
+	args.push_back( "15.0" ); // SDK version
+
 	const std::string arch_name= GetMachOArchName( triple );
 	args.push_back( "-arch" );
 	args.push_back( arch_name.data() );
