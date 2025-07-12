@@ -259,7 +259,11 @@ fn nomangle main() : i32
 		var MyVoidPtr p2= res0;
 		var void true_void_res= VoidPtrTypedefParamFunc(p2);
 
-		var MyVoid val2= $>(p2);
+		// This pointer is null, avoid actually reading it.
+		if( false )
+		{
+			var MyVoid val2= $>(p2);
+		}
 	}
 
 	// Should retrieve "nodiscard" for some types.
