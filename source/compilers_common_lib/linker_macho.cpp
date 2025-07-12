@@ -85,8 +85,9 @@ bool RunLinkerMachO(
 	args.push_back( "-o" );
 	args.push_back( output_file_path.data() );
 
-	if( !produce_shared_library )
-		args.push_back( "-lcrt0.o" );
+	// ustlib uses some libc and math library functions.
+	args.push_back( "-lc" );
+	args.push_back( "-lm" );
 
 	for( const std::string& arg : additional_args )
 		args.push_back( arg.data() );
