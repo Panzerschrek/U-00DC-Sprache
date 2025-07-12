@@ -34,17 +34,17 @@ int Function_RetVal()
 
 int* Function_RetPtr()
 {
-	return 0;
+	return nullptr;
 }
 
 const int* Function_RetConstPtr()
 {
-	return 0;
+	return nullptr;
 }
 
 float** Function_RetPtrToPtr()
 {
-	return 0;
+	return nullptr;
 }
 
 void Function_UnnamedArgs( int a, float b, double c )
