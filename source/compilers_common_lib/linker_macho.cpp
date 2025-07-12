@@ -13,6 +13,35 @@ LLD_HAS_DRIVER(macho)
 namespace U
 {
 
+namespace
+{
+
+std::string GetMachOArchName( const llvm::Triple& triple )
+{
+	switch( triple.getArch() )
+	{
+	case llvm::Triple::aarch64:
+		return triple.isArm64e() ? "arm64e" : "arm64";
+	case llvm::Triple::aarch64_32:
+		return "arm64_32";
+	case llvm::Triple::ppc:
+		return "ppc";
+	case llvm::Triple::ppcle:
+		return "ppcle";
+	case llvm::Triple::ppc64:
+		return "ppc64";
+	case llvm::Triple::ppc64le:
+		return "ppc64le";
+	case llvm::Triple::thumb:
+	case llvm::Triple::arm:
+		return "arm";
+	default:
+		return std::string( triple.getArchName() );
+	}
+}
+
+} // namespace
+
 bool RunLinkerMachO(
 	const char* argv0,
 	llvm::ArrayRef<std::string> additional_args,
@@ -24,7 +53,6 @@ bool RunLinkerMachO(
 	bool remove_unreferenced_symbols,
 	bool debug )
 {
-	(void)triple;
 	(void)remove_unreferenced_symbols;
 	(void)debug;
 
@@ -34,6 +62,10 @@ bool RunLinkerMachO(
 	llvm::SmallVector<const char*, 32> args;
 	args.push_back( argv0 );
 	args.push_back( input_temp_file_path.data() );
+
+	const std::string arch_name= GetMachOArchName( triple );
+	args.push_back( "-arch" );
+	args.push_back( arch_name.data() );
 
 	if( produce_shared_library )
 		args.push_back( "-dylib" );
