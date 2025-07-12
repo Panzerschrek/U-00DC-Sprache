@@ -55,6 +55,20 @@ if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 		endif()
 	endif()
 
+	if( MINGW )
+		# We need to provide path to MinGW libraries for linking.
+		# Detect MinGW installation using g++ path.
+		get_filename_component( MINGW_BIN_DIR ${CMAKE_CXX_COMPILER} DIRECTORY )
+		set( MINGW_INSTALLATION_PATH ${MINGW_BIN_DIR}/../ )
+		set( SYSROOT_OPTION --sysroot \"${MINGW_INSTALLATION_PATH}\" --host-sysroot \"${MINGW_INSTALLATION_PATH}\" )
+	elseif( NOT ${CMAKE_OSX_SYSROOT} STREQUAL "" )
+		# Building for OS X may also require sysroot specifying.
+		message( STATUS "Detected OSX sysroot ${CMAKE_OSX_SYSROOT}, use it for BuildSystem building." )
+		set( SYSROOT_OPTION --sysroot \"${CMAKE_OSX_SYSROOT}\" --host-sysroot \"${CMAKE_OSX_SYSROOT}\" )
+	else()
+		set( SYSROOT_OPTION "" )
+	endif()
+
 	add_custom_command(
 		OUTPUT ${BUILD_SYSTEM_EXECUTABLE_FILE}
 		DEPENDS ${BUILD_SYSTEM_HEADERS} ${BUILD_SYSTEM_SOURCES}
@@ -70,6 +84,7 @@ if( TARGET lldCommon AND "${CURRENT_COMPILER_GENERATION}" GREATER_EQUAL 1 )
 			--project-directory ${CMAKE_CURRENT_SOURCE_DIR}
 			--build-directory ${BK_BUILD_DIR}
 			--configuration-options ${CONFIGURATION_OPTIONS_FILE}
+			${SYSROOT_OPTION}
 		USES_TERMINAL
 			)
 
