@@ -1293,11 +1293,14 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 
 			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 
-			llvm::APInt int_val( 64u, 0u );
-			numeric_literal_parser.GetIntegerValue( int_val );
-			numeric_constant.num.value_int= int_val.getLimitedValue();
-
-			if( numeric_literal_parser.getRadix() == 10 )
+			if( numeric_literal_parser.isIntegerLiteral() || numeric_literal_parser.getRadix() != 10 )
+			{
+				llvm::APInt int_val( 64u, 0u );
+				numeric_literal_parser.GetIntegerValue( int_val );
+				numeric_constant.num.value_int= int_val.getLimitedValue();
+				numeric_constant.num.value_double= static_cast<double>(numeric_constant.num.value_int);
+			}
+			else
 			{
 				llvm::APFloat float_val(0.0);
 				numeric_literal_parser.GetFloatValue( float_val );
@@ -1306,9 +1309,8 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 				if( float_val.isInfinity() )
 					float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
 				numeric_constant.num.value_double= float_val.convertToDouble();
+				numeric_constant.num.value_int= uint64_t( numeric_constant.num.value_double );
 			}
-			else
-				numeric_constant.num.value_double= static_cast<double>(numeric_constant.num.value_int);
 
 			if( numeric_literal_parser.isFloat )
 				numeric_constant.num.type_suffix[0]= 'f';
