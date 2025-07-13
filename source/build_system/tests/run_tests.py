@@ -100,6 +100,12 @@ def RunSingleProgramCompilationTest( test_name_base ):
 		"--build-directory", g_tests_build_root_path,
 		]
 
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
 	# Run the build.
 	subprocess.check_call( build_system_args )
 
@@ -160,6 +166,8 @@ def ConfigurationOptions0Test():
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
 		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
 
 	# Run the build.
 	subprocess.check_call( build_system_args )
@@ -175,6 +183,12 @@ def ConfigurationOptions1Test():
 	options_file_path = os.path.join( project_root, "non_existing_file.json" )
 	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
 
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
 	call_res= subprocess.run( build_system_args, stderr=subprocess.PIPE )
 	stderr= str(call_res.stderr)
 	assert( stderr.find( "Failed to load configuration options file" ) != -1 )
@@ -186,6 +200,12 @@ def ConfigurationOptions2Test():
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory )
 	options_file_path = os.path.join( project_root, "options.json" )
 	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
+
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
 
 	call_res= subprocess.run( build_system_args, stderr=subprocess.PIPE )
 	stderr= str(call_res.stderr)
@@ -705,6 +725,12 @@ def SingleFileProgram2Test():
 		"--build-directory", g_tests_build_root_path,
 		]
 
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
 	subprocess.check_call( build_system_args )
 	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_name_base ) ], stdout= subprocess.DEVNULL )
 
@@ -734,6 +760,12 @@ def CustomHaltModeTest():
 		"--halt-mode", "unreachable"
 		]
 
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
 	subprocess.check_call( build_system_args )
 	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_name_base ) ], stdout= subprocess.DEVNULL )
 
@@ -759,6 +791,12 @@ def TargetCPUOptionTest():
 		"--target-cpu", "skylake"
 		]
 
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
 	subprocess.check_call( build_system_args )
 	subprocess.check_call( [ os.path.join( build_root, "release", "target_cpu_option_test" ) ], stdout= subprocess.DEVNULL )
 
@@ -783,6 +821,12 @@ def ReleaseOptimizationLevelOptionTest():
 		"--build-directory", build_root,
 		"--release-optimization-level", "O3",
 		]
+
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
 
 	subprocess.check_call( build_system_args )
 	subprocess.check_call( [ os.path.join( build_root, "release", "release_optimization_level_option_test" ) ] )
