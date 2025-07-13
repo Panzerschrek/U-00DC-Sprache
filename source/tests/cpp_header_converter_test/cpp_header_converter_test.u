@@ -33,6 +33,9 @@ fn nomangle main() : i32
 	var f64 f64_constants= TWO_CONSTANT_DOUBLE;
 	static_assert( TWO_CONSTANT_DOUBLE == 2.0 );
 
+	var f64 e_ratio= M_E / 2.7182818284590452354;
+	static_assert( e_ratio > 0.999999 && e_ratio < 1.000001 );
+
 	var f64 small_f64= SMALL_CONSTANT, large_f64= LARGE_CONSTANT;
 
 	static_assert( LARGE_INTEGER_CONSTANT == 153124586353854499i64 );
