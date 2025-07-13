@@ -1199,7 +1199,14 @@ fn CreatePackageTargetBuildGraphNodes(
 		else
 		{
 			// Specify soname, in order to load libraries using only name and not the full path to the library provided to the linker.
-			node.command_line.push_back( ust::concat( "-Wl,-soname,", target_name.name, ".so" ) );
+			if( target_triple.vendor == "apple" )
+			{
+				node.command_line.push_back( ust::concat( "-Wl,-dylib_install_name,", target_name.name, ".so" ) );
+			}
+			else
+			{
+				node.command_line.push_back( ust::concat( "-Wl,-soname,", target_name.name, ".so" ) );
+			}
 		}
 	}
 
