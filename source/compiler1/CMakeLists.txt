@@ -41,7 +41,6 @@ if( TARGET BuildSystem AND TARGET lldCommon AND ${NEXT_COMPILER_GENERATION} GREA
 		DEPENDS BuildSystem
 		COMMAND
 			BuildSystem build
-			-v
 			--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
 			--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
 			--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/../build_system/imports/
