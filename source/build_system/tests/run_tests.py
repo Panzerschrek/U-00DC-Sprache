@@ -486,6 +486,12 @@ def ExternalLibraryLinking1Test():
 	test_dir = "external_library_linking1"
 	RunBuildSystem( test_dir )
 
+	# For now disable this test on MacOS.
+	# External library built with CMake has "@rpath/" prefix and we can't load it in runtime, since the executable of this test is located not in the same directory as this external library.
+	if platform.system() == "Darwin":
+		print( "Disable \"external_library_linking1\" test on MacOS" )
+		return
+
 	external_shared_lib_dir = os.path.normpath( g_tests_build_root_path + "/.." )
 	# Slightly hacky way to find necessary shared library upon launch - set LD_LIBRARY_PATH.
 	env_tweaked = os.environ
