@@ -321,6 +321,8 @@ def SharedLibraryTargetTest():
 	library_file_path= os.path.join( g_tests_build_root_path, "shared_library_target", "release", "shared_library_target" )
 	if platform.system() == "Windows":
 		library_file_path+= ".dll"
+	else if platform.system() == "Darwin":
+		library_file_path+= ".dylib"
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
@@ -366,6 +368,8 @@ def PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest():
 	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
 	if platform.system() == "Windows":
 		library_file_path+= ".dll"
+	else if platform.system() == "Darwin":
+		library_file_path+= ".dylib"
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
@@ -391,6 +395,8 @@ def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
 	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
 	if platform.system() == "Windows":
 		library_file_path+= ".dll"
+	else if platform.system() == "Darwin":
+		library_file_path+= ".dylib"
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
@@ -417,6 +423,8 @@ def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
 		# This is necessary since Windows dll's have no "rpath=$ORIGIN".
 		b_library= ctypes.CDLL( os.path.join( g_tests_build_root_path, test_dir, "release", "b.dll" ) )
 		library_file_path+= ".dll"
+	else if platform.system() == "Darwin":
+		library_file_path+= ".dylib"
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )

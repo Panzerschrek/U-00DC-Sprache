@@ -789,7 +789,15 @@ fn CheckRebuildIsNeededBasedOnDepFile( Logger &mut logger, ust::filesystem_path_
 
 fn GetNativeSharedLibraryExtension() : ust::string_view8
 {
-	return( ust::string_view8( compiler::target::os ) == g_os_windows ? ust::string_view8("dll") : ust::string_view8("so") );
+	if( ust::string_view8( compiler::target::os ) == g_os_windows )
+	{
+		return "dll";
+	}
+	if( ust::string_view8( compiler::target::vendor ) == "apple" )
+	{
+		return "dylib";
+	}
+	return "so";
 }
 
 fn GetDependencyFilePath( ust::filesystem_path_view path ) : ust::filesystem_path
@@ -1152,6 +1160,10 @@ fn CreatePackageTargetBuildGraphNodes(
 			{
 				result_target_file_path+= ".dll";
 			}
+			else if( target_triple.vendor == "apple" )
+			{
+				result_target_file_path+= ".dylib";
+			}
 			else
 			{
 				result_target_file_path+= ".so";
@@ -1201,7 +1213,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			// Specify soname, in order to load libraries using only name and not the full path to the library provided to the linker.
 			if( target_triple.vendor == "apple" )
 			{
-				node.command_line.push_back( ust::concat( "-Wl,-dylib_install_name,", target_name.name, ".so" ) );
+				node.command_line.push_back( ust::concat( "-Wl,-dylib_install_name,", target_name.name, ".dylib" ) );
 			}
 			else
 			{
@@ -1334,6 +1346,13 @@ fn CreatePackageTargetBuildGraphNodes(
 					var ust::filesystem_path mut lib_file= ust::path::normalize( file_to_link + ".lib" );
 					node.command_line.push_back( "-Wl," + lib_file );
 					node.input_files.push_back( move(lib_file) );
+				}
+				else if( target_triple.vendor == "apple" )
+				{
+					// Darwin shared libraries are specified directly.
+					var ust::filesystem_path mut dylib_file= ust::path::normalize( file_to_link + ".dylib" );
+					node.command_line.push_back( "-Wl," + dylib_file );
+					node.input_files.push_back( move(dylib_file) );
 				}
 				else
 				{
