@@ -233,7 +233,7 @@ if( U_BUILD_BUILD_SYSTEM_TESTS AND TARGET lldCommon )
 	elseif( NOT ${CMAKE_OSX_SYSROOT} STREQUAL "" )
 		# Building for OS X may also require sysroot specifying.
 		message( STATUS "Detected OSX sysroot ${CMAKE_OSX_SYSROOT}, use it for BuildSystem tests." )
-		set( SYSROOT_OPTION --sysroot \"${CMAKE_OSX_SYSROOT}\"" )
+		set( SYSROOT_OPTION --sysroot \"${CMAKE_OSX_SYSROOT}\" )
 	else()
 		set( SYSROOT_OPTION "" )
 	endif()
