@@ -23,6 +23,7 @@ class ParseResult:
 g_compiler_executable= "Compiler"
 g_use_position_independent_code= False
 g_additional_libraries_to_link= []
+g_sysroot = None
 
 
 def LoadFile( file_name ):
@@ -176,6 +177,10 @@ def DoSuccessTest( file_path ):
 	for library in g_additional_libraries_to_link:
 		compiler_args.append( "-Wl," + library )
 
+	if g_sysroot is not None:
+		compiler_args.append( "--sysroot" )
+		compiler_args.append( g_sysroot )
+
 	if subprocess.call( compiler_args ) != 0:
 		print( "Compilation failed" )
 		return 1
@@ -263,6 +268,7 @@ def main():
 	parser.add_argument( "--compiler-executable", help= "path to compiler executable", type=str )
 	parser.add_argument( "--use-position-independent-code", help= "use or not position independent code", action="store_true" )
 	parser.add_argument( "--add-library", help= "specify an additional library for linking", action= "append" )
+	parser.add_argument( "--sysroot", help= "provide sysroot for the compiler", type=str, default= None )
 
 	args= parser.parse_args()
 
@@ -278,6 +284,9 @@ def main():
 		global g_additional_libraries_to_link
 		for library in args.add_library:
 			g_additional_libraries_to_link.append( library )
+
+	global g_sysroot
+	g_sysroot= args.sysroot
 
 	if args.input_file is not None:
 		return RunTestForFile( args.input_file )
