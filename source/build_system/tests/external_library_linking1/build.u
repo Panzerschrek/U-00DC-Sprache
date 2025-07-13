@@ -18,6 +18,10 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 			library_name = ust::concat( "libBuildSystemTestsSharedLibrary", libs_postfix, ".dll.a" ); // Interface static library for shared library - MinGW version.
 		}
 	}
+	else if( target_triple.vendor == "apple" )
+	{
+		library_name = ust::concat( "libBuildSystemTestsSharedLibrary", libs_postfix, ".dylib" );
+	}
 	else
 	{
 		library_name = ust::concat( "libBuildSystemTestsSharedLibrary", libs_postfix, ".so" );
