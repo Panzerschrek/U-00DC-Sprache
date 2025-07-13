@@ -452,7 +452,7 @@ def SharedLibraryUsedInTwoExecutablesTest():
 
 def ObjectFileTargetTest():
 	RunBuildSystem( "object_file_target" )
-	if platform.system() == "Linux" or platform.system() == "FreeBSD":
+	if platform.system() == "Linux" or platform.system() == "FreeBSD" or platform.system() == "Darwin":
 		# Run "nm" and check output - which symbols are present in result object file.
 		object_file_path= os.path.join( g_tests_build_root_path, "object_file_target", "release", "object_file_target.o" )
 		nm_res= subprocess.run( [ "nm", object_file_path ], stdout=subprocess.PIPE )
@@ -480,7 +480,7 @@ def ExternalLibraryLinking1Test():
 	external_shared_lib_dir = os.path.normpath( g_tests_build_root_path + "/.." )
 	# Slightly hacky way to find necessary shared library upon launch - set LD_LIBRARY_PATH.
 	env_tweaked = os.environ
-	if platform.system() == "Linux" or platform.system() == "FreeBSD":
+	if platform.system() == "Linux" or platform.system() == "FreeBSD" or platform.system() == "Darwin":
 		env_tweaked["LD_LIBRARY_PATH"]= external_shared_lib_dir
 	# Set also current directory - Windows searches for dll's in current directory.
 	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_dir, "release", "exe" ) ], env= env_tweaked, cwd = external_shared_lib_dir )
