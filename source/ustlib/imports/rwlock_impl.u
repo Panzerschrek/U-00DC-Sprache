@@ -14,8 +14,9 @@ namespace rwlock_impl
 type rwlock=
 	type_select</
 		constexpr_string_equals( compiler::target::os, "windows" ),
-		$(byte8),
-		[ byte64, 8 ] />;
+		$(byte8), // RTL_SRWLOCK
+		[ byte64, ( constexpr_string_equals( compiler::target::vendor, "apple" ) ? 25 : 8 ) ] // pthread_rwlock_t
+	/>;
 
 // Init lock at given address. Halts on fail.
 fn rwlock_init( rwlock &mut l ) unsafe;
