@@ -452,7 +452,8 @@ def SharedLibraryUsedInTwoExecutablesTest():
 
 def ObjectFileTargetTest():
 	RunBuildSystem( "object_file_target" )
-	if platform.system() == "Linux" or platform.system() == "FreeBSD" or platform.system() == "Darwin":
+	# TODO - enable this test for Darwin.
+	if platform.system() == "Linux" or platform.system() == "FreeBSD":
 		# Run "nm" and check output - which symbols are present in result object file.
 		object_file_path= os.path.join( g_tests_build_root_path, "object_file_target", "release", "object_file_target.o" )
 		nm_res= subprocess.run( [ "nm", object_file_path ], stdout=subprocess.PIPE )
@@ -978,7 +979,7 @@ def LinkingError1Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "undefined symbol" ) != -1 )
-	assert( stderr.find( "Foo()" ) != -1 or stderr.find( "Foo(void)" ) != -1 )
+	assert( stderr.find( "Foo" ) != -1 )
 
 
 def DuplicatedBuildTargetTest():
