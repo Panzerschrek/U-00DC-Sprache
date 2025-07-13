@@ -33,7 +33,8 @@ cmake ../source/ -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_MODULE_PATH=$PWD/..
 \
 # Run build
 cmake --build .  -- -k 128
-
+#
+echo "Finished the build, proceed further"
 # Run ustlib tests
 cd .. &&\
 python3 source/annotated_tests_run.py --compiler-executable build_dir/compiler0/Compiler  --add-library=build_dir/ustlib0/libustlib.a  --add-library=-lpthread --use-position-independent-code --input-dir source/ustlib/tests &&\
