@@ -3,12 +3,12 @@ name: VisualStudioExtension
 on: [workflow_dispatch]
 
 jobs:
-  build_windows:
+  visual_studio_extension_windows_x86_64:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v1
     - name: build Visual Studio extension
-      run: ./ci/build_visual_studio_extension.bat
+      run: ./ci/build_visual_studio_extension_windows_x86_64.bat
     - uses: actions/upload-artifact@v4
       with:
         name: VisualStudioExtension
