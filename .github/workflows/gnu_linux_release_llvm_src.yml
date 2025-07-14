@@ -3,11 +3,11 @@ name: GNU/Linux release LLVM src
 on: [workflow_dispatch]
 
 jobs:
-  build_release_llvm_bin:
+  gnu_linux_x86_64_release_llvm_src:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v1
     - name: build project
       run: |
         sudo apt-get update && sudo apt-get install ninja-build python3-sphinx sphinx-doc sphinx-common python3-stemmer
-        ./ci/build_release_llvm_src.sh
+        ./ci/build_gnu_linux_x86_64_release_llvm_src.sh
