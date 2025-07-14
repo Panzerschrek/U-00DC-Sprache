@@ -3,12 +3,12 @@ name: WindowsBuild
 on: [workflow_dispatch]
 
 jobs:
-  build_windows:
+  windows_x86_64_release_llvm_src:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v1
     - name: build project
-      run: ./ci/build_release_windows.ps1
+      run: ./ci/build_windows_x86_64_release_llvm_src.ps1
     - uses: actions/upload-artifact@v4
       with:
         name: compiler_windows
