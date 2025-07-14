@@ -4,9 +4,6 @@ import "../../imports/path_utils.u"
 import "../../imports/scoped_array.u"
 import "unix.uh"
 
-import "../../imports/string_conversions.u"
-import "../../imports/stdout.u"
-
 namespace ust
 {
 
@@ -838,7 +835,6 @@ fn open_file_impl( filesystem_path_view path, open_options& options ) unsafe : f
 	var i32 handle= unsafe( ::open( path_nt.data(), open_flags, mode_t(file_mode) ) );
 	if( handle == -1 )
 	{
-		stdout_print( concat( "open_file_impl got unexpected result ", to_string8(handle), " for file \"", path, "\", code is ", to_string8(get_errno()), "\n" ) );
 		return translate_errno( get_errno() );
 	}
 
@@ -933,7 +929,6 @@ fn read_impl( native_file_handle handle, array_view_mut</byte8/> buf ) unsafe : 
 
 	if( read_res < ssize_type(0) )
 	{
-		stdout_print( concat( "read_impl got unexpected result ", to_string8(read_res), " for buf of size ", to_string8(buf.size()), ", code is ", to_string8(get_errno()), "\n" ) );
 		return translate_errno( get_errno() );
 	}
 
@@ -951,7 +946,6 @@ fn read_exact_impl( native_file_handle handle, array_view_mut</byte8/> buf ) uns
 			{
 				if( bytes_read == 0s )
 				{
-					stdout_print( concat( "read_exact_impl got unexpected result ", to_string8(bytes_read), " for buf of size ", to_string8(buf.size()), ", code is ", to_string8(get_errno()), "\n" ) );
 					return io_error::unexpected_end_of_file;
 				}
 				offset+= bytes_read;
@@ -976,7 +970,6 @@ fn write_impl( native_file_handle handle, array_view_imut</byte8/> buf ) unsafe 
 
 	if( write_res < ssize_type(0) )
 	{
-		stdout_print( concat( "write_impl got unexpected result ", to_string8(write_res), " for buf of size ", to_string8(buf.size()), ", code is ", to_string8(get_errno()), "\n" ) );
 		return translate_errno( get_errno() );
 	}
 
