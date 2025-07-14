@@ -28,6 +28,8 @@
 #endif
 // #include <threads.h> // C11, but unsupported by GCC.
 #include <time.h>
-#include <uchar.h>
+#ifndef __APPLE__
+	#include <uchar.h> // Missing on Darwin.
+#endif
 #include <wchar.h>
 #include <wctype.h>
