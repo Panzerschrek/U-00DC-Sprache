@@ -10,7 +10,10 @@ if( MINGW )
 	# Detect MinGW installation using g++ path.
 	get_filename_component( MINGW_BIN_DIR ${CMAKE_CXX_COMPILER} DIRECTORY )
 	set( MINGW_INSTALLATION_PATH ${MINGW_BIN_DIR}/../ )
-	set( SYSROOT_OPTION "--sysroot \"${MINGW_INSTALLATION_PATH}\"" )
+	set( SYSROOT_OPTION --sysroot \"${MINGW_INSTALLATION_PATH}\" )
+elseif( NOT ${CMAKE_OSX_SYSROOT} STREQUAL "" )
+	# Building for OS X may also require sysroot specifying.
+	set( SYSROOT_OPTION --sysroot \"${CMAKE_OSX_SYSROOT}\" )
 else()
 	set( SYSROOT_OPTION "" )
 endif()

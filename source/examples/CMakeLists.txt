@@ -6,6 +6,19 @@ if( TARGET BuildSystem AND TARGET lldCommon )
 		set( BUILD_SYSTEM_BUILD_CONFIGURATION "release" )
 	endif()
 
+	if( MINGW )
+		# We need to provide path to MinGW libraries for linking.
+		# Detect MinGW installation using g++ path.
+		get_filename_component( MINGW_BIN_DIR ${CMAKE_CXX_COMPILER} DIRECTORY )
+		set( MINGW_INSTALLATION_PATH ${MINGW_BIN_DIR}/../ )
+		set( SYSROOT_OPTION --sysroot \"${MINGW_INSTALLATION_PATH}\" --host-sysroot \"${MINGW_INSTALLATION_PATH}\" )
+	elseif( NOT ${CMAKE_OSX_SYSROOT} STREQUAL "" )
+		# Building for OS X may also require sysroot specifying.
+		set( SYSROOT_OPTION --sysroot \"${CMAKE_OSX_SYSROOT}\" --host-sysroot \"${CMAKE_OSX_SYSROOT}\" )
+	else()
+		set( SYSROOT_OPTION "" )
+	endif()
+
 	file( GLOB EXAMPLES_SOURCES "*.u" )
 
 	foreach( EXAMPLE_SOURCE ${EXAMPLES_SOURCES} )
@@ -33,6 +46,7 @@ if( TARGET BuildSystem AND TARGET lldCommon )
 				--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
 				--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 				--build-directory ${CMAKE_CURRENT_BINARY_DIR}
+				${SYSROOT_OPTION}
 				)
 
 		add_custom_target(

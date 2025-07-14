@@ -188,13 +188,20 @@ else()
 
 	# Avoid undefined symbols in shared libraries.
 	# But disable this option for FreeBSD, since it fails to build our shared libraries due to undefined "environ" variable.
-	if( NOT ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" )
+	if( APPLE )
+		string( APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,-undefined,error" )
+	elseif( NOT ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" )
 		string( APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--no-undefined" )
 	endif()
 
 	# Clear garbage.
-	string( APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -s -Wl,--gc-sections" )
-	string( APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -s -Wl,--gc-sections" )
+	if( APPLE )
+		string( APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -Wl,-dead_strip" )
+		string( APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -Wl,-dead_strip" )
+	else()
+		string( APPEND CMAKE_EXE_LINKER_FLAGS_RELEASE " -s -Wl,--gc-sections" )
+		string( APPEND CMAKE_SHARED_LINKER_FLAGS_RELEASE " -s -Wl,--gc-sections" )
+	endif()
 
 endif()
 
@@ -219,7 +226,11 @@ add_subdirectory( tests/cpp_tests )
 # Hack! Force use static variables with initializers with tests registration
 set( CPP_TESTS_LIB_WRAPPED CppTestsLib )
 if( NOT MSVC )
-	set( CPP_TESTS_LIB_WRAPPED -Wl,--whole-archive ${CPP_TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
+	if( APPLE )
+		set( CPP_TESTS_LIB_WRAPPED -Wl,-force_load ${CPP_TESTS_LIB_WRAPPED} )
+	else()
+		set( CPP_TESTS_LIB_WRAPPED -Wl,--whole-archive ${CPP_TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
+	endif()
 endif()
 
 add_subdirectory( compiler0 )

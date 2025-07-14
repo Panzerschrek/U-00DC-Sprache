@@ -96,7 +96,7 @@ public:
 		}
 
 		// Require using "vfork" - it should be slightly faster.
-		var i16 spawn_flags(POSIX_SPAWN_USEVFORK);
+		var i16 spawn_flags( ( ust::constexpr_string_equals( compiler::target::vendor, "apple" ) ? 0 : POSIX_SPAWN_USEVFORK ) );
 		unsafe( ::posix_spawnattr_setflags( $<(spawn_attributes), spawn_flags ) );
 
 		var pid_t mut pid= zero_init;

@@ -1,6 +1,8 @@
 import "../../imports/memory.u"
 import "../../imports/alloc.u"
+import "../../imports/atomic.u"
 import "../../imports/semaphore_impl.u"
+import "../../imports/string_conversions.u"
 import "semaphore.uh"
 
 namespace ust
@@ -11,24 +13,54 @@ namespace semaphore_impl
 
 static_assert( same_type</ semaphore_handle_t, $(byte8) />, "Invalid type for semaphore handle!" );
 
+var bool is_darwin= constexpr_string_equals( compiler::target::vendor, "apple" );
+
+var u32 mut semaphore_unique_index= 1u;
+
 fn create_semaphore( u32 initial_value ) unsafe : semaphore_handle_t
 {
-	unsafe
+	static_if( is_darwin )
 	{
-		// We need stable address of the semaphore object, so, allocate it on heap.
-		var $(byte8) mem= memory_allocate( typeinfo</sem_t/>.size_of );
-		var i32 res= ::sem_init( byte_ptr_cast</sem_t/>( mem ), 0, initial_value );
-		halt if( res != 0 );
-		return mem;
+		// MacOS doesn't support unnamed semaphores, so, create named one.
+		// Use process ID and atomic variable to generate names - to ensure uniqueness.
+
+		var pid_t pid= unsafe( ::getpid() );
+		var u32 id= unsafe( atomic_inc( semaphore_unique_index ) );
+
+		var string8 mut name_nt= ust::concat( "/u_semaphore_", to_string8( pid ), "_", to_string8( id ), "\0" );
+
+		var $(sem_t) res= unsafe( ::sem_open( name_nt.data(), i32(O_CREAT | O_EXCL), mode_t(0o744), initial_value ) );
+		halt if( is_nullptr(res) );
+		return unsafe( ptr_cast_to_byte8( res ) );
+	}
+	else
+	{
+		ignore_unused( unsafe( semaphore_unique_index ) );
+
+		unsafe
+		{
+			// We need stable address of the semaphore object, so, allocate it on heap.
+			var $(byte8) mem= memory_allocate( typeinfo</sem_t/>.size_of );
+			var i32 res= ::sem_init( byte_ptr_cast</sem_t/>( mem ), 0, initial_value );
+			halt if( res != 0 );
+			return mem;
+		}
 	}
 }
 
 fn destroy_semaphore( semaphore_handle_t s ) unsafe
 {
-	unsafe
+	static_if( is_darwin )
 	{
-		::sem_destroy( byte_ptr_cast</sem_t/>( s ) );
-		memory_free( s );
+		unsafe( ::sem_close( byte_ptr_cast</sem_t/>(s) ) );
+	}
+	else
+	{
+		unsafe
+		{
+			::sem_destroy( byte_ptr_cast</sem_t/>( s ) );
+			memory_free( s );
+		}
 	}
 }
 

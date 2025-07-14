@@ -1,17 +1,18 @@
 // Header for pthread library functions, used in "ustlib".
+import "../../imports/type_traits.u"
 
 type pthread_t= size_type;
 
 // This structs have different size on diffrerent platforms. Use maximum size and maximum alignment.
 type pthread_attr_t  = [ byte64, 8 ];
-type pthread_mutexattr_t = [ byte32, 1 ];
-type pthread_mutex_t = [ byte64, 5 ];
-type pthread_rwlock_t= [ byte64, 8 ];
-type pthread_rwlockattr_t= [ byte64, 8 ];
+type pthread_mutexattr_t = [ byte64, ( c_pthread_is_darwin ? 2 : 1 ) ];
+type pthread_mutex_t = [ byte64, ( c_pthread_is_darwin ? 8 : 5 ) ];
+type pthread_rwlock_t= [ byte64, ( c_pthread_is_darwin ? 25 : 8 ) ];
+type pthread_rwlockattr_t= [ byte64, ( c_pthread_is_darwin ? 3 : 8 ) ];
 type pthread_barrier_t= [ byte64, 4 ];
 type pthread_barrierattr_t= [ byte32, 1 ];
 type pthread_cond_t= [ byte64, 6 ];
-type pthread_condattr_t= [ byte32, 1 ];
+type pthread_condattr_t= [ byte64, ( c_pthread_is_darwin ? 2 : 1 ) ];
 
 type pthread_start_function= fn( $(byte8) arg ) unsafe : $(byte8);
 
@@ -55,3 +56,5 @@ fn nomangle pthread_cond_broadcast( pthread_cond_t &mut cond ) unsafe : i32;
 fn nomangle pthread_cond_wait( pthread_cond_t &mut cond, pthread_mutex_t &mut mutex ) unsafe : i32;
 fn nomangle pthread_condattr_init( pthread_condattr_t &mut attr ) unsafe : i32;
 fn nomangle pthread_condattr_destroy( pthread_condattr_t &mut attr ) unsafe : i32;
+
+var bool c_pthread_is_darwin= ust::constexpr_string_equals( compiler::target::vendor, "apple" );

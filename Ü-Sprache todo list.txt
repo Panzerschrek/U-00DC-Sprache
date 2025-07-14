@@ -69,7 +69,6 @@ Standart library:
 	compilation of user programs using ustlib.
 *) Support types with references inside in some containers (variant, result, unordered_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
-*) Support more Unix-systems - 32-bit Linux, x32 ABI Linux, OS X, Hurd, etc.
 *) switch-like macro for variant
 *) Associative (ordered) containers - map, set, string_map
 *) More algorithms
@@ -251,3 +250,12 @@ Documentation:
 *) Describe more language details
 *) Documentation for interpreter
 *) Describe undefined behavior
+
+Targets:
+*) Support targeting Android
+*) Support targeting iOS
+*) Support targeting 32-bit GNU/Linux (including x32 ABI)
+*) Support older versions of OS X (prior to 15.0)
+*) Fix broken standard library functionality on OS X (semaphores, some file operations)
+*) Support hosting/targeting OS X on x86_64 CPUs
+*) Support hosting/targeting Windows on AArch64 CPUs

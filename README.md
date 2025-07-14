@@ -12,13 +12,14 @@ Also standard library sources and documentation sources are located in this repo
 
 The table below lists supported operating systems and architectures for Ü compiler hosting and targeting.
 
-| Operating system | Architecture | Hosting Ü compiler | Targeting |
-|------------------|--------------|--------------------|-----------|
-| Windows          | x86          |  ✅                 | ✅         |
-| Windows          | x86_64       |  ✅                 | ✅         |
-| GNU/Linux        | x86_64       |  ✅                 | ✅         |
-| GNU/Linux        | AArch64      |  ✅                 | ✅         |
-| FreeBSD          | x86_64       |  ✅                 | ✅         |
+| Operating system | Architecture | Hosting Ü compiler | Targeting | Notes                                                                              |
+|------------------|--------------|--------------------|-----------|------------------------------------------------------------------------------------|
+| Windows          | x86          |  ✅                 | ✅         | MSVC installation may be necessary.                                                |
+| Windows          | x86_64       |  ✅                 | ✅         | MSVC installation may be necessary. Supports also running Ü compiler built for x86.|
+| GNU/Linux        | x86_64       |  ✅                 | ✅         |                                                                                    |
+| GNU/Linux        | AArch64      |  ✅                 | ✅         |                                                                                    |
+| FreeBSD          | x86_64       |  ✅                 | ✅         |                                                                                    |
+| OS X             | AArch64      |  ✅                 | ✅         | Still experimental, some standard library functionality may not work properly.     |
 
 CPU architectures besides x86, x86_64 and AArch64 aren't tested, but they may work if Ü compiler is built with these architecture support (see *LLVM_TARGETS_TO_BUILD* option).
 32-bit GNU/Linux versions (including x32 ABI) aren't supported yet (necessary standard library fixes aren't implemented).

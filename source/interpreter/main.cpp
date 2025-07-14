@@ -417,7 +417,7 @@ int Main( int argc, const char* argv[] )
 		llvm::EngineBuilder builder(std::move(result_module));
 		std::string engine_creation_error_string;
 		builder.setEngineKind(llvm::EngineKind::JIT);
-		builder.setMemoryManager(std::make_unique<llvm::SectionMemoryManager>());
+		builder.setMCJITMemoryManager( std::make_unique<llvm::SectionMemoryManager>() );
 		builder.setErrorStr( &engine_creation_error_string );
 		const std::unique_ptr<llvm::ExecutionEngine> engine(builder.create(target_machine.release())); // Engine takes ownership over target machine.
 

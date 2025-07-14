@@ -400,87 +400,110 @@ fn copy_file_if_not_exists( filesystem_path_view src_path, filesystem_path_view 
 
 fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path, bool ensure_new ) : filesystem_result</void/>
 {
-	var filesystem_result</native_file_handle/> mut src_res=
-		unsafe( open_file_impl( src_path, open_options{ .read= true, .write= false, .create= false, .truncate= false, .ensure_new= false } ) );
-	if( src_res.is_error() )
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
-		return move(src_res).try_take_error();
-	}
-	var native_file_handle src_handle= move(src_res).try_take();
+		// Use MacOS-specific "copyfile" function.
 
-	var filesystem_result</native_file_handle/> mut dst_res=
-		unsafe( open_file_impl( dst_path, open_options{ .read= false, .write= true, .create= true, .truncate= true, .ensure_new= ensure_new } ) );
-	if( dst_res.is_error() )
-	{
-		unsafe( close_file_impl( src_handle ) );
-		return move(dst_res).try_take_error();
-	}
-	var native_file_handle dst_handle= move(dst_res).try_take();
+		scoped_array char8 src_path_nt[ src_path.size() + 1s ]( src_path.iter().chain( filesystem_path_view("\0").iter() ) );
+		scoped_array char8 dst_path_nt[ dst_path.size() + 1s ]( dst_path.iter().chain( filesystem_path_view("\0").iter() ) );
 
-	var filesystem_result</u64/> mut src_size_res= unsafe( get_size_impl( src_handle ) );
-	if( src_size_res.is_error() )
-	{
-		unsafe( close_file_impl( dst_handle ) );
-		unsafe( close_file_impl( src_handle ) );
-		return move(src_size_res).try_take_error();
-	}
-	var u64 src_size= move(src_size_res).try_take();
-
-	static_if( constexpr_string_equals( compiler::target::os, "linux" ) )
-	{
-		// Use Linux-specific "sendfile" function.
-		for( var off_t mut offset(0); offset < off_t(src_size); )
+		var u32 mut flags= COPYFILE_ALL;
+		if( ensure_new )
 		{
-			var ssize_type bytes_sent= unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) );
-			if( bytes_sent <= ssize_type(0) )
-			{
-				var i32 err= get_errno();
-				unsafe( close_file_impl( dst_handle ) );
-				unsafe( close_file_impl( src_handle ) );
-				return translate_errno( err );
-			}
+			flags|= COPYFILE_EXCL;
+		}
+
+		var i32 res= unsafe( ::copyfile( src_path_nt.data(), dst_path_nt.data(), nullptr</byte8/>(), flags ) );
+		if( res < 0 )
+		{
+			return translate_errno( get_errno() );
 		}
 	}
 	else
 	{
-		// Use FreeBSD-specific "copy_file_range" function.
-		for( var off_t mut offset(0); offset < off_t(src_size); )
+		var filesystem_result</native_file_handle/> mut src_res=
+			unsafe( open_file_impl( src_path, open_options{ .read= true, .write= false, .create= false, .truncate= false, .ensure_new= false } ) );
+		if( src_res.is_error() )
 		{
-			var ssize_type bytes_sent= unsafe( ::copy_file_range( src_handle, nullptr</off_t/>(), dst_handle, nullptr</off_t/>(), size_t( off_t(src_size) - offset ), 0u ) );
-			if( bytes_sent <= ssize_type(0) )
+			return move(src_res).try_take_error();
+		}
+		var native_file_handle src_handle= move(src_res).try_take();
+
+		var filesystem_result</native_file_handle/> mut dst_res=
+			unsafe( open_file_impl( dst_path, open_options{ .read= false, .write= true, .create= true, .truncate= true, .ensure_new= ensure_new } ) );
+		if( dst_res.is_error() )
+		{
+			unsafe( close_file_impl( src_handle ) );
+			return move(dst_res).try_take_error();
+		}
+		var native_file_handle dst_handle= move(dst_res).try_take();
+
+		var filesystem_result</u64/> mut src_size_res= unsafe( get_size_impl( src_handle ) );
+		if( src_size_res.is_error() )
+		{
+			unsafe( close_file_impl( dst_handle ) );
+			unsafe( close_file_impl( src_handle ) );
+			return move(src_size_res).try_take_error();
+		}
+		var u64 src_size= move(src_size_res).try_take();
+
+		static_if( constexpr_string_equals( compiler::target::os, "linux" ) )
+		{
+			// Use Linux-specific "sendfile" function.
+			for( var off_t mut offset(0); offset < off_t(src_size); )
+			{
+				var ssize_type bytes_sent= unsafe( ::sendfile( dst_handle, src_handle, $<(offset), size_t( off_t(src_size) - offset ) ) );
+				if( bytes_sent <= ssize_type(0) )
+				{
+					var i32 err= get_errno();
+					unsafe( close_file_impl( dst_handle ) );
+					unsafe( close_file_impl( src_handle ) );
+					return translate_errno( err );
+				}
+			}
+		}
+		else
+		{
+			// Use FreeBSD-specific "copy_file_range" function.
+			for( var off_t mut offset(0); offset < off_t(src_size); )
+			{
+				var ssize_type bytes_sent= unsafe( ::copy_file_range( src_handle, nullptr</off_t/>(), dst_handle, nullptr</off_t/>(), size_t( off_t(src_size) - offset ), 0u ) );
+				if( bytes_sent <= ssize_type(0) )
+				{
+					var i32 err= get_errno();
+					unsafe( close_file_impl( dst_handle ) );
+					unsafe( close_file_impl( src_handle ) );
+					return translate_errno( err );
+				}
+				offset+= off_t(bytes_sent);
+			}
+		}
+
+		{ // Copy permissions from src to dst.
+			var stat_ mut s= zero_init;
+			var i32 stat_res= unsafe( ::fstat( src_handle, $<(s) ) );
+			if( stat_res != 0 )
 			{
 				var i32 err= get_errno();
 				unsafe( close_file_impl( dst_handle ) );
 				unsafe( close_file_impl( src_handle ) );
 				return translate_errno( err );
 			}
-			offset+= off_t(bytes_sent);
+
+			var i32 chmod_res= unsafe( ::fchmod( dst_handle, s.st_mode ) );
+			if( chmod_res != 0 )
+			{
+				var i32 err= get_errno();
+				unsafe( close_file_impl( dst_handle ) );
+				unsafe( close_file_impl( src_handle ) );
+				return translate_errno( err );
+			}
 		}
+
+		unsafe( close_file_impl( dst_handle ) );
+		unsafe( close_file_impl( src_handle ) );
 	}
 
-	{ // Copy permissions from src to dst.
-		var stat_ mut s= zero_init;
-		var i32 stat_res= unsafe( ::fstat( src_handle, $<(s) ) );
-		if( stat_res != 0 )
-		{
-			var i32 err= get_errno();
-			unsafe( close_file_impl( dst_handle ) );
-			unsafe( close_file_impl( src_handle ) );
-			return translate_errno( err );
-		}
-
-		var i32 chmod_res= unsafe( ::fchmod( dst_handle, s.st_mode ) );
-		if( chmod_res != 0 )
-		{
-			var i32 err= get_errno();
-			unsafe( close_file_impl( dst_handle ) );
-			unsafe( close_file_impl( src_handle ) );
-			return translate_errno( err );
-		}
-	}
-
-	unsafe( close_file_impl( dst_handle ) );
-	unsafe( close_file_impl( src_handle ) );
 	return void();
 }
 
@@ -984,10 +1007,21 @@ fn write_all_impl( native_file_handle handle, array_view_imut</byte8/> buf ) uns
 
 fn flush_impl( native_file_handle handle ) unsafe : filesystem_result</void/>
 {
-	var i32 res= unsafe( ::fdatasync( handle ) );
-	if( res != 0 )
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
-		return translate_errno( get_errno() );
+		var i32 res= unsafe( ::fcntl( handle , F_FULLFSYNC ) );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+	}
+	else
+	{
+		var i32 res= unsafe( ::fdatasync( handle ) );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
 	}
 	return void();
 }
@@ -1014,9 +1048,9 @@ fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : filesystem_re
 
 fn seek_impl( native_file_handle handle, u64 offset ) unsafe : filesystem_result</void/>
 {
-	var off_t seek_res= unsafe( ::lseek( handle, ü__off64_t(offset), SEEK_SET ) );
+	var off_t seek_res= unsafe( ::lseek( handle, off_t(offset), SEEK_SET ) );
 
-	if( seek_res < ü__off64_t(-1) )
+	if( seek_res < off_t(-1) )
 	{
 		return translate_errno( get_errno() );
 	}

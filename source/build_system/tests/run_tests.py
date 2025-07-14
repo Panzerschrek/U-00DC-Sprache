@@ -100,6 +100,12 @@ def RunSingleProgramCompilationTest( test_name_base ):
 		"--build-directory", g_tests_build_root_path,
 		]
 
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
 	# Run the build.
 	subprocess.check_call( build_system_args )
 
@@ -160,6 +166,8 @@ def ConfigurationOptions0Test():
 	if g_sysroot is not None:
 		build_system_args.append( "--sysroot" )
 		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
 
 	# Run the build.
 	subprocess.check_call( build_system_args )
@@ -175,6 +183,12 @@ def ConfigurationOptions1Test():
 	options_file_path = os.path.join( project_root, "non_existing_file.json" )
 	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
 
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
 	call_res= subprocess.run( build_system_args, stderr=subprocess.PIPE )
 	stderr= str(call_res.stderr)
 	assert( stderr.find( "Failed to load configuration options file" ) != -1 )
@@ -186,6 +200,12 @@ def ConfigurationOptions2Test():
 	build_root = os.path.join( g_tests_build_root_path, project_subdirectory )
 	options_file_path = os.path.join( project_root, "options.json" )
 	build_system_args= [ g_build_system_executable, "build", "-q", "--compiler-executable", g_compiler_executable, "--build-system-imports-path", g_build_system_imports_path, "--ustlib-path", g_ustlib_path, "--project-directory", project_root, "--build-directory", build_root, "--configuration-options", options_file_path ]
+
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
 
 	call_res= subprocess.run( build_system_args, stderr=subprocess.PIPE )
 	stderr= str(call_res.stderr)
@@ -301,6 +321,8 @@ def SharedLibraryTargetTest():
 	library_file_path= os.path.join( g_tests_build_root_path, "shared_library_target", "release", "shared_library_target" )
 	if platform.system() == "Windows":
 		library_file_path+= ".dll"
+	elif platform.system() == "Darwin":
+		library_file_path+= ".dylib"
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
@@ -346,6 +368,8 @@ def PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest():
 	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
 	if platform.system() == "Windows":
 		library_file_path+= ".dll"
+	elif platform.system() == "Darwin":
+		library_file_path+= ".dylib"
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
@@ -371,6 +395,8 @@ def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
 	library_file_path= os.path.join( g_tests_build_root_path, test_dir, "release", "a" )
 	if platform.system() == "Windows":
 		library_file_path+= ".dll"
+	elif platform.system() == "Darwin":
+		library_file_path+= ".dylib"
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
@@ -397,6 +423,8 @@ def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
 		# This is necessary since Windows dll's have no "rpath=$ORIGIN".
 		b_library= ctypes.CDLL( os.path.join( g_tests_build_root_path, test_dir, "release", "b.dll" ) )
 		library_file_path+= ".dll"
+	elif platform.system() == "Darwin":
+		library_file_path+= ".dylib"
 	else:
 		library_file_path+= ".so"
 	library= ctypes.CDLL( library_file_path )
@@ -432,6 +460,7 @@ def SharedLibraryUsedInTwoExecutablesTest():
 
 def ObjectFileTargetTest():
 	RunBuildSystem( "object_file_target" )
+	# TODO - enable this test for Darwin.
 	if platform.system() == "Linux" or platform.system() == "FreeBSD":
 		# Run "nm" and check output - which symbols are present in result object file.
 		object_file_path= os.path.join( g_tests_build_root_path, "object_file_target", "release", "object_file_target.o" )
@@ -457,10 +486,16 @@ def ExternalLibraryLinking1Test():
 	test_dir = "external_library_linking1"
 	RunBuildSystem( test_dir )
 
+	# For now disable this test on MacOS.
+	# External library built with CMake has "@rpath/" prefix and we can't load it in runtime, since the executable of this test is located not in the same directory as this external library.
+	if platform.system() == "Darwin":
+		print( "Disable \"external_library_linking1\" test on MacOS" )
+		return
+
 	external_shared_lib_dir = os.path.normpath( g_tests_build_root_path + "/.." )
 	# Slightly hacky way to find necessary shared library upon launch - set LD_LIBRARY_PATH.
 	env_tweaked = os.environ
-	if platform.system() == "Linux" or platform.system() == "FreeBSD":
+	if platform.system() == "Linux" or platform.system() == "FreeBSD" or platform.system() == "Darwin":
 		env_tweaked["LD_LIBRARY_PATH"]= external_shared_lib_dir
 	# Set also current directory - Windows searches for dll's in current directory.
 	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_dir, "release", "exe" ) ], env= env_tweaked, cwd = external_shared_lib_dir )
@@ -705,6 +740,12 @@ def SingleFileProgram2Test():
 		"--build-directory", g_tests_build_root_path,
 		]
 
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
 	subprocess.check_call( build_system_args )
 	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_name_base ) ], stdout= subprocess.DEVNULL )
 
@@ -734,6 +775,12 @@ def CustomHaltModeTest():
 		"--halt-mode", "unreachable"
 		]
 
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
 	subprocess.check_call( build_system_args )
 	subprocess.check_call( [ os.path.join( g_tests_build_root_path, test_name_base ) ], stdout= subprocess.DEVNULL )
 
@@ -759,6 +806,12 @@ def TargetCPUOptionTest():
 		"--target-cpu", "skylake"
 		]
 
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
 	subprocess.check_call( build_system_args )
 	subprocess.check_call( [ os.path.join( build_root, "release", "target_cpu_option_test" ) ], stdout= subprocess.DEVNULL )
 
@@ -783,6 +836,12 @@ def ReleaseOptimizationLevelOptionTest():
 		"--build-directory", build_root,
 		"--release-optimization-level", "O3",
 		]
+
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
 
 	subprocess.check_call( build_system_args )
 	subprocess.check_call( [ os.path.join( build_root, "release", "release_optimization_level_option_test" ) ] )
@@ -934,7 +993,7 @@ def LinkingError1Test():
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
 	assert( stderr.find( "undefined symbol" ) != -1 )
-	assert( stderr.find( "Foo()" ) != -1 or stderr.find( "Foo(void)" ) != -1 )
+	assert( stderr.find( "Foo" ) != -1 )
 
 
 def DuplicatedBuildTargetTest():
