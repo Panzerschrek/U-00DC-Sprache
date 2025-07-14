@@ -3,9 +3,9 @@ name: MacOS
 on: [workflow_dispatch]
 
 jobs:
-  build_release_macos:
+  macos_aarch64_release_llvm_src:
     runs-on: macos-15
     steps:
     - uses: actions/checkout@v1
     - name: build project
-      run: ./ci/build_release_macos.sh
+      run: ./ci/build_macos_aarch_64_release_llvm_src.sh
