@@ -9,3 +9,7 @@ jobs:
     - uses: actions/checkout@v1
     - name: build project
       run: ./ci/build_macos_aarch_64_release_llvm_src.sh
+    - uses: actions/upload-artifact@v4
+      with:
+        name: compiler_macos
+        path: install/
