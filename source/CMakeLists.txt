@@ -188,7 +188,9 @@ else()
 
 	# Avoid undefined symbols in shared libraries.
 	# But disable this option for FreeBSD, since it fails to build our shared libraries due to undefined "environ" variable.
-	if( NOT ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" )
+	if( APPLE )
+		string( APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,-undefined,error" )
+	elseif( NOT ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD" )
 		string( APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--no-undefined" )
 	endif()
 
