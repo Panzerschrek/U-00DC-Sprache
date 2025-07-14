@@ -10,17 +10,42 @@ namespace barrier_impl
 static_assert( typeinfo</barrier_t/>.size_of >= typeinfo</pthread_barrier_t/>.size_of );
 static_assert( typeinfo</barrier_t/>.align_of >= typeinfo</pthread_barrier_t/>.align_of );
 
+// Darwing doesn't support POSIX barriers. So implement barriers manually using mutex and condition variable.
+struct DarwinBarrier
+{
+	pthread_mutex_t mutex;
+	pthread_cond_t condvar;
+	u32 num_threads;
+	u32 current_count;
+	u32 generation_index;
+}
+
 fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe
 {
 	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
-		// TODO - implement barriers for MacOS using other synchronization primitive, it has no native barriers support.
-		ignore_unused( b );
-		ignore_unused( num_threads );
-		halt;
+		static_assert( typeinfo</barrier_t/>.size_of >= typeinfo</DarwinBarrier/>.size_of );
+		static_assert( typeinfo</barrier_t/>.align_of >= typeinfo</DarwinBarrier/>.align_of );
+
+		unsafe
+		{
+			auto &mut darwin_barrier= cast_ref_unsafe</DarwinBarrier/>(b);
+
+			var $(pthread_mutexattr_t) mutex_attr= zero_init;
+			halt if(::pthread_mutex_init( darwin_barrier.mutex, mutex_attr ) != 0 );
+
+			var $(pthread_condattr_t) condvar_attr= zero_init;
+			halt if( ::pthread_cond_init( darwin_barrier.condvar, condvar_attr ) != 0 );
+
+			darwin_barrier.num_threads= num_threads;
+			darwin_barrier.current_count= 0u;
+			darwin_barrier.generation_index= 0u;
+		}
 	}
 	else
 	{
+		ignore_unused_impl</DarwinBarrier/>();
+
 		unsafe
 		{
 			var $(pthread_barrierattr_t) attr= zero_init;
@@ -34,8 +59,12 @@ fn destroy_barrier( barrier_t &mut b ) unsafe
 {
 	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
-		ignore_unused( b );
-		halt;
+		unsafe
+		{
+			auto &mut darwin_barrier= cast_ref_unsafe</DarwinBarrier/>(b);
+			::pthread_cond_destroy( darwin_barrier.condvar );
+			::pthread_mutex_destroy( darwin_barrier.mutex );
+		}
 	}
 	else
 	{
@@ -47,8 +76,33 @@ fn wait_barrier( barrier_t &mut b ) unsafe
 {
 	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
-		ignore_unused( b );
-		halt;
+		unsafe
+		{
+			auto &mut darwin_barrier= cast_ref_unsafe</DarwinBarrier/>(b);
+
+			::pthread_mutex_lock( darwin_barrier.mutex );
+
+			++darwin_barrier.current_count;
+
+			if( darwin_barrier.current_count == darwin_barrier.num_threads )
+			{
+				// This is the last thread reached this barrier - reset barrier to zero, increase generation index and notify all other waiting threads.
+				darwin_barrier.current_count= 0u;
+				++darwin_barrier.generation_index;
+				::pthread_cond_broadcast( darwin_barrier.condvar );
+			}
+			else
+			{
+				// Wait for remaining threads to finish.
+				var u32 prev_generation_index= darwin_barrier.generation_index;
+				while( darwin_barrier.generation_index == prev_generation_index )
+				{
+					pthread_cond_wait( darwin_barrier.condvar, darwin_barrier.mutex );
+				}
+			}
+
+			::pthread_mutex_unlock( darwin_barrier.mutex );
+		}
 	}
 	else
 	{

@@ -15,7 +15,7 @@ type barrier_t=
 	type_select</
 		constexpr_string_equals( compiler::target::os, "windows" ),
 		type_select</ typeinfo</size_type/>.size_of == 8s , [ byte64, 4 ], [ byte64, 3 ] />, // _RTL_BARRIER on Windows.
-		[ byte64, 4 ] // pthread_barrier_t on Unix.
+		[ byte64, ( constexpr_string_equals( compiler::target::vendor, "apple" ) ? 16 : 4 ) ] // pthread_barrier_t on Unix.
 		/>;
 
 // Initialize barrier at given address for given number of threads.
