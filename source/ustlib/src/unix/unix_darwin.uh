@@ -6,6 +6,7 @@ fn nomangle chmod( $(char8) param0, mode_t param1 ) unsafe : i32;
 fn nomangle clock_gettime( clockid_t ü__clock_id, $(timespec) ü__tp ) unsafe : i32;
 fn nomangle close( i32 param0 ) unsafe : i32;
 fn nomangle closedir( $(DIR) param0 ) unsafe : i32;
+fn nomangle copyfile( $(char8) from, $(char8) to, $(byte8) state, u32 flags ) unsafe : i32;
 fn nomangle fchmod( i32 param0, mode_t param1 ) unsafe : i32;
 fn nomangle fcntl( i32 param0, i32 param1 ) unsafe : i32;
 fn nomangle fstat( i32 param0, $(stat_) param1 ) unsafe : i32;
@@ -135,6 +136,9 @@ var ü_anon_enum_40
 	constexpr CLOCK_UPTIME_RAW_APPROX( 9u ),
 	constexpr CLOCK_PROCESS_CPUTIME_ID( 12u ),
 	constexpr CLOCK_THREAD_CPUTIME_ID( 16u );
+
+var u32 COPYFILE_ALL= 15u;
+var u32 COPYFILE_EXCL= 131072u;
 
 auto constexpr DT_UNKNOWN = 0;
 auto constexpr DT_FIFO = 1;
