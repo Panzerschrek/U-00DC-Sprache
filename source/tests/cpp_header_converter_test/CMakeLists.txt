@@ -6,6 +6,11 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 		set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
 	endif()
 
+	set( CPP_HEADER_CONVERTER_SYSROOT_OPTION "" )
+	if( NOT ${CMAKE_OSX_SYSROOT} STREQUAL "" )
+		set( CPP_HEADER_CONVERTER_SYSROOT_OPTION --sysroot ${CMAKE_OSX_SYSROOT} )
+	endif()
+
 	#
 	# Basic CppHeaderConverter test - for a manually-crafter header file.
 	#
@@ -83,7 +88,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			COMMAND
 				CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/unistd_headers.u
 				${CMAKE_CURRENT_SOURCE_DIR}/unistd_headers.h --
-				-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER}
+				-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER} ${CPP_HEADER_CONVERTER_SYSROOT_OPTION}
 				)
 
 		add_custom_command(
@@ -122,7 +127,7 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			CppHeaderConverter -o ${CMAKE_CURRENT_BINARY_DIR}/c_standard_library_headers.u
 			${CMAKE_CURRENT_SOURCE_DIR}/c_standard_library_headers.h --
 			-Wno-implicit-function-declaration
-			-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER}
+			-I${CLANG_BUILTIN_HEADERS_FOR_CPP_HEADER_CONVERTER} ${CPP_HEADER_CONVERTER_SYSROOT_OPTION}
 			)
 
 	add_custom_command(
