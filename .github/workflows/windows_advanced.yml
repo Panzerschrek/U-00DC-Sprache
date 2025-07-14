@@ -3,12 +3,12 @@ name: WindowsBuildAdvanced
 on: [workflow_dispatch]
 
 jobs:
-  build_windows_debug:
+  windows_x86_64_debug_llvm_src:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v1
     - name: build project
-      run: ./ci/build_debug_windows.ps1
+      run: ./ci/build_windows_x86_64_debug_llvm_src.ps1
   build_windows_release_32:
     runs-on: windows-2022
     steps:
