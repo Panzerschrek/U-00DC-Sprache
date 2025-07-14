@@ -14,7 +14,6 @@ if( TARGET BuildSystem AND TARGET lldCommon )
 		set( SYSROOT_OPTION --sysroot \"${MINGW_INSTALLATION_PATH}\" --host-sysroot \"${MINGW_INSTALLATION_PATH}\" )
 	elseif( NOT ${CMAKE_OSX_SYSROOT} STREQUAL "" )
 		# Building for OS X may also require sysroot specifying.
-		message( STATUS "Detected OSX sysroot ${CMAKE_OSX_SYSROOT}, use it for BuildSystem building." )
 		set( SYSROOT_OPTION --sysroot \"${CMAKE_OSX_SYSROOT}\" --host-sysroot \"${CMAKE_OSX_SYSROOT}\" )
 	else()
 		set( SYSROOT_OPTION "" )

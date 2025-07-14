@@ -13,7 +13,6 @@ if( MINGW )
 	set( SYSROOT_OPTION --sysroot \"${MINGW_INSTALLATION_PATH}\" )
 elseif( NOT ${CMAKE_OSX_SYSROOT} STREQUAL "" )
 	# Building for OS X may also require sysroot specifying.
-	message( STATUS "Detected OSX sysroot ${CMAKE_OSX_SYSROOT}, use it for compiler_exe_result_test${CURRENT_COMPILER_GENERATION} building." )
 	set( SYSROOT_OPTION --sysroot \"${CMAKE_OSX_SYSROOT}\" )
 else()
 	set( SYSROOT_OPTION "" )

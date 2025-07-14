@@ -8,7 +8,6 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 
 	set( CPP_HEADER_CONVERTER_SYSROOT_OPTION "" )
 	if( NOT ${CMAKE_OSX_SYSROOT} STREQUAL "" )
-		message( STATUS "Detected OSX sysroot ${CMAKE_OSX_SYSROOT}, use it for CppHeaderConverter test." )
 		set( CPP_HEADER_CONVERTER_SYSROOT_OPTION --sysroot ${CMAKE_OSX_SYSROOT} )
 	endif()
 
