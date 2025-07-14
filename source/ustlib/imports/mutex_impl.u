@@ -15,7 +15,7 @@ type mutex_t=
 	type_select</
 		constexpr_string_equals( compiler::target::os, "windows" ),
 		$(byte8), // RTL_SRWLOCK
-		[ byte64, 5 ] // pthread_mutex_t
+		[ byte64, ( constexpr_string_equals( compiler::target::vendor, "apple" ) ? 8 : 5 ) ] // pthread_mutex_t
 	/>;
 
 // Initialize mutex at given address.
