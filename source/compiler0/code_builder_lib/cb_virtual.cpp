@@ -346,12 +346,11 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 			// Use file path hash and not file contents hash in order to avoid merging type id tables of classes from different files which have identical contents.
 			llvm::StringRef("_type_id_for_") + mangler_->MangleType( class_type ) + "." + file_path_hash );
 
-	// Create comdat in order to ensure uniquiness of the table across different modules.
-
 	if( target_triple_.getObjectFormat() == llvm::Triple::MachO )
 		the_class.polymorph_type_id_table->setLinkage( llvm::GlobalValue::LinkOnceODRLinkage );
 	else
 	{
+		// Create comdat in order to ensure uniquiness of the table across different modules.
 		llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id_table->getName() );
 		type_id_comdat->setSelectionKind( llvm::Comdat::Any );
 		the_class.polymorph_type_id_table->setComdat( type_id_comdat );

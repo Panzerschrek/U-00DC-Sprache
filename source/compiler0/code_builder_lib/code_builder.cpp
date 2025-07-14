@@ -2444,12 +2444,11 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable(
 			// Use file path hash and not file contents hash in order to avoid merging variables from different files which have identical contents.
 			llvm::StringRef(mangled_name) + "." + file_path_hash );
 
-	// Use external linkage and comdat for global mutable variables to guarantee address uniqueness and enforce deduplication.
-
 	if( target_triple_.getObjectFormat() == llvm::Triple::MachO )
 		var->setLinkage( llvm::GlobalValue::LinkOnceODRLinkage );
 	else
 	{
+		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness and enforce deduplication.
 		llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
 		comdat->setSelectionKind( llvm::Comdat::Any );
 		var->setComdat( comdat );
