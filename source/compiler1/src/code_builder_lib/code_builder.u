@@ -29,6 +29,23 @@ fn ClearClassInternals( ClassTypePtr& class_type, NamesScopeMutPtr& dummy_class_
 	class_.generated_class_data= ClassType::NonGeneratedClassTag();
 }
 
+fn IsAppleTarget( ust::string_view8 target_triple_str ) : bool
+{
+	// Just search "apple" substring in target triple. This should be fine.
+
+	var ust::string_view8 vendor_name= "apple";
+
+	for( var size_type mut o= 0s; o < target_triple_str.size(); ++o )
+	{
+		if( target_triple_str.subrange_start(o).starts_with( vendor_name ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 fn CodeBuilder::constructor(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
@@ -38,6 +55,7 @@ fn CodeBuilder::constructor(
 	(
 		llvm_context_(llvm_context),
 		data_layout_(data_layout),
+		comdats_supported_= !IsAppleTarget( target_triple_str ),
 		target_triple_str_(move(target_triple_str)),
 		create_lifetimes_(options.create_lifetimes),
 		generate_lifetime_start_end_debug_calls_(options.generate_lifetime_start_end_debug_calls),
@@ -2401,17 +2419,17 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_term
 		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_with_suffix.front() );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
 
-		if( target_triple_str_.starts_with( "arm64-apple" ) /* TODO - detect Mach-O properly */ )
-		{
-			LLVMSetLinkage( global_variable, LLVMLinkage::LinkOnceODR );
-		}
-		else
+		if( comdats_supported_ )
 		{
 			// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
 			LLVMSetLinkage( global_variable, LLVMLinkage::External );
 			auto comdat= LLVMGetOrInsertComdat( module_, name_with_suffix.front() );
 			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
 			LLVMSetComdat( global_variable, comdat );
+		}
+		else
+		{
+			LLVMSetLinkage( global_variable, LLVMLinkage::LinkOnceODR );
 		}
 
 		// Use hidden visibility - in order to avoid exporting variables from shared libraries (we don't support it).

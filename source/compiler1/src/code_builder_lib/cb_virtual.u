@@ -422,11 +422,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 		LLVMSetInitializer( global_value, initializer );
 		LLVMSetGlobalConstant( global_value, LLVMBool::True );
 
-		if( target_triple_str_.starts_with( "arm64-apple" ) /* TODO - detect Mach-O properly */ )
-		{
-			LLVMSetLinkage( global_value, LLVMLinkage::LinkOnceODR );
-		}
-		else
+		if( comdats_supported_ )
 		{
 			LLVMSetLinkage( global_value, LLVMLinkage::External );
 
@@ -434,6 +430,10 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 			var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front() );
 			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
 			LLVMSetComdat( global_value, comdat );
+		}
+		else
+		{
+			LLVMSetLinkage( global_value, LLVMLinkage::LinkOnceODR );
 		}
 
 		// Make type id table hidden in order to avoid exporting it.
