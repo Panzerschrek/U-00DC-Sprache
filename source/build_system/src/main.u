@@ -1208,19 +1208,17 @@ fn CreatePackageTargetBuildGraphNodes(
 				node.command_line.push_back( "-Wl,--out-implib," + lib_name );
 			}
 		}
+		else if( target_triple.vendor == "apple" )
+		{
+			// Specify install name with "@rpath" prefix, so that this prefixed name is used in result executables/dynamic libraries, which depend on this shared library.
+			node.command_line.push_back( ust::concat( "-Wl,-dylib_install_name,@rpath/", target_name.name, ".dylib" ) );
+		}
 		else
 		{
-			if( target_triple.vendor == "apple" )
-			{
-				// Specify install name with "@rpath" prefix, so that this prefixed name is used in result executables/dynamic libraries, which depend on this shared library.
-				node.command_line.push_back( ust::concat( "-Wl,-dylib_install_name,@rpath/", target_name.name, ".dylib" ) );
-			}
-			else
-			{
-				// Specify soname, in order to load libraries using only name and not the full path to the library provided to the linker.
-				node.command_line.push_back( ust::concat( "-Wl,-soname,", target_name.name, ".so" ) );
-			}
+			// Specify soname, in order to load libraries using only name and not the full path to the library provided to the linker.
+			node.command_line.push_back( ust::concat( "-Wl,-soname,", target_name.name, ".so" ) );
 		}
+
 	}
 
 	foreach( &source_file_to_compile : source_files_to_compile )
@@ -1364,9 +1362,13 @@ fn CreatePackageTargetBuildGraphNodes(
 				}
 			}
 
-			if( !target.shared_library_dependencies_to_link.empty() && !target_is_windows )
+			if( !target.shared_library_dependencies_to_link.empty() )
 			{
-				if( target_triple.vendor == "apple" )
+				if( target_is_windows )
+				{
+					// Windows doesn't support "rpath".
+				}
+				else if( target_triple.vendor == "apple" )
 				{
 					// For now set "rpath" to loader_path - in order to have possibility to load shared libraries from common directory with all build targets.
 					node.command_line.push_back( "-Wl,-rpath,@loader_path" );
