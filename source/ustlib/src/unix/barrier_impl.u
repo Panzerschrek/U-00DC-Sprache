@@ -44,7 +44,16 @@ fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe
 	}
 	else
 	{
-		ignore_unused_impl</DarwinBarrier/>();
+		if( false )
+		{
+			var DarwinBarrier b= zero_init;
+			ignore_unused(b);
+			ignore_unused(b.mutex);
+			ignore_unused(b.condvar);
+			ignore_unused(b.num_threads);
+			ignore_unused(b.current_count);
+			ignore_unused(b.generation_index);
+		}
 
 		unsafe
 		{
