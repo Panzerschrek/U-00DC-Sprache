@@ -12,6 +12,8 @@ fn ParseTargetTriple( ust::string_view8 target_triple_str ) : ust::optional</Tar
 // Some known target triple components.
 auto &constexpr g_os_windows= "windows";
 
+auto &constexpr g_vendor_apple = "apple";
+
 auto &constexpr g_environment_gnu= "gnu";
 auto &constexpr g_environment_msvc= "msvc";
 

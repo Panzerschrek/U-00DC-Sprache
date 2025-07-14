@@ -793,7 +793,7 @@ fn GetNativeSharedLibraryExtension() : ust::string_view8
 	{
 		return "dll";
 	}
-	if( ust::string_view8( compiler::target::vendor ) == "apple" )
+	if( ust::string_view8( compiler::target::vendor ) == g_vendor_apple )
 	{
 		return "dylib";
 	}
@@ -1160,7 +1160,7 @@ fn CreatePackageTargetBuildGraphNodes(
 			{
 				result_target_file_path+= ".dll";
 			}
-			else if( target_triple.vendor == "apple" )
+			else if( target_triple.vendor == g_vendor_apple )
 			{
 				result_target_file_path+= ".dylib";
 			}
@@ -1208,7 +1208,7 @@ fn CreatePackageTargetBuildGraphNodes(
 				node.command_line.push_back( "-Wl,--out-implib," + lib_name );
 			}
 		}
-		else if( target_triple.vendor == "apple" )
+		else if( target_triple.vendor == g_vendor_apple )
 		{
 			// Specify install name with "@rpath" prefix, so that this prefixed name is used in result executables/dynamic libraries, which depend on this shared library.
 			node.command_line.push_back( ust::concat( "-Wl,-dylib_install_name,@rpath/", target_name.name, ".dylib" ) );
@@ -1218,7 +1218,6 @@ fn CreatePackageTargetBuildGraphNodes(
 			// Specify soname, in order to load libraries using only name and not the full path to the library provided to the linker.
 			node.command_line.push_back( ust::concat( "-Wl,-soname,", target_name.name, ".so" ) );
 		}
-
 	}
 
 	foreach( &source_file_to_compile : source_files_to_compile )
@@ -1346,7 +1345,7 @@ fn CreatePackageTargetBuildGraphNodes(
 					node.command_line.push_back( "-Wl," + lib_file );
 					node.input_files.push_back( move(lib_file) );
 				}
-				else if( target_triple.vendor == "apple" )
+				else if( target_triple.vendor == g_vendor_apple )
 				{
 					// Darwin shared libraries are specified directly.
 					var ust::filesystem_path mut dylib_file= ust::path::normalize( file_to_link + ".dylib" );
@@ -1368,7 +1367,7 @@ fn CreatePackageTargetBuildGraphNodes(
 				{
 					// Windows doesn't support "rpath".
 				}
-				else if( target_triple.vendor == "apple" )
+				else if( target_triple.vendor == g_vendor_apple )
 				{
 					// For now set "rpath" to loader_path - in order to have possibility to load shared libraries from common directory with all build targets.
 					node.command_line.push_back( "-Wl,-rpath,@loader_path" );
@@ -1770,7 +1769,7 @@ fn AddGCSectionsCompilerFlags( TargetTriple& target_triple, ust::vector</ust::st
 	compiler_flags.push_back( "--data-sections" );
 	if( target_triple.operating_system != g_os_windows || target_triple.environment == g_environment_gnu )
 	{
-		if( target_triple.vendor != "apple" )
+		if( target_triple.vendor != g_vendor_apple )
 		{
 			compiler_flags.push_back( "-Wl,--gc-sections" );
 		}
