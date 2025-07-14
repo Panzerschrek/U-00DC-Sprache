@@ -14,6 +14,36 @@
 namespace U
 {
 
+namespace
+{
+
+void RemoveAllComdats( llvm::Module& module )
+{
+	for( llvm::Function& function : module.functions() )
+	{
+		if( const auto comdat = function.getComdat() )
+		{
+			function.setComdat( nullptr );
+			// HACK! LLVM Doesn't remove unused comdat. Make this manually.
+			if( comdat->getName() == function.getName() )
+				module.getComdatSymbolTable().erase( comdat->getName() );
+		}
+	}
+
+	for( llvm::GlobalVariable& global_variable : module.globals() )
+	{
+		if( const auto comdat = global_variable.getComdat() )
+		{
+			global_variable.setComdat( nullptr );
+			// HACK! LLVM Doesn't remove unused comdat. Make this manually.
+			if( comdat->getName() == global_variable.getName() )
+				module.getComdatSymbolTable().erase( comdat->getName() );
+		}
+	}
+}
+
+} // namespace
+
 bool LinkUstLibModules(
 	llvm::Module& result_module,
 	const HaltMode halt_mode,
@@ -103,6 +133,12 @@ bool LinkUstLibModules(
 		}
 
 		std_lib_module.get()->setDataLayout( result_module.getDataLayout() );
+
+		if( triple.getObjectFormat() == llvm::Triple::MachO )
+		{
+			// Mach-O doesn't support comdats. Remove comdats from ustlib modules in such case.
+			RemoveAllComdats( *std_lib_module.get() );
+		}
 
 		std::string err_stream_str;
 		llvm::raw_string_ostream err_stream( err_stream_str );
