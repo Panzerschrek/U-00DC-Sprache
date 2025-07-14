@@ -789,7 +789,15 @@ fn CheckRebuildIsNeededBasedOnDepFile( Logger &mut logger, ust::filesystem_path_
 
 fn GetNativeSharedLibraryExtension() : ust::string_view8
 {
-	return( ust::string_view8( compiler::target::os ) == g_os_windows ? ust::string_view8("dll") : ust::string_view8("so") );
+	if( ust::string_view8( compiler::target::os ) == g_os_windows )
+	{
+		return "dll";
+	}
+	if( ust::string_view8( compiler::target::vendor ) == g_vendor_apple )
+	{
+		return "dylib";
+	}
+	return "so";
 }
 
 fn GetDependencyFilePath( ust::filesystem_path_view path ) : ust::filesystem_path
@@ -1152,6 +1160,10 @@ fn CreatePackageTargetBuildGraphNodes(
 			{
 				result_target_file_path+= ".dll";
 			}
+			else if( target_triple.vendor == g_vendor_apple )
+			{
+				result_target_file_path+= ".dylib";
+			}
 			else
 			{
 				result_target_file_path+= ".so";
@@ -1195,6 +1207,11 @@ fn CreatePackageTargetBuildGraphNodes(
 				// MinGW linker requires a special option to produce such library.
 				node.command_line.push_back( "-Wl,--out-implib," + lib_name );
 			}
+		}
+		else if( target_triple.vendor == g_vendor_apple )
+		{
+			// Specify install name with "@rpath" prefix, so that this prefixed name is used in result executables/dynamic libraries, which depend on this shared library.
+			node.command_line.push_back( ust::concat( "-Wl,-dylib_install_name,@rpath/", target_name.name, ".dylib" ) );
 		}
 		else
 		{
@@ -1328,6 +1345,13 @@ fn CreatePackageTargetBuildGraphNodes(
 					node.command_line.push_back( "-Wl," + lib_file );
 					node.input_files.push_back( move(lib_file) );
 				}
+				else if( target_triple.vendor == g_vendor_apple )
+				{
+					// Darwin shared libraries are specified directly.
+					var ust::filesystem_path mut dylib_file= ust::path::normalize( file_to_link + ".dylib" );
+					node.command_line.push_back( "-Wl," + dylib_file );
+					node.input_files.push_back( move(dylib_file) );
+				}
 				else
 				{
 					// Unix shared libraries are specified directly.
@@ -1337,10 +1361,22 @@ fn CreatePackageTargetBuildGraphNodes(
 				}
 			}
 
-			if( !target.shared_library_dependencies_to_link.empty() && !target_is_windows )
+			if( !target.shared_library_dependencies_to_link.empty() )
 			{
-				// For now set "rpath" to origin - in order to have possibility to load shared libraries from common directory with all build targets.
-				node.command_line.push_back( "-Wl,-rpath,$ORIGIN" );
+				if( target_is_windows )
+				{
+					// Windows doesn't support "rpath".
+				}
+				else if( target_triple.vendor == g_vendor_apple )
+				{
+					// For now set "rpath" to loader_path - in order to have possibility to load shared libraries from common directory with all build targets.
+					node.command_line.push_back( "-Wl,-rpath,@loader_path" );
+				}
+				else
+				{
+					// For now set "rpath" to origin - in order to have possibility to load shared libraries from common directory with all build targets.
+					node.command_line.push_back( "-Wl,-rpath,$ORIGIN" );
+				}
 			}
 		},
 		BuildTargetType::Library -> {}, // No need to link Ü libraries against shared libraries.
@@ -1733,7 +1769,10 @@ fn AddGCSectionsCompilerFlags( TargetTriple& target_triple, ust::vector</ust::st
 	compiler_flags.push_back( "--data-sections" );
 	if( target_triple.operating_system != g_os_windows || target_triple.environment == g_environment_gnu )
 	{
-		compiler_flags.push_back( "-Wl,--gc-sections" );
+		if( target_triple.vendor != g_vendor_apple )
+		{
+			compiler_flags.push_back( "-Wl,--gc-sections" );
+		}
 	}
 }
 
