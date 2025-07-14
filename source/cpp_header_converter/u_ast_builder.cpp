@@ -1065,6 +1065,23 @@ void CppAstConsumer::EmitEnum(
 			std::string_view underlying_type_name;
 			if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getIntegerType().getTypePtr() ) )
 				underlying_type_name= GetUFundamentalType( *built_in_type );
+			else if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getPromotionType().getTypePtr() ) )
+				underlying_type_name= GetUFundamentalType( *built_in_type );
+			else
+			{
+				// Some very strange enum. Assume it's int.
+				// This strange code from Darwin header "vm_types.h" produces such enum.
+				/*
+					__enum_decl(mach_vm_range_flavor_t, uint32_t, {
+						MACH_VM_RANGE_FLAVOR_INVALID,
+						MACH_VM_RANGE_FLAVOR_V1,
+					});
+				*/
+				if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( ast_context_.IntTy.getTypePtr() ) )
+					underlying_type_name= GetUFundamentalType(* built_in_type );
+				else
+					underlying_type_name= Keyword( Keywords::i32_ );
+			}
 
 			type_alias.value= StringToTypeName( underlying_type_name );
 
