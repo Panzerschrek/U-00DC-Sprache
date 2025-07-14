@@ -9,9 +9,9 @@ jobs:
     - uses: actions/checkout@v1
     - name: build project
       run: ./ci/build_windows_x86_64_debug_llvm_src.ps1
-  build_windows_release_32:
+  windows_x86_release_llvm_src:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v1
     - name: build project
-      run: ./ci/build_release_windows_32.ps1
+      run: ./ci/build_windows_x86_release_llvm_src.ps1
