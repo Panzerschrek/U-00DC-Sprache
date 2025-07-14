@@ -1319,6 +1319,7 @@ private:
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	bool imut generate_tbaa_metadata_;
 	bool imut report_about_unused_names_;
+	bool imut comdats_supported_;
 	TBAAMetadataBuilder tbaa_metadata_builder_;
 	ust::box</IMangler/> mangler_;
 	IVfsSharedPtr imut vfs_;
