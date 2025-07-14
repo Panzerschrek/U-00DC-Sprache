@@ -3,7 +3,7 @@ name: FreeBSD build
 on: [workflow_dispatch]
 
 jobs:
-  build_freebsd_release_llvm_src:
+  freebsd_x86_64_release_llvm_src:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,4 +12,4 @@ jobs:
         with:
           operating_system: freebsd
           version: '14.2'
-          run: cd /home/runner/work/U-00DC-Sprache/U-00DC-Sprache && sudo pkg install -y cmake gcc git ninja wget && sh ./ci/build_release_freebsd_llvm_src.sh
+          run: cd /home/runner/work/U-00DC-Sprache/U-00DC-Sprache && sudo pkg install -y cmake gcc git ninja wget && sh ./ci/build_freebsd_x86_64_release_llvm_src.sh

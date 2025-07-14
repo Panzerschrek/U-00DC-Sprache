@@ -11,3 +11,7 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install ninja-build
         ./ci/build_gnu_linux_aarch64_release_llvm_src.sh
+    - uses: actions/upload-artifact@v4
+      with:
+        name: compiler_gnu_linux
+        path: install/

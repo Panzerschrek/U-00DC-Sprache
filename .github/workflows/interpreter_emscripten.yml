@@ -3,14 +3,14 @@ name: InterpreterEmscripten
 on: [workflow_dispatch]
 
 jobs:
-  build_interpreter_emscripten:
+  build_interpreter_emscripten_llvm_src:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v1
     - name: build project
       run: |
         sudo apt-get install ninja-build
-        ./ci/build_emscripten.sh
+        ./ci/build_emscripten_llvm_src.sh
     - uses: actions/upload-artifact@v4
       with:
         name: Interpreter build
