@@ -36,6 +36,9 @@ U_TEST( BasicFunctionManglingTest )
 
 		fn SizeTypeFunc( size_type s ) {}
 		fn SsizeTypeFunc( ssize_type s ) {}
+
+		fn Int128Func( i128 x ) {}
+		fn Uint128Func( u128 x ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
@@ -64,6 +67,9 @@ U_TEST( BasicFunctionManglingTest )
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?SizeTypeFunc@@YAXK@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?SsizeTypeFunc@@YAXJ@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Int128Func@@YAX_L@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Uint128Func@@YAX_M@Z" ) != nullptr );
 }
 
 U_TEST( BasicGlobalVariablesManglingTest )
