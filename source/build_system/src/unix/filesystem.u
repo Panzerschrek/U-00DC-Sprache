@@ -6,32 +6,37 @@ import "unix.uh"
 namespace BK
 {
 
-fn GetCurrentExecutablePath() : ust::filesystem_path
+fn GetCurrentExecutablePath( ust::string_view8 argv0 ) : ust::filesystem_path
 {
-	auto mut link_path_nt= "/proc/self/exe\0";
-
-	var ust::filesystem_path mut res;
-	res.resize( 256s, '\0' );
-	for( auto mut i= 0s; i < 8s; ++i )
+	if( ust::string8( compiler::target::os ) == "linux" )
 	{
-		auto len = unsafe( ::readlink( $<(link_path_nt[0]), res.data(), res.size() ) );
-		if( len < ssize_type(0) )
-		{
-			return "";
-		}
-		if( size_type(len) >= res.size() )
-		{
-			// Possible truncation.
-			auto new_size= res.size() * 2s;
-			res.resize( new_size, '\0' );
-			continue;
-		}
+		// Read Linux-specific symlink "/proc/self/exe".
 
-		res.resize( size_type(len), ' ' );
-		return res;
+		auto mut link_path_nt= "/proc/self/exe\0";
+
+		var ust::filesystem_path mut res;
+		res.resize( 256s, '\0' );
+		for( auto mut i= 0s; i < 8s; ++i )
+		{
+			auto len = unsafe( ::readlink( $<(link_path_nt[0]), res.data(), res.size() ) );
+			if( len < ssize_type(0) )
+			{
+				return "";
+			}
+			if( size_type(len) >= res.size() )
+			{
+				// Possible truncation.
+				auto new_size= res.size() * 2s;
+				res.resize( new_size, '\0' );
+				continue;
+			}
+
+			res.resize( size_type(len), ' ' );
+			return res;
+		}
 	}
 
-	return "";
+	return argv0; // There is no portable way to obtain executable name other then using "argv[0]".
 }
 
 } // namespace BK

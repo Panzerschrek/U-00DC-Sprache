@@ -94,10 +94,7 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 		configuration_options= configuration_options_opt.try_take();
 	}
 
-	var ust::filesystem_path current_executable=
-		( ust::constexpr_string_starts_with( compiler::target::os, "freebsd" )
-			? ust::string8(first_arg) // HACK! There is no easy reliable way to obtain current executable path on FreeBSD, so, use argv[0].
-			: GetCurrentExecutablePath() );
+	var ust::filesystem_path current_executable= GetCurrentExecutablePath( first_arg );
 
 	var ust::filesystem_path exe_directory = MakePathAbsolute( ust::path::get_parent_path( current_executable ).deref_or( "" ) );
 

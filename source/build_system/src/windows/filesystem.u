@@ -7,8 +7,10 @@ import "windows.uh"
 namespace BK
 {
 
-fn GetCurrentExecutablePath() : ust::filesystem_path
+fn GetCurrentExecutablePath( ust::string_view8 argv0 ) : ust::filesystem_path
 {
+	ust::ignore_unused(argv0);
+
 	var WideString mut res;
 	res.resize( 256s, WCHAR(0) );
 	for( auto mut i= 0s; i < 8s; ++i )

@@ -29,6 +29,6 @@ type FileModificationTime= ust::system_time;
 fn GetFileModificationTime( ust::filesystem_path_view path ) : ust::optional</FileModificationTime/>;
 
 // Get absolute path to executable of current program.
-fn GetCurrentExecutablePath() : ust::filesystem_path;
+fn GetCurrentExecutablePath( ust::string_view8 argv0 ) : ust::filesystem_path;
 
 } // namespace BK
