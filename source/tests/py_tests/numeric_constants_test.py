@@ -30,7 +30,7 @@ def NumericConstants_DecimalConstants_Test1():
 		static_assert( 2147483647 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
 		static_assert( i32(-2147483648) == ( (-1)<<31u ) ); // min i32
 		static_assert( 9223372036854775807i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( -9223372036854775808i64 == ( (-1i64)<<63u ) ); // min i64
+		static_assert( i64( -9223372036854775808u64 ) == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 4294967295u == ~0u ); // max u32
 		static_assert( 18446744073709551615u64 == ~0u64 ); // max u64
 	"""
@@ -57,7 +57,7 @@ def NumericConstants_BinaryConstants_Test1():
 		static_assert( 0b01111111111111111111111111111111 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
 		static_assert( i32(0b10000000000000000000000000000000) == ( (-1)<<31u ) ); // min i32
 		static_assert( 0b0111111111111111111111111111111111111111111111111111111111111111i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( 0b1000000000000000000000000000000000000000000000000000000000000000i64 == ( (-1i64)<<63u ) ); // min i64
+		static_assert( i64( 0b1000000000000000000000000000000000000000000000000000000000000000u64 ) == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 0b11111111111111111111111111111111u == ~0u ); // max u32
 		static_assert( 0b1111111111111111111111111111111111111111111111111111111111111111u64== ~0u64 ); // max u64
 	"""
@@ -82,7 +82,7 @@ def NumericConstants_OctalConstants_Test1():
 		static_assert( 0o17777777777 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
 		static_assert( i32(0o20000000000) == ( (-1)<<31u ) ); // min i32
 		static_assert( 0o777777777777777777777i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( 0o1000000000000000000000i64 == ( (-1i64)<<63u ) ); // min i64
+		static_assert( i64( 0o1000000000000000000000u64 ) == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 0o37777777777u == ~0u ); // max u32
 		static_assert( 0o1777777777777777777777u64== ~0u64 ); // max u64
 	"""
@@ -109,7 +109,7 @@ def NumericConstants_HexadecimalConstants_Test1():
 		static_assert( 0x7fffffff == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
 		static_assert( i32(0x80000000) == ( (-1)<<31u ) ); // min i32
 		static_assert( 0x7fffffffffffffffi64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( 0x8000000000000000i64 == ( (-1i64)<<63u ) ); // min i64
+		static_assert( i64( 0x8000000000000000u64 ) == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 0xffffffffu == ~0u ); // max u32
 		static_assert( 0xffffffffffffffffu64 == ~0u64 ); // max u64
 	"""
@@ -311,3 +311,153 @@ def UnsupportedFloatingPointConstantType_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def IntegerConstantOverflow_Test0():
+	c_program_text= """
+		auto x= 178i8;
+		auto y= 273i8;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+
+
+def IntegerConstantOverflow_Test1():
+	c_program_text= """
+		auto x= 256u8;
+		auto y= 257u8;
+		auto z= 259u8;
+		auto w= 2554559u8;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+
+
+def IntegerConstantOverflow_Test2():
+	c_program_text= """
+		auto x= 32768i16;
+		auto y= 32769i16;
+		auto z= 34768i16;
+		auto w= 65545i16;
+		auto t= 65536i16;
+		auto u= 254765754i16;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 6 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 7 ) )
+
+
+def IntegerConstantOverflow_Test3():
+	c_program_text= """
+		auto x= 65536u16;
+		auto y= 65537u16;
+		auto z= 76852u16;
+		auto w= 254765754u16;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+
+
+def IntegerConstantOverflow_Test4():
+	c_program_text= """
+		auto x= 0x80000000i32;
+		auto y= 2147483648i32;
+		auto z= 2147483649i32;
+		auto w= 3147483648i32;
+		auto s= 642345476542345667i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 6 ) )
+
+
+def IntegerConstantOverflow_Test5():
+	c_program_text= """
+		auto x= 4294967296u32;
+		auto y= 4294967297u32;
+		auto z= 7294967296u32;
+		auto w= 9223372036854775807u32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+
+
+def IntegerConstantOverflow_Test6():
+	c_program_text= """
+		auto x= 9223372036854775808i64;
+		auto y= 9223372036854775809i64;
+		auto z= 15223372036854775808i64;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+
+
+def IntegerConstantOverflow_Test7():
+	c_program_text= """
+		auto x= 256c8;
+		auto y= 257c8;
+		auto z= 259c8;
+		auto w= 2554559c8;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+
+
+def IntegerConstantOverflow_Test8():
+	c_program_text= """
+		auto x= 65536c16;
+		auto y= 65537c16;
+		auto z= 76852c16;
+		auto w= 254765754c16;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+
+
+def IntegerConstantOverflow_Test9():
+	c_program_text= """
+		auto x= 4294967296c32;
+		auto y= 4294967297c32;
+		auto z= 7294967296c32;
+		auto w= 9223372036854775807c32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )

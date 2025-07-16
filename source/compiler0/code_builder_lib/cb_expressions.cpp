@@ -1295,6 +1295,45 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
+	const uint64_t type_size= GetFundamentalTypeSize( type );
+	const bool is_signed= IsSignedInteger( type );
+	bool overflow= false;
+	if( type_size == 1 )
+	{
+		if( is_signed )
+			overflow= num.value > 0x7Full;
+		else
+			overflow= num.value > 0xFFull;
+	}
+	else if( type_size == 2 )
+	{
+		if( is_signed )
+			overflow= num.value > 0x7FFFull;
+		else
+			overflow= num.value > 0xFFFFull;
+	}
+	else if( type_size == 4 )
+	{
+		if( is_signed )
+			overflow= num.value > 0x7FFFFFFFull;
+		else
+			overflow= num.value > 0xFFFFFFFFull;
+	}
+	else if( type_size == 8 )
+	{
+		if( is_signed )
+			overflow= num.value > 0x7FFFFFFFFFFFFFFFull;
+		// Unsigned overflow is impossible here.
+	}
+	else if( type_size == 16 )
+	{
+		// Lexical analyzer gives 64-bit value and thus should check overflow of this value before.
+	}
+	else U_ASSERT(false);
+
+	if( overflow )
+		REPORT_ERROR( IntegerConstantOverflow, names_scope.GetErrors(), numeric_constant.src_loc, num.value, GetFundamentalTypeName( type ) );
+
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
 
 	const VariableMutPtr result=
