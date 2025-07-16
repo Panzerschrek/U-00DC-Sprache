@@ -456,7 +456,7 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 		if( num == uint32_t(-1) )
 			break;
 
-		value= value * 10.0 + double(num);
+		value= std::fma( value, 10.0, double(num) );
 		++it;
 
 	}
@@ -552,7 +552,7 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 		{
 			// Continue parsing as float in case of overflow.
 			// TODO - ensure no precision lost happens in this case.
-			const double parsed_part= std::fma( double(value), 10, double(num) );
+			const double parsed_part= std::fma( double(value), 10.0, double(num) );
 			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
 		}
 		else
