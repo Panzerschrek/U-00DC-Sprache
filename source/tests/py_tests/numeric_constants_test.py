@@ -172,9 +172,6 @@ def NumericConstants_TypeSuffix_Test0():
 			check_type( 100u128, u128(0) );
 			check_type( 8.1f32, f32(0) );
 			check_type( 25.0f64, f64(0) );
-			check_type( 62char8, char8(0) );
-			check_type( 25647char16, char16(0) );
-			check_type( 7586954char32, char32(0) );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

@@ -1274,18 +1274,23 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 	else
+	{
 		type=GetFundamentalTypeByName( type_suffix );
 
-	if( type == U_FundamentalType::InvalidType )
-	{
-		REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
-		return ErrorValue();
-	}
+		if( type == U_FundamentalType::InvalidType )
+		{
+			REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+			return ErrorValue();
+		}
 
-	if( !( IsInteger( type ) || IsChar( type ) ) )
-	{
-		REPORT_ERROR( UnsupportedIntegerConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
-		return ErrorValue();
+		// Do not allow literals of types other then integers.
+		// char* and byte* types aren't supported, since such suffixes may conflict with hexadecimal literals (where 'c' and 'b' are digit names).
+
+		if( !IsInteger( type ) )
+		{
+			REPORT_ERROR( UnsupportedIntegerConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+			return ErrorValue();
+		}
 	}
 
 	const uint64_t type_size= GetFundamentalTypeSize( type );
@@ -1365,18 +1370,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 	else
+	{
 		type=GetFundamentalTypeByName( type_suffix );
 
-	if( type == U_FundamentalType::InvalidType )
-	{
-		REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
-		return ErrorValue();
-	}
+		if( type == U_FundamentalType::InvalidType )
+		{
+			REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+			return ErrorValue();
+		}
 
-	if( !IsFloatingPoint( type ) )
-	{
-		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
-		return ErrorValue();
+		if( !IsFloatingPoint( type ) )
+		{
+			REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+			return ErrorValue();
+		}
 	}
 
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
