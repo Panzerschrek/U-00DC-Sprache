@@ -1276,7 +1276,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else
 	{
-		type=GetFundamentalTypeByName( type_suffix );
+		type= GetFundamentalTypeByName( type_suffix );
 
 		if( type == U_FundamentalType::InvalidType )
 		{
@@ -1373,7 +1373,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else
 	{
-		type=GetFundamentalTypeByName( type_suffix );
+		type= GetFundamentalTypeByName( type_suffix );
 
 		if( type == U_FundamentalType::InvalidType )
 		{

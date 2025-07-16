@@ -4941,7 +4941,7 @@ void SyntaxAnalyzer::PushErrorMessage()
 		LexSyntError error_message;
 		error_message.src_loc= it_->src_loc;
 
-		if( it_->type == Lexem::Type::IntegerNumber )
+		if( it_->type == Lexem::Type::IntegerNumber || it_->type == Lexem::Type::FloatingPointNumber )
 		{
 			// Process numbers specially since text of number lexem is not a text but binary struct data.
 			error_message.text= "Syntax error - unexpected number lexem";
