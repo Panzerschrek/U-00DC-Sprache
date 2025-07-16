@@ -448,22 +448,23 @@ std::array<char, 8> TryParseNumericLexemTypeSuffix( Iterator& it, const Iterator
 
 Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
-	double integer_part= parsed_part;
+	double value= parsed_part;
 
+	// Integer part.
 	while( it < it_end )
 	{
 		const uint64_t num= TryParseDecimalNumber( *it );
 		if( num == uint64_t(-1) )
 			break;
 
-		integer_part= integer_part * 10.0 + double(num);
+		value= value * 10.0 + double(num);
 		++it;
 
 	}
 
-	double fractional_part= 0.0;
 	int32_t num_fractional_digits= 0;
 
+	// Fractional part.
 	if( it < it_end && *it == '.' )
 	{
 		++it;
@@ -475,7 +476,7 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 				break;
 
 			++num_fractional_digits;
-			fractional_part= fractional_part * 10.0 + double(num);
+			value= value * 10.0 + double(num);
 			++it;
 		}
 	}
@@ -516,14 +517,9 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 	// TODO - check no precision lost happens here.
 
 	if( exponent >= num_fractional_digits )
-		result.value= fractional_part * PowI( 10u, uint64_t( exponent - num_fractional_digits ) );
+		result.value= value * PowI( 10u, uint64_t( exponent - num_fractional_digits ) );
 	else
-		result.value= fractional_part / PowI( 10u, uint64_t( num_fractional_digits - exponent ) );
-
-	if( exponent >= 0 )
-		result.value+= integer_part * PowI( 10u, uint64_t(exponent) );
-	else
-		result.value+= integer_part / PowI( 10u, uint64_t(-exponent) );
+		result.value= value / PowI( 10u, uint64_t( num_fractional_digits - exponent ) );
 
 	result.type_suffix= TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors );
 
