@@ -398,17 +398,112 @@ double PowI( const uint64_t base, const uint64_t pow )
 	return res;
 }
 
+uint64_t TryParseDecimalNumber( const char c )
+{
+	if( c >= '0' && c <= '9' )
+		return uint64_t(c - '0');
+	return uint64_t(-1);
+}
+
+Lexem ContinueParingFloatingPointNumber( const double parsed_part, Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
+{
+	double integer_part= parsed_part;
+
+	while( it < it_end )
+	{
+		const uint64_t num= TryParseDecimalNumber( *it );
+		if( num == uint64_t(-1) )
+			break;
+
+		integer_part= integer_part * 10.0 + double(num);
+		++it;
+
+	}
+
+	double fractional_part= 0.0;
+	int32_t num_fractional_digits= 0;
+
+	if( it < it_end && *it == '.' )
+	{
+		++it;
+
+		while( it < it_end )
+		{
+			const uint64_t num= TryParseDecimalNumber( *it );
+			if( num == uint64_t(-1) )
+				break;
+
+			++num_fractional_digits;
+			fractional_part= fractional_part * 10.0 + double(num);
+			++it;
+		}
+	}
+
+	int32_t exponent= 0;
+
+	// Exponent
+	if( it < it_end && *it == 'e' )
+	{
+		++it;
+
+		bool is_negative= false;
+
+		if( it < it_end && *it == '-' )
+		{
+			is_negative= true;
+			++it;
+		}
+		else if( it < it_end && *it == '+' )
+			++it;
+
+		while( it < it_end )
+		{
+			const uint64_t num= TryParseDecimalNumber( *it );
+			if( num == uint64_t(-1) )
+				break;
+
+			// TODO - detect exponent overflow.
+			exponent= exponent * 10 + int32_t(num);
+			++it;
+		}
+		if( is_negative )
+			exponent= -exponent;
+	}
+
+	FloatingPointNumberLexemData result;
+	result.has_fractional_point= true;
+
+	if( exponent >= 0 )
+		result.value_double= integer_part * PowI( 10u, uint64_t(exponent) );
+	else
+		result.value_double= integer_part * PowI( 10u, uint64_t(-exponent) );
+
+	if( exponent >= num_fractional_digits )
+		result.value_double+= fractional_part * PowI( 10u, uint64_t( exponent - num_fractional_digits ) );
+	else
+		result.value_double+= fractional_part / PowI( 10u, uint64_t( num_fractional_digits - exponent ) );
+
+	if( it != it_end && IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
+	{
+		const Lexem type_suffix= ParseIdentifier( it, it_end );
+		if( type_suffix.text.size() >= sizeof(result.type_suffix) )
+			out_errors.emplace_back( "Type suffix of numeric literal is too long", src_loc );
+
+		std::memcpy( result.type_suffix.data(), type_suffix.text.data(), std::min( type_suffix.text.size(), sizeof(result.type_suffix) ) );
+	}
+
+	Lexem result_lexem;
+	result_lexem.type= Lexem::Type::IntegerNumber;
+	result_lexem.text.resize( sizeof(IntegerNumberLexemData) );
+	std::memcpy( result_lexem.text.data(), &result, sizeof(IntegerNumberLexemData) );
+	return result_lexem;
+}
+
 Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
 	uint64_t base= 10u;
 	// Returns -1 for non-numbers
-	uint64_t (*number_func)(char) =
-		[]( const char c ) -> uint64_t
-		{
-			if( c >= '0' && c <= '9' )
-				return uint64_t(c - '0');
-			return uint64_t(-1);
-		};
+	uint64_t (*number_func)(char) = TryParseDecimalNumber;
 
 	if( *it == '0' && std::next(it) < it_end )
 	{
@@ -461,9 +556,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 		};
 	}
 
-	uint64_t integer_part= 0, fractional_part= 0;
-	int fractional_part_digits= 0, exponent= 0;
-	bool has_fraction_point= false;
+	uint64_t value= 0u;
 
 	while( it < it_end )
 	{
@@ -471,101 +564,39 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 		if( num == uint64_t(-1) )
 			break;
 
-		const uint64_t integer_part_before= integer_part;
-		integer_part= integer_part * base + num;
+		const uint64_t new_value= value * base + num;
 		++it;
 
-		if( integer_part < integer_part_before ) // Check overflow
+		if( new_value < value ) // Check overflow
 		{
-			out_errors.emplace_back( "Integer part of numeric literal is too long", src_loc );
-			break;
-		}
-	}
-
-	if( it < it_end && *it == '.' )
-	{
-		++it;
-		has_fraction_point= true;
-
-		while( it < it_end )
-		{
-			const uint64_t num= number_func( *it );
-			if( num == uint64_t(-1) )
-				break;
-
-			const uint64_t fractional_part_before= fractional_part;
-			fractional_part= fractional_part * base + num;
-			++fractional_part_digits;
-			++it;
-
-			if( fractional_part < fractional_part_before ) // Check overflow
+			if( base == 10 )
 			{
-				out_errors.emplace_back( "Fractional part of numeric literal is too long", src_loc );
+				// Parse as float in case of overflow.
+				const double parsed_part= double(value) * double(base) + double(num);
+				return ContinueParingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
+			}
+			else
+			{
+				// We have no floating point non-decimal literals. So, emit an error in case of overflow.
+				out_errors.emplace_back( "Integer part of numeric literal is too long", src_loc );
 				break;
 			}
 		}
+		else
+			value= new_value;
 	}
 
-	// Exponent
-	if( base == 10u && it < it_end && *it == 'e' )
+	if( base == 10 && it != it_end && *it == '.' )
 	{
-		++it;
-
-		U_ASSERT( base == 10 );
-		bool is_negative= false;
-
-		if( it < it_end && *it == '-' )
-		{
-			is_negative= true;
-			++it;
-		}
-		else if( it < it_end && *it == '+' )
-			++it;
-
-		while( it < it_end )
-		{
-			const uint64_t num= number_func( *it );
-			if( num == uint64_t(-1) )
-				break;
-
-			exponent= exponent * int(base) + int(num);
-			++it;
-		}
-		if( is_negative )
-			exponent= -exponent;
+		// If we have decimal point - parse as float.
+		return ContinueParingFloatingPointNumber( double(value), it, it_end, src_loc, out_errors );
 	}
 
 	IntegerNumberLexemData result;
+	result.has_fractional_point= false;
+	result.value_int= value;
 
-	// For double calculate only powers > 0, because pow( base, positive ) is always integer and has exact double representation.
-	// pow( base, negative ) may have not exact double representation (1/10 for example).
-	// Example:
-	// 3 / 10 - right
-	// 3 * (1/10) - wrong
-	if( exponent >= 0 )
-		result.value_double= double(integer_part) * PowI( base, uint64_t(exponent) );
-	else
-		result.value_double= double(integer_part) / PowI( base, uint64_t(-exponent) );
-	if( exponent >= fractional_part_digits )
-		result.value_double+= double(fractional_part) * PowI( base, uint64_t( exponent - fractional_part_digits ) );
-	else
-		result.value_double+= double(fractional_part) / PowI( base, uint64_t( fractional_part_digits - exponent ) );
-
-	result.value_int= integer_part;
-	for( int i= 0; i < exponent; ++i )
-		result.value_int*= base;
-	for( int i= 0; i < -exponent; ++i )
-		result.value_int/= base;
-
-	uint64_t fractional_part_corrected= fractional_part;
-	for( int i= 0; i < exponent - fractional_part_digits; ++i )
-		fractional_part_corrected*= base;
-	for( int i= 0; i < fractional_part_digits - exponent; ++i )
-		fractional_part_corrected/= base;
-	result.value_int+= fractional_part_corrected;
-
-	result.has_fractional_point= has_fraction_point;
-
+	// Parse char literal.
 	if( it != it_end && IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 	{
 		const Lexem type_suffix= ParseIdentifier( it, it_end );
