@@ -12,7 +12,7 @@ def NumericConstants_DecimalConstants_Test0():
 		static_assert( 17.23e3 == 17.23e+3 );
 		static_assert( 256000.0e-3 == 256.0 ); // floating point with negative exponent
 		static_assert( 13e2 == 1300.0 ); // floating point with exponent
-		static_assert( 13.52e3i32 == 13520i32 ); // fractional part saved for integer constant
+		static_assert( i32( 13.52e3 )== 13520 ); // fractional part saved for integer constant
 		static_assert( 0.3 == 3.0 / 10.0 );
 		static_assert( 25.0e-5 == 0.00025 );
 		static_assert( 0.00025 == 25.0 / 100000.0 );
@@ -144,7 +144,6 @@ def NumericConstants_TypeSuffix_Test0():
 			check_type( 0xF41Au, u32(0) );
 			check_type( 0b1110u, u32(0) );
 			check_type( 0o7u, u32(0) );
-			check_type( 1.1u, u32(0) ); // Even if numeric constant has fractional point, type specified by suffix.
 
 			// "s" suffix for size_type.
 			check_type( 0s, size_type(0) );
@@ -154,7 +153,6 @@ def NumericConstants_TypeSuffix_Test0():
 
 			// "f" for 32-bit floating point.
 			check_type( 3.14f, f32(0) );
-			check_type( 99f, f32(0) );
 			check_type( 2e9f, f32(0) );
 			check_type( 3.1e2f, f32(0) );
 			check_type( 653e-3f, f32(0) );
@@ -176,8 +174,8 @@ def NumericConstants_TypeSuffix_Test0():
 			check_type( 653214785365245u64, u64(0) );
 			check_type( 100i128, i128(0) );
 			check_type( 100u128, u128(0) );
-			check_type( 8f32, f32(0) );
-			check_type( 25f64, f64(0) );
+			check_type( 8.1f32, f32(0) );
+			check_type( 25.0f64, f64(0) );
 			check_type( 62char8, char8(0) );
 			check_type( 25647char16, char16(0) );
 			check_type( 7586954char32, char32(0) );
