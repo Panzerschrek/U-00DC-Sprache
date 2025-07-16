@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <cstring>
 
 #include "../../lex_synt_lib_common/assert.hpp"
@@ -476,7 +477,7 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 				break;
 
 			++num_fractional_digits;
-			value= value * 10.0 + double(num);
+			value= std::fma( value, 10.0, double(num) );
 			++it;
 		}
 	}
@@ -553,7 +554,7 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 		{
 			// Continue parsing as float in case of overflow.
 			// TODO - ensure no precision lost happens in this case.
-			const double parsed_part= double(value) * 10.0 + double(num);
+			const double parsed_part= std::fma( double(value), 10, double(num) );
 			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
 		}
 		else
