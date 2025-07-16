@@ -535,7 +535,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 			exponent= -exponent;
 	}
 
-	NumberLexemData result;
+	IntegerNumberLexemData result;
 
 	// For double calculate only powers > 0, because pow( base, positive ) is always integer and has exact double representation.
 	// pow( base, negative ) may have not exact double representation (1/10 for example).
@@ -576,9 +576,9 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 	}
 
 	Lexem result_lexem;
-	result_lexem.type= Lexem::Type::Number;
-	result_lexem.text.resize( sizeof(NumberLexemData) );
-	std::memcpy( result_lexem.text.data(), &result, sizeof(NumberLexemData) );
+	result_lexem.type= Lexem::Type::IntegerNumber;
+	result_lexem.text.resize( sizeof(IntegerNumberLexemData) );
+	std::memcpy( result_lexem.text.data(), &result, sizeof(IntegerNumberLexemData) );
 	return result_lexem;
 }
 

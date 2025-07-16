@@ -1247,7 +1247,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	U_FundamentalType type= U_FundamentalType::InvalidType;
 
-	const NumberLexemData& num= numeric_constant.num;
+	const IntegerNumberLexemData& num= numeric_constant.num;
 	const std::string type_suffix= num.type_suffix.data();
 
 	if( type_suffix.empty() )
@@ -1326,7 +1326,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	U_FundamentalType type= U_FundamentalType::InvalidType;
 
-	const NumberLexemData& num= numeric_constant.num;
+	const FloatingPointNumberLexemData& num= numeric_constant.num;
 	const std::string type_suffix= num.type_suffix.data();
 
 	if( type_suffix.empty() )

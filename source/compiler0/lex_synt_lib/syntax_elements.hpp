@@ -415,7 +415,7 @@ struct IntegerNumericConstant
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	NumberLexemData num;
+	IntegerNumberLexemData num;
 };
 
 struct FloatingPointNumericConstant
@@ -424,7 +424,7 @@ struct FloatingPointNumericConstant
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
-	NumberLexemData num;
+	FloatingPointNumberLexemData num;
 };
 
 struct BooleanConstant
