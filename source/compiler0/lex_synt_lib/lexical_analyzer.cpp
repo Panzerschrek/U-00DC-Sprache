@@ -515,15 +515,15 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 
 	// TODO - check no precision lost happens here.
 
-	if( exponent >= 0 )
-		result.value= integer_part * PowI( 10u, uint64_t(exponent) );
-	else
-		result.value= integer_part * PowI( 10u, uint64_t(-exponent) );
-
 	if( exponent >= num_fractional_digits )
-		result.value+= fractional_part * PowI( 10u, uint64_t( exponent - num_fractional_digits ) );
+		result.value= fractional_part * PowI( 10u, uint64_t( exponent - num_fractional_digits ) );
 	else
-		result.value+= fractional_part / PowI( 10u, uint64_t( num_fractional_digits - exponent ) );
+		result.value= fractional_part / PowI( 10u, uint64_t( num_fractional_digits - exponent ) );
+
+	if( exponent >= 0 )
+		result.value+= integer_part * PowI( 10u, uint64_t(exponent) );
+	else
+		result.value+= integer_part / PowI( 10u, uint64_t(-exponent) );
 
 	result.type_suffix= TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors );
 
