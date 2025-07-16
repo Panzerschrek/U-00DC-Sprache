@@ -233,7 +233,7 @@ U_TEST( GoToDefinition_Test4 )
 		{
 			char8 ccc;
 			fn constructor()
-				( ccc= 42c8 )
+				( ccc( 42 ) )
 			{}
 		}
 		fn Foo()

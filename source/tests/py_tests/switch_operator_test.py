@@ -337,8 +337,8 @@ def SwitchOperatorRange_Test2():
 				'0' ... '9' -> { return 3; },
 				'$' -> { return 4; },
 				default -> { return 5; },
-				128c8 ... -> { return 6; },
-				... 31c8 -> { return 7; },
+				char8(128) ... -> { return 6; },
+				... char8(31) -> { return 7; },
 			}
 		}
 	"""

@@ -159,12 +159,6 @@ def NumericConstants_TypeSuffix_Test0():
 			check_type( 3.1e2f, f32(0) );
 			check_type( 653e-3f, f32(0) );
 
-			// Short char literals
-			check_type( 95c8, char8(0) );
-			check_type( 32c8, char8(0) );
-			check_type( 32564c16, char16(0) );
-			check_type( 1235678c32, char32(0) );
-
 			// Using fundamental types names as suffixes.
 			check_type( 52i8, i8(0) );
 			check_type( 254u8, u8(0) );
@@ -271,24 +265,6 @@ def UnsupportedFloatingPointConstantType_Test0():
 def UnsupportedFloatingPointConstantType_Test1():
 	c_program_text= """
 		auto x= 7876e13s; // Use integer suffix for floating-point literal.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
-
-
-def UnsupportedFloatingPointConstantType_Test2():
-	c_program_text= """
-		auto x= 7876.12c8; // Use integer suffix for floating-point literal.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
-
-
-def UnsupportedFloatingPointConstantType_Test3():
-	c_program_text= """
-		auto x= 7876.12c32; // Use integer suffix for floating-point literal.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -416,48 +392,3 @@ def IntegerConstantOverflow_Test6():
 	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
 	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
 	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
-
-
-def IntegerConstantOverflow_Test7():
-	c_program_text= """
-		auto x= 256c8;
-		auto y= 257c8;
-		auto z= 259c8;
-		auto w= 2554559c8;
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
-
-
-def IntegerConstantOverflow_Test8():
-	c_program_text= """
-		auto x= 65536c16;
-		auto y= 65537c16;
-		auto z= 76852c16;
-		auto w= 254765754c16;
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
-
-
-def IntegerConstantOverflow_Test9():
-	c_program_text= """
-		auto x= 4294967296c32;
-		auto y= 4294967297c32;
-		auto z= 7294967296c32;
-		auto w= 9223372036854775807c32;
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
-	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )

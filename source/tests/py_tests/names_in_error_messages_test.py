@@ -260,7 +260,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test10():
 		template</ char16 C /> struct Box{}
 		fn Foo()
 		{
-			var i32 x= Box</ 45c16 />();
+			var i32 x= Box</ char16(45) />();
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -268,7 +268,7 @@ def TypeNameInErrorMessage_ClassTemplate_Test10():
 	assert( errors_list[0].error_code == "TypesMismatch" )
 	assert( errors_list[0].src_loc.line == 5 )
 	assert( errors_list[0].text.find( "i32" ) != -1 )
-	assert( errors_list[0].text.find( "Box</45c16/>" ) != -1 )
+	assert( errors_list[0].text.find( "Box</char16(45)/>" ) != -1 )
 
 
 def TemplateParametersInErrorInsideTemplate_Test0():
