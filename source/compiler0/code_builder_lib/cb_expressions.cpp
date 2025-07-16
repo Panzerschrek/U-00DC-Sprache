@@ -1275,6 +1275,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		type= U_FundamentalType::char16_;
 	else if( type_suffix == "c32" )
 		type= U_FundamentalType::char32_;
+	else if( type_suffix == "f" )
+	{
+		REPORT_ERROR( UnsupportedIntegerConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+		return ErrorValue();
+	}
 	else
 		type=GetFundamentalTypeByName( type_suffix );
 
@@ -1322,6 +1327,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		type = U_FundamentalType::f64_;
 	else if( type_suffix == "f" )
 		type= U_FundamentalType::f32_;
+	else if( type_suffix == "u" || type_suffix == "s" || type_suffix == "c8" || type_suffix == "c16" || type_suffix == "c32" )
+	{
+		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+		return ErrorValue();
+	}
 	else
 		type=GetFundamentalTypeByName( type_suffix );
 
