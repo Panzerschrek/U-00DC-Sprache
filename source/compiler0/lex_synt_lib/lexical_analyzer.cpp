@@ -446,7 +446,7 @@ std::array<char, 8> TryParseNumericLexemTypeSuffix( Iterator& it, const Iterator
 	return res;
 }
 
-Lexem ContinueParingFloatingPointNumber( const double parsed_part, Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
+Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
 	double integer_part= parsed_part;
 
@@ -552,16 +552,17 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 			// Continue parsing as float in case of overflow.
 			// TODO - ensure no precision lost happens in this case.
 			const double parsed_part= double(value) * 10.0 + double(num);
-			return ContinueParingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
+			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
 		}
 		else
 			value= new_value;
 	}
 
-	if( it < it_end && *it == '.' )
+	if( it < it_end )
 	{
-		// If we have decimal point - parse as float.
-		return ContinueParingFloatingPointNumber( double(value), it, it_end, src_loc, out_errors );
+		// If we have decimal point or exponent - parse as float.
+		if( *it == '.' || *it == 'e' )
+			return ContinueParsingFloatingPointNumber( double(value), it, it_end, src_loc, out_errors );
 	}
 
 	IntegerNumberLexemData result;

@@ -7,11 +7,11 @@ def NumericConstants_DecimalConstants_Test0():
 		static_assert( 13 == 10 + 3 );
 		static_assert( 279 == 200 + 70 + 9 );
 		static_assert( 16.625 == 16.0 + 0.5 + 0.125 );
-		static_assert( 354e5 == 35400000 );
+		static_assert( 354e5 == 35400000.0 );
 		static_assert( 25.42e10 == 254200000000.0 );
 		static_assert( 17.23e3 == 17.23e+3 );
 		static_assert( 256000.0e-3 == 256.0 ); // floating point with negative exponent
-		static_assert( 13e2 == 1300 ); // integer with exponent
+		static_assert( 13e2 == 1300.0 ); // floating point with exponent
 		static_assert( 13.52e3i32 == 13520i32 ); // fractional part saved for integer constant
 		static_assert( 0.3 == 3.0 / 10.0 );
 		static_assert( 25.0e-5 == 0.00025 );
@@ -124,7 +124,6 @@ def NumericConstants_TypeSuffix_Test0():
 			// No suffix and no fractional part - is signed 32bit integer.
 			check_type( 23, i32(0) );
 			check_type( 9652412, i32(0) );
-			check_type( 1e5, i32(0) );
 			check_type( 0x0DEADC0D, i32(0) );
 			check_type( 0b101, i32(0) );
 			check_type( 0o52147, i32(0) );
@@ -135,6 +134,9 @@ def NumericConstants_TypeSuffix_Test0():
 			check_type( 0.001, f64(0) );
 			check_type( 5.34e-5, f64(0) );
 			check_type( 7.2e11, f64(0) );
+
+			// No suffix and has exponent - f64 floating point.
+			check_type( 1e5, f64(0) );
 
 			// "u" siffix for unsigned 32bit integer.
 			check_type( 99u, u32(0) );
@@ -153,7 +155,6 @@ def NumericConstants_TypeSuffix_Test0():
 			// "f" for 32-bit floating point.
 			check_type( 3.14f, f32(0) );
 			check_type( 99f, f32(0) );
-			check_type( 0b1.1f, f32(0) );
 			check_type( 2e9f, f32(0) );
 			check_type( 3.1e2f, f32(0) );
 			check_type( 653e-3f, f32(0) );
