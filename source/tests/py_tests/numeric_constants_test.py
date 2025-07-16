@@ -222,3 +222,12 @@ def NumericConstantsExtendedType_Test1():
 
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def NumericConstantsExtendedType_Test2():
+	c_program_text= """
+		// Large constants (over 64-bit range) are parsed as floating point constants.
+		static_assert( same_type</ typeof(1234567900681729874025512960), f64 /> );
+		static_assert( 1234567900681729874025512960 == 1234567900681729874025512960.0 );
+	"""
+	tests_lib.build_program( c_program_text )
