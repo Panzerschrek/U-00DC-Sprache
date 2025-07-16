@@ -504,9 +504,15 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 			if( num == uint64_t(-1) )
 				break;
 
-			// TODO - detect exponent overflow.
 			exponent= exponent * 10 + int32_t(num);
 			++it;
+
+			if( exponent > 2048 )
+			{
+				// Do not allow too large exponents.
+				out_errors.emplace_back( "Floating point number exponent overflow", src_loc );
+				break;
+			}
 		}
 		if( is_negative )
 			exponent= -exponent;
