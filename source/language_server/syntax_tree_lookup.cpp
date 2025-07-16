@@ -170,7 +170,12 @@ void FindImpl( const Synt::RawPointerToReferenceOperator& raw_pointer_to_referen
 	FindImpl( raw_pointer_to_reference_operator.expression );
 }
 
-void FindImpl( const Synt::NumericConstant& numeric_constant )
+void FindImpl( const Synt::IntegerNumericConstant& numeric_constant )
+{
+	(void)numeric_constant;
+}
+
+void FindImpl( const Synt::FloatingPointNumericConstant& numeric_constant )
 {
 	(void)numeric_constant;
 }
