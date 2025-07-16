@@ -241,9 +241,46 @@ def UnsupportedIntegerConstantType_Test1():
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
 
+
 def UnsupportedIntegerConstantType_Test2():
 	c_program_text= """
 		auto x= 7876f64; // Use floating-point suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedIntegerConstantType_Test3():
+	c_program_text= """
+		auto x= 56char8; // Use char-type suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedIntegerConstantType_Test4():
+	c_program_text= """
+		auto x= 526byte16; // Use byte-type suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedIntegerConstantType_Test5():
+	c_program_text= """
+		auto x= 1bool; // Use bool suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedIntegerConstantType_Test6():
+	c_program_text= """
+		auto x= 0void; // Use void suffix for integer literal.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -280,6 +317,42 @@ def UnsupportedFloatingPointConstantType_Test4():
 def UnsupportedFloatingPointConstantType_Test5():
 	c_program_text= """
 		auto x= 7876.0i16; // Use integer suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test6():
+	c_program_text= """
+		auto x= 7876.0char32; // Use char-type suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test7():
+	c_program_text= """
+		auto x= 13.0byte8; // Use byte-type suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test8():
+	c_program_text= """
+		auto x= 13.0bool; // Use bool suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test9():
+	c_program_text= """
+		auto x= 13.0void; // Use void suffix for floating-point literal.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
