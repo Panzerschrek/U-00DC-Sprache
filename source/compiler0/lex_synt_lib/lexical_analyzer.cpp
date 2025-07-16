@@ -579,10 +579,21 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 	return result_lexem;
 }
 
-// Initial prefix should be skipped.
+// Initial prefix should be skipped before this call.
 Lexem ParseBinaryNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
 	uint64_t value= 0u;
+
+	// Require at least one digit.
+	if( it == it_end )
+		out_errors.emplace_back( "Unexpected end of binary number", src_loc );
+	else
+	{
+		value= TryParseBinaryNumber( *it );
+		++it;
+		if( value == uint64_t(-1) )
+			out_errors.emplace_back( "Unexpected end of binary number", src_loc );
+	}
 
 	while( it < it_end )
 	{
@@ -614,10 +625,21 @@ Lexem ParseBinaryNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_loc
 	return result_lexem;
 }
 
-// Initial prefix should be skipped.
+// Initial prefix should be skipped before this call.
 Lexem ParseOctalNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
 	uint64_t value= 0u;
+
+	// Require at least one digit.
+	if( it == it_end )
+		out_errors.emplace_back( "Unexpected end of octal number", src_loc );
+	else
+	{
+		value= TryParseOctalNumber( *it );
+		++it;
+		if( value == uint64_t(-1) )
+			out_errors.emplace_back( "Unexpected end of octal number", src_loc );
+	}
 
 	while( it < it_end )
 	{
@@ -649,10 +671,21 @@ Lexem ParseOctalNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_loc,
 	return result_lexem;
 }
 
-// Initial prefix should be skipped.
+// Initial prefix should be skipped before this call.
 Lexem ParseHexadecimalNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
 	uint64_t value= 0u;
+
+	// Require at least one digit.
+	if( it == it_end )
+		out_errors.emplace_back( "Unexpected end of hexadecimal number", src_loc );
+	else
+	{
+		value= TryParseHexadecimalNumber( *it );
+		++it;
+		if( value == uint64_t(-1) )
+			out_errors.emplace_back( "Unexpected end of hexadecimal number", src_loc );
+	}
 
 	while( it < it_end )
 	{
