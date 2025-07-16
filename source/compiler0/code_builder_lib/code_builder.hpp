@@ -766,7 +766,8 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TernaryOperator& ternary_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NumericConstant& numeric_constant );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::IntegerNumericConstant& numeric_constant );
+	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FloatingPointNumericConstant& numeric_constant );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::BooleanConstant& boolean_constant );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::StringLiteral& string_literal );
 	Value BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::CharLiteral& char_literal );

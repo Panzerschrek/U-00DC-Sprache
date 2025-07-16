@@ -1243,7 +1243,86 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const Synt::NumericConstant& numeric_constant )
+	const Synt::IntegerNumericConstant& numeric_constant )
+{
+	U_FundamentalType type= U_FundamentalType::InvalidType;
+
+	const NumberLexemData& num= numeric_constant.num;
+	const std::string type_suffix= num.type_suffix.data();
+
+	if( type_suffix.empty() )
+	{
+		if( num.has_fractional_point )
+			type = U_FundamentalType::f64_;
+		else
+		{
+			// Constants without fractional point are integers.
+			// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
+			if( num.value_int <= 2147483647u )
+				type= U_FundamentalType::i32_;
+			else if( num.value_int <= 9223372036854775807ULL )
+				type= U_FundamentalType::i64_;
+			else
+				type= U_FundamentalType::i128_;
+		}
+	}
+	else if( type_suffix == "u" )
+	{
+		// Select "i32", if given constant fits inside it. Otherwise use "u64".
+		type = num.value_int <= 4294967295u ? U_FundamentalType::u32_ : U_FundamentalType::u64_;
+	}
+	// Suffix for size_type
+	else if( type_suffix == "s" )
+		type= U_FundamentalType::size_type_;
+	// Simple "f" suffix for 32bit floats.
+	else if( type_suffix == "f" )
+		type= U_FundamentalType::f32_;
+	// Short suffixes for chars
+	else if( type_suffix ==  "c8" )
+		type= U_FundamentalType::char8_ ;
+	else if( type_suffix == "c16" )
+		type= U_FundamentalType::char16_;
+	else if( type_suffix == "c32" )
+		type= U_FundamentalType::char32_;
+	else
+		type=GetFundamentalTypeByName( type_suffix );
+
+	if( type == U_FundamentalType::InvalidType )
+	{
+		REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+		return ErrorValue();
+	}
+	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
+
+	const VariableMutPtr result=
+		Variable::Create(
+			FundamentalType( type, llvm_type ),
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			"numeric constant " + std::to_string(num.value_double) );
+
+	if( IsInteger( type ) || IsChar( type ) )
+		result->constexpr_value=
+			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), num.value_int ) );
+	else if( IsFloatingPoint( type ) )
+		result->constexpr_value=
+			llvm::ConstantFP::get( llvm_type, num.value_double );
+	else
+		U_ASSERT(false);
+
+	result->llvm_value= result->constexpr_value;
+
+	function_context.variables_state.AddNode( result );
+
+	RegisterTemporaryVariable( function_context, result );
+	return result;
+}
+
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::FloatingPointNumericConstant& numeric_constant )
 {
 	U_FundamentalType type= U_FundamentalType::InvalidType;
 

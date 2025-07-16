@@ -354,7 +354,22 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( raw_pointer_to_reference_operator->expression, stream );
 			stream << ")";
 		}
-		void operator()( const NumericConstant& numeric_constant ) const
+		void operator()( const IntegerNumericConstant& numeric_constant ) const
+		{
+			stream.precision( std::numeric_limits<double>::digits10 + 1 );
+			if( numeric_constant.num.has_fractional_point )
+			{
+				stream.flags( stream.flags() | std::ios_base::showpoint );
+				stream << numeric_constant.num.value_double;
+			}
+			else
+			{
+				stream.flags( stream.flags() & (~std::ios_base::showpoint) );
+				stream << numeric_constant.num.value_int;
+			}
+			stream << numeric_constant.num.type_suffix.data();
+		}
+		void operator()( const FloatingPointNumericConstant& numeric_constant ) const
 		{
 			stream.precision( std::numeric_limits<double>::digits10 + 1 );
 			if( numeric_constant.num.has_fractional_point )

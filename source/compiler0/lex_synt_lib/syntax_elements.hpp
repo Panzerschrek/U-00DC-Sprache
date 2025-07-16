@@ -50,7 +50,8 @@ struct FunctionType;
 struct CoroutineType;
 
 // Expression
-struct NumericConstant;
+struct IntegerNumericConstant;
+struct FloatingPointNumericConstant;
 struct BooleanConstant;
 struct MoveOperator;
 struct MoveOperatorCompletion;
@@ -177,7 +178,8 @@ using TypeName= std::variant<
 using Expression= std::variant<
 	EmptyVariant,
 	// Terminal nodes.
-	NumericConstant,
+	IntegerNumericConstant,
+	FloatingPointNumericConstant,
 	BooleanConstant,
 	MoveOperator,
 	MoveOperatorCompletion,
@@ -407,9 +409,18 @@ struct NameLookupCompletion
 	std::string name;
 };
 
-struct NumericConstant
+struct IntegerNumericConstant
 {
-	NumericConstant( const SrcLoc& src_loc )
+	IntegerNumericConstant( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
+
+	SrcLoc src_loc;
+	NumberLexemData num;
+};
+
+struct FloatingPointNumericConstant
+{
+	FloatingPointNumericConstant( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;

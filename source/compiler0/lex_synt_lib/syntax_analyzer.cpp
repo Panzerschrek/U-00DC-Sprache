@@ -183,7 +183,7 @@ private:
 	ProgramElementsList ParseNamespaceBodyToNamespaceEnd();
 	ProgramElementsList ParseNamespaceBodyImpl( Lexem::Type end_lexem );
 
-	NumericConstant ParseNumericConstant();
+	IntegerNumericConstant ParseNumericConstant();
 
 	Expression ParseExpression();
 	template<size_t priority> Expression TryParseBinaryOperator();
@@ -859,12 +859,12 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 	return result_builder.Build();
 }
 
-NumericConstant SyntaxAnalyzer::ParseNumericConstant()
+IntegerNumericConstant SyntaxAnalyzer::ParseNumericConstant()
 {
 	U_ASSERT( it_->type == Lexem::Type::Number );
 	U_ASSERT( it_->text.size() == sizeof(NumberLexemData) );
 	
-	NumericConstant result( it_->src_loc );
+	IntegerNumericConstant result( it_->src_loc );
 	
 	std::memcpy( &result.num, it_->text.data(), sizeof(NumberLexemData) );
 	
