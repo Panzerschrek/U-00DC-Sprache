@@ -471,17 +471,16 @@ Lexem ContinueParingFloatingPointNumber( const double parsed_part, Iterator& it,
 	}
 
 	FloatingPointNumberLexemData result;
-	result.has_fractional_point= true;
 
 	if( exponent >= 0 )
-		result.value_double= integer_part * PowI( 10u, uint64_t(exponent) );
+		result.value= integer_part * PowI( 10u, uint64_t(exponent) );
 	else
-		result.value_double= integer_part * PowI( 10u, uint64_t(-exponent) );
+		result.value= integer_part * PowI( 10u, uint64_t(-exponent) );
 
 	if( exponent >= num_fractional_digits )
-		result.value_double+= fractional_part * PowI( 10u, uint64_t( exponent - num_fractional_digits ) );
+		result.value+= fractional_part * PowI( 10u, uint64_t( exponent - num_fractional_digits ) );
 	else
-		result.value_double+= fractional_part / PowI( 10u, uint64_t( num_fractional_digits - exponent ) );
+		result.value+= fractional_part / PowI( 10u, uint64_t( num_fractional_digits - exponent ) );
 
 	if( it != it_end && IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 	{
@@ -493,9 +492,9 @@ Lexem ContinueParingFloatingPointNumber( const double parsed_part, Iterator& it,
 	}
 
 	Lexem result_lexem;
-	result_lexem.type= Lexem::Type::IntegerNumber;
-	result_lexem.text.resize( sizeof(IntegerNumberLexemData) );
-	std::memcpy( result_lexem.text.data(), &result, sizeof(IntegerNumberLexemData) );
+	result_lexem.type= Lexem::Type::FloatingPointNumber;
+	result_lexem.text.resize( sizeof(FloatingPointNumberLexemData) );
+	std::memcpy( result_lexem.text.data(), &result, sizeof(FloatingPointNumberLexemData) );
 	return result_lexem;
 }
 
@@ -586,15 +585,14 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 			value= new_value;
 	}
 
-	if( base == 10 && it != it_end && *it == '.' )
+	if( base == 10 && it < it_end && *it == '.' )
 	{
 		// If we have decimal point - parse as float.
 		return ContinueParingFloatingPointNumber( double(value), it, it_end, src_loc, out_errors );
 	}
 
 	IntegerNumberLexemData result;
-	result.has_fractional_point= false;
-	result.value_int= value;
+	result.value= value;
 
 	// Parse char literal.
 	if( it != it_end && IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )

@@ -1252,24 +1252,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( type_suffix.empty() )
 	{
-		if( num.has_fractional_point )
-			type = U_FundamentalType::f64_;
+		// Constants without fractional point are integers.
+		// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
+		if( num.value <= 2147483647u )
+			type= U_FundamentalType::i32_;
+		else if( num.value <= 9223372036854775807ULL )
+			type= U_FundamentalType::i64_;
 		else
-		{
-			// Constants without fractional point are integers.
-			// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
-			if( num.value_int <= 2147483647u )
-				type= U_FundamentalType::i32_;
-			else if( num.value_int <= 9223372036854775807ULL )
-				type= U_FundamentalType::i64_;
-			else
-				type= U_FundamentalType::i128_;
-		}
+			type= U_FundamentalType::i128_;
+
 	}
 	else if( type_suffix == "u" )
 	{
 		// Select "i32", if given constant fits inside it. Otherwise use "u64".
-		type = num.value_int <= 4294967295u ? U_FundamentalType::u32_ : U_FundamentalType::u64_;
+		type = num.value <= 4294967295u ? U_FundamentalType::u32_ : U_FundamentalType::u64_;
 	}
 	// Suffix for size_type
 	else if( type_suffix == "s" )
@@ -1287,6 +1283,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	else
 		type=GetFundamentalTypeByName( type_suffix );
 
+	// TODO - maybe generate error if floating point type suffix is specified?
+
 	if( type == U_FundamentalType::InvalidType )
 	{
 		REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
@@ -1299,14 +1297,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			FundamentalType( type, llvm_type ),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			"numeric constant " + std::to_string(num.value_double) );
+			"numeric constant " + std::to_string(num.value) );
 
 	if( IsInteger( type ) || IsChar( type ) )
 		result->constexpr_value=
-			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), num.value_int ) );
+			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), num.value ) );
 	else if( IsFloatingPoint( type ) )
 		result->constexpr_value=
-			llvm::ConstantFP::get( llvm_type, num.value_double );
+			llvm::ConstantFP::get( llvm_type, double(num.value) );
 	else
 		U_ASSERT(false);
 
@@ -1330,25 +1328,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const std::string type_suffix= num.type_suffix.data();
 
 	if( type_suffix.empty() )
-	{
-		if( num.has_fractional_point )
-			type = U_FundamentalType::f64_;
-		else
-		{
-			// Constants without fractional point are integers.
-			// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
-			if( num.value_int <= 2147483647u )
-				type= U_FundamentalType::i32_;
-			else if( num.value_int <= 9223372036854775807ULL )
-				type= U_FundamentalType::i64_;
-			else
-				type= U_FundamentalType::i128_;
-		}
-	}
+		type = U_FundamentalType::f64_;
 	else if( type_suffix == "u" )
 	{
 		// Select "i32", if given constant fits inside it. Otherwise use "u64".
-		type = num.value_int <= 4294967295u ? U_FundamentalType::u32_ : U_FundamentalType::u64_;
+		type = num.value <= 4294967295u ? U_FundamentalType::u32_ : U_FundamentalType::u64_;
 	}
 	// Suffix for size_type
 	else if( type_suffix == "s" )
@@ -1366,6 +1350,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	else
 		type=GetFundamentalTypeByName( type_suffix );
 
+	// TODO - maybe generate error if integer type suffix is specified?
+
 	if( type == U_FundamentalType::InvalidType )
 	{
 		REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
@@ -1378,14 +1364,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			FundamentalType( type, llvm_type ),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			"numeric constant " + std::to_string(num.value_double) );
+			"floating point numeric constant" );
 
 	if( IsInteger( type ) || IsChar( type ) )
 		result->constexpr_value=
-			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), num.value_int ) );
+			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), uint64_t(num.value) ) );
 	else if( IsFloatingPoint( type ) )
 		result->constexpr_value=
-			llvm::ConstantFP::get( llvm_type, num.value_double );
+			llvm::ConstantFP::get( llvm_type, num.value );
 	else
 		U_ASSERT(false);
 
