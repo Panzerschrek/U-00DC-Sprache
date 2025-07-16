@@ -405,6 +405,21 @@ uint64_t TryParseDecimalNumber( const char c )
 	return uint64_t(-1);
 }
 
+std::array<char, 8> TryParseNumericLexemTypeSuffix( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
+{
+	std::array<char, 8> res{};
+	if( it != it_end && IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
+	{
+		const Lexem type_suffix= ParseIdentifier( it, it_end );
+		if( type_suffix.text.size() >= sizeof(res) )
+			out_errors.emplace_back( "Type suffix of numeric literal is too long", src_loc );
+
+		std::memcpy( res.data(), type_suffix.text.data(), std::min( type_suffix.text.size(), sizeof(res.size()) ) );
+	}
+
+	return res;
+}
+
 Lexem ContinueParingFloatingPointNumber( const double parsed_part, Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
 	double integer_part= parsed_part;
@@ -482,14 +497,7 @@ Lexem ContinueParingFloatingPointNumber( const double parsed_part, Iterator& it,
 	else
 		result.value+= fractional_part / PowI( 10u, uint64_t( num_fractional_digits - exponent ) );
 
-	if( it != it_end && IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
-	{
-		const Lexem type_suffix= ParseIdentifier( it, it_end );
-		if( type_suffix.text.size() >= sizeof(result.type_suffix) )
-			out_errors.emplace_back( "Type suffix of numeric literal is too long", src_loc );
-
-		std::memcpy( result.type_suffix.data(), type_suffix.text.data(), std::min( type_suffix.text.size(), sizeof(result.type_suffix) ) );
-	}
+	result.type_suffix= TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors );
 
 	Lexem result_lexem;
 	result_lexem.type= Lexem::Type::FloatingPointNumber;
@@ -594,15 +602,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 	IntegerNumberLexemData result;
 	result.value= value;
 
-	// Parse char literal.
-	if( it != it_end && IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
-	{
-		const Lexem type_suffix= ParseIdentifier( it, it_end );
-		if( type_suffix.text.size() >= sizeof(result.type_suffix) )
-			out_errors.emplace_back( "Type suffix of numeric literal is too long", src_loc );
-
-		std::memcpy( result.type_suffix.data(), type_suffix.text.data(), std::min( type_suffix.text.size(), sizeof(result.type_suffix) ) );
-	}
+	result.type_suffix= TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors );
 
 	Lexem result_lexem;
 	result_lexem.type= Lexem::Type::IntegerNumber;
