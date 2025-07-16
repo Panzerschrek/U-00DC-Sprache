@@ -399,37 +399,35 @@ double PowI( const uint64_t base, const uint64_t pow )
 	return res;
 }
 
-uint64_t TryParseBinaryNumber( const char c )
+template<uint32_t base>
+uint32_t TryParseDigit( const char c )
 {
-	if( c >= '0' && c <= '1' )
-		return uint64_t(c - '0');
-	return uint64_t(-1);
-}
+	if constexpr( base == 2 )
+	{
+		if( c >= '0' && c <= '1' )
+			return uint32_t(c - '0');
+	}
+	else if constexpr( base == 8 )
+	{
+		if( c >= '0' && c <= '7' )
+			return uint32_t(c - '0');
+	}
+	else if constexpr( base == 10 )
+	{
+		if( c >= '0' && c <= '9' )
+			return uint32_t(c - '0');
+	}
+	else if constexpr( base == 16 )
+	{
+		if( c >= '0' && c <= '9' )
+			return uint32_t(c - '0');
+		else if( c >= 'a' && c <= 'f' )
+			return uint32_t(c - 'a' + 10);
+		else if( c >= 'A' && c <= 'F' )
+			return uint32_t(c - 'A' + 10);
+	}
 
-uint64_t TryParseOctalNumber( const char c )
-{
-	if( c >= '0' && c <= '7' )
-		return uint64_t(c - '0');
-	return uint64_t(-1);
-}
-
-uint64_t TryParseDecimalNumber( const char c )
-{
-	if( c >= '0' && c <= '9' )
-		return uint64_t(c - '0');
-	return uint64_t(-1);
-}
-
-uint64_t TryParseHexadecimalNumber( const char c )
-{
-	if( c >= '0' && c <= '9' )
-		return uint64_t(c - '0');
-	else if( c >= 'a' && c <= 'f' )
-		return uint64_t(c - 'a' + 10);
-	else if( c >= 'A' && c <= 'F' )
-		return uint64_t(c - 'A' + 10);
-	else
-		return uint64_t(-1);
+	return uint32_t(-1);
 }
 
 std::array<char, 8> TryParseNumericLexemTypeSuffix( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
@@ -454,8 +452,8 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 	// Integer part.
 	while( it < it_end )
 	{
-		const uint64_t num= TryParseDecimalNumber( *it );
-		if( num == uint64_t(-1) )
+		const uint32_t num= TryParseDigit<10>( *it );
+		if( num == uint32_t(-1) )
 			break;
 
 		value= value * 10.0 + double(num);
@@ -472,8 +470,8 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 
 		while( it < it_end )
 		{
-			const uint64_t num= TryParseDecimalNumber( *it );
-			if( num == uint64_t(-1) )
+			const uint32_t num= TryParseDigit<10>( *it );
+			if( num == uint32_t(-1) )
 				break;
 
 			++num_fractional_digits;
@@ -501,8 +499,8 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 
 		while( it < it_end )
 		{
-			const uint64_t num= TryParseDecimalNumber( *it );
-			if( num == uint64_t(-1) )
+			const uint32_t num= TryParseDigit<10>( *it );
+			if( num == uint32_t(-1) )
 				break;
 
 			exponent= exponent * 10 + int32_t(num);
@@ -543,8 +541,8 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 
 	while( it < it_end )
 	{
-		const uint64_t num= TryParseDecimalNumber( *it );
-		if( num == uint64_t(-1) )
+		const uint32_t num= TryParseDigit<10>( *it );
+		if( num == uint32_t(-1) )
 			break;
 
 		const uint64_t new_value= value * 10 + num;
@@ -581,120 +579,29 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 }
 
 // Initial prefix should be skipped before this call.
-Lexem ParseBinaryNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
+template<uint32_t base>
+Lexem ParseIntegerNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
 	uint64_t value= 0u;
 
 	// Require at least one digit.
 	if( it == it_end )
-		out_errors.emplace_back( "Unexpected end of binary number", src_loc );
+		out_errors.emplace_back( "Unexpected end of number", src_loc );
 	else
 	{
-		value= TryParseBinaryNumber( *it );
+		value= TryParseDigit<base>( *it );
 		++it;
 		if( value == uint64_t(-1) )
-			out_errors.emplace_back( "Unexpected end of binary number", src_loc );
+			out_errors.emplace_back( "Unexpected end of number", src_loc );
 	}
 
 	while( it < it_end )
 	{
-		const uint64_t num= TryParseBinaryNumber( *it );
-		if( num == uint64_t(-1) )
+		const uint32_t num= TryParseDigit<base>( *it );
+		if( num == uint32_t(-1) )
 			break;
 
-		const uint64_t new_value= ( value << 1 ) + num;
-		++it;
-
-		if( new_value < value ) // Check overflow
-		{
-			out_errors.emplace_back( "Integer part of numeric literal is too long", src_loc );
-			break;
-		}
-		else
-			value= new_value;
-	}
-
-	IntegerNumberLexemData result;
-	result.value= value;
-
-	result.type_suffix= TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors );
-
-	Lexem result_lexem;
-	result_lexem.type= Lexem::Type::IntegerNumber;
-	result_lexem.text.resize( sizeof(IntegerNumberLexemData) );
-	std::memcpy( result_lexem.text.data(), &result, sizeof(IntegerNumberLexemData) );
-	return result_lexem;
-}
-
-// Initial prefix should be skipped before this call.
-Lexem ParseOctalNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
-{
-	uint64_t value= 0u;
-
-	// Require at least one digit.
-	if( it == it_end )
-		out_errors.emplace_back( "Unexpected end of octal number", src_loc );
-	else
-	{
-		value= TryParseOctalNumber( *it );
-		++it;
-		if( value == uint64_t(-1) )
-			out_errors.emplace_back( "Unexpected end of octal number", src_loc );
-	}
-
-	while( it < it_end )
-	{
-		const uint64_t num= TryParseOctalNumber( *it );
-		if( num == uint64_t(-1) )
-			break;
-
-		const uint64_t new_value= ( value << 3 ) + num;
-		++it;
-
-		if( new_value < value ) // Check overflow
-		{
-			out_errors.emplace_back( "Integer part of numeric literal is too long", src_loc );
-			break;
-		}
-		else
-			value= new_value;
-	}
-
-	IntegerNumberLexemData result;
-	result.value= value;
-
-	result.type_suffix= TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors );
-
-	Lexem result_lexem;
-	result_lexem.type= Lexem::Type::IntegerNumber;
-	result_lexem.text.resize( sizeof(IntegerNumberLexemData) );
-	std::memcpy( result_lexem.text.data(), &result, sizeof(IntegerNumberLexemData) );
-	return result_lexem;
-}
-
-// Initial prefix should be skipped before this call.
-Lexem ParseHexadecimalNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
-{
-	uint64_t value= 0u;
-
-	// Require at least one digit.
-	if( it == it_end )
-		out_errors.emplace_back( "Unexpected end of hexadecimal number", src_loc );
-	else
-	{
-		value= TryParseHexadecimalNumber( *it );
-		++it;
-		if( value == uint64_t(-1) )
-			out_errors.emplace_back( "Unexpected end of hexadecimal number", src_loc );
-	}
-
-	while( it < it_end )
-	{
-		const uint64_t num= TryParseHexadecimalNumber( *it );
-		if( num == uint64_t(-1) )
-			break;
-
-		const uint64_t new_value= ( value << 4 ) + num;
+		const uint64_t new_value= value * base + num;
 		++it;
 
 		if( new_value < value ) // Check overflow
@@ -727,13 +634,13 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 		{
 		case 'b':
 			it+= 2;
-			return ParseBinaryNumberImpl( it, it_end, src_loc, out_errors );
+			return ParseIntegerNumberImpl<2>( it, it_end, src_loc, out_errors );
 		case 'o':
 			it+= 2;
-			return ParseOctalNumberImpl( it, it_end, src_loc, out_errors );
+			return ParseIntegerNumberImpl<8>( it, it_end, src_loc, out_errors );
 		case 'x':
 			it+= 2;
-			return ParseHexadecimalNumberImpl( it, it_end, src_loc, out_errors );
+			return ParseIntegerNumberImpl<16>( it, it_end, src_loc, out_errors );
 		};
 	}
 
