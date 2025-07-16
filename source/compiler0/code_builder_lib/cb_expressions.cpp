@@ -1245,10 +1245,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::IntegerNumericConstant& numeric_constant )
 {
-	U_FundamentalType type= U_FundamentalType::InvalidType;
-
 	const IntegerNumberLexemData& num= numeric_constant.num;
 	const std::string type_suffix= num.type_suffix.data();
+
+	U_FundamentalType type= U_FundamentalType::InvalidType;
 
 	if( type_suffix.empty() )
 	{
@@ -1270,6 +1270,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		type= U_FundamentalType::size_type_;
 	else if( type_suffix == "f" )
 	{
+		// Don't allow "f" suffix (short form for "f32") to be used for integers.
 		REPORT_ERROR( UnsupportedIntegerConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
 		return ErrorValue();
 	}
@@ -1355,10 +1356,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::FloatingPointNumericConstant& numeric_constant )
 {
-	U_FundamentalType type= U_FundamentalType::InvalidType;
-
 	const FloatingPointNumberLexemData& num= numeric_constant.num;
 	const std::string type_suffix= num.type_suffix.data();
+
+	U_FundamentalType type= U_FundamentalType::InvalidType;
 
 	if( type_suffix.empty() )
 		type = U_FundamentalType::f64_;
@@ -1366,6 +1367,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		type= U_FundamentalType::f32_;
 	else if( type_suffix == "u" || type_suffix == "s" )
 	{
+		// Don't allow "u" suffix (short form for "u32") and "s" suffix (short form for "size_type") to be used for floating point numbers.
 		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
 		return ErrorValue();
 	}
