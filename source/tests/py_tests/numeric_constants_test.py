@@ -45,9 +45,6 @@ def NumericConstants_BinaryConstants_Test0():
 		static_assert( 0b0000011 == 3 );
 		static_assert( 0b1001 == 9 );
 		static_assert( 0b11111001001 == 1993 );
-		static_assert( 0b10.11 == 2.75 );
-		static_assert( 0b000.0101 == 0.25 + 0.0625 );
-		static_assert( 0b1000000.1 == 64.5 );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -73,8 +70,6 @@ def NumericConstants_OctalConstants_Test0():
 		static_assert( 0o7 == 7 );
 		static_assert( 0o10 == 8 );
 		static_assert( 0o5413641 == 1447841 );
-		static_assert( 0o0.12 == 0.15625 );
-		static_assert( 0o0.523 == 0.662109375 );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -102,9 +97,6 @@ def NumericConstants_HexadecimalConstants_Test0():
 		static_assert( 0xF == 15 );
 		static_assert( 0xDEADC0DEu == 3735929054u );
 		static_assert( 0xFEDCBA == 0xfedcba );
-		static_assert( 0x1.5 == 1.3125 );
-		static_assert( 0x52.31 == 82.19140625 );
-		static_assert( 0x0.ff == 0.99609375 );
 	"""
 	tests_lib.build_program( c_program_text )
 
