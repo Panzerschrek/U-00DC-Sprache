@@ -165,18 +165,10 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 		else if( IsChar( fundamental_type->fundamental_type ) )
 		{
 			std::string res;
-
-			if( fundamental_type->fundamental_type == U_FundamentalType::char8_  )
-				res= Keyword( Keywords::char8_ );
-			if( fundamental_type->fundamental_type == U_FundamentalType::char16_ )
-				res= Keyword( Keywords::char16_ );
-			if( fundamental_type->fundamental_type == U_FundamentalType::char32_ )
-				res= Keyword( Keywords::char32_ );
-
+			res+= GetFundamentalTypeName( fundamental_type->fundamental_type );
 			res.push_back( '(' );
 			res+= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
 			res.push_back( ')' );
-
 			return res;
 		}
 		else if( IsByte( fundamental_type->fundamental_type ) )
