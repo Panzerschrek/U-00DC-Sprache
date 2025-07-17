@@ -384,6 +384,7 @@ Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 	return result;
 }
 
+// Function for fast calculation of large integer powers.
 double IntegerPower( const double base, const uint32_t pow )
 {
 	double res= 1.0, p= base;
@@ -404,6 +405,7 @@ double TenIntegerPower( const uint32_t pow )
 	return IntegerPower( 10.0, pow );
 }
 
+// Returns uint32_t(-1) if failed to parse.
 template<uint32_t base>
 uint32_t TryParseDigit( const char c )
 {
@@ -444,7 +446,7 @@ std::array<char, 8> TryParseNumericLexemTypeSuffix( Iterator& it, const Iterator
 		if( type_suffix.text.size() >= sizeof(res) )
 			out_errors.emplace_back( "Type suffix of numeric literal is too long", src_loc );
 
-		std::memcpy( res.data(), type_suffix.text.data(), std::min( type_suffix.text.size(), sizeof(res.size()) ) );
+		std::memcpy( res.data(), type_suffix.text.data(), std::min( type_suffix.text.size(), res.size() ) );
 	}
 
 	return res;
@@ -461,9 +463,8 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 		if( digit == uint32_t(-1) )
 			break;
 
-		value= std::fma( value, 10.0, double(digit) );
 		++it;
-
+		value= std::fma( value, 10.0, double(digit) );
 	}
 
 	int32_t num_fractional_digits= 0;
@@ -479,9 +480,9 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 			if( digit == uint32_t(-1) )
 				break;
 
+			++it;
 			++num_fractional_digits;
 			value= std::fma( value, 10.0, double(digit) );
-			++it;
 		}
 	}
 
@@ -508,8 +509,8 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 			if( digit == uint32_t(-1) )
 				break;
 
-			exponent= exponent * 10 + int32_t(digit);
 			++it;
+			exponent= exponent * 10 + int32_t(digit);
 
 			if( exponent > 2048 )
 			{
@@ -522,16 +523,14 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 			exponent= -exponent;
 	}
 
-	FloatingPointNumberLexemData result;
-
 	// TODO - check no precision lost happens here.
 
 	if( exponent >= num_fractional_digits )
-		result.value= value * TenIntegerPower( uint32_t( exponent - num_fractional_digits ) );
+		value*= TenIntegerPower( uint32_t( exponent - num_fractional_digits ) );
 	else
-		result.value= value / TenIntegerPower( uint32_t( num_fractional_digits - exponent ) );
+		value/= TenIntegerPower( uint32_t( num_fractional_digits - exponent ) );
 
-	result.type_suffix= TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors );
+	FloatingPointNumberLexemData result{ value, TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors ) };
 
 	Lexem result_lexem;
 	result_lexem.type= Lexem::Type::FloatingPointNumber;
@@ -557,8 +556,7 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 		if( value > max_value / 10 )
 		{
 			// Continue parsing as float in case of overflow.
-			// TODO - ensure no precision lost happens in this case.
-			const double parsed_part= double(value) * 10.0;
+			const double parsed_part= std::fma( double(value), 10.0, double(digit) ); // TODO - ensure no precision lost happens in this operation.
 			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
 		}
 		value*= 10;
@@ -566,24 +564,17 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 		if( value > max_value - digit )
 		{
 			// Continue parsing as float in case of overflow.
-			// TODO - ensure no precision lost happens in this case.
-			const double parsed_part= double(value) + double(digit);
+			const double parsed_part= double(value) + double(digit); // TODO - ensure no precision lost happens in this operation.
 			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
 		}
 		value+= digit;
 	}
 
-	if( it < it_end )
-	{
-		// If we have decimal point or exponent - parse as float.
-		if( *it == '.' || *it == 'e' )
-			return ContinueParsingFloatingPointNumber( double(value), it, it_end, src_loc, out_errors );
-	}
+	// If we have decimal point or exponent - continue parsing as float.
+	if( it < it_end && ( *it == '.' || *it == 'e' ) )
+		return ContinueParsingFloatingPointNumber( double(value), it, it_end, src_loc, out_errors );
 
-	IntegerNumberLexemData result;
-	result.value= value;
-
-	result.type_suffix= TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors );
+	IntegerNumberLexemData result{ value, TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors ) };
 
 	Lexem result_lexem;
 	result_lexem.type= Lexem::Type::IntegerNumber;
@@ -621,23 +612,20 @@ Lexem ParseIntegerNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_lo
 
 		if( value > max_value / base )
 		{
-			out_errors.emplace_back( "Integer part of numeric literal is too long", src_loc );
+			out_errors.emplace_back( "Integer numeric literal overflow", src_loc );
 			break;
 		}
 		value*= base;
 
 		if( value > max_value - digit )
 		{
-			out_errors.emplace_back( "Integer part of numeric literal is too long", src_loc );
+			out_errors.emplace_back( "Integer numeric literal overflow", src_loc );
 			break;
 		}
 		value+= digit;
 	}
 
-	IntegerNumberLexemData result;
-	result.value= value;
-
-	result.type_suffix= TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors );
+	IntegerNumberLexemData result{ value, TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors ) };
 
 	Lexem result_lexem;
 	result_lexem.type= Lexem::Type::IntegerNumber;
@@ -665,6 +653,7 @@ Lexem ParseNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntE
 		};
 	}
 
+	// Numbers without prefix are decimal numbers, maybe even floating-point decimals.
 	return ParseDecimalNumber( it, it_end, src_loc, out_errors );
 }
 
