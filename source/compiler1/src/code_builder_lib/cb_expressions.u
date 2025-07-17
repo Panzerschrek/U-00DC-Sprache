@@ -277,6 +277,61 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		}
 	}
 
+	var u32 type_size= GetFundamentalTypeSize( t );
+	var bool is_signed= IsSignedInteger( t );
+	var bool mut overflow= false;
+	if( type_size == 1u )
+	{
+		if( is_signed )
+		{
+			overflow= numeric_constant.num.value_int > 0x7Fu64;
+		}
+		else
+		{
+			overflow= numeric_constant.num.value_int > 0xFFu64;
+		}
+	}
+	else if( type_size == 2u )
+	{
+		if( is_signed )
+		{
+			overflow= numeric_constant.num.value_int > 0x7FFFu64;
+		}
+		else
+		{
+			overflow= numeric_constant.num.value_int > 0xFFFFu64;
+		}
+	}
+	else if( type_size == 4u )
+	{
+		if( is_signed )
+		{
+			overflow= numeric_constant.num.value_int > 0x7FFFFFFFu64;
+		}
+		else
+		{
+			overflow= numeric_constant.num.value_int > 0xFFFFFFFFu64;
+		}
+	}
+	else if( type_size == 8u )
+	{
+		if( is_signed )
+		{
+			overflow= numeric_constant.num.value_int > 0x7FFFFFFFFFFFFFFFu64;
+		}
+		// Unsigned overflow is impossible here.
+	}
+	else if( type_size == 16u )
+	{
+		// Lexical analyzer gives 64-bit value and thus should check overflow of this value before.
+	}
+	else { halt; }
+
+	if( overflow )
+	{
+		REPORT_ERROR( IntegerConstantOverflow, names_scope, numeric_constant.src_loc, numeric_constant.num.value_int, GetFundamentalTypeName( t ) )
+	}
+
 	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
 
 	var Variable mut result
@@ -344,7 +399,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.t= Type( FundamentalType( t, llvm_type ) ),
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.name= "numeric constant ",
+		.name= "numeric constant",
 	};
 
 	result.constexpr_value= unsafe( LLVMConstReal( llvm_type, numeric_constant.num.value_double ) );
