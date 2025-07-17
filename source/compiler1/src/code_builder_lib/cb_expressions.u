@@ -227,26 +227,19 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	auto mut t= U_FundamentalType::InvalidType;
 	if( type_suffix.empty() )
 	{
-		if( numeric_constant.num.has_fractional_point )
+		// Constants without fractional point are integers.
+		// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
+		if( numeric_constant.num.value_int <= 2147483647u64 )
 		{
-			t= U_FundamentalType::f64_;
+			t= U_FundamentalType::i32_;
+		}
+		else if( numeric_constant.num.value_int <= 9223372036854775807u )
+		{
+			t= U_FundamentalType::i64_;
 		}
 		else
 		{
-			// Constants without fractional point are integers.
-			// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
-			if( numeric_constant.num.value_int <= 2147483647u64 )
-			{
-				t= U_FundamentalType::i32_;
-			}
-			else if( numeric_constant.num.value_int <= 9223372036854775807u )
-			{
-				t= U_FundamentalType::i64_;
-			}
-			else
-			{
-				t= U_FundamentalType::i128_;
-			}
+			t= U_FundamentalType::i128_;
 		}
 	}
 	else if( type_suffix == "u" )
@@ -260,50 +253,41 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 	else if( type_suffix == "f" )
 	{
-		t= U_FundamentalType::f32_;
-	}
-	else if( type_suffix == "c8" )
-	{
-		t= U_FundamentalType::char8_;
-	}
-	else if( type_suffix == "c16" )
-	{
-		t= U_FundamentalType::char16_;
-	}
-	else if( type_suffix == "c32" )
-	{
-		t= U_FundamentalType::char32_;
+		// Don't allow "f" suffix (short form for "f32") to be used for integers.
+		REPORT_ERROR( UnsupportedIntegerConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+		return ErrorValue();
 	}
 	else
 	{
 		t= GetFundamentalTypeByName( type_suffix );
+
+		if( t == U_FundamentalType::InvalidType )
+		{
+			REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+			return ErrorValue();
+		}
+
+		// Do not allow literals of types other then integers.
+		// char* and byte* types aren't supported, since such suffixes may conflict with hexadecimal literals (where 'c' and 'b' are digit names).
+
+		if( !IsInteger( t ) )
+		{
+			REPORT_ERROR( UnsupportedIntegerConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+			return ErrorValue();
+		}
 	}
 
-	if( t == U_FundamentalType::InvalidType )
-	{
-		REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, type_suffix )
-		return ErrorValue();
-	}
+	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
 
 	var Variable mut result
 	{
-		.t= Type( FundamentalType( t, GetFundamentalLLVMType(t) ) ),
+		.t= Type( FundamentalType( t, llvm_type ) ),
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.name= "numeric constant ",
+		.name= "numeric constant",
 	};
 
-	unsafe
-	{
-		if( IsFloatingPoint( t ) )
-		{
-			result.constexpr_value= LLVMConstReal( result.t.GetLLVMType(), numeric_constant.num.value_double );
-		}
-		else
-		{
-			result.constexpr_value= LLVMConstInt( result.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::False );
-		}
-	}
+	result.constexpr_value= unsafe( LLVMConstInt( llvm_type, numeric_constant.num.value_int, LLVMBool::False ) );
 	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
@@ -312,7 +296,6 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return result_ptr;
 }
-
 
 fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FloatingPointNumericConstant& numeric_constant ) : Value
 {
@@ -325,83 +308,46 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	auto mut t= U_FundamentalType::InvalidType;
 	if( type_suffix.empty() )
 	{
-		if( numeric_constant.num.has_fractional_point )
-		{
-			t= U_FundamentalType::f64_;
-		}
-		else
-		{
-			// Constants without fractional point are integers.
-			// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
-			if( numeric_constant.num.value_int <= 2147483647u64 )
-			{
-				t= U_FundamentalType::i32_;
-			}
-			else if( numeric_constant.num.value_int <= 9223372036854775807u )
-			{
-				t= U_FundamentalType::i64_;
-			}
-			else
-			{
-				t= U_FundamentalType::i128_;
-			}
-		}
-	}
-	else if( type_suffix == "u" )
-	{
-		// Select "i32", if given constant fits inside it. Otherwise use "u64".
-		t= ( numeric_constant.num.value_int <= 4294967295u64 ? U_FundamentalType::u32_ : U_FundamentalType::u64_ );
-	}
-	else if( type_suffix == "s" )
-	{
-		t= U_FundamentalType::size_type_;
+		t= U_FundamentalType::f64_;
 	}
 	else if( type_suffix == "f" )
 	{
 		t= U_FundamentalType::f32_;
 	}
-	else if( type_suffix == "c8" )
+	else if( type_suffix == "u" || type_suffix == "s" )
 	{
-		t= U_FundamentalType::char8_;
-	}
-	else if( type_suffix == "c16" )
-	{
-		t= U_FundamentalType::char16_;
-	}
-	else if( type_suffix == "c32" )
-	{
-		t= U_FundamentalType::char32_;
+		// Don't allow "u" suffix (short form for "u32") and "s" suffix (short form for "size_type") to be used for floating point numbers.
+		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+		return ErrorValue();
 	}
 	else
 	{
 		t= GetFundamentalTypeByName( type_suffix );
+
+		if( t == U_FundamentalType::InvalidType )
+		{
+			REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+			return ErrorValue();
+		}
+
+		if( !IsFloatingPoint( t ) )
+		{
+			REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope, numeric_constant.src_loc, type_suffix )
+			return ErrorValue();
+		}
 	}
 
-	if( t == U_FundamentalType::InvalidType )
-	{
-		REPORT_ERROR( UnknownNumericConstantType, names_scope, numeric_constant.src_loc, type_suffix )
-		return ErrorValue();
-	}
+	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
 
 	var Variable mut result
 	{
-		.t= Type( FundamentalType( t, GetFundamentalLLVMType(t) ) ),
+		.t= Type( FundamentalType( t, llvm_type ) ),
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
 		.name= "numeric constant ",
 	};
 
-	unsafe
-	{
-		if( IsFloatingPoint( t ) )
-		{
-			result.constexpr_value= LLVMConstReal( result.t.GetLLVMType(), numeric_constant.num.value_double );
-		}
-		else
-		{
-			result.constexpr_value= LLVMConstInt( result.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::False );
-		}
-	}
+	result.constexpr_value= unsafe( LLVMConstReal( llvm_type, numeric_constant.num.value_double ) );
 	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
