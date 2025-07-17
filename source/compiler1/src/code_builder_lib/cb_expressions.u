@@ -229,11 +229,11 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	{
 		// Constants without fractional point are integers.
 		// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
-		if( numeric_constant.num.value <= 2147483647u64 )
+		if( numeric_constant.num.value <= 0x7FFFFFFFu64 )
 		{
 			t= U_FundamentalType::i32_;
 		}
-		else if( numeric_constant.num.value <= 9223372036854775807u )
+		else if( numeric_constant.num.value <= 0x7FFFFFFFFFFFFFFFu64 )
 		{
 			t= U_FundamentalType::i64_;
 		}
@@ -245,7 +245,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	else if( type_suffix == "u" )
 	{
 		// Select "i32", if given constant fits inside it. Otherwise use "u64".
-		t= ( numeric_constant.num.value <= 4294967295u64 ? U_FundamentalType::u32_ : U_FundamentalType::u64_ );
+		t= ( numeric_constant.num.value <= 0xFFFFFFFFu64 ? U_FundamentalType::u32_ : U_FundamentalType::u64_ );
 	}
 	else if( type_suffix == "s" )
 	{
