@@ -282,36 +282,15 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	var bool mut overflow= false;
 	if( type_size == 1u )
 	{
-		if( is_signed )
-		{
-			overflow= numeric_constant.num.value > 0x7Fu64;
-		}
-		else
-		{
-			overflow= numeric_constant.num.value > 0xFFu64;
-		}
+		overflow= ( is_signed ? ( numeric_constant.num.value > 0x7Fu64 ) : ( numeric_constant.num.value > 0xFFu64 ) );
 	}
 	else if( type_size == 2u )
 	{
-		if( is_signed )
-		{
-			overflow= numeric_constant.num.value > 0x7FFFu64;
-		}
-		else
-		{
-			overflow= numeric_constant.num.value > 0xFFFFu64;
-		}
+		overflow= ( is_signed ? ( numeric_constant.num.value > 0x7FFFu64 ) : ( numeric_constant.num.value > 0xFFFFu64 ) );
 	}
 	else if( type_size == 4u )
 	{
-		if( is_signed )
-		{
-			overflow= numeric_constant.num.value > 0x7FFFFFFFu64;
-		}
-		else
-		{
-			overflow= numeric_constant.num.value > 0xFFFFFFFFu64;
-		}
+		overflow= ( is_signed ? ( numeric_constant.num.value > 0x7FFFFFFFu64 ) : ( numeric_constant.num.value > 0xFFFFFFFFu64 ) );
 	}
 	else if( type_size == 8u )
 	{

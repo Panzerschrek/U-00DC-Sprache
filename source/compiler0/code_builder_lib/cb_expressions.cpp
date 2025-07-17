@@ -1298,26 +1298,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const bool is_signed= IsSignedInteger( type );
 	bool overflow= false;
 	if( type_size == 1 )
-	{
-		if( is_signed )
-			overflow= num.value > 0x7Full;
-		else
-			overflow= num.value > 0xFFull;
-	}
+		overflow= is_signed ? ( num.value > 0x7Full ) : ( num.value > 0xFFull );
 	else if( type_size == 2 )
-	{
-		if( is_signed )
-			overflow= num.value > 0x7FFFull;
-		else
-			overflow= num.value > 0xFFFFull;
-	}
+		overflow= is_signed ? ( num.value > 0x7FFFull ) : ( num.value > 0xFFFFull );
 	else if( type_size == 4 )
-	{
-		if( is_signed )
-			overflow= num.value > 0x7FFFFFFFull;
-		else
-			overflow= num.value > 0xFFFFFFFFull;
-	}
+		overflow= is_signed ? ( num.value > 0x7FFFFFFFull ) : ( num.value > 0xFFFFFFFFull );
 	else if( type_size == 8 )
 	{
 		if( is_signed )
