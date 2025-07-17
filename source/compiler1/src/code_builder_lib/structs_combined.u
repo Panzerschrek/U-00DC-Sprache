@@ -923,15 +923,12 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 		}
 		else if( IsChar( fundamental_type.fundamental_type ) )
 		{
-			var ust::string_view8 mut suffix;
-			switch( fundamental_type.fundamental_type )
-			{
-				U_FundamentalType::char8_  -> {  suffix= "c8" ;  },
-				U_FundamentalType::char16_ -> {  suffix= "c16";  },
-				U_FundamentalType::char32_ -> {  suffix= "c32";  },
-				default -> { halt; },
-			}
-			return ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) ) + suffix;
+			var ust::string8 mut result;
+			result+= GetFundamentalTypeName( fundamental_type.fundamental_type );
+			result.push_back( '(' );
+			result+= ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) );
+			result.push_back( ')' );
+			return result;
 		}
 		else if( IsByte( fundamental_type.fundamental_type ) )
 		{
