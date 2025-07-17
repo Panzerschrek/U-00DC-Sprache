@@ -828,9 +828,20 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 			bitwise_not.expr= ParseBinaryOperatorComponent();
 			return ust::make_box( move(bitwise_not) );
 		},
-		Lexem::Type::Number ->
+		Lexem::Type::IntegerNumber ->
 		{
 			var IntegerNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc };
+			halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
+
+			unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( $<(numeric_constant.num) ), ust::ptr_cast_to_byte8( cast_mut(it_.front().text).data() ), typeinfo</NumberLexemData/>.size_of ) );
+
+			NextLexem();
+
+			return numeric_constant;
+		},
+		Lexem::Type::FloatingPointNumber ->
+		{
+			var FloatingPointNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc };
 			halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
 
 			unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( $<(numeric_constant.num) ), ust::ptr_cast_to_byte8( cast_mut(it_.front().text).data() ), typeinfo</NumberLexemData/>.size_of ) );

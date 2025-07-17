@@ -24,7 +24,8 @@ struct Lexem
 		MacroUniqueIdentifier,
 		String,
 		CharLiteral,
-		Number,
+		IntegerNumber,
+		FloatingPointNumber,
 
 		LiteralSuffix, // For strings, numbers
 
