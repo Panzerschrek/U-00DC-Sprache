@@ -555,7 +555,7 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 
 		if( value > max_value / 10 )
 		{
-			// Continue parsing as float in case of overflow.
+			// Continue parsing as floating point in case of overflow.
 			const double parsed_part= std::fma( double(value), 10.0, double(digit) ); // TODO - ensure no precision lost happens in this operation.
 			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
 		}
@@ -563,14 +563,14 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 
 		if( value > max_value - digit )
 		{
-			// Continue parsing as float in case of overflow.
+			// Continue parsing as floating point in case of overflow.
 			const double parsed_part= double(value) + double(digit); // TODO - ensure no precision lost happens in this operation.
 			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
 		}
 		value+= digit;
 	}
 
-	// If we have decimal point or exponent - continue parsing as float.
+	// If we have decimal point or exponent - continue parsing as floating point.
 	if( it < it_end && ( *it == '.' || *it == 'e' ) )
 		return ContinueParsingFloatingPointNumber( double(value), it, it_end, src_loc, out_errors );
 

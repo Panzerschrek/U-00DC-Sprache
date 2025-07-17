@@ -230,7 +230,7 @@ fn TenIntegerPower( u32 pow ) : f64
 	return IntegerPower( 10.0, pow );
 }
 
-// Returns uint32_t(-1) if failed to parse.
+// Returns u32(-1) if failed to parse.
 template</ u32 base_ />
 fn TryParseDigit( char8 c ) : u32
 {
@@ -415,7 +415,7 @@ fn ParseDecimalNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& 
 
 		if( value > max_value / 10u64 )
 		{
-			// Continue parsing as float in case of overflow.
+			// Continue parsing as floating point in case of overflow.
 			var f64 parsed_part= ust::fma( f64(value), 10.0, f64(digit) ); // TODO - ensure no precision lost happens in this operation.
 			return ContinueParsingFloatingPointNumber( parsed_part, it, out_errors, src_loc );
 		}
@@ -423,14 +423,14 @@ fn ParseDecimalNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& 
 
 		if( value > max_value - u64(digit) )
 		{
-			// Continue parsing as float in case of overflow.
+			// Continue parsing as floating point in case of overflow.
 			var f64 parsed_part= f64(value) + f64(digit); // TODO - ensure no precision lost happens in this operation.
 			return ContinueParsingFloatingPointNumber( parsed_part, it, out_errors, src_loc );
 		}
 		value+= u64(digit);
 	}
 
-	// If we have decimal point or exponent - continue parsing as float.
+	// If we have decimal point or exponent - continue parsing as floating point.
 	if( !it.empty() && ( it.front() == '.' || it.front() == 'e' ) )
 	{
 		return ContinueParsingFloatingPointNumber( f64(value), it, out_errors, src_loc );
