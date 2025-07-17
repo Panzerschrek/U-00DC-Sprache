@@ -384,11 +384,11 @@ Lexem ParseMacroIdentifier( Iterator& it, const Iterator it_end )
 	return result;
 }
 
-double PowI( const uint64_t base, const uint64_t pow )
+double IntegerPower( const double base, const uint32_t pow )
 {
-	double res= 1.0, p= double(base);
+	double res= 1.0, p= base;
 
-	for( uint64_t i= 1; ; i <<= 1, p*= p )
+	for( uint32_t i= 1; ; i <<= 1, p*= p )
 	{
 		if( (i & pow ) != 0 )
 			res*= p;
@@ -397,6 +397,11 @@ double PowI( const uint64_t base, const uint64_t pow )
 	}
 
 	return res;
+}
+
+double TenIntegerPower( const uint32_t pow )
+{
+	return IntegerPower( 10.0, pow );
 }
 
 template<uint32_t base>
@@ -522,9 +527,9 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 	// TODO - check no precision lost happens here.
 
 	if( exponent >= num_fractional_digits )
-		result.value= value * PowI( 10u, uint64_t( exponent - num_fractional_digits ) );
+		result.value= value * TenIntegerPower( uint32_t( exponent - num_fractional_digits ) );
 	else
-		result.value= value / PowI( 10u, uint64_t( num_fractional_digits - exponent ) );
+		result.value= value / TenIntegerPower( uint32_t( num_fractional_digits - exponent ) );
 
 	result.type_suffix= TryParseNumericLexemTypeSuffix( it, it_end, src_loc, out_errors );
 
