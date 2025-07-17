@@ -1262,7 +1262,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else if( type_suffix == "u" )
 	{
-		// Select "i32", if given constant fits inside it. Otherwise use "u64".
+		// Select "u32", if given constant fits inside it. Otherwise use "u64".
 		type = num.value <= 0xFFFFFFFFu ? U_FundamentalType::u32_ : U_FundamentalType::u64_;
 	}
 	// Suffix for size_type
@@ -1284,7 +1284,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			return ErrorValue();
 		}
 
-		// Do not allow literals of types other then integers.
+		// Do not allow literals of types other than integers.
 		// char* and byte* types aren't supported, since such suffixes may conflict with hexadecimal literals (where 'c' and 'b' are digit names).
 
 		if( !IsInteger( type ) )

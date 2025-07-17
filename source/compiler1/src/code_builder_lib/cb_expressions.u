@@ -227,7 +227,6 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	auto mut t= U_FundamentalType::InvalidType;
 	if( type_suffix.empty() )
 	{
-		// Constants without fractional point are integers.
 		// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
 		if( numeric_constant.num.value <= 0x7FFFFFFFu64 )
 		{
@@ -244,7 +243,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	}
 	else if( type_suffix == "u" )
 	{
-		// Select "i32", if given constant fits inside it. Otherwise use "u64".
+		// Select "u32", if given constant fits inside it. Otherwise use "u64".
 		t= ( numeric_constant.num.value <= 0xFFFFFFFFu64 ? U_FundamentalType::u32_ : U_FundamentalType::u64_ );
 	}
 	else if( type_suffix == "s" )
@@ -267,7 +266,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			return ErrorValue();
 		}
 
-		// Do not allow literals of types other then integers.
+		// Do not allow literals of types other than integers.
 		// char* and byte* types aren't supported, since such suffixes may conflict with hexadecimal literals (where 'c' and 'b' are digit names).
 
 		if( !IsInteger( t ) )
