@@ -5,7 +5,7 @@ fn nomangle main() : i32
 {
 	// swap_bytes
 	static_assert( ust::swap_bytes( 0x5A6Bu16 ) == 0x6B5Au16 );
-	static_assert( ust::swap_bytes( 0xC7F1i16 ) == 0xF1C7i16 );
+	static_assert( ust::swap_bytes( i16(0xC7F1) ) == i16(0xF1C7) );
 	static_assert( ust::swap_bytes( byte16( 0x67D9u16 ) ) == byte16( 0xD967u16 ) );
 	static_assert( ust::swap_bytes( 0xA1B2C3D4u ) == 0xD4C3B2A1u );
 	static_assert( ust::swap_bytes( 0x0542F239 ) == 0x39F24205 );

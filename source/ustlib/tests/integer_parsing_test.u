@@ -64,7 +64,7 @@ fn nomangle main() : i32
 	assert( ust::parse_integer_exact</i8/>( "-125" ) == -125i8 );
 	assert( ust::parse_integer_exact</i8/>( "-126" ) == -126i8 );
 	assert( ust::parse_integer_exact</i8/>( "-127" ) == -127i8 );
-	assert( ust::parse_integer_exact</i8/>( "-128" ) == -128i8 );
+	assert( ust::parse_integer_exact</i8/>( "-128" ) == i8(-128) );
 	assert( ust::parse_integer_exact</i8/>( "-129" ).empty() ); // Overflow
 	assert( ust::parse_integer_exact</i8/>( "-1000" ).empty() ); // Overflow
 	assert( ust::parse_integer_exact</i8/>( "-00" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left
@@ -159,7 +159,7 @@ fn nomangle main() : i32
 	assert( ust::parse_integer_exact</i16/>( "-2743" ) == -2743i16 );
 	assert( ust::parse_integer_exact</i16/>( "-29869" ) == -29869i16 );
 	assert( ust::parse_integer_exact</i16/>( "-32767" ) == -32767i16 );
-	assert( ust::parse_integer_exact</i16/>( "-32768" )  == -32768i16 );
+	assert( ust::parse_integer_exact</i16/>( "-32768" )  == i16(-32768) );
 	assert( ust::parse_integer_exact</i16/>( "-32769" ).empty() ); // Overflow
 	assert( ust::parse_integer_exact</i16/>( "-327600" ).empty() ); // Overflow
 	assert( ust::parse_integer_exact</i16/>( "-00" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left
@@ -337,7 +337,7 @@ fn nomangle main() : i32
 	assert( ust::parse_integer_exact</i64/>( "-9223372036854775805" ) == -9223372036854775805i64 );
 	assert( ust::parse_integer_exact</i64/>( "-9223372036854775806" ) == -9223372036854775806i64 );
 	assert( ust::parse_integer_exact</i64/>( "-9223372036854775807" ) == -9223372036854775807i64 );
-	assert( ust::parse_integer_exact</i64/>( "-9223372036854775808" ) == -9223372036854775808i64 );
+	assert( ust::parse_integer_exact</i64/>( "-9223372036854775808" ) == i64(-9223372036854775808) );
 	assert( ust::parse_integer_exact</i64/>( "-9223372036854775809" ).empty() ); // Overflow
 	assert( ust::parse_integer_exact</i64/>( "-92233720368547758000" ).empty() ); // Overflow
 	assert( ust::parse_integer_exact</i64/>( "-00" ).empty() ); // 0 is parsed as single digit number, parsing fails because numbers are left

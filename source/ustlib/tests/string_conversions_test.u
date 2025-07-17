@@ -16,7 +16,7 @@ fn nomangle main() : i32
 	halt if( ust::to_string8(-14i8) != "-14" );
 	halt if( ust::to_string8(-47i8) != "-47" );
 	halt if( ust::to_string8(-115i8) != "-115" );
-	halt if( ust::to_string8(-128i8) != "-128" );
+	halt if( ust::to_string8(i8(-128)) != "-128" );
 
 	// u8
 	halt if( ust::to_string8(0u8) != "0" );
@@ -45,7 +45,7 @@ fn nomangle main() : i32
 	halt if( ust::to_string8(-47i16) != "-47" );
 	halt if( ust::to_string8(-854i16) != "-854" );
 	halt if( ust::to_string8(-7654i16) != "-7654" );
-	halt if( ust::to_string8(-32768i16) != "-32768" );
+	halt if( ust::to_string8(i16(-32768)) != "-32768" );
 
 	// u16
 	halt if( ust::to_string8(0u16) != "0" );
@@ -108,7 +108,7 @@ fn nomangle main() : i32
 	halt if( ust::to_string8(-7654i64) != "-7654" );
 	halt if( ust::to_string8(-2147483648i64) != "-2147483648" );
 	halt if( ust::to_string8(-774612927736889278i64) != "-774612927736889278" );
-	halt if( ust::to_string8(-9223372036854775808i64) != "-9223372036854775808" );
+	halt if( ust::to_string8(i64(-9223372036854775808)) != "-9223372036854775808" );
 
 	// u64
 	halt if( ust::to_string8(0u64) != "0" );
