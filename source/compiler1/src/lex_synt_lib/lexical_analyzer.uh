@@ -113,7 +113,8 @@ struct Lexem
 
 	// Contains text for non-fixed lexems (identifiers, strings, etc.).
 	// For fixed lexems is emplty.
-	// For numbers contains data of "struct NumberLexemData".
+	// For integer numbers contains data of "struct IntegerNumberLexemData".
+	// For floating point numbers contains data of "struct FloatingPointNumberLexemData".
 	ust::string8 text;
 
 	SrcLoc src_loc;

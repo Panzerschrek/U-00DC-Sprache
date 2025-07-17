@@ -121,7 +121,11 @@ struct Lexem
 		EndOfFile,
 	};
 
-	std::string text; // Contains text for all lexem types, except numbers. Contains data of "struct NumberLexemData" for numbers.
+	// Contains text for all lexem types, except numbers.
+	// Contains data of "struct IntegerNumberLexemData" for integer numbers.
+	// Contains data of "struct FloatingPointNumberLexemData" for floating point numbers.
+	std::string text;
+
 	SrcLoc src_loc;
 	Type type= Type::None;
 };
