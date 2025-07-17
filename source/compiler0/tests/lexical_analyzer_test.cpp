@@ -21,7 +21,7 @@ void TestLexResult( const std::string_view program_text, const Lexems& expected_
 		U_TEST_ASSERT( lex_result.lexems[i].src_loc == expected_result[i].src_loc );
 
 		// Do not compare number text, because in number lexem text actually stored special struct.
-		if( expected_result[i].type != Lexem::Type::IntegerNumber )
+		if( expected_result[i].type != Lexem::Type::IntegerNumber && expected_result[i].type != Lexem::Type::FloatingPointNumber )
 		{
 			U_TEST_ASSERT( lex_result.lexems[i].text == expected_result[i].text );
 		}
