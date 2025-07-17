@@ -78,7 +78,13 @@ struct TemplateParameterization
 	TemplateArgs template_args;
 }
 
-struct NumericConstant
+struct IntegerNumericConstant
+{
+	SrcLoc src_loc;
+	NumberLexemData num= zero_init;
+}
+
+struct FloatingPointNumericConstant
 {
 	SrcLoc src_loc;
 	NumberLexemData num= zero_init;
@@ -301,7 +307,8 @@ struct BitwiseNot
 // Make exceptions for nodes, where an expression is stored in "shared_ptr_final" for some reasons.
 type Expression= ust::variant</ tup[
 	EmptyVariant,
-	NumericConstant,
+	IntegerNumericConstant,
+	FloatingPointNumericConstant,
 	BooleanConstant,
 	StringLiteral,
 	CharLiteral,
