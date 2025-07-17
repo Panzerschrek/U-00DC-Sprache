@@ -229,11 +229,11 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	{
 		// Constants without fractional point are integers.
 		// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
-		if( numeric_constant.num.value_int <= 2147483647u64 )
+		if( numeric_constant.num.value <= 2147483647u64 )
 		{
 			t= U_FundamentalType::i32_;
 		}
-		else if( numeric_constant.num.value_int <= 9223372036854775807u )
+		else if( numeric_constant.num.value <= 9223372036854775807u )
 		{
 			t= U_FundamentalType::i64_;
 		}
@@ -245,7 +245,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	else if( type_suffix == "u" )
 	{
 		// Select "i32", if given constant fits inside it. Otherwise use "u64".
-		t= ( numeric_constant.num.value_int <= 4294967295u64 ? U_FundamentalType::u32_ : U_FundamentalType::u64_ );
+		t= ( numeric_constant.num.value <= 4294967295u64 ? U_FundamentalType::u32_ : U_FundamentalType::u64_ );
 	}
 	else if( type_suffix == "s" )
 	{
@@ -284,40 +284,40 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	{
 		if( is_signed )
 		{
-			overflow= numeric_constant.num.value_int > 0x7Fu64;
+			overflow= numeric_constant.num.value > 0x7Fu64;
 		}
 		else
 		{
-			overflow= numeric_constant.num.value_int > 0xFFu64;
+			overflow= numeric_constant.num.value > 0xFFu64;
 		}
 	}
 	else if( type_size == 2u )
 	{
 		if( is_signed )
 		{
-			overflow= numeric_constant.num.value_int > 0x7FFFu64;
+			overflow= numeric_constant.num.value > 0x7FFFu64;
 		}
 		else
 		{
-			overflow= numeric_constant.num.value_int > 0xFFFFu64;
+			overflow= numeric_constant.num.value > 0xFFFFu64;
 		}
 	}
 	else if( type_size == 4u )
 	{
 		if( is_signed )
 		{
-			overflow= numeric_constant.num.value_int > 0x7FFFFFFFu64;
+			overflow= numeric_constant.num.value > 0x7FFFFFFFu64;
 		}
 		else
 		{
-			overflow= numeric_constant.num.value_int > 0xFFFFFFFFu64;
+			overflow= numeric_constant.num.value > 0xFFFFFFFFu64;
 		}
 	}
 	else if( type_size == 8u )
 	{
 		if( is_signed )
 		{
-			overflow= numeric_constant.num.value_int > 0x7FFFFFFFFFFFFFFFu64;
+			overflow= numeric_constant.num.value > 0x7FFFFFFFFFFFFFFFu64;
 		}
 		// Unsigned overflow is impossible here.
 	}
@@ -329,7 +329,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( overflow )
 	{
-		REPORT_ERROR( IntegerConstantOverflow, names_scope, numeric_constant.src_loc, numeric_constant.num.value_int, GetFundamentalTypeName( t ) )
+		REPORT_ERROR( IntegerConstantOverflow, names_scope, numeric_constant.src_loc, numeric_constant.num.value, GetFundamentalTypeName( t ) )
 	}
 
 	var LLVMTypeRef llvm_type= GetFundamentalLLVMType(t);
@@ -342,7 +342,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.name= "numeric constant",
 	};
 
-	result.constexpr_value= unsafe( LLVMConstInt( llvm_type, numeric_constant.num.value_int, LLVMBool::False ) );
+	result.constexpr_value= unsafe( LLVMConstInt( llvm_type, numeric_constant.num.value, LLVMBool::False ) );
 	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
@@ -402,7 +402,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.name= "numeric constant",
 	};
 
-	result.constexpr_value= unsafe( LLVMConstReal( llvm_type, numeric_constant.num.value_double ) );
+	result.constexpr_value= unsafe( LLVMConstReal( llvm_type, numeric_constant.num.value ) );
 	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.

@@ -81,13 +81,13 @@ struct TemplateParameterization
 struct IntegerNumericConstant
 {
 	SrcLoc src_loc;
-	NumberLexemData num= zero_init;
+	IntegerNumberLexemData num;
 }
 
 struct FloatingPointNumericConstant
 {
 	SrcLoc src_loc;
-	NumberLexemData num= zero_init;
+	FloatingPointNumberLexemData num;
 }
 
 struct BooleanConstant

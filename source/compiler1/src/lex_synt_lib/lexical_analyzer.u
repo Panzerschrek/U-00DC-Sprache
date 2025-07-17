@@ -32,16 +32,16 @@ fn Lexem::ToDiagnosticString(this) : ust::string8
 	}
 	if( lexem_type == Lexem::Type::IntegerNumber )
 	{
-		halt if( text.size() < typeinfo</NumberLexemData/>.size_of );
-		auto& number_lexem_data= unsafe( cast_ref_unsafe</NumberLexemData/>( text.front() ) );
-		return ust::to_string8( number_lexem_data.value_int );
+		halt if( text.size() < typeinfo</IntegerNumberLexemData/>.size_of );
+		auto& number_lexem_data= unsafe( cast_ref_unsafe</IntegerNumberLexemData/>( text.front() ) );
+		return ust::to_string8( number_lexem_data.value );
 	}
 	if( lexem_type == Lexem::Type::FloatingPointNumber )
 	{
-		halt if( text.size() < typeinfo</NumberLexemData/>.size_of );
-		auto& number_lexem_data= unsafe( cast_ref_unsafe</NumberLexemData/>( text.front() ) );
+		halt if( text.size() < typeinfo</FloatingPointNumberLexemData/>.size_of );
+		auto& number_lexem_data= unsafe( cast_ref_unsafe</FloatingPointNumberLexemData/>( text.front() ) );
 		// For now just print only integer part. It's enough for something like errors indication.
-		return ust::to_string8( u64( number_lexem_data.value_int ) );
+		return ust::to_string8( u64( number_lexem_data.value ) );
 	}
 	if( lexem_type == Lexem::Type::LiteralSuffix )
 	{
@@ -273,9 +273,9 @@ fn TryParseDigit( char8 c ) : u32
 	return -1u;
 }
 
-fn TryParseNumericLexemTypeSuffix( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : [ char8, 7 ]
+fn TryParseNumericLexemTypeSuffix( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : [ char8, 8 ]
 {
-	var [ char8, 7 ] mut res= zero_init;
+	var [ char8, 8 ] mut res= zero_init;
 
 	if( !it.empty() && IsIdentifierStartChar( ust::utf::get_code_point_or_null_from_string( it ) ) )
 	{
@@ -385,12 +385,12 @@ fn ContinueParsingFloatingPointNumber( f64 parsed_part, Iterator &mut it, LexSyn
 		value/= TenIntegerPower( u32( num_fractional_digits - exponent ) );
 	}
 
-	var NumberLexemData mut result{ .value_double= value, .has_fractional_point= true, .type_suffix= TryParseNumericLexemTypeSuffix( it, out_errors, src_loc ) };
+	var FloatingPointNumberLexemData mut result{ .value= value, .type_suffix= TryParseNumericLexemTypeSuffix( it, out_errors, src_loc ) };
 
 	var Lexem mut result_lexem;
 	result_lexem.lexem_type= Lexem::Type::FloatingPointNumber;
-	result_lexem.text.resize( typeinfo</NumberLexemData/>.size_of, '\0' );
-	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8(result_lexem.text.data()), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</NumberLexemData/>.size_of ) );
+	result_lexem.text.resize( typeinfo</FloatingPointNumberLexemData/>.size_of, '\0' );
+	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8(result_lexem.text.data()), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</FloatingPointNumberLexemData/>.size_of ) );
 	return result_lexem;
 }
 
@@ -433,12 +433,12 @@ fn ParseDecimalNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& 
 		return ContinueParsingFloatingPointNumber( f64(value), it, out_errors, src_loc );
 	}
 
-	var NumberLexemData mut result{ .value_int= value, .type_suffix= TryParseNumericLexemTypeSuffix( it, out_errors, src_loc ) };
+	var IntegerNumberLexemData mut result{ .value= value, .type_suffix= TryParseNumericLexemTypeSuffix( it, out_errors, src_loc ) };
 
 	var Lexem mut result_lexem;
 	result_lexem.lexem_type= Lexem::Type::IntegerNumber;
-	result_lexem.text.resize( typeinfo</NumberLexemData/>.size_of, '\0' );
-	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8(result_lexem.text.data()), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</NumberLexemData/>.size_of ) );
+	result_lexem.text.resize( typeinfo</IntegerNumberLexemData/>.size_of, '\0' );
+	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8(result_lexem.text.data()), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</IntegerNumberLexemData/>.size_of ) );
 	return result_lexem;
 }
 
@@ -491,12 +491,12 @@ fn ParseIntegerNumberImpl( Iterator &mut it, LexSyntErrors &mut out_errors, SrcL
 		value+= u64(digit);
 	}
 
-	var NumberLexemData mut result{ .value_int= value, .type_suffix= TryParseNumericLexemTypeSuffix( it, out_errors, src_loc ) };
+	var IntegerNumberLexemData mut result{ .value= value, .type_suffix= TryParseNumericLexemTypeSuffix( it, out_errors, src_loc ) };
 
 	var Lexem mut result_lexem;
 	result_lexem.lexem_type= Lexem::Type::IntegerNumber;
-	result_lexem.text.resize( typeinfo</NumberLexemData/>.size_of, '\0' );
-	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8(result_lexem.text.data()), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</NumberLexemData/>.size_of ) );
+	result_lexem.text.resize( typeinfo</IntegerNumberLexemData/>.size_of, '\0' );
+	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8(result_lexem.text.data()), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</IntegerNumberLexemData/>.size_of ) );
 	return result_lexem;
 }
 

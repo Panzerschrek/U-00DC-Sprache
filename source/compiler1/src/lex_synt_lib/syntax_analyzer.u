@@ -830,10 +830,10 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		},
 		Lexem::Type::IntegerNumber ->
 		{
-			var IntegerNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc };
-			halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
+			var IntegerNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc, .num= zero_init };
+			halt if( it_.front().text.size() < typeinfo</IntegerNumberLexemData/>.size_of );
 
-			unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( $<(numeric_constant.num) ), ust::ptr_cast_to_byte8( cast_mut(it_.front().text).data() ), typeinfo</NumberLexemData/>.size_of ) );
+			unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( $<(numeric_constant.num) ), ust::ptr_cast_to_byte8( cast_mut(it_.front().text).data() ), typeinfo</IntegerNumberLexemData/>.size_of ) );
 
 			NextLexem();
 
@@ -841,10 +841,10 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		},
 		Lexem::Type::FloatingPointNumber ->
 		{
-			var FloatingPointNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc };
-			halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
+			var FloatingPointNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc, .num= zero_init };
+			halt if( it_.front().text.size() < typeinfo</FloatingPointNumberLexemData/>.size_of );
 
-			unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( $<(numeric_constant.num) ), ust::ptr_cast_to_byte8( cast_mut(it_.front().text).data() ), typeinfo</NumberLexemData/>.size_of ) );
+			unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( $<(numeric_constant.num) ), ust::ptr_cast_to_byte8( cast_mut(it_.front().text).data() ), typeinfo</FloatingPointNumberLexemData/>.size_of ) );
 
 			NextLexem();
 

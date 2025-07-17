@@ -5,12 +5,16 @@ import "lex_synt_error.uh"
 namespace U1
 {
 
-struct NumberLexemData
+struct IntegerNumberLexemData
 {
-	f64 value_double= 0.0;
-	u64 value_int(0);
-	bool has_fractional_point= false;
-	[ char8, 7 ] type_suffix= zero_init;
+	u64 value;
+	[ char8, 8 ] type_suffix;
+}
+
+struct FloatingPointNumberLexemData
+{
+	f64 value;
+	[ char8, 8 ] type_suffix;
 }
 
 struct Lexem
