@@ -457,11 +457,11 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 	// Integer part.
 	while( it < it_end )
 	{
-		const uint32_t num= TryParseDigit<10>( *it );
-		if( num == uint32_t(-1) )
+		const uint32_t digit= TryParseDigit<10>( *it );
+		if( digit == uint32_t(-1) )
 			break;
 
-		value= std::fma( value, 10.0, double(num) );
+		value= std::fma( value, 10.0, double(digit) );
 		++it;
 
 	}
@@ -475,12 +475,12 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 
 		while( it < it_end )
 		{
-			const uint32_t num= TryParseDigit<10>( *it );
-			if( num == uint32_t(-1) )
+			const uint32_t digit= TryParseDigit<10>( *it );
+			if( digit == uint32_t(-1) )
 				break;
 
 			++num_fractional_digits;
-			value= std::fma( value, 10.0, double(num) );
+			value= std::fma( value, 10.0, double(digit) );
 			++it;
 		}
 	}
@@ -504,11 +504,11 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 
 		while( it < it_end )
 		{
-			const uint32_t num= TryParseDigit<10>( *it );
-			if( num == uint32_t(-1) )
+			const uint32_t digit= TryParseDigit<10>( *it );
+			if( digit == uint32_t(-1) )
 				break;
 
-			exponent= exponent * 10 + int32_t(num);
+			exponent= exponent * 10 + int32_t(digit);
 			++it;
 
 			if( exponent > 2048 )
@@ -544,24 +544,33 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 {
 	uint64_t value= 0u;
 
+	const uint64_t max_value= std::numeric_limits<uint64_t>::max();
+
 	while( it < it_end )
 	{
-		const uint32_t num= TryParseDigit<10>( *it );
-		if( num == uint32_t(-1) )
+		const uint32_t digit= TryParseDigit<10>( *it );
+		if( digit == uint32_t(-1) )
 			break;
 
-		const uint64_t new_value= value * 10 + num;
 		++it;
 
-		if( new_value < value ) // Check overflow
+		if( value > max_value / 10 )
 		{
 			// Continue parsing as float in case of overflow.
 			// TODO - ensure no precision lost happens in this case.
-			const double parsed_part= std::fma( double(value), 10.0, double(num) );
+			const double parsed_part= double(value) * 10.0;
 			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
 		}
-		else
-			value= new_value;
+		value*= 10;
+
+		if( value > max_value - digit )
+		{
+			// Continue parsing as float in case of overflow.
+			// TODO - ensure no precision lost happens in this case.
+			const double parsed_part= double(value) + double(digit);
+			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
+		}
+		value+= digit;
 	}
 
 	if( it < it_end )
@@ -600,22 +609,29 @@ Lexem ParseIntegerNumberImpl( Iterator& it, const Iterator it_end, SrcLoc src_lo
 			out_errors.emplace_back( "Unexpected end of number", src_loc );
 	}
 
+	const uint64_t max_value= std::numeric_limits<uint64_t>::max();
+
 	while( it < it_end )
 	{
-		const uint32_t num= TryParseDigit<base>( *it );
-		if( num == uint32_t(-1) )
+		const uint32_t digit= TryParseDigit<base>( *it );
+		if( digit == uint32_t(-1) )
 			break;
 
-		const uint64_t new_value= value * base + num;
 		++it;
 
-		if( new_value < value ) // Check overflow
+		if( value > max_value / base )
 		{
 			out_errors.emplace_back( "Integer part of numeric literal is too long", src_loc );
 			break;
 		}
-		else
-			value= new_value;
+		value*= base;
+
+		if( value > max_value - digit )
+		{
+			out_errors.emplace_back( "Integer part of numeric literal is too long", src_loc );
+			break;
+		}
+		value+= digit;
 	}
 
 	IntegerNumberLexemData result;
