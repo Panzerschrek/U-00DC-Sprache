@@ -539,6 +539,29 @@ Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it
 	return result_lexem;
 }
 
+// Call this on overflow on integer number parsing.
+Lexem ContinueParsingDecimalNumberEnsureFloatingPoint( double parsed_part, Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
+{
+	while( it < it_end )
+	{
+		const uint32_t digit= TryParseDigit<10>( *it );
+		if( digit == uint32_t(-1) )
+			break;
+
+		++it;
+		parsed_part= std::fma( parsed_part, 10.0, double(digit) );
+	}
+
+	if( it >= it_end || !( *it == '.' || *it == 'e' ) )
+	{
+		// Integer part overflow was detected previoisly.
+		// If we found no fractional point and exponent, this means that this was integer numeric literal and thus we should report overflow error.
+		out_errors.emplace_back( "Integer numeric literal overflow", src_loc );
+	}
+
+	return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
+}
+
 Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
 	uint64_t value= 0u;
@@ -555,17 +578,17 @@ Lexem ParseDecimalNumber( Iterator& it, const Iterator it_end, SrcLoc src_loc, L
 
 		if( value > max_value / 10 )
 		{
-			// Continue parsing as floating point in case of overflow.
+			// Try parsing as floating point in case of overflow or generate error about overflow.
 			const double parsed_part= std::fma( double(value), 10.0, double(digit) ); // TODO - ensure no precision lost happens in this operation.
-			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
+			return ContinueParsingDecimalNumberEnsureFloatingPoint( parsed_part, it, it_end, src_loc, out_errors );
 		}
 		value*= 10;
 
 		if( value > max_value - digit )
 		{
-			// Continue parsing as floating point in case of overflow.
+			// Try parsing as floating point in case of overflow or generate error about overflow.
 			const double parsed_part= double(value) + double(digit); // TODO - ensure no precision lost happens in this operation.
-			return ContinueParsingFloatingPointNumber( parsed_part, it, it_end, src_loc, out_errors );
+			return ContinueParsingDecimalNumberEnsureFloatingPoint( parsed_part, it, it_end, src_loc, out_errors );
 		}
 		value+= digit;
 	}
