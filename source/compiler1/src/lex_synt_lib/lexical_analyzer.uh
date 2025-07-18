@@ -5,12 +5,16 @@ import "lex_synt_error.uh"
 namespace U1
 {
 
-struct NumberLexemData
+struct IntegerNumberLexemData
 {
-	f64 value_double= 0.0;
-	u64 value_int(0);
-	bool has_fractional_point= false;
-	[ char8, 7 ] type_suffix= zero_init;
+	u64 value;
+	[ char8, 8 ] type_suffix;
+}
+
+struct FloatingPointNumberLexemData
+{
+	f64 value;
+	[ char8, 8 ] type_suffix;
 }
 
 struct Lexem
@@ -24,7 +28,8 @@ struct Lexem
 		MacroUniqueIdentifier,
 		String,
 		CharLiteral,
-		Number,
+		IntegerNumber,
+		FloatingPointNumber,
 
 		LiteralSuffix, // For strings, numbers
 
@@ -108,7 +113,8 @@ struct Lexem
 
 	// Contains text for non-fixed lexems (identifiers, strings, etc.).
 	// For fixed lexems is emplty.
-	// For numbers contains data of "struct NumberLexemData".
+	// For integer numbers contains data of "struct IntegerNumberLexemData".
+	// For floating point numbers contains data of "struct FloatingPointNumberLexemData".
 	ust::string8 text;
 
 	SrcLoc src_loc;

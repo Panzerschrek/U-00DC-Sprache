@@ -183,7 +183,8 @@ private:
 	ProgramElementsList ParseNamespaceBodyToNamespaceEnd();
 	ProgramElementsList ParseNamespaceBodyImpl( Lexem::Type end_lexem );
 
-	NumericConstant ParseNumericConstant();
+	IntegerNumericConstant ParseIntegerNumericConstant();
+	FloatingPointNumericConstant ParseFloatingPointNumericConstant();
 
 	Expression ParseExpression();
 	template<size_t priority> Expression TryParseBinaryOperator();
@@ -859,15 +860,28 @@ ProgramElementsList SyntaxAnalyzer::ParseNamespaceBodyImpl( const Lexem::Type en
 	return result_builder.Build();
 }
 
-NumericConstant SyntaxAnalyzer::ParseNumericConstant()
+IntegerNumericConstant SyntaxAnalyzer::ParseIntegerNumericConstant()
 {
-	U_ASSERT( it_->type == Lexem::Type::Number );
-	U_ASSERT( it_->text.size() == sizeof(NumberLexemData) );
+	U_ASSERT( it_->type == Lexem::Type::IntegerNumber );
+	U_ASSERT( it_->text.size() == sizeof(IntegerNumberLexemData) );
 	
-	NumericConstant result( it_->src_loc );
+	IntegerNumericConstant result( it_->src_loc );
 	
-	std::memcpy( &result.num, it_->text.data(), sizeof(NumberLexemData) );
+	std::memcpy( &result.num, it_->text.data(), sizeof(IntegerNumberLexemData) );
 	
+	NextLexem();
+	return result;
+}
+
+FloatingPointNumericConstant SyntaxAnalyzer::ParseFloatingPointNumericConstant()
+{
+	U_ASSERT( it_->type == Lexem::Type::FloatingPointNumber );
+	U_ASSERT( it_->text.size() == sizeof(FloatingPointNumberLexemData) );
+
+	FloatingPointNumericConstant result( it_->src_loc );
+
+	std::memcpy( &result.num, it_->text.data(), sizeof(FloatingPointNumberLexemData) );
+
 	NextLexem();
 	return result;
 }
@@ -1068,9 +1082,11 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		}
 	case Lexem::Type::DoubleColon:
 	case Lexem::Type::CompletionScope:
-			return ComplexNameToExpression( ParseComplexName() );
-	case Lexem::Type::Number:
-			return ParseNumericConstant();
+		return ComplexNameToExpression( ParseComplexName() );
+	case Lexem::Type::IntegerNumber:
+		return ParseIntegerNumericConstant();
+	case Lexem::Type::FloatingPointNumber:
+		return ParseFloatingPointNumericConstant();
 	case Lexem::Type::String:
 		{
 			auto string_literal= std::make_unique<StringLiteral>( it_->src_loc );
@@ -4925,7 +4941,7 @@ void SyntaxAnalyzer::PushErrorMessage()
 		LexSyntError error_message;
 		error_message.src_loc= it_->src_loc;
 
-		if( it_->type == Lexem::Type::Number )
+		if( it_->type == Lexem::Type::IntegerNumber || it_->type == Lexem::Type::FloatingPointNumber )
 		{
 			// Process numbers specially since text of number lexem is not a text but binary struct data.
 			error_message.text= "Syntax error - unexpected number lexem";

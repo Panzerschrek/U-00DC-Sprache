@@ -1,3 +1,4 @@
+import "/math.u"
 import "/string_conversions.u"
 import "/utf.u"
 import "lexical_analyzer.uh"
@@ -29,12 +30,18 @@ fn Lexem::ToDiagnosticString(this) : ust::string8
 		// For now ignore escape sequences (for simplicity).
 		return ust::concat( "'", text, "'" );
 	}
-	if( lexem_type == Lexem::Type::Number )
+	if( lexem_type == Lexem::Type::IntegerNumber )
 	{
-		halt if( text.size() < typeinfo</NumberLexemData/>.size_of );
-		auto& number_lexem_data= unsafe( cast_ref_unsafe</NumberLexemData/>( text.front() ) );
+		halt if( text.size() < typeinfo</IntegerNumberLexemData/>.size_of );
+		auto& number_lexem_data= unsafe( cast_ref_unsafe</IntegerNumberLexemData/>( text.front() ) );
+		return ust::to_string8( number_lexem_data.value );
+	}
+	if( lexem_type == Lexem::Type::FloatingPointNumber )
+	{
+		halt if( text.size() < typeinfo</FloatingPointNumberLexemData/>.size_of );
+		auto& number_lexem_data= unsafe( cast_ref_unsafe</FloatingPointNumberLexemData/>( text.front() ) );
 		// For now just print only integer part. It's enough for something like errors indication.
-		return ust::to_string8( number_lexem_data.value_int );
+		return ust::to_string8( u64( number_lexem_data.value ) );
 	}
 	if( lexem_type == Lexem::Type::LiteralSuffix )
 	{
@@ -198,13 +205,14 @@ fn ParseMacroIdentifier( Iterator &mut it ) : Lexem
 	return result;
 }
 
-fn PowI( u64 base_, u64 pow ) : f64
+// Function for fast calculation of large integer powers.
+fn IntegerPower( f64 base_, u32 pow ) : f64
 {
-	var f64 mut res= 1.0, mut p(base_);
+	var f64 mut res= 1.0, mut p= base_;
 
-	for( var u64 mut i(1); ; i <<= 1u, p*= p )
+	for( var u32 mut i(1); ; i <<= 1u, p*= p )
 	{
-		if( (i & pow ) != 0u64 )
+		if( (i & pow ) != 0u )
 		{
 			res*= p;
 		}
@@ -217,122 +225,118 @@ fn PowI( u64 base_, u64 pow ) : f64
 	return res;
 }
 
-fn NumberFunc2( char8 c ) : u64
+fn TenIntegerPower( u32 pow ) : f64
 {
-	if( c >= '0' && c <= '1' )
-	{
-		return u64(c) - u64('0');
-	}
-	return -1u64;
+	return IntegerPower( 10.0, pow );
 }
 
-fn NumberFunc8( char8 c ) : u64
+// Returns u32(-1) if failed to parse.
+template</ u32 base_ />
+fn TryParseDigit( char8 c ) : u32
 {
-	if( c >= '0' && c <= '7' )
+	static_if( base_ == 2u )
 	{
-		return u64(c) - u64('0');
-	}
-	return -1u64;
-}
-
-fn NumberFunc10( char8 c ) : u64
-{
-	if( c >= '0' && c <= '9' )
-	{
-		return u64(c) - u64('0');
-	}
-	return -1u64;
-}
-
-fn NumberFunc16( char8 c ) : u64
-{
-	switch(c)
-	{
-		'0' ... '9' -> { return u64(c) - u64('0'); },
-		'a' ... 'f' -> { return u64(c) - u64('a') + u64(10); },
-		'A' ... 'F' -> { return u64(c) - u64('A') + u64(10); },
-		default -> { return -1u64; },
-	}
-}
-
-fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
-{
-	var u64 mut base_(10);
-	auto mut number_func= NumberFunc10;
-
-	if( it.size() >= 3s && it.front() == '0' )
-	{
-		auto d= it[1s];
-		if( d == 'b' )
+		if( c >= '0' && c <= '1' )
 		{
-			base_= 2u64;
-			number_func= NumberFunc2;
-			it= it.subrange_start(2s);
-		}
-		if( d == 'o' )
-		{
-			base_= 8u64;
-			number_func= NumberFunc8;
-			it= it.subrange_start(2s);
-		}
-		if( d == 'x' )
-		{
-			base_= 16u64;
-			number_func= NumberFunc16;
-			it= it.subrange_start(2s);
+			return u32(c) - u32('0');
 		}
 	}
+	else static_if( base_ == 8u )
+	{
+		if( c >= '0' && c <= '7' )
+		{
+			return u32(c) - u32('0');
+		}
+	}
+	else static_if( base_ == 10u )
+	{
+		if( c >= '0' && c <= '9' )
+		{
+			return u32(c) - u32('0');
+		}
+	}
+	else static_if( base_ == 16u )
+	{
+		switch(c)
+		{
+			'0' ... '9' -> { return u32(c) - u32('0'); },
+			'a' ... 'f' -> { return u32(c) - u32('a') + u32(10); },
+			'A' ... 'F' -> { return u32(c) - u32('A') + u32(10); },
+			default -> {},
+		}
+	}
+	else
+	{
+		static_assert( false, "Unsupported base!" );
+	}
 
-	var u64 mut integer_part(0), mut fractional_part(0);
-	var i32 mut fractional_part_digits= 0, mut exponent= 0;
-	var bool mut has_fraction_point= false;
+	return -1u;
+}
 
+fn TryParseNumericLexemTypeSuffix( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : [ char8, 8 ]
+{
+	var [ char8, 8 ] mut res= zero_init;
+
+	if( !it.empty() && IsIdentifierStartChar( ust::utf::get_code_point_or_null_from_string( it ) ) )
+	{
+		auto max_size= typeinfo</ typeof(res) />.element_count;
+		var Lexem type_suffix= ParseIdentifier( it );
+		if( type_suffix.text.size() >= max_size )
+		{
+			out_errors.push_back( LexSyntError( src_loc, "Type suffix of numeric literal is too long" ) );
+		}
+
+		for( auto mut i= 0s; i < ust::min( type_suffix.text.size(), max_size ); ++i )
+		{
+			res[i]= type_suffix.text[i];
+		}
+	}
+
+	return res;
+}
+
+fn ContinueParsingFloatingPointNumber( f64 parsed_part, Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
+{
+	var f64 mut value= parsed_part;
+
+	// Integer part.
 	while( !it.empty() )
 	{
-		auto num= number_func( it.front() );
-		if( num == -1u64 )
+		auto digit= TryParseDigit</10u/>( it.front() );
+		if( digit == -1u )
 		{
 			break;
 		}
 
-		auto integer_part_before= integer_part;
-		integer_part= integer_part * base_ + num;
 		it.drop_front();
-
-		if( integer_part < integer_part_before ) // Check overflow
-		{
-			out_errors.push_back( LexSyntError( src_loc, "Integer part of numeric literal is too long" ) );
-			break;
-		}
+		value= ust::fma( value, 10.0, f64(digit) );
 	}
 
+	var i32 mut num_fractional_digits= 0;
+
+	// Fractional part.
 	if( !it.empty() && it.front() == '.' )
 	{
 		it.drop_front();
-		has_fraction_point= true;
 
 		while( !it.empty() )
 		{
-			var u64 num= number_func( it.front() );
-			if( num == -1u64 )
+			auto digit= TryParseDigit</10u/>( it.front() );
+			if( digit == -1u )
 			{
 				break;
 			}
 
-			var u64 fractional_part_before= fractional_part;
-			fractional_part= fractional_part * base_ + num;
-			++fractional_part_digits;
 			it.drop_front();
-
-			if( fractional_part < fractional_part_before ) // Check overflow
-			{
-				out_errors.push_back( LexSyntError( src_loc,"Fractional part of numeric literal is too long" ) );
-				break;
-			}
+			++num_fractional_digits;
+			value= ust::fma( value, 10.0, f64(digit) );
 		}
 	}
 
-	if( base_ == 10u64 && !it.empty() && it.front() == 'e' )
+	var i32 mut exponent= 0;
+
+	// Exponent.
+	if( !it.empty() && it.front() == 'e' )
 	{
 		it.drop_front();
 
@@ -350,87 +354,184 @@ fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 
 		while( !it.empty() )
 		{
-			auto num= NumberFunc10( it.front() );
-			if( num == -1u64 )
+			auto digit= TryParseDigit</10u/>( it.front() );
+			if( digit == -1u )
 			{
 				break;
 			}
-			exponent= exponent * i32(base_) + i32(num);
+
 			it.drop_front();
+			exponent= exponent * 10 + i32(digit);
+
+			if( exponent > 2048 )
+			{
+				// Do not allow too large exponents.
+				out_errors.push_back( LexSyntError( src_loc, "Floating point number exponent overflow" ) );
+				break;
+			}
 		}
 
 		exponent*= sign;
 	}
 
-	var NumberLexemData mut result;
+	// TODO - check no precision lost happens here.
 
-	// For double calculate only powers > 0, because pow( base, positive ) is always integer and has exact double representation.
-	// pow( base, negative ) may have not exact double representation (1/10 for example).
-	// Example:
-	// 3 / 10 - right
-	// 3 * (1/10) - wrong
-	if( exponent >= 0 )
+	if( exponent >= num_fractional_digits )
 	{
-		result.value_double= f64(integer_part) * PowI( base_, u64(exponent) );
+		value*= TenIntegerPower( u32( exponent - num_fractional_digits ) );
 	}
 	else
 	{
-		result.value_double= f64(integer_part) / PowI( base_, u64(-exponent) );
+		value/= TenIntegerPower( u32( num_fractional_digits - exponent ) );
 	}
-	if( exponent >= fractional_part_digits )
+
+	var FloatingPointNumberLexemData mut result
 	{
-		result.value_double+= f64(fractional_part) * PowI( base_, u64( exponent - fractional_part_digits ) );
-	}
-	else
-	{
-		result.value_double+= f64(fractional_part) / PowI( base_, u64( fractional_part_digits - exponent ) );
-	}
+		.value= value,
+		.type_suffix= TryParseNumericLexemTypeSuffix( it, out_errors, src_loc )
+	};
 
-	result.value_int= integer_part;
-
-	for( auto mut i= 0; i <  exponent; ++i )
-	{
-		result.value_int*= base_;
-	}
-	for( auto mut i= 0; i < -exponent; ++i )
-	{
-		result.value_int/= base_;
-	}
-
-	auto mut fractional_part_corrected= fractional_part;
-
-	for( auto mut i= 0; i < exponent - fractional_part_digits; ++i )
-	{
-		fractional_part_corrected*= base_;
-	}
-	for( auto mut i= 0; i < fractional_part_digits - exponent; ++i )
-	{
-		fractional_part_corrected/= base_;
-	}
-
-	result.value_int+= fractional_part_corrected;
-	result.has_fractional_point= has_fraction_point;
-
-	if( !it.empty() && IsIdentifierStartChar( ust::utf::get_code_point_or_null_from_string( it ) ) )
-	{
-		auto max_size= typeinfo</ typeof(result.type_suffix) />.element_count;
-		var Lexem type_suffix= ParseIdentifier( it );
-		if( type_suffix.text.size() >= max_size )
-		{
-			out_errors.push_back( LexSyntError( src_loc, "Type suffix of numeric literal is too long" ) );
-		}
-
-		for( auto mut i= 0s; i < ust::min( type_suffix.text.size(), max_size ); ++i )
-		{
-			result.type_suffix[i]= type_suffix.text[i];
-		}
-	}
-
-	var Lexem mut result_lexem;
-	result_lexem.lexem_type= Lexem::Type::Number;
-	result_lexem.text.resize( typeinfo</NumberLexemData/>.size_of, '\0' );
-	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8(result_lexem.text.data()), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</NumberLexemData/>.size_of ) );
+	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::FloatingPointNumber };
+	result_lexem.text.resize( typeinfo</FloatingPointNumberLexemData/>.size_of, '\0' );
+	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( result_lexem.text.data() ), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</FloatingPointNumberLexemData/>.size_of ) );
 	return result_lexem;
+}
+
+fn ParseDecimalNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
+{
+	var u64 mut value( 0u );
+
+	var u64 max_value= 0xFFFFFFFFFFFFFFFFu64;
+
+	while( !it.empty() )
+	{
+		auto digit= TryParseDigit</10u/>( it.front() );
+		if( digit == -1u )
+		{
+			break;
+		}
+
+		it.drop_front();
+
+		if( value > max_value / 10u64 )
+		{
+			// Continue parsing as floating point in case of overflow.
+			var f64 parsed_part= ust::fma( f64(value), 10.0, f64(digit) ); // TODO - ensure no precision lost happens in this operation.
+			return ContinueParsingFloatingPointNumber( parsed_part, it, out_errors, src_loc );
+		}
+		value*= 10u64;
+
+		if( value > max_value - u64(digit) )
+		{
+			// Continue parsing as floating point in case of overflow.
+			var f64 parsed_part= f64(value) + f64(digit); // TODO - ensure no precision lost happens in this operation.
+			return ContinueParsingFloatingPointNumber( parsed_part, it, out_errors, src_loc );
+		}
+		value+= u64(digit);
+	}
+
+	// If we have decimal point or exponent - continue parsing as floating point.
+	if( !it.empty() && ( it.front() == '.' || it.front() == 'e' ) )
+	{
+		return ContinueParsingFloatingPointNumber( f64(value), it, out_errors, src_loc );
+	}
+
+	var IntegerNumberLexemData mut result
+	{
+		.value= value,
+		.type_suffix= TryParseNumericLexemTypeSuffix( it, out_errors, src_loc )
+	};
+
+	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::IntegerNumber };
+	result_lexem.text.resize( typeinfo</IntegerNumberLexemData/>.size_of, '\0' );
+	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( result_lexem.text.data() ), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</IntegerNumberLexemData/>.size_of ) );
+	return result_lexem;
+}
+
+// Initial prefix should be skipped before this call.
+template</ u32 base_ />
+fn ParseIntegerNumberImpl( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
+{
+	var u64 mut value(0u);
+
+	// Require at least one digit.
+	if( it.empty() )
+	{
+		out_errors.push_back( LexSyntError( src_loc, "Unexpected end of number" ) );
+	}
+	else
+	{
+		var u32 digit= TryParseDigit</base_/>( it.front() );
+		it.drop_front();
+		if( digit == -1u32 )
+		{
+			out_errors.push_back( LexSyntError( src_loc, "Unexpected end of number" ) );
+		}
+		value= u64(digit);
+	}
+
+	var u64 max_value= 0xFFFFFFFFFFFFFFFFu64;
+
+	while( !it.empty() )
+	{
+		auto digit= TryParseDigit</base_/>( it.front() );
+		if( digit == -1u )
+		{
+			break;
+		}
+
+		it.drop_front();
+
+		if( value > max_value / u64(base_) )
+		{
+			out_errors.push_back( LexSyntError( src_loc, "Integer numeric literal overflow" ) );
+			break;
+		}
+		value*= u64(base_);
+
+		if( value > max_value - u64(digit) )
+		{
+			out_errors.push_back( LexSyntError( src_loc, "Integer numeric literal overflow" ) );
+			break;
+		}
+		value+= u64(digit);
+	}
+
+	var IntegerNumberLexemData mut result
+	{
+		.value= value,
+		.type_suffix= TryParseNumericLexemTypeSuffix( it, out_errors, src_loc )
+	};
+
+	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::IntegerNumber };
+	result_lexem.text.resize( typeinfo</IntegerNumberLexemData/>.size_of, '\0' );
+	unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( result_lexem.text.data() ), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</IntegerNumberLexemData/>.size_of ) );
+	return result_lexem;
+}
+
+fn ParseNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
+{
+	if( it.size() >= 3s && it.front() == '0' )
+	{
+		auto d= it[1s];
+		if( d == 'b' )
+		{
+			it= it.subrange_start(2s);
+			return ParseIntegerNumberImpl</2u/>( it, out_errors, src_loc );
+		}
+		if( d == 'o' )
+		{
+			it= it.subrange_start(2s);
+			return ParseIntegerNumberImpl</8u/>( it, out_errors, src_loc );
+		}
+		if( d == 'x' )
+		{
+			it= it.subrange_start(2s);
+			return ParseIntegerNumberImpl</16u/>( it, out_errors, src_loc );
+		}
+	}
+
+	return ParseDecimalNumber( it, out_errors, src_loc );
 }
 
 fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
@@ -473,14 +574,14 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 						auto mut char_code= 0u;
 						for( auto mut i= 0u; i < 4u; ++i )
 						{
-							auto digit= NumberFunc16( it.front() );
-							if( digit == -1u64 )
+							auto digit= TryParseDigit</16u/>( it.front() );
+							if( digit == -1u )
 							{
 								out_errors.push_back( LexSyntError( src_loc, "expected hex number" ) );
 								return result_lexem;
 							}
 
-							char_code|= u32(digit) << ( ( 3u - i ) * 4u );
+							char_code|= digit << ( ( 3u - i ) * 4u );
 							it.drop_front();
 						}
 						ust::utf::push_code_point_to_string( result_lexem.text, char32(char_code) );
@@ -550,14 +651,14 @@ fn ParseCharLiteral( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& sr
 				auto mut char_code= 0u;
 				for( auto mut i= 0u; i < 4u; ++i )
 				{
-					auto digit= NumberFunc16( it.front() );
-					if( digit == -1u64 )
+					auto digit= TryParseDigit</16u/>( it.front() );
+					if( digit == -1u )
 					{
 						out_errors.push_back( LexSyntError( src_loc, "expected hex number" ) );
 						return result_lexem;
 					}
 
-					char_code|= u32(digit) << ( ( 3u - i ) * 4u );
+					char_code|= digit << ( ( 3u - i ) * 4u );
 					it.drop_front();
 				}
 				ust::utf::push_code_point_to_string( result_lexem.text, char32(char_code) );

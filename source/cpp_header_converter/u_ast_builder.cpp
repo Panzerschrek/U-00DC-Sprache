@@ -305,9 +305,8 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		auto array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
 		array_type->element_type= TranslateType( *complex_type->getElementType().getTypePtr(), type_names_map );
 
-		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-		numeric_constant.num.value_int= 2;
-		numeric_constant.num.value_double= 2.0;
+		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+		numeric_constant.num.value= 2;
 		array_type->size= std::move(numeric_constant);
 
 		return std::move(array_type);
@@ -318,11 +317,10 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		auto array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
 		array_type->element_type= TranslateType( *constant_array_type->getElementType().getTypePtr(), type_names_map );
 
-		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-		numeric_constant.num.value_int= constant_array_type->getSize().getLimitedValue();
-		numeric_constant.num.value_double= static_cast<double>(numeric_constant.num.value_int);
+		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+		numeric_constant.num.value= constant_array_type->getSize().getLimitedValue();
 		numeric_constant.num.type_suffix[0]= 'u';
-		if( numeric_constant.num.value_int >= 0x7FFFFFFFFu )
+		if( numeric_constant.num.value >= 0x7FFFFFFFFu )
 		{
 			numeric_constant.num.type_suffix[1]= '6';
 			numeric_constant.num.type_suffix[2]= '4';
@@ -337,9 +335,8 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		auto out_array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
 		out_array_type->element_type= TranslateType( *array_type->getElementType().getTypePtr(), type_names_map );
 
-		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-		numeric_constant.num.value_int= 0;
-		numeric_constant.num.value_double= 0.0;
+		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+		numeric_constant.num.value= 0;
 		numeric_constant.num.type_suffix[0]= 'u';
 		out_array_type->size= std::move(numeric_constant);
 
@@ -975,9 +972,8 @@ Synt::ClassElementsList CppAstConsumer::MakeOpaqueRecordElements(
 	auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
 	array_type->element_type= StringToTypeName( byte_name );
 
-	Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-	numeric_constant.num.value_int= num_elements;
-	numeric_constant.num.value_double= double(numeric_constant.num.value_int);
+	Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+	numeric_constant.num.value= num_elements;
 	array_type->size= std::move(numeric_constant);
 
 	Synt::ClassField field( g_dummy_src_loc );
@@ -1093,12 +1089,11 @@ void CppAstConsumer::EmitEnum(
 
 		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
 		{
-			Synt::NumericConstant initializer_number( g_dummy_src_loc );
+			Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
 			const llvm::APSInt val= enumerator->getInitVal();
-			initializer_number.num.value_int= val.isNegative() ? uint64_t(val.getExtValue()) : val.getLimitedValue();
-			initializer_number.num.value_double= static_cast<double>(initializer_number.num.value_int);
+			initializer_number.num.value= val.isNegative() ? uint64_t(val.getExtValue()) : val.getLimitedValue();
 			initializer_number.num.type_suffix[0]= 'u';
-			if( initializer_number.num.value_int >= 0x7FFFFFFFFu )
+			if( initializer_number.num.value >= 0x7FFFFFFFFu )
 			{
 				initializer_number.num.type_suffix[1]= '6';
 				initializer_number.num.type_suffix[2]= '4';
@@ -1206,12 +1201,11 @@ void CppAstConsumer::EmitEnum(
 
 		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
 		{
-			Synt::NumericConstant initializer_number( g_dummy_src_loc );
+			Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
 			const llvm::APSInt val= enumerator->getInitVal();
-			initializer_number.num.value_int= val.isNegative() ? uint64_t(val.getExtValue()) : val.getLimitedValue();
-			initializer_number.num.value_double= static_cast<double>(initializer_number.num.value_int);
+			initializer_number.num.value= val.isNegative() ? uint64_t(val.getExtValue()) : val.getLimitedValue();
 			initializer_number.num.type_suffix[0]= 'u';
-			if( initializer_number.num.value_int >= 0x7FFFFFFFFu )
+			if( initializer_number.num.value >= 0x7FFFFFFFFu )
 			{
 				initializer_number.num.type_suffix[1]= '6';
 				initializer_number.num.type_suffix[2]= '4';
@@ -1308,51 +1302,53 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			auto_variable_declaration.name= name;
 
-			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
-
 			if( numeric_literal_parser.isIntegerLiteral() || numeric_literal_parser.getRadix() != 10 )
 			{
+				Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
+
 				llvm::APInt int_val( 64u, 0u );
 				numeric_literal_parser.GetIntegerValue( int_val );
-				numeric_constant.num.value_int= int_val.getLimitedValue();
-				numeric_constant.num.value_double= static_cast<double>(numeric_constant.num.value_int);
+				numeric_constant.num.value= int_val.getLimitedValue();
+
+				if( numeric_literal_parser.isUnsigned )
+				{
+					numeric_constant.num.type_suffix[0]= 'u';
+					if( numeric_literal_parser.isLongLong )
+					{
+						numeric_constant.num.type_suffix[1]= '6';
+						numeric_constant.num.type_suffix[2]= '4';
+					}
+				}
+				else
+				{
+					if( numeric_literal_parser.isLongLong )
+					{
+						numeric_constant.num.type_suffix[0]= 'i';
+						numeric_constant.num.type_suffix[1]= '6';
+						numeric_constant.num.type_suffix[2]= '4';
+					}
+				}
+
+				auto_variable_declaration.initializer_expression= std::move(numeric_constant);
 			}
 			else
 			{
+				Synt::FloatingPointNumericConstant numeric_constant( g_dummy_src_loc );
+
 				llvm::APFloat float_val(0.0);
 				numeric_literal_parser.GetFloatValue( float_val );
 
 				// "HACK! fix infinity.
 				if( float_val.isInfinity() )
 					float_val= llvm::APFloat::getLargest( float_val.getSemantics(), float_val.isNegative() );
-				numeric_constant.num.value_double= float_val.convertToDouble();
-				numeric_constant.num.value_int= uint64_t( numeric_constant.num.value_double );
+				numeric_constant.num.value= float_val.convertToDouble();
+
+				if( numeric_literal_parser.isFloat )
+					numeric_constant.num.type_suffix[0]= 'f';
+
+				auto_variable_declaration.initializer_expression= std::move(numeric_constant);
 			}
 
-			if( numeric_literal_parser.isFloat )
-				numeric_constant.num.type_suffix[0]= 'f';
-			else if( numeric_literal_parser.isUnsigned )
-			{
-				numeric_constant.num.type_suffix[0]= 'u';
-				if( numeric_literal_parser.isLongLong )
-				{
-					numeric_constant.num.type_suffix[1]= '6';
-					numeric_constant.num.type_suffix[2]= '4';
-				}
-			}
-			else
-			{
-				if( numeric_literal_parser.isLongLong )
-				{
-					numeric_constant.num.type_suffix[0]= 'i';
-					numeric_constant.num.type_suffix[1]= '6';
-					numeric_constant.num.type_suffix[2]= '4';
-				}
-			}
-
-			numeric_constant.num.has_fractional_point= numeric_literal_parser.isFloatingLiteral();
-
-			auto_variable_declaration.initializer_expression= std::move(numeric_constant);
 			root_program_elements_.Append( std::move( auto_variable_declaration ) );
 		}
 		else if( clang::tok::isStringLiteral( token.getKind() ) )

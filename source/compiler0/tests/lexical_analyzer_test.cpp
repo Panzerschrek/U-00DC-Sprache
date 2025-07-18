@@ -21,7 +21,7 @@ void TestLexResult( const std::string_view program_text, const Lexems& expected_
 		U_TEST_ASSERT( lex_result.lexems[i].src_loc == expected_result[i].src_loc );
 
 		// Do not compare number text, because in number lexem text actually stored special struct.
-		if( expected_result[i].type != Lexem::Type::Number )
+		if( expected_result[i].type != Lexem::Type::IntegerNumber && expected_result[i].type != Lexem::Type::FloatingPointNumber )
 		{
 			U_TEST_ASSERT( lex_result.lexems[i].text == expected_result[i].text );
 		}
@@ -48,7 +48,7 @@ auto x= "str"; var i32 y= 0x666;
 		{ "i32"   , SrcLoc( 0, 2, 19 ), Lexem::Type::Identifier },
 		{ "y"     , SrcLoc( 0, 2, 23 ), Lexem::Type::Identifier },
 		{ "="     , SrcLoc( 0, 2, 24 ), Lexem::Type::Equal      },
-		{ "0x666" , SrcLoc( 0, 2, 26 ), Lexem::Type::Number     },
+		{ "0x666" , SrcLoc( 0, 2, 26 ), Lexem::Type::IntegerNumber     },
 		{ ";"     , SrcLoc( 0, 2, 31 ), Lexem::Type::Semicolon  },
 	};
 

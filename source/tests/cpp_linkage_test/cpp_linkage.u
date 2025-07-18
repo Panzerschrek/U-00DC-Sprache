@@ -21,8 +21,8 @@ fn TakeS( NameSpace::S &imut s )
 
 fn U32ToStr( u32 mut x, [ char8, 64 ] &mut out_str )
 {
-	auto constexpr zero_char= "0"[0u];
-	auto constexpr end_null= 0c8;
+	auto constexpr zero_char= '0';
+	auto constexpr end_null= '\0';
 	if( x == 0u )
 	{
 		out_str[0u]= zero_char;

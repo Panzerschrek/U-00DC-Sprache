@@ -13,7 +13,7 @@ def CharLiteral_Test1():
 	c_program_text= """
 		// short-form literal, type is char16
 		var char16 constexpr c= 'Ё'c16;
-		static_assert( c == 1025c16 );
+		static_assert( c == char16(1025) );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -22,7 +22,7 @@ def CharLiteral_Test2():
 	c_program_text= """
 		// long-form literal
 		var char32 constexpr c= 'Ⴅ'char32;
-		static_assert( c == 4261c32 );
+		static_assert( c == char32(4261) );
 	"""
 	tests_lib.build_program( c_program_text )
 

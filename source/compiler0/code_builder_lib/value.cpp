@@ -2,6 +2,7 @@
 #include <llvm/ADT/SmallString.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "keywords.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "class.hpp"
 #include "template_signature_param.hpp"
@@ -163,15 +164,11 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 		}
 		else if( IsChar( fundamental_type->fundamental_type ) )
 		{
-			std::string res= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
-
-			if( fundamental_type->fundamental_type == U_FundamentalType::char8_  )
-				res+= "c8" ;
-			if( fundamental_type->fundamental_type == U_FundamentalType::char16_ )
-				res+= "c16";
-			if( fundamental_type->fundamental_type == U_FundamentalType::char32_ )
-				res+= "c32";
-
+			std::string res;
+			res+= GetFundamentalTypeName( fundamental_type->fundamental_type );
+			res.push_back( '(' );
+			res+= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
+			res.push_back( ')' );
 			return res;
 		}
 		else if( IsByte( fundamental_type->fundamental_type ) )

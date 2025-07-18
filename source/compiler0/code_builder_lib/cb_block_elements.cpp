@@ -53,7 +53,8 @@ bool SingleExpressionIsUselessImpl( const Synt::NamesScopeNameFetch& ) { return 
 bool SingleExpressionIsUselessImpl( const Synt::NamesScopeNameFetchCompletion& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::TemplateParameterization& ) { return true; }
 // Simple constant expressions have no side effects.
-bool SingleExpressionIsUselessImpl( const Synt::NumericConstant& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::IntegerNumericConstant& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::FloatingPointNumericConstant& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::BooleanConstant& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::StringLiteral& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::CharLiteral& ) { return true; }

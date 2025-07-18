@@ -8,12 +8,16 @@
 namespace U
 {
 
-struct NumberLexemData
+struct IntegerNumberLexemData
 {
-	double value_double= 0.0f;
-	uint64_t value_int= 0u;
-	bool has_fractional_point= false;
-	std::array<char, 7> type_suffix{0};
+	uint64_t value= 0u;
+	std::array<char, 8> type_suffix{0};
+};
+
+struct FloatingPointNumberLexemData
+{
+	double value= 0.0f;
+	std::array<char, 8> type_suffix{0};
 };
 
 struct Lexem
@@ -27,7 +31,8 @@ struct Lexem
 		MacroUniqueIdentifier,
 		String,
 		CharLiteral,
-		Number,
+		IntegerNumber,
+		FloatingPointNumber,
 
 		LiteralSuffix, // For strings, numbers
 
@@ -116,7 +121,11 @@ struct Lexem
 		EndOfFile,
 	};
 
-	std::string text; // Contains text for all lexem types, except numbers. Contains data of "struct NumberLexemData" for numbers.
+	// Contains text for all lexem types, except numbers.
+	// Contains data of "struct IntegerNumberLexemData" for integer numbers.
+	// Contains data of "struct FloatingPointNumberLexemData" for floating point numbers.
+	std::string text;
+
 	SrcLoc src_loc;
 	Type type= Type::None;
 };

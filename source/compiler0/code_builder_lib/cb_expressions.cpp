@@ -1243,55 +1243,81 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const Synt::NumericConstant& numeric_constant )
+	const Synt::IntegerNumericConstant& numeric_constant )
 {
-	U_FundamentalType type= U_FundamentalType::InvalidType;
-
-	const NumberLexemData& num= numeric_constant.num;
+	const IntegerNumberLexemData& num= numeric_constant.num;
 	const std::string type_suffix= num.type_suffix.data();
+
+	U_FundamentalType type= U_FundamentalType::InvalidType;
 
 	if( type_suffix.empty() )
 	{
-		if( num.has_fractional_point )
-			type = U_FundamentalType::f64_;
+		// Select "i32", if given constant fits inside it. Otherwise use "i64". If it's not enough, use "i128".
+		if( num.value <= 0x7FFFFFFFu )
+			type= U_FundamentalType::i32_;
+		else if( num.value <= 0x7FFFFFFFFFFFFFFFull )
+			type= U_FundamentalType::i64_;
 		else
-		{
-			// Constants without fractional point are integers.
-			// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
-			if( num.value_int <= 2147483647u )
-				type= U_FundamentalType::i32_;
-			else if( num.value_int <= 9223372036854775807ULL )
-				type= U_FundamentalType::i64_;
-			else
-				type= U_FundamentalType::i128_;
-		}
+			type= U_FundamentalType::i128_;
 	}
 	else if( type_suffix == "u" )
 	{
-		// Select "i32", if given constant fits inside it. Otherwise use "u64".
-		type = num.value_int <= 4294967295u ? U_FundamentalType::u32_ : U_FundamentalType::u64_;
+		// Select "u32", if given constant fits inside it. Otherwise use "u64".
+		type = num.value <= 0xFFFFFFFFu ? U_FundamentalType::u32_ : U_FundamentalType::u64_;
 	}
 	// Suffix for size_type
 	else if( type_suffix == "s" )
 		type= U_FundamentalType::size_type_;
-	// Simple "f" suffix for 32bit floats.
 	else if( type_suffix == "f" )
-		type= U_FundamentalType::f32_;
-	// Short suffixes for chars
-	else if( type_suffix ==  "c8" )
-		type= U_FundamentalType::char8_ ;
-	else if( type_suffix == "c16" )
-		type= U_FundamentalType::char16_;
-	else if( type_suffix == "c32" )
-		type= U_FundamentalType::char32_;
-	else
-		type=GetFundamentalTypeByName( type_suffix );
-
-	if( type == U_FundamentalType::InvalidType )
 	{
-		REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+		// Don't allow "f" suffix (short form for "f32") to be used for integers.
+		REPORT_ERROR( UnsupportedIntegerConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
 		return ErrorValue();
 	}
+	else
+	{
+		type= GetFundamentalTypeByName( type_suffix );
+
+		if( type == U_FundamentalType::InvalidType )
+		{
+			REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+			return ErrorValue();
+		}
+
+		// Do not allow literals of types other than integers.
+		// char* and byte* types aren't supported, since such suffixes may conflict with hexadecimal literals (where 'c' and 'b' are digit names).
+
+		if( !IsInteger( type ) )
+		{
+			REPORT_ERROR( UnsupportedIntegerConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+			return ErrorValue();
+		}
+	}
+
+	const uint64_t type_size= GetFundamentalTypeSize( type );
+	const bool is_signed= IsSignedInteger( type );
+	bool overflow= false;
+	if( type_size == 1 )
+		overflow= is_signed ? ( num.value > 0x7Full ) : ( num.value > 0xFFull );
+	else if( type_size == 2 )
+		overflow= is_signed ? ( num.value > 0x7FFFull ) : ( num.value > 0xFFFFull );
+	else if( type_size == 4 )
+		overflow= is_signed ? ( num.value > 0x7FFFFFFFull ) : ( num.value > 0xFFFFFFFFull );
+	else if( type_size == 8 )
+	{
+		if( is_signed )
+			overflow= num.value > 0x7FFFFFFFFFFFFFFFull;
+		// Unsigned overflow is impossible here.
+	}
+	else if( type_size == 16 )
+	{
+		// Lexical analyzer gives 64-bit value and thus should check overflow of this value before.
+	}
+	else U_ASSERT(false);
+
+	if( overflow )
+		REPORT_ERROR( IntegerConstantOverflow, names_scope.GetErrors(), numeric_constant.src_loc, num.value, GetFundamentalTypeName( type ) );
+
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
 
 	const VariableMutPtr result=
@@ -1299,18 +1325,64 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			FundamentalType( type, llvm_type ),
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			"numeric constant " + std::to_string(num.value_double) );
+			"numeric constant " + std::to_string(num.value) );
 
-	if( IsInteger( type ) || IsChar( type ) )
-		result->constexpr_value=
-			llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), num.value_int ) );
-	else if( IsFloatingPoint( type ) )
-		result->constexpr_value=
-			llvm::ConstantFP::get( llvm_type, num.value_double );
-	else
-		U_ASSERT(false);
-
+	result->constexpr_value= llvm::Constant::getIntegerValue( llvm_type, llvm::APInt( llvm_type->getIntegerBitWidth(), num.value ) );
 	result->llvm_value= result->constexpr_value;
+
+	function_context.variables_state.AddNode( result );
+
+	RegisterTemporaryVariable( function_context, result );
+	return result;
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::FloatingPointNumericConstant& numeric_constant )
+{
+	const FloatingPointNumberLexemData& num= numeric_constant.num;
+	const std::string type_suffix= num.type_suffix.data();
+
+	U_FundamentalType type= U_FundamentalType::InvalidType;
+
+	if( type_suffix.empty() )
+		type = U_FundamentalType::f64_;
+	else if( type_suffix == "f" )
+		type= U_FundamentalType::f32_;
+	else if( type_suffix == "u" || type_suffix == "s" )
+	{
+		// Don't allow "u" suffix (short form for "u32") and "s" suffix (short form for "size_type") to be used for floating point numbers.
+		REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+		return ErrorValue();
+	}
+	else
+	{
+		type= GetFundamentalTypeByName( type_suffix );
+
+		if( type == U_FundamentalType::InvalidType )
+		{
+			REPORT_ERROR( UnknownNumericConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+			return ErrorValue();
+		}
+
+		if( !IsFloatingPoint( type ) )
+		{
+			REPORT_ERROR( UnsupportedFloatingPointConstantType, names_scope.GetErrors(), numeric_constant.src_loc, num.type_suffix.data() );
+			return ErrorValue();
+		}
+	}
+
+	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
+
+	const VariableMutPtr result=
+		Variable::Create(
+			FundamentalType( type, llvm_type ),
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			"floating point numeric constant" );
+
+	result->llvm_value= result->constexpr_value= llvm::ConstantFP::get( llvm_type, num.value );
 
 	function_context.variables_state.AddNode( result );
 

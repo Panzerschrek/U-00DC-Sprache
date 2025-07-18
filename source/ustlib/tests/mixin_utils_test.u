@@ -72,7 +72,7 @@ fn nomangle main() : i32
 	}
 	{
 		var ust::mixin_utils::static_string</32s/> mut s;
-		s.append_decimal_number( -9223372036854775808i64 );
+		s.append_decimal_number( -i64(-9223372036854775808) );
 		halt if( s != "-9223372036854775808" );
 	}
 	{

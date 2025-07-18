@@ -3963,7 +3963,8 @@ fn SingleExpressionIsUselessImpl( Synt::RawPointerToReferenceOperator& e ) : boo
 // Name resolving itself has no side effects.
 fn SingleExpressionIsUselessImpl( Synt::ComplexName& e ) : bool { ust::ignore_unused(e); return true; }
 // Simple constant expressions have no side effects.
-fn SingleExpressionIsUselessImpl( Synt::NumericConstant& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::IntegerNumericConstant& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::FloatingPointNumericConstant& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::BooleanConstant& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::StringLiteral& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::CharLiteral& e ) : bool { ust::ignore_unused(e); return true; }

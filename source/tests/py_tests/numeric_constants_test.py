@@ -7,17 +7,23 @@ def NumericConstants_DecimalConstants_Test0():
 		static_assert( 13 == 10 + 3 );
 		static_assert( 279 == 200 + 70 + 9 );
 		static_assert( 16.625 == 16.0 + 0.5 + 0.125 );
-		static_assert( 354e5 == 35400000 );
+		static_assert( 354e5 == 35400000.0 );
 		static_assert( 25.42e10 == 254200000000.0 );
 		static_assert( 17.23e3 == 17.23e+3 );
 		static_assert( 256000.0e-3 == 256.0 ); // floating point with negative exponent
-		static_assert( 13e2 == 1300 ); // integer with exponent
-		static_assert( 13.52e3i32 == 13520i32 ); // fractional part saved for integer constant
+		static_assert( 13e2 == 1300.0 ); // floating point with exponent
+		static_assert( i32( 13.52e3 )== 13520 ); // fractional part saved for integer constant
 		static_assert( 0.3 == 3.0 / 10.0 );
 		static_assert( 25.0e-5 == 0.00025 );
 		static_assert( 0.00025 == 25.0 / 100000.0 );
 		static_assert( 0.32145e5 == 32145.0 );
-		static_assert( 5.0e32 == 5.0 * 1.0e8 * 1.0e8 * 1.0e8 * 1.0e8 ); // pow( 10, exponent ) is greater, than u64 limit.
+		static_assert( 5.0e32 == 5.0 * 1.0e16 * 1.0e16 ); // pow( 10, exponent ) is greater, than u64 limit.
+		static_assert( 0.00000004e18 == 40000000000.0 ); // Small value with large exponent results into large value.
+		static_assert( 0.00000004754248911e18 == 47542489110.0 ); // Small value with large exponent results into large value.
+		static_assert( 100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 == 1.0 / 0.0 ); // Overflow results to infinity.
+		static_assert( 1e500 == 1.0 / 0.0 ); // Overflow with large exponent results to infinity.
+		static_assert( 1e-500 == 0.0 ); // Small exponent results to zero.
+		static_assert( 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 == 0.0 ); // Underflow results to zero.
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -28,7 +34,7 @@ def NumericConstants_DecimalConstants_Test1():
 		static_assert( 2147483647 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
 		static_assert( i32(-2147483648) == ( (-1)<<31u ) ); // min i32
 		static_assert( 9223372036854775807i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( -9223372036854775808i64 == ( (-1i64)<<63u ) ); // min i64
+		static_assert( i64( -9223372036854775808 ) == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 4294967295u == ~0u ); // max u32
 		static_assert( 18446744073709551615u64 == ~0u64 ); // max u64
 	"""
@@ -45,9 +51,6 @@ def NumericConstants_BinaryConstants_Test0():
 		static_assert( 0b0000011 == 3 );
 		static_assert( 0b1001 == 9 );
 		static_assert( 0b11111001001 == 1993 );
-		static_assert( 0b10.11 == 2.75 );
-		static_assert( 0b000.0101 == 0.25 + 0.0625 );
-		static_assert( 0b1000000.1 == 64.5 );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -58,7 +61,7 @@ def NumericConstants_BinaryConstants_Test1():
 		static_assert( 0b01111111111111111111111111111111 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
 		static_assert( i32(0b10000000000000000000000000000000) == ( (-1)<<31u ) ); // min i32
 		static_assert( 0b0111111111111111111111111111111111111111111111111111111111111111i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( 0b1000000000000000000000000000000000000000000000000000000000000000i64 == ( (-1i64)<<63u ) ); // min i64
+		static_assert( i64( 0b1000000000000000000000000000000000000000000000000000000000000000 ) == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 0b11111111111111111111111111111111u == ~0u ); // max u32
 		static_assert( 0b1111111111111111111111111111111111111111111111111111111111111111u64== ~0u64 ); // max u64
 	"""
@@ -73,8 +76,6 @@ def NumericConstants_OctalConstants_Test0():
 		static_assert( 0o7 == 7 );
 		static_assert( 0o10 == 8 );
 		static_assert( 0o5413641 == 1447841 );
-		static_assert( 0o0.12 == 0.15625 );
-		static_assert( 0o0.523 == 0.662109375 );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -85,7 +86,7 @@ def NumericConstants_OctalConstants_Test1():
 		static_assert( 0o17777777777 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
 		static_assert( i32(0o20000000000) == ( (-1)<<31u ) ); // min i32
 		static_assert( 0o777777777777777777777i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( 0o1000000000000000000000i64 == ( (-1i64)<<63u ) ); // min i64
+		static_assert( i64( 0o1000000000000000000000 ) == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 0o37777777777u == ~0u ); // max u32
 		static_assert( 0o1777777777777777777777u64== ~0u64 ); // max u64
 	"""
@@ -102,9 +103,6 @@ def NumericConstants_HexadecimalConstants_Test0():
 		static_assert( 0xF == 15 );
 		static_assert( 0xDEADC0DEu == 3735929054u );
 		static_assert( 0xFEDCBA == 0xfedcba );
-		static_assert( 0x1.5 == 1.3125 );
-		static_assert( 0x52.31 == 82.19140625 );
-		static_assert( 0x0.ff == 0.99609375 );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -115,7 +113,7 @@ def NumericConstants_HexadecimalConstants_Test1():
 		static_assert( 0x7fffffff == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
 		static_assert( i32(0x80000000) == ( (-1)<<31u ) ); // min i32
 		static_assert( 0x7fffffffffffffffi64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( 0x8000000000000000i64 == ( (-1i64)<<63u ) ); // min i64
+		static_assert( i64( 0x8000000000000000 ) == ( (-1i64)<<63u ) ); // min i64
 		static_assert( 0xffffffffu == ~0u ); // max u32
 		static_assert( 0xffffffffffffffffu64 == ~0u64 ); // max u64
 	"""
@@ -132,7 +130,6 @@ def NumericConstants_TypeSuffix_Test0():
 			// No suffix and no fractional part - is signed 32bit integer.
 			check_type( 23, i32(0) );
 			check_type( 9652412, i32(0) );
-			check_type( 1e5, i32(0) );
 			check_type( 0x0DEADC0D, i32(0) );
 			check_type( 0b101, i32(0) );
 			check_type( 0o52147, i32(0) );
@@ -144,13 +141,15 @@ def NumericConstants_TypeSuffix_Test0():
 			check_type( 5.34e-5, f64(0) );
 			check_type( 7.2e11, f64(0) );
 
+			// No suffix and has exponent - f64 floating point.
+			check_type( 1e5, f64(0) );
+
 			// "u" siffix for unsigned 32bit integer.
 			check_type( 99u, u32(0) );
 			check_type( 953652114u, u32(0) );
 			check_type( 0xF41Au, u32(0) );
 			check_type( 0b1110u, u32(0) );
 			check_type( 0o7u, u32(0) );
-			check_type( 1.1u, u32(0) ); // Even if numeric constant has fractional point, type specified by suffix.
 
 			// "s" suffix for size_type.
 			check_type( 0s, size_type(0) );
@@ -160,17 +159,9 @@ def NumericConstants_TypeSuffix_Test0():
 
 			// "f" for 32-bit floating point.
 			check_type( 3.14f, f32(0) );
-			check_type( 99f, f32(0) );
-			check_type( 0b1.1f, f32(0) );
 			check_type( 2e9f, f32(0) );
 			check_type( 3.1e2f, f32(0) );
 			check_type( 653e-3f, f32(0) );
-
-			// Short char literals
-			check_type( 95c8, char8(0) );
-			check_type( 32c8, char8(0) );
-			check_type( 32564c16, char16(0) );
-			check_type( 1235678c32, char32(0) );
 
 			// Using fundamental types names as suffixes.
 			check_type( 52i8, i8(0) );
@@ -183,11 +174,8 @@ def NumericConstants_TypeSuffix_Test0():
 			check_type( 653214785365245u64, u64(0) );
 			check_type( 100i128, i128(0) );
 			check_type( 100u128, u128(0) );
-			check_type( 8f32, f32(0) );
-			check_type( 25f64, f64(0) );
-			check_type( 62char8, char8(0) );
-			check_type( 25647char16, char16(0) );
-			check_type( 7586954char32, char32(0) );
+			check_type( 8.1f32, f32(0) );
+			check_type( 25.0f64, f64(0) );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -229,3 +217,255 @@ def NumericConstantsExtendedType_Test1():
 
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def NumericConstantsExtendedType_Test2():
+	c_program_text= """
+		// Large constants (over 64-bit range) are parsed as floating point constants.
+		static_assert( same_type</ typeof(1234567900681729874025512960), f64 /> );
+		static_assert( 1234567900681729874025512960 == 1234567900681729874025512960.0 );
+		static_assert( same_type</ typeof(18446744073709551615), i128 /> ); // Last value representable in "u64".
+		static_assert( same_type</ typeof(18446744073709551616), f64 /> ); // Next value requires "f64".
+		static_assert( same_type</ typeof(98446744073709551616), f64 /> ); // This should overflow to "f64" at multiplication stage.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UnsupportedIntegerConstantType_Test0():
+	c_program_text= """
+		auto x= 7876f; // Use floating-point suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedIntegerConstantType_Test1():
+	c_program_text= """
+		auto x= 7876f32; // Use floating-point suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedIntegerConstantType_Test2():
+	c_program_text= """
+		auto x= 7876f64; // Use floating-point suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedIntegerConstantType_Test3():
+	c_program_text= """
+		auto x= 56char8; // Use char-type suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedIntegerConstantType_Test4():
+	c_program_text= """
+		auto x= 526byte16; // Use byte-type suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedIntegerConstantType_Test5():
+	c_program_text= """
+		auto x= 1bool; // Use bool suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedIntegerConstantType_Test6():
+	c_program_text= """
+		auto x= 0void; // Use void suffix for integer literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedIntegerConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test0():
+	c_program_text= """
+		auto x= 7876.0u; // Use integer suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test1():
+	c_program_text= """
+		auto x= 7876e13s; // Use integer suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test4():
+	c_program_text= """
+		auto x= 7876.25u64; // Use integer suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test5():
+	c_program_text= """
+		auto x= 7876.0i16; // Use integer suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test6():
+	c_program_text= """
+		auto x= 7876.0char32; // Use char-type suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test7():
+	c_program_text= """
+		auto x= 13.0byte8; // Use byte-type suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test8():
+	c_program_text= """
+		auto x= 13.0bool; // Use bool suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def UnsupportedFloatingPointConstantType_Test9():
+	c_program_text= """
+		auto x= 13.0void; // Use void suffix for floating-point literal.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnsupportedFloatingPointConstantType", 2 ) )
+
+
+def IntegerConstantOverflow_Test0():
+	c_program_text= """
+		auto x= 178i8;
+		auto y= 273i8;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+
+
+def IntegerConstantOverflow_Test1():
+	c_program_text= """
+		auto x= 256u8;
+		auto y= 257u8;
+		auto z= 259u8;
+		auto w= 2554559u8;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+
+
+def IntegerConstantOverflow_Test2():
+	c_program_text= """
+		auto x= 32768i16;
+		auto y= 32769i16;
+		auto z= 34768i16;
+		auto w= 65545i16;
+		auto t= 65536i16;
+		auto u= 254765754i16;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 6 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 7 ) )
+
+
+def IntegerConstantOverflow_Test3():
+	c_program_text= """
+		auto x= 65536u16;
+		auto y= 65537u16;
+		auto z= 76852u16;
+		auto w= 254765754u16;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+
+
+def IntegerConstantOverflow_Test4():
+	c_program_text= """
+		auto x= 0x80000000i32;
+		auto y= 2147483648i32;
+		auto z= 2147483649i32;
+		auto w= 3147483648i32;
+		auto s= 642345476542345667i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 6 ) )
+
+
+def IntegerConstantOverflow_Test5():
+	c_program_text= """
+		auto x= 4294967296u32;
+		auto y= 4294967297u32;
+		auto z= 7294967296u32;
+		auto w= 9223372036854775807u32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 5 ) )
+
+
+def IntegerConstantOverflow_Test6():
+	c_program_text= """
+		auto x= 9223372036854775808i64;
+		auto y= 9223372036854775809i64;
+		auto z= 15223372036854775808i64;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 2 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 3 ) )
+	assert( HasError( errors_list, "IntegerConstantOverflow", 4 ) )
