@@ -22,7 +22,7 @@ Examples of floating-point numeric literals:
 
    var f64 a = 0.0; // Has fractional point.
    var f64 b = 1234.56; // Has several integer and fractional digits.
-   var f32 c = 87.33f; // Has suffix "f'.
+   var f32 c = 87.33f; // Has suffix "f".
    var f32 d = 0.000253f; // Has leading zeros in fractional part.
    var f64 e = 67e7; // Has exponent.
    var f64 f = 3.5e-14; // Has fractional point and negative exponent.
@@ -46,7 +46,7 @@ There is also support of non-decimal numeric literals:
 Non-decimal numeric literals are always integers, fractional point and exponent can't be specified, overflow is treated as error.
 
 Type suffix may be specified for an integer numeric literal.
-Specifying suffix equal to the name of some built-in integer type means that this numeric literal is of this type.
+Specifying suffix equal to the name of some built-in integer type means, that this numeric literal is of this type.
 There are also additional suffixes ``u`` for ``u32`` type and ``s`` for ``size_type`` type.
 If no suffix is specified for an integer numeric literal, it's assumed to be of type ``i32`` (if it fits inside it), ``i64`` or ``i128``.
 
