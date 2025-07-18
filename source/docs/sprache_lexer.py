@@ -19,9 +19,9 @@ class SpracheLexer(RegexLexer):
 			# Whitespaces
 			(r'[\ \t\n\r]+', token.Whitespace),
 			# Numbers
-			(r'0b[0-1]+(\.[0-1]+)?', token.Number),
-			(r'0o[0-7]+(\.[0-7]+)?', token.Number),
-			(r'0x[0-9a-fA-F]+(\.[0-9a-fA-F]+)?', token.Number),
+			(r'0b[0-1]+', token.Number),
+			(r'0o[0-7]+', token.Number),
+			(r'0x[0-9a-fA-F]+', token.Number),
 			(r'[0-9]+(\.[0-9]+)?(e((-)|(\+))?[0-9]+)?', token.Number),
 			# Keywords
 			(r'fn(?![a-zA-Z_0-9])', token.Keyword),
