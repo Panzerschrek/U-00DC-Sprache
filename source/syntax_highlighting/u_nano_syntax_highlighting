@@ -16,15 +16,15 @@ color red "\<(unsafe|uninitialized|cast_mut|cast_ref_unsafe)\>"
 # Operators
 color cyan "\<(</)|(/>)|(::)|(\+\+)|(--)|(==)|(!=)|(<=)|(>=)|(&&)|(\|\|)|(\+=)|(-=)|(\*=)|(/=)|(%=)|(&=)|(\|=)|(\^=)|(<<)|(>>)|(<-)|(->)\>"
 color cyan "\<(<<=)|(>>=)|(<=>)|(\.\.\.)\>"
-color cyan "[,.:;?=+\*/%<>&|\^~!\'\$\\-]"
+color cyan "[,\.:;?=+\*/%<>&|\^~!\'\$\\-]"
 color cyan "[\{\}\(\)]"
 color cyan "(\[|\])"
 
 # Numbers
-color brightmagenta "\<0b[0-1]+(\.[0-1]+)?\>"
-color brightmagenta "\<0o[0-7]+(\.[0-7]+)?\>"
-color brightmagenta "\<0x[0-9a-fA-F]+(\.[0-9a-fA-F]+)?\>"
-color brightmagenta "\<[0-9]+(\.[0-9]+)?(e((-)|(\+))?[0-9]+)?\>"
+color brightmagenta "\<0b[0-1]+"
+color brightmagenta "\<0o[0-7]+"
+color brightmagenta "\<0x[0-9a-fA-F]+"
+color brightmagenta "\<[0-9]+(\.[0-9]+)?(e((-)|(\+))?[0-9]+)?"
 
 # String
 color yellow "\"([^\\\"]|(\\n)|(\\r)|(\\t)|(\\b)|(\\f)|(\\\")|(\\\')|(\\0)|(\\\\)|(\\u[0-9a-fA-F]{4,4}))*\""
