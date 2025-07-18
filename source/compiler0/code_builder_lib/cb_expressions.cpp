@@ -1252,7 +1252,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( type_suffix.empty() )
 	{
-		// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
+		// Select "i32", if given constant fits inside it. Otherwise use "i64". If it's not enough, use "i128".
 		if( num.value <= 0x7FFFFFFFu )
 			type= U_FundamentalType::i32_;
 		else if( num.value <= 0x7FFFFFFFFFFFFFFFull )

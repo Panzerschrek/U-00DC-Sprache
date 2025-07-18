@@ -387,8 +387,8 @@ fn ContinueParsingFloatingPointNumber( f64 parsed_part, Iterator &mut it, LexSyn
 
 	var FloatingPointNumberLexemData mut result
 	{
-		.value= value, .type_suffix=
-		TryParseNumericLexemTypeSuffix( it, out_errors, src_loc )
+		.value= value,
+		.type_suffix= TryParseNumericLexemTypeSuffix( it, out_errors, src_loc )
 	};
 
 	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::FloatingPointNumber };

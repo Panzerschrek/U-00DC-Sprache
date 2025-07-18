@@ -227,7 +227,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	auto mut t= U_FundamentalType::InvalidType;
 	if( type_suffix.empty() )
 	{
-		// Select "i32", if given constant fits inside it. Otherwise use "i64". If It's not enough, use "i128".
+		// Select "i32", if given constant fits inside it. Otherwise use "i64". If it's not enough, use "i128".
 		if( numeric_constant.num.value <= 0x7FFFFFFFu64 )
 		{
 			t= U_FundamentalType::i32_;
