@@ -1,3 +1,4 @@
+import "/math.u"
 import "/utf.u"
 import "parsing.uh"
 
@@ -219,7 +220,7 @@ fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Nu
 		var char8 c= text.front();
 		if( c >= '0' && c <= '9' )
 		{
-			num= num * 10.0 + f64( u32(c) - u32( '0' ) );
+			num= ust::fma( num, 10.0, f64( u32(c) - u32( '0' ) ) );
 			text.drop_front();
 		}
 		else
@@ -243,7 +244,7 @@ fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Nu
 			var char8 c= text.front();
 			if( c >= '0' && c <= '9' )
 			{
-				num= num * 10.0 + f64( u32(c) - u32( '0' ) );
+				num= ust::fma( num, 10.0, f64( u32(c) - u32( '0' ) ) );
 				++decimal_point_position;
 				text.drop_front();
 			}
@@ -302,18 +303,19 @@ fn ParseJsonNumber( ust::string_view8 &mut text ) : ust::optional</JsonValue::Nu
 		decimal_point_position-= exponent;
 	}
 
-	// For double calculate only powers > 0, because pow( base, positive ) is always integer and has exact double representation.
-	// pow( base, negative ) may have not exact double representation (1/10 for example).
+	// For f64 calculate only non-negative powers,
+	// because such powers are always integer and have exact f64 representation (for not too large numbers).
+	// Negative powers have no exact f64 representation (1/10 for example).
 	// Example:
 	// 3 / 10 - right
 	// 3 * (1/10) - wrong
 	if( decimal_point_position >= 0 )
 	{
-		return sign * (num / PowI( u64(10), u64(decimal_point_position) ) );
+		return sign * (num / TenIntegerPower( u32(decimal_point_position) ) );
 	}
 	else
 	{
-		return sign * (num * PowI( u64(10), u64(-decimal_point_position) ) );
+		return sign * (num * TenIntegerPower( u32(-decimal_point_position) ) );
 	}
 }
 
@@ -401,13 +403,19 @@ fn ParseJsonString( ust::string_view8 &mut text ) : ust::optional</JsonValue::St
 	return res;
 }
 
-fn PowI( u64 base_, u64 pow ) : f64
+fn TenIntegerPower( u32 pow ) : f64
 {
-	var f64 mut res= 1.0, mut p(base_);
+	return IntegerPower( 10.0, pow );
+}
 
-	for( var u64 mut i(1); ; i <<= 1u, p*= p )
+// Function for fast calculation of large integer powers.
+fn IntegerPower( f64 base_, u32 pow ) : f64
+{
+	var f64 mut res= 1.0, mut p= base_;
+
+	for( var u32 mut i(1); ; i <<= 1u, p*= p )
 	{
-		if( ( i & pow ) != 0u64 )
+		if( (i & pow ) != 0u )
 		{
 			res*= p;
 		}
