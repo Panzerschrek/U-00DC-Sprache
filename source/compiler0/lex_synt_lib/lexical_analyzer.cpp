@@ -452,20 +452,9 @@ std::array<char, 8> TryParseNumericLexemTypeSuffix( Iterator& it, const Iterator
 	return res;
 }
 
-Lexem ContinueParsingFloatingPointNumber( const double parsed_part, Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
+Lexem ContinueParsingFloatingPointNumber( const double integer_part, Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
 {
-	double value= parsed_part;
-
-	// Integer part.
-	while( it < it_end )
-	{
-		const uint32_t digit= TryParseDigit<10>( *it );
-		if( digit == uint32_t(-1) )
-			break;
-
-		++it;
-		value= std::fma( value, 10.0, double(digit) );
-	}
+	double value= integer_part;
 
 	int32_t num_fractional_digits= 0;
 
@@ -554,8 +543,8 @@ Lexem ContinueParsingDecimalNumberEnsureFloatingPoint( double parsed_part, Itera
 
 	if( it >= it_end || !( *it == '.' || *it == 'e' ) )
 	{
-		// Integer part overflow was detected previoisly.
-		// If we found no fractional point and exponent, this means that this was integer numeric literal and thus we should report overflow error.
+		// Integer part overflow was detected previoisly (before this call).
+		// If we found no fractional point and no exponent, this means that this was integer numeric literal and thus we should report overflow error.
 		out_errors.emplace_back( "Integer numeric literal overflow", src_loc );
 	}
 
