@@ -295,22 +295,9 @@ fn TryParseNumericLexemTypeSuffix( Iterator &mut it, LexSyntErrors &mut out_erro
 	return res;
 }
 
-fn ContinueParsingFloatingPointNumber( f64 parsed_part, Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
+fn ContinueParsingFloatingPointNumber( f64 integer_part, Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
 {
-	var f64 mut value= parsed_part;
-
-	// Integer part.
-	while( !it.empty() )
-	{
-		auto digit= TryParseDigit</10u/>( it.front() );
-		if( digit == -1u )
-		{
-			break;
-		}
-
-		it.drop_front();
-		value= ust::fma( value, 10.0, f64(digit) );
-	}
+	var f64 mut value= integer_part;
 
 	var i32 mut num_fractional_digits= 0;
 
@@ -397,6 +384,31 @@ fn ContinueParsingFloatingPointNumber( f64 parsed_part, Iterator &mut it, LexSyn
 	return result_lexem;
 }
 
+// Call this on overflow on integer number parsing.
+fn ContinueParsingDecimalNumberEnsureFloatingPoint( f64 mut parsed_part,  Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
+{
+	while( !it.empty() )
+	{
+		auto digit= TryParseDigit</10u/>( it.front() );
+		if( digit == -1u )
+		{
+			break;
+		}
+
+		it.drop_front();
+		parsed_part= ust::fma( parsed_part, 10.0, f64(digit) );
+	}
+
+	if( it.empty() || !( it.front() == '.' || it.front() == 'e' ) )
+	{
+		// Integer part overflow was detected previoisly (before this call).
+		// If we found no fractional point and no exponent, this means that this was integer numeric literal and thus we should report overflow error.
+		out_errors.push_back( LexSyntError( src_loc, "Integer numeric literal overflow" ) );
+	}
+
+	return ContinueParsingFloatingPointNumber( parsed_part, it, out_errors, src_loc );
+}
+
 fn ParseDecimalNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc ) : Lexem
 {
 	var u64 mut value( 0u );
@@ -415,17 +427,17 @@ fn ParseDecimalNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& 
 
 		if( value > max_value / 10u64 )
 		{
-			// Continue parsing as floating point in case of overflow.
+			// Try parsing as floating point in case of overflow or generate error about overflow.
 			var f64 parsed_part= ust::fma( f64(value), 10.0, f64(digit) ); // TODO - ensure no precision lost happens in this operation.
-			return ContinueParsingFloatingPointNumber( parsed_part, it, out_errors, src_loc );
+			return ContinueParsingDecimalNumberEnsureFloatingPoint( parsed_part, it, out_errors, src_loc );
 		}
 		value*= 10u64;
 
 		if( value > max_value - u64(digit) )
 		{
-			// Continue parsing as floating point in case of overflow.
+			// Try parsing as floating point in case of overflow or generate error about overflow.
 			var f64 parsed_part= f64(value) + f64(digit); // TODO - ensure no precision lost happens in this operation.
-			return ContinueParsingFloatingPointNumber( parsed_part, it, out_errors, src_loc );
+			return ContinueParsingDecimalNumberEnsureFloatingPoint( parsed_part, it, out_errors, src_loc );
 		}
 		value+= u64(digit);
 	}
