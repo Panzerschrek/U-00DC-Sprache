@@ -104,6 +104,38 @@ const FixedLexemsMap g_fixed_lexems[ g_max_fixed_lexem_size + 1 ]=
 
 using Iterator= const char*;
 
+// Returns uint32_t(-1) if failed to parse.
+template<uint32_t base>
+uint32_t TryParseDigit( const char c )
+{
+	if constexpr( base == 2 )
+	{
+		if( c >= '0' && c <= '1' )
+			return uint32_t(c - '0');
+	}
+	else if constexpr( base == 8 )
+	{
+		if( c >= '0' && c <= '7' )
+			return uint32_t(c - '0');
+	}
+	else if constexpr( base == 10 )
+	{
+		if( c >= '0' && c <= '9' )
+			return uint32_t(c - '0');
+	}
+	else if constexpr( base == 16 )
+	{
+		if( c >= '0' && c <= '9' )
+			return uint32_t(c - '0');
+		else if( c >= 'a' && c <= 'f' )
+			return uint32_t(c - 'a' + 10);
+		else if( c >= 'A' && c <= 'F' )
+			return uint32_t(c - 'A' + 10);
+	}
+
+	return uint32_t(-1);
+}
+
 bool IsWhitespace( const sprache_char c )
 {
 	return
@@ -205,11 +237,8 @@ Lexem ParseCharLiteral( Iterator& it, const Iterator it_end, const SrcLoc& src_l
 				sprache_char char_code= 0u;
 				for( size_t i= 0u; i < 4u; i++ )
 				{
-					sprache_char digit;
-						 if( *it >= '0' && *it <= '9' ) digit= uint32_t( *it - '0' );
-					else if( *it >= 'a' && *it <= 'f' ) digit= uint32_t( *it - 'a' + 10 );
-					else if( *it >= 'A' && *it <= 'F' ) digit= uint32_t( *it - 'A' + 10 );
-					else
+					const uint32_t digit= TryParseDigit<16>( *it );
+					if( digit == uint32_t(-1) )
 					{
 						out_errors.emplace_back( "expected hex number", src_loc );
 						return result;
@@ -301,11 +330,8 @@ Lexem ParseStringImpl( Iterator& it, const Iterator it_end, const SrcLoc& src_lo
 					sprache_char char_code= 0u;
 					for( size_t i= 0u; i < 4u; i++ )
 					{
-						sprache_char digit;
-							 if( *it >= '0' && *it <= '9' ) digit= uint32_t( *it - '0' );
-						else if( *it >= 'a' && *it <= 'f' ) digit= uint32_t( *it - 'a' + 10 );
-						else if( *it >= 'A' && *it <= 'F' ) digit= uint32_t( *it - 'A' + 10 );
-						else
+						const uint32_t digit= TryParseDigit<16>( *it );
+						if( digit == uint32_t(-1) )
 						{
 							out_errors.emplace_back( "expected hex number", src_loc );
 							return result;
@@ -403,38 +429,6 @@ double IntegerPower( const double base, const uint32_t pow )
 double TenIntegerPower( const uint32_t pow )
 {
 	return IntegerPower( 10.0, pow );
-}
-
-// Returns uint32_t(-1) if failed to parse.
-template<uint32_t base>
-uint32_t TryParseDigit( const char c )
-{
-	if constexpr( base == 2 )
-	{
-		if( c >= '0' && c <= '1' )
-			return uint32_t(c - '0');
-	}
-	else if constexpr( base == 8 )
-	{
-		if( c >= '0' && c <= '7' )
-			return uint32_t(c - '0');
-	}
-	else if constexpr( base == 10 )
-	{
-		if( c >= '0' && c <= '9' )
-			return uint32_t(c - '0');
-	}
-	else if constexpr( base == 16 )
-	{
-		if( c >= '0' && c <= '9' )
-			return uint32_t(c - '0');
-		else if( c >= 'a' && c <= 'f' )
-			return uint32_t(c - 'a' + 10);
-		else if( c >= 'A' && c <= 'F' )
-			return uint32_t(c - 'A' + 10);
-	}
-
-	return uint32_t(-1);
 }
 
 std::array<char, 8> TryParseNumericLexemTypeSuffix( Iterator& it, const Iterator it_end, SrcLoc src_loc, LexSyntErrors& out_errors )
