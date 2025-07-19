@@ -10,7 +10,6 @@ There are two kinds of numeric literals - integers and floating point-literals.
 *********************************
 
 Floating-point numeric literals are decimal numbers with fractional point and/or exponent specified.
-Very large decimal literals (above 18446744073709551615) without fractional point and exponent are also considered to be floating-point.
 
 Type suffix may be specified for a floating-point numeric literal.
 Supported suffixes are ``f`` and ``f32`` for ``f32`` type, ``f64`` for ``f64`` type.
@@ -28,14 +27,13 @@ Examples of floating-point numeric literals:
    var f64 f = 3.5e-14; // Has fractional point and negative exponent.
    var f32 g = 12323.7f32; // Has suffix "f32".
    var f64 h = 908754.24556f64; // Has suffix "f64".
-   var f64 i = 38756999757506378436; // Too large to be integer, so it's a floating-point literal.
 
 
 **************************
 *Integer numeric literals*
 **************************
 
-Decimal numbers less than 18446744073709551616 and without fractional point and exponent are considered to be integer numeric literals.
+Decimal numbers without fractional point and exponent are considered to be integer numeric literals.
 
 There is also support of non-decimal numeric literals:
 
@@ -44,6 +42,8 @@ There is also support of non-decimal numeric literals:
 * base-16. Literal starts with ``0x`` prefix. Digits 0-9 and a-f or A-F are possible.
 
 Non-decimal numeric literals are always integers, fractional point and exponent can't be specified, overflow is treated as error.
+
+Integer numeric literals with value greater than 18446744073709551615 (2\ :sup:`64` - 1) aren't supported.
 
 Type suffix may be specified for an integer numeric literal.
 Specifying suffix equal to the name of some built-in integer type means, that this numeric literal is of this type.
