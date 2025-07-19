@@ -65,7 +65,7 @@ If terminating zero is required, for C code interaction for example, it may be e
 
 Single char literals are specified via single quotes ``''``.
 By default such literals are of ``char8`` type.
-There are suffixes ``c8``, ``c16``, ``c32``,``char8``, ``char16``, ``char32`` for explicit type specifying.
+There are suffixes ``c8``, ``c16``, ``c32``, ``char8``, ``char16``, ``char32`` for explicit type specifying.
 
 .. code-block:: u_spr
 
