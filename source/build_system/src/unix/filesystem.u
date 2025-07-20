@@ -46,7 +46,7 @@ fn GetCurrentExecutablePath( ust::string_view8 argv0 ) : ust::filesystem_path
 fn ResolveRelativeExecutablePath( ust::filesystem_path_view path ) : ust::optional</ust::filesystem_path/>
 {
 	// Read "$PATH", iterate over entries inside it and construct all possible paths.
-	// Requires metadata for constructed in such a way path, and if it exists and it's an executable file - return this full path.
+	// Request metadata for constructed in such a way path, and if it exists and it's an executable file - return this full path.
 
 	auto path_environment_variable= ust::get_environment_variable( "PATH" );
 	if( path_environment_variable.empty() )
