@@ -1407,8 +1407,12 @@ def CustomBuildStepFilePathIsNotAbsolute2Test():
 		build_system_args.append( g_sysroot )
 
 	# Provide path to BuildSystemTestFileGenerationTool.
+	if platform.system() == "Windows":
+		paths_separator = ';'
+	else:
+		paths_separator = ':'
 	env_tweaked = os.environ
-	env_tweaked["PATH"]= env_tweaked["PATH"] + ";" + os.path.dirname( g_tests_build_root_path )
+	env_tweaked["PATH"]= env_tweaked["PATH"] + paths_separator + os.path.dirname( g_tests_build_root_path )
 
 	# Run the build.
 	subprocess.check_call( build_system_args, env= env_tweaked )
