@@ -6,8 +6,12 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	auto mut in_file= ust::path::join( build_system_interface.GetCurrentPackageSourceDirectory(), "some_file.txt" );
 	auto mut out_file= ust::path::join( build_system_interface.GetCurrentPackageBuildDirectory(), "some_file_multiplied.txt" );
 
-	// Error here - executable path isn't absolute.
-	auto mut program= "BuildSystemTestFileGenerationTool";
+	// Executable file is not absolute. It's fine, as long as we can find it in $PATH.
+	var ust::filesystem_path mut program= "BuildSystemTestFileGenerationTool" + build_system_interface.GetConfigurationOption( "tests_libs_postfix" ).try_deref();
+	if( ust::constexpr_string_equals( compiler::target::os, "windows" ) )
+	{
+		program+= ".exe";
+	}
 
 	var BK::CustomBuildStep mut step
 	{
