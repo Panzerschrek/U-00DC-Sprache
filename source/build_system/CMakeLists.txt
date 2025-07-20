@@ -159,7 +159,9 @@ else()
 		target_link_options( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE "-municode" ) # Allow "wmain" as entry point.
 	endif()
 
-	if( NOT WIN32 )
+	if( WIN32 )
+		target_link_libraries( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE Shlwapi.lib )
+	else()
 		target_link_libraries( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE dl )
 	endif()
 

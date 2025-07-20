@@ -61,6 +61,8 @@ fn nomangle GetPackageInfo( BK::BuildSystemInterface& build_system_interface ) :
 		{
 			target.source_files.push_back( ust::path::join( "src/windows", s ) );
 		}
+
+		target.external_libraries.push_back( "Shlwapi.lib" );
 	}
 	else
 	{

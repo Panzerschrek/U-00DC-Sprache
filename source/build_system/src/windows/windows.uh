@@ -32,6 +32,8 @@ fn nomangle GetQueuedCompletionStatus( HANDLE CompletionPort, LPDWORD lpNumberOf
 
 fn nomangle LoadLibraryW( LPCWSTR lpLibFileName ) unsafe call_conv( "system" ) : HMODULE;
 
+fn nomangle PathFindOnPathW( LPWSTR pszPath, PZPCWSTR ppszOtherDirs ) unsafe call_conv( "system" ) : BOOL;
+
 fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
 
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
@@ -116,7 +118,9 @@ type LPVOID = $(byte8);
 type LPWSTR = $(WCHAR);
 type OVERLAPPED = ü_OVERLAPPED;
 type PROCESS_INFORMATION = ü_PROCESS_INFORMATION;
+type PCWSTR = $(WCHAR);
 type PULONG_PTR = $(ULONG_PTR);
+type PZPCWSTR = $(PCWSTR);
 type SECURITY_ATTRIBUTES = ü_SECURITY_ATTRIBUTES;
 type STARTUPINFOW = ü_STARTUPINFOW;
 type ULONG_PTR = size_type;

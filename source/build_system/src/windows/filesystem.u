@@ -32,4 +32,34 @@ fn GetCurrentExecutablePath( ust::string_view8 argv0 ) : ust::filesystem_path
 	return WideStringToUTF8( res );
 }
 
+fn ResolveRelativeExecutablePath( ust::string_view8 path ) : ust::optional</ust::filesystem_path/>
+{
+	var WideString mut path_w= UTF8ToWideString( path );
+
+	unsafe
+	{
+		var [ WCHAR, 32768 ] mut path_buffer= uninitialized; // Allocate enough space to avoid buffer overrun.
+
+		ust::memory_copy(
+			ust::ptr_cast_to_byte8( $<(path_buffer) ),
+			ust::ptr_cast_to_byte8( path_w.data() ),
+			path_w.size() * typeinfo</WCHAR/>.size_of );
+		path_buffer[ path_w.size() ]= '\0'c16;
+
+		var BOOL res= ::PathFindOnPathW( $<(path_buffer[0]), ust::nullptr</PCWSTR/>() );
+		if( res != 1 )
+		{
+			return ust::null_optional;
+		}
+
+		var size_type mut size= 0s;
+		while( size < typeinfo</ typeof(path_buffer) />.element_count && path_buffer[size] != '\0'c16 )
+		{
+			++size;
+		}
+
+		return WideStringToUTF8( WideStringView( $<(path_buffer[0]), size ) );
+	}
+}
+
 } // namespace BK
