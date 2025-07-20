@@ -1,0 +1,99 @@
+import "alloc.u"
+import "container_utils.u"
+import "polymorph.u"
+
+namespace ust
+{
+
+
+class any
+{
+public:
+	fn constructor()
+		( ptr_= zero_init )
+	{
+	}
+
+	fn destructor()
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return;
+		}
+
+		unsafe
+		{
+			call_destructor( $>(ptr_) ); // Since we have reference to polymorph base class, virtual call should be performed here.
+			memory_free( ptr_cast_to_byte8( ptr_ ) );
+		}
+	}
+
+	// TODO - disable it for types with references inside.
+	template</type T/>
+	fn constructor( T mut value )
+		( ptr_= zero_init )
+	{
+		type storage= any_storage</T/>;
+
+		unsafe
+		{
+			var $(byte8) ptr= memory_allocate( typeinfo</storage/>.size_of );
+
+			var storage &mut ptr_to_storage= cast_ref_unsafe</storage/>( $>(ptr) );
+			move_into_uninitialized( ptr_to_storage, storage( move(value) ) );
+
+			ptr_= $<( cast_ref</any_storage_base/>( ptr_to_storage ) );
+		}
+	}
+
+	fn empty( this ) : bool
+	{
+		return is_nullptr(ptr_);
+	}
+
+	template</ type T />
+	fn has( this ) : bool
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return false;
+		}
+
+		return polymorph_is_instance_of</ any_storage</T/> />( unsafe( $>(ptr_) ) );
+	}
+
+	template</ type T />
+	fn get( this ) : T&
+	{
+		halt if( is_nullptr(ptr_) );
+		return polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) ).try_deref().value_;
+	}
+
+	template</ type T />
+	fn get( mut this ) : T &mut
+	{
+		halt if( is_nullptr(ptr_) );
+		return polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) ).try_deref().value_;
+	}
+
+private:
+	// Use for storage a polymorph class - to use polymorph cast and virtual destructor.
+	class any_storage_base interface {}
+
+	template</type T/>
+	class any_storage : any_storage_base
+	{
+	public:
+		fn constructor( T mut value )
+			( value_= move(value) )
+		{}
+
+	public:
+		T value_;
+	}
+
+private:
+	$(any_storage_base) ptr_;
+}
+
+} // namespace ust

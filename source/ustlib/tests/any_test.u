@@ -1,0 +1,27 @@
+//##success_test
+import "../imports/any.u"
+
+fn nomangle main() : i32
+{
+	{
+		var ust::any a;
+		halt if( !a.empty() );
+		halt if( a.has</i32/>() );
+	}
+	{
+		var ust::any a( 64 );
+		halt if( a.empty() );
+		halt if( !a.has</i32/>() );
+		halt if( a.get</i32/>() != 64 );
+	}
+	{
+		var ust::any mut a( 17.3f );
+		halt if( a.empty() );
+		halt if( !a.has</f32/>() );
+		halt if( a.get</f32/>() != 17.3f );
+		a.get</f32/>() = -784.4f;
+		halt if( a.get</f32/>() != -784.4f );
+	}
+
+	return 0;
+}
