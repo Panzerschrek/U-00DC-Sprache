@@ -14,6 +14,8 @@ public:
 	{
 	}
 
+	// Doesn't have constructor and copy-assignment operator, since not any type is copyable.
+
 	fn destructor()
 	{
 		if( is_nullptr(ptr_) )
@@ -63,17 +65,49 @@ public:
 	}
 
 	template</ type T />
-	fn get( this ) : T&
+	fn try_get( this ) : T&
 	{
 		halt if( is_nullptr(ptr_) );
 		return polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) ).try_deref().value_;
 	}
 
 	template</ type T />
-	fn get( mut this ) : T &mut
+	fn try_get( mut this ) : T &mut
 	{
 		halt if( is_nullptr(ptr_) );
 		return polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) ).try_deref().value_;
+	}
+
+	template</ type T />
+	fn get( this ) : optional_ref_imut</T/> @( reference_notation::return_inner_references::param0 )
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return null_optional_ref;
+		}
+
+		auto opt_ref= polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) );
+		if( opt_ref.empty() )
+		{
+			return null_optional_ref;
+		}
+		return opt_ref.try_deref().value_;
+	}
+
+	template</ type T />
+	fn get( mut this ) : optional_ref_mut</T/> @( reference_notation::return_inner_references::param0 )
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return null_optional_ref;
+		}
+
+		auto opt_ref= polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) );
+		if( opt_ref.empty() )
+		{
+			return null_optional_ref;
+		}
+		return opt_ref.try_deref().value_;
 	}
 
 private:

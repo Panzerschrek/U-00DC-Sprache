@@ -8,19 +8,29 @@ fn nomangle main() : i32
 		halt if( !a.empty() );
 		halt if( a.has</i32/>() );
 	}
-	{
+	{ // Has "get" and "try_get" methods.
 		var ust::any a( 64 );
 		halt if( a.empty() );
 		halt if( !a.has</i32/>() );
-		halt if( a.get</i32/>() != 64 );
+		halt if( a.try_get</i32/>() != 64 );
+		halt if( a.get</i32/>().empty() );
+		halt if( a.get</i32/>().try_deref() != 64 );
+		halt if( !a.get</u32/>().empty() );
+		halt if( !a.get</f32/>().empty() );
+		halt if( !a.get</[i32, 1]/>().empty() );
+		halt if( !a.get</tup[i32]/>().empty() );
+		halt if( !a.get</$(i32)/>().empty() );
+		halt if( !a.get</u64/>().empty() );
 	}
-	{
+	{ // Can modify stored value.
 		var ust::any mut a( 17.3f );
 		halt if( a.empty() );
 		halt if( !a.has</f32/>() );
-		halt if( a.get</f32/>() != 17.3f );
-		a.get</f32/>() = -784.4f;
-		halt if( a.get</f32/>() != -784.4f );
+		halt if( a.try_get</f32/>() != 17.3f );
+		a.try_get</f32/>() = -784.4f;
+		halt if( a.try_get</f32/>() != -784.4f );
+		a.get</f32/>().try_deref()= 74258.1f;
+		halt if( a.get</f32/>().try_deref() != 74258.1f );
 	}
 
 	return 0;
