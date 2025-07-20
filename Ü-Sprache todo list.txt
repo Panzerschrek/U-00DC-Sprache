@@ -224,7 +224,6 @@ CPP Header converter:
 *) Support dependency files for custom build steps
 *) Ensure output files of custom build steps are located within package build directory or at least within root build
 	directory
-*) Support non-absolute program paths for custom build steps - where these programs may be resolved via "$PATH"
 *) Try to detect dependency loops involving custom build steps before executing the build
 *) Save build graph atomically
 *) Rebuild build script shared libraries and ustlib for them if compiler executable is changed

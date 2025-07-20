@@ -36,7 +36,7 @@ endif()
 # Global codegen options (for both Ü and dependencies).
 #
 
-if( CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" )
+if( CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "AMD64" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "amd64" )
 	message( STATUS "Target architecture seems to be x86_64 (${CMAKE_SYSTEM_PROCESSOR}), turn on modern instructions support" )
 
 	# Use a CPU from year 2015 or newer. It seems to be fine to avoid using older CPUs.

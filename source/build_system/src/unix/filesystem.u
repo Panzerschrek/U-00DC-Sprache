@@ -1,5 +1,9 @@
 // Platform-dependent filesystem-related functions.
 
+import "/environment.u"
+import "/filesystem.u"
+import "/path_utils.u"
+
 import "../filesystem.uh"
 import "unix.uh"
 
@@ -37,6 +41,82 @@ fn GetCurrentExecutablePath( ust::string_view8 argv0 ) : ust::filesystem_path
 	}
 
 	return argv0; // There is no portable way to obtain executable name other then using "argv[0]".
+}
+
+fn ResolveRelativeExecutablePath( ust::filesystem_path_view path ) : ust::optional</ust::filesystem_path/>
+{
+	// Read "$PATH", iterate over entries inside it and construct all possible paths.
+	// Request metadata for constructed in such a way path, and if it exists and it's an executable file - return this full path.
+
+	auto path_environment_variable= ust::get_environment_variable( "PATH" );
+	if( path_environment_variable.empty() )
+	{
+		return ust::null_optional;
+	}
+
+	// For now just check if at least one of executable bits is set. Generally it's not correct, but it's fine for most cases.
+	var u32 constexpr someone_can_execute_mask=
+		ust::file_permissions::owner_execute |
+		ust::file_permissions::group_execute |
+		ust::file_permissions::others_execute;
+
+	foreach( &path_entry : ust::wrap_raw_iterator( ColonSeparatedListRawIterator( path_environment_variable.try_deref() ) ) )
+	{
+		var ust::filesystem_path path_combined= ust::path::join( path_entry, path );
+
+		auto metadata_res= ust::get_metadata_for_path( path_combined );
+		if( metadata_res.is_ok() &&
+			( metadata_res.try_deref().permissions.bits & someone_can_execute_mask ) != 0u )
+		{
+			return path_combined;
+		}
+	}
+
+	return ust::null_optional;
+}
+
+class ColonSeparatedListRawIterator
+{
+public:
+	fn constructor( ust::string_view8 s ) @( ust::reference_notation::pollution::param0_param_1_inner_reference )
+		( s_= s )
+	{}
+
+	fn next( mut this ) : ust::optional</ust::string_view8/> @( ust::reference_notation::return_inner_references::param0_inner_reference0 )
+	{
+		loop
+		{
+			if( s_.empty() )
+			{
+				return ust::null_optional;
+			}
+
+			var size_type mut end= 0s;
+			while( end < s_.size() && s_[end] != ':' )
+			{
+				++end;
+			}
+
+			auto res= s_.subrange_end( end );
+
+			for( auto mut i= 0s; i < end; ++i )
+			{
+				s_.drop_front();
+			}
+			if( !s_.empty() )
+			{
+				s_.drop_front();
+			}
+
+			if( !res.empty() )
+			{
+				return res;
+			}
+		}
+	}
+
+private:
+	ust::string_view8 s_;
 }
 
 } // namespace BK

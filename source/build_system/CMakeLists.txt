@@ -159,8 +159,10 @@ else()
 		target_link_options( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE "-municode" ) # Allow "wmain" as entry point.
 	endif()
 
-	if( NOT WIN32 )
-		target_link_libraries( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE dl )
+	if( WIN32 )
+		target_link_libraries( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE Shlwapi.lib )
+	else()
+		target_link_libraries( BuildSystem${CURRENT_COMPILER_GENERATION} PRIVATE dl m )
 	endif()
 
 	install( PROGRAMS $<TARGET_FILE:BuildSystem${CURRENT_COMPILER_GENERATION}> TYPE BIN RENAME u.._build_system${CURRENT_COMPILER_GENERATION}${CMAKE_EXECUTABLE_SUFFIX} )

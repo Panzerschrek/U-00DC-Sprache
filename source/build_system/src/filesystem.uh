@@ -31,4 +31,7 @@ fn GetFileModificationTime( ust::filesystem_path_view path ) : ust::optional</Fi
 // Get absolute path to executable of current program.
 fn GetCurrentExecutablePath( ust::string_view8 argv0 ) : ust::filesystem_path;
 
+// Assuming given path is relative executable path, get full path to it (expanding $PATH environment variable).
+fn ResolveRelativeExecutablePath( ust::filesystem_path_view path ) : ust::optional</ust::filesystem_path/>;
+
 } // namespace BK

@@ -129,7 +129,7 @@ struct CustomBuildStep
 	// An external executable to run.
 	struct ExeCommand
 	{
-		// Path to the executable.
+		// Path to the executable - absolute or relative to $PATH environment variable.
 		ust::filesystem_path exe_path;
 		// Command line arguments.
 		ust::vector</ust::string8/> command_line;

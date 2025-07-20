@@ -1381,10 +1381,46 @@ def CustomBuildStepFilePathIsNotAbsolute1Test():
 
 
 def CustomBuildStepFilePathIsNotAbsolute2Test():
-	res = RunBuildSystemWithErrors( "custom_build_step_file_path_is_not_absolute2" )
-	assert( res.returncode != 0 )
-	stderr = str(res.stderr)
-	assert( stderr.find( "Error, custom build step executable path \"BuildSystemTestFileGenerationTool\" is not absolute!" ) != -1 )
+
+	project_subdirectory= "custom_build_step_file_path_is_not_absolute2"
+
+	project_root = os.path.join( g_tests_path, project_subdirectory )
+	build_root = os.path.join( g_tests_build_root_path, project_subdirectory );
+
+	build_system_args= [
+		g_build_system_executable,
+		"build",
+		"-q",
+		"--build-configuration", "release",
+		"--compiler-executable", g_compiler_executable,
+		"--build-system-imports-path", g_build_system_imports_path,
+		"--ustlib-path", g_ustlib_path,
+		"--configuration-options", g_configuration_options_file_path,
+		"--project-directory", project_root,
+		"--build-directory", build_root,
+		]
+
+	if g_sysroot is not None:
+		build_system_args.append( "--sysroot" )
+		build_system_args.append( g_sysroot )
+		build_system_args.append( "--host-sysroot" )
+		build_system_args.append( g_sysroot )
+
+	# Provide path to BuildSystemTestFileGenerationTool.
+	if platform.system() == "Windows":
+		paths_separator = ';'
+	else:
+		paths_separator = ':'
+	env_tweaked = os.environ
+	env_tweaked["PATH"]= env_tweaked["PATH"] + paths_separator + os.path.dirname( g_tests_build_root_path )
+
+	# Run the build.
+	subprocess.check_call( build_system_args, env= env_tweaked )
+
+	# Should successfully generate custom file, using custom build step with relative executable path.
+	with open( os.path.join( g_tests_build_root_path, build_root, "release", "some_file_multiplied.txt" ), "r") as file:
+		data = file.read()
+		assert( data == "abcabcabcabc" )
 
 
 def CustomBuildStepsShareSameOutputFileTest():
