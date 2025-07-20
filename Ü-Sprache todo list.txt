@@ -46,6 +46,7 @@ General:
 *) Provide more information in typeinfo about member function templates for structs/classes, like calling convention or
 	mutability/reference modifiers for params and return values
 *) Allow accessing type templates of a class using "." operator for a class instance
+*) Support target-specific types like "long double", "__m64", "__m64" and intrinsics for these types.
 
 References:
 *) Support second order inner references for coroutine types
@@ -67,7 +68,7 @@ Lambdas:
 Standart library:
 *) Optimize template functions and classes in order to minimize number of things being compiling and thus speed-up
 	compilation of user programs using ustlib.
-*) Support types with references inside in some containers (variant, result, unordered_map)
+*) Support types with references inside in some containers (variant, result, hash_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
 *) switch-like macro for variant
 *) Associative (ordered) containers - map, set, string_map
@@ -77,7 +78,7 @@ Standart library:
 *) Functions for conversion of floating-point numbers into string
 *) Functions for floating-point numbers parsing
 *) Support 128-bit integer types stringification/parsing
-*) Reverse iterators for unordered_map and unordered_set. They are mostly useless, but should exist for completeness.
+*) Reverse iterators for hash_map and hash_set. They are mostly useless, but should exist for completeness.
 *) Time library - request monotonic time, perform time difference calculations, perform conversions from/to calendar
 	time, perform conversions to human-readable format
 *) String formatting library
@@ -133,6 +134,7 @@ Compiler:
 *) Pass/return by-value composite values containing more than one scalar inside.
 	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,
 	or it would be better to pass it in memory.
+*) Support passing/returning composite values across language borders (use exact C calling convention approach).
 *) Add possibility to execute internal LLD directly, bypassing compiler logic itself
 *) Add possibility to execute an external linker (ld, ld.gold, ld.lld, link.exe, etc.)
 *) More options for internal linker
