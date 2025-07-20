@@ -70,7 +70,7 @@ fn polymorph_is_instance_of( B& b ) : bool
 template</ type To, type From />
 fn polymorph_cast( From & mut from ) : optional_ref_mut</ To /> @( reference_notation::return_inner_references::param0 )
 {
-	polymorph_impl::polymorph_cast_impl</To/>(from);
+	return polymorph_impl::polymorph_cast_impl</To/>(from);
 }
 
 template</ type To, type From />
