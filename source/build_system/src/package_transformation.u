@@ -3,6 +3,7 @@ import "/sort.u"
 import "package_transformation.uh"
 import "build_system_paths.uh"
 import "options.uh"
+import "filesystem.uh"
 
 namespace BK
 {
@@ -328,14 +329,21 @@ fn nodiscard TransformAndValidatePackageInfo(
 
 		if_var( mut exe_command : custom_build_step.command.get</CustomBuildStep::ExeCommand/>() )
 		{
-			if( !ust::path::is_absolute( exe_command.exe_path ) )
+			if( ust::path::is_absolute( exe_command.exe_path ) )
 			{
-				logger.LogError( ust::concat( "Error, custom build step executable path \"", exe_command.exe_path, "\" is not absolute!" ) );
-				ok= false;
+				exe_command.exe_path= ust::path::normalize( exe_command.exe_path );
 			}
 			else
 			{
-				exe_command.exe_path= ust::path::normalize( exe_command.exe_path );
+				if_var( &path_resolved : ResolveRelativeExecutablePath( exe_command.exe_path ) )
+				{
+					exe_command.exe_path= ust::path::normalize( path_resolved );
+				}
+				else
+				{
+					logger.LogError( ust::concat( "Error, failed to resolve custom build step executable path \"", exe_command.exe_path, "\"!" ) );
+					ok= false;
+				}
 			}
 			out_custom_build_step.command= move(exe_command);
 		}
