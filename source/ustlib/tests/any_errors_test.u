@@ -1,0 +1,64 @@
+//##fail_test
+import "../imports/any.u"
+
+struct StructWithReference{ i32& x; }
+
+struct NonSyncStruct non_sync {}
+
+fn nomangle main() : i32
+{
+	{ // Any isn't copyable.
+		var ust::any a;
+		var ust::any a_copy= a; //##expect_error CopyConstructValueOfNoncopyableType
+	}
+	{ // Any isn't equality-comparable.
+		var ust::any a, b;
+		auto eq= a == b; //##expect_error OperationNotSupportedForThisType
+	}
+	{ // Can't store types with references inside in "any".
+		var i32 x= 0;
+		var ust::any a( StructWithReference{ .x= x } ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Can't store types with references inside in "any".
+		var i32 x= 0;
+		var ust::any mut a;
+		a.reset( StructWithReference{ .x= x } ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Can't store "non_sync" type in "any".
+		var ust::any a( NonSyncStruct{} ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Can't store "non_sync" type in "any".
+		var ust::any mut a;
+		a.reset( NonSyncStruct{} ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Can't modify stored value using "imut" reference to "any".
+		var ust::any a( 1.0f );
+		a.try_get</f32/>() *= 3.5f; //##expect_error ExpectedReferenceValue
+	}
+	{ // Can't modify stored value using "imut" reference to "any".
+		var ust::any a( 1.0f );
+		var ust::optional_ref_mut</f32/> r= a.get</f32/>(); //##expect_error TypesMismatch
+	}
+	{ // Can't modify "any" container if has derived reference.
+		var ust::any mut a( 135 );
+		var ust::optional_ref_imut</i32/> r= a.get</i32/>();
+		a.reset(); //##expect_error ReferenceProtectionError
+	}
+	{ // Can't modify "any" container if has derived reference.
+		var ust::any mut a( 135 );
+		var i32& r= a.try_get</i32/>();
+		a.reset(); //##expect_error ReferenceProtectionError
+	}
+	{ // Can't create second derived mutable reference to "any" stored value.
+		var ust::any mut a( 135 );
+		var ust::optional_ref_mut</i32/> r0= a.get</i32/>();
+		var ust::optional_ref_mut</i32/> r1= a.get</i32/>(); //##expect_error ReferenceProtectionError
+	}
+	{ // Can't create second derived mutable reference to "any" stored value.
+		var ust::any mut a( 135 );
+		var i32 &mut r0= a.try_get</i32/>();
+		var i32 &mut r1= a.try_get</i32/>(); //##expect_error ReferenceProtectionError
+	}
+
+	return 0;
+}

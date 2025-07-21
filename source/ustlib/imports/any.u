@@ -1,0 +1,240 @@
+import "alloc.u"
+import "container_utils.u"
+import "polymorph.u"
+
+namespace ust
+{
+
+// "any" container is designed to store a value of almost any type, except types with references inside and "non_sync" types.
+// "any" may be empty (it's his default state).
+// Since there is no upper bound on size, actual value is stored on heap.
+// "any" isn't copyable, since not any possible stored type is copyable, but there is a method for copy trying.
+// "any_non_sync" is like "any", but allows storing "non_sync" types, but is itself "non_sync" and thus can't be transferred across thread borders.
+//
+// Use "any" and "any_non_sync" only if it's strictly necessary.
+// If you need to store only some known types, prefer using "variant" container.
+// If you need to store a type satisfying some interface, use an interface or a polymorph class together with "box"/"shared_ptr".
+
+type any= any_base</false/>;
+type any_non_sync= any_base</true/>;
+
+template</ bool allow_storing_non_sync_types />
+class any_base non_sync( allow_storing_non_sync_types )
+{
+public:
+	// Construct empty container.
+	fn constructor()
+		( ptr_= zero_init )
+	{
+	}
+
+	// Construct container containing value of given type.
+	template</type T/>
+	fn enable_if(
+		typeinfo</T/>.reference_tag_count == 0s &&
+		!( !allow_storing_non_sync_types && non_sync</T/> ) )
+	constructor( T mut value )
+		( ptr_= zero_init )
+	{
+		type storage= any_storage</T/>;
+
+		unsafe
+		{
+			var $(byte8) ptr= memory_allocate( typeinfo</storage/>.size_of );
+
+			var storage &mut ptr_to_storage= cast_ref_unsafe</storage/>( $>(ptr) );
+			move_into_uninitialized( ptr_to_storage, storage( move(value) ) );
+
+			ptr_= $<( cast_ref</any_storage_interface/>( ptr_to_storage ) );
+		}
+	}
+
+	// Doesn't have constructor and copy-assignment operator, since not any type is copyable.
+
+	fn destructor()
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return;
+		}
+
+		unsafe
+		{
+			$>(ptr_).destructor(); // Since we have reference to polymorph base class, virtual destructor call should be performed here.
+			memory_free( ptr_cast_to_byte8( ptr_ ) );
+		}
+	}
+
+	// Destroy stored value (if has one) and make container empty.
+	fn reset( mut this )
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return;
+		}
+
+		unsafe
+		{
+			$>(ptr_).destructor(); // Since we have reference to polymorph base class, virtual destructor call should be performed here.
+			memory_free( ptr_cast_to_byte8( ptr_ ) );
+			ptr_= nullptr</ any_storage_interface />();
+		}
+	}
+
+	// Destroy stored value (if has one) and store given value instead.
+	template</type T/>
+	fn enable_if(
+		typeinfo</T/>.reference_tag_count == 0s &&
+		!( !allow_storing_non_sync_types && non_sync</T/> ) )
+	reset( mut this, T mut value )
+	{
+		// Move-assign newly-created instanse of "any" to "this".
+		this= this_type( move(value) );
+	}
+
+	fn empty( this ) : bool
+	{
+		return is_nullptr(ptr_);
+	}
+
+	// Check if stores a value of given type.
+	template</ type T />
+	fn has( this ) : bool
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return false;
+		}
+
+		return polymorph_is_instance_of</ any_storage</T/> />( unsafe( $>(ptr_) ) );
+	}
+
+	// Get reference to stored value of given type. Halts if container doesn't store a value of this type.
+	template</ type T />
+	fn try_get( this ) : T& @( reference_notation::return_references::param0 )
+	{
+		halt if( is_nullptr(ptr_) );
+		return polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) ).try_deref().value_;
+	}
+
+	// Get reference to stored value of given type. Halts if container doesn't store a value of this type.
+	template</ type T />
+	fn try_get( mut this ) : T &mut @( reference_notation::return_references::param0 )
+	{
+		halt if( is_nullptr(ptr_) );
+		return polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) ).try_deref().value_;
+	}
+
+	// Get optional reference to stored value of given type. Returns empty reference if container doesn't store a value of this type.
+	template</ type T />
+	fn get( this ) : optional_ref_imut</T/> @( reference_notation::return_inner_references::param0 )
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return null_optional_ref;
+		}
+
+		auto opt_ref= polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) );
+		if( opt_ref.empty() )
+		{
+			return null_optional_ref;
+		}
+		return opt_ref.try_deref().value_;
+	}
+
+	// Get optional reference to stored value of given type. Returns empty reference if container doesn't store a value of this type.
+	template</ type T />
+	fn get( mut this ) : optional_ref_mut</T/> @( reference_notation::return_inner_references::param0 )
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return null_optional_ref;
+		}
+
+		auto opt_ref= polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) );
+		if( opt_ref.empty() )
+		{
+			return null_optional_ref;
+		}
+		return opt_ref.try_deref().value_;
+	}
+
+	// Try to move value out of the container. Halts, if it's empty or if it doesn't contain value of specified type.
+	template</ type T />
+	fn nodiscard try_move( byval mut this ) : T
+	{
+		halt if( is_nullptr(ptr_) );
+
+		auto opt_ref= polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) );
+
+		var T &mut stored_value= opt_ref.try_deref().value_; // Halts if contains wrong type.
+
+		unsafe
+		{
+			var T mut result= uninitialized;
+			memory_copy_aligned(
+				typeinfo</T/>.align_of,
+				ptr_cast_to_byte8( $<(result) ),
+				ptr_cast_to_byte8( $<(stored_value) ),
+				typeinfo</T/>.size_of );
+
+			// Free memory, but don't call destructor (since value was moved).
+			memory_free( ptr_cast_to_byte8( ptr_ ) );
+			ptr_= nullptr</any_storage_interface/>();
+
+			return result;
+		}
+	}
+
+	// Try to make copy of the stored value.
+	// If this container is empty or if stored type isn't copyable - empty container is returned.
+	fn try_copy( this ) : this_type
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return this_type();
+		}
+
+		return unsafe( $>(ptr_).try_copy() );
+	}
+
+private:
+	type this_type= any_base</allow_storing_non_sync_types/>;
+
+	// Use for storage a polymorph class - to be able to use polymorph cast and virtual destructor.
+	class any_storage_interface interface non_sync( allow_storing_non_sync_types )
+	{
+	public:
+		// Copy if copyable, returns empty container if can't copy.
+		fn virtual pure try_copy( this ) : this_type;
+	}
+
+	template</type T/>
+	class any_storage final : any_storage_interface non_sync( allow_storing_non_sync_types )
+	{
+	public:
+		fn constructor( T mut value )
+			( value_= move(value) )
+		{}
+
+		fn virtual final try_copy( this ) : this_type
+		{
+			static_if( typeinfo</T/>.is_copy_constructible )
+			{
+				return this_type( value_ );
+			}
+			else
+			{
+				return this_type();
+			}
+		}
+
+	public:
+		T value_;
+	}
+
+private:
+	$(any_storage_interface) ptr_;
+}
+
+} // namespace ust

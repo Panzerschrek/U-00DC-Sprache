@@ -1,0 +1,192 @@
+//##success_test
+import "../imports/any.u"
+import "../imports/string.u"
+import "../imports/shared_ptr.u"
+
+// "any" is default-constructible (with default empty state).
+static_assert( typeinfo</ust::any/>.is_default_constructible );
+static_assert( typeinfo</ust::any_non_sync/>.is_default_constructible );
+
+// Can't copy "any".
+static_assert( !typeinfo</ust::any/>.is_copy_constructible );
+static_assert( !typeinfo</ust::any_non_sync/>.is_copy_constructible );
+static_assert( !typeinfo</ust::any/>.is_copy_assignable );
+static_assert( !typeinfo</ust::any_non_sync/>.is_copy_assignable );
+
+// Can't compare "any" values.
+static_assert( !typeinfo</ust::any/>.is_equality_comparable );
+static_assert( !typeinfo</ust::any_non_sync/>.is_equality_comparable );
+
+// "any" is not "non_sync".
+static_assert( !non_sync</ ust::any /> );
+// But "any_non_sync" is "non_sync" and can store "non_sync" types.
+static_assert( non_sync</ ust::any_non_sync /> );
+
+// "any" has pointer size.
+static_assert( typeinfo</ust::any/>.size_of == typeinfo</$(byte8)/>.size_of );
+static_assert( typeinfo</ust::any_non_sync/>.size_of == typeinfo</$(byte8)/>.size_of );
+
+class NonCopyableClass {}
+static_assert( !typeinfo</ NonCopyableClass />.is_copy_constructible );
+
+struct SharedPtrHolder
+{
+	ust::shared_ptr_mut</i32/> ptr;
+
+	fn destructor()
+	{
+		auto mut lock= ptr.lock_mut();
+		lock.deref()= -1;
+	}
+}
+
+class ABase polymorph {}
+class BDerived : ABase {}
+
+fn nomangle main() : i32
+{
+	{
+		var ust::any a;
+		halt if( !a.empty() );
+		halt if( a.has</i32/>() );
+	}
+	{ // Has "get" and "try_get" methods.
+		var ust::any a( 64 );
+		halt if( a.empty() );
+		halt if( !a.has</i32/>() );
+		halt if( a.try_get</i32/>() != 64 );
+		halt if( a.get</i32/>().empty() );
+		halt if( a.get</i32/>().try_deref() != 64 );
+		halt if( !a.get</u32/>().empty() );
+		halt if( !a.get</f32/>().empty() );
+		halt if( !a.get</[i32, 1]/>().empty() );
+		halt if( !a.get</tup[i32]/>().empty() );
+		halt if( !a.get</$(i32)/>().empty() );
+		halt if( !a.get</u64/>().empty() );
+	}
+	{ // Can modify stored value.
+		var ust::any mut a( 17.3f );
+		halt if( a.empty() );
+		halt if( !a.has</f32/>() );
+		halt if( a.try_get</f32/>() != 17.3f );
+		a.try_get</f32/>() = -784.4f;
+		halt if( a.try_get</f32/>() != -784.4f );
+		a.get</f32/>().try_deref()= 74258.1f;
+		halt if( a.get</f32/>().try_deref() != 74258.1f );
+	}
+	{ // Can reset.
+		var ust::any mut a( 'F' );
+		halt if( a.empty() );
+		halt if( a.try_get</char8/>() != 'F' );
+
+		a.reset();
+		halt if( !a.empty() );
+		halt if( !a.get</char8/>().empty() );
+	}
+	{ // Can reset with value.
+		var ust::any mut a( 54656 );
+		halt if( a.empty() );
+		halt if( a.try_get</i32/>() != 54656 );
+
+		a.reset( 56.56 );
+		halt if( a.empty() );
+		halt if( a.has</i32/>() );
+		halt if( !a.has</f64/>() );
+		halt if( a.try_get</f64/>() != 56.56 );
+	}
+	{ // Can move value oof of the any container.
+
+		var ust::any mut a( ust::string8( "Ficket Euch!" ) );
+		halt if( !a.has</ust::string8/>() );
+
+		var ust::string8 s= move(a).try_move</ust::string8/>();
+		halt if( s != "Ficket Euch!" );
+	}
+	{ // try_copy for empty container.
+		var ust::any a;
+		halt if( !a.empty() );
+
+		var ust::any a_copy= a.try_copy();
+		halt if( !a_copy.empty() );
+	}
+	{ // try_copy for copyable value.
+		var ust::any a( 852u );
+		halt if( a.empty() );
+
+		var ust::any mut a_copy= a.try_copy();
+		halt if( a_copy.empty() );
+
+		// Modify copy.
+		a_copy.try_get</u32/>()= 234646u;
+		// Original value should remain unchanged.
+		halt if( a.try_get</u32/>() != 852u );
+	}
+	{ // try_copy for non-copyable value.
+		var ust::any a( NonCopyableClass() );
+		halt if( a.empty() );
+		halt if( !a.has</NonCopyableClass/>() );
+
+		var ust::any a_copy= a.try_copy();
+		halt if( !a_copy.empty() );
+		halt if( a_copy.has</NonCopyableClass/>() );
+	}
+	{ // Specifying exact stored type is required.
+		var ust::any a( "Sir Schwanzelot" ); // Stores [ char8, 15 ]
+		halt if( a.empty() );
+		halt if( a.has</ ust::string8 />() );
+		halt if( a.has</ char8 />() );
+		halt if( a.has</ [ char8, 14 ] />() );
+		halt if( a.has</ [ byte8, 15 ] />() );
+		halt if( !a.has</ [ char8, 15 ] />() );
+		halt if( !a.get</ ust::string8 />().empty() );
+		halt if( a.try_get</ [ char8, 15 ] />() != "Sir Schwanzelot" );
+	}
+	{ // Specifying exact stored type is required, polymorph casts aren't possible.
+		var ust::any a( BDerived() );
+		halt if( a.empty() );
+		halt if( a.has</ ABase />() );
+		halt if( !a.has</ BDerived />() );
+		halt if( !a.get</ ABase />().empty() );
+		halt if( a.get</ BDerived />().empty() );
+	}
+	{ // "any" storing value of type "void" is different from empty "any".
+		var ust::any a( void() );
+		halt if( a.empty() );
+		halt if( !a.has</void/>() );
+		halt if( a.get</void/>().empty() );
+	}
+	{ // any_non_sync for non_sync type.
+		static_assert( non_sync</ ust::shared_ptr_mut</i32/> /> );
+
+		var ust::any_non_sync a( ust::make_shared_ptr( 77 ) );
+
+		halt if( !a.has</ ust::shared_ptr_mut</i32/> />() );
+		halt if( a.try_get</ ust::shared_ptr_mut</i32/> />().lock_imut().deref() != 77 );
+	}
+	{ // any_non_sync for type without "non_sync" property.
+		var ust::any_non_sync a( 112233445566778899u64 );
+		halt if( !a.has</u64/>() );
+		halt if( a.try_get</u64/>() != 112233445566778899u64 );
+	}
+	{ // Destructor is called properly.
+		auto ptr= ust::make_shared_ptr( 1235 );
+
+		{
+			var ust::any_non_sync a( SharedPtrHolder{ .ptr= ptr } );
+			halt if( !a.has</ SharedPtrHolder />() );
+			halt if( a.try_get</ SharedPtrHolder />().ptr.lock_imut().deref() != 1235 );
+		} // Destructor for "a" and its stored value of type "SharedPtrHolder" is called here.
+
+		halt if( ptr.lock_imut().deref() != -1 );
+	}
+	{ // Destructor is called properly.
+		auto ptr= ust::make_shared_ptr( 987678 );
+		var ust::any_non_sync mut a( SharedPtrHolder{ .ptr= ptr } );
+		halt if( !a.has</ SharedPtrHolder />() );
+		halt if( a.try_get</ SharedPtrHolder />().ptr.lock_imut().deref() != 987678 );
+		a.reset(); // Destructor for stored value of type "SharedPtrHolder" is called here.
+		halt if( ptr.lock_imut().deref() != -1 );
+	}
+
+	return 0;
+}

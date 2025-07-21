@@ -69,6 +69,7 @@ if you want to learn more, read its sources yourself.
 *Containers*
 ************
 
+* Constainer for storing a value of an (almost) arbitrary type (any.u).
 * Atomic variable container, which wraps raw atomic operations (atomic_variable.u).
 * Heap-allocated box (box.u) and its nullable version (box_nullabe.u).
   Designed to store a value indirectly, which allows creating recursive data structures.
