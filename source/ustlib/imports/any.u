@@ -5,8 +5,14 @@ import "polymorph.u"
 namespace ust
 {
 
+// Can store any type except types with references inside and "non_sync" types.
+type any= any_base</false/>;
 
-class any
+// Can store any type except types with references inside.
+type any_non_sync= any_base</true/>;
+
+template</ bool allow_storing_non_sync_types />
+class any_base non_sync( allow_storing_non_sync_types )
 {
 public:
 	fn constructor()
@@ -15,7 +21,9 @@ public:
 	}
 
 	template</type T/>
-	fn enable_if( typeinfo</T/>.reference_tag_count == 0s )
+	fn enable_if(
+		typeinfo</T/>.reference_tag_count == 0s &&
+		!( !allow_storing_non_sync_types && non_sync</T/> ) )
 	constructor( T mut value )
 		( ptr_= zero_init )
 	{
@@ -64,11 +72,13 @@ public:
 	}
 
 	template</type T/>
-	fn enable_if( typeinfo</T/>.reference_tag_count == 0s )
+	fn enable_if(
+		typeinfo</T/>.reference_tag_count == 0s &&
+		!( !allow_storing_non_sync_types && non_sync</T/> ) )
 	reset( mut this, T mut value )
 	{
 		// Move-assign newly-created instanse of "any" to "this".
-		this= any( move(value) );
+		this= this_type( move(value) );
 	}
 
 	fn empty( this ) : bool
@@ -162,42 +172,45 @@ public:
 
 	// Try to make copy of the stored value.
 	// If this container is empty or if stored type isn't copyable - empty container is returned.
-	fn try_copy( this ) : any
+	fn try_copy( this ) : this_type
 	{
 		if( is_nullptr(ptr_) )
 		{
-			return any();
+			return this_type();
 		}
 
 		return unsafe( $>(ptr_).try_copy() );
 	}
 
 private:
+
+	type this_type= any_base</allow_storing_non_sync_types/>;
+
 	// Use for storage a polymorph class - to use polymorph cast and virtual destructor.
-	class any_storage_interface interface
+	class any_storage_interface interface non_sync( allow_storing_non_sync_types )
 	{
 	public:
 		// Copy if copyable, returns empty container if can't copy.
-		fn virtual pure try_copy( this ) : any;
+		fn virtual pure try_copy( this ) : this_type;
 	}
 
 	template</type T/>
-	class any_storage : any_storage_interface
+	class any_storage : any_storage_interface non_sync( allow_storing_non_sync_types )
 	{
 	public:
 		fn constructor( T mut value )
 			( value_= move(value) )
 		{}
 
-		fn virtual final try_copy( this ) : any
+		fn virtual final try_copy( this ) : this_type
 		{
 			static_if( typeinfo</T/>.is_copy_constructible )
 			{
-				return any( value_ );
+				return this_type( value_ );
 			}
 			else
 			{
-				return any();
+				return this_type();
 			}
 		}
 

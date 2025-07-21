@@ -2,6 +2,9 @@
 import "../imports/any.u"
 
 struct StructWithReference{ i32& x; }
+
+struct NonSyncStruct non_sync {}
+
 fn nomangle main() : i32
 {
 	{ // Any isn't copyable.
@@ -20,6 +23,13 @@ fn nomangle main() : i32
 		var i32 x= 0;
 		var ust::any mut a;
 		a.reset( StructWithReference{ .x= x } ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Can't store "non_sync" type in "any".
+		var ust::any a( NonSyncStruct{} ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Can't store "non_sync" type in "any".
+		var ust::any mut a;
+		a.reset( NonSyncStruct{} ); //##expect_error CouldNotSelectOverloadedFunction
 	}
 
 	return 0;

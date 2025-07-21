@@ -1,6 +1,10 @@
 //##success_test
 import "../imports/any.u"
 import "../imports/string.u"
+import "../imports/shared_ptr.u"
+
+static_assert( !non_sync</ ust::any /> );
+static_assert( non_sync</ ust::any_non_sync /> );
 
 class NonCopyableClass {}
 static_assert( !typeinfo</ NonCopyableClass />.is_copy_constructible );
@@ -91,6 +95,17 @@ fn nomangle main() : i32
 		var ust::any a_copy= a.try_copy();
 		halt if( !a_copy.empty() );
 		halt if( a_copy.has</NonCopyableClass/>() );
+	}
+	{ // any_non_sync for non_sync type.
+		var ust::any_non_sync a( ust::make_shared_ptr( 77 ) );
+
+		halt if( !a.has</ ust::shared_ptr_mut</i32/> />() );
+		halt if( a.try_get</ ust::shared_ptr_mut</i32/> />().lock_imut().deref() != 77 );
+	}
+	{ // any_non_sync for type without "non_sync" property.
+		var ust::any_non_sync a( 112233445566778899u64 );
+		halt if( !a.has</u64/>() );
+		halt if( a.try_get</u64/>() != 112233445566778899u64 );
 	}
 
 	return 0;
