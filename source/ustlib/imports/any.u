@@ -5,21 +5,30 @@ import "polymorph.u"
 namespace ust
 {
 
-// Can store any type except types with references inside and "non_sync" types.
-type any= any_base</false/>;
+// "any" container is designed to store a value of almost any type, except types with references inside and "non_sync" types.
+// "any" may be empty (it's his default state).
+// Since there is no upper bound on size, actual value is stored on heap.
+// "any" isn't copyable, since not any possible stored type is copyable, but there is a method for copy trying.
+// "any_non_sync" is like "any", but allows storing "non_sync" types, but is itself "non_sync" and thus can't be transferred across thread borders.
+//
+// Use "any" and "any_non_sync" only if it's strictly necessary.
+// If you need to store only some known types, prefer using "variant" container.
+// If you need to store a type satisfying some interface, use an interface or a polymorph class together with "box"/"shared_ptr".
 
-// Can store any type except types with references inside.
+type any= any_base</false/>;
 type any_non_sync= any_base</true/>;
 
 template</ bool allow_storing_non_sync_types />
 class any_base non_sync( allow_storing_non_sync_types )
 {
 public:
+	// Construct empty container.
 	fn constructor()
 		( ptr_= zero_init )
 	{
 	}
 
+	// Construct container containing value of given type.
 	template</type T/>
 	fn enable_if(
 		typeinfo</T/>.reference_tag_count == 0s &&
@@ -56,6 +65,7 @@ public:
 		}
 	}
 
+	// Destroy stored value (if has one) and make container empty.
 	fn reset( mut this )
 	{
 		if( is_nullptr(ptr_) )
@@ -71,6 +81,7 @@ public:
 		}
 	}
 
+	// Destroy stored value (if has one) and store given value instead.
 	template</type T/>
 	fn enable_if(
 		typeinfo</T/>.reference_tag_count == 0s &&
@@ -86,6 +97,7 @@ public:
 		return is_nullptr(ptr_);
 	}
 
+	// Check if stores a value of given type.
 	template</ type T />
 	fn has( this ) : bool
 	{
@@ -97,6 +109,7 @@ public:
 		return polymorph_is_instance_of</ any_storage</T/> />( unsafe( $>(ptr_) ) );
 	}
 
+	// Get reference to stored value of given type. Halts if container doesn't store a value of this type.
 	template</ type T />
 	fn try_get( this ) : T&
 	{
@@ -104,6 +117,7 @@ public:
 		return polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) ).try_deref().value_;
 	}
 
+	// Get reference to stored value of given type. Halts if container doesn't store a value of this type.
 	template</ type T />
 	fn try_get( mut this ) : T &mut
 	{
@@ -111,6 +125,7 @@ public:
 		return polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) ).try_deref().value_;
 	}
 
+	// Get optional reference to stored value of given type. Returns empty reference if container doesn't store a value of this type.
 	template</ type T />
 	fn get( this ) : optional_ref_imut</T/> @( reference_notation::return_inner_references::param0 )
 	{
@@ -127,6 +142,7 @@ public:
 		return opt_ref.try_deref().value_;
 	}
 
+	// Get optional reference to stored value of given type. Returns empty reference if container doesn't store a value of this type.
 	template</ type T />
 	fn get( mut this ) : optional_ref_mut</T/> @( reference_notation::return_inner_references::param0 )
 	{
