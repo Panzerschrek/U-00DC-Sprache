@@ -63,6 +63,13 @@ public:
 		}
 	}
 
+	template</type T/>
+	fn reset( mut this, T mut value )
+	{
+		// Move-assign newly-created instanse of "any" to "this".
+		this= any( move(value) );
+	}
+
 	fn empty( this ) : bool
 	{
 		return is_nullptr(ptr_);

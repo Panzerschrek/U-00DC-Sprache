@@ -45,6 +45,17 @@ fn nomangle main() : i32
 		halt if( !a.empty() );
 		halt if( !a.get</char8/>().empty() );
 	}
+	{ // Can reset with value.
+		var ust::any mut a( 54656 );
+		halt if( a.empty() );
+		halt if( a.try_get</i32/>() != 54656 );
+
+		a.reset( 56.56 );
+		halt if( a.empty() );
+		halt if( a.has</i32/>() );
+		halt if( !a.has</f64/>() );
+		halt if( a.try_get</f64/>() != 56.56 );
+	}
 	{ // Can move value oof of the any container.
 
 		var ust::any mut a( ust::string8( "Ficket Euch!" ) );
