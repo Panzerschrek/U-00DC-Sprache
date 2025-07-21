@@ -95,12 +95,13 @@ Thus you can use this option and provide your own allocation/deallocation functi
 List of built-in functionality:
 
 * Allocation functionality (alloc_libc_32.ll, alloc_libc_64.ll, alloc_winapi_32.ll, alloc_winapi_64.ll, alloc_dummy.ll)
-* Atomic operations (atomic.ll)
+* Atomic operations (atomic.ll, atomic_32.ll, atomic_64.ll)
 * Math functions with overflow checks (checked_math.ll)
 * Coroutines helpers (coro.ll)
 * Halt handlers (halt_abort.ll, halt_configurable.ll, halt_trap.ll, halt_unreachable.ll)
 * Math functions (math.ll)
 * Memory helpers (memory_32.ll, memory_64.ll)
+* Volatile operations (volatile.ll)
 
 Some built-ins are implemented via C standard library functions, like malloc/free, stdout print or some math functions.
 Thus you need to link against C standard library in order to use them.
@@ -112,7 +113,8 @@ Some functionality of ustlib is allocation-free and can be used in environment w
 
 But some functionality uses heap.
 This includes containers like *box*, *box_nullable* *string*, *vector*, *hash_map* and all *shared_ptr* containers.
-Also thread class uses heap allocation for its internal state.
+Thread class and all synchronization primitive classes use heap too.
+Also functions, which interact with operationg system (filesystem functions, environment variable functions, stdin/stdout, etc.) may allocate.
 So, you need to avoid usage of these functionality in heapless environment.
 
 Note that compiler itself may use heap allocations - for coroutines.
