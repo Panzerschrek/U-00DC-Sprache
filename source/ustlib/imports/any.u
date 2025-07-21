@@ -152,9 +152,26 @@ public:
 		}
 	}
 
+	// Try to make copy of the stored value.
+	// If this container is empty or if stored type isn't copyable - empty container is returned.
+	fn try_copy( this ) : any
+	{
+		if( is_nullptr(ptr_) )
+		{
+			return any();
+		}
+
+		return unsafe( $>(ptr_).try_copy() );
+	}
+
 private:
 	// Use for storage a polymorph class - to use polymorph cast and virtual destructor.
-	class any_storage_interface interface {}
+	class any_storage_interface interface
+	{
+	public:
+		// Copy if copyable, returns empty container if can't copy.
+		fn virtual pure try_copy( this ) : any;
+	}
 
 	template</type T/>
 	class any_storage : any_storage_interface
@@ -163,6 +180,18 @@ private:
 		fn constructor( T mut value )
 			( value_= move(value) )
 		{}
+
+		fn virtual final try_copy( this ) : any
+		{
+			static_if( typeinfo</T/>.is_copy_constructible )
+			{
+				return any( value_ );
+			}
+			else
+			{
+				return any();
+			}
+		}
 
 	public:
 		T value_;

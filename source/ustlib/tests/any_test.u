@@ -2,6 +2,9 @@
 import "../imports/any.u"
 import "../imports/string.u"
 
+class NonCopyableClass {}
+static_assert( !typeinfo</ NonCopyableClass />.is_copy_constructible );
+
 fn nomangle main() : i32
 {
 	{
@@ -49,6 +52,34 @@ fn nomangle main() : i32
 
 		var ust::string8 s= move(a).try_move</ust::string8/>();
 		halt if( s != "Ficket Euch!" );
+	}
+	{ // try_copy for empty container.
+		var ust::any a;
+		halt if( !a.empty() );
+
+		var ust::any a_copy= a.try_copy();
+		halt if( !a_copy.empty() );
+	}
+	{ // try_copy for copyable value.
+		var ust::any a( 852u );
+		halt if( a.empty() );
+
+		var ust::any mut a_copy= a.try_copy();
+		halt if( a_copy.empty() );
+
+		// Modify copy.
+		a_copy.try_get</u32/>()= 234646u;
+		// Original value should remain unchanged.
+		halt if( a.try_get</u32/>() != 852u );
+	}
+	{ // try_copy for non-copyable value.
+		var ust::any a( NonCopyableClass() );
+		halt if( a.empty() );
+		halt if( !a.has</NonCopyableClass/>() );
+
+		var ust::any a_copy= a.try_copy();
+		halt if( !a_copy.empty() );
+		halt if( a_copy.has</NonCopyableClass/>() );
 	}
 
 	return 0;
