@@ -3,8 +3,28 @@ import "../imports/any.u"
 import "../imports/string.u"
 import "../imports/shared_ptr.u"
 
+// "any" is default-constructible (with default empty state).
+static_assert( typeinfo</ust::any/>.is_default_constructible );
+static_assert( typeinfo</ust::any_non_sync/>.is_default_constructible );
+
+// Can't copy "any".
+static_assert( !typeinfo</ust::any/>.is_copy_constructible );
+static_assert( !typeinfo</ust::any_non_sync/>.is_copy_constructible );
+static_assert( !typeinfo</ust::any/>.is_copy_assignable );
+static_assert( !typeinfo</ust::any_non_sync/>.is_copy_assignable );
+
+// Can't compare "any" values.
+static_assert( !typeinfo</ust::any/>.is_equality_comparable );
+static_assert( !typeinfo</ust::any_non_sync/>.is_equality_comparable );
+
+// "any" is not "non_sync".
 static_assert( !non_sync</ ust::any /> );
+// But "any_non_sync" is "non_sync" and can store "non_sync" types.
 static_assert( non_sync</ ust::any_non_sync /> );
+
+// "any" has pointer size.
+static_assert( typeinfo</ust::any/>.size_of == typeinfo</$(byte8)/>.size_of );
+static_assert( typeinfo</ust::any_non_sync/>.size_of == typeinfo</$(byte8)/>.size_of );
 
 class NonCopyableClass {}
 static_assert( !typeinfo</ NonCopyableClass />.is_copy_constructible );
@@ -114,6 +134,9 @@ fn nomangle main() : i32
 		var ust::any a( "Sir Schwanzelot" ); // Stores [ char8, 15 ]
 		halt if( a.empty() );
 		halt if( a.has</ ust::string8 />() );
+		halt if( a.has</ char8 />() );
+		halt if( a.has</ [ char8, 14 ] />() );
+		halt if( a.has</ [ byte8, 15 ] />() );
 		halt if( !a.has</ [ char8, 15 ] />() );
 		halt if( !a.get</ ust::string8 />().empty() );
 		halt if( a.try_get</ [ char8, 15 ] />() != "Sir Schwanzelot" );
@@ -126,7 +149,15 @@ fn nomangle main() : i32
 		halt if( !a.get</ ABase />().empty() );
 		halt if( a.get</ BDerived />().empty() );
 	}
+	{ // "any" storing value of type "void" is different from empty "any".
+		var ust::any a( void() );
+		halt if( a.empty() );
+		halt if( !a.has</void/>() );
+		halt if( a.get</void/>().empty() );
+	}
 	{ // any_non_sync for non_sync type.
+		static_assert( non_sync</ ust::shared_ptr_mut</i32/> /> );
+
 		var ust::any_non_sync a( ust::make_shared_ptr( 77 ) );
 
 		halt if( !a.has</ ust::shared_ptr_mut</i32/> />() );
