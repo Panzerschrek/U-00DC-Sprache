@@ -111,7 +111,7 @@ public:
 
 	// Get reference to stored value of given type. Halts if container doesn't store a value of this type.
 	template</ type T />
-	fn try_get( this ) : T&
+	fn try_get( this ) : T& @( reference_notation::return_references::param0 )
 	{
 		halt if( is_nullptr(ptr_) );
 		return polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) ).try_deref().value_;
@@ -119,7 +119,7 @@ public:
 
 	// Get reference to stored value of given type. Halts if container doesn't store a value of this type.
 	template</ type T />
-	fn try_get( mut this ) : T &mut
+	fn try_get( mut this ) : T &mut @( reference_notation::return_references::param0 )
 	{
 		halt if( is_nullptr(ptr_) );
 		return polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) ).try_deref().value_;
