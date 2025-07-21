@@ -60,7 +60,7 @@ public:
 
 		unsafe
 		{
-			call_destructor( $>(ptr_) ); // Since we have reference to polymorph base class, virtual call should be performed here.
+			$>(ptr_).destructor(); // Since we have reference to polymorph base class, virtual destructor call should be performed here.
 			memory_free( ptr_cast_to_byte8( ptr_ ) );
 		}
 	}
@@ -75,7 +75,7 @@ public:
 
 		unsafe
 		{
-			call_destructor( $>(ptr_) ); // Since we have reference to polymorph base class, virtual call should be performed here.
+			$>(ptr_).destructor(); // Since we have reference to polymorph base class, virtual destructor call should be performed here.
 			memory_free( ptr_cast_to_byte8( ptr_ ) );
 			ptr_= nullptr</ any_storage_interface />();
 		}
@@ -178,7 +178,7 @@ public:
 				ptr_cast_to_byte8( $<(stored_value) ),
 				typeinfo</T/>.size_of );
 
-			// Free memory, but don't call destructor.
+			// Free memory, but don't call destructor (since value was moved).
 			memory_free( ptr_cast_to_byte8( ptr_ ) );
 			ptr_= nullptr</any_storage_interface/>();
 
@@ -199,10 +199,9 @@ public:
 	}
 
 private:
-
 	type this_type= any_base</allow_storing_non_sync_types/>;
 
-	// Use for storage a polymorph class - to use polymorph cast and virtual destructor.
+	// Use for storage a polymorph class - to be able to use polymorph cast and virtual destructor.
 	class any_storage_interface interface non_sync( allow_storing_non_sync_types )
 	{
 	public:
@@ -211,7 +210,7 @@ private:
 	}
 
 	template</type T/>
-	class any_storage : any_storage_interface non_sync( allow_storing_non_sync_types )
+	class any_storage final : any_storage_interface non_sync( allow_storing_non_sync_types )
 	{
 	public:
 		fn constructor( T mut value )
