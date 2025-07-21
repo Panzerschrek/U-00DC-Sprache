@@ -125,6 +125,33 @@ public:
 		return opt_ref.try_deref().value_;
 	}
 
+	// Try to move value out of the container. Halts, if it's empty or if it doesn't contain value of specified type.
+	template</ type T />
+	fn nodiscard try_move( byval mut this ) : T
+	{
+		halt if( is_nullptr(ptr_) );
+
+		auto opt_ref= polymorph_cast</ any_storage</T/> />( unsafe( $>(ptr_) ) );
+
+		var T &mut stored_value= opt_ref.try_deref().value_; // Halts if contains wrong type.
+
+		unsafe
+		{
+			var T mut result= uninitialized;
+			memory_copy_aligned(
+				typeinfo</T/>.align_of,
+				ptr_cast_to_byte8( $<(result) ),
+				ptr_cast_to_byte8( $<(stored_value) ),
+				typeinfo</T/>.size_of );
+
+			// Free memory, but don't call destructor.
+			memory_free( ptr_cast_to_byte8( ptr_ ) );
+			ptr_= nullptr</any_storage_base/>();
+
+			return result;
+		}
+	}
+
 private:
 	// Use for storage a polymorph class - to use polymorph cast and virtual destructor.
 	class any_storage_base interface {}

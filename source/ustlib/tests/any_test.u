@@ -1,5 +1,6 @@
 //##success_test
 import "../imports/any.u"
+import "../imports/string.u"
 
 fn nomangle main() : i32
 {
@@ -40,6 +41,14 @@ fn nomangle main() : i32
 		a.reset();
 		halt if( !a.empty() );
 		halt if( !a.get</char8/>().empty() );
+	}
+	{ // Can move value oof of the any container.
+
+		var ust::any mut a( ust::string8( "Ficket Euch!" ) );
+		halt if( !a.has</ust::string8/>() );
+
+		var ust::string8 s= move(a).try_move</ust::string8/>();
+		halt if( s != "Ficket Euch!" );
 	}
 
 	return 0;
