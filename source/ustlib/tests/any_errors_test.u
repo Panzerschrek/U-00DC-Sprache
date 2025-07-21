@@ -1,0 +1,26 @@
+//##fail_test
+import "../imports/any.u"
+
+struct StructWithReference{ i32& x; }
+fn nomangle main() : i32
+{
+	{ // Any isn't copyable.
+		var ust::any a;
+		var ust::any a_copy= a; //##expect_error CopyConstructValueOfNoncopyableType
+	}
+	{ // Any isn't equality-comparable.
+		var ust::any a, b;
+		auto eq= a == b; //##expect_error OperationNotSupportedForThisType
+	}
+	{ // Can't store types with references inside in "any".
+		var i32 x= 0;
+		var ust::any a( StructWithReference{ .x= x } ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Can't store types with references inside in "any".
+		var i32 x= 0;
+		var ust::any mut a;
+		a.reset( StructWithReference{ .x= x } ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+
+	return 0;
+}

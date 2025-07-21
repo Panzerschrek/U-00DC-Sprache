@@ -14,9 +14,9 @@ public:
 	{
 	}
 
-	// TODO - disable it for types with references inside.
 	template</type T/>
-	fn constructor( T mut value )
+	fn enable_if( typeinfo</T/>.reference_tag_count == 0s )
+	constructor( T mut value )
 		( ptr_= zero_init )
 	{
 		type storage= any_storage</T/>;
@@ -64,7 +64,8 @@ public:
 	}
 
 	template</type T/>
-	fn reset( mut this, T mut value )
+	fn enable_if( typeinfo</T/>.reference_tag_count == 0s )
+	reset( mut this, T mut value )
 	{
 		// Move-assign newly-created instanse of "any" to "this".
 		this= any( move(value) );
