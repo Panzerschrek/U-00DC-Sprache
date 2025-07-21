@@ -14,6 +14,24 @@ public:
 	{
 	}
 
+	// TODO - disable it for types with references inside.
+	template</type T/>
+	fn constructor( T mut value )
+		( ptr_= zero_init )
+	{
+		type storage= any_storage</T/>;
+
+		unsafe
+		{
+			var $(byte8) ptr= memory_allocate( typeinfo</storage/>.size_of );
+
+			var storage &mut ptr_to_storage= cast_ref_unsafe</storage/>( $>(ptr) );
+			move_into_uninitialized( ptr_to_storage, storage( move(value) ) );
+
+			ptr_= $<( cast_ref</any_storage_base/>( ptr_to_storage ) );
+		}
+	}
+
 	// Doesn't have constructor and copy-assignment operator, since not any type is copyable.
 
 	fn destructor()
@@ -30,21 +48,18 @@ public:
 		}
 	}
 
-	// TODO - disable it for types with references inside.
-	template</type T/>
-	fn constructor( T mut value )
-		( ptr_= zero_init )
+	fn reset( mut this )
 	{
-		type storage= any_storage</T/>;
+		if( is_nullptr(ptr_) )
+		{
+			return;
+		}
 
 		unsafe
 		{
-			var $(byte8) ptr= memory_allocate( typeinfo</storage/>.size_of );
-
-			var storage &mut ptr_to_storage= cast_ref_unsafe</storage/>( $>(ptr) );
-			move_into_uninitialized( ptr_to_storage, storage( move(value) ) );
-
-			ptr_= $<( cast_ref</any_storage_base/>( ptr_to_storage ) );
+			call_destructor( $>(ptr_) ); // Since we have reference to polymorph base class, virtual call should be performed here.
+			memory_free( ptr_cast_to_byte8( ptr_ ) );
+			ptr_= nullptr</ any_storage_base />();
 		}
 	}
 

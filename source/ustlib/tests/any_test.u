@@ -32,6 +32,15 @@ fn nomangle main() : i32
 		a.get</f32/>().try_deref()= 74258.1f;
 		halt if( a.get</f32/>().try_deref() != 74258.1f );
 	}
+	{ // Can reset.
+		var ust::any mut a( 'F' );
+		halt if( a.empty() );
+		halt if( a.try_get</char8/>() != 'F' );
+
+		a.reset();
+		halt if( !a.empty() );
+		halt if( !a.get</char8/>().empty() );
+	}
 
 	return 0;
 }
