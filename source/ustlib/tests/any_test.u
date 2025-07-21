@@ -20,6 +20,9 @@ struct SharedPtrHolder
 	}
 }
 
+class ABase polymorph {}
+class BDerived : ABase {}
+
 fn nomangle main() : i32
 {
 	{
@@ -106,6 +109,22 @@ fn nomangle main() : i32
 		var ust::any a_copy= a.try_copy();
 		halt if( !a_copy.empty() );
 		halt if( a_copy.has</NonCopyableClass/>() );
+	}
+	{ // Specifying exact stored type is required.
+		var ust::any a( "Sir Schwanzelot" ); // Stores [ char8, 15 ]
+		halt if( a.empty() );
+		halt if( a.has</ ust::string8 />() );
+		halt if( !a.has</ [ char8, 15 ] />() );
+		halt if( !a.get</ ust::string8 />().empty() );
+		halt if( a.try_get</ [ char8, 15 ] />() != "Sir Schwanzelot" );
+	}
+	{ // Specifying exact stored type is required, polymorph casts aren't possible.
+		var ust::any a( BDerived() );
+		halt if( a.empty() );
+		halt if( a.has</ ABase />() );
+		halt if( !a.has</ BDerived />() );
+		halt if( !a.get</ ABase />().empty() );
+		halt if( a.get</ BDerived />().empty() );
 	}
 	{ // any_non_sync for non_sync type.
 		var ust::any_non_sync a( ust::make_shared_ptr( 77 ) );
