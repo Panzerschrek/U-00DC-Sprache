@@ -28,7 +28,7 @@ public:
 			var storage &mut ptr_to_storage= cast_ref_unsafe</storage/>( $>(ptr) );
 			move_into_uninitialized( ptr_to_storage, storage( move(value) ) );
 
-			ptr_= $<( cast_ref</any_storage_base/>( ptr_to_storage ) );
+			ptr_= $<( cast_ref</any_storage_interface/>( ptr_to_storage ) );
 		}
 	}
 
@@ -59,7 +59,7 @@ public:
 		{
 			call_destructor( $>(ptr_) ); // Since we have reference to polymorph base class, virtual call should be performed here.
 			memory_free( ptr_cast_to_byte8( ptr_ ) );
-			ptr_= nullptr</ any_storage_base />();
+			ptr_= nullptr</ any_storage_interface />();
 		}
 	}
 
@@ -146,7 +146,7 @@ public:
 
 			// Free memory, but don't call destructor.
 			memory_free( ptr_cast_to_byte8( ptr_ ) );
-			ptr_= nullptr</any_storage_base/>();
+			ptr_= nullptr</any_storage_interface/>();
 
 			return result;
 		}
@@ -154,10 +154,10 @@ public:
 
 private:
 	// Use for storage a polymorph class - to use polymorph cast and virtual destructor.
-	class any_storage_base interface {}
+	class any_storage_interface interface {}
 
 	template</type T/>
-	class any_storage : any_storage_base
+	class any_storage : any_storage_interface
 	{
 	public:
 		fn constructor( T mut value )
@@ -169,7 +169,7 @@ private:
 	}
 
 private:
-	$(any_storage_base) ptr_;
+	$(any_storage_interface) ptr_;
 }
 
 } // namespace ust
