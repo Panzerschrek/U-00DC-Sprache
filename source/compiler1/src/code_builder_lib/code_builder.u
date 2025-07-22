@@ -2137,13 +2137,14 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names
 				// Heap allocation block.
 				LLVMAppendExistingBasicBlock( function_context.llvm_function, heap_allocation_block );
 				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, heap_allocation_block );
-				LLVMBuildCall2(
+				var LLVMValueRef free_call= LLVMBuildCall2(
 					function_context.llvm_ir_builder,
 					U1_GetFunctionType( free_function_ ),
 					free_function_,
 					$<(ptr_for_free),
 					1u,
 					g_null_string );
+				LLVMSetInstructionCallConv( free_call, LLVMGetFunctionCallConv( free_function_ ) );
 				LLVMBuildBr( function_context.llvm_ir_builder, end_block );
 
 				// End block.

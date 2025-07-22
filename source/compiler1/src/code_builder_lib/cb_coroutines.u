@@ -351,6 +351,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 		MarkInstructionWithEmptyMetadata( coro_frame_size, "u_coro_block" );
 
 		var LLVMValueRef coro_frame_memory_allocated= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( malloc_function_ ), malloc_function_, $<(coro_frame_size), 1u, "coro_frame_memory_allocated\0"[0] );
+		LLVMSetInstructionCallConv( coro_frame_memory_allocated, LLVMGetFunctionCallConv( malloc_function_ ) );
 
 		LLVMBuildBr( function_context.llvm_ir_builder, block_coro_begin );
 
@@ -391,6 +392,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_need_to_free );
 
 		var LLVMValueRef free_call= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( free_function_ ), free_function_, $<(mem_for_free), 1u, g_null_string );
+		LLVMSetInstructionCallConv( free_call, LLVMGetFunctionCallConv( free_function_ ) );
 		MarkInstructionWithEmptyMetadata( free_call, "u_coro_block" );
 		LLVMBuildBr( function_context.llvm_ir_builder, function_context.coro_suspend_bb );
 
