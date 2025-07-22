@@ -108,6 +108,17 @@ struct RawPointerType
 	}
 }
 
+enum CallingConvention
+{
+	Default,
+	C,
+	Fast,
+	Cold,
+	System,
+}
+
+fn StringToCallingConvention( ust::string_view8 s ) : ust::optional</CallingConvention/>;
+
 struct FunctionType
 {
 	// Inner types.
@@ -144,7 +155,7 @@ struct FunctionType
 	Type return_type;
 	ValueType return_value_type;
 
-	LLVMCallConvID calling_convention = LLVMCallConv::C;
+	CallingConvention calling_convention = CallingConvention::Default;
 	bool is_unsafe= false;
 
 	ParamReferences return_references;
@@ -860,7 +871,7 @@ public:
 		ValueType return_value_type;
 
 		bool is_unsafe;
-		LLVMCallConvID calling_convention;
+		CallingConvention calling_convention;
 
 		struct Param
 		{

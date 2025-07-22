@@ -681,7 +681,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		.return_type( TemplateSignatureParam::Type() ),
 		.is_unsafe= signature_param.is_unsafe,
-		.calling_convention= GetLLVMCallingConvention( signature_param.calling_convention, names_scope, signature_param.src_loc ),
+		.calling_convention= PrepareCallingConvention( signature_param.calling_convention, names_scope, signature_param.src_loc ),
 		.return_value_type= ValueType::Value,
 	};
 

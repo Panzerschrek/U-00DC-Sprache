@@ -90,25 +90,37 @@ fn ToString( FunctionType& function_type ) : ust::string8
 		result+= KeywordToString( Keyword::unsafe_ );
 	}
 
-	if( function_type.calling_convention != LLVMCallConv::C )
+	switch( function_type.calling_convention )
 	{
-		result+= KeywordToString( Keyword::call_conv_ );
-		result+= " (\"";
-
-		if( function_type.calling_convention == LLVMCallConv::Fast )
+		CallingConvention::Default -> {},
+		CallingConvention::C ->
 		{
+			result+= KeywordToString( Keyword::call_conv_ );
+			result+= " (\"";
+			result+= "C";
+			result+= "\")";
+		},
+		CallingConvention::Fast ->
+		{
+			result+= KeywordToString( Keyword::call_conv_ );
+			result+= " (\"";
 			result+= "fast";
-		}
-		if( function_type.calling_convention == LLVMCallConv::Cold )
+			result+= "\")";
+		},
+		CallingConvention::Cold ->
 		{
+			result+= KeywordToString( Keyword::call_conv_ );
+			result+= " (\"";
 			result+= "cold";
-		}
-		if( function_type.calling_convention == LLVMCallConv::X86Stdcall )
+			result+= "\")";
+		},
+		CallingConvention::System ->
 		{
+			result+= KeywordToString( Keyword::call_conv_ );
+			result+= " (\"";
 			result+= "system";
-		}
-
-		result+= "\")";
+			result+= "\")";
+		},
 	}
 
 	result+= " : ";
@@ -184,6 +196,32 @@ op FunctionType::ReferencePollution::<=>(ReferencePollution& l, ReferencePolluti
 		return l.dst <=> r.dst;
 	}
 	return l.src <=> r.src;
+}
+
+fn StringToCallingConvention( ust::string_view8 s ) : ust::optional</CallingConvention/>
+{
+	if( s == "default" || s == "Ü" )
+	{
+		return CallingConvention::Default;
+	}
+	if( s == "C" )
+	{
+		return CallingConvention::C;
+	}
+	if( s == "fast" )
+	{
+		return CallingConvention::Fast;
+	}
+	if( s == "cold" )
+	{
+		return CallingConvention::Cold;
+	}
+	if( s == "system" )
+	{
+		return CallingConvention::System;
+	}
+
+	return ust::null_optional;
 }
 
 fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool

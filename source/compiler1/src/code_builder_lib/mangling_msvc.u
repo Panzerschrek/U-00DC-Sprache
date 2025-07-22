@@ -1065,15 +1065,19 @@ fn MakeNullTerminatedString( ust::string8 mut str ) : ust::string8
 	return str;
 }
 
-fn GetCallingConventionName( LLVMCallConvID cc ) : ust::string_view8
+fn GetCallingConventionName( CallingConvention calling_convention ) : ust::string_view8
 {
-	switch(cc)
+	switch( calling_convention )
 	{
-		LLVMCallConv::C -> { return "A"; },
-		LLVMCallConv::Fast -> { return "I"; },
-		LLVMCallConv::Cold -> { return "U"; },
-		LLVMCallConv::X86Stdcall -> { return "G"; },
-		default -> { /* Unhandled convention */ halt; },
+		CallingConvention::Default -> { return "A"; }, // __cdecl
+		CallingConvention::C -> { return "B"; }, // __export __cdecl. "export" here has almost no meaning, just use it to distinguish Ü and C calling conventions.
+		CallingConvention::Fast -> { return "I"; }, // __fastcall
+		CallingConvention::Cold -> { return "U"; }, // preserve most
+		CallingConvention::System ->
+		{
+			// Use "G" (normally used for x86 "stdcall") in all cases - since we need 1 to 1 mangling of Ü calling conventions regardless of underlying actual calling conventions.
+			return "G";
+		},
 	}
 }
 

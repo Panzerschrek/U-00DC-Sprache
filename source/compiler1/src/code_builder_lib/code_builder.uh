@@ -321,11 +321,13 @@ private:
 
 	fn FunctionTypeToPointer( mut this, FunctionType function_type ) : FunctionPointerType;
 
-	fn GetLLVMCallingConvention(
+	fn PrepareCallingConvention(
 		this,
 		ust::optional</ust::string8/>& calling_convention_name,
 		NamesScopePtr& names_scope,
-		SrcLoc& src_loc ) : LLVMCallConvID;
+		SrcLoc& src_loc ) : CallingConvention;
+
+	fn GetLLVMCallingConvention( this, CallingConvention calling_convention ) : LLVMCallConvID;
 
 	// Requires return type to be complete.
 	fn FunctionTypeIsSRet( FunctionType& function_type ) : bool;

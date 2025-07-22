@@ -604,7 +604,7 @@ fn CodeBuilder::PrepareFunction(
 		{
 			REPORT_ERROR( VirtualCoroutine, names_scope_ptr, function_declaration.src_loc )
 		}
-		if( function_type.calling_convention != LLVMCallConv::C )
+		if( function_type.calling_convention != CallingConvention::Default )
 		{
 			REPORT_ERROR( NonDefaultCallingConventionForCoroutine, names_scope_ptr, function_declaration.src_loc )
 		}
@@ -717,7 +717,7 @@ fn CodeBuilder::PrepareFunction(
 	}
 
 	// Check calling convention for methods.
-	if( function_variable.t.calling_convention != LLVMCallConv::C &&
+	if( function_variable.t.calling_convention != CallingConvention::Default &&
 		( function_variable.is_this_call || function_declaration.operator != OverloadedOperator::None ) )
 	{
 		REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope_ptr, function_declaration.src_loc )
@@ -2478,7 +2478,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 			lazy_function.name_mangled.front(),
 			GetLLVMFunctionType( function_variable.t ) ) );
 
-	unsafe( LLVMSetFunctionCallConv( llvm_function, function_variable.t.calling_convention ) );
+	unsafe( LLVMSetFunctionCallConv( llvm_function, GetLLVMCallingConvention( function_variable.t.calling_convention ) ) );
 
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )

@@ -999,7 +999,8 @@ fn CodeBuilder::BuildExpressionCodeImpl(
 
 	var ust::string8 name_nt= external_function_access.name + "\0";
 
-	var LLVMTypeRef function_llvm_type= GetLLVMFunctionType( function_pointer_type.try_deref().function_type );
+	var FunctionType& function_type= function_pointer_type.try_deref().function_type;
+	var LLVMTypeRef function_llvm_type= GetLLVMFunctionType( function_type );
 
 	var LLVMValueRef mut function= LLVMValueRef::Null;
 
@@ -1016,6 +1017,7 @@ fn CodeBuilder::BuildExpressionCodeImpl(
 	else
 	{
 		function= unsafe( LLVMAddFunction( module_, name_nt.front(), function_llvm_type ) );
+		unsafe( LLVMSetFunctionCallConv( function, GetLLVMCallingConvention( function_type.calling_convention ) ) );
 	}
 
 	// Return value of function pointer type.
@@ -4862,7 +4864,7 @@ fn CodeBuilder::DoCallFunction(
 				llvm_args.data(), u32(llvm_args.size()),
 				g_null_string ) );
 
-		unsafe( LLVMSetInstructionCallConv( call_result, function_type.calling_convention ) );
+		unsafe( LLVMSetInstructionCallConv( call_result, GetLLVMCallingConvention( function_type.calling_convention ) ) );
 
 		if( !is_function && function_type.return_value_type != ValueType::Value )
 		{
