@@ -913,6 +913,7 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 			auto mut v= async_func_variable.llvm_value;
 			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( destructor_ );
 			var LLVMValueRef call_instruction= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( llvm_function ), llvm_function, $<(v), 1u, g_null_string ) );
+			unsafe( LLVMSetInstructionCallConv( call_instruction, GetLLVMCallingConvention( destructor_.t.calling_convention ) ) );
 
 			MarkInstructionWithEmptyMetadata( call_instruction, "u_await_destructor_call" );
 		}
