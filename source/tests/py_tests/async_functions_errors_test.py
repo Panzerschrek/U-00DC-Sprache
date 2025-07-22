@@ -317,9 +317,11 @@ def NonDefaultCallingConventionForCoroutine_ForAsyncFunction_Test2():
 
 def NonDefaultCallingConventionForCoroutine_ForAsyncFunction_Test3():
 	c_program_text= """
-		fn async Foo() call_conv("C") : i32 { return 0; } // Ok - "C" is default calling convention.
+		fn async Foo() call_conv("C") : i32 { return 0; } // "C" is not default calling convention.
 	"""
-	tests_lib.build_program( c_program_text )
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NonDefaultCallingConventionForCoroutine", 2 ) )
 
 
 def VirtualAsyncFunction_Test0():
