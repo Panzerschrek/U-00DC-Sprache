@@ -1,6 +1,6 @@
 import "../../ustlib/imports/stdout.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	ust::stdout_print( "Interpreter compiler prelude test.\n" );
 

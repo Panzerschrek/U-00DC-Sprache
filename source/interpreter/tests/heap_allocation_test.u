@@ -1,7 +1,7 @@
 import "../../ustlib/imports/stdout.u"
 import "../../ustlib/imports/string.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	ust::stdout_print( ust::string8( "Interpreter test - create long string (heap-allocated).\n" ).range() );
 	return 0;

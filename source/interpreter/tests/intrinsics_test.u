@@ -1,7 +1,7 @@
 import "../../ustlib/imports/stdout.u"
 import "../../ustlib/imports/checked_math.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	ust::add_overflow_check_halt( 8, -7 );
 	ust::add_overflow_check_halt( 17u, 656u );
