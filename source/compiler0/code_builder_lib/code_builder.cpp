@@ -645,7 +645,10 @@ void CodeBuilder::TryCallCopyConstructor(
 
 	// Call it
 	if( !function_context.is_functionless_context )
-		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *constructor ), { this_, src } );
+	{
+		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *constructor ), { this_, src } );
+		call_instruction->setCallingConv( GetLLVMCallingConvention( constructor->type.calling_convention ) );
+	}
 }
 
 void CodeBuilder::GenerateLoop(
@@ -788,7 +791,8 @@ void CodeBuilder::CallDestructor(
 		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
 
 		const FunctionVariable& destructor= destructors->functions.front();
-		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( destructor ), { ptr } );
+		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( destructor ), { ptr } );
+		call_instruction->setCallingConv( GetLLVMCallingConvention( destructor.type.calling_convention ) );
 	}
 	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{

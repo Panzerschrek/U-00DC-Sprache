@@ -860,6 +860,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& functio
 
 		const FunctionVariable& destructor= destructors->functions.front();
 		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( destructor ), { async_func_variable->llvm_value } );
+		call_instruction->setCallingConv( GetLLVMCallingConvention( destructor.type.calling_convention ) );
 
 		call_instruction->setMetadata( llvm::StringRef("u_await_destructor_call"), llvm::MDNode::get( llvm_context_, {} ) );
 

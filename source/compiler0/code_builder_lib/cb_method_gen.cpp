@@ -861,7 +861,8 @@ void CodeBuilder::BuildCopyConstructorPart(
 			function_context.has_non_constexpr_operations_inside= true;
 
 		// Call it.
-		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated(*constructor), { dst, src } );
+		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated(*constructor), { dst, src } );
+		call_instruction->setCallingConv( GetLLVMCallingConvention( constructor->type.calling_convention ) );
 	}
 	else
 		U_ASSERT(false);
@@ -936,7 +937,8 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 			function_context.has_non_constexpr_operations_inside= true;
 
 		// Call it.
-		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *op ), { dst, src } );
+		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *op ), { dst, src } );
+		call_instruction->setCallingConv( GetLLVMCallingConvention( op->type.calling_convention ) );
 	}
 	else
 		U_ASSERT(false);
@@ -1025,7 +1027,8 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 			function_context.has_non_constexpr_operations_inside= true;
 
 		// Call it.
-		const auto eq= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *op ), { l_address, r_address } );
+		llvm::CallInst* const eq= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *op ), { l_address, r_address } );
+		eq->setCallingConv( GetLLVMCallingConvention( op->type.calling_convention ) );
 
 		const auto next_bb= llvm::BasicBlock::Create( llvm_context_ );
 
