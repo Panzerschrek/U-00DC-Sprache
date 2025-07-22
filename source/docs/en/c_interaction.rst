@@ -55,19 +55,22 @@ It's specified after function parameters list and after ``unsafe`` (if it is pre
    
    var (fn() call_conv("C")) ptr = Foo;
 
-There are following calling convention names: ``C``, ``default``, ``Ü``, ``fast``, ``cold``, ``system``.
+There are following calling convention names: ``default``, ``Ü``, ``C``, ``fast``, ``cold``, ``system``.
 
-``C`` is the default calling convention that is used in C and C++.
-``default`` and ``Ü`` are aliases for ``C``.
-If no calling convention is specified it is assumed to be ``C``.
+``default`` is the default calling convention.
+Functions with no calling convention specified have such convention.
+Some special methods can use only this calling convention.
+``Ü`` is just alias for ``default``, they are equal to each other.
+
+``C`` is the calling convention, that is used in C and C++.
 This calling convention should be generally used for C interaction.
 
 ``fast`` and ``cold`` are calling conventions respectively for fast and compact calls.
 They are not compatible with similar calling conventions in other languages and may be used only in Ü code if this has sense.
 
-``system`` is a platform-dependent alias for calling system functions.
-For most of the platforms it is an alias for the ``C`` calling convention.
-For 32-bit Windows it is an alias for ``stdcall`` calling convention that is used in WinAPI.
+``system`` is the calling convention for calling system functions.
+For most of the platforms it's equivalent to ``C`` calling convention (but doesn't equal to it).
+For 32-bit Windows it's equivalent to ``stdcall`` calling convention, that is used in WinAPI.
 
 *****************************
 *Structs with ordered fields*
