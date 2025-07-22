@@ -666,6 +666,9 @@ std::string Type::ToString() const
 			{
 			case CallingConvention::Default:
 				break;
+			case CallingConvention::C:
+				result+= " call_conv(\"C\")";
+				break;
 			case CallingConvention::Fast:
 				result+= " call_conv(\"fast\")";
 				break;
@@ -806,15 +809,14 @@ bool operator==( const RawPointerType& l, const RawPointerType& r )
 
 std::optional<CallingConvention> StringToCallingConvention( const std::string_view s )
 {
-	if( s == "C" || s == "default" || s == "Ü" )
+	if( s == "default" || s == "Ü" )
 		return CallingConvention::Default;
-
+	if( s == "C" )
+		return CallingConvention::C;
 	if( s == "fast" )
 		return CallingConvention::Fast;
-
 	if( s == "cold" )
 		return CallingConvention::Cold;
-
 	if( s == "system" )
 		return CallingConvention::System;
 

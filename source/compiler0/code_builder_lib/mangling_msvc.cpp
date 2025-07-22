@@ -64,11 +64,13 @@ std::string_view GetCallingConventionName( const CallingConvention calling_conve
 	switch(calling_convention)
 	{
 	case CallingConvention::Default:
-		return "A";
+		return "A"; // __cdecl
+	case CallingConvention::C:
+		return "B";  // __export __cdecl. "export" here has almost no meaning, just use it to distinguish Ü and C calling conventions.
 	case CallingConvention::Fast:
-		return "I";
+		return "I"; // __fastcall
 	case CallingConvention::Cold:
-		return "U";
+		return "U"; // preserve most
 	case CallingConvention::System:
 		// Use "G" (normally used for x86 "stdcall") in all cases - since we need 1 to 1 mangling of Ü calling conventions regardless of underlying actual calling conventions.
 		return "G";

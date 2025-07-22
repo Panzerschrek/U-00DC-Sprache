@@ -712,6 +712,11 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 	{
 	case CallingConvention::Default:
 		break;
+	case CallingConvention::C:
+		// Use non-standard name "C" to call C calling convention (distinct from default).
+		mangler_state.Push( 'U' );
+		mangler_state.PushLengthPrefixed( "C" );
+		break;
 	case CallingConvention::Cold:
 		mangler_state.Push( 'U' );
 		mangler_state.PushLengthPrefixed( "cold" );

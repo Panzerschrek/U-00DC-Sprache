@@ -402,6 +402,8 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const CallingConven
 	{
 	case CallingConvention::Default:
 		return llvm::CallingConv::C;
+	case CallingConvention::C:
+		return llvm::CallingConv::C;
 	case CallingConvention::Fast:
 		return llvm::CallingConv::Fast;
 	case CallingConvention::Cold:

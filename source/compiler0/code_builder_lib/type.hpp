@@ -185,6 +185,7 @@ inline bool operator!=( const RawPointerType& l, const RawPointerType& r ) { ret
 enum class CallingConvention : uint8_t
 {
 	Default,
+	C,
 	Fast,
 	Cold,
 	System,
