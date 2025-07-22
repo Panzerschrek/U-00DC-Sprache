@@ -331,8 +331,9 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 		"coro_frame_size" );
 	coro_frame_size->setMetadata( llvm::StringRef( "u_coro_block" ), llvm::MDNode::get( llvm_context_, {} ) );
 
-	llvm::Value* const coro_frame_memory_allocated=
+	llvm::CallInst* const coro_frame_memory_allocated=
 		function_context.llvm_ir_builder.CreateCall( malloc_func_, { coro_frame_size }, "coro_frame_memory_allocated" );
+	coro_frame_memory_allocated->setCallingConv( malloc_func_->getCallingConv() );
 
 	function_context.llvm_ir_builder.CreateBr( block_coro_begin );
 
@@ -379,7 +380,8 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	// Need to free block.
 	block_need_to_free->insertInto( function_context.function );
 	function_context.llvm_ir_builder.SetInsertPoint( block_need_to_free );
-	llvm::CallInst* free_call= function_context.llvm_ir_builder.CreateCall( free_func_, { mem_for_free } );
+	llvm::CallInst* const free_call= function_context.llvm_ir_builder.CreateCall( free_func_, { mem_for_free } );
+	free_call->setCallingConv( free_func_->getCallingConv() );
 	free_call->setMetadata( llvm::StringRef( "u_coro_block" ), llvm::MDNode::get( llvm_context_, {} ) );
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_suspend_bb );
 

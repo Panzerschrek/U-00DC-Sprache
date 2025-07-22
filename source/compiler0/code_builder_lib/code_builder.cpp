@@ -754,7 +754,8 @@ void CodeBuilder::CallDestructorsImpl(
 			// Heap allocation block.
 			heap_allocation_block->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( heap_allocation_block );
-			function_context.llvm_ir_builder.CreateCall( free_func_, { alloca_info.ptr_for_free } );
+			llvm::CallInst* const free_call= function_context.llvm_ir_builder.CreateCall( free_func_, { alloca_info.ptr_for_free } );
+			free_call->setCallingConv( free_func_->getCallingConv() );
 			function_context.llvm_ir_builder.CreateBr( end_block );
 
 			// End block.
