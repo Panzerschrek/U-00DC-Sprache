@@ -9,7 +9,7 @@ fn nomangle nodiscard U1_BuildProgram(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
+	bool enable_unsed_name_errors ) unsafe call_conv( "C" ) : LLVMModuleRef
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
@@ -39,7 +39,7 @@ fn nomangle U1_BuildProgramWithErrors(
 	LLVMTargetDataRef data_layout,
 	bool enable_unsed_name_errors,
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle data ) unsafe : bool
+	U1_UserHandle data ) unsafe call_conv( "C" ) : bool
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
@@ -63,7 +63,7 @@ fn nomangle U1_BuildProgramWithErrors(
 fn nomangle U1_BuildProgramWithSyntaxErrors(
 	U1_StringView& program_text,
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle data ) unsafe
+	U1_UserHandle data ) unsafe call_conv( "C" )
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
@@ -97,7 +97,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1_LexSyntErrorCallback lex_synt_error_callback,
 	U1_UserHandle lex_synt_error_callback_data,
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle error_processing_data ) unsafe : LLVMModuleRef
+	U1_UserHandle error_processing_data ) unsafe call_conv( "C" ) : LLVMModuleRef
 {
 	var U1::IVfsSharedPtr vfs= ust::make_shared_ptr( U1::ExternalVfsWrapper( vfs_interface ) );
 
@@ -170,7 +170,7 @@ fn nomangle nodiscard U1_BuildMultisourceProgram(
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
+	bool enable_unsed_name_errors ) unsafe call_conv( "C" ) : LLVMModuleRef
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::TransformSourceFiles( source_files, source_file_count ) ) ) );
 	auto source_graph=
@@ -205,7 +205,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
-	U1_UserHandle data ) unsafe : bool
+	U1_UserHandle data ) unsafe call_conv( "C" ) : bool
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::TransformSourceFiles( source_files, source_file_count ) ) ) );
 	auto source_graph=
@@ -234,7 +234,7 @@ fn nomangle nodiscard U1_BuildProgramForLifetimesTest(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
+	bool enable_unsed_name_errors ) unsafe call_conv( "C" ) : LLVMModuleRef
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
@@ -269,7 +269,7 @@ fn nomangle nodiscard U1_BuildProgramForLifetimesTest(
 fn nomangle nodiscard U1_BuildProgramForMSVCManglingTest(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
+	LLVMTargetDataRef data_layout ) unsafe call_conv( "C" ) : LLVMModuleRef
 {
 	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
@@ -547,7 +547,7 @@ public:
 	}
 
 private:
-	fn FillStringCallback( U1_UserHandle user_data, U1_StringView& result_path_normalized ) unsafe
+	fn FillStringCallback( U1_UserHandle user_data, U1_StringView& result_path_normalized ) unsafe call_conv( "C" )
 	{
 		unsafe
 		{
