@@ -1,26 +1,26 @@
 // This file contains some definitions from UNIX (pparticulary Linux) headers, which are used inside the build system.
 // These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
-fn nomangle close( i32 ü__fd ) unsafe : i32;
-fn nomangle dlerror() unsafe : $(char8);
-fn nomangle dlopen( $(char8) ü__file, i32 ü__mode ) unsafe : $(byte8);
-fn nomangle dlsym( $(byte8) ü__handle, $(char8) ü__name ) unsafe : $(byte8);
-fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe : i32;
-fn nomangle pipe( $(i32) ü__pipedes ) unsafe : i32;
-fn nomangle poll( $(pollfd) ü__fds, nfds_t ü__nfds, i32 ü__timeout ) unsafe : i32;
-fn nomangle posix_spawn( $(pid_t) ü__pid, $(char8) ü__path, $(posix_spawn_file_actions_t) ü__file_actions, $(posix_spawnattr_t) ü__attrp, $($(char8)) ü__argv, $($(char8)) ü__envp ) unsafe : i32;
-fn nomangle posix_spawn_file_actions_addclose( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd ) unsafe : i32;
-fn nomangle posix_spawn_file_actions_adddup2( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd, i32 ü__newfd ) unsafe : i32;
-fn nomangle posix_spawn_file_actions_addopen( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd, $(char8) ü__path, i32 ü__oflag, mode_t ü__mode ) unsafe : i32;
-fn nomangle posix_spawn_file_actions_destroy( $(posix_spawn_file_actions_t) ü__file_actions ) unsafe : i32;
-fn nomangle posix_spawn_file_actions_init( $(posix_spawn_file_actions_t) ü__file_actions ) unsafe : i32;
-fn nomangle posix_spawnattr_destroy( $(posix_spawnattr_t) ü__attr ) unsafe : i32;
-fn nomangle posix_spawnattr_init( $(posix_spawnattr_t) ü__attr ) unsafe : i32;
-fn nomangle posix_spawnattr_setflags( $(posix_spawnattr_t) ü_attr, i16 ü__flags ) unsafe : i32;
-fn nomangle posix_spawnp( $(pid_t) ü__pid, $(char8) ü__file, $(posix_spawn_file_actions_t) ü__file_actions, $(posix_spawnattr_t) ü__attrp, $($(char8)) ü__argv, $($(char8)) ü__envp ) unsafe : i32;
-fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe : ssize_t;
-fn nomangle readlink( $(char8) ü__path, $(char8) ü__buf, size_t ü__len ) unsafe : ssize_t;
-fn nomangle waitpid( ü__pid_t ü__pid, $(i32) ü__stat_loc, i32 ü__options ) unsafe : ü__pid_t;
+fn nomangle close( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
+fn nomangle dlerror() unsafe call_conv( "C" ) : $(char8);
+fn nomangle dlopen( $(char8) ü__file, i32 ü__mode ) unsafe call_conv( "C" ) : $(byte8);
+fn nomangle dlsym( $(byte8) ü__handle, $(char8) ü__name ) unsafe call_conv( "C" ) : $(byte8);
+fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe call_conv( "C" ) : i32;
+fn nomangle pipe( $(i32) ü__pipedes ) unsafe call_conv( "C" ) : i32;
+fn nomangle poll( $(pollfd) ü__fds, nfds_t ü__nfds, i32 ü__timeout ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn( $(pid_t) ü__pid, $(char8) ü__path, $(posix_spawn_file_actions_t) ü__file_actions, $(posix_spawnattr_t) ü__attrp, $($(char8)) ü__argv, $($(char8)) ü__envp ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn_file_actions_addclose( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn_file_actions_adddup2( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd, i32 ü__newfd ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn_file_actions_addopen( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd, $(char8) ü__path, i32 ü__oflag, mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn_file_actions_destroy( $(posix_spawn_file_actions_t) ü__file_actions ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn_file_actions_init( $(posix_spawn_file_actions_t) ü__file_actions ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawnattr_destroy( $(posix_spawnattr_t) ü__attr ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawnattr_init( $(posix_spawnattr_t) ü__attr ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawnattr_setflags( $(posix_spawnattr_t) ü_attr, i16 ü__flags ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawnp( $(pid_t) ü__pid, $(char8) ü__file, $(posix_spawn_file_actions_t) ü__file_actions, $(posix_spawnattr_t) ü__attrp, $($(char8)) ü__argv, $($(char8)) ü__envp ) unsafe call_conv( "C" ) : i32;
+fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle readlink( $(char8) ü__path, $(char8) ü__buf, size_t ü__len ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle waitpid( ü__pid_t ü__pid, $(i32) ü__stat_loc, i32 ü__options ) unsafe call_conv( "C" ) : ü__pid_t;
 
 struct pollfd ordered
 {

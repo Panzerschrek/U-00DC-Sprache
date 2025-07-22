@@ -22,7 +22,7 @@ fn AbortHandler( i32 s )
 } // namespace BK
 
 // C library function.
-fn nomangle signal( i32 sig, ( fn( i32 s ) ) handler ) unsafe;
+fn nomangle signal( i32 sig, ( fn( i32 s ) ) handler ) unsafe call_conv( "C" );
 
 // auto constexpr SIGINT = 2;
 // auto constexpr SIGILL = 4;
