@@ -1988,7 +1988,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	llvm::FunctionType* const function_llvm_type= GetLLVMFunctionType( function_pointer_type->function_type );
+	const FunctionType& function_type= function_pointer_type->function_type;
+	llvm::FunctionType* const function_llvm_type= GetLLVMFunctionType( function_type );
 
 	llvm::Function* function= nullptr;
 	if( const auto prev_function= module_->getFunction( external_function_access.name ) )
@@ -2001,12 +2002,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function= prev_function;
 	}
 	else
+	{
 		function=
 			llvm::Function::Create(
 				function_llvm_type,
 				llvm::GlobalValue::ExternalLinkage,
 				external_function_access.name,
 				*module_ );
+
+		function->setCallingConv( GetLLVMCallingConvention( function_type.calling_convention ) );
+	}
 
 	// Return value of function pointer type.
 	const auto result= Variable::Create(
