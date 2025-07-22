@@ -1,7 +1,6 @@
 import "/c_converted.u"
 
-fn SomeLocalFunc( f32 x ){}
-
+fn SomeLocalFunc( f32 x ) call_conv( "C" ) {}
 
 template</ type char_type, size_type size0, size_type size1 />
 fn constexpr string_equals( [ char_type, size0 ]& s0, [ char_type, size1 ]& s1 ) : bool
@@ -68,6 +67,17 @@ fn nomangle main() : i32
 		ExternallyDeclaredFunction( $<(c) );
 	}
 	{
+		static_assert( same_type</ typeof(Function_ZeroArgs), ( fn() unsafe call_conv( "C" ) ) /> );
+		static_assert( same_type</ typeof(Function_ArgVal), fn( i32 x ) unsafe call_conv( "C" ) /> );
+		static_assert( same_type</ typeof(Function_ArgPtr), fn( $(i32) x ) unsafe call_conv( "C" ) /> );
+		static_assert( same_type</ typeof(Function_ArgConstPtr), fn( $(i32) x ) unsafe call_conv( "C" ) /> );
+		static_assert( same_type</ typeof(Function_ArgPtrToPtr), fn( $($(f32)) f ) unsafe call_conv( "C" ) /> );
+		static_assert( same_type</ typeof(Function_RetVal), fn() unsafe call_conv( "C" ) : i32 /> );
+		static_assert( same_type</ typeof(Function_RetPtr), fn() unsafe call_conv( "C" ) : $(i32) /> );
+		static_assert( same_type</ typeof(Function_RetConstPtr), fn() unsafe call_conv( "C" ) : $(i32) /> );
+		static_assert( same_type</ typeof(Function_RetPtrToPtr), fn() unsafe call_conv( "C" ) : $($(f32)) /> );
+	}
+	{
 		static_assert( same_type</ CPP_char8, char8 /> );
 		static_assert( same_type</ CPP_i8 ,  i8 /> );
 		static_assert( same_type</ CPP_u8 ,  u8 /> );
@@ -98,6 +108,7 @@ fn nomangle main() : i32
 			.void_ptr_ptr_field= $<(a_ptr_as_byte8),
 		};
 		unsafe{ s.function_ptr_field( 3.14f ); }
+		static_assert( same_type</ typeof( s.function_ptr_field ), fn( f32 arg0 ) unsafe call_conv( "C" ) : void /> );
 	}
 	{
 		var TypedefedStruct mut s{ .data= zero_init };
@@ -245,10 +256,12 @@ fn nomangle main() : i32
 		// But ising this typedef in combination with pointer should work.
 		var StructWithFunctionTypePtrField s= zero_init;
 		static_assert( typeinfo</ typeof(s.ptr) />.is_function_pointer );
+		static_assert( same_type</ typeof(s.ptr), fn( i32 arg0, $(byte8) arg1 ) unsafe call_conv("C") : i32 /> );
 	}
 
 	// Should translate type alias for function pointer with no information about params.
 	static_assert( typeinfo</FunctionTypedefNoProto/>.is_function_pointer );
+	static_assert( same_type</ FunctionTypedefNoProto, fn() unsafe call_conv("C") : i32 /> );
 
 	// void* should be translated as $(byte8)
 	unsafe
