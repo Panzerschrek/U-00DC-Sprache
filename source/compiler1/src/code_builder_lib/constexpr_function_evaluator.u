@@ -4,7 +4,7 @@ import "constexpr_function_evaluator.uh"
 namespace U1
 {
 
-fn ErrorHandlerFunc( byte8 &mut user_data, $(char8) error_text_start, size_type error_text_size )
+fn ErrorHandlerFunc( byte8 &mut user_data, $(char8) error_text_start, size_type error_text_size ) unsafe call_conv( "C" )
 {
 	unsafe
 	{

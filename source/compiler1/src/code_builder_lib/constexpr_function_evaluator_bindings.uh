@@ -4,10 +4,10 @@ import "llvm_ext.uh"
 
 enum ConstexprFunctionEvaluatorRef : size_type{ Null }
 
-fn nomangle U1_ConstexprFunctionEvaluatorCreate( LLVMTargetDataRef data_layout ) unsafe : ConstexprFunctionEvaluatorRef;
-fn nomangle U1_ConstexprFunctionEvaluatorDestroy( ConstexprFunctionEvaluatorRef constexpr_function_evaluator ) unsafe;
+fn nomangle U1_ConstexprFunctionEvaluatorCreate( LLVMTargetDataRef data_layout ) unsafe call_conv( "C" ) : ConstexprFunctionEvaluatorRef;
+fn nomangle U1_ConstexprFunctionEvaluatorDestroy( ConstexprFunctionEvaluatorRef constexpr_function_evaluator ) unsafe call_conv( "C" );
 
-type ConstexprFunctionEvaluatorErrorHandlerFunc= fn( byte8 &mut user_data, $(char8) error_text_start, size_type error_text_size );
+type ConstexprFunctionEvaluatorErrorHandlerFunc= fn( byte8 &mut user_data, $(char8) error_text_start, size_type error_text_size ) unsafe call_conv( "C" );
 
 fn nomangle U1_ConstexprFunctionEvaluatorEvaluate(
 	ConstexprFunctionEvaluatorRef constexpr_function_evaluator,
@@ -15,4 +15,4 @@ fn nomangle U1_ConstexprFunctionEvaluatorEvaluate(
 	$(LLVMValueRef) args_start,
 	size_type arg_count,
 	ConstexprFunctionEvaluatorErrorHandlerFunc error_handler_func,
-	byte8 &mut user_data ) unsafe : LLVMValueRef;
+	byte8 &mut user_data ) unsafe call_conv( "C" ) : LLVMValueRef;
