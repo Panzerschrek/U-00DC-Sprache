@@ -1095,7 +1095,7 @@ fn get_errno_location() : $(i32)
 		{
 			// "errno" in system C library is accessed via function "__error".
 			// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
-			auto f= import fn</ fn() : $(i32) /> ( "__error" );
+			auto f= import fn</ fn() unsafe call_conv( "C" ) : $(i32) /> ( "__error" );
 			var $(i32) ptr= f();
 			return ptr;
 		}
@@ -1106,7 +1106,7 @@ fn get_errno_location() : $(i32)
 		// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
 		unsafe
 		{
-			auto f= import fn</ fn() : $(i32) /> ( "__errno_location" );
+			auto f= import fn</ fn() unsafe call_conv( "C" ) : $(i32) /> ( "__errno_location" );
 			var $(i32) ptr= f();
 			return ptr;
 		}

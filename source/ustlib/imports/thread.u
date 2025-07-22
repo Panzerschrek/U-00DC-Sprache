@@ -117,7 +117,7 @@ private:
 		return 0u;
 	}
 
-	fn enable_if(!is_windows) thread_function( $(byte8) impl_ptr ) unsafe : $(byte8)
+	fn enable_if(!is_windows) thread_function( $(byte8) impl_ptr ) unsafe call_conv( "C" ) : $(byte8)
 	{
 		unsafe( cast_ref_unsafe</Impl/>( $>(impl_ptr) ) ).run();
 		return nullptr</byte8/>();

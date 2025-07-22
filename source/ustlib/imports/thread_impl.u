@@ -28,7 +28,7 @@ type thread_start_function=
 	type_select</
 		constexpr_string_equals( compiler::target::os, "windows" ),
 		fn( $(byte8) arg ) unsafe call_conv( "system" ) : u32,
-		fn( $(byte8) arg ) unsafe : $(byte8) />;
+		fn( $(byte8) arg ) unsafe call_conv( "C" ) : $(byte8) />;
 
 // Starts a new thread with specified function and its argument.
 // Halts if can't start.

@@ -1,13 +1,13 @@
 // Contents of this file was manually copy-pasted from output of CppHeaderConverter for "semaphore.h" file and sligtly tweaked.
 import "unix.uh"
 
-fn nomangle sem_destroy( $(sem_t) ü__sem ) unsafe : i32;
-fn nomangle sem_init( $(sem_t) ü__sem, i32 ü__pshared, u32 ü__value ) unsafe : i32;
-fn nomangle sem_post( $(sem_t) ü__sem ) unsafe : i32;
-fn nomangle sem_wait( $(sem_t) ü__sem ) unsafe : i32;
+fn nomangle sem_destroy( $(sem_t) ü__sem ) unsafe call_conv( "C" ) : i32;
+fn nomangle sem_init( $(sem_t) ü__sem, i32 ü__pshared, u32 ü__value ) unsafe call_conv( "C" ) : i32;
+fn nomangle sem_post( $(sem_t) ü__sem ) unsafe call_conv( "C" ) : i32;
+fn nomangle sem_wait( $(sem_t) ü__sem ) unsafe call_conv( "C" ) : i32;
 
-fn nomangle sem_open( $(char8) name_nt, i32 flag, mode_t mode, u32 value ) unsafe : $(sem_t);
-fn nomangle sem_close( $(sem_t) ü__sem ) unsafe : i32;
+fn nomangle sem_open( $(char8) name_nt, i32 flag, mode_t mode, u32 value ) unsafe call_conv( "C" ) : $(sem_t);
+fn nomangle sem_close( $(sem_t) ü__sem ) unsafe call_conv( "C" ) : i32;
 
 struct ü_anon_record_12 ordered
 {

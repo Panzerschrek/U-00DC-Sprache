@@ -35,8 +35,8 @@ fn stderr_print( array_view_imut</char8/> str )
 auto constexpr STDOUT_FILENO = 1;
 auto constexpr STDERR_FILENO = 2;
 
-fn nomangle fwrite( $(byte8) data, size_type size, size_type count, FilePtr file_ptr ) : size_type;
-fn nomangle fflush( FilePtr file_ptr ) : i32;
+fn nomangle fwrite( $(byte8) data, size_type size, size_type count, FilePtr file_ptr ) unsafe call_conv( "C" ) : size_type;
+fn nomangle fflush( FilePtr file_ptr ) unsafe call_conv( "C" ) : i32;
 
-type AcrtIobFuncType= fn( i32 x ) : FilePtr;
+type AcrtIobFuncType= fn( i32 x ) unsafe call_conv( "C" ) : FilePtr;
 type FilePtr= $(byte8);
