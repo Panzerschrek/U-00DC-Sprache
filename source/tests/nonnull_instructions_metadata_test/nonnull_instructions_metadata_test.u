@@ -44,7 +44,7 @@ fn nomangle HaltNullReturnReference()
 	halt if( ust::is_nullptr( $<( RetRef() ) ) );
 }
 
-fn nomangle RetRef() : i32 &mut;
+fn nomangle RetRef() call_conv( "C" ) : i32 &mut;
 
 //
 // Case 2 - check inner reference.
@@ -80,7 +80,7 @@ fn nomangle GetValByPtr() : i32
 	return o.try_deref();
 }
 
-fn nomangle RetPtr() : $(i32);
+fn nomangle RetPtr() call_conv( "C" ) : $(i32);
 
 //
 // Case 3 - check return reference.

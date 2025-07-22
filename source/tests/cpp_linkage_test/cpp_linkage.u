@@ -1,25 +1,25 @@
 import "cpp_linkage.uh"
 
 // Extern C++ function
-fn CallCPP( i32 x );
+fn CallCPP( i32 x ) call_conv( "C" );
 
 // Function, exported to C++ module
-fn Do( i32 x ) : f64
+fn Do( i32 x ) call_conv( "C" ) : f64
 {
 	CallCPP( x );
 	return 1.251;
 }
 
-fn NameSpace::Nested()
+fn NameSpace::Nested() call_conv( "C" )
 {
 }
 
-fn TakeS( NameSpace::S &imut s )
+fn TakeS( NameSpace::S &imut s ) call_conv( "C" )
 {
 	CallCPP( i32( typeinfo</typeof(s)/>.size_of ) ); // hack to make "s" used.
 }
 
-fn U32ToStr( u32 mut x, [ char8, 64 ] &mut out_str )
+fn U32ToStr( u32 mut x, [ char8, 64 ] &mut out_str ) call_conv( "C" )
 {
 	auto constexpr zero_char= '0';
 	auto constexpr end_null= '\0';
@@ -48,14 +48,14 @@ fn U32ToStr( u32 mut x, [ char8, 64 ] &mut out_str )
 	out_str[dst]= end_null;
 }
 
-fn CondHalt( bool cond )
+fn CondHalt( bool cond ) call_conv( "C" )
 {
 	halt if( cond );
 }
 
-fn nomangle NoMangleFunctionCPPSide() : i32;
+fn nomangle NoMangleFunctionCPPSide() call_conv( "C" ) : i32;
 
-fn nomangle NoMangleFunction() : i32
+fn nomangle NoMangleFunction() call_conv( "C" ) : i32
 {
 	return NoMangleFunctionCPPSide();
 }

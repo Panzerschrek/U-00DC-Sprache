@@ -2093,8 +2093,8 @@ U_TEST(HeapUsage_Test0)
 
 	static const char c_program_text[]=
 	R"(
-		fn nomangle malloc( size_type size ) unsafe : $(byte8);
-		fn nomangle free( $(byte8) ptr ) unsafe;
+		fn nomangle malloc( size_type size ) unsafe call_conv( "C" ) : $(byte8);
+		fn nomangle free( $(byte8) ptr ) unsafe call_conv( "C" );
 
 		fn Write( $(byte8) addr )
 		{
@@ -2140,8 +2140,8 @@ U_TEST(HeapUsage_Test1)
 
 	static const char c_program_text[]=
 	R"(
-		fn nomangle ust_memory_allocate_impl( size_type size ) unsafe : $(byte8);
-		fn nomangle ust_memory_free_impl( $(byte8) ptr ) unsafe;
+		fn nomangle ust_memory_allocate_impl( size_type size ) unsafe call_conv( "C" ) : $(byte8);
+		fn nomangle ust_memory_free_impl( $(byte8) ptr ) unsafe call_conv( "C" );
 
 		fn Write( $(byte8) addr )
 		{

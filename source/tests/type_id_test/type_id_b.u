@@ -1,6 +1,6 @@
 import "inc.u"
 
-fn nomangle GetSomeClassIdB() : size_type
+fn nomangle GetSomeClassIdB() call_conv( "C" ) : size_type
 {
 	var SomeClass some_class;
 	unsafe
