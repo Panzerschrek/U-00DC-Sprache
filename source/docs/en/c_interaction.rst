@@ -20,7 +20,7 @@ It's also possible to declare a ``nomangle`` prototype for an implemented in C f
 
 .. code-block:: u_spr
 
-   fn nomangle SDL_Quit() : void;
+   fn nomangle SDL_Quit() call_conv( "C" ) : void;
    
    fn MyQuit()
    {
@@ -28,7 +28,7 @@ It's also possible to declare a ``nomangle`` prototype for an implemented in C f
    }
    
    // A function that may be accessed in C code
-   fn nomangle SomeFoo() : i32
+   fn nomangle SomeFoo() call_conv( "C" ) : i32
    {
        return 0;
    }

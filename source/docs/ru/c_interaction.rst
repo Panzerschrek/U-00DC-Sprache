@@ -18,7 +18,7 @@
 
 .. code-block:: u_spr
 
-   fn nomangle SDL_Quit() : void;
+   fn nomangle SDL_Quit() call_conv( "C" ) : void;
    
    fn MyQuit()
    {
@@ -26,7 +26,7 @@
    }
    
    // Функция, доступная в Си коде
-   fn nomangle SomeFoo() : i32
+   fn nomangle SomeFoo() call_conv( "C" ) : i32
    {
        return 0;
    }
