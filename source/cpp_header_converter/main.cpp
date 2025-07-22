@@ -23,19 +23,22 @@ int main( int argc, const char* argv[] )
 	llvm::cl::opt<std::string> output_file_name(
 		"o",
 		llvm::cl::desc("Set output filename"),
-		llvm::cl::value_desc("filename") );
+		llvm::cl::value_desc("filename"),
+		llvm::cl::cat(tool_category) );
 
 	llvm::cl::opt<bool> skip_declarations_from_includes(
 		"skip-declarations-from-includes",
 		llvm::cl::desc("Skip declarations from includes."),
-		llvm::cl::init(false) );
+		llvm::cl::init(false),
+		llvm::cl::cat(tool_category) );
 
 	llvm::cl::list<std::string> force_import(
 		"force-import",
 		llvm::cl::CommaSeparated,
 		llvm::cl::desc("Specify list of files, added to imports section of result file."),
 		llvm::cl::value_desc("file1, file2, fileN,..."),
-		llvm::cl::Optional );
+		llvm::cl::Optional,
+		llvm::cl::cat(tool_category) );
 
 	auto options_parser_opt= clang::tooling::CommonOptionsParser::create( argc, argv, tool_category );
 	if( !options_parser_opt )
