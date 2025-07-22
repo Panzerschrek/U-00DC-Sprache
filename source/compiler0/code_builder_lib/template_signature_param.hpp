@@ -74,7 +74,7 @@ public:
 		ValueType return_value_type= ValueType::Value;
 
 		bool is_unsafe= false;
-		llvm::CallingConv::ID calling_convention= llvm::CallingConv::C;
+		CallingConvention calling_convention= CallingConvention::Default;
 
 		struct Param
 		{

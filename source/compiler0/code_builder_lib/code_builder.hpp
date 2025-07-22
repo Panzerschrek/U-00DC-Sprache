@@ -315,10 +315,13 @@ private:
 
 	// Getting LLVM function type may require building complete types for arguments/return value.
 	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
-	llvm::CallingConv::ID GetLLVMCallingConvention(
+
+	CallingConvention PrepareCallingConvention(
 		const std::optional<std::string>& calling_convention_name,
 		const SrcLoc& src_loc,
 		CodeBuilderErrorsContainer& errors );
+
+	llvm::CallingConv::ID GetLLVMCallingConvention( CallingConvention calling_convention );
 
 	// Requires return type to be complete.
 	static bool FunctionTypeIsSRet( const FunctionType& function_type );

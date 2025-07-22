@@ -1165,7 +1165,7 @@ size_t CodeBuilder::PrepareFunction(
 
 		// Disable non-default calling conventions for this-call methods and operators because of problems with call of generated methods/operators.
 		// But it's fine to use custom calling convention for static methods.
-		if( function_type.calling_convention != llvm::CallingConv::C &&
+		if( function_type.calling_convention != CallingConvention::Default &&
 			( func_variable.is_this_call || func.overloaded_operator != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc );
 
@@ -1194,7 +1194,7 @@ size_t CodeBuilder::PrepareFunction(
 			if( func.type.references_pollution_expression != nullptr )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "References pollution for coroutines." );
 
-			if( function_type.calling_convention != llvm::CallingConv::C )
+			if( function_type.calling_convention != CallingConvention::Default )
 				REPORT_ERROR( NonDefaultCallingConventionForCoroutine, names_scope.GetErrors(), func.type.src_loc );
 
 			// It is too complicated to support virtual coroutines. It is simplier to just forbid such coroutines.
@@ -2485,7 +2485,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 			function_variable.llvm_function->name_mangled,
 			module_.get() );
 
-	llvm_function->setCallingConv( function_type.calling_convention );
+	llvm_function->setCallingConv( GetLLVMCallingConvention( function_type.calling_convention ) );
 
 	// Merge functions with identical code.
 	// We doesn`t need different addresses for different functions.

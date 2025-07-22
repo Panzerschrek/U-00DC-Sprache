@@ -59,22 +59,19 @@ std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 	return "";
 }
 
-std::string_view GetCallingConventionName( const llvm::CallingConv::ID calling_convention )
+std::string_view GetCallingConventionName( const CallingConvention calling_convention )
 {
 	switch(calling_convention)
 	{
-	case llvm::CallingConv::C:
+	case CallingConvention::Default:
 		return "A";
-	case llvm::CallingConv::Fast:
+	case CallingConvention::Fast:
 		return "I";
-	case llvm::CallingConv::Cold:
+	case CallingConvention::Cold:
 		return "U";
-	case llvm::CallingConv::X86_StdCall:
+	case CallingConvention::System:
+		// TODO - enable this only on x86 Windows.
 		return "G";
-	case llvm::CallingConv::X86_ThisCall:
-		return "E";
-	case llvm::CallingConv::X86_VectorCall:
-		return "Q";
 	};
 	U_ASSERT(false);
 	return "A";

@@ -709,17 +709,18 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 
 	switch( function_type.calling_convention )
 	{
-	case llvm::CallingConv::C:
+	case CallingConvention::Default:
 		break;
-	case llvm::CallingConv::Cold:
+	case CallingConvention::Cold:
 		mangler_state.Push( 'U' );
 		mangler_state.PushLengthPrefixed( "cold" );
 		break;
-	case llvm::CallingConv::Fast:
+	case CallingConvention::Fast:
 		mangler_state.Push( 'U' );
 		mangler_state.PushLengthPrefixed( "fast" );
 		break;
-	case llvm::CallingConv::X86_StdCall:
+	case CallingConvention::System:
+		// TODO - enable this only on x86 Windows.
 		mangler_state.Push( 'U' );
 		mangler_state.PushLengthPrefixed( "stdcall" );
 		break;

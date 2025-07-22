@@ -182,6 +182,16 @@ struct RawPointerType
 bool operator==( const RawPointerType& l, const RawPointerType& r );
 inline bool operator!=( const RawPointerType& l, const RawPointerType& r ) { return !( l == r ); }
 
+enum class CallingConvention : uint8_t
+{
+	Default,
+	Fast,
+	Cold,
+	System,
+};
+
+std::optional<CallingConvention> StringToCallingConvention( std::string_view s );
+
 struct FunctionType
 {
 public:
@@ -218,7 +228,7 @@ public:
 	Type return_type;
 	ValueType return_value_type= ValueType::Value;
 	bool unsafe= false;
-	llvm::CallingConv::ID calling_convention= llvm::CallingConv::C;
+	CallingConvention calling_convention= CallingConvention::Default;
 
 	// Tags of returned reference.
 	ReturnReferences return_references;

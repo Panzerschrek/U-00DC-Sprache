@@ -662,12 +662,20 @@ std::string Type::ToString() const
 			if( function.unsafe )
 				result+= " unsafe";
 
-			if( function.calling_convention == llvm::CallingConv::Fast )
+			switch( function.calling_convention )
+			{
+			case CallingConvention::Default:
+				break;
+			case CallingConvention::Fast:
 				result+= " call_conv(\"fast\")";
-			if( function.calling_convention == llvm::CallingConv::Cold )
+				break;
+			case CallingConvention::Cold:
 				result+= " call_conv(\"cold\")";
-			if( function.calling_convention == llvm::CallingConv::X86_StdCall )
+				break;
+			case CallingConvention::System:
 				result+= " call_conv(\"system\")";
+				break;
+			}
 
 			result+= " : ";
 			result+= function.return_type.ToString();
@@ -790,6 +798,27 @@ bool operator==( const ArrayType& l, const ArrayType& r )
 bool operator==( const RawPointerType& l, const RawPointerType& r )
 {
 	return l.element_type == r.element_type;
+}
+
+//
+// CallingConvention
+//
+
+std::optional<CallingConvention> StringToCallingConvention( const std::string_view s )
+{
+	if( s == "C" || s == "default" || s == "Ü" )
+		return CallingConvention::Default;
+
+	if( s == "fast" )
+		return CallingConvention::Fast;
+
+	if( s == "cold" )
+		return CallingConvention::Cold;
+
+	if( s == "system" )
+		return CallingConvention::System;
+
+	return std::nullopt;
 }
 
 //

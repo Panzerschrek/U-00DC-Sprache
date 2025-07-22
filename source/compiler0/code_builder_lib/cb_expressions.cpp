@@ -4406,7 +4406,7 @@ Value CodeBuilder::DoCallFunction(
 			really_function != nullptr ? really_function->getFunctionType() : GetLLVMFunctionType( function_type );
 
 		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( llvm_function_type, function, llvm_args );
-		call_instruction->setCallingConv( function_type.calling_convention );
+		call_instruction->setCallingConv( GetLLVMCallingConvention( function_type.calling_convention ) );
 
 		// In calls via function pointer set "nonnull" attribute for functions returning references.
 		// It is needed only for pointer calls, since regular functions already have "nonnull" attribute on return value.
