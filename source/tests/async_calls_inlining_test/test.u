@@ -20,7 +20,7 @@ fn async nomangle Fun3( u32 x ) : u32
 	return Fun2(x).await - 5u;
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	auto mut f= Fun3( 625412u );
 	loop

@@ -68,7 +68,7 @@ fn DoBytesTest()
 	halt if( ust::volatile_read( x ) != T(IntT(114)) );
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	DoBoolTest();
 

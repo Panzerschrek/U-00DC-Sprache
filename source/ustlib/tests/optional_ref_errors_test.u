@@ -4,7 +4,7 @@ import "../imports/optional_ref.u"
 type IntRefImut= ust::optional_ref_imut</ i32 />;
 type IntRefMut = ust::optional_ref_mut</ i32 />;
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		auto mut x= 0;

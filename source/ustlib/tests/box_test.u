@@ -34,7 +34,7 @@ struct SNonSync non_sync{}
 type SNonSyncBox= ust::box</SNonSync/>; // Should be ok for types with "non_sync" tag
 static_assert( non_sync</SNonSyncBox/> );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// Box have pointer size.
 	static_assert( typeinfo</ ust::box</ BigStruct /> />.size_of == typeinfo</S/>.size_of );

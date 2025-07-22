@@ -29,14 +29,14 @@ import "type_traits.u"
 <?
 	// For Windows use "wmain" - with UTF-16 args.
 	fn nomangle enable_if( ::ust::constexpr_string_equals( compiler::target::os, "windows" ) )
-		wmain( i32 argc, $($(char16)) argv ) unsafe : i32
+		wmain( i32 argc, $($(char16)) argv ) unsafe call_conv( "C" ) : i32
 	{
 		return unsafe( ::ust::main_wrapper_impl( argc, argv, ??main_impl ) );
 	}
 
 	// For non-Windows use just "main" with UTF-8 args.
 	fn nomangle enable_if( !::ust::constexpr_string_equals( compiler::target::os, "windows" ) )
-		main( i32 argc, $($(char8)) argv ) unsafe : i32
+		main( i32 argc, $($(char8)) argv ) unsafe call_conv( "C" ) : i32
 	{
 		return unsafe( ::ust::main_wrapper_impl( argc, argv, ??main_impl ) );
 	}

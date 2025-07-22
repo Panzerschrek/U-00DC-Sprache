@@ -19,7 +19,7 @@ fn generator MultipleValuesGen(u32 max) : u32
 	}
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		auto mut g= EmptyGen();

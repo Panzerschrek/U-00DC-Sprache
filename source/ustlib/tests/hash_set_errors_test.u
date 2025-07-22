@@ -13,7 +13,7 @@ class NonCopyableKey
 
 type BrokenHashSet= ust::hash_set</NonCopyableKey/>; //##expect_error TemplateContext
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Try to mutate set keys.
 		var ust::hash_set</u32/> mut s;

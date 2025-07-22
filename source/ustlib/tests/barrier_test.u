@@ -9,7 +9,7 @@ static_assert( !typeinfo</ ust::barrier />.is_copy_constructible ); // Barriers 
 static_assert( !typeinfo</ ust::barrier />.is_copy_assignable ); // Barriers are non-copyable.
 static_assert( typeinfo</ ust::barrier />.size_of == typeinfo</$(byte8)/>.size_of ); // Barrier class has size of a pointer.
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// Create a bunch of threads, each of them synchronise at a couple of points.
 

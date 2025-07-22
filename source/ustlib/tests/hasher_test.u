@@ -7,7 +7,7 @@ import "../imports/shared_ptr_final.u"
 import "../imports/variant.u"
 import "../imports/vector.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Initial default hasher value is zero.
 		var ust::default_hasher hasher;

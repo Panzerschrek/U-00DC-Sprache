@@ -43,7 +43,7 @@ struct SharedPtrHolder
 class ABase polymorph {}
 class BDerived : ABase {}
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		var ust::any a;

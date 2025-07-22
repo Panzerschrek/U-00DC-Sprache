@@ -94,7 +94,7 @@ fn ResultCheckRetTest() : ust::result</ void, SomeErrorEnum />
 	return void();
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Construct from result.
 		var IntRes res( 55 );

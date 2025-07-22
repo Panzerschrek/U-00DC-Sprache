@@ -18,7 +18,7 @@ struct RM
 
 class C{}
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // constructor does reference-pollution.
 		var i32 mut x= 0;

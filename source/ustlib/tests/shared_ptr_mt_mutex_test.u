@@ -70,7 +70,7 @@ private:
 	u32 b_= 456u;
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Has "empty" method. For non-nullable "shared_ptr_mt_mutex" it always returns "true".
 		var IntPtr m( 23535 );

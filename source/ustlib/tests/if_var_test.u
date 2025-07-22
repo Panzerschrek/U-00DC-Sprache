@@ -5,7 +5,7 @@ import "../imports/optional.u"
 type IntBox= ust::box_nullable</i32/>;
 type IntOpt= ust::optional</i32/>;
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		var IntBox box(66);

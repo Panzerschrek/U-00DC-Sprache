@@ -47,7 +47,7 @@ fn GetNegative( i32 x ) : i32
 	return -x;
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // "is_sorted" for empty array.
 		var [ i32, 0 ] arr[ ];

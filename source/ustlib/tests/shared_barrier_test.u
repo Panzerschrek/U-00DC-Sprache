@@ -10,7 +10,7 @@ static_assert( typeinfo</ ust::shared_barrier />.is_copy_assignable ); // Shared
 static_assert( typeinfo</ ust::shared_barrier />.is_equality_comparable ); // Shared barriers are equality-comparable.
 static_assert( typeinfo</ ust::shared_barrier />.size_of == typeinfo</$(byte8)/>.size_of ); // Barrier class has size of a pointer.
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Shared barrer can be copied and compared.
 		var ust::shared_barrier a0(4u), a1= a0, b0(17u), b1(b0);

@@ -11,7 +11,7 @@ struct R
 	}
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// "min" and "max" for immutable arguments.
 	halt if( ust::max( 85, 96 ) != 96 );

@@ -12,7 +12,7 @@ static_assert( typeinfo</IntPtrNullable/>.size_of == typeinfo</size_type/>.size_
 static_assert( non_sync</IntPtr/> );
 static_assert( non_sync</IntPtrNullable/> );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Can directly get reference to content of shared_ptr_final
 		var IntPtr ptr(52);

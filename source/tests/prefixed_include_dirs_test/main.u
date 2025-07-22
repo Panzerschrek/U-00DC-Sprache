@@ -4,7 +4,7 @@ import "/ach/wie/gut/dass/niemand/weiss/wer/ich/bin/und/wie/ich/heiss/rumpelstil
 import "/d/krupps.uh"
 import "/root_import.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	auto a= AFunc( 77 );
 	halt if( a != 154 );

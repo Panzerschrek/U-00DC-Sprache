@@ -31,7 +31,7 @@ static_assert( !typeinfo</ ust::directory_raw_iterator />.is_copy_assignable );
 static_assert( !typeinfo</ ust::directory_raw_iterator />.is_equality_comparable );
 static_assert( !non_sync</ ust::directory_raw_iterator /> );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// Several tests fail on MacOS for no obvious reason, so, disable all these tests for now until further investigation.
 	if( ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )

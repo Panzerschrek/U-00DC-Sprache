@@ -17,7 +17,7 @@ static_assert( !typeinfo</ ust::condition_variable />.is_copy_assignable );
 // It's also not possible to compare condition variables.
 static_assert( !typeinfo</ ust::condition_variable />.is_equality_comparable );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		auto m= ust::make_shared_ptr_mt_mutex( false );

@@ -4,7 +4,7 @@ import "../imports/vector.u"
 type VecType= ust::vector</i32/>;
 
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		var VecType mut vec;

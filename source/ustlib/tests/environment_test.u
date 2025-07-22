@@ -3,7 +3,7 @@ import "../imports/assert.u"
 import "../imports/environment.u"
 import "../imports/stdout.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		var ust::optional</ust::string8/> path= ust::get_environment_variable( "PATH" );

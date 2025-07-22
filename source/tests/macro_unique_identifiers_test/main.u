@@ -6,7 +6,7 @@ Names, produced in "a.uh", "b.uh", "c.uh", during "x.u" and "b.u" files compilat
 import "x.uh"
 import "y.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		var [u32, 3] a[3u, 5u, 7u];

@@ -24,7 +24,7 @@ struct R // Have destructor with side-effects.
 	}
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// Optional saves alignment.
 	static_assert( typeinfo</ ust::optional</ i8/> />.align_of >= typeinfo</ i8/>.align_of );

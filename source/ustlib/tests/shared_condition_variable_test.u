@@ -17,7 +17,7 @@ static_assert( typeinfo</ ust::shared_condition_variable />.is_copy_assignable )
 // It's also possible to compare shared condition variables.
 static_assert( typeinfo</ ust::shared_condition_variable />.is_equality_comparable );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Shared condition variable can be copied and compared.
 		var ust::shared_condition_variable a0, a1= a0, b0, b1(b0);

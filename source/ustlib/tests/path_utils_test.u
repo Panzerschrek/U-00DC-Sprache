@@ -3,7 +3,7 @@ import "../imports/assert.u"
 import "../imports/path_utils.u"
 import "../imports/vector.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	if( ust::constexpr_string_equals( compiler::target::os, "windows" ) )
 	{

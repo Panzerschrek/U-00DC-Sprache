@@ -1,6 +1,6 @@
 import "/unistd_headers.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// Can request process id.
 	auto pid= unsafe( getpid() );

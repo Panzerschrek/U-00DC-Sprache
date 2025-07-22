@@ -6,7 +6,7 @@ import "../imports/thread.u"
 import "../imports/vector.u"
 
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// Semaphores test is still broken on MacOS. TODO - fix it.
 	if( ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )

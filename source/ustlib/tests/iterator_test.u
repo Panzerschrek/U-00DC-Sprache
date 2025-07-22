@@ -165,7 +165,7 @@ private:
 static_assert( !typeinfo</NonCopyableIterator/>.is_copy_constructible );
 static_assert( !typeinfo</NonCopyableIterator/>.is_copy_assignable );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Basic iteration.
 		var [ i32, 4 ] ints[ 44, 33, 22, 11 ];

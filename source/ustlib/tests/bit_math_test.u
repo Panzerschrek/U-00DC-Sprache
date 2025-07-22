@@ -1,7 +1,7 @@
 //##success_test
 import "../imports/bit_math.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// swap_bytes
 	static_assert( ust::swap_bytes( 0x5A6Bu16 ) == 0x6B5Au16 );

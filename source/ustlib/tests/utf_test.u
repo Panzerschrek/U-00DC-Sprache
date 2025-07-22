@@ -1,7 +1,7 @@
 //##success_test
 import "../imports/utf.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	auto &constexpr s8= "Серп и Молот ☭ Hammer und Sichel"u8;
 	auto &constexpr s16= "Серп и Молот ☭ Hammer und Sichel"u16;
