@@ -1,6 +1,6 @@
 import "inc.uh"
 
-fn nomangle main() : u32
+fn nomangle main() call_conv( "C" ) : u32
 {
 	Foo();
 	Bar();

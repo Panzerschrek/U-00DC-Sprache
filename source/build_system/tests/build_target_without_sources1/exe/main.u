@@ -1,6 +1,6 @@
 import "/lib/some_header.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	halt if( Get42() != 42 );
 	return 0;

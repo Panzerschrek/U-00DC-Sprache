@@ -1,6 +1,6 @@
 import "/stdout.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	static_if( compiler::options::generate_debug_info )
 	{

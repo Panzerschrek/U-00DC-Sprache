@@ -3,7 +3,7 @@ import "/string_conversions.u"
 import "/lib_a/lib_a.uh"
 import "/lib_b/lib_b.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	var Num x(17);
 	auto square= Square(x);

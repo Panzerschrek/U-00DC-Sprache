@@ -1,6 +1,6 @@
 import "foo.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	halt if( Foo() != 678123 );
 	return 0;
