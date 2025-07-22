@@ -707,6 +707,7 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 {
 	const ManglerState::NodeHolder function_node( mangler_state );
 
+	// "clang" uses vendor prefix 'U' with length-prefixed names for calling conventions. Use such approach.
 	switch( function_type.calling_convention )
 	{
 	case CallingConvention::Default:
@@ -720,11 +721,10 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 		mangler_state.PushLengthPrefixed( "fast" );
 		break;
 	case CallingConvention::System:
-		// TODO - enable this only on x86 Windows.
+		// Use "system" in all cases - since we need 1 to 1 mangling of Ü calling conventions regardless of underlying actual calling conventions.
 		mangler_state.Push( 'U' );
-		mangler_state.PushLengthPrefixed( "stdcall" );
+		mangler_state.PushLengthPrefixed( "system" );
 		break;
-	default: U_ASSERT(false); // Unknown calling convention.
 	};
 
 	mangler_state.Push( 'F' );

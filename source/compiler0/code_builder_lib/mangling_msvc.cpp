@@ -70,7 +70,7 @@ std::string_view GetCallingConventionName( const CallingConvention calling_conve
 	case CallingConvention::Cold:
 		return "U";
 	case CallingConvention::System:
-		// TODO - enable this only on x86 Windows.
+		// Use "G" (normally used for x86 "stdcall") in all cases - since we need 1 to 1 mangling of Ü calling conventions regardless of underlying actual calling conventions.
 		return "G";
 	};
 	U_ASSERT(false);
