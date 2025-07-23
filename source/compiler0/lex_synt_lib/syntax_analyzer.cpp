@@ -1477,15 +1477,7 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::call_conv_ )
 	{
 		NextLexem();
-		ExpectLexem( Lexem::Type::BracketLeft );
-
-		if( it_->type != Lexem::Type::String )
-			PushErrorMessage();
-
-		result.calling_convention= it_->text;
-		NextLexem();
-
-		ExpectLexem( Lexem::Type::BracketRight );
+		result.calling_convention= std::make_unique<Expression>( ParseExpressionInBrackets() );
 	}
 
 	if( it_->type == Lexem::Type::Colon )
