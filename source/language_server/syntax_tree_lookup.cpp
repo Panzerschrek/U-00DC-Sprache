@@ -312,6 +312,7 @@ void FindImpl( const Synt::FunctionType& function_type )
 	for( const Synt::FunctionParam& param : function_type.params )
 		FindImpl( param.type );
 
+	FindImpl( function_type.calling_convention );
 	FindImpl( function_type.references_pollution_expression );
 	FindImpl( function_type.return_value_reference_expression );
 	FindImpl( function_type.return_value_inner_references_expression );
