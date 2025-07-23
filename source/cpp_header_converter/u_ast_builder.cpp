@@ -64,7 +64,8 @@ private:
 	Synt::TypeName StringToTypeName( std::string_view s );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type, const TypeNamesMap& type_names_map );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionType& in_type, const TypeNamesMap& type_names_map );
-	std::optional<std::string> TranslateCallingConvention( const clang::FunctionType& in_type );
+	std::unique_ptr<const Synt::Expression> TranslateCallingConvention( const clang::FunctionType& in_type );
+	std::optional<std::string> TranslateCallingConventionImpl( const clang::FunctionType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
 
@@ -532,7 +533,20 @@ Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionT
 	return function_type;
 }
 
-std::optional<std::string> CppAstConsumer::TranslateCallingConvention( const clang::FunctionType& in_type )
+std::unique_ptr<const Synt::Expression> CppAstConsumer::TranslateCallingConvention( const clang::FunctionType& in_type )
+{
+	if( auto cc= TranslateCallingConventionImpl( in_type ) )
+	{
+		auto string_literal= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
+		string_literal->value= std::move(*cc);
+
+		return std::make_unique<Synt::Expression>( std::move(string_literal) );
+	}
+
+	return nullptr;
+}
+
+std::optional<std::string> CppAstConsumer::TranslateCallingConventionImpl( const clang::FunctionType& in_type )
 {
 	// TODO - handle/introduce other calling conventions.
 	switch( in_type.getCallConv() )
