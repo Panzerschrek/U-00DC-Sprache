@@ -4,18 +4,18 @@ import "long_stable_hash_wrapper.uh"
 
 type UserHandle= size_type;
 
-type U1_CalculateLongStableHashCallback= fn( UserHandle data, $(char8) hash_data, size_type hash_size );
+type U1_CalculateLongStableHashCallback= fn( UserHandle data, $(char8) hash_data, size_type hash_size ) unsafe call_conv( "C" );
 
 fn nomangle U1_CalculateLongStableHash(
 	$(char8) data,
 	size_type size,
 	U1_CalculateLongStableHashCallback callback,
-	UserHandle callback_data ) unsafe;
+	UserHandle callback_data ) unsafe call_conv( "C" );
 
 namespace U1
 {
 
-fn CalculateLongStableHashCallbackFunc( UserHandle data, $(char8) hash_data, size_type hash_size )
+fn CalculateLongStableHashCallbackFunc( UserHandle data, $(char8) hash_data, size_type hash_size ) unsafe call_conv( "C" )
 {
 	unsafe
 	{

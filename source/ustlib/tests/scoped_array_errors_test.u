@@ -7,7 +7,7 @@ struct RM
 	i32& mut x;
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // "array_over_external_memory" constructor is unsafe.
 		alloca i32 mem[16s];

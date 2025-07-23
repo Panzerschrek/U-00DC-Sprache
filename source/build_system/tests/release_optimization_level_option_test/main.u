@@ -1,7 +1,7 @@
 import "/stdout.u"
 import "/string.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	var [ char8, 2 ] opt_level[ 'O', compiler::options::optimization_level ];
 	halt if( opt_level != "O3" );

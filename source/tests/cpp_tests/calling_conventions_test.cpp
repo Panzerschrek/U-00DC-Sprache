@@ -173,32 +173,60 @@ U_TEST(CallForFunctionWithCustomCallingConvention_Test3)
 
 U_TEST(CallingConventionAliases_Test0)
 {
-	// Currently calling conventions "C", "default", "Ü" are aliases for "C" calling convention.
+	// Currently calling conventions "default" and "Ü" are identical.
 	static const char c_program_text[]=
 	R"(
-		fn Foo() call_conv("C");
 		fn Bar() call_conv("default");
 		fn Baz() call_conv("Ü");
 		fn FooBar();
 
 		type F= fn() call_conv("default");
 
-		var F f0(Foo), f1(Bar), f2(Baz), f3(FooBar);
+		var F f1(Bar), f2(Baz), f3(FooBar);
 	)";
 
 	BuildProgram( c_program_text );
 }
 
-U_TEST(CallingConventionAliases_Test1)
+U_TEST(CallingConventionDistinct_Test0)
 {
 	static const char c_program_text[]=
 	R"(
-		namespace Abc
-		{
-			fn Foo() call_conv("default");
-		}
-		// Ok, define body for existing function using alias for calling convention.
-		fn Abc::Foo() call_conv("C") {}
+		type FDefault= fn() call_conv("default");
+		type FÜ= fn() call_conv("Ü");
+		type FFast= fn() call_conv("fast");
+		type FCold= fn() call_conv("cold");
+		type FSystem= fn() call_conv("system");
+
+		static_assert(  same_type</ FDefault, FDefault /> );
+		static_assert(  same_type</ FDefault, FÜ /> );
+		static_assert( !same_type</ FDefault, FFast /> );
+		static_assert( !same_type</ FDefault, FCold /> );
+		static_assert( !same_type</ FDefault, FSystem /> );
+
+		static_assert(  same_type</ FÜ, FDefault /> );
+		static_assert(  same_type</ FÜ, FÜ /> );
+		static_assert( !same_type</ FÜ, FFast /> );
+		static_assert( !same_type</ FÜ, FCold /> );
+		static_assert( !same_type</ FÜ, FSystem /> );
+
+		static_assert( !same_type</ FFast, FDefault /> );
+		static_assert( !same_type</ FFast, FÜ /> );
+		static_assert(  same_type</ FFast, FFast /> );
+		static_assert( !same_type</ FFast, FCold /> );
+		static_assert( !same_type</ FFast, FSystem /> );
+
+		static_assert( !same_type</ FCold, FDefault /> );
+		static_assert( !same_type</ FCold, FÜ /> );
+		static_assert( !same_type</ FCold, FFast /> );
+		static_assert(  same_type</ FCold, FCold /> );
+		static_assert( !same_type</ FCold, FSystem /> );
+
+		static_assert( !same_type</ FSystem, FDefault /> );
+		static_assert( !same_type</ FSystem, FÜ /> );
+		static_assert( !same_type</ FSystem, FFast /> );
+		static_assert( !same_type</ FSystem, FCold /> );
+		static_assert(  same_type</ FSystem, FSystem /> );
 	)";
 
 	BuildProgram( c_program_text );

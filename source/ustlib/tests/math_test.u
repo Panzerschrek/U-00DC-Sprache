@@ -359,7 +359,7 @@ fn DoFloatsTest()
 	halt if( !ust::is_nan( ust::fma( T(3.0), T(5.0), ust::nan</T/>() ) ) );
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	ust::ignore_unused( MyNan );
 

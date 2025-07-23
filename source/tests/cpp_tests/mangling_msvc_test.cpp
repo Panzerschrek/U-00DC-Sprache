@@ -1214,14 +1214,18 @@ U_TEST( CallingConventionTest )
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() call_conv("C"){}
-		fn Bar() call_conv("fast"){}
+		fn Foo() call_conv("default"){}
+		fn Bar() call_conv("C"){}
+		fn Baz() call_conv("fast"){}
+		fn Lol() call_conv("system"){}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXXZ" ) != nullptr );
-	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YIXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YBXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Baz@@YIXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@@YGXXZ" ) != nullptr );
 }
 
 U_TEST( LambdasMangling_Test0 )

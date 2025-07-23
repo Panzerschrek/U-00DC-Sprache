@@ -1,6 +1,6 @@
 import "/c_standard_library_headers.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// Some well-known C functions should be available.
 	auto exit_func= exit;

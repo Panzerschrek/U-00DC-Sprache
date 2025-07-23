@@ -1,6 +1,6 @@
 import "inc.u"
 
-fn nomangle GetSomeClassIdTypeinfo() : size_type
+fn nomangle GetSomeClassIdTypeinfo() call_conv( "C" ) : size_type
 {
 	return ust::ref_to_int( typeinfo</SomeClass/>.type_id );
 }

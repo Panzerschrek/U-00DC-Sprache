@@ -36,7 +36,7 @@ static_assert(
 	typeinfo</ ust::array_over_external_memory</i32/> />.size_of ==
 	2s * typeinfo</size_type/>.size_of );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Filler constructor.
 		alloca i32 arr_ptr[8s];

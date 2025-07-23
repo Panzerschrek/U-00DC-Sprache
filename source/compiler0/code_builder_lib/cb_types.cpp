@@ -275,7 +275,7 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 	}
 
 	function_type.unsafe= function_type_name.unsafe;
-	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention, function_type_name.src_loc, names_scope.GetErrors() );
+	function_type.calling_convention= PrepareCallingConvention( function_type_name.calling_convention, function_type_name.src_loc, names_scope.GetErrors() );
 
 	const size_t num_params= function_type.params.size();
 	if( function_type_name.references_pollution_expression != nullptr )
@@ -381,34 +381,41 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	return llvm::FunctionType::get( llvm_function_return_type, params_llvm_types, false );
 }
 
-llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention(
+CallingConvention CodeBuilder::PrepareCallingConvention(
 	const std::optional<std::string>& calling_convention_name,
 	const SrcLoc& src_loc,
 	CodeBuilderErrorsContainer& errors )
 {
 	if( calling_convention_name == std::nullopt )
-		return llvm::CallingConv::C;
+		return CallingConvention::Default;
 
-	if( *calling_convention_name == "C" ||
-		*calling_convention_name == "default" ||
-		*calling_convention_name == "Ü" )
-		return llvm::CallingConv::C;
-
-	if( *calling_convention_name == "fast" )
-		return llvm::CallingConv::Fast;
-
-	if( *calling_convention_name == "cold" )
-		return llvm::CallingConv::Cold;
-
-	if( *calling_convention_name == "system" )
-	{
-		if( target_triple_.getArch() == llvm::Triple::x86 && target_triple_.getOS() == llvm::Triple::Win32 )
-			return llvm::CallingConv::X86_StdCall;
-
-		return llvm::CallingConv::C;
-	}
+	if( const auto cc_opt= StringToCallingConvention( *calling_convention_name ) )
+		return *cc_opt;
 
 	REPORT_ERROR( UnknownCallingConvention, errors, src_loc, *calling_convention_name );
+	return CallingConvention::Default;
+}
+
+llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const CallingConvention calling_convention )
+{
+	switch( calling_convention )
+	{
+	case CallingConvention::Default:
+		return llvm::CallingConv::C;
+	case CallingConvention::C:
+		return llvm::CallingConv::C;
+	case CallingConvention::Fast:
+		return llvm::CallingConv::Fast;
+	case CallingConvention::Cold:
+		return llvm::CallingConv::Cold;
+	case CallingConvention::System:
+		if( target_triple_.getArch() == llvm::Triple::x86 && target_triple_.getOS() == llvm::Triple::Win32 )
+			return llvm::CallingConv::X86_StdCall;
+		else
+			return llvm::CallingConv::C;
+	}
+
+	U_ASSERT(false);
 	return llvm::CallingConv::C;
 }
 

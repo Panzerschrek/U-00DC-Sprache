@@ -5,7 +5,7 @@ struct StructWithReference{ i32& x; }
 
 struct NonSyncStruct non_sync {}
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Any isn't copyable.
 		var ust::any a;

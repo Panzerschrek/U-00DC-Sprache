@@ -1,4 +1,4 @@
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	for( auto mut i= 0s; i < 16s; ++i )
 	{

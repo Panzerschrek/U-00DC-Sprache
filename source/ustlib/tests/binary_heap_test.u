@@ -31,7 +31,7 @@ fn CompareStringSize( ust::string8& l, ust::string8& r ) : bool
 	return l.size() < r.size();
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// "push_heap" for all combinations of 7 elements.
 	for( auto mut i0= 0; i0 < 7; ++i0 )

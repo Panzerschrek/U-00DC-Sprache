@@ -18,7 +18,7 @@ struct NonSyncStruct non_sync {}
 // Multithreaded shared pointers disabled for non_sync types.
 type InvalidNonSyncStructPtr= ust::shared_ptr_mt_mut</NonSyncStruct/>; //##expect_error TemplateContext
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	//
 	// Common test with "shared_ptr"

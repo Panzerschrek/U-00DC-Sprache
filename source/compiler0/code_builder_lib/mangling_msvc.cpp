@@ -59,22 +59,25 @@ std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 	return "";
 }
 
-std::string_view GetCallingConventionName( const llvm::CallingConv::ID calling_convention )
+std::string_view GetCallingConventionName( const CallingConvention calling_convention )
 {
 	switch(calling_convention)
 	{
-	case llvm::CallingConv::C:
+	case CallingConvention::Default:
+		// __cdecl
 		return "A";
-	case llvm::CallingConv::Fast:
+	case CallingConvention::C:
+		// __export __cdecl. "export" here has almost no meaning, just use it to distinguish Ü and C calling conventions.
+		return "B";
+	case CallingConvention::Fast:
+		// __fastcall
 		return "I";
-	case llvm::CallingConv::Cold:
+	case CallingConvention::Cold:
+		// preserve most
 		return "U";
-	case llvm::CallingConv::X86_StdCall:
+	case CallingConvention::System:
+		// Use "G" (normally used for x86 "stdcall") in all cases - since we need 1 to 1 mangling of Ü calling conventions regardless of underlying actual calling conventions.
 		return "G";
-	case llvm::CallingConv::X86_ThisCall:
-		return "E";
-	case llvm::CallingConv::X86_VectorCall:
-		return "Q";
 	};
 	U_ASSERT(false);
 	return "A";

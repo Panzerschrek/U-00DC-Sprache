@@ -5,7 +5,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 {
 	var ust::string8 generated_source= "main.u";
 
-	auto& contents= "fn nomangle main() : i32 { return 0; }";
+	auto& contents= "fn nomangle main() call_conv( \"C\" ) : i32 { return 0; }";
 
 	var BK::BuildTarget mut target
 	{

@@ -645,7 +645,10 @@ void CodeBuilder::TryCallCopyConstructor(
 
 	// Call it
 	if( !function_context.is_functionless_context )
-		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *constructor ), { this_, src } );
+	{
+		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *constructor ), { this_, src } );
+		call_instruction->setCallingConv( GetLLVMCallingConvention( constructor->type.calling_convention ) );
+	}
 }
 
 void CodeBuilder::GenerateLoop(
@@ -751,7 +754,8 @@ void CodeBuilder::CallDestructorsImpl(
 			// Heap allocation block.
 			heap_allocation_block->insertInto( function_context.function );
 			function_context.llvm_ir_builder.SetInsertPoint( heap_allocation_block );
-			function_context.llvm_ir_builder.CreateCall( free_func_, { alloca_info.ptr_for_free } );
+			llvm::CallInst* const free_call= function_context.llvm_ir_builder.CreateCall( free_func_, { alloca_info.ptr_for_free } );
+			free_call->setCallingConv( free_func_->getCallingConv() );
 			function_context.llvm_ir_builder.CreateBr( end_block );
 
 			// End block.
@@ -788,7 +792,8 @@ void CodeBuilder::CallDestructor(
 		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
 
 		const FunctionVariable& destructor= destructors->functions.front();
-		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( destructor ), { ptr } );
+		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( destructor ), { ptr } );
+		call_instruction->setCallingConv( GetLLVMCallingConvention( destructor.type.calling_convention ) );
 	}
 	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
@@ -1165,7 +1170,7 @@ size_t CodeBuilder::PrepareFunction(
 
 		// Disable non-default calling conventions for this-call methods and operators because of problems with call of generated methods/operators.
 		// But it's fine to use custom calling convention for static methods.
-		if( function_type.calling_convention != llvm::CallingConv::C &&
+		if( function_type.calling_convention != CallingConvention::Default &&
 			( func_variable.is_this_call || func.overloaded_operator != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc );
 
@@ -1194,7 +1199,7 @@ size_t CodeBuilder::PrepareFunction(
 			if( func.type.references_pollution_expression != nullptr )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "References pollution for coroutines." );
 
-			if( function_type.calling_convention != llvm::CallingConv::C )
+			if( function_type.calling_convention != CallingConvention::Default )
 				REPORT_ERROR( NonDefaultCallingConventionForCoroutine, names_scope.GetErrors(), func.type.src_loc );
 
 			// It is too complicated to support virtual coroutines. It is simplier to just forbid such coroutines.
@@ -2485,7 +2490,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 			function_variable.llvm_function->name_mangled,
 			module_.get() );
 
-	llvm_function->setCallingConv( function_type.calling_convention );
+	llvm_function->setCallingConv( GetLLVMCallingConvention( function_type.calling_convention ) );
 
 	// Merge functions with identical code.
 	// We doesn`t need different addresses for different functions.

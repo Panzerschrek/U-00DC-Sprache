@@ -1,7 +1,7 @@
 //##success_test
 import "../imports/string_conversions.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	// i8
 	halt if( ust::to_string8(0i8) != "0" );

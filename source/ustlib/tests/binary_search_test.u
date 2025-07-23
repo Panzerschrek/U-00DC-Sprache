@@ -5,7 +5,7 @@ import "../imports/sort.u"
 import "../imports/string.u"
 import "../imports/vector.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		// All nums are unique.

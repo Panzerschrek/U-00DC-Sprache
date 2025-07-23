@@ -12,7 +12,7 @@ struct NonSyncStruct non_sync {}
 type InvalidNonSyncStructSharedPtr= ust::shared_ptr_mt_mutex</NonSyncStruct/>; //##expect_error TemplateContext
 type InvalidNonSyncStructWeakPtr= ust::weak_ptr_mt_mutex</NonSyncStruct/>; //##expect_error TemplateContext
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 
 	{ // Non-nullable "shared_ptr_mt_mutex" isn't default-constructible.

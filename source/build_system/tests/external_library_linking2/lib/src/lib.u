@@ -6,4 +6,4 @@ fn Foo()
 	halt if( StaticLibFunc( 34u, 10u ) != 34u * 34u + 3u * 10u );
 }
 
-fn nomangle StaticLibFunc( u32 x, u32 y ) : u32;
+fn nomangle StaticLibFunc( u32 x, u32 y ) call_conv( "C" ) : u32;

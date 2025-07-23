@@ -810,23 +810,29 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 	{
 		switch( function_type.calling_convention )
 		{
-			LLVMCallConv::C -> {},
-			LLVMCallConv::Cold ->
+			CallingConvention::Default -> {},
+			CallingConvention::C ->
+			{
+				// Use non-standard name "C" for naming C calling convention (distinct from default).
+				mangler_state.Push( 'U' );
+				mangler_state.PushLengthPrefixed( "C" );
+			},
+			CallingConvention::Cold ->
 			{
 				mangler_state.Push( 'U' );
 				mangler_state.PushLengthPrefixed( "cold" );
 			},
-			LLVMCallConv::Fast ->
+			CallingConvention::Fast ->
 			{
 				mangler_state.Push( 'U' );
 				mangler_state.PushLengthPrefixed( "fast" );
 			},
-			LLVMCallConv::X86Stdcall ->
+			CallingConvention::System ->
 			{
+				// Use "system" in all cases - since we need 1 to 1 mangling of Ü calling conventions regardless of underlying actual calling conventions.
 				mangler_state.Push( 'U' );
-				mangler_state.PushLengthPrefixed( "stdcall" );
+				mangler_state.PushLengthPrefixed( "system" );
 			},
-			default -> { /* Unhandled convention */ halt; },
 		}
 
 		mangler_state.Push( 'F' );

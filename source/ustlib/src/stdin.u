@@ -118,4 +118,4 @@ var i32 g_end_of_file= -1;
 } // namespace ust
 
 // C standard library function.
-fn nomangle getchar() : i32;
+fn nomangle getchar() call_conv( "C" ) : i32;

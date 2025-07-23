@@ -4,7 +4,7 @@ import "/lib/one.uh"
 import "/lib/two.uh"
 import "/lib/three.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	halt if( one + two != three );
 	return 0;

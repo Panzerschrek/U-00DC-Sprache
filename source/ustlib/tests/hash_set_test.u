@@ -3,7 +3,7 @@ import "../imports/hash_set.u"
 
 type IntSet = ust::hash_set</i32/>;
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Basic "hash_set" operations.
 		var IntSet mut s;

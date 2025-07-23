@@ -681,6 +681,7 @@ fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_sc
 				$<(memory_size),
 				1u,
 				"alloca_heap\0"[0] );
+		LLVMSetInstructionCallConv( heap_allocation, LLVMGetFunctionCallConv( malloc_function_ ) );
 		LLVMBuildBr( function_context.llvm_ir_builder, end_block );
 
 		// End block.

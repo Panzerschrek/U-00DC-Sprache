@@ -28,7 +28,7 @@ struct CallableObjectMutThis
 	{}
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Create thread with "non_sync"-marked function-object.
 		auto thread= ust::make_thread( CallableObject() ); //##expect_error TemplateContext

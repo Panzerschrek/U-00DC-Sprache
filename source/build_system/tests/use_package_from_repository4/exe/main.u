@@ -1,6 +1,6 @@
 import "/four_returner/four_returner.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	halt if( GetFour() != 4 );
 	return 0;

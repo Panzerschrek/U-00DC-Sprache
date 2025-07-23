@@ -15,7 +15,7 @@ struct S{ i32 x; }
 
 enum E { A, B, C }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Atomic variables aren't copyable.
 		var ust::atomic_variable</u32/> v0( 0u );

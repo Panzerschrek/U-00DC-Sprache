@@ -17,7 +17,7 @@ struct Ref
 	i32& r;
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	//
 	// make_array test

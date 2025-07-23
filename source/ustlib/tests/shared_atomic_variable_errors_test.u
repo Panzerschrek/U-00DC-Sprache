@@ -15,7 +15,7 @@ struct S{ i32 x; }
 
 enum E { A, B, C }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Can't read value from atomic variable without special method.
 		var ust::shared_atomic_variable</i32/> v( 0 );

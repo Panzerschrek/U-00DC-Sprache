@@ -514,8 +514,11 @@ U_TEST( FunctionTypesMangling_Test0 )
 		fn BinaryRet( (fn( f32 x, f32 y ) : bool ) ptr ){}
 		fn RetS( (fn() : S ) ptr ){}
 		fn Pass( (fn( OtherStruct& o ) : OtherStruct ) ptr ){}
+		fn Default( (fn() call_conv("default") ) void_fn ){}
+		fn CFunc( (fn() call_conv("C") ) void_fn ){}
 		fn Cold( (fn() call_conv("cold") ) void_fn ){}
 		fn Fast( (fn() call_conv("fast") ) void_fn ){}
+		fn SystemFunc( (fn() call_conv("system") ) void_fn ){}
 		fn Unsafe( (fn() unsafe) ptr ) {}
 	)";
 
@@ -528,8 +531,11 @@ U_TEST( FunctionTypesMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z9BinaryRetPFbffE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4RetSPF1SvE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4PassPF11OtherStructRKS_E" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z7DefaultPFvvE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5CFuncPU1CFvvE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4ColdPU4coldFvvE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FastPU4fastFvvE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z10SystemFuncPU6systemFvvE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z6UnsafePFvv6unsafeE" ) != nullptr );
 }
 

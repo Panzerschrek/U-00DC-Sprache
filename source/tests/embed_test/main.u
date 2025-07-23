@@ -9,7 +9,7 @@ static_assert( embed</char8/>( "a.txt" ) == "some\ntext in\nthis_file\n" );
 // Embed a file using absolute path.
 static_assert( embed</char8/>( "/doom.number" ) == "666" );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	return 0;
 }

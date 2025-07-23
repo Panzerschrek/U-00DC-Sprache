@@ -16,7 +16,7 @@ enum Gener : u32
 	// There are only two genders.
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	halt if( ust::enum_to_string( Ampel::Rot ) != "Rot" );
 	halt if( ust::enum_to_string( Ampel::Gelb ) != "Gelb" );

@@ -1,4 +1,4 @@
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	static_assert( embed</char8/>( "/generated_sources5/test.txt" ) == "PTNPNHPTNPNH" );
 	return 0;

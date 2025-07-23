@@ -1,7 +1,7 @@
 // Linking should fail because "Foo" isn't found.
 fn Foo();
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	Foo();
 	return 0;

@@ -1,7 +1,7 @@
 //##success_test
 import "../imports/stdout.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	ust::stdout_print( "Test stdout - " );
 	ust::stdout_print( " ok\n" );

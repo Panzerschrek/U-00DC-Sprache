@@ -3,7 +3,7 @@ import "../imports/memory.u"
 
 struct S{ i32 a; f32 b; }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	var [ S, 3 ] arr= zero_init;
 

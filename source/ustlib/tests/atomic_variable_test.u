@@ -20,7 +20,7 @@ static_assert( typeinfo</ ust::atomic_variable</ $( tup[ f64, u64, char8, bool ]
 // Atomic variables don't contain unsynchronized interrrior mutability.
 static_assert( !non_sync</ ust::atomic_variable</char32/> /> );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Should support type aliases for many fundamental types.
 		type AtomicBool= ust::atomic_variable</bool/>;

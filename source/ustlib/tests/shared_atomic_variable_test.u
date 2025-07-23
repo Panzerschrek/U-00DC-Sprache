@@ -20,7 +20,7 @@ static_assert( typeinfo</ ust::shared_atomic_variable</ $( tup[ f64, u64, char8,
 // Shared atomic variables don't contain unsynchronized interrrior mutability.
 static_assert( !non_sync</ ust::shared_atomic_variable</char32/> /> );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Should support type aliases for many fundamental types.
 		type AtomicBool= ust::shared_atomic_variable</bool/>;

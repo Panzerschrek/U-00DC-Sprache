@@ -2,7 +2,7 @@
 import "../imports/helpers.u"
 import "../imports/ustlib_macros.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		var [ i32, 4 ] arr[ 4, 8, 15, 16 ];

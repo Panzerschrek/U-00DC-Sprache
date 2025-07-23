@@ -215,7 +215,7 @@ static_assert( ust::constexpr_string_select</false/>( "some", "another" ) == "an
 static_assert( ust::constexpr_string_select</true />( "", "non_empty" ) == "" );
 static_assert( ust::constexpr_string_select</false/>( "", "non_empty" ) == "non_empty" );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	var LargeClassWithMethods mut c;
 	c.Bar();

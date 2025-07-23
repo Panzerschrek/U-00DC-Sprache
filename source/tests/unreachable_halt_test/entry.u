@@ -1,6 +1,6 @@
 import "halt_func.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	HaltIfTrue(true);
 	return 0;

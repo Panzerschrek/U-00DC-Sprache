@@ -79,7 +79,7 @@ fn RefEq( T& a, T& b ) :  bool
 	}
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	//
 	// Common test with "shared_ptr"

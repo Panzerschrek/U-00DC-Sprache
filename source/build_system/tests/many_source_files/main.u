@@ -1,6 +1,6 @@
 import "inc.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	halt if( FuncA() !=  0 );
 	halt if( FuncB() !=  1 );

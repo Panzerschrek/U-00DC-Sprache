@@ -25,7 +25,7 @@ struct NonComparableStruct
 	op==(NonComparableStruct& l, NonComparableStruct& r) : bool = delete;
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		// Result type is not copyable.

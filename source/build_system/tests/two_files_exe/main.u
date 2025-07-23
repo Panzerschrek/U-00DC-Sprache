@@ -1,6 +1,6 @@
 import "other.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	SayHello();
 	return 0;

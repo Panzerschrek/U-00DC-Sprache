@@ -366,7 +366,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 		function_param.return_value_type= function_pointer_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 	function_param.is_unsafe= function_pointer_type_name.unsafe;
-	function_param.calling_convention= GetLLVMCallingConvention(function_pointer_type_name.calling_convention, function_pointer_type_name.src_loc, names_scope.GetErrors() );
+	function_param.calling_convention= PrepareCallingConvention( function_pointer_type_name.calling_convention, function_pointer_type_name.src_loc, names_scope.GetErrors() );
 
 	// TODO - maybe check also reference tags?
 	if( function_pointer_type_name.return_type != nullptr )

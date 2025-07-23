@@ -22,7 +22,7 @@ class NonCopyableKey
 
 type BrokenHashMap= ust::hash_map</NonCopyableKey, i32/>; //##expect_error TemplateContext
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 
 	{ // Try to copy noncopyable container. It is noncopyable because of noncopyable value.

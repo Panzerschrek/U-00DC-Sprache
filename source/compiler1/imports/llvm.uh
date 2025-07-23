@@ -288,249 +288,250 @@ enum LLVMDWARFEmissionKind : u32
 // Functions
 
 // Context
-fn nomangle LLVMContextCreate() unsafe : LLVMContextRef;
-fn nomangle LLVMContextDispose(LLVMContextRef C) unsafe;
+fn nomangle LLVMContextCreate() unsafe call_conv( "C" ) : LLVMContextRef;
+fn nomangle LLVMContextDispose(LLVMContextRef C) unsafe call_conv( "C" );
 
 // Module
-fn nomangle LLVMModuleCreateWithNameInContext(NullTerminatedString& ModuleID, LLVMContextRef C) unsafe : LLVMModuleRef;
-fn nomangle LLVMDisposeModule(LLVMModuleRef M) unsafe;
-fn nomangle LLVMSetModuleDataLayout(LLVMModuleRef M, LLVMTargetDataRef DL) unsafe;
-fn nomangle LLVMSetTarget(LLVMModuleRef M, NullTerminatedString& Triple) unsafe;
+fn nomangle LLVMModuleCreateWithNameInContext(NullTerminatedString& ModuleID, LLVMContextRef C) unsafe call_conv( "C" ) : LLVMModuleRef;
+fn nomangle LLVMDisposeModule(LLVMModuleRef M) unsafe call_conv( "C" );
+fn nomangle LLVMSetModuleDataLayout(LLVMModuleRef M, LLVMTargetDataRef DL) unsafe call_conv( "C" );
+fn nomangle LLVMSetTarget(LLVMModuleRef M, NullTerminatedString& Triple) unsafe call_conv( "C" );
 
 // Data layout
 
-fn nomangle LLVMABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) unsafe : u64;
-fn nomangle LLVMABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) unsafe : u32;
-fn nomangle LLVMOffsetOfElement(LLVMTargetDataRef TD, LLVMTypeRef StructTy, u32 Element) unsafe : u64;
-fn nomangle LLVMPointerSize(LLVMTargetDataRef TD) unsafe : u32;
+fn nomangle LLVMABISizeOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) unsafe call_conv( "C" ) : u64;
+fn nomangle LLVMABIAlignmentOfType(LLVMTargetDataRef TD, LLVMTypeRef Ty) unsafe call_conv( "C" ) : u32;
+fn nomangle LLVMOffsetOfElement(LLVMTargetDataRef TD, LLVMTypeRef StructTy, u32 Element) unsafe call_conv( "C" ) : u64;
+fn nomangle LLVMPointerSize(LLVMTargetDataRef TD) unsafe call_conv( "C" ) : u32;
 
 // Type
-fn nomangle LLVMInt1TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
-fn nomangle LLVMInt8TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
-fn nomangle LLVMInt16TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
-fn nomangle LLVMInt32TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
-fn nomangle LLVMInt64TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
-fn nomangle LLVMInt128TypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
-fn nomangle LLVMFloatTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
-fn nomangle LLVMDoubleTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
-fn nomangle LLVMVoidTypeInContext(LLVMContextRef C) unsafe : LLVMTypeRef;
-fn nomangle LLVMIntPtrTypeInContext(LLVMContextRef C, LLVMTargetDataRef TD) unsafe : LLVMTypeRef;
+fn nomangle LLVMInt1TypeInContext(LLVMContextRef C) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMInt8TypeInContext(LLVMContextRef C) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMInt16TypeInContext(LLVMContextRef C) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMInt32TypeInContext(LLVMContextRef C) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMInt64TypeInContext(LLVMContextRef C) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMInt128TypeInContext(LLVMContextRef C) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMFloatTypeInContext(LLVMContextRef C) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMDoubleTypeInContext(LLVMContextRef C) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMVoidTypeInContext(LLVMContextRef C) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMIntPtrTypeInContext(LLVMContextRef C, LLVMTargetDataRef TD) unsafe call_conv( "C" ) : LLVMTypeRef;
 
-fn nomangle LLVMGetIntTypeWidth(LLVMTypeRef IntegerTy) unsafe : u32;
+fn nomangle LLVMGetIntTypeWidth(LLVMTypeRef IntegerTy) unsafe call_conv( "C" ) : u32;
 
-fn nomangle LLVMArrayType2(LLVMTypeRef ElementType, u64 ElementCount) unsafe : LLVMTypeRef;
+fn nomangle LLVMArrayType2(LLVMTypeRef ElementType, u64 ElementCount) unsafe call_conv( "C" ) : LLVMTypeRef;
 
 fn nomangle LLVMFunctionType(
 	LLVMTypeRef ReturnType,
 	$(LLVMTypeRef) ParamTypes, u32 ParamCount,
-	LLVMBool IsVarArg) unsafe : LLVMTypeRef;
+	LLVMBool IsVarArg) unsafe call_conv( "C" ) : LLVMTypeRef;
 
-fn nomangle LLVMPointerType(LLVMTypeRef ElementType, u32 AddressSpace) unsafe : LLVMTypeRef;
-fn nomangle LLVMPointerTypeInContext(LLVMContextRef C, u32 AddressSpace) unsafe : LLVMTypeRef;
+fn nomangle LLVMPointerType(LLVMTypeRef ElementType, u32 AddressSpace) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMPointerTypeInContext(LLVMContextRef C, u32 AddressSpace) unsafe call_conv( "C" ) : LLVMTypeRef;
 
-fn nomangle LLVMStructTypeInContext(LLVMContextRef C, $(LLVMTypeRef) ElementTypes, u32 ElementCount, LLVMBool Packed) unsafe : LLVMTypeRef;
-fn nomangle LLVMStructCreateNamed(LLVMContextRef C, NullTerminatedString& Name) unsafe : LLVMTypeRef;
-fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, $(LLVMTypeRef) ElementTypes, u32 ElementCount, LLVMBool Packed) unsafe;
-fn nomangle LLVMIsOpaqueStruct(LLVMTypeRef StructTy) unsafe : LLVMBool;
+fn nomangle LLVMStructTypeInContext(LLVMContextRef C, $(LLVMTypeRef) ElementTypes, u32 ElementCount, LLVMBool Packed) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMStructCreateNamed(LLVMContextRef C, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, $(LLVMTypeRef) ElementTypes, u32 ElementCount, LLVMBool Packed) unsafe call_conv( "C" );
+fn nomangle LLVMIsOpaqueStruct(LLVMTypeRef StructTy) unsafe call_conv( "C" ) : LLVMBool;
 
-fn nomangle LLVMStructGetTypeAtIndex(LLVMTypeRef StructTy, u32 i) unsafe : LLVMTypeRef;
+fn nomangle LLVMStructGetTypeAtIndex(LLVMTypeRef StructTy, u32 i) unsafe call_conv( "C" ) : LLVMTypeRef;
 fn nomangle LLVMCountStructElementTypes(LLVMTypeRef StructTy) unsafe: u32;
 
-fn nomangle LLVMGetArrayLength2(LLVMTypeRef ArrayTy) unsafe : u64;
+fn nomangle LLVMGetArrayLength2(LLVMTypeRef ArrayTy) unsafe call_conv( "C" ) : u64;
 
-fn nomangle LLVMGetElementType(LLVMTypeRef Ty) unsafe : LLVMTypeRef;
+fn nomangle LLVMGetElementType(LLVMTypeRef Ty) unsafe call_conv( "C" ) : LLVMTypeRef;
 
-fn nomangle LLVMGetTypeKind(LLVMTypeRef Ty) unsafe : LLVMTypeKind;
+fn nomangle LLVMGetTypeKind(LLVMTypeRef Ty) unsafe call_conv( "C" ) : LLVMTypeKind;
 
-fn nomangle LLVMTypeIsSized(LLVMTypeRef Ty) unsafe : LLVMBool;
+fn nomangle LLVMTypeIsSized(LLVMTypeRef Ty) unsafe call_conv( "C" ) : LLVMBool;
 
 // Value
 
-fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe : LLVMTypeRef;
-fn nomangle LLVMGetValueName2(LLVMValueRef Val, size_type &mut Length) unsafe : $(char8);
-fn nomangle LLVMSetValueName2(LLVMValueRef Val, $(char8) Name, size_type NameLen) unsafe;
-fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
-fn nomangle LLVMConstIntGetSExtValue(LLVMValueRef ConstantVal) unsafe : i64;
-fn nomangle LLVMGetAsString(LLVMValueRef c, size_type &mut Length) unsafe : $(char8);
-fn nomangle LLVMGetInitializer(LLVMValueRef GlobalVar) unsafe : LLVMValueRef;
-fn nomangle LLVMGetOperand(LLVMValueRef Val, u32 Index) unsafe : LLVMValueRef;
-fn nomangle LLVMGetNumOperands(LLVMValueRef Val) unsafe : i32;
-fn nomangle LLVMIsConstant(LLVMValueRef Val) unsafe : LLVMBool;
-fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
+fn nomangle LLVMTypeOf(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMTypeRef;
+fn nomangle LLVMGetValueName2(LLVMValueRef Val, size_type &mut Length) unsafe call_conv( "C" ) : $(char8);
+fn nomangle LLVMSetValueName2(LLVMValueRef Val, $(char8) Name, size_type NameLen) unsafe call_conv( "C" );
+fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe call_conv( "C" ) : u64;
+fn nomangle LLVMConstIntGetSExtValue(LLVMValueRef ConstantVal) unsafe call_conv( "C" ) : i64;
+fn nomangle LLVMGetAsString(LLVMValueRef c, size_type &mut Length) unsafe call_conv( "C" ) : $(char8);
+fn nomangle LLVMGetInitializer(LLVMValueRef GlobalVar) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMGetOperand(LLVMValueRef Val, u32 Index) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMGetNumOperands(LLVMValueRef Val) unsafe call_conv( "C" ) : i32;
+fn nomangle LLVMIsConstant(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMBool;
+fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMBool;
 
-fn nomangle LLVMReplaceAllUsesWith(LLVMValueRef OldVal, LLVMValueRef NewVal) unsafe;
+fn nomangle LLVMReplaceAllUsesWith(LLVMValueRef OldVal, LLVMValueRef NewVal) unsafe call_conv( "C" );
 
-fn nomangle LLVMIsAFunction(LLVMValueRef Val) unsafe : LLVMValueRef;
-fn nomangle LLVMIsAInstruction(LLVMValueRef Val) unsafe : LLVMValueRef;
-fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe : LLVMValueRef;
-fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
-fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
-fn nomangle LLVMIsAConstantAggregateZero(LLVMValueRef Val) unsafe : LLVMValueRef;
-fn nomangle LLVMIsAConstantDataArray(LLVMValueRef Val) unsafe : LLVMValueRef;
-fn nomangle LLVMIsAGlobalVariable(LLVMValueRef Val) unsafe : LLVMValueRef;
+fn nomangle LLVMIsAFunction(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMIsAInstruction(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMIsAConstantAggregateZero(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMIsAConstantDataArray(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMIsAGlobalVariable(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMValueRef;
 
-fn nomangle LLVMGetInstructionOpcode(LLVMValueRef Inst) unsafe : LLVMOpcodeType;
-fn nomangle LLVMGetInstructionParent(LLVMValueRef Inst) unsafe : LLVMBasicBlockRef;
+fn nomangle LLVMGetInstructionOpcode(LLVMValueRef Inst) unsafe call_conv( "C" ) : LLVMOpcodeType;
+fn nomangle LLVMGetInstructionParent(LLVMValueRef Inst) unsafe call_conv( "C" ) : LLVMBasicBlockRef;
 
-fn nomangle LLVMGetAllocatedType(LLVMValueRef Alloca) unsafe : LLVMTypeRef;
+fn nomangle LLVMGetAllocatedType(LLVMValueRef Alloca) unsafe call_conv( "C" ) : LLVMTypeRef;
 
-fn nomangle LLVMSetFunctionCallConv(LLVMValueRef Fn, LLVMCallConvID CC) unsafe;
-fn nomangle LLVMSetInstructionCallConv(LLVMValueRef Instr, LLVMCallConvID CC) unsafe;
+fn nomangle LLVMGetFunctionCallConv(LLVMValueRef Fn) unsafe call_conv( "C" ) : LLVMCallConvID;
+fn nomangle LLVMSetFunctionCallConv(LLVMValueRef Fn, LLVMCallConvID CC) unsafe call_conv( "C" );
+fn nomangle LLVMSetInstructionCallConv(LLVMValueRef Instr, LLVMCallConvID CC) unsafe call_conv( "C" );
 
 // Global value
 
-fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;
-fn nomangle LLVMSetLinkage(LLVMValueRef Global, LLVMLinkage Linkage) unsafe;
-fn nomangle LLVMSetVisibility(LLVMValueRef Global, LLVMVisibility Viz) unsafe;
-fn nomangle LLVMSetUnnamedAddress(LLVMValueRef Global, LLVMUnnamedAddr UnnamedAddr) unsafe;
-fn nomangle LLVMGetNamedFunction(LLVMModuleRef M, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMSetLinkage(LLVMValueRef Global, LLVMLinkage Linkage) unsafe call_conv( "C" );
+fn nomangle LLVMSetVisibility(LLVMValueRef Global, LLVMVisibility Viz) unsafe call_conv( "C" );
+fn nomangle LLVMSetUnnamedAddress(LLVMValueRef Global, LLVMUnnamedAddr UnnamedAddr) unsafe call_conv( "C" );
+fn nomangle LLVMGetNamedFunction(LLVMModuleRef M, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Global variable
 
-fn nomangle LLVMGetNamedGlobal(LLVMModuleRef M, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMAddGlobal(LLVMModuleRef M, LLVMTypeRef Ty, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMSetInitializer(LLVMValueRef GlobalVar, LLVMValueRef ConstantVal) unsafe : LLVMValueRef;
-fn nomangle LLVMSetGlobalConstant(LLVMValueRef GlobalVar, LLVMBool IsConstant) unsafe;
-fn nomangle LLVMGlobalGetValueType(LLVMValueRef Global) unsafe : LLVMTypeRef;
+fn nomangle LLVMGetNamedGlobal(LLVMModuleRef M, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMAddGlobal(LLVMModuleRef M, LLVMTypeRef Ty, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMSetInitializer(LLVMValueRef GlobalVar, LLVMValueRef ConstantVal) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMSetGlobalConstant(LLVMValueRef GlobalVar, LLVMBool IsConstant) unsafe call_conv( "C" );
+fn nomangle LLVMGlobalGetValueType(LLVMValueRef Global) unsafe call_conv( "C" ) : LLVMTypeRef;
 
-fn nomangle LLVMIsThreadLocal(LLVMValueRef GlobalVar) unsafe : LLVMBool;
-fn nomangle LLVMSetThreadLocal(LLVMValueRef GlobalVar, LLVMBool IsThreadLocal) unsafe;
+fn nomangle LLVMIsThreadLocal(LLVMValueRef GlobalVar) unsafe call_conv( "C" ) : LLVMBool;
+fn nomangle LLVMSetThreadLocal(LLVMValueRef GlobalVar, LLVMBool IsThreadLocal) unsafe call_conv( "C" );
 
 // Function
 
-fn nomangle LLVMGetParam(LLVMValueRef Fn, u32 Index) unsafe : LLVMValueRef;
-fn nomangle LLVMCountBasicBlocks(LLVMValueRef Fn) unsafe : u32;
-fn nomangle LLVMGetLastBasicBlock(LLVMValueRef Fn) unsafe : LLVMBasicBlockRef;
-fn nomangle LLVMDeleteFunction(LLVMValueRef Fn) unsafe;
+fn nomangle LLVMGetParam(LLVMValueRef Fn, u32 Index) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMCountBasicBlocks(LLVMValueRef Fn) unsafe call_conv( "C" ) : u32;
+fn nomangle LLVMGetLastBasicBlock(LLVMValueRef Fn) unsafe call_conv( "C" ) : LLVMBasicBlockRef;
+fn nomangle LLVMDeleteFunction(LLVMValueRef Fn) unsafe call_conv( "C" );
 
 // Basic block
 
-fn nomangle LLVMInstructionEraseFromParent(LLVMValueRef Inst) unsafe;
-fn nomangle LLVMGetLastInstruction(LLVMBasicBlockRef BB) unsafe : LLVMValueRef;
+fn nomangle LLVMInstructionEraseFromParent(LLVMValueRef Inst) unsafe call_conv( "C" );
+fn nomangle LLVMGetLastInstruction(LLVMBasicBlockRef BB) unsafe call_conv( "C" ) : LLVMValueRef;
 
-fn nomangle LLVMCreateBasicBlockInContext(LLVMContextRef C, NullTerminatedString& Name) unsafe : LLVMBasicBlockRef;
-fn nomangle LLVMAppendBasicBlockInContext(LLVMContextRef C, LLVMValueRef Fn, NullTerminatedString& Name) unsafe : LLVMBasicBlockRef;
-fn nomangle LLVMAppendExistingBasicBlock(LLVMValueRef Fn, LLVMBasicBlockRef BB) unsafe;
-fn nomangle LLVMDeleteBasicBlock(LLVMBasicBlockRef BB) unsafe;
+fn nomangle LLVMCreateBasicBlockInContext(LLVMContextRef C, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMBasicBlockRef;
+fn nomangle LLVMAppendBasicBlockInContext(LLVMContextRef C, LLVMValueRef Fn, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMBasicBlockRef;
+fn nomangle LLVMAppendExistingBasicBlock(LLVMValueRef Fn, LLVMBasicBlockRef BB) unsafe call_conv( "C" );
+fn nomangle LLVMDeleteBasicBlock(LLVMBasicBlockRef BB) unsafe call_conv( "C" );
 
 // Comdat
 
-fn nomangle LLVMGetOrInsertComdat(LLVMModuleRef M, NullTerminatedString& Name) unsafe : LLVMComdatRef;
-fn nomangle LLVMGetComdatSelectionKind(LLVMComdatRef C) unsafe : LLVMComdatSelectionKind;
-fn nomangle LLVMSetComdatSelectionKind(LLVMComdatRef C, LLVMComdatSelectionKind Kind) unsafe;
-fn nomangle LLVMGetComdat(LLVMValueRef V) unsafe : LLVMComdatRef;
-fn nomangle LLVMSetComdat(LLVMValueRef V, LLVMComdatRef C) unsafe;
+fn nomangle LLVMGetOrInsertComdat(LLVMModuleRef M, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMComdatRef;
+fn nomangle LLVMGetComdatSelectionKind(LLVMComdatRef C) unsafe call_conv( "C" ) : LLVMComdatSelectionKind;
+fn nomangle LLVMSetComdatSelectionKind(LLVMComdatRef C, LLVMComdatSelectionKind Kind) unsafe call_conv( "C" );
+fn nomangle LLVMGetComdat(LLVMValueRef V) unsafe call_conv( "C" ) : LLVMComdatRef;
+fn nomangle LLVMSetComdat(LLVMValueRef V, LLVMComdatRef C) unsafe call_conv( "C" );
 
 // Module helpers
 
-fn nomangle LLVMDumpModule(LLVMModuleRef M) unsafe;
+fn nomangle LLVMDumpModule(LLVMModuleRef M) unsafe call_conv( "C" );
 
 
 // IRBuilder
 
-fn nomangle LLVMCreateBuilderInContext(LLVMContextRef C) unsafe : LLVMBuilderRef;
-fn nomangle LLVMDisposeBuilder(LLVMBuilderRef Builder) unsafe;
+fn nomangle LLVMCreateBuilderInContext(LLVMContextRef C) unsafe call_conv( "C" ) : LLVMBuilderRef;
+fn nomangle LLVMDisposeBuilder(LLVMBuilderRef Builder) unsafe call_conv( "C" );
 
-fn nomangle LLVMGetInsertBlock(LLVMBuilderRef Builder) unsafe : LLVMBasicBlockRef;
+fn nomangle LLVMGetInsertBlock(LLVMBuilderRef Builder) unsafe call_conv( "C" ) : LLVMBasicBlockRef;
 
-fn nomangle LLVMPositionBuilderAtEnd(LLVMBuilderRef Builder, LLVMBasicBlockRef Block) unsafe;
-fn nomangle LLVMInsertExistingBasicBlockAfterInsertBlock(LLVMBuilderRef Builder, LLVMBasicBlockRef BB) unsafe;
+fn nomangle LLVMPositionBuilderAtEnd(LLVMBuilderRef Builder, LLVMBasicBlockRef Block) unsafe call_conv( "C" );
+fn nomangle LLVMInsertExistingBasicBlockAfterInsertBlock(LLVMBuilderRef Builder, LLVMBasicBlockRef BB) unsafe call_conv( "C" );
 
-fn nomangle LLVMInsertIntoBuilder(LLVMBuilderRef Builder, LLVMValueRef Instr) unsafe;
+fn nomangle LLVMInsertIntoBuilder(LLVMBuilderRef Builder, LLVMValueRef Instr) unsafe call_conv( "C" );
 
-fn nomangle LLVMSetCurrentDebugLocation2(LLVMBuilderRef Builder, LLVMMetadataRef Loc) unsafe;
+fn nomangle LLVMSetCurrentDebugLocation2(LLVMBuilderRef Builder, LLVMMetadataRef Loc) unsafe call_conv( "C" );
 
 // Constants
-fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe : LLVMValueRef;
-fn nomangle LLVMConstReal(LLVMTypeRef RealTy, f64 N) unsafe : LLVMValueRef;
-fn nomangle LLVMGetUndef(LLVMTypeRef Ty) unsafe : LLVMValueRef;
-fn nomangle LLVMConstNull(LLVMTypeRef Ty) unsafe : LLVMValueRef; /* all zeroes */
-fn nomangle LLVMConstArray2(LLVMTypeRef ElementTy, $(LLVMValueRef) ConstantVals, u64 Length)  unsafe : LLVMValueRef;
-fn nomangle LLVMConstStructInContext(LLVMContextRef C, $(LLVMValueRef) ConstantVals, u32 Count, LLVMBool Packed) unsafe : LLVMValueRef;
-fn nomangle LLVMConstNamedStruct(LLVMTypeRef StructTy, $(LLVMValueRef) ConstantVals, u32 Count) unsafe : LLVMValueRef;
-fn nomangle LLVMConstStringInContext(LLVMContextRef C, $(char8) Str, u32 Length, LLVMBool DontNullTerminate) unsafe : LLVMValueRef;
-fn nomangle LLVMGetAggregateElement(LLVMValueRef C, u32 Idx) unsafe : LLVMValueRef;
+fn nomangle LLVMConstInt(LLVMTypeRef IntTy, u64 N, LLVMBool SignExtend) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMConstReal(LLVMTypeRef RealTy, f64 N) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMGetUndef(LLVMTypeRef Ty) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMConstNull(LLVMTypeRef Ty) unsafe call_conv( "C" ) : LLVMValueRef; /* all zeroes */
+fn nomangle LLVMConstArray2(LLVMTypeRef ElementTy, $(LLVMValueRef) ConstantVals, u64 Length)  unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMConstStructInContext(LLVMContextRef C, $(LLVMValueRef) ConstantVals, u32 Count, LLVMBool Packed) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMConstNamedStruct(LLVMTypeRef StructTy, $(LLVMValueRef) ConstantVals, u32 Count) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMConstStringInContext(LLVMContextRef C, $(char8) Str, u32 Length, LLVMBool DontNullTerminate) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMGetAggregateElement(LLVMValueRef C, u32 Idx) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Instructions
 
-fn nomangle LLVMBuildBr(LLVMBuilderRef Builder, LLVMBasicBlockRef Dest) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildCondBr(LLVMBuilderRef Builder, LLVMValueRef If, LLVMBasicBlockRef Then, LLVMBasicBlockRef Else) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildSwitch(LLVMBuilderRef Builder, LLVMValueRef V, LLVMBasicBlockRef Else, u32 NumCases) unsafe : LLVMValueRef;
-fn nomangle LLVMAddCase(LLVMValueRef Switch, LLVMValueRef OnVal, LLVMBasicBlockRef Dest) unsafe;
+fn nomangle LLVMBuildBr(LLVMBuilderRef Builder, LLVMBasicBlockRef Dest) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildCondBr(LLVMBuilderRef Builder, LLVMValueRef If, LLVMBasicBlockRef Then, LLVMBasicBlockRef Else) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildSwitch(LLVMBuilderRef Builder, LLVMValueRef V, LLVMBasicBlockRef Else, u32 NumCases) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMAddCase(LLVMValueRef Switch, LLVMValueRef OnVal, LLVMBasicBlockRef Dest) unsafe call_conv( "C" );
 
-fn nomangle LLVMBuildRetVoid(LLVMBuilderRef Builder) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildRet(LLVMBuilderRef Builder, LLVMValueRef V) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildRetVoid(LLVMBuilderRef Builder) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildRet(LLVMBuilderRef Builder, LLVMValueRef V) unsafe call_conv( "C" ) : LLVMValueRef;
 
-fn nomangle LLVMBuildLoad2(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef PointerVal, NullTerminatedString& name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildStore(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMValueRef Ptr) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildLoad2(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef PointerVal, NullTerminatedString& name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildStore(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMValueRef Ptr) unsafe call_conv( "C" ) : LLVMValueRef;
 
-fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildArrayAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef Val, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildArrayAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef Val, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
-fn nomangle LLVMBuildGEP2(LLVMBuilderRef BBuilder, LLVMTypeRef Ty, LLVMValueRef Pointer, $(LLVMValueRef) Indices, u32 NumIndices, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildInBoundsGEP2(LLVMBuilderRef BBuilder, LLVMTypeRef Ty, LLVMValueRef Pointer, $(LLVMValueRef) Indices, u32 NumIndices, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildGEP2(LLVMBuilderRef BBuilder, LLVMTypeRef Ty, LLVMValueRef Pointer, $(LLVMValueRef) Indices, u32 NumIndices, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildInBoundsGEP2(LLVMBuilderRef BBuilder, LLVMTypeRef Ty, LLVMValueRef Pointer, $(LLVMValueRef) Indices, u32 NumIndices, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
 fn nomangle LLVMBuildCall2(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef Fn, $(LLVMValueRef) Args, u32 NumArgs, NullTerminatedString& Name) unsafe: LLVMValueRef;
-fn nomangle LLVMBuildSelect(LLVMBuilderRef Builder, LLVMValueRef If, LLVMValueRef Then, LLVMValueRef Else, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildUnreachable(LLVMBuilderRef Builder) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSelect(LLVMBuilderRef Builder, LLVMValueRef If, LLVMValueRef Then, LLVMValueRef Else, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildUnreachable(LLVMBuilderRef Builder) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // PHI
 
-fn nomangle LLVMBuildPhi(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMAddIncoming(LLVMValueRef PhiNode, $(LLVMValueRef) IncomingValues, $(LLVMBasicBlockRef) IncomingBlocks, u32 Count) unsafe;
+fn nomangle LLVMBuildPhi(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMAddIncoming(LLVMValueRef PhiNode, $(LLVMValueRef) IncomingValues, $(LLVMBasicBlockRef) IncomingBlocks, u32 Count) unsafe call_conv( "C" );
 
 // Arithmetic
-fn nomangle LLVMBuildAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildExactUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildExactSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildURem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildSRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildExactUDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildExactSDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildURem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildSRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Binary bitwise operators
-fn nomangle LLVMBuildAnd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildOr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildXor(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildAnd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildOr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildXor(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Bit shift operators
-fn nomangle LLVMBuildShl(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildLShr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildAShr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildShl(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildLShr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildAShr(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Floating point arithmetic
-fn nomangle LLVMBuildFAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildFSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildFMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildFDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildFRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildFAdd(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildFSub(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildFMul(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildFDiv(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildFRem(LLVMBuilderRef Builder, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Compare
-fn nomangle LLVMBuildICmp(LLVMBuilderRef Builder, LLVMIntPredicate Op, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildFCmp(LLVMBuilderRef Builder, LLVMRealPredicate Op, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildICmp(LLVMBuilderRef Builder, LLVMIntPredicate Op, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildFCmp(LLVMBuilderRef Builder, LLVMRealPredicate Op, LLVMValueRef LHS, LLVMValueRef RHS, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Unary arithmetic
-fn nomangle LLVMBuildNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildFNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildNot(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildFNeg(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildNot(LLVMBuilderRef Builder, LLVMValueRef V, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Casts
 
-fn nomangle LLVMBuildTrunc(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildZExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildSExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildFPToUI(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildFPToSI(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildUIToFP(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildSIToFP(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildFPTrunc(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildFPExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildPointerCast(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildPtrToInt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildIntToPtr(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
-fn nomangle LLVMBuildBitCast(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildTrunc(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildZExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildSExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildFPToUI(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildFPToSI(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildUIToFP(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildSIToFP(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildFPTrunc(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildFPExt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildPointerCast(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildPtrToInt(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildIntToPtr(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
+fn nomangle LLVMBuildBitCast(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMTypeRef DestTy, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Intrinsics
 
@@ -538,43 +539,43 @@ fn nomangle LLVMBuildMemCpy(
 	LLVMBuilderRef B,
 	LLVMValueRef Dst, u32 DstAlign,
 	LLVMValueRef Src, u32 SrcAlign,
-	LLVMValueRef Size) unsafe : LLVMValueRef;
+	LLVMValueRef Size) unsafe call_conv( "C" ) : LLVMValueRef;
 
-fn nomangle LLVMLookupIntrinsicID($(char8) Name, size_type NameLen) unsafe : u32;
+fn nomangle LLVMLookupIntrinsicID($(char8) Name, size_type NameLen) unsafe call_conv( "C" ) : u32;
 
 fn nomangle LLVMGetIntrinsicDeclaration(
 	LLVMModuleRef Mod,
 	u32 ID,
-	$(LLVMTypeRef) ParamTypes, size_type ParamCount) unsafe : LLVMValueRef;
+	$(LLVMTypeRef) ParamTypes, size_type ParamCount) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Attributes
-fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;
-fn nomangle LLVMCreateTypeAttribute(LLVMContextRef C, u32 KindID, LLVMTypeRef type_ref) unsafe : LLVMAttributeRef;
-fn nomangle LLVMGetEnumAttributeKindForName($(char8) Name, size_type SLen) unsafe : u32;
+fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe call_conv( "C" ) : LLVMAttributeRef;
+fn nomangle LLVMCreateTypeAttribute(LLVMContextRef C, u32 KindID, LLVMTypeRef type_ref) unsafe call_conv( "C" ) : LLVMAttributeRef;
+fn nomangle LLVMGetEnumAttributeKindForName($(char8) Name, size_type SLen) unsafe call_conv( "C" ) : u32;
 
-fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe;
-fn nomangle LLVMAddCallSiteAttribute(LLVMValueRef C, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe;
+fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe call_conv( "C" );
+fn nomangle LLVMAddCallSiteAttribute(LLVMValueRef C, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe call_conv( "C" );
 
 // Metadata
 
-fn nomangle LLVMSetMetadata(LLVMValueRef Val, u32 KindID, LLVMValueRef Node) unsafe;
-fn nomangle LLVMGlobalSetMetadata(LLVMValueRef Global, u32 Kind, LLVMMetadataRef Node) unsafe;
-fn nomangle LLVMGlobalEraseMetadata(LLVMValueRef Global, u32 Kind) unsafe;
-fn nomangle LLVMGetMDKindIDInContext(LLVMContextRef C, $(char8) Name, u32 SLen) unsafe : u32;
-fn nomangle LLVMMDStringInContext2(LLVMContextRef C, $(char8) Str, size_type SLen) unsafe : LLVMMetadataRef;
-fn nomangle LLVMMDNodeInContext2(LLVMContextRef C, $(LLVMMetadataRef) MDs, size_type Count) unsafe : LLVMMetadataRef;
-fn nomangle LLVMValueAsMetadata(LLVMValueRef Val) unsafe : LLVMMetadataRef;
-fn nomangle LLVMMetadataAsValue(LLVMContextRef C, LLVMMetadataRef MD) unsafe : LLVMValueRef;
+fn nomangle LLVMSetMetadata(LLVMValueRef Val, u32 KindID, LLVMValueRef Node) unsafe call_conv( "C" );
+fn nomangle LLVMGlobalSetMetadata(LLVMValueRef Global, u32 Kind, LLVMMetadataRef Node) unsafe call_conv( "C" );
+fn nomangle LLVMGlobalEraseMetadata(LLVMValueRef Global, u32 Kind) unsafe call_conv( "C" );
+fn nomangle LLVMGetMDKindIDInContext(LLVMContextRef C, $(char8) Name, u32 SLen) unsafe call_conv( "C" ) : u32;
+fn nomangle LLVMMDStringInContext2(LLVMContextRef C, $(char8) Str, size_type SLen) unsafe call_conv( "C" ) : LLVMMetadataRef;
+fn nomangle LLVMMDNodeInContext2(LLVMContextRef C, $(LLVMMetadataRef) MDs, size_type Count) unsafe call_conv( "C" ) : LLVMMetadataRef;
+fn nomangle LLVMValueAsMetadata(LLVMValueRef Val) unsafe call_conv( "C" ) : LLVMMetadataRef;
+fn nomangle LLVMMetadataAsValue(LLVMContextRef C, LLVMMetadataRef MD) unsafe call_conv( "C" ) : LLVMValueRef;
 
 // Debug info
-fn nomangle LLVMCreateDIBuilder(LLVMModuleRef M) unsafe : LLVMDIBuilderRef;
-fn nomangle LLVMDIBuilderFinalize(LLVMDIBuilderRef Builder) unsafe;
-fn nomangle LLVMDisposeDIBuilder(LLVMDIBuilderRef Builder) unsafe;
+fn nomangle LLVMCreateDIBuilder(LLVMModuleRef M) unsafe call_conv( "C" ) : LLVMDIBuilderRef;
+fn nomangle LLVMDIBuilderFinalize(LLVMDIBuilderRef Builder) unsafe call_conv( "C" );
+fn nomangle LLVMDisposeDIBuilder(LLVMDIBuilderRef Builder) unsafe call_conv( "C" );
 
 fn nomangle LLVMDIBuilderCreateFile(
 	LLVMDIBuilderRef Builder,
 	$(char8) Filename, size_type FilenameLen,
-	$(char8) Directory, size_type DirectoryLen) unsafe : LLVMMetadataRef;
+	$(char8) Directory, size_type DirectoryLen) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateCompileUnit(
 	LLVMDIBuilderRef Builder,
@@ -590,17 +591,17 @@ fn nomangle LLVMDIBuilderCreateCompileUnit(
 	LLVMBool SplitDebugInlining,
 	LLVMBool DebugInfoForProfiling,
 	$(char8) SysRoot, size_type SysRootLen,
-	$(char8) SDK, size_type SDKLen) unsafe : LLVMMetadataRef;
+	$(char8) SDK, size_type SDKLen) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateLexicalBlock(
 	LLVMDIBuilderRef Builder,
 	LLVMMetadataRef Scope,
 	LLVMMetadataRef File,
 	u32 Line,
-	u32 Column) unsafe : LLVMMetadataRef;
+	u32 Column) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
-fn nomangle LLVMDILocationGetScope(LLVMMetadataRef Location) unsafe : LLVMMetadataRef;
-fn nomangle LLVMGetSubprogram(LLVMValueRef Func) unsafe : LLVMMetadataRef;
+fn nomangle LLVMDILocationGetScope(LLVMMetadataRef Location) unsafe call_conv( "C" ) : LLVMMetadataRef;
+fn nomangle LLVMGetSubprogram(LLVMValueRef Func) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateAutoVariable(
 	LLVMDIBuilderRef Builder,
@@ -611,7 +612,7 @@ fn nomangle LLVMDIBuilderCreateAutoVariable(
 	LLVMMetadataRef Ty,
 	LLVMBool AlwaysPreserve,
 	LLVMDIFlags Flags,
-	u32 AlignInBits) unsafe : LLVMMetadataRef;
+	u32 AlignInBits) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderInsertDeclareAtEnd(
 	LLVMDIBuilderRef Builder,
@@ -619,7 +620,7 @@ fn nomangle LLVMDIBuilderInsertDeclareAtEnd(
 	LLVMMetadataRef VarInfo,
 	LLVMMetadataRef Expr,
 	LLVMMetadataRef DebugLoc,
-	LLVMBasicBlockRef Block) unsafe : LLVMValueRef;
+	LLVMBasicBlockRef Block) unsafe call_conv( "C" ) : LLVMValueRef;
 
 fn nomangle LLVMDIBuilderCreateFunction(
 	LLVMDIBuilderRef Builder,
@@ -633,25 +634,25 @@ fn nomangle LLVMDIBuilderCreateFunction(
 	LLVMBool IsDefinition,
 	u32 ScopeLine,
 	LLVMDIFlags Flags,
-	LLVMBool IsOptimized) unsafe : LLVMMetadataRef;
+	LLVMBool IsOptimized) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
-fn nomangle LLVMSetSubprogram(LLVMValueRef Func, LLVMMetadataRef SP) unsafe;
+fn nomangle LLVMSetSubprogram(LLVMValueRef Func, LLVMMetadataRef SP) unsafe call_conv( "C" );
 
 fn nomangle LLVMDIBuilderCreateDebugLocation(
 	LLVMContextRef Ctx,
 	u32 Line,
 	u32 Column,
 	LLVMMetadataRef Scope,
-	LLVMMetadataRef InlinedAt) unsafe : LLVMMetadataRef;
+	LLVMMetadataRef InlinedAt) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
-fn nomangle LLVMDIBuilderCreateExpression(LLVMDIBuilderRef Builder, i64& Addr, size_type Length) unsafe : LLVMMetadataRef;
+fn nomangle LLVMDIBuilderCreateExpression(LLVMDIBuilderRef Builder, i64& Addr, size_type Length) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateBasicType(
 	LLVMDIBuilderRef Builder,
 	$(char8) Name, size_type NameLen,
 	u64 SizeInBits,
 	LLVMDWARFTypeEncoding Encoding,
-	LLVMDIFlags Flags) unsafe : LLVMMetadataRef;
+	LLVMDIFlags Flags) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreatePointerType(
 	LLVMDIBuilderRef Builder,
@@ -659,13 +660,13 @@ fn nomangle LLVMDIBuilderCreatePointerType(
 	u64 SizeInBits,
 	u32 AlignInBits,
 	u32 AddressSpace,
-	$(char8) Name, size_type NameLen) unsafe : LLVMMetadataRef;
+	$(char8) Name, size_type NameLen) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateSubroutineType(
 	LLVMDIBuilderRef Builder,
 	LLVMMetadataRef File,
 	$(LLVMMetadataRef) ParameterTypes, u32 NumParameterTypes,
-	LLVMDIFlags Flags) unsafe : LLVMMetadataRef;
+	LLVMDIFlags Flags) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateStructType(
 	LLVMDIBuilderRef Builder,
@@ -680,7 +681,7 @@ fn nomangle LLVMDIBuilderCreateStructType(
 	$(LLVMMetadataRef) Elements, u32 NumElements,
 	u32 RunTimeLang,
 	LLVMMetadataRef VTableHolder,
-	$(char8) UniqueId, size_type UniqueIdLen) unsafe : LLVMMetadataRef;
+	$(char8) UniqueId, size_type UniqueIdLen) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateMemberType(
 	LLVMDIBuilderRef Builder,
@@ -692,7 +693,7 @@ fn nomangle LLVMDIBuilderCreateMemberType(
 	u32 AlignInBits,
 	u64 OffsetInBits,
 	LLVMDIFlags Flags,
-	LLVMMetadataRef Ty) unsafe : LLVMMetadataRef;
+	LLVMMetadataRef Ty) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateClassType(
 	LLVMDIBuilderRef Builder,
@@ -708,7 +709,7 @@ fn nomangle LLVMDIBuilderCreateClassType(
 	$(LLVMMetadataRef) Elements, u32 NumElements,
 	LLVMMetadataRef VTableHolder,
 	LLVMMetadataRef TemplateParamsNode,
-	$(char8) UniqueIdentifier, size_type UniqueIdentifierLen) unsafe : LLVMMetadataRef;
+	$(char8) UniqueIdentifier, size_type UniqueIdentifierLen) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateReplaceableCompositeType(
 	LLVMDIBuilderRef Builder,
@@ -721,26 +722,26 @@ fn nomangle LLVMDIBuilderCreateReplaceableCompositeType(
 	u64 SizeInBits,
 	u32 AlignInBits,
 	LLVMDIFlags Flags,
-	$(char8) UniqueIdentifier, size_type UniqueIdentifierLen ) unsafe : LLVMMetadataRef;
+	$(char8) UniqueIdentifier, size_type UniqueIdentifierLen ) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMMetadataReplaceAllUsesWith(
 	LLVMMetadataRef TempTargetMetadata,
-	LLVMMetadataRef Replacement ) unsafe;
+	LLVMMetadataRef Replacement ) unsafe call_conv( "C" );
 
-fn nomangle LLVMDIBuilderGetOrCreateSubrange(LLVMDIBuilderRef Builder, i64 LowerBound, i64 Count) unsafe : LLVMMetadataRef;
+fn nomangle LLVMDIBuilderGetOrCreateSubrange(LLVMDIBuilderRef Builder, i64 LowerBound, i64 Count) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateArrayType(
 	LLVMDIBuilderRef Builder,
 	u64 Size,
 	u32 AlignInBits,
 	LLVMMetadataRef Ty,
-	$(LLVMMetadataRef) Subscripts, u32 NumSubscripts) unsafe : LLVMMetadataRef;
+	$(LLVMMetadataRef) Subscripts, u32 NumSubscripts) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateEnumerator(
 	LLVMDIBuilderRef Builder,
 	$(char8) Name, size_type NameLen,
 	i64 Value,
-	LLVMBool IsUnsigned) unsafe : LLVMMetadataRef;
+	LLVMBool IsUnsigned) unsafe call_conv( "C" ) : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateEnumerationType(
 	LLVMDIBuilderRef Builder,
@@ -751,4 +752,4 @@ fn nomangle LLVMDIBuilderCreateEnumerationType(
 	u64 SizeInBits,
 	u32 AlignInBits,
 	$(LLVMMetadataRef) Elements, u32 NumElements,
-	LLVMMetadataRef ClassTy) unsafe : LLVMMetadataRef;
+	LLVMMetadataRef ClassTy) unsafe call_conv( "C" ) : LLVMMetadataRef;

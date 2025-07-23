@@ -14,7 +14,7 @@ struct S{ i32& r; }
 // Shared pointers disabled for types with references.
 type SPtrInvalid= ust::shared_ptr_mut</S/>; //##expect_error TemplateContext
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // For non-nullable pointers expected initializer.
 		var IntPtrMut  ptr_mut ; //##expect_error ExpectedInitializer

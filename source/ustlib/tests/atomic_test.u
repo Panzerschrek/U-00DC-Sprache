@@ -1,7 +1,7 @@
 //##success_test
 import "../imports/atomic.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		var bool mut x= false;

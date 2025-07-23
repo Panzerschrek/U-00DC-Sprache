@@ -62,7 +62,7 @@ static_assert( non_sync</ SomeNonSync /> );
 static_assert( non_sync</ ust::variant</ tup[ u32, SomeNonSync ] /> /> );
 static_assert( non_sync</ ust::variant</ tup[ SomeNonSync, bool, $(char8) ] /> /> );
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		var ust::variant</ tup[ i32, f32 ] />

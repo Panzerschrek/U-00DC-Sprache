@@ -1,6 +1,6 @@
 import "inc.u"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	FunFromA();
 	FunFromB();

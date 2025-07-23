@@ -1,6 +1,6 @@
 import "common.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	ASetVar( 7554 );
 	halt if( BGetVar() != 7554 );

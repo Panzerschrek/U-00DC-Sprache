@@ -1,14 +1,14 @@
-fn Do( i32 x ) : f64;
+fn Do( i32 x ) call_conv( "C" ) : f64;
 
 namespace NameSpace
 {
-	fn Nested();
+	fn Nested() call_conv( "C" );
 
 	struct S{}
 }
 
-fn TakeS( NameSpace::S &imut s );
+fn TakeS( NameSpace::S &imut s ) call_conv( "C" );
 
-fn U32ToStr( u32 mut x, [ char8, 64 ] &mut out_str );
+fn U32ToStr( u32 mut x, [ char8, 64 ] &mut out_str ) call_conv( "C" );
 
-fn CondHalt( bool cond );
+fn CondHalt( bool cond ) call_conv( "C" );

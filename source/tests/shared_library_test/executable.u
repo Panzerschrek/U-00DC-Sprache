@@ -1,6 +1,6 @@
 import "shared_library.uh"
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	halt if(SomeUnmangledFunction() != 123098);
 	halt if(SomeMangledFunction(33.1f) != 33u);

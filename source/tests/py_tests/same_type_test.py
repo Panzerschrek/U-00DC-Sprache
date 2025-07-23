@@ -42,7 +42,7 @@ def SameType_test1():
 		static_assert( same_type</ tup[ f32, tup[ char8 ], bool ], tup[ f32, tup[ char8 ], bool ] /> );
 		static_assert( same_type</ fn( i32 x, f32 y ), fn( i32 a, f32 b ) /> );
 		static_assert( same_type</ fn() unsafe : bool, fn() unsafe : bool /> );
-		static_assert( same_type</ fn() call_conv("C"), fn() call_conv("default") /> );
+		static_assert( same_type</ fn() call_conv("Ü"), fn() call_conv("default") /> );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -73,6 +73,10 @@ def SameType_test2():
 		static_assert( !same_type</ fn( i32& x ), fn( i32 x ) /> );
 		static_assert( !same_type</ fn( i32 &imut x ), fn( i32 &mut x ) /> );
 		static_assert( !same_type</ fn() call_conv("C"), fn() call_conv("fast") /> );
+		static_assert( !same_type</ fn() call_conv("C"), fn() call_conv("default") /> );
+		static_assert( !same_type</ fn() call_conv("Ü"), fn() call_conv("C") /> );
+		static_assert( !same_type</ fn() call_conv("Ü"), fn() call_conv("system") /> );
+		static_assert( !same_type</ fn() call_conv("C"), fn() call_conv("system") /> );
 	"""
 	tests_lib.build_program( c_program_text )
 

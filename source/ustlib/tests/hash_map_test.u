@@ -41,7 +41,7 @@ private:
 	u32 state_= 0u;
 }
 
-fn nomangle main() : i32
+fn nomangle main() call_conv( "C" ) : i32
 {
 	{
 		var ust::hash_map</ i32, i32 /> mut m;

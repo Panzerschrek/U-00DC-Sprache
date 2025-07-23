@@ -638,8 +638,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Heap allocation block.
 		heap_allocation_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( heap_allocation_block );
-		llvm::Value* const heap_allocation=
+		llvm::CallInst* const heap_allocation=
 			function_context.llvm_ir_builder.CreateCall( malloc_func_, { memory_size }, "alloca_heap" );
+		heap_allocation->setCallingConv( malloc_func_->getCallingConv() );
 		function_context.llvm_ir_builder.CreateBr( end_block );
 
 		// End block.

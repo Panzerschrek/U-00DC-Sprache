@@ -538,7 +538,7 @@ std::optional<std::string> CppAstConsumer::TranslateCallingConvention( const cla
 	switch( in_type.getCallConv() )
 	{
 	case clang::CallingConv::CC_C:
-		return std::nullopt;
+		return "C";
 	case clang::CallingConv::CC_X86StdCall:
 		return "system";
 	case clang::CallingConv::CC_X86FastCall:
