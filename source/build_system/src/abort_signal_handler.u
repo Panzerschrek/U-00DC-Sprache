@@ -9,7 +9,7 @@ fn SetupAbortSignalHandler()
 	unsafe( ::signal( SIGABRT, AbortHandler ) );
 }
 
-fn AbortHandler( i32 s )
+fn AbortHandler( i32 s ) unsafe call_conv( "C" )
 {
 	// We use "halt-mode=abort" for build script libraries.
 	// If we caught an abort signal, it's likely halt in a build script.
@@ -22,7 +22,7 @@ fn AbortHandler( i32 s )
 } // namespace BK
 
 // C library function.
-fn nomangle signal( i32 sig, ( fn( i32 s ) ) handler ) unsafe call_conv( "C" );
+fn nomangle signal( i32 sig, ( fn( i32 s ) unsafe call_conv( "C" ) ) handler ) unsafe call_conv( "C" );
 
 // auto constexpr SIGINT = 2;
 // auto constexpr SIGILL = 4;
