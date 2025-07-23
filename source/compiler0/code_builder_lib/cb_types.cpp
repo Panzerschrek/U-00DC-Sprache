@@ -389,7 +389,9 @@ CallingConvention CodeBuilder::PrepareCallingConvention(
 	if( calling_convention_name == nullptr )
 		return CallingConvention::Default;
 
-	const VariablePtr v= BuildExpressionCodeEnsureVariable( *calling_convention_name, names_scope, function_context );
+	const Synt::Expression& expr= *calling_convention_name;
+
+	const VariablePtr v= BuildExpressionCodeEnsureVariable( expr, names_scope, function_context );
 
 	if( const auto array_type= v->type.GetArrayType() )
 	{
@@ -405,25 +407,25 @@ CallingConvention CodeBuilder::PrepareCallingConvention(
 						if( const auto cc_opt= StringToCallingConvention( name_str ) )
 							return *cc_opt;
 
-						REPORT_ERROR( UnknownCallingConvention, names_scope.GetErrors(), Synt::GetSrcLoc(*calling_convention_name), name_str );
+						REPORT_ERROR( UnknownCallingConvention, names_scope.GetErrors(), Synt::GetSrcLoc( expr ), name_str );
 						return CallingConvention::Default;
 					}
 					else
 					{
-						REPORT_ERROR( UnknownCallingConvention, names_scope.GetErrors(), Synt::GetSrcLoc(*calling_convention_name), "<non-trivial constant expression>" );
+						REPORT_ERROR( UnknownCallingConvention, names_scope.GetErrors(), Synt::GetSrcLoc( expr ), "<non-trivial constant expression>" );
 						return CallingConvention::Default;
 					}
 				}
 				else
 				{
-					REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetSrcLoc(*calling_convention_name) );
+					REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetSrcLoc( expr ) );
 					return CallingConvention::Default;
 				}
 			}
 		}
 	}
 
-	REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetSrcLoc(*calling_convention_name), "char8 array", v->type );
+	REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetSrcLoc( expr ), "char8 array", v->type );
 	return CallingConvention::Default;
 }
 
