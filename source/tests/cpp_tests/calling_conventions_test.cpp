@@ -536,6 +536,157 @@ U_TEST(NonDefaultCallingConventionForClassMethod_Test9)
 	BuildProgram( c_program_text );
 }
 
+U_TEST(CallingConventionArbitraryExpression_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		// Calling convention specified as variable.
+		fn Foo() call_conv( current_convention ) {}
+		auto current_convention= "cold";
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const function= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::Cold );
+}
+
+U_TEST(CallingConventionArbitraryExpression_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		// Calling convention specified as binary operator.
+		fn Foo() call_conv( "de" + "fault" ) {}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const function= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::C );
+}
+
+U_TEST(CallingConventionArbitraryExpression_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		// Calling convention specified as [] operator.
+		fn FooFast() call_conv( conventions[0] ) {}
+		fn FooCold() call_conv( conventions[1] ) {}
+		var[ [ char8, 4 ], 2 ] conventions[ "fast", "cold" ];
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const foo_fast= module->getFunction( "_Z7FooFastv" );
+	U_TEST_ASSERT( foo_fast != nullptr );
+	U_TEST_ASSERT( foo_fast->getCallingConv() == llvm::CallingConv::Fast );
+
+	const llvm::Function* const foo_cold= module->getFunction( "_Z7FooColdv" );
+	U_TEST_ASSERT( foo_cold != nullptr );
+	U_TEST_ASSERT( foo_cold->getCallingConv() == llvm::CallingConv::Cold );
+}
+
+U_TEST(CallingConventionArbitraryExpression_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		// Calling convention obtained via constexpr call.
+		fn Foo() call_conv( GetCallingConvention() ) {}
+		fn constexpr GetCallingConvention() : [ char8, 1 ] { return "C"; }
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const function= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::C );
+}
+
+U_TEST(TypesMismatch_ForCallingConvention_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() call_conv( 42 ); // "i32" value instead of "char8" elements array.
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 2 ) );
+}
+
+U_TEST(TypesMismatch_ForCallingConvention_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() call_conv( Bar ); // Function pointer value instead of "char8" elements array.
+		fn Bar();
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 2 ) );
+}
+
+U_TEST(TypesMismatch_ForCallingConvention_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() call_conv( S() ); // Struct value instead of "char8" elements array.
+		struct S{}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 2 ) );
+}
+
+U_TEST(TypesMismatch_ForCallingConvention_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() call_conv( "C"c16 ); // "char16" elements array instead of "char8" elements array.
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 2 ) );
+}
+
+U_TEST(TypesMismatch_ForCallingConvention_Test4)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() call_conv( conv ); // "byte8" elements array instead of "char8" elements array."
+		var [ byte8, 4 ] conv[ ('f'), ('a'), ('s'), ('t') ];
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::TypesMismatch, 2 ) );
+}
+
+U_TEST(ExpectedConstantExpression_ForCallingConvention_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		// Call to non-contexpr function in calling convention.
+		fn Foo() call_conv( Bar() );
+		fn Bar() : [ char8, 4 ];
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 3 ) );
+}
+
 } // namespace
 
 } // namespace U
