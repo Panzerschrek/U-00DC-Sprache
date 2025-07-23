@@ -1,3 +1,7 @@
+if(WIN32)
+	return()
+endif()
+
 # Compile simple program on "Ü-Sprache", link it together with C++ program.
 set( CPP_LINKAGE_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/cpp_linkage.u )
 CompileUSources( "${CPP_LINKAGE_SOURCES}" CPP_LINKAGE_OBJECTS )
