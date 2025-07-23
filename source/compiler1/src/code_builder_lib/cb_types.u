@@ -434,7 +434,7 @@ fn CodeBuilder::GetLLVMCallingConvention( this, CallingConvention calling_conven
 {
 	switch( calling_convention )
 	{
-		CallingConvention::Default -> { return LLVMCallConv::C; },
+		CallingConvention::Default -> { return LLVMCallConv::Fast; }, // Use fast calling convention, which should be generally faster compared to C calling convention.
 		CallingConvention::C -> { return LLVMCallConv::C; },
 		CallingConvention::Fast -> { return LLVMCallConv::Fast; },
 		CallingConvention::Cold -> { return LLVMCallConv::Cold; },
