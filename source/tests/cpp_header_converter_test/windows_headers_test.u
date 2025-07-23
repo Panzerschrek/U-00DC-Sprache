@@ -120,7 +120,20 @@ fn WriteHello()
 			reserved ) );
 }
 
-fn WindowProc( HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param ) unsafe call_conv("system") : LRESULT
+// TODO - fix this, use char-array constant for "call_conv", which depends on target.
+var bool is_32bit= typeinfo</$(byte8)/>.size_of == 4s;
+
+fn enable_if( is_32bit ) WindowProc( HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param ) unsafe call_conv("system") : LRESULT
+{
+	if( msg == u32(WM_CLOSE) || msg == u32(WM_QUIT) )
+	{
+		unsafe( ExitProcess( 0u ) );
+	}
+
+	return unsafe( DefWindowProcA( hwnd, msg, w_param, l_param ) );
+}
+
+fn enable_if( !is_32bit ) WindowProc( HWND hwnd, UINT msg, WPARAM w_param, LPARAM l_param ) unsafe call_conv("C") : LRESULT
 {
 	if( msg == u32(WM_CLOSE) || msg == u32(WM_QUIT) )
 	{
