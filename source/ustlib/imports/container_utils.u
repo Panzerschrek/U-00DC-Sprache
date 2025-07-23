@@ -86,7 +86,7 @@ fn move_into_nowhere( T mut t ) unsafe
 {
 	// Hack! Use function pointer conversions to call () function as (T) function.
 	// It works, because in C calling convention caller is responsible for arguments pushing/poping.
-	var ( fn( T t ) ) mut ptr= zero_init;
+	var ( fn( T t ) call_conv( "C" ) ) mut ptr= zero_init;
 	unsafe{  cast_ref_unsafe</ fn() call_conv( "C" ) />(ptr)= move_into_nowhere_impl;  }
 	ptr( move(t) );
 }
