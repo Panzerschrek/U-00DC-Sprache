@@ -175,11 +175,13 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) @( ust::refe
 			module_,
 			"__U_ust_memory_allocate_impl\0"[0],
 			LLVMFunctionType( malloc_result_type, $<(malloc_size_type), 1u, LLVMBool::False ) );
+		LLVMSetFunctionCallConv( malloc_function_, GetLLVMCallingConvention( CallingConvention::Default ) );
 
 		free_function_= LLVMAddFunction(
 			module_,
 			"__U_ust_memory_free_impl\0"[0],
 			LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, $<(malloc_result_type), 1u, LLVMBool::False ) );
+		LLVMSetFunctionCallConv( free_function_, GetLLVMCallingConvention( CallingConvention::Default ) );
 	}
 
 	// Get stacksave/stackrestore functions.
