@@ -79,15 +79,15 @@ fn call_default_constructor( T&mut t ) unsafe
 	}
 }
 
-fn move_into_nowhere_impl(){}
+fn move_into_nowhere_impl() call_conv( "C" ) {}
 
 template</ type T />
 fn move_into_nowhere( T mut t ) unsafe
 {
 	// Hack! Use function pointer conversions to call () function as (T) function.
-	// It works, because compiler uses "c calling convention".
+	// It works, because in C calling convention caller is responsible for arguments pushing/poping.
 	var ( fn( T t ) ) mut ptr= zero_init;
-	unsafe{  cast_ref_unsafe</ fn() />(ptr)= move_into_nowhere_impl;  }
+	unsafe{  cast_ref_unsafe</ fn() call_conv( "C" ) />(ptr)= move_into_nowhere_impl;  }
 	ptr( move(t) );
 }
 
