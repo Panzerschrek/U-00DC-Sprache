@@ -249,6 +249,7 @@ void CodeBuilder::BuildProgramInternal( const SourceGraphPtr& source_graph )
 					llvm::Function::ExternalLinkage,
 					"__U_ust_memory_allocate_impl",
 					module_.get() );
+		malloc_func_->setCallingConv( GetLLVMCallingConvention( CallingConvention::Default ) );
 
 		free_func_=
 			llvm::Function::Create(
@@ -259,6 +260,7 @@ void CodeBuilder::BuildProgramInternal( const SourceGraphPtr& source_graph )
 					llvm::Function::ExternalLinkage,
 					"__U_ust_memory_free_impl",
 					module_.get() );
+		free_func_->setCallingConv( GetLLVMCallingConvention( CallingConvention::Default ) );
 	}
 
 	{
