@@ -1649,17 +1649,7 @@ fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function
 	if( IsKeyword( it_.front(), Keyword::call_conv_ ) )
 	{
 		NextLexem();
-		ExpectLexem( Lexem::Type::BracketLeft );
-
-		if( it_.front().lexem_type != Lexem::Type::String )
-		{
-			PushErrorMessage();
-		}
-
-		function_type.calling_convention= it_.front().text;
-		NextLexem();
-
-		ExpectLexem( Lexem::Type::BracketRight );
+		function_type.calling_convention.reset( ParseExpressionInBrackets() );
 	}
 
 	if( it_.front().lexem_type != Lexem::Type::Colon )

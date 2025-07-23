@@ -408,7 +408,7 @@ struct FunctionType
 	ust::box_nullable</Expression/> references_pollution_expression;
 	ust::box_nullable</Expression/> return_value_reference_expression;
 	ust::box_nullable</Expression/> return_value_inner_references_expression;
-	ust::optional</ust::string8/> calling_convention;
+	ust::box_nullable</Expression/> calling_convention;
 	bool is_unsafe= false;
 
 	fn IsAutoReturn( this ) : bool;

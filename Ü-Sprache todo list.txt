@@ -16,7 +16,6 @@ General:
 	(in expression context)
 *) Function to function pointer assignment with multiple possible functions
 *) Provide calling convention in typeinfo for function types
-*) Calling convention as arbitrary constant expression (possibility to generate it in compilation time)
 *) Static assert message as arbitrary constrant expression (possibility to generate it in compilation time)
 *) Multidimensional [] operator - for accessing elements of multidimensional arrays or as overloaded operator
 *) Allow unsafe code and raw pointers in constexpr functions and perform additional safety checks during constexpr

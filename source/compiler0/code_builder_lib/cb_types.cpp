@@ -275,7 +275,7 @@ FunctionType CodeBuilder::PrepareFunctionType( NamesScope& names_scope, Function
 	}
 
 	function_type.unsafe= function_type_name.unsafe;
-	function_type.calling_convention= PrepareCallingConvention( function_type_name.calling_convention, function_type_name.src_loc, names_scope.GetErrors() );
+	function_type.calling_convention= PrepareCallingConvention( names_scope, function_context, function_type_name.calling_convention );
 
 	const size_t num_params= function_type.params.size();
 	if( function_type_name.references_pollution_expression != nullptr )
@@ -382,17 +382,50 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 }
 
 CallingConvention CodeBuilder::PrepareCallingConvention(
-	const std::optional<std::string>& calling_convention_name,
-	const SrcLoc& src_loc,
-	CodeBuilderErrorsContainer& errors )
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const std::unique_ptr<const Synt::Expression>& calling_convention_name )
 {
-	if( calling_convention_name == std::nullopt )
+	if( calling_convention_name == nullptr )
 		return CallingConvention::Default;
 
-	if( const auto cc_opt= StringToCallingConvention( *calling_convention_name ) )
-		return *cc_opt;
+	const Synt::Expression& expr= *calling_convention_name;
 
-	REPORT_ERROR( UnknownCallingConvention, errors, src_loc, *calling_convention_name );
+	const VariablePtr v= BuildExpressionCodeEnsureVariable( expr, names_scope, function_context );
+
+	if( const auto array_type= v->type.GetArrayType() )
+	{
+		if( const auto fundamental_type= array_type->element_type.GetFundamentalType() )
+		{
+			if( fundamental_type->fundamental_type == U_FundamentalType::char8_ )
+			{
+				if( v->constexpr_value != nullptr )
+				{
+					if( const auto constant_data= llvm::dyn_cast<llvm::ConstantDataArray>( v->constexpr_value ) )
+					{
+						const std::string_view name_str= constant_data->getRawDataValues();
+						if( const auto cc_opt= StringToCallingConvention( name_str ) )
+							return *cc_opt;
+
+						REPORT_ERROR( UnknownCallingConvention, names_scope.GetErrors(), Synt::GetSrcLoc( expr ), name_str );
+						return CallingConvention::Default;
+					}
+					else
+					{
+						REPORT_ERROR( UnknownCallingConvention, names_scope.GetErrors(), Synt::GetSrcLoc( expr ), "<non-trivial constant expression>" );
+						return CallingConvention::Default;
+					}
+				}
+				else
+				{
+					REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetSrcLoc( expr ) );
+					return CallingConvention::Default;
+				}
+			}
+		}
+	}
+
+	REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetSrcLoc( expr ), "char8 array", v->type );
 	return CallingConvention::Default;
 }
 

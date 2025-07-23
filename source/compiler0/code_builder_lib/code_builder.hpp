@@ -317,9 +317,9 @@ private:
 	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
 
 	CallingConvention PrepareCallingConvention(
-		const std::optional<std::string>& calling_convention_name,
-		const SrcLoc& src_loc,
-		CodeBuilderErrorsContainer& errors );
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::unique_ptr<const Synt::Expression>& calling_convention_name );
 
 	llvm::CallingConv::ID GetLLVMCallingConvention( CallingConvention calling_convention );
 

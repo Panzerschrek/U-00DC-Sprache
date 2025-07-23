@@ -46,6 +46,7 @@ It's also possible to declare a ``nomangle`` prototype for an implemented in C f
 
 Functions and function pointers may have a calling convention specified.
 It's specified after function parameters list and after ``unsafe`` (if it is present).
+Any expression which results into constexpr ``char8`` elements array may be used for calling convention name.
 
 .. code-block:: u_spr
 
