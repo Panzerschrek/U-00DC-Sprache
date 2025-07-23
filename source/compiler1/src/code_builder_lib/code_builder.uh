@@ -322,10 +322,10 @@ private:
 	fn FunctionTypeToPointer( mut this, FunctionType function_type ) : FunctionPointerType;
 
 	fn PrepareCallingConvention(
-		this,
-		ust::optional</ust::string8/>& calling_convention_name,
+		mut this,
 		NamesScopePtr& names_scope,
-		SrcLoc& src_loc ) : CallingConvention;
+		FunctionContext &mut function_context,
+		ust::box_nullable</Synt::Expression/>& calling_convention_name ) : CallingConvention;
 
 	fn GetLLVMCallingConvention( this, CallingConvention calling_convention ) : LLVMCallConvID;
 
