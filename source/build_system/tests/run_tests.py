@@ -381,7 +381,7 @@ def PrivateSharedLibraryDependencyWithPublicLibraryDependencyTest():
 		a_func= getattr( library, "_Z5AFuncv" )
 		b_func= getattr( library, "_Z5BFuncv" )
 	# Call "A" function which is part of public interface "A".
-	# For now this works only because underlying calling convention in Ü code is identical to C calling convention.
+	# For now this works only because underlying calling convention in Ü code is (sort of) identical to C calling convention.
 	a_func.restype = ctypes.c_uint
 	assert( a_func() == 66664 * 7 )
 	# Call "B" function, which should be also exported, because it's a public dependency of the shared library.
@@ -407,7 +407,7 @@ def PrivateSharedLibraryDependencyWithPrivateLibraryDependencyTest():
 	else:
 		a_func= getattr( library, "_Z5AFuncv" )
 	# Call "A" function which is part of public interface "A".
-	# For now this works only because underlying calling convention in Ü code is identical to C calling convention.
+	# For now this works only because underlying calling convention in Ü code is (sort of) identical to C calling convention.
 	a_func.restype = ctypes.c_uint
 	assert( a_func() == 66664 * 7 )
 	# Functions from "B" shouldn't be exported, since "B" is a private dependency of shared library "a".
@@ -433,7 +433,7 @@ def SharedLibraryDeduplicatedTransitivePublicSharedLibraryDependencyTest():
 	library= ctypes.CDLL( library_file_path )
 
 	# Call "A" function which is part of public interface "A".
-	# For now this works only because underlying calling convention in Ü code is identical to C calling convention.
+	# For now this works only because underlying calling convention in Ü code is (sort of) identical to C calling convention.
 	if g_mangling_scheme == "msvc":
 		a_func= getattr( library, "?AFunc@@YAIXZ" )
 	else:
