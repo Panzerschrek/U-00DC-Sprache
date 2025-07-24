@@ -17,7 +17,7 @@ U_TEST(CallingConventionDeclaration_Test0)
 
 	const llvm::Function* const function= module->getFunction( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
-	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::C );
+	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::Fast ); // Default calling convention is fast.
 }
 
 U_TEST(CallingConventionDeclaration_Test1)
@@ -59,7 +59,7 @@ U_TEST(CallingConventionDeclaration_Test3)
 
 	const llvm::Function* const function= module->getFunction( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
-	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::C );
+	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::Fast ); // Default calling convention is fast.
 }
 
 U_TEST(CallingConventionDeclaration_Test4)
@@ -73,7 +73,7 @@ U_TEST(CallingConventionDeclaration_Test4)
 
 	const llvm::Function* const function= module->getFunction( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
-	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::C );
+	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::Fast ); // Default calling convention is fast.
 }
 
 U_TEST(CallingConventionDeclaration_Test5)
@@ -564,7 +564,7 @@ U_TEST(CallingConventionArbitraryExpression_Test1)
 
 	const llvm::Function* const function= module->getFunction( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
-	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::C );
+	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::Fast ); // Default calling convention is fast.
 }
 
 U_TEST(CallingConventionArbitraryExpression_Test2)
