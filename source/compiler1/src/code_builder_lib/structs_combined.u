@@ -95,6 +95,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 		CallingConvention::Default -> {},
 		CallingConvention::C ->
 		{
+			result+= " ";
 			result+= KeywordToString( Keyword::call_conv_ );
 			result+= " (\"";
 			result+= "C";
@@ -102,6 +103,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 		},
 		CallingConvention::Fast ->
 		{
+			result+= " ";
 			result+= KeywordToString( Keyword::call_conv_ );
 			result+= " (\"";
 			result+= "fast";
@@ -109,6 +111,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 		},
 		CallingConvention::Cold ->
 		{
+			result+= " ";
 			result+= KeywordToString( Keyword::call_conv_ );
 			result+= " (\"";
 			result+= "cold";
@@ -116,6 +119,7 @@ fn ToString( FunctionType& function_type ) : ust::string8
 		},
 		CallingConvention::System ->
 		{
+			result+= " ";
 			result+= KeywordToString( Keyword::call_conv_ );
 			result+= " (\"";
 			result+= "system";
