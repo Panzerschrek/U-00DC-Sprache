@@ -137,8 +137,7 @@ Compiler:
 *) Add possibility to execute internal LLD directly, bypassing compiler logic itself
 *) Add possibility to execute an external linker (ld, ld.gold, ld.lld, link.exe, etc.)
 *) More options for internal linker
-*) More internal linkers spupport - MachO, wasm
-*) Faster calling convention for non-cross-language functions.
+*) Support Wasm linker
 *) Fix possible UB in float->int conversion.
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors

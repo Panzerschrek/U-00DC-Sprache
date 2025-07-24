@@ -434,7 +434,7 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const CallingConven
 	switch( calling_convention )
 	{
 	case CallingConvention::Default:
-		return llvm::CallingConv::C;
+		return llvm::CallingConv::Fast; // Use fast calling convention, which should be generally faster compared to C calling convention.
 	case CallingConvention::C:
 		return llvm::CallingConv::C;
 	case CallingConvention::Fast:

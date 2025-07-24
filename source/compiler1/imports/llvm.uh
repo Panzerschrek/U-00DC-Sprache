@@ -334,7 +334,7 @@ fn nomangle LLVMStructSetBody(LLVMTypeRef StructTy, $(LLVMTypeRef) ElementTypes,
 fn nomangle LLVMIsOpaqueStruct(LLVMTypeRef StructTy) unsafe call_conv( "C" ) : LLVMBool;
 
 fn nomangle LLVMStructGetTypeAtIndex(LLVMTypeRef StructTy, u32 i) unsafe call_conv( "C" ) : LLVMTypeRef;
-fn nomangle LLVMCountStructElementTypes(LLVMTypeRef StructTy) unsafe: u32;
+fn nomangle LLVMCountStructElementTypes(LLVMTypeRef StructTy) unsafe call_conv( "C" ) : u32;
 
 fn nomangle LLVMGetArrayLength2(LLVMTypeRef ArrayTy) unsafe call_conv( "C" ) : u64;
 
@@ -471,7 +471,7 @@ fn nomangle LLVMBuildArrayAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMVal
 fn nomangle LLVMBuildGEP2(LLVMBuilderRef BBuilder, LLVMTypeRef Ty, LLVMValueRef Pointer, $(LLVMValueRef) Indices, u32 NumIndices, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 fn nomangle LLVMBuildInBoundsGEP2(LLVMBuilderRef BBuilder, LLVMTypeRef Ty, LLVMValueRef Pointer, $(LLVMValueRef) Indices, u32 NumIndices, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 
-fn nomangle LLVMBuildCall2(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef Fn, $(LLVMValueRef) Args, u32 NumArgs, NullTerminatedString& Name) unsafe: LLVMValueRef;
+fn nomangle LLVMBuildCall2(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef Fn, $(LLVMValueRef) Args, u32 NumArgs, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 fn nomangle LLVMBuildSelect(LLVMBuilderRef Builder, LLVMValueRef If, LLVMValueRef Then, LLVMValueRef Else, NullTerminatedString& Name) unsafe call_conv( "C" ) : LLVMValueRef;
 fn nomangle LLVMBuildUnreachable(LLVMBuilderRef Builder) unsafe call_conv( "C" ) : LLVMValueRef;
 
