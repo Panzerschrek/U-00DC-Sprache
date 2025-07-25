@@ -2555,7 +2555,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 				// composite value-args must not alias.
 				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
 				// "byval" forces passing in stack.
-				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ByVal );
+				llvm_function->addParamAttrs( param_attr_index, llvm::AttrBuilder(llvm_context_).addByValAttr( param.type.GetLLVMType() ) );
 			}
 			else U_ASSERT(false);
 		}

@@ -4460,7 +4460,7 @@ Value CodeBuilder::DoCallFunction(
 				else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
 				{
 					// TODO - add other attributes?
-					call_instruction->addParamAttr( param_attr_index, llvm::Attribute::ByVal );
+					call_instruction->addParamAttr( param_attr_index, llvm::Attribute::getWithByValType( llvm_context_, param.type.GetLLVMType() ) );
 				}
 				else U_ASSERT(false);
 			}
