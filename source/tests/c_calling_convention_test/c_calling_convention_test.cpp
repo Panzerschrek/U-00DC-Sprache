@@ -289,5 +289,54 @@ void Pass_i16_x83_Test0( const std::array<int16_t, 83> x )
 		TEST_ASSERT( x[ size_t(i) ] == int16_t( i * i * 5 - i * 43 + 11 ) );
 	}
 }
+void Pass_u32_x1_Test0( const std::array<uint32_t, 1> x )
+{
+	TEST_ASSERT( x[0] == 0xFBA633ADu );
+}
+void Pass_u32_x2_Test0( const std::array<uint32_t, 2> x )
+{
+	TEST_ASSERT( x[0] == 0x5356A4D7u ); TEST_ASSERT( x[1] == 0x05AD74CBu );
+}
+void Pass_u32_x3_Test0( const std::array<uint32_t, 3> x )
+{
+	TEST_ASSERT( x[0] == 0x15A67FCBu ); TEST_ASSERT( x[1] == 0x5D56A437u ); TEST_ASSERT( x[2] == 0xAB4C8F12u );
+}
+void Pass_u32_x4_Test0( const std::array<uint32_t, 4> x )
+{
+	TEST_ASSERT( x[0] == 0x23A68FCAu ); TEST_ASSERT( x[1] == 0x1E5AA732u ); TEST_ASSERT( x[2] == 0xC34D8F12u ); TEST_ASSERT( x[3] == 0xF354AB3Eu );
+}
+void Pass_u32_x5_Test0( const std::array<uint32_t, 5> x )
+{
+	TEST_ASSERT( x[0] == 0x5E5AE732u ); TEST_ASSERT( x[1] == 0x33A68FCAu ); TEST_ASSERT( x[2] == 0xE34D8F12u ); TEST_ASSERT( x[3] == 0xD354AB3Eu );
+	TEST_ASSERT( x[4] == 0x03AD63C3u );
+}
+void Pass_u32_x6_Test0( const std::array<uint32_t, 6> x )
+{
+	TEST_ASSERT( x[0] == 0x34A68FCEu ); TEST_ASSERT( x[1] == 0x5E53E732u ); TEST_ASSERT( x[2] == 0xE34D8A12u ); TEST_ASSERT( x[3] == 0x03ADE3C3u );
+	TEST_ASSERT( x[4] == 0xD354CB3Eu ); TEST_ASSERT( x[5] == 0x42D4E6C8u );
+}
+void Pass_u32_x7_Test0( const std::array<uint32_t, 7> x )
+{
+	TEST_ASSERT( x[0] == 0x14A68FCEu ); TEST_ASSERT( x[1] == 0x5F53E732u ); TEST_ASSERT( x[2] == 0x42D4E6F8u ); TEST_ASSERT( x[3] == 0xE36D8A12u );
+	TEST_ASSERT( x[4] == 0x63ADF3C3u ); TEST_ASSERT( x[5] == 0x7354CE3Eu ); TEST_ASSERT( x[6] == 0x63E7F7C5u );
+}
+void Pass_u32_x8_Test0( const std::array<uint32_t, 8> x )
+{
+	TEST_ASSERT( x[0] == 0xE3E7F731u ); TEST_ASSERT( x[1] == 0xE4A686CEu ); TEST_ASSERT( x[2] == 0xD2D4E638u ); TEST_ASSERT( x[3] == 0xF36D8A62u );
+	TEST_ASSERT( x[4] == 0x63ADF4C3u ); TEST_ASSERT( x[5] == 0x7E54CE3Eu ); TEST_ASSERT( x[6] == 0xDF53E732u ); TEST_ASSERT( x[7] == 0xC3E47C15u );
+}
+void Pass_u32_x9_Test0( const std::array<uint32_t, 9> x )
+{
+	TEST_ASSERT( x[0] == 0xE3E1F731u ); TEST_ASSERT( x[1] == 0xE4A686CEu ); TEST_ASSERT( x[2] == 0x5E7CD38Fu ); TEST_ASSERT( x[3] == 0xD2D48638u );
+	TEST_ASSERT( x[4] == 0xF36D8A62u ); TEST_ASSERT( x[5] == 0x63ADF5C3u ); TEST_ASSERT( x[6] == 0x7E54CE3Eu ); TEST_ASSERT( x[7] == 0xDF51E732u );
+	TEST_ASSERT( x[8] == 0xE3E47C15u );
+}
+void Pass_u32_x17_Test0( const std::array<uint32_t, 17> x )
+{
+	for( uint32_t i= 0; i < 17u; ++i )
+	{
+		TEST_ASSERT( x[i] == i * i * i * 37u + i * i * 52u + i * 12u + 36747u );
+	}
+}
 
 } // extern "C"

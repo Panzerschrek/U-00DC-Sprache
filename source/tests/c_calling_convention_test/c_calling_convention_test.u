@@ -212,6 +212,50 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 		Pass_i16_x83_Test0( arg );
 	}
+	{
+		var [ u32, 1 ] arg[ 0xFBA633ADu ];
+		Pass_u32_x1_Test0( arg );
+	}
+	{
+		var [ u32, 2 ] arg[ 0x5356A4D7u, 0x05AD74CBu ];
+		Pass_u32_x2_Test0( arg );
+	}
+	{
+		var [ u32, 3 ] arg[ 0x15A67FCBu, 0x5D56A437u, 0xAB4C8F12u ];
+		Pass_u32_x3_Test0( arg );
+	}
+	{
+		var [ u32, 4 ] arg[ 0x23A68FCAu, 0x1E5AA732u, 0xC34D8F12u, 0xF354AB3Eu ];
+		Pass_u32_x4_Test0( arg );
+	}
+	{
+		var [ u32, 5 ] arg[ 0x5E5AE732u, 0x33A68FCAu, 0xE34D8F12u, 0xD354AB3Eu, 0x03AD63C3u ];
+		Pass_u32_x5_Test0( arg );
+	}
+	{
+		var [ u32, 6 ] arg[ 0x34A68FCEu, 0x5E53E732u, 0xE34D8A12u, 0x03ADE3C3u, 0xD354CB3Eu, 0x42D4E6C8u ];
+		Pass_u32_x6_Test0( arg );
+	}
+	{
+		var [ u32, 7 ] arg[ 0x14A68FCEu, 0x5F53E732u, 0x42D4E6F8u, 0xE36D8A12u, 0x63ADF3C3u, 0x7354CE3Eu, 0x63E7F7C5u ];
+		Pass_u32_x7_Test0( arg );
+	}
+	{
+		var [ u32, 8 ] arg[ 0xE3E7F731u, 0xE4A686CEu, 0xD2D4E638u, 0xF36D8A62u, 0x63ADF4C3u, 0x7E54CE3Eu, 0xDF53E732u, 0xC3E47C15u ];
+		Pass_u32_x8_Test0( arg );
+	}
+	{
+		var [ u32, 9 ] arg[ 0xE3E1F731u, 0xE4A686CEu, 0x5E7CD38Fu, 0xD2D48638u, 0xF36D8A62u, 0x63ADF5C3u, 0x7E54CE3Eu, 0xDF51E732u, 0xE3E47C15u ];
+		Pass_u32_x9_Test0( arg );
+	}
+	{
+		var [ u32, 17 ] mut arg= zero_init;
+		for( auto mut i= 0u; i < 17u; ++i )
+		{
+			arg[ i ]= u32( i * i * i * 37u + i * i * 52u + i * 12u + 36747u );
+		}
+		Pass_u32_x17_Test0( arg );
+	}
 
 	return 0;
 }
@@ -302,3 +346,13 @@ fn nomangle Pass_i16_x8_Test0( [ i16, 8 ] x ) call_conv( "C" );
 fn nomangle Pass_i16_x9_Test0( [ i16, 9 ] x ) call_conv( "C" );
 fn nomangle Pass_i16_x15_Test0( [ i16, 15 ] x ) call_conv( "C" );
 fn nomangle Pass_i16_x83_Test0( [ i16, 83 ] x ) call_conv( "C" );
+fn nomangle Pass_u32_x1_Test0( [ u32, 1 ] x ) call_conv( "C" );
+fn nomangle Pass_u32_x2_Test0( [ u32, 2 ] x ) call_conv( "C" );
+fn nomangle Pass_u32_x3_Test0( [ u32, 3 ] x ) call_conv( "C" );
+fn nomangle Pass_u32_x4_Test0( [ u32, 4 ] x ) call_conv( "C" );
+fn nomangle Pass_u32_x5_Test0( [ u32, 5 ] x ) call_conv( "C" );
+fn nomangle Pass_u32_x6_Test0( [ u32, 6 ] x ) call_conv( "C" );
+fn nomangle Pass_u32_x7_Test0( [ u32, 7 ] x ) call_conv( "C" );
+fn nomangle Pass_u32_x8_Test0( [ u32, 8 ] x ) call_conv( "C" );
+fn nomangle Pass_u32_x9_Test0( [ u32, 9 ] x ) call_conv( "C" );
+fn nomangle Pass_u32_x17_Test0( [ u32, 17 ] x ) call_conv( "C" );
