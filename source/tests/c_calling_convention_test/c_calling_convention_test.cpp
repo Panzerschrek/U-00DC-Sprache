@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdint>
 #include <iostream>
 
@@ -44,5 +45,17 @@ void Pass_char8_Test3( const char x ) { TEST_ASSERT( x == char(240) ); }
 void Pass_char16_Test0( const char16_t x ) { TEST_ASSERT( x == u'Ж' ); }
 void Pass_char16_Test1( const char16_t x ) { TEST_ASSERT( x == u'Ꙥ' ); }
 void Pass_char32_Test0( const char32_t x ) { TEST_ASSERT( x == U'😀' ); }
+void Pass_f32_Test0( const float x ) { TEST_ASSERT( x == 0.0f ); }
+void Pass_f32_Test1( const float x ) { TEST_ASSERT( x == 0.125f ); }
+void Pass_f32_Test2( const float x ) { TEST_ASSERT( x == 6743.5f ); }
+void Pass_f32_Test3( const float x ) { TEST_ASSERT( x == -7689543378437.0f ); }
+void Pass_f32_Test4( const float x ) { TEST_ASSERT( x == 1.0f / 0.0f ); }
+void Pass_f32_Test5( const float x ) { TEST_ASSERT( std::isnan(x) ); }
+void Pass_f64_Test0( const double x ) { TEST_ASSERT( x == 0.0 ); }
+void Pass_f64_Test1( const double x ) { TEST_ASSERT( x == 0.0625 ); }
+void Pass_f64_Test2( const double x ) { TEST_ASSERT( x == 173.25 ); }
+void Pass_f64_Test3( const double x ) { TEST_ASSERT( x == -569907695478437.0 ); }
+void Pass_f64_Test4( const double x ) { TEST_ASSERT( x == 1.0 / 0.0 ); }
+void Pass_f64_Test5( const double x ) { TEST_ASSERT( std::isnan(x) ); }
 
 } // extern "C"

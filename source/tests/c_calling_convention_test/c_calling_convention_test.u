@@ -38,6 +38,18 @@ fn nomangle main() call_conv( "C" ) : i32
 	Pass_char16_Test0( 'Ж'c16 );
 	Pass_char16_Test1( 'Ꙥ'c16 );
 	Pass_char32_Test0( '😀'c32 );
+	Pass_f32_Test0( 0.0f );
+	Pass_f32_Test1( 0.125f );
+	Pass_f32_Test2( 6743.5f );
+	Pass_f32_Test3( -7689543378437.0f );
+	Pass_f32_Test4( 1.0f / 0.0f );
+	Pass_f32_Test5( 0.0f / 0.0f );
+	Pass_f64_Test0( 0.0 );
+	Pass_f64_Test1( 0.0625 );
+	Pass_f64_Test2( 173.25 );
+	Pass_f64_Test3( -569907695478437.0 );
+	Pass_f64_Test4( 1.0 / 0.0 );
+	Pass_f64_Test5( 0.0 / 0.0 );
 
 	return 0;
 }
@@ -80,3 +92,15 @@ fn nomangle Pass_char8_Test3( char8 x ) call_conv( "C" );
 fn nomangle Pass_char16_Test0( char16 x ) call_conv( "C" );
 fn nomangle Pass_char16_Test1( char16 x ) call_conv( "C" );
 fn nomangle Pass_char32_Test0( char32 x ) call_conv( "C" );
+fn nomangle Pass_f32_Test0( f32 x ) call_conv( "C" );
+fn nomangle Pass_f32_Test1( f32 x ) call_conv( "C" );
+fn nomangle Pass_f32_Test2( f32 x ) call_conv( "C" );
+fn nomangle Pass_f32_Test3( f32 x ) call_conv( "C" );
+fn nomangle Pass_f32_Test4( f32 x ) call_conv( "C" );
+fn nomangle Pass_f32_Test5( f32 x ) call_conv( "C" );
+fn nomangle Pass_f64_Test0( f64 x ) call_conv( "C" );
+fn nomangle Pass_f64_Test1( f64 x ) call_conv( "C" );
+fn nomangle Pass_f64_Test2( f64 x ) call_conv( "C" );
+fn nomangle Pass_f64_Test3( f64 x ) call_conv( "C" );
+fn nomangle Pass_f64_Test4( f64 x ) call_conv( "C" );
+fn nomangle Pass_f64_Test5( f64 x ) call_conv( "C" );
