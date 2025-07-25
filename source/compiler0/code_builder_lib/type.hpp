@@ -3,7 +3,6 @@
 #include <variant>
 
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/IR/CallingConv.h>
 #include <llvm/IR/DerivedTypes.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
