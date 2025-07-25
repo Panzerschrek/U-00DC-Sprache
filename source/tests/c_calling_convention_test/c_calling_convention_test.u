@@ -1,0 +1,8 @@
+fn nomangle main() call_conv( "C" ) : i32
+{
+	PassI8_Test0( 27i8 );
+
+	return 0;
+}
+
+fn nomangle PassI8_Test0( i8 x ) call_conv( "C" );
