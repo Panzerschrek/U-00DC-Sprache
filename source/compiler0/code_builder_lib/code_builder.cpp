@@ -111,6 +111,7 @@ CodeBuilder::CodeBuilder(
 	, collect_definition_points_( options.collect_definition_points )
 	, skip_building_generated_functions_( options.skip_building_generated_functions )
 	, vfs_( std::move(vfs) )
+	, calling_convention_infos_( CreateCallingConventionInfos( target_triple_, data_layout_ ) )
 	, constexpr_function_evaluator_( data_layout_ )
 	, mangler_( CreateMangler( options.mangling_scheme, data_layout_ ) )
 	, tbaa_metadata_builder_( llvm_context_, data_layout, mangler_ )
@@ -1674,13 +1675,18 @@ void CodeBuilder::BuildFuncCode(
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
-				if( GetSingleScalarType( variable->type.GetLLVMType() ) != nullptr )
+				const ICallingConventionInfo::ArgumentPassing argument_passing=
+					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareValueArgumentPassingInfo( param.type );
+
+				if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
 				{
 					variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
 					CreateLifetimeStart( function_context, variable->llvm_value );
 
-					// Reinterretete composite type address as scalar type address and store value in it.
-					function_context.llvm_ir_builder.CreateStore( &llvm_arg, variable->llvm_value );
+					// Store direct argument using address of object allocated on stack.
+					// TODO - use typed store (with TBAA metadata)?
+					llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( &llvm_arg, variable->llvm_value );
+					store_instruction->setAlignment( llvm::Align( uint64_t( direct_passing->load_store_alignment ) ) );
 				}
 				else
 				{
@@ -2519,41 +2525,55 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 		const auto param_attr_index= uint32_t(i + (first_param_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
-		const bool pass_value_param_by_hidden_ref=
-			param.value_type == ValueType::Value &&
-			(param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr ) &&
-			GetSingleScalarType( param.type.GetLLVMType() ) == nullptr;
-
-		// Mark reference params as nonnull.
-		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
-			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
-		// Mutable reference params or composite value-args must not alias.
-		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
-		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
-			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
-		// Mark as "readonly" immutable reference params.
-		if( param.value_type == ValueType::ReferenceImut )
-			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ReadOnly );
-		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
-		// It is not possible to capture this reference.
-		if( pass_value_param_by_hidden_ref )
-			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
-
 		if( param.value_type == ValueType::Value )
 		{
-			if( const auto f= param.type.GetFundamentalType() )
+			const ICallingConventionInfo::ArgumentPassing argument_passing=
+				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareValueArgumentPassingInfo( param.type );
+
+			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
 			{
-				if( IsSignedInteger( f->fundamental_type ) )
+				if( direct_passing->sext )
 					llvm_function->addParamAttr( param_attr_index, llvm::Attribute::SExt );
-				else if(
-					IsUnsignedInteger( f->fundamental_type ) ||
-					IsChar( f->fundamental_type ) ||
-					IsByte( f->fundamental_type ) ||
-					f->fundamental_type == U_FundamentalType::bool_ )
+				if( direct_passing->zext )
 					llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
-				else { /* void and float types doesn't require signext/zeroext attributes. */ }
 			}
+			else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) )
+			{
+				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
+				// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
+				// It is not possible to capture this reference.
+				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
+				// composite value-args must not alias.
+				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
+			}
+			else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
+			{
+				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
+				// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
+				// It is not possible to capture this reference.
+				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
+				// composite value-args must not alias.
+				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
+				// "byval" forces passing in stack.
+				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ByVal );
+			}
+			else U_ASSERT(false);
 		}
+		else if( param.value_type == ValueType::ReferenceImut )
+		{
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
+			// Mark as "readonly" immutable reference params.
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ReadOnly );
+			// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/17.0.1/docs/AliasAnalysis.html#must-may-or-no.
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
+		}
+		else if( param.value_type == ValueType::ReferenceMut )
+		{
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
+			// Mutable reference params must not alias.
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
+		}
+		else U_ASSERT(false);
 	}
 
 	// Prepare ret attributes.
@@ -2593,12 +2613,24 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 		const auto param_attr_index= uint32_t(i + (first_param_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
-		const bool pass_value_param_by_hidden_ref=
-			param.value_type == ValueType::Value &&
-			( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr ) &&
-			GetSingleScalarType( param.type.GetLLVMType() ) == nullptr;
 		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
-		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
+		if( param.value_type == ValueType::Value )
+		{
+			const ICallingConventionInfo::ArgumentPassing argument_passing=
+				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareValueArgumentPassingInfo( param.type );
+
+			if(
+				std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
+				std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
+			{
+				const auto llvm_type= param.type.GetLLVMType();
+				if( !llvm_type->isSized() )
+					continue; // May be in case of error.
+
+				llvm_function->addDereferenceableParamAttr( param_attr_index, data_layout_.getTypeAllocSize( llvm_type ) );
+			}
+		}
+		else
 		{
 			const auto llvm_type= param.type.GetLLVMType();
 			if( !llvm_type->isSized() )

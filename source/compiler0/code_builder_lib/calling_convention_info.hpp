@@ -20,10 +20,14 @@ public:
 		bool zext= false;
 	};
 
+	// Pass pointer to a value allocated on caller stack.
 	struct ArgumentPassingByPointer{};
-	struct ArguemntPassingInStack{};
+	// Almost identical to passing by pointer,
+	// but "byval" attribute is used and thus LLVM library pushes temporary copy direct onto the stack.
+	// No actual pointer should be passed, value should be accessed by stack offset.
+	struct ArgumentPassingInStack{};
 
-	using ArgumentPassing= std::variant<ArgumentPassingDirect, ArgumentPassingByPointer, ArguemntPassingInStack>;
+	using ArgumentPassing= std::variant<ArgumentPassingDirect, ArgumentPassingByPointer, ArgumentPassingInStack>;
 
 public:
 	virtual ~ICallingConventionInfo()= default;

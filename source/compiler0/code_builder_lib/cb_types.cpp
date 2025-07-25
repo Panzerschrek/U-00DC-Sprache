@@ -329,25 +329,16 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 			// Require complete type in order to know how to pass value args.
 			if( EnsureTypeComplete( param.type ) )
 			{
-				if( param.type.GetFundamentalType() != nullptr ||
-					param.type.GetEnumType() != nullptr ||
-					param.type.GetRawPointerType() != nullptr ||
-					param.type.GetFunctionPointerType() )
-				{}
-				else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
-				{
-					if( const auto single_scalar= GetSingleScalarType( param.type.GetLLVMType() ) )
-					{
-						// Pass composite types with single scalar inside in register, using type of this scalar.
-						type= single_scalar;
-					}
-					else
-					{
-						// Pass composite types by hidden pointer.
-						type= type->getPointerTo();
-					}
-				}
-				else U_ASSERT( false );
+				const ICallingConventionInfo::ArgumentPassing argument_passing=
+					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareValueArgumentPassingInfo( param.type );
+
+				if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+					type= direct_passing->llvm_type;
+				else if(
+					std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
+					std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
+					type= type->getPointerTo();
+				else U_ASSERT(false);
 			}
 		}
 		else

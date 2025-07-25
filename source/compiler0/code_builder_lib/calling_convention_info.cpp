@@ -112,6 +112,20 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculareV
 			return ArgumentPassingByPointer{};
 	}
 
+	if( const auto a= type.GetArrayType() )
+	{
+		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
+		{
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= single_scalar;
+			argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
+			// TODO - set sext/zext?
+			return argument_passing;
+		}
+		else
+			return ArgumentPassingByPointer{};
+	}
+
 	if( const auto t= type.GetTupleType() )
 	{
 		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )

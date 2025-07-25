@@ -4205,14 +4205,22 @@ Value CodeBuilder::DoCallFunction(
 				EnsureTypeComplete( param.type ); // arg type for value arg must be already complete.
 				function_context.variables_state.TryAddInnerLinks( expr, arg_node, names_scope.GetErrors(), src_loc );
 
-				llvm::Type* const single_scalar_type= GetSingleScalarType( param.type.GetLLVMType() );
+				const ICallingConventionInfo::ArgumentPassing argument_passing=
+					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareValueArgumentPassingInfo( param.type );
 
 				if( expr->constexpr_value != nullptr )
 				{
-					if( single_scalar_type == nullptr )
-						constant_llvm_args.push_back( expr->constexpr_value );
-					else
+					if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+					{
+						// TODO - use it.
+						(void)direct_passing;
 						constant_llvm_args.push_back( UnwrapRawScalarConstant( expr->constexpr_value ) );
+					}
+					else if(
+						std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
+						std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
+						constant_llvm_args.push_back( expr->constexpr_value );
+					else U_ASSERT(false);
 				}
 
 				if( expr->value_type == ValueType::Value && expr->type == param.type )
@@ -4222,10 +4230,17 @@ Value CodeBuilder::DoCallFunction(
 
 					if( !function_context.is_functionless_context )
 					{
-						if( single_scalar_type == nullptr )
+						if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+						{
+							llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( direct_passing->llvm_type, expr->llvm_value );
+							load_instruction->setAlignment( llvm::Align( uint64_t( direct_passing->load_store_alignment ) ) );
+							llvm_args[arg_number]= load_instruction;
+						}
+						else if(
+							std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
+							std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ))
 							llvm_args[arg_number]= expr->llvm_value;
-						else
-							llvm_args[arg_number]= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expr->llvm_value );
+						else U_ASSERT(false);
 
 						// Save address into temporary container to call lifetime.end after call.
 						value_args_for_lifetime_end_call.push_back( expr->llvm_value );
@@ -4261,16 +4276,17 @@ Value CodeBuilder::DoCallFunction(
 							param.type,
 							function_context );
 
-						if( single_scalar_type == nullptr )
+						if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
 						{
-							// Pass by hidden reference.
+							llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( direct_passing->llvm_type, arg_copy );
+							load_instruction->setAlignment( llvm::Align( uint64_t( direct_passing->load_store_alignment ) ) );
+							llvm_args[arg_number]= load_instruction;
+						}
+						else if(
+							std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
+							std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
 							llvm_args[arg_number]= arg_copy;
-						}
-						else
-						{
-							// If this is a single scalar type - just load value.
-							llvm_args[arg_number]= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
-						}
+						else U_ASSERT(false);
 
 						// Save address into temporary container to call lifetime.end after call.
 						value_args_for_lifetime_end_call.push_back( arg_copy );
@@ -4427,18 +4443,26 @@ Value CodeBuilder::DoCallFunction(
 			const FunctionType::Param& param= function_type.params[i];
 			if( param.value_type == ValueType::Value )
 			{
-				if( const auto f= param.type.GetFundamentalType() )
+				const ICallingConventionInfo::ArgumentPassing argument_passing=
+					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareValueArgumentPassingInfo( param.type );
+
+				if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
 				{
-					if( IsSignedInteger( f->fundamental_type ) )
+					if( direct_passing->sext )
 						call_instruction->addParamAttr( param_attr_index, llvm::Attribute::SExt );
-					else if(
-						IsUnsignedInteger( f->fundamental_type ) ||
-						IsChar( f->fundamental_type ) ||
-						IsByte( f->fundamental_type ) ||
-						f->fundamental_type == U_FundamentalType::bool_ )
+					if( direct_passing->zext )
 						call_instruction->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
-					else { /* void and float types doesn't require signext/zeroext attributes. */ }
 				}
+				else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) )
+				{
+					// TODO - add other attributes?
+				}
+				else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
+				{
+					// TODO - add other attributes?
+					call_instruction->addParamAttr( param_attr_index, llvm::Attribute::ByVal );
+				}
+				else U_ASSERT(false);
 			}
 		}
 

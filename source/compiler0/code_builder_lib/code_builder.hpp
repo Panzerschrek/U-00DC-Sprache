@@ -13,6 +13,7 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../code_builder_lib_common/interpreter.hpp"
 #include "../../code_builder_lib_common/mangling.hpp"
+#include "calling_convention_info.hpp"
 #include "class.hpp"
 #include "debug_info_builder.hpp"
 #include "enum.hpp"
@@ -1484,6 +1485,7 @@ private:
 	bool skip_building_generated_functions_;
 
 	const IVfsSharedPtr vfs_;
+	const CallingConventionInfos calling_convention_infos_;
 
 	struct
 	{
