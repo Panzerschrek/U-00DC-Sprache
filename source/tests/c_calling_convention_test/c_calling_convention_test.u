@@ -1,8 +1,20 @@
 fn nomangle main() call_conv( "C" ) : i32
 {
-	PassI8_Test0( 27i8 );
+	Pass_i8_Test0( 27i8 );
+	Pass_i8_Test1( -58i8 );
+	Pass_u8_Test0( 117u8 );
+	Pass_u8_Test1( 134u8 );
+	Pass_u8_Test2( u8(249) );
+	Pass_i16_Test0( 27346i16 );
+	Pass_i16_Test1( -15343i16 );
 
 	return 0;
 }
 
-fn nomangle PassI8_Test0( i8 x ) call_conv( "C" );
+fn nomangle Pass_i8_Test0( i8 x ) call_conv( "C" );
+fn nomangle Pass_i8_Test1( i8 x ) call_conv( "C" );
+fn nomangle Pass_u8_Test0( u8 x ) call_conv( "C" );
+fn nomangle Pass_u8_Test1( u8 x ) call_conv( "C" );
+fn nomangle Pass_u8_Test2( u8 x ) call_conv( "C" );
+fn nomangle Pass_i16_Test0( i16 x ) call_conv( "C" );
+fn nomangle Pass_i16_Test1( i16 x ) call_conv( "C" );
