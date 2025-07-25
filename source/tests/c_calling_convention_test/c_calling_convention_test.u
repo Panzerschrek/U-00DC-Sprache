@@ -29,6 +29,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	Pass_u64_Test1( 2147521472u64 );
 	Pass_u64_Test2( 7445889504678477554u64 );
 	Pass_u64_Test3( 18246784073809531617u64 );
+	Pass_i128_Test0( i128( ( ( 0x0123456789ABCDEFu128) << 64u ) | 0xFEDCBA9876543210u128 ) );
+	Pass_u128_Test0( ( ( 0xFEDCBA9876543210u128) << 64u ) | 0x0123456789ABCDEFu128 );
 
 	return 0;
 }
@@ -62,3 +64,5 @@ fn nomangle Pass_u64_Test0( u64 x ) call_conv( "C" );
 fn nomangle Pass_u64_Test1( u64 x ) call_conv( "C" );
 fn nomangle Pass_u64_Test2( u64 x ) call_conv( "C" );
 fn nomangle Pass_u64_Test3( u64 x ) call_conv( "C" );
+fn nomangle Pass_i128_Test0( i128 x ) call_conv( "C" );
+fn nomangle Pass_u128_Test0( u128 x ) call_conv( "C" );
