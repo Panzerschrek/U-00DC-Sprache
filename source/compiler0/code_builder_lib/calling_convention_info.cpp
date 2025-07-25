@@ -279,12 +279,13 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 		{
 			constexpr size_t num_parts= 2;
 			std::array<llvm::Type*, num_parts> types{};
+			const uint32_t part_sizes[2]{ 8u, uint32_t(type_size)  - 8u };
 			for( size_t part= 0; part < num_parts; ++part )
 			{
 				if( classes[part] == ArgumentClass::Integer )
-					types[part]= llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 );
+					types[part]= llvm::IntegerType::get( llvm_context, part_sizes[part] * 8 );
 				else if( classes[part] == ArgumentClass::SSE )
-					types[part]= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+					types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
 				else U_ASSERT(false);
 			}
 
@@ -308,8 +309,8 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 void CallingConventionInfoSystemVX86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint64_t offset )
 {
 	if( llvm_type.isPointerTy() )
-		MergeArgumentClasses( out_classes[ ( offset + 8 ) >> 3 ], ArgumentClass::Integer );
-	else if( llvm_type.isPointerTy() )
+		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
+	else if( llvm_type.isIntegerTy() )
 	{
 		const uint64_t size= llvm_type.getIntegerBitWidth() / 8;
 		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
