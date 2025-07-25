@@ -2538,6 +2538,17 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 		// It is not possible to capture this reference.
 		if( pass_value_param_by_hidden_ref )
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
+
+		if( param.value_type == ValueType::Value )
+		{
+			if( const auto f= param.type.GetFundamentalType() )
+			{
+				if( IsSignedInteger( f->fundamental_type ) )
+					llvm_function->addParamAttr( param_attr_index, llvm::Attribute::SExt );
+				else if( IsUnsignedInteger( f->fundamental_type ) )
+					llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
+			}
+		}
 	}
 
 	// Prepare ret attributes.

@@ -4421,6 +4421,22 @@ Value CodeBuilder::DoCallFunction(
 		if( return_value_is_sret )
 			call_instruction->addParamAttr( 0, llvm::Attribute::get( llvm_context_, llvm::Attribute::StructRet, function_type.return_type.GetLLVMType() ) );
 
+		for( size_t i= 0u; i < function_type.params.size(); i++ )
+		{
+			const auto param_attr_index= uint32_t(i + (return_value_is_sret ? 1u : 0u ));
+			const FunctionType::Param& param= function_type.params[i];
+			if( param.value_type == ValueType::Value )
+			{
+				if( const auto f= param.type.GetFundamentalType() )
+				{
+					if( IsSignedInteger( f->fundamental_type ) )
+						call_instruction->addParamAttr( param_attr_index, llvm::Attribute::SExt );
+					else if( IsUnsignedInteger( f->fundamental_type ) )
+						call_instruction->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
+				}
+			}
+		}
+
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 			result->llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 		else if( return_value_is_composite )
