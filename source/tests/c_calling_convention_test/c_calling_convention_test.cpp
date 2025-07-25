@@ -366,5 +366,20 @@ void Pass_u64_x11_Test0( const std::array<uint64_t, 11> x )
 		TEST_ASSERT( x[i] == i * i * i * 337547u + i * i * i * 563454548u + 34565224787u );
 	}
 }
+void Pass_u128_x1_Test0( const std::array<__uint128_t, 1> x )
+{
+	TEST_ASSERT( x[0] == ( ( __uint128_t( 0xEBA631ADE4968FC3ull ) << 64u ) | 0x5E7CD38FDF53E732ull ) );
+}
+void Pass_u128_x2_Test0( const std::array<__uint128_t, 2> x )
+{
+	TEST_ASSERT( x[0] == ( ( __uint128_t( 0xEEA631ADE4968FC3ull ) << 64u ) | 0x5E7CD3CFDF53E732ull ) );
+	TEST_ASSERT( x[1] == ( ( __uint128_t( 0x7353CE3ED2D48638ull ) << 64u ) | 0xC3E4741534A68FCEull ) );
+}
+void Pass_u128_x3_Test0( const std::array<__uint128_t, 3> x )
+{
+	TEST_ASSERT( x[0] == ( ( __uint128_t( 0x1EA63AADE4968FC3ull ) << 64u ) | 0x5E7CDECFDF53E738ull ) );
+	TEST_ASSERT( x[1] == ( ( __uint128_t( 0x7353CE3ED2D48138ull ) << 64u ) | 0xC354741534A68FFEull ) );
+	TEST_ASSERT( x[2] == ( ( __uint128_t( 0x7353CE3ED2D48638ull ) << 64u ) | 0x13E7F7313B4C8F12ull ) );
+}
 
 } // extern "C"

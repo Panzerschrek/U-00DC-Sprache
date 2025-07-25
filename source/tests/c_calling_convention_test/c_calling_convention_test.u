@@ -284,6 +284,23 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 		Pass_u64_x11_Test0( arg );
 	}
+	{
+		var [ u128, 1 ] arg[ ( ( u128( 0xEBA631ADE4968FC3u ) << 64u ) | 0x5E7CD38FDF53E732u128 ) ];
+		Pass_u128_x1_Test0( arg );
+	}
+	{
+		var [ u128, 2 ] arg[
+			( ( u128( 0xEEA631ADE4968FC3u ) << 64u ) | 0x5E7CD3CFDF53E732u128 ),
+			( ( u128( 0x7353CE3ED2D48638u ) << 64u ) | 0xC3E4741534A68FCEu128 ) ];
+		Pass_u128_x2_Test0( arg );
+	}
+	{
+		var [ u128, 3 ] arg[
+			( ( u128( 0x1EA63AADE4968FC3u ) << 64u ) | 0x5E7CDECFDF53E738u128 ),
+			( ( u128( 0x7353CE3ED2D48138u ) << 64u ) | 0xC354741534A68FFEu128 ),
+			( ( u128( 0x7353CE3ED2D48638u ) << 64u ) | 0x13E7F7313B4C8F12u128 ) ];
+		Pass_u128_x3_Test0( arg );
+	}
 
 	return 0;
 }
@@ -390,3 +407,6 @@ fn nomangle Pass_u64_x3_Test0( [ u64, 3 ] x ) call_conv( "C" );
 fn nomangle Pass_u64_x4_Test0( [ u64, 4 ] x ) call_conv( "C" );
 fn nomangle Pass_u64_x5_Test0( [ u64, 5 ] x ) call_conv( "C" );
 fn nomangle Pass_u64_x11_Test0( [ u64, 11 ] x ) call_conv( "C" );
+fn nomangle Pass_u128_x1_Test0( [ u128, 1 ] x ) call_conv( "C" );
+fn nomangle Pass_u128_x2_Test0( [ u128, 2 ] x ) call_conv( "C" );
+fn nomangle Pass_u128_x3_Test0( [ u128, 3 ] x ) call_conv( "C" );
