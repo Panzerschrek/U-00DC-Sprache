@@ -181,6 +181,7 @@ struct RawPointerType
 bool operator==( const RawPointerType& l, const RawPointerType& r );
 inline bool operator!=( const RawPointerType& l, const RawPointerType& r ) { return !( l == r ); }
 
+// Keep it sequential, since these values are used for array indexing.
 enum class CallingConvention : uint8_t
 {
 	Default,
@@ -189,6 +190,8 @@ enum class CallingConvention : uint8_t
 	Cold,
 	System,
 };
+
+constexpr size_t g_num_calling_conventions= 5;
 
 std::optional<CallingConvention> StringToCallingConvention( std::string_view s );
 
