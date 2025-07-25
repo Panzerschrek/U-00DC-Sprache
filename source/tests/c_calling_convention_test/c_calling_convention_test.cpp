@@ -233,5 +233,61 @@ void Pass_u8_x371_Test0( const std::array<uint8_t, 371> x )
 		TEST_ASSERT( x[i] == uint8_t( i * 3u - i * i * 6u + 564u ) );
 	}
 }
+void Pass_i16_x1_Test0( const std::array<int16_t, 1> x )
+{
+	TEST_ASSERT( x[0] == -27816 );
+}
+void Pass_i16_x2_Test0( const std::array<int16_t, 2> x )
+{
+	TEST_ASSERT( x[0] == 1754 ); TEST_ASSERT( x[1] == -6534 );
+}
+void Pass_i16_x3_Test0( const std::array<int16_t, 3> x )
+{
+	TEST_ASSERT( x[0] == -1234 ); TEST_ASSERT( x[1] == 30431 ); TEST_ASSERT( x[2] == 561 );
+}
+void Pass_i16_x4_Test0( const std::array<int16_t, 4> x )
+{
+	TEST_ASSERT( x[0] == 29554 ); TEST_ASSERT( x[1] == -63 ); TEST_ASSERT( x[2] == 2452 ); TEST_ASSERT( x[3] == -22543 );
+}
+void Pass_i16_x5_Test0( const std::array<int16_t, 5> x )
+{
+	TEST_ASSERT( x[0] == -3431 ); TEST_ASSERT( x[1] == 9655 ); TEST_ASSERT( x[2] == 15667 ); TEST_ASSERT( x[3] == 46 );
+	TEST_ASSERT( x[4] == 19734 );
+}
+void Pass_i16_x6_Test0( const std::array<int16_t, 6> x )
+{
+	TEST_ASSERT( x[0] == 3451 ); TEST_ASSERT( x[1] == 29655 ); TEST_ASSERT( x[2] == 93 ); TEST_ASSERT( x[3] == -5667 );
+	TEST_ASSERT( x[4] == 19734 ); TEST_ASSERT( x[5] == -4323 );
+}
+void Pass_i16_x7_Test0( const std::array<int16_t, 7> x )
+{
+	TEST_ASSERT( x[0] == 3351 ); TEST_ASSERT( x[1] == 2955 ); TEST_ASSERT( x[2] == 5393 ); TEST_ASSERT( x[3] == -5667 );
+	TEST_ASSERT( x[4] == -4323 ); TEST_ASSERT( x[5] == 19234 ); TEST_ASSERT( x[6] == -3373 );
+}
+void Pass_i16_x8_Test0( const std::array<int16_t, 8> x )
+{
+	TEST_ASSERT( x[0] == -3373 ); TEST_ASSERT( x[1] == 3351 ); TEST_ASSERT( x[2] == -5953 ); TEST_ASSERT( x[3] == 15353 );
+	TEST_ASSERT( x[4] == 5667 ); TEST_ASSERT( x[5] == 4323 ); TEST_ASSERT( x[6] == -29214 ); TEST_ASSERT( x[7] == 5342 );
+}
+void Pass_i16_x9_Test0( const std::array<int16_t, 9> x )
+{
+	TEST_ASSERT( x[0] == 7322 ); TEST_ASSERT( x[1] == -3373 ); TEST_ASSERT( x[2] == 3351 ); TEST_ASSERT( x[3] == -5953 );
+	TEST_ASSERT( x[4] == 5667 ); TEST_ASSERT( x[5] == -29214 ); TEST_ASSERT( x[6] == 5342 ); TEST_ASSERT( x[7] == 25353 );
+	TEST_ASSERT( x[8] == -6343 );
+}
+void Pass_i16_x15_Test0( const std::array<int16_t, 15> x )
+{
+	for( int32_t i= 0; i < 15; ++i )
+	{
+		TEST_ASSERT( x[ size_t(i) ] == int16_t( i * i * 7 - i * 37 + 3 ) );
+	}
+}
+void Pass_i16_x83_Test0( const std::array<int16_t, 83> x )
+{
+	for( int32_t i= 0; i < 83; ++i )
+	{
+		TEST_ASSERT( x[ size_t(i) ] == int16_t( i * i * 5 - i * 43 + 11 ) );
+	}
+}
 
 } // extern "C"
