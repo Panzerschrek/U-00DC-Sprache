@@ -1,5 +1,7 @@
 fn nomangle main() call_conv( "C" ) : i32
 {
+	Pass_bool_Test0( false );
+	Pass_bool_Test1( true );
 	Pass_i8_Test0( 27i8 );
 	Pass_i8_Test1( -58i8 );
 	Pass_u8_Test0( 117u8 );
@@ -7,10 +9,32 @@ fn nomangle main() call_conv( "C" ) : i32
 	Pass_u8_Test2( u8(249) );
 	Pass_i16_Test0( 27346i16 );
 	Pass_i16_Test1( -15343i16 );
+	Pass_u16_Test0( 17u16 );
+	Pass_u16_Test1( 15642u16 );
+	Pass_u16_Test2( 30651u16 );
+	Pass_u16_Test3( 52188u16 );
+	Pass_i32_Test0( 274383 );
+	Pass_i32_Test1( -7456 );
+	Pass_i32_Test2( 0x78ABCDEF );
+	Pass_i32_Test3( -674348993 );
+	Pass_u32_Test0( 78u );
+	Pass_u32_Test1( 45677u );
+	Pass_u32_Test2( 6633477u );
+	Pass_u32_Test3( 0xFEDCBA98u );
+	Pass_i64_Test0( 636746i64 );
+	Pass_i64_Test1( -36i64 );
+	Pass_i64_Test2( -6433763852258913i64 );
+	Pass_i64_Test3( 7434744889515923245i64 );
+	Pass_u64_Test0( 7612u64 );
+	Pass_u64_Test1( 2147521472u64 );
+	Pass_u64_Test2( 7445889504678477554u64 );
+	Pass_u64_Test3( 18246784073809531617u64 );
 
 	return 0;
 }
 
+fn nomangle Pass_bool_Test0( bool x ) call_conv( "C" );
+fn nomangle Pass_bool_Test1( bool x ) call_conv( "C" );
 fn nomangle Pass_i8_Test0( i8 x ) call_conv( "C" );
 fn nomangle Pass_i8_Test1( i8 x ) call_conv( "C" );
 fn nomangle Pass_u8_Test0( u8 x ) call_conv( "C" );
@@ -18,3 +42,23 @@ fn nomangle Pass_u8_Test1( u8 x ) call_conv( "C" );
 fn nomangle Pass_u8_Test2( u8 x ) call_conv( "C" );
 fn nomangle Pass_i16_Test0( i16 x ) call_conv( "C" );
 fn nomangle Pass_i16_Test1( i16 x ) call_conv( "C" );
+fn nomangle Pass_u16_Test0( u16 x ) call_conv( "C" );
+fn nomangle Pass_u16_Test1( u16 x ) call_conv( "C" );
+fn nomangle Pass_u16_Test2( u16 x ) call_conv( "C" );
+fn nomangle Pass_u16_Test3( u16 x ) call_conv( "C" );
+fn nomangle Pass_i32_Test0( i32 x ) call_conv( "C" );
+fn nomangle Pass_i32_Test1( i32 x ) call_conv( "C" );
+fn nomangle Pass_i32_Test2( i32 x ) call_conv( "C" );
+fn nomangle Pass_i32_Test3( i32 x ) call_conv( "C" );
+fn nomangle Pass_u32_Test0( u32 x ) call_conv( "C" );
+fn nomangle Pass_u32_Test1( u32 x ) call_conv( "C" );
+fn nomangle Pass_u32_Test2( u32 x ) call_conv( "C" );
+fn nomangle Pass_u32_Test3( u32 x ) call_conv( "C" );
+fn nomangle Pass_i64_Test0( i64 x ) call_conv( "C" );
+fn nomangle Pass_i64_Test1( i64 x ) call_conv( "C" );
+fn nomangle Pass_i64_Test2( i64 x ) call_conv( "C" );
+fn nomangle Pass_i64_Test3( i64 x ) call_conv( "C" );
+fn nomangle Pass_u64_Test0( u64 x ) call_conv( "C" );
+fn nomangle Pass_u64_Test1( u64 x ) call_conv( "C" );
+fn nomangle Pass_u64_Test2( u64 x ) call_conv( "C" );
+fn nomangle Pass_u64_Test3( u64 x ) call_conv( "C" );
