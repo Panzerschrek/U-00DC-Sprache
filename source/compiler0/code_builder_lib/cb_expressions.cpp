@@ -4431,8 +4431,13 @@ Value CodeBuilder::DoCallFunction(
 				{
 					if( IsSignedInteger( f->fundamental_type ) )
 						call_instruction->addParamAttr( param_attr_index, llvm::Attribute::SExt );
-					else if( IsUnsignedInteger( f->fundamental_type ) )
+					else if(
+						IsUnsignedInteger( f->fundamental_type ) ||
+						IsChar( f->fundamental_type ) ||
+						IsByte( f->fundamental_type ) ||
+						f->fundamental_type == U_FundamentalType::bool_ )
 						call_instruction->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
+					else { /* void and float types doesn't require signext/zeroext attributes. */ }
 				}
 			}
 		}

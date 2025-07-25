@@ -2545,8 +2545,13 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 			{
 				if( IsSignedInteger( f->fundamental_type ) )
 					llvm_function->addParamAttr( param_attr_index, llvm::Attribute::SExt );
-				else if( IsUnsignedInteger( f->fundamental_type ) )
+				else if(
+					IsUnsignedInteger( f->fundamental_type ) ||
+					IsChar( f->fundamental_type ) ||
+					IsByte( f->fundamental_type ) ||
+					f->fundamental_type == U_FundamentalType::bool_ )
 					llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
+				else { /* void and float types doesn't require signext/zeroext attributes. */ }
 			}
 		}
 	}
