@@ -31,6 +31,13 @@ fn nomangle main() call_conv( "C" ) : i32
 	Pass_u64_Test3( 18246784073809531617u64 );
 	Pass_i128_Test0( i128( ( ( 0x0123456789ABCDEFu128) << 64u ) | 0xFEDCBA9876543210u128 ) );
 	Pass_u128_Test0( ( ( 0xFEDCBA9876543210u128) << 64u ) | 0x0123456789ABCDEFu128 );
+	Pass_char8_Test0( 'Q' );
+	Pass_char8_Test1( '!' );
+	Pass_char8_Test2( ' ' );
+	Pass_char8_Test3( char8( 240 ) );
+	Pass_char16_Test0( 'Ж'c16 );
+	Pass_char16_Test1( 'Ꙥ'c16 );
+	Pass_char32_Test0( '😀'c32 );
 
 	return 0;
 }
@@ -66,3 +73,10 @@ fn nomangle Pass_u64_Test2( u64 x ) call_conv( "C" );
 fn nomangle Pass_u64_Test3( u64 x ) call_conv( "C" );
 fn nomangle Pass_i128_Test0( i128 x ) call_conv( "C" );
 fn nomangle Pass_u128_Test0( u128 x ) call_conv( "C" );
+fn nomangle Pass_char8_Test0( char8 x ) call_conv( "C" );
+fn nomangle Pass_char8_Test1( char8 x ) call_conv( "C" );
+fn nomangle Pass_char8_Test2( char8 x ) call_conv( "C" );
+fn nomangle Pass_char8_Test3( char8 x ) call_conv( "C" );
+fn nomangle Pass_char16_Test0( char16 x ) call_conv( "C" );
+fn nomangle Pass_char16_Test1( char16 x ) call_conv( "C" );
+fn nomangle Pass_char32_Test0( char32 x ) call_conv( "C" );
