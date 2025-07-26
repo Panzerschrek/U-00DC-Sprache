@@ -10,6 +10,7 @@
 template<typename T0> struct Tuple1 { T0 v0; };
 template<typename T0, typename T1> struct Tuple2{ T0 v0; T1 v1; };
 template<typename T0, typename T1, typename T2> struct Tuple3{ T0 v0; T1 v1; T2 v2; };
+template<typename T0, typename T1, typename T2, typename T3> struct Tuple4{ T0 v0; T1 v1; T2 v2; T3 v3; };
 
 extern "C"
 {
@@ -934,6 +935,62 @@ void Pass_tup_f64_f64_Test0( const Tuple2<double, double> x )
 void Pass_tup_f64_f64_Test1( const Tuple2<double, double> x )
 {
 	TEST_ASSERT( x.v0 == 0.0 ); TEST_ASSERT( x.v1 == 253.0 );
+}
+void Pass_tup_u32_u16_u8_Test0( const Tuple3<uint32_t, uint16_t, uint8_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x01234567u ); TEST_ASSERT( x.v1 == 0x89ABu ); TEST_ASSERT( x.v2 == 0xCDu );
+}
+void Pass_tup_u32_u16_u16_Test0( const Tuple3<uint32_t, uint16_t, uint16_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x01234567u ); TEST_ASSERT( x.v1 == 0x89ABu ); TEST_ASSERT( x.v2 == 0xCDEFu );
+}
+void Pass_tup_u8_u16_u32_Test0( const Tuple3<uint8_t, uint16_t, uint32_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x01u ); TEST_ASSERT( x.v1 == 0x2345u ); TEST_ASSERT( x.v2 == 0x6789ABCDu );
+}
+void Pass_tup_u16_u16_u32_Test0( const Tuple3<uint16_t, uint16_t, uint32_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x0123u ); TEST_ASSERT( x.v1 == 0x4567u ); TEST_ASSERT( x.v2 == 0x89ABCDEFu );
+}
+void Pass_tup_u64_u32_u16_u8_Test0( const Tuple4<uint64_t, uint32_t, uint16_t, uint8_t> x )
+{
+	TEST_ASSERT( x.v0 == 0xFEDCBA9876543210ull ); TEST_ASSERT( x.v1 == 0x01234567u ); TEST_ASSERT( x.v2 == 0x89ABu ); TEST_ASSERT( x.v3 == 0xCDu );
+}
+void Pass_tup_u64_u32_u16_u16_Test0( const Tuple4<uint64_t, uint32_t, uint16_t, uint16_t> x )
+{
+	TEST_ASSERT( x.v0 == 0xFEDCBA9876543210ull ); TEST_ASSERT( x.v1 == 0x01234567u ); TEST_ASSERT( x.v2 == 0x89ABu ); TEST_ASSERT( x.v3 == 0xCDEFu );
+}
+void Pass_tup_u8_u16_u32_u64_Test0( const Tuple4<uint8_t, uint16_t, uint32_t, uint64_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x01u ); TEST_ASSERT( x.v1 == 0x2345u ); TEST_ASSERT( x.v2 == 0x6789ABCDu ); TEST_ASSERT( x.v3 == 0xFEDCBA9876543210ull );
+}
+void Pass_tup_u16_u16_u32_u64_Test0( const Tuple4<uint16_t, uint16_t, uint32_t, uint64_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x0123u ); TEST_ASSERT( x.v1 == 0x4567u ); TEST_ASSERT( x.v2 == 0x89ABCDEFu ); TEST_ASSERT( x.v3 == 0xFEDCBA9876543210ull );
+}
+void Pass_tup_u8_u16_u8_Test0( const Tuple3<uint8_t, uint16_t, uint8_t> x )
+{
+	TEST_ASSERT( x.v0 == 0xFEu ); TEST_ASSERT( x.v1 == 0xDCBAu ); TEST_ASSERT( x.v2 == 0x98u );
+}
+void Pass_tup_u8_u32_u8_Test0( const Tuple3<uint8_t, uint32_t, uint8_t> x )
+{
+	TEST_ASSERT( x.v0 == 0xFEu ); TEST_ASSERT( x.v1 == 0xDCBA9876u ); TEST_ASSERT( x.v2 == 0x54u );
+}
+void Pass_tup_u8_u64_u8_Test0( const Tuple3<uint8_t, uint64_t, uint8_t> x )
+{
+	TEST_ASSERT( x.v0 == 0xABu ); TEST_ASSERT( x.v1 == 0x0123456789ABCDEFull ); TEST_ASSERT( x.v2 == 0x12u );
+}
+void Pass_tup_u16_u32_u16_Test0( const Tuple3<uint16_t, uint32_t, uint16_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x0123u ); TEST_ASSERT( x.v1 == 0x456789ABu ); TEST_ASSERT( x.v2 == 0xCDEFu );
+}
+void Pass_tup_u16_u64_u16_Test0( const Tuple3<uint16_t, uint64_t, uint16_t> x )
+{
+	TEST_ASSERT( x.v0 == 0xFEDCu ); TEST_ASSERT( x.v1 == 0x17283A4B5C6D7E8Full ); TEST_ASSERT( x.v2 == 0x9876ull );
+}
+void Pass_tup_u32_u64_u32_Test0( const Tuple3<uint32_t, uint64_t, uint32_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x01234567u ); TEST_ASSERT( x.v1 == 0x17283A4B5C6D7E8Full ); TEST_ASSERT( x.v2 == 0x89ABCEDFu );
 }
 
 } // extern "C"
