@@ -896,6 +896,15 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ f64, f64, f64 ] arg[ 0.25, -363.2, 3773440.0 ];
 		Pass_tup_f64_f64_f64_Test0( arg );
 	}
+	{
+		var tup[ u64, f64 ] arg[ 0x0123456789ABCDEFu, 26376.25 ];
+		Pass_u32_u32_u32_u32_u32_tup_u64_f64( 47588u, 33677u, 12u, 3785427u, 13748588u, arg );
+	}
+	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
+	{
+		var tup[ u64, f64 ] arg[ 0xFEDCBA9876543210u, -16376.75 ];
+		Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( 41588u, 633677u, 7812u, 5785427u, 23748588u, 788588u, arg );
+	}
 
 	return 0;
 }
@@ -1164,3 +1173,6 @@ fn nomangle Pass_tup_f64_f32_f32_Test0( tup [ f64, f32, f32 ] x ) call_conv( "C"
 fn nomangle Pass_tup_f64_f32_f64_Test0( tup [ f64, f32, f64 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f64_f64_f32_Test0( tup [ f64, f64, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f64_f64_f64_Test0( tup [ f64, f64, f64 ] x ) call_conv( "C" );
+// Tricky cases - x86_64 System V ABI uses 6 integer registers for passing integer values.
+fn nomangle Pass_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d, u32 e, tup[ u64, f64 ] f ) call_conv( "C" );
+fn nomangle Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d, u32 e, u32 f, tup[ u64, f64 ] g ) call_conv( "C" );

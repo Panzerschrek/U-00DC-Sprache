@@ -1072,5 +1072,15 @@ void Pass_tup_f64_f64_f64_Test0( const Tuple3<double, double, double> x )
 {
 	TEST_ASSERT( x.v0 == 0.25 ); TEST_ASSERT( x.v1 == -363.2 ); TEST_ASSERT( x.v2 == 3773440.0 );
 }
+void Pass_u32_u32_u32_u32_u32_tup_u64_f64( const uint32_t a, const uint32_t b, const uint32_t c, const uint32_t d, const uint32_t e, const Tuple2<uint64_t, double> f )
+{
+	TEST_ASSERT( a == 47588u ); TEST_ASSERT( b == 33677u ); TEST_ASSERT( c == 12u ); TEST_ASSERT( d == 3785427u ); TEST_ASSERT( e == 13748588u );
+	TEST_ASSERT( f.v0 == 0x0123456789ABCDEFull ); TEST_ASSERT( f.v1 == 26376.25 );
+}
+void Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( const uint32_t a, const uint32_t b, const uint32_t c, const uint32_t d, const uint32_t e, const uint32_t f, const Tuple2<uint64_t, double> g )
+{
+	TEST_ASSERT( a == 41588u ); TEST_ASSERT( b == 633677u ); TEST_ASSERT( c == 7812u ); TEST_ASSERT( d == 5785427u ); TEST_ASSERT( e == 23748588u ); TEST_ASSERT( f == 788588u );
+	TEST_ASSERT( g.v0 == 0xFEDCBA9876543210ull ); TEST_ASSERT( g.v1 == -16376.75 );
+}
 
 } // extern "C"
