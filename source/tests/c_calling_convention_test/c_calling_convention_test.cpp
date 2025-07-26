@@ -437,5 +437,61 @@ void Pass_f32_x47_Test0( const std::array<float, 47> x )
 		TEST_ASSERT( x[i] == float(i) * float(i) * 12.75f + 253.5f );
 	}
 }
+void Pass_f64_x1_Test0( const std::array<double, 1> x )
+{
+	TEST_ASSERT( x[0] == -7878.25 );
+}
+void Pass_f64_x2_Test0( const std::array<double, 2> x )
+{
+	TEST_ASSERT( x[0] == 7.5 ); TEST_ASSERT( x[1] == 0.0625 );
+}
+void Pass_f64_x3_Test0( const std::array<double, 3> x )
+{
+	TEST_ASSERT( x[0] == 72.15 ); TEST_ASSERT( x[1] == 0.0 ); TEST_ASSERT( x[2] == -0.125 );
+}
+void Pass_f64_x4_Test0( const std::array<double, 4> x )
+{
+	TEST_ASSERT( x[0] == 3712.2 ); TEST_ASSERT( x[1] == 663300.0 ); TEST_ASSERT( x[2] == -336.25 ); TEST_ASSERT( x[3] == 250000000.0 );
+}
+void Pass_f64_x5_Test0( const std::array<double, 5> x )
+{
+	TEST_ASSERT( x[0] == -536.25 ); TEST_ASSERT( x[1] == 4711.4 ); TEST_ASSERT( x[2] == 66330230.0 ); TEST_ASSERT( x[3] == 270000000.0 );
+	TEST_ASSERT( x[4] == -5333566.0 );
+}
+void Pass_f64_x6_Test0( const std::array<double, 6> x )
+{
+	TEST_ASSERT( x[0] == -4333563.0 ); TEST_ASSERT( x[1] == -536.25 ); TEST_ASSERT( x[2] == 4712.8 ); TEST_ASSERT( x[3] == 26330231.0 );
+	TEST_ASSERT( x[4] == 130000000.0 ); TEST_ASSERT( x[5] == 0.01 );
+}
+void Pass_f64_x7_Test0( const std::array<double, 7> x )
+{
+	TEST_ASSERT( x[0] == 3712.3 ); TEST_ASSERT( x[1] == -1536.25 ); TEST_ASSERT( x[2] == 2633031.0 ); TEST_ASSERT( x[3] == -4323565.0 );
+	TEST_ASSERT( x[4] == 13005000.0 ); TEST_ASSERT( x[5] == 0.02 ); TEST_ASSERT( x[6] == -6434.75 );
+}
+void Pass_f64_x8_Test0( const std::array<double, 8> x )
+{
+	TEST_ASSERT( x[0] == 3742.5 ); TEST_ASSERT( x[1] == 13005010.0 ); TEST_ASSERT( x[2] == -1566.25 ); TEST_ASSERT( x[3] == 1643031.0 );
+	TEST_ASSERT( x[4] == -432515.5 ); TEST_ASSERT( x[5] == 0.04 ); TEST_ASSERT( x[6] == -634.75 ); TEST_ASSERT( x[7] == 164363.0 );
+}
+void Pass_f64_x9_Test0( const std::array<double, 9> x )
+{
+	TEST_ASSERT( x[0] == 162363.0 ); TEST_ASSERT( x[1] == 3742.7 ); TEST_ASSERT( x[2] == -1563.25 ); TEST_ASSERT( x[3] == 1644031.0 );
+	TEST_ASSERT( x[4] == -437515.5 ); TEST_ASSERT( x[5] == 0.08 ); TEST_ASSERT( x[6] == 13005210.0 ); TEST_ASSERT( x[7] == -534.75 );
+	TEST_ASSERT( x[8] == 345423.0 );
+}
+void Pass_f64_x15_Test0( const std::array<double, 15> x )
+{
+	for( uint32_t i= 0; i < 15u; ++i )
+	{
+		TEST_ASSERT( x[i] == double(i) * double(i) * 13.5 + 153.25 );
+	}
+}
+void Pass_f64_x47_Test0( const std::array<double, 47> x )
+{
+	for( uint32_t i= 0; i < 47u; ++i )
+	{
+		TEST_ASSERT( x[i] == double(i) * double(i) * 12.75 + 253.5 );
+	}
+}
 
 } // extern "C"
