@@ -1077,6 +1077,11 @@ void Pass_u32_u32_u32_u32_u32_tup_u64_f64( const uint32_t a, const uint32_t b, c
 	TEST_ASSERT( a == 47588u ); TEST_ASSERT( b == 33677u ); TEST_ASSERT( c == 12u ); TEST_ASSERT( d == 3785427u ); TEST_ASSERT( e == 13748588u );
 	TEST_ASSERT( f.v0 == 0x0123456789ABCDEFull ); TEST_ASSERT( f.v1 == 26376.25 );
 }
+void Pass_u32_u32_u32_u32_u32_tup_u64_u64( const uint32_t a, const uint32_t b, const uint32_t c, const uint32_t d, const uint32_t e, const Tuple2<uint64_t, uint64_t> f )
+{
+	TEST_ASSERT( a == 47288u ); TEST_ASSERT( b == 31677u ); TEST_ASSERT( c == 14u ); TEST_ASSERT( d == 3285427u ); TEST_ASSERT( e == 13748988u );
+	TEST_ASSERT( f.v0 == 0x0123456789ABCDEFu ); TEST_ASSERT( f.v1 == 0xFEDCBA9876543210u );
+}
 void Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( const uint32_t a, const uint32_t b, const uint32_t c, const uint32_t d, const uint32_t e, const uint32_t f, const Tuple2<uint64_t, double> g )
 {
 	TEST_ASSERT( a == 41588u ); TEST_ASSERT( b == 633677u ); TEST_ASSERT( c == 7812u ); TEST_ASSERT( d == 5785427u ); TEST_ASSERT( e == 23748588u ); TEST_ASSERT( f == 788588u );
@@ -1087,6 +1092,12 @@ void Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( const double a, const dou
 	TEST_ASSERT( a == 1.0 ); TEST_ASSERT( b == 774.3 ); TEST_ASSERT( c == -366.0 ); TEST_ASSERT( d == 0.125 );
 	TEST_ASSERT( e == 6336.2 ); TEST_ASSERT( f == 6774.0 ); TEST_ASSERT( g == -126.25 ); TEST_ASSERT( h == 0.75 );
 	TEST_ASSERT( i.v0 == 0xFED7BA98C6543210ull ); TEST_ASSERT( i.v1 == 163.2 );
+}
+void Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( const double a, const double b, const double c, const double d, const double e, const double f, const double g, const Tuple2<double, double> h )
+{
+	TEST_ASSERT( a == 3.0 ); TEST_ASSERT( b == 724.1 ); TEST_ASSERT( c == -365.0 ); TEST_ASSERT( d == -0.125 );
+	TEST_ASSERT( e == 6336.2 ); TEST_ASSERT( f == 6724.0 ); TEST_ASSERT( g == -126.85 );
+	TEST_ASSERT( h.v0 == 631.3 ); TEST_ASSERT( h.v1 == 165.2 );
 }
 
 void U_Pass_bool_Test0( bool x );
