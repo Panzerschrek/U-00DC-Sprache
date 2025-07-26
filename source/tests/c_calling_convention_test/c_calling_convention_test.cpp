@@ -755,5 +755,65 @@ void Pass_tup_i32_f64_Test1( const Tuple2<int32_t, double> x )
 {
 	TEST_ASSERT( x.v0 == -5674137 ); TEST_ASSERT( x.v1 == 251.0 );
 }
+void Pass_tup_u64_i8_Test0( const Tuple2<uint64_t, int8_t> x )
+{
+	TEST_ASSERT( x.v0 == 0xFEDCBA9876543210u ); TEST_ASSERT( x.v1 == 114 );
+}
+void Pass_tup_u64_i8_Test1( const Tuple2<uint64_t, int8_t> x )
+{
+	TEST_ASSERT( x.v0 == 0xFED7BA9876543E10u ); TEST_ASSERT( x.v1 == -13 );
+}
+void Pass_tup_u64_u16_Test0( const Tuple2<uint64_t, uint16_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x3EDCBA987654321Cu ); TEST_ASSERT( x.v1 == 31000 );
+}
+void Pass_tup_u64_u16_Test1( const Tuple2<uint64_t, uint16_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x3EDCBAE87654721Cu ); TEST_ASSERT( x.v1 == 57823 );
+}
+void Pass_tup_u64_i32_Test0( const Tuple2<uint64_t, int32_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x9EDCBAEA7654721Cu ); TEST_ASSERT( x.v1 == -533167754 );
+}
+void Pass_tup_u64_i32_Test1( const Tuple2<uint64_t, int32_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x91DCBAEA765472ECu ); TEST_ASSERT( x.v1 == 336637444 );
+}
+void Pass_tup_u64_u64_Test0( const Tuple2<uint64_t, uint64_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x91DC6AEA765477ECu ); TEST_ASSERT( x.v1 == 0x08192A3B4C5D6E7Full );
+}
+void Pass_tup_u64_u64_Test1( const Tuple2<uint64_t, uint64_t> x )
+{
+	TEST_ASSERT( x.v0 == 0xD1DC6AEA7E5477ECu ); TEST_ASSERT( x.v1 == 0xF7E6D5C4B3A29180ull );
+}
+void Pass_tup_u64_i128_Test0( const Tuple2<uint64_t, __int128_t> x )
+{
+	TEST_ASSERT( x.v0 == 0xD1D16AEA7E54778Cu );
+	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	TEST_ASSERT( x.v1 == ( ( __int128_t(0x0123456789ABCDEFll) << 64 ) | 0x7EDCBA9876543210ll ) );
+}
+void Pass_tup_u64_i128_Test1( const Tuple2<uint64_t, __int128_t> x )
+{
+	TEST_ASSERT( x.v0 == 0x11D16AEA7E54278Cu )
+	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	TEST_ASSERT( x.v1 == ( ( __int128_t(0x1EDCBA9876543210ll) << 64 ) | 0x0123456789ABCDEFll ) );
+}
+void Pass_tup_u64_f32_Test0( const Tuple2<uint64_t, float> x )
+{
+	TEST_ASSERT( x.v0 == 0x1ED16AEA7E54278Cu ); TEST_ASSERT( x.v1 == 6263.5f );
+}
+void Pass_tup_u64_f32_Test1( const Tuple2<uint64_t, float> x )
+{
+	TEST_ASSERT( x.v0 == 0x1ED1AAEA7E54279Cu ); TEST_ASSERT( x.v1 == -6356470.0f );
+}
+void Pass_tup_u64_f64_Test0( const Tuple2<uint64_t, double> x )
+{
+	TEST_ASSERT( x.v0 == 0xCED164EA7E54278Cu ); TEST_ASSERT( x.v1 == -37163.125 );
+}
+void Pass_tup_u64_f64_Test1( const Tuple2<uint64_t, double> x )
+{
+	TEST_ASSERT( x.v0 == 0xCE1164EA7354278Cu ); TEST_ASSERT( x.v1 == 253.0 );
+}
 
 } // extern "C"
