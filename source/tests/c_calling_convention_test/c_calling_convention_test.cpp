@@ -1040,5 +1040,37 @@ void Pass_tup_u64_u64_f64_Test0( const Tuple3<uint64_t, uint64_t, double> x )
 {
 	TEST_ASSERT( x.v0 == 0x27283A4B5C637E8Fu ); TEST_ASSERT( x.v1 == 0xE637347436B47218u ); TEST_ASSERT( x.v2 == 4.7 );
 }
+void Pass_tup_f32_f32_f32_Test0( const Tuple3<float, float, float> x )
+{
+	TEST_ASSERT( x.v0 == 0.25f ); TEST_ASSERT( x.v1 == -363.2f ); TEST_ASSERT( x.v2 == 3773440.0f );
+}
+void Pass_tup_f32_f32_f64_Test0( const Tuple3<float, float, double> x )
+{
+	TEST_ASSERT( x.v0 == 0.25f ); TEST_ASSERT( x.v1 == -363.2f ); TEST_ASSERT( x.v2 == 3773440.0 );
+}
+void Pass_tup_f32_f64_f32_Test0( const Tuple3<float, double, float> x )
+{
+	TEST_ASSERT( x.v0 == 0.25f ); TEST_ASSERT( x.v1 == -363.2 ); TEST_ASSERT( x.v2 == 3773440.0f );
+}
+void Pass_tup_f32_f64_f64_Test0( const Tuple3<float, double, double> x )
+{
+	TEST_ASSERT( x.v0 == 0.25f ); TEST_ASSERT( x.v1 == -363.2 ); TEST_ASSERT( x.v2 == 3773440.0 );
+}
+void Pass_tup_f64_f32_f32_Test0( const Tuple3<double, float, float> x )
+{
+	TEST_ASSERT( x.v0 == 0.25 ); TEST_ASSERT( x.v1 == -363.2f ); TEST_ASSERT( x.v2 == 3773440.0f );
+}
+void Pass_tup_f64_f32_f64_Test0( const Tuple3<double, float, double> x )
+{
+	TEST_ASSERT( x.v0 == 0.25 ); TEST_ASSERT( x.v1 == -363.2f ); TEST_ASSERT( x.v2 == 3773440.0 );
+}
+void Pass_tup_f64_f64_f32_Test0( const Tuple3<double, double, float> x )
+{
+	TEST_ASSERT( x.v0 == 0.25 ); TEST_ASSERT( x.v1 == -363.2 ); TEST_ASSERT( x.v2 == 3773440.0f );
+}
+void Pass_tup_f64_f64_f64_Test0( const Tuple3<double, double, double> x )
+{
+	TEST_ASSERT( x.v0 == 0.25 ); TEST_ASSERT( x.v1 == -363.2 ); TEST_ASSERT( x.v2 == 3773440.0 );
+}
 
 } // extern "C"

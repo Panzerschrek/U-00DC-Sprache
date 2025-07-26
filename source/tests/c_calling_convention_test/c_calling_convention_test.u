@@ -864,6 +864,38 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ u64, u64, f64 ] arg[ 0x27283A4B5C637E8Fu, 0xE637347436B47218u, 4.7 ];
 		Pass_tup_u64_u64_f64_Test0( arg );
 	}
+	{
+		var tup[ f32, f32, f32 ] arg[ 0.25f, -363.2f, 3773440.0f ];
+		Pass_tup_f32_f32_f32_Test0( arg );
+	}
+	{
+		var tup[ f32, f32, f64 ] arg[ 0.25f, -363.2f, 3773440.0 ];
+		Pass_tup_f32_f32_f64_Test0( arg );
+	}
+	{
+		var tup[ f32, f64, f32 ] arg[ 0.25f, -363.2, 3773440.0f ];
+		Pass_tup_f32_f64_f32_Test0( arg );
+	}
+	{
+		var tup[ f32, f64, f64 ] arg[ 0.25f, -363.2, 3773440.0 ];
+		Pass_tup_f32_f64_f64_Test0( arg );
+	}
+	{
+		var tup[ f64, f32, f32 ] arg[ 0.25, -363.2f, 3773440.0f ];
+		Pass_tup_f64_f32_f32_Test0( arg );
+	}
+	{
+		var tup[ f64, f32, f64 ] arg[ 0.25, -363.2f, 3773440.0 ];
+		Pass_tup_f64_f32_f64_Test0( arg );
+	}
+	{
+		var tup[ f64, f64, f32 ] arg[ 0.25, -363.2, 3773440.0f ];
+		Pass_tup_f64_f64_f32_Test0( arg );
+	}
+	{
+		var tup[ f64, f64, f64 ] arg[ 0.25, -363.2, 3773440.0 ];
+		Pass_tup_f64_f64_f64_Test0( arg );
+	}
 
 	return 0;
 }
@@ -1124,3 +1156,11 @@ fn nomangle Pass_tup_i32_i32_f64_Test0( tup [ i32, i32, f64 ] x ) call_conv( "C"
 fn nomangle Pass_tup_f64_u64_u64_Test0( tup [ f64, u64, u64 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u64_f64_u64_Test0( tup [ u64, f64, u64 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u64_u64_f64_Test0( tup [ u64, u64, f64 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_f32_f32_f32_Test0( tup [ f32, f32, f32 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_f32_f32_f64_Test0( tup [ f32, f32, f64 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_f32_f64_f32_Test0( tup [ f32, f64, f32 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_f32_f64_f64_Test0( tup [ f32, f64, f64 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_f64_f32_f32_Test0( tup [ f64, f32, f32 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_f64_f32_f64_Test0( tup [ f64, f32, f64 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_f64_f64_f32_Test0( tup [ f64, f64, f32 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_f64_f64_f64_Test0( tup [ f64, f64, f64 ] x ) call_conv( "C" );
