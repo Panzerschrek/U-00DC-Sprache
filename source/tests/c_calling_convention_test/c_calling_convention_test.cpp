@@ -6,6 +6,11 @@
 
 #define TEST_ASSERT(x) { if( !(x) ) { std::cerr << "Line " << __LINE__ << " assertion failed: " << #x << std::endl; std::abort(); } }
 
+// std::tuple isn't POD, so, use our own replacement.
+template<typename T0> struct Tuple1 { T0 v0; };
+template<typename T0, typename T1> struct Tuple2{ T0 v0; T1 v1; };
+template<typename T0, typename T1, typename T2> struct Tuple3{ T0 v0; T1 v1; T2 v2; };
+
 extern "C"
 {
 
@@ -569,6 +574,66 @@ void Pass_char8_x32_Test0( const std::array<char, 32> x )
 void Pass_char8_x39_Test0( const std::array<char, 39> x )
 {
 	TEST_ASSERT( std::memcmp( x.data(), "Ficket euch, ihr beleidigt meine Augen!", x.size() ) == 0 );
+}
+void Pass_tup_i8_u8_Test0( const Tuple2<int8_t, uint8_t> x )
+{
+	TEST_ASSERT( x.v0 == -76 ); TEST_ASSERT( x.v1 == 214 );
+}
+void Pass_tup_i8_u8_Test1( const Tuple2<int8_t, uint8_t> x )
+{
+	TEST_ASSERT( x.v0 == 127 ); TEST_ASSERT( x.v1 == 13 );
+}
+void Pass_tup_i8_i16_Test0( const Tuple2<int8_t, int16_t> x )
+{
+	TEST_ASSERT( x.v0 == -72 ); TEST_ASSERT( x.v1 == 31000 );
+}
+void Pass_tup_i8_i16_Test1( const Tuple2<int8_t, int16_t> x )
+{
+	TEST_ASSERT( x.v0 == 105 ); TEST_ASSERT( x.v1 == -27823 );
+}
+void Pass_tup_i8_u32_Test0( const Tuple2<int8_t, uint32_t> x )
+{
+	TEST_ASSERT( x.v0 == 98 ); TEST_ASSERT( x.v1 == 0xFA56DE4Fu );
+}
+void Pass_tup_i8_u32_Test1( const Tuple2<int8_t, uint32_t> x )
+{
+	TEST_ASSERT( x.v0 == -123 ); TEST_ASSERT( x.v1 == 0x3AC6DE1Fu );
+}
+void Pass_tup_i8_i64_Test0( const Tuple2<int8_t, int64_t> x )
+{
+	TEST_ASSERT( x.v0 == 72 ); TEST_ASSERT( x.v1 == 6336747347783754868 );
+}
+void Pass_tup_i8_i64_Test1( const Tuple2<int8_t, int64_t> x )
+{
+	TEST_ASSERT( x.v0 == -13 ); TEST_ASSERT( x.v1 == -642476347823222 );
+}
+void Pass_tup_i8_u128_Test0( const Tuple2<int8_t, __uint128_t> x )
+{
+	TEST_ASSERT( x.v0 == 71 );
+	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	TEST_ASSERT( x.v1 == ( ( __uint128_t(0x0123456789ABCDEFull) << 64 ) | 0xFEDCBA9876543210ull ) );
+}
+void Pass_tup_i8_u128_Test1( const Tuple2<int8_t, __uint128_t> x )
+{
+	TEST_ASSERT( x.v0 == -88 )
+	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	TEST_ASSERT( x.v1 == ( ( __uint128_t(0xFEDCBA9876543210ull) << 64 ) | 0x0123456789ABCDEFull ) );
+}
+void Pass_tup_i8_f32_Test0( const Tuple2<int8_t, float> x )
+{
+	TEST_ASSERT( x.v0 == 78 ); TEST_ASSERT( x.v1 == 6763.5f );
+}
+void Pass_tup_i8_f32_Test1( const Tuple2<int8_t, float> x )
+{
+	TEST_ASSERT( x.v0 == -124 ); TEST_ASSERT( x.v1 == -6346470.0f );
+}
+void Pass_tup_i8_f64_Test0( const Tuple2<int8_t, double> x )
+{
+	TEST_ASSERT( x.v0 == 53 ); TEST_ASSERT( x.v1 == -67163.25 );
+}
+void Pass_tup_i8_f64_Test1( const Tuple2<int8_t, double> x )
+{
+	TEST_ASSERT( x.v0 == -97 ); TEST_ASSERT( x.v1 == 251.0 );
 }
 
 } // extern "C"

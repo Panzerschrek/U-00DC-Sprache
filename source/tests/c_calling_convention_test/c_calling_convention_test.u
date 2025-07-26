@@ -424,6 +424,62 @@ fn nomangle main() call_conv( "C" ) : i32
 	Pass_char8_x17_Test0( "XY = 33 + 44 - 55" );
 	Pass_char8_x32_Test0( "0123456789abcdefFEDCBA9876543210" );
 	Pass_char8_x39_Test0( "Ficket euch, ihr beleidigt meine Augen!" );
+	{
+		var tup[ i8, u8 ] arg[ -76i8, 214u8 ];
+		Pass_tup_i8_u8_Test0( arg );
+	}
+	{
+		var tup[ i8, u8 ] arg[ 127i8, 13u8 ];
+		Pass_tup_i8_u8_Test1( arg );
+	}
+	{
+		var tup[ i8, i16 ] arg[ -72i8, 31000i16 ];
+		Pass_tup_i8_i16_Test0( arg );
+	}
+	{
+		var tup[ i8, i16 ] arg[ 105i8, -27823i16 ];
+		Pass_tup_i8_i16_Test1( arg );
+	}
+	{
+		var tup[ i8, u32 ] arg[ 98i8, 0xFA56DE4Fu ];
+		Pass_tup_i8_u32_Test0( arg );
+	}
+	{
+		var tup[ i8, u32 ] arg[ -123i8, 0x3AC6DE1Fu ];
+		Pass_tup_i8_u32_Test1( arg );
+	}
+	{
+		var tup[ i8, i64 ] arg[ 72i8, 6336747347783754868 ];
+		Pass_tup_i8_i64_Test0( arg );
+	}
+	{
+		var tup[ i8, i64 ] arg[ -13i8, -642476347823222 ];
+		Pass_tup_i8_i64_Test1( arg );
+	}
+	{
+		var tup[ i8, u128 ] arg[ 71i8, ( ( 0x0123456789ABCDEFu128 << 64u ) | 0xFEDCBA9876543210u128 ) ];
+		Pass_tup_i8_u128_Test0( arg );
+	}
+	{
+		var tup[ i8, u128 ] arg[ -88i8, ( ( 0xFEDCBA9876543210u128 << 64u ) | 0x0123456789ABCDEFu128 ) ];
+		Pass_tup_i8_u128_Test1( arg );
+	}
+	{
+		var tup[ i8, f32 ] arg[ 78i8, 6763.5f ];
+		Pass_tup_i8_f32_Test0( arg );
+	}
+	{
+		var tup[ i8, f32 ] arg[ -124i8, -6346470.0f ];
+		Pass_tup_i8_f32_Test1( arg );
+	}
+	{
+		var tup[ i8, f64 ] arg[ 53i8, -67163.25 ];
+		Pass_tup_i8_f64_Test0( arg );
+	}
+	{
+		var tup[ i8, f64 ] arg[ -97i8, 251.0 ];
+		Pass_tup_i8_f64_Test1( arg );
+	}
 
 	return 0;
 }
@@ -574,3 +630,17 @@ fn nomangle Pass_char8_x16_Test0( [ char8, 16 ] x ) call_conv( "C" );
 fn nomangle Pass_char8_x17_Test0( [ char8, 17 ] x ) call_conv( "C" );
 fn nomangle Pass_char8_x32_Test0( [ char8, 32 ] x ) call_conv( "C" );
 fn nomangle Pass_char8_x39_Test0( [ char8, 39 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_u8_Test0( tup [ i8, u8 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_u8_Test1( tup [ i8, u8 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_i16_Test0( tup [ i8, i16 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_i16_Test1( tup [ i8, i16 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_u32_Test0( tup [ i8, u32 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_u32_Test1( tup [ i8, u32 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_i64_Test0( tup [ i8, i64 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_i64_Test1( tup [ i8, i64 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_u128_Test0( tup [ i8, u128 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_u128_Test1( tup [ i8, u128 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_f32_Test0( tup [ i8, f32 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_f32_Test1( tup [ i8, f32 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_f64_Test0( tup [ i8, f64 ] x ) call_conv( "C" );
+fn nomangle Pass_tup_i8_f64_Test1( tup [ i8, f64 ] x ) call_conv( "C" );
