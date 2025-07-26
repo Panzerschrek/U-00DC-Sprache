@@ -1082,5 +1082,11 @@ void Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( const uint32_t a, const uint32_t 
 	TEST_ASSERT( a == 41588u ); TEST_ASSERT( b == 633677u ); TEST_ASSERT( c == 7812u ); TEST_ASSERT( d == 5785427u ); TEST_ASSERT( e == 23748588u ); TEST_ASSERT( f == 788588u );
 	TEST_ASSERT( g.v0 == 0xFEDCBA9876543210ull ); TEST_ASSERT( g.v1 == -16376.75 );
 }
+void Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( const double a, const double b, const double c, const double d, const double e, const double f, const double g, const double h, const Tuple2<uint64_t, double> i )
+{
+	TEST_ASSERT( a == 1.0 ); TEST_ASSERT( b == 774.3 ); TEST_ASSERT( c == -366.0 ); TEST_ASSERT( d == 0.125 );
+	TEST_ASSERT( e == 6336.2 ); TEST_ASSERT( f == 6774.0 ); TEST_ASSERT( g == -126.25 ); TEST_ASSERT( h == 0.75 );
+	TEST_ASSERT( i.v0 == 0xFED7BA98C6543210ull ); TEST_ASSERT( i.v1 == 163.2 );
+}
 
 } // extern "C"

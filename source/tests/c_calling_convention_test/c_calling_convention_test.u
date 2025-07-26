@@ -905,6 +905,11 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ u64, f64 ] arg[ 0xFEDCBA9876543210u, -16376.75 ];
 		Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( 41588u, 633677u, 7812u, 5785427u, 23748588u, 788588u, arg );
 	}
+	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
+	{
+		var tup[ u64, f64 ] arg[ 0xFED7BA98C6543210u, 163.2 ];
+		Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( 1.0, 774.3, -366.0, 0.125, 6336.2, 6774.0, -126.25, 0.75, arg );
+	}
 
 	return 0;
 }
@@ -1176,3 +1181,5 @@ fn nomangle Pass_tup_f64_f64_f64_Test0( tup [ f64, f64, f64 ] x ) call_conv( "C"
 // Tricky cases - x86_64 System V ABI uses 6 integer registers for passing integer values.
 fn nomangle Pass_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d, u32 e, tup[ u64, f64 ] f ) call_conv( "C" );
 fn nomangle Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d, u32 e, u32 f, tup[ u64, f64 ] g ) call_conv( "C" );
+// Tricky case - x86_64 System V ABI uses 8 sse registers for passing floating-point values.
+fn nomangle Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( f64 a, f64 b, f64 c, f64 d, f64 e, f64 f, f64 g, f64 h, tup[ u64, f64 ] i ) call_conv( "C" );
