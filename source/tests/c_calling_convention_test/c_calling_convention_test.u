@@ -405,6 +405,25 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 		Pass_f64_x47_Test0( arg );
 	}
+	Pass_char8_x1_Test0( "H" );
+	Pass_char8_x2_Test0( "-8" );
+	Pass_char8_x3_Test0( "Kek" );
+	Pass_char8_x4_Test0( "SPQR" );
+	Pass_char8_x5_Test0( "ApplE" );
+	Pass_char8_x6_Test0( "56 to " );
+	Pass_char8_x7_Test0( "@#--ABe" );
+	Pass_char8_x8_Test0( "S.P.Q.R." );
+	Pass_char8_x9_Test0( "Жопа!" );
+	Pass_char8_x10_Test0( "Black Mesa" );
+	Pass_char8_x11_Test0( "qwertyuiop[" );
+	Pass_char8_x12_Test0( "][poiuytrewq" );
+	Pass_char8_x13_Test0( "Computerliebe" );
+	Pass_char8_x14_Test0( "11 + 22 = some" );
+	Pass_char8_x15_Test0( "ABCDEFGHIJKLMNO" );
+	Pass_char8_x16_Test0( "Er ist wieder da" );
+	Pass_char8_x17_Test0( "XY = 33 + 44 - 55" );
+	Pass_char8_x32_Test0( "0123456789abcdefFEDCBA9876543210" );
+	Pass_char8_x39_Test0( "Ficket euch, ihr beleidigt meine Augen!" );
 
 	return 0;
 }
@@ -536,3 +555,22 @@ fn nomangle Pass_f64_x8_Test0( [ f64, 8 ] x ) call_conv( "C" );
 fn nomangle Pass_f64_x9_Test0( [ f64, 9 ] x ) call_conv( "C" );
 fn nomangle Pass_f64_x15_Test0( [ f64, 15 ] x ) call_conv( "C" );
 fn nomangle Pass_f64_x47_Test0( [ f64, 47 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x1_Test0( [ char8, 1 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x2_Test0( [ char8, 2 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x3_Test0( [ char8, 3 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x4_Test0( [ char8, 4 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x5_Test0( [ char8, 5 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x6_Test0( [ char8, 6 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x7_Test0( [ char8, 7 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x8_Test0( [ char8, 8 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x9_Test0( [ char8, 9 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x10_Test0( [ char8, 10 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x11_Test0( [ char8, 11 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x12_Test0( [ char8, 12 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x13_Test0( [ char8, 13 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x14_Test0( [ char8, 14 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x15_Test0( [ char8, 15 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x16_Test0( [ char8, 16 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x17_Test0( [ char8, 17 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x32_Test0( [ char8, 32 ] x ) call_conv( "C" );
+fn nomangle Pass_char8_x39_Test0( [ char8, 39 ] x ) call_conv( "C" );

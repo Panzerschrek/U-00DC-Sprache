@@ -1,6 +1,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 
 #define TEST_ASSERT(x) { if( !(x) ) { std::cerr << "Line " << __LINE__ << " assertion failed: " << #x << std::endl; std::abort(); } }
@@ -492,6 +493,82 @@ void Pass_f64_x47_Test0( const std::array<double, 47> x )
 	{
 		TEST_ASSERT( x[i] == double(i) * double(i) * 12.75 + 253.5 );
 	}
+}
+void Pass_char8_x1_Test0( const std::array<char, 1> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "H", x.size() ) == 0 );
+}
+void Pass_char8_x2_Test0( const std::array<char, 2> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "-8", x.size() ) == 0 );
+}
+void Pass_char8_x3_Test0( const std::array<char, 3> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "Kek", x.size() ) == 0 );
+}
+void Pass_char8_x4_Test0( const std::array<char, 4> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "SPQR", x.size() ) == 0 );
+}
+void Pass_char8_x5_Test0( const std::array<char, 5> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "ApplE", x.size() ) == 0 );
+}
+void Pass_char8_x6_Test0( const std::array<char, 6> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "56 to ", x.size() ) == 0 );
+}
+void Pass_char8_x7_Test0( const std::array<char, 7> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "@#--ABe", x.size() ) == 0 );
+}
+void Pass_char8_x8_Test0( const std::array<char, 8> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "S.P.Q.R.", x.size() ) == 0 );
+}
+void Pass_char8_x9_Test0( const std::array<char, 9> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "Жопа!", x.size() ) == 0 );
+}
+void Pass_char8_x10_Test0( const std::array<char, 10> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "Black Mesa", x.size() ) == 0 );
+}
+void Pass_char8_x11_Test0( const std::array<char, 11> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "qwertyuiop[", x.size() ) == 0 );
+}
+void Pass_char8_x12_Test0( const std::array<char, 12> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "][poiuytrewq", x.size() ) == 0 );
+}
+void Pass_char8_x13_Test0( const std::array<char, 13> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "Computerliebe", x.size() ) == 0 );
+}
+void Pass_char8_x14_Test0( const std::array<char, 14> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "11 + 22 = some", x.size() ) == 0 );
+}
+void Pass_char8_x15_Test0( const std::array<char, 15> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "ABCDEFGHIJKLMNO", x.size() ) == 0 );
+}
+void Pass_char8_x16_Test0( const std::array<char, 16> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "Er ist wieder da", x.size() ) == 0 );
+}
+void Pass_char8_x17_Test0( const std::array<char, 17> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "XY = 33 + 44 - 55", x.size() ) == 0 );
+}
+void Pass_char8_x32_Test0( const std::array<char, 32> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "0123456789abcdefFEDCBA9876543210", x.size() ) == 0 );
+}
+void Pass_char8_x39_Test0( const std::array<char, 39> x )
+{
+	TEST_ASSERT( std::memcmp( x.data(), "Ficket euch, ihr beleidigt meine Augen!", x.size() ) == 0 );
 }
 
 } // extern "C"
