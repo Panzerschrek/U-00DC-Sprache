@@ -636,4 +636,65 @@ void Pass_tup_i8_f64_Test1( const Tuple2<int8_t, double> x )
 	TEST_ASSERT( x.v0 == -97 ); TEST_ASSERT( x.v1 == 251.0 );
 }
 
+void Pass_tup_u16_i8_Test0( const Tuple2<uint16_t, int8_t> x )
+{
+	TEST_ASSERT( x.v0 == 1245 ); TEST_ASSERT( x.v1 == 114 );
+}
+void Pass_tup_u16_i8_Test1( const Tuple2<uint16_t, int8_t> x )
+{
+	TEST_ASSERT( x.v0 == 48437 ); TEST_ASSERT( x.v1 == -13 );
+}
+void Pass_tup_u16_u16_Test0( const Tuple2<uint16_t, uint16_t> x )
+{
+	TEST_ASSERT( x.v0 == 43311 ); TEST_ASSERT( x.v1 == 31000 );
+}
+void Pass_tup_u16_u16_Test1( const Tuple2<uint16_t, uint16_t> x )
+{
+	TEST_ASSERT( x.v0 == 37 ); TEST_ASSERT( x.v1 == 57823 );
+}
+void Pass_tup_u16_i32_Test0( const Tuple2<uint16_t, int32_t> x )
+{
+	TEST_ASSERT( x.v0 == 1298 ); TEST_ASSERT( x.v1 == -533167754 );
+}
+void Pass_tup_u16_i32_Test1( const Tuple2<uint16_t, int32_t> x )
+{
+	TEST_ASSERT( x.v0 == 65530 ); TEST_ASSERT( x.v1 == 336637444 );
+}
+void Pass_tup_u16_u64_Test0( const Tuple2<uint16_t, uint64_t> x )
+{
+	TEST_ASSERT( x.v0 == 257 ); TEST_ASSERT( x.v1 == 0x08192A3B4C5D6E7Full );
+}
+void Pass_tup_u16_u64_Test1( const Tuple2<uint16_t, uint64_t> x )
+{
+	TEST_ASSERT( x.v0 == 56316 ); TEST_ASSERT( x.v1 == 0xF7E6D5C4B3A29180ull );
+}
+void Pass_tup_u16_i128_Test0( const Tuple2<uint16_t, __int128_t> x )
+{
+	TEST_ASSERT( x.v0 == 712 );
+	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	TEST_ASSERT( x.v1 == ( ( __int128_t(0x0123456789ABCDEFll) << 64 ) | 0x7EDCBA9876543210ll ) );
+}
+void Pass_tup_u16_i128_Test1( const Tuple2<uint16_t, __int128_t> x )
+{
+	TEST_ASSERT( x.v0 == 8812 )
+	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	TEST_ASSERT( x.v1 == ( ( __int128_t(0x1EDCBA9876543210ll) << 64 ) | 0x0123456789ABCDEFll ) );
+}
+void Pass_tup_u16_f32_Test0( const Tuple2<uint16_t, float> x )
+{
+	TEST_ASSERT( x.v0 == 2467 ); TEST_ASSERT( x.v1 == 6263.5f );
+}
+void Pass_tup_u16_f32_Test1( const Tuple2<uint16_t, float> x )
+{
+	TEST_ASSERT( x.v0 == 9850 ); TEST_ASSERT( x.v1 == -6356470.0f );
+}
+void Pass_tup_u16_f64_Test0( const Tuple2<uint16_t, double> x )
+{
+	TEST_ASSERT( x.v0 == 3126 ); TEST_ASSERT( x.v1 == -37163.125 );
+}
+void Pass_tup_u16_f64_Test1( const Tuple2<uint16_t, double> x )
+{
+	TEST_ASSERT( x.v0 == 65535 ); TEST_ASSERT( x.v1 == 253.0 );
+}
+
 } // extern "C"
