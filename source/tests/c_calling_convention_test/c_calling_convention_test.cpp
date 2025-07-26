@@ -1156,6 +1156,96 @@ void U_Pass_f64_Test3( double x );
 void U_Pass_f64_Test4( double x );
 void U_Pass_f64_Test5( double x );
 void U_Pass_f64_Test6( double x0, double x1, double x2, double x3, double x4, double x5, double x6, double x7, double x8, double x9, double xa, double xb, double xc, double xd, double xe, double xf );
+void U_Pass_u8_x1_Test0( std::array<uint8_t, 1> x );
+void U_Pass_u8_x2_Test0( std::array<uint8_t, 2> x );
+void U_Pass_u8_x3_Test0( std::array<uint8_t, 3> x );
+void U_Pass_u8_x4_Test0( std::array<uint8_t, 4> x );
+void U_Pass_u8_x5_Test0( std::array<uint8_t, 5> x );
+void U_Pass_u8_x6_Test0( std::array<uint8_t, 6> x );
+void U_Pass_u8_x7_Test0( std::array<uint8_t, 7> x );
+void U_Pass_u8_x8_Test0( std::array<uint8_t, 8> x );
+void U_Pass_u8_x9_Test0( std::array<uint8_t, 9> x );
+void U_Pass_u8_x10_Test0( std::array<uint8_t, 10> x );
+void U_Pass_u8_x11_Test0( std::array<uint8_t, 11> x );
+void U_Pass_u8_x12_Test0( std::array<uint8_t, 12> x );
+void U_Pass_u8_x13_Test0( std::array<uint8_t, 13> x );
+void U_Pass_u8_x14_Test0( std::array<uint8_t, 14> x );
+void U_Pass_u8_x15_Test0( std::array<uint8_t, 15> x );
+void U_Pass_u8_x16_Test0( std::array<uint8_t, 16> x );
+void U_Pass_u8_x17_Test0( std::array<uint8_t, 17> x );
+void U_Pass_u8_x29_Test0( std::array<uint8_t, 29> x );
+void U_Pass_u8_x371_Test0( std::array<uint8_t, 371> x );
+void U_Pass_i16_x1_Test0( std::array<int16_t, 1> x );
+void U_Pass_i16_x2_Test0( std::array<int16_t, 2> x );
+void U_Pass_i16_x3_Test0( std::array<int16_t, 3> x );
+void U_Pass_i16_x4_Test0( std::array<int16_t, 4> x );
+void U_Pass_i16_x5_Test0( std::array<int16_t, 5> x );
+void U_Pass_i16_x6_Test0( std::array<int16_t, 6> x );
+void U_Pass_i16_x7_Test0( std::array<int16_t, 7> x );
+void U_Pass_i16_x8_Test0( std::array<int16_t, 8> x );
+void U_Pass_i16_x9_Test0( std::array<int16_t, 9> x );
+void U_Pass_i16_x15_Test0( std::array<int16_t, 15> x );
+void U_Pass_i16_x83_Test0( std::array<int16_t, 83> x );
+void U_Pass_u32_x1_Test0( std::array<uint32_t, 1> x );
+void U_Pass_u32_x2_Test0( std::array<uint32_t, 2> x );
+void U_Pass_u32_x3_Test0( std::array<uint32_t, 3> x );
+void U_Pass_u32_x4_Test0( std::array<uint32_t, 4> x );
+void U_Pass_u32_x5_Test0( std::array<uint32_t, 5> x );
+void U_Pass_u32_x6_Test0( std::array<uint32_t, 6> x );
+void U_Pass_u32_x7_Test0( std::array<uint32_t, 7> x );
+void U_Pass_u32_x8_Test0( std::array<uint32_t, 8> x );
+void U_Pass_u32_x9_Test0( std::array<uint32_t, 9> x );
+void U_Pass_u32_x17_Test0( std::array<uint32_t, 17> x );
+void U_Pass_u64_x1_Test0( std::array<uint64_t, 1> x );
+void U_Pass_u64_x2_Test0( std::array<uint64_t, 2> x );
+void U_Pass_u64_x3_Test0( std::array<uint64_t, 3> x );
+void U_Pass_u64_x4_Test0( std::array<uint64_t, 4> x );
+void U_Pass_u64_x5_Test0( std::array<uint64_t, 5> x );
+void U_Pass_u64_x11_Test0( std::array<uint64_t, 11> x );
+void U_Pass_u128_x1_Test0( std::array<__uint128_t, 1> x );
+void U_Pass_u128_x2_Test0( std::array<__uint128_t, 2> x );
+void U_Pass_u128_x3_Test0( std::array<__uint128_t, 3> x );
+void U_Pass_f32_x1_Test0( std::array<float, 1> x );
+void U_Pass_f32_x2_Test0( std::array<float, 2> x );
+void U_Pass_f32_x3_Test0( std::array<float, 3> x );
+void U_Pass_f32_x4_Test0( std::array<float, 4> x );
+void U_Pass_f32_x5_Test0( std::array<float, 5> x );
+void U_Pass_f32_x6_Test0( std::array<float, 6> x );
+void U_Pass_f32_x7_Test0( std::array<float, 7> x );
+void U_Pass_f32_x8_Test0( std::array<float, 8> x );
+void U_Pass_f32_x9_Test0( std::array<float, 9> x );
+void U_Pass_f32_x15_Test0( std::array<float, 15> x );
+void U_Pass_f32_x47_Test0( std::array<float, 47> x );
+void U_Pass_f64_x1_Test0( std::array<double, 1> x );
+void U_Pass_f64_x2_Test0( std::array<double, 2> x );
+void U_Pass_f64_x3_Test0( std::array<double, 3> x );
+void U_Pass_f64_x4_Test0( std::array<double, 4> x );
+void U_Pass_f64_x5_Test0( std::array<double, 5> x );
+void U_Pass_f64_x6_Test0( std::array<double, 6> x );
+void U_Pass_f64_x7_Test0( std::array<double, 7> x );
+void U_Pass_f64_x8_Test0( std::array<double, 8> x );
+void U_Pass_f64_x9_Test0( std::array<double, 9> x );
+void U_Pass_f64_x15_Test0( std::array<double, 15> x );
+void U_Pass_f64_x47_Test0( std::array<double, 47> x );
+void U_Pass_char8_x1_Test0( std::array<char, 1> x );
+void U_Pass_char8_x2_Test0( std::array<char, 2> x );
+void U_Pass_char8_x3_Test0( std::array<char, 3> x );
+void U_Pass_char8_x4_Test0( std::array<char, 4> x );
+void U_Pass_char8_x5_Test0( std::array<char, 5> x );
+void U_Pass_char8_x6_Test0( std::array<char, 6> x );
+void U_Pass_char8_x7_Test0( std::array<char, 7> x );
+void U_Pass_char8_x8_Test0( std::array<char, 8> x );
+void U_Pass_char8_x9_Test0( std::array<char, 9> x );
+void U_Pass_char8_x10_Test0( std::array<char, 10> x );
+void U_Pass_char8_x11_Test0( std::array<char, 11> x );
+void U_Pass_char8_x12_Test0( std::array<char, 12> x );
+void U_Pass_char8_x13_Test0( std::array<char, 13> x );
+void U_Pass_char8_x14_Test0( std::array<char, 14> x );
+void U_Pass_char8_x15_Test0( std::array<char, 15> x );
+void U_Pass_char8_x16_Test0( std::array<char, 16> x );
+void U_Pass_char8_x17_Test0( std::array<char, 17> x );
+void U_Pass_char8_x32_Test0( std::array<char, 32> x );
+void U_Pass_char8_x39_Test0( std::array<char, 39> x );
 
 void TestPassingValuesToUCode()
 {
@@ -1215,6 +1305,60 @@ void TestPassingValuesToUCode()
 	U_Pass_f64_Test4( 1.0 / 0.0 );
 	U_Pass_f64_Test5( 0.0 / 0.0 );
 	U_Pass_f64_Test6( 364341.5, 1786.5, -643.4, 353347.0, 70000000.0, -4454.25, 7854320000000.0, 0.0, 66434.0, 3643.3, 67436.125, 754.0, 378436.0, -42.75, -6552.4, 6564.0 );
+	U_Pass_u8_x1_Test0( { 0xB4 } );
+	U_Pass_u8_x2_Test0( { 0xAB, 0x7C } );
+	U_Pass_u8_x3_Test0( { 0x16, 0xF7, 0x75 } );
+	U_Pass_u8_x4_Test0( { 0x01, 0x23, 0x45, 0x67 } );
+	U_Pass_u8_x5_Test0( { 0x89, 0xAB, 0xCD, 0xEF, 0x76 } );
+	U_Pass_u8_x6_Test0( { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66 } );
+	U_Pass_u8_x7_Test0( { 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD } );
+	U_Pass_u8_x8_Test0( { 0xF0, 0xE1, 0xD2, 0xC3, 0xB4, 0xA5, 0x96, 0x87 } );
+	U_Pass_u8_x9_Test0( { 0x01, 0x12, 0x23, 0x34, 0x45, 0x56, 0x67, 0x78, 0x89 } );
+	U_Pass_u8_x10_Test0( { 0x9A, 0xAB, 0xBC, 0xCD, 0xDE, 0xEF, 0xF0, 0x01, 0x12, 0x23 } );
+	U_Pass_u8_x11_Test0( { 0xF0, 0x1E, 0xD2, 0x3C, 0xB4, 0x5A, 0x96, 0x78, 0x11, 0x22, 0x33 } );
+	U_Pass_u8_x12_Test0( { 0xF7, 0x8B, 0xE6, 0x72, 0x85, 0x00, 0x3C, 0xFE, 0xD5, 0x91, 0x4E, 0x67 } );
+	{
+		std::array<uint8_t, 13> arg;
+		for( auto  i= 0u; i < 13u; ++i )
+			arg[i]= uint8_t( i * i + i * 7u );
+		U_Pass_u8_x13_Test0( arg );
+	}
+	{
+		std::array<uint8_t, 14> arg;
+		for( auto  i= 0u; i < 14u; ++i )
+			arg[i]= uint8_t( i * i - i * 5u + 3u );
+		U_Pass_u8_x14_Test0( arg );
+	}
+	{
+		std::array<uint8_t, 15> arg;
+		for( auto  i= 0u; i < 15u; ++i )
+			arg[i]= uint8_t( i * i + i * 3u - 7u );
+		U_Pass_u8_x15_Test0( arg );
+	}
+	{
+		std::array<uint8_t, 16> arg;
+		for( auto  i= 0u; i < 16u; ++i )
+			arg[i]= uint8_t( 3u * i * i + i * 7u - 2u );
+		U_Pass_u8_x16_Test0( arg );
+	}
+	{
+		std::array<uint8_t, 17> arg;
+		for( auto  i= 0u; i < 17u; ++i )
+			arg[i]= uint8_t( i * i + i * 13u - 3567u );
+		U_Pass_u8_x17_Test0( arg );
+	}
+	{
+		std::array<uint8_t, 29> arg;
+		for( auto  i= 0u; i < 29u; ++i )
+			arg[i]= uint8_t( ( i * i ) ^ ( i + 13u ) );
+		U_Pass_u8_x29_Test0( arg );
+	}
+	{
+		std::array<uint8_t, 371> arg;
+		for( auto  i= 0u; i < 371u; ++i )
+			arg[i]= uint8_t( i * 3u - i * i * 6u + 564u );
+		U_Pass_u8_x371_Test0( arg );
+	}
 }
 
 } // extern "C"
