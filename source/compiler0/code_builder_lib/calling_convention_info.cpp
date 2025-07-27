@@ -369,7 +369,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 				else U_ASSERT(false);
 			}
 
-			// Create a touple for two parts.
+			// Create a tuple for two parts.
 			argument_passing.llvm_type= llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) );
 			// TODO - set zext/sext?
 		}
@@ -385,7 +385,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 		return ArgumentPassingByPointer{};
 	}
 }
-
 
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::CalculateReturnValuePassingInfo( const Type& type )
 {
@@ -421,48 +420,75 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::C
 		return return_value_passing;
 	}
 
-	if( const auto c= type.GetClassType() )
-	{
-		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
-		{
-			ReturnValuePassingDirect return_value_passing;
-			return_value_passing.llvm_type= single_scalar;
-			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
-			return return_value_passing;
-		}
-		else
-			return ReturnValuePassingByPointer{};
-	}
+	// Composite types are left.
 
-	if( const auto a= type.GetArrayType() )
+	if( type.GetClassType() != nullptr || type.GetArrayType() != nullptr || type.GetTupleType() != nullptr )
 	{
-		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
-		{
-			ReturnValuePassingDirect return_value_passing;
-			return_value_passing.llvm_type= single_scalar;
-			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
-			return return_value_passing;
-		}
-		else
-			return ReturnValuePassingByPointer{};
-	}
+		llvm::Type* const llvm_type= type.GetLLVMType();
 
-	if( const auto t= type.GetTupleType() )
+		const uint64_t type_size= data_layout_.getTypeAllocSize( llvm_type );
+		if( type_size > 16 )
+			return ReturnValuePassingByPointer{};
+
+		if( type_size == 0 )
+		{
+			// TODO - handle zero-sized structs properly.
+			return ReturnValuePassingByPointer{};
+		}
+
+		ArgumentPartClasses classes;
+		for( ArgumentClass& c : classes )
+			c= ArgumentClass::NoClass;
+
+		uint64_t offset= 0;
+		ClassifyType_r( *llvm_type, classes, offset );
+		PostMergeArgumentClasses( classes );
+
+		if( classes[0] == ArgumentClass::Memory )
+			return ReturnValuePassingByPointer{};
+
+		llvm::LLVMContext& llvm_context= llvm_type->getContext();
+
+		ReturnValuePassingDirect return_value_passing;
+		// Always use original type alignment.
+		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( llvm_type ).value() );
+
+		if( type_size <= 8 )
+		{
+			if( classes[0] == ArgumentClass::Integer )
+				return_value_passing.llvm_type= llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 );
+			else if( classes[0] == ArgumentClass::SSE )
+				return_value_passing.llvm_type= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+			else U_ASSERT(false);
+		}
+		else if( type_size <= 16 )
+		{
+			constexpr size_t num_parts= 2;
+			std::array<llvm::Type*, num_parts> types{};
+			const uint32_t part_sizes[2]{ 8u, uint32_t(type_size)  - 8u };
+			for( size_t part= 0; part < num_parts; ++part )
+			{
+				if( classes[part] == ArgumentClass::Integer )
+					types[part]= llvm::IntegerType::get( llvm_context, part_sizes[part] * 8 );
+				else if( classes[part] == ArgumentClass::SSE )
+					types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+				else U_ASSERT(false);
+			}
+
+			// Create a tuple for two parts.
+			return_value_passing.llvm_type= llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) );
+			// TODO - set zext/sext?
+		}
+		else U_ASSERT( false );
+
+		return return_value_passing;
+	}
+	else
 	{
-		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
-		{
-			ReturnValuePassingDirect return_value_passing;
-			return_value_passing.llvm_type= single_scalar;
-			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
-			return return_value_passing;
-		}
-		else
-			return ReturnValuePassingByPointer{};
+		// Unhandled type kind.
+		U_ASSERT(false);
+		return ReturnValuePassingByPointer{};
 	}
-
-	// Unhandled type kind.
-	U_ASSERT(false);
-	return ReturnValuePassingByPointer{};
 }
 
 void CallingConventionInfoSystemVX86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint64_t offset )
