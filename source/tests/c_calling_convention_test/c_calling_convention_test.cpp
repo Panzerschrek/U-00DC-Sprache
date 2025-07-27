@@ -1832,6 +1832,27 @@ std::array<uint64_t, 5> Get_u64_x5_Test0() { return { 378824816171u, 73436784282
 std::array<__int128_t, 1> Get_i128_x1_Test0() { return { ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll }; }
 std::array<__int128_t, 2> Get_i128_x2_Test0() { return { ( __int128_t(0x3123456789AeCDEFll) << 64u ) | 6428589734399ll, ( __int128_t(0x5123456789ABFDEFll) << 64u ) | 6453589734892ll }; }
 std::array<__int128_t, 3> Get_i128_x3_Test0() { return { ( __int128_t(0x3123256789AeCDEFll) << 64u ) | 6428589754399ll, ( __int128_t(0x51234567896BFDEFll) << 64u ) | 6453582734892ll, ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll }; }
+std::array<float, 1> Get_f32_x1_Test0() { return { 0.125f }; }
+std::array<float, 2> Get_f32_x2_Test0() { return { -2.125f, 3.5f }; }
+std::array<float, 3> Get_f32_x3_Test0() { return { -22.125f, 35.5f, 7336.0f  }; }
+std::array<float, 4> Get_f32_x4_Test0() { return { 32.25f, -35.5f, 736.0f, 56367744.5f }; }
+std::array<float, 5> Get_f32_x5_Test0() { return { 322.25f, -352.5f, 7316.0f, 5636744.5f, -0.1f }; }
+std::array<float, 6> Get_f32_x6_Test0() { return { 322.75f, 0.0f, -322.5f, -7316.0f, 5632744.75f, -0.2f }; }
+std::array<float, 7> Get_f32_x7_Test0() { return { 1322.75f, -0.0f, -3222.5f, -736.0f, 56344.75f, -4.2f, 874.5f }; }
+std::array<float, 8> Get_f32_x8_Test0() { return { 1322.75f, -0.0f, -3226.5f, -7365.0f, 5634.75f, -43.2f, 8174.5f, 3743477800.0f }; }
+std::array<float, 9> Get_f32_x9_Test0() { return { 322.75f, -0.4f, 563.0f, -32226.5f, -735.0f, 56734.75f, -44.2f, 81274.5f, 3743477801.0f }; }
+std::array<float, 19> Get_f32_x19_Test0()
+{
+	std::array<float, 19> res;
+	for( uint32_t i= 0; i < 19u; ++i )
+		res[i]= float(i) * float(i) * 13.5f - float(i) * 67.25f + 2647.0f;
+	return res;
+}
+std::array<double, 1> Get_f64_x1_Test0() { return { 0.0625 }; }
+std::array<double, 2> Get_f64_x2_Test0() { return { -2.0625, 5757.25 }; }
+std::array<double, 3> Get_f64_x3_Test0() { return { 34.0625, 1757.75, 6741663000000000000.0 }; }
+std::array<double, 4> Get_f64_x4_Test0() { return { -34.0625, 1726757.75, -67523676.25, 0.005 }; }
+std::array<double, 5> Get_f64_x5_Test0() { return { 34.0625, 172657.0, -675276.25, 3.005, 643677.2 }; }
 
 #pragma GCC diagnostic pop
 
