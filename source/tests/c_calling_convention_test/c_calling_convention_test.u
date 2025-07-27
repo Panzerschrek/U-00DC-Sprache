@@ -2210,13 +2210,35 @@ fn nomangle U_Pass_tup_u64_u64_f64_Test0( tup [ u64, u64, f64 ] x ) call_conv( "
 {
 	halt if( x[0] != 0x27283A4B5C637E8Fu ); halt if( x[1] != 0xE637347436B47218u ); halt if( x[2] != 4.7 );
 }
-/*
-fn nomangle U_Pass_tup_f32_f32_f32_Test0( tup [ f32, f32, f32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_f32_f32_f64_Test0( tup [ f32, f32, f64 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_f32_f64_f32_Test0( tup [ f32, f64, f32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_f32_f64_f64_Test0( tup [ f32, f64, f64 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_f64_f32_f32_Test0( tup [ f64, f32, f32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_f64_f32_f64_Test0( tup [ f64, f32, f64 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_f64_f64_f32_Test0( tup [ f64, f64, f32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_f64_f64_f64_Test0( tup [ f64, f64, f64 ] x ) call_conv( "C" );
-*/
+fn nomangle U_Pass_tup_f32_f32_f32_Test0( tup [ f32, f32, f32 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0.25f ); halt if( x[1] != -363.2f ); halt if( x[2] != 3773440.0f );
+}
+fn nomangle U_Pass_tup_f32_f32_f64_Test0( tup [ f32, f32, f64 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0.25f ); halt if( x[1] != -363.2f ); halt if( x[2] != 3773440.0 );
+}
+fn nomangle U_Pass_tup_f32_f64_f32_Test0( tup [ f32, f64, f32 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0.25f ); halt if( x[1] != -363.2 ); halt if( x[2] != 3773440.0f );
+}
+fn nomangle U_Pass_tup_f32_f64_f64_Test0( tup [ f32, f64, f64 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0.25f ); halt if( x[1] != -363.2 ); halt if( x[2] != 3773440.0 );
+}
+fn nomangle U_Pass_tup_f64_f32_f32_Test0( tup [ f64, f32, f32 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0.25 ); halt if( x[1] != -363.2f ); halt if( x[2] != 3773440.0f );
+}
+fn nomangle U_Pass_tup_f64_f32_f64_Test0( tup [ f64, f32, f64 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0.25 ); halt if( x[1] != -363.2f ); halt if( x[2] != 3773440.0 );
+}
+fn nomangle U_Pass_tup_f64_f64_f32_Test0( tup [ f64, f64, f32 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0.25 ); halt if( x[1] != -363.2 ); halt if( x[2] != 3773440.0f );
+}
+fn nomangle U_Pass_tup_f64_f64_f64_Test0( tup [ f64, f64, f64 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0.25 ); halt if( x[1] != -363.2 ); halt if( x[2] != 3773440.0 );
+}

@@ -1709,6 +1709,14 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_f64_u64_u64_Test0( { 323.25, 0x64AB3C5482367DE3u, 0x17283A4B5C6D7E8Fu } );
 	U_Pass_tup_u64_f64_u64_Test0( { 0x7637347A36B4E218u, 1336.5, 0x067374735AE7DFC13u } );
 	U_Pass_tup_u64_u64_f64_Test0( { 0x27283A4B5C637E8Fu, 0xE637347436B47218u, 4.7 } );
+	U_Pass_tup_f32_f32_f32_Test0( { 0.25f, -363.2f, 3773440.0f } );
+	U_Pass_tup_f32_f32_f64_Test0( { 0.25f, -363.2f, 3773440.0 } );
+	U_Pass_tup_f32_f64_f32_Test0( { 0.25f, -363.2, 3773440.0f } );
+	U_Pass_tup_f32_f64_f64_Test0( { 0.25f, -363.2, 3773440.0 } );
+	U_Pass_tup_f64_f32_f32_Test0( { 0.25, -363.2f, 3773440.0f } );
+	U_Pass_tup_f64_f32_f64_Test0( { 0.25, -363.2f, 3773440.0  } );
+	U_Pass_tup_f64_f64_f32_Test0( { 0.25, -363.2, 3773440.0f } );
+	U_Pass_tup_f64_f64_f64_Test0( { 0.25, -363.2, 3773440.0 } );
 }
 
 } // extern "C"
