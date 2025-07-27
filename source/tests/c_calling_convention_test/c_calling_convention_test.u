@@ -1115,6 +1115,38 @@ fn nomangle main() call_conv( "C" ) : i32
 			halt if( res[ size_type(i) ] != i * i * 752 + 6447 * i + 6437784 );
 		}
 	}
+	{
+		var [ u64, 1 ] expected[ 0x0123456789ABCDEFu ];
+		halt if( Get_u64_x1_Test0() != expected );
+	}
+	{
+		var [ u64, 2 ] expected[ 73434784882478588u, 378824886678u ];
+		halt if( Get_u64_x2_Test0() != expected );
+	}
+	{
+		var [ u64, 3 ] expected[ 378824816678u, 73436784882478588u, 74784785858885u ];
+		halt if( Get_u64_x3_Test0() != expected );
+	}
+	{
+		var [ u64, 4 ] expected[ 378824816178u, 734367848822478588u, 74784785888885u, 75443787589u ];
+		halt if( Get_u64_x4_Test0() != expected );
+	}
+	{
+		var [ u64, 5 ] expected[ 378824816171u, 734367842822478588u, 74784785888883u, 754243787589u, 67437858898u ];
+		halt if( Get_u64_x5_Test0() != expected );
+	}
+	{
+		var [ i128, 1 ] expected[ ( ( 0x0123456789ABCDEFi128 << 64u ) | 6458589734899i128 ) ];
+		halt if( Get_i128_x1_Test0() != expected );
+	}
+	{
+		var [ i128, 2 ] expected[ ( ( 0x3123456789AeCDEFi128 << 64u ) | 6428589734399i128 ), ( ( 0x5123456789ABFDEFi128 << 64u ) | 6453589734892i128 ) ];
+		halt if( Get_i128_x2_Test0() != expected );
+	}
+	{
+		var [ i128, 3 ] expected[ ( ( 0x3123256789AeCDEFi128 << 64u ) | 6428589754399i128 ), ( ( 0x51234567896BFDEFi128 << 64u ) | 6453582734892i128 ), ( ( 0x0123456789ABCDEFi128 << 64u ) | 6458589734899i128 ) ];
+		halt if( Get_i128_x3_Test0() != expected );
+	}
 
 	return 0;
 }
@@ -1461,6 +1493,14 @@ fn nomangle Get_i32_x7_Test0() call_conv( "C" ) : [ i32, 7 ];
 fn nomangle Get_i32_x8_Test0() call_conv( "C" ) : [ i32, 8 ];
 fn nomangle Get_i32_x9_Test0() call_conv( "C" ) : [ i32, 9 ];
 fn nomangle Get_i32_x18_Test0() call_conv( "C" ) : [ i32, 18 ];
+fn nomangle Get_u64_x1_Test0() call_conv( "C" ) : [ u64, 1 ];
+fn nomangle Get_u64_x2_Test0() call_conv( "C" ) : [ u64, 2 ];
+fn nomangle Get_u64_x3_Test0() call_conv( "C" ) : [ u64, 3 ];
+fn nomangle Get_u64_x4_Test0() call_conv( "C" ) : [ u64, 4 ];
+fn nomangle Get_u64_x5_Test0() call_conv( "C" ) : [ u64, 5 ];
+fn nomangle Get_i128_x1_Test0() call_conv( "C" ) : [ i128, 1 ];
+fn nomangle Get_i128_x2_Test0() call_conv( "C" ) : [ i128, 2 ];
+fn nomangle Get_i128_x3_Test0() call_conv( "C" ) : [ i128, 3 ];
 
 // Function to execute C++ functions passing arguments to Ü code.
 fn nomangle TestPassingValuesToUCode() call_conv( "C" );

@@ -1824,6 +1824,14 @@ std::array<int32_t, 18> Get_i32_x18_Test0()
 		res[ size_t(i) ]= i * i * 752 + 6447 * i + 6437784;
 	return res;
 }
+std::array<uint64_t, 1> Get_u64_x1_Test0() { return { 0x0123456789ABCDEFu }; }
+std::array<uint64_t, 2> Get_u64_x2_Test0() { return { 73434784882478588u, 378824886678u }; }
+std::array<uint64_t, 3> Get_u64_x3_Test0() { return { 378824816678u, 73436784882478588u, 74784785858885u }; }
+std::array<uint64_t, 4> Get_u64_x4_Test0() { return { 378824816178u, 734367848822478588u, 74784785888885u, 75443787589u }; }
+std::array<uint64_t, 5> Get_u64_x5_Test0() { return { 378824816171u, 734367842822478588u, 74784785888883u, 754243787589u, 67437858898u }; }
+std::array<__int128_t, 1> Get_i128_x1_Test0() { return { ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll }; }
+std::array<__int128_t, 2> Get_i128_x2_Test0() { return { ( __int128_t(0x3123456789AeCDEFll) << 64u ) | 6428589734399ll, ( __int128_t(0x5123456789ABFDEFll) << 64u ) | 6453589734892ll }; }
+std::array<__int128_t, 3> Get_i128_x3_Test0() { return { ( __int128_t(0x3123256789AeCDEFll) << 64u ) | 6428589754399ll, ( __int128_t(0x51234567896BFDEFll) << 64u ) | 6453582734892ll, ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll }; }
 
 #pragma GCC diagnostic pop
 
