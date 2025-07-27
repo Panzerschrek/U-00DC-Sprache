@@ -326,7 +326,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 			EnsureTypeComplete( function_type.return_type );
 
 			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_type.return_type );
+				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
 
 			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
 				llvm_function_return_type= direct_passing->llvm_type;
@@ -350,7 +350,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 			if( EnsureTypeComplete( param.type ) )
 			{
 				const ICallingConventionInfo::ArgumentPassing argument_passing=
-					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareValueArgumentPassingInfo( param.type );
+					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateValueArgumentPassingInfo( param.type );
 
 				if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
 					type= direct_passing->llvm_type;

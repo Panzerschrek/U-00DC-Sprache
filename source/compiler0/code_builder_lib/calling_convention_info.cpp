@@ -42,8 +42,8 @@ public:
 	explicit CallingConventionInfoDefault( llvm::DataLayout data_layout );
 
 public: // ICallingConventionInfo
-	virtual ArgumentPassing CalculareValueArgumentPassingInfo( const Type& type ) override;
-	virtual ReturnValuePassing CalculareRetunValuePassingInfo( const Type& type ) override;
+	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
+	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -53,7 +53,7 @@ CallingConventionInfoDefault::CallingConventionInfoDefault( llvm::DataLayout dat
 	: data_layout_( std::move(data_layout) )
 {}
 
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculareValueArgumentPassingInfo( const Type& type )
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
 	{
@@ -146,7 +146,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculareV
 	return ArgumentPassingByPointer{};
 }
 
-ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::CalculareRetunValuePassingInfo( const Type& type )
+ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::CalculateReturnValuePassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
 	{
@@ -230,8 +230,8 @@ public:
 	explicit CallingConventionInfoSystemVX86_64( llvm::DataLayout data_layout );
 
 public: // ICallingConventionInfo
-	virtual ArgumentPassing CalculareValueArgumentPassingInfo( const Type& type ) override;
-	virtual ReturnValuePassing CalculareRetunValuePassingInfo( const Type& type ) override;
+	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
+	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
 
 private:
 	enum class ArgumentClass
@@ -263,7 +263,7 @@ CallingConventionInfoSystemVX86_64::CallingConventionInfoSystemVX86_64( llvm::Da
 	: data_layout_( std::move(data_layout ) )
 {}
 
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::CalculareValueArgumentPassingInfo( const Type& type )
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	// TODO - rework this properly.
 
@@ -387,7 +387,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 }
 
 
-ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::CalculareRetunValuePassingInfo( const Type& type )
+ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::CalculateReturnValuePassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
 	{

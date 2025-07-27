@@ -880,7 +880,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.variables_state.MoveNode( expression_result );
 
 			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-				calling_convention_infos_[ size_t( function_context.function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_context.function_type.return_type );
+				calling_convention_infos_[ size_t( function_context.function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_context.function_type.return_type );
 
 			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
 			{
@@ -915,7 +915,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 
 			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-				calling_convention_infos_[ size_t( function_context.function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_context.function_type.return_type );
+				calling_convention_infos_[ size_t( function_context.function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_context.function_type.return_type );
 
 			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
 			{

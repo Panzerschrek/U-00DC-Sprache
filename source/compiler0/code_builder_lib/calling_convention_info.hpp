@@ -35,7 +35,7 @@ public:
 		uint16_t load_store_alignment= 0;
 	};
 
-	// Pass as arguemnt #0 a pointer, where returned value should be constructed.
+	// Pass as argument #0 a pointer, where returned value should be constructed.
 	struct ReturnValuePassingByPointer{};
 
 	using ReturnValuePassing= std::variant<ReturnValuePassingDirect, ReturnValuePassingByPointer>;
@@ -43,8 +43,8 @@ public:
 public:
 	virtual ~ICallingConventionInfo()= default;
 
-	virtual ArgumentPassing CalculareValueArgumentPassingInfo( const Type& type ) = 0;
-	virtual ReturnValuePassing CalculareRetunValuePassingInfo( const Type& type ) = 0;
+	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) = 0;
+	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) = 0;
 };
 
 using ICallingConventionInfoPtr= std::shared_ptr<ICallingConventionInfo>;

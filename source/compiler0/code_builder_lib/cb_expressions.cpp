@@ -4206,7 +4206,7 @@ Value CodeBuilder::DoCallFunction(
 				function_context.variables_state.TryAddInnerLinks( expr, arg_node, names_scope.GetErrors(), src_loc );
 
 				const ICallingConventionInfo::ArgumentPassing argument_passing=
-					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareValueArgumentPassingInfo( param.type );
+					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateValueArgumentPassingInfo( param.type );
 
 				if( expr->constexpr_value != nullptr )
 				{
@@ -4352,7 +4352,7 @@ Value CodeBuilder::DoCallFunction(
 	if( function_type.return_value_type == ValueType::Value )
 	{
 		const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-			calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_type.return_type );
+			calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
 
 		if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
 			return_value_is_sret= true;
@@ -4453,7 +4453,7 @@ Value CodeBuilder::DoCallFunction(
 			if( param.value_type == ValueType::Value )
 			{
 				const ICallingConventionInfo::ArgumentPassing argument_passing=
-					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareValueArgumentPassingInfo( param.type );
+					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateValueArgumentPassingInfo( param.type );
 
 				if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
 				{
@@ -4480,7 +4480,7 @@ Value CodeBuilder::DoCallFunction(
 		else if( return_value_is_composite )
 		{
 			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_type.return_type );
+				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
 
 			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
 			{
