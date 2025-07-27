@@ -1735,4 +1735,32 @@ void TestPassingValuesToUCode()
 		U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( 3.0, 724.1, -365.0, -0.125, 6336.2, 6724.0, -126.85, { 631.3, 165.2 } );
 }
 
+int8_t Get_i8_Test0() { return 117; }
+int8_t Get_i8_Test1() { return -24; }
+uint8_t Get_u8_Test0() { return 104; }
+uint8_t Get_u8_Test1() { return 231; }
+int16_t Get_i16_Test0() { return 12361; }
+int16_t Get_i16_Test1() { return -25331; }
+uint16_t Get_u16_Test0() { return 22365; }
+uint16_t Get_u16_Test1() { return 43652; }
+int32_t Get_i32_Test0() { return 534875478; }
+int32_t Get_i32_Test1() { return -34745344; }
+uint32_t Get_u32_Test0() { return 0x35B6E36Fu; }
+uint32_t Get_u32_Test1() { return 0xE54EC57Fu; }
+int64_t Get_i64_Test0() { return 474247578522; }
+int64_t Get_i64_Test1() { return -65433774422444; }
+uint64_t Get_u64_Test0() { return 0x35B6E36F4E8FEC37u; }
+uint64_t Get_u64_Test1() { return 0xE54EC57F1E070FC1u; }
+__int128_t Get_i128_Test0() { return ( __int128_t( 0x0123456789ABCDEFull) << 64u ) | 0xFEDCBA9876543210ull; }
+__uint128_t Get_u128_Test0() { return ( __uint128_t(0xFEDCBA9876543210ull) << 64u ) | 0x0123456789ABCDEFull; }
+char Get_char8_Test0() { return 'n'; }
+char Get_char8_Test1() { return char(145); }
+char16_t Get_char16_Test0() { return u'Й'; }
+char16_t Get_char16_Test1() { return u'Ꙥ'; }
+char32_t Get_char32_Test0() { return U'😀'; }
+float Get_f32_Test0() { return 642.05f; }
+float Get_f32_Test1() { return -0.012f; }
+double Get_f64_Test0() { return 544747366.75; }
+double Get_f64_Test1() { return -34.25; }
+
 } // extern "C"

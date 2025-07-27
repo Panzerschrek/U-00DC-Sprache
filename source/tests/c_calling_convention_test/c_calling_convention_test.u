@@ -923,6 +923,34 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	TestPassingValuesToUCode();
 
+	halt if( Get_i8_Test0() != 117i8 );
+	halt if( Get_i8_Test1() != -24i8 );
+	halt if( Get_u8_Test0() != 104u8 );
+	halt if( Get_u8_Test1() != 231u8 );
+	halt if( Get_i16_Test0() != 12361i16 );
+	halt if( Get_i16_Test1() != -25331i16 );
+	halt if( Get_u16_Test0() != 22365u16 );
+	halt if( Get_u16_Test1() != 43652u16 );
+	halt if( Get_i32_Test0() != 534875478 );
+	halt if( Get_i32_Test1() != -34745344 );
+	halt if( Get_u32_Test0() != 0x35B6E36Fu );
+	halt if( Get_u32_Test1() != 0xE54EC57Fu );
+	halt if( Get_i64_Test0() != 474247578522 );
+	halt if( Get_i64_Test1() != -65433774422444 );
+	halt if( Get_u64_Test0() != 0x35B6E36F4E8FEC37u );
+	halt if( Get_u64_Test1() != 0xE54EC57F1E070FC1u );
+	halt if( Get_i128_Test0() != i128( ( ( 0x0123456789ABCDEFu128) << 64u ) | 0xFEDCBA9876543210u128 ) );
+	halt if( Get_u128_Test0() != ( ( ( 0xFEDCBA9876543210u128) << 64u ) | 0x0123456789ABCDEFu128 ) );
+	halt if( Get_char8_Test0() != 'n' );
+	halt if( Get_char8_Test1() != char8(145) );
+	halt if( Get_char16_Test0() != 'Й'c16 );
+	halt if( Get_char16_Test1() != 'Ꙥ'c16 );
+	halt if( Get_char32_Test0() != '😀'c32 );
+	halt if( Get_f32_Test0() != 642.05f );
+	halt if( Get_f32_Test1() != -0.012f );
+	halt if( Get_f64_Test0() != 544747366.75 );
+	halt if( Get_f64_Test1() != -34.25 );
+
 	return 0;
 }
 
@@ -1201,6 +1229,34 @@ fn nomangle Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d
 // Tricky cases - x86_64 System V ABI uses 8 sse registers for passing floating-point values.
 fn nomangle Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( f64 a, f64 b, f64 c, f64 d, f64 e, f64 f, f64 g, f64 h, tup[ u64, f64 ] i ) call_conv( "C" );
 fn nomangle Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( f64 a, f64 b, f64 c, f64 d, f64 e, f64 f, f64 g, tup[ f64, f64 ] h ) call_conv( "C" );
+
+fn nomangle Get_i8_Test0() call_conv( "C" ) : i8;
+fn nomangle Get_i8_Test1() call_conv( "C" ) : i8;
+fn nomangle Get_u8_Test0() call_conv( "C" ) : u8;
+fn nomangle Get_u8_Test1() call_conv( "C" ) : u8;
+fn nomangle Get_i16_Test0() call_conv( "C" ) : i16;
+fn nomangle Get_i16_Test1() call_conv( "C" ) : i16;
+fn nomangle Get_u16_Test0() call_conv( "C" ) : u16;
+fn nomangle Get_u16_Test1() call_conv( "C" ) : u16;
+fn nomangle Get_i32_Test0() call_conv( "C" ) : i32;
+fn nomangle Get_i32_Test1() call_conv( "C" ) : i32;
+fn nomangle Get_u32_Test0() call_conv( "C" ) : u32;
+fn nomangle Get_u32_Test1() call_conv( "C" ) : u32;
+fn nomangle Get_i64_Test0() call_conv( "C" ) : i64;
+fn nomangle Get_i64_Test1() call_conv( "C" ) : i64;
+fn nomangle Get_u64_Test0() call_conv( "C" ) : u64;
+fn nomangle Get_u64_Test1() call_conv( "C" ) : u64;
+fn nomangle Get_i128_Test0() call_conv( "C" ) : i128;
+fn nomangle Get_u128_Test0() call_conv( "C" ) : u128;
+fn nomangle Get_char8_Test0() call_conv( "C" ) : char8;
+fn nomangle Get_char8_Test1() call_conv( "C" ) : char8;
+fn nomangle Get_char16_Test0() call_conv( "C" ) : char16;
+fn nomangle Get_char16_Test1() call_conv( "C" ) : char16;
+fn nomangle Get_char32_Test0() call_conv( "C" ) : char32;
+fn nomangle Get_f32_Test0() call_conv( "C" ) : f32;
+fn nomangle Get_f32_Test1() call_conv( "C" ) : f32;
+fn nomangle Get_f64_Test0() call_conv( "C" ) : f64;
+fn nomangle Get_f64_Test1() call_conv( "C" ) : f64;
 
 // Function to execute C++ functions passing arguments to Ü code.
 fn nomangle TestPassingValuesToUCode() call_conv( "C" );
