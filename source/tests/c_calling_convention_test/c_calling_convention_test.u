@@ -1410,18 +1410,63 @@ fn nomangle U_Pass_u8_x371_Test0( [ u8, 371 ] x ) call_conv( "C" )
 		halt if( x[i] != u8( i * 3u - i * i * 6u + 564u ) );
 	}
 }
+fn nomangle U_Pass_i16_x1_Test0( [ i16, 1 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != -27816i16 );
+}
+fn nomangle U_Pass_i16_x2_Test0( [ i16, 2 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 1754i16 ); halt if( x[1] != -6534i16 );
+}
+fn nomangle U_Pass_i16_x3_Test0( [ i16, 3 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != -1234i16 ); halt if( x[1] != 30431i16 ); halt if( x[2] != 561i16 );
+}
+fn nomangle U_Pass_i16_x4_Test0( [ i16, 4 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 29554i16 ); halt if( x[1] != -63i16 ); halt if( x[2] != 2452i16 ); halt if( x[3] != -22543i16 );
+}
+fn nomangle U_Pass_i16_x5_Test0( [ i16, 5 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != -3431i16 ); halt if( x[1] != 9655i16 ); halt if( x[2] != 15667i16 ); halt if( x[3] != 46i16 );
+	halt if( x[4] != 19734i16 );
+}
+fn nomangle U_Pass_i16_x6_Test0( [ i16, 6 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 3451i16 ); halt if( x[1] != 29655i16 ); halt if( x[2] != 93i16 ); halt if( x[3] != -5667i16 );
+	halt if( x[4] != 19734i16 ); halt if( x[5] != -4323i16 );
+}
+fn nomangle U_Pass_i16_x7_Test0( [ i16, 7 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 3351i16 ); halt if( x[1] != 2955i16 ); halt if( x[2] != 5393i16 ); halt if( x[3] != -5667i16 );
+	halt if( x[4] != -4323i16 ); halt if( x[5] != 19234i16 ); halt if( x[6] != -3373i16 );
+}
+fn nomangle U_Pass_i16_x8_Test0( [ i16, 8 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != -3373i16 ); halt if( x[1] != 3351i16 ); halt if( x[2] != -5953i16 ); halt if( x[3] != 15353i16 );
+	halt if( x[4] != 5667i16 ); halt if( x[5] != 4323i16 ); halt if( x[6] != -29214i16 ); halt if( x[7] != 5342i16 );
+}
+fn nomangle U_Pass_i16_x9_Test0( [ i16, 9 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 7322i16 ); halt if( x[1] != -3373i16 ); halt if( x[2] != 3351i16 ); halt if( x[3] != -5953i16 );
+	halt if( x[4] != 5667i16 ); halt if( x[5] != -29214i16 ); halt if( x[6] != 5342i16 ); halt if( x[7] != 25353i16 );
+	halt if( x[8] != -6343i16 );
+}
+fn nomangle U_Pass_i16_x15_Test0( [ i16, 15 ] x ) call_conv( "C" )
+{
+	for( auto mut i= 0; i < 15; ++i )
+	{
+		halt if( x[ size_type(i) ] != i16( i * i * 7 - i * 37 + 3 ) );
+	}
+}
+fn nomangle U_Pass_i16_x83_Test0( [ i16, 83 ] x ) call_conv( "C" )
+{
+	for( auto mut i= 0; i < 83; ++i )
+	{
+		halt if( x[ size_type(i) ] != i16( i * i * 5 - i * 43 + 11 ) );
+	}
+}
 /*
-fn nomangle U_Pass_i16_x1_Test0( [ i16, 1 ] x ) call_conv( "C" );
-fn nomangle U_Pass_i16_x2_Test0( [ i16, 2 ] x ) call_conv( "C" );
-fn nomangle U_Pass_i16_x3_Test0( [ i16, 3 ] x ) call_conv( "C" );
-fn nomangle U_Pass_i16_x4_Test0( [ i16, 4 ] x ) call_conv( "C" );
-fn nomangle U_Pass_i16_x5_Test0( [ i16, 5 ] x ) call_conv( "C" );
-fn nomangle U_Pass_i16_x6_Test0( [ i16, 6 ] x ) call_conv( "C" );
-fn nomangle U_Pass_i16_x7_Test0( [ i16, 7 ] x ) call_conv( "C" );
-fn nomangle U_Pass_i16_x8_Test0( [ i16, 8 ] x ) call_conv( "C" );
-fn nomangle U_Pass_i16_x9_Test0( [ i16, 9 ] x ) call_conv( "C" );
-fn nomangle U_Pass_i16_x15_Test0( [ i16, 15 ] x ) call_conv( "C" );
-fn nomangle U_Pass_i16_x83_Test0( [ i16, 83 ] x ) call_conv( "C" );
 fn nomangle U_Pass_u32_x1_Test0( [ u32, 1 ] x ) call_conv( "C" );
 fn nomangle U_Pass_u32_x2_Test0( [ u32, 2 ] x ) call_conv( "C" );
 fn nomangle U_Pass_u32_x3_Test0( [ u32, 3 ] x ) call_conv( "C" );

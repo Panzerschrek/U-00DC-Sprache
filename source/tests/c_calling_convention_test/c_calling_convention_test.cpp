@@ -1359,6 +1359,27 @@ void TestPassingValuesToUCode()
 			arg[i]= uint8_t( i * 3u - i * i * 6u + 564u );
 		U_Pass_u8_x371_Test0( arg );
 	}
+	U_Pass_i16_x1_Test0( { -27816 } );
+	U_Pass_i16_x2_Test0( { 1754, -6534 } );
+	U_Pass_i16_x3_Test0( { -1234, 30431, 561 } );
+	U_Pass_i16_x4_Test0( { 29554, -63, 2452, -22543 } );
+	U_Pass_i16_x5_Test0( { -3431, 9655, 15667, 46, 19734 } );
+	U_Pass_i16_x6_Test0( { 3451, 29655, 93, -5667, 19734, -4323 } );
+	U_Pass_i16_x7_Test0( { 3351, 2955, 5393, -5667, -4323, 19234, -3373 } );
+	U_Pass_i16_x8_Test0( { -3373, 3351, -5953, 15353, 5667, 4323, -29214, 5342 } );
+	U_Pass_i16_x9_Test0( { 7322, -3373, 3351, -5953, 5667, -29214, 5342, 25353, -6343 } );
+	{
+		std::array<int16_t, 15> arg;
+		for( int32_t i= 0; i < 15; ++i )
+			arg[ size_t(i) ]= int16_t( i * i * 7 - i * 37 + 3 );
+		U_Pass_i16_x15_Test0( arg );
+	}
+	{
+		std::array<int16_t, 83> arg;
+		for( int32_t i= 0; i < 83; ++i )
+			arg[ size_t(i) ]= int16_t( i * i * 5 - i * 43 + 11 );
+		U_Pass_i16_x83_Test0( arg );
+	}
 }
 
 } // extern "C"
