@@ -2162,19 +2162,55 @@ fn nomangle U_Pass_tup_u32_u64_u32_Test0( tup [ u32, u64, u32 ] x ) call_conv( "
 {
 	halt if( x[0] != 0x01234567u32 ); halt if( x[1] != 0x17283A4B5C6D7E8Fu64 ); halt if( x[2] != 0x89ABCEDFu32 );
 }
+fn nomangle U_Pass_tup_f32_i32_i32_Test0( tup [ f32, i32, i32 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 123.45f ); halt if( x[1] != 266747477 ); halt if( x[2] != -963237321 );
+}
+fn nomangle U_Pass_tup_i32_f32_i32_Test0( tup [ i32, f32, i32 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != -196323732 ); halt if( x[1] != 236.5f ); halt if( x[2] != 266745477 );
+}
+fn nomangle U_Pass_tup_i32_i32_f32_Test0( tup [ i32, i32, f32 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 196323735 ); halt if( x[1] != 166745427 ); halt if( x[2] != -0.7f );
+}
+fn nomangle U_Pass_tup_f32_u64_u64_Test0( tup [ f32, u64, u64 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 323.25f ); halt if( x[1] != 0x64AB3C5482367DE3u ); halt if( x[2] != 0x17283A4B5C6D7E8Fu );
+}
+fn nomangle U_Pass_tup_u64_f32_u64_Test0( tup [ u64, f32, u64 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0x7637347A36B4E218u ); halt if( x[1] != 1336.5f ); halt if( x[2] != 0x067374735AE7DFC13u );
+}
+fn nomangle U_Pass_tup_u64_u64_f32_Test0( tup [ u64, u64, f32 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0x27283A4B5C637E8Fu ); halt if( x[1] != 0xE637347436B47218u ); halt if( x[2] != 4.7f );
+}
+fn nomangle U_Pass_tup_f64_i32_i32_Test0( tup [ f64, i32, i32 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 123.45 ); halt if( x[1] != 266747477 ); halt if( x[2] != -963237321 );
+}
+fn nomangle U_Pass_tup_i32_f64_i32_Test0( tup [ i32, f64, i32 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != -196323732 ); halt if( x[1] != 236.5 ); halt if( x[2] != 266745477 );
+}
+fn nomangle U_Pass_tup_i32_i32_f64_Test0( tup [ i32, i32, f64 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 196323735 ); halt if( x[1] != 166745427 ); halt if( x[2] != -0.7 );
+}
+fn nomangle U_Pass_tup_f64_u64_u64_Test0( tup [ f64, u64, u64 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 323.25 ); halt if( x[1] != 0x64AB3C5482367DE3u ); halt if( x[2] != 0x17283A4B5C6D7E8Fu );
+}
+fn nomangle U_Pass_tup_u64_f64_u64_Test0( tup [ u64, f64, u64 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0x7637347A36B4E218u ); halt if( x[1] != 1336.5 ); halt if( x[2] != 0x067374735AE7DFC13u );
+}
+fn nomangle U_Pass_tup_u64_u64_f64_Test0( tup [ u64, u64, f64 ] x ) call_conv( "C" )
+{
+	halt if( x[0] != 0x27283A4B5C637E8Fu ); halt if( x[1] != 0xE637347436B47218u ); halt if( x[2] != 4.7 );
+}
 /*
-fn nomangle U_Pass_tup_f32_i32_i32_Test0( tup [ f32, i32, i32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_i32_f32_i32_Test0( tup [ i32, f32, i32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_i32_i32_f32_Test0( tup [ i32, i32, f32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_f32_u64_u64_Test0( tup [ f32, u64, u64 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_u64_f32_u64_Test0( tup [ u64, f32, u64 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_u64_u64_f32_Test0( tup [ u64, u64, f32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_f64_i32_i32_Test0( tup [ f64, i32, i32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_i32_f64_i32_Test0( tup [ i32, f64, i32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_i32_i32_f64_Test0( tup [ i32, i32, f64 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_f64_u64_u64_Test0( tup [ f64, u64, u64 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_u64_f64_u64_Test0( tup [ u64, f64, u64 ] x ) call_conv( "C" );
-fn nomangle U_Pass_tup_u64_u64_f64_Test0( tup [ u64, u64, f64 ] x ) call_conv( "C" );
 fn nomangle U_Pass_tup_f32_f32_f32_Test0( tup [ f32, f32, f32 ] x ) call_conv( "C" );
 fn nomangle U_Pass_tup_f32_f32_f64_Test0( tup [ f32, f32, f64 ] x ) call_conv( "C" );
 fn nomangle U_Pass_tup_f32_f64_f32_Test0( tup [ f32, f64, f32 ] x ) call_conv( "C" );
