@@ -1763,4 +1763,35 @@ float Get_f32_Test1() { return -0.012f; }
 double Get_f64_Test0() { return 544747366.75; }
 double Get_f64_Test1() { return -34.25; }
 
+// Silence GCC warning - for some reason it doesn't like returning std::array by value.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
+
+std::array<int8_t, 1> Get_i8_x1_Test0() { return { -95 }; }
+std::array<int8_t, 2> Get_i8_x2_Test0() { return { 107, -34 }; }
+std::array<int8_t, 3> Get_i8_x3_Test0() { return { -65, 77, 4 }; }
+std::array<int8_t, 4> Get_i8_x4_Test0() { return { 37, 0, 127, -25 }; }
+std::array<int8_t, 5> Get_i8_x5_Test0() { return { 67, 3, 127, -25, 88 }; }
+std::array<int8_t, 6> Get_i8_x6_Test0() { return { 37, -63, 127, -25, 125, -107 }; }
+std::array<int8_t, 7> Get_i8_x7_Test0() { return { 117, 27, -93, -21, 125, -107, 72 }; }
+std::array<int8_t, 8> Get_i8_x8_Test0() { return { 34, 112, 73, -21, 125, -107, 52, -94 }; }
+std::array<int8_t, 9> Get_i8_x9_Test0() { return { 74, 126, 67, 73, -21, 125, -107, 53, -92 }; }
+std::array<int8_t, 10> Get_i8_x10_Test0() { return { 24, 120, 54, 73, -21, 105, -89, -107, 53, -93 }; }
+std::array<int8_t, 11> Get_i8_x11_Test0() { return { 29, 99, 120, 54, 78, -121, 105, -85, -107, 53, -94 }; }
+std::array<int8_t, 12> Get_i8_x12_Test0() { return { 69, 95, 120, 34, 78, -121, 105, -87, -107, 48, 63, -98 }; }
+std::array<int8_t, 13> Get_i8_x13_Test0() { return { 62, 95, 120, 31, 78, -121, 76, 105, -87, 107, 48, 64, -58 }; }
+std::array<int8_t, 14> Get_i8_x14_Test0() { return { 78, 61, 94, 121, 31, 72, -121, 78, 125, -87, 107, 48, 14, -28 }; }
+std::array<int8_t, 15> Get_i8_x15_Test0() { return { 79, 61, 94, 121, 121, 52, -121, 78, -5, 125, -87, 107, 48, 24, -7 }; }
+std::array<int8_t, 16> Get_i8_x16_Test0() { return { 59, 61, 84, 121, 121, 55, -121, 78, 74, -51, 24, -87, 107, 48, 24, -73 }; }
+std::array<int8_t, 17> Get_i8_x17_Test0() { return { 69, 65, 82, 101, 121, 55, -121, 0, 78, 74, -56, 24, -87, 104, 58, 34, -93 }; }
+std::array<int8_t, 35> Get_i8_x35_Test0()
+{
+	std::array<int8_t, 35> res;
+	for( int32_t i= 0; i < 35; ++i )
+		res[ size_t(i) ]= int8_t( i * i -5 * i - 2 );
+	return res;
+}
+
+#pragma GCC diagnostic pop
+
 } // extern "C"

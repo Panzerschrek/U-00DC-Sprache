@@ -950,6 +950,81 @@ fn nomangle main() call_conv( "C" ) : i32
 	halt if( Get_f32_Test1() != -0.012f );
 	halt if( Get_f64_Test0() != 544747366.75 );
 	halt if( Get_f64_Test1() != -34.25 );
+	{
+		var [ i8, 1 ] expected[ -95i8 ];
+		halt if( Get_i8_x1_Test0() != expected );
+	}
+	{
+		var [ i8, 2 ] expected[ 107i8, -34i8 ];
+		halt if( Get_i8_x2_Test0() != expected );
+	}
+	{
+		var [ i8, 3 ] expected[ -65i8, 77i8, 4i8 ];
+		halt if( Get_i8_x3_Test0() != expected );
+	}
+	{
+		var [ i8, 4 ] expected[ 37i8, 0i8, 127i8, -25i8 ];
+		halt if( Get_i8_x4_Test0() != expected );
+	}
+	{
+		var [ i8, 5 ] expected[ 67i8, 3i8, 127i8, -25i8, 88i8 ];
+		halt if( Get_i8_x5_Test0() != expected );
+	}
+	{
+		var [ i8, 6 ] expected[ 37i8, -63i8, 127i8, -25i8, 125i8, -107i8 ];
+		halt if( Get_i8_x6_Test0() != expected );
+	}
+	{
+		var [ i8, 7 ] expected[ 117i8, 27i8, -93i8, -21i8, 125i8, -107i8, 72i8 ];
+		halt if( Get_i8_x7_Test0() != expected );
+	}
+	{
+		var [ i8, 8 ] expected[ 34i8, 112i8, 73i8, -21i8, 125i8, -107i8, 52i8, -94i8 ];
+		halt if( Get_i8_x8_Test0() != expected );
+	}
+	{
+		var [ i8, 9 ] expected[ 74i8, 126i8, 67i8, 73i8, -21i8, 125i8, -107i8, 53i8, -92i8 ];
+		halt if( Get_i8_x9_Test0() != expected );
+	}
+	{
+		var [ i8, 10 ] expected[ 24i8, 120i8, 54i8, 73i8, -21i8, 105i8, -89i8, -107i8, 53i8, -93i8 ];
+		halt if( Get_i8_x10_Test0() != expected );
+	}
+	{
+		var [ i8, 11 ] expected[ 29i8, 99i8, 120i8, 54i8, 78i8, -121i8, 105i8, -85i8, -107i8, 53i8, -94i8 ];
+		halt if( Get_i8_x11_Test0() != expected );
+	}
+	{
+		var [ i8, 12 ] expected[ 69i8, 95i8, 120i8, 34i8, 78i8, -121i8, 105i8, -87i8, -107i8, 48i8, 63i8, -98i8 ];
+		halt if( Get_i8_x12_Test0() != expected );
+	}
+	{
+		var [ i8, 13 ] expected[ 62i8, 95i8, 120i8, 31i8, 78i8, -121i8, 76i8, 105i8, -87i8, 107i8, 48i8, 64i8, -58i8 ];
+		halt if( Get_i8_x13_Test0() != expected );
+	}
+	{
+		var [ i8, 14 ] expected[ 78i8, 61i8, 94i8, 121i8, 31i8, 72i8, -121i8, 78i8, 125i8, -87i8, 107i8, 48i8, 14i8, -28i8 ];
+		halt if( Get_i8_x14_Test0() != expected );
+	}
+	{
+		var [ i8, 15 ] expected[ 79i8, 61i8, 94i8, 121i8, 121i8, 52i8, -121i8, 78i8, -5i8, 125i8, -87i8, 107i8, 48i8, 24i8, -7i8 ];
+		halt if( Get_i8_x15_Test0() != expected );
+	}
+	{
+		var [ i8, 16 ] expected[ 59i8, 61i8, 84i8, 121i8, 121i8, 55i8, -121i8, 78i8, 74i8, -51i8, 24i8, -87i8, 107i8, 48i8, 24i8, -73i8 ];
+		halt if( Get_i8_x16_Test0() != expected );
+	}
+	{
+		var [ i8, 17 ] expected[ 69i8, 65i8, 82i8, 101i8, 121i8, 55i8, -121i8, 0i8, 78i8, 74i8, -56i8, 24i8, -87i8, 104i8, 58i8, 34i8, -93i8 ];
+		halt if( Get_i8_x17_Test0() != expected );
+	}
+	{
+		auto res= Get_i8_x35_Test0();
+		for( auto mut i= 0; i < 35; ++i )
+		{
+			halt if( res[ size_type(i) ] != i8( i * i  -5 * i - 2 ) );
+		}
+	}
 
 	return 0;
 }
@@ -1257,6 +1332,24 @@ fn nomangle Get_f32_Test0() call_conv( "C" ) : f32;
 fn nomangle Get_f32_Test1() call_conv( "C" ) : f32;
 fn nomangle Get_f64_Test0() call_conv( "C" ) : f64;
 fn nomangle Get_f64_Test1() call_conv( "C" ) : f64;
+fn nomangle Get_i8_x1_Test0() call_conv( "C" ) : [ i8, 1 ];
+fn nomangle Get_i8_x2_Test0() call_conv( "C" ) : [ i8, 2 ];
+fn nomangle Get_i8_x3_Test0() call_conv( "C" ) : [ i8, 3 ];
+fn nomangle Get_i8_x4_Test0() call_conv( "C" ) : [ i8, 4 ];
+fn nomangle Get_i8_x5_Test0() call_conv( "C" ) : [ i8, 5 ];
+fn nomangle Get_i8_x6_Test0() call_conv( "C" ) : [ i8, 6 ];
+fn nomangle Get_i8_x7_Test0() call_conv( "C" ) : [ i8, 7 ];
+fn nomangle Get_i8_x8_Test0() call_conv( "C" ) : [ i8, 8 ];
+fn nomangle Get_i8_x9_Test0() call_conv( "C" ) : [ i8, 9 ];
+fn nomangle Get_i8_x10_Test0() call_conv( "C" ) : [ i8, 10 ];
+fn nomangle Get_i8_x11_Test0() call_conv( "C" ) : [ i8, 11 ];
+fn nomangle Get_i8_x12_Test0() call_conv( "C" ) : [ i8, 12 ];
+fn nomangle Get_i8_x13_Test0() call_conv( "C" ) : [ i8, 13 ];
+fn nomangle Get_i8_x14_Test0() call_conv( "C" ) : [ i8, 14 ];
+fn nomangle Get_i8_x15_Test0() call_conv( "C" ) : [ i8, 15 ];
+fn nomangle Get_i8_x16_Test0() call_conv( "C" ) : [ i8, 16 ];
+fn nomangle Get_i8_x17_Test0() call_conv( "C" ) : [ i8, 17 ];
+fn nomangle Get_i8_x35_Test0() call_conv( "C" ) : [ i8, 35 ];
 
 // Function to execute C++ functions passing arguments to Ü code.
 fn nomangle TestPassingValuesToUCode() call_conv( "C" );
