@@ -1380,6 +1380,42 @@ void TestPassingValuesToUCode()
 			arg[ size_t(i) ]= int16_t( i * i * 5 - i * 43 + 11 );
 		U_Pass_i16_x83_Test0( arg );
 	}
+	U_Pass_u32_x1_Test0( { 0xFBA633ADu } );
+	U_Pass_u32_x2_Test0( { 0x5356A4D7u, 0x05AD74CBu } );
+	U_Pass_u32_x3_Test0( { 0x15A67FCBu, 0x5D56A437u, 0xAB4C8F12u } );
+	U_Pass_u32_x4_Test0( { 0x23A68FCAu, 0x1E5AA732u, 0xC34D8F12u, 0xF354AB3Eu } );
+	U_Pass_u32_x5_Test0( { 0x5E5AE732u, 0x33A68FCAu, 0xE34D8F12u, 0xD354AB3Eu, 0x03AD63C3u } );
+	U_Pass_u32_x6_Test0( { 0x34A68FCEu, 0x5E53E732u, 0xE34D8A12u, 0x03ADE3C3u, 0xD354CB3Eu, 0x42D4E6C8u } );
+	U_Pass_u32_x7_Test0( { 0x14A68FCEu, 0x5F53E732u, 0x42D4E6F8u, 0xE36D8A12u, 0x63ADF3C3u, 0x7354CE3Eu, 0x63E7F7C5u } );
+	U_Pass_u32_x8_Test0( { 0xE3E7F731u, 0xE4A686CEu, 0xD2D4E638u, 0xF36D8A62u, 0x63ADF4C3u, 0x7E54CE3Eu, 0xDF53E732u, 0xC3E47C15u } );
+	U_Pass_u32_x9_Test0( { 0xE3E1F731u, 0xE4A686CEu, 0x5E7CD38Fu, 0xD2D48638u, 0xF36D8A62u, 0x63ADF5C3u, 0x7E54CE3Eu, 0xDF51E732u, 0xE3E47C15u } );
+	{
+		std::array<uint32_t, 17> arg;
+		for( uint32_t i= 0u; i < 17u; ++i )
+			arg[i]= uint32_t( i * i * i * 37u + i * i * 52u + i * 12u + 36747u );
+		U_Pass_u32_x17_Test0( arg );
+	}
+	U_Pass_u64_x1_Test0( { 0xFBA633ADE4A686CEull } );
+	U_Pass_u64_x2_Test0( { 0xEBA631ADE4968FC3ull, 0x5E7CD38FDF53E732ull } );
+	U_Pass_u64_x3_Test0( { 0x5E72D38FDF53E73Eull, 0xEBA631ACE4968FC4ull, 0xC3E47C1534A68FCEull } );
+	U_Pass_u64_x4_Test0( { 0xE3E7F731AB4C8F12ull, 0x1E72D38FDF52E73Eull, 0xEBA631FCE4968FC4ull, 0xC3E4741534A68FCEull } );
+	U_Pass_u64_x5_Test0( { 0x13E7F7313B4C8F12ull, 0x1E72D38FDC52E79Eull, 0x7353CE3ED2D48638ull, 0xFBA631FCE1968FC4ull, 0xC3E1741534A68F7Eull } );
+	{
+		std::array<uint64_t, 11> arg;
+		for(uint64_t i= 0u; i < 11u; ++i )
+			arg[i]= i * i * i * 337547ull + i * i * i * 563454548ull + 34565224787ull;
+		U_Pass_u64_x11_Test0( arg );
+	}
+	U_Pass_u128_x1_Test0( { ( __uint128_t( 0xEBA631ADE4968FC3ull ) << 64u ) | 0x5E7CD38FDF53E732ull } );
+	U_Pass_u128_x2_Test0( {
+			( __uint128_t( 0xEEA631ADE4968FC3ull ) << 64u ) | 0x5E7CD3CFDF53E732ull,
+			( __uint128_t( 0x7353CE3ED2D48638ull ) << 64u ) | 0xC3E4741534A68FCEull,
+		} );
+	U_Pass_u128_x3_Test0( {
+			( __uint128_t( 0x1EA63AADE4968FC3ull ) << 64u ) | 0x5E7CDECFDF53E738ull,
+			( __uint128_t( 0x7353CE3ED2D48138ull ) << 64u ) | 0xC354741534A68FFEull,
+			( __uint128_t( 0x7353CE3ED2D48638ull ) << 64u ) | 0x13E7F7313B4C8F12ull,
+		} );
 }
 
 } // extern "C"
