@@ -1607,6 +1607,20 @@ void TestPassingValuesToUCode()
 	Pass_tup_i32_f32_Test1( { -334642, -6346470.0f } );
 	Pass_tup_i32_f64_Test0( { 6413647, -67163.25 } );
 	Pass_tup_i32_f64_Test1( { -5674137, 251.0 } );
+	Pass_tup_u64_i8_Test0( { 0xFEDCBA9876543210ull, 114 } );
+	Pass_tup_u64_i8_Test1( { 0xFED7BA9876543E10ull, -13 } );
+	Pass_tup_u64_u16_Test0( { 0x3EDCBA987654321Cull, 31000u } );
+	Pass_tup_u64_u16_Test1( { 0x3EDCBAE87654721Cull, 57823u } );
+	Pass_tup_u64_i32_Test0( { 0x9EDCBAEA7654721Cull, -533167754 } );
+	Pass_tup_u64_i32_Test1( { 0x91DCBAEA765472ECull, 336637444 } );
+	Pass_tup_u64_u64_Test0( { 0x91DC6AEA765477ECull, 0x08192A3B4C5D6E7Full } );
+	Pass_tup_u64_u64_Test1( { 0xD1DC6AEA7E5477ECull, 0xF7E6D5C4B3A29180ull } );
+	Pass_tup_u64_i128_Test0( { 0xD1D16AEA7E54778Cull, ( __int128_t( 0x0123456789ABCDEFll ) << 64u ) | 0x7EDCBA9876543210ll } );
+	Pass_tup_u64_i128_Test1( { 0x11D16AEA7E54278Cull, ( __int128_t( 0x1EDCBA9876543210ll ) << 64u ) | 0x0123456789ABCDEFll } );
+	Pass_tup_u64_f32_Test0( { 0x1ED16AEA7E54278Cull, 6263.5f } );
+	Pass_tup_u64_f32_Test1( { 0x1ED1AAEA7E54279Cull, -6356470.0f } );
+	Pass_tup_u64_f64_Test0( { 0xCED164EA7E54278Cull, -37163.125 } );
+	Pass_tup_u64_f64_Test1( { 0xCE1164EA7354278Cull, 253.0 } );
 }
 
 } // extern "C"
