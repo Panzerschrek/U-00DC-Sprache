@@ -1670,24 +1670,79 @@ fn nomangle U_Pass_f64_x47_Test0( [ f64, 47 ] x ) call_conv( "C" )
 		halt if( x[i] != f64(i) * f64(i) * 12.75 + 253.5 );
 	}
 }
-/*
-fn nomangle U_Pass_char8_x1_Test0( [ char8, 1 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x2_Test0( [ char8, 2 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x3_Test0( [ char8, 3 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x4_Test0( [ char8, 4 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x5_Test0( [ char8, 5 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x6_Test0( [ char8, 6 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x7_Test0( [ char8, 7 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x8_Test0( [ char8, 8 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x9_Test0( [ char8, 9 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x10_Test0( [ char8, 10 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x11_Test0( [ char8, 11 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x12_Test0( [ char8, 12 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x13_Test0( [ char8, 13 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x14_Test0( [ char8, 14 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x15_Test0( [ char8, 15 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x16_Test0( [ char8, 16 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x17_Test0( [ char8, 17 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x32_Test0( [ char8, 32 ] x ) call_conv( "C" );
-fn nomangle U_Pass_char8_x39_Test0( [ char8, 39 ] x ) call_conv( "C" );
-*/
+fn nomangle U_Pass_char8_x1_Test0( [ char8, 1 ] x ) call_conv( "C" )
+{
+	halt if( x != "H" );
+}
+fn nomangle U_Pass_char8_x2_Test0( [ char8, 2 ] x ) call_conv( "C" )
+{
+	halt if( x != "-8" );
+}
+fn nomangle U_Pass_char8_x3_Test0( [ char8, 3 ] x ) call_conv( "C" )
+{
+	halt if( x != "Kek" );
+}
+fn nomangle U_Pass_char8_x4_Test0( [ char8, 4 ] x ) call_conv( "C" )
+{
+	halt if( x != "SPQR" );
+}
+fn nomangle U_Pass_char8_x5_Test0( [ char8, 5 ] x ) call_conv( "C" )
+{
+	halt if( x != "ApplE" );
+}
+fn nomangle U_Pass_char8_x6_Test0( [ char8, 6 ] x ) call_conv( "C" )
+{
+	halt if( x != "56 to " );
+}
+fn nomangle U_Pass_char8_x7_Test0( [ char8, 7 ] x ) call_conv( "C" )
+{
+	halt if( x != "@#--ABe" );
+}
+fn nomangle U_Pass_char8_x8_Test0( [ char8, 8 ] x ) call_conv( "C" )
+{
+	halt if( x != "S.P.Q.R." );
+}
+fn nomangle U_Pass_char8_x9_Test0( [ char8, 9 ] x ) call_conv( "C" )
+{
+	halt if( x != "Жопа!" );
+}
+fn nomangle U_Pass_char8_x10_Test0( [ char8, 10 ] x ) call_conv( "C" )
+{
+	halt if( x != "Black Mesa" );
+}
+fn nomangle U_Pass_char8_x11_Test0( [ char8, 11 ] x ) call_conv( "C" )
+{
+	halt if( x != "qwertyuiop[" );
+}
+fn nomangle U_Pass_char8_x12_Test0( [ char8, 12 ] x ) call_conv( "C" )
+{
+	halt if( x != "][poiuytrewq" );
+}
+fn nomangle U_Pass_char8_x13_Test0( [ char8, 13 ] x ) call_conv( "C" )
+{
+	halt if( x != "Computerliebe" );
+}
+fn nomangle U_Pass_char8_x14_Test0( [ char8, 14 ] x ) call_conv( "C" )
+{
+	halt if( x != "11 + 22 = some" );
+}
+fn nomangle U_Pass_char8_x15_Test0( [ char8, 15 ] x ) call_conv( "C" )
+{
+	halt if( x != "ABCDEFGHIJKLMNO" );
+}
+fn nomangle U_Pass_char8_x16_Test0( [ char8, 16 ] x ) call_conv( "C" )
+{
+	halt if( x != "Er ist wieder da" );
+}
+fn nomangle U_Pass_char8_x17_Test0( [ char8, 17 ] x ) call_conv( "C" )
+{
+	halt if( x != "XY = 33 + 44 - 55" );
+}
+fn nomangle U_Pass_char8_x32_Test0( [ char8, 32 ] x ) call_conv( "C" )
+{
+	halt if( x != "0123456789abcdefFEDCBA9876543210" );
+}
+fn nomangle U_Pass_char8_x39_Test0( [ char8, 39 ] x ) call_conv( "C" )
+{
+	halt if( x != "Ficket euch, ihr beleidigt meine Augen!" );
+}

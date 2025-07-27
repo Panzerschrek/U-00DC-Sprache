@@ -1458,6 +1458,29 @@ void TestPassingValuesToUCode()
 			arg[i]= double(i) * double(i) * 12.75 + 253.5;
 		U_Pass_f64_x47_Test0( arg );
 	}
+	U_Pass_char8_x1_Test0( { 'H' } );
+	U_Pass_char8_x2_Test0( { '-', '8' } );
+	U_Pass_char8_x3_Test0( { 'K', 'e', 'k' } );
+	U_Pass_char8_x4_Test0( { 'S', 'P', 'Q', 'R' } );
+	U_Pass_char8_x5_Test0( { 'A', 'p', 'p', 'l', 'E' } );
+	U_Pass_char8_x6_Test0( { '5', '6', ' ', 't', 'o', ' ' } );
+	U_Pass_char8_x7_Test0( { '@', '#', '-', '-', 'A', 'B', 'e' } );
+	U_Pass_char8_x8_Test0( { 'S', '.', 'P', '.', 'Q', '.', 'R', '.' } );
+	{
+		std::array<char, 9> arg;
+		std::memcpy( arg.data(), "Жопа!", 9 );
+		U_Pass_char8_x9_Test0( arg );
+	}
+	U_Pass_char8_x10_Test0( { 'B', 'l', 'a', 'c', 'k', ' ', 'M', 'e', 's', 'a' } );
+	U_Pass_char8_x11_Test0( { 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[' } );
+	U_Pass_char8_x12_Test0( { ']', '[', 'p', 'o', 'i', 'u', 'y', 't', 'r', 'e', 'w', 'q' } );
+	U_Pass_char8_x13_Test0( { 'C', 'o', 'm', 'p', 'u', 't', 'e', 'r', 'l', 'i', 'e', 'b', 'e' } );
+	U_Pass_char8_x14_Test0( { '1', '1', ' ', '+', ' ', '2', '2', ' ', '=', ' ', 's', 'o', 'm', 'e' } );
+	U_Pass_char8_x15_Test0( { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O' } );
+	U_Pass_char8_x16_Test0( { 'E', 'r', ' ', 'i', 's', 't', ' ', 'w', 'i', 'e', 'd', 'e', 'r', ' ', 'd', 'a' } );
+	U_Pass_char8_x17_Test0( { 'X', 'Y', ' ', '=', ' ', '3', '3', ' ', '+', ' ', '4', '4', ' ', '-', ' ', '5', '5' } );
+	U_Pass_char8_x32_Test0( { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'F', 'E', 'D', 'C', 'B', 'A', '9', '8', '7', '6', '5', '4', '3', '2', '1', '0' } );
+	U_Pass_char8_x39_Test0( { 'F', 'i', 'c', 'k', 'e', 't', ' ', 'e', 'u', 'c', 'h', ',', ' ', 'i', 'h', 'r', ' ', 'b', 'e', 'l', 'e', 'i', 'd', 'i', 'g', 't', ' ', 'm', 'e', 'i', 'n', 'e', ' ', 'A', 'u', 'g', 'e', 'n', '!' } );
 }
 
 } // extern "C"
