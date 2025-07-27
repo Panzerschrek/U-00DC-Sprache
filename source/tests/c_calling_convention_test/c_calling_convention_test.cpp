@@ -1853,6 +1853,30 @@ std::array<double, 2> Get_f64_x2_Test0() { return { -2.0625, 5757.25 }; }
 std::array<double, 3> Get_f64_x3_Test0() { return { 34.0625, 1757.75, 6741663000000000000.0 }; }
 std::array<double, 4> Get_f64_x4_Test0() { return { -34.0625, 1726757.75, -67523676.25, 0.005 }; }
 std::array<double, 5> Get_f64_x5_Test0() { return { 34.0625, 172657.0, -675276.25, 3.005, 643677.2 }; }
+std::array<char, 1> Get_char8_x1_Test0() { return { 'H' }; }
+std::array<char, 2> Get_char8_x2_Test0() { return { '-', '8' }; }
+std::array<char, 3> Get_char8_x3_Test0() { return { 'K', 'e', 'k' }; }
+std::array<char, 4> Get_char8_x4_Test0() { return { 'S', 'P', 'Q', 'R' }; }
+std::array<char, 5> Get_char8_x5_Test0() { return { 'A', 'p', 'p', 'l', 'E' }; }
+std::array<char, 6> Get_char8_x6_Test0() { return { '5', '6', ' ', 't', 'o', ' ' }; }
+std::array<char, 7> Get_char8_x7_Test0() { return { '@', '#', '-', '-', 'A', 'B', 'e' }; }
+std::array<char, 8> Get_char8_x8_Test0() { return { 'S', '.', 'P', '.', 'Q', '.', 'R', '.' }; }
+std::array<char, 9> Get_char8_x9_Test0()
+{
+	std::array<char, 9> res;
+	std::memcpy( res.data(), "Жопа!", 9 );
+	return res;
+}
+std::array<char, 10> Get_char8_x10_Test0() { return { 'B', 'l', 'a', 'c', 'k', ' ', 'M', 'e', 's', 'a' }; }
+std::array<char, 11> Get_char8_x11_Test0() { return { 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[' }; }
+std::array<char, 12> Get_char8_x12_Test0() { return { ']', '[', 'p', 'o', 'i', 'u', 'y', 't', 'r', 'e', 'w', 'q' }; }
+std::array<char, 13> Get_char8_x13_Test0() { return { 'C', 'o', 'm', 'p', 'u', 't', 'e', 'r', 'l', 'i', 'e', 'b', 'e' }; }
+std::array<char, 14> Get_char8_x14_Test0() { return { '1', '1', ' ', '+', ' ', '2', '2', ' ', '=', ' ', 's', 'o', 'm', 'e' }; }
+std::array<char, 15> Get_char8_x15_Test0() { return { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O' }; }
+std::array<char, 16> Get_char8_x16_Test0() { return { 'E', 'r', ' ', 'i', 's', 't', ' ', 'w', 'i', 'e', 'd', 'e', 'r', ' ', 'd', 'a' }; }
+std::array<char, 17> Get_char8_x17_Test0() { return { 'X', 'Y', ' ', '=', ' ', '3', '3', ' ', '+', ' ', '4', '4', ' ', '-', ' ', '5', '5' }; }
+std::array<char, 32> Get_char8_x32_Test0() { return { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'F', 'E', 'D', 'C', 'B', 'A', '9', '8', '7', '6', '5', '4', '3', '2', '1', '0' }; }
+std::array<char, 39> Get_char8_x39_Test0() { return { 'F', 'i', 'c', 'k', 'e', 't', ' ', 'e', 'u', 'c', 'h', ',', ' ', 'i', 'h', 'r', ' ', 'b', 'e', 'l', 'e', 'i', 'd', 'i', 'g', 't', ' ', 'm', 'e', 'i', 'n', 'e', ' ', 'A', 'u', 'g', 'e', 'n', '!' }; }
 
 #pragma GCC diagnostic pop
 

@@ -1210,6 +1210,25 @@ fn nomangle main() call_conv( "C" ) : i32
 		var [ f64, 5 ] expected[ 34.0625, 172657.0, -675276.25, 3.005, 643677.2 ];
 		halt if( Get_f64_x5_Test0() != expected );
 	}
+	halt if( Get_char8_x1_Test0() != "H" );
+	halt if( Get_char8_x2_Test0() != "-8" );
+	halt if( Get_char8_x3_Test0() != "Kek" );
+	halt if( Get_char8_x4_Test0() != "SPQR" );
+	halt if( Get_char8_x5_Test0() != "ApplE" );
+	halt if( Get_char8_x6_Test0() != "56 to " );
+	halt if( Get_char8_x7_Test0() != "@#--ABe" );
+	halt if( Get_char8_x8_Test0() != "S.P.Q.R." );
+	halt if( Get_char8_x9_Test0() != "Жопа!" );
+	halt if( Get_char8_x10_Test0() != "Black Mesa" );
+	halt if( Get_char8_x11_Test0() != "qwertyuiop[" );
+	halt if( Get_char8_x12_Test0() != "][poiuytrewq" );
+	halt if( Get_char8_x13_Test0() != "Computerliebe" );
+	halt if( Get_char8_x14_Test0() != "11 + 22 = some" );
+	halt if( Get_char8_x15_Test0() != "ABCDEFGHIJKLMNO" );
+	halt if( Get_char8_x16_Test0() != "Er ist wieder da" );
+	halt if( Get_char8_x17_Test0() != "XY = 33 + 44 - 55" );
+	halt if( Get_char8_x32_Test0() != "0123456789abcdefFEDCBA9876543210" );
+	halt if( Get_char8_x39_Test0() != "Ficket euch, ihr beleidigt meine Augen!" );
 
 	return 0;
 }
@@ -1579,6 +1598,25 @@ fn nomangle Get_f64_x2_Test0() call_conv( "C" ) : [ f64, 2 ];
 fn nomangle Get_f64_x3_Test0() call_conv( "C" ) : [ f64, 3 ];
 fn nomangle Get_f64_x4_Test0() call_conv( "C" ) : [ f64, 4 ];
 fn nomangle Get_f64_x5_Test0() call_conv( "C" ) : [ f64, 5 ];
+fn nomangle Get_char8_x1_Test0() call_conv( "C" ) : [ char8, 1 ];
+fn nomangle Get_char8_x2_Test0() call_conv( "C" ) : [ char8, 2 ];
+fn nomangle Get_char8_x3_Test0() call_conv( "C" ) : [ char8, 3 ];
+fn nomangle Get_char8_x4_Test0() call_conv( "C" ) : [ char8, 4 ];
+fn nomangle Get_char8_x5_Test0() call_conv( "C" ) : [ char8, 5 ];
+fn nomangle Get_char8_x6_Test0() call_conv( "C" ) : [ char8, 6 ];
+fn nomangle Get_char8_x7_Test0() call_conv( "C" ) : [ char8, 7 ];
+fn nomangle Get_char8_x8_Test0() call_conv( "C" ) : [ char8, 8 ];
+fn nomangle Get_char8_x9_Test0() call_conv( "C" ) : [ char8, 9 ];
+fn nomangle Get_char8_x10_Test0() call_conv( "C" ) : [ char8, 10 ];
+fn nomangle Get_char8_x11_Test0() call_conv( "C" ) : [ char8, 11 ];
+fn nomangle Get_char8_x12_Test0() call_conv( "C" ) : [ char8, 12 ];
+fn nomangle Get_char8_x13_Test0() call_conv( "C" ) : [ char8, 13 ];
+fn nomangle Get_char8_x14_Test0() call_conv( "C" ) : [ char8, 14 ];
+fn nomangle Get_char8_x15_Test0() call_conv( "C" ) : [ char8, 15 ];
+fn nomangle Get_char8_x16_Test0() call_conv( "C" ) : [ char8, 16 ];
+fn nomangle Get_char8_x17_Test0() call_conv( "C" ) : [ char8, 17 ];
+fn nomangle Get_char8_x32_Test0() call_conv( "C" ) : [ char8, 32 ];
+fn nomangle Get_char8_x39_Test0() call_conv( "C" ) : [ char8, 39 ];
 
 // Function to execute C++ functions passing arguments to Ü code.
 fn nomangle TestPassingValuesToUCode() call_conv( "C" );
