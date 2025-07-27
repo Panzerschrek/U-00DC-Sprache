@@ -1330,6 +1330,40 @@ void U_Pass_tup_f64_f32_Test0( Tuple2<double, float> x );
 void U_Pass_tup_f64_f32_Test1( Tuple2<double, float> x );
 void U_Pass_tup_f64_f64_Test0( Tuple2<double, double> x );
 void U_Pass_tup_f64_f64_Test1( Tuple2<double, double> x );
+void U_Pass_tup_u32_u16_u8_Test0( Tuple3<uint32_t, uint16_t, uint8_t> x );
+void U_Pass_tup_u32_u16_u16_Test0( Tuple3<uint32_t, uint16_t, uint16_t> x );
+void U_Pass_tup_u8_u16_u32_Test0( Tuple3<uint8_t, uint16_t, uint32_t> x );
+void U_Pass_tup_u16_u16_u32_Test0( Tuple3<uint16_t, uint16_t, uint32_t> x );
+void U_Pass_tup_u64_u32_u16_u8_Test0( Tuple4<uint64_t, uint32_t, uint16_t, uint8_t> x );
+void U_Pass_tup_u64_u32_u16_u16_Test0( Tuple4<uint64_t, uint32_t, uint16_t, uint16_t> x );
+void U_Pass_tup_u8_u16_u32_u64_Test0( Tuple4<uint8_t, uint16_t, uint32_t, uint64_t> x );
+void U_Pass_tup_u16_u16_u32_u64_Test0( Tuple4<uint16_t, uint16_t, uint32_t, uint64_t> x );
+void U_Pass_tup_u8_u16_u8_Test0( Tuple3<uint8_t, uint16_t, uint8_t> x );
+void U_Pass_tup_u8_u32_u8_Test0( Tuple3<uint8_t, uint32_t, uint8_t> x );
+void U_Pass_tup_u8_u64_u8_Test0( Tuple3<uint8_t, uint64_t, uint8_t> x );
+void U_Pass_tup_u16_u32_u16_Test0( Tuple3<uint16_t, uint32_t, uint16_t> x );
+void U_Pass_tup_u16_u64_u16_Test0( Tuple3<uint16_t, uint64_t, uint16_t> x );
+void U_Pass_tup_u32_u64_u32_Test0( Tuple3<uint32_t, uint64_t, uint32_t> x );
+void U_Pass_tup_f32_i32_i32_Test0( Tuple3<float, int32_t, int32_t> x );
+void U_Pass_tup_i32_f32_i32_Test0( Tuple3<int32_t, float, int32_t> x );
+void U_Pass_tup_i32_i32_f32_Test0( Tuple3<int32_t, int32_t, float> x );
+void U_Pass_tup_f32_u64_u64_Test0( Tuple3<float, uint64_t, uint64_t> x );
+void U_Pass_tup_u64_f32_u64_Test0( Tuple3<uint64_t, float, uint64_t> x );
+void U_Pass_tup_u64_u64_f32_Test0( Tuple3<uint64_t, uint64_t, float> x );
+void U_Pass_tup_f64_i32_i32_Test0( Tuple3<double, int32_t, int32_t> x );
+void U_Pass_tup_i32_f64_i32_Test0( Tuple3<int32_t, double, int32_t> x );
+void U_Pass_tup_i32_i32_f64_Test0( Tuple3<int32_t, int32_t, double> x );
+void U_Pass_tup_f64_u64_u64_Test0( Tuple3<double, uint64_t, uint64_t> x );
+void U_Pass_tup_u64_f64_u64_Test0( Tuple3<uint64_t, double, uint64_t> x );
+void U_Pass_tup_u64_u64_f64_Test0( Tuple3<uint64_t, uint64_t, double> x );
+void U_Pass_tup_f32_f32_f32_Test0( Tuple3<float, float, float> x );
+void U_Pass_tup_f32_f32_f64_Test0( Tuple3<float, float, double> x );
+void U_Pass_tup_f32_f64_f32_Test0( Tuple3<float, double, float> x );
+void U_Pass_tup_f32_f64_f64_Test0( Tuple3<float, double, double> x );
+void U_Pass_tup_f64_f32_f32_Test0( Tuple3<double, float, float> x );
+void U_Pass_tup_f64_f32_f64_Test0( Tuple3<double, float, double> x );
+void U_Pass_tup_f64_f64_f32_Test0( Tuple3<double, double, float> x );
+void U_Pass_tup_f64_f64_f64_Test0( Tuple3<double, double, double> x );
 
 void TestPassingValuesToUCode()
 {
@@ -1649,6 +1683,20 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_f64_f32_Test1( { 11.125, -6356470.0f } );
 	U_Pass_tup_f64_f64_Test0( { -1.75, -37163.125 } );
 	U_Pass_tup_f64_f64_Test1( { 0.0, 253.0 } );
+	U_Pass_tup_u32_u16_u8_Test0( { 0x01234567, 0x89AB, 0xCD } );
+	U_Pass_tup_u32_u16_u16_Test0( { 0x01234567, 0x89AB, 0xCDEF } );
+	U_Pass_tup_u8_u16_u32_Test0( { 0x01, 0x2345, 0x6789ABCD } );
+	U_Pass_tup_u16_u16_u32_Test0( { 0x0123, 0x4567, 0x89ABCDEF } );
+	U_Pass_tup_u64_u32_u16_u8_Test0( { 0xFEDCBA9876543210, 0x01234567, 0x89AB, 0xCD } );
+	U_Pass_tup_u64_u32_u16_u16_Test0( { 0xFEDCBA9876543210, 0x01234567, 0x89AB, 0xCDEF } );
+	U_Pass_tup_u8_u16_u32_u64_Test0( { 0x01, 0x2345, 0x6789ABCD, 0xFEDCBA9876543210 } );
+	U_Pass_tup_u16_u16_u32_u64_Test0( { 0x0123, 0x4567, 0x89ABCDEF, 0xFEDCBA9876543210 } );
+	U_Pass_tup_u8_u16_u8_Test0( { 0xFE, 0xDCBA, 0x98 } );
+	U_Pass_tup_u8_u32_u8_Test0( { 0xFE, 0xDCBA9876, 0x54 } );
+	U_Pass_tup_u8_u64_u8_Test0( { 0xAB, 0x0123456789ABCDEF, 0x12 } );
+	U_Pass_tup_u16_u32_u16_Test0( { 0x0123, 0x456789AB, 0xCDEF } );
+	U_Pass_tup_u16_u64_u16_Test0( { 0xFEDC, 0x17283A4B5C6D7E8F, 0x9876 } );
+	U_Pass_tup_u32_u64_u32_Test0( { 0x01234567, 0x17283A4B5C6D7E8F, 0x89ABCEDF } );
 }
 
 } // extern "C"
