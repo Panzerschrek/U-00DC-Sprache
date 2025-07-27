@@ -2242,3 +2242,30 @@ fn nomangle U_Pass_tup_f64_f64_f64_Test0( tup [ f64, f64, f64 ] x ) call_conv( "
 {
 	halt if( x[0] != 0.25 ); halt if( x[1] != -363.2 ); halt if( x[2] != 3773440.0 );
 }
+fn nomangle U_Pass_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d, u32 e, tup[ u64, f64 ] f ) call_conv( "C" )
+{
+	halt if( a != 47588u ); halt if( b != 33677u ); halt if( c != 12u ); halt if( d != 3785427u ); halt if( e != 13748588u );
+	halt if( f[0] != 0x0123456789ABCDEFu64 ); halt if( f[1] != 26376.25 );
+}
+fn nomangle U_Pass_u32_u32_u32_u32_u32_tup_u64_u64( u32 a, u32 b, u32 c, u32 d, u32 e, tup[ u64, u64 ] f ) call_conv( "C" )
+{
+	halt if( a != 47288u ); halt if( b != 31677u ); halt if( c != 14u ); halt if( d != 3285427u ); halt if( e != 13748988u );
+	halt if( f[0] != 0x0123456789ABCDEFu ); halt if( f[1] != 0xFEDCBA9876543210u );
+}
+fn nomangle U_Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d, u32 e, u32 f, tup[ u64, f64 ] g ) call_conv( "C" )
+{
+	halt if( a != 41588u ); halt if( b != 633677u ); halt if( c != 7812u ); halt if( d != 5785427u ); halt if( e != 23748588u ); halt if( f != 788588u );
+	halt if( g[0] != 0xFEDCBA9876543210u64 ); halt if( g[1] != -16376.75 );
+}
+fn nomangle U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( f64 a, f64 b, f64 c, f64 d, f64 e, f64 f, f64 g, f64 h, tup[ u64, f64 ] i ) call_conv( "C" )
+{
+	halt if( a != 1.0 ); halt if( b != 774.3 ); halt if( c != -366.0 ); halt if( d != 0.125 );
+	halt if( e != 6336.2 ); halt if( f != 6774.0 ); halt if( g != -126.25 ); halt if( h != 0.75 );
+	halt if( i[0] != 0xFED7BA98C6543210u64 ); halt if( i[1] != 163.2 );
+}
+fn nomangle U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( f64 a, f64 b, f64 c, f64 d, f64 e, f64 f, f64 g, tup[ f64, f64 ] h ) call_conv( "C" )
+{
+	halt if( a != 3.0 ); halt if( b != 724.1 ); halt if( c != -365.0 ); halt if( d != -0.125 );
+	halt if( e != 6336.2 ); halt if( f != 6724.0 ); halt if( g != -126.85 );
+	halt if( h[0] != 631.3 ); halt if( h[1] != 165.2 );
+}

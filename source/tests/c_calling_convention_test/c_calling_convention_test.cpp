@@ -1364,6 +1364,13 @@ void U_Pass_tup_f64_f32_f32_Test0( Tuple3<double, float, float> x );
 void U_Pass_tup_f64_f32_f64_Test0( Tuple3<double, float, double> x );
 void U_Pass_tup_f64_f64_f32_Test0( Tuple3<double, double, float> x );
 void U_Pass_tup_f64_f64_f64_Test0( Tuple3<double, double, double> x );
+// Tricky cases - x86_64 System V ABI uses 6 integer registers for passing integer values.
+void U_Pass_u32_u32_u32_u32_u32_tup_u64_f64( uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, Tuple2<uint64_t, double> f );
+void U_Pass_u32_u32_u32_u32_u32_tup_u64_u64( uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, Tuple2<uint64_t, uint64_t> f );
+void U_Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, Tuple2<uint64_t, double> g );
+// Tricky cases - x86_64 System V ABI uses 8 sse registers for passing floating-point values.
+void U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( double a, double b, double c, double d, double e, double f, double g, double h, Tuple2<uint64_t, double> i );
+void U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( double a, double b, double c, double d, double e, double f, double g, Tuple2<double, double> h );
 
 void TestPassingValuesToUCode()
 {
@@ -1717,6 +1724,15 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_f64_f32_f64_Test0( { 0.25, -363.2f, 3773440.0  } );
 	U_Pass_tup_f64_f64_f32_Test0( { 0.25, -363.2, 3773440.0f } );
 	U_Pass_tup_f64_f64_f64_Test0( { 0.25, -363.2, 3773440.0 } );
+	U_Pass_u32_u32_u32_u32_u32_tup_u64_f64( 47588u, 33677u, 12u, 3785427u, 13748588u, { 0x0123456789ABCDEFu, 26376.25 } );
+	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
+		U_Pass_u32_u32_u32_u32_u32_tup_u64_u64( 47288u, 31677u, 14u, 3285427u, 13748988u, { 0x0123456789ABCDEFu, 0xFEDCBA9876543210u } );
+	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
+		U_Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( 41588u, 633677u, 7812u, 5785427u, 23748588u, 788588u, { 0xFEDCBA9876543210u, -16376.75 } );
+	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
+		U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( 1.0, 774.3, -366.0, 0.125, 6336.2, 6774.0, -126.25, 0.75, { 0xFED7BA98C6543210u, 163.2 } );
+	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
+		U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( 3.0, 724.1, -365.0, -0.125, 6336.2, 6724.0, -126.85, { 631.3, 165.2 } );
 }
 
 } // extern "C"
