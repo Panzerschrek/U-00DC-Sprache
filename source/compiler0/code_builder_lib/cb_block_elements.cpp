@@ -879,16 +879,22 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			function_context.variables_state.MoveNode( expression_result );
 
-			if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
+			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+				calling_convention_infos_[ size_t( function_context.function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_context.function_type.return_type );
+
+			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
 			{
 				U_ASSERT( function_context.s_ret == nullptr );
-				ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expression_result->llvm_value );
+				llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( direct_passing->llvm_type, expression_result->llvm_value );
+				load_instruction->setAlignment( llvm::Align( uint64_t( direct_passing->load_store_alignment ) ) );
+				ret= load_instruction;
 			}
-			else
+			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
 			{
 				U_ASSERT( function_context.s_ret != nullptr );
 				CopyBytes( function_context.s_ret, expression_result->llvm_value, return_type, function_context );
 			}
+			else U_ASSERT(false);
 
 			if( expression_result->location == Variable::Location::Pointer )
 				CreateLifetimeEnd( function_context, expression_result->llvm_value );
@@ -908,7 +914,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				return block_info;
 			}
 
-			if( const auto single_scalar_type= GetSingleScalarType( return_type.GetLLVMType() ) )
+			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+				calling_convention_infos_[ size_t( function_context.function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_context.function_type.return_type );
+
+			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
 			{
 				U_ASSERT( function_context.s_ret == nullptr );
 				// Call copy constructor on temp address, load then value from it.
@@ -921,11 +930,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					return_type,
 					function_context );
 
-				ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, temp );
+				llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( direct_passing->llvm_type, expression_result->llvm_value );
+				load_instruction->setAlignment( llvm::Align( uint64_t( direct_passing->load_store_alignment ) ) );
+				ret= load_instruction;
 
 				CreateLifetimeEnd( function_context, temp );
 			}
-			else
+			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
 			{
 				// Call copy constructor on "s_ret".
 				U_ASSERT( function_context.s_ret != nullptr );
@@ -935,6 +946,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					return_type,
 					function_context );
 			}
+			else U_ASSERT(false);
 		}
 	}
 	else

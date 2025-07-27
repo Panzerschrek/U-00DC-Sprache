@@ -1637,7 +1637,7 @@ void CodeBuilder::BuildFuncCode(
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		// Skip "sret".
-		if( &llvm_arg == &*llvm_function->arg_begin() && FunctionTypeIsSRet( function_type ) )
+		if( llvm_arg.hasAttribute( llvm::Attribute::StructRet ) )
 		{
 			llvm_arg.setName( "_return_value" );
 			function_context.s_ret= &llvm_arg;
@@ -2518,7 +2518,14 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 
 	// Prepare params attributes.
 
-	const bool first_param_is_sret= FunctionTypeIsSRet( function_type );
+	bool first_param_is_sret= false;
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+			calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_type.return_type );
+		if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
+			first_param_is_sret= true;
+	}
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
@@ -2606,7 +2613,14 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 
 	const FunctionType& function_type= function_variable.type;
 
-	const bool first_param_is_sret= FunctionTypeIsSRet( function_type );
+	bool first_param_is_sret= false;
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+			calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_type.return_type );
+		if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
+			first_param_is_sret= true;
+	}
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{

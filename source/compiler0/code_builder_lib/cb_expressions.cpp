@@ -4347,7 +4347,16 @@ Value CodeBuilder::DoCallFunction(
 		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, function_type.return_type );
 
 	const bool return_value_is_composite= function_type.ReturnsCompositeValue();
-	const bool return_value_is_sret= FunctionTypeIsSRet( function_type );
+	bool return_value_is_sret= false;
+
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+			calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_type.return_type );
+
+		if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
+			return_value_is_sret= true;
+	}
 
 	const VariableMutPtr result= Variable::Create(
 		function_type.return_type,
@@ -4470,8 +4479,17 @@ Value CodeBuilder::DoCallFunction(
 			result->llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 		else if( return_value_is_composite )
 		{
-			if( !return_value_is_sret )
-				function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
+			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_type.return_type );
+
+			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
+			{
+				llvm::StoreInst* store_instruction= function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
+				store_instruction->setAlignment( llvm::Align( uint64_t( direct_passing->load_store_alignment ) ) );
+			}
+			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
+			{}
+			else U_ASSERT(false);
 		}
 		else
 			result->llvm_value= call_instruction;

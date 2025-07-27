@@ -310,16 +310,36 @@ FunctionPointerType CodeBuilder::FunctionTypeToPointer( FunctionType function_ty
 
 llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type )
 {
+	llvm::Type* llvm_function_return_type= nullptr;
 	llvm::SmallVector<llvm::Type*, 16> params_llvm_types;
 
-	// Require complete type in order to know how to return values.
 	if( function_type.return_value_type == ValueType::Value )
-		EnsureTypeComplete( function_type.return_type );
+	{
+		if( function_type.return_type == void_type_ )
+		{
+			// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
+			llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
+		}
+		else
+		{
+			// Require complete type in order to know how to return values.
+			EnsureTypeComplete( function_type.return_type );
 
-	const bool first_param_is_sret= FunctionTypeIsSRet( function_type );
+			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculareRetunValuePassingInfo( function_type.return_type );
 
-	if( first_param_is_sret )
-		params_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
+			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
+				llvm_function_return_type= direct_passing->llvm_type;
+			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
+			{
+				llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
+				params_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
+			}
+			else U_ASSERT(false);
+		}
+	}
+	else
+		llvm_function_return_type= function_type.return_type.GetLLVMType()->getPointerTo();
 
 	for( const FunctionType::Param& param : function_type.params )
 	{
@@ -351,23 +371,6 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 
 		params_llvm_types.push_back( type );
 	}
-
-	llvm::Type* llvm_function_return_type= function_type.return_type.GetLLVMType();
-	if( function_type.return_value_type == ValueType::Value )
-	{
-		if( first_param_is_sret || function_type.return_type == void_type_ )
-		{
-			// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
-			llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
-		}
-		else
-		{
-			llvm_function_return_type= GetSingleScalarType( function_type.return_type.GetLLVMType() );
-			U_ASSERT( llvm_function_return_type != nullptr );
-		}
-	}
-	else
-		llvm_function_return_type= llvm_function_return_type->getPointerTo();
 
 	return llvm::FunctionType::get( llvm_function_return_type, params_llvm_types, false );
 }
@@ -441,13 +444,6 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const CallingConven
 
 	U_ASSERT(false);
 	return llvm::CallingConv::C;
-}
-
-bool CodeBuilder::FunctionTypeIsSRet( const FunctionType& function_type )
-{
-	return
-		function_type.ReturnsCompositeValue() &&
-		GetSingleScalarType( function_type.return_type.GetLLVMType() ) == nullptr;
 }
 
 llvm::Type* CodeBuilder::GetSingleScalarType( llvm::Type* type )

@@ -43,6 +43,7 @@ public:
 
 public: // ICallingConventionInfo
 	virtual ArgumentPassing CalculareValueArgumentPassingInfo( const Type& type ) override;
+	virtual ReturnValuePassing CalculareRetunValuePassingInfo( const Type& type ) override;
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -145,6 +146,84 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculareV
 	return ArgumentPassingByPointer{};
 }
 
+ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::CalculareRetunValuePassingInfo( const Type& type )
+{
+	if( const auto f= type.GetFundamentalType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= f->llvm_type;
+		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( f->llvm_type ).value() );
+		return return_value_passing;
+	}
+
+	if( const auto e= type.GetEnumType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= e->underlying_type.llvm_type;
+		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( e->underlying_type.llvm_type ).value() );
+		return return_value_passing;
+	}
+
+	if( const auto fp= type.GetFunctionPointerType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= fp->llvm_type;
+		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( fp->llvm_type ).value() );
+		return return_value_passing;
+	}
+
+	if( const auto p= type.GetRawPointerType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= p->llvm_type;
+		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( p->llvm_type ).value() );
+		return return_value_passing;
+	}
+
+	if( const auto c= type.GetClassType() )
+	{
+		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
+		{
+			ReturnValuePassingDirect return_value_passing;
+			return_value_passing.llvm_type= single_scalar;
+			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
+			return return_value_passing;
+		}
+		else
+			return ReturnValuePassingByPointer{};
+	}
+
+	if( const auto a= type.GetArrayType() )
+	{
+		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
+		{
+			ReturnValuePassingDirect return_value_passing;
+			return_value_passing.llvm_type= single_scalar;
+			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
+			return return_value_passing;
+		}
+		else
+			return ReturnValuePassingByPointer{};
+	}
+
+	if( const auto t= type.GetTupleType() )
+	{
+		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
+		{
+			ReturnValuePassingDirect return_value_passing;
+			return_value_passing.llvm_type= single_scalar;
+			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
+			return return_value_passing;
+		}
+		else
+			return ReturnValuePassingByPointer{};
+	}
+
+	// Unhandled type kind.
+	U_ASSERT(false);
+	return ReturnValuePassingByPointer{};
+}
+
 class CallingConventionInfoSystemVX86_64 final : public ICallingConventionInfo
 {
 public:
@@ -152,6 +231,7 @@ public:
 
 public: // ICallingConventionInfo
 	virtual ArgumentPassing CalculareValueArgumentPassingInfo( const Type& type ) override;
+	virtual ReturnValuePassing CalculareRetunValuePassingInfo( const Type& type ) override;
 
 private:
 	enum class ArgumentClass
@@ -304,6 +384,85 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 		U_ASSERT(false);
 		return ArgumentPassingByPointer{};
 	}
+}
+
+
+ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::CalculareRetunValuePassingInfo( const Type& type )
+{
+	if( const auto f= type.GetFundamentalType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= f->llvm_type;
+		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( f->llvm_type ).value() );
+		return return_value_passing;
+	}
+
+	if( const auto e= type.GetEnumType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= e->underlying_type.llvm_type;
+		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( e->underlying_type.llvm_type ).value() );
+		return return_value_passing;
+	}
+
+	if( const auto fp= type.GetFunctionPointerType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= fp->llvm_type;
+		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( fp->llvm_type ).value() );
+		return return_value_passing;
+	}
+
+	if( const auto p= type.GetRawPointerType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= p->llvm_type;
+		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( p->llvm_type ).value() );
+		return return_value_passing;
+	}
+
+	if( const auto c= type.GetClassType() )
+	{
+		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
+		{
+			ReturnValuePassingDirect return_value_passing;
+			return_value_passing.llvm_type= single_scalar;
+			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
+			return return_value_passing;
+		}
+		else
+			return ReturnValuePassingByPointer{};
+	}
+
+	if( const auto a= type.GetArrayType() )
+	{
+		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
+		{
+			ReturnValuePassingDirect return_value_passing;
+			return_value_passing.llvm_type= single_scalar;
+			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
+			return return_value_passing;
+		}
+		else
+			return ReturnValuePassingByPointer{};
+	}
+
+	if( const auto t= type.GetTupleType() )
+	{
+		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
+		{
+			ReturnValuePassingDirect return_value_passing;
+			return_value_passing.llvm_type= single_scalar;
+			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
+			return return_value_passing;
+		}
+		else
+			return ReturnValuePassingByPointer{};
+	}
+
+	// Unhandled type kind.
+	U_ASSERT(false);
+	return ReturnValuePassingByPointer{};
 }
 
 void CallingConventionInfoSystemVX86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint64_t offset )

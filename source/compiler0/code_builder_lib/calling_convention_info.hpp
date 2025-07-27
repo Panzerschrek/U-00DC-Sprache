@@ -29,10 +29,22 @@ public:
 
 	using ArgumentPassing= std::variant<ArgumentPassingDirect, ArgumentPassingByPointer, ArgumentPassingInStack>;
 
+	struct ReturnValuePassingDirect
+	{
+		llvm::Type* llvm_type= nullptr;
+		uint16_t load_store_alignment= 0;
+	};
+
+	// Pass as arguemnt #0 a pointer, where returned value should be constructed.
+	struct ReturnValuePassingByPointer{};
+
+	using ReturnValuePassing= std::variant<ReturnValuePassingDirect, ReturnValuePassingByPointer>;
+
 public:
 	virtual ~ICallingConventionInfo()= default;
 
 	virtual ArgumentPassing CalculareValueArgumentPassingInfo( const Type& type ) = 0;
+	virtual ReturnValuePassing CalculareRetunValuePassingInfo( const Type& type ) = 0;
 };
 
 using ICallingConventionInfoPtr= std::shared_ptr<ICallingConventionInfo>;
