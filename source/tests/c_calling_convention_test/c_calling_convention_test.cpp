@@ -1305,7 +1305,7 @@ void U_Pass_tup_u64_f64_Test1( Tuple2<uint64_t, double> x );
 void U_Pass_tup_f32_u8_Test0( Tuple2<float, uint8_t> x );
 void U_Pass_tup_f32_u8_Test1( Tuple2<float, uint8_t> x );
 void U_Pass_tup_f32_i16_Test0( Tuple2<float, int16_t> x );
-void U_Pass_tup_f32_i16_Test1( Tuple2<float, uint16_t> x );
+void U_Pass_tup_f32_i16_Test1( Tuple2<float, int16_t> x );
 void U_Pass_tup_f32_u32_Test0( Tuple2<float, uint32_t> x );
 void U_Pass_tup_f32_u32_Test1( Tuple2<float, uint32_t> x );
 void U_Pass_tup_f32_i64_Test0( Tuple2<float, int64_t> x );
@@ -1621,6 +1621,20 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_u64_f32_Test1( { 0x1ED1AAEA7E54279Cull, -6356470.0f } );
 	U_Pass_tup_u64_f64_Test0( { 0xCED164EA7E54278Cull, -37163.125 } );
 	U_Pass_tup_u64_f64_Test1( { 0xCE1164EA7354278Cull, 253.0 } );
+	U_Pass_tup_f32_u8_Test0( { -3347237.0f, 214 } );
+	U_Pass_tup_f32_u8_Test1( { 3643.25f, 13 } );
+	U_Pass_tup_f32_i16_Test0( { -346314.0f, 31000 } );
+	U_Pass_tup_f32_i16_Test1( { 43440.1f, -27823 } );
+	U_Pass_tup_f32_u32_Test0( { 5336.0f, 0xFA56DE4Fu } );
+	U_Pass_tup_f32_u32_Test1( { -3346477.25f, 0x3AC6DE1Fu } );
+	U_Pass_tup_f32_i64_Test0( { 5366.5f, 6336747347783754868 } );
+	U_Pass_tup_f32_i64_Test1( { -0.0625f, -642476347823222 } );
+	U_Pass_tup_f32_u128_Test0( { -3366.75f, ( __uint128_t( 0x0123456789ABCDEFull ) << 64u ) | 0xFEDCBA9876543210ull } );
+	U_Pass_tup_f32_u128_Test1( { 0.125f, ( __uint128_t( 0xFEDCBA9876543210ull ) << 64u ) | 0x0123456789ABCDEFull } );
+	U_Pass_tup_f32_f32_Test0( { 444666.0f, 6763.5f } );
+	U_Pass_tup_f32_f32_Test1( { -15215.2f, -6346470.0f } );
+	U_Pass_tup_f32_f64_Test0( { 634663660000.0f, -67163.25 } );
+	U_Pass_tup_f32_f64_Test1( { -333636.5f, 251.0 } );
 }
 
 } // extern "C"
