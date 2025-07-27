@@ -1788,7 +1788,24 @@ std::array<int8_t, 35> Get_i8_x35_Test0()
 {
 	std::array<int8_t, 35> res;
 	for( int32_t i= 0; i < 35; ++i )
-		res[ size_t(i) ]= int8_t( i * i -5 * i - 2 );
+		res[ size_t(i) ]= int8_t( i * i - 5 * i - 2 );
+	return res;
+}
+std::array<uint16_t, 1> Get_u16_x1_Test0() { return { 0xABCD }; }
+std::array<uint16_t, 2> Get_u16_x2_Test0() { return { 0xEF01, 0x2345 }; }
+std::array<uint16_t, 3> Get_u16_x3_Test0() { return { 0x6789, 0xABCD, 0xEF01 }; }
+std::array<uint16_t, 4> Get_u16_x4_Test0() { return { 0x2345, 0x6789, 0xABCD, 0xEF01 }; }
+std::array<uint16_t, 5> Get_u16_x5_Test0() { return { 0x2233, 0x4455, 0x6677, 0x8899, 0xAABB }; }
+std::array<uint16_t, 6> Get_u16_x6_Test0() { return { 0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666 }; }
+std::array<uint16_t, 7> Get_u16_x7_Test0() { return { 0x0123, 0x1234, 0x2345, 0x3456, 0x4567, 0x5678, 0x6789 }; }
+std::array<uint16_t, 8> Get_u16_x8_Test0() { return { 0xFEDC, 0xBA98, 0x7654, 0x3210, 0xDEAD, 0xC0DE, 0xB00B, 0xEBA0 }; }
+std::array<uint16_t, 9> Get_u16_x9_Test0() { return { 0x4444, 0x5555, 0x6666, 0x7777, 0x8888, 0x9999, 0xAAAA, 0xBBBB, 0xCCCC }; }
+std::array<uint16_t, 15> Get_u16_x15_Test0() { return { 0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777, 0x8888, 0x9999, 0xAAAA, 0xBBBB, 0xCCCC, 0xDDDD, 0xEEEE, 0xFFFF }; }
+std::array<uint16_t, 21> Get_u16_x21_Test0()
+{
+	std::array<uint16_t, 21> res;
+	for( uint32_t i= 0; i < 21; ++i )
+		res[ size_t(i) ]= uint16_t( i * i * 15u + i * 23u + 17u );
 	return res;
 }
 

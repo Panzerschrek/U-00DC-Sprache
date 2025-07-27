@@ -1022,7 +1022,54 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto res= Get_i8_x35_Test0();
 		for( auto mut i= 0; i < 35; ++i )
 		{
-			halt if( res[ size_type(i) ] != i8( i * i  -5 * i - 2 ) );
+			halt if( res[ size_type(i) ] != i8( i * i - 5 * i - 2 ) );
+		}
+	}
+	{
+		var [ u16, 1 ] expected[ 0xABCDu16 ];
+		halt if( Get_u16_x1_Test0() != expected );
+	}
+	{
+		var [ u16, 2 ] expected[ 0xEF01u16, 0x2345u16 ];
+		halt if( Get_u16_x2_Test0() != expected );
+	}
+	{
+		var [ u16, 3 ] expected[ 0x6789u16, 0xABCDu16, 0xEF01u16 ];
+		halt if( Get_u16_x3_Test0() != expected );
+	}
+	{
+		var [ u16, 4 ] expected[ 0x2345u16, 0x6789u16, 0xABCDu16, 0xEF01u16 ];
+		halt if( Get_u16_x4_Test0() != expected );
+	}
+	{
+		var [ u16, 5 ] expected[ 0x2233u16, 0x4455u16, 0x6677u16, 0x8899u16, 0xAABBu16 ];
+		halt if( Get_u16_x5_Test0() != expected );
+	}
+	{
+		var [ u16, 6 ] expected[ 0x1111u16, 0x2222u16, 0x3333u16, 0x4444u16, 0x5555u16, 0x6666u16 ];
+		halt if( Get_u16_x6_Test0() != expected );
+	}
+	{
+		var [ u16, 7 ] expected[ 0x0123u16, 0x1234u16, 0x2345u16, 0x3456u16, 0x4567u16, 0x5678u16, 0x6789u16 ];
+		halt if( Get_u16_x7_Test0() != expected );
+	}
+	{
+		var [ u16, 8 ] expected[ 0xFEDCu16, 0xBA98u16, 0x7654u16, 0x3210u16, 0xDEADu16, 0xC0DEu16, 0xB00Bu16, 0xEBA0u16 ];
+		halt if( Get_u16_x8_Test0() != expected );
+	}
+	{
+		var [ u16, 9 ] expected[ 0x4444u16, 0x5555u16, 0x6666u16, 0x7777u16, 0x8888u16, 0x9999u16, 0xAAAAu16, 0xBBBBu16, 0xCCCCu16 ];
+		halt if( Get_u16_x9_Test0() != expected );
+	}
+	{
+		var [ u16, 15 ] expected[ 0x1111u16, 0x2222u16, 0x3333u16, 0x4444u16, 0x5555u16, 0x6666u16, 0x7777u16, 0x8888u16, 0x9999u16, 0xAAAAu16, 0xBBBBu16, 0xCCCCu16, 0xDDDDu16, 0xEEEEu16, 0xFFFFu16 ];
+		halt if( Get_u16_x15_Test0() != expected );
+	}
+	{
+		auto res= Get_u16_x21_Test0();
+		for( auto mut i= 0u; i < 21u; ++i )
+		{
+			halt if( res[ size_type(i) ] != u16( i * i * 15u + i * 23u + 17u ) );
 		}
 	}
 
@@ -1350,6 +1397,17 @@ fn nomangle Get_i8_x15_Test0() call_conv( "C" ) : [ i8, 15 ];
 fn nomangle Get_i8_x16_Test0() call_conv( "C" ) : [ i8, 16 ];
 fn nomangle Get_i8_x17_Test0() call_conv( "C" ) : [ i8, 17 ];
 fn nomangle Get_i8_x35_Test0() call_conv( "C" ) : [ i8, 35 ];
+fn nomangle Get_u16_x1_Test0() call_conv( "C" ) : [ u16, 1 ];
+fn nomangle Get_u16_x2_Test0() call_conv( "C" ) : [ u16, 2 ];
+fn nomangle Get_u16_x3_Test0() call_conv( "C" ) : [ u16, 3 ];
+fn nomangle Get_u16_x4_Test0() call_conv( "C" ) : [ u16, 4 ];
+fn nomangle Get_u16_x5_Test0() call_conv( "C" ) : [ u16, 5 ];
+fn nomangle Get_u16_x6_Test0() call_conv( "C" ) : [ u16, 6 ];
+fn nomangle Get_u16_x7_Test0() call_conv( "C" ) : [ u16, 7 ];
+fn nomangle Get_u16_x8_Test0() call_conv( "C" ) : [ u16, 8 ];
+fn nomangle Get_u16_x9_Test0() call_conv( "C" ) : [ u16, 9 ];
+fn nomangle Get_u16_x15_Test0() call_conv( "C" ) : [ u16, 15 ];
+fn nomangle Get_u16_x21_Test0() call_conv( "C" ) : [ u16, 21 ];
 
 // Function to execute C++ functions passing arguments to Ü code.
 fn nomangle TestPassingValuesToUCode() call_conv( "C" );
