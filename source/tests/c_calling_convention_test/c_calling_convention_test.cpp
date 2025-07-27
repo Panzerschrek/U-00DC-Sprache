@@ -1579,6 +1579,20 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_i8_f32_Test1( { -124, -6346470.0f } );
 	U_Pass_tup_i8_f64_Test0( { 53, -67163.25 } );
 	U_Pass_tup_i8_f64_Test1( { -97, 251.0 } );
+	U_Pass_tup_u16_i8_Test0( { 1245, 114 } );
+	U_Pass_tup_u16_i8_Test1( { 48437, -13 } );
+	U_Pass_tup_u16_u16_Test0( { 43311, 31000 } );
+	U_Pass_tup_u16_u16_Test1( { 37, 57823 } );
+	U_Pass_tup_u16_i32_Test0( { 1298, -533167754 } );
+	U_Pass_tup_u16_i32_Test1( { 65530, 336637444 } );
+	U_Pass_tup_u16_u64_Test0( { 257, 0x08192A3B4C5D6E7Full } );
+	U_Pass_tup_u16_u64_Test1( { 56316, 0xF7E6D5C4B3A29180ull } );
+	U_Pass_tup_u16_i128_Test0( { 712, ( __uint128_t( 0x0123456789ABCDEFll ) << 64u ) | 0x7EDCBA9876543210ll } );
+	U_Pass_tup_u16_i128_Test1( { 8812, ( __uint128_t( 0x1EDCBA9876543210ll ) << 64u ) | 0x0123456789ABCDEFll } );
+	U_Pass_tup_u16_f32_Test0( { 2467, 6263.5f } );
+	U_Pass_tup_u16_f32_Test1( { 9850, -6356470.0f } );
+	U_Pass_tup_u16_f64_Test0( { 3126, -37163.125 } );
+	U_Pass_tup_u16_f64_Test1( { 65535, 253.0 } );
 }
 
 } // extern "C"
