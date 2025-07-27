@@ -1072,6 +1072,49 @@ fn nomangle main() call_conv( "C" ) : i32
 			halt if( res[ size_type(i) ] != u16( i * i * 15u + i * 23u + 17u ) );
 		}
 	}
+	{
+		var [ i32, 1 ] expected[ 547718243 ];
+		halt if( Get_i32_x1_Test0() != expected );
+	}
+	{
+		var [ i32, 2 ] expected[ -4744785, 1236317 ];
+		halt if( Get_i32_x2_Test0() != expected );
+	}
+	{
+		var [ i32, 3 ] expected[ 78482236, 847587447, 289378855 ];
+		halt if( Get_i32_x3_Test0() != expected );
+	}
+	{
+		var [ i32, 4 ] expected[ -66366, 2667377, -1674, 757233 ];
+		halt if( Get_i32_x4_Test0() != expected );
+	}
+	{
+		var [ i32, 5 ] expected[ -6353, -61366, 2667371, -2674, 5757233 ];
+		halt if( Get_i32_x5_Test0() != expected );
+	}
+	{
+		var [ i32, 6 ] expected[ 5757233, -6353, 616613, 23521, 2667371, -2677834 ];
+		halt if( Get_i32_x6_Test0() != expected );
+	}
+	{
+		var [ i32, 7 ] expected[ 5757213, -63543, 616513, 231521, 266371, -26778234, 289378855 ];
+		halt if( Get_i32_x7_Test0() != expected );
+	}
+	{
+		var [ i32, 8 ] expected[ 157573, -613543, 6113, 231561, 2661371, -26778234, 289237855, -2634 ];
+		halt if( Get_i32_x8_Test0() != expected );
+	}
+	{
+		var [ i32, 9 ] expected[ 15773, -613543, 6116, 211561, 2651371, -3412, -26778234, 289737855, -263 ];
+		halt if( Get_i32_x9_Test0() != expected );
+	}
+	{
+		auto res= Get_i32_x18_Test0();
+		for( auto mut i= 0; i < 18; ++i )
+		{
+			halt if( res[ size_type(i) ] != i * i * 752 + 6447 * i + 6437784 );
+		}
+	}
 
 	return 0;
 }
@@ -1408,6 +1451,16 @@ fn nomangle Get_u16_x8_Test0() call_conv( "C" ) : [ u16, 8 ];
 fn nomangle Get_u16_x9_Test0() call_conv( "C" ) : [ u16, 9 ];
 fn nomangle Get_u16_x15_Test0() call_conv( "C" ) : [ u16, 15 ];
 fn nomangle Get_u16_x21_Test0() call_conv( "C" ) : [ u16, 21 ];
+fn nomangle Get_i32_x1_Test0() call_conv( "C" ) : [ i32, 1 ];
+fn nomangle Get_i32_x2_Test0() call_conv( "C" ) : [ i32, 2 ];
+fn nomangle Get_i32_x3_Test0() call_conv( "C" ) : [ i32, 3 ];
+fn nomangle Get_i32_x4_Test0() call_conv( "C" ) : [ i32, 4 ];
+fn nomangle Get_i32_x5_Test0() call_conv( "C" ) : [ i32, 5 ];
+fn nomangle Get_i32_x6_Test0() call_conv( "C" ) : [ i32, 6 ];
+fn nomangle Get_i32_x7_Test0() call_conv( "C" ) : [ i32, 7 ];
+fn nomangle Get_i32_x8_Test0() call_conv( "C" ) : [ i32, 8 ];
+fn nomangle Get_i32_x9_Test0() call_conv( "C" ) : [ i32, 9 ];
+fn nomangle Get_i32_x18_Test0() call_conv( "C" ) : [ i32, 18 ];
 
 // Function to execute C++ functions passing arguments to Ü code.
 fn nomangle TestPassingValuesToUCode() call_conv( "C" );

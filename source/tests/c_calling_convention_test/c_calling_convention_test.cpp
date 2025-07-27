@@ -1808,6 +1808,22 @@ std::array<uint16_t, 21> Get_u16_x21_Test0()
 		res[ size_t(i) ]= uint16_t( i * i * 15u + i * 23u + 17u );
 	return res;
 }
+std::array<int32_t, 1> Get_i32_x1_Test0() { return { 547718243 }; }
+std::array<int32_t, 2> Get_i32_x2_Test0() { return { -4744785, 1236317 }; }
+std::array<int32_t, 3> Get_i32_x3_Test0() { return { 78482236, 847587447, 289378855 }; }
+std::array<int32_t, 4> Get_i32_x4_Test0() { return { -66366, 2667377, -1674, 757233 }; }
+std::array<int32_t, 5> Get_i32_x5_Test0() { return { -6353, -61366, 2667371, -2674, 5757233  }; }
+std::array<int32_t, 6> Get_i32_x6_Test0() { return { 5757233, -6353, 616613, 23521, 2667371, -2677834 }; }
+std::array<int32_t, 7> Get_i32_x7_Test0() { return { 5757213, -63543, 616513, 231521, 266371, -26778234, 289378855 }; }
+std::array<int32_t, 8> Get_i32_x8_Test0() { return { 157573, -613543, 6113, 231561, 2661371, -26778234, 289237855, -2634 }; }
+std::array<int32_t, 9> Get_i32_x9_Test0() { return { 15773, -613543, 6116, 211561, 2651371, -3412, -26778234, 289737855, -263 }; }
+std::array<int32_t, 18> Get_i32_x18_Test0()
+{
+	std::array<int32_t, 18> res;
+	for( int32_t i= 0; i < 18; ++i )
+		res[ size_t(i) ]= i * i * 752 + 6447 * i + 6437784;
+	return res;
+}
 
 #pragma GCC diagnostic pop
 
