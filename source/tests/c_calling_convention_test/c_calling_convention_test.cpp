@@ -1945,6 +1945,14 @@ Tuple3<int32_t, int32_t, double> Get_tup_i32_i32_f64_Test0() { return { 19632373
 Tuple3<double, uint64_t, uint64_t> Get_tup_f64_u64_u64_Test0() { return { 323.25, 0x64AB3C5482367DE3u, 0x17283A4B5C6D7E8Fu }; }
 Tuple3<uint64_t, double, uint64_t> Get_tup_u64_f64_u64_Test0() { return { 0x7637347A36B4E218u, 1336.5, 0x067374735AE7DFC13u }; }
 Tuple3<uint64_t, uint64_t, double> Get_tup_u64_u64_f64_Test0() { return { 0x27283A4B5C637E8Fu, 0xE637347436B47218u, 4.7 }; }
+Tuple3<float, float, float> Get_tup_f32_f32_f32_Test0(){ return { 0.7f, 67567.5f, -256733770.0f }; }
+Tuple3<float, float, double> Get_tup_f32_f32_f64_Test0(){ return { 0.7f, 67567.5f, -256733770.0 }; }
+Tuple3<float, double, float> Get_tup_f32_f64_f32_Test0(){ return { 0.7f, 67567.5, -256733770.0f }; }
+Tuple3<float, double, double> Get_tup_f32_f64_f64_Test0(){ return { 0.7f, 67567.5, -256733770.0 }; }
+Tuple3<double, float, float> Get_tup_f64_f32_f32_Test0(){ return { 0.7, 67567.5f, -256733770.0f }; }
+Tuple3<double, float, double> Get_tup_f64_f32_f64_Test0(){ return { 0.7, 67567.5f, -256733770.0 }; }
+Tuple3<double, double, float> Get_tup_f64_f64_f32_Test0(){ return { 0.7, 67567.5, -256733770.0f }; }
+Tuple3<double, double, double> Get_tup_f64_f64_f64_Test0(){ return { 0.7, 67567.5, -256733770.0 }; }
 
 #pragma GCC diagnostic pop
 
