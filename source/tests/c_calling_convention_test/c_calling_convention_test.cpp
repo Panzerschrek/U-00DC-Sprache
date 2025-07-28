@@ -1884,6 +1884,13 @@ Tuple2<int8_t, uint64_t> Get_tup_i8_u64_Test0() { return { -67, 0x0022446688AACC
 Tuple2<int8_t, __int128_t> Get_tup_i8_i128_Test0() { return { 78, ( __int128_t( 0x0022446688AACCEEll ) << 64u ) | 0x1133557799BBDDFFll }; }
 Tuple2<int8_t, float> Get_tup_i8_f32_Test0() { return { 127, 89.5f }; }
 Tuple2<int8_t, double> Get_tup_i8_f64_Test0() { return { -128, -674730004400.0 }; }
+Tuple2<uint16_t, uint8_t> Get_tup_u16_u8_Test0() { return { 0xABCD, 251 }; }
+Tuple2<uint16_t, int16_t> Get_tup_u16_i16_Test0() { return { 0x5432, 30712 }; }
+Tuple2<uint16_t, uint32_t> Get_tup_u16_u32_Test0() { return { 0x0123, 543467432 }; }
+Tuple2<uint16_t, int64_t> Get_tup_u16_i64_Test0() { return { 0xFEDC, 0x0022446688AACCEE }; }
+Tuple2<uint16_t, __uint128_t> Get_tup_u16_u128_Test0() { return { 0x6732, ( __uint128_t( 0x0022446688AACCEEull ) << 64u ) | 0x1133557799BBDDFFull }; }
+Tuple2<uint16_t, float> Get_tup_u16_f32_Test0() { return { 0xFFF1, 89.5f }; }
+Tuple2<uint16_t, double> Get_tup_u16_f64_Test0() { return { 0x7F5E, -674730004400.0 }; }
 
 #pragma GCC diagnostic pop
 
