@@ -1372,6 +1372,10 @@ void U_Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( uint32_t a, uint32_t b, uint32_
 void U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( double a, double b, double c, double d, double e, double f, double g, double h, Tuple2<uint64_t, double> i );
 void U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( double a, double b, double c, double d, double e, double f, double g, Tuple2<double, double> h );
 
+// Silence GCC warning - for some reason it doesn't like returning std::array by value.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
+
 int8_t U_Get_i8_Test0();
 int8_t U_Get_i8_Test1();
 uint8_t U_Get_u8_Test0();
@@ -1399,6 +1403,26 @@ float U_Get_f32_Test0();
 float U_Get_f32_Test1();
 double U_Get_f64_Test0();
 double U_Get_f64_Test1();
+std::array<int8_t, 1> U_Get_i8_x1_Test0();
+std::array<int8_t, 2> U_Get_i8_x2_Test0();
+std::array<int8_t, 3> U_Get_i8_x3_Test0();
+std::array<int8_t, 4> U_Get_i8_x4_Test0();
+std::array<int8_t,5> U_Get_i8_x5_Test0();
+std::array<int8_t, 6> U_Get_i8_x6_Test0();
+std::array<int8_t, 7> U_Get_i8_x7_Test0();
+std::array<int8_t, 8> U_Get_i8_x8_Test0();
+std::array<int8_t, 9> U_Get_i8_x9_Test0();
+std::array<int8_t, 10> U_Get_i8_x10_Test0();
+std::array<int8_t, 11> U_Get_i8_x11_Test0();
+std::array<int8_t, 12> U_Get_i8_x12_Test0();
+std::array<int8_t, 13> U_Get_i8_x13_Test0();
+std::array<int8_t, 14> U_Get_i8_x14_Test0();
+std::array<int8_t, 15> U_Get_i8_x15_Test0();
+std::array<int8_t, 16> U_Get_i8_x16_Test0();
+std::array<int8_t, 17> U_Get_i8_x17_Test0();
+std::array<int8_t, 35> U_Get_i8_x35_Test0();
+
+#pragma GCC diagnostic pop
 
 void TestPassingValuesToUCode()
 {
@@ -1789,6 +1813,79 @@ void TestPassingValuesToUCode()
 	TEST_ASSERT( U_Get_f32_Test1() == -0.012f );
 	TEST_ASSERT( U_Get_f64_Test0() == 544747366.75 );
 	TEST_ASSERT( U_Get_f64_Test1() == -34.25 );
+	{
+		std::array<int8_t, 1> expected{ -95 };
+		TEST_ASSERT( U_Get_i8_x1_Test0() == expected );
+	}
+	{
+		std::array<int8_t, 2> expected{ 107, -34 };
+		TEST_ASSERT( U_Get_i8_x2_Test0() == expected );
+	}
+	{
+		std::array<int8_t, 3> expected{ -65, 77, 4 };
+		TEST_ASSERT( U_Get_i8_x3_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 4> expected{ 37, 0, 127, -25 };
+		TEST_ASSERT( U_Get_i8_x4_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 5> expected{ 67, 3, 127, -25, 88 };
+		TEST_ASSERT( U_Get_i8_x5_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 6> expected{ 37, -63, 127, -25, 125, -107 };
+		TEST_ASSERT( U_Get_i8_x6_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 7> expected{ 117, 27, -93, -21, 125, -107, 72 };
+		TEST_ASSERT( U_Get_i8_x7_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 8> expected{ 34, 112, 73, -21, 125, -107, 52, -94 };
+		TEST_ASSERT( U_Get_i8_x8_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 9> expected{ 74, 126, 67, 73, -21, 125, -107, 53, -92 };
+		TEST_ASSERT( U_Get_i8_x9_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 10> expected{ 24, 120, 54, 73, -21, 105, -89, -107, 53, -93 };
+		TEST_ASSERT( U_Get_i8_x10_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 11> expected{ 29, 99, 120, 54, 78, -121, 105, -85, -107, 53, -94 };
+		TEST_ASSERT( U_Get_i8_x11_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 12> expected{ 69, 95, 120, 34, 78, -121, 105, -87, -107, 48, 63, -98 };
+		TEST_ASSERT( U_Get_i8_x12_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 13> expected{ 62, 95, 120, 31, 78, -121, 76, 105, -87, 107, 48, 64, -58 };
+		TEST_ASSERT( U_Get_i8_x13_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 14> expected{ 78, 61, 94, 121, 31, 72, -121, 78, 125, -87, 107, 48, 14, -28 };
+		TEST_ASSERT( U_Get_i8_x14_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 15> expected{ 79, 61, 94, 121, 121, 52, -121, 78, -5, 125, -87, 107, 48, 24, -7 };
+		TEST_ASSERT( U_Get_i8_x15_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 16> expected{ 59, 61, 84, 121, 121, 55, -121, 78, 74, -51, 24, -87, 107, 48, 24, -73 };
+		TEST_ASSERT( U_Get_i8_x16_Test0() == expected );
+	}
+	{
+		const std::array<int8_t, 17> expected{ 69, 65, 82, 101, 121, 55, -121, 0, 78, 74, -56, 24, -87, 104, 58, 34, -93 };
+		TEST_ASSERT( U_Get_i8_x17_Test0() == expected );
+	}
+	{
+		const auto res= U_Get_i8_x35_Test0();
+		for( int32_t i= 0; i < 35; ++i )
+			TEST_ASSERT( res[ size_t(i) ] == int8_t( i * i - 5 * i - 2 ) );
+	}
 }
 
 int8_t Get_i8_Test0() { return 117; }

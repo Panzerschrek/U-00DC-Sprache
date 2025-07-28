@@ -3099,25 +3099,102 @@ fn nomangle U_Get_f32_Test0() call_conv( "C" ) : f32 { return 642.05f; }
 fn nomangle U_Get_f32_Test1() call_conv( "C" ) : f32 { return -0.012f; }
 fn nomangle U_Get_f64_Test0() call_conv( "C" ) : f64 { return 544747366.75; }
 fn nomangle U_Get_f64_Test1() call_conv( "C" ) : f64 { return -34.25; }
+fn nomangle U_Get_i8_x1_Test0() call_conv( "C" ) : [ i8, 1 ]
+{
+	var [ i8, 1 ] res[ -95i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x2_Test0() call_conv( "C" ) : [ i8, 2 ]
+{
+	var [ i8, 2 ] res[ 107i8, -34i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x3_Test0() call_conv( "C" ) : [ i8, 3 ]
+{
+	var [ i8, 3 ] res[ -65i8, 77i8, 4i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x4_Test0() call_conv( "C" ) : [ i8, 4 ]
+{
+	var [ i8, 4 ] res[ 37i8, 0i8, 127i8, -25i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x5_Test0() call_conv( "C" ) : [ i8, 5 ]
+{
+	var [ i8, 5 ] res[ 67i8, 3i8, 127i8, -25i8, 88i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x6_Test0() call_conv( "C" ) : [ i8, 6 ]
+{
+	var [ i8, 6 ] res[ 37i8, -63i8, 127i8, -25i8, 125i8, -107i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x7_Test0() call_conv( "C" ) : [ i8, 7 ]
+{
+	var [ i8, 7 ] res[ 117i8, 27i8, -93i8, -21i8, 125i8, -107i8, 72i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x8_Test0() call_conv( "C" ) : [ i8, 8 ]
+{
+	var [ i8, 8 ] res[ 34i8, 112i8, 73i8, -21i8, 125i8, -107i8, 52i8, -94i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x9_Test0() call_conv( "C" ) : [ i8, 9 ]
+{
+	var [ i8, 9 ] res[ 74i8, 126i8, 67i8, 73i8, -21i8, 125i8, -107i8, 53i8, -92i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x10_Test0() call_conv( "C" ) : [ i8, 10 ]
+{
+	var [ i8, 10 ] res[ 24i8, 120i8, 54i8, 73i8, -21i8, 105i8, -89i8, -107i8, 53i8, -93i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x11_Test0() call_conv( "C" ) : [ i8, 11 ]
+{
+	var [ i8, 11 ] res[ 29i8, 99i8, 120i8, 54i8, 78i8, -121i8, 105i8, -85i8, -107i8, 53i8, -94i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x12_Test0() call_conv( "C" ) : [ i8, 12 ]
+{
+	var [ i8, 12 ] res[ 69i8, 95i8, 120i8, 34i8, 78i8, -121i8, 105i8, -87i8, -107i8, 48i8, 63i8, -98i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x13_Test0() call_conv( "C" ) : [ i8, 13 ]
+{
+	var [ i8, 13 ] res[ 62i8, 95i8, 120i8, 31i8, 78i8, -121i8, 76i8, 105i8, -87i8, 107i8, 48i8, 64i8, -58i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x14_Test0() call_conv( "C" ) : [ i8, 14 ]
+{
+	var [ i8, 14 ] res[ 78i8, 61i8, 94i8, 121i8, 31i8, 72i8, -121i8, 78i8, 125i8, -87i8, 107i8, 48i8, 14i8, -28i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x15_Test0() call_conv( "C" ) : [ i8, 15 ]
+{
+	var [ i8, 15 ] res[ 79i8, 61i8, 94i8, 121i8, 121i8, 52i8, -121i8, 78i8, -5i8, 125i8, -87i8, 107i8, 48i8, 24i8, -7i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x16_Test0() call_conv( "C" ) : [ i8, 16 ]
+{
+	var [ i8, 16 ] res[ 59i8, 61i8, 84i8, 121i8, 121i8, 55i8, -121i8, 78i8, 74i8, -51i8, 24i8, -87i8, 107i8, 48i8, 24i8, -73i8 ];
+	return res;
+}
+
+fn nomangle U_Get_i8_x17_Test0() call_conv( "C" ) : [ i8, 17 ]
+{
+	var [ i8, 17 ] res[ 69i8, 65i8, 82i8, 101i8, 121i8, 55i8, -121i8, 0i8, 78i8, 74i8, -56i8, 24i8, -87i8, 104i8, 58i8, 34i8, -93i8 ];
+	return res;
+}
+fn nomangle U_Get_i8_x35_Test0() call_conv( "C" ) : [ i8, 35 ]
+{
+	var [ i8, 35 ] mut res= zero_init;
+	for( auto mut i= 0; i < 35; ++i )
+	{
+		res[ size_type(i) ]= i8( i * i - 5 * i - 2 );
+	}
+	return res;
+}
 /*
-fn nomangle U_Get_i8_x1_Test0() call_conv( "C" ) : [ i8, 1 ];
-fn nomangle U_Get_i8_x2_Test0() call_conv( "C" ) : [ i8, 2 ];
-fn nomangle U_Get_i8_x3_Test0() call_conv( "C" ) : [ i8, 3 ];
-fn nomangle U_Get_i8_x4_Test0() call_conv( "C" ) : [ i8, 4 ];
-fn nomangle U_Get_i8_x5_Test0() call_conv( "C" ) : [ i8, 5 ];
-fn nomangle U_Get_i8_x6_Test0() call_conv( "C" ) : [ i8, 6 ];
-fn nomangle U_Get_i8_x7_Test0() call_conv( "C" ) : [ i8, 7 ];
-fn nomangle U_Get_i8_x8_Test0() call_conv( "C" ) : [ i8, 8 ];
-fn nomangle U_Get_i8_x9_Test0() call_conv( "C" ) : [ i8, 9 ];
-fn nomangle U_Get_i8_x10_Test0() call_conv( "C" ) : [ i8, 10 ];
-fn nomangle U_Get_i8_x11_Test0() call_conv( "C" ) : [ i8, 11 ];
-fn nomangle U_Get_i8_x12_Test0() call_conv( "C" ) : [ i8, 12 ];
-fn nomangle U_Get_i8_x13_Test0() call_conv( "C" ) : [ i8, 13 ];
-fn nomangle U_Get_i8_x14_Test0() call_conv( "C" ) : [ i8, 14 ];
-fn nomangle U_Get_i8_x15_Test0() call_conv( "C" ) : [ i8, 15 ];
-fn nomangle U_Get_i8_x16_Test0() call_conv( "C" ) : [ i8, 16 ];
-fn nomangle U_Get_i8_x17_Test0() call_conv( "C" ) : [ i8, 17 ];
-fn nomangle U_Get_i8_x35_Test0() call_conv( "C" ) : [ i8, 35 ];
 fn nomangle U_Get_u16_x1_Test0() call_conv( "C" ) : [ u16, 1 ];
 fn nomangle U_Get_u16_x2_Test0() call_conv( "C" ) : [ u16, 2 ];
 fn nomangle U_Get_u16_x3_Test0() call_conv( "C" ) : [ u16, 3 ];
