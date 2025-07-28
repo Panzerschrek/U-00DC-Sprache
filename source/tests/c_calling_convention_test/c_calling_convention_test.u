@@ -3308,15 +3308,48 @@ fn nomangle U_Get_i32_x18_Test0() call_conv( "C" ) : [ i32, 18 ]
 	}
 	return res;
 }
+
+fn nomangle U_Get_u64_x1_Test0() call_conv( "C" ) : [ u64, 1 ]
+{
+	var [ u64, 1 ] res[ 0x0123456789ABCDEFu ];
+	return res;
+}
+fn nomangle U_Get_u64_x2_Test0() call_conv( "C" ) : [ u64, 2 ]
+{
+	var [ u64, 2 ] res[ 73434784882478588u, 378824886678u ];
+	return res;
+}
+fn nomangle U_Get_u64_x3_Test0() call_conv( "C" ) : [ u64, 3 ]
+{
+	var [ u64, 3 ] res[ 378824816678u, 73436784882478588u, 74784785858885u ];
+	return res;
+}
+fn nomangle U_Get_u64_x4_Test0() call_conv( "C" ) : [ u64, 4 ]
+{
+	var [ u64, 4 ] res[ 378824816178u, 734367848822478588u, 74784785888885u, 75443787589u ];
+	return res;
+}
+fn nomangle U_Get_u64_x5_Test0() call_conv( "C" ) : [ u64, 5 ]
+{
+	var [ u64, 5 ] res[ 378824816171u, 734367842822478588u, 74784785888883u, 754243787589u, 67437858898u ];
+	return res;
+}
+fn nomangle U_Get_i128_x1_Test0() call_conv( "C" ) : [ i128, 1 ]
+{
+	var [ i128, 1 ] res[ ( ( 0x0123456789ABCDEFi128 << 64u ) | 6458589734899i128 ) ];
+	return res;
+}
+fn nomangle U_Get_i128_x2_Test0() call_conv( "C" ) : [ i128, 2 ]
+{
+	var [ i128, 2 ] res[ ( ( 0x3123456789AeCDEFi128 << 64u ) | 6428589734399i128 ), ( ( 0x5123456789ABFDEFi128 << 64u ) | 6453589734892i128 ) ];
+	return res;
+}
+fn nomangle U_Get_i128_x3_Test0() call_conv( "C" ) : [ i128, 3 ]
+{
+	var [ i128, 3 ] res[ ( ( 0x3123256789AeCDEFi128 << 64u ) | 6428589754399i128 ), ( ( 0x51234567896BFDEFi128 << 64u ) | 6453582734892i128 ), ( ( 0x0123456789ABCDEFi128 << 64u ) | 6458589734899i128 ) ];
+	return res;
+}
 /*
-fn nomangle U_Get_u64_x1_Test0() call_conv( "C" ) : [ u64, 1 ];
-fn nomangle U_Get_u64_x2_Test0() call_conv( "C" ) : [ u64, 2 ];
-fn nomangle U_Get_u64_x3_Test0() call_conv( "C" ) : [ u64, 3 ];
-fn nomangle U_Get_u64_x4_Test0() call_conv( "C" ) : [ u64, 4 ];
-fn nomangle U_Get_u64_x5_Test0() call_conv( "C" ) : [ u64, 5 ];
-fn nomangle U_Get_i128_x1_Test0() call_conv( "C" ) : [ i128, 1 ];
-fn nomangle U_Get_i128_x2_Test0() call_conv( "C" ) : [ i128, 2 ];
-fn nomangle U_Get_i128_x3_Test0() call_conv( "C" ) : [ i128, 3 ];
 fn nomangle U_Get_f32_x1_Test0() call_conv( "C" ) : [ f32, 1 ];
 fn nomangle U_Get_f32_x2_Test0() call_conv( "C" ) : [ f32, 2 ];
 fn nomangle U_Get_f32_x3_Test0() call_conv( "C" ) : [ f32, 3 ];

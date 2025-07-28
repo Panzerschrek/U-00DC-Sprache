@@ -1441,7 +1441,15 @@ std::array<int32_t, 6> U_Get_i32_x6_Test0();
 std::array<int32_t, 7> U_Get_i32_x7_Test0();
 std::array<int32_t, 8> U_Get_i32_x8_Test0();
 std::array<int32_t, 9> U_Get_i32_x9_Test0();
-std::array<int32_t, 18> U_Get_i32_x18_Test0() ;
+std::array<int32_t, 18> U_Get_i32_x18_Test0();
+std::array<uint64_t, 1> U_Get_u64_x1_Test0();
+std::array<uint64_t, 2> U_Get_u64_x2_Test0();
+std::array<uint64_t, 3> U_Get_u64_x3_Test0();
+std::array<uint64_t, 4> U_Get_u64_x4_Test0();
+std::array<uint64_t, 5> U_Get_u64_x5_Test0();
+std::array<__int128_t, 1> U_Get_i128_x1_Test0();
+std::array<__int128_t, 2> U_Get_i128_x2_Test0();
+std::array<__int128_t, 3> U_Get_i128_x3_Test0();
 
 #pragma GCC diagnostic pop
 
@@ -1992,6 +2000,38 @@ void TestPassingValuesToUCode()
 		const auto res= U_Get_i32_x18_Test0();
 		for( int32_t i= 0; i < 18; ++i )
 			TEST_ASSERT( res[ size_t(i) ] == i * i * 752 + 6447 * i + 6437784 );
+	}
+	{
+		const std::array<uint64_t, 1> expected{ 0x0123456789ABCDEFu };
+		TEST_ASSERT( U_Get_u64_x1_Test0() == expected );
+	}
+	{
+		const std::array<uint64_t, 2> expected{ 73434784882478588u, 378824886678u };
+		TEST_ASSERT( U_Get_u64_x2_Test0() == expected );
+	}
+	{
+		const std::array<uint64_t, 3> expected{ 378824816678u, 73436784882478588u, 74784785858885u };
+		TEST_ASSERT( U_Get_u64_x3_Test0() == expected );
+	}
+	{
+		const std::array<uint64_t, 4> expected{ 378824816178u, 734367848822478588u, 74784785888885u, 75443787589u };
+		TEST_ASSERT( U_Get_u64_x4_Test0() == expected );
+	}
+	{
+		const std::array<uint64_t, 5> expected{ 378824816171u, 734367842822478588u, 74784785888883u, 754243787589u, 67437858898u };
+		TEST_ASSERT( U_Get_u64_x5_Test0() == expected );
+	}
+	{
+		const std::array<__int128_t, 1> expected{ ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll };
+		TEST_ASSERT( U_Get_i128_x1_Test0() == expected );
+	}
+	{
+		const std::array<__int128_t, 2> expected{ ( __int128_t(0x3123456789AeCDEFll) << 64u ) | 6428589734399ll, ( __int128_t(0x5123456789ABFDEFll) << 64u ) | 6453589734892ll };
+		TEST_ASSERT( U_Get_i128_x2_Test0() == expected );
+	}
+	{
+		const std::array<__int128_t, 3> expected{ ( __int128_t(0x3123256789AeCDEFll) << 64u ) | 6428589754399ll, ( __int128_t(0x51234567896BFDEFll) << 64u ) | 6453582734892ll, ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll };
+		TEST_ASSERT( U_Get_i128_x3_Test0() == expected );
 	}
 }
 
