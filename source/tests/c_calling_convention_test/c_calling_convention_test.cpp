@@ -1450,6 +1450,16 @@ std::array<uint64_t, 5> U_Get_u64_x5_Test0();
 std::array<__int128_t, 1> U_Get_i128_x1_Test0();
 std::array<__int128_t, 2> U_Get_i128_x2_Test0();
 std::array<__int128_t, 3> U_Get_i128_x3_Test0();
+std::array<float, 1> U_Get_f32_x1_Test0();
+std::array<float, 2> U_Get_f32_x2_Test0();
+std::array<float, 3> U_Get_f32_x3_Test0();
+std::array<float, 4> U_Get_f32_x4_Test0();
+std::array<float, 5> U_Get_f32_x5_Test0();
+std::array<float, 6> U_Get_f32_x6_Test0();
+std::array<float, 7> U_Get_f32_x7_Test0();
+std::array<float, 8> U_Get_f32_x8_Test0();
+std::array<float, 9> U_Get_f32_x9_Test0();
+std::array<float, 19> U_Get_f32_x19_Test0();
 
 #pragma GCC diagnostic pop
 
@@ -2032,6 +2042,47 @@ void TestPassingValuesToUCode()
 	{
 		const std::array<__int128_t, 3> expected{ ( __int128_t(0x3123256789AeCDEFll) << 64u ) | 6428589754399ll, ( __int128_t(0x51234567896BFDEFll) << 64u ) | 6453582734892ll, ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll };
 		TEST_ASSERT( U_Get_i128_x3_Test0() == expected );
+	}
+	{
+		const std::array<float, 1> expected{ 0.125f };
+		TEST_ASSERT( U_Get_f32_x1_Test0() == expected );
+	}
+	{
+		const std::array<float, 2> expected{ -2.125f, 3.5f };
+		TEST_ASSERT( U_Get_f32_x2_Test0() == expected );
+	}
+	{
+		const std::array<float, 3> expected{ -22.125f, 35.5f, 7336.0f };
+		TEST_ASSERT( U_Get_f32_x3_Test0() == expected );
+	}
+	{
+		const std::array<float, 4> expected{ 32.25f, -35.5f, 736.0f, 56367744.5f };
+		TEST_ASSERT( U_Get_f32_x4_Test0() == expected );
+	}
+	{
+		const std::array<float, 5> expected{ 322.25f, -352.5f, 7316.0f, 5636744.5f, -0.1f };
+		TEST_ASSERT( U_Get_f32_x5_Test0() == expected );
+	}
+	{
+		const std::array<float, 6> expected{ 322.75f, 0.0f, -322.5f, -7316.0f, 5632744.75f, -0.2f };
+		TEST_ASSERT( U_Get_f32_x6_Test0() == expected );
+	}
+	{
+		const std::array<float, 7> expected{ 1322.75f, -0.0f, -3222.5f, -736.0f, 56344.75f, -4.2f, 874.5f };
+		TEST_ASSERT( U_Get_f32_x7_Test0() == expected );
+	}
+	{
+		const std::array<float, 8> expected{ 1322.75f, -0.0f, -3226.5f, -7365.0f, 5634.75f, -43.2f, 8174.5f, 3743477800.0f };
+		TEST_ASSERT( U_Get_f32_x8_Test0() == expected );
+	}
+	{
+		const std::array<float, 9> expected{ 322.75f, -0.4f, 563.0f, -32226.5f, -735.0f, 56734.75f, -44.2f, 81274.5f, 3743477801.0f };
+		TEST_ASSERT( U_Get_f32_x9_Test0() == expected );
+	}
+	{
+		const auto res= U_Get_f32_x19_Test0();
+		for( uint32_t i= 0u; i < 19u; ++i )
+			TEST_ASSERT( res[i] == float(i) * float(i) * 13.5f - float(i) * 67.25f + 2647.0f );
 	}
 }
 
