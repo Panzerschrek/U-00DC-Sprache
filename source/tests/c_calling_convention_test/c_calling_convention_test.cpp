@@ -1593,6 +1593,14 @@ Tuple3<int32_t, int32_t, double> U_Get_tup_i32_i32_f64_Test0();
 Tuple3<double, uint64_t, uint64_t> U_Get_tup_f64_u64_u64_Test0();
 Tuple3<uint64_t, double, uint64_t> U_Get_tup_u64_f64_u64_Test0();
 Tuple3<uint64_t, uint64_t, double> U_Get_tup_u64_u64_f64_Test0();
+Tuple3<float, float, float> U_Get_tup_f32_f32_f32_Test0();
+Tuple3<float, float, double> U_Get_tup_f32_f32_f64_Test0();
+Tuple3<float, double, float> U_Get_tup_f32_f64_f32_Test0();
+Tuple3<float, double, double> U_Get_tup_f32_f64_f64_Test0();
+Tuple3<double, float, float> U_Get_tup_f64_f32_f32_Test0();
+Tuple3<double, float, double> U_Get_tup_f64_f32_f64_Test0();
+Tuple3<double, double, float> U_Get_tup_f64_f64_f32_Test0();
+Tuple3<double, double, double> U_Get_tup_f64_f64_f64_Test0();
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
@@ -2535,6 +2543,38 @@ void TestPassingValuesToUCode()
 	{
 		const Tuple3<uint64_t, uint64_t, double> expected{ 0x27283A4B5C637E8Fu, 0xE637347436B47218u, 4.7 };
 		TEST_ASSERT( U_Get_tup_u64_u64_f64_Test0() == expected );
+	}
+	{
+		const Tuple3<float, float, float> expected{ 0.7f, 67567.5f, -256733770.0f };
+		TEST_ASSERT( U_Get_tup_f32_f32_f32_Test0() == expected );
+	}
+	{
+		const Tuple3<float, float, double> expected{ 0.7f, 67567.5f, -256733770.0 };
+		TEST_ASSERT( U_Get_tup_f32_f32_f64_Test0() == expected );
+	}
+	{
+		const Tuple3<float, double, float> expected{ 0.7f, 67567.5, -256733770.0f };
+		TEST_ASSERT( U_Get_tup_f32_f64_f32_Test0() == expected );
+	}
+	{
+		const Tuple3<float, double, double> expected{ 0.7f, 67567.5, -256733770.0 };
+		TEST_ASSERT( U_Get_tup_f32_f64_f64_Test0() == expected );
+	}
+	{
+		const Tuple3<double, float, float> expected{ 0.7, 67567.5f, -256733770.0f };
+		TEST_ASSERT( U_Get_tup_f64_f32_f32_Test0() == expected );
+	}
+	{
+		const Tuple3<double, float, double> expected{ 0.7, 67567.5f, -256733770.0 };
+		TEST_ASSERT( U_Get_tup_f64_f32_f64_Test0() == expected );
+	}
+	{
+		const Tuple3<double, double, float> expected{ 0.7, 67567.5, -256733770.0f };
+		TEST_ASSERT( U_Get_tup_f64_f64_f32_Test0() == expected );
+	}
+	{
+		const Tuple3<double, double, double> expected{ 0.7, 67567.5, -256733770.0 };
+		TEST_ASSERT( U_Get_tup_f64_f64_f64_Test0() == expected );
 	}
 }
 

@@ -3790,13 +3790,43 @@ fn nomangle U_Get_tup_u64_u64_f64_Test0() call_conv( "C" ) : tup[ u64, u64, f64 
 	var tup[ u64, u64, f64 ] res[ 0x27283A4B5C637E8Fu, 0xE637347436B47218u, 4.7 ];
 	return res;
 }
-/*
-fn nomangle U_Get_tup_f32_f32_f32_Test0() call_conv( "C" ) : tup[ f32, f32, f32 ];
-fn nomangle U_Get_tup_f32_f32_f64_Test0() call_conv( "C" ) : tup[ f32, f32, f64 ];
-fn nomangle U_Get_tup_f32_f64_f32_Test0() call_conv( "C" ) : tup[ f32, f64, f32 ];
-fn nomangle U_Get_tup_f32_f64_f64_Test0() call_conv( "C" ) : tup[ f32, f64, f64 ];
-fn nomangle U_Get_tup_f64_f32_f32_Test0() call_conv( "C" ) : tup[ f64, f32, f32 ];
-fn nomangle U_Get_tup_f64_f32_f64_Test0() call_conv( "C" ) : tup[ f64, f32, f64 ];
-fn nomangle U_Get_tup_f64_f64_f32_Test0() call_conv( "C" ) : tup[ f64, f64, f32 ];
-fn nomangle U_Get_tup_f64_f64_f64_Test0() call_conv( "C" ) : tup[ f64, f64, f64 ];
-*/
+fn nomangle U_Get_tup_f32_f32_f32_Test0() call_conv( "C" ) : tup[ f32, f32, f32 ]
+{
+	var tup[ f32, f32, f32 ] res[ 0.7f, 67567.5f, -256733770.0f ];
+	return res;
+}
+fn nomangle U_Get_tup_f32_f32_f64_Test0() call_conv( "C" ) : tup[ f32, f32, f64 ]
+{
+	var tup[ f32, f32, f64 ] res[ 0.7f, 67567.5f, -256733770.0 ];
+	return res;
+}
+fn nomangle U_Get_tup_f32_f64_f32_Test0() call_conv( "C" ) : tup[ f32, f64, f32 ]
+{
+	var tup[ f32, f64, f32 ] res[ 0.7f, 67567.5, -256733770.0f ];
+	return res;
+}
+fn nomangle U_Get_tup_f32_f64_f64_Test0() call_conv( "C" ) : tup[ f32, f64, f64 ]
+{
+	var tup[ f32, f64, f64 ] res[ 0.7f, 67567.5, -256733770.0 ];
+	return res;
+}
+fn nomangle U_Get_tup_f64_f32_f32_Test0() call_conv( "C" ) : tup[ f64, f32, f32 ]
+{
+	var tup[ f64, f32, f32 ] res[ 0.7, 67567.5f, -256733770.0f ];
+	return res;
+}
+fn nomangle U_Get_tup_f64_f32_f64_Test0() call_conv( "C" ) : tup[ f64, f32, f64 ]
+{
+	var tup[ f64, f32, f64 ] res[ 0.7, 67567.5f, -256733770.0 ];
+	return res;
+}
+fn nomangle U_Get_tup_f64_f64_f32_Test0() call_conv( "C" ) : tup[ f64, f64, f32 ]
+{
+	var tup[ f64, f64, f32 ] res[ 0.7, 67567.5, -256733770.0f ];
+	return res;
+}
+fn nomangle U_Get_tup_f64_f64_f64_Test0() call_conv( "C" ) : tup[ f64, f64, f64 ]
+{
+	var tup[ f64, f64, f64 ] res[ 0.7, 67567.5, -256733770.0 ];
+	return res;
+}
