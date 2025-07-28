@@ -1432,6 +1432,16 @@ std::array<uint16_t, 8> U_Get_u16_x8_Test0();
 std::array<uint16_t, 9> U_Get_u16_x9_Test0();
 std::array<uint16_t, 15> U_Get_u16_x15_Test0();
 std::array<uint16_t, 21> U_Get_u16_x21_Test0();
+std::array<int32_t, 1> U_Get_i32_x1_Test0();
+std::array<int32_t, 2> U_Get_i32_x2_Test0();
+std::array<int32_t, 3> U_Get_i32_x3_Test0();
+std::array<int32_t, 4> U_Get_i32_x4_Test0();
+std::array<int32_t, 5> U_Get_i32_x5_Test0();
+std::array<int32_t, 6> U_Get_i32_x6_Test0();
+std::array<int32_t, 7> U_Get_i32_x7_Test0();
+std::array<int32_t, 8> U_Get_i32_x8_Test0();
+std::array<int32_t, 9> U_Get_i32_x9_Test0();
+std::array<int32_t, 18> U_Get_i32_x18_Test0() ;
 
 #pragma GCC diagnostic pop
 
@@ -1941,6 +1951,47 @@ void TestPassingValuesToUCode()
 		const auto res= U_Get_u16_x21_Test0();
 		for( uint32_t i = 0u; i < 21u; ++i )
 			TEST_ASSERT( res[ size_t(i) ] == uint16_t( i * i * 15u + i * 23u + 17u ) );
+	}
+	{
+		const std::array<int32_t, 1> expected{ 547718243 };
+		TEST_ASSERT( U_Get_i32_x1_Test0() == expected );
+	}
+	{
+		const std::array<int32_t, 2> expected{ -4744785, 1236317 };
+		TEST_ASSERT( U_Get_i32_x2_Test0() == expected );
+	}
+	{
+		const std::array<int32_t, 3> expected{ 78482236, 847587447, 289378855 };
+		TEST_ASSERT( U_Get_i32_x3_Test0() == expected );
+	}
+	{
+		const std::array<int32_t, 4> expected{ -66366, 2667377, -1674, 757233 };
+		TEST_ASSERT( U_Get_i32_x4_Test0() == expected );
+	}
+	{
+		const std::array<int32_t, 5> expected{ -6353, -61366, 2667371, -2674, 5757233 };
+		TEST_ASSERT( U_Get_i32_x5_Test0() == expected );
+	}
+	{
+		const std::array<int32_t, 6> expected{ 5757233, -6353, 616613, 23521, 2667371, -2677834 };
+		TEST_ASSERT( U_Get_i32_x6_Test0() == expected );
+	}
+	{
+		const std::array<int32_t, 7> expected{ 5757213, -63543, 616513, 231521, 266371, -26778234, 289378855 };
+		TEST_ASSERT( U_Get_i32_x7_Test0() == expected );
+	}
+	{
+		const std::array<int32_t, 8> expected{ 157573, -613543, 6113, 231561, 2661371, -26778234, 289237855, -2634 };
+		TEST_ASSERT( U_Get_i32_x8_Test0() == expected );
+	}
+	{
+		const std::array<int32_t, 9> expected{ 15773, -613543, 6116, 211561, 2651371, -3412, -26778234, 289737855, -263 };
+		TEST_ASSERT( U_Get_i32_x9_Test0() == expected );
+	}
+	{
+		const auto res= U_Get_i32_x18_Test0();
+		for( int32_t i= 0; i < 18; ++i )
+			TEST_ASSERT( res[ size_t(i) ] == i * i * 752 + 6447 * i + 6437784 );
 	}
 }
 

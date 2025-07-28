@@ -3253,17 +3253,62 @@ fn nomangle U_Get_u16_x21_Test0() call_conv( "C" ) : [ u16, 21 ]
 	}
 	return res;
 }
+
+fn nomangle U_Get_i32_x1_Test0() call_conv( "C" ) : [ i32, 1 ]
+{
+	var [ i32, 1 ] res[ 547718243 ];
+	return res;
+}
+fn nomangle U_Get_i32_x2_Test0() call_conv( "C" ) : [ i32, 2 ]
+{
+	var [ i32, 2 ] res[ -4744785, 1236317 ];
+	return res;
+}
+fn nomangle U_Get_i32_x3_Test0() call_conv( "C" ) : [ i32, 3 ]
+{
+	var [ i32, 3 ] res[ 78482236, 847587447, 289378855 ];
+	return res;
+}
+fn nomangle U_Get_i32_x4_Test0() call_conv( "C" ) : [ i32, 4 ]
+{
+	var [ i32, 4 ] res[ -66366, 2667377, -1674, 757233 ];
+	return res;
+}
+fn nomangle U_Get_i32_x5_Test0() call_conv( "C" ) : [ i32, 5 ]
+{
+	var [ i32, 5 ] res[ -6353, -61366, 2667371, -2674, 5757233 ];
+	return res;
+}
+fn nomangle U_Get_i32_x6_Test0() call_conv( "C" ) : [ i32, 6 ]
+{
+	var [ i32, 6 ] res[ 5757233, -6353, 616613, 23521, 2667371, -2677834 ];
+	return res;
+}
+fn nomangle U_Get_i32_x7_Test0() call_conv( "C" ) : [ i32, 7 ]
+{
+	var [ i32, 7 ] res[ 5757213, -63543, 616513, 231521, 266371, -26778234, 289378855 ];
+	return res;
+}
+fn nomangle U_Get_i32_x8_Test0() call_conv( "C" ) : [ i32, 8 ]
+{
+	var [ i32, 8 ] res[ 157573, -613543, 6113, 231561, 2661371, -26778234, 289237855, -2634 ];
+	return res;
+}
+fn nomangle U_Get_i32_x9_Test0() call_conv( "C" ) : [ i32, 9 ]
+{
+	var [ i32, 9 ] res[ 15773, -613543, 6116, 211561, 2651371, -3412, -26778234, 289737855, -263 ];
+	return res;
+}
+fn nomangle U_Get_i32_x18_Test0() call_conv( "C" ) : [ i32, 18 ]
+{
+	var [ i32, 18 ] mut res= zero_init;
+	for( auto mut i= 0; i < 18; ++i )
+	{
+		res[ size_type(i) ] = i * i * 752 + 6447 * i + 6437784;
+	}
+	return res;
+}
 /*
-fn nomangle U_Get_i32_x1_Test0() call_conv( "C" ) : [ i32, 1 ];
-fn nomangle U_Get_i32_x2_Test0() call_conv( "C" ) : [ i32, 2 ];
-fn nomangle U_Get_i32_x3_Test0() call_conv( "C" ) : [ i32, 3 ];
-fn nomangle U_Get_i32_x4_Test0() call_conv( "C" ) : [ i32, 4 ];
-fn nomangle U_Get_i32_x5_Test0() call_conv( "C" ) : [ i32, 5 ];
-fn nomangle U_Get_i32_x6_Test0() call_conv( "C" ) : [ i32, 6 ];
-fn nomangle U_Get_i32_x7_Test0() call_conv( "C" ) : [ i32, 7 ];
-fn nomangle U_Get_i32_x8_Test0() call_conv( "C" ) : [ i32, 8 ];
-fn nomangle U_Get_i32_x9_Test0() call_conv( "C" ) : [ i32, 9 ];
-fn nomangle U_Get_i32_x18_Test0() call_conv( "C" ) : [ i32, 18 ];
 fn nomangle U_Get_u64_x1_Test0() call_conv( "C" ) : [ u64, 1 ];
 fn nomangle U_Get_u64_x2_Test0() call_conv( "C" ) : [ u64, 2 ];
 fn nomangle U_Get_u64_x3_Test0() call_conv( "C" ) : [ u64, 3 ];
