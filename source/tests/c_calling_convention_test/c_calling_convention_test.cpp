@@ -1373,8 +1373,12 @@ void U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( double a, double b, dou
 void U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( double a, double b, double c, double d, double e, double f, double g, Tuple2<double, double> h );
 
 // Silence GCC warning - for some reason it doesn't like returning std::array by value.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
+#ifdef __GNUC__
+	#pragma GCC diagnostic push
+	#ifdef __clang__
+		#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
+	#endif
+#endif
 
 int8_t U_Get_i8_Test0();
 int8_t U_Get_i8_Test1();
@@ -1484,8 +1488,88 @@ std::array<char, 16> U_Get_char8_x16_Test0();
 std::array<char, 17> U_Get_char8_x17_Test0();
 std::array<char, 32> U_Get_char8_x32_Test0();
 std::array<char, 39> U_Get_char8_x39_Test0();
+/*
+stub_type U_Get_tup_i8_i8_Test0() : tup[ i8, i8 ];
+stub_type U_Get_tup_i8_u16_Test0() : tup[ i8, u16 ];
+stub_type U_Get_tup_i8_i32_Test0() : tup[ i8, i32 ];
+stub_type U_Get_tup_i8_u64_Test0() : tup[ i8, u64 ];
+stub_type U_Get_tup_i8_i128_Test0() : tup[ i8, i128 ];
+stub_type U_Get_tup_i8_f32_Test0() : tup[ i8, f32 ];
+stub_type U_Get_tup_i8_f64_Test0() : tup[ i8, f64 ];
+stub_type U_Get_tup_u16_u8_Test0() : tup[ u16, u8 ];
+stub_type U_Get_tup_u16_i16_Test0() : tup[ u16, i16 ];
+stub_type U_Get_tup_u16_u32_Test0() : tup[ u16, u32 ];
+stub_type U_Get_tup_u16_i64_Test0() : tup[ u16, i64 ];
+stub_type U_Get_tup_u16_u128_Test0() : tup[ u16, u128 ];
+stub_type U_Get_tup_u16_f32_Test0() : tup[ u16, f32 ];
+stub_type U_Get_tup_u16_f64_Test0() : tup[ u16, f64 ];
+stub_type U_Get_tup_i32_i8_Test0() : tup[ i32, i8 ];
+stub_type U_Get_tup_i32_u16_Test0() : tup[ i32, u16 ];
+stub_type U_Get_tup_i32_i32_Test0() : tup[ i32, i32 ];
+stub_type U_Get_tup_i32_u64_Test0() : tup[ i32, u64 ];
+stub_type U_Get_tup_i32_i128_Test0() : tup[ i32, i128 ];
+stub_type U_Get_tup_i32_f32_Test0() : tup[ i32, f32 ];
+stub_type U_Get_tup_i32_f64_Test0() : tup[ i32, f64 ];
+stub_type U_Get_tup_u64_u8_Test0() : tup[ u64, u8 ];
+stub_type U_Get_tup_u64_i16_Test0() : tup[ u64, i16 ];
+stub_type U_Get_tup_u64_u32_Test0() : tup[ u64, u32 ];
+stub_type U_Get_tup_u64_i64_Test0() : tup[ u64, i64 ];
+stub_type U_Get_tup_u64_u128_Test0() : tup[ u64, u128 ];
+stub_type U_Get_tup_u64_f32_Test0() : tup[ u64, f32 ];
+stub_type U_Get_tup_u64_f64_Test0() : tup[ u64, f64 ];
+stub_type U_Get_tup_f32_i8_Test0() : tup[ f32, i8 ];
+stub_type U_Get_tup_f32_u16_Test0() : tup[ f32, u16 ];
+stub_type U_Get_tup_f32_i32_Test0() : tup[ f32, i32 ];
+stub_type U_Get_tup_f32_u64_Test0() : tup[ f32, u64 ];
+stub_type U_Get_tup_f32_i128_Test0() : tup[ f32, i128 ];
+stub_type U_Get_tup_f32_f32_Test0() : tup[ f32, f32 ];
+stub_type U_Get_tup_f32_f64_Test0() : tup[ f32, f64 ];
+stub_type U_Get_tup_f64_u8_Test0() : tup[ f64, u8 ];
+stub_type U_Get_tup_f64_i16_Test0() : tup[ f64, i16 ];
+stub_type U_Get_tup_f64_u32_Test0() : tup[ f64, u32 ];
+stub_type U_Get_tup_f64_i64_Test0() : tup[ f64, i64 ];
+stub_type U_Get_tup_f64_u128_Test0() : tup[ f64, u128 ];
+stub_type U_Get_tup_f64_f32_Test0() : tup[ f64, f32 ];
+stub_type U_Get_tup_f64_f64_Test0() : tup[ f64, f64 ];
+stub_type U_Get_tup_u32_u16_u8_Test0() : tup[ u32, u16, u8 ];
+stub_type U_Get_tup_u32_u16_u16_Test0() : tup[ u32, u16, u16 ];
+stub_type U_Get_tup_u8_u16_u32_Test0() : tup[ u8, u16, u32 ];
+stub_type U_Get_tup_u16_u16_u32_Test0() : tup[ u16, u16, u32 ];
+stub_type U_Get_tup_u64_u32_u16_u8_Test0() : tup[ u64, u32, u16, u8 ];
+stub_type U_Get_tup_u64_u32_u16_u16_Test0() : tup[ u64, u32, u16, u16 ];
+stub_type U_Get_tup_u8_u16_u32_u64_Test0() : tup[ u8, u16, u32, u64 ];
+stub_type U_Get_tup_u16_u16_u32_u64_Test0() : tup[ u16, u16, u32, u64 ];
+stub_type U_Get_tup_u8_u16_u8_Test0() : tup[ u8, u16, u8 ];
+stub_type U_Get_tup_u8_u32_u8_Test0() : tup[ u8, u32, u8 ];
+stub_type U_Get_tup_u8_u64_u8_Test0() : tup[ u8, u64, u8 ];
+stub_type U_Get_tup_u16_u32_u16_Test0() : tup[ u16, u32, u16 ];
+stub_type U_Get_tup_u16_u64_u16_Test0() : tup[ u16, u64, u16 ];
+stub_type U_Get_tup_u32_u64_u32_Test0() : tup[ u32, u64, u32 ];
+stub_type U_Get_tup_f32_i32_i32_Test0() : tup[ f32, i32, i32 ];
+stub_type U_Get_tup_i32_f32_i32_Test0() : tup[ i32, f32, i32 ];
+stub_type U_Get_tup_i32_i32_f32_Test0() : tup[ i32, i32, f32 ];
+stub_type U_Get_tup_f32_u64_u64_Test0() : tup[ f32, u64, u64 ];
+stub_type U_Get_tup_u64_f32_u64_Test0() : tup[ u64, f32, u64 ];
+stub_type U_Get_tup_u64_u64_f32_Test0() : tup[ u64, u64, f32 ];
+stub_type U_Get_tup_f64_i32_i32_Test0() : tup[ f64, i32, i32 ];
+stub_type U_Get_tup_i32_f64_i32_Test0() : tup[ i32, f64, i32 ];
+stub_type U_Get_tup_i32_i32_f64_Test0() : tup[ i32, i32, f64 ];
+stub_type U_Get_tup_f64_u64_u64_Test0() : tup[ f64, u64, u64 ];
+stub_type U_Get_tup_u64_f64_u64_Test0() : tup[ u64, f64, u64 ];
+stub_type U_Get_tup_u64_u64_f64_Test0() : tup[ u64, u64, f64 ];
+stub_type U_Get_tup_f32_f32_f32_Test0() : tup[ f32, f32, f32 ];
+stub_type U_Get_tup_f32_f32_f64_Test0() : tup[ f32, f32, f64 ];
+stub_type U_Get_tup_f32_f64_f32_Test0() : tup[ f32, f64, f32 ];
+stub_type U_Get_tup_f32_f64_f64_Test0() : tup[ f32, f64, f64 ];
+stub_type U_Get_tup_f64_f32_f32_Test0() : tup[ f64, f32, f32 ];
+stub_type U_Get_tup_f64_f32_f64_Test0() : tup[ f64, f32, f64 ];
+stub_type U_Get_tup_f64_f64_f32_Test0() : tup[ f64, f64, f32 ];
+stub_type U_Get_tup_f64_f64_f64_Test0() : tup[ f64, f64, f64 ];
+*/
 
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 void TestPassingValuesToUCode()
 {
@@ -2177,9 +2261,13 @@ float Get_f32_Test1() { return -0.012f; }
 double Get_f64_Test0() { return 544747366.75; }
 double Get_f64_Test1() { return -34.25; }
 
-// Silence GCC warning - for some reason it doesn't like returning std::array by value.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
+// Silence Clang warning - for some reason it doesn't like returning std::array by value.
+#ifdef __GNUC__
+	#pragma GCC diagnostic push
+	#ifdef __clang__
+		#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
+	#endif
+#endif
 
 std::array<int8_t, 1> Get_i8_x1_Test0() { return { -95 }; }
 std::array<int8_t, 2> Get_i8_x2_Test0() { return { 107, -34 }; }
@@ -2368,6 +2456,8 @@ Tuple3<double, float, double> Get_tup_f64_f32_f64_Test0(){ return { 0.7, 67567.5
 Tuple3<double, double, float> Get_tup_f64_f64_f32_Test0(){ return { 0.7, 67567.5, -256733770.0f }; }
 Tuple3<double, double, double> Get_tup_f64_f64_f64_Test0(){ return { 0.7, 67567.5, -256733770.0 }; }
 
-#pragma GCC diagnostic pop
+#ifdef __GNUC__
+	#pragma GCC diagnostic pop
+#endif
 
 } // extern "C"
