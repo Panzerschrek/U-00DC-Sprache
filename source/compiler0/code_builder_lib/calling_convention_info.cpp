@@ -59,15 +59,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= f->llvm_type;
-		if( IsSignedInteger( f->fundamental_type ) )
-			argument_passing.sext= true;
-		else if(
-			IsUnsignedInteger( f->fundamental_type ) ||
-			IsChar( f->fundamental_type ) ||
-			IsByte( f->fundamental_type ) ||
-			f->fundamental_type == U_FundamentalType::bool_ )
-			argument_passing.zext= true;
-
 		return argument_passing;
 	}
 
@@ -75,7 +66,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		argument_passing.zext= true; // Enums are usniged.
 		return argument_passing;
 	}
 
@@ -83,7 +73,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= fp->llvm_type;
-		// It seems like zero extension isn't necessary for pointers.
 		return argument_passing;
 	}
 
@@ -91,7 +80,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= p->llvm_type;
-		// It seems like zero extension isn't necessary for pointers.
 		return argument_passing;
 	}
 
@@ -101,7 +89,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 		{
 			ArgumentPassingDirect argument_passing;
 			argument_passing.llvm_type= single_scalar;
-			// TODO - set sext/zext?
 			return argument_passing;
 		}
 		else
@@ -114,7 +101,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 		{
 			ArgumentPassingDirect argument_passing;
 			argument_passing.llvm_type= single_scalar;
-			// TODO - set sext/zext?
 			return argument_passing;
 		}
 		else
@@ -127,7 +113,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 		{
 			ArgumentPassingDirect argument_passing;
 			argument_passing.llvm_type= single_scalar;
-			// TODO - set sext/zext?
 			return argument_passing;
 		}
 		else
@@ -145,15 +130,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= f->llvm_type;
-		if( IsSignedInteger( f->fundamental_type ) )
-			return_value_passing.sext= true;
-		else if(
-			IsUnsignedInteger( f->fundamental_type ) ||
-			IsChar( f->fundamental_type ) ||
-			IsByte( f->fundamental_type ) ||
-			f->fundamental_type == U_FundamentalType::bool_ )
-			return_value_passing.zext= true;
-
 		return return_value_passing;
 	}
 
@@ -161,7 +137,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= e->underlying_type.llvm_type;
-		return_value_passing.zext= true; // Enums are unsigned.
 		return return_value_passing;
 	}
 
@@ -176,7 +151,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= p->llvm_type;
-		// It seems like zero extension isn't necessary for pointers.
 		return return_value_passing;
 	}
 
@@ -186,7 +160,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 		{
 			ReturnValuePassingDirect return_value_passing;
 			return_value_passing.llvm_type= single_scalar;
-			// It seems like zero extension isn't necessary for pointers.
 			return return_value_passing;
 		}
 		else
@@ -263,12 +236,11 @@ CallingConventionInfoSystemVX86_64::CallingConventionInfoSystemVX86_64( llvm::Da
 
 ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::CalculateValueArgumentPassingInfo( const Type& type )
 {
-	// TODO - rework this properly.
-
 	if( const auto f= type.GetFundamentalType() )
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= f->llvm_type;
+		// sext/zext flags are necessary for scalars.
 		if( IsSignedInteger( f->fundamental_type ) )
 			argument_passing.sext= true;
 		else if(
@@ -285,7 +257,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		argument_passing.zext= true; // Enums are unsigned.
+		argument_passing.zext= true; // Enums are unsigned and thus require zero extension.
 		return argument_passing;
 	}
 
@@ -293,7 +265,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= fp->llvm_type;
-		// It seems like zero extension isn't necessary for pointers.
+		// It seems like zero extension isn't necessary for pointers. Is it?
 		return argument_passing;
 	}
 
@@ -301,7 +273,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= p->llvm_type;
-		// It seems like zero extension isn't necessary for pointers.
+		// It seems like zero extension isn't necessary for pointers. Is it?
 		return argument_passing;
 	}
 
