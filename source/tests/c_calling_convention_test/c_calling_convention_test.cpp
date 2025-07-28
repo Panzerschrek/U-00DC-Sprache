@@ -1539,6 +1539,13 @@ Tuple2<uint16_t, int64_t> U_Get_tup_u16_i64_Test0();
 Tuple2<uint16_t, __uint128_t> U_Get_tup_u16_u128_Test0();
 Tuple2<uint16_t, float> U_Get_tup_u16_f32_Test0();
 Tuple2<uint16_t, double> U_Get_tup_u16_f64_Test0();
+Tuple2<int32_t, int8_t> U_Get_tup_i32_i8_Test0();
+Tuple2<int32_t, uint16_t> U_Get_tup_i32_u16_Test0();
+Tuple2<int32_t, int32_t> U_Get_tup_i32_i32_Test0();
+Tuple2<int32_t, uint64_t> U_Get_tup_i32_u64_Test0();
+Tuple2<int32_t, __int128_t> U_Get_tup_i32_i128_Test0();
+Tuple2<int32_t, float> U_Get_tup_i32_f32_Test0();
+Tuple2<int32_t, double> U_Get_tup_i32_f64_Test0();
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
@@ -2261,6 +2268,35 @@ void TestPassingValuesToUCode()
 	{
 		const Tuple2<uint16_t, double> expected{ 0x7F5E, -674730004400.0 };
 		TEST_ASSERT( U_Get_tup_u16_f64_Test0() == expected );
+	}
+	{
+		const Tuple2<int32_t, int8_t> expected{ 65247547, -98 };
+		TEST_ASSERT( U_Get_tup_i32_i8_Test0() == expected );
+	}
+	{
+		const Tuple2<int32_t, uint16_t> expected{ -33467428, 35712 };
+		TEST_ASSERT( U_Get_tup_i32_u16_Test0() == expected );
+	}
+	{
+		const Tuple2<int32_t, int32_t> expected{ 78423, -543467432 };
+		TEST_ASSERT( U_Get_tup_i32_i32_Test0() == expected );
+	}
+	{
+		const Tuple2<int32_t, uint64_t> expected{ -377848, 0x0022446688AACCEE };
+		TEST_ASSERT( U_Get_tup_i32_u64_Test0() == expected );
+	}
+	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	{
+		const Tuple2<int32_t, __int128_t> expected{ 6781134, ( __int128_t(0x0022446688AACCEEll) << 64u ) | 0x1133557799BBDDFFll };
+		TEST_ASSERT( U_Get_tup_i32_i128_Test0() == expected );
+	}
+	{
+		const Tuple2<int32_t, float> expected{ -7712378, 89.5f };
+		TEST_ASSERT( U_Get_tup_i32_f32_Test0() == expected );
+	}
+	{
+		const Tuple2<int32_t, double> expected{ 67844881, -674730004400.0 };
+		TEST_ASSERT( U_Get_tup_i32_f64_Test0() == expected );
 	}
 }
 
