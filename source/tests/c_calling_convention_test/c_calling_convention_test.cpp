@@ -1877,6 +1877,13 @@ std::array<char, 16> Get_char8_x16_Test0() { return { 'E', 'r', ' ', 'i', 's', '
 std::array<char, 17> Get_char8_x17_Test0() { return { 'X', 'Y', ' ', '=', ' ', '3', '3', ' ', '+', ' ', '4', '4', ' ', '-', ' ', '5', '5' }; }
 std::array<char, 32> Get_char8_x32_Test0() { return { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'F', 'E', 'D', 'C', 'B', 'A', '9', '8', '7', '6', '5', '4', '3', '2', '1', '0' }; }
 std::array<char, 39> Get_char8_x39_Test0() { return { 'F', 'i', 'c', 'k', 'e', 't', ' ', 'e', 'u', 'c', 'h', ',', ' ', 'i', 'h', 'r', ' ', 'b', 'e', 'l', 'e', 'i', 'd', 'i', 'g', 't', ' ', 'm', 'e', 'i', 'n', 'e', ' ', 'A', 'u', 'g', 'e', 'n', '!' }; }
+Tuple2<int8_t, int8_t> Get_tup_i8_i8_Test0() { return { 37, -98 }; }
+Tuple2<int8_t, uint16_t> Get_tup_i8_u16_Test0() { return { 97, 35712 }; }
+Tuple2<int8_t, int32_t> Get_tup_i8_i32_Test0() { return { -67, -543467432 }; }
+Tuple2<int8_t, uint64_t> Get_tup_i8_u64_Test0() { return { -67, 0x0022446688AACCEE }; }
+Tuple2<int8_t, __int128_t> Get_tup_i8_i128_Test0() { return { 78, ( __int128_t( 0x0022446688AACCEEll ) << 64u ) | 0x1133557799BBDDFFll }; }
+Tuple2<int8_t, float> Get_tup_i8_f32_Test0() { return { 127, 89.5f }; }
+Tuple2<int8_t, double> Get_tup_i8_f64_Test0() { return { -128, -674730004400.0 }; }
 
 #pragma GCC diagnostic pop
 
