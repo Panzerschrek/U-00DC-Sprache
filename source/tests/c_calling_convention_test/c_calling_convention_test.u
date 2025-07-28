@@ -1374,6 +1374,35 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ f32, f64 ] expected[ 2252.5f, -674730004400.0 ];
 		halt if( Get_tup_f32_f64_Test0() != expected );
 	}
+	{
+		var tup[ f64, u8 ] expected[ 96.5, 251u8 ];
+		halt if( Get_tup_f64_u8_Test0() != expected );
+	}
+	{
+		var tup[ f64, i16 ] expected[ -0.0625, 30712i16 ];
+		halt if( Get_tup_f64_i16_Test0() != expected );
+	}
+	{
+		var tup[ f64, u32 ] expected[ 73377700000.0, 543467432u ];
+		halt if( Get_tup_f64_u32_Test0() != expected );
+	}
+	{
+		var tup[ f64, i64 ] expected[ -23.2, 0x0022446688AACCEE ];
+		halt if( Get_tup_f64_i64_Test0() != expected );
+	}
+	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	{
+		var tup[ f64, u128 ] expected[ 7477.5, ( ( 0x0022446688AACCEEu128 << 64u ) | 0x1133557799BBDDFFu128 ) ];
+		halt if( Get_tup_f64_u128_Test0() != expected );
+	}
+	{
+		var tup[ f64, f32 ] expected[ 733333300000000.0, 89.5f ];
+		halt if( Get_tup_f64_f32_Test0() != expected );
+	}
+	{
+		var tup[ f64, f64 ] expected[ -6723667.5, -674730004400.0 ];
+		halt if( Get_tup_f64_f64_Test0() != expected );
+	}
 
 	return 0;
 }
@@ -1797,6 +1826,13 @@ fn nomangle Get_tup_f32_u64_Test0() call_conv( "C" ) : tup[ f32, u64 ];
 fn nomangle Get_tup_f32_i128_Test0() call_conv( "C" ) : tup[ f32, i128 ];
 fn nomangle Get_tup_f32_f32_Test0() call_conv( "C" ) : tup[ f32, f32 ];
 fn nomangle Get_tup_f32_f64_Test0() call_conv( "C" ) : tup[ f32, f64 ];
+fn nomangle Get_tup_f64_u8_Test0() call_conv( "C" ) : tup[ f64, u8 ];
+fn nomangle Get_tup_f64_i16_Test0() call_conv( "C" ) : tup[ f64, i16 ];
+fn nomangle Get_tup_f64_u32_Test0() call_conv( "C" ) : tup[ f64, u32 ];
+fn nomangle Get_tup_f64_i64_Test0() call_conv( "C" ) : tup[ f64, i64 ];
+fn nomangle Get_tup_f64_u128_Test0() call_conv( "C" ) : tup[ f64, u128 ];
+fn nomangle Get_tup_f64_f32_Test0() call_conv( "C" ) : tup[ f64, f32 ];
+fn nomangle Get_tup_f64_f64_Test0() call_conv( "C" ) : tup[ f64, f64 ];
 
 // Function to execute C++ functions passing arguments to Ü code.
 fn nomangle TestPassingValuesToUCode() call_conv( "C" );
