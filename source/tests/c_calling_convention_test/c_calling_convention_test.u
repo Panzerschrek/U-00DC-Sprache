@@ -3450,14 +3450,42 @@ fn nomangle U_Get_char8_x16_Test0() call_conv( "C" ) : [ char8, 16 ] { return "E
 fn nomangle U_Get_char8_x17_Test0() call_conv( "C" ) : [ char8, 17 ] { return "XY = 33 + 44 - 55"; }
 fn nomangle U_Get_char8_x32_Test0() call_conv( "C" ) : [ char8, 32 ] { return "0123456789abcdefFEDCBA9876543210"; }
 fn nomangle U_Get_char8_x39_Test0() call_conv( "C" ) : [ char8, 39 ] { return "Ficket euch, ihr beleidigt meine Augen!"; }
+fn nomangle U_Get_tup_i8_i8_Test0() call_conv( "C" ) : tup[ i8, i8 ]
+{
+	var tup[ i8, i8 ] res[ 37i8, -98i8 ];
+	return res;
+}
+fn nomangle U_Get_tup_i8_u16_Test0() call_conv( "C" ) : tup[ i8, u16 ]
+{
+	var tup[ i8, u16 ] res[ 97i8, 35712u16 ];
+	return res;
+}
+fn nomangle U_Get_tup_i8_i32_Test0() call_conv( "C" ) : tup[ i8, i32 ]
+{
+	var tup[ i8, i32 ] res[ -67i8, -543467432 ];
+	return res;
+}
+fn nomangle U_Get_tup_i8_u64_Test0() call_conv( "C" ) : tup[ i8, u64 ]
+{
+	var tup[ i8, u64 ] res[ -67i8, 0x0022446688AACCEEu ];
+	return res;
+}
+fn nomangle U_Get_tup_i8_i128_Test0() call_conv( "C" ) : tup[ i8, i128 ]
+{
+	var tup[ i8, i128 ] res[ 78i8, ( ( 0x0022446688AACCEEi128 << 64u ) | 0x1133557799BBDDFFi128 ) ];
+	return res;
+}
+fn nomangle U_Get_tup_i8_f32_Test0() call_conv( "C" ) : tup[ i8, f32 ]
+{
+	var tup[ i8, f32 ] res[ 127i8, 89.5f ];
+	return res;
+}
+fn nomangle U_Get_tup_i8_f64_Test0() call_conv( "C" ) : tup[ i8, f64 ]
+{
+	var tup[ i8, f64 ] res[ i8(-128), -674730004400.0 ];
+	return res;
+}
 /*
-fn nomangle U_Get_tup_i8_i8_Test0() call_conv( "C" ) : tup[ i8, i8 ];
-fn nomangle U_Get_tup_i8_u16_Test0() call_conv( "C" ) : tup[ i8, u16 ];
-fn nomangle U_Get_tup_i8_i32_Test0() call_conv( "C" ) : tup[ i8, i32 ];
-fn nomangle U_Get_tup_i8_u64_Test0() call_conv( "C" ) : tup[ i8, u64 ];
-fn nomangle U_Get_tup_i8_i128_Test0() call_conv( "C" ) : tup[ i8, i128 ];
-fn nomangle U_Get_tup_i8_f32_Test0() call_conv( "C" ) : tup[ i8, f32 ];
-fn nomangle U_Get_tup_i8_f64_Test0() call_conv( "C" ) : tup[ i8, f64 ];
 fn nomangle U_Get_tup_u16_u8_Test0() call_conv( "C" ) : tup[ u16, u8 ];
 fn nomangle U_Get_tup_u16_i16_Test0() call_conv( "C" ) : tup[ u16, i16 ];
 fn nomangle U_Get_tup_u16_u32_Test0() call_conv( "C" ) : tup[ u16, u32 ];

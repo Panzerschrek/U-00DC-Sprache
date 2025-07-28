@@ -7,10 +7,47 @@
 #define TEST_ASSERT(x) { if( !(x) ) { std::cerr << "Line " << __LINE__ << " assertion failed: " << #x << std::endl; std::abort(); } }
 
 // std::tuple isn't POD, so, use our own replacement.
-template<typename T0> struct Tuple1 { T0 v0; };
-template<typename T0, typename T1> struct Tuple2{ T0 v0; T1 v1; };
-template<typename T0, typename T1, typename T2> struct Tuple3{ T0 v0; T1 v1; T2 v2; };
-template<typename T0, typename T1, typename T2, typename T3> struct Tuple4{ T0 v0; T1 v1; T2 v2; T3 v3; };
+template<typename T0> struct Tuple1
+{
+	T0 v0;
+	bool operator==( const Tuple1& other ) const
+	{
+		return this->v0 == other.v0;
+	}
+};
+
+template<typename T0, typename T1> struct Tuple2
+{
+	T0 v0;
+	T1 v1;
+	bool operator==( const Tuple2& other ) const
+	{
+		return this->v0 == other.v0 && this->v1 == other.v1;
+	}
+};
+
+template<typename T0, typename T1, typename T2> struct Tuple3
+{
+	T0 v0;
+	T1 v1;
+	T2 v2;
+	bool operator==( const Tuple3& other ) const
+	{
+		return this->v0 == other.v0 && this->v1 == other.v1 && this->v2 == other.v2;
+	}
+};
+
+template<typename T0, typename T1, typename T2, typename T3> struct Tuple4
+{
+	T0 v0;
+	T1 v1;
+	T2 v2;
+	T3 v3;
+	bool operator==( const Tuple4& other ) const
+	{
+		return this->v0 == other.v0 && this->v1 == other.v1 && this->v2 == other.v2 && this->v3 == other.v3;
+	}
+};
 
 extern "C"
 {
@@ -1488,84 +1525,13 @@ std::array<char, 16> U_Get_char8_x16_Test0();
 std::array<char, 17> U_Get_char8_x17_Test0();
 std::array<char, 32> U_Get_char8_x32_Test0();
 std::array<char, 39> U_Get_char8_x39_Test0();
-/*
-stub_type U_Get_tup_i8_i8_Test0() : tup[ i8, i8 ];
-stub_type U_Get_tup_i8_u16_Test0() : tup[ i8, u16 ];
-stub_type U_Get_tup_i8_i32_Test0() : tup[ i8, i32 ];
-stub_type U_Get_tup_i8_u64_Test0() : tup[ i8, u64 ];
-stub_type U_Get_tup_i8_i128_Test0() : tup[ i8, i128 ];
-stub_type U_Get_tup_i8_f32_Test0() : tup[ i8, f32 ];
-stub_type U_Get_tup_i8_f64_Test0() : tup[ i8, f64 ];
-stub_type U_Get_tup_u16_u8_Test0() : tup[ u16, u8 ];
-stub_type U_Get_tup_u16_i16_Test0() : tup[ u16, i16 ];
-stub_type U_Get_tup_u16_u32_Test0() : tup[ u16, u32 ];
-stub_type U_Get_tup_u16_i64_Test0() : tup[ u16, i64 ];
-stub_type U_Get_tup_u16_u128_Test0() : tup[ u16, u128 ];
-stub_type U_Get_tup_u16_f32_Test0() : tup[ u16, f32 ];
-stub_type U_Get_tup_u16_f64_Test0() : tup[ u16, f64 ];
-stub_type U_Get_tup_i32_i8_Test0() : tup[ i32, i8 ];
-stub_type U_Get_tup_i32_u16_Test0() : tup[ i32, u16 ];
-stub_type U_Get_tup_i32_i32_Test0() : tup[ i32, i32 ];
-stub_type U_Get_tup_i32_u64_Test0() : tup[ i32, u64 ];
-stub_type U_Get_tup_i32_i128_Test0() : tup[ i32, i128 ];
-stub_type U_Get_tup_i32_f32_Test0() : tup[ i32, f32 ];
-stub_type U_Get_tup_i32_f64_Test0() : tup[ i32, f64 ];
-stub_type U_Get_tup_u64_u8_Test0() : tup[ u64, u8 ];
-stub_type U_Get_tup_u64_i16_Test0() : tup[ u64, i16 ];
-stub_type U_Get_tup_u64_u32_Test0() : tup[ u64, u32 ];
-stub_type U_Get_tup_u64_i64_Test0() : tup[ u64, i64 ];
-stub_type U_Get_tup_u64_u128_Test0() : tup[ u64, u128 ];
-stub_type U_Get_tup_u64_f32_Test0() : tup[ u64, f32 ];
-stub_type U_Get_tup_u64_f64_Test0() : tup[ u64, f64 ];
-stub_type U_Get_tup_f32_i8_Test0() : tup[ f32, i8 ];
-stub_type U_Get_tup_f32_u16_Test0() : tup[ f32, u16 ];
-stub_type U_Get_tup_f32_i32_Test0() : tup[ f32, i32 ];
-stub_type U_Get_tup_f32_u64_Test0() : tup[ f32, u64 ];
-stub_type U_Get_tup_f32_i128_Test0() : tup[ f32, i128 ];
-stub_type U_Get_tup_f32_f32_Test0() : tup[ f32, f32 ];
-stub_type U_Get_tup_f32_f64_Test0() : tup[ f32, f64 ];
-stub_type U_Get_tup_f64_u8_Test0() : tup[ f64, u8 ];
-stub_type U_Get_tup_f64_i16_Test0() : tup[ f64, i16 ];
-stub_type U_Get_tup_f64_u32_Test0() : tup[ f64, u32 ];
-stub_type U_Get_tup_f64_i64_Test0() : tup[ f64, i64 ];
-stub_type U_Get_tup_f64_u128_Test0() : tup[ f64, u128 ];
-stub_type U_Get_tup_f64_f32_Test0() : tup[ f64, f32 ];
-stub_type U_Get_tup_f64_f64_Test0() : tup[ f64, f64 ];
-stub_type U_Get_tup_u32_u16_u8_Test0() : tup[ u32, u16, u8 ];
-stub_type U_Get_tup_u32_u16_u16_Test0() : tup[ u32, u16, u16 ];
-stub_type U_Get_tup_u8_u16_u32_Test0() : tup[ u8, u16, u32 ];
-stub_type U_Get_tup_u16_u16_u32_Test0() : tup[ u16, u16, u32 ];
-stub_type U_Get_tup_u64_u32_u16_u8_Test0() : tup[ u64, u32, u16, u8 ];
-stub_type U_Get_tup_u64_u32_u16_u16_Test0() : tup[ u64, u32, u16, u16 ];
-stub_type U_Get_tup_u8_u16_u32_u64_Test0() : tup[ u8, u16, u32, u64 ];
-stub_type U_Get_tup_u16_u16_u32_u64_Test0() : tup[ u16, u16, u32, u64 ];
-stub_type U_Get_tup_u8_u16_u8_Test0() : tup[ u8, u16, u8 ];
-stub_type U_Get_tup_u8_u32_u8_Test0() : tup[ u8, u32, u8 ];
-stub_type U_Get_tup_u8_u64_u8_Test0() : tup[ u8, u64, u8 ];
-stub_type U_Get_tup_u16_u32_u16_Test0() : tup[ u16, u32, u16 ];
-stub_type U_Get_tup_u16_u64_u16_Test0() : tup[ u16, u64, u16 ];
-stub_type U_Get_tup_u32_u64_u32_Test0() : tup[ u32, u64, u32 ];
-stub_type U_Get_tup_f32_i32_i32_Test0() : tup[ f32, i32, i32 ];
-stub_type U_Get_tup_i32_f32_i32_Test0() : tup[ i32, f32, i32 ];
-stub_type U_Get_tup_i32_i32_f32_Test0() : tup[ i32, i32, f32 ];
-stub_type U_Get_tup_f32_u64_u64_Test0() : tup[ f32, u64, u64 ];
-stub_type U_Get_tup_u64_f32_u64_Test0() : tup[ u64, f32, u64 ];
-stub_type U_Get_tup_u64_u64_f32_Test0() : tup[ u64, u64, f32 ];
-stub_type U_Get_tup_f64_i32_i32_Test0() : tup[ f64, i32, i32 ];
-stub_type U_Get_tup_i32_f64_i32_Test0() : tup[ i32, f64, i32 ];
-stub_type U_Get_tup_i32_i32_f64_Test0() : tup[ i32, i32, f64 ];
-stub_type U_Get_tup_f64_u64_u64_Test0() : tup[ f64, u64, u64 ];
-stub_type U_Get_tup_u64_f64_u64_Test0() : tup[ u64, f64, u64 ];
-stub_type U_Get_tup_u64_u64_f64_Test0() : tup[ u64, u64, f64 ];
-stub_type U_Get_tup_f32_f32_f32_Test0() : tup[ f32, f32, f32 ];
-stub_type U_Get_tup_f32_f32_f64_Test0() : tup[ f32, f32, f64 ];
-stub_type U_Get_tup_f32_f64_f32_Test0() : tup[ f32, f64, f32 ];
-stub_type U_Get_tup_f32_f64_f64_Test0() : tup[ f32, f64, f64 ];
-stub_type U_Get_tup_f64_f32_f32_Test0() : tup[ f64, f32, f32 ];
-stub_type U_Get_tup_f64_f32_f64_Test0() : tup[ f64, f32, f64 ];
-stub_type U_Get_tup_f64_f64_f32_Test0() : tup[ f64, f64, f32 ];
-stub_type U_Get_tup_f64_f64_f64_Test0() : tup[ f64, f64, f64 ];
-*/
+Tuple2<int8_t, int8_t> U_Get_tup_i8_i8_Test0();
+Tuple2<int8_t, uint16_t> U_Get_tup_i8_u16_Test0();
+Tuple2<int8_t, int32_t> U_Get_tup_i8_i32_Test0();
+Tuple2<int8_t, uint64_t> U_Get_tup_i8_u64_Test0();
+Tuple2<int8_t, __int128_t> U_Get_tup_i8_i128_Test0();
+Tuple2<int8_t, float> U_Get_tup_i8_f32_Test0();
+Tuple2<int8_t, double> U_Get_tup_i8_f64_Test0();
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
@@ -2231,6 +2197,35 @@ void TestPassingValuesToUCode()
 	TEST_ASSERT( std::memcmp( U_Get_char8_x17_Test0().data(), "XY = 33 + 44 - 55", 17 ) == 0 );
 	TEST_ASSERT( std::memcmp( U_Get_char8_x32_Test0().data(), "0123456789abcdefFEDCBA9876543210", 32 ) == 0 );
 	TEST_ASSERT( std::memcmp( U_Get_char8_x39_Test0().data(), "Ficket euch, ihr beleidigt meine Augen!", 39 ) == 0 );
+	{
+		const Tuple2<int8_t, int8_t> expected{ 37, -98 };
+		TEST_ASSERT( U_Get_tup_i8_i8_Test0() == expected );
+	}
+	{
+		const Tuple2<int8_t, uint16_t> expected{ 97, 35712 };
+		TEST_ASSERT( U_Get_tup_i8_u16_Test0() == expected );
+	}
+	{
+		const Tuple2<int8_t, int32_t> expected{ -67, -543467432 };
+		TEST_ASSERT( U_Get_tup_i8_i32_Test0() == expected );
+	}
+	{
+		const Tuple2<int8_t, uint64_t> expected{ -67, 0x0022446688AACCEEu };
+		TEST_ASSERT( U_Get_tup_i8_u64_Test0() == expected );
+	}
+	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	{
+		const Tuple2<int8_t, __int128_t> expected{ 78, ( __int128_t(0x0022446688AACCEEll) << 64u ) | 0x1133557799BBDDFFll };
+		TEST_ASSERT( U_Get_tup_i8_i128_Test0() == expected );
+	}
+	{
+		const Tuple2<int8_t, float> expected{ 127, 89.5f };
+		TEST_ASSERT( U_Get_tup_i8_f32_Test0() == expected );
+	}
+	{
+		const Tuple2<int8_t, double> expected{ -128, -674730004400.0 };
+		TEST_ASSERT( U_Get_tup_i8_f64_Test0() == expected );
+	}
 }
 
 int8_t Get_i8_Test0() { return 117; }
