@@ -1919,6 +1919,20 @@ Tuple2<double, int64_t> Get_tup_f64_i64_Test0() { return { -23.2, 0x0022446688AA
 Tuple2<double, __uint128_t> Get_tup_f64_u128_Test0() { return { 7477.5, ( __uint128_t( 0x0022446688AACCEEull ) << 64u ) | 0x1133557799BBDDFFull }; }
 Tuple2<double, float> Get_tup_f64_f32_Test0() { return { 733333300000000.0, 89.5f }; }
 Tuple2<double, double> Get_tup_f64_f64_Test0() { return { -6723667.5, -674730004400.0 }; }
+Tuple3<uint32_t, uint16_t, uint8_t> Get_tup_u32_u16_u8_Test0() { return { 0x01234567, 0x89AB, 0xCD }; }
+Tuple3<uint32_t, uint16_t, uint16_t> Get_tup_u32_u16_u16_Test0() { return { 0x01234567, 0x89ABu, 0xCDEF }; }
+Tuple3<uint8_t, uint16_t, uint32_t> Get_tup_u8_u16_u32_Test0() { return { 0x01, 0x2345, 0x6789ABCD }; }
+Tuple3<uint16_t, uint16_t, uint32_t> Get_tup_u16_u16_u32_Test0() { return { 0x0123, 0x4567, 0x89ABCDEF }; }
+Tuple4<uint64_t, uint32_t, uint16_t, uint8_t> Get_tup_u64_u32_u16_u8_Test0() { return { 0xFEDCBA9876543210, 0x01234567, 0x89AB, 0xCD }; }
+Tuple4<uint64_t, uint32_t, uint16_t, uint16_t> Get_tup_u64_u32_u16_u16_Test0() { return { 0xFEDCBA9876543210, 0x01234567, 0x89AB, 0xCDEF }; }
+Tuple4<uint8_t, uint16_t, uint32_t, uint64_t> Get_tup_u8_u16_u32_u64_Test0() { return { 0x01, 0x2345, 0x6789ABCD, 0xFEDCBA9876543210 }; }
+Tuple4<uint16_t, uint16_t, uint32_t, uint64_t> Get_tup_u16_u16_u32_u64_Test0() { return { 0x0123, 0x4567, 0x89ABCDEF, 0xFEDCBA9876543210 }; }
+Tuple3<uint8_t, uint16_t, uint8_t> Get_tup_u8_u16_u8_Test0() { return { 0xFE, 0xDCBA, 0x98 }; }
+Tuple3<uint8_t, uint32_t, uint8_t> Get_tup_u8_u32_u8_Test0() { return { 0xFE, 0xDCBA9876, 0x54 }; }
+Tuple3<uint8_t, uint64_t, uint8_t> Get_tup_u8_u64_u8_Test0() { return { 0xAB, 0x0123456789ABCDEF, 0x12 }; }
+Tuple3<uint16_t, uint32_t, uint16_t> Get_tup_u16_u32_u16_Test0() { return { 0x0123, 0x456789AB, 0xCDEF }; }
+Tuple3<uint16_t, uint64_t, uint16_t> Get_tup_u16_u64_u16_Test0() { return { 0xFEDC, 0x17283A4B5C6D7E8F, 0x9876 }; }
+Tuple3<uint32_t, uint64_t, uint32_t> Get_tup_u32_u64_u32_Test0() { return { 0x01234567, 0x17283A4B5C6D7E8F, 0x89ABCEDF }; }
 
 #pragma GCC diagnostic pop
 
