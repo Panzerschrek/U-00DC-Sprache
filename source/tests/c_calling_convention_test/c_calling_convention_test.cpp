@@ -1421,6 +1421,17 @@ std::array<int8_t, 15> U_Get_i8_x15_Test0();
 std::array<int8_t, 16> U_Get_i8_x16_Test0();
 std::array<int8_t, 17> U_Get_i8_x17_Test0();
 std::array<int8_t, 35> U_Get_i8_x35_Test0();
+std::array<uint16_t, 1> U_Get_u16_x1_Test0();
+std::array<uint16_t, 2> U_Get_u16_x2_Test0();
+std::array<uint16_t, 3> U_Get_u16_x3_Test0();
+std::array<uint16_t, 4> U_Get_u16_x4_Test0();
+std::array<uint16_t, 5> U_Get_u16_x5_Test0();
+std::array<uint16_t, 6> U_Get_u16_x6_Test0();
+std::array<uint16_t, 7> U_Get_u16_x7_Test0();
+std::array<uint16_t, 8> U_Get_u16_x8_Test0();
+std::array<uint16_t, 9> U_Get_u16_x9_Test0();
+std::array<uint16_t, 15> U_Get_u16_x15_Test0();
+std::array<uint16_t, 21> U_Get_u16_x21_Test0();
 
 #pragma GCC diagnostic pop
 
@@ -1885,6 +1896,51 @@ void TestPassingValuesToUCode()
 		const auto res= U_Get_i8_x35_Test0();
 		for( int32_t i= 0; i < 35; ++i )
 			TEST_ASSERT( res[ size_t(i) ] == int8_t( i * i - 5 * i - 2 ) );
+	}
+	{
+		const std::array<uint16_t, 1> expected{ 0xABCD };
+		TEST_ASSERT( U_Get_u16_x1_Test0() == expected );
+	}
+	{
+		const std::array<uint16_t, 2> expected{ 0xEF01, 0x2345 };
+		TEST_ASSERT( U_Get_u16_x2_Test0() == expected );
+	}
+	{
+		const std::array<uint16_t, 3> expected{ 0x6789, 0xABCD, 0xEF01 };
+		TEST_ASSERT( U_Get_u16_x3_Test0() == expected );
+	}
+	{
+		const std::array<uint16_t, 4> expected{ 0x2345, 0x6789, 0xABCD, 0xEF01 };
+		TEST_ASSERT( U_Get_u16_x4_Test0() == expected );
+	}
+	{
+		const std::array<uint16_t, 5> expected{ 0x2233, 0x4455, 0x6677, 0x8899, 0xAABB };
+		TEST_ASSERT( U_Get_u16_x5_Test0() == expected );
+	}
+	{
+		const std::array<uint16_t, 6> expected{ 0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666 };
+		TEST_ASSERT( U_Get_u16_x6_Test0() == expected );
+	}
+	{
+		const std::array<uint16_t, 7> expected{ 0x0123, 0x1234, 0x2345, 0x3456, 0x4567, 0x5678, 0x6789 };
+		TEST_ASSERT( U_Get_u16_x7_Test0() == expected );
+	}
+	{
+		const std::array<uint16_t, 8> expected{ 0xFEDC, 0xBA98, 0x7654, 0x3210, 0xDEAD, 0xC0DE, 0xB00B, 0xEBA0 };
+		TEST_ASSERT( U_Get_u16_x8_Test0() == expected );
+	}
+	{
+		const std::array<uint16_t, 9> expected{ 0x4444, 0x5555, 0x6666, 0x7777, 0x8888, 0x9999, 0xAAAA, 0xBBBB, 0xCCCC };
+		TEST_ASSERT( U_Get_u16_x9_Test0() == expected );
+	}
+	{
+		const std::array<uint16_t, 15> expected{ 0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666, 0x7777, 0x8888, 0x9999, 0xAAAA, 0xBBBB, 0xCCCC, 0xDDDD, 0xEEEE, 0xFFFF };
+		TEST_ASSERT( U_Get_u16_x15_Test0() == expected );
+	}
+	{
+		const auto res= U_Get_u16_x21_Test0();
+		for( uint32_t i = 0u; i < 21u; ++i )
+			TEST_ASSERT( res[ size_t(i) ] == uint16_t( i * i * 15u + i * 23u + 17u ) );
 	}
 }
 

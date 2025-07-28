@@ -3194,18 +3194,66 @@ fn nomangle U_Get_i8_x35_Test0() call_conv( "C" ) : [ i8, 35 ]
 	}
 	return res;
 }
+fn nomangle U_Get_u16_x1_Test0() call_conv( "C" ) : [ u16, 1 ]
+{
+	var [ u16, 1 ] res[ 0xABCDu16 ];
+	return res;
+}
+fn nomangle U_Get_u16_x2_Test0() call_conv( "C" ) : [ u16, 2 ]
+{
+	var [ u16, 2 ] res[ 0xEF01u16, 0x2345u16 ];
+	return res;
+}
+fn nomangle U_Get_u16_x3_Test0() call_conv( "C" ) : [ u16, 3 ]
+{
+	var [ u16, 3 ] res[ 0x6789u16, 0xABCDu16, 0xEF01u16 ];
+	return res;
+}
+fn nomangle U_Get_u16_x4_Test0() call_conv( "C" ) : [ u16, 4 ]
+{
+	var [ u16, 4 ] res[ 0x2345u16, 0x6789u16, 0xABCDu16, 0xEF01u16 ];
+	return res;
+}
+fn nomangle U_Get_u16_x5_Test0() call_conv( "C" ) : [ u16, 5 ]
+{
+	var [ u16, 5 ] res[ 0x2233u16, 0x4455u16, 0x6677u16, 0x8899u16, 0xAABBu16 ];
+	return res;
+}
+fn nomangle U_Get_u16_x6_Test0() call_conv( "C" ) : [ u16, 6 ]
+{
+	var [ u16, 6 ] res[ 0x1111u16, 0x2222u16, 0x3333u16, 0x4444u16, 0x5555u16, 0x6666u16 ];
+	return res;
+}
+fn nomangle U_Get_u16_x7_Test0() call_conv( "C" ) : [ u16, 7 ]
+{
+	var [ u16, 7 ] res[ 0x0123u16, 0x1234u16, 0x2345u16, 0x3456u16, 0x4567u16, 0x5678u16, 0x6789u16 ];
+	return res;
+}
+fn nomangle U_Get_u16_x8_Test0() call_conv( "C" ) : [ u16, 8 ]
+{
+	var [ u16, 8 ] res[ 0xFEDCu16, 0xBA98u16, 0x7654u16, 0x3210u16, 0xDEADu16, 0xC0DEu16, 0xB00Bu16, 0xEBA0u16  ];
+	return res;
+}
+fn nomangle U_Get_u16_x9_Test0() call_conv( "C" ) : [ u16, 9 ]
+{
+	var [ u16, 9 ] res[ 0x4444u16, 0x5555u16, 0x6666u16, 0x7777u16, 0x8888u16, 0x9999u16, 0xAAAAu16, 0xBBBBu16, 0xCCCCu16 ];
+	return res;
+}
+fn nomangle U_Get_u16_x15_Test0() call_conv( "C" ) : [ u16, 15 ]
+{
+	var [ u16, 15 ] res[ 0x1111u16, 0x2222u16, 0x3333u16, 0x4444u16, 0x5555u16, 0x6666u16, 0x7777u16, 0x8888u16, 0x9999u16, 0xAAAAu16, 0xBBBBu16, 0xCCCCu16, 0xDDDDu16, 0xEEEEu16, 0xFFFFu16  ];
+	return res;
+}
+fn nomangle U_Get_u16_x21_Test0() call_conv( "C" ) : [ u16, 21 ]
+{
+	var [ u16, 21 ] mut res= zero_init;
+	for( auto mut i= 0u; i < 21u; ++i )
+	{
+		res[ size_type(i) ] = u16( i * i * 15u + i * 23u + 17u );
+	}
+	return res;
+}
 /*
-fn nomangle U_Get_u16_x1_Test0() call_conv( "C" ) : [ u16, 1 ];
-fn nomangle U_Get_u16_x2_Test0() call_conv( "C" ) : [ u16, 2 ];
-fn nomangle U_Get_u16_x3_Test0() call_conv( "C" ) : [ u16, 3 ];
-fn nomangle U_Get_u16_x4_Test0() call_conv( "C" ) : [ u16, 4 ];
-fn nomangle U_Get_u16_x5_Test0() call_conv( "C" ) : [ u16, 5 ];
-fn nomangle U_Get_u16_x6_Test0() call_conv( "C" ) : [ u16, 6 ];
-fn nomangle U_Get_u16_x7_Test0() call_conv( "C" ) : [ u16, 7 ];
-fn nomangle U_Get_u16_x8_Test0() call_conv( "C" ) : [ u16, 8 ];
-fn nomangle U_Get_u16_x9_Test0() call_conv( "C" ) : [ u16, 9 ];
-fn nomangle U_Get_u16_x15_Test0() call_conv( "C" ) : [ u16, 15 ];
-fn nomangle U_Get_u16_x21_Test0() call_conv( "C" ) : [ u16, 21 ];
 fn nomangle U_Get_i32_x1_Test0() call_conv( "C" ) : [ i32, 1 ];
 fn nomangle U_Get_i32_x2_Test0() call_conv( "C" ) : [ i32, 2 ];
 fn nomangle U_Get_i32_x3_Test0() call_conv( "C" ) : [ i32, 3 ];
