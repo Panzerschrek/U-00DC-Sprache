@@ -1678,7 +1678,7 @@ void CodeBuilder::BuildFuncCode(
 				const ICallingConventionInfo::ArgumentPassing argument_passing=
 					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateValueArgumentPassingInfo( param.type );
 
-				if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+				if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingDirect>( argument_passing ) )
 				{
 					variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
 					CreateLifetimeStart( function_context, variable->llvm_value );
@@ -1686,7 +1686,7 @@ void CodeBuilder::BuildFuncCode(
 					// Store direct argument using address of object allocated on stack.
 					// TODO - use typed store (with TBAA metadata)?
 					llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( &llvm_arg, variable->llvm_value );
-					store_instruction->setAlignment( llvm::Align( uint64_t( direct_passing->load_store_alignment ) ) );
+					store_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
 				}
 				else
 				{

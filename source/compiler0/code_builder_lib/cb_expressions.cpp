@@ -4233,7 +4233,7 @@ Value CodeBuilder::DoCallFunction(
 						if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
 						{
 							llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( direct_passing->llvm_type, expr->llvm_value );
-							load_instruction->setAlignment( llvm::Align( uint64_t( direct_passing->load_store_alignment ) ) );
+							load_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
 							llvm_args[arg_number]= load_instruction;
 						}
 						else if(
@@ -4279,7 +4279,7 @@ Value CodeBuilder::DoCallFunction(
 						if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
 						{
 							llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( direct_passing->llvm_type, arg_copy );
-							load_instruction->setAlignment( llvm::Align( uint64_t( direct_passing->load_store_alignment ) ) );
+							load_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
 							llvm_args[arg_number]= load_instruction;
 						}
 						else if(
@@ -4482,10 +4482,10 @@ Value CodeBuilder::DoCallFunction(
 			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
 				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
 
-			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
+			if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingDirect>( return_value_passing ) )
 			{
-				llvm::StoreInst* store_instruction= function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
-				store_instruction->setAlignment( llvm::Align( uint64_t( direct_passing->load_store_alignment ) ) );
+				llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
+				store_instruction->setAlignment( data_layout_.getABITypeAlign( function_type.return_type.GetLLVMType() ) );
 			}
 			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
 			{}

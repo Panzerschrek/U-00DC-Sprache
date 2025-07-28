@@ -59,7 +59,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= f->llvm_type;
-		argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( f->llvm_type ).value() );
 		if( IsSignedInteger( f->fundamental_type ) )
 			argument_passing.sext= true;
 		else if(
@@ -76,7 +75,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( e->underlying_type.llvm_type ).value() );
 		argument_passing.zext= true; // Enums are usniged.
 		return argument_passing;
 	}
@@ -85,7 +83,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= fp->llvm_type;
-		argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( fp->llvm_type ).value() );
 		// It seems like zero extension isn't necessary for pointers.
 		return argument_passing;
 	}
@@ -94,7 +91,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= p->llvm_type;
-		argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( p->llvm_type ).value() );
 		// It seems like zero extension isn't necessary for pointers.
 		return argument_passing;
 	}
@@ -105,7 +101,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 		{
 			ArgumentPassingDirect argument_passing;
 			argument_passing.llvm_type= single_scalar;
-			argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
 			// TODO - set sext/zext?
 			return argument_passing;
 		}
@@ -119,7 +114,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 		{
 			ArgumentPassingDirect argument_passing;
 			argument_passing.llvm_type= single_scalar;
-			argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
 			// TODO - set sext/zext?
 			return argument_passing;
 		}
@@ -133,7 +127,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 		{
 			ArgumentPassingDirect argument_passing;
 			argument_passing.llvm_type= single_scalar;
-			argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
 			// TODO - set sext/zext?
 			return argument_passing;
 		}
@@ -152,7 +145,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= f->llvm_type;
-		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( f->llvm_type ).value() );
 		return return_value_passing;
 	}
 
@@ -160,7 +152,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= e->underlying_type.llvm_type;
-		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( e->underlying_type.llvm_type ).value() );
 		return return_value_passing;
 	}
 
@@ -168,7 +159,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= fp->llvm_type;
-		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( fp->llvm_type ).value() );
 		return return_value_passing;
 	}
 
@@ -176,7 +166,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= p->llvm_type;
-		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( p->llvm_type ).value() );
 		return return_value_passing;
 	}
 
@@ -186,7 +175,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 		{
 			ReturnValuePassingDirect return_value_passing;
 			return_value_passing.llvm_type= single_scalar;
-			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
 			return return_value_passing;
 		}
 		else
@@ -199,7 +187,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 		{
 			ReturnValuePassingDirect return_value_passing;
 			return_value_passing.llvm_type= single_scalar;
-			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
 			return return_value_passing;
 		}
 		else
@@ -212,7 +199,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 		{
 			ReturnValuePassingDirect return_value_passing;
 			return_value_passing.llvm_type= single_scalar;
-			return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( single_scalar ).value() );
 			return return_value_passing;
 		}
 		else
@@ -271,7 +257,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= f->llvm_type;
-		argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( f->llvm_type ).value() );
 		if( IsSignedInteger( f->fundamental_type ) )
 			argument_passing.sext= true;
 		else if(
@@ -288,7 +273,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( e->underlying_type.llvm_type ).value() );
 		argument_passing.zext= true; // Enums are usniged.
 		return argument_passing;
 	}
@@ -297,7 +281,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= fp->llvm_type;
-		argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( fp->llvm_type ).value() );
 		// It seems like zero extension isn't necessary for pointers.
 		return argument_passing;
 	}
@@ -306,7 +289,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 	{
 		ArgumentPassingDirect argument_passing;
 		argument_passing.llvm_type= p->llvm_type;
-		argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( p->llvm_type ).value() );
 		// It seems like zero extension isn't necessary for pointers.
 		return argument_passing;
 	}
@@ -341,8 +323,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 		llvm::LLVMContext& llvm_context= llvm_type->getContext();
 
 		ArgumentPassingDirect argument_passing;
-		// Always use original type alignment.
-		argument_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( llvm_type ).value() );
 
 		if( type_size <= 8 )
 		{
@@ -392,7 +372,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::C
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= f->llvm_type;
-		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( f->llvm_type ).value() );
 		return return_value_passing;
 	}
 
@@ -400,7 +379,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::C
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= e->underlying_type.llvm_type;
-		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( e->underlying_type.llvm_type ).value() );
 		return return_value_passing;
 	}
 
@@ -408,7 +386,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::C
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= fp->llvm_type;
-		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( fp->llvm_type ).value() );
 		return return_value_passing;
 	}
 
@@ -416,7 +393,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::C
 	{
 		ReturnValuePassingDirect return_value_passing;
 		return_value_passing.llvm_type= p->llvm_type;
-		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( p->llvm_type ).value() );
 		return return_value_passing;
 	}
 
@@ -450,8 +426,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::C
 		llvm::LLVMContext& llvm_context= llvm_type->getContext();
 
 		ReturnValuePassingDirect return_value_passing;
-		// Always use original type alignment.
-		return_value_passing.load_store_alignment= uint16_t( data_layout_.getABITypeAlign( llvm_type ).value() );
 
 		if( type_size <= 8 )
 		{

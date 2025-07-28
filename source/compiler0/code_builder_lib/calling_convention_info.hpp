@@ -14,8 +14,9 @@ class ICallingConventionInfo
 public:
 	struct ArgumentPassingDirect
 	{
+		// May be different type from original argument LLVM type.
+		// Set explicit alignment for load/store instructions for this type equal to original type alignment.
 		llvm::Type* llvm_type= nullptr;
-		uint16_t load_store_alignment= 0;
 		bool sext= false;
 		bool zext= false;
 	};
@@ -31,8 +32,9 @@ public:
 
 	struct ReturnValuePassingDirect
 	{
+		// May be different type from original return LLVM type.
+		// Set explicit alignment for load/store instructions for this type equal to original type alignment.
 		llvm::Type* llvm_type= nullptr;
-		uint16_t load_store_alignment= 0;
 	};
 
 	// Pass as argument #0 a pointer, where returned value should be constructed.
