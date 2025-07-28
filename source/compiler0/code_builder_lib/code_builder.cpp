@@ -2595,6 +2595,19 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 	if( function_type.return_value_type != ValueType::Value )
 		llvm_function->addRetAttr( llvm::Attribute::NonNull );
 
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+			calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
+		if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
+		{
+			if( direct_passing->sext )
+				llvm_function->addRetAttr( llvm::Attribute::SExt );
+			if( direct_passing->zext )
+				llvm_function->addRetAttr( llvm::Attribute::ZExt );
+		}
+	}
+
 	// We can't specify dereferenceable attrubutes here, since types of reference args and return values may be still incomplete.
 	// So, setup dereferenceable attributes later, using separate pass.
 

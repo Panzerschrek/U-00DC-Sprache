@@ -35,6 +35,8 @@ public:
 		// May be different type from original return LLVM type.
 		// Set explicit alignment for load/store instructions for this type equal to original type alignment.
 		llvm::Type* llvm_type= nullptr;
+		bool sext= false;
+		bool zext= false;
 	};
 
 	// Pass as argument #0 a pointer, where returned value should be constructed.

@@ -4446,6 +4446,19 @@ Value CodeBuilder::DoCallFunction(
 		if( return_value_is_sret )
 			call_instruction->addParamAttr( 0, llvm::Attribute::get( llvm_context_, llvm::Attribute::StructRet, function_type.return_type.GetLLVMType() ) );
 
+		if( function_type.return_value_type == ValueType::Value )
+		{
+			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
+			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
+			{
+				if( direct_passing->sext )
+					call_instruction->addRetAttr( llvm::Attribute::SExt );
+				if( direct_passing->zext )
+					call_instruction->addRetAttr( llvm::Attribute::ZExt );
+			}
+		}
+
 		for( size_t i= 0u; i < function_type.params.size(); i++ )
 		{
 			const auto param_attr_index= uint32_t(i + (return_value_is_sret ? 1u : 0u ));
