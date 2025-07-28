@@ -3404,12 +3404,32 @@ fn nomangle U_Get_f32_x19_Test0() call_conv( "C" ) : [ f32, 19 ]
 	}
 	return res;
 }
+fn nomangle U_Get_f64_x1_Test0() call_conv( "C" ) : [ f64, 1 ]
+{
+	var [ f64, 1 ] res[ 0.0625 ];
+	return res;
+}
+fn nomangle U_Get_f64_x2_Test0() call_conv( "C" ) : [ f64, 2 ]
+{
+	var [ f64, 2 ] res[ -2.0625, 5757.25 ];
+	return res;
+}
+fn nomangle U_Get_f64_x3_Test0() call_conv( "C" ) : [ f64, 3 ]
+{
+	var [ f64, 3 ] res[ 34.0625, 1757.75, 6741663000000000000.0 ];
+	return res;
+}
+fn nomangle U_Get_f64_x4_Test0() call_conv( "C" ) : [ f64, 4 ]
+{
+	var [ f64, 4 ] res[ -34.0625, 1726757.75, -67523676.25, 0.005 ];
+	return res;
+}
+fn nomangle U_Get_f64_x5_Test0() call_conv( "C" ) : [ f64, 5 ]
+{
+	var [ f64, 5 ] res[ 34.0625, 172657.0, -675276.25, 3.005, 643677.2 ];
+	return res;
+}
 /*
-fn nomangle U_Get_f64_x1_Test0() call_conv( "C" ) : [ f64, 1 ];
-fn nomangle U_Get_f64_x2_Test0() call_conv( "C" ) : [ f64, 2 ];
-fn nomangle U_Get_f64_x3_Test0() call_conv( "C" ) : [ f64, 3 ];
-fn nomangle U_Get_f64_x4_Test0() call_conv( "C" ) : [ f64, 4 ];
-fn nomangle U_Get_f64_x5_Test0() call_conv( "C" ) : [ f64, 5 ];
 fn nomangle U_Get_char8_x1_Test0() call_conv( "C" ) : [ char8, 1 ];
 fn nomangle U_Get_char8_x2_Test0() call_conv( "C" ) : [ char8, 2 ];
 fn nomangle U_Get_char8_x3_Test0() call_conv( "C" ) : [ char8, 3 ];

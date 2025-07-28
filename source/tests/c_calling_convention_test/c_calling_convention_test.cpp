@@ -1460,6 +1460,11 @@ std::array<float, 7> U_Get_f32_x7_Test0();
 std::array<float, 8> U_Get_f32_x8_Test0();
 std::array<float, 9> U_Get_f32_x9_Test0();
 std::array<float, 19> U_Get_f32_x19_Test0();
+std::array<double, 1> U_Get_f64_x1_Test0();
+std::array<double, 2> U_Get_f64_x2_Test0();
+std::array<double, 3> U_Get_f64_x3_Test0();
+std::array<double, 4> U_Get_f64_x4_Test0();
+std::array<double, 5> U_Get_f64_x5_Test0();
 
 #pragma GCC diagnostic pop
 
@@ -2083,6 +2088,26 @@ void TestPassingValuesToUCode()
 		const auto res= U_Get_f32_x19_Test0();
 		for( uint32_t i= 0u; i < 19u; ++i )
 			TEST_ASSERT( res[i] == float(i) * float(i) * 13.5f - float(i) * 67.25f + 2647.0f );
+	}
+	{
+		const std::array<double, 1> expected{ 0.0625 };
+		TEST_ASSERT( U_Get_f64_x1_Test0() == expected );
+	}
+	{
+		const std::array<double, 2> expected{ -2.0625, 5757.25 };
+		TEST_ASSERT( U_Get_f64_x2_Test0() == expected );
+	}
+	{
+		const std::array<double, 3> expected{ 34.0625, 1757.75, 6741663000000000000.0 };
+		TEST_ASSERT( U_Get_f64_x3_Test0() == expected );
+	}
+	{
+		const std::array<double, 4> expected{ -34.0625, 1726757.75, -67523676.25, 0.005 };
+		TEST_ASSERT( U_Get_f64_x4_Test0() == expected );
+	}
+	{
+		const std::array<double, 5> expected{ 34.0625, 172657.0, -675276.25, 3.005, 643677.2 };
+		TEST_ASSERT( U_Get_f64_x5_Test0() == expected );
 	}
 }
 
