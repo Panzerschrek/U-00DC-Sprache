@@ -3429,26 +3429,26 @@ fn nomangle U_Get_f64_x5_Test0() call_conv( "C" ) : [ f64, 5 ]
 	var [ f64, 5 ] res[ 34.0625, 172657.0, -675276.25, 3.005, 643677.2 ];
 	return res;
 }
+fn nomangle U_Get_char8_x1_Test0() call_conv( "C" ) : [ char8, 1 ] { return "H"; }
+fn nomangle U_Get_char8_x2_Test0() call_conv( "C" ) : [ char8, 2 ] { return "-8"; }
+fn nomangle U_Get_char8_x3_Test0() call_conv( "C" ) : [ char8, 3 ] { return "Kek"; }
+fn nomangle U_Get_char8_x4_Test0() call_conv( "C" ) : [ char8, 4 ] { return "SPQR"; }
+fn nomangle U_Get_char8_x5_Test0() call_conv( "C" ) : [ char8, 5 ] { return "ApplE"; }
+fn nomangle U_Get_char8_x6_Test0() call_conv( "C" ) : [ char8, 6 ] { return "56 to "; }
+fn nomangle U_Get_char8_x7_Test0() call_conv( "C" ) : [ char8, 7 ] { return "@#--ABe"; }
+fn nomangle U_Get_char8_x8_Test0() call_conv( "C" ) : [ char8, 8 ] { return "S.P.Q.R."; }
+fn nomangle U_Get_char8_x9_Test0() call_conv( "C" ) : [ char8, 9 ] { return "Жопа!"; }
+fn nomangle U_Get_char8_x10_Test0() call_conv( "C" ) : [ char8, 10 ] { return "Black Mesa"; }
+fn nomangle U_Get_char8_x11_Test0() call_conv( "C" ) : [ char8, 11 ] { return "qwertyuiop["; }
+fn nomangle U_Get_char8_x12_Test0() call_conv( "C" ) : [ char8, 12 ] { return "][poiuytrewq"; }
+fn nomangle U_Get_char8_x13_Test0() call_conv( "C" ) : [ char8, 13 ] { return "Computerliebe"; }
+fn nomangle U_Get_char8_x14_Test0() call_conv( "C" ) : [ char8, 14 ] { return "11 + 22 = some"; }
+fn nomangle U_Get_char8_x15_Test0() call_conv( "C" ) : [ char8, 15 ] { return "ABCDEFGHIJKLMNO"; }
+fn nomangle U_Get_char8_x16_Test0() call_conv( "C" ) : [ char8, 16 ] { return "Er ist wieder da"; }
+fn nomangle U_Get_char8_x17_Test0() call_conv( "C" ) : [ char8, 17 ] { return "XY = 33 + 44 - 55"; }
+fn nomangle U_Get_char8_x32_Test0() call_conv( "C" ) : [ char8, 32 ] { return "0123456789abcdefFEDCBA9876543210"; }
+fn nomangle U_Get_char8_x39_Test0() call_conv( "C" ) : [ char8, 39 ] { return "Ficket euch, ihr beleidigt meine Augen!"; }
 /*
-fn nomangle U_Get_char8_x1_Test0() call_conv( "C" ) : [ char8, 1 ];
-fn nomangle U_Get_char8_x2_Test0() call_conv( "C" ) : [ char8, 2 ];
-fn nomangle U_Get_char8_x3_Test0() call_conv( "C" ) : [ char8, 3 ];
-fn nomangle U_Get_char8_x4_Test0() call_conv( "C" ) : [ char8, 4 ];
-fn nomangle U_Get_char8_x5_Test0() call_conv( "C" ) : [ char8, 5 ];
-fn nomangle U_Get_char8_x6_Test0() call_conv( "C" ) : [ char8, 6 ];
-fn nomangle U_Get_char8_x7_Test0() call_conv( "C" ) : [ char8, 7 ];
-fn nomangle U_Get_char8_x8_Test0() call_conv( "C" ) : [ char8, 8 ];
-fn nomangle U_Get_char8_x9_Test0() call_conv( "C" ) : [ char8, 9 ];
-fn nomangle U_Get_char8_x10_Test0() call_conv( "C" ) : [ char8, 10 ];
-fn nomangle U_Get_char8_x11_Test0() call_conv( "C" ) : [ char8, 11 ];
-fn nomangle U_Get_char8_x12_Test0() call_conv( "C" ) : [ char8, 12 ];
-fn nomangle U_Get_char8_x13_Test0() call_conv( "C" ) : [ char8, 13 ];
-fn nomangle U_Get_char8_x14_Test0() call_conv( "C" ) : [ char8, 14 ];
-fn nomangle U_Get_char8_x15_Test0() call_conv( "C" ) : [ char8, 15 ];
-fn nomangle U_Get_char8_x16_Test0() call_conv( "C" ) : [ char8, 16 ];
-fn nomangle U_Get_char8_x17_Test0() call_conv( "C" ) : [ char8, 17 ];
-fn nomangle U_Get_char8_x32_Test0() call_conv( "C" ) : [ char8, 32 ];
-fn nomangle U_Get_char8_x39_Test0() call_conv( "C" ) : [ char8, 39 ];
 fn nomangle U_Get_tup_i8_i8_Test0() call_conv( "C" ) : tup[ i8, i8 ];
 fn nomangle U_Get_tup_i8_u16_Test0() call_conv( "C" ) : tup[ i8, u16 ];
 fn nomangle U_Get_tup_i8_i32_Test0() call_conv( "C" ) : tup[ i8, i32 ];

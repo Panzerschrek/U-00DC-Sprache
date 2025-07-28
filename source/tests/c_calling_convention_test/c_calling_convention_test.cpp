@@ -1465,6 +1465,25 @@ std::array<double, 2> U_Get_f64_x2_Test0();
 std::array<double, 3> U_Get_f64_x3_Test0();
 std::array<double, 4> U_Get_f64_x4_Test0();
 std::array<double, 5> U_Get_f64_x5_Test0();
+std::array<char, 1> U_Get_char8_x1_Test0();
+std::array<char, 2> U_Get_char8_x2_Test0();
+std::array<char, 3> U_Get_char8_x3_Test0();
+std::array<char, 4> U_Get_char8_x4_Test0();
+std::array<char, 5> U_Get_char8_x5_Test0();
+std::array<char, 6> U_Get_char8_x6_Test0();
+std::array<char, 7> U_Get_char8_x7_Test0();
+std::array<char, 8> U_Get_char8_x8_Test0();
+std::array<char, 9> U_Get_char8_x9_Test0();
+std::array<char, 10> U_Get_char8_x10_Test0();
+std::array<char, 11> U_Get_char8_x11_Test0();
+std::array<char, 12> U_Get_char8_x12_Test0();
+std::array<char, 13> U_Get_char8_x13_Test0();
+std::array<char, 14> U_Get_char8_x14_Test0();
+std::array<char, 15> U_Get_char8_x15_Test0();
+std::array<char, 16> U_Get_char8_x16_Test0();
+std::array<char, 17> U_Get_char8_x17_Test0();
+std::array<char, 32> U_Get_char8_x32_Test0();
+std::array<char, 39> U_Get_char8_x39_Test0();
 
 #pragma GCC diagnostic pop
 
@@ -2109,6 +2128,25 @@ void TestPassingValuesToUCode()
 		const std::array<double, 5> expected{ 34.0625, 172657.0, -675276.25, 3.005, 643677.2 };
 		TEST_ASSERT( U_Get_f64_x5_Test0() == expected );
 	}
+	TEST_ASSERT( std::memcmp( U_Get_char8_x1_Test0().data(), "H", 1 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x2_Test0().data(), "-8", 2 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x3_Test0().data(), "Kek", 3 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x4_Test0().data(), "SPQR", 4 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x5_Test0().data(), "ApplE", 5 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x6_Test0().data(), "56 to ", 6 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x7_Test0().data(), "@#--ABe", 7 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x8_Test0().data(), "S.P.Q.R.", 8 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x9_Test0().data(), "Жопа!", 9 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x10_Test0().data(), "Black Mesa", 10 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x11_Test0().data(), "qwertyuiop[", 11 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x12_Test0().data(), "][poiuytrewq", 12 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x13_Test0().data(), "Computerliebe", 13 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x14_Test0().data(), "11 + 22 = some", 14 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x15_Test0().data(), "ABCDEFGHIJKLMNO", 15 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x16_Test0().data(), "Er ist wieder da", 16 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x17_Test0().data(), "XY = 33 + 44 - 55", 17 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x32_Test0().data(), "0123456789abcdefFEDCBA9876543210", 32 ) == 0 );
+	TEST_ASSERT( std::memcmp( U_Get_char8_x39_Test0().data(), "Ficket euch, ihr beleidigt meine Augen!", 39 ) == 0 );
 }
 
 int8_t Get_i8_Test0() { return 117; }
