@@ -1372,6 +1372,34 @@ void U_Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( uint32_t a, uint32_t b, uint32_
 void U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( double a, double b, double c, double d, double e, double f, double g, double h, Tuple2<uint64_t, double> i );
 void U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( double a, double b, double c, double d, double e, double f, double g, Tuple2<double, double> h );
 
+int8_t U_Get_i8_Test0();
+int8_t U_Get_i8_Test1();
+uint8_t U_Get_u8_Test0();
+uint8_t U_Get_u8_Test1();
+int16_t U_Get_i16_Test0();
+int16_t U_Get_i16_Test1();
+uint16_t U_Get_u16_Test0();
+uint16_t U_Get_u16_Test1();
+int32_t U_Get_i32_Test0();
+int32_t U_Get_i32_Test1();
+uint32_t U_Get_u32_Test0();
+uint32_t U_Get_u32_Test1();
+int64_t U_Get_i64_Test0();
+int64_t U_Get_i64_Test1();
+uint64_t U_Get_u64_Test0();
+uint64_t U_Get_u64_Test1();
+__int128_t U_Get_i128_Test0();
+__uint128_t U_Get_u128_Test0();
+char U_Get_char8_Test0();
+char U_Get_char8_Test1();
+char16_t U_Get_char16_Test0();
+char16_t U_Get_char16_Test1();
+char32_t U_Get_char32_Test0();
+float U_Get_f32_Test0();
+float U_Get_f32_Test1();
+double U_Get_f64_Test0();
+double U_Get_f64_Test1();
+
 void TestPassingValuesToUCode()
 {
 	U_Pass_bool_Test0( false );
@@ -1733,6 +1761,34 @@ void TestPassingValuesToUCode()
 		U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( 1.0, 774.3, -366.0, 0.125, 6336.2, 6774.0, -126.25, 0.75, { 0xFED7BA98C6543210u, 163.2 } );
 	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
 		U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( 3.0, 724.1, -365.0, -0.125, 6336.2, 6724.0, -126.85, { 631.3, 165.2 } );
+
+	TEST_ASSERT( U_Get_i8_Test0() == 117 );
+	TEST_ASSERT( U_Get_i8_Test1() == -24 );
+	TEST_ASSERT( U_Get_u8_Test0() == 104 );
+	TEST_ASSERT( U_Get_u8_Test1() == 231 );
+	TEST_ASSERT( U_Get_i16_Test0() == 12361 );
+	TEST_ASSERT( U_Get_i16_Test1() == -25331 );
+	TEST_ASSERT( U_Get_u16_Test0() == 22365 );
+	TEST_ASSERT( U_Get_u16_Test1() == 43652 );
+	TEST_ASSERT( U_Get_i32_Test0() == 534875478 );
+	TEST_ASSERT( U_Get_i32_Test1() == -34745344 );
+	TEST_ASSERT( U_Get_u32_Test0() == 0x35B6E36Fu );
+	TEST_ASSERT( U_Get_u32_Test1() == 0xE54EC57Fu );
+	TEST_ASSERT( U_Get_i64_Test0() == 474247578522 );
+	TEST_ASSERT( U_Get_i64_Test1() == -65433774422444 );
+	TEST_ASSERT( U_Get_u64_Test0() == 0x35B6E36F4E8FEC37u );
+	TEST_ASSERT( U_Get_u64_Test1() == 0xE54EC57F1E070FC1u );
+	TEST_ASSERT( U_Get_i128_Test0() == __int128_t( ( __uint128_t( 0x0123456789ABCDEFull) << 64u ) | 0xFEDCBA9876543210ull ) );
+	TEST_ASSERT( U_Get_u128_Test0() == ( ( ( __uint128_t( 0xFEDCBA9876543210ull) << 64u ) | 0x0123456789ABCDEFull ) ) );
+	TEST_ASSERT( U_Get_char8_Test0() == 'n' );
+	TEST_ASSERT( U_Get_char8_Test1() == char(145) );
+	TEST_ASSERT( U_Get_char16_Test0() == u'Й' );
+	TEST_ASSERT( U_Get_char16_Test1() == u'Ꙥ' );
+	TEST_ASSERT( U_Get_char32_Test0() == U'😀' );
+	TEST_ASSERT( U_Get_f32_Test0() == 642.05f );
+	TEST_ASSERT( U_Get_f32_Test1() == -0.012f );
+	TEST_ASSERT( U_Get_f64_Test0() == 544747366.75 );
+	TEST_ASSERT( U_Get_f64_Test1() == -34.25 );
 }
 
 int8_t Get_i8_Test0() { return 117; }
