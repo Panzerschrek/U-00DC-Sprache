@@ -2105,14 +2105,10 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_f64_f64_f32_Test0( { 0.25, -363.2, 3773440.0f } );
 	U_Pass_tup_f64_f64_f64_Test0( { 0.25, -363.2, 3773440.0 } );
 	U_Pass_u32_u32_u32_u32_u32_tup_u64_f64( 47588u, 33677u, 12u, 3785427u, 13748588u, { 0x0123456789ABCDEFu, 26376.25 } );
-	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
-		U_Pass_u32_u32_u32_u32_u32_tup_u64_u64( 47288u, 31677u, 14u, 3285427u, 13748988u, { 0x0123456789ABCDEFu, 0xFEDCBA9876543210u } );
-	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
-		U_Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( 41588u, 633677u, 7812u, 5785427u, 23748588u, 788588u, { 0xFEDCBA9876543210u, -16376.75 } );
-	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
-		U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( 1.0, 774.3, -366.0, 0.125, 6336.2, 6774.0, -126.25, 0.75, { 0xFED7BA98C6543210u, 163.2 } );
-	if( false ) // For now disabled - Compiler0 code doesn't handle such case properly. TODO - fix this.
-		U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( 3.0, 724.1, -365.0, -0.125, 6336.2, 6724.0, -126.85, { 631.3, 165.2 } );
+	U_Pass_u32_u32_u32_u32_u32_tup_u64_u64( 47288u, 31677u, 14u, 3285427u, 13748988u, { 0x0123456789ABCDEFu, 0xFEDCBA9876543210u } );
+	U_Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( 41588u, 633677u, 7812u, 5785427u, 23748588u, 788588u, { 0xFEDCBA9876543210u, -16376.75 } );
+	U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( 1.0, 774.3, -366.0, 0.125, 6336.2, 6774.0, -126.25, 0.75, { 0xFED7BA98C6543210u, 163.2 } );
+	U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( 3.0, 724.1, -365.0, -0.125, 6336.2, 6724.0, -126.85, { 631.3, 165.2 } );
 
 	TEST_ASSERT( U_Get_i8_Test0() == 117 );
 	TEST_ASSERT( U_Get_i8_Test1() == -24 );
