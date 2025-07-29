@@ -44,6 +44,7 @@ public:
 public: // ICallingConventionInfo
 	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
+	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -195,6 +196,36 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	return ReturnValuePassingByPointer{};
 }
 
+ICallingConventionInfo::CallInfo CallingConventionInfoDefault::CalculateFunctionCallInfo( const FunctionType& function_type )
+{
+	CallInfo call_info;
+
+	if( function_type.return_value_type == ValueType::Value )
+		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
+	else
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= function_type.return_type.GetLLVMType()->getPointerTo();
+		call_info.return_value_passing= std::move(return_value_passing);
+	}
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	for( size_t i= 0; i < function_type.params.size(); ++i )
+	{
+		const FunctionType::Param& param= function_type.params[i];
+		if( param.value_type == ValueType::Value )
+			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
+		else
+		{
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
+			call_info.arguments_passing[i]= std::move(argument_passing);
+		}
+	}
+
+	return call_info;
+}
+
 class CallingConventionInfoSystemV_X86_64 final : public ICallingConventionInfo
 {
 public:
@@ -203,6 +234,7 @@ public:
 public: // ICallingConventionInfo
 	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
+	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
 private:
 	enum class ArgumentClass
@@ -524,6 +556,36 @@ void CallingConventionInfoSystemV_X86_64::PostMergeArgumentClasses( ArgumentPart
 	// Do not bother for now with x87.
 }
 
+ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( const FunctionType& function_type )
+{
+	CallInfo call_info;
+
+	if( function_type.return_value_type == ValueType::Value )
+		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
+	else
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= function_type.return_type.GetLLVMType()->getPointerTo();
+		call_info.return_value_passing= std::move(return_value_passing);
+	}
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	for( size_t i= 0; i < function_type.params.size(); ++i )
+	{
+		const FunctionType::Param& param= function_type.params[i];
+		if( param.value_type == ValueType::Value )
+			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
+		else
+		{
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
+			call_info.arguments_passing[i]= std::move(argument_passing);
+		}
+	}
+
+	return call_info;
+}
+
 class CallingConventionInfoMSVC_X86_64 final : public ICallingConventionInfo
 {
 public:
@@ -532,6 +594,7 @@ public:
 public: // ICallingConventionInfo
 	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
+	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -631,6 +694,36 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86_64::Cal
 	return ReturnValuePassingByPointer{};
 }
 
+ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86_64::CalculateFunctionCallInfo( const FunctionType& function_type )
+{
+	CallInfo call_info;
+
+	if( function_type.return_value_type == ValueType::Value )
+		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
+	else
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= function_type.return_type.GetLLVMType()->getPointerTo();
+		call_info.return_value_passing= std::move(return_value_passing);
+	}
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	for( size_t i= 0; i < function_type.params.size(); ++i )
+	{
+		const FunctionType::Param& param= function_type.params[i];
+		if( param.value_type == ValueType::Value )
+			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
+		else
+		{
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
+			call_info.arguments_passing[i]= std::move(argument_passing);
+		}
+	}
+
+	return call_info;
+}
+
 class CallingConventionInfoMSVC_X86 final : public ICallingConventionInfo
 {
 public:
@@ -639,6 +732,7 @@ public:
 public: // ICallingConventionInfo
 	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
+	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -729,6 +823,36 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86::Calcul
 	return ReturnValuePassingByPointer{};
 }
 
+ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86::CalculateFunctionCallInfo( const FunctionType& function_type )
+{
+	CallInfo call_info;
+
+	if( function_type.return_value_type == ValueType::Value )
+		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
+	else
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= function_type.return_type.GetLLVMType()->getPointerTo();
+		call_info.return_value_passing= std::move(return_value_passing);
+	}
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	for( size_t i= 0; i < function_type.params.size(); ++i )
+	{
+		const FunctionType::Param& param= function_type.params[i];
+		if( param.value_type == ValueType::Value )
+			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
+		else
+		{
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
+			call_info.arguments_passing[i]= std::move(argument_passing);
+		}
+	}
+
+	return call_info;
+}
+
 class CallingConventionInfoSystemV_AArch64 final : public ICallingConventionInfo
 {
 public:
@@ -737,6 +861,7 @@ public:
 public: // ICallingConventionInfo
 	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
+	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
 private:
 	void CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types );
@@ -927,6 +1052,36 @@ void CallingConventionInfoSystemV_AArch64::CollectScalarTypes_r( llvm::Type& llv
 			CollectScalarTypes_r( *struct_type->getElementType( element_index ), out_types );
 	}
 	else U_ASSERT( false ); // Unhandled type kind.
+}
+
+ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_AArch64::CalculateFunctionCallInfo( const FunctionType& function_type )
+{
+	CallInfo call_info;
+
+	if( function_type.return_value_type == ValueType::Value )
+		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
+	else
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= function_type.return_type.GetLLVMType()->getPointerTo();
+		call_info.return_value_passing= std::move(return_value_passing);
+	}
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	for( size_t i= 0; i < function_type.params.size(); ++i )
+	{
+		const FunctionType::Param& param= function_type.params[i];
+		if( param.value_type == ValueType::Value )
+			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
+		else
+		{
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
+			call_info.arguments_passing[i]= std::move(argument_passing);
+		}
+	}
+
+	return call_info;
 }
 
 } // namespace
