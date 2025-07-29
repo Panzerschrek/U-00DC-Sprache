@@ -54,7 +54,6 @@ public:
 public:
 	virtual ~ICallingConventionInfo()= default;
 
-	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) = 0;
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) = 0;
 	// For value arguments and return value (not return reference) types should be complete prior to this call!
 	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type )= 0;

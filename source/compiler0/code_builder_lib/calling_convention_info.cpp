@@ -42,9 +42,11 @@ public:
 	explicit CallingConventionInfoDefault( llvm::DataLayout data_layout );
 
 public: // ICallingConventionInfo
-	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
 	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
+
+private:
+	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -53,77 +55,6 @@ private:
 CallingConventionInfoDefault::CallingConventionInfoDefault( llvm::DataLayout data_layout )
 	: data_layout_( std::move(data_layout) )
 {}
-
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( const Type& type )
-{
-	if( const auto f= type.GetFundamentalType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= f->llvm_type;
-		return argument_passing;
-	}
-
-	if( const auto e= type.GetEnumType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		return argument_passing;
-	}
-
-	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= fp->llvm_type;
-		return argument_passing;
-	}
-
-	if( const auto p= type.GetRawPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= p->llvm_type;
-		return argument_passing;
-	}
-
-	if( const auto c= type.GetClassType() )
-	{
-		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
-		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= single_scalar;
-			return argument_passing;
-		}
-		else
-			return ArgumentPassingByPointer{};
-	}
-
-	if( const auto a= type.GetArrayType() )
-	{
-		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
-		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= single_scalar;
-			return argument_passing;
-		}
-		else
-			return ArgumentPassingByPointer{};
-	}
-
-	if( const auto t= type.GetTupleType() )
-	{
-		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
-		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= single_scalar;
-			return argument_passing;
-		}
-		else
-			return ArgumentPassingByPointer{};
-	}
-
-	// Unhandled type kind.
-	U_ASSERT(false);
-	return ArgumentPassingByPointer{};
-}
 
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::CalculateReturnValuePassingInfo( const Type& type )
 {
@@ -226,13 +157,84 @@ ICallingConventionInfo::CallInfo CallingConventionInfoDefault::CalculateFunction
 	return call_info;
 }
 
+
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( const Type& type )
+{
+	if( const auto f= type.GetFundamentalType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= f->llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto e= type.GetEnumType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= e->underlying_type.llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto fp= type.GetFunctionPointerType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= fp->llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto p= type.GetRawPointerType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= p->llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto c= type.GetClassType() )
+	{
+		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
+		{
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= single_scalar;
+			return argument_passing;
+		}
+		else
+			return ArgumentPassingByPointer{};
+	}
+
+	if( const auto a= type.GetArrayType() )
+	{
+		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
+		{
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= single_scalar;
+			return argument_passing;
+		}
+		else
+			return ArgumentPassingByPointer{};
+	}
+
+	if( const auto t= type.GetTupleType() )
+	{
+		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
+		{
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= single_scalar;
+			return argument_passing;
+		}
+		else
+			return ArgumentPassingByPointer{};
+	}
+
+	// Unhandled type kind.
+	U_ASSERT(false);
+	return ArgumentPassingByPointer{};
+}
+
 class CallingConventionInfoSystemV_X86_64 final : public ICallingConventionInfo
 {
 public:
 	explicit CallingConventionInfoSystemV_X86_64( llvm::DataLayout data_layout );
 
 public: // ICallingConventionInfo
-	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
 	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
@@ -252,6 +254,9 @@ private:
 	static constexpr size_t c_max_argument_parts= 2;
 	using ArgumentPartClasses= std::array<ArgumentClass, c_max_argument_parts>;
 
+private:
+	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
+
 	void ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset );
 
 	static void MergeArgumentClasses( ArgumentClass& dst, const ArgumentClass src );
@@ -265,6 +270,116 @@ private:
 CallingConventionInfoSystemV_X86_64::CallingConventionInfoSystemV_X86_64( llvm::DataLayout data_layout )
 	: data_layout_( std::move(data_layout ) )
 {}
+
+ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( const Type& type )
+{
+	if( const auto f= type.GetFundamentalType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= f->llvm_type;
+		if( IsSignedInteger( f->fundamental_type ) )
+			return_value_passing.sext= true;
+		else if(
+			IsUnsignedInteger( f->fundamental_type ) ||
+			IsChar( f->fundamental_type ) ||
+			IsByte( f->fundamental_type ) ||
+			f->fundamental_type == U_FundamentalType::bool_ )
+			return_value_passing.zext= true;
+
+		return return_value_passing;
+	}
+
+	if( const auto e= type.GetEnumType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= e->underlying_type.llvm_type;
+		return_value_passing.zext= true; // Enums are unsigned.
+		return return_value_passing;
+	}
+
+	if( const auto fp= type.GetFunctionPointerType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= fp->llvm_type;
+		// It seems like zero extension isn't necessary for pointers.
+		return return_value_passing;
+	}
+
+	if( const auto p= type.GetRawPointerType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= p->llvm_type;
+		// It seems like zero extension isn't necessary for pointers.
+		return return_value_passing;
+	}
+
+	// Composite types are left.
+
+	if( type.GetClassType() != nullptr || type.GetArrayType() != nullptr || type.GetTupleType() != nullptr )
+	{
+		llvm::Type* const llvm_type= type.GetLLVMType();
+
+		const uint64_t type_size= data_layout_.getTypeAllocSize( llvm_type );
+		if( type_size > 16 )
+			return ReturnValuePassingByPointer{};
+
+		if( type_size == 0 )
+		{
+			// TODO - handle zero-sized structs properly.
+			return ReturnValuePassingByPointer{};
+		}
+
+		ArgumentPartClasses classes;
+		for( ArgumentClass& c : classes )
+			c= ArgumentClass::NoClass;
+
+		ClassifyType_r( *llvm_type, classes, 0u );
+		PostMergeArgumentClasses( classes );
+
+		if( classes[0] == ArgumentClass::Memory )
+			return ReturnValuePassingByPointer{};
+
+		llvm::LLVMContext& llvm_context= llvm_type->getContext();
+
+		ReturnValuePassingDirect return_value_passing;
+
+		if( type_size <= 8 )
+		{
+			if( classes[0] == ArgumentClass::Integer )
+				return_value_passing.llvm_type= llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 );
+			else if( classes[0] == ArgumentClass::SSE )
+				return_value_passing.llvm_type= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+			else U_ASSERT(false);
+		}
+		else if( type_size <= 16 )
+		{
+			constexpr size_t num_parts= 2;
+			std::array<llvm::Type*, num_parts> types{};
+			const uint32_t part_sizes[2]{ 8u, uint32_t(type_size)  - 8u };
+			for( size_t part= 0; part < num_parts; ++part )
+			{
+				if( classes[part] == ArgumentClass::Integer )
+					types[part]= llvm::IntegerType::get( llvm_context, part_sizes[part] * 8 );
+				else if( classes[part] == ArgumentClass::SSE )
+					types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+				else U_ASSERT(false);
+			}
+
+			// Create a tuple for two parts.
+			return_value_passing.llvm_type= llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) );
+			// TODO - set zext/sext?
+		}
+		else U_ASSERT( false );
+
+		return return_value_passing;
+	}
+	else
+	{
+		// Unhandled type kind.
+		U_ASSERT(false);
+		return ReturnValuePassingByPointer{};
+	}
+}
 
 ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_X86_64::CalculateValueArgumentPassingInfo( const Type& type )
 {
@@ -381,116 +496,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_X86_64::Cal
 	}
 }
 
-ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( const Type& type )
-{
-	if( const auto f= type.GetFundamentalType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= f->llvm_type;
-		if( IsSignedInteger( f->fundamental_type ) )
-			return_value_passing.sext= true;
-		else if(
-			IsUnsignedInteger( f->fundamental_type ) ||
-			IsChar( f->fundamental_type ) ||
-			IsByte( f->fundamental_type ) ||
-			f->fundamental_type == U_FundamentalType::bool_ )
-			return_value_passing.zext= true;
-
-		return return_value_passing;
-	}
-
-	if( const auto e= type.GetEnumType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= e->underlying_type.llvm_type;
-		return_value_passing.zext= true; // Enums are unsigned.
-		return return_value_passing;
-	}
-
-	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= fp->llvm_type;
-		// It seems like zero extension isn't necessary for pointers.
-		return return_value_passing;
-	}
-
-	if( const auto p= type.GetRawPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= p->llvm_type;
-		// It seems like zero extension isn't necessary for pointers.
-		return return_value_passing;
-	}
-
-	// Composite types are left.
-
-	if( type.GetClassType() != nullptr || type.GetArrayType() != nullptr || type.GetTupleType() != nullptr )
-	{
-		llvm::Type* const llvm_type= type.GetLLVMType();
-
-		const uint64_t type_size= data_layout_.getTypeAllocSize( llvm_type );
-		if( type_size > 16 )
-			return ReturnValuePassingByPointer{};
-
-		if( type_size == 0 )
-		{
-			// TODO - handle zero-sized structs properly.
-			return ReturnValuePassingByPointer{};
-		}
-
-		ArgumentPartClasses classes;
-		for( ArgumentClass& c : classes )
-			c= ArgumentClass::NoClass;
-
-		ClassifyType_r( *llvm_type, classes, 0u );
-		PostMergeArgumentClasses( classes );
-
-		if( classes[0] == ArgumentClass::Memory )
-			return ReturnValuePassingByPointer{};
-
-		llvm::LLVMContext& llvm_context= llvm_type->getContext();
-
-		ReturnValuePassingDirect return_value_passing;
-
-		if( type_size <= 8 )
-		{
-			if( classes[0] == ArgumentClass::Integer )
-				return_value_passing.llvm_type= llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 );
-			else if( classes[0] == ArgumentClass::SSE )
-				return_value_passing.llvm_type= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
-			else U_ASSERT(false);
-		}
-		else if( type_size <= 16 )
-		{
-			constexpr size_t num_parts= 2;
-			std::array<llvm::Type*, num_parts> types{};
-			const uint32_t part_sizes[2]{ 8u, uint32_t(type_size)  - 8u };
-			for( size_t part= 0; part < num_parts; ++part )
-			{
-				if( classes[part] == ArgumentClass::Integer )
-					types[part]= llvm::IntegerType::get( llvm_context, part_sizes[part] * 8 );
-				else if( classes[part] == ArgumentClass::SSE )
-					types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
-				else U_ASSERT(false);
-			}
-
-			// Create a tuple for two parts.
-			return_value_passing.llvm_type= llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) );
-			// TODO - set zext/sext?
-		}
-		else U_ASSERT( false );
-
-		return return_value_passing;
-	}
-	else
-	{
-		// Unhandled type kind.
-		U_ASSERT(false);
-		return ReturnValuePassingByPointer{};
-	}
-}
-
 void CallingConventionInfoSystemV_X86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset )
 {
 	if( llvm_type.isPointerTy() )
@@ -592,9 +597,11 @@ public:
 	explicit CallingConventionInfoMSVC_X86_64( llvm::DataLayout data_layout );
 
 public: // ICallingConventionInfo
-	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
 	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
+
+private:
+	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -603,51 +610,6 @@ private:
 CallingConventionInfoMSVC_X86_64::CallingConventionInfoMSVC_X86_64( llvm::DataLayout data_layout )
 	: data_layout_( std::move(data_layout) )
 {}
-
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86_64::CalculateValueArgumentPassingInfo( const Type& type )
-{
-	if( const auto f= type.GetFundamentalType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= f->llvm_type;
-		return argument_passing;
-	}
-
-	if( const auto e= type.GetEnumType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		return argument_passing;
-	}
-
-	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= fp->llvm_type;
-		return argument_passing;
-	}
-
-	if( const auto p= type.GetRawPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= p->llvm_type;
-		return argument_passing;
-	}
-
-	// Composite types are left.
-
-	// Pass composites with integer sizes as integers (even if a composite contains floating-point values).
-	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
-	if( size == 1 || size == 2 || size == 4 || size == 8 )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 );
-		return argument_passing;
-	}
-
-	// Pass other composites via pointer.
-	return ArgumentPassingByPointer{};
-}
 
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86_64::CalculateReturnValuePassingInfo( const Type& type )
 {
@@ -724,25 +686,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86_64::CalculateFunc
 	return call_info;
 }
 
-class CallingConventionInfoMSVC_X86 final : public ICallingConventionInfo
-{
-public:
-	explicit CallingConventionInfoMSVC_X86( llvm::DataLayout data_layout );
-
-public: // ICallingConventionInfo
-	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
-	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
-	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
-
-private:
-	const llvm::DataLayout data_layout_;
-};
-
-CallingConventionInfoMSVC_X86::CallingConventionInfoMSVC_X86( llvm::DataLayout data_layout )
-	: data_layout_( std::move(data_layout) )
-{}
-
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86::CalculateValueArgumentPassingInfo( const Type& type )
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86_64::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
 	{
@@ -773,10 +717,39 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86::Calculate
 	}
 
 	// Composite types are left.
-	// TODO - make sure it's correct to pass float/double arrays/tuples via stack and not via x87 registers.
 
-	return ArgumentPassingInStack{};
+	// Pass composites with integer sizes as integers (even if a composite contains floating-point values).
+	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
+	if( size == 1 || size == 2 || size == 4 || size == 8 )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 );
+		return argument_passing;
+	}
+
+	// Pass other composites via pointer.
+	return ArgumentPassingByPointer{};
 }
+
+class CallingConventionInfoMSVC_X86 final : public ICallingConventionInfo
+{
+public:
+	explicit CallingConventionInfoMSVC_X86( llvm::DataLayout data_layout );
+
+public: // ICallingConventionInfo
+	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
+	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
+
+private:
+	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
+
+private:
+	const llvm::DataLayout data_layout_;
+};
+
+CallingConventionInfoMSVC_X86::CallingConventionInfoMSVC_X86( llvm::DataLayout data_layout )
+	: data_layout_( std::move(data_layout) )
+{}
 
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86::CalculateReturnValuePassingInfo( const Type& type )
 {
@@ -853,28 +826,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86::CalculateFunctio
 	return call_info;
 }
 
-class CallingConventionInfoSystemV_AArch64 final : public ICallingConventionInfo
-{
-public:
-	explicit CallingConventionInfoSystemV_AArch64( llvm::DataLayout data_layout );
-
-public: // ICallingConventionInfo
-	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
-	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
-	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
-
-private:
-	void CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types );
-
-private:
-	const llvm::DataLayout data_layout_;
-};
-
-CallingConventionInfoSystemV_AArch64::CallingConventionInfoSystemV_AArch64( llvm::DataLayout data_layout )
-	: data_layout_( std::move(data_layout) )
-{}
-
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( const Type& type )
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
 	{
@@ -904,56 +856,32 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 		return argument_passing;
 	}
 
-	// Composite types.
+	// Composite types are left.
+	// TODO - make sure it's correct to pass float/double arrays/tuples via stack and not via x87 registers.
 
-	llvm::Type* const llvm_type= type.GetLLVMType();
-
-	const auto size= data_layout_.getTypeAllocSize( llvm_type );
-	if( size > 32 )
-	{
-		// Pass composites with size larger than 32 by pointer.
-		return ArgumentPassingByPointer{};
-	}
-
-	llvm::SmallVector<llvm::Type*, 16> scalar_types;
-	CollectScalarTypes_r( *llvm_type, scalar_types );
-
-	if( scalar_types.size() == 1 )
-	{
-		// Pass composites with single scalar inside using this scalar.
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= scalar_types.front();
-		return argument_passing;
-	}
-
-	if( scalar_types.size() <= 4 )
-	{
-		bool all_scalar_elements_are_same= true;
-		for( const llvm::Type* const t : scalar_types )
-			all_scalar_elements_are_same &= t == scalar_types.front();
-
-		if( all_scalar_elements_are_same && ( scalar_types.front()->isFloatTy() || scalar_types.front()->isDoubleTy() ) )
-		{
-			// Homogeneous Floating-point Aggregate - they are passed directly, if there is no more than 4 elements.
-			// [ f64, 4 ] array is largest composite type, which can be passed directly.
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= llvm::ArrayType::get( scalar_types.front(), scalar_types.size() );
-			return argument_passing;
-		}
-	}
-
-	if( size > 16 )
-	{
-		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are passed by pointer.
-		return ArgumentPassingByPointer{};
-	}
-
-	// Small composite types are passed as integers.
-	// This includes even structs consisting of f32/f64 pairs.
-	ArgumentPassingDirect argument_passing;
-	argument_passing.llvm_type= llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 );
-	return argument_passing;
+	return ArgumentPassingInStack{};
 }
+
+class CallingConventionInfoSystemV_AArch64 final : public ICallingConventionInfo
+{
+public:
+	explicit CallingConventionInfoSystemV_AArch64( llvm::DataLayout data_layout );
+
+public: // ICallingConventionInfo
+	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
+	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
+
+private:
+	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
+	void CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types );
+
+private:
+	const llvm::DataLayout data_layout_;
+};
+
+CallingConventionInfoSystemV_AArch64::CallingConventionInfoSystemV_AArch64( llvm::DataLayout data_layout )
+	: data_layout_( std::move(data_layout) )
+{}
 
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( const Type& type )
 {
@@ -1034,6 +962,87 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 	ReturnValuePassingDirect return_value_passing;
 	return_value_passing.llvm_type= llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 );
 	return return_value_passing;
+}
+
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( const Type& type )
+{
+	if( const auto f= type.GetFundamentalType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= f->llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto e= type.GetEnumType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= e->underlying_type.llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto fp= type.GetFunctionPointerType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= fp->llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto p= type.GetRawPointerType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= p->llvm_type;
+		return argument_passing;
+	}
+
+	// Composite types.
+
+	llvm::Type* const llvm_type= type.GetLLVMType();
+
+	const auto size= data_layout_.getTypeAllocSize( llvm_type );
+	if( size > 32 )
+	{
+		// Pass composites with size larger than 32 by pointer.
+		return ArgumentPassingByPointer{};
+	}
+
+	llvm::SmallVector<llvm::Type*, 16> scalar_types;
+	CollectScalarTypes_r( *llvm_type, scalar_types );
+
+	if( scalar_types.size() == 1 )
+	{
+		// Pass composites with single scalar inside using this scalar.
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= scalar_types.front();
+		return argument_passing;
+	}
+
+	if( scalar_types.size() <= 4 )
+	{
+		bool all_scalar_elements_are_same= true;
+		for( const llvm::Type* const t : scalar_types )
+			all_scalar_elements_are_same &= t == scalar_types.front();
+
+		if( all_scalar_elements_are_same && ( scalar_types.front()->isFloatTy() || scalar_types.front()->isDoubleTy() ) )
+		{
+			// Homogeneous Floating-point Aggregate - they are passed directly, if there is no more than 4 elements.
+			// [ f64, 4 ] array is largest composite type, which can be passed directly.
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= llvm::ArrayType::get( scalar_types.front(), scalar_types.size() );
+			return argument_passing;
+		}
+	}
+
+	if( size > 16 )
+	{
+		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are passed by pointer.
+		return ArgumentPassingByPointer{};
+	}
+
+	// Small composite types are passed as integers.
+	// This includes even structs consisting of f32/f64 pairs.
+	ArgumentPassingDirect argument_passing;
+	argument_passing.llvm_type= llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 );
+	return argument_passing;
 }
 
 void CallingConventionInfoSystemV_AArch64::CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types )
