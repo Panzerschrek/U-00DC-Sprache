@@ -524,7 +524,6 @@ void CallingConventionInfoSystemVX86_64::PostMergeArgumentClasses( ArgumentPartC
 	// Do not bother for now with x87.
 }
 
-
 class CallingConventionInfoMSVC_X86_64 final : public ICallingConventionInfo
 {
 public:
@@ -628,6 +627,102 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86_64::Cal
 	return ReturnValuePassingByPointer{};
 }
 
+class CallingConventionInfoMSVC_X86 final : public ICallingConventionInfo
+{
+public:
+	explicit CallingConventionInfoMSVC_X86( llvm::DataLayout data_layout );
+
+public: // ICallingConventionInfo
+	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
+	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
+
+private:
+	const llvm::DataLayout data_layout_;
+};
+
+CallingConventionInfoMSVC_X86::CallingConventionInfoMSVC_X86( llvm::DataLayout data_layout )
+	: data_layout_( std::move(data_layout) )
+{}
+
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86::CalculateValueArgumentPassingInfo( const Type& type )
+{
+	if( const auto f= type.GetFundamentalType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= f->llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto e= type.GetEnumType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= e->underlying_type.llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto fp= type.GetFunctionPointerType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= fp->llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto p= type.GetRawPointerType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= p->llvm_type;
+		return argument_passing;
+	}
+
+	// Composite types are left.
+	// TODO - make sure it's correct to pass float/double arrays/tuples via stack and not via x87 registers.
+
+	return ArgumentPassingInStack{};
+}
+
+ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86::CalculateReturnValuePassingInfo( const Type& type )
+{
+	if( const auto f= type.GetFundamentalType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= f->llvm_type;
+		return return_value_passing;
+	}
+
+	if( const auto e= type.GetEnumType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= e->underlying_type.llvm_type;
+		return return_value_passing;
+	}
+
+	if( const auto fp= type.GetFunctionPointerType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= fp->llvm_type;
+		return return_value_passing;
+	}
+
+	if( const auto p= type.GetRawPointerType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= p->llvm_type;
+		return return_value_passing;
+	}
+
+	// Composite types are left.
+
+	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
+	if( size == 1 || size == 2 || size == 4 || size == 8 )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 );
+		return return_value_passing;
+	}
+
+	return ReturnValuePassingByPointer{};
+}
+
 } // namespace
 
 CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_triple, const llvm::DataLayout& data_layout )
@@ -659,6 +754,15 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 			const auto msvc_x86_64_info= std::make_shared<CallingConventionInfoMSVC_X86_64>( data_layout );
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= msvc_x86_64_info;
 			calling_convention_infos[ size_t( CallingConvention::System ) ]= msvc_x86_64_info;
+		}
+	}
+	else if( target_triple.getArch() == llvm::Triple::x86 )
+	{
+		if( target_triple.getOS() == llvm::Triple::Win32 )
+		{
+			const auto msvc_x86_info= std::make_shared<CallingConventionInfoMSVC_X86>( data_layout );
+			calling_convention_infos[ size_t( CallingConvention::C ) ]= msvc_x86_info;
+			calling_convention_infos[ size_t( CallingConvention::System ) ]= msvc_x86_info;
 		}
 	}
 	else
