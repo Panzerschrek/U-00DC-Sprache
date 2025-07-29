@@ -943,19 +943,21 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 	calling_convention_infos[ size_t( CallingConvention::Cold ) ]= default_info;
 	calling_convention_infos[ size_t( CallingConvention::System ) ]= default_info;
 
-	if( target_triple.getArch() == llvm::Triple::x86_64 )
-	{
-		if( target_triple.getOS() == llvm::Triple::Linux ||
-			target_triple.getOS() == llvm::Triple::FreeBSD ||
-			target_triple.getOS() == llvm::Triple::Darwin ||
-			target_triple.getOS() == llvm::Triple::MacOSX )
-		{
+	const llvm::Triple::ArchType arch= target_triple.getArch();
+	const llvm::Triple::OSType os= target_triple.getOS();
 
+	if( arch == llvm::Triple::x86_64 )
+	{
+		if( os == llvm::Triple::Linux ||
+			os == llvm::Triple::FreeBSD ||
+			os == llvm::Triple::Darwin ||
+			os == llvm::Triple::MacOSX )
+		{
 			const auto system_v_x86_64_info= std::make_shared<CallingConventionInfoSystemV_X86_64>( data_layout );
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= system_v_x86_64_info;
 			calling_convention_infos[ size_t( CallingConvention::System ) ]= system_v_x86_64_info;
 		}
-		else if( target_triple.getOS() == llvm::Triple::Win32 )
+		else if( os == llvm::Triple::Win32 )
 		{
 			const auto msvc_x86_64_info= std::make_shared<CallingConventionInfoMSVC_X86_64>( data_layout );
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= msvc_x86_64_info;
@@ -966,9 +968,16 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 			// TODO - handle other operating systems.
 		}
 	}
-	else if( target_triple.getArch() == llvm::Triple::x86 )
+	else if( arch == llvm::Triple::x86 )
 	{
-		if( target_triple.getOS() == llvm::Triple::Win32 )
+		if( os == llvm::Triple::Linux ||
+			os == llvm::Triple::FreeBSD ||
+			os == llvm::Triple::Darwin ||
+			os == llvm::Triple::MacOSX )
+		{
+			// TODO - support x86 calling conventions on GNU/Linux and other systems using System V ABI.
+		}
+		else if( os == llvm::Triple::Win32 )
 		{
 			const auto msvc_x86_info= std::make_shared<CallingConventionInfoMSVC_X86>( data_layout );
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= msvc_x86_info;
@@ -981,12 +990,12 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 			// TODO - handle other operating systems.
 		}
 	}
-	else if( target_triple.getArch() == llvm::Triple::aarch64 )
+	else if( arch == llvm::Triple::aarch64 )
 	{
-		if( target_triple.getOS() == llvm::Triple::Linux ||
-			target_triple.getOS() == llvm::Triple::FreeBSD ||
-			target_triple.getOS() == llvm::Triple::Darwin ||
-			target_triple.getOS() == llvm::Triple::MacOSX )
+		if( os == llvm::Triple::Linux ||
+			os == llvm::Triple::FreeBSD ||
+			os == llvm::Triple::Darwin ||
+			os == llvm::Triple::MacOSX )
 		{
 
 			const auto system_v_aarch64_info= std::make_shared<CallingConventionInfoSystemV_AArch64>( data_layout );
