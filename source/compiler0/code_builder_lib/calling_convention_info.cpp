@@ -1123,7 +1123,21 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 	// Small composite types are passed as integers.
 	// This includes even structs consisting of f32/f64 pairs.
 	ArgumentPassingDirect argument_passing;
-	argument_passing.llvm_type= llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 );
+	if( size <= 8 )
+	{
+		// Use single integer for a composite less than 8 bytes.
+		argument_passing.llvm_type= llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 );
+	}
+	else
+	{
+		// Use pair of integers for larger composites.
+		// We can't use something like i128, since it should be aligned to even register index.
+		argument_passing.llvm_type=
+			llvm::StructType::get(
+				llvm::IntegerType::get( llvm_type->getContext(), 8 * 8 ),
+				llvm::IntegerType::get( llvm_type->getContext(), ( uint32_t(size) - 8 ) * 8 ) );
+	}
+
 	return argument_passing;
 }
 
