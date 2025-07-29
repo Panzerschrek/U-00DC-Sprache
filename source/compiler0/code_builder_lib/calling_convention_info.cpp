@@ -195,10 +195,10 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	return ReturnValuePassingByPointer{};
 }
 
-class CallingConventionInfoSystemVX86_64 final : public ICallingConventionInfo
+class CallingConventionInfoSystemV_X86_64 final : public ICallingConventionInfo
 {
 public:
-	explicit CallingConventionInfoSystemVX86_64( llvm::DataLayout data_layout );
+	explicit CallingConventionInfoSystemV_X86_64( llvm::DataLayout data_layout );
 
 public: // ICallingConventionInfo
 	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
@@ -230,11 +230,11 @@ private:
 	const llvm::DataLayout data_layout_;
 };
 
-CallingConventionInfoSystemVX86_64::CallingConventionInfoSystemVX86_64( llvm::DataLayout data_layout )
+CallingConventionInfoSystemV_X86_64::CallingConventionInfoSystemV_X86_64( llvm::DataLayout data_layout )
 	: data_layout_( std::move(data_layout ) )
 {}
 
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::CalculateValueArgumentPassingInfo( const Type& type )
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_X86_64::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
 	{
@@ -349,7 +349,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 	}
 }
 
-ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::CalculateReturnValuePassingInfo( const Type& type )
+ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
 	{
@@ -459,7 +459,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::C
 	}
 }
 
-void CallingConventionInfoSystemVX86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset )
+void CallingConventionInfoSystemV_X86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset )
 {
 	if( llvm_type.isPointerTy() )
 		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
@@ -488,7 +488,7 @@ void CallingConventionInfoSystemVX86_64::ClassifyType_r( llvm::Type& llvm_type, 
 	else U_ASSERT( false ); // Unhandled type kind.
 }
 
-void CallingConventionInfoSystemVX86_64::MergeArgumentClasses( ArgumentClass& dst, const ArgumentClass src )
+void CallingConventionInfoSystemV_X86_64::MergeArgumentClasses( ArgumentClass& dst, const ArgumentClass src )
 {
 	if( dst == src )
 	{}
@@ -508,7 +508,7 @@ void CallingConventionInfoSystemVX86_64::MergeArgumentClasses( ArgumentClass& ds
 		dst= ArgumentClass::SSE;
 }
 
-void CallingConventionInfoSystemVX86_64::PostMergeArgumentClasses( ArgumentPartClasses& classes )
+void CallingConventionInfoSystemV_X86_64::PostMergeArgumentClasses( ArgumentPartClasses& classes )
 {
 	// If some of classes is memory - make all memory.
 	for( const ArgumentClass c : classes )
@@ -751,7 +751,7 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 			target_triple.getOS() == llvm::Triple::MacOSX )
 		{
 
-			const auto system_v_x86_64_info= std::make_shared<CallingConventionInfoSystemVX86_64>( data_layout );
+			const auto system_v_x86_64_info= std::make_shared<CallingConventionInfoSystemV_X86_64>( data_layout );
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= system_v_x86_64_info;
 			calling_convention_infos[ size_t( CallingConvention::System ) ]= system_v_x86_64_info;
 		}
