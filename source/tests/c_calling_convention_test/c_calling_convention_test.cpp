@@ -4,6 +4,10 @@
 #include <cstring>
 #include <iostream>
 
+#ifdef __GNUC__
+#define ENABLE_128BIT_INT_TESTS
+#endif
+
 #define TEST_ASSERT(x) { if( !(x) ) { std::cerr << "Line " << __LINE__ << " assertion failed: " << #x << std::endl; std::abort(); } }
 
 // std::tuple isn't POD, so, use our own replacement.
@@ -125,8 +129,10 @@ void Pass_u64_Test4(
 	TEST_ASSERT( x8 == 7623758235ull ); TEST_ASSERT( x9 == 88524ull ); TEST_ASSERT( xa == 76521ull ); TEST_ASSERT( xb == 0xFF00112233445566ull );
 	TEST_ASSERT( xc == 77852ull ); TEST_ASSERT( xd == 651374ull ); TEST_ASSERT( xe == 86ull ); TEST_ASSERT( xf == 3741356ull );
 }
+#ifdef ENABLE_128BIT_INT_TESTS
 void Pass_i128_Test0( const __int128_t x ) { TEST_ASSERT( x == ( ( __int128_t( 0x0123456789ABCDEFll ) << 64u ) | __int128_t(0xFEDCBA9876543210ll) ) ); }
 void Pass_u128_Test0( const __uint128_t x ) { TEST_ASSERT( x == ( ( __uint128_t( 0xFEDCBA9876543210ull ) << 64u ) | __uint128_t(0x0123456789ABCDEFull) ) ); }
+#endif
 void Pass_char8_Test0( const char x ) { TEST_ASSERT( x == 'Q' ); }
 void Pass_char8_Test1( const char x ) { TEST_ASSERT( x == '!' ); }
 void Pass_char8_Test2( const char x ) { TEST_ASSERT( x == ' ' ); }
@@ -410,6 +416,7 @@ void Pass_u64_x11_Test0( const std::array<uint64_t, 11> x )
 		TEST_ASSERT( x[i] == i * i * i * 337547u + i * i * i * 563454548u + 34565224787u );
 	}
 }
+#ifdef ENABLE_128BIT_INT_TESTS
 void Pass_u128_x1_Test0( const std::array<__uint128_t, 1> x )
 {
 	TEST_ASSERT( x[0] == ( ( __uint128_t( 0xEBA631ADE4968FC3ull ) << 64u ) | 0x5E7CD38FDF53E732ull ) );
@@ -425,6 +432,7 @@ void Pass_u128_x3_Test0( const std::array<__uint128_t, 3> x )
 	TEST_ASSERT( x[1] == ( ( __uint128_t( 0x7353CE3ED2D48138ull ) << 64u ) | 0xC354741534A68FFEull ) );
 	TEST_ASSERT( x[2] == ( ( __uint128_t( 0x7353CE3ED2D48638ull ) << 64u ) | 0x13E7F7313B4C8F12ull ) );
 }
+#endif
 void Pass_f32_x1_Test0( const std::array<float, 1> x )
 {
 	TEST_ASSERT( x[0] == -7878.25f );
@@ -645,6 +653,7 @@ void Pass_tup_i8_i64_Test1( const Tuple2<int8_t, int64_t> x )
 {
 	TEST_ASSERT( x.v0 == -13 ); TEST_ASSERT( x.v1 == -642476347823222 );
 }
+#ifdef ENABLE_128BIT_INT_TESTS
 void Pass_tup_i8_u128_Test0( const Tuple2<int8_t, __uint128_t> x )
 {
 	TEST_ASSERT( x.v0 == 71 );
@@ -657,6 +666,7 @@ void Pass_tup_i8_u128_Test1( const Tuple2<int8_t, __uint128_t> x )
 	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	TEST_ASSERT( x.v1 == ( ( __uint128_t(0xFEDCBA9876543210ull) << 64 ) | 0x0123456789ABCDEFull ) );
 }
+#endif
 void Pass_tup_i8_f32_Test0( const Tuple2<int8_t, float> x )
 {
 	TEST_ASSERT( x.v0 == 78 ); TEST_ASSERT( x.v1 == 6763.5f );
@@ -705,6 +715,7 @@ void Pass_tup_u16_u64_Test1( const Tuple2<uint16_t, uint64_t> x )
 {
 	TEST_ASSERT( x.v0 == 56316 ); TEST_ASSERT( x.v1 == 0xF7E6D5C4B3A29180ull );
 }
+#ifdef ENABLE_128BIT_INT_TESTS
 void Pass_tup_u16_i128_Test0( const Tuple2<uint16_t, __int128_t> x )
 {
 	TEST_ASSERT( x.v0 == 712 );
@@ -717,6 +728,7 @@ void Pass_tup_u16_i128_Test1( const Tuple2<uint16_t, __int128_t> x )
 	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	TEST_ASSERT( x.v1 == ( ( __int128_t(0x1EDCBA9876543210ll) << 64 ) | 0x0123456789ABCDEFll ) );
 }
+#endif
 void Pass_tup_u16_f32_Test0( const Tuple2<uint16_t, float> x )
 {
 	TEST_ASSERT( x.v0 == 2467 ); TEST_ASSERT( x.v1 == 6263.5f );
@@ -765,6 +777,7 @@ void Pass_tup_i32_i64_Test1( const Tuple2<int32_t, int64_t> x )
 {
 	TEST_ASSERT( x.v0 == -854647 ); TEST_ASSERT( x.v1 == -642476347823222 );
 }
+#ifdef ENABLE_128BIT_INT_TESTS
 void Pass_tup_i32_u128_Test0( const Tuple2<int32_t, __uint128_t> x )
 {
 	TEST_ASSERT( x.v0 == -643647 );
@@ -777,6 +790,7 @@ void Pass_tup_i32_u128_Test1( const Tuple2<int32_t, __uint128_t> x )
 	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	TEST_ASSERT( x.v1 == ( ( __uint128_t(0xFEDCBA9876543210ull) << 64 ) | 0x0123456789ABCDEFull ) );
 }
+#endif
 void Pass_tup_i32_f32_Test0( const Tuple2<int32_t, float> x )
 {
 	TEST_ASSERT( x.v0 == 7542347 ); TEST_ASSERT( x.v1 == 6763.5f );
@@ -825,6 +839,7 @@ void Pass_tup_u64_u64_Test1( const Tuple2<uint64_t, uint64_t> x )
 {
 	TEST_ASSERT( x.v0 == 0xD1DC6AEA7E5477ECu ); TEST_ASSERT( x.v1 == 0xF7E6D5C4B3A29180ull );
 }
+#ifdef ENABLE_128BIT_INT_TESTS
 void Pass_tup_u64_i128_Test0( const Tuple2<uint64_t, __int128_t> x )
 {
 	TEST_ASSERT( x.v0 == 0xD1D16AEA7E54778Cu );
@@ -837,6 +852,7 @@ void Pass_tup_u64_i128_Test1( const Tuple2<uint64_t, __int128_t> x )
 	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	TEST_ASSERT( x.v1 == ( ( __int128_t(0x1EDCBA9876543210ll) << 64 ) | 0x0123456789ABCDEFll ) );
 }
+#endif
 void Pass_tup_u64_f32_Test0( const Tuple2<uint64_t, float> x )
 {
 	TEST_ASSERT( x.v0 == 0x1ED16AEA7E54278Cu ); TEST_ASSERT( x.v1 == 6263.5f );
@@ -885,6 +901,7 @@ void Pass_tup_f32_i64_Test1( const Tuple2<float, int64_t> x )
 {
 	TEST_ASSERT( x.v0 == -0.0625f ); TEST_ASSERT( x.v1 == -642476347823222 );
 }
+#ifdef ENABLE_128BIT_INT_TESTS
 void Pass_tup_f32_u128_Test0( const Tuple2<float, __uint128_t> x )
 {
 	TEST_ASSERT( x.v0 == -3366.75f );
@@ -897,6 +914,7 @@ void Pass_tup_f32_u128_Test1( const Tuple2<float, __uint128_t> x )
 	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	TEST_ASSERT( x.v1 == ( ( __uint128_t(0xFEDCBA9876543210ull) << 64 ) | 0x0123456789ABCDEFull ) );
 }
+#endif
 void Pass_tup_f32_f32_Test0( const Tuple2<float, float> x )
 {
 	TEST_ASSERT( x.v0 == 444666.0f ); TEST_ASSERT( x.v1 == 6763.5f );
@@ -945,6 +963,7 @@ void Pass_tup_f64_u64_Test1( const Tuple2<double, uint64_t> x )
 {
 	TEST_ASSERT( x.v0 == 7372483800000.0 ); TEST_ASSERT( x.v1 == 0xF7E6D5C4B3A29180ull );
 }
+#ifdef ENABLE_128BIT_INT_TESTS
 void Pass_tup_f64_i128_Test0( const Tuple2<double, __int128_t> x )
 {
 	TEST_ASSERT( x.v0 == -5362370.5 );
@@ -957,6 +976,7 @@ void Pass_tup_f64_i128_Test1( const Tuple2<double, __int128_t> x )
 	if( true ) return; // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	TEST_ASSERT( x.v1 == ( ( __int128_t(0x1EDCBA9876543210ll) << 64 ) | 0x0123456789ABCDEFll ) );
 }
+#endif
 void Pass_tup_f64_f32_Test0( const Tuple2<double, float> x )
 {
 	TEST_ASSERT( x.v0 == 2632647.0 ); TEST_ASSERT( x.v1 == 6263.5f );
@@ -1170,8 +1190,10 @@ void U_Pass_u64_Test1( uint64_t x );
 void U_Pass_u64_Test2( uint64_t x );
 void U_Pass_u64_Test3( uint64_t x );
 void U_Pass_u64_Test4( uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint64_t x4, uint64_t x5, uint64_t x6, uint64_t x7, uint64_t x8, uint64_t x9, uint64_t xa, uint64_t xb, uint64_t xc, uint64_t xd, uint64_t xe, uint64_t xf );
+#ifdef ENABLE_128BIT_INT_TESTS
 void U_Pass_i128_Test0( __int128_t x );
 void U_Pass_u128_Test0( __uint128_t x );
+#endif
 void U_Pass_char8_Test0( char x );
 void U_Pass_char8_Test1( char x );
 void U_Pass_char8_Test2( char x );
@@ -1239,9 +1261,11 @@ void U_Pass_u64_x3_Test0( std::array<uint64_t, 3> x );
 void U_Pass_u64_x4_Test0( std::array<uint64_t, 4> x );
 void U_Pass_u64_x5_Test0( std::array<uint64_t, 5> x );
 void U_Pass_u64_x11_Test0( std::array<uint64_t, 11> x );
+#ifdef ENABLE_128BIT_INT_TESTS
 void U_Pass_u128_x1_Test0( std::array<__uint128_t, 1> x );
 void U_Pass_u128_x2_Test0( std::array<__uint128_t, 2> x );
 void U_Pass_u128_x3_Test0( std::array<__uint128_t, 3> x );
+#endif
 void U_Pass_f32_x1_Test0( std::array<float, 1> x );
 void U_Pass_f32_x2_Test0( std::array<float, 2> x );
 void U_Pass_f32_x3_Test0( std::array<float, 3> x );
@@ -1291,8 +1315,10 @@ void U_Pass_tup_i8_u32_Test0( Tuple2<int8_t, uint32_t> x );
 void U_Pass_tup_i8_u32_Test1( Tuple2<int8_t, uint32_t> x );
 void U_Pass_tup_i8_i64_Test0( Tuple2<int8_t, int64_t> x );
 void U_Pass_tup_i8_i64_Test1( Tuple2<int8_t, int64_t> x );
+#ifdef ENABLE_128BIT_INT_TESTS
 void U_Pass_tup_i8_u128_Test0( Tuple2<int8_t, __uint128_t> x );
 void U_Pass_tup_i8_u128_Test1( Tuple2<int8_t, __uint128_t> x );
+#endif
 void U_Pass_tup_i8_f32_Test0( Tuple2<int8_t, float> x );
 void U_Pass_tup_i8_f32_Test1( Tuple2<int8_t, float> x );
 void U_Pass_tup_i8_f64_Test0( Tuple2<int8_t, double> x );
@@ -1305,8 +1331,10 @@ void U_Pass_tup_u16_i32_Test0( Tuple2<uint16_t, int32_t> x );
 void U_Pass_tup_u16_i32_Test1( Tuple2<uint16_t, int32_t> x );
 void U_Pass_tup_u16_u64_Test0( Tuple2<uint16_t, uint64_t> x );
 void U_Pass_tup_u16_u64_Test1( Tuple2<uint16_t, uint64_t> x );
+#ifdef ENABLE_128BIT_INT_TESTS
 void U_Pass_tup_u16_i128_Test0( Tuple2<uint16_t, __int128_t> x );
 void U_Pass_tup_u16_i128_Test1( Tuple2<uint16_t, __int128_t> x );
+#endif
 void U_Pass_tup_u16_f32_Test0( Tuple2<uint16_t, float> x );
 void U_Pass_tup_u16_f32_Test1( Tuple2<uint16_t, float> x );
 void U_Pass_tup_u16_f64_Test0( Tuple2<uint16_t, double> x );
@@ -1319,8 +1347,10 @@ void U_Pass_tup_i32_u32_Test0( Tuple2<int32_t, uint32_t> x );
 void U_Pass_tup_i32_u32_Test1( Tuple2<int32_t, uint32_t> x );
 void U_Pass_tup_i32_i64_Test0( Tuple2<int32_t, int64_t> x );
 void U_Pass_tup_i32_i64_Test1( Tuple2<int32_t, int64_t> x );
+#ifdef ENABLE_128BIT_INT_TESTS
 void U_Pass_tup_i32_u128_Test0( Tuple2<int32_t, __uint128_t> x );
 void U_Pass_tup_i32_u128_Test1( Tuple2<int32_t, __uint128_t> x );
+#endif
 void U_Pass_tup_i32_f32_Test0( Tuple2<int32_t, float> x );
 void U_Pass_tup_i32_f32_Test1( Tuple2<int32_t, float> x );
 void U_Pass_tup_i32_f64_Test0( Tuple2<int32_t, double> x );
@@ -1333,8 +1363,10 @@ void U_Pass_tup_u64_i32_Test0( Tuple2<uint64_t, int32_t> x );
 void U_Pass_tup_u64_i32_Test1( Tuple2<uint64_t, int32_t> x );
 void U_Pass_tup_u64_u64_Test0( Tuple2<uint64_t, uint64_t> x );
 void U_Pass_tup_u64_u64_Test1( Tuple2<uint64_t, uint64_t> x );
+#ifdef ENABLE_128BIT_INT_TESTS
 void U_Pass_tup_u64_i128_Test0( Tuple2<uint64_t, __int128_t> x );
 void U_Pass_tup_u64_i128_Test1( Tuple2<uint64_t, __int128_t> x );
+#endif
 void U_Pass_tup_u64_f32_Test0( Tuple2<uint64_t, float> x );
 void U_Pass_tup_u64_f32_Test1( Tuple2<uint64_t, float> x );
 void U_Pass_tup_u64_f64_Test0( Tuple2<uint64_t, double> x );
@@ -1347,8 +1379,10 @@ void U_Pass_tup_f32_u32_Test0( Tuple2<float, uint32_t> x );
 void U_Pass_tup_f32_u32_Test1( Tuple2<float, uint32_t> x );
 void U_Pass_tup_f32_i64_Test0( Tuple2<float, int64_t> x );
 void U_Pass_tup_f32_i64_Test1( Tuple2<float, int64_t> x );
+#ifdef ENABLE_128BIT_INT_TESTS
 void U_Pass_tup_f32_u128_Test0( Tuple2<float, __uint128_t> x );
 void U_Pass_tup_f32_u128_Test1( Tuple2<float, __uint128_t> x );
+#endif
 void U_Pass_tup_f32_f32_Test0( Tuple2<float, float> x );
 void U_Pass_tup_f32_f32_Test1( Tuple2<float, float> x );
 void U_Pass_tup_f32_f64_Test0( Tuple2<float, double> x );
@@ -1361,8 +1395,10 @@ void U_Pass_tup_f64_i32_Test0( Tuple2<double, int32_t> x );
 void U_Pass_tup_f64_i32_Test1( Tuple2<double, int32_t> x );
 void U_Pass_tup_f64_u64_Test0( Tuple2<double, uint64_t> x );
 void U_Pass_tup_f64_u64_Test1( Tuple2<double, uint64_t> x );
+#ifdef ENABLE_128BIT_INT_TESTS
 void U_Pass_tup_f64_i128_Test0( Tuple2<double, __int128_t> x );
 void U_Pass_tup_f64_i128_Test1( Tuple2<double, __int128_t> x );
+#endif
 void U_Pass_tup_f64_f32_Test0( Tuple2<double, float> x );
 void U_Pass_tup_f64_f32_Test1( Tuple2<double, float> x );
 void U_Pass_tup_f64_f64_Test0( Tuple2<double, double> x );
@@ -1433,8 +1469,10 @@ int64_t U_Get_i64_Test0();
 int64_t U_Get_i64_Test1();
 uint64_t U_Get_u64_Test0();
 uint64_t U_Get_u64_Test1();
+#ifdef ENABLE_128BIT_INT_TESTS
 __int128_t U_Get_i128_Test0();
 __uint128_t U_Get_u128_Test0();
+#endif
 char U_Get_char8_Test0();
 char U_Get_char8_Test1();
 char16_t U_Get_char16_Test0();
@@ -1488,9 +1526,11 @@ std::array<uint64_t, 2> U_Get_u64_x2_Test0();
 std::array<uint64_t, 3> U_Get_u64_x3_Test0();
 std::array<uint64_t, 4> U_Get_u64_x4_Test0();
 std::array<uint64_t, 5> U_Get_u64_x5_Test0();
+#ifdef ENABLE_128BIT_INT_TESTS
 std::array<__int128_t, 1> U_Get_i128_x1_Test0();
 std::array<__int128_t, 2> U_Get_i128_x2_Test0();
 std::array<__int128_t, 3> U_Get_i128_x3_Test0();
+#endif
 std::array<float, 1> U_Get_f32_x1_Test0();
 std::array<float, 2> U_Get_f32_x2_Test0();
 std::array<float, 3> U_Get_f32_x3_Test0();
@@ -1529,42 +1569,54 @@ Tuple2<int8_t, int8_t> U_Get_tup_i8_i8_Test0();
 Tuple2<int8_t, uint16_t> U_Get_tup_i8_u16_Test0();
 Tuple2<int8_t, int32_t> U_Get_tup_i8_i32_Test0();
 Tuple2<int8_t, uint64_t> U_Get_tup_i8_u64_Test0();
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<int8_t, __int128_t> U_Get_tup_i8_i128_Test0();
+#endif
 Tuple2<int8_t, float> U_Get_tup_i8_f32_Test0();
 Tuple2<int8_t, double> U_Get_tup_i8_f64_Test0();
 Tuple2<uint16_t, uint8_t> U_Get_tup_u16_u8_Test0();
 Tuple2<uint16_t, int16_t> U_Get_tup_u16_i16_Test0();
 Tuple2<uint16_t, uint32_t> U_Get_tup_u16_u32_Test0();
 Tuple2<uint16_t, int64_t> U_Get_tup_u16_i64_Test0();
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<uint16_t, __uint128_t> U_Get_tup_u16_u128_Test0();
+#endif
 Tuple2<uint16_t, float> U_Get_tup_u16_f32_Test0();
 Tuple2<uint16_t, double> U_Get_tup_u16_f64_Test0();
 Tuple2<int32_t, int8_t> U_Get_tup_i32_i8_Test0();
 Tuple2<int32_t, uint16_t> U_Get_tup_i32_u16_Test0();
 Tuple2<int32_t, int32_t> U_Get_tup_i32_i32_Test0();
 Tuple2<int32_t, uint64_t> U_Get_tup_i32_u64_Test0();
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<int32_t, __int128_t> U_Get_tup_i32_i128_Test0();
+#endif
 Tuple2<int32_t, float> U_Get_tup_i32_f32_Test0();
 Tuple2<int32_t, double> U_Get_tup_i32_f64_Test0();
 Tuple2<uint64_t, uint8_t> U_Get_tup_u64_u8_Test0();
 Tuple2<uint64_t, int16_t> U_Get_tup_u64_i16_Test0();
 Tuple2<uint64_t, uint32_t> U_Get_tup_u64_u32_Test0();
 Tuple2<uint64_t, int64_t> U_Get_tup_u64_i64_Test0();
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<uint64_t, __uint128_t> U_Get_tup_u64_u128_Test0();
+#endif
 Tuple2<uint64_t, float> U_Get_tup_u64_f32_Test0();
 Tuple2<uint64_t, double> U_Get_tup_u64_f64_Test0();
 Tuple2<float, int8_t> U_Get_tup_f32_i8_Test0();
 Tuple2<float, uint16_t> U_Get_tup_f32_u16_Test0();
 Tuple2<float, int32_t> U_Get_tup_f32_i32_Test0();
 Tuple2<float, uint64_t> U_Get_tup_f32_u64_Test0();
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<float, __int128_t> U_Get_tup_f32_i128_Test0();
+#endif
 Tuple2<float, float> U_Get_tup_f32_f32_Test0();
 Tuple2<float, double> U_Get_tup_f32_f64_Test0();
 Tuple2<double, uint8_t> U_Get_tup_f64_u8_Test0();
 Tuple2<double, int16_t> U_Get_tup_f64_i16_Test0();
 Tuple2<double, uint32_t> U_Get_tup_f64_u32_Test0();
 Tuple2<double, int64_t> U_Get_tup_f64_i64_Test0();
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<double, __uint128_t> U_Get_tup_f64_u128_Test0();
+#endif
 Tuple2<double, float> U_Get_tup_f64_f32_Test0();
 Tuple2<double, double> U_Get_tup_f64_f64_Test0();
 Tuple3<uint32_t, uint16_t, uint8_t> U_Get_tup_u32_u16_u8_Test0();
@@ -1641,8 +1693,10 @@ void TestPassingValuesToUCode()
 	U_Pass_u64_Test2( 7445889504678477554ull );
 	U_Pass_u64_Test3( 18246784073809531617ull );
 	U_Pass_u64_Test4( 36774676ull, 78ull, 478543737834754785ull, 0ull, 21ull, 78542136ull, 8847838ull, 47547247472367861ull, 7623758235ull, 88524ull, 76521ul, 0xFF00112233445566ull, 77852ull, 651374ull, 86ull, 3741356ull );
+#ifdef ENABLE_128BIT_INT_TESTS
 	U_Pass_i128_Test0( ( __int128_t( 0x0123456789ABCDEFll) << 64u ) | 0xFEDCBA9876543210ll );
 	U_Pass_u128_Test0( ( __uint128_t(0xFEDCBA9876543210ull) << 64u ) | 0x0123456789ABCDEFull );
+#endif
 	U_Pass_char8_Test0( 'Q' );
 	U_Pass_char8_Test1( '!' );
 	U_Pass_char8_Test2( ' ' );
@@ -1765,6 +1819,7 @@ void TestPassingValuesToUCode()
 			arg[i]= i * i * i * 337547ull + i * i * i * 563454548ull + 34565224787ull;
 		U_Pass_u64_x11_Test0( arg );
 	}
+#ifdef ENABLE_128BIT_INT_TESTS
 	U_Pass_u128_x1_Test0( { ( __uint128_t( 0xEBA631ADE4968FC3ull ) << 64u ) | 0x5E7CD38FDF53E732ull } );
 	U_Pass_u128_x2_Test0( {
 			( __uint128_t( 0xEEA631ADE4968FC3ull ) << 64u ) | 0x5E7CD3CFDF53E732ull,
@@ -1775,6 +1830,7 @@ void TestPassingValuesToUCode()
 			( __uint128_t( 0x7353CE3ED2D48138ull ) << 64u ) | 0xC354741534A68FFEull,
 			( __uint128_t( 0x7353CE3ED2D48638ull ) << 64u ) | 0x13E7F7313B4C8F12ull,
 		} );
+#endif
 	U_Pass_f32_x1_Test0( { -7878.25f } );
 	U_Pass_f32_x2_Test0( { 7.5f, 0.0625f } );
 	U_Pass_f32_x3_Test0( { 72.15f, 0.0f, -0.125f } );
@@ -1848,8 +1904,10 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_i8_u32_Test1( { -123, 0x3AC6DE1Fu } );
 	U_Pass_tup_i8_i64_Test0( { 72, 6336747347783754868 } );
 	U_Pass_tup_i8_i64_Test1( { -13, -642476347823222 } );
+#ifdef ENABLE_128BIT_INT_TESTS
 	U_Pass_tup_i8_u128_Test0( { 71, ( __uint128_t( 0x0123456789ABCDEFull ) << 64u ) | 0xFEDCBA9876543210ull } );
 	U_Pass_tup_i8_u128_Test1( { -88, ( __uint128_t( 0xFEDCBA9876543210ull ) << 64u  ) | 0x0123456789ABCDEFull } );
+#endif
 	U_Pass_tup_i8_f32_Test0( { 78, 6763.5f } );
 	U_Pass_tup_i8_f32_Test1( { -124, -6346470.0f } );
 	U_Pass_tup_i8_f64_Test0( { 53, -67163.25 } );
@@ -1862,8 +1920,10 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_u16_i32_Test1( { 65530, 336637444 } );
 	U_Pass_tup_u16_u64_Test0( { 257, 0x08192A3B4C5D6E7Full } );
 	U_Pass_tup_u16_u64_Test1( { 56316, 0xF7E6D5C4B3A29180ull } );
+#ifdef ENABLE_128BIT_INT_TESTS
 	U_Pass_tup_u16_i128_Test0( { 712, ( __int128_t( 0x0123456789ABCDEFll ) << 64u ) | 0x7EDCBA9876543210ll } );
 	U_Pass_tup_u16_i128_Test1( { 8812, ( __int128_t( 0x1EDCBA9876543210ll ) << 64u ) | 0x0123456789ABCDEFll } );
+#endif
 	U_Pass_tup_u16_f32_Test0( { 2467, 6263.5f } );
 	U_Pass_tup_u16_f32_Test1( { 9850, -6356470.0f } );
 	U_Pass_tup_u16_f64_Test0( { 3126, -37163.125 } );
@@ -1876,8 +1936,10 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_i32_u32_Test1( { -36131647, 0x3AC6DE1Fu } );
 	U_Pass_tup_i32_i64_Test0( { 847823478, 6336747347783754868 } );
 	U_Pass_tup_i32_i64_Test1( { -854647, -642476347823222 } );
+#ifdef ENABLE_128BIT_INT_TESTS
 	U_Pass_tup_i32_u128_Test0( { -643647, ( __uint128_t(0x0123456789ABCDEFull) << 64u ) | 0xFEDCBA9876543210ull } );
 	U_Pass_tup_i32_u128_Test1( { 856247, ( __uint128_t(0xFEDCBA9876543210ull) << 64u ) | 0x0123456789ABCDEFull } );
+#endif
 	U_Pass_tup_i32_f32_Test0( { 7542347, 6763.5f } );
 	U_Pass_tup_i32_f32_Test1( { -334642, -6346470.0f } );
 	U_Pass_tup_i32_f64_Test0( { 6413647, -67163.25 } );
@@ -1890,8 +1952,10 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_u64_i32_Test1( { 0x91DCBAEA765472ECull, 336637444 } );
 	U_Pass_tup_u64_u64_Test0( { 0x91DC6AEA765477ECull, 0x08192A3B4C5D6E7Full } );
 	U_Pass_tup_u64_u64_Test1( { 0xD1DC6AEA7E5477ECull, 0xF7E6D5C4B3A29180ull } );
+#ifdef ENABLE_128BIT_INT_TESTS
 	U_Pass_tup_u64_i128_Test0( { 0xD1D16AEA7E54778Cull, ( __int128_t( 0x0123456789ABCDEFll ) << 64u ) | 0x7EDCBA9876543210ll } );
 	U_Pass_tup_u64_i128_Test1( { 0x11D16AEA7E54278Cull, ( __int128_t( 0x1EDCBA9876543210ll ) << 64u ) | 0x0123456789ABCDEFll } );
+#endif
 	U_Pass_tup_u64_f32_Test0( { 0x1ED16AEA7E54278Cull, 6263.5f } );
 	U_Pass_tup_u64_f32_Test1( { 0x1ED1AAEA7E54279Cull, -6356470.0f } );
 	U_Pass_tup_u64_f64_Test0( { 0xCED164EA7E54278Cull, -37163.125 } );
@@ -1904,8 +1968,10 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_f32_u32_Test1( { -3346477.25f, 0x3AC6DE1Fu } );
 	U_Pass_tup_f32_i64_Test0( { 5366.5f, 6336747347783754868 } );
 	U_Pass_tup_f32_i64_Test1( { -0.0625f, -642476347823222 } );
+#ifdef ENABLE_128BIT_INT_TESTS
 	U_Pass_tup_f32_u128_Test0( { -3366.75f, ( __uint128_t( 0x0123456789ABCDEFull ) << 64u ) | 0xFEDCBA9876543210ull } );
 	U_Pass_tup_f32_u128_Test1( { 0.125f, ( __uint128_t( 0xFEDCBA9876543210ull ) << 64u ) | 0x0123456789ABCDEFull } );
+#endif
 	U_Pass_tup_f32_f32_Test0( { 444666.0f, 6763.5f } );
 	U_Pass_tup_f32_f32_Test1( { -15215.2f, -6346470.0f } );
 	U_Pass_tup_f32_f64_Test0( { 634663660000.0f, -67163.25 } );
@@ -1918,8 +1984,10 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_f64_i32_Test1( { -0.5, 336637444 } );
 	U_Pass_tup_f64_u64_Test0( { 447.2, 0x08192A3B4C5D6E7Full } );
 	U_Pass_tup_f64_u64_Test1( { 7372483800000.0, 0xF7E6D5C4B3A29180ull } );
+#ifdef ENABLE_128BIT_INT_TESTS
 	U_Pass_tup_f64_i128_Test0( { -5362370.5, ( __int128_t( 0x0123456789ABCDEFll ) << 64u ) | 0x7EDCBA9876543210ll } );
 	U_Pass_tup_f64_i128_Test1( { -37485856855542.0, ( __int128_t( 0x1EDCBA9876543210ll ) << 64u ) | 0x0123456789ABCDEFll } );
+#endif
 	U_Pass_tup_f64_f32_Test0( { 2632647.0, 6263.5f } );
 	U_Pass_tup_f64_f32_Test1( { 11.125, -6356470.0f } );
 	U_Pass_tup_f64_f64_Test0( { -1.75, -37163.125 } );
@@ -1984,8 +2052,10 @@ void TestPassingValuesToUCode()
 	TEST_ASSERT( U_Get_i64_Test1() == -65433774422444 );
 	TEST_ASSERT( U_Get_u64_Test0() == 0x35B6E36F4E8FEC37u );
 	TEST_ASSERT( U_Get_u64_Test1() == 0xE54EC57F1E070FC1u );
+#ifdef ENABLE_128BIT_INT_TESTS
 	TEST_ASSERT( U_Get_i128_Test0() == __int128_t( ( __uint128_t( 0x0123456789ABCDEFull) << 64u ) | 0xFEDCBA9876543210ull ) );
 	TEST_ASSERT( U_Get_u128_Test0() == ( ( ( __uint128_t( 0xFEDCBA9876543210ull) << 64u ) | 0x0123456789ABCDEFull ) ) );
+#endif
 	TEST_ASSERT( U_Get_char8_Test0() == 'n' );
 	TEST_ASSERT( U_Get_char8_Test1() == char(145) );
 	TEST_ASSERT( U_Get_char16_Test0() == u'Й' );
@@ -2174,6 +2244,7 @@ void TestPassingValuesToUCode()
 		const std::array<uint64_t, 5> expected{ 378824816171u, 734367842822478588u, 74784785888883u, 754243787589u, 67437858898u };
 		TEST_ASSERT( U_Get_u64_x5_Test0() == expected );
 	}
+#ifdef ENABLE_128BIT_INT_TESTS
 	{
 		const std::array<__int128_t, 1> expected{ ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll };
 		TEST_ASSERT( U_Get_i128_x1_Test0() == expected );
@@ -2186,6 +2257,7 @@ void TestPassingValuesToUCode()
 		const std::array<__int128_t, 3> expected{ ( __int128_t(0x3123256789AeCDEFll) << 64u ) | 6428589754399ll, ( __int128_t(0x51234567896BFDEFll) << 64u ) | 6453582734892ll, ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll };
 		TEST_ASSERT( U_Get_i128_x3_Test0() == expected );
 	}
+#endif
 	{
 		const std::array<float, 1> expected{ 0.125f };
 		TEST_ASSERT( U_Get_f32_x1_Test0() == expected );
@@ -2282,11 +2354,13 @@ void TestPassingValuesToUCode()
 		const Tuple2<int8_t, uint64_t> expected{ -67, 0x0022446688AACCEEu };
 		TEST_ASSERT( U_Get_tup_i8_u64_Test0() == expected );
 	}
+#ifdef ENABLE_128BIT_INT_TESTS
 	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	{
 		const Tuple2<int8_t, __int128_t> expected{ 78, ( __int128_t(0x0022446688AACCEEll) << 64u ) | 0x1133557799BBDDFFll };
 		TEST_ASSERT( U_Get_tup_i8_i128_Test0() == expected );
 	}
+#endif
 	{
 		const Tuple2<int8_t, float> expected{ 127, 89.5f };
 		TEST_ASSERT( U_Get_tup_i8_f32_Test0() == expected );
@@ -2311,11 +2385,13 @@ void TestPassingValuesToUCode()
 		const Tuple2<uint16_t, int64_t> expected{ 0xFEDC, 0x0022446688AACCEE };
 		TEST_ASSERT( U_Get_tup_u16_i64_Test0() == expected );
 	}
+#ifdef ENABLE_128BIT_INT_TESTS
 	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	{
 		const Tuple2<uint16_t, __uint128_t> expected{ 0x6732, ( __uint128_t(0x0022446688AACCEEull) << 64u ) | 0x1133557799BBDDFFull };
 		TEST_ASSERT( U_Get_tup_u16_u128_Test0() == expected );
 	}
+#endif
 	{
 		const Tuple2<uint16_t, float> expected{ 0xFFF1, 89.5f };
 		TEST_ASSERT( U_Get_tup_u16_f32_Test0() == expected );
@@ -2340,11 +2416,13 @@ void TestPassingValuesToUCode()
 		const Tuple2<int32_t, uint64_t> expected{ -377848, 0x0022446688AACCEE };
 		TEST_ASSERT( U_Get_tup_i32_u64_Test0() == expected );
 	}
+#ifdef ENABLE_128BIT_INT_TESTS
 	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	{
 		const Tuple2<int32_t, __int128_t> expected{ 6781134, ( __int128_t(0x0022446688AACCEEll) << 64u ) | 0x1133557799BBDDFFll };
 		TEST_ASSERT( U_Get_tup_i32_i128_Test0() == expected );
 	}
+#endif
 	{
 		const Tuple2<int32_t, float> expected{ -7712378, 89.5f };
 		TEST_ASSERT( U_Get_tup_i32_f32_Test0() == expected );
@@ -2369,11 +2447,13 @@ void TestPassingValuesToUCode()
 		const Tuple2<uint64_t, int64_t> expected{ 0x08192A3B4C5D6E7F, 0x0022446688AACCEE };
 		TEST_ASSERT( U_Get_tup_u64_i64_Test0() == expected );
 	}
+#ifdef ENABLE_128BIT_INT_TESTS
 	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	{
 		const Tuple2<uint64_t, __uint128_t> expected{ 0xF8E6D5C4B3A29180, ( __int128_t(0x0022446688AACCEEull) << 64u ) | 0x1133557799BBDDFFul };
 		TEST_ASSERT( U_Get_tup_u64_u128_Test0() == expected );
 	}
+#endif
 	{
 		const Tuple2<uint64_t, float> expected{ 0x121234345656787A, 89.5f };
 		TEST_ASSERT( U_Get_tup_u64_f32_Test0() == expected );
@@ -2398,11 +2478,13 @@ void TestPassingValuesToUCode()
 		const Tuple2<float, uint64_t> expected{ 12.25f, 0x0022446688AACCEE };
 		TEST_ASSERT( U_Get_tup_f32_u64_Test0() == expected );
 	}
+#ifdef ENABLE_128BIT_INT_TESTS
 	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	{
 		const Tuple2<float, __int128_t> expected{ 7558.0f, ( __int128_t(0x0022446688AACCEEll) << 64u ) | 0x1133557799BBDDFFll };
 		TEST_ASSERT( U_Get_tup_f32_i128_Test0() == expected );
 	}
+#endif
 	{
 		const Tuple2<float, float> expected{ -63674777.0f, 89.5f };
 		TEST_ASSERT( U_Get_tup_f32_f32_Test0() == expected );
@@ -2427,11 +2509,13 @@ void TestPassingValuesToUCode()
 		const Tuple2<double, int64_t> expected{ -23.2, 0x0022446688AACCEE };
 		TEST_ASSERT( U_Get_tup_f64_i64_Test0() == expected );
 	}
+#ifdef ENABLE_128BIT_INT_TESTS
 	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
 	{
 		const Tuple2<double, __uint128_t> expected{ 7477.5, ( __uint128_t(0x0022446688AACCEEull) << 64u ) | 0x1133557799BBDDFFull };
 		TEST_ASSERT( U_Get_tup_f64_u128_Test0() == expected );
 	}
+#endif
 	{
 		const Tuple2<double, float> expected{ 733333300000000.0, 89.5f };
 		TEST_ASSERT( U_Get_tup_f64_f32_Test0() == expected );
@@ -2594,8 +2678,10 @@ int64_t Get_i64_Test0() { return 474247578522; }
 int64_t Get_i64_Test1() { return -65433774422444; }
 uint64_t Get_u64_Test0() { return 0x35B6E36F4E8FEC37u; }
 uint64_t Get_u64_Test1() { return 0xE54EC57F1E070FC1u; }
+#ifdef ENABLE_128BIT_INT_TESTS
 __int128_t Get_i128_Test0() { return ( __int128_t( 0x0123456789ABCDEFull) << 64u ) | 0xFEDCBA9876543210ull; }
 __uint128_t Get_u128_Test0() { return ( __uint128_t(0xFEDCBA9876543210ull) << 64u ) | 0x0123456789ABCDEFull; }
+#endif
 char Get_char8_Test0() { return 'n'; }
 char Get_char8_Test1() { return char(145); }
 char16_t Get_char16_Test0() { return u'Й'; }
@@ -2676,9 +2762,11 @@ std::array<uint64_t, 2> Get_u64_x2_Test0() { return { 73434784882478588u, 378824
 std::array<uint64_t, 3> Get_u64_x3_Test0() { return { 378824816678u, 73436784882478588u, 74784785858885u }; }
 std::array<uint64_t, 4> Get_u64_x4_Test0() { return { 378824816178u, 734367848822478588u, 74784785888885u, 75443787589u }; }
 std::array<uint64_t, 5> Get_u64_x5_Test0() { return { 378824816171u, 734367842822478588u, 74784785888883u, 754243787589u, 67437858898u }; }
+#ifdef ENABLE_128BIT_INT_TESTS
 std::array<__int128_t, 1> Get_i128_x1_Test0() { return { ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll }; }
 std::array<__int128_t, 2> Get_i128_x2_Test0() { return { ( __int128_t(0x3123456789AeCDEFll) << 64u ) | 6428589734399ll, ( __int128_t(0x5123456789ABFDEFll) << 64u ) | 6453589734892ll }; }
 std::array<__int128_t, 3> Get_i128_x3_Test0() { return { ( __int128_t(0x3123256789AeCDEFll) << 64u ) | 6428589754399ll, ( __int128_t(0x51234567896BFDEFll) << 64u ) | 6453582734892ll, ( __int128_t(0x0123456789ABCDEFll) << 64u ) | 6458589734899ll }; }
+#endif
 std::array<float, 1> Get_f32_x1_Test0() { return { 0.125f }; }
 std::array<float, 2> Get_f32_x2_Test0() { return { -2.125f, 3.5f }; }
 std::array<float, 3> Get_f32_x3_Test0() { return { -22.125f, 35.5f, 7336.0f  }; }
@@ -2728,42 +2816,54 @@ Tuple2<int8_t, int8_t> Get_tup_i8_i8_Test0() { return { 37, -98 }; }
 Tuple2<int8_t, uint16_t> Get_tup_i8_u16_Test0() { return { 97, 35712 }; }
 Tuple2<int8_t, int32_t> Get_tup_i8_i32_Test0() { return { -67, -543467432 }; }
 Tuple2<int8_t, uint64_t> Get_tup_i8_u64_Test0() { return { -67, 0x0022446688AACCEE }; }
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<int8_t, __int128_t> Get_tup_i8_i128_Test0() { return { 78, ( __int128_t( 0x0022446688AACCEEll ) << 64u ) | 0x1133557799BBDDFFll }; }
+#endif
 Tuple2<int8_t, float> Get_tup_i8_f32_Test0() { return { 127, 89.5f }; }
 Tuple2<int8_t, double> Get_tup_i8_f64_Test0() { return { -128, -674730004400.0 }; }
 Tuple2<uint16_t, uint8_t> Get_tup_u16_u8_Test0() { return { 0xABCD, 251 }; }
 Tuple2<uint16_t, int16_t> Get_tup_u16_i16_Test0() { return { 0x5432, 30712 }; }
 Tuple2<uint16_t, uint32_t> Get_tup_u16_u32_Test0() { return { 0x0123, 543467432 }; }
 Tuple2<uint16_t, int64_t> Get_tup_u16_i64_Test0() { return { 0xFEDC, 0x0022446688AACCEE }; }
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<uint16_t, __uint128_t> Get_tup_u16_u128_Test0() { return { 0x6732, ( __uint128_t( 0x0022446688AACCEEull ) << 64u ) | 0x1133557799BBDDFFull }; }
+#endif
 Tuple2<uint16_t, float> Get_tup_u16_f32_Test0() { return { 0xFFF1, 89.5f }; }
 Tuple2<uint16_t, double> Get_tup_u16_f64_Test0() { return { 0x7F5E, -674730004400.0 }; }
 Tuple2<int32_t, int8_t> Get_tup_i32_i8_Test0() { return { 65247547, -98 }; }
 Tuple2<int32_t, uint16_t> Get_tup_i32_u16_Test0() { return { -33467428, 35712 }; }
 Tuple2<int32_t, int32_t> Get_tup_i32_i32_Test0() { return { 78423, -543467432 }; }
 Tuple2<int32_t, uint64_t> Get_tup_i32_u64_Test0() { return { -377848, 0x0022446688AACCEE }; }
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<int32_t, __int128_t> Get_tup_i32_i128_Test0() { return { 6781134, ( __int128_t( 0x0022446688AACCEEll ) << 64u ) | 0x1133557799BBDDFFll }; }
+#endif
 Tuple2<int32_t, float> Get_tup_i32_f32_Test0() { return { -7712378, 89.5f }; }
 Tuple2<int32_t, double> Get_tup_i32_f64_Test0() { return { 67844881, -674730004400.0 }; }
 Tuple2<uint64_t, uint8_t> Get_tup_u64_u8_Test0() { return { 0x1122334455667788u, 251 }; }
 Tuple2<uint64_t, int16_t> Get_tup_u64_i16_Test0() { return { 0x9ABCDEF01234567u, 30712 }; }
 Tuple2<uint64_t, uint32_t> Get_tup_u64_u32_Test0() { return { 0xFEDCBA9876543210u, 543467432 }; }
 Tuple2<uint64_t, int64_t> Get_tup_u64_i64_Test0() { return { 0x08192A3B4C5D6E7Fu, 0x0022446688AACCEE }; }
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<uint64_t, __uint128_t> Get_tup_u64_u128_Test0() { return { 0xF8E6D5C4B3A29180u, ( __uint128_t( 0x0022446688AACCEEull ) << 64u ) | 0x1133557799BBDDFFull }; }
+#endif
 Tuple2<uint64_t, float> Get_tup_u64_f32_Test0() { return { 0x121234345656787Au, 89.5f }; }
 Tuple2<uint64_t, double> Get_tup_u64_f64_Test0() { return { 0x9A9ABCBCDEDEF0F0u, -674730004400.0 }; }
 Tuple2<float, int8_t> Get_tup_f32_i8_Test0() { return { 674.1f, -98 }; }
 Tuple2<float, uint16_t> Get_tup_f32_u16_Test0() { return { -0.75f, 35712 }; }
 Tuple2<float, int32_t> Get_tup_f32_i32_Test0() { return { 677.5f, -543467432 }; }
 Tuple2<float, uint64_t> Get_tup_f32_u64_Test0() { return { 12.25f, 0x0022446688AACCEE }; }
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<float, __int128_t> Get_tup_f32_i128_Test0() { return { 7558.0f, ( __int128_t( 0x0022446688AACCEEll ) << 64u ) | 0x1133557799BBDDFFll }; }
+#endif
 Tuple2<float, float> Get_tup_f32_f32_Test0() { return { -63674777.0f, 89.5f }; }
 Tuple2<float, double> Get_tup_f32_f64_Test0() { return { 2252.5f, -674730004400.0 }; }
 Tuple2<double, uint8_t> Get_tup_f64_u8_Test0() { return { 96.5, 251 }; }
 Tuple2<double, int16_t> Get_tup_f64_i16_Test0() { return { -0.0625, 30712 }; }
 Tuple2<double, uint32_t> Get_tup_f64_u32_Test0() { return { 73377700000.0, 543467432 }; }
 Tuple2<double, int64_t> Get_tup_f64_i64_Test0() { return { -23.2, 0x0022446688AACCEE }; }
+#ifdef ENABLE_128BIT_INT_TESTS
 Tuple2<double, __uint128_t> Get_tup_f64_u128_Test0() { return { 7477.5, ( __uint128_t( 0x0022446688AACCEEull ) << 64u ) | 0x1133557799BBDDFFull }; }
+#endif
 Tuple2<double, float> Get_tup_f64_f32_Test0() { return { 733333300000000.0, 89.5f }; }
 Tuple2<double, double> Get_tup_f64_f64_Test0() { return { -6723667.5, -674730004400.0 }; }
 Tuple3<uint32_t, uint16_t, uint8_t> Get_tup_u32_u16_u8_Test0() { return { 0x01234567, 0x89AB, 0xCD }; }
