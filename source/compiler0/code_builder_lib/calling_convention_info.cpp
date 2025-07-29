@@ -255,8 +255,6 @@ private:
 	using ArgumentPartClasses= std::array<ArgumentClass, c_max_argument_parts>;
 
 private:
-	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
-
 	void ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset );
 
 	static void MergeArgumentClasses( ArgumentClass& dst, const ArgumentClass src );
@@ -381,121 +379,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 	}
 }
 
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_X86_64::CalculateValueArgumentPassingInfo( const Type& type )
-{
-	if( const auto f= type.GetFundamentalType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= f->llvm_type;
-		// sext/zext flags are necessary for scalars.
-		if( IsSignedInteger( f->fundamental_type ) )
-			argument_passing.sext= true;
-		else if(
-			IsUnsignedInteger( f->fundamental_type ) ||
-			IsChar( f->fundamental_type ) ||
-			IsByte( f->fundamental_type ) ||
-			f->fundamental_type == U_FundamentalType::bool_ )
-			argument_passing.zext= true;
-
-		return argument_passing;
-	}
-
-	if( const auto e= type.GetEnumType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		argument_passing.zext= true; // Enums are unsigned and thus require zero extension.
-		return argument_passing;
-	}
-
-	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= fp->llvm_type;
-		// It seems like zero extension isn't necessary for pointers. Is it?
-		return argument_passing;
-	}
-
-	if( const auto p= type.GetRawPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= p->llvm_type;
-		// It seems like zero extension isn't necessary for pointers. Is it?
-		return argument_passing;
-	}
-
-	// Composite types are left.
-
-	if( type.GetClassType() != nullptr || type.GetArrayType() != nullptr || type.GetTupleType() != nullptr )
-	{
-		llvm::Type* const llvm_type= type.GetLLVMType();
-
-		const uint64_t type_size= data_layout_.getTypeAllocSize( llvm_type );
-		if( type_size > 16 )
-			return ArgumentPassingInStack{};
-
-		if( type_size == 0 )
-		{
-			// TODO - handle zero-sized structs properly.
-			return ArgumentPassingInStack{};
-		}
-
-		ArgumentPartClasses classes;
-		for( ArgumentClass& c : classes )
-			c= ArgumentClass::NoClass;
-
-		ClassifyType_r( *llvm_type, classes, 0u );
-		PostMergeArgumentClasses( classes );
-
-		if( classes[0] == ArgumentClass::Memory )
-			return ArgumentPassingInStack{};
-
-		llvm::LLVMContext& llvm_context= llvm_type->getContext();
-
-		ArgumentPassingDirect argument_passing;
-
-		if( type_size <= 8 )
-		{
-			if( classes[0] == ArgumentClass::Integer )
-			{
-				argument_passing.llvm_type= llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 );
-				argument_passing.zext= true; // TODO - check if it's correct.
-			}
-			else if( classes[0] == ArgumentClass::SSE )
-				argument_passing.llvm_type= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
-			else U_ASSERT(false);
-		}
-		else if( type_size <= 16 )
-		{
-			constexpr size_t num_parts= 2;
-			std::array<llvm::Type*, num_parts> types{};
-			const uint32_t part_sizes[2]{ 8u, uint32_t(type_size)  - 8u };
-			for( size_t part= 0; part < num_parts; ++part )
-			{
-				if( classes[part] == ArgumentClass::Integer )
-					types[part]= llvm::IntegerType::get( llvm_context, part_sizes[part] * 8 );
-				else if( classes[part] == ArgumentClass::SSE )
-					types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
-				else U_ASSERT(false);
-			}
-
-			// Create a tuple for two parts.
-			argument_passing.llvm_type= llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) );
-			// TODO - set zext/sext?
-		}
-		else U_ASSERT( false );
-
-		return argument_passing;
-	}
-	else
-	{
-
-		// Unhandled type kind.
-		U_ASSERT(false);
-		return ArgumentPassingByPointer{};
-	}
-}
-
 void CallingConventionInfoSystemV_X86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset )
 {
 	if( llvm_type.isPointerTy() )
@@ -563,10 +446,26 @@ void CallingConventionInfoSystemV_X86_64::PostMergeArgumentClasses( ArgumentPart
 
 ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( const FunctionType& function_type )
 {
+	// Count registers used for parameters passing.
+	// It's neccessary because of the rule, which says, that a composite argument sholdn't be passed partially in registers and partially in stack.
+	// So if we have no place in registers for such argument, pass it entirely in stack.
+
+	// We have 6 integer register available for integer parameters passing: %rdi, %rsi, %rdx, %rcx, %r8, %r8.
+	// We have 8 floating point registers available for floating-point parameters passing: %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm5, %xmm6, %xmm7.
+	size_t num_integer_registers_left= 6, num_floating_point_registers_left= 8;
+
 	CallInfo call_info;
 
 	if( function_type.return_value_type == ValueType::Value )
+	{
 		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
+
+		if( std::holds_alternative<ReturnValuePassingByPointer>( call_info.return_value_passing ) )
+		{
+			// Consume an integer register for "sret" pointer.
+			--num_integer_registers_left;
+		}
+	}
 	else
 	{
 		ReturnValuePassingDirect return_value_passing;
@@ -579,12 +478,195 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 	{
 		const FunctionType::Param& param= function_type.params[i];
 		if( param.value_type == ValueType::Value )
-			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
+		{
+			if( const auto f= param.type.GetFundamentalType() )
+			{
+				ArgumentPassingDirect argument_passing;
+				argument_passing.llvm_type= f->llvm_type;
+				// sext/zext flags are necessary for scalars.
+				if( IsSignedInteger( f->fundamental_type ) )
+					argument_passing.sext= true;
+				else if(
+					IsUnsignedInteger( f->fundamental_type ) ||
+					IsChar( f->fundamental_type ) ||
+					IsByte( f->fundamental_type ) ||
+					f->fundamental_type == U_FundamentalType::bool_ )
+					argument_passing.zext= true;
+
+				call_info.arguments_passing[i]= std::move(argument_passing);
+
+				if( IsFloatingPoint( f->fundamental_type ) )
+				{
+					// Floating-point scalar arg consumes one floating-point register.
+					if( num_floating_point_registers_left > 0 )
+						--num_floating_point_registers_left;
+				}
+				else
+				{
+					// Integer arg consumes one integer register.
+					if( num_integer_registers_left > 0 )
+						--num_integer_registers_left;
+				}
+			}
+			else if( const auto e= param.type.GetEnumType() )
+			{
+				ArgumentPassingDirect argument_passing;
+				argument_passing.llvm_type= e->underlying_type.llvm_type;
+				argument_passing.zext= true; // Enums are unsigned and thus require zero extension.
+				call_info.arguments_passing[i]= std::move(argument_passing);
+
+				// Enum arg consumes one integer register.
+				if( num_integer_registers_left > 0 )
+					--num_integer_registers_left;
+			}
+			else if( const auto fp= param.type.GetFunctionPointerType() )
+			{
+				ArgumentPassingDirect argument_passing;
+				argument_passing.llvm_type= fp->llvm_type;
+				// It seems like zero extension isn't necessary for pointers. Is it?
+				call_info.arguments_passing[i]= std::move(argument_passing);
+
+				// Pointer arg consumes one integer register.
+				if( num_integer_registers_left > 0 )
+					--num_integer_registers_left;
+			}
+			else if( const auto p= param.type.GetRawPointerType() )
+			{
+				ArgumentPassingDirect argument_passing;
+				argument_passing.llvm_type= p->llvm_type;
+				// It seems like zero extension isn't necessary for pointers. Is it?
+				call_info.arguments_passing[i]= std::move(argument_passing);
+
+				// Pointer arg consumes one integer register.
+				if( num_integer_registers_left > 0 )
+					--num_integer_registers_left;
+			}
+			else if(
+				param.type.GetClassType() != nullptr ||
+				param.type.GetArrayType() != nullptr ||
+				param.type.GetTupleType() != nullptr )
+			{
+				llvm::Type* const llvm_type= param.type.GetLLVMType();
+
+				const uint64_t type_size= data_layout_.getTypeAllocSize( llvm_type );
+
+				if( type_size > 16 )
+				{
+					call_info.arguments_passing[i]= ArgumentPassingInStack{};
+
+					// No registers are consumed for in-stack passing.
+				}
+				else if( type_size == 0 )
+				{
+					// TODO - handle zero-sized structs properly.
+					call_info.arguments_passing[i]= ArgumentPassingInStack{};
+
+					// No registers are consumed for in-stack passing.
+				}
+				else
+				{
+					ArgumentPartClasses classes;
+					for( ArgumentClass& c : classes )
+						c= ArgumentClass::NoClass;
+
+					ClassifyType_r( *llvm_type, classes, 0u );
+					PostMergeArgumentClasses( classes );
+
+					if( classes[0] == ArgumentClass::Memory )
+					{
+						call_info.arguments_passing[i]= ArgumentPassingInStack{};
+
+						// No registers are consumed for in-stack passing.
+					}
+					else
+					{
+						llvm::LLVMContext& llvm_context= llvm_type->getContext();
+
+						if( type_size <= 8 )
+						{
+							ArgumentPassingDirect argument_passing;
+
+							if( classes[0] == ArgumentClass::Integer )
+							{
+								argument_passing.llvm_type= llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 );
+								argument_passing.zext= true; // TODO - check if it's correct.
+
+								if( num_integer_registers_left > 0 )
+									--num_integer_registers_left;
+							}
+							else if( classes[0] == ArgumentClass::SSE )
+							{
+								argument_passing.llvm_type= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+
+								if( num_floating_point_registers_left > 0 )
+									--num_floating_point_registers_left;
+							}
+							else U_ASSERT(false);
+
+							call_info.arguments_passing[i]= std::move(argument_passing);
+						}
+						else if( type_size <= 16 )
+						{
+							constexpr size_t num_parts= 2;
+							std::array<llvm::Type*, num_parts> types{};
+							const uint32_t part_sizes[2]{ 8u, uint32_t(type_size)  - 8u };
+							size_t num_integer_registers_needed= 0, num_floating_point_registers_needed= 0;
+							for( size_t part= 0; part < num_parts; ++part )
+							{
+								if( classes[part] == ArgumentClass::Integer )
+								{
+									types[part]= llvm::IntegerType::get( llvm_context, part_sizes[part] * 8 );
+									++num_integer_registers_needed;
+								}
+								else if( classes[part] == ArgumentClass::SSE )
+								{
+									types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+									++num_floating_point_registers_needed;
+								}
+								else U_ASSERT(false);
+							}
+
+							if( num_integer_registers_needed <= num_integer_registers_left &&
+								num_floating_point_registers_needed <= num_floating_point_registers_left )
+							{
+								ArgumentPassingDirect argument_passing;
+								// Create a tuple for two parts.
+								argument_passing.llvm_type= llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) );
+								// TODO - set zext/sext?
+
+								call_info.arguments_passing[i]= std::move(argument_passing);
+
+								num_integer_registers_left-= num_integer_registers_needed;
+								num_floating_point_registers_left-= num_floating_point_registers_needed;
+							}
+							else
+							{
+								// If we have not enough registers to pass all components of this composite - pass it in stack.
+								call_info.arguments_passing[i]= ArgumentPassingInStack{};
+
+								// No registers are consumed for in-stack passing.
+							}
+						}
+						else U_ASSERT( false );
+					}
+				}
+			}
+			else
+			{
+				// Unhandled type kind.
+				U_ASSERT(false);
+				call_info.arguments_passing[i]= ArgumentPassingByPointer{};
+			}
+		}
 		else
 		{
 			ArgumentPassingDirect argument_passing;
 			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
 			call_info.arguments_passing[i]= std::move(argument_passing);
+
+			// Reference arg consumes one integer register.
+			if( num_integer_registers_left > 0 )
+				--num_integer_registers_left;
 		}
 	}
 
