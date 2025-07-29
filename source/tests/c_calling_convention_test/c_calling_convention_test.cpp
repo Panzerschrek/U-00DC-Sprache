@@ -53,7 +53,7 @@ template<typename T0, typename T1, typename T2, typename T3> struct Tuple4
 	}
 };
 
-// I have no idea what is this, but it helps to silence nasty MSVC warnings about C++-class return types of "extern C" functions.
+// Use explicit template instantiations here, since it helps to silence nasty compilation warnings/errors about C++-class return types of "extern C" functions.
 template class std::array<int8_t, 1>;
 template class std::array<int8_t, 2>;
 template class std::array<int8_t, 3>;
@@ -93,32 +93,55 @@ template class std::array<int32_t, 7>;
 template class std::array<int32_t, 8>;
 template class std::array<int32_t, 9>;
 template class std::array<int32_t, 18>;
+#ifdef ENABLE_128BIT_INT_TESTS
+template class std::array<__int128_t, 1>;
+template class std::array<__int128_t, 2>;
+template class std::array<__int128_t, 3>;
+#endif
 template class std::array<float, 19>;
 
 template struct Tuple2<int8_t, int8_t>;
 template struct Tuple2<int8_t, uint16_t>;
 template struct Tuple2<int8_t, int32_t>;
 template struct Tuple2<int8_t, uint64_t>;
+#ifdef ENABLE_128BIT_INT_TESTS
+template struct Tuple2<int8_t, __int128_t>;
+#endif
 template struct Tuple2<uint16_t, uint8_t>;
 template struct Tuple2<uint16_t, int16_t>;
 template struct Tuple2<uint16_t, uint32_t>;
 template struct Tuple2<uint16_t, int64_t>;
+#ifdef ENABLE_128BIT_INT_TESTS
+template struct Tuple2<uint16_t, __uint128_t>;
+#endif
 template struct Tuple2<int32_t, int8_t>;
 template struct Tuple2<int32_t, uint16_t>;
 template struct Tuple2<int32_t, int32_t>;
 template struct Tuple2<int32_t, uint64_t>;
+#ifdef ENABLE_128BIT_INT_TESTS
+template struct Tuple2<int32_t, __int128_t>;
+#endif
 template struct Tuple2<uint64_t, uint8_t>;
 template struct Tuple2<uint64_t, int16_t>;
 template struct Tuple2<uint64_t, uint32_t>;
 template struct Tuple2<uint64_t, int64_t>;
+#ifdef ENABLE_128BIT_INT_TESTS
+template struct Tuple2<uint64_t, __uint128_t>;
+#endif
 template struct Tuple2<float, int8_t>;
 template struct Tuple2<float, uint16_t>;
 template struct Tuple2<float, int32_t>;
 template struct Tuple2<float, uint64_t>;
+#ifdef ENABLE_128BIT_INT_TESTS
+template struct Tuple2<float, __int128_t>;
+#endif
 template struct Tuple2<double, uint8_t>;
 template struct Tuple2<double, int16_t>;
 template struct Tuple2<double, uint32_t>;
 template struct Tuple2<double, int64_t>;
+#ifdef ENABLE_128BIT_INT_TESTS
+template struct Tuple2<double, __uint128_t>;
+#endif
 
 extern "C"
 {
@@ -1512,14 +1535,6 @@ void U_Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( uint32_t a, uint32_t b, uint32_
 void U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( double a, double b, double c, double d, double e, double f, double g, double h, Tuple2<uint64_t, double> i );
 void U_Pass_f64_f64_f64_f64_f64_f64_f64_tup_f64_f64( double a, double b, double c, double d, double e, double f, double g, Tuple2<double, double> h );
 
-// Silence GCC warning - for some reason it doesn't like returning std::array by value.
-#ifdef __GNUC__
-	#pragma GCC diagnostic push
-	#ifdef __clang__
-		#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
-	#endif
-#endif
-
 int8_t U_Get_i8_Test0();
 int8_t U_Get_i8_Test1();
 uint8_t U_Get_u8_Test0();
@@ -1720,10 +1735,6 @@ Tuple3<double, float, float> U_Get_tup_f64_f32_f32_Test0();
 Tuple3<double, float, double> U_Get_tup_f64_f32_f64_Test0();
 Tuple3<double, double, float> U_Get_tup_f64_f64_f32_Test0();
 Tuple3<double, double, double> U_Get_tup_f64_f64_f64_Test0();
-
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 
 void TestPassingValuesToUCode()
 {
@@ -2758,15 +2769,6 @@ float Get_f32_Test0() { return 642.05f; }
 float Get_f32_Test1() { return -0.012f; }
 double Get_f64_Test0() { return 544747366.75; }
 double Get_f64_Test1() { return -34.25; }
-
-// Silence Clang warning - for some reason it doesn't like returning std::array by value.
-#ifdef __GNUC__
-	#pragma GCC diagnostic push
-	#ifdef __clang__
-		#pragma GCC diagnostic ignored "-Wreturn-type-c-linkage"
-	#endif
-#endif
-
 std::array<int8_t, 1> Get_i8_x1_Test0() { return { -95 }; }
 std::array<int8_t, 2> Get_i8_x2_Test0() { return { 107, -34 }; }
 std::array<int8_t, 3> Get_i8_x3_Test0() { return { -65, 77, 4 }; }
@@ -2967,9 +2969,5 @@ Tuple3<double, float, float> Get_tup_f64_f32_f32_Test0(){ return { 0.7, 67567.5f
 Tuple3<double, float, double> Get_tup_f64_f32_f64_Test0(){ return { 0.7, 67567.5f, -256733770.0 }; }
 Tuple3<double, double, float> Get_tup_f64_f64_f32_Test0(){ return { 0.7, 67567.5, -256733770.0f }; }
 Tuple3<double, double, double> Get_tup_f64_f64_f64_Test0(){ return { 0.7, 67567.5, -256733770.0 }; }
-
-#ifdef __GNUC__
-	#pragma GCC diagnostic pop
-#endif
 
 } // extern "C"
