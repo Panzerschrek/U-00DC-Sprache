@@ -310,6 +310,24 @@ FunctionPointerType CodeBuilder::FunctionTypeToPointer( FunctionType function_ty
 
 llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type )
 {
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		// Require complete type in order to know how to return values.
+		EnsureTypeComplete( function_type.return_type );
+	}
+
+	for( const FunctionType::Param& param : function_type.params )
+	{
+		if( param.value_type == ValueType::Value )
+		{
+			// Require complete type in order to know how to pass value args.
+			EnsureTypeComplete( param.type );
+		}
+	}
+
+	const ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
+
 	llvm::Type* llvm_function_return_type= nullptr;
 	llvm::SmallVector<llvm::Type*, 16> params_llvm_types;
 
@@ -322,15 +340,9 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 		}
 		else
 		{
-			// Require complete type in order to know how to return values.
-			EnsureTypeComplete( function_type.return_type );
-
-			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
-
-			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
+			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &call_info.return_value_passing ) )
 				llvm_function_return_type= direct_passing->llvm_type;
-			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
+			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing ) )
 			{
 				llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
 				params_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
@@ -341,33 +353,19 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	else
 		llvm_function_return_type= function_type.return_type.GetLLVMType()->getPointerTo();
 
-	for( const FunctionType::Param& param : function_type.params )
+	for( size_t i= 0; i < function_type.params.size(); ++i )
 	{
-		llvm::Type* type= param.type.GetLLVMType();
-		if( param.value_type == ValueType::Value )
-		{
-			// Require complete type in order to know how to pass value args.
-			if( EnsureTypeComplete( param.type ) )
-			{
-				const ICallingConventionInfo::ArgumentPassing argument_passing=
-					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateValueArgumentPassingInfo( param.type );
+		const FunctionType::Param& param= function_type.params[i];
+		const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[i];
 
-				if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
-					type= direct_passing->llvm_type;
-				else if(
-					std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
-					std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
-					type= type->getPointerTo();
-				else U_ASSERT(false);
-			}
-		}
-		else
-		{
-			// Do not need to have complete type in order to know how to pass reference args.
-			// It is important not to trigger type completeness build, since this function may be called within class build code,
-			// in case of special and/or generated methods.
-			type= type->getPointerTo();
-		}
+		llvm::Type* type= nullptr;
+		if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+			type= direct_passing->llvm_type;
+		else if(
+			std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
+			std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
+			type= param.type.GetLLVMType()->getPointerTo();
+		else U_ASSERT(false);
 
 		params_llvm_types.push_back( type );
 	}

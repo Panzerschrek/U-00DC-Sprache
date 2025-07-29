@@ -1634,6 +1634,9 @@ void CodeBuilder::BuildFuncCode(
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
 
+	const ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
+
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		// Skip "sret".
@@ -1675,8 +1678,7 @@ void CodeBuilder::BuildFuncCode(
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
-				const ICallingConventionInfo::ArgumentPassing argument_passing=
-					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateValueArgumentPassingInfo( param.type );
+				const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[ arg_number ];
 
 				if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingDirect>( argument_passing ) )
 				{
@@ -2518,25 +2520,20 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 
 	// Prepare params attributes.
 
-	bool first_param_is_sret= false;
-	if( function_type.return_value_type == ValueType::Value )
-	{
-		const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-			calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
-		if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
-			first_param_is_sret= true;
-	}
+	const ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
+
+	const bool first_param_is_sret= std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing );
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
 		const auto param_attr_index= uint32_t(i + (first_param_is_sret ? 1u : 0u ));
+
 		const FunctionType::Param& param= function_type.params[i];
+		const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[i];
 
 		if( param.value_type == ValueType::Value )
 		{
-			const ICallingConventionInfo::ArgumentPassing argument_passing=
-				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateValueArgumentPassingInfo( param.type );
-
 			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
 			{
 				if( direct_passing->sext )
@@ -2595,17 +2592,12 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 	if( function_type.return_value_type != ValueType::Value )
 		llvm_function->addRetAttr( llvm::Attribute::NonNull );
 
-	if( function_type.return_value_type == ValueType::Value )
+	if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &call_info.return_value_passing ) )
 	{
-		const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-			calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
-		if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
-		{
-			if( direct_passing->sext )
-				llvm_function->addRetAttr( llvm::Attribute::SExt );
-			if( direct_passing->zext )
-				llvm_function->addRetAttr( llvm::Attribute::ZExt );
-		}
+		if( direct_passing->sext )
+			llvm_function->addRetAttr( llvm::Attribute::SExt );
+		if( direct_passing->zext )
+			llvm_function->addRetAttr( llvm::Attribute::ZExt );
 	}
 
 	// We can't specify dereferenceable attrubutes here, since types of reference args and return values may be still incomplete.
@@ -2626,26 +2618,21 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 
 	const FunctionType& function_type= function_variable.type;
 
-	bool first_param_is_sret= false;
-	if( function_type.return_value_type == ValueType::Value )
-	{
-		const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-			calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
-		if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
-			first_param_is_sret= true;
-	}
+	const ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
+
+	const bool first_param_is_sret= std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing );
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
 		const auto param_attr_index= uint32_t(i + (first_param_is_sret ? 1u : 0u ));
+
 		const FunctionType::Param& param= function_type.params[i];
+		const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[i];
 
 		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
 		if( param.value_type == ValueType::Value )
 		{
-			const ICallingConventionInfo::ArgumentPassing argument_passing=
-				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateValueArgumentPassingInfo( param.type );
-
 			if(
 				std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
 				std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )

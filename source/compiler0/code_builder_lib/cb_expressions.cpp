@@ -4036,6 +4036,14 @@ Value CodeBuilder::DoCallFunction(
 	const size_t arg_count= preevaluated_args.size() + args.size();
 	U_ASSERT( arg_count == function_type.params.size() );
 
+	// TODO - ensure here completeness of arg types?
+
+	if( !EnsureTypeComplete( function_type.return_type ) )
+		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, function_type.return_type );
+
+	const ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
+
 	llvm::SmallVector<llvm::Value*, 16> llvm_args;
 	llvm::SmallVector<llvm::Constant*, 16> constant_llvm_args;
 	llvm_args.resize( arg_count, nullptr );
@@ -4205,8 +4213,7 @@ Value CodeBuilder::DoCallFunction(
 				EnsureTypeComplete( param.type ); // arg type for value arg must be already complete.
 				function_context.variables_state.TryAddInnerLinks( expr, arg_node, names_scope.GetErrors(), src_loc );
 
-				const ICallingConventionInfo::ArgumentPassing argument_passing=
-					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateValueArgumentPassingInfo( param.type );
+				const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[ arg_number ];
 
 				if( expr->constexpr_value != nullptr )
 				{
@@ -4347,16 +4354,7 @@ Value CodeBuilder::DoCallFunction(
 		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, function_type.return_type );
 
 	const bool return_value_is_composite= function_type.ReturnsCompositeValue();
-	bool return_value_is_sret= false;
-
-	if( function_type.return_value_type == ValueType::Value )
-	{
-		const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-			calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
-
-		if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
-			return_value_is_sret= true;
-	}
+	const bool return_value_is_sret= std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing );
 
 	const VariableMutPtr result= Variable::Create(
 		function_type.return_type,
@@ -4446,61 +4444,50 @@ Value CodeBuilder::DoCallFunction(
 		if( return_value_is_sret )
 			call_instruction->addParamAttr( 0, llvm::Attribute::get( llvm_context_, llvm::Attribute::StructRet, function_type.return_type.GetLLVMType() ) );
 
-		if( function_type.return_value_type == ValueType::Value )
+		if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &call_info.return_value_passing ) )
 		{
-			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
-			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &return_value_passing ) )
-			{
-				if( direct_passing->sext )
-					call_instruction->addRetAttr( llvm::Attribute::SExt );
-				if( direct_passing->zext )
-					call_instruction->addRetAttr( llvm::Attribute::ZExt );
-			}
+			if( direct_passing->sext )
+				call_instruction->addRetAttr( llvm::Attribute::SExt );
+			if( direct_passing->zext )
+				call_instruction->addRetAttr( llvm::Attribute::ZExt );
 		}
 
 		for( size_t i= 0u; i < function_type.params.size(); i++ )
 		{
 			const auto param_attr_index= uint32_t(i + (return_value_is_sret ? 1u : 0u ));
-			const FunctionType::Param& param= function_type.params[i];
-			if( param.value_type == ValueType::Value )
-			{
-				const ICallingConventionInfo::ArgumentPassing argument_passing=
-					calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateValueArgumentPassingInfo( param.type );
 
-				if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
-				{
-					if( direct_passing->sext )
-						call_instruction->addParamAttr( param_attr_index, llvm::Attribute::SExt );
-					if( direct_passing->zext )
-						call_instruction->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
-				}
-				else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) )
-				{
-					// TODO - add other attributes?
-				}
-				else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
-				{
-					// TODO - add other attributes?
-					call_instruction->addParamAttr( param_attr_index, llvm::Attribute::getWithByValType( llvm_context_, param.type.GetLLVMType() ) );
-				}
-				else U_ASSERT(false);
+			const FunctionType::Param& param= function_type.params[i];
+			const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[i];
+
+			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+			{
+				if( direct_passing->sext )
+					call_instruction->addParamAttr( param_attr_index, llvm::Attribute::SExt );
+				if( direct_passing->zext )
+					call_instruction->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
 			}
+			else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) )
+			{
+				// TODO - add other attributes?
+			}
+			else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
+			{
+				// TODO - add other attributes?
+				call_instruction->addParamAttr( param_attr_index, llvm::Attribute::getWithByValType( llvm_context_, param.type.GetLLVMType() ) );
+			}
+			else U_ASSERT(false);
 		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 			result->llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 		else if( return_value_is_composite )
 		{
-			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
-				calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( function_type.return_type );
-
-			if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingDirect>( return_value_passing ) )
+			if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingDirect>( call_info.return_value_passing ) )
 			{
 				llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
 				store_instruction->setAlignment( data_layout_.getABITypeAlign( function_type.return_type.GetLLVMType() ) );
 			}
-			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( return_value_passing ) )
+			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing ) )
 			{}
 			else U_ASSERT(false);
 		}
