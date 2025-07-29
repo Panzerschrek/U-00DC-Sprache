@@ -413,7 +413,7 @@ void Pass_u64_x11_Test0( const std::array<uint64_t, 11> x )
 {
 	for( uint64_t i= 0; i < 11u; ++i )
 	{
-		TEST_ASSERT( x[i] == i * i * i * 337547u + i * i * i * 563454548u + 34565224787u );
+		TEST_ASSERT( x[ size_t(i) ] == i * i * i * 337547u + i * i * i * 563454548u + 34565224787u );
 	}
 }
 #ifdef ENABLE_128BIT_INT_TESTS
@@ -1816,7 +1816,7 @@ void TestPassingValuesToUCode()
 	{
 		std::array<uint64_t, 11> arg;
 		for(uint64_t i= 0u; i < 11u; ++i )
-			arg[i]= i * i * i * 337547ull + i * i * i * 563454548ull + 34565224787ull;
+			arg[ size_t(i) ]= i * i * i * 337547ull + i * i * i * 563454548ull + 34565224787ull;
 		U_Pass_u64_x11_Test0( arg );
 	}
 #ifdef ENABLE_128BIT_INT_TESTS

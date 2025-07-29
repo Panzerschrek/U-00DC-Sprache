@@ -220,7 +220,7 @@ private:
 	static constexpr size_t c_max_argument_parts= 2;
 	using ArgumentPartClasses= std::array<ArgumentClass, c_max_argument_parts>;
 
-	void ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint64_t offset );
+	void ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset );
 
 	static void MergeArgumentClasses( ArgumentClass& dst, const ArgumentClass src );
 
@@ -297,8 +297,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemVX86_64::Calc
 		for( ArgumentClass& c : classes )
 			c= ArgumentClass::NoClass;
 
-		uint64_t offset= 0;
-		ClassifyType_r( *llvm_type, classes, offset );
+		ClassifyType_r( *llvm_type, classes, 0u );
 		PostMergeArgumentClasses( classes );
 
 		if( classes[0] == ArgumentClass::Memory )
@@ -412,8 +411,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::C
 		for( ArgumentClass& c : classes )
 			c= ArgumentClass::NoClass;
 
-		uint64_t offset= 0;
-		ClassifyType_r( *llvm_type, classes, offset );
+		ClassifyType_r( *llvm_type, classes, 0u );
 		PostMergeArgumentClasses( classes );
 
 		if( classes[0] == ArgumentClass::Memory )
@@ -461,7 +459,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemVX86_64::C
 	}
 }
 
-void CallingConventionInfoSystemVX86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint64_t offset )
+void CallingConventionInfoSystemVX86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset )
 {
 	if( llvm_type.isPointerTy() )
 		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
@@ -479,13 +477,13 @@ void CallingConventionInfoSystemVX86_64::ClassifyType_r( llvm::Type& llvm_type, 
 		llvm::Type* const element_type= array_type->getElementType();
 		const uint64_t element_size= data_layout_.getTypeAllocSize( element_type );
 		for( uint64_t element_index= 0; element_index < array_type->getNumElements(); ++element_index )
-			ClassifyType_r( *element_type, out_classes, offset + element_index * element_size );
+			ClassifyType_r( *element_type, out_classes, offset + uint32_t( element_index * element_size ) );
 	}
 	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( &llvm_type ) )
 	{
 		const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( struct_type );
 		for( uint32_t element_index= 0; element_index < struct_type->getNumElements(); ++element_index )
-			ClassifyType_r( *llvm_type.getStructElementType( element_index ), out_classes, offset + struct_layout->getElementOffset( element_index ) );
+			ClassifyType_r( *llvm_type.getStructElementType( element_index ), out_classes, offset + uint32_t( struct_layout->getElementOffset( element_index ) ) );
 	}
 	else U_ASSERT( false ); // Unhandled type kind.
 }
