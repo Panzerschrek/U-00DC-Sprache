@@ -729,6 +729,97 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86::Calcul
 	return ReturnValuePassingByPointer{};
 }
 
+class CallingConventionInfoSystemV_AArch64 final : public ICallingConventionInfo
+{
+public:
+	explicit CallingConventionInfoSystemV_AArch64( llvm::DataLayout data_layout );
+
+public: // ICallingConventionInfo
+	virtual ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) override;
+	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
+
+private:
+	const llvm::DataLayout data_layout_;
+};
+
+CallingConventionInfoSystemV_AArch64::CallingConventionInfoSystemV_AArch64( llvm::DataLayout data_layout )
+	: data_layout_( std::move(data_layout) )
+{}
+
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( const Type& type )
+{
+	if( const auto f= type.GetFundamentalType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= f->llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto e= type.GetEnumType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= e->underlying_type.llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto fp= type.GetFunctionPointerType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= fp->llvm_type;
+		return argument_passing;
+	}
+
+	if( const auto p= type.GetRawPointerType() )
+	{
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= p->llvm_type;
+		return argument_passing;
+	}
+
+	// Composite types.
+
+	// TODO
+
+	return ArgumentPassingByPointer{};
+}
+
+ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( const Type& type )
+{
+	if( const auto f= type.GetFundamentalType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= f->llvm_type;
+		return return_value_passing;
+	}
+
+	if( const auto e= type.GetEnumType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= e->underlying_type.llvm_type;
+		return return_value_passing;
+	}
+
+	if( const auto fp= type.GetFunctionPointerType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= fp->llvm_type;
+		return return_value_passing;
+	}
+
+	if( const auto p= type.GetRawPointerType() )
+	{
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= p->llvm_type;
+		return return_value_passing;
+	}
+
+	// Composite types.
+
+	// TODO
+
+	return ReturnValuePassingByPointer{};
+}
+
 } // namespace
 
 CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_triple, const llvm::DataLayout& data_layout )
@@ -775,6 +866,23 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 			// "system" calling convention on x86 Windows is actually separate convention - stdcall.
 			// TODO - check if it's correct to use the same info as for cdecl.
 			calling_convention_infos[ size_t( CallingConvention::System ) ]= msvc_x86_info;
+		}
+		else
+		{
+			// TODO - handle other operating systems.
+		}
+	}
+	else if( target_triple.getArch() == llvm::Triple::aarch64 )
+	{
+		if( target_triple.getOS() == llvm::Triple::Linux ||
+			target_triple.getOS() == llvm::Triple::FreeBSD ||
+			target_triple.getOS() == llvm::Triple::Darwin ||
+			target_triple.getOS() == llvm::Triple::MacOSX )
+		{
+
+			const auto system_v_aarch64_info= std::make_shared<CallingConventionInfoSystemV_AArch64>( data_layout );
+			calling_convention_infos[ size_t( CallingConvention::C ) ]= system_v_aarch64_info;
+			calling_convention_infos[ size_t( CallingConvention::System ) ]= system_v_aarch64_info;
 		}
 		else
 		{
