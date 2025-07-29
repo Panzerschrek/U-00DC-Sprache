@@ -1156,19 +1156,22 @@ fn nomangle main() call_conv( "C" ) : i32
 		var [ u64, 5 ] expected[ 378824816171u, 734367842822478588u, 74784785888883u, 754243787589u, 67437858898u ];
 		halt if( Get_u64_x5_Test0() != expected );
 	}
+	static_if( c_enable_128bit_int_tests )
 	{
-		var [ i128, 1 ] expected[ ( ( 0x0123456789ABCDEFi128 << 64u ) | 6458589734899i128 ) ];
-		halt if( Get_i128_x1_Test0() != expected );
-	}
-	if( false ) // Fails on GCC due to i128 sret pointer alignment problem - 16-byte alignmentis expected, but in Ü 128-bit types are somehow 8-byte aligned. TODO - fix this.
-	{
-		var [ i128, 2 ] expected[ ( ( 0x3123456789AeCDEFi128 << 64u ) | 6428589734399i128 ), ( ( 0x5123456789ABFDEFi128 << 64u ) | 6453589734892i128 ) ];
-		halt if( Get_i128_x2_Test0() != expected );
-	}
-	if( false ) // Fails on GCC due to i128 sret pointer alignment problem - 16-byte alignment is expected, but in Ü 128-bit types are somehow 8-byte aligned. TODO - fix this.
-	{
-		var [ i128, 3 ] expected[ ( ( 0x3123256789AeCDEFi128 << 64u ) | 6428589754399i128 ), ( ( 0x51234567896BFDEFi128 << 64u ) | 6453582734892i128 ), ( ( 0x0123456789ABCDEFi128 << 64u ) | 6458589734899i128 ) ];
-		halt if( Get_i128_x3_Test0() != expected );
+		{
+			var [ i128, 1 ] expected[ ( ( 0x0123456789ABCDEFi128 << 64u ) | 6458589734899i128 ) ];
+			halt if( Get_i128_x1_Test0() != expected );
+		}
+		if( false ) // Fails on GCC due to i128 sret pointer alignment problem - 16-byte alignmentis expected, but in Ü 128-bit types are somehow 8-byte aligned. TODO - fix this.
+		{
+			var [ i128, 2 ] expected[ ( ( 0x3123456789AeCDEFi128 << 64u ) | 6428589734399i128 ), ( ( 0x5123456789ABFDEFi128 << 64u ) | 6453589734892i128 ) ];
+			halt if( Get_i128_x2_Test0() != expected );
+		}
+		if( false ) // Fails on GCC due to i128 sret pointer alignment problem - 16-byte alignment is expected, but in Ü 128-bit types are somehow 8-byte aligned. TODO - fix this.
+		{
+			var [ i128, 3 ] expected[ ( ( 0x3123256789AeCDEFi128 << 64u ) | 6428589754399i128 ), ( ( 0x51234567896BFDEFi128 << 64u ) | 6453582734892i128 ), ( ( 0x0123456789ABCDEFi128 << 64u ) | 6458589734899i128 ) ];
+			halt if( Get_i128_x3_Test0() != expected );
+		}
 	}
 	{
 		var [ f32, 1 ] expected[ 0.125f ];
@@ -1672,9 +1675,9 @@ fn nomangle Pass_u64_x3_Test0( [ u64, 3 ] x ) call_conv( "C" );
 fn nomangle Pass_u64_x4_Test0( [ u64, 4 ] x ) call_conv( "C" );
 fn nomangle Pass_u64_x5_Test0( [ u64, 5 ] x ) call_conv( "C" );
 fn nomangle Pass_u64_x11_Test0( [ u64, 11 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_u128_x1_Test0( [ u128, 1 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_u128_x2_Test0( [ u128, 2 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_u128_x3_Test0( [ u128, 3 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_u128_x1_Test0( [ u128, 1 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_u128_x2_Test0( [ u128, 2 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_u128_x3_Test0( [ u128, 3 ] x ) call_conv( "C" );
 fn nomangle Pass_f32_x1_Test0( [ f32, 1 ] x ) call_conv( "C" );
 fn nomangle Pass_f32_x2_Test0( [ f32, 2 ] x ) call_conv( "C" );
 fn nomangle Pass_f32_x3_Test0( [ f32, 3 ] x ) call_conv( "C" );
@@ -1724,8 +1727,8 @@ fn nomangle Pass_tup_i8_u32_Test0( tup [ i8, u32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i8_u32_Test1( tup [ i8, u32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i8_i64_Test0( tup [ i8, i64 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i8_i64_Test1( tup [ i8, i64 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_i8_u128_Test0( tup [ i8, u128 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_i8_u128_Test1( tup [ i8, u128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_i8_u128_Test0( tup [ i8, u128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_i8_u128_Test1( tup [ i8, u128 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i8_f32_Test0( tup [ i8, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i8_f32_Test1( tup [ i8, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i8_f64_Test0( tup [ i8, f64 ] x ) call_conv( "C" );
@@ -1738,8 +1741,8 @@ fn nomangle Pass_tup_u16_i32_Test0( tup [ u16, i32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u16_i32_Test1( tup [ u16, i32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u16_u64_Test0( tup [ u16, u64 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u16_u64_Test1( tup [ u16, u64 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_u16_i128_Test0( tup [ u16, i128 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_u16_i128_Test1( tup [ u16, i128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_u16_i128_Test0( tup [ u16, i128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_u16_i128_Test1( tup [ u16, i128 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u16_f32_Test0( tup [ u16, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u16_f32_Test1( tup [ u16, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u16_f64_Test0( tup [ u16, f64 ] x ) call_conv( "C" );
@@ -1752,8 +1755,8 @@ fn nomangle Pass_tup_i32_u32_Test0( tup [ i32, u32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i32_u32_Test1( tup [ i32, u32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i32_i64_Test0( tup [ i32, i64 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i32_i64_Test1( tup [ i32, i64 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_i32_u128_Test0( tup [ i32, u128 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_i32_u128_Test1( tup [ i32, u128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_i32_u128_Test0( tup [ i32, u128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_i32_u128_Test1( tup [ i32, u128 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i32_f32_Test0( tup [ i32, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i32_f32_Test1( tup [ i32, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_i32_f64_Test0( tup [ i32, f64 ] x ) call_conv( "C" );
@@ -1766,8 +1769,8 @@ fn nomangle Pass_tup_u64_i32_Test0( tup [ u64, i32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u64_i32_Test1( tup [ u64, i32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u64_u64_Test0( tup [ u64, u64 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u64_u64_Test1( tup [ u64, u64 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_u64_i128_Test0( tup [ u64, i128 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_u64_i128_Test1( tup [ u64, i128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_u64_i128_Test0( tup [ u64, i128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_u64_i128_Test1( tup [ u64, i128 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u64_f32_Test0( tup [ u64, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u64_f32_Test1( tup [ u64, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_u64_f64_Test0( tup [ u64, f64 ] x ) call_conv( "C" );
@@ -1780,8 +1783,8 @@ fn nomangle Pass_tup_f32_u32_Test0( tup [ f32, u32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f32_u32_Test1( tup [ f32, u32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f32_i64_Test0( tup [ f32, i64 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f32_i64_Test1( tup [ f32, i64 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_f32_u128_Test0( tup [ f32, u128 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_f32_u128_Test1( tup [ f32, u128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_f32_u128_Test0( tup [ f32, u128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_f32_u128_Test1( tup [ f32, u128 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f32_f32_Test0( tup [ f32, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f32_f32_Test1( tup [ f32, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f32_f64_Test0( tup [ f32, f64 ] x ) call_conv( "C" );
@@ -1794,8 +1797,8 @@ fn nomangle Pass_tup_f64_i32_Test0( tup [ f64, i32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f64_i32_Test1( tup [ f64, i32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f64_u64_Test0( tup [ f64, u64 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f64_u64_Test1( tup [ f64, u64 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_f64_i128_Test0( tup [ f64, i128 ] x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_tup_f64_i128_Test1( tup [ f64, i128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_f64_i128_Test0( tup [ f64, i128 ] x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_tup_f64_i128_Test1( tup [ f64, i128 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f64_f32_Test0( tup [ f64, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f64_f32_Test1( tup [ f64, f32 ] x ) call_conv( "C" );
 fn nomangle Pass_tup_f64_f64_Test0( tup [ f64, f64 ] x ) call_conv( "C" );
@@ -1858,8 +1861,8 @@ fn nomangle Get_i64_Test0() call_conv( "C" ) : i64;
 fn nomangle Get_i64_Test1() call_conv( "C" ) : i64;
 fn nomangle Get_u64_Test0() call_conv( "C" ) : u64;
 fn nomangle Get_u64_Test1() call_conv( "C" ) : u64;
-fn nomangle enable_if( c_enable_128bit_int_tests )  Get_i128_Test0() call_conv( "C" ) : i128;
-fn nomangle enable_if( c_enable_128bit_int_tests )  Get_u128_Test0() call_conv( "C" ) : u128;
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_i128_Test0() call_conv( "C" ) : i128;
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_u128_Test0() call_conv( "C" ) : u128;
 fn nomangle Get_char8_Test0() call_conv( "C" ) : char8;
 fn nomangle Get_char8_Test1() call_conv( "C" ) : char8;
 fn nomangle Get_char16_Test0() call_conv( "C" ) : char16;
@@ -1908,14 +1911,15 @@ fn nomangle Get_i32_x7_Test0() call_conv( "C" ) : [ i32, 7 ];
 fn nomangle Get_i32_x8_Test0() call_conv( "C" ) : [ i32, 8 ];
 fn nomangle Get_i32_x9_Test0() call_conv( "C" ) : [ i32, 9 ];
 fn nomangle Get_i32_x18_Test0() call_conv( "C" ) : [ i32, 18 ];
+*/
 fn nomangle Get_u64_x1_Test0() call_conv( "C" ) : [ u64, 1 ];
 fn nomangle Get_u64_x2_Test0() call_conv( "C" ) : [ u64, 2 ];
 fn nomangle Get_u64_x3_Test0() call_conv( "C" ) : [ u64, 3 ];
 fn nomangle Get_u64_x4_Test0() call_conv( "C" ) : [ u64, 4 ];
 fn nomangle Get_u64_x5_Test0() call_conv( "C" ) : [ u64, 5 ];
-fn nomangle Get_i128_x1_Test0() call_conv( "C" ) : [ i128, 1 ];
-fn nomangle Get_i128_x2_Test0() call_conv( "C" ) : [ i128, 2 ];
-fn nomangle Get_i128_x3_Test0() call_conv( "C" ) : [ i128, 3 ];
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_i128_x1_Test0() call_conv( "C" ) : [ i128, 1 ];
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_i128_x2_Test0() call_conv( "C" ) : [ i128, 2 ];
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_i128_x3_Test0() call_conv( "C" ) : [ i128, 3 ];
 fn nomangle Get_f32_x1_Test0() call_conv( "C" ) : [ f32, 1 ];
 fn nomangle Get_f32_x2_Test0() call_conv( "C" ) : [ f32, 2 ];
 fn nomangle Get_f32_x3_Test0() call_conv( "C" ) : [ f32, 3 ];
@@ -1954,42 +1958,42 @@ fn nomangle Get_tup_i8_i8_Test0() call_conv( "C" ) : tup[ i8, i8 ];
 fn nomangle Get_tup_i8_u16_Test0() call_conv( "C" ) : tup[ i8, u16 ];
 fn nomangle Get_tup_i8_i32_Test0() call_conv( "C" ) : tup[ i8, i32 ];
 fn nomangle Get_tup_i8_u64_Test0() call_conv( "C" ) : tup[ i8, u64 ];
-fn nomangle Get_tup_i8_i128_Test0() call_conv( "C" ) : tup[ i8, i128 ];
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_tup_i8_i128_Test0() call_conv( "C" ) : tup[ i8, i128 ];
 fn nomangle Get_tup_i8_f32_Test0() call_conv( "C" ) : tup[ i8, f32 ];
 fn nomangle Get_tup_i8_f64_Test0() call_conv( "C" ) : tup[ i8, f64 ];
 fn nomangle Get_tup_u16_u8_Test0() call_conv( "C" ) : tup[ u16, u8 ];
 fn nomangle Get_tup_u16_i16_Test0() call_conv( "C" ) : tup[ u16, i16 ];
 fn nomangle Get_tup_u16_u32_Test0() call_conv( "C" ) : tup[ u16, u32 ];
 fn nomangle Get_tup_u16_i64_Test0() call_conv( "C" ) : tup[ u16, i64 ];
-fn nomangle Get_tup_u16_u128_Test0() call_conv( "C" ) : tup[ u16, u128 ];
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_tup_u16_u128_Test0() call_conv( "C" ) : tup[ u16, u128 ];
 fn nomangle Get_tup_u16_f32_Test0() call_conv( "C" ) : tup[ u16, f32 ];
 fn nomangle Get_tup_u16_f64_Test0() call_conv( "C" ) : tup[ u16, f64 ];
 fn nomangle Get_tup_i32_i8_Test0() call_conv( "C" ) : tup[ i32, i8 ];
 fn nomangle Get_tup_i32_u16_Test0() call_conv( "C" ) : tup[ i32, u16 ];
 fn nomangle Get_tup_i32_i32_Test0() call_conv( "C" ) : tup[ i32, i32 ];
 fn nomangle Get_tup_i32_u64_Test0() call_conv( "C" ) : tup[ i32, u64 ];
-fn nomangle Get_tup_i32_i128_Test0() call_conv( "C" ) : tup[ i32, i128 ];
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_tup_i32_i128_Test0() call_conv( "C" ) : tup[ i32, i128 ];
 fn nomangle Get_tup_i32_f32_Test0() call_conv( "C" ) : tup[ i32, f32 ];
 fn nomangle Get_tup_i32_f64_Test0() call_conv( "C" ) : tup[ i32, f64 ];
 fn nomangle Get_tup_u64_u8_Test0() call_conv( "C" ) : tup[ u64, u8 ];
 fn nomangle Get_tup_u64_i16_Test0() call_conv( "C" ) : tup[ u64, i16 ];
 fn nomangle Get_tup_u64_u32_Test0() call_conv( "C" ) : tup[ u64, u32 ];
 fn nomangle Get_tup_u64_i64_Test0() call_conv( "C" ) : tup[ u64, i64 ];
-fn nomangle Get_tup_u64_u128_Test0() call_conv( "C" ) : tup[ u64, u128 ];
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_tup_u64_u128_Test0() call_conv( "C" ) : tup[ u64, u128 ];
 fn nomangle Get_tup_u64_f32_Test0() call_conv( "C" ) : tup[ u64, f32 ];
 fn nomangle Get_tup_u64_f64_Test0() call_conv( "C" ) : tup[ u64, f64 ];
 fn nomangle Get_tup_f32_i8_Test0() call_conv( "C" ) : tup[ f32, i8 ];
 fn nomangle Get_tup_f32_u16_Test0() call_conv( "C" ) : tup[ f32, u16 ];
 fn nomangle Get_tup_f32_i32_Test0() call_conv( "C" ) : tup[ f32, i32 ];
 fn nomangle Get_tup_f32_u64_Test0() call_conv( "C" ) : tup[ f32, u64 ];
-fn nomangle Get_tup_f32_i128_Test0() call_conv( "C" ) : tup[ f32, i128 ];
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_tup_f32_i128_Test0() call_conv( "C" ) : tup[ f32, i128 ];
 fn nomangle Get_tup_f32_f32_Test0() call_conv( "C" ) : tup[ f32, f32 ];
 fn nomangle Get_tup_f32_f64_Test0() call_conv( "C" ) : tup[ f32, f64 ];
 fn nomangle Get_tup_f64_u8_Test0() call_conv( "C" ) : tup[ f64, u8 ];
 fn nomangle Get_tup_f64_i16_Test0() call_conv( "C" ) : tup[ f64, i16 ];
 fn nomangle Get_tup_f64_u32_Test0() call_conv( "C" ) : tup[ f64, u32 ];
 fn nomangle Get_tup_f64_i64_Test0() call_conv( "C" ) : tup[ f64, i64 ];
-fn nomangle Get_tup_f64_u128_Test0() call_conv( "C" ) : tup[ f64, u128 ];
+fn nomangle enable_if( c_enable_128bit_int_tests ) Get_tup_f64_u128_Test0() call_conv( "C" ) : tup[ f64, u128 ];
 fn nomangle Get_tup_f64_f32_Test0() call_conv( "C" ) : tup[ f64, f32 ];
 fn nomangle Get_tup_f64_f64_Test0() call_conv( "C" ) : tup[ f64, f64 ];
 fn nomangle Get_tup_u32_u16_u8_Test0() call_conv( "C" ) : tup[ u32, u16, u8 ];
