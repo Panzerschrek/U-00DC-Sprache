@@ -573,6 +573,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86_64::Calcul
 
 	// Composite types are left.
 
+	// Pass composites with integer sizes as integers (even if a composite contains floating-point values).
 	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
 	{
@@ -581,6 +582,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86_64::Calcul
 		return argument_passing;
 	}
 
+	// Pass other composites via pointer.
 	return ArgumentPassingByPointer{};
 }
 
@@ -616,6 +618,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86_64::Cal
 
 	// Composite types are left.
 
+	// Return composites with integer sizes as integers (even if a composite contains floating-point values).
 	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
 	{
@@ -624,6 +627,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86_64::Cal
 		return return_value_passing;
 	}
 
+	// Return other composites via sret pointer.
 	return ReturnValuePassingByPointer{};
 }
 
@@ -712,6 +716,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86::Calcul
 
 	// Composite types are left.
 
+	// Return composites with integer sizes as integers (even if a composite contains floating-point values).
 	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
 	{
@@ -720,6 +725,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86::Calcul
 		return return_value_passing;
 	}
 
+	// Return other composites via sret pointer.
 	return ReturnValuePassingByPointer{};
 }
 
@@ -755,6 +761,10 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= msvc_x86_64_info;
 			calling_convention_infos[ size_t( CallingConvention::System ) ]= msvc_x86_64_info;
 		}
+		else
+		{
+			// TODO - handle other operating systems.
+		}
 	}
 	else if( target_triple.getArch() == llvm::Triple::x86 )
 	{
@@ -762,7 +772,13 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 		{
 			const auto msvc_x86_info= std::make_shared<CallingConventionInfoMSVC_X86>( data_layout );
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= msvc_x86_info;
+			// "system" calling convention on x86 Windows is actually separate convention - stdcall.
+			// TODO - check if it's correct to use the same info as for cdecl.
 			calling_convention_infos[ size_t( CallingConvention::System ) ]= msvc_x86_info;
+		}
+		else
+		{
+			// TODO - handle other operating systems.
 		}
 	}
 	else
