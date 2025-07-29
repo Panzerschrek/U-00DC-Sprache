@@ -483,7 +483,7 @@ void CallingConventionInfoSystemV_X86_64::ClassifyType_r( llvm::Type& llvm_type,
 	{
 		const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( struct_type );
 		for( uint32_t element_index= 0; element_index < struct_type->getNumElements(); ++element_index )
-			ClassifyType_r( *llvm_type.getStructElementType( element_index ), out_classes, offset + uint32_t( struct_layout->getElementOffset( element_index ) ) );
+			ClassifyType_r( *struct_type->getElementType( element_index ), out_classes, offset + uint32_t( struct_layout->getElementOffset( element_index ) ) );
 	}
 	else U_ASSERT( false ); // Unhandled type kind.
 }
@@ -739,6 +739,9 @@ public: // ICallingConventionInfo
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
 
 private:
+	void CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types );
+
+private:
 	const llvm::DataLayout data_layout_;
 };
 
@@ -778,9 +781,53 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 
 	// Composite types.
 
-	// TODO
+	llvm::Type* const llvm_type= type.GetLLVMType();
 
-	return ArgumentPassingByPointer{};
+	const auto size= data_layout_.getTypeAllocSize( llvm_type );
+	if( size > 32 )
+	{
+		// Pass composites with size larger than 32 by pointer.
+		return ArgumentPassingByPointer{};
+	}
+
+	llvm::SmallVector<llvm::Type*, 16> scalar_types;
+	CollectScalarTypes_r( *llvm_type, scalar_types );
+
+	if( scalar_types.size() == 1 )
+	{
+		// Pass composites with single scalar inside using this scalar.
+		ArgumentPassingDirect argument_passing;
+		argument_passing.llvm_type= scalar_types.front();
+		return argument_passing;
+	}
+
+	if( scalar_types.size() <= 4 )
+	{
+		bool all_scalar_elements_are_same= true;
+		for( const llvm::Type* const t : scalar_types )
+			all_scalar_elements_are_same &= t == scalar_types.front();
+
+		if( all_scalar_elements_are_same && ( scalar_types.front()->isFloatTy() || scalar_types.front()->isDoubleTy() ) )
+		{
+			// Homogeneous Floating-point Aggregate - they are passed directly, if there is no more than 4 elements.
+			// [ f64, 4 ] array is largest composite type, which can be passed directly.
+			ArgumentPassingDirect argument_passing;
+			argument_passing.llvm_type= llvm::ArrayType::get( scalar_types.front(), scalar_types.size() );
+			return argument_passing;
+		}
+	}
+
+	if( size > 16 )
+	{
+		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are passed by pointer.
+		return ArgumentPassingByPointer{};
+	}
+
+	// Small composite types are passed as integers.
+	// This includes even structs consisting of f32/f64 pairs.
+	ArgumentPassingDirect argument_passing;
+	argument_passing.llvm_type= llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 );
+	return argument_passing;
 }
 
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( const Type& type )
@@ -815,9 +862,71 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 
 	// Composite types.
 
-	// TODO
+	llvm::Type* const llvm_type= type.GetLLVMType();
 
-	return ReturnValuePassingByPointer{};
+	const auto size= data_layout_.getTypeAllocSize( llvm_type );
+	if( size > 32 )
+	{
+		// Return composites with size larger than 32 by pointer.
+		return ReturnValuePassingByPointer{};
+	}
+
+	llvm::SmallVector<llvm::Type*, 16> scalar_types;
+	CollectScalarTypes_r( *llvm_type, scalar_types );
+
+	if( scalar_types.size() == 1 )
+	{
+		// Return composites with single scalar inside using this scalar.
+		ReturnValuePassingDirect return_value_passing;
+		return_value_passing.llvm_type= scalar_types.front();
+		return return_value_passing;
+	}
+
+	if( scalar_types.size() <= 4 )
+	{
+		bool all_scalar_elements_are_same= true;
+		for( const llvm::Type* const t : scalar_types )
+			all_scalar_elements_are_same &= t == scalar_types.front();
+
+		if( all_scalar_elements_are_same && ( scalar_types.front()->isFloatTy() || scalar_types.front()->isDoubleTy() ) )
+		{
+			// Homogeneous Floating-point Aggregate - they are passed directly, if there is no more than 4 elements.
+			// [ f64, 4 ] array is largest composite type, which can be passed directly.
+			ReturnValuePassingDirect return_value_passing;
+			return_value_passing.llvm_type= llvm::ArrayType::get( scalar_types.front(), scalar_types.size() );
+			return return_value_passing;
+		}
+	}
+
+	if( size > 16 )
+	{
+		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are passed by pointer.
+		return ReturnValuePassingByPointer{};
+	}
+
+	// Small composite types are passed as integers.
+	// This includes even structs consisting of f32/f64 pairs.
+	ReturnValuePassingDirect return_value_passing;
+	return_value_passing.llvm_type= llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 );
+	return return_value_passing;
+}
+
+void CallingConventionInfoSystemV_AArch64::CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types )
+{
+	if( llvm_type.isIntegerTy() || llvm_type.isFloatingPointTy() || llvm_type.isPointerTy() )
+		out_types.push_back( &llvm_type );
+	else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>( &llvm_type ) )
+	{
+		llvm::Type* const element_type= array_type->getElementType();
+		for( uint64_t element_index= 0; element_index < array_type->getNumElements(); ++element_index )
+			CollectScalarTypes_r( *element_type, out_types );
+	}
+	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( &llvm_type ) )
+	{
+		for( uint32_t element_index= 0; element_index < struct_type->getNumElements(); ++element_index )
+			CollectScalarTypes_r( *struct_type->getElementType( element_index ), out_types );
+	}
+	else U_ASSERT( false ); // Unhandled type kind.
 }
 
 } // namespace
