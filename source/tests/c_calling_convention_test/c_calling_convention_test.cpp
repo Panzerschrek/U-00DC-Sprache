@@ -102,7 +102,7 @@ void Pass_i32_Test4(
 	const int32_t xc, const int32_t xd, const int32_t xe, const int32_t xf )
 {
 	TEST_ASSERT( x0 == 6531 ); TEST_ASSERT( x1 == -75247554 ); TEST_ASSERT( x2 == 456424 ); TEST_ASSERT( x3 == 8565523 );
-	TEST_ASSERT( x4 == 0 ); TEST_ASSERT( x5 == 0x7FFFFFFF ); TEST_ASSERT( x6 == 54 ); TEST_ASSERT( x7 == int32_t(-0x80000000) );
+	TEST_ASSERT( x4 == 0 ); TEST_ASSERT( x5 == 0x7FFFFFFF ); TEST_ASSERT( x6 == 54 ); TEST_ASSERT( x7 == int32_t(-0x80000000ll) );
 	TEST_ASSERT( x8 == 643 ); TEST_ASSERT( x9 == 7621375 ); TEST_ASSERT( xa == 7567863 ); TEST_ASSERT( xb == -24782 );
 	TEST_ASSERT( xc == 786234786 ); TEST_ASSERT( xd == 12308562 ); TEST_ASSERT( xe == -8624557 ); TEST_ASSERT( xf == 867245 );
 }
@@ -1679,7 +1679,7 @@ void TestPassingValuesToUCode()
 	U_Pass_i32_Test1( -7456 );
 	U_Pass_i32_Test2( 0x78ABCDEF );
 	U_Pass_i32_Test3( -674348993 );
-	U_Pass_i32_Test4( 6531, -75247554, 456424, 8565523, 0, 0x7FFFFFFF, 54, int32_t(-0x80000000), 643, 7621375, 7567863, -24782, 786234786, 12308562, -8624557, 867245 );
+	U_Pass_i32_Test4( 6531, -75247554, 456424, 8565523, 0, 0x7FFFFFFF, 54, int32_t(-0x80000000ll), 643, 7621375, 7567863, -24782, 786234786, 12308562, -8624557, 867245 );
 	U_Pass_u32_Test0( 78u );
 	U_Pass_u32_Test1( 45677u );
 	U_Pass_u32_Test2( 6633477u );
@@ -1708,15 +1708,15 @@ void TestPassingValuesToUCode()
 	U_Pass_f32_Test1( 0.125f );
 	U_Pass_f32_Test2( 6743.5f );
 	U_Pass_f32_Test3( -7689543378437.0f );
-	U_Pass_f32_Test4( 1.0f / 0.0f );
-	U_Pass_f32_Test5( 0.0f / 0.0f );
+	U_Pass_f32_Test4( std::numeric_limits<float>::infinity() );
+	U_Pass_f32_Test5( std::numeric_limits<float>::quiet_NaN() );
 	U_Pass_f32_Test6( 1786.5f, -643.4f, 754.0f, 353347.0f, 3000000.0f, -4454.25f, 0.0f, 66434.0f, 3643.3f, 367341.5f, 67436.125f, 378436.0f, 42.75f, -7542.2f, 6564.0f, 7854300000000.0f );
 	U_Pass_f64_Test0( 0.0 );
 	U_Pass_f64_Test1( 0.0625 );
 	U_Pass_f64_Test2( 173.25 );
 	U_Pass_f64_Test3( -569907695478437.0 );
-	U_Pass_f64_Test4( 1.0 / 0.0 );
-	U_Pass_f64_Test5( 0.0 / 0.0 );
+	U_Pass_f64_Test4( std::numeric_limits<double>::infinity() );
+	U_Pass_f64_Test5( std::numeric_limits<double>::quiet_NaN() );
 	U_Pass_f64_Test6( 364341.5, 1786.5, -643.4, 353347.0, 70000000.0, -4454.25, 7854320000000.0, 0.0, 66434.0, 3643.3, 67436.125, 754.0, 378436.0, -42.75, -6552.4, 6564.0 );
 	U_Pass_u8_x1_Test0( { 0xB4 } );
 	U_Pass_u8_x2_Test0( { 0xAB, 0x7C } );
