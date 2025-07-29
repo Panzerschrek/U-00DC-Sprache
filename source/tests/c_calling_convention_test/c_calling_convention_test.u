@@ -1271,10 +1271,13 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ i8, u64 ] expected[ -67i8, 0x0022446688AACCEEu ];
 		halt if( Get_tup_i8_u64_Test0() != expected );
 	}
-	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	static_if( c_enable_128bit_int_tests )
 	{
-		var tup[ i8, i128 ] expected[ 78i8, ( ( 0x0022446688AACCEEi128 << 64u ) | 0x1133557799BBDDFFi128 ) ];
-		halt if( Get_tup_i8_i128_Test0() != expected );
+		if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+		{
+			var tup[ i8, i128 ] expected[ 78i8, ( ( 0x0022446688AACCEEi128 << 64u ) | 0x1133557799BBDDFFi128 ) ];
+			halt if( Get_tup_i8_i128_Test0() != expected );
+		}
 	}
 	{
 		var tup[ i8, f32 ] expected[ 127i8, 89.5f ];
@@ -1300,10 +1303,13 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ u16, i64 ] expected[ 0xFEDCu16, 0x0022446688AACCEE ];
 		halt if( Get_tup_u16_i64_Test0() != expected );
 	}
-	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	static_if( c_enable_128bit_int_tests )
 	{
-		var tup[ u16, u128 ] expected[ 0x6732u16, ( ( 0x0022446688AACCEEu128 << 64u ) | 0x1133557799BBDDFFu128 ) ];
-		halt if( Get_tup_u16_u128_Test0() != expected );
+		if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+		{
+			var tup[ u16, u128 ] expected[ 0x6732u16, ( ( 0x0022446688AACCEEu128 << 64u ) | 0x1133557799BBDDFFu128 ) ];
+			halt if( Get_tup_u16_u128_Test0() != expected );
+		}
 	}
 	{
 		var tup[ u16, f32 ] expected[ 0xFFF1u16, 89.5f ];
@@ -1329,10 +1335,13 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ i32, u64 ] expected[ -377848, 0x0022446688AACCEEu ];
 		halt if( Get_tup_i32_u64_Test0() != expected );
 	}
-	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	static_if( c_enable_128bit_int_tests )
 	{
-		var tup[ i32, i128 ] expected[ 6781134, ( ( 0x0022446688AACCEEi128 << 64u ) | 0x1133557799BBDDFFi128 ) ];
-		halt if( Get_tup_i32_i128_Test0() != expected );
+		if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+		{
+			var tup[ i32, i128 ] expected[ 6781134, ( ( 0x0022446688AACCEEi128 << 64u ) | 0x1133557799BBDDFFi128 ) ];
+			halt if( Get_tup_i32_i128_Test0() != expected );
+		}
 	}
 	{
 		var tup[ i32, f32 ] expected[ -7712378, 89.5f ];
@@ -1358,10 +1367,13 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ u64, i64 ] expected[ 0x08192A3B4C5D6E7Fu, 0x0022446688AACCEE ];
 		halt if( Get_tup_u64_i64_Test0() != expected );
 	}
-	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	static_if( c_enable_128bit_int_tests )
 	{
-		var tup[ u64, u128 ] expected[ 0xF8E6D5C4B3A29180u, ( ( 0x0022446688AACCEEu128 << 64u ) | 0x1133557799BBDDFFu128 ) ];
-		halt if( Get_tup_u64_u128_Test0() != expected );
+		if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+		{
+			var tup[ u64, u128 ] expected[ 0xF8E6D5C4B3A29180u, ( ( 0x0022446688AACCEEu128 << 64u ) | 0x1133557799BBDDFFu128 ) ];
+			halt if( Get_tup_u64_u128_Test0() != expected );
+		}
 	}
 	{
 		var tup[ u64, f32 ] expected[ 0x121234345656787Au, 89.5f ];
@@ -1387,10 +1399,13 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ f32, u64 ] expected[ 12.25f, 0x0022446688AACCEEu ];
 		halt if( Get_tup_f32_u64_Test0() != expected );
 	}
-	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	static_if( c_enable_128bit_int_tests )
 	{
-		var tup[ f32, i128 ] expected[ 7558.0f, ( ( 0x0022446688AACCEEi128 << 64u ) | 0x1133557799BBDDFFi128 ) ];
-		halt if( Get_tup_f32_i128_Test0() != expected );
+		if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+		{
+			var tup[ f32, i128 ] expected[ 7558.0f, ( ( 0x0022446688AACCEEi128 << 64u ) | 0x1133557799BBDDFFi128 ) ];
+			halt if( Get_tup_f32_i128_Test0() != expected );
+		}
 	}
 	{
 		var tup[ f32, f32 ] expected[ -63674777.0f, 89.5f ];
@@ -1416,10 +1431,13 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ f64, i64 ] expected[ -23.2, 0x0022446688AACCEE ];
 		halt if( Get_tup_f64_i64_Test0() != expected );
 	}
-	if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+	static_if( c_enable_128bit_int_tests )
 	{
-		var tup[ f64, u128 ] expected[ 7477.5, ( ( 0x0022446688AACCEEu128 << 64u ) | 0x1133557799BBDDFFu128 ) ];
-		halt if( Get_tup_f64_u128_Test0() != expected );
+		if( false ) // Disabled for now. In C++ uint128_t is 16-byte aligned, but in Ü only 8-byte aligned. TODO - fix this.
+		{
+			var tup[ f64, u128 ] expected[ 7477.5, ( ( 0x0022446688AACCEEu128 << 64u ) | 0x1133557799BBDDFFu128 ) ];
+			halt if( Get_tup_f64_u128_Test0() != expected );
+		}
 	}
 	{
 		var tup[ f64, f32 ] expected[ 733333300000000.0, 89.5f ];
@@ -1607,7 +1625,7 @@ fn nomangle Pass_u64_Test2( u64 x ) call_conv( "C" );
 fn nomangle Pass_u64_Test3( u64 x ) call_conv( "C" );
 fn nomangle Pass_u64_Test4( u64 x0, u64 x1, u64 x2, u64 x3, u64 x4, u64 x5, u64 x6, u64 x7, u64 x8, u64 x9, u64 xa, u64 xb, u64 xc, u64 xd, u64 xe, u64 xf ) call_conv( "C" );
 fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_i128_Test0( i128 x ) call_conv( "C" );
-fn nomangle enable_if( c_enable_128bit_int_tests )  Pass_u128_Test0( u128 x ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_u128_Test0( u128 x ) call_conv( "C" );
 fn nomangle Pass_char8_Test0( char8 x ) call_conv( "C" );
 fn nomangle Pass_char8_Test1( char8 x ) call_conv( "C" );
 fn nomangle Pass_char8_Test2( char8 x ) call_conv( "C" );
@@ -1911,7 +1929,6 @@ fn nomangle Get_i32_x7_Test0() call_conv( "C" ) : [ i32, 7 ];
 fn nomangle Get_i32_x8_Test0() call_conv( "C" ) : [ i32, 8 ];
 fn nomangle Get_i32_x9_Test0() call_conv( "C" ) : [ i32, 9 ];
 fn nomangle Get_i32_x18_Test0() call_conv( "C" ) : [ i32, 18 ];
-*/
 fn nomangle Get_u64_x1_Test0() call_conv( "C" ) : [ u64, 1 ];
 fn nomangle Get_u64_x2_Test0() call_conv( "C" ) : [ u64, 2 ];
 fn nomangle Get_u64_x3_Test0() call_conv( "C" ) : [ u64, 3 ];

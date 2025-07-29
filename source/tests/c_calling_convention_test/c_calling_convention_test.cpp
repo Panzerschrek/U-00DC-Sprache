@@ -53,6 +53,73 @@ template<typename T0, typename T1, typename T2, typename T3> struct Tuple4
 	}
 };
 
+// I have no idea what is this, but it helps to silence nasty MSVC warnings about C++-class return types of "extern C" functions.
+template class std::array<int8_t, 1>;
+template class std::array<int8_t, 2>;
+template class std::array<int8_t, 3>;
+template class std::array<int8_t, 4>;
+template class std::array<int8_t, 5>;
+template class std::array<int8_t, 6>;
+template class std::array<int8_t, 7>;
+template class std::array<int8_t, 8>;
+template class std::array<int8_t, 9>;
+template class std::array<int8_t, 10>;
+template class std::array<int8_t, 11>;
+template class std::array<int8_t, 12>;
+template class std::array<int8_t, 13>;
+template class std::array<int8_t, 14>;
+template class std::array<int8_t, 15>;
+template class std::array<int8_t, 16>;
+template class std::array<int8_t, 17>;
+template class std::array<int8_t, 35>;
+template class std::array<uint16_t, 1>;
+template class std::array<uint16_t, 2>;
+template class std::array<uint16_t, 3>;
+template class std::array<uint16_t, 4>;
+template class std::array<uint16_t, 5>;
+template class std::array<uint16_t, 6>;
+template class std::array<uint16_t, 7>;
+template class std::array<uint16_t, 8>;
+template class std::array<uint16_t, 9>;
+template class std::array<uint16_t, 15>;
+template class std::array<uint16_t, 21>;
+template class std::array<int32_t, 1>;
+template class std::array<int32_t, 2>;
+template class std::array<int32_t, 3>;
+template class std::array<int32_t, 4>;
+template class std::array<int32_t, 5>;
+template class std::array<int32_t, 6>;
+template class std::array<int32_t, 7>;
+template class std::array<int32_t, 8>;
+template class std::array<int32_t, 9>;
+template class std::array<int32_t, 18>;
+template class std::array<float, 19>;
+
+template struct Tuple2<int8_t, int8_t>;
+template struct Tuple2<int8_t, uint16_t>;
+template struct Tuple2<int8_t, int32_t>;
+template struct Tuple2<int8_t, uint64_t>;
+template struct Tuple2<uint16_t, uint8_t>;
+template struct Tuple2<uint16_t, int16_t>;
+template struct Tuple2<uint16_t, uint32_t>;
+template struct Tuple2<uint16_t, int64_t>;
+template struct Tuple2<int32_t, int8_t>;
+template struct Tuple2<int32_t, uint16_t>;
+template struct Tuple2<int32_t, int32_t>;
+template struct Tuple2<int32_t, uint64_t>;
+template struct Tuple2<uint64_t, uint8_t>;
+template struct Tuple2<uint64_t, int16_t>;
+template struct Tuple2<uint64_t, uint32_t>;
+template struct Tuple2<uint64_t, int64_t>;
+template struct Tuple2<float, int8_t>;
+template struct Tuple2<float, uint16_t>;
+template struct Tuple2<float, int32_t>;
+template struct Tuple2<float, uint64_t>;
+template struct Tuple2<double, uint8_t>;
+template struct Tuple2<double, int16_t>;
+template struct Tuple2<double, uint32_t>;
+template struct Tuple2<double, int64_t>;
+
 extern "C"
 {
 
@@ -1486,7 +1553,7 @@ std::array<int8_t, 1> U_Get_i8_x1_Test0();
 std::array<int8_t, 2> U_Get_i8_x2_Test0();
 std::array<int8_t, 3> U_Get_i8_x3_Test0();
 std::array<int8_t, 4> U_Get_i8_x4_Test0();
-std::array<int8_t,5> U_Get_i8_x5_Test0();
+std::array<int8_t, 5> U_Get_i8_x5_Test0();
 std::array<int8_t, 6> U_Get_i8_x6_Test0();
 std::array<int8_t, 7> U_Get_i8_x7_Test0();
 std::array<int8_t, 8> U_Get_i8_x8_Test0();
