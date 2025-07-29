@@ -4036,10 +4036,18 @@ Value CodeBuilder::DoCallFunction(
 	const size_t arg_count= preevaluated_args.size() + args.size();
 	U_ASSERT( arg_count == function_type.params.size() );
 
-	// TODO - ensure here completeness of arg types?
+	// Ensure return type/param types completeness before performing the call.
+	{
+		if( !EnsureTypeComplete( function_type.return_type ) )
+			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, function_type.return_type );
 
-	if( !EnsureTypeComplete( function_type.return_type ) )
-		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, function_type.return_type );
+		for( const FunctionType::Param& param : function_type.params )
+		{
+			// Type completeness is necessary for both value and reference params.
+			if( !EnsureTypeComplete( param.type ) )
+				REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, param.type );
+		}
+	}
 
 	const ICallingConventionInfo::CallInfo call_info=
 		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
@@ -4431,7 +4439,7 @@ Value CodeBuilder::DoCallFunction(
 		const auto really_function= llvm::dyn_cast<llvm::Function>(function);
 
 		llvm::FunctionType* const llvm_function_type=
-			really_function != nullptr ? really_function->getFunctionType() : GetLLVMFunctionType( function_type );
+			really_function != nullptr ? really_function->getFunctionType() : GetLLVMFunctionType( function_type, call_info );
 
 		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( llvm_function_type, function, llvm_args );
 		call_instruction->setCallingConv( GetLLVMCallingConvention( function_type.calling_convention ) );

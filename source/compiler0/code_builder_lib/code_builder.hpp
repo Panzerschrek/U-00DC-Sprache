@@ -316,6 +316,8 @@ private:
 
 	// Getting LLVM function type may require building complete types for arguments/return value.
 	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
+	// Get function type, using call info, calculated previously.
+	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type, const ICallingConventionInfo::CallInfo& call_info );
 
 	CallingConvention PrepareCallingConvention(
 		NamesScope& names_scope,

@@ -2492,9 +2492,23 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 
 	const FunctionType& function_type= function_variable.type;
 
+	// Ensure completeness of return value and value params before requesting call info.
+
+	if( function_type.return_value_type == ValueType::Value )
+		EnsureTypeComplete( function_type.return_type );
+
+	for( const FunctionType::Param& param : function_type.params )
+	{
+		if( param.value_type == ValueType::Value )
+			EnsureTypeComplete( param.type );
+	}
+
+	const ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
+
 	llvm_function=
 		llvm::Function::Create(
-			GetLLVMFunctionType( function_type ),
+			GetLLVMFunctionType( function_type, call_info ),
 			// Use private linkage for generated function.
 			function_variable.is_generated ? llvm::GlobalValue::PrivateLinkage : llvm::Function::LinkageTypes::ExternalLinkage,
 			function_variable.llvm_function->name_mangled,
@@ -2519,9 +2533,6 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 		llvm_function->addFnAttr( llvm::Attribute::PresplitCoroutine );
 
 	// Prepare params attributes.
-
-	const ICallingConventionInfo::CallInfo call_info=
-		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
 
 	const bool first_param_is_sret= std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing );
 

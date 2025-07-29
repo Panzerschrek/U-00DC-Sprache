@@ -328,6 +328,13 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	const ICallingConventionInfo::CallInfo call_info=
 		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
 
+	return GetLLVMFunctionType( function_type, call_info );
+}
+
+llvm::FunctionType* CodeBuilder::GetLLVMFunctionType(
+	const FunctionType& function_type,
+	const ICallingConventionInfo::CallInfo& call_info )
+{
 	llvm::Type* llvm_function_return_type= nullptr;
 	llvm::SmallVector<llvm::Type*, 16> params_llvm_types;
 
