@@ -4254,6 +4254,8 @@ Value CodeBuilder::DoCallFunction(
 							{
 								llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( argument_passing.llvm_type, expr->llvm_value );
 								load_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
+								if( generate_tbaa_metadata_ )
+									load_instruction->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( expr->type ) );
 								llvm_args[arg_number]= load_instruction;
 							}
 							break;
@@ -4512,6 +4514,8 @@ Value CodeBuilder::DoCallFunction(
 				{
 					llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
 					store_instruction->setAlignment( data_layout_.getABITypeAlign( function_type.return_type.GetLLVMType() ) );
+					if( generate_tbaa_metadata_ )
+						store_instruction->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( result->type ) );
 				}
 				break;
 			case ICallingConventionInfo::ReturnValuePassingKind::ByPointer:

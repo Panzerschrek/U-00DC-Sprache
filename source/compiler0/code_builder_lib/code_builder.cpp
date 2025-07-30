@@ -1690,9 +1690,10 @@ void CodeBuilder::BuildFuncCode(
 						CreateLifetimeStart( function_context, variable->llvm_value );
 
 						// Store direct argument using address of object allocated on stack.
-						// TODO - use typed store (with TBAA metadata)?
 						llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( &llvm_arg, variable->llvm_value );
 						store_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
+						if( generate_tbaa_metadata_ )
+							store_instruction->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( variable->type ) );
 					}
 					break;
 
