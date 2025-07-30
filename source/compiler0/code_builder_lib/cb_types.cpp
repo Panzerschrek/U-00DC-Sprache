@@ -440,30 +440,4 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const CallingConven
 	return llvm::CallingConv::C;
 }
 
-llvm::Type* CodeBuilder::GetSingleScalarType( llvm::Type* type )
-{
-	U_ASSERT( type->isSized() && "expected sized type!" );
-
-	while( true )
-	{
-		if( type->isStructTy() && type->getStructNumElements() == 1 )
-		{
-			type= type->getStructElementType(0);
-			continue;
-		}
-		if( type->isArrayTy() && type->getArrayNumElements() == 1 )
-		{
-			type= type->getArrayElementType();
-			continue;
-		}
-
-		break; // Not a composite.
-	}
-
-	if( type->isIntegerTy() || type->isFloatingPointTy() || type->isPointerTy() )
-		return type;
-
-	return nullptr;
-}
-
 } // namespace U

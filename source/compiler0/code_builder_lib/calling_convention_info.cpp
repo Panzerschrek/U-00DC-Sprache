@@ -10,6 +10,9 @@ namespace U
 namespace
 {
 
+// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
+// Returns null otherwise.
+// Requires type to be complete.
 llvm::Type* GetSingleScalarType( llvm::Type* type )
 {
 	U_ASSERT( type->isSized() && "expected sized type!" );
@@ -120,7 +123,6 @@ ICallingConventionInfo::CallInfo CallingConventionInfoDefault::CalculateFunction
 
 	return call_info;
 }
-
 
 ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( const Type& type )
 {
@@ -275,7 +277,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 		{
 			constexpr size_t num_parts= 2;
 			std::array<llvm::Type*, num_parts> types{};
-			const uint32_t part_sizes[2]{ 8u, uint32_t(type_size)  - 8u };
+			const uint32_t part_sizes[num_parts]{ 8u, uint32_t(type_size)  - 8u };
 			for( size_t part= 0; part < num_parts; ++part )
 			{
 				if( classes[part] == ArgumentClass::Integer )
@@ -286,8 +288,8 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 			}
 
 			// Create a tuple for two parts.
-			result_llvm_type= llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) );
 			// TODO - set zext/sext?
+			result_llvm_type= llvm::StructType::get( llvm_context, types );
 		}
 		else U_ASSERT( false );
 
@@ -369,7 +371,7 @@ void CallingConventionInfoSystemV_X86_64::PostMergeArgumentClasses( ArgumentPart
 ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( const FunctionType& function_type )
 {
 	// Count registers used for parameters passing.
-	// It's neccessary because of the rule, which says, that a composite argument sholdn't be passed partially in registers and partially in stack.
+	// It's neccessary because of the rule, which says, that a composite argument shouldn't be passed partially in registers and partially in stack.
 	// So if we have no place in registers for such argument, pass it entirely in stack.
 
 	// We have 6 integer register available for integer parameters passing: %rdi, %rsi, %rdx, %rcx, %r8, %r8.
@@ -494,11 +496,11 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 
 						if( type_size <= 8 )
 						{
-
 							if( classes[0] == ArgumentClass::Integer )
 							{
 								// TODO - check if it's correct to use ZExt.
-								call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::DirectZExt, llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 ) };
+								call_info.arguments_passing[i]=
+									ArgumentPassing{ ArgumentPassingKind::DirectZExt, llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 ) };
 
 								if( num_integer_registers_left > 0 )
 									--num_integer_registers_left;
@@ -519,7 +521,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 						{
 							constexpr size_t num_parts= 2;
 							std::array<llvm::Type*, num_parts> types{};
-							const uint32_t part_sizes[2]{ 8u, uint32_t(type_size)  - 8u };
+							const uint32_t part_sizes[num_parts]{ 8u, uint32_t(type_size)  - 8u };
 							size_t num_integer_registers_needed= 0, num_floating_point_registers_needed= 0;
 							for( size_t part= 0; part < num_parts; ++part )
 							{
@@ -541,17 +543,14 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 							{
 								// Create a tuple for two parts.
 								// TODO - set zext/sext?
-								call_info.arguments_passing[i]=
-									ArgumentPassing{
-										ArgumentPassingKind::Direct,
-										llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) ) };
+								call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, llvm::StructType::get( llvm_context, types ) };
 
 								num_integer_registers_left-= num_integer_registers_needed;
 								num_floating_point_registers_left-= num_floating_point_registers_needed;
 							}
 							else
 							{
-								// If we have not enough registers to pass all components of this composite - pass it in stack.
+								// If we have not enough registers to pass all parts of this composite - pass it in stack.
 								call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
 
 								// No registers are consumed for in-stack passing.
@@ -617,7 +616,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86_64::Cal
 
 	// Composite types are left.
 
-	// Return composites with integer sizes as integers (even if a composite contains floating-point values).
+	// Return composites with integer sizes as integers (even if a composite contains pointer or floating-point value(s)).
 	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
 		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 ) };
@@ -666,7 +665,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86_64::Calcul
 
 	llvm::Type* const llvm_type= type.GetLLVMType();
 
-	// Pass composites with integer sizes as integers (even if a composite contains floating-point values).
+	// Pass composites with integer sizes as integers (even if a composite contains pointer or floating-point value(s)).
 	const auto size= data_layout_.getTypeAllocSize( llvm_type );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
 		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 )};
@@ -713,7 +712,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86::Calcul
 
 	llvm::Type* const llvm_type= type.GetLLVMType();
 
-	// Return composites with integer sizes as integers (even if a composite contains floating-point values).
+	// Return composites with integer sizes as integers (even if a composite contains pointer or floating-point value(s)).
 	const auto size= data_layout_.getTypeAllocSize( llvm_type );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
 		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 ) };
@@ -827,19 +826,19 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 
 		if( all_scalar_elements_are_same && ( scalar_types.front()->isFloatTy() || scalar_types.front()->isDoubleTy() ) )
 		{
-			// Homogeneous Floating-point Aggregate - they are passed directly, if there is no more than 4 elements.
-			// [ f64, 4 ] array is largest composite type, which can be passed directly.
+			// Homogeneous Floating-point Aggregate - they are returned directly, but only if they have no more than 4 elements.
+			// [ f64, 4 ] array is largest composite type, which can be returned directly.
 			return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::ArrayType::get( scalar_types.front(), scalar_types.size() ) };
 		}
 	}
 
 	if( size > 16 )
 	{
-		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are passed by pointer.
+		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are returned via "sret" pointer.
 		return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 	}
 
-	// Small composite types are passed as integers.
+	// Small composite types are returned as integers.
 	// This includes even structs consisting of f32/f64 pairs.
 	return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 ) };
 }
@@ -886,7 +885,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 
 		if( all_scalar_elements_are_same && ( scalar_types.front()->isFloatTy() || scalar_types.front()->isDoubleTy() ) )
 		{
-			// Homogeneous Floating-point Aggregate - they are passed directly, if there is no more than 4 elements.
+			// Homogeneous Floating-point Aggregate - they are passed directly, but only if they have no more than 4 elements.
 			// [ f64, 4 ] array is largest composite type, which can be passed directly.
 			return ArgumentPassing{ ArgumentPassingKind::Direct, llvm::ArrayType::get( scalar_types.front(), scalar_types.size() ) };
 		}
