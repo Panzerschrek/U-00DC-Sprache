@@ -4224,20 +4224,7 @@ Value CodeBuilder::DoCallFunction(
 				const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[ arg_number ];
 
 				if( expr->constexpr_value != nullptr )
-				{
-					switch( argument_passing.kind )
-					{
-					case ICallingConventionInfo::ArgumentPassingKind::Direct:
-					case ICallingConventionInfo::ArgumentPassingKind::DirectZExt:
-					case ICallingConventionInfo::ArgumentPassingKind::DirectSExt:
-						constant_llvm_args.push_back( UnwrapRawScalarConstant( expr->constexpr_value ) );
-						break;
-					case ICallingConventionInfo::ArgumentPassingKind::ByPointer:
-					case ICallingConventionInfo::ArgumentPassingKind::InStack:
-						constant_llvm_args.push_back( expr->constexpr_value );
-						break;
-					};
-				}
+					constant_llvm_args.push_back( expr->constexpr_value );
 
 				if( expr->value_type == ValueType::Value && expr->type == param.type )
 				{

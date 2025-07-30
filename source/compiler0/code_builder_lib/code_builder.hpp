@@ -658,7 +658,6 @@ private:
 		FunctionContext& function_context );
 
 	static llvm::Constant* WrapRawScalarConstant( llvm::Constant* constant, llvm::Type* dst_type );
-	static llvm::Constant* UnwrapRawScalarConstant( llvm::Constant* constant );
 
 	void TryCallCopyConstructor(
 		CodeBuilderErrorsContainer& errors_container,

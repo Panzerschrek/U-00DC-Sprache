@@ -81,7 +81,14 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 		}
 		else if( param.getType() == args[i]->getType() )
 			current_function_frame_.instructions_map[ &param ]= GetVal( args[i] );
-		else U_ASSERT(false);
+		else
+		{
+			// Assume we have a constant of type compatible with parameter type.
+			// Convert it onto expected type, using load-store, which is effectively equivalent to bitcast.
+			const size_t offset= MoveConstantToStack( *args[i] );
+			const std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
+			current_function_frame_.instructions_map[ &param ]= DoLoad( data_ptr, param.getType() );
+		}
 
 		++i;
 	}
