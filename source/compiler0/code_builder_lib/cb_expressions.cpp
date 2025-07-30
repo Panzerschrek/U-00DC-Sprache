@@ -4395,7 +4395,12 @@ Value CodeBuilder::DoCallFunction(
 		function_type.return_value_type == ValueType::Value && function_type.return_type.ReferenceTagCount() == 0u )
 	{
 		const Interpreter::ResultConstexpr evaluation_result=
-			constexpr_function_evaluator_.EvaluateConstexpr( function_as_real_function, constant_llvm_args );
+			constexpr_function_evaluator_.EvaluateConstexpr(
+				function_as_real_function,
+				constant_llvm_args,
+				function_type.return_type == void_type_
+					? *fundamental_llvm_types_.void_for_ret_
+					: *function_type.return_type.GetLLVMType() );
 
 		for( const std::string& error_text : evaluation_result.errors )
 		{
@@ -4411,18 +4416,14 @@ Value CodeBuilder::DoCallFunction(
 				result->llvm_value= result->constexpr_value= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
 			else if( return_value_is_composite )
 			{
-				if( return_value_is_sret )
+				if( !function_context.is_functionless_context )
 				{
-					if( !function_context.is_functionless_context )
+					if( return_value_is_sret )
 						MoveConstantToMemory( result->type, result->llvm_value, evaluation_result.result_constant, function_context );
-					result->constexpr_value= evaluation_result.result_constant;
-				}
-				else
-				{
-					if( !function_context.is_functionless_context )
+					else
 						function_context.llvm_ir_builder.CreateStore( evaluation_result.result_constant, result->llvm_value );
-					result->constexpr_value= WrapRawScalarConstant( evaluation_result.result_constant, function_type.return_type.GetLLVMType() );
 				}
+				result->constexpr_value= evaluation_result.result_constant;
 			}
 			else
 				result->llvm_value= result->constexpr_value= evaluation_result.result_constant;

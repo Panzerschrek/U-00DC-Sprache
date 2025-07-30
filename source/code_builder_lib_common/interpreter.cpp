@@ -35,15 +35,15 @@ Interpreter::Interpreter( const llvm::DataLayout& data_layout, InterpreterOption
 
 Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 	llvm::Function* const llvm_function,
-	const llvm::ArrayRef<const llvm::Constant*> args )
+	const llvm::ArrayRef<const llvm::Constant*> args,
+	llvm::Type& return_type )
 {
 	instructions_executed_= 0;
 
 	stack_.resize(16u); // reserve null pointer
 
 	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
-
-	llvm::Type* return_type= llvm_function->getReturnType();
+	U_ASSERT( !return_type.isPointerTy() ); // Currently can return only values.
 
 	size_t s_ret_ptr= 0u;
 
@@ -53,13 +53,12 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 	{
 		if( param.getType()->isPointerTy() )
 		{
-			if( const auto s_ret_type= param.getParamStructRetType() )
+			if( param.hasStructRetAttr() )
 			{
 				U_ASSERT(i == 0u);
-				return_type= s_ret_type;
 
 				s_ret_ptr= stack_.size();
-				const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
+				const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize( &return_type ) );
 				if( new_stack_size >= g_max_data_stack_size )
 				{
 					ReportDataStackOverflow();
@@ -84,7 +83,7 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 		else
 		{
 			// Assume we have a constant of type compatible with parameter type.
-			// Convert it onto expected type, using load-store, which is effectively equivalent to bitcast.
+			// Convert it into expected type, using load-store, which is effectively equivalent to bitcast.
 			const size_t offset= MoveConstantToStack( *args[i] );
 			const std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
 			current_function_frame_.instructions_map[ &param ]= DoLoad( data_ptr, param.getType() );
@@ -93,25 +92,42 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 		++i;
 	}
 
-	U_ASSERT( !return_type->isPointerTy() ); // Currently can return only values.
-
 	const llvm::GenericValue res= CallFunction( *llvm_function );
 
 	ResultConstexpr result;
 	result.errors= std::move(errors_);
 	errors_= {};
 
-	if( return_type->isIntegerTy() )
-		result.result_constant= llvm::Constant::getIntegerValue( return_type, res.IntVal );
-	else if( return_type->isFloatTy() )
-		result.result_constant= llvm::ConstantFP::get( return_type, double(res.FloatVal) );
-	else if( return_type->isDoubleTy() )
-		result.result_constant= llvm::ConstantFP::get( return_type, res.DoubleVal );
-	else if( return_type->isVoidTy() )
-		result.result_constant= llvm::UndefValue::get( return_type ); // TODO - set correct value
-	else if( return_type->isArrayTy() || return_type->isStructTy() )
-		result.result_constant= ReadConstantFromStack( return_type, s_ret_ptr );
-	else if( return_type->isPointerTy() )
+	if( return_type.isIntegerTy() )
+		result.result_constant= llvm::Constant::getIntegerValue( &return_type, res.IntVal );
+	else if( return_type.isFloatTy() )
+		result.result_constant= llvm::ConstantFP::get( &return_type, double(res.FloatVal) );
+	else if( return_type.isDoubleTy() )
+		result.result_constant= llvm::ConstantFP::get( &return_type, res.DoubleVal );
+	else if( return_type.isVoidTy() )
+		result.result_constant= llvm::UndefValue::get( &return_type ); // TODO - set correct value
+	else if( return_type.isArrayTy() || return_type.isStructTy() )
+	{
+		if( s_ret_ptr != 0 )
+			result.result_constant= ReadConstantFromStack( &return_type, s_ret_ptr );
+		else
+		{
+			// It's an immediate value, which should be converted into a constant of given composite type.
+			// Convert it into expected type, using load-store, which is effectively equivalent to bitcast.
+			const size_t address= stack_.size();
+			const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize( &return_type ) );
+			if( new_stack_size >= g_max_data_stack_size )
+			{
+				ReportDataStackOverflow();
+				return result;
+			}
+			stack_.resize( new_stack_size );
+
+			DoStore( GetMemoryForVirtualAddress( address ), res, llvm_function->getReturnType() );
+			result.result_constant= ReadConstantFromStack( &return_type, address );
+		}
+	}
+	else if( return_type.isPointerTy() )
 		ReportError( "returning pointer in constexpr function" );
 	else U_ASSERT(false);
 
