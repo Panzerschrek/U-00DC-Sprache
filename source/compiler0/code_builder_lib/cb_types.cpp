@@ -347,14 +347,17 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType(
 		}
 		else
 		{
-			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &call_info.return_value_passing ) )
-				llvm_function_return_type= direct_passing->llvm_type;
-			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing ) )
+			switch( call_info.return_value_passing.kind )
 			{
+			case ICallingConventionInfo::ReturnValuePassingKind::Direct:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectZExt:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectSExt:
+				llvm_function_return_type= call_info.return_value_passing.llvm_type;
+				break;
+			case ICallingConventionInfo::ReturnValuePassingKind::ByPointer:
 				llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
 				params_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
 			}
-			else U_ASSERT(false);
 		}
 	}
 	else

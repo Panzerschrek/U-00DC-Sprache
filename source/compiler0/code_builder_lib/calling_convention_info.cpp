@@ -59,72 +59,44 @@ CallingConventionInfoDefault::CallingConventionInfoDefault( llvm::DataLayout dat
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::CalculateReturnValuePassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= f->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, f->llvm_type };
 
 	if( const auto e= type.GetEnumType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= e->underlying_type.llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, e->underlying_type.llvm_type };
 
 	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= fp->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, fp->llvm_type };
 
 	if( const auto p= type.GetRawPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= p->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, p->llvm_type };
 
 	if( const auto c= type.GetClassType() )
 	{
 		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
-		{
-			ReturnValuePassingDirect return_value_passing;
-			return_value_passing.llvm_type= single_scalar;
-			return return_value_passing;
-		}
+			return ReturnValuePassing{ ReturnValuePassingKind::Direct, single_scalar };
 		else
-			return ReturnValuePassingByPointer{};
+			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 	}
 
 	if( const auto a= type.GetArrayType() )
 	{
 		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
-		{
-			ReturnValuePassingDirect return_value_passing;
-			return_value_passing.llvm_type= single_scalar;
-			return return_value_passing;
-		}
+			return ReturnValuePassing{ ReturnValuePassingKind::Direct, single_scalar };
 		else
-			return ReturnValuePassingByPointer{};
+			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 	}
 
 	if( const auto t= type.GetTupleType() )
 	{
 		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
-		{
-			ReturnValuePassingDirect return_value_passing;
-			return_value_passing.llvm_type= single_scalar;
-			return return_value_passing;
-		}
+			return ReturnValuePassing{ ReturnValuePassingKind::Direct, single_scalar };
 		else
-			return ReturnValuePassingByPointer{};
+			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 	}
 
 	// Unhandled type kind.
 	U_ASSERT(false);
-	return ReturnValuePassingByPointer{};
+	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 }
 
 ICallingConventionInfo::CallInfo CallingConventionInfoDefault::CalculateFunctionCallInfo( const FunctionType& function_type )
@@ -134,11 +106,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoDefault::CalculateFunction
 	if( function_type.return_value_type == ValueType::Value )
 		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
 	else
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= function_type.return_type.GetLLVMType()->getPointerTo();
-		call_info.return_value_passing= std::move(return_value_passing);
-	}
+		call_info.return_value_passing= ReturnValuePassing{ ReturnValuePassingKind::Direct, function_type.return_type.GetLLVMType()->getPointerTo() };
 
 	call_info.arguments_passing.resize( function_type.params.size() );
 	for( size_t i= 0; i < function_type.params.size(); ++i )
@@ -273,43 +241,29 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 {
 	if( const auto f= type.GetFundamentalType() )
 	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= f->llvm_type;
 		if( IsSignedInteger( f->fundamental_type ) )
-			return_value_passing.sext= true;
+			return ReturnValuePassing{ ReturnValuePassingKind::DirectSExt, f->llvm_type };
 		else if(
 			IsUnsignedInteger( f->fundamental_type ) ||
 			IsChar( f->fundamental_type ) ||
 			IsByte( f->fundamental_type ) ||
 			f->fundamental_type == U_FundamentalType::bool_ )
-			return_value_passing.zext= true;
+			return ReturnValuePassing{ ReturnValuePassingKind::DirectZExt, f->llvm_type };
 
-		return return_value_passing;
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, f->llvm_type };
 	}
 
+	// Enums are unsigned.
 	if( const auto e= type.GetEnumType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= e->underlying_type.llvm_type;
-		return_value_passing.zext= true; // Enums are unsigned.
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::DirectZExt, e->underlying_type.llvm_type };
 
+	// It seems like zero extension isn't necessary for pointers.
 	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= fp->llvm_type;
-		// It seems like zero extension isn't necessary for pointers.
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, fp->llvm_type };
 
+	// It seems like zero extension isn't necessary for pointers.
 	if( const auto p= type.GetRawPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= p->llvm_type;
-		// It seems like zero extension isn't necessary for pointers.
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, p->llvm_type };
 
 	// Composite types are left.
 
@@ -319,12 +273,12 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 
 		const uint64_t type_size= data_layout_.getTypeAllocSize( llvm_type );
 		if( type_size > 16 )
-			return ReturnValuePassingByPointer{};
+			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 
 		if( type_size == 0 )
 		{
 			// TODO - handle zero-sized structs properly.
-			return ReturnValuePassingByPointer{};
+			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 		}
 
 		ArgumentPartClasses classes;
@@ -335,18 +289,18 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 		PostMergeArgumentClasses( classes );
 
 		if( classes[0] == ArgumentClass::Memory )
-			return ReturnValuePassingByPointer{};
+			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 
 		llvm::LLVMContext& llvm_context= llvm_type->getContext();
 
-		ReturnValuePassingDirect return_value_passing;
+		llvm::Type* result_llvm_type= nullptr;
 
 		if( type_size <= 8 )
 		{
 			if( classes[0] == ArgumentClass::Integer )
-				return_value_passing.llvm_type= llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 );
+				result_llvm_type= llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 );
 			else if( classes[0] == ArgumentClass::SSE )
-				return_value_passing.llvm_type= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+				result_llvm_type= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
 			else U_ASSERT(false);
 		}
 		else if( type_size <= 16 )
@@ -364,18 +318,18 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 			}
 
 			// Create a tuple for two parts.
-			return_value_passing.llvm_type= llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) );
+			result_llvm_type= llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) );
 			// TODO - set zext/sext?
 		}
 		else U_ASSERT( false );
 
-		return return_value_passing;
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, result_llvm_type };
 	}
 	else
 	{
 		// Unhandled type kind.
 		U_ASSERT(false);
-		return ReturnValuePassingByPointer{};
+		return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 	}
 }
 
@@ -460,18 +414,14 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 	{
 		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
 
-		if( std::holds_alternative<ReturnValuePassingByPointer>( call_info.return_value_passing ) )
+		if( call_info.return_value_passing.kind == ReturnValuePassingKind::ByPointer )
 		{
 			// Consume an integer register for "sret" pointer.
 			--num_integer_registers_left;
 		}
 	}
 	else
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= function_type.return_type.GetLLVMType()->getPointerTo();
-		call_info.return_value_passing= std::move(return_value_passing);
-	}
+		call_info.return_value_passing= ReturnValuePassing{ ReturnValuePassingKind::Direct, function_type.return_type.GetLLVMType()->getPointerTo() };
 
 	call_info.arguments_passing.resize( function_type.params.size() );
 	for( size_t i= 0; i < function_type.params.size(); ++i )
@@ -696,46 +646,26 @@ CallingConventionInfoMSVC_X86_64::CallingConventionInfoMSVC_X86_64( llvm::DataLa
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86_64::CalculateReturnValuePassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= f->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, f->llvm_type };
 
 	if( const auto e= type.GetEnumType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= e->underlying_type.llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, e->underlying_type.llvm_type };
 
 	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= fp->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, fp->llvm_type };
 
 	if( const auto p= type.GetRawPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= p->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, p->llvm_type };
 
 	// Composite types are left.
 
 	// Return composites with integer sizes as integers (even if a composite contains floating-point values).
 	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 );
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 ) };
 
 	// Return other composites via sret pointer.
-	return ReturnValuePassingByPointer{};
+	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 }
 
 ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86_64::CalculateFunctionCallInfo( const FunctionType& function_type )
@@ -745,11 +675,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86_64::CalculateFunc
 	if( function_type.return_value_type == ValueType::Value )
 		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
 	else
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= function_type.return_type.GetLLVMType()->getPointerTo();
-		call_info.return_value_passing= std::move(return_value_passing);
-	}
+		call_info.return_value_passing= ReturnValuePassing{ ReturnValuePassingKind::Direct, function_type.return_type.GetLLVMType()->getPointerTo() };
 
 	call_info.arguments_passing.resize( function_type.params.size() );
 	for( size_t i= 0; i < function_type.params.size(); ++i )
@@ -836,46 +762,28 @@ CallingConventionInfoMSVC_X86::CallingConventionInfoMSVC_X86( llvm::DataLayout d
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86::CalculateReturnValuePassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= f->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, f->llvm_type };
 
 	if( const auto e= type.GetEnumType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= e->underlying_type.llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, e->underlying_type.llvm_type };
 
 	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= fp->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, fp->llvm_type };
 
 	if( const auto p= type.GetRawPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= p->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, p->llvm_type };
 
 	// Composite types are left.
 
+	llvm::Type* const llvm_type= type.GetLLVMType();
+
 	// Return composites with integer sizes as integers (even if a composite contains floating-point values).
-	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
+	const auto size= data_layout_.getTypeAllocSize( llvm_type );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 );
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 ) };
 
 	// Return other composites via sret pointer.
-	return ReturnValuePassingByPointer{};
+	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 }
 
 ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86::CalculateFunctionCallInfo( const FunctionType& function_type )
@@ -885,11 +793,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86::CalculateFunctio
 	if( function_type.return_value_type == ValueType::Value )
 		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
 	else
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= function_type.return_type.GetLLVMType()->getPointerTo();
-		call_info.return_value_passing= std::move(return_value_passing);
-	}
+		call_info.return_value_passing= ReturnValuePassing{ ReturnValuePassingKind::Direct, function_type.return_type.GetLLVMType()->getPointerTo() };
 
 	call_info.arguments_passing.resize( function_type.params.size() );
 	for( size_t i= 0; i < function_type.params.size(); ++i )
@@ -968,32 +872,16 @@ CallingConventionInfoSystemV_AArch64::CallingConventionInfoSystemV_AArch64( llvm
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= f->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, f->llvm_type };
 
 	if( const auto e= type.GetEnumType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= e->underlying_type.llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, e->underlying_type.llvm_type };
 
 	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= fp->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, fp->llvm_type };
 
 	if( const auto p= type.GetRawPointerType() )
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= p->llvm_type;
-		return return_value_passing;
-	}
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, p->llvm_type };
 
 	// Composite types.
 
@@ -1003,7 +891,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 	if( size > 32 )
 	{
 		// Return composites with size larger than 32 by pointer.
-		return ReturnValuePassingByPointer{};
+		return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 	}
 
 	llvm::SmallVector<llvm::Type*, 16> scalar_types;
@@ -1012,9 +900,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 	if( scalar_types.size() == 1 )
 	{
 		// Return composites with single scalar inside using this scalar.
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= scalar_types.front();
-		return return_value_passing;
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, scalar_types.front() };
 	}
 
 	if( scalar_types.size() <= 4 )
@@ -1027,23 +913,19 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 		{
 			// Homogeneous Floating-point Aggregate - they are passed directly, if there is no more than 4 elements.
 			// [ f64, 4 ] array is largest composite type, which can be passed directly.
-			ReturnValuePassingDirect return_value_passing;
-			return_value_passing.llvm_type= llvm::ArrayType::get( scalar_types.front(), scalar_types.size() );
-			return return_value_passing;
+			return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::ArrayType::get( scalar_types.front(), scalar_types.size() ) };
 		}
 	}
 
 	if( size > 16 )
 	{
 		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are passed by pointer.
-		return ReturnValuePassingByPointer{};
+		return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 	}
 
 	// Small composite types are passed as integers.
 	// This includes even structs consisting of f32/f64 pairs.
-	ReturnValuePassingDirect return_value_passing;
-	return_value_passing.llvm_type= llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 );
-	return return_value_passing;
+	return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 ) };
 }
 
 ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( const Type& type )
@@ -1166,11 +1048,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_AArch64::Calculate
 	if( function_type.return_value_type == ValueType::Value )
 		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
 	else
-	{
-		ReturnValuePassingDirect return_value_passing;
-		return_value_passing.llvm_type= function_type.return_type.GetLLVMType()->getPointerTo();
-		call_info.return_value_passing= std::move(return_value_passing);
-	}
+		call_info.return_value_passing= ReturnValuePassing{ ReturnValuePassingKind::Direct, function_type.return_type.GetLLVMType()->getPointerTo() };
 
 	call_info.arguments_passing.resize( function_type.params.size() );
 	for( size_t i= 0; i < function_type.params.size(); ++i )

@@ -4362,7 +4362,7 @@ Value CodeBuilder::DoCallFunction(
 		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, function_type.return_type );
 
 	const bool return_value_is_composite= function_type.ReturnsCompositeValue();
-	const bool return_value_is_sret= std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing );
+	const bool return_value_is_sret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 
 	const VariableMutPtr result= Variable::Create(
 		function_type.return_type,
@@ -4449,15 +4449,19 @@ Value CodeBuilder::DoCallFunction(
 		if( really_function == nullptr && function_type.return_value_type != ValueType::Value )
 			call_instruction->addRetAttr( llvm::Attribute::NonNull );
 
-		if( return_value_is_sret )
-			call_instruction->addParamAttr( 0, llvm::Attribute::get( llvm_context_, llvm::Attribute::StructRet, function_type.return_type.GetLLVMType() ) );
-
-		if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &call_info.return_value_passing ) )
+		switch( call_info.return_value_passing.kind )
 		{
-			if( direct_passing->sext )
-				call_instruction->addRetAttr( llvm::Attribute::SExt );
-			if( direct_passing->zext )
-				call_instruction->addRetAttr( llvm::Attribute::ZExt );
+		case ICallingConventionInfo::ReturnValuePassingKind::Direct:
+			break;
+		case ICallingConventionInfo::ReturnValuePassingKind::DirectZExt:
+			call_instruction->addRetAttr( llvm::Attribute::ZExt );
+			break;
+		case ICallingConventionInfo::ReturnValuePassingKind::DirectSExt:
+			call_instruction->addRetAttr( llvm::Attribute::SExt );
+			break;
+		case ICallingConventionInfo::ReturnValuePassingKind::ByPointer:
+			call_instruction->addParamAttr( 0, llvm::Attribute::get( llvm_context_, llvm::Attribute::StructRet, function_type.return_type.GetLLVMType() ) );
+			break;
 		}
 
 		for( size_t i= 0u; i < function_type.params.size(); i++ )
@@ -4490,14 +4494,19 @@ Value CodeBuilder::DoCallFunction(
 			result->llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 		else if( return_value_is_composite )
 		{
-			if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingDirect>( call_info.return_value_passing ) )
+			switch( call_info.return_value_passing.kind )
 			{
-				llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
-				store_instruction->setAlignment( data_layout_.getABITypeAlign( function_type.return_type.GetLLVMType() ) );
+			case ICallingConventionInfo::ReturnValuePassingKind::Direct:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectZExt:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectSExt:
+				{
+					llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
+					store_instruction->setAlignment( data_layout_.getABITypeAlign( function_type.return_type.GetLLVMType() ) );
+				}
+				break;
+			case ICallingConventionInfo::ReturnValuePassingKind::ByPointer:
+				break;
 			}
-			else if( std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing ) )
-			{}
-			else U_ASSERT(false);
 		}
 		else
 			result->llvm_value= call_instruction;

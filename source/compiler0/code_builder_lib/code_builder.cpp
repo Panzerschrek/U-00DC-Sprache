@@ -2534,7 +2534,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 
 	// Prepare params attributes.
 
-	const bool first_param_is_sret= std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing );
+	const bool first_param_is_sret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
@@ -2592,24 +2592,24 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 	}
 
 	// Prepare ret attributes.
-	if( first_param_is_sret )
-	{
-		llvm_function->addParamAttr( 0, llvm::Attribute::NoAlias );
-
-		llvm::AttrBuilder builder(llvm_context_);
-		builder.addStructRetAttr(function_type.return_type.GetLLVMType());
-		llvm_function->addParamAttrs( 0, builder );
-	}
 	if( function_type.return_value_type != ValueType::Value )
 		llvm_function->addRetAttr( llvm::Attribute::NonNull );
 
-	if( const auto direct_passing= std::get_if<ICallingConventionInfo::ReturnValuePassingDirect>( &call_info.return_value_passing ) )
+	switch( call_info.return_value_passing.kind )
 	{
-		if( direct_passing->sext )
-			llvm_function->addRetAttr( llvm::Attribute::SExt );
-		if( direct_passing->zext )
-			llvm_function->addRetAttr( llvm::Attribute::ZExt );
-	}
+	case ICallingConventionInfo::ReturnValuePassingKind::Direct:
+		break;
+	case ICallingConventionInfo::ReturnValuePassingKind::DirectZExt:
+		llvm_function->addRetAttr( llvm::Attribute::ZExt );
+		break;
+	case ICallingConventionInfo::ReturnValuePassingKind::DirectSExt:
+		llvm_function->addRetAttr( llvm::Attribute::SExt );
+		break;
+	case ICallingConventionInfo::ReturnValuePassingKind::ByPointer:
+		llvm_function->addParamAttr( 0, llvm::Attribute::NoAlias );
+		llvm_function->addParamAttr( 0, llvm::Attribute::get( llvm_context_, llvm::Attribute::StructRet, function_type.return_type.GetLLVMType() ) );
+		break;
+	};
 
 	// We can't specify dereferenceable attrubutes here, since types of reference args and return values may be still incomplete.
 	// So, setup dereferenceable attributes later, using separate pass.
@@ -2632,7 +2632,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 	const ICallingConventionInfo::CallInfo call_info=
 		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
 
-	const bool first_param_is_sret= std::holds_alternative<ICallingConventionInfo::ReturnValuePassingByPointer>( call_info.return_value_passing );
+	const bool first_param_is_sret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{

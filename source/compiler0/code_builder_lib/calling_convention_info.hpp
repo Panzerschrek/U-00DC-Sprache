@@ -30,20 +30,21 @@ public:
 
 	using ArgumentPassing= std::variant<ArgumentPassingByPointer, ArgumentPassingDirect, ArgumentPassingInStack>;
 
-	struct ReturnValuePassingDirect
+	enum class ReturnValuePassingKind : uint8_t
 	{
+		Direct,
+		DirectZExt,
+		DirectSExt,
+		ByPointer, // Pass as argument #0 a pointer, where returned value should be constructed.
+	};
+
+	struct ReturnValuePassing
+	{
+		ReturnValuePassingKind kind= ReturnValuePassingKind::Direct;
 		// May be different type from original return LLVM type.
 		// Set explicit alignment for load/store instructions for this type equal to original type alignment.
 		llvm::Type* llvm_type= nullptr;
-		bool sext= false;
-		bool zext= false;
-
 	};
-
-	// Pass as argument #0 a pointer, where returned value should be constructed.
-	struct ReturnValuePassingByPointer{};
-
-	using ReturnValuePassing= std::variant<ReturnValuePassingByPointer, ReturnValuePassingDirect>;
 
 	struct CallInfo
 	{
