@@ -296,53 +296,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 	}
 }
 
-void CallingConventionInfoSystemV_X86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset )
-{
-	if( llvm_type.isPointerTy() )
-		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
-	else if( llvm_type.isIntegerTy() )
-	{
-		const uint64_t size= llvm_type.getIntegerBitWidth() / 8;
-		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
-		if( size > 8 )
-			MergeArgumentClasses( out_classes[ ( offset + 8 ) >> 3 ], ArgumentClass::Integer );
-	}
-	else if( llvm_type.isFloatTy() || llvm_type.isDoubleTy() )
-		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::SSE );
-	else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>( &llvm_type ) )
-	{
-		llvm::Type* const element_type= array_type->getElementType();
-		const uint64_t element_size= data_layout_.getTypeAllocSize( element_type );
-		for( uint64_t element_index= 0; element_index < array_type->getNumElements(); ++element_index )
-			ClassifyType_r( *element_type, out_classes, offset + uint32_t( element_index * element_size ) );
-	}
-	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( &llvm_type ) )
-	{
-		const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( struct_type );
-		for( uint32_t element_index= 0; element_index < struct_type->getNumElements(); ++element_index )
-			ClassifyType_r( *struct_type->getElementType( element_index ), out_classes, offset + uint32_t( struct_layout->getElementOffset( element_index ) ) );
-	}
-	else U_ASSERT( false ); // Unhandled type kind.
-}
-
-void CallingConventionInfoSystemV_X86_64::MergeArgumentClasses( ArgumentClass& dst, const ArgumentClass src )
-{
-	if( dst == src )
-	{}
-	else if( src == ArgumentClass::NoClass )
-	{}
-	else if( dst == ArgumentClass::NoClass )
-		dst= src;
-	else if( src == ArgumentClass::Memory )
-		dst= ArgumentClass::Memory;
-	else if( src == ArgumentClass::Integer )
-		dst= ArgumentClass::Integer;
-	else if( dst == ArgumentClass::Integer )
-	{}
-	else
-		dst= ArgumentClass::SSE;
-}
-
 ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( const FunctionType& function_type )
 {
 	// Count registers used for parameters passing.
@@ -552,6 +505,53 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 	}
 
 	return call_info;
+}
+
+void CallingConventionInfoSystemV_X86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset )
+{
+	if( llvm_type.isPointerTy() )
+		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
+	else if( llvm_type.isIntegerTy() )
+	{
+		const uint64_t size= llvm_type.getIntegerBitWidth() / 8;
+		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
+		if( size > 8 )
+			MergeArgumentClasses( out_classes[ ( offset + 8 ) >> 3 ], ArgumentClass::Integer );
+	}
+	else if( llvm_type.isFloatTy() || llvm_type.isDoubleTy() )
+		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::SSE );
+	else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>( &llvm_type ) )
+	{
+		llvm::Type* const element_type= array_type->getElementType();
+		const uint64_t element_size= data_layout_.getTypeAllocSize( element_type );
+		for( uint64_t element_index= 0; element_index < array_type->getNumElements(); ++element_index )
+			ClassifyType_r( *element_type, out_classes, offset + uint32_t( element_index * element_size ) );
+	}
+	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( &llvm_type ) )
+	{
+		const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( struct_type );
+		for( uint32_t element_index= 0; element_index < struct_type->getNumElements(); ++element_index )
+			ClassifyType_r( *struct_type->getElementType( element_index ), out_classes, offset + uint32_t( struct_layout->getElementOffset( element_index ) ) );
+	}
+	else U_ASSERT( false ); // Unhandled type kind.
+}
+
+void CallingConventionInfoSystemV_X86_64::MergeArgumentClasses( ArgumentClass& dst, const ArgumentClass src )
+{
+	if( dst == src )
+	{}
+	else if( src == ArgumentClass::NoClass )
+	{}
+	else if( dst == ArgumentClass::NoClass )
+		dst= src;
+	else if( src == ArgumentClass::Memory )
+		dst= ArgumentClass::Memory;
+	else if( src == ArgumentClass::Integer )
+		dst= ArgumentClass::Integer;
+	else if( dst == ArgumentClass::Integer )
+	{}
+	else
+		dst= ArgumentClass::SSE;
 }
 
 class CallingConventionInfoMSVC_X86_64 final : public ICallingConventionInfo
@@ -817,6 +817,28 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 	return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 ) };
 }
 
+ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_AArch64::CalculateFunctionCallInfo( const FunctionType& function_type )
+{
+	CallInfo call_info;
+
+	if( function_type.return_value_type == ValueType::Value )
+		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
+	else
+		call_info.return_value_passing= ReturnValuePassing{ ReturnValuePassingKind::Direct, function_type.return_type.GetLLVMType()->getPointerTo() };
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	for( size_t i= 0; i < function_type.params.size(); ++i )
+	{
+		const FunctionType::Param& param= function_type.params[i];
+		if( param.value_type == ValueType::Value )
+			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
+		else
+			call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, param.type.GetLLVMType()->getPointerTo() };
+	}
+
+	return call_info;
+}
+
 ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
@@ -907,28 +929,6 @@ void CallingConventionInfoSystemV_AArch64::CollectScalarTypes_r( llvm::Type& llv
 			CollectScalarTypes_r( *struct_type->getElementType( element_index ), out_types );
 	}
 	else U_ASSERT( false ); // Unhandled type kind.
-}
-
-ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_AArch64::CalculateFunctionCallInfo( const FunctionType& function_type )
-{
-	CallInfo call_info;
-
-	if( function_type.return_value_type == ValueType::Value )
-		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
-	else
-		call_info.return_value_passing= ReturnValuePassing{ ReturnValuePassingKind::Direct, function_type.return_type.GetLLVMType()->getPointerTo() };
-
-	call_info.arguments_passing.resize( function_type.params.size() );
-	for( size_t i= 0; i < function_type.params.size(); ++i )
-	{
-		const FunctionType::Param& param= function_type.params[i];
-		if( param.value_type == ValueType::Value )
-			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
-		else
-			call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, param.type.GetLLVMType()->getPointerTo() };
-	}
-
-	return call_info;
 }
 
 } // namespace
