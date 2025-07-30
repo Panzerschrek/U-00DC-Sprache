@@ -39,6 +39,27 @@ llvm::Type* GetSingleScalarType( llvm::Type* type )
 	return nullptr;
 }
 
+// Collect scalars of given type in their placement order.
+// Use this function with caution, since it can create very large lists for large arrays.
+// So, prefer skipping using it if it's known if given type is pretty large.
+void CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types )
+{
+	if( llvm_type.isIntegerTy() || llvm_type.isFloatingPointTy() || llvm_type.isPointerTy() )
+		out_types.push_back( &llvm_type );
+	else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>( &llvm_type ) )
+	{
+		llvm::Type* const element_type= array_type->getElementType();
+		for( uint64_t element_index= 0; element_index < array_type->getNumElements(); ++element_index )
+			CollectScalarTypes_r( *element_type, out_types );
+	}
+	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( &llvm_type ) )
+	{
+		for( uint32_t element_index= 0; element_index < struct_type->getNumElements(); ++element_index )
+			CollectScalarTypes_r( *struct_type->getElementType( element_index ), out_types );
+	}
+	else U_ASSERT( false ); // Unhandled type kind.
+}
+
 class CallingConventionInfoDefault final : public ICallingConventionInfo
 {
 public:
@@ -748,7 +769,6 @@ public: // ICallingConventionInfo
 
 private:
 	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
-	void CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types );
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -911,24 +931,6 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 					llvm::IntegerType::get( llvm_type->getContext(), 8 * 8 ),
 					llvm::IntegerType::get( llvm_type->getContext(), ( uint32_t(size) - 8 ) * 8 ) ) };
 	}
-}
-
-void CallingConventionInfoSystemV_AArch64::CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types )
-{
-	if( llvm_type.isIntegerTy() || llvm_type.isFloatingPointTy() || llvm_type.isPointerTy() )
-		out_types.push_back( &llvm_type );
-	else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>( &llvm_type ) )
-	{
-		llvm::Type* const element_type= array_type->getElementType();
-		for( uint64_t element_index= 0; element_index < array_type->getNumElements(); ++element_index )
-			CollectScalarTypes_r( *element_type, out_types );
-	}
-	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( &llvm_type ) )
-	{
-		for( uint32_t element_index= 0; element_index < struct_type->getNumElements(); ++element_index )
-			CollectScalarTypes_r( *struct_type->getElementType( element_index ), out_types );
-	}
-	else U_ASSERT( false ); // Unhandled type kind.
 }
 
 } // namespace
