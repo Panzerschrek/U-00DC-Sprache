@@ -182,10 +182,6 @@ private:
 		NoClass,
 		Integer,
 		SSE,
-		SSEUp,
-		x87,
-		x87Up,
-		Complex_x87,
 		Memory,
 	};
 
@@ -196,8 +192,6 @@ private:
 	void ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset );
 
 	static void MergeArgumentClasses( ArgumentClass& dst, const ArgumentClass src );
-
-	static void PostMergeArgumentClasses( ArgumentPartClasses& classes );
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -256,9 +250,8 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 			c= ArgumentClass::NoClass;
 
 		ClassifyType_r( *llvm_type, classes, 0u );
-		PostMergeArgumentClasses( classes );
 
-		if( classes[0] == ArgumentClass::Memory )
+		if( std::find( classes.begin(), classes.end(), ArgumentClass::Memory ) != classes.end() )
 			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 
 		llvm::LLVMContext& llvm_context= llvm_type->getContext();
@@ -346,26 +339,8 @@ void CallingConventionInfoSystemV_X86_64::MergeArgumentClasses( ArgumentClass& d
 		dst= ArgumentClass::Integer;
 	else if( dst == ArgumentClass::Integer )
 	{}
-	else if( src == ArgumentClass::x87 || src == ArgumentClass::x87Up || src == ArgumentClass::Complex_x87 )
-		dst= ArgumentClass::Memory;
 	else
 		dst= ArgumentClass::SSE;
-}
-
-void CallingConventionInfoSystemV_X86_64::PostMergeArgumentClasses( ArgumentPartClasses& classes )
-{
-	// If some of classes is memory - make all memory.
-	for( const ArgumentClass c : classes )
-	{
-		if( c == ArgumentClass::Memory )
-		{
-			for( ArgumentClass& other_c : classes )
-				other_c= ArgumentClass::Memory;
-			return;
-		}
-	}
-
-	// Do not bother for now with x87.
 }
 
 ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( const FunctionType& function_type )
@@ -482,9 +457,8 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 						c= ArgumentClass::NoClass;
 
 					ClassifyType_r( *llvm_type, classes, 0u );
-					PostMergeArgumentClasses( classes );
 
-					if( classes[0] == ArgumentClass::Memory )
+					if( std::find( classes.begin(), classes.end(), ArgumentClass::Memory ) != classes.end() )
 					{
 						call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
 
