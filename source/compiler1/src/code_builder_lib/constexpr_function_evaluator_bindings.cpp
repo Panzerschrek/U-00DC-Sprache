@@ -22,13 +22,15 @@ LLVMValueRef U1_ConstexprFunctionEvaluatorEvaluate(
 	const LLVMValueRef function,
 	const LLVMValueRef* const args_start,
 	const size_t arg_count,
+	const LLVMTypeRef return_type,
 	const ConstexprFunctionEvaluatorErrorHandlerFunc error_handler_func,
 	void* const user_data )
 {
 	const auto res=
 		constexpr_function_evaluator.EvaluateConstexpr(
 			llvm::dyn_cast<llvm::Function>(llvm::unwrap(function)),
-			llvm::ArrayRef<const llvm::Constant*>( reinterpret_cast<const llvm::Constant* const*>(args_start), arg_count ) );
+			llvm::ArrayRef<const llvm::Constant*>( reinterpret_cast<const llvm::Constant* const*>(args_start), arg_count ),
+			*llvm::unwrap( return_type ) );
 
 	for( const std::string& err : res.errors )
 		error_handler_func( user_data, err.data(), err.size() );

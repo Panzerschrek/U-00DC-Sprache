@@ -4562,18 +4562,12 @@ fn CodeBuilder::DoCallFunction(
 
 			if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
 			{
-				var LLVMTypeRef single_scalar_type= GetSingleScalarType( arg.t.GetLLVMType() );
 				if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null )
 				{
-					if( single_scalar_type == LLVMTypeRef::Null )
-					{
-						constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
-					}
-					else
-					{
-						constexpr_args[ first_llvm_arg_number + arg_n ]= UnwrapRawScalarConstant( arg.constexpr_value );
-					}
+					constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
 				}
+
+				var LLVMTypeRef single_scalar_type= GetSingleScalarType( arg.t.GetLLVMType() );
 
 				if( arg.value_type == ValueType::Value && arg.t == expected_arg_type )
 				{
@@ -4798,7 +4792,11 @@ fn CodeBuilder::DoCallFunction(
 
 	if( is_constexpr )
 	{
-		result_match( constexpr_function_evaluator_.Evaluate( function, constexpr_args ) )
+		var LLVMTypeRef llvm_return_type =
+			( function_type.return_type == void_type_
+				? fundamental_llvm_types_.void_for_ret_
+				: function_type.return_type.GetLLVMType() );
+		result_match( constexpr_function_evaluator_.Evaluate( function, constexpr_args, llvm_return_type ) )
 		{
 			Ok(constant) ->
 			{
@@ -4809,19 +4807,18 @@ fn CodeBuilder::DoCallFunction(
 				}
 				else if( return_value_is_composite )
 				{
-					if( return_value_is_sret )
+					if( !function_context.is_functionless_context )
 					{
-						MoveConstantToMemory( s_ret_value, constant, function_context );
-						result.constexpr_value= constant;
-					}
-					else
-					{
-						if( !function_context.is_functionless_context )
+						if( return_value_is_sret )
+						{
+							MoveConstantToMemory( s_ret_value, constant, function_context );
+						}
+						else
 						{
 							unsafe( LLVMBuildStore( function_context.llvm_ir_builder, constant, result.llvm_value ) );
 						}
-						result.constexpr_value= WrapRawScalarConstant( constant, function_type.return_type.GetLLVMType() );
 					}
+					result.constexpr_value= constant;
 				}
 				else
 				{

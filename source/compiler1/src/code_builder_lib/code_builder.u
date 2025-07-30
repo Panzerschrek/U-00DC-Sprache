@@ -3054,35 +3054,6 @@ fn CodeBuilder::ForceCreateConstantIndexGEP( this, FunctionContext& function_con
 	return gep;
 }
 
-fn CodeBuilder::WrapRawScalarConstant( LLVMValueRef constant, LLVMTypeRef dst_type ) : LLVMValueRef
-{
-	var LLVMTypeKind type_kind= unsafe( LLVMGetTypeKind( dst_type ) );
-	if( type_kind == LLVMTypeKind::Struct )
-	{
-		var [ LLVMValueRef, 1 ] mut i[ WrapRawScalarConstant( constant, unsafe( LLVMStructGetTypeAtIndex( dst_type, 0u ) ) ) ];
-		return unsafe( LLVMConstNamedStruct( dst_type, $<(i[0]), 1u ) );
-	}
-	if( type_kind == LLVMTypeKind::Array )
-	{
-		var LLVMTypeRef element_type= unsafe( LLVMGetElementType( dst_type ) );
-		var [ LLVMValueRef, 1 ] mut i[ WrapRawScalarConstant( constant, element_type ) ];
-		return unsafe( LLVMConstArray2( element_type, $<(i[0]), 1u64 ) );
-	}
-
-	return constant;
-}
-
-fn CodeBuilder::UnwrapRawScalarConstant( LLVMValueRef constant ) : LLVMValueRef
-{
-	var LLVMTypeKind type_kind= unsafe( LLVMGetTypeKind( LLVMTypeOf( constant ) ) );
-	if( type_kind == LLVMTypeKind::Struct || type_kind == LLVMTypeKind::Array )
-	{
-		return UnwrapRawScalarConstant( unsafe( LLVMGetAggregateElement( constant, 0u ) ) );
-	}
-
-	return constant;
-}
-
 fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context )
 {
 	if( function_context.is_functionless_context )
@@ -3261,7 +3232,11 @@ fn CodeBuilder::ConstexprCompareEqual(
 			// TODO - what if "==" is unsafe?
 
 			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( op_ );
-			result_match( constexpr_function_evaluator_.Evaluate( llvm_function, ust::make_array( l, r ) ) )
+			result_match(
+				constexpr_function_evaluator_.Evaluate(
+					llvm_function,
+					ust::make_array( l, r ),
+					op_.t.return_type.GetLLVMType() ) )
 			{
 				Ok(constant) -> { return constant; },
 				Err(errors) ->

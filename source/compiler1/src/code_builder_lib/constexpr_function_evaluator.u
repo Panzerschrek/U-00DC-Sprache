@@ -23,7 +23,8 @@ fn ConstexprFunctionEvaluator::destructor()
 	unsafe( U1_ConstexprFunctionEvaluatorDestroy( impl_ ) );
 }
 
-fn ConstexprFunctionEvaluator::Evaluate( mut this, LLVMValueRef function, ust::array_view_imut</LLVMValueRef/> args ) : Result
+fn ConstexprFunctionEvaluator::Evaluate(
+	mut this, LLVMValueRef function, ust::array_view_imut</LLVMValueRef/> args, LLVMTypeRef return_type ) : Result
 {
 	var ust::vector</ ust::string8 /> mut errors;
 
@@ -34,6 +35,7 @@ fn ConstexprFunctionEvaluator::Evaluate( mut this, LLVMValueRef function, ust::a
 				function,
 				args.data(),
 				args.size(),
+				return_type,
 				ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
 				cast_ref_unsafe</byte8/>( errors ) ) );
 
