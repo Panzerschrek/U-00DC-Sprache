@@ -1680,18 +1680,24 @@ void CodeBuilder::BuildFuncCode(
 			{
 				const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[ arg_number ];
 
-				if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingDirect>( argument_passing ) )
+				switch( argument_passing.kind )
 				{
-					variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
-					CreateLifetimeStart( function_context, variable->llvm_value );
+				case ICallingConventionInfo::ArgumentPassingKind::Direct:
+				case ICallingConventionInfo::ArgumentPassingKind::DirectZExt:
+				case ICallingConventionInfo::ArgumentPassingKind::DirectSExt:
+					{
+						variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
+						CreateLifetimeStart( function_context, variable->llvm_value );
 
-					// Store direct argument using address of object allocated on stack.
-					// TODO - use typed store (with TBAA metadata)?
-					llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( &llvm_arg, variable->llvm_value );
-					store_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
-				}
-				else
-				{
+						// Store direct argument using address of object allocated on stack.
+						// TODO - use typed store (with TBAA metadata)?
+						llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( &llvm_arg, variable->llvm_value );
+						store_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
+					}
+					break;
+
+				case ICallingConventionInfo::ArgumentPassingKind::ByPointer:
+				case ICallingConventionInfo::ArgumentPassingKind::InStack:
 					// Values of composite types are passed via pointer.
 					if( func_variable.IsCoroutine() )
 					{
@@ -1703,7 +1709,9 @@ void CodeBuilder::BuildFuncCode(
 					}
 					else
 						variable->llvm_value = &llvm_arg;
-				}
+					break;
+
+				};
 			}
 			else U_ASSERT(false);
 
@@ -2545,24 +2553,29 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 
 		if( param.value_type == ValueType::Value )
 		{
-			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+			switch( argument_passing.kind )
 			{
-				if( direct_passing->sext )
-					llvm_function->addParamAttr( param_attr_index, llvm::Attribute::SExt );
-				if( direct_passing->zext )
-					llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
-			}
-			else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) )
-			{
+			case ICallingConventionInfo::ArgumentPassingKind::Direct:
+				break;
+
+			case ICallingConventionInfo::ArgumentPassingKind::DirectZExt:
+				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
+				break;
+
+			case ICallingConventionInfo::ArgumentPassingKind::DirectSExt:
+				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::SExt );
+				break;
+
+			case ICallingConventionInfo::ArgumentPassingKind::ByPointer:
 				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
 				// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
 				// It is not possible to capture this reference.
 				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
 				// composite value-args must not alias.
 				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
-			}
-			else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
-			{
+				break;
+
+			case ICallingConventionInfo::ArgumentPassingKind::InStack:
 				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
 				// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
 				// It is not possible to capture this reference.
@@ -2571,8 +2584,8 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 				llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
 				// "byval" forces passing in stack.
 				llvm_function->addParamAttrs( param_attr_index, llvm::AttrBuilder(llvm_context_).addByValAttr( param.type.GetLLVMType() ) );
-			}
-			else U_ASSERT(false);
+				break;
+			};
 		}
 		else if( param.value_type == ValueType::ReferenceImut )
 		{
@@ -2644,9 +2657,8 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
 		if( param.value_type == ValueType::Value )
 		{
-			if(
-				std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
-				std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
+			if( argument_passing.kind == ICallingConventionInfo::ArgumentPassingKind::ByPointer ||
+				argument_passing.kind == ICallingConventionInfo::ArgumentPassingKind::InStack )
 			{
 				const auto llvm_type= param.type.GetLLVMType();
 				if( !llvm_type->isSized() )

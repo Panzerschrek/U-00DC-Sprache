@@ -12,23 +12,25 @@ namespace U
 class ICallingConventionInfo
 {
 public:
-	struct ArgumentPassingDirect
+	enum class ArgumentPassingKind : uint8_t
 	{
+		Direct,
+		DirectZExt,
+		DirectSExt,
+		ByPointer, // Pass pointer to a value allocated on caller's stack.
+		// Almost identical to passing by pointer,
+		// but "byval" attribute is used and thus LLVM library pushes temporary copy direct onto the stack.
+		// No actual pointer should be passed, value should be accessed by stack offset.
+		InStack,
+	};
+
+	struct ArgumentPassing
+	{
+		ArgumentPassingKind kind= ArgumentPassingKind::Direct;
 		// May be different type from original argument LLVM type.
 		// Set explicit alignment for load/store instructions for this type equal to original type alignment.
 		llvm::Type* llvm_type= nullptr;
-		bool sext= false;
-		bool zext= false;
 	};
-
-	// Pass pointer to a value allocated on caller stack.
-	struct ArgumentPassingByPointer{};
-	// Almost identical to passing by pointer,
-	// but "byval" attribute is used and thus LLVM library pushes temporary copy direct onto the stack.
-	// No actual pointer should be passed, value should be accessed by stack offset.
-	struct ArgumentPassingInStack{};
-
-	using ArgumentPassing= std::variant<ArgumentPassingByPointer, ArgumentPassingDirect, ArgumentPassingInStack>;
 
 	enum class ReturnValuePassingKind : uint8_t
 	{

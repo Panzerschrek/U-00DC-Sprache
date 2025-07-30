@@ -115,11 +115,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoDefault::CalculateFunction
 		if( param.value_type == ValueType::Value )
 			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
 		else
-		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
-			call_info.arguments_passing[i]= std::move(argument_passing);
-		}
+			call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, param.type.GetLLVMType()->getPointerTo() };
 	}
 
 	return call_info;
@@ -129,72 +125,44 @@ ICallingConventionInfo::CallInfo CallingConventionInfoDefault::CalculateFunction
 ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= f->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, f->llvm_type };
 
 	if( const auto e= type.GetEnumType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, e->underlying_type.llvm_type };
 
 	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= fp->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, fp->llvm_type };
 
 	if( const auto p= type.GetRawPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= p->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, p->llvm_type };
 
 	if( const auto c= type.GetClassType() )
 	{
 		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
-		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= single_scalar;
-			return argument_passing;
-		}
+			return ArgumentPassing{ ArgumentPassingKind::Direct, single_scalar };
 		else
-			return ArgumentPassingByPointer{};
+			return ArgumentPassing{ ArgumentPassingKind::ByPointer, c->llvm_type->getPointerTo() };
 	}
 
 	if( const auto a= type.GetArrayType() )
 	{
 		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
-		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= single_scalar;
-			return argument_passing;
-		}
+			return ArgumentPassing{ ArgumentPassingKind::Direct, single_scalar };
 		else
-			return ArgumentPassingByPointer{};
+			return ArgumentPassing{ ArgumentPassingKind::ByPointer, a->llvm_type->getPointerTo() };
 	}
 
 	if( const auto t= type.GetTupleType() )
 	{
 		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
-		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= single_scalar;
-			return argument_passing;
-		}
+			return ArgumentPassing{ ArgumentPassingKind::Direct, single_scalar };
 		else
-			return ArgumentPassingByPointer{};
+			return ArgumentPassing{ ArgumentPassingKind::ByPointer, t->llvm_type->getPointerTo() };
 	}
 
 	// Unhandled type kind.
 	U_ASSERT(false);
-	return ArgumentPassingByPointer{};
+	return ArgumentPassing{ ArgumentPassingKind::ByPointer, type.GetLLVMType()->getPointerTo() };
 }
 
 class CallingConventionInfoSystemV_X86_64 final : public ICallingConventionInfo
@@ -431,19 +399,17 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 		{
 			if( const auto f= param.type.GetFundamentalType() )
 			{
-				ArgumentPassingDirect argument_passing;
-				argument_passing.llvm_type= f->llvm_type;
 				// sext/zext flags are necessary for scalars.
 				if( IsSignedInteger( f->fundamental_type ) )
-					argument_passing.sext= true;
+					call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::DirectSExt, f->llvm_type };
 				else if(
 					IsUnsignedInteger( f->fundamental_type ) ||
 					IsChar( f->fundamental_type ) ||
 					IsByte( f->fundamental_type ) ||
 					f->fundamental_type == U_FundamentalType::bool_ )
-					argument_passing.zext= true;
-
-				call_info.arguments_passing[i]= std::move(argument_passing);
+					call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::DirectZExt, f->llvm_type };
+				else
+					call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, f->llvm_type };
 
 				if( IsFloatingPoint( f->fundamental_type ) )
 				{
@@ -460,10 +426,8 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 			}
 			else if( const auto e= param.type.GetEnumType() )
 			{
-				ArgumentPassingDirect argument_passing;
-				argument_passing.llvm_type= e->underlying_type.llvm_type;
-				argument_passing.zext= true; // Enums are unsigned and thus require zero extension.
-				call_info.arguments_passing[i]= std::move(argument_passing);
+				// Enums are unsigned and thus require zero extension.
+				call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::DirectZExt, e->underlying_type.llvm_type };
 
 				// Enum arg consumes one integer register.
 				if( num_integer_registers_left > 0 )
@@ -471,10 +435,8 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 			}
 			else if( const auto fp= param.type.GetFunctionPointerType() )
 			{
-				ArgumentPassingDirect argument_passing;
-				argument_passing.llvm_type= fp->llvm_type;
 				// It seems like zero extension isn't necessary for pointers. Is it?
-				call_info.arguments_passing[i]= std::move(argument_passing);
+				call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, fp->llvm_type };
 
 				// Pointer arg consumes one integer register.
 				if( num_integer_registers_left > 0 )
@@ -482,10 +444,8 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 			}
 			else if( const auto p= param.type.GetRawPointerType() )
 			{
-				ArgumentPassingDirect argument_passing;
-				argument_passing.llvm_type= p->llvm_type;
 				// It seems like zero extension isn't necessary for pointers. Is it?
-				call_info.arguments_passing[i]= std::move(argument_passing);
+				call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, p->llvm_type };
 
 				// Pointer arg consumes one integer register.
 				if( num_integer_registers_left > 0 )
@@ -502,14 +462,14 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 
 				if( type_size > 16 )
 				{
-					call_info.arguments_passing[i]= ArgumentPassingInStack{};
+					call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
 
 					// No registers are consumed for in-stack passing.
 				}
 				else if( type_size == 0 )
 				{
 					// TODO - handle zero-sized structs properly.
-					call_info.arguments_passing[i]= ArgumentPassingInStack{};
+					call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
 
 					// No registers are consumed for in-stack passing.
 				}
@@ -524,7 +484,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 
 					if( classes[0] == ArgumentClass::Memory )
 					{
-						call_info.arguments_passing[i]= ArgumentPassingInStack{};
+						call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
 
 						// No registers are consumed for in-stack passing.
 					}
@@ -534,26 +494,26 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 
 						if( type_size <= 8 )
 						{
-							ArgumentPassingDirect argument_passing;
 
 							if( classes[0] == ArgumentClass::Integer )
 							{
-								argument_passing.llvm_type= llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 );
-								argument_passing.zext= true; // TODO - check if it's correct.
+								// TODO - check if it's correct to use ZExt.
+								call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::DirectZExt, llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 ) };
 
 								if( num_integer_registers_left > 0 )
 									--num_integer_registers_left;
 							}
 							else if( classes[0] == ArgumentClass::SSE )
 							{
-								argument_passing.llvm_type= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+								call_info.arguments_passing[i]=
+									ArgumentPassing{
+										ArgumentPassingKind::Direct,
+										type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() ) };
 
 								if( num_floating_point_registers_left > 0 )
 									--num_floating_point_registers_left;
 							}
 							else U_ASSERT(false);
-
-							call_info.arguments_passing[i]= std::move(argument_passing);
 						}
 						else if( type_size <= 16 )
 						{
@@ -579,12 +539,12 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 							if( num_integer_registers_needed <= num_integer_registers_left &&
 								num_floating_point_registers_needed <= num_floating_point_registers_left )
 							{
-								ArgumentPassingDirect argument_passing;
 								// Create a tuple for two parts.
-								argument_passing.llvm_type= llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) );
 								// TODO - set zext/sext?
-
-								call_info.arguments_passing[i]= std::move(argument_passing);
+								call_info.arguments_passing[i]=
+									ArgumentPassing{
+										ArgumentPassingKind::Direct,
+										llvm::StructType::get( llvm_context, llvm::ArrayRef<llvm::Type*>( types ) ) };
 
 								num_integer_registers_left-= num_integer_registers_needed;
 								num_floating_point_registers_left-= num_floating_point_registers_needed;
@@ -592,7 +552,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 							else
 							{
 								// If we have not enough registers to pass all components of this composite - pass it in stack.
-								call_info.arguments_passing[i]= ArgumentPassingInStack{};
+								call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
 
 								// No registers are consumed for in-stack passing.
 							}
@@ -605,14 +565,12 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 			{
 				// Unhandled type kind.
 				U_ASSERT(false);
-				call_info.arguments_passing[i]= ArgumentPassingByPointer{};
+				call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::ByPointer, param.type.GetLLVMType()->getPointerTo() };
 			}
 		}
 		else
 		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
-			call_info.arguments_passing[i]= std::move(argument_passing);
+			call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, param.type.GetLLVMType()->getPointerTo() };
 
 			// Reference arg consumes one integer register.
 			if( num_integer_registers_left > 0 )
@@ -684,11 +642,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86_64::CalculateFunc
 		if( param.value_type == ValueType::Value )
 			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
 		else
-		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
-			call_info.arguments_passing[i]= std::move(argument_passing);
-		}
+			call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, param.type.GetLLVMType()->getPointerTo() };
 	}
 
 	return call_info;
@@ -697,46 +651,28 @@ ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86_64::CalculateFunc
 ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86_64::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= f->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, f->llvm_type };
 
 	if( const auto e= type.GetEnumType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, e->underlying_type.llvm_type };
 
 	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= fp->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, fp->llvm_type };
 
 	if( const auto p= type.GetRawPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= p->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, p->llvm_type };
 
 	// Composite types are left.
 
+	llvm::Type* const llvm_type= type.GetLLVMType();
+
 	// Pass composites with integer sizes as integers (even if a composite contains floating-point values).
-	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
+	const auto size= data_layout_.getTypeAllocSize( llvm_type );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 );
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 )};
 
 	// Pass other composites via pointer.
-	return ArgumentPassingByPointer{};
+	return ArgumentPassing{ ArgumentPassingKind::ByPointer, llvm_type->getPointerTo() };
 }
 
 class CallingConventionInfoMSVC_X86 final : public ICallingConventionInfo
@@ -802,11 +738,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86::CalculateFunctio
 		if( param.value_type == ValueType::Value )
 			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
 		else
-		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
-			call_info.arguments_passing[i]= std::move(argument_passing);
-		}
+			call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, param.type.GetLLVMType()->getPointerTo() };
 	}
 
 	return call_info;
@@ -815,37 +747,21 @@ ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86::CalculateFunctio
 ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= f->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, f->llvm_type };
 
 	if( const auto e= type.GetEnumType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, e->underlying_type.llvm_type };
 
 	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= fp->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, fp->llvm_type };
 
 	if( const auto p= type.GetRawPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= p->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, p->llvm_type };
 
 	// Composite types are left.
-	// TODO - make sure it's correct to pass float/double arrays/tuples via stack and not via x87 registers.
+	// It seems like they are always passed in stack, including composites consisting of single integers or floats.
 
-	return ArgumentPassingInStack{};
+	return ArgumentPassing{ ArgumentPassingKind::InStack, type.GetLLVMType()->getPointerTo() };
 }
 
 class CallingConventionInfoSystemV_AArch64 final : public ICallingConventionInfo
@@ -931,32 +847,16 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= f->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, f->llvm_type };
 
 	if( const auto e= type.GetEnumType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= e->underlying_type.llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, e->underlying_type.llvm_type };
 
 	if( const auto fp= type.GetFunctionPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= fp->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, fp->llvm_type };
 
 	if( const auto p= type.GetRawPointerType() )
-	{
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= p->llvm_type;
-		return argument_passing;
-	}
+		return ArgumentPassing{ ArgumentPassingKind::Direct, p->llvm_type };
 
 	// Composite types.
 
@@ -966,7 +866,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 	if( size > 32 )
 	{
 		// Pass composites with size larger than 32 by pointer.
-		return ArgumentPassingByPointer{};
+		return ArgumentPassing{ ArgumentPassingKind::ByPointer, llvm_type->getPointerTo() };
 	}
 
 	llvm::SmallVector<llvm::Type*, 16> scalar_types;
@@ -975,9 +875,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 	if( scalar_types.size() == 1 )
 	{
 		// Pass composites with single scalar inside using this scalar.
-		ArgumentPassingDirect argument_passing;
-		argument_passing.llvm_type= scalar_types.front();
-		return argument_passing;
+		return ArgumentPassing{ ArgumentPassingKind::Direct, scalar_types.front() };
 	}
 
 	if( scalar_types.size() <= 4 )
@@ -990,37 +888,34 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 		{
 			// Homogeneous Floating-point Aggregate - they are passed directly, if there is no more than 4 elements.
 			// [ f64, 4 ] array is largest composite type, which can be passed directly.
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= llvm::ArrayType::get( scalar_types.front(), scalar_types.size() );
-			return argument_passing;
+			return ArgumentPassing{ ArgumentPassingKind::Direct, llvm::ArrayType::get( scalar_types.front(), scalar_types.size() ) };
 		}
 	}
 
 	if( size > 16 )
 	{
 		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are passed by pointer.
-		return ArgumentPassingByPointer{};
+		return ArgumentPassing{ ArgumentPassingKind::ByPointer, llvm_type->getPointerTo() };
 	}
 
 	// Small composite types are passed as integers.
 	// This includes even structs consisting of f32/f64 pairs.
-	ArgumentPassingDirect argument_passing;
 	if( size <= 8 )
 	{
 		// Use single integer for a composite less than 8 bytes.
-		argument_passing.llvm_type= llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 );
+		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 ) };
 	}
 	else
 	{
 		// Use pair of integers for larger composites.
 		// We can't use something like i128, since it should be aligned to even register index.
-		argument_passing.llvm_type=
-			llvm::StructType::get(
-				llvm::IntegerType::get( llvm_type->getContext(), 8 * 8 ),
-				llvm::IntegerType::get( llvm_type->getContext(), ( uint32_t(size) - 8 ) * 8 ) );
+		return
+			ArgumentPassing{
+				ArgumentPassingKind::Direct,
+				llvm::StructType::get(
+					llvm::IntegerType::get( llvm_type->getContext(), 8 * 8 ),
+					llvm::IntegerType::get( llvm_type->getContext(), ( uint32_t(size) - 8 ) * 8 ) ) };
 	}
-
-	return argument_passing;
 }
 
 void CallingConventionInfoSystemV_AArch64::CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types )
@@ -1057,11 +952,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_AArch64::Calculate
 		if( param.value_type == ValueType::Value )
 			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
 		else
-		{
-			ArgumentPassingDirect argument_passing;
-			argument_passing.llvm_type= param.type.GetLLVMType()->getPointerTo();
-			call_info.arguments_passing[i]= std::move(argument_passing);
-		}
+			call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, param.type.GetLLVMType()->getPointerTo() };
 	}
 
 	return call_info;

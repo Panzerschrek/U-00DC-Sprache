@@ -364,21 +364,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType(
 		llvm_function_return_type= function_type.return_type.GetLLVMType()->getPointerTo();
 
 	for( size_t i= 0; i < function_type.params.size(); ++i )
-	{
-		const FunctionType::Param& param= function_type.params[i];
-		const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[i];
-
-		llvm::Type* type= nullptr;
-		if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
-			type= direct_passing->llvm_type;
-		else if(
-			std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
-			std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
-			type= param.type.GetLLVMType()->getPointerTo();
-		else U_ASSERT(false);
-
-		params_llvm_types.push_back( type );
-	}
+		params_llvm_types.push_back( call_info.arguments_passing[i].llvm_type );
 
 	return llvm::FunctionType::get( llvm_function_return_type, params_llvm_types, false );
 }

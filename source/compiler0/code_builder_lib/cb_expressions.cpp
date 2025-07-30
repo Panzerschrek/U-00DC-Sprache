@@ -4225,17 +4225,18 @@ Value CodeBuilder::DoCallFunction(
 
 				if( expr->constexpr_value != nullptr )
 				{
-					if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+					switch( argument_passing.kind )
 					{
-						// TODO - use it.
-						(void)direct_passing;
+					case ICallingConventionInfo::ArgumentPassingKind::Direct:
+					case ICallingConventionInfo::ArgumentPassingKind::DirectZExt:
+					case ICallingConventionInfo::ArgumentPassingKind::DirectSExt:
 						constant_llvm_args.push_back( UnwrapRawScalarConstant( expr->constexpr_value ) );
-					}
-					else if(
-						std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
-						std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
+						break;
+					case ICallingConventionInfo::ArgumentPassingKind::ByPointer:
+					case ICallingConventionInfo::ArgumentPassingKind::InStack:
 						constant_llvm_args.push_back( expr->constexpr_value );
-					else U_ASSERT(false);
+						break;
+					};
 				}
 
 				if( expr->value_type == ValueType::Value && expr->type == param.type )
@@ -4245,17 +4246,22 @@ Value CodeBuilder::DoCallFunction(
 
 					if( !function_context.is_functionless_context )
 					{
-						if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+						switch( argument_passing.kind )
 						{
-							llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( direct_passing->llvm_type, expr->llvm_value );
-							load_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
-							llvm_args[arg_number]= load_instruction;
-						}
-						else if(
-							std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
-							std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ))
+						case ICallingConventionInfo::ArgumentPassingKind::Direct:
+						case ICallingConventionInfo::ArgumentPassingKind::DirectZExt:
+						case ICallingConventionInfo::ArgumentPassingKind::DirectSExt:
+							{
+								llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( argument_passing.llvm_type, expr->llvm_value );
+								load_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
+								llvm_args[arg_number]= load_instruction;
+							}
+							break;
+						case ICallingConventionInfo::ArgumentPassingKind::ByPointer:
+						case ICallingConventionInfo::ArgumentPassingKind::InStack:
 							llvm_args[arg_number]= expr->llvm_value;
-						else U_ASSERT(false);
+							break;
+						};
 
 						// Save address into temporary container to call lifetime.end after call.
 						value_args_for_lifetime_end_call.push_back( expr->llvm_value );
@@ -4291,17 +4297,22 @@ Value CodeBuilder::DoCallFunction(
 							param.type,
 							function_context );
 
-						if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+						switch( argument_passing.kind )
 						{
-							llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( direct_passing->llvm_type, arg_copy );
-							load_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
-							llvm_args[arg_number]= load_instruction;
-						}
-						else if(
-							std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) ||
-							std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
+						case ICallingConventionInfo::ArgumentPassingKind::Direct:
+						case ICallingConventionInfo::ArgumentPassingKind::DirectZExt:
+						case ICallingConventionInfo::ArgumentPassingKind::DirectSExt:
+							{
+								llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( argument_passing.llvm_type, arg_copy );
+								load_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
+								llvm_args[arg_number]= load_instruction;
+							}
+							break;
+						case ICallingConventionInfo::ArgumentPassingKind::ByPointer:
+						case ICallingConventionInfo::ArgumentPassingKind::InStack:
 							llvm_args[arg_number]= arg_copy;
-						else U_ASSERT(false);
+							break;
+						};
 
 						// Save address into temporary container to call lifetime.end after call.
 						value_args_for_lifetime_end_call.push_back( arg_copy );
@@ -4471,23 +4482,22 @@ Value CodeBuilder::DoCallFunction(
 			const FunctionType::Param& param= function_type.params[i];
 			const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[i];
 
-			if( const auto direct_passing= std::get_if<ICallingConventionInfo::ArgumentPassingDirect>( &argument_passing ) )
+			switch( argument_passing.kind )
 			{
-				if( direct_passing->sext )
-					call_instruction->addParamAttr( param_attr_index, llvm::Attribute::SExt );
-				if( direct_passing->zext )
-					call_instruction->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
-			}
-			else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingByPointer>( argument_passing ) )
-			{
+			case ICallingConventionInfo::ArgumentPassingKind::Direct:
+				break;
+			case ICallingConventionInfo::ArgumentPassingKind::DirectZExt:
+				call_instruction->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
+				break;
+			case ICallingConventionInfo::ArgumentPassingKind::DirectSExt:
+				call_instruction->addParamAttr( param_attr_index, llvm::Attribute::SExt );
+			case ICallingConventionInfo::ArgumentPassingKind::ByPointer:
 				// TODO - add other attributes?
-			}
-			else if( std::holds_alternative<ICallingConventionInfo::ArgumentPassingInStack>( argument_passing ) )
-			{
+				break;
+			case ICallingConventionInfo::ArgumentPassingKind::InStack:
 				// TODO - add other attributes?
 				call_instruction->addParamAttr( param_attr_index, llvm::Attribute::getWithByValType( llvm_context_, param.type.GetLLVMType() ) );
-			}
-			else U_ASSERT(false);
+			};
 		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
