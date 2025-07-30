@@ -891,9 +891,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					U_ASSERT( function_context.s_ret == nullptr );
 					llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( return_value_passing.llvm_type, expression_result->llvm_value );
 					load_instruction->setAlignment( data_layout_.getABITypeAlign( return_type.GetLLVMType() ) );
-					if( generate_tbaa_metadata_ )
-						load_instruction->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( expression_result->type ) );
-
 					ret= load_instruction;
 				}
 				break;
@@ -944,9 +941,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 					llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( return_value_passing.llvm_type, expression_result->llvm_value );
 					load_instruction->setAlignment( data_layout_.getABITypeAlign( return_type.GetLLVMType() ) );
-					if( generate_tbaa_metadata_ )
-						load_instruction->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( expression_result->type ) );
-
 					ret= load_instruction;
 
 					CreateLifetimeEnd( function_context, temp );
