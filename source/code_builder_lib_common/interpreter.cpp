@@ -954,7 +954,34 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction )
 	uint32_t i= 0u;
 	for( const llvm::Argument& arg : function->args() )
 	{
-		call_frame.instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
+		llvm::GenericValue val= GetVal( instruction->getOperand(i) );
+
+		if( arg.hasByValAttr() )
+		{
+			// Create copy of the memory block representing by a "byval" pointer argument.
+			// It's necessary in order to avoid changes for an argument made in calle to be visible in caller.
+
+			const size_t object_size= size_t( data_layout_.getTypeAllocSize( arg.getParamByValType() ) );
+
+			const size_t new_address_value= stack_.size();
+			const size_t new_stack_size= stack_.size() + object_size;
+			if( new_stack_size >= g_max_data_stack_size )
+			{
+				ReportDataStackOverflow();
+				return;
+			}
+			stack_.resize( new_stack_size );
+
+			std::memcpy(
+				stack_.data() + new_address_value,
+				stack_.data() + size_t( val.IntVal.getLimitedValue() ),
+				object_size );
+
+			val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(new_address_value) );
+		}
+
+		call_frame.instructions_map[ &arg ]= std::move(val);
+
 		++i;
 	}
 
