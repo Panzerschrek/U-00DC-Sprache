@@ -372,7 +372,10 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 				{
 					// void arg consumes no registers.
 				}
-				else if( f->fundamental_type == U_FundamentalType::i128_ || f->fundamental_type == U_FundamentalType::u128_ )
+				else if(
+					f->fundamental_type == U_FundamentalType::i128_ ||
+					f->fundamental_type == U_FundamentalType::u128_ ||
+					f->fundamental_type == U_FundamentalType::byte128_ )
 				{
 					// 128-bit integers consume two integer registers.
 					if( num_integer_registers_left >= 2 )
@@ -391,7 +394,8 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 				call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::DirectZExt, e->underlying_type.llvm_type };
 
 				if( e->underlying_type.fundamental_type == U_FundamentalType::i128_ ||
-					e->underlying_type.fundamental_type == U_FundamentalType::u128_ )
+					e->underlying_type.fundamental_type == U_FundamentalType::u128_ ||
+					e->underlying_type.fundamental_type == U_FundamentalType::byte128_ )
 				{
 					// Enums with 128-bit underlying type consume two integer registers.
 					if( num_integer_registers_left >= 2 )
