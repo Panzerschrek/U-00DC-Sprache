@@ -261,7 +261,7 @@ fn CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( this, T
 
 	// Composite types are left.
 
-	if( !t.GetClassType().empty() || !t.GetArrayType().empty() || t.GetTupleType().empty() )
+	if( !t.GetClassType().empty() || !t.GetArrayType().empty() || !t.GetTupleType().empty() )
 	{
 		var LLVMTypeRef llvm_type= t.GetLLVMType();
 
@@ -390,7 +390,7 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 				// It seems like zero extension isn't necessary for pointers.
 				argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, fp.llvm_type );
 			}
-			else if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || param.t.GetTupleType().empty() )
+			else if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
 			{
 				var LLVMTypeRef llvm_type= param.t.GetLLVMType();
 
@@ -406,7 +406,6 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 				}
 				else
 				{
-
 					var ArgumentPartClasses mut classes= zero_init;
 					ClassifyType_r( llvm_type, classes, 0u );
 
