@@ -4901,12 +4901,12 @@ fn CodeBuilder::DoCallFunction(
 			ICallingConventionInfo::ReturnValuePassingKind::DirectZExt ->
 			{
 				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("zeroext"), 0u64 ) );
-				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
+				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
 			},
 			ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
 			{
 				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("signext"), 0u64 ) );
-				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
+				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
 			},
 			ICallingConventionInfo::ReturnValuePassingKind::ByPointer ->
 			{
