@@ -5,14 +5,11 @@ namespace U1
 
 fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTargetDataRef data_layout ) : CallingConventionInfos
 {
-	ust::ignore_unused( target_triple_str ); // TODO - use it.
-	ust::ignore_unused( data_layout ); // TODO - use it.
-
 	var ICallingConventionInfoPtr default_info =
 		ust::shared_ptr_imut</CallingConventionInfoDefault/>(
 			ust::make_shared_ptr( CallingConventionInfoDefault() ) );
 
-	var CallingConventionInfos calling_convention_infos
+	var CallingConventionInfos mut calling_convention_infos
 	[
 		default_info,
 		default_info,
@@ -20,6 +17,32 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 		default_info,
 		default_info,
 	];
+
+	// TODO - imporve this, perform proper target triple parsing.
+
+	if( HasSubstr( target_triple_str, "x86_64" ) )
+	{
+		if(
+			HasSubstr( target_triple_str, "linux" ) ||
+			HasSubstr( target_triple_str, "freebsd" ) ||
+			HasSubstr( target_triple_str, "darwin" ) ||
+			HasSubstr( target_triple_str, "macosx" ) )
+		{
+			var ust::shared_ptr_imut</CallingConventionInfoSystemV_X86_64/> system_v_x86_64_info =
+				ust::make_shared_ptr( CallingConventionInfoSystemV_X86_64( data_layout ) );
+
+			calling_convention_infos[ size_type( CallingConvention::C ) ]= system_v_x86_64_info;
+			calling_convention_infos[ size_type( CallingConvention::System ) ]= system_v_x86_64_info;
+		}
+		else
+		{
+			// TODO - handle other operating systems.
+		}
+	}
+	else
+	{
+		// TODO - handle other architectures.
+	}
 
 	return calling_convention_infos;
 }
@@ -170,6 +193,367 @@ fn CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( this, Type& 
 	halt; // Unhandled type kind.
 }
 
+class CallingConventionInfoSystemV_X86_64 final : ICallingConventionInfo
+{
+public:
+	fn constructor( LLVMTargetDataRef data_layout );
+
+public: // ICallingConventionInfo
+	fn virtual override CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing;
+	fn virtual final CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo;
+
+private:
+	enum ArgumentClass
+	{
+		NoClass,
+		Integer,
+		SSE,
+		Memory,
+	}
+
+	auto c_max_argument_parts= 2s;
+	type ArgumentPartClasses= [ ArgumentClass, c_max_argument_parts ];
+
+	fn ClassifyType_r( this, LLVMTypeRef llvm_type, ArgumentPartClasses &mut out_classes, u32 offset );
+	fn MergeArgumentClasses( ArgumentClass &mut dst, ArgumentClass src );
+
+private:
+	LLVMTargetDataRef imut data_layout_;
+}
+
+fn CallingConventionInfoSystemV_X86_64::constructor( LLVMTargetDataRef data_layout )
+	( data_layout_= data_layout )
+{}
+
+fn CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing
+{
+	if_var( &f : t.GetFundamentalType() )
+	{
+		if( IsSignedInteger( f.fundamental_type ) )
+		{
+			return ReturnValuePassing( ReturnValuePassingKind::DirectSExt, f.llvm_type );
+		}
+		if( IsUnsignedInteger( f.fundamental_type ) ||
+			IsChar( f.fundamental_type ) ||
+			IsByte( f.fundamental_type ) ||
+			f.fundamental_type == U_FundamentalType::bool_ )
+		{
+			return ReturnValuePassing( ReturnValuePassingKind::DirectZExt, f.llvm_type );
+		}
+
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, f.llvm_type );
+	}
+	if_var( &e : t.GetEnumType() )
+	{
+		// Enums are unsigned.
+		return ReturnValuePassing( ReturnValuePassingKind::DirectZExt, e.lock_imut().deref().underlying_type.llvm_type );
+	}
+	if_var( &p : t.GetRawPointerType() )
+	{
+		// It seems like zero extension isn't necessary for pointers.
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, p.llvm_type );
+	}
+	if_var( &fp : t.GetFunctionPointerType() )
+	{
+		// It seems like zero extension isn't necessary for pointers.
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, fp.llvm_type );
+	}
+
+	// Composite types are left.
+
+	if( !t.GetClassType().empty() || !t.GetArrayType().empty() || t.GetTupleType().empty() )
+	{
+		var LLVMTypeRef llvm_type= t.GetLLVMType();
+
+		var u64 type_size= unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) );
+		if( type_size > 16u64 )
+		{
+			return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
+		}
+
+		if( type_size == 0u64 )
+		{
+			// TODO - handle zero-sized structs properly.
+			return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
+		}
+
+		var ArgumentPartClasses mut classes= zero_init;
+		ClassifyType_r( llvm_type, classes, 0u );
+
+		foreach( c : classes )
+		{
+			if( c == ArgumentClass::Memory )
+			{
+				return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
+			}
+		}
+
+		var LLVMContextRef llvm_context= unsafe( LLVMGetTypeContext( llvm_type ) );
+
+		var LLVMTypeRef mut result_llvm_type= LLVMTypeRef::Null;
+
+		if( type_size <= 8u64 )
+		{
+			if( classes[0] == ArgumentClass::Integer )
+			{
+				result_llvm_type= unsafe( LLVMIntTypeInContext( llvm_context, u32(type_size) * 8u ) );
+			}
+			else if( classes[0] == ArgumentClass::SSE )
+			{
+				result_llvm_type= unsafe( ( type_size <= 4u64 ? LLVMFloatTypeInContext( llvm_context ) : LLVMDoubleTypeInContext( llvm_context ) ) );
+			}
+			else{ halt; }
+		}
+		else if( type_size <= 16u64 )
+		{
+			auto constexpr num_parts= 2s;
+			var [ LLVMTypeRef, num_parts ] mut types= zero_init;
+			var [ u32, num_parts ] part_sizes[ 8u, u32(type_size)  - 8u ];
+			for( auto mut part= 0s; part < num_parts; ++part )
+			{
+				if( classes[part] == ArgumentClass::Integer )
+				{
+					types[part]= unsafe( LLVMIntTypeInContext( llvm_context, part_sizes[part] * 8u ) );
+				}
+				else if( classes[part] == ArgumentClass::SSE )
+				{
+					types[part]= unsafe( ( part_sizes[part] <= 4u ? LLVMFloatTypeInContext( llvm_context ) : LLVMDoubleTypeInContext( llvm_context ) ) );
+				}
+				else { halt; }
+			}
+
+			// Create a tuple for two parts.
+			// TODO - set zext/sext?
+			result_llvm_type= unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) );
+		}
+		else{ halt; }
+
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, result_llvm_type );
+	}
+	else
+	{
+		// Unhandled type kind.
+		halt;
+	}
+}
+
+fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
+{
+	var CallInfo mut call_info
+	{
+		.return_value_passing=
+			( function_type.return_value_type == ValueType::Value
+				? CalculateReturnValuePassingInfo( function_type.return_type )
+				: ReturnValuePassing(
+					ReturnValuePassingKind::Direct,
+					unsafe( LLVMPointerType( function_type.return_type.GetLLVMType(), 0u ) ) ) ),
+	};
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	foreach( pair : function_type.params.iter().zip( call_info.arguments_passing.iter() ) )
+	{
+		var FunctionType::Param& param = pair.first;
+		var ArgumentPassing &mut argument_passing= pair.second;
+		if( param.value_type == ValueType::Value )
+		{
+			if_var( &f : param.t.GetFundamentalType() )
+			{
+				if( IsSignedInteger( f.fundamental_type ) )
+				{
+					argument_passing= ArgumentPassing( ArgumentPassingKind::DirectSExt, f.llvm_type );
+				}
+				else if(
+					IsUnsignedInteger( f.fundamental_type ) ||
+					IsChar( f.fundamental_type ) ||
+					IsByte( f.fundamental_type ) ||
+					f.fundamental_type == U_FundamentalType::bool_ )
+				{
+					argument_passing= ArgumentPassing( ArgumentPassingKind::DirectZExt, f.llvm_type );
+				}
+				else
+				{
+					argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, f.llvm_type );
+				}
+			}
+			else if_var( &e : param.t.GetEnumType() )
+			{
+				// Enums are unsigned.
+				argument_passing= ArgumentPassing( ArgumentPassingKind::DirectZExt, e.lock_imut().deref().underlying_type.llvm_type );
+			}
+			else if_var( &p : param.t.GetRawPointerType() )
+			{
+				// It seems like zero extension isn't necessary for pointers.
+				argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, p.llvm_type );
+			}
+			else if_var( &fp : param.t.GetFunctionPointerType() )
+			{
+				// It seems like zero extension isn't necessary for pointers.
+				argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, fp.llvm_type );
+			}
+			else if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || param.t.GetTupleType().empty() )
+			{
+				var LLVMTypeRef llvm_type= param.t.GetLLVMType();
+
+				var u64 type_size= unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) );
+				if( type_size > 16u64 )
+				{
+					argument_passing= ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+				}
+				else if( type_size == 0u64 )
+				{
+					// TODO - handle zero-sized structs properly.
+					argument_passing= ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+				}
+				else
+				{
+
+					var ArgumentPartClasses mut classes= zero_init;
+					ClassifyType_r( llvm_type, classes, 0u );
+
+					var bool mut is_memory_class= false;
+					foreach( c : classes )
+					{
+						is_memory_class|= c == ArgumentClass::Memory;
+					}
+
+					if( is_memory_class )
+					{
+						argument_passing= ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+					}
+					else
+					{
+						var LLVMContextRef llvm_context= unsafe( LLVMGetTypeContext( llvm_type ) );
+
+						if( type_size <= 8u64 )
+						{
+							if( classes[0] == ArgumentClass::Integer )
+							{
+								argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMIntTypeInContext( llvm_context, u32(type_size) * 8u ) ) );
+							}
+							else if( classes[0] == ArgumentClass::SSE )
+							{
+								argument_passing=
+									ArgumentPassing(
+										ArgumentPassingKind::Direct,
+										unsafe( ( type_size <= 4u64 ? LLVMFloatTypeInContext( llvm_context ) : LLVMDoubleTypeInContext( llvm_context ) ) ) );
+							}
+							else{ halt; }
+						}
+						else if( type_size <= 16u64 )
+						{
+							auto constexpr num_parts= 2s;
+							var [ LLVMTypeRef, num_parts ] mut types= zero_init;
+							var [ u32, num_parts ] part_sizes[ 8u, u32(type_size)  - 8u ];
+							for( auto mut part= 0s; part < num_parts; ++part )
+							{
+								if( classes[part] == ArgumentClass::Integer )
+								{
+									types[part]= unsafe( LLVMIntTypeInContext( llvm_context, part_sizes[part] * 8u ) );
+								}
+								else if( classes[part] == ArgumentClass::SSE )
+								{
+									types[part]= unsafe( ( part_sizes[part] <= 4u ? LLVMFloatTypeInContext( llvm_context ) : LLVMDoubleTypeInContext( llvm_context ) ) );
+								}
+								else { halt; }
+							}
+
+							// Create a tuple for two parts.
+							// TODO - set zext/sext?
+							argument_passing=
+								ArgumentPassing(
+									ArgumentPassingKind::Direct,
+									unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) ) );
+						}
+						else{ halt; }
+					}
+				}
+			}
+			else
+			{
+				// Unhandled type kind.
+				halt;
+			}
+		}
+		else
+		{
+			argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMPointerType( param.t.GetLLVMType(), 0u ) ) );
+		}
+	}
+
+	return call_info;
+}
+
+
+fn CallingConventionInfoSystemV_X86_64::ClassifyType_r( this, LLVMTypeRef llvm_type, ArgumentPartClasses &mut out_classes, u32 offset )
+{
+	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( llvm_type ) );
+
+	if( t_kind == LLVMTypeKind::Pointer )
+	{
+		MergeArgumentClasses( out_classes[ offset >> 3u ], ArgumentClass::Integer );
+	}
+	else if( t_kind == LLVMTypeKind::Integer )
+	{
+		var u32 size= unsafe( LLVMGetIntTypeWidth( llvm_type ) / 8u );
+		MergeArgumentClasses( out_classes[ offset >> 3u ], ArgumentClass::Integer );
+		if( size > 8u )
+		{
+			MergeArgumentClasses( out_classes[ ( offset + 8u ) >> 3u ], ArgumentClass::Integer );
+		}
+	}
+	else if( t_kind == LLVMTypeKind::Float || t_kind == LLVMTypeKind::Double )
+	{
+		MergeArgumentClasses( out_classes[ offset >> 3u ], ArgumentClass::SSE );
+	}
+	else if( t_kind == LLVMTypeKind::Array )
+	{
+		var LLVMTypeRef element_type= unsafe( LLVMGetElementType( llvm_type ) );
+		var u64 element_size= unsafe( LLVMABISizeOfType( data_layout_, element_type ) );
+		var u64 num_elements= unsafe( LLVMGetArrayLength2( llvm_type ) );
+		for( var u64 mut element_index= 0u64; element_index < num_elements; ++element_index )
+		{
+			ClassifyType_r( element_type, out_classes, offset + u32( element_index * element_size ) );
+		}
+	}
+	else if( t_kind == LLVMTypeKind::Struct )
+	{
+		var u32 num_elements= unsafe( LLVMCountStructElementTypes( llvm_type ) );
+		for( var u32 mut element_index= 0u; element_index < num_elements; ++element_index )
+		{
+			var LLVMTypeRef element_type= unsafe( LLVMStructGetTypeAtIndex( llvm_type, element_index ) );
+			var u64 element_offset= unsafe( LLVMOffsetOfElement( data_layout_, llvm_type, element_index ) );
+			ClassifyType_r( element_type, out_classes, offset + u32(element_offset) );
+		}
+	}
+	else { halt; } // Unhandled type kind.
+}
+
+fn CallingConventionInfoSystemV_X86_64::MergeArgumentClasses( ArgumentClass &mut dst, ArgumentClass src )
+{
+	if( dst == src )
+	{}
+	else if( src == ArgumentClass::NoClass )
+	{}
+	else if( dst == ArgumentClass::NoClass )
+	{
+		dst= src;
+	}
+	else if( src == ArgumentClass::Memory )
+	{
+		dst= ArgumentClass::Memory;
+	}
+	else if( src == ArgumentClass::Integer )
+	{
+		dst= ArgumentClass::Integer;
+	}
+	else if( dst == ArgumentClass::Integer )
+	{}
+	else
+	{
+		dst= ArgumentClass::SSE;
+	}
+}
+
 // Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
 // Returns null otherwise.
 // Requires type to be complete.
@@ -206,6 +590,25 @@ fn GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
 	}
 
 	return LLVMTypeRef::Null;
+}
+
+// TODO - create a standard library function for this.
+fn HasSubstr( ust::string_view8 where_to_search, ust::string_view8 what_to_search ) : bool
+{
+	if( what_to_search.size() > where_to_search.size() )
+	{
+		return false;
+	}
+
+	for( auto mut i= 0s; i <= where_to_search.size() - what_to_search.size(); ++i )
+	{
+		if( where_to_search.subrange_start(i).starts_with( what_to_search ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 } // namespace U1
