@@ -309,6 +309,11 @@ fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : L
 	var ICallingConventionInfo::CallInfo call_info=
 		calling_convention_infos_[ size_type( function_type.calling_convention ) ].lock_imut().deref().CalculateFunctionCallInfo( function_type );
 
+	return GetLLVMFunctionType( function_type, call_info );
+}
+
+fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type, ICallingConventionInfo::CallInfo& call_info ) : LLVMTypeRef
+{
 	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
 	var LLVMTypeRef mut ret_llvm_type= LLVMTypeRef::Null;
 

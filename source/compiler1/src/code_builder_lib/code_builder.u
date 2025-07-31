@@ -2508,7 +2508,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 		unsafe( LLVMAddFunction(
 			module_,
 			lazy_function.name_mangled.front(),
-			GetLLVMFunctionType( function_type ) ) );
+			GetLLVMFunctionType( function_type, call_info ) ) );
 
 	unsafe( LLVMSetFunctionCallConv( llvm_function, GetLLVMCallingConvention( function_type.calling_convention ) ) );
 

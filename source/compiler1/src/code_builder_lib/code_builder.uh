@@ -318,7 +318,11 @@ private:
 	fn PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CoroutineType& coroutine_type ) : Type;
 	fn PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Type;
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
+
+	// Getting LLVM function type may require building complete types for arguments/return value.
 	fn GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef;
+	// Get function type, using call info, calculated previously.
+	fn GetLLVMFunctionType( mut this, FunctionType& function_type, ICallingConventionInfo::CallInfo& call_info ) : LLVMTypeRef;
 
 	fn FunctionTypeToPointer( mut this, FunctionType function_type ) : FunctionPointerType;
 
