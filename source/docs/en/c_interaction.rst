@@ -168,10 +168,6 @@ There are some limitations for calls.
 Ü compiler doesn't know if a function is implemented in C and thus can't check a call correctness.
 Ensuring the call correctness is a programmer's responsibility.
 
-Value-parameters and return values may be of fundamental types, enum types, function pointer types and raw pointer types.
-Composite types (structs or classes, arrays, tuples) are not supported.
-But it's allowed to pass and return references, they are represented internally like pointers in C.
-
 Structs which are passed into C code or obtained from it should have the same contents and layout as in C.
 Exceptions are structs which fields are not accessed within Ü code and which are passed one by one (not in arrays).
 Such structs may have different field count and fields types, it's only important for them to have size and alignment not less than in C code.
