@@ -1,5 +1,6 @@
 import "../../imports/mangling_scheme.uh"
 import "../lex_synt_lib/source_graph.uh"
+import "calling_convention_info.uh"
 import "code_builder_errors.uh"
 import "constexpr_function_evaluator.uh"
 import "debug_info_builder.uh"
@@ -1315,6 +1316,7 @@ private:
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
+	CallingConventionInfos imut calling_convention_infos_;
 	ust::string8 imut target_triple_str_; // null-terminated
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	bool imut generate_tbaa_metadata_;

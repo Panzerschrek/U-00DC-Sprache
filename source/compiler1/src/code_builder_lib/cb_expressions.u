@@ -4455,6 +4455,19 @@ fn CodeBuilder::DoCallFunction(
 		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, function_type.return_type )
 		return ErrorValue();
 	}
+
+	foreach( &param : function_type.params )
+	{
+		if( !EnsureTypeComplete( param.t ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, param.t )
+			return ErrorValue();
+		}
+	}
+
+	var ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_type( function_type.calling_convention ) ].lock_imut().deref().CalculateFunctionCallInfo( function_type );
+
 	if( function_type.is_unsafe && !function_context.is_in_unsafe_block )
 	{
 		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
@@ -4567,7 +4580,7 @@ fn CodeBuilder::DoCallFunction(
 					constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
 				}
 
-				var LLVMTypeRef single_scalar_type= GetSingleScalarType( arg.t.GetLLVMType() );
+				var ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[ arg_n ];
 
 				if( arg.value_type == ValueType::Value && arg.t == expected_arg_type )
 				{
@@ -4576,14 +4589,19 @@ fn CodeBuilder::DoCallFunction(
 
 					if( !function_context.is_functionless_context )
 					{
-						if( single_scalar_type == LLVMTypeRef::Null )
+						switch( argument_passing.kind )
 						{
-							llvm_arg= arg.llvm_value;
+							ICallingConventionInfo::ArgumentPassingKind::Direct,
+							ICallingConventionInfo::ArgumentPassingKind::DirectZExt,
+							ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
+							{
+								llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, argument_passing.llvm_type, arg.llvm_value, g_null_string ) );
+								// TODO - set proper alignment
+							},
+							ICallingConventionInfo::ArgumentPassingKind::ByPointer,
+							ICallingConventionInfo::ArgumentPassingKind::InStack -> { llvm_arg= arg.llvm_value; },
 						}
-						else
-						{
-							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, arg.llvm_value, g_null_string ) );
-						}
+
 						value_args_for_lifetime_end_call.push_back( arg.llvm_value );
 					}
 
@@ -4611,15 +4629,19 @@ fn CodeBuilder::DoCallFunction(
 						auto value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
 						BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, src_loc );
 
-						if( single_scalar_type == LLVMTypeRef::Null )
+						switch( argument_passing.kind )
 						{
-							llvm_arg= var_copy;
+							ICallingConventionInfo::ArgumentPassingKind::Direct,
+							ICallingConventionInfo::ArgumentPassingKind::DirectZExt,
+							ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
+							{
+								llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, argument_passing.llvm_type, var_copy, g_null_string ) );
+								// TODO - set proper alignment
+							},
+							ICallingConventionInfo::ArgumentPassingKind::ByPointer,
+							ICallingConventionInfo::ArgumentPassingKind::InStack -> { llvm_arg= var_copy; },
+						}
 
-						}
-						else
-						{
-							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, var_copy, g_null_string ) );
-						}
 						value_args_for_lifetime_end_call.push_back( var_copy );
 
 						with( &mut lock : arg_node.lock_mut() )
@@ -4876,6 +4898,35 @@ fn CodeBuilder::DoCallFunction(
 			var LLVMTypeRef sret_type= function_type.return_type.GetLLVMType();
 			auto attr= unsafe( LLVMCreateTypeAttribute( llvm_context_, GetAttributeKindByName("sret"), sret_type ) );
 			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
+		}
+
+		for( auto mut i= 0s; i < function_type.params.size(); ++i )
+		{
+			var u32 llvm_param_n= LLVMAttributeFirstParamIndex + ( return_value_is_sret ? 1u : 0u ) + u32(i);
+
+			var FunctionType::Param& param= function_type.params[i];
+
+			switch( call_info.arguments_passing[i].kind )
+			{
+				ICallingConventionInfo::ArgumentPassingKind::Direct -> {},
+				ICallingConventionInfo::ArgumentPassingKind::DirectZExt ->
+				{
+					auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("zext"), 0u64 ) );
+					unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
+				},
+				ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
+				{
+					auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("sext"), 0u64 ) );
+					unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
+				},
+				ICallingConventionInfo::ArgumentPassingKind::ByPointer -> {},
+				ICallingConventionInfo::ArgumentPassingKind::InStack ->
+				{
+					var LLVMTypeRef byval_type= param.t.GetLLVMType();
+					auto attr= unsafe( LLVMCreateTypeAttribute( llvm_context_, GetAttributeKindByName("byval"), byval_type ) );
+					unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
+				},
+			}
 		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )

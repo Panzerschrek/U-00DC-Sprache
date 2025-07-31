@@ -293,6 +293,22 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef
 {
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		EnsureTypeComplete( function_type.return_type );
+	}
+
+	foreach( &param : function_type.params )
+	{
+		if( param.value_type == ValueType::Value )
+		{
+			EnsureTypeComplete( param.t );
+		}
+	}
+
+	var ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_type( function_type.calling_convention ) ].lock_imut().deref().CalculateFunctionCallInfo( function_type );
+
 	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
 
 	if( function_type.ReturnsCompositeValue() )
@@ -331,35 +347,9 @@ fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : L
 		ret_llvm_type= unsafe( LLVMPointerType( ret_llvm_type, 0u ) );
 	}
 
-	foreach( &param : function_type.params )
+	foreach( &argument_passing : call_info.arguments_passing )
 	{
-		var LLVMTypeRef mut llvm_type= param.t.GetLLVMType();
-		if( param.value_type == ValueType::Value )
-		{
-			if( EnsureTypeComplete( param.t ) )
-			{
-				if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
-				{
-					var LLVMTypeRef single_scalar_type= GetSingleScalarType( param.t.GetLLVMType() );
-					if( single_scalar_type != LLVMTypeRef::Null )
-					{
-						// Pass composite types with single scalar inside in register, using type of this scalar.
-						llvm_type= single_scalar_type;
-					}
-					else
-					{
-						// Pass aggregate types by-reference.
-						llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
-					}
-				}
-			}
-		}
-		else
-		{
-			llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
-		}
-
-		llvm_param_types.push_back( llvm_type );
+		llvm_param_types.push_back( argument_passing.llvm_type );
 	}
 
 	return unsafe( LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool::False ) );
