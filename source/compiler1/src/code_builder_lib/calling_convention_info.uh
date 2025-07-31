@@ -1,0 +1,54 @@
+import "structs_combined.uh"
+
+namespace U1
+{
+
+fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTargetDataRef data_layout ) : CallingConventionInfos;
+
+// Contains ICallingConventionInfo instance for each calling convention.
+type CallingConventionInfos = [ ICallingConventionInfoPtr, typeinfo</CallingConvention/>.element_count ];
+
+type ICallingConventionInfoPtr = ust::shared_ptr_imut</ICallingConventionInfo/>;
+
+class ICallingConventionInfo interface
+{
+public:
+	enum ArgumentPassingKind
+	{
+		Direct,
+		DirectZExt, // Pass directly, but apply zero extension.
+		DirectSExt, // Pass directly, but apply sign extension.
+		ByPointer, // Pass pointer to a value allocated on caller's stack.
+		// Almost identical to passing by pointer,
+		// but "byval" attribute is used and thus LLVM library pushes temporary copy direct onto the stack.
+		// No actual pointer should be passed, value should be accessed by stack offset.
+		InStack,
+	}
+
+	struct ArgumentPassing
+	{
+		ArgumentPassingKind kind;
+		// May be different type from original argument LLVM type.
+		// Set explicit alignment for load/store instructions for this type equal to original type alignment.
+		LLVMTypeRef llvm_type;
+
+		fn constructor()
+			( kind= ArgumentPassingKind::Direct, llvm_type= LLVMTypeRef::Null )
+		{}
+
+		fn constructor( ArgumentPassingKind k, LLVMTypeRef t )
+			( kind= k, llvm_type= t )
+		{}
+	}
+
+	struct CallInfo
+	{
+		ust::vector</ArgumentPassing/> arguments_passing;
+	}
+
+public:
+	// For value arguments and return value (not return reference) types should be complete prior to this call!
+	fn virtual pure CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo;
+}
+
+} // namespace U1

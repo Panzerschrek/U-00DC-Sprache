@@ -1,0 +1,153 @@
+import "calling_convention_info.uh"
+
+namespace U1
+{
+
+fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTargetDataRef data_layout ) : CallingConventionInfos
+{
+	ust::ignore_unused( target_triple_str ); // TODO - use it.
+	ust::ignore_unused( data_layout ); // TODO - use it.
+
+	var ICallingConventionInfoPtr default_info =
+		ust::shared_ptr_imut</CallingConventionInfoDefault/>(
+			ust::make_shared_ptr( CallingConventionInfoDefault() ) );
+
+	var CallingConventionInfos calling_convention_infos
+	[
+		default_info,
+		default_info,
+		default_info,
+		default_info,
+		default_info,
+	];
+
+	return calling_convention_infos;
+}
+
+class CallingConventionInfoDefault final : ICallingConventionInfo
+{
+public:
+	fn constructor();
+
+public: // ICallingConventionInfo
+	fn virtual final CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo;
+
+private:
+	fn CalculateValueArgumentPassingInfo( this, Type& t ) : ArgumentPassing;
+}
+
+fn CallingConventionInfoDefault::constructor()
+{}
+
+fn CallingConventionInfoDefault::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
+{
+	var CallInfo mut call_info;
+
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	foreach( pair : function_type.params.iter().zip( call_info.arguments_passing.iter() ) )
+	{
+		var FunctionType::Param& param = pair.first;
+		var ArgumentPassing &mut argument_passing= pair.second;
+		if( param.value_type == ValueType::Value )
+		{
+			argument_passing= CalculateValueArgumentPassingInfo( param.t );
+		}
+		else
+		{
+			argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMPointerType( param.t.GetLLVMType(), 0u ) ) );
+		}
+	}
+
+	return call_info;
+}
+
+fn CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( this, Type& t ) : ArgumentPassing
+{
+	if_var( &f : t.GetFundamentalType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, f.llvm_type );
+	}
+	if_var( &e : t.GetEnumType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, e.lock_imut().deref().underlying_type.llvm_type );
+	}
+	if_var( &p : t.GetRawPointerType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, p.llvm_type );
+	}
+	if_var( &fp : t.GetFunctionPointerType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, fp.llvm_type );
+	}
+	if_var( &c : t.GetClassType() )
+	{
+		var LLVMTypeRef llvm_type= c.lock_imut().deref().llvm_type;
+		var LLVMTypeRef single_scalar= GetSingleScalarType( llvm_type );
+		if( single_scalar != LLVMTypeRef::Null )
+		{
+			return ArgumentPassing( ArgumentPassingKind::Direct, single_scalar );
+		}
+		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+	}
+	if_var( &a : t.GetArrayType() )
+	{
+		var LLVMTypeRef single_scalar= GetSingleScalarType( a.llvm_type );
+		if( single_scalar != LLVMTypeRef::Null )
+		{
+			return ArgumentPassing( ArgumentPassingKind::Direct, single_scalar );
+		}
+		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( a.llvm_type, 0u ) ) );
+	}
+	if_var( &t : t.GetTupleType() )
+	{
+		var LLVMTypeRef single_scalar= GetSingleScalarType( t.llvm_type );
+		if( single_scalar != LLVMTypeRef::Null )
+		{
+			return ArgumentPassing( ArgumentPassingKind::Direct, single_scalar );
+		}
+		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( t.llvm_type, 0u ) ) );
+	}
+
+	halt; // Unhandled type kind.
+}
+
+// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
+// Returns null otherwise.
+// Requires type to be complete.
+fn GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
+{
+	loop
+	{
+		var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
+		if( t_kind == LLVMTypeKind::Struct && unsafe( LLVMCountStructElementTypes( t ) ) == 1u )
+		{
+			t= unsafe( LLVMStructGetTypeAtIndex( t, 0u ) );
+			continue;
+		}
+		if( t_kind == LLVMTypeKind::Array && unsafe( LLVMGetArrayLength2( t ) ) == 1u64 )
+		{
+			t= unsafe( LLVMGetElementType( t ) );
+			continue;
+		}
+
+		break; // Not a composite.
+	}
+
+	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
+	if( t_kind == LLVMTypeKind::Half ||
+		t_kind == LLVMTypeKind::Float ||
+		t_kind == LLVMTypeKind::Double ||
+		t_kind == LLVMTypeKind::X86_FP80 ||
+		t_kind == LLVMTypeKind::P128 ||
+		t_kind == LLVMTypeKind::PPC_FP128 ||
+		t_kind == LLVMTypeKind::Integer ||
+		t_kind == LLVMTypeKind::Pointer )
+	{
+		return t;
+	}
+
+	return LLVMTypeRef::Null;
+}
+
+} // namespace U1
