@@ -4477,7 +4477,7 @@ fn CodeBuilder::DoCallFunction(
 
 	auto mut s_ret_value= LLVMValueRef::Null;
 	var bool return_value_is_composite= function_type.ReturnsCompositeValue();
-	var bool return_value_is_sret= FunctionTypeIsSRet( function_type );
+	var bool return_value_is_sret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 	if( return_value_is_composite )
 	{
 		if( !function_context.is_functionless_context )
@@ -4893,11 +4893,27 @@ fn CodeBuilder::DoCallFunction(
 			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
 		}
 
-		if( return_value_is_sret )
+		switch( call_info.return_value_passing.kind )
 		{
-			var LLVMTypeRef sret_type= function_type.return_type.GetLLVMType();
-			auto attr= unsafe( LLVMCreateTypeAttribute( llvm_context_, GetAttributeKindByName("sret"), sret_type ) );
-			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
+			ICallingConventionInfo::ReturnValuePassingKind::Direct ->
+			{
+			},
+			ICallingConventionInfo::ReturnValuePassingKind::DirectZExt ->
+			{
+				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("zext"), 0u64 ) );
+				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
+			},
+			ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
+			{
+				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("sext"), 0u64 ) );
+				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
+			},
+			ICallingConventionInfo::ReturnValuePassingKind::ByPointer ->
+			{
+				var LLVMTypeRef sret_type= function_type.return_type.GetLLVMType();
+				auto attr= unsafe( LLVMCreateTypeAttribute( llvm_context_, GetAttributeKindByName("sret"), sret_type ) );
+				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
+			},
 		}
 
 		for( auto mut i= 0s; i < function_type.params.size(); ++i )
@@ -4935,9 +4951,16 @@ fn CodeBuilder::DoCallFunction(
 		}
 		else if( return_value_is_composite )
 		{
-			if( !return_value_is_sret )
+			switch( call_info.return_value_passing.kind )
 			{
-				unsafe( LLVMBuildStore( function_context.llvm_ir_builder, call_result, result.llvm_value ) );
+				ICallingConventionInfo::ReturnValuePassingKind::Direct,
+				ICallingConventionInfo::ReturnValuePassingKind::DirectZExt,
+				ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
+				{
+					unsafe( LLVMBuildStore( function_context.llvm_ir_builder, call_result, result.llvm_value ) );
+					// TODO - set proper alignment.
+				},
+				ICallingConventionInfo::ReturnValuePassingKind::ByPointer -> {},
 			}
 		}
 		else

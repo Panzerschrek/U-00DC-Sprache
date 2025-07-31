@@ -1270,7 +1270,7 @@ fn CodeBuilder::BuildFuncCode(
 	{
 		auto &mut args_names_scope= args_names_scope_lock.deref();
 
-		var bool is_s_ret= FunctionTypeIsSRet( func_variable.t );
+		var bool is_s_ret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 		if( is_s_ret )
 		{
 			unsafe
@@ -2539,16 +2539,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 		}
 	}
 
-	var bool is_s_ret= FunctionTypeIsSRet( function_type);
-	if( is_s_ret )
-	{
-		AddFunctionTypeAttribute( llvm_function, LLVMAttributeFirstParamIndex, "sret", function_type.return_type.GetLLVMType() );
-		AddFunctionAttribute( llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
-	}
-	if( function_type.return_value_type != ValueType::Value )
-	{
-		AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "nonnull" );
-	}
+	var bool is_s_ret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 
 	for( auto mut i= 0s; i < function_type.params.size(); ++i )
 	{
@@ -2611,6 +2602,29 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 		}
 	}
 
+	if( function_type.return_value_type != ValueType::Value )
+	{
+		AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "nonnull" );
+	}
+
+	switch( call_info.return_value_passing.kind )
+	{
+		ICallingConventionInfo::ReturnValuePassingKind::Direct -> {},
+		ICallingConventionInfo::ReturnValuePassingKind::DirectZExt ->
+		{
+			AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "zext" );
+		},
+		ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
+		{
+			AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "sext" );
+		},
+		ICallingConventionInfo::ReturnValuePassingKind::ByPointer ->
+		{
+			AddFunctionTypeAttribute( llvm_function, LLVMAttributeFirstParamIndex, "sret", function_type.return_type.GetLLVMType() );
+			AddFunctionAttribute( llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
+		},
+	}
+
 	return llvm_function;
 }
 
@@ -2629,7 +2643,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 	var ICallingConventionInfo::CallInfo call_info=
 		calling_convention_infos_[ size_type( function_type.calling_convention ) ].lock_imut().deref().CalculateFunctionCallInfo( function_type );
 
-	var bool is_s_ret= FunctionTypeIsSRet( function_variable.t );
+	var bool is_s_ret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 
 	for( auto mut i= 0s; i < function_type.params.size(); ++i )
 	{

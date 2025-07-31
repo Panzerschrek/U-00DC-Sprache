@@ -330,14 +330,6 @@ private:
 
 	fn GetLLVMCallingConvention( this, CallingConvention calling_convention ) : LLVMCallConvID;
 
-	// Requires return type to be complete.
-	fn FunctionTypeIsSRet( FunctionType& function_type ) : bool;
-
-	// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
-	// Returns null otherwise.
-	// Requires type to be complete.
-	fn GetSingleScalarType( LLVMTypeRef t ) : LLVMTypeRef;
-
 	// Returns constant value if initializer is constant
 	fn ApplyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef;
 
