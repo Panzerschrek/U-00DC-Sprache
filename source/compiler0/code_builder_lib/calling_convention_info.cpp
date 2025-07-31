@@ -368,20 +368,21 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 					if( num_floating_point_registers_left > 0 )
 						--num_floating_point_registers_left;
 				}
+				else if( f->fundamental_type == U_FundamentalType::void_ )
+				{
+					// void arg consumes no registers.
+				}
+				else if( f->fundamental_type == U_FundamentalType::i128_ || f->fundamental_type == U_FundamentalType::u128_ )
+				{
+					// 128-bit integers consume two integer registers.
+					if( num_integer_registers_left >= 2 )
+						num_integer_registers_left-= 2;
+				}
 				else
 				{
-					if( f->fundamental_type == U_FundamentalType::i128_ || f->fundamental_type == U_FundamentalType::u128_ )
-					{
-						// 128-bit integers consume two integer registers.
-						if( num_integer_registers_left >= 2 )
-							num_integer_registers_left-= 2;
-					}
-					else
-					{
-						// Integer arg consumes one integer register.
-						if( num_integer_registers_left > 0 )
-							--num_integer_registers_left;
-					}
+					// Integer arg consumes one integer register.
+					if( num_integer_registers_left > 0 )
+						--num_integer_registers_left;
 				}
 			}
 			else if( const auto e= param.type.GetEnumType() )

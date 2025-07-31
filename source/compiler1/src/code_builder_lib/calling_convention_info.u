@@ -441,23 +441,24 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 						--num_floating_point_registers_left;
 					}
 				}
+				else if( f.fundamental_type == U_FundamentalType::void_ )
+				{
+					// void arg consumes no registers.
+				}
+				else if( f.fundamental_type == U_FundamentalType::i128_ || f.fundamental_type == U_FundamentalType::u128_ )
+				{
+					// 128-bit integers consume two integer registers.
+					if( num_integer_registers_left >= 2s )
+					{
+						num_integer_registers_left-= 2s;
+					}
+				}
 				else
 				{
-					if( f.fundamental_type == U_FundamentalType::i128_ || f.fundamental_type == U_FundamentalType::u128_ )
+					// Integer arg consumes one integer register.
+					if( num_integer_registers_left > 0s )
 					{
-						// 128-bit integers consume two integer registers.
-						if( num_integer_registers_left >= 2s )
-						{
-							num_integer_registers_left-= 2s;
-						}
-					}
-					else
-					{
-						// Integer arg consumes one integer register.
-						if( num_integer_registers_left > 0s )
-						{
-							--num_integer_registers_left;
-						}
+						--num_integer_registers_left;
 					}
 				}
 			}
