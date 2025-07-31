@@ -4837,7 +4837,8 @@ fn CodeBuilder::DoCallFunction(
 						}
 						else
 						{
-							unsafe( LLVMBuildStore( function_context.llvm_ir_builder, constant, result.llvm_value ) );
+							var LLVMValueRef store_instruction= unsafe( LLVMBuildStore( function_context.llvm_ir_builder, constant, result.llvm_value ) );
+							unsafe( LLVMSetAlignment( store_instruction, LLVMABIAlignmentOfType( data_layout_, result.t.GetLLVMType() ) ) );
 						}
 					}
 					result.constexpr_value= constant;
