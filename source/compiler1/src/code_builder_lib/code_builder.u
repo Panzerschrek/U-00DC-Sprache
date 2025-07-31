@@ -2579,7 +2579,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 						// Composite value-args must not alias.
 						AddFunctionAttribute( llvm_function, llvm_param_n, "noalias" );
 						// "byval" forces passing in stack.
-						AddFunctionAttribute( llvm_function, llvm_param_n, "byval" );
+						AddFunctionTypeAttribute( llvm_function, llvm_param_n, "byval", param.t.GetLLVMType() );
 					},
 				}
 			},
