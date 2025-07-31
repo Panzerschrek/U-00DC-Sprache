@@ -377,6 +377,8 @@ fn nomangle LLVMGetInstructionParent(LLVMValueRef Inst) unsafe call_conv( "C" ) 
 
 fn nomangle LLVMGetAllocatedType(LLVMValueRef Alloca) unsafe call_conv( "C" ) : LLVMTypeRef;
 
+fn nomangle LLVMSetAlignment(LLVMValueRef V, u32 Bytes) unsafe call_conv( "C" );
+
 fn nomangle LLVMGetFunctionCallConv(LLVMValueRef Fn) unsafe call_conv( "C" ) : LLVMCallConvID;
 fn nomangle LLVMSetFunctionCallConv(LLVMValueRef Fn, LLVMCallConvID CC) unsafe call_conv( "C" );
 fn nomangle LLVMSetInstructionCallConv(LLVMValueRef Instr, LLVMCallConvID CC) unsafe call_conv( "C" );

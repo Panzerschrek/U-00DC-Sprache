@@ -4596,7 +4596,7 @@ fn CodeBuilder::DoCallFunction(
 							ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
 							{
 								llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, argument_passing.llvm_type, arg.llvm_value, g_null_string ) );
-								// TODO - set proper alignment
+								unsafe( LLVMSetAlignment( llvm_arg, LLVMABIAlignmentOfType( data_layout_, param.t.GetLLVMType() ) ) );
 							},
 							ICallingConventionInfo::ArgumentPassingKind::ByPointer,
 							ICallingConventionInfo::ArgumentPassingKind::InStack -> { llvm_arg= arg.llvm_value; },
@@ -4636,7 +4636,7 @@ fn CodeBuilder::DoCallFunction(
 							ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
 							{
 								llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, argument_passing.llvm_type, var_copy, g_null_string ) );
-								// TODO - set proper alignment
+								unsafe( LLVMSetAlignment( llvm_arg, LLVMABIAlignmentOfType( data_layout_, param.t.GetLLVMType() ) ) );
 							},
 							ICallingConventionInfo::ArgumentPassingKind::ByPointer,
 							ICallingConventionInfo::ArgumentPassingKind::InStack -> { llvm_arg= var_copy; },
@@ -4957,8 +4957,8 @@ fn CodeBuilder::DoCallFunction(
 				ICallingConventionInfo::ReturnValuePassingKind::DirectZExt,
 				ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
 				{
-					unsafe( LLVMBuildStore( function_context.llvm_ir_builder, call_result, result.llvm_value ) );
-					// TODO - set proper alignment.
+					var LLVMValueRef store_instruction= unsafe( LLVMBuildStore( function_context.llvm_ir_builder, call_result, result.llvm_value ) );
+					unsafe( LLVMSetAlignment( store_instruction, LLVMABIAlignmentOfType( data_layout_, result.t.GetLLVMType() ) ) );
 				},
 				ICallingConventionInfo::ReturnValuePassingKind::ByPointer -> {},
 			}
