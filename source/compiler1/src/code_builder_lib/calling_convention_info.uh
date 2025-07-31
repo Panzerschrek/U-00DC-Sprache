@@ -13,6 +13,32 @@ type ICallingConventionInfoPtr = ust::shared_ptr_imut</ICallingConventionInfo/>;
 class ICallingConventionInfo interface
 {
 public:
+	struct CallInfo
+	{
+		ReturnValuePassing return_value_passing;
+		ust::vector</ArgumentPassing/> arguments_passing;
+	}
+
+	enum ReturnValuePassingKind
+	{
+		Direct,
+		DirectZExt, // Pass directly, but apply zero extension.
+		DirectSExt, // Pass directly, but apply sign extension.
+		ByPointer, // Pass as argument #0 a pointer, where returned value should be constructed.
+	}
+
+	struct ReturnValuePassing
+	{
+		ReturnValuePassingKind kind;
+		// May be different type from original return LLVM type.
+		// Set explicit alignment for load/store instructions for this type equal to original type alignment.
+		LLVMTypeRef llvm_type;
+
+		fn constructor( ReturnValuePassingKind k, LLVMTypeRef t )
+			( kind= k, llvm_type= t )
+		{}
+	}
+
 	enum ArgumentPassingKind
 	{
 		Direct,
@@ -41,12 +67,11 @@ public:
 		{}
 	}
 
-	struct CallInfo
-	{
-		ust::vector</ArgumentPassing/> arguments_passing;
-	}
-
 public:
+
+	// Ensure type is complete before calling this method!
+	fn virtual pure CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing;
+
 	// For value arguments and return value (not return reference) types should be complete prior to this call!
 	fn virtual pure CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo;
 }

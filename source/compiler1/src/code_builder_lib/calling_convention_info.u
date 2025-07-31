@@ -30,6 +30,7 @@ public:
 	fn constructor();
 
 public: // ICallingConventionInfo
+	fn virtual override CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing;
 	fn virtual final CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo;
 
 private:
@@ -39,10 +40,67 @@ private:
 fn CallingConventionInfoDefault::constructor()
 {}
 
+fn CallingConventionInfoDefault::CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing
+{
+	if_var( &f : t.GetFundamentalType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, f.llvm_type );
+	}
+	if_var( &e : t.GetEnumType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, e.lock_imut().deref().underlying_type.llvm_type );
+	}
+	if_var( &p : t.GetRawPointerType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, p.llvm_type );
+	}
+	if_var( &fp : t.GetFunctionPointerType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, fp.llvm_type );
+	}
+	if_var( &c : t.GetClassType() )
+	{
+		var LLVMTypeRef llvm_type= c.lock_imut().deref().llvm_type;
+		var LLVMTypeRef single_scalar= GetSingleScalarType( llvm_type );
+		if( single_scalar != LLVMTypeRef::Null )
+		{
+			return ReturnValuePassing( ReturnValuePassingKind::Direct, single_scalar );
+		}
+		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+	}
+	if_var( &a : t.GetArrayType() )
+	{
+		var LLVMTypeRef single_scalar= GetSingleScalarType( a.llvm_type );
+		if( single_scalar != LLVMTypeRef::Null )
+		{
+			return ReturnValuePassing( ReturnValuePassingKind::Direct, single_scalar );
+		}
+		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, unsafe( LLVMPointerType( a.llvm_type, 0u ) ) );
+	}
+	if_var( &t : t.GetTupleType() )
+	{
+		var LLVMTypeRef single_scalar= GetSingleScalarType( t.llvm_type );
+		if( single_scalar != LLVMTypeRef::Null )
+		{
+			return ReturnValuePassing( ReturnValuePassingKind::Direct, single_scalar );
+		}
+		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, unsafe( LLVMPointerType( t.llvm_type, 0u ) ) );
+	}
+
+	halt; // Unhandled type kind.
+}
+
 fn CallingConventionInfoDefault::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
 {
-	var CallInfo mut call_info;
-
+	var CallInfo mut call_info
+	{
+		.return_value_passing=
+			( function_type.return_value_type == ValueType::Value
+				? CalculateReturnValuePassingInfo( function_type.return_type )
+				: ReturnValuePassing(
+					ReturnValuePassingKind::Direct,
+					unsafe( LLVMPointerType( function_type.return_type.GetLLVMType(), 0u ) ) ) ),
+	};
 
 	call_info.arguments_passing.resize( function_type.params.size() );
 	foreach( pair : function_type.params.iter().zip( call_info.arguments_passing.iter() ) )
