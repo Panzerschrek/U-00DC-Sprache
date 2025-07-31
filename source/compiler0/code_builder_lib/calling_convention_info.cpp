@@ -203,7 +203,6 @@ private:
 		NoClass,
 		Integer,
 		SSE,
-		Memory,
 	};
 
 	static constexpr size_t c_max_argument_parts= 2;
@@ -271,9 +270,6 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 			c= ArgumentClass::NoClass;
 
 		ClassifyType_r( *llvm_type, classes, 0u );
-
-		if( std::find( classes.begin(), classes.end(), ArgumentClass::Memory ) != classes.end() )
-			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 
 		llvm::LLVMContext& llvm_context= llvm_type->getContext();
 
@@ -456,80 +452,71 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 
 					ClassifyType_r( *llvm_type, classes, 0u );
 
-					if( std::find( classes.begin(), classes.end(), ArgumentClass::Memory ) != classes.end() )
-					{
-						call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
+					llvm::LLVMContext& llvm_context= llvm_type->getContext();
 
-						// No registers are consumed for in-stack passing.
-					}
-					else
+					if( type_size <= 8 )
 					{
-						llvm::LLVMContext& llvm_context= llvm_type->getContext();
-
-						if( type_size <= 8 )
+						if( classes[0] == ArgumentClass::Integer )
 						{
-							if( classes[0] == ArgumentClass::Integer )
-							{
-								// TODO - check if it's correct to use ZExt.
-								call_info.arguments_passing[i]=
-									ArgumentPassing{ ArgumentPassingKind::DirectZExt, llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 ) };
+							// TODO - check if it's correct to use ZExt.
+							call_info.arguments_passing[i]=
+								ArgumentPassing{ ArgumentPassingKind::DirectZExt, llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 ) };
 
-								if( num_integer_registers_left > 0 )
-									--num_integer_registers_left;
+							if( num_integer_registers_left > 0 )
+								--num_integer_registers_left;
+						}
+						else if( classes[0] == ArgumentClass::SSE )
+						{
+							call_info.arguments_passing[i]=
+								ArgumentPassing{
+									ArgumentPassingKind::Direct,
+									type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_context ) };
+
+							if( num_floating_point_registers_left > 0 )
+								--num_floating_point_registers_left;
+						}
+						else U_ASSERT(false);
+					}
+					else if( type_size <= 16 )
+					{
+						constexpr size_t num_parts= 2;
+						std::array<llvm::Type*, num_parts> types{};
+						const uint32_t part_sizes[num_parts]{ 8u, uint32_t(type_size)  - 8u };
+						size_t num_integer_registers_needed= 0, num_floating_point_registers_needed= 0;
+						for( size_t part= 0; part < num_parts; ++part )
+						{
+							if( classes[part] == ArgumentClass::Integer )
+							{
+								types[part]= llvm::IntegerType::get( llvm_context, part_sizes[part] * 8 );
+								++num_integer_registers_needed;
 							}
-							else if( classes[0] == ArgumentClass::SSE )
+							else if( classes[part] == ArgumentClass::SSE )
 							{
-								call_info.arguments_passing[i]=
-									ArgumentPassing{
-										ArgumentPassingKind::Direct,
-										type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_context ) };
-
-								if( num_floating_point_registers_left > 0 )
-									--num_floating_point_registers_left;
+								types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_context );
+								++num_floating_point_registers_needed;
 							}
 							else U_ASSERT(false);
 						}
-						else if( type_size <= 16 )
+
+						if( num_integer_registers_needed <= num_integer_registers_left &&
+							num_floating_point_registers_needed <= num_floating_point_registers_left )
 						{
-							constexpr size_t num_parts= 2;
-							std::array<llvm::Type*, num_parts> types{};
-							const uint32_t part_sizes[num_parts]{ 8u, uint32_t(type_size)  - 8u };
-							size_t num_integer_registers_needed= 0, num_floating_point_registers_needed= 0;
-							for( size_t part= 0; part < num_parts; ++part )
-							{
-								if( classes[part] == ArgumentClass::Integer )
-								{
-									types[part]= llvm::IntegerType::get( llvm_context, part_sizes[part] * 8 );
-									++num_integer_registers_needed;
-								}
-								else if( classes[part] == ArgumentClass::SSE )
-								{
-									types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_context );
-									++num_floating_point_registers_needed;
-								}
-								else U_ASSERT(false);
-							}
+							// Create a tuple for two parts.
+							// TODO - set zext/sext?
+							call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, llvm::StructType::get( llvm_context, types ) };
 
-							if( num_integer_registers_needed <= num_integer_registers_left &&
-								num_floating_point_registers_needed <= num_floating_point_registers_left )
-							{
-								// Create a tuple for two parts.
-								// TODO - set zext/sext?
-								call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, llvm::StructType::get( llvm_context, types ) };
-
-								num_integer_registers_left-= num_integer_registers_needed;
-								num_floating_point_registers_left-= num_floating_point_registers_needed;
-							}
-							else
-							{
-								// If we have not enough registers to pass all parts of this composite - pass it in stack.
-								call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
-
-								// No registers are consumed for in-stack passing.
-							}
+							num_integer_registers_left-= num_integer_registers_needed;
+							num_floating_point_registers_left-= num_floating_point_registers_needed;
 						}
-						else U_ASSERT( false );
+						else
+						{
+							// If we have not enough registers to pass all parts of this composite - pass it in stack.
+							call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
+
+							// No registers are consumed for in-stack passing.
+						}
 					}
+					else U_ASSERT( false );
 				}
 			}
 			else
@@ -589,8 +576,6 @@ void CallingConventionInfoSystemV_X86_64::MergeArgumentClasses( ArgumentClass& d
 	{}
 	else if( dst == ArgumentClass::NoClass )
 		dst= src;
-	else if( src == ArgumentClass::Memory )
-		dst= ArgumentClass::Memory;
 	else if( src == ArgumentClass::Integer )
 		dst= ArgumentClass::Integer;
 	else if( dst == ArgumentClass::Integer )

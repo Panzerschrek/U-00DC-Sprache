@@ -252,7 +252,6 @@ private:
 		NoClass,
 		Integer,
 		SSE,
-		Memory,
 	}
 
 	auto c_max_argument_parts= 2s;
@@ -323,14 +322,6 @@ fn CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( this, T
 
 		var ArgumentPartClasses mut classes= zero_init;
 		ClassifyType_r( llvm_type, classes, 0u );
-
-		foreach( c : classes )
-		{
-			if( c == ArgumentClass::Memory )
-			{
-				return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
-			}
-		}
 
 		var LLVMContextRef llvm_context= unsafe( LLVMGetTypeContext( llvm_type ) );
 
@@ -537,88 +528,73 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 					var ArgumentPartClasses mut classes= zero_init;
 					ClassifyType_r( llvm_type, classes, 0u );
 
-					var bool mut is_memory_class= false;
-					foreach( c : classes )
-					{
-						is_memory_class|= c == ArgumentClass::Memory;
-					}
+					var LLVMContextRef llvm_context= unsafe( LLVMGetTypeContext( llvm_type ) );
 
-					if( is_memory_class )
+					if( type_size <= 8u64 )
 					{
-						argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
-
-						// No registers are consumed for in-stack passing.
-					}
-					else
-					{
-						var LLVMContextRef llvm_context= unsafe( LLVMGetTypeContext( llvm_type ) );
-
-						if( type_size <= 8u64 )
+						if( classes[0] == ArgumentClass::Integer )
 						{
-							if( classes[0] == ArgumentClass::Integer )
-							{
-								argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMIntTypeInContext( llvm_context, u32(type_size) * 8u ) ) );
+							argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMIntTypeInContext( llvm_context, u32(type_size) * 8u ) ) );
 
-								if( num_integer_registers_left > 0s )
-								{
-									--num_integer_registers_left;
-								}
-							}
-							else if( classes[0] == ArgumentClass::SSE )
+							if( num_integer_registers_left > 0s )
 							{
-								argument_passing=
-									ArgumentPassing(
-										ArgumentPassingKind::Direct,
-										unsafe( ( type_size <= 4u64 ? LLVMFloatTypeInContext( llvm_context ) : LLVMDoubleTypeInContext( llvm_context ) ) ) );
-
-								if( num_floating_point_registers_left > 0s )
-								{
-									--num_floating_point_registers_left;
-								}
+								--num_integer_registers_left;
 							}
-							else{ halt; }
 						}
-						else if( type_size <= 16u64 )
+						else if( classes[0] == ArgumentClass::SSE )
 						{
-							auto constexpr num_parts= 2s;
-							var [ LLVMTypeRef, num_parts ] mut types= zero_init;
-							var [ u32, num_parts ] part_sizes[ 8u, u32(type_size)  - 8u ];
-							var size_type mut num_integer_registers_needed= 0s, mut num_floating_point_registers_needed= 0s;
-							for( auto mut part= 0s; part < num_parts; ++part )
-							{
-								if( classes[part] == ArgumentClass::Integer )
-								{
-									types[part]= unsafe( LLVMIntTypeInContext( llvm_context, part_sizes[part] * 8u ) );
-									++num_integer_registers_needed;
-								}
-								else if( classes[part] == ArgumentClass::SSE )
-								{
-									types[part]= unsafe( ( part_sizes[part] <= 4u ? LLVMFloatTypeInContext( llvm_context ) : LLVMDoubleTypeInContext( llvm_context ) ) );
-									++num_floating_point_registers_needed;
-								}
-								else { halt; }
-							}
+							argument_passing=
+								ArgumentPassing(
+									ArgumentPassingKind::Direct,
+									unsafe( ( type_size <= 4u64 ? LLVMFloatTypeInContext( llvm_context ) : LLVMDoubleTypeInContext( llvm_context ) ) ) );
 
-							if( num_integer_registers_needed <= num_integer_registers_left &&
-								num_floating_point_registers_needed <= num_floating_point_registers_left )
+							if( num_floating_point_registers_left > 0s )
 							{
-								// Create a tuple for two parts.
-								// TODO - set zext/sext?
-								argument_passing=
-									ArgumentPassing(
-										ArgumentPassingKind::Direct,
-										unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) ) );
-							}
-							else
-							{
-								// If we have not enough registers to pass all parts of this composite - pass it in stack.
-								argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
-
-								// No registers are consumed for in-stack passing.
+								--num_floating_point_registers_left;
 							}
 						}
 						else{ halt; }
 					}
+					else if( type_size <= 16u64 )
+					{
+						auto constexpr num_parts= 2s;
+						var [ LLVMTypeRef, num_parts ] mut types= zero_init;
+						var [ u32, num_parts ] part_sizes[ 8u, u32(type_size)  - 8u ];
+						var size_type mut num_integer_registers_needed= 0s, mut num_floating_point_registers_needed= 0s;
+						for( auto mut part= 0s; part < num_parts; ++part )
+						{
+							if( classes[part] == ArgumentClass::Integer )
+							{
+								types[part]= unsafe( LLVMIntTypeInContext( llvm_context, part_sizes[part] * 8u ) );
+								++num_integer_registers_needed;
+							}
+							else if( classes[part] == ArgumentClass::SSE )
+							{
+								types[part]= unsafe( ( part_sizes[part] <= 4u ? LLVMFloatTypeInContext( llvm_context ) : LLVMDoubleTypeInContext( llvm_context ) ) );
+								++num_floating_point_registers_needed;
+							}
+							else { halt; }
+						}
+
+						if( num_integer_registers_needed <= num_integer_registers_left &&
+							num_floating_point_registers_needed <= num_floating_point_registers_left )
+						{
+							// Create a tuple for two parts.
+							// TODO - set zext/sext?
+							argument_passing=
+								ArgumentPassing(
+									ArgumentPassingKind::Direct,
+									unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) ) );
+						}
+						else
+						{
+							// If we have not enough registers to pass all parts of this composite - pass it in stack.
+							argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+
+							// No registers are consumed for in-stack passing.
+						}
+					}
+					else{ halt; }
 				}
 			}
 			else
@@ -696,10 +672,6 @@ fn CallingConventionInfoSystemV_X86_64::MergeArgumentClasses( ArgumentClass &mut
 	else if( dst == ArgumentClass::NoClass )
 	{
 		dst= src;
-	}
-	else if( src == ArgumentClass::Memory )
-	{
-		dst= ArgumentClass::Memory;
 	}
 	else if( src == ArgumentClass::Integer )
 	{
