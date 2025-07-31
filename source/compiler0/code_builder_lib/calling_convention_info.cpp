@@ -284,7 +284,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 			if( classes[0] == ArgumentClass::Integer )
 				result_llvm_type= llvm::IntegerType::get( llvm_context, uint32_t(type_size) * 8 );
 			else if( classes[0] == ArgumentClass::SSE )
-				result_llvm_type= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+				result_llvm_type= type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_context );
 			else U_ASSERT(false);
 		}
 		else if( type_size <= 16 )
@@ -297,7 +297,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 				if( classes[part] == ArgumentClass::Integer )
 					types[part]= llvm::IntegerType::get( llvm_context, part_sizes[part] * 8 );
 				else if( classes[part] == ArgumentClass::SSE )
-					types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+					types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_context );
 				else U_ASSERT(false);
 			}
 
@@ -458,7 +458,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 								call_info.arguments_passing[i]=
 									ArgumentPassing{
 										ArgumentPassingKind::Direct,
-										type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() ) };
+										type_size <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_context ) };
 
 								if( num_floating_point_registers_left > 0 )
 									--num_floating_point_registers_left;
@@ -480,7 +480,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 								}
 								else if( classes[part] == ArgumentClass::SSE )
 								{
-									types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_type->getContext() );
+									types[part]= part_sizes[part] <= 4 ? llvm::Type::getFloatTy( llvm_context ) : llvm::Type::getDoubleTy( llvm_context );
 									++num_floating_point_registers_needed;
 								}
 								else U_ASSERT(false);
