@@ -4900,12 +4900,12 @@ fn CodeBuilder::DoCallFunction(
 			},
 			ICallingConventionInfo::ReturnValuePassingKind::DirectZExt ->
 			{
-				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("zext"), 0u64 ) );
+				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("zeroext"), 0u64 ) );
 				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
 			},
 			ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
 			{
-				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("sext"), 0u64 ) );
+				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("signext"), 0u64 ) );
 				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
 			},
 			ICallingConventionInfo::ReturnValuePassingKind::ByPointer ->
@@ -4927,12 +4927,12 @@ fn CodeBuilder::DoCallFunction(
 				ICallingConventionInfo::ArgumentPassingKind::Direct -> {},
 				ICallingConventionInfo::ArgumentPassingKind::DirectZExt ->
 				{
-					auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("zext"), 0u64 ) );
+					auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("zeroext"), 0u64 ) );
 					unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
 				},
 				ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
 				{
-					auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("sext"), 0u64 ) );
+					auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("signext"), 0u64 ) );
 					unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
 				},
 				ICallingConventionInfo::ArgumentPassingKind::ByPointer -> {},

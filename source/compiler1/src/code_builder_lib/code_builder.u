@@ -2557,11 +2557,11 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 					ICallingConventionInfo::ArgumentPassingKind::Direct -> {},
 					ICallingConventionInfo::ArgumentPassingKind::DirectZExt ->
 					{
-						AddFunctionAttribute( llvm_function, llvm_param_n, "zext" );
+						AddFunctionAttribute( llvm_function, llvm_param_n, "zeroext" );
 					},
 					ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
 					{
-						AddFunctionAttribute( llvm_function, llvm_param_n, "sext" );
+						AddFunctionAttribute( llvm_function, llvm_param_n, "signext" );
 					},
 					ICallingConventionInfo::ArgumentPassingKind::ByPointer ->
 					{
@@ -2612,11 +2612,11 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 		ICallingConventionInfo::ReturnValuePassingKind::Direct -> {},
 		ICallingConventionInfo::ReturnValuePassingKind::DirectZExt ->
 		{
-			AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "zext" );
+			AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "zeroext" );
 		},
 		ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
 		{
-			AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "sext" );
+			AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "signext" );
 		},
 		ICallingConventionInfo::ReturnValuePassingKind::ByPointer ->
 		{
