@@ -397,12 +397,12 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 				var u64 type_size= unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) );
 				if( type_size > 16u64 )
 				{
-					argument_passing= ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+					argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
 				}
 				else if( type_size == 0u64 )
 				{
 					// TODO - handle zero-sized structs properly.
-					argument_passing= ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+					argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
 				}
 				else
 				{
@@ -417,7 +417,7 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 
 					if( is_memory_class )
 					{
-						argument_passing= ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+						argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
 					}
 					else
 					{
