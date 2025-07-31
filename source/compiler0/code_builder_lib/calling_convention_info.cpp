@@ -390,9 +390,19 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 				// Enums are unsigned and thus require zero extension.
 				call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::DirectZExt, e->underlying_type.llvm_type };
 
-				// Enum arg consumes one integer register.
-				if( num_integer_registers_left > 0 )
-					--num_integer_registers_left;
+				if( e->underlying_type.fundamental_type == U_FundamentalType::i128_ ||
+					e->underlying_type.fundamental_type == U_FundamentalType::u128_ )
+				{
+					// Enums with 128-bit underlying type consume two integer registers.
+					if( num_integer_registers_left >= 2 )
+						num_integer_registers_left-= 2;
+				}
+				else
+				{
+					// Other enums consume one integer register.
+					if( num_integer_registers_left > 0 )
+						--num_integer_registers_left;
+				}
 			}
 			else if( const auto fp= param.type.GetFunctionPointerType() )
 			{

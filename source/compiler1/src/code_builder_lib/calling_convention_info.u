@@ -464,13 +464,28 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 			}
 			else if_var( &e : param.t.GetEnumType() )
 			{
-				// Enums are unsigned.
-				argument_passing= ArgumentPassing( ArgumentPassingKind::DirectZExt, e.lock_imut().deref().underlying_type.llvm_type );
-
-				// Enum arg consumes one integer register.
-				if( num_integer_registers_left > 0s )
+				with( &underlying_type : e.lock_imut().deref().underlying_type )
 				{
-					--num_integer_registers_left;
+					// Enums are unsigned.
+					argument_passing= ArgumentPassing( ArgumentPassingKind::DirectZExt, underlying_type.llvm_type );
+
+					if( underlying_type.fundamental_type == U_FundamentalType::i128_ ||
+						underlying_type.fundamental_type == U_FundamentalType::u128_ )
+					{
+						// Enums with 128-bit underlying type consume two integer registers.
+						if( num_integer_registers_left >= 2s )
+						{
+							num_integer_registers_left-= 2s;
+						}
+					}
+					else
+					{
+						// Other enums consume one integer register.
+						if( num_integer_registers_left > 0s )
+						{
+							--num_integer_registers_left;
+						}
+					}
 				}
 			}
 			else if_var( &p : param.t.GetRawPointerType() )
