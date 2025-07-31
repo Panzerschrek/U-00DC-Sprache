@@ -64,6 +64,25 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 			// TODO - handle other operating systems.
 		}
 	}
+	else if( HasSubstr( target_triple_str, "aarch64" ) )
+	{
+		if(
+			HasSubstr( target_triple_str, "linux" ) ||
+			HasSubstr( target_triple_str, "freebsd" ) ||
+			HasSubstr( target_triple_str, "darwin" ) ||
+			HasSubstr( target_triple_str, "macosx" ) )
+		{
+			var ust::shared_ptr_imut</CallingConventionInfoSystemV_AArch64/> system_v_aarch64_info =
+				ust::make_shared_ptr( CallingConventionInfoSystemV_AArch64( data_layout ) );
+
+			calling_convention_infos[ size_type( CallingConvention::C ) ]= system_v_aarch64_info;
+			calling_convention_infos[ size_type( CallingConvention::System ) ]= system_v_aarch64_info;
+		}
+		else
+		{
+			// TODO - handle other operating systems.
+		}
+	}
 	else
 	{
 		// TODO - handle other architectures.
@@ -911,6 +930,228 @@ fn CallingConventionInfoMSVC_X86::CalculateValueArgumentPassingInfo( this, Type&
 	return ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( t.GetLLVMType(), 0u ) ) );
 }
 
+
+class CallingConventionInfoSystemV_AArch64 final : ICallingConventionInfo
+{
+public:
+	fn constructor( LLVMTargetDataRef data_lyout );
+
+public: // ICallingConventionInfo
+	fn virtual override CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing;
+	fn virtual final CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo;
+
+private:
+	fn CalculateValueArgumentPassingInfo( this, Type& t ) : ArgumentPassing;
+
+private:
+	LLVMTargetDataRef imut data_layout_;
+}
+
+fn CallingConventionInfoSystemV_AArch64::constructor( LLVMTargetDataRef data_layout )
+	( data_layout_= data_layout )
+{}
+
+fn CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing
+{
+	if_var( &f : t.GetFundamentalType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, f.llvm_type );
+	}
+	if_var( &e : t.GetEnumType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, e.lock_imut().deref().underlying_type.llvm_type );
+	}
+	if_var( &p : t.GetRawPointerType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, p.llvm_type );
+	}
+	if_var( &fp : t.GetFunctionPointerType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, fp.llvm_type );
+	}
+
+	// Composite types.
+
+	var LLVMTypeRef llvm_type= t.GetLLVMType();
+
+	var LLVMTypeRef single_scalar= GetSingleScalarType( llvm_type );
+	if( single_scalar != LLVMTypeRef::Null )
+	{
+		// Return composites with single scalar inside using this scalar.
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, single_scalar );
+	}
+
+	var u64 size= unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) );
+	if( size > 32u64 )
+	{
+		// Return composites with size larger than 32 by pointer.
+		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
+	}
+
+	var ust::vector</LLVMTypeRef/> mut scalar_types;
+	CollectScalarTypes_r( llvm_type, scalar_types );
+
+	if( scalar_types.size() <= 4s )
+	{
+		var LLVMTypeRef first_scalar= scalar_types.front();
+
+		var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( scalar_types.front() ) );
+		if( t_kind == LLVMTypeKind::Float || t_kind == LLVMTypeKind::Double )
+		{
+			var bool mut all_scalar_elements_are_same= true;
+			foreach( t : scalar_types )
+			{
+				all_scalar_elements_are_same &= t == first_scalar;
+			}
+
+			if( all_scalar_elements_are_same )
+			{
+				// Homogeneous Floating-point Aggregate - they are returned directly, but only if they have no more than 4 elements.
+				// [ f64, 4 ] array is largest composite type, which can be returned directly.
+				return ReturnValuePassing( ReturnValuePassingKind::Direct, unsafe( LLVMArrayType2( first_scalar, u64( scalar_types.size() ) ) ) );
+			}
+		}
+	}
+
+	if( size > 16u64 )
+	{
+		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are returned via "sret" pointer.
+		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
+	}
+
+	// Small composite types are returned as integers.
+	// This includes even structs consisting of f32/f64 pairs.
+	return
+		ReturnValuePassing(
+			ReturnValuePassingKind::Direct,
+			unsafe( LLVMIntTypeInContext( LLVMGetTypeContext( llvm_type ), u32(size) * 8u ) ) );
+}
+
+fn CallingConventionInfoSystemV_AArch64::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
+{
+	var CallInfo mut call_info
+	{
+		.return_value_passing=
+			( function_type.return_value_type == ValueType::Value
+				? CalculateReturnValuePassingInfo( function_type.return_type )
+				: ReturnValuePassing(
+					ReturnValuePassingKind::Direct,
+					unsafe( LLVMPointerType( function_type.return_type.GetLLVMType(), 0u ) ) ) ),
+	};
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	foreach( pair : function_type.params.iter().zip( call_info.arguments_passing.iter() ) )
+	{
+		var FunctionType::Param& param = pair.first;
+		var ArgumentPassing &mut argument_passing= pair.second;
+		if( param.value_type == ValueType::Value )
+		{
+			argument_passing= CalculateValueArgumentPassingInfo( param.t );
+		}
+		else
+		{
+			argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMPointerType( param.t.GetLLVMType(), 0u ) ) );
+		}
+	}
+
+	return call_info;
+}
+
+fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this, Type& t ) : ArgumentPassing
+{
+	if_var( &f : t.GetFundamentalType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, f.llvm_type );
+	}
+	if_var( &e : t.GetEnumType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, e.lock_imut().deref().underlying_type.llvm_type );
+	}
+	if_var( &p : t.GetRawPointerType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, p.llvm_type );
+	}
+	if_var( &fp : t.GetFunctionPointerType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, fp.llvm_type );
+	}
+
+	// Composite types.
+
+	var LLVMTypeRef llvm_type= t.GetLLVMType();
+
+	var LLVMTypeRef single_scalar= GetSingleScalarType( llvm_type );
+	if( single_scalar != LLVMTypeRef::Null )
+	{
+		// Pass composites with single scalar inside using this scalar.
+		return ArgumentPassing( ArgumentPassingKind::Direct, single_scalar );
+	}
+
+	var u64 size= unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) );
+	if( size > 32u64 )
+	{
+		// Pass composites with size larger than 32 by pointer.
+		return ArgumentPassing( ArgumentPassingKind::ByPointer, LLVMTypeRef::Null );
+	}
+
+	var ust::vector</LLVMTypeRef/> mut scalar_types;
+	CollectScalarTypes_r( llvm_type, scalar_types );
+
+	if( scalar_types.size() <= 4s )
+	{
+		var LLVMTypeRef first_scalar= scalar_types.front();
+
+		var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( scalar_types.front() ) );
+		if( t_kind == LLVMTypeKind::Float || t_kind == LLVMTypeKind::Double )
+		{
+			var bool mut all_scalar_elements_are_same= true;
+			foreach( t : scalar_types )
+			{
+				all_scalar_elements_are_same &= t == first_scalar;
+			}
+
+			if( all_scalar_elements_are_same )
+			{
+				// Homogeneous Floating-point Aggregate - they are passed directly, but only if they have no more than 4 elements.
+				// [ f64, 4 ] array is largest composite type, which can be passed directly.
+				return ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMArrayType2( first_scalar, u64( scalar_types.size() ) ) ) );
+			}
+		}
+	}
+
+	if( size > 16u64 )
+	{
+		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are passed by pointer.
+		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+	}
+
+	var LLVMContextRef llvm_context= unsafe( LLVMGetTypeContext( llvm_type ) );
+
+	// Small composite types are passed as integers.
+	// This includes even structs consisting of f32/f64 pairs.
+	if( size <= 8u64 )
+	{
+		// Use single integer for a composite less than 8 bytes.
+		return ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMIntTypeInContext( llvm_context, u32(size) * 8u ) ) );
+	}
+	else
+	{
+		// Use pair of integers for larger composites.
+		// We can't use something like i128, since it should be aligned to even register index.
+
+		var [ LLVMTypeRef, 2 ] mut elements
+		[
+			unsafe( LLVMIntTypeInContext( llvm_context, 8u * 8u ) ),
+			unsafe( LLVMIntTypeInContext( llvm_context, ( u32(size) - 8u ) * 8u ) ),
+		];
+
+		return
+			ArgumentPassing(
+				ArgumentPassingKind::Direct,
+				unsafe( LLVMStructTypeInContext( llvm_context, $<(elements[0]), 2u, LLVMBool::False ) ) );
+	}
+}
+
 // Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
 // Returns null otherwise.
 // Requires type to be complete.
@@ -947,6 +1188,43 @@ fn GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
 	}
 
 	return LLVMTypeRef::Null;
+}
+
+// Collect scalars of given type in their placement order.
+// Use this function with caution, since it can create very large lists for large arrays.
+// So, prefer skipping using it if it's known if given type is pretty large.
+fn CollectScalarTypes_r( LLVMTypeRef llvm_type, ust::vector</LLVMTypeRef/> &mut out_types )
+{
+	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( llvm_type ) );
+	if( t_kind == LLVMTypeKind::Half ||
+		t_kind == LLVMTypeKind::Float ||
+		t_kind == LLVMTypeKind::Double ||
+		t_kind == LLVMTypeKind::X86_FP80 ||
+		t_kind == LLVMTypeKind::P128 ||
+		t_kind == LLVMTypeKind::PPC_FP128 ||
+		t_kind == LLVMTypeKind::Integer ||
+		t_kind == LLVMTypeKind::Pointer )
+	{
+		out_types.push_back( llvm_type );
+	}
+	else if( t_kind == LLVMTypeKind::Array )
+	{
+		var LLVMTypeRef element_type= unsafe( LLVMGetElementType( llvm_type ) );
+		var u64 num_elements= unsafe( LLVMGetArrayLength2( llvm_type ) );
+		for( var u64 mut element_index= 0u64; element_index < num_elements; ++element_index )
+		{
+			CollectScalarTypes_r( element_type, out_types );
+		}
+	}
+	else if( t_kind == LLVMTypeKind::Struct )
+	{
+		var u32 num_elements= unsafe( LLVMCountStructElementTypes( llvm_type ) );
+		for( var u32 mut element_index= 0u; element_index < num_elements; ++element_index )
+		{
+			CollectScalarTypes_r( unsafe( LLVMStructGetTypeAtIndex( llvm_type, element_index ) ), out_types );
+		}
+	}
+	else { halt; } // Unhandled type kind.
 }
 
 // TODO - create a standard library function for this.
