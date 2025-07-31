@@ -339,6 +339,14 @@ fn CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( this, T
 
 fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
 {
+	// Count registers used for parameters passing.
+	// It's neccessary because of the rule, which says, that a composite argument shouldn't be passed partially in registers and partially in stack.
+	// So if we have no place in registers for such argument, pass it entirely in stack.
+
+	// We have 6 integer register available for integer parameters passing: %rdi, %rsi, %rdx, %rcx, %r8, %r8.
+	// We have 8 floating point registers available for floating-point parameters passing: %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm5, %xmm6, %xmm7.
+	var size_type mut num_integer_registers_left= 6s, mut num_floating_point_registers_left= 8s;
+
 	var CallInfo mut call_info
 	{
 		.return_value_passing=
@@ -348,6 +356,12 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 					ReturnValuePassingKind::Direct,
 					unsafe( LLVMPointerType( function_type.return_type.GetLLVMType(), 0u ) ) ) ),
 	};
+
+	if( call_info.return_value_passing.kind == ReturnValuePassingKind::ByPointer )
+	{
+		// Consume an integer register for "sret" pointer.
+		--num_integer_registers_left;
+	}
 
 	call_info.arguments_passing.resize( function_type.params.size() );
 	foreach( pair : function_type.params.iter().zip( call_info.arguments_passing.iter() ) )
@@ -374,21 +388,56 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 				{
 					argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, f.llvm_type );
 				}
+
+				if( IsFloatingPoint( f.fundamental_type ) )
+				{
+					// Floating-point scalar arg consumes one floating-point register.
+					if( num_floating_point_registers_left > 0s )
+					{
+						--num_floating_point_registers_left;
+					}
+				}
+				else
+				{
+					// Integer arg consumes one integer register.
+					if( num_integer_registers_left > 0s )
+					{
+						--num_integer_registers_left;
+					}
+				}
 			}
 			else if_var( &e : param.t.GetEnumType() )
 			{
 				// Enums are unsigned.
 				argument_passing= ArgumentPassing( ArgumentPassingKind::DirectZExt, e.lock_imut().deref().underlying_type.llvm_type );
+
+				// Enum arg consumes one integer register.
+				if( num_integer_registers_left > 0s )
+				{
+					--num_integer_registers_left;
+				}
 			}
 			else if_var( &p : param.t.GetRawPointerType() )
 			{
 				// It seems like zero extension isn't necessary for pointers.
 				argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, p.llvm_type );
+
+				// Pointer arg consumes one integer register.
+				if( num_integer_registers_left > 0s )
+				{
+					--num_integer_registers_left;
+				}
 			}
 			else if_var( &fp : param.t.GetFunctionPointerType() )
 			{
 				// It seems like zero extension isn't necessary for pointers.
 				argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, fp.llvm_type );
+
+				// Pointer arg consumes one integer register.
+				if( num_integer_registers_left > 0s )
+				{
+					--num_integer_registers_left;
+				}
 			}
 			else if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
 			{
@@ -398,11 +447,15 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 				if( type_size > 16u64 )
 				{
 					argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+
+					// No registers are consumed for in-stack passing.
 				}
 				else if( type_size == 0u64 )
 				{
 					// TODO - handle zero-sized structs properly.
 					argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+
+					// No registers are consumed for in-stack passing.
 				}
 				else
 				{
@@ -418,6 +471,8 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 					if( is_memory_class )
 					{
 						argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+
+						// No registers are consumed for in-stack passing.
 					}
 					else
 					{
@@ -428,6 +483,11 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 							if( classes[0] == ArgumentClass::Integer )
 							{
 								argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMIntTypeInContext( llvm_context, u32(type_size) * 8u ) ) );
+
+								if( num_integer_registers_left > 0s )
+								{
+									--num_integer_registers_left;
+								}
 							}
 							else if( classes[0] == ArgumentClass::SSE )
 							{
@@ -435,6 +495,11 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 									ArgumentPassing(
 										ArgumentPassingKind::Direct,
 										unsafe( ( type_size <= 4u64 ? LLVMFloatTypeInContext( llvm_context ) : LLVMDoubleTypeInContext( llvm_context ) ) ) );
+
+								if( num_floating_point_registers_left > 0s )
+								{
+									--num_floating_point_registers_left;
+								}
 							}
 							else{ halt; }
 						}
@@ -443,25 +508,39 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 							auto constexpr num_parts= 2s;
 							var [ LLVMTypeRef, num_parts ] mut types= zero_init;
 							var [ u32, num_parts ] part_sizes[ 8u, u32(type_size)  - 8u ];
+							var size_type mut num_integer_registers_needed= 0s, mut num_floating_point_registers_needed= 0s;
 							for( auto mut part= 0s; part < num_parts; ++part )
 							{
 								if( classes[part] == ArgumentClass::Integer )
 								{
 									types[part]= unsafe( LLVMIntTypeInContext( llvm_context, part_sizes[part] * 8u ) );
+									++num_integer_registers_needed;
 								}
 								else if( classes[part] == ArgumentClass::SSE )
 								{
 									types[part]= unsafe( ( part_sizes[part] <= 4u ? LLVMFloatTypeInContext( llvm_context ) : LLVMDoubleTypeInContext( llvm_context ) ) );
+									++num_floating_point_registers_needed;
 								}
 								else { halt; }
 							}
 
-							// Create a tuple for two parts.
-							// TODO - set zext/sext?
-							argument_passing=
-								ArgumentPassing(
-									ArgumentPassingKind::Direct,
-									unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) ) );
+							if( num_integer_registers_needed <= num_integer_registers_left &&
+								num_floating_point_registers_needed <= num_floating_point_registers_left )
+							{
+								// Create a tuple for two parts.
+								// TODO - set zext/sext?
+								argument_passing=
+									ArgumentPassing(
+										ArgumentPassingKind::Direct,
+										unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) ) );
+							}
+							else
+							{
+								// If we have not enough registers to pass all parts of this composite - pass it in stack.
+								argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+
+								// No registers are consumed for in-stack passing.
+							}
 						}
 						else{ halt; }
 					}
@@ -476,6 +555,12 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 		else
 		{
 			argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMPointerType( param.t.GetLLVMType(), 0u ) ) );
+
+			// Reference arg consumes one integer register.
+			if( num_integer_registers_left > 0s )
+			{
+				--num_integer_registers_left;
+			}
 		}
 	}
 
