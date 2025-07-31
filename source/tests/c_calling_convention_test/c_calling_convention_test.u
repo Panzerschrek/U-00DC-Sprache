@@ -918,6 +918,11 @@ fn nomangle main() call_conv( "C" ) : i32
 		var tup[ u64, f64 ] arg[ 0x0123456789ABCDEFu, 26376.25 ];
 		Pass_u32_u32_u32_u32_u32_tup_u64_f64( 47588u, 33677u, 12u, 3785427u, 13748588u, arg );
 	}
+	static_if( c_enable_128bit_int_tests )
+	{
+		var tup[ u64, f64 ] arg[ 0x012D456789ABC3EFu, -26336.75 ];
+		Pass_u128_u32_u32_u32_u32_tup_u64_f64( ( 0x1122334455667788u128 << 64u ) | 0x99AABBCCDDEEFFu128, 33647u, 13u, 3785437u, 53748583u, arg );
+	}
 	{
 		var tup[ u64, u64 ] arg[ 0x0123456789ABCDEFu, 0xFEDCBA9876543210u ];
 		Pass_u32_u32_u32_u32_u32_tup_u64_u64( 47288u, 31677u, 14u, 3285427u, 13748988u, arg );
@@ -1853,6 +1858,7 @@ fn nomangle Pass_tup_f64_f64_f32_Test0( tup [ f64, f64, f32 ] x ) call_conv( "C"
 fn nomangle Pass_tup_f64_f64_f64_Test0( tup [ f64, f64, f64 ] x ) call_conv( "C" );
 // Tricky cases - x86_64 System V ABI uses 6 integer registers for passing integer values.
 fn nomangle Pass_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d, u32 e, tup[ u64, f64 ] f ) call_conv( "C" );
+fn nomangle enable_if( c_enable_128bit_int_tests ) Pass_u128_u32_u32_u32_u32_tup_u64_f64( u128 a, u32 b, u32 c, u32 d, u32 e, tup[ u64, f64 ] f ) call_conv( "C" );
 fn nomangle Pass_u32_u32_u32_u32_u32_tup_u64_u64( u32 a, u32 b, u32 c, u32 d, u32 e, tup[ u64, u64 ] f ) call_conv( "C" );
 fn nomangle Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d, u32 e, u32 f, tup[ u64, f64 ] g ) call_conv( "C" );
 // Tricky cases - x86_64 System V ABI uses 8 sse registers for passing floating-point values.
@@ -3088,6 +3094,15 @@ fn nomangle U_Pass_u32_u32_u32_u32_u32_tup_u64_f64( u32 a, u32 b, u32 c, u32 d, 
 {
 	halt if( a != 47588u ); halt if( b != 33677u ); halt if( c != 12u ); halt if( d != 3785427u ); halt if( e != 13748588u );
 	halt if( f[0] != 0x0123456789ABCDEFu64 ); halt if( f[1] != 26376.25 );
+}
+fn nomangle enable_if( c_enable_128bit_int_tests ) U_Pass_u128_u32_u32_u32_u32_tup_u64_f64( u128 a, u32 b, u32 c, u32 d, u32 e, tup[ u64, f64 ] f ) call_conv( "C" )
+{
+	halt if( a != ( ( 0x1122334455667788u128  << 64u ) | 0x99AABBCCDDEEFFu128 ) );
+	halt if( b != 33647u );
+	halt if( c != 13u );
+	halt if( d != 378543u );
+	halt if( e != 53748583u );
+	halt if( f[0] != 0x012D456789ABC3EFu ); halt if( f[1] != -26336.75 );
 }
 fn nomangle U_Pass_u32_u32_u32_u32_u32_tup_u64_u64( u32 a, u32 b, u32 c, u32 d, u32 e, tup[ u64, u64 ] f ) call_conv( "C" )
 {

@@ -1224,6 +1224,17 @@ void Pass_u32_u32_u32_u32_u32_tup_u64_f64( const uint32_t a, const uint32_t b, c
 	TEST_ASSERT( a == 47588u ); TEST_ASSERT( b == 33677u ); TEST_ASSERT( c == 12u ); TEST_ASSERT( d == 3785427u ); TEST_ASSERT( e == 13748588u );
 	TEST_ASSERT( f.v0 == 0x0123456789ABCDEFull ); TEST_ASSERT( f.v1 == 26376.25 );
 }
+#ifdef ENABLE_128BIT_INT_TESTS
+void Pass_u128_u32_u32_u32_u32_tup_u64_f64( const __uint128_t a, const uint32_t b, const uint32_t c, const uint32_t d, const uint32_t e, const Tuple2<uint64_t, double> f )
+{
+	TEST_ASSERT( a == ( ( __uint128_t( 0x1122334455667788ull ) << 64u ) | 0x99AABBCCDDEEFFull ) );
+	TEST_ASSERT( b == 33647u );
+	TEST_ASSERT( c == 13u );
+	TEST_ASSERT( d == 3785437u );
+	TEST_ASSERT( e == 53748583u );
+	TEST_ASSERT( f.v0 == 0x012D456789ABC3EFull ); TEST_ASSERT( f.v1 == -26336.75 );
+}
+#endif
 void Pass_u32_u32_u32_u32_u32_tup_u64_u64( const uint32_t a, const uint32_t b, const uint32_t c, const uint32_t d, const uint32_t e, const Tuple2<uint64_t, uint64_t> f )
 {
 	TEST_ASSERT( a == 47288u ); TEST_ASSERT( b == 31677u ); TEST_ASSERT( c == 14u ); TEST_ASSERT( d == 3285427u ); TEST_ASSERT( e == 13748988u );
@@ -1529,6 +1540,9 @@ void U_Pass_tup_f64_f64_f32_Test0( Tuple3<double, double, float> x );
 void U_Pass_tup_f64_f64_f64_Test0( Tuple3<double, double, double> x );
 // Tricky cases - x86_64 System V ABI uses 6 integer registers for passing integer values.
 void U_Pass_u32_u32_u32_u32_u32_tup_u64_f64( uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, Tuple2<uint64_t, double> f );
+#ifdef ENABLE_128BIT_INT_TESTS
+void U_Pass_u128_u32_u32_u32_u32_tup_u64_f64( __uint128_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, Tuple2<uint64_t, double> f );
+#endif
 void U_Pass_u32_u32_u32_u32_u32_tup_u64_u64( uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, Tuple2<uint64_t, uint64_t> f );
 void U_Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( uint32_t a, uint32_t b, uint32_t c, uint32_t d, uint32_t e, uint32_t f, Tuple2<uint64_t, double> g );
 // Tricky cases - x86_64 System V ABI uses 8 sse registers for passing floating-point values.
@@ -2105,6 +2119,9 @@ void TestPassingValuesToUCode()
 	U_Pass_tup_f64_f64_f32_Test0( { 0.25, -363.2, 3773440.0f } );
 	U_Pass_tup_f64_f64_f64_Test0( { 0.25, -363.2, 3773440.0 } );
 	U_Pass_u32_u32_u32_u32_u32_tup_u64_f64( 47588u, 33677u, 12u, 3785427u, 13748588u, { 0x0123456789ABCDEFu, 26376.25 } );
+#ifdef ENABLE_128BIT_INT_TESTS
+	U_Pass_u128_u32_u32_u32_u32_tup_u64_f64( ( __uint128_t(0x1122334455667788ull) << 64u ) | 0x99AABBCCDDEEFFull, 33647, 13, 378543, 53748583, { 0x012D456789ABC3EF, -26336.75 } );
+#endif
 	U_Pass_u32_u32_u32_u32_u32_tup_u64_u64( 47288u, 31677u, 14u, 3285427u, 13748988u, { 0x0123456789ABCDEFu, 0xFEDCBA9876543210u } );
 	U_Pass_u32_u32_u32_u32_u32_u32_tup_u64_f64( 41588u, 633677u, 7812u, 5785427u, 23748588u, 788588u, { 0xFEDCBA9876543210u, -16376.75 } );
 	U_Pass_f64_f64_f64_f64_f64_f64_f64_f64_tup_u64_f64( 1.0, 774.3, -366.0, 0.125, 6336.2, 6774.0, -126.25, 0.75, { 0xFED7BA98C6543210u, 163.2 } );
