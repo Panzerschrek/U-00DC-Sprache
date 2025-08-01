@@ -223,10 +223,11 @@ void Pass_u64_Test4(
 void Pass_i128_Test0( const __int128_t x ) { TEST_ASSERT( x == ( ( __int128_t( 0x0123456789ABCDEFll ) << 64u ) | __int128_t(0xFEDCBA9876543210ll) ) ); }
 void Pass_u128_Test0( const __uint128_t x ) { TEST_ASSERT( x == ( ( __uint128_t( 0xFEDCBA9876543210ull ) << 64u ) | __uint128_t(0x0123456789ABCDEFull) ) ); }
 #endif
-void Pass_char8_Test0( const char x ) { TEST_ASSERT( x == 'Q' ); }
-void Pass_char8_Test1( const char x ) { TEST_ASSERT( x == '!' ); }
-void Pass_char8_Test2( const char x ) { TEST_ASSERT( x == ' ' ); }
-void Pass_char8_Test3( const char x ) { TEST_ASSERT( x == char(240) ); }
+// Use "unsigned char" for represent Ü "char8", since in C++ regular char signess is inplementation defined.
+void Pass_char8_Test0( const unsigned char x ) { TEST_ASSERT( x == 'Q' ); }
+void Pass_char8_Test1( const unsigned char x ) { TEST_ASSERT( x == '!' ); }
+void Pass_char8_Test2( const unsigned char x ) { TEST_ASSERT( x == ' ' ); }
+void Pass_char8_Test3( const unsigned char x ) { TEST_ASSERT( x == 240 ); }
 void Pass_char16_Test0( const char16_t x ) { TEST_ASSERT( x == u'Ж' ); }
 void Pass_char16_Test1( const char16_t x ) { TEST_ASSERT( x == u'Ꙥ' ); }
 void Pass_char32_Test0( const char32_t x ) { TEST_ASSERT( x == U'😀' ); }
@@ -1295,10 +1296,11 @@ void U_Pass_u64_Test4( uint64_t x0, uint64_t x1, uint64_t x2, uint64_t x3, uint6
 void U_Pass_i128_Test0( __int128_t x );
 void U_Pass_u128_Test0( __uint128_t x );
 #endif
-void U_Pass_char8_Test0( char x );
-void U_Pass_char8_Test1( char x );
-void U_Pass_char8_Test2( char x );
-void U_Pass_char8_Test3( char x );
+// Use "unsigned char" for represent Ü "char8", since in C++ regular char signess is inplementation defined.
+void U_Pass_char8_Test0( unsigned char x );
+void U_Pass_char8_Test1( unsigned char x );
+void U_Pass_char8_Test2( unsigned char x );
+void U_Pass_char8_Test3( unsigned char x );
 void U_Pass_char16_Test0( char16_t x );
 void U_Pass_char16_Test1( char16_t x );
 void U_Pass_char32_Test0( char32_t x );
@@ -1569,8 +1571,9 @@ uint64_t U_Get_u64_Test1();
 __int128_t U_Get_i128_Test0();
 __uint128_t U_Get_u128_Test0();
 #endif
-char U_Get_char8_Test0();
-char U_Get_char8_Test1();
+// Use "unsigned char" for represent Ü "char8", since in C++ regular char signess is inplementation defined.
+unsigned char U_Get_char8_Test0();
+unsigned char U_Get_char8_Test1();
 char16_t U_Get_char16_Test0();
 char16_t U_Get_char16_Test1();
 char32_t U_Get_char32_Test0();
@@ -1792,7 +1795,7 @@ void TestPassingValuesToUCode()
 	U_Pass_char8_Test0( 'Q' );
 	U_Pass_char8_Test1( '!' );
 	U_Pass_char8_Test2( ' ' );
-	U_Pass_char8_Test3( char( 240 ) );
+	U_Pass_char8_Test3( 240 );
 	U_Pass_char16_Test0( u'Ж' );
 	U_Pass_char16_Test1( u'Ꙥ' );
 	U_Pass_char32_Test0( U'😀' );
@@ -2148,7 +2151,7 @@ void TestPassingValuesToUCode()
 	TEST_ASSERT( U_Get_u128_Test0() == ( ( ( __uint128_t( 0xFEDCBA9876543210ull) << 64u ) | 0x0123456789ABCDEFull ) ) );
 #endif
 	TEST_ASSERT( U_Get_char8_Test0() == 'n' );
-	TEST_ASSERT( U_Get_char8_Test1() == char(145) );
+	TEST_ASSERT( U_Get_char8_Test1() == 145 );
 	TEST_ASSERT( U_Get_char16_Test0() == u'Й' );
 	TEST_ASSERT( U_Get_char16_Test1() == u'Ꙥ' );
 	TEST_ASSERT( U_Get_char32_Test0() == U'😀' );
@@ -2773,8 +2776,9 @@ uint64_t Get_u64_Test1() { return 0xE54EC57F1E070FC1u; }
 __int128_t Get_i128_Test0() { return ( __int128_t( 0x0123456789ABCDEFull) << 64u ) | 0xFEDCBA9876543210ull; }
 __uint128_t Get_u128_Test0() { return ( __uint128_t(0xFEDCBA9876543210ull) << 64u ) | 0x0123456789ABCDEFull; }
 #endif
-char Get_char8_Test0() { return 'n'; }
-char Get_char8_Test1() { return char(145); }
+// Use "unsigned char" for represent Ü "char8", since in C++ regular char signess is inplementation defined.
+unsigned char Get_char8_Test0() { return 'n'; }
+unsigned char Get_char8_Test1() { return 145; }
 char16_t Get_char16_Test0() { return u'Й'; }
 char16_t Get_char16_Test1() { return u'Ꙥ'; }
 char32_t Get_char32_Test0() { return U'😀'; }
