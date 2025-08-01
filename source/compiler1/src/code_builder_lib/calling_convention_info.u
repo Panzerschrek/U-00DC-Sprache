@@ -47,7 +47,7 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 			// TODO - handle other operating systems.
 		}
 	}
-	else if( HasSubstr( target_triple_str, "x86" ) )
+	else if( HasSubstr( target_triple_str, "i686" ) )
 	{
 		if( HasSubstr( target_triple_str, "windows" ) )
 		{
