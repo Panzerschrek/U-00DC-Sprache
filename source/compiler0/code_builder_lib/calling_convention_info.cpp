@@ -836,6 +836,12 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 		return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 	}
 
+	if( size == 0 )
+	{
+		// For now return empty structs by pointer. TODO - improve this.
+		return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
+	}
+
 	llvm::SmallVector<llvm::Type*, 16> scalar_types;
 	CollectScalarTypes_r( *llvm_type, scalar_types );
 
@@ -936,6 +942,12 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 	if( size > 32 )
 	{
 		// Pass composites with size larger than 32 by pointer.
+		return ArgumentPassing{ ArgumentPassingKind::ByPointer, llvm_type->getPointerTo() };
+	}
+
+	if( size == 0 )
+	{
+		// For now pass empty structs by pointer. TODO - improve this.
 		return ArgumentPassing{ ArgumentPassingKind::ByPointer, llvm_type->getPointerTo() };
 	}
 

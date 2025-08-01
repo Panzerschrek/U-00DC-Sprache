@@ -1008,6 +1008,12 @@ fn CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( this, 
 		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
 	}
 
+	if( size == 0u64 )
+	{
+		// For now return empty structs by pointer. TODO - improve this.
+		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
+	}
+
 	var ust::vector</LLVMTypeRef/> mut scalar_types;
 	CollectScalarTypes_r( llvm_type, scalar_types );
 
@@ -1134,6 +1140,12 @@ fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this
 	if( size > 32u64 )
 	{
 		// Pass composites with size larger than 32 by pointer.
+		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+	}
+
+	if( size == 0u64 )
+	{
+		// For now pass empty structs by pointer. TODO - improve this.
 		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
 	}
 
