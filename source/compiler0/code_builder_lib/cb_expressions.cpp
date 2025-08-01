@@ -4421,10 +4421,7 @@ Value CodeBuilder::DoCallFunction(
 					if( return_value_is_sret )
 						MoveConstantToMemory( result->type, result->llvm_value, evaluation_result.result_constant, function_context );
 					else
-					{
-						llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( evaluation_result.result_constant, result->llvm_value );
-						store_instruction->setAlignment( data_layout_.getABITypeAlign( result->type.GetLLVMType() ) );
-					}
+						function_context.llvm_ir_builder.CreateStore( evaluation_result.result_constant, result->llvm_value );
 				}
 				result->constexpr_value= evaluation_result.result_constant;
 			}
