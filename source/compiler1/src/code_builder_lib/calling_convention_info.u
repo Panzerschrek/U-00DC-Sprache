@@ -28,16 +28,16 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 			HasSubstr( target_triple_str, "darwin" ) ||
 			HasSubstr( target_triple_str, "macosx" ) )
 		{
-			var ust::shared_ptr_imut</CallingConventionInfoSystemV_X86_64/> system_v_x86_64_info =
-				ust::make_shared_ptr( CallingConventionInfoSystemV_X86_64( data_layout ) );
+			var ust::shared_ptr_imut</CallingConventionInfoSystemV_X86_64/> system_v_x86_64_info(
+				CallingConventionInfoSystemV_X86_64( data_layout ) );
 
 			calling_convention_infos[ size_type( CallingConvention::C ) ]= system_v_x86_64_info;
 			calling_convention_infos[ size_type( CallingConvention::System ) ]= system_v_x86_64_info;
 		}
 		else if( HasSubstr( target_triple_str, "windows" ) )
 		{
-			var ust::shared_ptr_imut</CallingConventionInfoMSVC_X86_64/> msvc_x86_64_info =
-				ust::make_shared_ptr( CallingConventionInfoMSVC_X86_64( data_layout ) );
+			var ust::shared_ptr_imut</CallingConventionInfoMSVC_X86_64/> msvc_x86_64_info(
+				CallingConventionInfoMSVC_X86_64( data_layout ) );
 
 			calling_convention_infos[ size_type( CallingConvention::C ) ]= msvc_x86_64_info;
 			calling_convention_infos[ size_type( CallingConvention::System ) ]= msvc_x86_64_info;
@@ -51,8 +51,8 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 	{
 		if( HasSubstr( target_triple_str, "windows" ) )
 		{
-			var ust::shared_ptr_imut</CallingConventionInfoMSVC_X86/> msvc_x86_info =
-				ust::make_shared_ptr( CallingConventionInfoMSVC_X86( data_layout ) );
+			var ust::shared_ptr_imut</CallingConventionInfoMSVC_X86/> msvc_x86_info(
+				CallingConventionInfoMSVC_X86( data_layout ) );
 
 			calling_convention_infos[ size_type( CallingConvention::C ) ]= msvc_x86_info;
 			// "system" calling convention on x86 Windows is actually separate convention - stdcall.
@@ -68,16 +68,16 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 	{
 		if( HasSubstr( target_triple_str, "linux" ) || HasSubstr( target_triple_str, "freebsd" ) )
 		{
-			var ust::shared_ptr_imut</CallingConventionInfoSystemV_AArch64/> system_v_aarch64_info =
-				ust::make_shared_ptr( CallingConventionInfoSystemV_AArch64( data_layout, false ) );
+			var ust::shared_ptr_imut</CallingConventionInfoSystemV_AArch64/> system_v_aarch64_info(
+				CallingConventionInfoSystemV_AArch64( data_layout, false ) );
 
 			calling_convention_infos[ size_type( CallingConvention::C ) ]= system_v_aarch64_info;
 			calling_convention_infos[ size_type( CallingConvention::System ) ]= system_v_aarch64_info;
 		}
 		else if( HasSubstr( target_triple_str, "darwin" ) || HasSubstr( target_triple_str, "macosx" ) )
 		{
-			var ust::shared_ptr_imut</CallingConventionInfoSystemV_AArch64/> system_v_aarch64_info =
-				ust::make_shared_ptr( CallingConventionInfoSystemV_AArch64( data_layout, true ) );
+			var ust::shared_ptr_imut</CallingConventionInfoSystemV_AArch64/> system_v_aarch64_info(
+				CallingConventionInfoSystemV_AArch64( data_layout, true ) );
 
 			calling_convention_infos[ size_type( CallingConvention::C ) ]= system_v_aarch64_info;
 			calling_convention_infos[ size_type( CallingConvention::System ) ]= system_v_aarch64_info;
