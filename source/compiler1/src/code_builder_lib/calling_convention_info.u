@@ -636,9 +636,9 @@ fn CallingConventionInfoSystemV_X86_64::ClassifyType_r( this, LLVMTypeRef llvm_t
 	}
 	else if( t_kind == LLVMTypeKind::Integer )
 	{
-		var u32 size= unsafe( LLVMGetIntTypeWidth( llvm_type ) / 8u );
 		MergeArgumentClasses( out_classes[ offset >> 3u ], ArgumentClass::Integer );
-		if( size > 8u )
+		var u32 bit_size= unsafe( LLVMGetIntTypeWidth( llvm_type ) );
+		if( bit_size > 64u )
 		{
 			MergeArgumentClasses( out_classes[ ( offset + 8u ) >> 3u ], ArgumentClass::Integer );
 		}

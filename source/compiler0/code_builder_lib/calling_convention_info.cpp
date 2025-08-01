@@ -545,9 +545,9 @@ void CallingConventionInfoSystemV_X86_64::ClassifyType_r( llvm::Type& llvm_type,
 		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
 	else if( llvm_type.isIntegerTy() )
 	{
-		const uint64_t size= llvm_type.getIntegerBitWidth() / 8;
 		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
-		if( size > 8 )
+		const uint64_t bit_size= llvm_type.getIntegerBitWidth();
+		if( bit_size > 64 )
 			MergeArgumentClasses( out_classes[ ( offset + 8 ) >> 3 ], ArgumentClass::Integer );
 	}
 	else if( llvm_type.isFloatTy() || llvm_type.isDoubleTy() )
