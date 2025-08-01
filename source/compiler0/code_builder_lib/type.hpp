@@ -3,7 +3,6 @@
 #include <variant>
 
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/IR/CallingConv.h>
 #include <llvm/IR/DerivedTypes.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
@@ -182,6 +181,7 @@ struct RawPointerType
 bool operator==( const RawPointerType& l, const RawPointerType& r );
 inline bool operator!=( const RawPointerType& l, const RawPointerType& r ) { return !( l == r ); }
 
+// Keep it sequential, since these values are used for array indexing.
 enum class CallingConvention : uint8_t
 {
 	Default,
@@ -190,6 +190,8 @@ enum class CallingConvention : uint8_t
 	Cold,
 	System,
 };
+
+constexpr size_t g_num_calling_conventions= 5;
 
 std::optional<CallingConvention> StringToCallingConvention( std::string_view s );
 

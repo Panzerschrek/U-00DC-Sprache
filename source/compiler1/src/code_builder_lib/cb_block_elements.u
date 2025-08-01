@@ -935,23 +935,32 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 
 		if( !ret_type.GetClassType().empty() || !ret_type.GetArrayType().empty() || !ret_type.GetTupleType().empty() )
 		{
-			var LLVMTypeRef single_scalar_type= GetSingleScalarType( ret_type.GetLLVMType() );
+			var ICallingConventionInfo::ReturnValuePassing return_value_passing=
+				calling_convention_infos_[ size_type( function_context.function_type.calling_convention ) ]
+					.lock_imut()
+					.deref()
+					.CalculateReturnValuePassingInfo( ret_type );
 
 			if( expr.value_type == ValueType::Value && expr.t == ret_type )
 			{
 				// Move
 				function_context.references_graph.MoveNode( expr_ptr );
 
-				if( single_scalar_type == LLVMTypeRef::Null )
+				switch( return_value_passing.kind )
 				{
-					CopyBytes( function_context.s_ret, expr.llvm_value, ret_type, function_context );
-					CreateLifetimeEnd( function_context, expr.llvm_value );
+					ICallingConventionInfo::ReturnValuePassingKind::Direct,
+					ICallingConventionInfo::ReturnValuePassingKind::DirectZExt,
+					ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
+					{
+						ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, return_value_passing.llvm_type, expr.llvm_value, g_null_string ) );
+						unsafe( LLVMSetAlignment( ret, LLVMABIAlignmentOfType( data_layout_, expr.t.GetLLVMType() ) ) );
+					},
+					ICallingConventionInfo::ReturnValuePassingKind::ByPointer ->
+					{
+						CopyBytes( function_context.s_ret, expr.llvm_value, ret_type, function_context );
+					},
 				}
-				else
-				{
-					ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, expr.llvm_value, g_null_string ) );
-					CreateLifetimeEnd( function_context, expr.llvm_value );
-				}
+				CreateLifetimeEnd( function_context, expr.llvm_value );
 			}
 			else
 			{
@@ -965,22 +974,34 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 				{
 					REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, return_operator.src_loc, ret_type )
 				}
-				else if( single_scalar_type == LLVMTypeRef::Null )
-				{
-					// Copy into "s_ret".
-					var LLVMValueRef s_ret= function_context.s_ret;
-					BuildCopyConstructorPart( names_scope, function_context, s_ret, expr_reference_converted, ret_type, return_operator.src_loc );
-				}
 				else
 				{
-					// Copy into temp address, than load the result.
-					var LLVMValueRef temp= unsafe( LLVMBuildAlloca( function_context.llvm_ir_builder, ret_type.GetLLVMType(), g_null_string ) );
-					CreateLifetimeStart( function_context, temp );
+					switch( return_value_passing.kind )
+					{
+						ICallingConventionInfo::ReturnValuePassingKind::Direct,
+						ICallingConventionInfo::ReturnValuePassingKind::DirectZExt,
+						ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
+						{
+							var LLVMTypeRef ret_llvm_type= ret_type.GetLLVMType();
 
-					BuildCopyConstructorPart( names_scope, function_context, temp, expr_reference_converted, ret_type, return_operator.src_loc );
+							// Copy into temp address, than load the result.
+							var LLVMValueRef temp= unsafe( LLVMBuildAlloca( function_context.llvm_ir_builder, ret_llvm_type, g_null_string ) );
+							CreateLifetimeStart( function_context, temp );
 
-					ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, temp, g_null_string ) );
-					CreateLifetimeEnd( function_context, temp );
+							BuildCopyConstructorPart( names_scope, function_context, temp, expr_reference_converted, ret_type, return_operator.src_loc );
+
+							ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, return_value_passing.llvm_type, temp, g_null_string ) );
+							unsafe( LLVMSetAlignment( ret, LLVMABIAlignmentOfType( data_layout_, ret_llvm_type ) ) );
+
+							CreateLifetimeEnd( function_context, temp );
+						},
+						ICallingConventionInfo::ReturnValuePassingKind::ByPointer ->
+						{
+							// Copy into "s_ret".
+							var LLVMValueRef s_ret= function_context.s_ret;
+							BuildCopyConstructorPart( names_scope, function_context, s_ret, expr_reference_converted, ret_type, return_operator.src_loc );
+						},
+					}
 				}
 			}
 		}

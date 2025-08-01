@@ -59,7 +59,9 @@ public:
 	Interpreter& operator=( const Interpreter& )= delete;
 
 	// Evaluate result of "constexpr" call.
-	ResultConstexpr EvaluateConstexpr( llvm::Function* llvm_function, llvm::ArrayRef<const llvm::Constant*> args );
+	// it suports value and pointer args, it can return value args.
+	// Provided args should be equal to expected param types or compatible with it (have same size).
+	ResultConstexpr EvaluateConstexpr( llvm::Function* llvm_function, llvm::ArrayRef<const llvm::Constant*> args, llvm::Type& return_type );
 
 	// Evaluate any other call.
 	// Pointer args are not supported.

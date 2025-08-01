@@ -133,7 +133,6 @@ Compiler:
 *) Pass/return by-value composite values containing more than one scalar inside.
 	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,
 	or it would be better to pass it in memory.
-*) Support passing/returning composite values across language borders (use exact C calling convention approach).
 *) Add possibility to execute internal LLD directly, bypassing compiler logic itself
 *) Add possibility to execute an external linker (ld, ld.gold, ld.lld, link.exe, etc.)
 *) More options for internal linker

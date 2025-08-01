@@ -879,16 +879,27 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			function_context.variables_state.MoveNode( expression_result );
 
-			if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
+			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+				calling_convention_infos_[ size_t( function_context.function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( return_type );
+
+			switch( return_value_passing.kind )
 			{
-				U_ASSERT( function_context.s_ret == nullptr );
-				ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expression_result->llvm_value );
-			}
-			else
-			{
+			case ICallingConventionInfo::ReturnValuePassingKind::Direct:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectZExt:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectSExt:
+				{
+					U_ASSERT( function_context.s_ret == nullptr );
+					llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( return_value_passing.llvm_type, expression_result->llvm_value );
+					load_instruction->setAlignment( data_layout_.getABITypeAlign( return_type.GetLLVMType() ) );
+					ret= load_instruction;
+				}
+				break;
+
+			case ICallingConventionInfo::ReturnValuePassingKind::ByPointer:
 				U_ASSERT( function_context.s_ret != nullptr );
 				CopyBytes( function_context.s_ret, expression_result->llvm_value, return_type, function_context );
-			}
+				break;
+			};
 
 			if( expression_result->location == Variable::Location::Pointer )
 				CreateLifetimeEnd( function_context, expression_result->llvm_value );
@@ -908,25 +919,35 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				return block_info;
 			}
 
-			if( const auto single_scalar_type= GetSingleScalarType( return_type.GetLLVMType() ) )
+			const ICallingConventionInfo::ReturnValuePassing return_value_passing=
+				calling_convention_infos_[ size_t( function_context.function_type.calling_convention ) ]->CalculateReturnValuePassingInfo( return_type );
+
+			switch( return_value_passing.kind )
 			{
-				U_ASSERT( function_context.s_ret == nullptr );
-				// Call copy constructor on temp address, load then value from it.
-				llvm::Value* const temp= function_context.alloca_ir_builder.CreateAlloca( return_type.GetLLVMType() );
-				CreateLifetimeStart( function_context, temp );
+			case ICallingConventionInfo::ReturnValuePassingKind::Direct:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectZExt:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectSExt:
+				{
+					U_ASSERT( function_context.s_ret == nullptr );
+					// Call copy constructor on temp address, load then value from it.
+					llvm::Value* const temp= function_context.alloca_ir_builder.CreateAlloca( return_type.GetLLVMType() );
+					CreateLifetimeStart( function_context, temp );
 
-				BuildCopyConstructorPart(
-					temp,
-					CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context ),
-					return_type,
-					function_context );
+					BuildCopyConstructorPart(
+						temp,
+						CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context ),
+						return_type,
+						function_context );
 
-				ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, temp );
+					llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( return_value_passing.llvm_type, expression_result->llvm_value );
+					load_instruction->setAlignment( data_layout_.getABITypeAlign( return_type.GetLLVMType() ) );
+					ret= load_instruction;
 
-				CreateLifetimeEnd( function_context, temp );
-			}
-			else
-			{
+					CreateLifetimeEnd( function_context, temp );
+				}
+				break;
+
+			case ICallingConventionInfo::ReturnValuePassingKind::ByPointer:
 				// Call copy constructor on "s_ret".
 				U_ASSERT( function_context.s_ret != nullptr );
 				BuildCopyConstructorPart(
@@ -934,7 +955,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					CreateReferenceCast( expression_result->llvm_value, expression_result->type, return_type, function_context ),
 					return_type,
 					function_context );
-			}
+				break;
+			};
 		}
 	}
 	else

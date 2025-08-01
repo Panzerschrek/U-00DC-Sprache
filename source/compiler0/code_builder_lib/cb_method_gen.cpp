@@ -1141,7 +1141,10 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 		U_ASSERT( op != nullptr );
 
 		const Interpreter::ResultConstexpr evaluation_result=
-			constexpr_function_evaluator_.EvaluateConstexpr( EnsureLLVMFunctionCreated( *op ), { l, r } );
+			constexpr_function_evaluator_.EvaluateConstexpr(
+				EnsureLLVMFunctionCreated( *op ),
+				{ l, r },
+				*op->type.return_type.GetLLVMType() );
 
 		for( const std::string& error_text : evaluation_result.errors )
 		{
@@ -1211,36 +1214,6 @@ void CodeBuilder::MoveConstantToMemory(
 		// Assume this is scalar type.
 		CreateTypedStore( function_context, type, constant, ptr );
 	}
-}
-
-llvm::Constant* CodeBuilder::WrapRawScalarConstant( llvm::Constant* const constant, llvm::Type* const dst_type )
-{
-	U_ASSERT( GetSingleScalarType( dst_type ) == constant->getType() );
-
-	if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(dst_type) )
-		return
-			llvm::ConstantStruct::get(
-				struct_type,
-				{ WrapRawScalarConstant( constant, struct_type->getElementType(0) ) } );
-
-	if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>(dst_type) )
-		return
-			llvm::ConstantArray::get(
-				array_type,
-				{ WrapRawScalarConstant( constant, array_type->getElementType() ) } );
-
-	return constant;
-}
-
-llvm::Constant* CodeBuilder::UnwrapRawScalarConstant( llvm::Constant* const constant )
-{
-	llvm::Type* const constant_type= constant->getType();
-	U_ASSERT( GetSingleScalarType( constant_type ) != nullptr );
-
-	if( constant_type->isStructTy() || constant_type->isArrayTy() )
-		return UnwrapRawScalarConstant( constant->getAggregateElement(0u) );
-
-	return constant;
 }
 
 bool CodeBuilder::IsDefaultConstructor( const FunctionType& function_type, const Type& base_class )

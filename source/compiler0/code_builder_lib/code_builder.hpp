@@ -13,6 +13,7 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../code_builder_lib_common/interpreter.hpp"
 #include "../../code_builder_lib_common/mangling.hpp"
+#include "calling_convention_info.hpp"
 #include "class.hpp"
 #include "debug_info_builder.hpp"
 #include "enum.hpp"
@@ -315,6 +316,8 @@ private:
 
 	// Getting LLVM function type may require building complete types for arguments/return value.
 	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
+	// Get function type, using call info, calculated previously.
+	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type, const ICallingConventionInfo::CallInfo& call_info );
 
 	CallingConvention PrepareCallingConvention(
 		NamesScope& names_scope,
@@ -322,14 +325,6 @@ private:
 		const std::unique_ptr<const Synt::Expression>& calling_convention_name );
 
 	llvm::CallingConv::ID GetLLVMCallingConvention( CallingConvention calling_convention );
-
-	// Requires return type to be complete.
-	static bool FunctionTypeIsSRet( const FunctionType& function_type );
-
-	// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
-	// Returns null otherwise.
-	// Requires type to be complete.
-	static llvm::Type* GetSingleScalarType( llvm::Type* type );
 
 	// Virtual stuff
 
@@ -656,9 +651,6 @@ private:
 		const Type& type,
 		llvm::Value* ptr, llvm::Constant* constant,
 		FunctionContext& function_context );
-
-	static llvm::Constant* WrapRawScalarConstant( llvm::Constant* constant, llvm::Type* dst_type );
-	static llvm::Constant* UnwrapRawScalarConstant( llvm::Constant* constant );
 
 	void TryCallCopyConstructor(
 		CodeBuilderErrorsContainer& errors_container,
@@ -1484,6 +1476,7 @@ private:
 	bool skip_building_generated_functions_;
 
 	const IVfsSharedPtr vfs_;
+	const CallingConventionInfos calling_convention_infos_;
 
 	struct
 	{

@@ -56,6 +56,7 @@ fn CodeBuilder::constructor(
 		llvm_context_(llvm_context),
 		data_layout_(data_layout),
 		comdats_supported_= !IsAppleTarget( target_triple_str ),
+		calling_convention_infos_= CreateCallingConventionInfos( target_triple_str, data_layout ),
 		target_triple_str_(move(target_triple_str)),
 		create_lifetimes_(options.create_lifetimes),
 		generate_lifetime_start_end_debug_calls_(options.generate_lifetime_start_end_debug_calls),
@@ -1260,13 +1261,16 @@ fn CodeBuilder::BuildFuncCode(
 		CheckCompleteFunctionReferenceNotation( func_variable.t, names_scope, body_syntax_element.src_loc );
 	}
 
+	var ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_type( func_variable.t.calling_convention ) ].lock_imut().deref().CalculateFunctionCallInfo( func_variable.t );
+
 	debug_info_builder_.try_deref().SetCurrentLocation( function_context, body_syntax_element.src_loc );
 
 	with( mut args_names_scope_lock : args_names_scope_ptr.lock_mut() )
 	{
 		auto &mut args_names_scope= args_names_scope_lock.deref();
 
-		var bool is_s_ret= FunctionTypeIsSRet( func_variable.t );
+		var bool is_s_ret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 		if( is_s_ret )
 		{
 			unsafe
@@ -1299,30 +1303,39 @@ fn CodeBuilder::BuildFuncCode(
 			{
 				if( !type_param.t.GetClassType().empty() || !type_param.t.GetArrayType().empty() || !type_param.t.GetTupleType().empty() )
 				{
-					var LLVMTypeRef single_scalar_type= GetSingleScalarType( type_param.t.GetLLVMType() );
-					if( single_scalar_type != LLVMTypeRef::Null )
+					var ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[ arg_n ];
+					switch( argument_passing.kind )
 					{
-						variable.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() ) );
-						CreateLifetimeStart( function_context, variable.llvm_value );
+						ICallingConventionInfo::ArgumentPassingKind::Direct,
+						ICallingConventionInfo::ArgumentPassingKind::DirectZExt,
+						ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
+						{
+							var LLVMTypeRef llvm_type= type_param.t.GetLLVMType();
 
-						// Reinterpretete composite type address as scalar type address and store value in it.=
-						unsafe( LLVMBuildStore( function_context.llvm_ir_builder, arg_value, variable.llvm_value ) );
-					}
-					else
-					{
-						// Large aggregate types are passed by reference.
-						if( func_variable.IsCoroutine() )
-						{
-							// In coroutines we must save value args, passed by hidden reference, on local stack (this may be compiled as heap allocation).
-							// This is needed, because address, allocated by coroutine function initial call, does not live long enough.
-							variable.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() ) );
+							variable.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, llvm_type, (in_param.name + "\0").front() ) );
 							CreateLifetimeStart( function_context, variable.llvm_value );
-							CopyBytes( variable.llvm_value, arg_value, type_param.t, function_context );
-						}
-						else
+
+							// Reinterpretet composite type address as scalar type address and store value in it.
+							var LLVMValueRef store_instruction= unsafe( LLVMBuildStore( function_context.llvm_ir_builder, arg_value, variable.llvm_value ) );
+							unsafe( LLVMSetAlignment( store_instruction, LLVMABIAlignmentOfType( data_layout_, llvm_type ) ) );
+						},
+						ICallingConventionInfo::ArgumentPassingKind::ByPointer,
+						ICallingConventionInfo::ArgumentPassingKind::InStack ->
 						{
-							variable.llvm_value= arg_value;
-						}
+							// Large aggregate types are passed by reference.
+							if( func_variable.IsCoroutine() )
+							{
+								// In coroutines we must save value args, passed by hidden reference, on local stack (this may be compiled as heap allocation).
+								// This is needed, because address, allocated by coroutine function initial call, does not live long enough.
+								variable.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() ) );
+								CreateLifetimeStart( function_context, variable.llvm_value );
+								CopyBytes( variable.llvm_value, arg_value, type_param.t, function_context );
+							}
+							else
+							{
+								variable.llvm_value= arg_value;
+							}
+						},
 					}
 				}
 				else
@@ -2475,13 +2488,31 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 		return llvm_function;
 	}
 
+	var FunctionType& function_type= function_variable.t;
+
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		EnsureTypeComplete( function_type.return_type );
+	}
+
+	foreach( &param : function_type.params )
+	{
+		if( param.value_type == ValueType::Value )
+		{
+			EnsureTypeComplete( param.t );
+		}
+	}
+
+	var ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_type( function_type.calling_convention ) ].lock_imut().deref().CalculateFunctionCallInfo( function_type );
+
 	llvm_function=
 		unsafe( LLVMAddFunction(
 			module_,
 			lazy_function.name_mangled.front(),
-			GetLLVMFunctionType( function_variable.t ) ) );
+			GetLLVMFunctionType( function_type, call_info ) ) );
 
-	unsafe( LLVMSetFunctionCallConv( llvm_function, GetLLVMCallingConvention( function_variable.t.calling_convention ) ) );
+	unsafe( LLVMSetFunctionCallConv( llvm_function, GetLLVMCallingConvention( function_type.calling_convention ) ) );
 
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )
@@ -2510,49 +2541,90 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 		}
 	}
 
-	var bool is_s_ret= FunctionTypeIsSRet( function_variable.t );
-	if( is_s_ret )
+	var bool is_s_ret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
+
+	for( auto mut i= 0s; i < function_type.params.size(); ++i )
 	{
-		AddFunctionTypeAttribute( llvm_function, LLVMAttributeFirstParamIndex, "sret", function_variable.t.return_type.GetLLVMType() );
-		AddFunctionAttribute( llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
+		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + ( is_s_ret ? 1u : 0u ) + u32(i);
+
+		var FunctionType::Param& param= function_type.params[i];
+		var ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[ size_type(i) ];
+
+		switch( param.value_type )
+		{
+			ValueType::Value ->
+			{
+				switch( argument_passing.kind )
+				{
+					ICallingConventionInfo::ArgumentPassingKind::Direct -> {},
+					ICallingConventionInfo::ArgumentPassingKind::DirectZExt ->
+					{
+						AddFunctionAttribute( llvm_function, llvm_param_n, "zeroext" );
+					},
+					ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
+					{
+						AddFunctionAttribute( llvm_function, llvm_param_n, "signext" );
+					},
+					ICallingConventionInfo::ArgumentPassingKind::ByPointer ->
+					{
+						AddFunctionAttribute( llvm_function, llvm_param_n, "nonnull" );
+						// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
+						AddFunctionAttribute( llvm_function, llvm_param_n, "nocapture" );
+						// Composite value-args must not alias.
+						AddFunctionAttribute( llvm_function, llvm_param_n, "noalias" );
+					},
+					ICallingConventionInfo::ArgumentPassingKind::InStack ->
+					{
+						AddFunctionAttribute( llvm_function, llvm_param_n, "nonnull" );
+						// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
+						AddFunctionAttribute( llvm_function, llvm_param_n, "nocapture" );
+						// Composite value-args must not alias.
+						AddFunctionAttribute( llvm_function, llvm_param_n, "noalias" );
+						// "byval" forces passing in stack.
+						AddFunctionTypeAttribute( llvm_function, llvm_param_n, "byval", param.t.GetLLVMType() );
+					},
+				}
+			},
+			ValueType::ReferenceImut ->
+			{
+				// Mark as "readonly" immutable reference params.
+				AddFunctionAttribute( llvm_function, llvm_param_n, "readonly" );
+				// Mark reference-parameters as "nonnull".
+				AddFunctionAttribute( llvm_function, llvm_param_n, "nonnull" );
+				// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/17.0.1/docs/AliasAnalysis.html#must-may-or-no.
+				AddFunctionAttribute( llvm_function, llvm_param_n, "noalias" );
+			},
+			ValueType::ReferenceMut ->
+			{
+				// Mark reference-parameters as "nonnull".
+				AddFunctionAttribute( llvm_function, llvm_param_n, "nonnull" );
+				// Mutable reference args must not alias.
+				AddFunctionAttribute( llvm_function, llvm_param_n, "noalias" );
+			},
+		}
 	}
-	if( function_variable.t.return_value_type != ValueType::Value )
+
+	if( function_type.return_value_type != ValueType::Value )
 	{
 		AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "nonnull" );
 	}
 
-	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
+	switch( call_info.return_value_passing.kind )
 	{
-		var FunctionType::Param& param= function_variable.t.params[i];
-		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + ( is_s_ret ? 1u : 0u ) + u32(i);
-
-		var bool pass_value_param_by_hidden_ref=
-			param.value_type == ValueType::Value &&
-			( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() ) &&
-			GetSingleScalarType( param.t.GetLLVMType() ) == LLVMTypeRef::Null;
-
-		// Mark pointer-parameters as "nonnull".
-		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
+		ICallingConventionInfo::ReturnValuePassingKind::Direct -> {},
+		ICallingConventionInfo::ReturnValuePassingKind::DirectZExt ->
 		{
-			AddFunctionAttribute( llvm_function, llvm_param_n, "nonnull" );
-		}
-		// Mutable reference args or composite value-args must not alias.
-		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
-		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
+			AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "zeroext" );
+		},
+		ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
 		{
-			AddFunctionAttribute( llvm_function, llvm_param_n, "noalias" );
-		}
-		// Mark as "readonly" immutable reference params.
-		if( param.value_type == ValueType::ReferenceImut )
+			AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "signext" );
+		},
+		ICallingConventionInfo::ReturnValuePassingKind::ByPointer ->
 		{
-			AddFunctionAttribute( llvm_function, llvm_param_n, "readonly" );
-		}
-		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
-		// It is not possible to capture this reference.
-		if( param.value_type == ValueType::Value && pass_value_param_by_hidden_ref )
-		{
-			AddFunctionAttribute( llvm_function, llvm_param_n, "nocapture" );
-		}
+			AddFunctionTypeAttribute( llvm_function, LLVMAttributeFirstParamIndex, "sret", function_type.return_type.GetLLVMType() );
+			AddFunctionAttribute( llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
+		},
 	}
 
 	return llvm_function;
@@ -2568,21 +2640,25 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 		return;
 	}
 
-	var bool is_s_ret= FunctionTypeIsSRet( function_variable.t );
+	var FunctionType& function_type= function_variable.t;
 
-	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
+	var ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_type( function_type.calling_convention ) ].lock_imut().deref().CalculateFunctionCallInfo( function_type );
+
+	var bool is_s_ret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
+
+	for( auto mut i= 0s; i < function_type.params.size(); ++i )
 	{
-		var FunctionType::Param& param= function_variable.t.params[i];
 		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + ( is_s_ret ? 1u : 0u ) + u32(i);
 
-		var bool pass_value_param_by_hidden_ref=
-			param.value_type == ValueType::Value &&
-			( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() ) &&
-			GetSingleScalarType( param.t.GetLLVMType() ) == LLVMTypeRef::Null;
+		var FunctionType::Param& param= function_type.params[i];
+		var ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[ size_type(i) ];
 
-		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
-		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
+		if( param.value_type != ValueType::Value ||
+			argument_passing.kind == ICallingConventionInfo::ArgumentPassingKind::ByPointer ||
+			argument_passing.kind == ICallingConventionInfo::ArgumentPassingKind::InStack )
 		{
+			// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
 			var LLVMTypeRef llvm_type= param.t.GetLLVMType();
 			unsafe
 			{
@@ -2598,7 +2674,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 
 	unsafe
 	{
-		var LLVMTypeRef llvm_type= function_variable.t.return_type.GetLLVMType();
+		var LLVMTypeRef llvm_type= function_type.return_type.GetLLVMType();
 		if( LLVMTypeIsSized( llvm_type ) != LLVMBool::True )
 		{
 			return; // May be in case of error.
@@ -2608,7 +2684,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 		{
 			U1_FunctionAddDereferenceableAttr( llvm_function, LLVMAttributeFirstParamIndex, LLVMABISizeOfType( data_layout_, llvm_type ) );
 		}
-		else if( function_variable.t.return_value_type != ValueType::Value )
+		else if( function_type.return_value_type != ValueType::Value )
 		{
 			U1_FunctionAddDereferenceableAttr( llvm_function, LLVMAttributeReturnIndex, LLVMABISizeOfType( data_layout_, llvm_type ) );
 		}
@@ -3054,35 +3130,6 @@ fn CodeBuilder::ForceCreateConstantIndexGEP( this, FunctionContext& function_con
 	return gep;
 }
 
-fn CodeBuilder::WrapRawScalarConstant( LLVMValueRef constant, LLVMTypeRef dst_type ) : LLVMValueRef
-{
-	var LLVMTypeKind type_kind= unsafe( LLVMGetTypeKind( dst_type ) );
-	if( type_kind == LLVMTypeKind::Struct )
-	{
-		var [ LLVMValueRef, 1 ] mut i[ WrapRawScalarConstant( constant, unsafe( LLVMStructGetTypeAtIndex( dst_type, 0u ) ) ) ];
-		return unsafe( LLVMConstNamedStruct( dst_type, $<(i[0]), 1u ) );
-	}
-	if( type_kind == LLVMTypeKind::Array )
-	{
-		var LLVMTypeRef element_type= unsafe( LLVMGetElementType( dst_type ) );
-		var [ LLVMValueRef, 1 ] mut i[ WrapRawScalarConstant( constant, element_type ) ];
-		return unsafe( LLVMConstArray2( element_type, $<(i[0]), 1u64 ) );
-	}
-
-	return constant;
-}
-
-fn CodeBuilder::UnwrapRawScalarConstant( LLVMValueRef constant ) : LLVMValueRef
-{
-	var LLVMTypeKind type_kind= unsafe( LLVMGetTypeKind( LLVMTypeOf( constant ) ) );
-	if( type_kind == LLVMTypeKind::Struct || type_kind == LLVMTypeKind::Array )
-	{
-		return UnwrapRawScalarConstant( unsafe( LLVMGetAggregateElement( constant, 0u ) ) );
-	}
-
-	return constant;
-}
-
 fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context )
 {
 	if( function_context.is_functionless_context )
@@ -3261,7 +3308,11 @@ fn CodeBuilder::ConstexprCompareEqual(
 			// TODO - what if "==" is unsafe?
 
 			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( op_ );
-			result_match( constexpr_function_evaluator_.Evaluate( llvm_function, ust::make_array( l, r ) ) )
+			result_match(
+				constexpr_function_evaluator_.Evaluate(
+					llvm_function,
+					ust::make_array( l, r ),
+					op_.t.return_type.GetLLVMType() ) )
 			{
 				Ok(constant) -> { return constant; },
 				Err(errors) ->

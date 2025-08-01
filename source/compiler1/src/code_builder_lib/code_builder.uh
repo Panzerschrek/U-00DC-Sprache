@@ -1,5 +1,6 @@
 import "../../imports/mangling_scheme.uh"
 import "../lex_synt_lib/source_graph.uh"
+import "calling_convention_info.uh"
 import "code_builder_errors.uh"
 import "constexpr_function_evaluator.uh"
 import "debug_info_builder.uh"
@@ -317,7 +318,11 @@ private:
 	fn PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CoroutineType& coroutine_type ) : Type;
 	fn PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : Type;
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
+
+	// Getting LLVM function type may require building complete types for arguments/return value.
 	fn GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef;
+	// Get function type, using call info, calculated previously.
+	fn GetLLVMFunctionType( mut this, FunctionType& function_type, ICallingConventionInfo::CallInfo& call_info ) : LLVMTypeRef;
 
 	fn FunctionTypeToPointer( mut this, FunctionType function_type ) : FunctionPointerType;
 
@@ -328,14 +333,6 @@ private:
 		ust::box_nullable</Synt::Expression/>& calling_convention_name ) : CallingConvention;
 
 	fn GetLLVMCallingConvention( this, CallingConvention calling_convention ) : LLVMCallConvID;
-
-	// Requires return type to be complete.
-	fn FunctionTypeIsSRet( FunctionType& function_type ) : bool;
-
-	// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
-	// Returns null otherwise.
-	// Requires type to be complete.
-	fn GetSingleScalarType( LLVMTypeRef t ) : LLVMTypeRef;
 
 	// Returns constant value if initializer is constant
 	fn ApplyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef;
@@ -1282,9 +1279,6 @@ private:
 	// Create GEP instruction even in functionless context.
 	fn ForceCreateConstantIndexGEP( this, FunctionContext& function_context, LLVMTypeRef t, LLVMValueRef value, u32 index ) : LLVMValueRef;
 
-	fn WrapRawScalarConstant( LLVMValueRef constant, LLVMTypeRef dst_type ) : LLVMValueRef;
-	fn UnwrapRawScalarConstant( LLVMValueRef constant ) : LLVMValueRef;
-
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 
 	fn CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
@@ -1318,6 +1312,7 @@ private:
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
+	CallingConventionInfos imut calling_convention_infos_;
 	ust::string8 imut target_triple_str_; // null-terminated
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	bool imut generate_tbaa_metadata_;

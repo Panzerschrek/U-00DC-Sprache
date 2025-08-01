@@ -4455,6 +4455,19 @@ fn CodeBuilder::DoCallFunction(
 		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, function_type.return_type )
 		return ErrorValue();
 	}
+
+	foreach( &param : function_type.params )
+	{
+		if( !EnsureTypeComplete( param.t ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, param.t )
+			return ErrorValue();
+		}
+	}
+
+	var ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_type( function_type.calling_convention ) ].lock_imut().deref().CalculateFunctionCallInfo( function_type );
+
 	if( function_type.is_unsafe && !function_context.is_in_unsafe_block )
 	{
 		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
@@ -4464,7 +4477,7 @@ fn CodeBuilder::DoCallFunction(
 
 	auto mut s_ret_value= LLVMValueRef::Null;
 	var bool return_value_is_composite= function_type.ReturnsCompositeValue();
-	var bool return_value_is_sret= FunctionTypeIsSRet( function_type );
+	var bool return_value_is_sret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 	if( return_value_is_composite )
 	{
 		if( !function_context.is_functionless_context )
@@ -4562,18 +4575,12 @@ fn CodeBuilder::DoCallFunction(
 
 			if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
 			{
-				var LLVMTypeRef single_scalar_type= GetSingleScalarType( arg.t.GetLLVMType() );
 				if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null )
 				{
-					if( single_scalar_type == LLVMTypeRef::Null )
-					{
-						constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
-					}
-					else
-					{
-						constexpr_args[ first_llvm_arg_number + arg_n ]= UnwrapRawScalarConstant( arg.constexpr_value );
-					}
+					constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
 				}
+
+				var ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[ arg_n ];
 
 				if( arg.value_type == ValueType::Value && arg.t == expected_arg_type )
 				{
@@ -4582,14 +4589,19 @@ fn CodeBuilder::DoCallFunction(
 
 					if( !function_context.is_functionless_context )
 					{
-						if( single_scalar_type == LLVMTypeRef::Null )
+						switch( argument_passing.kind )
 						{
-							llvm_arg= arg.llvm_value;
+							ICallingConventionInfo::ArgumentPassingKind::Direct,
+							ICallingConventionInfo::ArgumentPassingKind::DirectZExt,
+							ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
+							{
+								llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, argument_passing.llvm_type, arg.llvm_value, g_null_string ) );
+								unsafe( LLVMSetAlignment( llvm_arg, LLVMABIAlignmentOfType( data_layout_, param.t.GetLLVMType() ) ) );
+							},
+							ICallingConventionInfo::ArgumentPassingKind::ByPointer,
+							ICallingConventionInfo::ArgumentPassingKind::InStack -> { llvm_arg= arg.llvm_value; },
 						}
-						else
-						{
-							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, arg.llvm_value, g_null_string ) );
-						}
+
 						value_args_for_lifetime_end_call.push_back( arg.llvm_value );
 					}
 
@@ -4617,15 +4629,19 @@ fn CodeBuilder::DoCallFunction(
 						auto value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
 						BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, src_loc );
 
-						if( single_scalar_type == LLVMTypeRef::Null )
+						switch( argument_passing.kind )
 						{
-							llvm_arg= var_copy;
+							ICallingConventionInfo::ArgumentPassingKind::Direct,
+							ICallingConventionInfo::ArgumentPassingKind::DirectZExt,
+							ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
+							{
+								llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, argument_passing.llvm_type, var_copy, g_null_string ) );
+								unsafe( LLVMSetAlignment( llvm_arg, LLVMABIAlignmentOfType( data_layout_, param.t.GetLLVMType() ) ) );
+							},
+							ICallingConventionInfo::ArgumentPassingKind::ByPointer,
+							ICallingConventionInfo::ArgumentPassingKind::InStack -> { llvm_arg= var_copy; },
+						}
 
-						}
-						else
-						{
-							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, var_copy, g_null_string ) );
-						}
 						value_args_for_lifetime_end_call.push_back( var_copy );
 
 						with( &mut lock : arg_node.lock_mut() )
@@ -4798,7 +4814,11 @@ fn CodeBuilder::DoCallFunction(
 
 	if( is_constexpr )
 	{
-		result_match( constexpr_function_evaluator_.Evaluate( function, constexpr_args ) )
+		var LLVMTypeRef llvm_return_type =
+			( function_type.return_type == void_type_
+				? fundamental_llvm_types_.void_for_ret_
+				: function_type.return_type.GetLLVMType() );
+		result_match( constexpr_function_evaluator_.Evaluate( function, constexpr_args, llvm_return_type ) )
 		{
 			Ok(constant) ->
 			{
@@ -4809,19 +4829,18 @@ fn CodeBuilder::DoCallFunction(
 				}
 				else if( return_value_is_composite )
 				{
-					if( return_value_is_sret )
+					if( !function_context.is_functionless_context )
 					{
-						MoveConstantToMemory( s_ret_value, constant, function_context );
-						result.constexpr_value= constant;
-					}
-					else
-					{
-						if( !function_context.is_functionless_context )
+						if( return_value_is_sret )
+						{
+							MoveConstantToMemory( s_ret_value, constant, function_context );
+						}
+						else
 						{
 							unsafe( LLVMBuildStore( function_context.llvm_ir_builder, constant, result.llvm_value ) );
 						}
-						result.constexpr_value= WrapRawScalarConstant( constant, function_type.return_type.GetLLVMType() );
 					}
+					result.constexpr_value= constant;
 				}
 				else
 				{
@@ -4854,7 +4873,7 @@ fn CodeBuilder::DoCallFunction(
 
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		var LLVMTypeRef function_llvm_type=
-			unsafe( ( is_function ? U1_GetFunctionType( function ) : GetLLVMFunctionType( function_type ) ) );
+			unsafe( ( is_function ? U1_GetFunctionType( function ) : GetLLVMFunctionType( function_type, call_info ) ) );
 
 		var LLVMValueRef call_result=
 			unsafe( LLVMBuildCall2(
@@ -4874,11 +4893,54 @@ fn CodeBuilder::DoCallFunction(
 			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
 		}
 
-		if( return_value_is_sret )
+		switch( call_info.return_value_passing.kind )
 		{
-			var LLVMTypeRef sret_type= function_type.return_type.GetLLVMType();
-			auto attr= unsafe( LLVMCreateTypeAttribute( llvm_context_, GetAttributeKindByName("sret"), sret_type ) );
-			unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
+			ICallingConventionInfo::ReturnValuePassingKind::Direct -> {},
+			ICallingConventionInfo::ReturnValuePassingKind::DirectZExt ->
+			{
+				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("zeroext"), 0u64 ) );
+				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
+			},
+			ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
+			{
+				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("signext"), 0u64 ) );
+				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeReturnIndex, attr ) );
+			},
+			ICallingConventionInfo::ReturnValuePassingKind::ByPointer ->
+			{
+				var LLVMTypeRef sret_type= function_type.return_type.GetLLVMType();
+				auto attr= unsafe( LLVMCreateTypeAttribute( llvm_context_, GetAttributeKindByName("sret"), sret_type ) );
+				unsafe( LLVMAddCallSiteAttribute( call_result, LLVMAttributeFirstParamIndex, attr ) );
+			},
+		}
+
+		for( auto mut i= 0s; i < function_type.params.size(); ++i )
+		{
+			var u32 llvm_param_n= LLVMAttributeFirstParamIndex + ( return_value_is_sret ? 1u : 0u ) + u32(i);
+
+			var FunctionType::Param& param= function_type.params[i];
+
+			switch( call_info.arguments_passing[i].kind )
+			{
+				ICallingConventionInfo::ArgumentPassingKind::Direct -> {},
+				ICallingConventionInfo::ArgumentPassingKind::DirectZExt ->
+				{
+					auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("zeroext"), 0u64 ) );
+					unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
+				},
+				ICallingConventionInfo::ArgumentPassingKind::DirectSExt ->
+				{
+					auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("signext"), 0u64 ) );
+					unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
+				},
+				ICallingConventionInfo::ArgumentPassingKind::ByPointer -> {},
+				ICallingConventionInfo::ArgumentPassingKind::InStack ->
+				{
+					var LLVMTypeRef byval_type= param.t.GetLLVMType();
+					auto attr= unsafe( LLVMCreateTypeAttribute( llvm_context_, GetAttributeKindByName("byval"), byval_type ) );
+					unsafe( LLVMAddCallSiteAttribute( call_result, llvm_param_n, attr ) );
+				},
+			}
 		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
@@ -4887,9 +4949,16 @@ fn CodeBuilder::DoCallFunction(
 		}
 		else if( return_value_is_composite )
 		{
-			if( !return_value_is_sret )
+			switch( call_info.return_value_passing.kind )
 			{
-				unsafe( LLVMBuildStore( function_context.llvm_ir_builder, call_result, result.llvm_value ) );
+				ICallingConventionInfo::ReturnValuePassingKind::Direct,
+				ICallingConventionInfo::ReturnValuePassingKind::DirectZExt,
+				ICallingConventionInfo::ReturnValuePassingKind::DirectSExt ->
+				{
+					var LLVMValueRef store_instruction= unsafe( LLVMBuildStore( function_context.llvm_ir_builder, call_result, result.llvm_value ) );
+					unsafe( LLVMSetAlignment( store_instruction, LLVMABIAlignmentOfType( data_layout_, result.t.GetLLVMType() ) ) );
+				},
+				ICallingConventionInfo::ReturnValuePassingKind::ByPointer -> {},
 			}
 		}
 		else

@@ -310,73 +310,61 @@ FunctionPointerType CodeBuilder::FunctionTypeToPointer( FunctionType function_ty
 
 llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type )
 {
-	llvm::SmallVector<llvm::Type*, 16> params_llvm_types;
-
-	// Require complete type in order to know how to return values.
 	if( function_type.return_value_type == ValueType::Value )
+	{
+		// Require complete type in order to know how to return values.
 		EnsureTypeComplete( function_type.return_type );
-
-	const bool first_param_is_sret= FunctionTypeIsSRet( function_type );
-
-	if( first_param_is_sret )
-		params_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
+	}
 
 	for( const FunctionType::Param& param : function_type.params )
 	{
-		llvm::Type* type= param.type.GetLLVMType();
 		if( param.value_type == ValueType::Value )
 		{
 			// Require complete type in order to know how to pass value args.
-			if( EnsureTypeComplete( param.type ) )
-			{
-				if( param.type.GetFundamentalType() != nullptr ||
-					param.type.GetEnumType() != nullptr ||
-					param.type.GetRawPointerType() != nullptr ||
-					param.type.GetFunctionPointerType() )
-				{}
-				else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
-				{
-					if( const auto single_scalar= GetSingleScalarType( param.type.GetLLVMType() ) )
-					{
-						// Pass composite types with single scalar inside in register, using type of this scalar.
-						type= single_scalar;
-					}
-					else
-					{
-						// Pass composite types by hidden pointer.
-						type= type->getPointerTo();
-					}
-				}
-				else U_ASSERT( false );
-			}
+			EnsureTypeComplete( param.type );
 		}
-		else
-		{
-			// Do not need to have complete type in order to know how to pass reference args.
-			// It is important not to trigger type completeness build, since this function may be called within class build code,
-			// in case of special and/or generated methods.
-			type= type->getPointerTo();
-		}
-
-		params_llvm_types.push_back( type );
 	}
 
-	llvm::Type* llvm_function_return_type= function_type.return_type.GetLLVMType();
+	const ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
+
+	return GetLLVMFunctionType( function_type, call_info );
+}
+
+llvm::FunctionType* CodeBuilder::GetLLVMFunctionType(
+	const FunctionType& function_type,
+	const ICallingConventionInfo::CallInfo& call_info )
+{
+	llvm::Type* llvm_function_return_type= nullptr;
+	llvm::SmallVector<llvm::Type*, 16> params_llvm_types;
+
 	if( function_type.return_value_type == ValueType::Value )
 	{
-		if( first_param_is_sret || function_type.return_type == void_type_ )
+		if( function_type.return_type == void_type_ )
 		{
 			// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
 			llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
 		}
 		else
 		{
-			llvm_function_return_type= GetSingleScalarType( function_type.return_type.GetLLVMType() );
-			U_ASSERT( llvm_function_return_type != nullptr );
+			switch( call_info.return_value_passing.kind )
+			{
+			case ICallingConventionInfo::ReturnValuePassingKind::Direct:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectZExt:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectSExt:
+				llvm_function_return_type= call_info.return_value_passing.llvm_type;
+				break;
+			case ICallingConventionInfo::ReturnValuePassingKind::ByPointer:
+				llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
+				params_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
+			}
 		}
 	}
 	else
-		llvm_function_return_type= llvm_function_return_type->getPointerTo();
+		llvm_function_return_type= function_type.return_type.GetLLVMType()->getPointerTo();
+
+	for( size_t i= 0; i < function_type.params.size(); ++i )
+		params_llvm_types.push_back( call_info.arguments_passing[i].llvm_type );
 
 	return llvm::FunctionType::get( llvm_function_return_type, params_llvm_types, false );
 }
@@ -450,39 +438,6 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const CallingConven
 
 	U_ASSERT(false);
 	return llvm::CallingConv::C;
-}
-
-bool CodeBuilder::FunctionTypeIsSRet( const FunctionType& function_type )
-{
-	return
-		function_type.ReturnsCompositeValue() &&
-		GetSingleScalarType( function_type.return_type.GetLLVMType() ) == nullptr;
-}
-
-llvm::Type* CodeBuilder::GetSingleScalarType( llvm::Type* type )
-{
-	U_ASSERT( type->isSized() && "expected sized type!" );
-
-	while( true )
-	{
-		if( type->isStructTy() && type->getStructNumElements() == 1 )
-		{
-			type= type->getStructElementType(0);
-			continue;
-		}
-		if( type->isArrayTy() && type->getArrayNumElements() == 1 )
-		{
-			type= type->getArrayElementType();
-			continue;
-		}
-
-		break; // Not a composite.
-	}
-
-	if( type->isIntegerTy() || type->isFloatingPointTy() || type->isPointerTy() )
-		return type;
-
-	return nullptr;
 }
 
 } // namespace U

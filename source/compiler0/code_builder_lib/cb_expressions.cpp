@@ -4036,6 +4036,22 @@ Value CodeBuilder::DoCallFunction(
 	const size_t arg_count= preevaluated_args.size() + args.size();
 	U_ASSERT( arg_count == function_type.params.size() );
 
+	// Ensure return type/param types completeness before performing the call.
+	{
+		if( !EnsureTypeComplete( function_type.return_type ) )
+			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, function_type.return_type );
+
+		for( const FunctionType::Param& param : function_type.params )
+		{
+			// Type completeness is necessary for both value and reference params.
+			if( !EnsureTypeComplete( param.type ) )
+				REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, param.type );
+		}
+	}
+
+	const ICallingConventionInfo::CallInfo call_info=
+		calling_convention_infos_[ size_t( function_type.calling_convention ) ]->CalculateFunctionCallInfo( function_type );
+
 	llvm::SmallVector<llvm::Value*, 16> llvm_args;
 	llvm::SmallVector<llvm::Constant*, 16> constant_llvm_args;
 	llvm_args.resize( arg_count, nullptr );
@@ -4205,15 +4221,10 @@ Value CodeBuilder::DoCallFunction(
 				EnsureTypeComplete( param.type ); // arg type for value arg must be already complete.
 				function_context.variables_state.TryAddInnerLinks( expr, arg_node, names_scope.GetErrors(), src_loc );
 
-				llvm::Type* const single_scalar_type= GetSingleScalarType( param.type.GetLLVMType() );
+				const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[ arg_number ];
 
 				if( expr->constexpr_value != nullptr )
-				{
-					if( single_scalar_type == nullptr )
-						constant_llvm_args.push_back( expr->constexpr_value );
-					else
-						constant_llvm_args.push_back( UnwrapRawScalarConstant( expr->constexpr_value ) );
-				}
+					constant_llvm_args.push_back( expr->constexpr_value );
 
 				if( expr->value_type == ValueType::Value && expr->type == param.type )
 				{
@@ -4222,10 +4233,22 @@ Value CodeBuilder::DoCallFunction(
 
 					if( !function_context.is_functionless_context )
 					{
-						if( single_scalar_type == nullptr )
+						switch( argument_passing.kind )
+						{
+						case ICallingConventionInfo::ArgumentPassingKind::Direct:
+						case ICallingConventionInfo::ArgumentPassingKind::DirectZExt:
+						case ICallingConventionInfo::ArgumentPassingKind::DirectSExt:
+							{
+								llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( argument_passing.llvm_type, expr->llvm_value );
+								load_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
+								llvm_args[arg_number]= load_instruction;
+							}
+							break;
+						case ICallingConventionInfo::ArgumentPassingKind::ByPointer:
+						case ICallingConventionInfo::ArgumentPassingKind::InStack:
 							llvm_args[arg_number]= expr->llvm_value;
-						else
-							llvm_args[arg_number]= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expr->llvm_value );
+							break;
+						};
 
 						// Save address into temporary container to call lifetime.end after call.
 						value_args_for_lifetime_end_call.push_back( expr->llvm_value );
@@ -4261,16 +4284,22 @@ Value CodeBuilder::DoCallFunction(
 							param.type,
 							function_context );
 
-						if( single_scalar_type == nullptr )
+						switch( argument_passing.kind )
 						{
-							// Pass by hidden reference.
+						case ICallingConventionInfo::ArgumentPassingKind::Direct:
+						case ICallingConventionInfo::ArgumentPassingKind::DirectZExt:
+						case ICallingConventionInfo::ArgumentPassingKind::DirectSExt:
+							{
+								llvm::LoadInst* const load_instruction= function_context.llvm_ir_builder.CreateLoad( argument_passing.llvm_type, arg_copy );
+								load_instruction->setAlignment( data_layout_.getABITypeAlign( param.type.GetLLVMType() ) );
+								llvm_args[arg_number]= load_instruction;
+							}
+							break;
+						case ICallingConventionInfo::ArgumentPassingKind::ByPointer:
+						case ICallingConventionInfo::ArgumentPassingKind::InStack:
 							llvm_args[arg_number]= arg_copy;
-						}
-						else
-						{
-							// If this is a single scalar type - just load value.
-							llvm_args[arg_number]= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
-						}
+							break;
+						};
 
 						// Save address into temporary container to call lifetime.end after call.
 						value_args_for_lifetime_end_call.push_back( arg_copy );
@@ -4331,7 +4360,7 @@ Value CodeBuilder::DoCallFunction(
 		REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), call_src_loc, function_type.return_type );
 
 	const bool return_value_is_composite= function_type.ReturnsCompositeValue();
-	const bool return_value_is_sret= FunctionTypeIsSRet( function_type );
+	const bool return_value_is_sret= call_info.return_value_passing.kind == ICallingConventionInfo::ReturnValuePassingKind::ByPointer;
 
 	const VariableMutPtr result= Variable::Create(
 		function_type.return_type,
@@ -4366,7 +4395,12 @@ Value CodeBuilder::DoCallFunction(
 		function_type.return_value_type == ValueType::Value && function_type.return_type.ReferenceTagCount() == 0u )
 	{
 		const Interpreter::ResultConstexpr evaluation_result=
-			constexpr_function_evaluator_.EvaluateConstexpr( function_as_real_function, constant_llvm_args );
+			constexpr_function_evaluator_.EvaluateConstexpr(
+				function_as_real_function,
+				constant_llvm_args,
+				function_type.return_type == void_type_
+					? *fundamental_llvm_types_.void_for_ret_
+					: *function_type.return_type.GetLLVMType() );
 
 		for( const std::string& error_text : evaluation_result.errors )
 		{
@@ -4382,18 +4416,14 @@ Value CodeBuilder::DoCallFunction(
 				result->llvm_value= result->constexpr_value= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
 			else if( return_value_is_composite )
 			{
-				if( return_value_is_sret )
+				if( !function_context.is_functionless_context )
 				{
-					if( !function_context.is_functionless_context )
+					if( return_value_is_sret )
 						MoveConstantToMemory( result->type, result->llvm_value, evaluation_result.result_constant, function_context );
-					result->constexpr_value= evaluation_result.result_constant;
-				}
-				else
-				{
-					if( !function_context.is_functionless_context )
+					else
 						function_context.llvm_ir_builder.CreateStore( evaluation_result.result_constant, result->llvm_value );
-					result->constexpr_value= WrapRawScalarConstant( evaluation_result.result_constant, function_type.return_type.GetLLVMType() );
 				}
+				result->constexpr_value= evaluation_result.result_constant;
 			}
 			else
 				result->llvm_value= result->constexpr_value= evaluation_result.result_constant;
@@ -4408,7 +4438,7 @@ Value CodeBuilder::DoCallFunction(
 		const auto really_function= llvm::dyn_cast<llvm::Function>(function);
 
 		llvm::FunctionType* const llvm_function_type=
-			really_function != nullptr ? really_function->getFunctionType() : GetLLVMFunctionType( function_type );
+			really_function != nullptr ? really_function->getFunctionType() : GetLLVMFunctionType( function_type, call_info );
 
 		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( llvm_function_type, function, llvm_args );
 		call_instruction->setCallingConv( GetLLVMCallingConvention( function_type.calling_convention ) );
@@ -4418,15 +4448,63 @@ Value CodeBuilder::DoCallFunction(
 		if( really_function == nullptr && function_type.return_value_type != ValueType::Value )
 			call_instruction->addRetAttr( llvm::Attribute::NonNull );
 
-		if( return_value_is_sret )
+		switch( call_info.return_value_passing.kind )
+		{
+		case ICallingConventionInfo::ReturnValuePassingKind::Direct:
+			break;
+		case ICallingConventionInfo::ReturnValuePassingKind::DirectZExt:
+			call_instruction->addRetAttr( llvm::Attribute::ZExt );
+			break;
+		case ICallingConventionInfo::ReturnValuePassingKind::DirectSExt:
+			call_instruction->addRetAttr( llvm::Attribute::SExt );
+			break;
+		case ICallingConventionInfo::ReturnValuePassingKind::ByPointer:
 			call_instruction->addParamAttr( 0, llvm::Attribute::get( llvm_context_, llvm::Attribute::StructRet, function_type.return_type.GetLLVMType() ) );
+			break;
+		}
+
+		for( size_t i= 0u; i < function_type.params.size(); i++ )
+		{
+			const auto param_attr_index= uint32_t(i + (return_value_is_sret ? 1u : 0u ));
+
+			const FunctionType::Param& param= function_type.params[i];
+			const ICallingConventionInfo::ArgumentPassing& argument_passing= call_info.arguments_passing[i];
+
+			switch( argument_passing.kind )
+			{
+			case ICallingConventionInfo::ArgumentPassingKind::Direct:
+				break;
+			case ICallingConventionInfo::ArgumentPassingKind::DirectZExt:
+				call_instruction->addParamAttr( param_attr_index, llvm::Attribute::ZExt );
+				break;
+			case ICallingConventionInfo::ArgumentPassingKind::DirectSExt:
+				call_instruction->addParamAttr( param_attr_index, llvm::Attribute::SExt );
+			case ICallingConventionInfo::ArgumentPassingKind::ByPointer:
+				// TODO - add other attributes?
+				break;
+			case ICallingConventionInfo::ArgumentPassingKind::InStack:
+				// TODO - add other attributes?
+				call_instruction->addParamAttr( param_attr_index, llvm::Attribute::getWithByValType( llvm_context_, param.type.GetLLVMType() ) );
+			};
+		}
 
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 			result->llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 		else if( return_value_is_composite )
 		{
-			if( !return_value_is_sret )
-				function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
+			switch( call_info.return_value_passing.kind )
+			{
+			case ICallingConventionInfo::ReturnValuePassingKind::Direct:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectZExt:
+			case ICallingConventionInfo::ReturnValuePassingKind::DirectSExt:
+				{
+					llvm::StoreInst* const store_instruction= function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
+					store_instruction->setAlignment( data_layout_.getABITypeAlign( function_type.return_type.GetLLVMType() ) );
+				}
+				break;
+			case ICallingConventionInfo::ReturnValuePassingKind::ByPointer:
+				break;
+			}
 		}
 		else
 			result->llvm_value= call_instruction;
