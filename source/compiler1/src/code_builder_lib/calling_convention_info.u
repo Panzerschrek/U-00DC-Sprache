@@ -633,7 +633,6 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 	return call_info;
 }
 
-
 fn CallingConventionInfoSystemV_X86_64::ClassifyType_r( this, LLVMTypeRef llvm_type, ArgumentPartClasses &mut out_classes, u32 offset )
 {
 	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( llvm_type ) );
@@ -824,7 +823,6 @@ fn CallingConventionInfoMSVC_X86_64::CalculateValueArgumentPassingInfo( this, Ty
 	return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
 }
 
-
 class CallingConventionInfoMSVC_X86 final : ICallingConventionInfo
 {
 public:
@@ -936,7 +934,6 @@ fn CallingConventionInfoMSVC_X86::CalculateValueArgumentPassingInfo( this, Type&
 
 	return ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( t.GetLLVMType(), 0u ) ) );
 }
-
 
 class CallingConventionInfoSystemV_AArch64 final : ICallingConventionInfo
 {
@@ -1258,7 +1255,7 @@ fn GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
 
 // Collect scalars of given type in their placement order.
 // Use this function with caution, since it can create very large lists for large arrays.
-// So, prefer skipping using it if it's known if given type is pretty large.
+// So, prefer skipping using it, if it's known, that given type is pretty large.
 fn CollectScalarTypes_r( LLVMTypeRef llvm_type, ust::vector</LLVMTypeRef/> &mut out_types )
 {
 	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( llvm_type ) );

@@ -41,7 +41,7 @@ llvm::Type* GetSingleScalarType( llvm::Type* type )
 
 // Collect scalars of given type in their placement order.
 // Use this function with caution, since it can create very large lists for large arrays.
-// So, prefer skipping using it if it's known if given type is pretty large.
+// So, prefer skipping using it, if it's known, that given type is pretty large.
 void CollectScalarTypes_r( llvm::Type& llvm_type, llvm::SmallVectorImpl<llvm::Type*>& out_types )
 {
 	if( llvm_type.isIntegerTy() || llvm_type.isFloatingPointTy() || llvm_type.isPointerTy() )
@@ -1065,7 +1065,6 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 	{
 		if( os == llvm::Triple::Linux || os == llvm::Triple::FreeBSD )
 		{
-
 			const auto system_v_aarch64_info= std::make_shared<CallingConventionInfoSystemV_AArch64>( data_layout, false );
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= system_v_aarch64_info;
 			calling_convention_infos[ size_t( CallingConvention::System ) ]= system_v_aarch64_info;

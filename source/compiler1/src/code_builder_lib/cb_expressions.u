@@ -4895,9 +4895,7 @@ fn CodeBuilder::DoCallFunction(
 
 		switch( call_info.return_value_passing.kind )
 		{
-			ICallingConventionInfo::ReturnValuePassingKind::Direct ->
-			{
-			},
+			ICallingConventionInfo::ReturnValuePassingKind::Direct -> {},
 			ICallingConventionInfo::ReturnValuePassingKind::DirectZExt ->
 			{
 				auto attr= unsafe( LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("zeroext"), 0u64 ) );
