@@ -49,7 +49,15 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 	}
 	else if( HasSubstr( target_triple_str, "i686" ) )
 	{
-		if( HasSubstr( target_triple_str, "windows" ) )
+		if(
+			HasSubstr( target_triple_str, "linux" ) ||
+			HasSubstr( target_triple_str, "freebsd" ) ||
+			HasSubstr( target_triple_str, "darwin" ) ||
+			HasSubstr( target_triple_str, "macosx" ) )
+		{
+			// TODO - support x86 calling conventions on GNU/Linux and other systems using System V ABI.
+		}
+		else if( HasSubstr( target_triple_str, "windows" ) )
 		{
 			var ust::shared_ptr_imut</CallingConventionInfoMSVC_X86/> msvc_x86_info(
 				CallingConventionInfoMSVC_X86( data_layout ) );
