@@ -1134,7 +1134,7 @@ fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this
 	if( size > 32u64 )
 	{
 		// Pass composites with size larger than 32 by pointer.
-		return ArgumentPassing( ArgumentPassingKind::ByPointer, LLVMTypeRef::Null );
+		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
 	}
 
 	var ust::vector</LLVMTypeRef/> mut scalar_types;
