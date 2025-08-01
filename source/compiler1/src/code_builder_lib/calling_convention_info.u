@@ -589,6 +589,9 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 								ArgumentPassing(
 									ArgumentPassingKind::Direct,
 									unsafe( LLVMStructTypeInContext( llvm_context, $<(types[0]), u32(num_parts), LLVMBool::False ) ) );
+
+							num_integer_registers_left-= num_integer_registers_needed;
+							num_floating_point_registers_left-= num_floating_point_registers_needed;
 						}
 						else
 						{
