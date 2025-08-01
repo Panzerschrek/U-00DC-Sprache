@@ -286,6 +286,30 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeSingleScalarsValueParamsAttrs )
 	U_TEST_ASSERT( !bar->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
 }
 
+U_TEST( LLVMFunctionAttrsTest_SingleScalarCompositesArePassedByValue )
+{
+	// Complex composite contains many elements, but all of them except one are empty, so there is only one total scalar.
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		type T= tup[ tup[], tup[ [ i32, 1 ], void ], S, [ f32, 0 ], [ tup[], 5 ] ];
+		static_assert( typeinfo</T/>.size_of == typeinfo</i32/>.size_of );
+		fn nomangle Foo( T t ) { halt; }
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* foo= module->getFunction( "Foo" );
+	U_TEST_ASSERT( foo != nullptr );
+
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !foo->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by value.
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+}
+
 U_TEST( LLVMFunctionAttrsTest_StructTypeImutReferenceParamsAttrs )
 {
 	// Immutalbe reference params of struct type marked as "nonnull", "readonly", "noalias". "dereferenceable" should be equal to type size.
