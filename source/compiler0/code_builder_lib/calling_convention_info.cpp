@@ -770,7 +770,7 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86::Calculate
 class CallingConventionInfoSystemV_AArch64 final : public ICallingConventionInfo
 {
 public:
-	explicit CallingConventionInfoSystemV_AArch64( llvm::DataLayout data_layout );
+	CallingConventionInfoSystemV_AArch64( llvm::DataLayout data_layout, bool is_darwin );
 
 public: // ICallingConventionInfo
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
@@ -781,19 +781,43 @@ private:
 
 private:
 	const llvm::DataLayout data_layout_;
+	const bool is_darwin_;
 };
 
-CallingConventionInfoSystemV_AArch64::CallingConventionInfoSystemV_AArch64( llvm::DataLayout data_layout )
-	: data_layout_( std::move(data_layout) )
+CallingConventionInfoSystemV_AArch64::CallingConventionInfoSystemV_AArch64(
+	llvm::DataLayout data_layout, const bool is_darwin )
+	: data_layout_( std::move(data_layout) ), is_darwin_(is_darwin)
 {}
 
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
+	{
+		if( is_darwin_ )
+		{
+			if( IsSignedInteger( f->fundamental_type ) )
+				return ReturnValuePassing{ ReturnValuePassingKind::DirectSExt, f->llvm_type };
+			else if(
+				IsUnsignedInteger( f->fundamental_type ) ||
+				IsChar( f->fundamental_type ) ||
+				IsByte( f->fundamental_type ) ||
+				f->fundamental_type == U_FundamentalType::bool_ )
+				return ReturnValuePassing{ ReturnValuePassingKind::DirectZExt, f->llvm_type };
+		}
+
 		return ReturnValuePassing{ ReturnValuePassingKind::Direct, f->llvm_type };
+	}
 
 	if( const auto e= type.GetEnumType() )
-		return ReturnValuePassing{ ReturnValuePassingKind::Direct, e->underlying_type.llvm_type };
+	{
+		if( is_darwin_ )
+		{
+			// Enums are unsigned and thus require zero extension.
+			return ReturnValuePassing{ ReturnValuePassingKind::DirectZExt, e->underlying_type.llvm_type };
+		}
+		else
+			return ReturnValuePassing{ ReturnValuePassingKind::Direct, e->underlying_type.llvm_type };
+	}
 
 	if( const auto fp= type.GetFunctionPointerType() )
 		return ReturnValuePassing{ ReturnValuePassingKind::Direct, fp->llvm_type };
@@ -871,10 +895,32 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_AArch64::Calculate
 ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( const Type& type )
 {
 	if( const auto f= type.GetFundamentalType() )
+	{
+		if( is_darwin_ )
+		{
+			if( IsSignedInteger( f->fundamental_type ) )
+				return ArgumentPassing{ ArgumentPassingKind::DirectSExt, f->llvm_type };
+			else if(
+				IsUnsignedInteger( f->fundamental_type ) ||
+				IsChar( f->fundamental_type ) ||
+				IsByte( f->fundamental_type ) ||
+				f->fundamental_type == U_FundamentalType::bool_ )
+				return ArgumentPassing{ ArgumentPassingKind::DirectZExt, f->llvm_type };
+		}
+
 		return ArgumentPassing{ ArgumentPassingKind::Direct, f->llvm_type };
+	}
 
 	if( const auto e= type.GetEnumType() )
-		return ArgumentPassing{ ArgumentPassingKind::Direct, e->underlying_type.llvm_type };
+	{
+		if( is_darwin_ )
+		{
+			// Enums are unsigned and thus require zero extension.
+			return ArgumentPassing{ ArgumentPassingKind::DirectZExt, e->underlying_type.llvm_type };
+		}
+		else
+			return ArgumentPassing{ ArgumentPassingKind::Direct, e->underlying_type.llvm_type };
+	}
 
 	if( const auto fp= type.GetFunctionPointerType() )
 		return ArgumentPassing{ ArgumentPassingKind::Direct, fp->llvm_type };
@@ -1005,13 +1051,17 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 	}
 	else if( arch == llvm::Triple::aarch64 )
 	{
-		if( os == llvm::Triple::Linux ||
-			os == llvm::Triple::FreeBSD ||
-			os == llvm::Triple::Darwin ||
-			os == llvm::Triple::MacOSX )
+		if( os == llvm::Triple::Linux || os == llvm::Triple::FreeBSD )
 		{
 
-			const auto system_v_aarch64_info= std::make_shared<CallingConventionInfoSystemV_AArch64>( data_layout );
+			const auto system_v_aarch64_info= std::make_shared<CallingConventionInfoSystemV_AArch64>( data_layout, false );
+			calling_convention_infos[ size_t( CallingConvention::C ) ]= system_v_aarch64_info;
+			calling_convention_infos[ size_t( CallingConvention::System ) ]= system_v_aarch64_info;
+		}
+		else if( os == llvm::Triple::Darwin || os == llvm::Triple::MacOSX )
+		{
+
+			const auto system_v_aarch64_info= std::make_shared<CallingConventionInfoSystemV_AArch64>( data_layout, true );
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= system_v_aarch64_info;
 			calling_convention_infos[ size_t( CallingConvention::System ) ]= system_v_aarch64_info;
 		}
