@@ -70,7 +70,7 @@ public: // ICallingConventionInfo
 	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
 private:
-	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
+	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) const;
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -145,7 +145,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoDefault::CalculateFunction
 	return call_info;
 }
 
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( const Type& type )
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( const Type& type ) const
 {
 	if( const auto f= type.GetFundamentalType() )
 		return ArgumentPassing{ ArgumentPassingKind::Direct, f->llvm_type };
@@ -209,7 +209,7 @@ private:
 	using ArgumentPartClasses= std::array<ArgumentClass, c_max_argument_parts>;
 
 private:
-	void ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset );
+	void ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset ) const;
 
 	static void MergeArgumentClasses( ArgumentClass& dst, const ArgumentClass src );
 
@@ -539,7 +539,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 	return call_info;
 }
 
-void CallingConventionInfoSystemV_X86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset )
+void CallingConventionInfoSystemV_X86_64::ClassifyType_r( llvm::Type& llvm_type, ArgumentPartClasses& out_classes, const uint32_t offset ) const
 {
 	if( llvm_type.isPointerTy() )
 		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
@@ -594,7 +594,7 @@ public: // ICallingConventionInfo
 	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
 private:
-	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
+	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) const;
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -651,7 +651,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86_64::CalculateFunc
 	return call_info;
 }
 
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86_64::CalculateValueArgumentPassingInfo( const Type& type )
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86_64::CalculateValueArgumentPassingInfo( const Type& type ) const
 {
 	if( const auto f= type.GetFundamentalType() )
 		return ArgumentPassing{ ArgumentPassingKind::Direct, f->llvm_type };
@@ -688,7 +688,7 @@ public: // ICallingConventionInfo
 	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
 private:
-	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
+	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) const;
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -747,7 +747,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoMSVC_X86::CalculateFunctio
 	return call_info;
 }
 
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86::CalculateValueArgumentPassingInfo( const Type& type )
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86::CalculateValueArgumentPassingInfo( const Type& type ) const
 {
 	if( const auto f= type.GetFundamentalType() )
 		return ArgumentPassing{ ArgumentPassingKind::Direct, f->llvm_type };
@@ -777,7 +777,7 @@ public: // ICallingConventionInfo
 	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
 private:
-	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type );
+	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) const;
 
 private:
 	const llvm::DataLayout data_layout_;
@@ -898,7 +898,7 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_AArch64::Calculate
 	return call_info;
 }
 
-ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( const Type& type )
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( const Type& type ) const
 {
 	if( const auto f= type.GetFundamentalType() )
 	{
