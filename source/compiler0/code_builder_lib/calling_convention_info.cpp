@@ -1024,7 +1024,7 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 		}
 		else
 		{
-			// TODO - handle other operating systems.
+			// Unsupported for now operating system.
 		}
 	}
 	else if( arch == llvm::Triple::x86 )
@@ -1046,7 +1046,7 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 		}
 		else
 		{
-			// TODO - handle other operating systems.
+			// Unsupported for now operating system.
 		}
 	}
 	else if( arch == llvm::Triple::aarch64 )
@@ -1067,12 +1067,12 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 		}
 		else
 		{
-			// TODO - handle other operating systems.
+			// Unsupported for now operating system.
 		}
 	}
 	else
 	{
-		// TODO - handle other architectures.
+		// Unsupported for now architecture.
 	}
 
 	return calling_convention_infos;

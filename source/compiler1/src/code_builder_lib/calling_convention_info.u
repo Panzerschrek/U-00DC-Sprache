@@ -44,7 +44,7 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 		}
 		else
 		{
-			// TODO - handle other operating systems.
+			// Unsupported for now operating system.
 		}
 	}
 	else if( HasSubstr( target_triple_str, "i686" ) )
@@ -61,7 +61,7 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 		}
 		else
 		{
-			// TODO - handle other operating systems.
+			// Unsupported for now operating system.
 		}
 	}
 	else if( HasSubstr( target_triple_str, "aarch64" ) || HasSubstr( target_triple_str, "arm64" ) )
@@ -84,12 +84,12 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 		}
 		else
 		{
-			// TODO - handle other operating systems.
+			// Unsupported for now operating system.
 		}
 	}
 	else
 	{
-		// TODO - handle other architectures.
+		// Unsupported for now architecture.
 	}
 
 	return calling_convention_infos;
