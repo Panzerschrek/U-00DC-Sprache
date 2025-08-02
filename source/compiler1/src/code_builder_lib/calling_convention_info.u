@@ -1002,13 +1002,6 @@ fn CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( this, 
 
 	var LLVMTypeRef llvm_type= t.GetLLVMType();
 
-	var LLVMTypeRef single_scalar= GetSingleScalarType( llvm_type );
-	if( single_scalar != LLVMTypeRef::Null )
-	{
-		// Return composites with single scalar inside using this scalar.
-		return ReturnValuePassing( ReturnValuePassingKind::Direct, single_scalar );
-	}
-
 	var u64 size= unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) );
 	if( size > 32u64 )
 	{
@@ -1024,6 +1017,12 @@ fn CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( this, 
 
 	var ust::vector</LLVMTypeRef/> mut scalar_types;
 	CollectScalarTypes_r( llvm_type, scalar_types );
+
+	if( scalar_types.size() == 1s )
+	{
+		// Return composites with single scalar inside using this scalar.
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, scalar_types.front() );
+	}
 
 	if( scalar_types.size() <= 4s )
 	{
@@ -1137,13 +1136,6 @@ fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this
 
 	var LLVMTypeRef llvm_type= t.GetLLVMType();
 
-	var LLVMTypeRef single_scalar= GetSingleScalarType( llvm_type );
-	if( single_scalar != LLVMTypeRef::Null )
-	{
-		// Pass composites with single scalar inside using this scalar.
-		return ArgumentPassing( ArgumentPassingKind::Direct, single_scalar );
-	}
-
 	var u64 size= unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) );
 	if( size > 32u64 )
 	{
@@ -1159,6 +1151,12 @@ fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this
 
 	var ust::vector</LLVMTypeRef/> mut scalar_types;
 	CollectScalarTypes_r( llvm_type, scalar_types );
+
+	if( scalar_types.size() == 1s )
+	{
+		// Pass composites with single scalar inside using this scalar.
+		return ArgumentPassing( ArgumentPassingKind::Direct, scalar_types.front() );
+	}
 
 	if( scalar_types.size() <= 4s )
 	{
