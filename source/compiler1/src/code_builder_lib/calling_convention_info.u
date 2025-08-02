@@ -7,7 +7,7 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 {
 	var ICallingConventionInfoPtr default_info =
 		ust::shared_ptr_imut</CallingConventionInfoDefault/>(
-			ust::make_shared_ptr( CallingConventionInfoDefault() ) );
+			ust::make_shared_ptr( CallingConventionInfoDefault( data_layout ) ) );
 
 	var CallingConventionInfos mut calling_convention_infos
 	[
@@ -106,7 +106,7 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 class CallingConventionInfoDefault final : ICallingConventionInfo
 {
 public:
-	fn constructor();
+	fn constructor( LLVMTargetDataRef data_layout );
 
 public: // ICallingConventionInfo
 	fn virtual override CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing;
@@ -114,9 +114,13 @@ public: // ICallingConventionInfo
 
 private:
 	fn CalculateValueArgumentPassingInfo( this, Type& t ) : ArgumentPassing;
+
+private:
+	u32 imut pointer_size_bits_;
 }
 
-fn CallingConventionInfoDefault::constructor()
+fn CallingConventionInfoDefault::constructor( LLVMTargetDataRef data_layout )
+	( pointer_size_bits_= unsafe( LLVMPointerSize( data_layout ) ) * 8u )
 {}
 
 fn CallingConventionInfoDefault::CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing
@@ -137,36 +141,28 @@ fn CallingConventionInfoDefault::CalculateReturnValuePassingInfo( this, Type& t 
 	{
 		return ReturnValuePassing( ReturnValuePassingKind::Direct, fp.llvm_type );
 	}
-	if_var( &c : t.GetClassType() )
+
+	// Composite types are left.
+
+	var LLVMTypeRef llvm_type= t.GetLLVMType();
+
+	var [ LLVMTypeRef, 2 ] mut first_scalars= zero_init;
+	var size_type num_scalars_collected= CollectFirstSeveralScalars_r( llvm_type, first_scalars );
+
+	if( num_scalars_collected == 0s )
 	{
-		var LLVMTypeRef llvm_type= c.lock_imut().deref().llvm_type;
-		var LLVMTypeRef single_scalar= GetSingleScalarType( llvm_type );
-		if( single_scalar != LLVMTypeRef::Null )
-		{
-			return ReturnValuePassing( ReturnValuePassingKind::Direct, single_scalar );
-		}
-		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
-	}
-	if_var( &a : t.GetArrayType() )
-	{
-		var LLVMTypeRef single_scalar= GetSingleScalarType( a.llvm_type );
-		if( single_scalar != LLVMTypeRef::Null )
-		{
-			return ReturnValuePassing( ReturnValuePassingKind::Direct, single_scalar );
-		}
-		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, unsafe( LLVMPointerType( a.llvm_type, 0u ) ) );
-	}
-	if_var( &t : t.GetTupleType() )
-	{
-		var LLVMTypeRef single_scalar= GetSingleScalarType( t.llvm_type );
-		if( single_scalar != LLVMTypeRef::Null )
-		{
-			return ReturnValuePassing( ReturnValuePassingKind::Direct, single_scalar );
-		}
-		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, unsafe( LLVMPointerType( t.llvm_type, 0u ) ) );
+		// Return empty scalars directly (which is basically no-op).
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, llvm_type );
 	}
 
-	halt; // Unhandled type kind.
+	if( num_scalars_collected == 1s )
+	{
+		// Return composite types with single scalar inside using this scalar.
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, first_scalars[0] );
+	}
+
+	// Return other composites via pointer.
+	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
 }
 
 fn CallingConventionInfoDefault::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
@@ -217,36 +213,60 @@ fn CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( this, Type& 
 	{
 		return ArgumentPassing( ArgumentPassingKind::Direct, fp.llvm_type );
 	}
-	if_var( &c : t.GetClassType() )
+
+	// Composite types are left.
+
+	var LLVMTypeRef llvm_type= t.GetLLVMType();
+
+	var [ LLVMTypeRef, 2 ] mut first_scalars= zero_init;
+	var size_type num_scalars_collected= CollectFirstSeveralScalars_r( llvm_type, first_scalars );
+
+	if( num_scalars_collected == 0s )
 	{
-		var LLVMTypeRef llvm_type= c.lock_imut().deref().llvm_type;
-		var LLVMTypeRef single_scalar= GetSingleScalarType( llvm_type );
-		if( single_scalar != LLVMTypeRef::Null )
-		{
-			return ArgumentPassing( ArgumentPassingKind::Direct, single_scalar );
-		}
-		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
-	}
-	if_var( &a : t.GetArrayType() )
-	{
-		var LLVMTypeRef single_scalar= GetSingleScalarType( a.llvm_type );
-		if( single_scalar != LLVMTypeRef::Null )
-		{
-			return ArgumentPassing( ArgumentPassingKind::Direct, single_scalar );
-		}
-		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( a.llvm_type, 0u ) ) );
-	}
-	if_var( &t : t.GetTupleType() )
-	{
-		var LLVMTypeRef single_scalar= GetSingleScalarType( t.llvm_type );
-		if( single_scalar != LLVMTypeRef::Null )
-		{
-			return ArgumentPassing( ArgumentPassingKind::Direct, single_scalar );
-		}
-		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( t.llvm_type, 0u ) ) );
+		// Pass empty scalars directly (which is basically no-op).
+		return ArgumentPassing( ArgumentPassingKind::Direct, llvm_type );
 	}
 
-	halt; // Unhandled type kind.
+	if( num_scalars_collected == 1s )
+	{
+		// Pass composite types with single scalar inside using this scalar.
+		return ArgumentPassing( ArgumentPassingKind::Direct, first_scalars[0] );
+	}
+
+	if( num_scalars_collected == 2s )
+	{
+		// If we have only 2 scalars, try passing them both directly.
+		// Assume this direct passing involves registers usage.
+		// But do it only if it doesn't lead to underutilization of register space - if these scalars have expected register size.
+
+		// We can't generally perform packing of two scalars into single value,
+		// since it requires unaligned load and store instructions,
+		// which may not exist on some platforms and thus are implemented via several byte load/stores, which is slow.
+
+		var bool mut all_scalars_fit_into_native_register= true;
+		for( var size_type mut i= 0s; i < num_scalars_collected; ++i )
+		{
+			var LLVMTypeRef t= first_scalars[i];
+			var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
+			if( t_kind == LLVMTypeKind::Float || t_kind == LLVMTypeKind::Double ) {}  // It's fine to pass f32/f64 values in registers.
+			else if( t_kind == LLVMTypeKind::Pointer ) { } // It's fine to pass f32/f64 values in registers.
+			else if( t_kind == LLVMTypeKind::Integer )
+			{
+				// Avoid passing integers smaller than pointer size directly.
+				// We use here pointer size as estimation for register size, which isn't true on some platforms, but is mostly fine.
+				all_scalars_fit_into_native_register&= unsafe( LLVMGetIntTypeWidth( t ) ) == pointer_size_bits_;
+			}
+			else { halt; } // Unhandled scalar kind.
+		}
+
+		if( all_scalars_fit_into_native_register )
+		{
+			return ArgumentPassing( ArgumentPassingKind::Direct, llvm_type );
+		}
+	}
+
+	// Pass other composites via pointer.
+	return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
 }
 
 class CallingConventionInfoSystemV_X86_64 final : ICallingConventionInfo
@@ -1213,29 +1233,13 @@ fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this
 	}
 }
 
-// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
-// Returns null otherwise.
-// Requires type to be complete.
-fn GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
+
+// Collect first scalars of given type (in their natural order) into given buffer.
+// Returns number of scalars collected.
+// If Given buffer has not enough capaticy, stops search and returns number greater than number of scalars collected, but possible less than actual number of scalars.
+fn nodiscard CollectFirstSeveralScalars_r( LLVMTypeRef llvm_type, ust::array_view_mut</LLVMTypeRef/> out_types ) : size_type
 {
-	loop
-	{
-		var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
-		if( t_kind == LLVMTypeKind::Struct && unsafe( LLVMCountStructElementTypes( t ) ) == 1u )
-		{
-			t= unsafe( LLVMStructGetTypeAtIndex( t, 0u ) );
-			continue;
-		}
-		if( t_kind == LLVMTypeKind::Array && unsafe( LLVMGetArrayLength2( t ) ) == 1u64 )
-		{
-			t= unsafe( LLVMGetElementType( t ) );
-			continue;
-		}
-
-		break; // Not a composite.
-	}
-
-	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
+	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( llvm_type ) );
 	if( t_kind == LLVMTypeKind::Half ||
 		t_kind == LLVMTypeKind::Float ||
 		t_kind == LLVMTypeKind::Double ||
@@ -1245,10 +1249,42 @@ fn GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
 		t_kind == LLVMTypeKind::Integer ||
 		t_kind == LLVMTypeKind::Pointer )
 	{
-		return t;
+		if( !out_types.empty() )
+		{
+			out_types.front()= llvm_type;
+		}
+		return 1s;
 	}
-
-	return LLVMTypeRef::Null;
+	else if( t_kind == LLVMTypeKind::Array )
+	{
+		var size_type mut num_scalars= 0s;
+		var LLVMTypeRef element_type= unsafe( LLVMGetElementType( llvm_type ) );
+		var u64 num_elements= unsafe( LLVMGetArrayLength2( llvm_type ) );
+		for( var u64 mut element_index= 0u64; element_index < num_elements; ++element_index )
+		{
+			num_scalars+= CollectFirstSeveralScalars_r( element_type, out_types.subrange_start( num_scalars ) );
+			if( num_scalars > out_types.size() )
+			{
+				return num_scalars;
+			}
+		}
+		return num_scalars;
+	}
+	else if( t_kind == LLVMTypeKind::Struct )
+	{
+		var size_type mut num_scalars= 0s;
+		var u32 num_elements= unsafe( LLVMCountStructElementTypes( llvm_type ) );
+		for( var u32 mut element_index= 0u; element_index < num_elements; ++element_index )
+		{
+			num_scalars+= CollectFirstSeveralScalars_r( unsafe( LLVMStructGetTypeAtIndex( llvm_type, element_index ) ), out_types.subrange_start( num_scalars ) );
+			if( num_scalars > out_types.size() )
+			{
+				return num_scalars;
+			}
+		}
+		return num_scalars;
+	}
+	else { halt; } // Unhandled type kind.
 }
 
 // Collect scalars of given type in their placement order.
