@@ -12,7 +12,7 @@ namespace
 
 // Collect first scalars of given type (in their natural order) into given buffer.
 // Returns number of scalars collected.
-// If Given buffer has not enough capaticy, stops search and returns number greater than number of scalars collected, but possible less than actual number of scalars.
+// If the given buffer has not enough capaticy, stops search and returns number greater than number of scalars collected, but possible less than actual number of scalars.
 size_t CollectFirstSeveralScalars_r( llvm::Type& llvm_type, llvm::Type** const out_types, const size_t out_types_size )
 {
 	if( llvm_type.isIntegerTy() || llvm_type.isFloatingPointTy() || llvm_type.isPointerTy() )
@@ -195,22 +195,23 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 		// since it requires unaligned load and store instructions,
 		// which may not exist on some platforms and thus are implemented via several byte load/stores, which is slow.
 
-		bool all_scalars_fit_into_native_register= true;
+		bool all_scalars_fully_fit_into_native_register= true;
 		for( size_t i= 0; i < num_scalars_collected; ++i )
 		{
 			llvm::Type* const t= first_scalars[i];
 			if( t->isFloatingPointTy() ) { } // It's fine to pass f32/f64 values in registers.
-			else if( t->isPointerTy() ){ } // Assume passing pointer scalars doesn't waste register space.
+			else if( t->isPointerTy() ) { } // Assume passing pointer scalars doesn't waste register space.
 			else if( t->isIntegerTy() )
 			{
 				// Avoid passing integers smaller than pointer size directly.
 				// We use here pointer size as estimation for register size, which isn't true on some platforms, but is mostly fine.
-				all_scalars_fit_into_native_register&= t->getIntegerBitWidth() == pointer_size_bits_;
+				// If integer size is bigger than pointer size, don't pass it directly too, because this may require two registers.
+				all_scalars_fully_fit_into_native_register&= t->getIntegerBitWidth() == pointer_size_bits_;
 			}
 			else U_ASSERT(false); // Unhandled scalar kind.
 		}
 
-		if( all_scalars_fit_into_native_register )
+		if( all_scalars_fully_fit_into_native_register )
 			return ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
 	}
 
@@ -888,7 +889,7 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 
 	if( size == 0 )
 	{
-		// Return empty composited directly
+		// Return empty composited directly.
 		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
 	}
 
