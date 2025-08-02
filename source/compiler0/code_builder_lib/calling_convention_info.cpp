@@ -10,33 +10,45 @@ namespace U
 namespace
 {
 
-// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
-// Returns null otherwise.
-// Requires type to be complete.
-llvm::Type* GetSingleScalarType( llvm::Type* type )
+// Collect first scalars of given type (in their natural order) into given buffer.
+// Returns number of scalars collected.
+// If Given buffer has not enough capaticy, stops search and returns number greater than number of scalars collected, but possible less than actual number of scalars.
+size_t CollectFirstSeveralScalars_r( llvm::Type& llvm_type, llvm::Type** const out_types, const size_t out_types_size )
 {
-	U_ASSERT( type->isSized() && "expected sized type!" );
-
-	while( true )
+	if( llvm_type.isIntegerTy() || llvm_type.isFloatingPointTy() || llvm_type.isPointerTy() )
 	{
-		if( type->isStructTy() && type->getStructNumElements() == 1 )
-		{
-			type= type->getStructElementType(0);
-			continue;
-		}
-		if( type->isArrayTy() && type->getArrayNumElements() == 1 )
-		{
-			type= type->getArrayElementType();
-			continue;
-		}
-
-		break; // Not a composite.
+		if( out_types_size > 0 )
+			out_types[0]= &llvm_type;
+		return 1;
 	}
-
-	if( type->isIntegerTy() || type->isFloatingPointTy() || type->isPointerTy() )
-		return type;
-
-	return nullptr;
+	else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>( &llvm_type ) )
+	{
+		size_t num_scalars= 0;
+		llvm::Type* const element_type= array_type->getElementType();
+		for( uint64_t element_index= 0; element_index < array_type->getNumElements(); ++element_index )
+		{
+			num_scalars+= CollectFirstSeveralScalars_r( *element_type, out_types + num_scalars, out_types_size - num_scalars );
+			if( num_scalars > out_types_size )
+				return num_scalars;
+		}
+		return num_scalars;
+	}
+	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( &llvm_type ) )
+	{
+		size_t num_scalars= 0;
+		for( uint32_t element_index= 0; element_index < struct_type->getNumElements(); ++element_index )
+		{
+			num_scalars+= CollectFirstSeveralScalars_r( *struct_type->getElementType( element_index ), out_types + num_scalars, out_types_size - num_scalars );
+			if( num_scalars > out_types_size )
+				return num_scalars;
+		}
+		return num_scalars;
+	}
+	else
+	{
+		U_ASSERT( false ); // Unhandled type kind.
+		return 0;
+	}
 }
 
 // Collect scalars of given type in their placement order.
@@ -94,32 +106,20 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	if( const auto p= type.GetRawPointerType() )
 		return ReturnValuePassing{ ReturnValuePassingKind::Direct, p->llvm_type };
 
-	if( const auto c= type.GetClassType() )
+	// Composite types are left.
+
+	llvm::Type* const llvm_type= type.GetLLVMType();
+
+	std::array<llvm::Type*, 1> first_scalars;
+	const size_t num_scalars_collected= CollectFirstSeveralScalars_r( *llvm_type, first_scalars.data(), first_scalars.size() );
+
+	if( num_scalars_collected == 1 )
 	{
-		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
-			return ReturnValuePassing{ ReturnValuePassingKind::Direct, single_scalar };
-		else
-			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
+		// Return composite types with single scalar inside using this scalar.
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, first_scalars.front() };
 	}
 
-	if( const auto a= type.GetArrayType() )
-	{
-		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
-			return ReturnValuePassing{ ReturnValuePassingKind::Direct, single_scalar };
-		else
-			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
-	}
-
-	if( const auto t= type.GetTupleType() )
-	{
-		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
-			return ReturnValuePassing{ ReturnValuePassingKind::Direct, single_scalar };
-		else
-			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
-	}
-
-	// Unhandled type kind.
-	U_ASSERT(false);
+	// Return other composites via pointer.
 	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 }
 
@@ -159,32 +159,20 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	if( const auto p= type.GetRawPointerType() )
 		return ArgumentPassing{ ArgumentPassingKind::Direct, p->llvm_type };
 
-	if( const auto c= type.GetClassType() )
+	// Composite types are left.
+
+	llvm::Type* const llvm_type= type.GetLLVMType();
+
+	std::array<llvm::Type*, 1> first_scalars;
+	const size_t num_scalars_collected= CollectFirstSeveralScalars_r( *llvm_type, first_scalars.data(), first_scalars.size() );
+
+	if( num_scalars_collected == 1 )
 	{
-		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
-			return ArgumentPassing{ ArgumentPassingKind::Direct, single_scalar };
-		else
-			return ArgumentPassing{ ArgumentPassingKind::ByPointer, c->llvm_type->getPointerTo() };
+		// Pass composite types with single scalar inside using this scalar.
+		return ArgumentPassing{ ArgumentPassingKind::Direct, first_scalars.front() };
 	}
 
-	if( const auto a= type.GetArrayType() )
-	{
-		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
-			return ArgumentPassing{ ArgumentPassingKind::Direct, single_scalar };
-		else
-			return ArgumentPassing{ ArgumentPassingKind::ByPointer, a->llvm_type->getPointerTo() };
-	}
-
-	if( const auto t= type.GetTupleType() )
-	{
-		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
-			return ArgumentPassing{ ArgumentPassingKind::Direct, single_scalar };
-		else
-			return ArgumentPassing{ ArgumentPassingKind::ByPointer, t->llvm_type->getPointerTo() };
-	}
-
-	// Unhandled type kind.
-	U_ASSERT(false);
+	// Pass other composites via pointer.
 	return ArgumentPassing{ ArgumentPassingKind::ByPointer, type.GetLLVMType()->getPointerTo() };
 }
 
