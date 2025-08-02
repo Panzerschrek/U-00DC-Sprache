@@ -291,8 +291,8 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 
 		if( type_size == 0 )
 		{
-			// TODO - handle zero-sized structs properly.
-			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
+			// Return empty composites directly.
+			return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
 		}
 
 		ArgumentPartClasses classes;
@@ -469,10 +469,10 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 				}
 				else if( type_size == 0 )
 				{
-					// TODO - handle zero-sized structs properly.
-					call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
+					// Pass empty composites directly.
+					call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
 
-					// No registers are consumed for in-stack passing.
+					// No registers are consumed for empty composite passing.
 				}
 				else
 				{
@@ -650,10 +650,18 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86_64::Cal
 
 	// Composite types are left.
 
+	llvm::Type* const llvm_type= type.GetLLVMType();
+
 	// Return composites with integer sizes as integers (even if a composite contains pointer or floating-point value(s)).
-	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
+	const auto size= data_layout_.getTypeAllocSize( llvm_type );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
-		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 ) };
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 ) };
+
+	if( size == 0 )
+	{
+		// Return empty composites directly.
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
+	}
 
 	// Return other composites via sret pointer.
 	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
@@ -702,7 +710,13 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86_64::Calcul
 	// Pass composites with integer sizes as integers (even if a composite contains pointer or floating-point value(s)).
 	const auto size= data_layout_.getTypeAllocSize( llvm_type );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
-		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 )};
+		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 )};
+
+	if( size == 0 )
+	{
+		// Pass empty composites directly.
+		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
+	}
 
 	// Pass other composites via pointer.
 	return ArgumentPassing{ ArgumentPassingKind::ByPointer, llvm_type->getPointerTo() };
@@ -749,7 +763,13 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86::Calcul
 	// Return composites with integer sizes as integers (even if a composite contains pointer or floating-point value(s)).
 	const auto size= data_layout_.getTypeAllocSize( llvm_type );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
-		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 ) };
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 ) };
+
+	if( size == 0 )
+	{
+		// Return empty composites directly.
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
+	}
 
 	// Return other composites via sret pointer.
 	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
@@ -868,8 +888,8 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 
 	if( size == 0 )
 	{
-		// For now return empty structs by pointer. TODO - improve this.
-		return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
+		// Return empty composited directly
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
 	}
 
 	llvm::SmallVector<llvm::Type*, 16> scalar_types;
@@ -977,8 +997,8 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 
 	if( size == 0 )
 	{
-		// For now pass empty structs by pointer. TODO - improve this.
-		return ArgumentPassing{ ArgumentPassingKind::ByPointer, llvm_type->getPointerTo() };
+		// Pass empty composites directly.
+		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
 	}
 
 	llvm::SmallVector<llvm::Type*, 16> scalar_types;

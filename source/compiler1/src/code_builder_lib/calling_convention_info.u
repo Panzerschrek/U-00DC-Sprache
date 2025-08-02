@@ -348,8 +348,8 @@ fn CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( this, T
 
 		if( type_size == 0u64 )
 		{
-			// TODO - handle zero-sized structs properly.
-			return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
+			// Return empty composites directly.
+			return ReturnValuePassing( ReturnValuePassingKind::Direct, llvm_type );
 		}
 
 		var ArgumentPartClasses mut classes= zero_init;
@@ -550,10 +550,10 @@ fn CallingConventionInfoSystemV_X86_64::CalculateFunctionCallInfo( this, Functio
 				}
 				else if( type_size == 0u64 )
 				{
-					// TODO - handle zero-sized structs properly.
-					argument_passing= ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+					// Return empty composites directly.
+					argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, llvm_type );
 
-					// No registers are consumed for in-stack passing.
+					// No registers are consumed for empty composited passing.
 				}
 				else
 				{
@@ -772,6 +772,12 @@ fn CallingConventionInfoMSVC_X86_64::CalculateReturnValuePassingInfo( this, Type
 				unsafe( LLVMIntTypeInContext( LLVMGetTypeContext( llvm_type ), u32(size) * 8u ) ) );
 	}
 
+	if( size == 0u64 )
+	{
+		// Return empty composites directly.
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, llvm_type );
+	}
+
 	// Return other composites via sret pointer.
 	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
 }
@@ -839,6 +845,12 @@ fn CallingConventionInfoMSVC_X86_64::CalculateValueArgumentPassingInfo( this, Ty
 				unsafe( LLVMIntTypeInContext( LLVMGetTypeContext( llvm_type ), u32(size) * 8u ) ) );
 	}
 
+	if( size == 0u64 )
+	{
+		// Pass empty composites directly.
+		return ArgumentPassing( ArgumentPassingKind::Direct, llvm_type );
+	}
+
 	// Return other composites via sret pointer.
 	return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
 }
@@ -894,6 +906,12 @@ fn CallingConventionInfoMSVC_X86::CalculateReturnValuePassingInfo( this, Type& t
 			ReturnValuePassing(
 				ReturnValuePassingKind::Direct,
 				unsafe( LLVMIntTypeInContext( LLVMGetTypeContext( llvm_type ), u32(size) * 8u ) ) );
+	}
+
+	if( size == 0u64 )
+	{
+		// Return empty composites directly.
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, llvm_type );
 	}
 
 	// Return other composites via sret pointer.
@@ -1031,8 +1049,8 @@ fn CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( this, 
 
 	if( size == 0u64 )
 	{
-		// For now return empty structs by pointer. TODO - improve this.
-		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
+		// Return empty composited directly
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, llvm_type );
 	}
 
 	var ust::vector</LLVMTypeRef/> mut scalar_types;
@@ -1165,8 +1183,8 @@ fn CallingConventionInfoSystemV_AArch64::CalculateValueArgumentPassingInfo( this
 
 	if( size == 0u64 )
 	{
-		// For now pass empty structs by pointer. TODO - improve this.
-		return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+		// Pass empty composites directly.
+		return ArgumentPassing( ArgumentPassingKind::Direct, llvm_type );
 	}
 
 	var ust::vector</LLVMTypeRef/> mut scalar_types;
