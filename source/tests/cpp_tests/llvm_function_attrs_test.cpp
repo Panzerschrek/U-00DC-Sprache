@@ -372,7 +372,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeMutReferenceParamsAttrs )
 	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) || function->getParamDereferenceableBytes( 1 ) == 0 );
 }
 
-U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
+U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs0 )
 {
 	// For functions, returning struct values, create hidden pointer param, where returned value placed.
 
@@ -412,6 +412,28 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
 	U_TEST_ASSERT( !bar->hasRetAttribute( llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
+}
+
+U_TEST( LLVMFunctionAttrsTest_SingleScalarStructTypeReturnValueAttrs1 )
+{
+	// Complex composite contains many elements, but all of them except one are empty, so there is only one total scalar.
+	// Composites with one scalar are passed directly (not via "sret" argument).
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		type T= tup[ tup[], tup[ [ i32, 1 ], void ], S, [ f32, 0 ], [ tup[], 5 ] ];
+		static_assert( typeinfo</T/>.size_of == typeinfo</i32/>.size_of );
+		fn Foo() : T { halt; }
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* foo= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( foo != nullptr );
+
+	U_TEST_ASSERT( foo->getReturnType()->isIntegerTy() );
+	U_TEST_ASSERT( foo->getReturnType()->getIntegerBitWidth() == 32 );
+	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 0 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_SingleScalarStructTypeReturnValueAttrs )
