@@ -217,7 +217,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	U_TEST_ASSERT( !foo->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( foo->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( !foo->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) || foo->getParamDereferenceableBytes( 1 ) == 16 );
+	U_TEST_ASSERT( foo->getParamDereferenceableBytes( 1 ) == 16 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Bar1E1S" );
 	U_TEST_ASSERT( bar != nullptr );
@@ -227,7 +227,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) || bar->getParamDereferenceableBytes( 0 ) == 16 );
+	U_TEST_ASSERT( bar->getParamDereferenceableBytes( 0 ) == 16 );
 
 	U_TEST_ASSERT( bar->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( bar->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
@@ -546,7 +546,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs0 )
 	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::StructRet ) );
 	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) || bar->getParamDereferenceableBytes( 0 ) == 16 );
+	U_TEST_ASSERT( bar->getParamDereferenceableBytes( 0 ) == 16 );
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
