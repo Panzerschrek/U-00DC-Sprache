@@ -427,8 +427,11 @@ std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& 
 
 	case clang::BuiltinType::Bool: return Keyword( Keywords::bool_ );
 
-	case clang::BuiltinType::Char_S: return Keyword( Keywords::char8_ );
-	case clang::BuiltinType::Char_U: return Keyword( Keywords::char8_ );
+	case clang::BuiltinType::Char_S:
+	case clang::BuiltinType::Char_U:
+	case clang::BuiltinType::Char8:
+		return Keyword( Keywords::char8_ );
+
 	case clang::BuiltinType::Char16: return Keyword( Keywords::char16_ );
 	case clang::BuiltinType::Char32: return Keyword( Keywords::char32_ );
 
