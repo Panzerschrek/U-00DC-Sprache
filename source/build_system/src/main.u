@@ -852,7 +852,7 @@ fn CreateWorkspace(
 fn nodiscard CreateWorkspaceBuildDirectories(
 	Logger &mut logger, WorkspaceInfo& workspace, ust::filesystem_path_view root_package_build_directory ) : bool
 {
-	// Create directories for generated sources, if necessary.
+	// Create directories for generated sources and headers, if necessary.
 	foreach( &target_pair : workspace.build_targets )
 	{
 		auto& build_target_name= target_pair.key();
@@ -860,6 +860,13 @@ fn nodiscard CreateWorkspaceBuildDirectories(
 		if( !build_target.generated_source_files.empty() || !build_target.generated_private_header_files.empty() )
 		{
 			if( !EnsureDirectoryExists( logger, GetBuildTargetGeneratedSourcesDirectory( root_package_build_directory, build_target_name ) ) )
+			{
+				return false;
+			}
+		}
+		if( !build_target.generated_public_header_files.empty() )
+		{
+			if( !EnsureDirectoryExists( logger, GetBuildTargetGeneratedPublicHeadersDirectory( root_package_build_directory, build_target_name ) ) )
 			{
 				return false;
 			}
