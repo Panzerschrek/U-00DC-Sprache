@@ -193,7 +193,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	// "nocapture" should be used since there is no legal way to capture address of passed variable (because of some kind of "ReferenceProtectionError").
 	static const char c_program_text[]=
 	R"(
-		struct S{ i32 x; f32 y; }
+		struct S{ i32 x; f32 y; u32 z; }
 		struct E{}
 		fn Foo( S  mut s, E  mut e ) { halt; }
 		fn Bar( E imut e, S imut s ) { halt; }
@@ -210,7 +210,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
 	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( foo->getParamDereferenceableBytes( 0 ) == 8 );
+	U_TEST_ASSERT( foo->getParamDereferenceableBytes( 0 ) == 12 );
 
 	U_TEST_ASSERT( foo->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( foo->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
@@ -235,7 +235,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	U_TEST_ASSERT( bar->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
 	U_TEST_ASSERT( bar->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( bar->getParamDereferenceableBytes( 1 ) == 8 );
+	U_TEST_ASSERT( bar->getParamDereferenceableBytes( 1 ) == 12 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeSingleScalarsValueParamsAttrs )
@@ -308,6 +308,122 @@ U_TEST( LLVMFunctionAttrsTest_SingleScalarCompositesArePassedByValue )
 	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( !foo->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by value.
 	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+}
+
+U_TEST( LLVMFunctionAttrsTest_SomeTwoScalarCompositesArePassedByValue )
+{
+	static const char c_program_text[]=
+	R"(
+		// This struct has two scalars inside, both of them have pointer size. So it should be passed directly.
+		struct S{ $(byte8) ptr; size_type s; }
+		fn nomangle Foo( S s ) { halt; }
+
+		// This struct has two scalars inside, both of them are floating-point values. So it should be passed directly.
+		struct T{ f32 x; f64 y; }
+		fn nomangle Bar( T t ) { halt; }
+
+		// This tuple has two scalars - floating-point value and pointer-sized integer. So it should be passed directly.
+		fn nomangle Lol( tup[ f32, size_type ] t ) { halt; }
+
+		// Array with two f64 values is passed directly.
+		fn nomangle Kek( [ f64, 2 ] a ) { halt; }
+
+		// This struct contains two small scalars inside. So it's passed via pointer.
+		struct U{ u16 x; i8 y; }
+		fn nomangle Baz( U u ) { halt; }
+
+		// This array contains two scalars with less than pointer size. It should be passed via pointer.
+		fn nomangle Wtf( [ byte16, 2 ] a ) { halt; }
+
+		// Structs with 3 or more scalars are passed via pointer.
+		struct V{ f32 x; f32 y; f32 z; }
+		fn nomangle Vec( V v ) { halt; }
+
+		// Tuples with 3 or more scalars are passed via pointer.
+		fn nomangle Triple( tup[ size_type, $(byte8), ssize_type ] t ) { halt; }
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const foo= module->getFunction( "Foo" );
+	U_TEST_ASSERT( foo != nullptr );
+
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isStructTy() ); // Passed by value.
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+
+	const llvm::Function* const bar= module->getFunction( "Bar" );
+	U_TEST_ASSERT( bar != nullptr );
+
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isStructTy() ); // Passed by value.
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+
+	const llvm::Function* const lol= module->getFunction( "Lol" );
+	U_TEST_ASSERT( lol != nullptr );
+
+	U_TEST_ASSERT( !lol->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !lol->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !lol->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !lol->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( lol->getFunctionType()->getParamType(0)->isStructTy() ); // Passed by value.
+	U_TEST_ASSERT( !lol->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+
+	const llvm::Function* const kek= module->getFunction( "Kek" );
+	U_TEST_ASSERT( kek != nullptr );
+
+	U_TEST_ASSERT( !kek->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !kek->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !kek->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !kek->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( kek->getFunctionType()->getParamType(0)->isArrayTy() ); // Passed by value.
+	U_TEST_ASSERT( !kek->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+
+	const llvm::Function* const baz= module->getFunction( "Baz" );
+	U_TEST_ASSERT( baz != nullptr );
+
+	U_TEST_ASSERT( baz->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( baz->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !baz->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( baz->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( baz->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( baz->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+
+	const llvm::Function* const wtf= module->getFunction( "Wtf" );
+	U_TEST_ASSERT( wtf != nullptr );
+
+	U_TEST_ASSERT( wtf->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( wtf->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !wtf->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( wtf->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( wtf->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( wtf->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+
+	const llvm::Function* const vec= module->getFunction( "Vec" );
+	U_TEST_ASSERT( vec != nullptr );
+
+	U_TEST_ASSERT( vec->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( vec->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !vec->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( vec->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( vec->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( vec->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+
+	const llvm::Function* const triple= module->getFunction( "Triple" );
+	U_TEST_ASSERT( triple != nullptr );
+
+	U_TEST_ASSERT( triple->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( triple->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !triple->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( triple->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( triple->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( triple->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeImutReferenceParamsAttrs )

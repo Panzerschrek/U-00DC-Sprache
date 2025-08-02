@@ -86,10 +86,11 @@ private:
 
 private:
 	const llvm::DataLayout data_layout_;
+	const uint32_t pointer_size_bits_;
 };
 
 CallingConventionInfoDefault::CallingConventionInfoDefault( llvm::DataLayout data_layout )
-	: data_layout_( std::move(data_layout) )
+	: data_layout_( std::move(data_layout) ), pointer_size_bits_( data_layout_.getPointerSize() * 8u )
 {}
 
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::CalculateReturnValuePassingInfo( const Type& type )
@@ -163,13 +164,42 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 
 	llvm::Type* const llvm_type= type.GetLLVMType();
 
-	std::array<llvm::Type*, 1> first_scalars;
+	std::array<llvm::Type*, 2> first_scalars;
 	const size_t num_scalars_collected= CollectFirstSeveralScalars_r( *llvm_type, first_scalars.data(), first_scalars.size() );
 
 	if( num_scalars_collected == 1 )
 	{
 		// Pass composite types with single scalar inside using this scalar.
 		return ArgumentPassing{ ArgumentPassingKind::Direct, first_scalars.front() };
+	}
+
+	if( num_scalars_collected == 2 )
+	{
+		// If we have only 2 scalars, try passing them both directly.
+		// Assume this direct passing involves registers usage.
+		// But do it only if it doesn't lead to underutilization of register space - if these scalars have expected register size.
+
+		// We can't generally perform packing of two scalars into single value,
+		// since it requires unaligned load and store instructions,
+		// which may not exist on some platforms and thus are implemented via several byte load/stores, which is slow.
+
+		bool all_scalars_fit_into_native_register= true;
+		for( size_t i= 0; i < num_scalars_collected; ++i )
+		{
+			llvm::Type* const t= first_scalars[i];
+			if( t->isFloatingPointTy() ) { } // It's fine to pass f32/f64 values in registers.
+			else if( t->isPointerTy() ){ } // Assume passing pointer scalars doesn't waste register space.
+			else if( t->isIntegerTy() )
+			{
+				// Avoid passing integers smaller than pointer size directly.
+				// We use here pointer size as estimation for register size, which isn't true on some platforms, but is mostly fine.
+				all_scalars_fit_into_native_register&= t->getIntegerBitWidth() == pointer_size_bits_;
+			}
+			else U_ASSERT(false); // Unhandled scalar kind.
+		}
+
+		if( all_scalars_fit_into_native_register )
+			return ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
 	}
 
 	// Pass other composites via pointer.
