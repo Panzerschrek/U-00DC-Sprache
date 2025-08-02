@@ -114,6 +114,12 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	std::array<llvm::Type*, 1> first_scalars;
 	const size_t num_scalars_collected= CollectFirstSeveralScalars_r( *llvm_type, first_scalars.data(), first_scalars.size() );
 
+	if( num_scalars_collected == 0 )
+	{
+		// Return empty scalars directly (which is basically no-op).
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
+	}
+
 	if( num_scalars_collected == 1 )
 	{
 		// Return composite types with single scalar inside using this scalar.
@@ -166,6 +172,12 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 
 	std::array<llvm::Type*, 2> first_scalars;
 	const size_t num_scalars_collected= CollectFirstSeveralScalars_r( *llvm_type, first_scalars.data(), first_scalars.size() );
+
+	if( num_scalars_collected == 0 )
+	{
+		// Pass empty scalars directly (which is basically no-op).
+		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
+	}
 
 	if( num_scalars_collected == 1 )
 	{

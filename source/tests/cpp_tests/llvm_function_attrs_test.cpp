@@ -194,7 +194,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; u32 z; }
-		struct E{}
+		struct E{ u64 x; bool y; }
 		fn Foo( S  mut s, E  mut e ) { halt; }
 		fn Bar( E imut e, S imut s ) { halt; }
 	)";
@@ -217,7 +217,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	U_TEST_ASSERT( !foo->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( foo->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( !foo->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) || foo->getParamDereferenceableBytes( 1 ) == 0  );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) || foo->getParamDereferenceableBytes( 1 ) == 16 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Bar1E1S" );
 	U_TEST_ASSERT( bar != nullptr );
@@ -227,7 +227,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) || bar->getParamDereferenceableBytes( 0 ) == 0 );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) || bar->getParamDereferenceableBytes( 0 ) == 16 );
 
 	U_TEST_ASSERT( bar->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( bar->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
@@ -426,6 +426,30 @@ U_TEST( LLVMFunctionAttrsTest_SomeTwoScalarCompositesArePassedByValue )
 	U_TEST_ASSERT( triple->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
 }
 
+U_TEST( LLVMFunctionAttrsTest_EmptyCompositesArePassedByValue )
+{
+	// Complex composite contains many elements, but all of them are empty, so there is zero total scalars.
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		type T= tup[ S, [ i32, 0 ], tup[ S, [ S, 333 ], S ] ];
+		static_assert( typeinfo</T/>.size_of == 0s );
+		fn nomangle Foo( T t ) : T { halt; }
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* foo= module->getFunction( "Foo" );
+	U_TEST_ASSERT( foo != nullptr );
+
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isStructTy() ); // Passed by value.
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+}
+
 U_TEST( LLVMFunctionAttrsTest_StructTypeImutReferenceParamsAttrs )
 {
 	// Immutalbe reference params of struct type marked as "nonnull", "readonly", "noalias". "dereferenceable" should be equal to type size.
@@ -495,7 +519,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs0 )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; }
-		struct E{}
+		struct E{ u64 x; bool y; }
 		fn Foo() : S { halt; }
 		fn Bar() : E { halt; }
 	)";
@@ -522,7 +546,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs0 )
 	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::StructRet ) );
 	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) || bar->getParamDereferenceableBytes( 0 ) == 0 );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) || bar->getParamDereferenceableBytes( 0 ) == 16 );
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
@@ -549,6 +573,26 @@ U_TEST( LLVMFunctionAttrsTest_SingleScalarStructTypeReturnValueAttrs1 )
 
 	U_TEST_ASSERT( foo->getReturnType()->isIntegerTy() );
 	U_TEST_ASSERT( foo->getReturnType()->getIntegerBitWidth() == 32 );
+	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 0 );
+}
+
+U_TEST( LLVMFunctionAttrsTest_EmptyCompositeTypeReturn )
+{
+	// Composites with zero size are returned directly.
+	static const char c_program_text[]=
+	R"(
+		struct S{}
+		type T= tup[ S, [ i32, 0 ], tup[ S, [ S, 333 ], S ] ];
+		static_assert( typeinfo</T/>.size_of == 0s );
+		fn Foo() : T { halt; }
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* foo= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( foo != nullptr );
+
+	U_TEST_ASSERT( foo->getReturnType()->isStructTy() );
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 0 );
 }
 
