@@ -393,7 +393,7 @@ U_TEST( LLVMFunctionAttrsTest_SomeTwoScalarCompositesArePassedByValue )
 	U_TEST_ASSERT( !baz->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( baz->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( baz->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( baz->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( baz->getParamDereferenceableBytes( 0 ) == 4 );
 
 	const llvm::Function* const wtf= module->getFunction( "Wtf" );
 	U_TEST_ASSERT( wtf != nullptr );
@@ -403,7 +403,7 @@ U_TEST( LLVMFunctionAttrsTest_SomeTwoScalarCompositesArePassedByValue )
 	U_TEST_ASSERT( !wtf->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( wtf->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( wtf->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( wtf->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( wtf->getParamDereferenceableBytes( 0 ) == 4 );
 
 	const llvm::Function* const vec= module->getFunction( "Vec" );
 	U_TEST_ASSERT( vec != nullptr );
@@ -413,7 +413,7 @@ U_TEST( LLVMFunctionAttrsTest_SomeTwoScalarCompositesArePassedByValue )
 	U_TEST_ASSERT( !vec->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( vec->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( vec->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( vec->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( vec->getParamDereferenceableBytes( 0 ) == 12 );
 
 	const llvm::Function* const triple= module->getFunction( "Triple" );
 	U_TEST_ASSERT( triple != nullptr );
@@ -518,7 +518,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs0 )
 
 	static const char c_program_text[]=
 	R"(
-		struct S{ i32 x; f32 y; }
+		struct S{ i32 x; f32 y; char16 z; }
 		struct E{ u64 x; bool y; }
 		fn Foo() : S { halt; }
 		fn Bar() : E { halt; }
@@ -533,7 +533,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs0 )
 	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( foo->getParamDereferenceableBytes( 0 ) == 8 );
+	U_TEST_ASSERT( foo->getParamDereferenceableBytes( 0 ) == 12 );
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( foo->getReturnType()->isVoidTy() );
