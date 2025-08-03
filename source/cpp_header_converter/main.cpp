@@ -69,5 +69,13 @@ int main( int argc, const char* argv[] )
 	for( auto& unit : *parsed_units )
 		U::Synt::WriteProgram( unit.second.Build(), out_file );
 
+	out_file.flush();
+
+	if( out_file.fail() )
+	{
+		std::cerr << "Failed to write out file \"" << output_file_name.getValue() << "\"!" << std::endl;
+		return 1;
+	}
+
 	return 0;
 }
