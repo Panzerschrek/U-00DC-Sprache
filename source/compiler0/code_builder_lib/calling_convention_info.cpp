@@ -10,33 +10,45 @@ namespace U
 namespace
 {
 
-// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
-// Returns null otherwise.
-// Requires type to be complete.
-llvm::Type* GetSingleScalarType( llvm::Type* type )
+// Collect first scalars of given type (in their natural order) into given buffer.
+// Returns number of scalars collected.
+// If the given buffer has not enough capaticy, stops search and returns number greater than number of scalars collected, but possible less than actual number of scalars.
+size_t CollectFirstSeveralScalars_r( llvm::Type& llvm_type, llvm::Type** const out_types, const size_t out_types_size )
 {
-	U_ASSERT( type->isSized() && "expected sized type!" );
-
-	while( true )
+	if( llvm_type.isIntegerTy() || llvm_type.isFloatingPointTy() || llvm_type.isPointerTy() )
 	{
-		if( type->isStructTy() && type->getStructNumElements() == 1 )
-		{
-			type= type->getStructElementType(0);
-			continue;
-		}
-		if( type->isArrayTy() && type->getArrayNumElements() == 1 )
-		{
-			type= type->getArrayElementType();
-			continue;
-		}
-
-		break; // Not a composite.
+		if( out_types_size > 0 )
+			out_types[0]= &llvm_type;
+		return 1;
 	}
-
-	if( type->isIntegerTy() || type->isFloatingPointTy() || type->isPointerTy() )
-		return type;
-
-	return nullptr;
+	else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>( &llvm_type ) )
+	{
+		size_t num_scalars= 0;
+		llvm::Type* const element_type= array_type->getElementType();
+		for( uint64_t element_index= 0; element_index < array_type->getNumElements(); ++element_index )
+		{
+			num_scalars+= CollectFirstSeveralScalars_r( *element_type, out_types + num_scalars, out_types_size - num_scalars );
+			if( num_scalars > out_types_size )
+				return num_scalars;
+		}
+		return num_scalars;
+	}
+	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( &llvm_type ) )
+	{
+		size_t num_scalars= 0;
+		for( uint32_t element_index= 0; element_index < struct_type->getNumElements(); ++element_index )
+		{
+			num_scalars+= CollectFirstSeveralScalars_r( *struct_type->getElementType( element_index ), out_types + num_scalars, out_types_size - num_scalars );
+			if( num_scalars > out_types_size )
+				return num_scalars;
+		}
+		return num_scalars;
+	}
+	else
+	{
+		U_ASSERT( false ); // Unhandled type kind.
+		return 0;
+	}
 }
 
 // Collect scalars of given type in their placement order.
@@ -74,10 +86,11 @@ private:
 
 private:
 	const llvm::DataLayout data_layout_;
+	const uint32_t pointer_size_bits_;
 };
 
 CallingConventionInfoDefault::CallingConventionInfoDefault( llvm::DataLayout data_layout )
-	: data_layout_( std::move(data_layout) )
+	: data_layout_( std::move(data_layout) ), pointer_size_bits_( data_layout_.getPointerSize() * 8u )
 {}
 
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::CalculateReturnValuePassingInfo( const Type& type )
@@ -94,32 +107,26 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoDefault::Calcula
 	if( const auto p= type.GetRawPointerType() )
 		return ReturnValuePassing{ ReturnValuePassingKind::Direct, p->llvm_type };
 
-	if( const auto c= type.GetClassType() )
+	// Composite types are left.
+
+	llvm::Type* const llvm_type= type.GetLLVMType();
+
+	std::array<llvm::Type*, 1> first_scalars;
+	const size_t num_scalars_collected= CollectFirstSeveralScalars_r( *llvm_type, first_scalars.data(), first_scalars.size() );
+
+	if( num_scalars_collected == 0 )
 	{
-		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
-			return ReturnValuePassing{ ReturnValuePassingKind::Direct, single_scalar };
-		else
-			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
+		// Return empty scalars directly (which is basically no-op).
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
 	}
 
-	if( const auto a= type.GetArrayType() )
+	if( num_scalars_collected == 1 )
 	{
-		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
-			return ReturnValuePassing{ ReturnValuePassingKind::Direct, single_scalar };
-		else
-			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
+		// Return composite types with single scalar inside using this scalar.
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, first_scalars.front() };
 	}
 
-	if( const auto t= type.GetTupleType() )
-	{
-		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
-			return ReturnValuePassing{ ReturnValuePassingKind::Direct, single_scalar };
-		else
-			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
-	}
-
-	// Unhandled type kind.
-	U_ASSERT(false);
+	// Return other composites via pointer.
 	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
 }
 
@@ -159,32 +166,56 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	if( const auto p= type.GetRawPointerType() )
 		return ArgumentPassing{ ArgumentPassingKind::Direct, p->llvm_type };
 
-	if( const auto c= type.GetClassType() )
+	// Composite types are left.
+
+	llvm::Type* const llvm_type= type.GetLLVMType();
+
+	std::array<llvm::Type*, 2> first_scalars;
+	const size_t num_scalars_collected= CollectFirstSeveralScalars_r( *llvm_type, first_scalars.data(), first_scalars.size() );
+
+	if( num_scalars_collected == 0 )
 	{
-		if( const auto single_scalar= GetSingleScalarType( c->llvm_type ) )
-			return ArgumentPassing{ ArgumentPassingKind::Direct, single_scalar };
-		else
-			return ArgumentPassing{ ArgumentPassingKind::ByPointer, c->llvm_type->getPointerTo() };
+		// Pass empty scalars directly (which is basically no-op).
+		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
 	}
 
-	if( const auto a= type.GetArrayType() )
+	if( num_scalars_collected == 1 )
 	{
-		if( const auto single_scalar= GetSingleScalarType( a->llvm_type ) )
-			return ArgumentPassing{ ArgumentPassingKind::Direct, single_scalar };
-		else
-			return ArgumentPassing{ ArgumentPassingKind::ByPointer, a->llvm_type->getPointerTo() };
+		// Pass composite types with single scalar inside using this scalar.
+		return ArgumentPassing{ ArgumentPassingKind::Direct, first_scalars.front() };
 	}
 
-	if( const auto t= type.GetTupleType() )
+	if( num_scalars_collected == 2 )
 	{
-		if( const auto single_scalar= GetSingleScalarType( t->llvm_type ) )
-			return ArgumentPassing{ ArgumentPassingKind::Direct, single_scalar };
-		else
-			return ArgumentPassing{ ArgumentPassingKind::ByPointer, t->llvm_type->getPointerTo() };
+		// If we have only 2 scalars, try passing them both directly.
+		// Assume this direct passing involves registers usage.
+		// But do it only if it doesn't lead to underutilization of register space - if these scalars have expected register size.
+
+		// We can't generally perform packing of two scalars into single value,
+		// since it requires unaligned load and store instructions,
+		// which may not exist on some platforms and thus are implemented via several byte load/stores, which is slow.
+
+		bool all_scalars_fully_fit_into_native_register= true;
+		for( size_t i= 0; i < num_scalars_collected; ++i )
+		{
+			llvm::Type* const t= first_scalars[i];
+			if( t->isFloatingPointTy() ) { } // It's fine to pass f32/f64 values in registers.
+			else if( t->isPointerTy() ) { } // Assume passing pointer scalars doesn't waste register space.
+			else if( t->isIntegerTy() )
+			{
+				// Avoid passing integers smaller than pointer size directly.
+				// We use here pointer size as estimation for register size, which isn't true on some platforms, but is mostly fine.
+				// If integer size is bigger than pointer size, don't pass it directly too, because this may require two registers.
+				all_scalars_fully_fit_into_native_register&= t->getIntegerBitWidth() == pointer_size_bits_;
+			}
+			else U_ASSERT(false); // Unhandled scalar kind.
+		}
+
+		if( all_scalars_fully_fit_into_native_register )
+			return ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
 	}
 
-	// Unhandled type kind.
-	U_ASSERT(false);
+	// Pass other composites via pointer.
 	return ArgumentPassing{ ArgumentPassingKind::ByPointer, type.GetLLVMType()->getPointerTo() };
 }
 
@@ -261,8 +292,8 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86_64::
 
 		if( type_size == 0 )
 		{
-			// TODO - handle zero-sized structs properly.
-			return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
+			// Return empty composites directly.
+			return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
 		}
 
 		ArgumentPartClasses classes;
@@ -439,10 +470,10 @@ ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86_64::CalculateF
 				}
 				else if( type_size == 0 )
 				{
-					// TODO - handle zero-sized structs properly.
-					call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::InStack, llvm_type->getPointerTo() };
+					// Pass empty composites directly.
+					call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
 
-					// No registers are consumed for in-stack passing.
+					// No registers are consumed for empty composite passing.
 				}
 				else
 				{
@@ -620,10 +651,18 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86_64::Cal
 
 	// Composite types are left.
 
+	llvm::Type* const llvm_type= type.GetLLVMType();
+
 	// Return composites with integer sizes as integers (even if a composite contains pointer or floating-point value(s)).
-	const auto size= data_layout_.getTypeAllocSize( type.GetLLVMType() );
+	const auto size= data_layout_.getTypeAllocSize( llvm_type );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
-		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 ) };
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 ) };
+
+	if( size == 0 )
+	{
+		// Return empty composites directly.
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
+	}
 
 	// Return other composites via sret pointer.
 	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
@@ -672,7 +711,13 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoMSVC_X86_64::Calcul
 	// Pass composites with integer sizes as integers (even if a composite contains pointer or floating-point value(s)).
 	const auto size= data_layout_.getTypeAllocSize( llvm_type );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
-		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 )};
+		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 )};
+
+	if( size == 0 )
+	{
+		// Pass empty composites directly.
+		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
+	}
 
 	// Pass other composites via pointer.
 	return ArgumentPassing{ ArgumentPassingKind::ByPointer, llvm_type->getPointerTo() };
@@ -719,7 +764,13 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoMSVC_X86::Calcul
 	// Return composites with integer sizes as integers (even if a composite contains pointer or floating-point value(s)).
 	const auto size= data_layout_.getTypeAllocSize( llvm_type );
 	if( size == 1 || size == 2 || size == 4 || size == 8 )
-		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( type.GetLLVMType()->getContext(), uint32_t(size) * 8 ) };
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm::IntegerType::get( llvm_type->getContext(), uint32_t(size) * 8 ) };
+
+	if( size == 0 )
+	{
+		// Return empty composites directly.
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
+	}
 
 	// Return other composites via sret pointer.
 	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
@@ -838,8 +889,8 @@ ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_AArch64:
 
 	if( size == 0 )
 	{
-		// For now return empty structs by pointer. TODO - improve this.
-		return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
+		// Return empty composited directly.
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, llvm_type };
 	}
 
 	llvm::SmallVector<llvm::Type*, 16> scalar_types;
@@ -947,8 +998,8 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_AArch64::Ca
 
 	if( size == 0 )
 	{
-		// For now pass empty structs by pointer. TODO - improve this.
-		return ArgumentPassing{ ArgumentPassingKind::ByPointer, llvm_type->getPointerTo() };
+		// Pass empty composites directly.
+		return ArgumentPassing{ ArgumentPassingKind::Direct, llvm_type };
 	}
 
 	llvm::SmallVector<llvm::Type*, 16> scalar_types;

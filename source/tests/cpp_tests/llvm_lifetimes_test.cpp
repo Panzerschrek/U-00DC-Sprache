@@ -451,6 +451,7 @@ U_TEST( ArgVariableLifetime_Test2 )
 		{
 			i32 x;
 			i32 y= 0;
+			f32 z= 1.5f;
 			fn constructor()(x= 99996){}
 		}
 		fn nomangle CaptureValue(S& data, u64 size);

@@ -130,9 +130,9 @@ Compiler:
 *) Find a way to detect recursive mixins in blocks, type names, expressions
 *) Print full mixin text on error within mixin
 *) Imporve TBAA - use struct path-based TBAA.
-*) Pass/return by-value composite values containing more than one scalar inside.
-	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,
-	or it would be better to pass it in memory.
+*) Use target-specific calling-convention knowledge (available registers) to determine the most effective way of
+	parameters passing and result returning in functions with default calling convention. Perform calculation based on
+	all parameter types and return type.
 *) Add possibility to execute internal LLD directly, bypassing compiler logic itself
 *) Add possibility to execute an external linker (ld, ld.gold, ld.lld, link.exe, etc.)
 *) More options for internal linker
