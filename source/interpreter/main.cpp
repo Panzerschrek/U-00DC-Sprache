@@ -400,19 +400,10 @@ int Main( int argc, const char* argv[] )
 
 	// TODO - run here optimizations?
 
-	// TODO - support main with empty args or argc+argv.
-	const auto expected_main_function_type= llvm::FunctionType::get( llvm::Type::getInt32Ty(llvm_context), {}, false );
-	const auto main_function_llvm= result_module->getFunction(entry_point_name);
+	const auto main_function_llvm= result_module->getFunction( entry_point_name );
 	if( main_function_llvm == nullptr )
 	{
 		std::cerr << "Can't find entry point!" << std::endl;
-		return 1;
-	}
-
-	// Check if entry point function signatire is correct.
-	if( main_function_llvm->getFunctionType() != expected_main_function_type )
-	{
-		std::cerr << "Entry point has invalid signature! Expected (fn() : i32)." << std::endl;
 		return 1;
 	}
 
@@ -439,16 +430,19 @@ int Main( int argc, const char* argv[] )
 
 		// No need to add other functions here - llvm interpreter supports other required functions (memory functions, exit, abort).
 
-		using MainFunctionType= int(*)();
+		using MainFunctionType= int(*)( int argc, const char** argv );
 		const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(entry_point_name));
 		if( main_function == nullptr )
 		{
 			std::cerr << "Can't find entry point!" << std::endl;
-
 			return 1;
 		}
 
-		return main_function();
+		// It's safe to pass argc + argv even into a function with no args, since C calling convention allows this.
+		// For now just pass empty command line (containing only executable name).
+		const int custom_argc= 1;
+		const char* custom_argv[]= { argv[0], nullptr };
+		return main_function( custom_argc, custom_argv );
 	}
 	else
 	{
@@ -468,17 +462,40 @@ int Main( int argc, const char* argv[] )
 		g_interpreter->RegisterCustomFunction( "memcmp", InterpreterFuncs::MemCmp );
 		g_interpreter->RegisterCustomFunction( "abort", InterpreterFuncs::Abort );
 
-		const Interpreter::ResultGeneric result= g_interpreter->EvaluateGeneric( main_function_llvm, {} );
+		const llvm::FunctionType* const function_type= main_function_llvm->getFunctionType();
 
-		for( const std::string& err : result.errors )
-			std::cerr << "Execution error: " << err << std::endl;
+		if( function_type->getNumParams() == 0 )
+		{
+			const Interpreter::ResultGeneric result= g_interpreter->EvaluateGeneric( main_function_llvm, {} );
 
-		g_interpreter= nullptr;
+			for( const std::string& err : result.errors )
+				std::cerr << "Execution error: " << err << std::endl;
 
-		if( !result.errors.empty() )
+			return int(result.result.IntVal.getLimitedValue());
+		}
+		else if(
+			function_type->getNumParams() == 2 &&
+			function_type->getParamType(0)->isIntegerTy() &&
+			function_type->getParamType(1)->isPointerTy() )
+		{
+			// argc + argv
+			// For now pass no args at all, since we can't pass pointer to external memory into interpreter.
+			llvm::GenericValue args[2];
+			args[0].IntVal= llvm::APInt( 32, 0ull );
+			args[1].IntVal= llvm::APInt( data_layout.getPointerSizeInBits(), 0ull );
+
+			const Interpreter::ResultGeneric result= g_interpreter->EvaluateGeneric( main_function_llvm, args );
+
+			for( const std::string& err : result.errors )
+				std::cerr << "Execution error: " << err << std::endl;
+
+			return int(result.result.IntVal.getLimitedValue());
+		}
+		else
+		{
+			std::cerr << "Entry point has invalid signature! Expected ( fn() : i32 ) or ( fn( i32 argc, $($(char8)) argv ) : i32 )." << std::endl;
 			return 1;
-
-		return int(result.result.IntVal.getLimitedValue());
+		}
 	}
 }
 
