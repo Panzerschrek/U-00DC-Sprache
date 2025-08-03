@@ -664,13 +664,13 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
 	// Composites with single scalar inside are passed in register using this scalar type.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( [ i32, 2 ] mut a, tup[ bool, f64 ] imut b ) { halt; }
+		fn Foo( [ i32, 3 ] mut a, tup[ bool, f64 ] imut b ) { halt; }
 		fn Bar( tup[ i32 ] a, [ char8, 1 ] b ) { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
 
-	const llvm::Function* const foo= module->getFunction( "_Z3FooA2_i3tupIbdE" );
+	const llvm::Function* const foo= module->getFunction( "_Z3FooA3_i3tupIbdE" );
 	U_TEST_ASSERT( foo != nullptr );
 
 	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
@@ -679,7 +679,7 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
 	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
 	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( foo->getParamDereferenceableBytes( 0 ) == 8 );
+	U_TEST_ASSERT( foo->getParamDereferenceableBytes( 0 ) == 12 );
 
 	U_TEST_ASSERT( foo->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( foo->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
@@ -1098,6 +1098,7 @@ U_TEST( LLVMFunctionAttrs_ForByValThis_Test0 )
 		{
 			i32 x;
 			i32 y;
+			f32 z;
 
 			fn Foo( byval imut this ){}
 			fn Bar( byval mut this ){}
@@ -1114,7 +1115,7 @@ U_TEST( LLVMFunctionAttrs_ForByValThis_Test0 )
 	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( foo->getParamDereferenceableBytes(0) == 8 );
+	U_TEST_ASSERT( foo->getParamDereferenceableBytes(0) == 12 );
 
 	const llvm::Function* bar= module->getFunction( "_ZN1S3BarES_" );
 	U_TEST_ASSERT( bar != nullptr );
@@ -1124,7 +1125,7 @@ U_TEST( LLVMFunctionAttrs_ForByValThis_Test0 )
 	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( bar->getParamDereferenceableBytes(0) == 8 );
+	U_TEST_ASSERT( bar->getParamDereferenceableBytes(0) == 12 );
 }
 
 U_TEST( LLVMFunctionAttrs_ForByValThis_Test1 )
