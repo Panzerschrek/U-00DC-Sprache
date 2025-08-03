@@ -34,13 +34,6 @@ std::unique_ptr<Interpreter> g_interpreter;
 namespace InterpreterFuncs
 {
 
-// This struct should match "ust::string_view8" layout!
-struct StringViewImut
-{
-	size_t ptr= 0;
-	size_t size= 0;
-};
-
 llvm::GenericValue StdOutPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::GenericValue> args )
 {
 	if( args.size() < 1 )
@@ -49,24 +42,33 @@ llvm::GenericValue StdOutPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::
 		return llvm::GenericValue();
 	}
 
-	const uint64_t string_view_address= args[0].IntVal.getLimitedValue();
-	StringViewImut string_view;
-	g_interpreter->ReadExecutinEngineData( &string_view, string_view_address, sizeof(StringViewImut) );
+	// Expect "array_view" structure, which has 3 fields, first is container tag, second is pointer and third is size.
 
-	constexpr auto buffer_size= 1024;
-	if( string_view.size < buffer_size )
+	const llvm::GenericValue& arg= args[0];
+
+	if( arg.AggregateVal.size() != 3 )
+	{
+		std::cerr << "stdout_print called with incorrect arg, having unexpected number of composites inside." << std::endl;
+		return llvm::GenericValue();
+	}
+
+	const uint64_t ptr= arg.AggregateVal[1].IntVal.getLimitedValue();
+	const size_t size= size_t( arg.AggregateVal[2].IntVal.getLimitedValue() );
+
+	constexpr size_t buffer_size= 1024;
+	if( size < buffer_size )
 	{
 		char buffer[buffer_size];
-		g_interpreter->ReadExecutinEngineData( buffer, string_view.ptr, string_view.size );
-		buffer[string_view.size]= '\0';
+		g_interpreter->ReadExecutinEngineData( buffer, ptr, size );
+		buffer[size]= '\0';
 		std::cout << buffer;
 	}
 	else
 	{
 		std::string buffer;
-		buffer.resize(string_view.size + 1);
-		g_interpreter->ReadExecutinEngineData( buffer.data(), string_view.ptr, string_view.size );
-		buffer[string_view.size]= '\0';
+		buffer.resize(size + 1);
+		g_interpreter->ReadExecutinEngineData( buffer.data(), ptr, size );
+		buffer[size]= '\0';
 		std::cout << buffer;
 	}
 
@@ -78,28 +80,37 @@ llvm::GenericValue StdErrPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::
 {
 	if( args.size() < 1 )
 	{
-		std::cerr << "stdout_print called with invalid number of args." << std::endl;
+		std::cerr << "stderr_print called with invalid number of args." << std::endl;
 		return llvm::GenericValue();
 	}
 
-	const uint64_t string_view_address= args[0].IntVal.getLimitedValue();
-	StringViewImut string_view;
-	g_interpreter->ReadExecutinEngineData( &string_view, string_view_address, sizeof(StringViewImut) );
+	// Expect "array_view" structure, which has 3 fields, first is container tag, second is pointer and third is size.
 
-	constexpr auto buffer_size= 1024;
-	if( string_view.size < buffer_size )
+	const llvm::GenericValue& arg= args[0];
+
+	if( arg.AggregateVal.size() != 3 )
+	{
+		std::cerr << "stderr_print called with incorrect arg, having unexpected number of composites inside." << std::endl;
+		return llvm::GenericValue();
+	}
+
+	const uint64_t ptr= arg.AggregateVal[1].IntVal.getLimitedValue();
+	const size_t size= size_t( arg.AggregateVal[2].IntVal.getLimitedValue() );
+
+	constexpr size_t buffer_size= 1024;
+	if( size < buffer_size )
 	{
 		char buffer[buffer_size];
-		g_interpreter->ReadExecutinEngineData( buffer, string_view.ptr, string_view.size );
-		buffer[string_view.size]= '\0';
+		g_interpreter->ReadExecutinEngineData( buffer, ptr, size );
+		buffer[size]= '\0';
 		std::cerr << buffer;
 	}
 	else
 	{
 		std::string buffer;
-		buffer.resize(string_view.size + 1);
-		g_interpreter->ReadExecutinEngineData( buffer.data(), string_view.ptr, string_view.size );
-		buffer[string_view.size]= '\0';
+		buffer.resize(size + 1);
+		g_interpreter->ReadExecutinEngineData( buffer.data(), ptr, size );
+		buffer[size]= '\0';
 		std::cerr << buffer;
 	}
 
