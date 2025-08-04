@@ -349,7 +349,7 @@ def ByValThisErrors_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
 
 
 def ByValThisErrors_Test1():
@@ -365,7 +365,7 @@ def ByValThisErrors_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
 
 
 def ByValThisErrors_Test2():
@@ -513,7 +513,7 @@ def ByValThisErrors_Test11():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
 
 
 def ByValThisErrors_Test12():

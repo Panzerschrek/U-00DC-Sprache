@@ -405,7 +405,7 @@ def WithOperatorForConstexprValue_Test5():
 	assert( HasError( errors_list, "StaticAssertExpressionIsNotConstant", 7 ) )
 
 
-def BindingConstReferenceToNonconstReference_For_WithOperator_Test0():
+def ExpectedMutableReferenceOrImmediateValue_For_WithOperator_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -416,7 +416,7 @@ def BindingConstReferenceToNonconstReference_For_WithOperator_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "BindingConstReferenceToNonconstReference" )
+	assert( errors_list[0].error_code == "ExpectedMutableReferenceOrImmediateValue" )
 	assert( errors_list[0].src_loc.line == 5 )
 
 

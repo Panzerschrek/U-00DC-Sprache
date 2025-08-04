@@ -6,7 +6,7 @@ namespace U
 namespace
 {
 
-U_TEST(BindingConstReferenceToNonconstReferenceTest0)
+U_TEST(ExpectedMutableReference_Test0)
 {
 	// Initialize reference using value-object.
 	static const char c_program_text[]=
@@ -23,11 +23,11 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
-U_TEST(BindingConstReferenceToNonconstReferenceTest2)
+U_TEST(ExpectedMutableReference_Test2)
 {
 	// Return reference, when return value is const reference.
 	static const char c_program_text[]=
@@ -43,11 +43,11 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest2)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
-U_TEST(BindingConstReferenceToNonconstReferenceTest3)
+U_TEST(ExpectedMutableReference_Test3)
 {
 	// Binding "imut this" to mutable reference.
 	static const char c_program_text[]=
@@ -66,11 +66,11 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest3)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
-U_TEST(BindingConstReferenceToNonconstReferenceTest5)
+U_TEST(ExpectedMutableReference_Test5)
 {
 	// Try mutate member.
 	static const char c_program_text[]=
@@ -90,11 +90,11 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest5)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
-U_TEST(BindingConstReferenceToNonconstReferenceTest6)
+U_TEST(ExpectedMutableReference_Test6)
 {
 	// Try mutate array member.
 	static const char c_program_text[]=
@@ -114,11 +114,11 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest6)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
-U_TEST(BindingConstReferenceToNonconstReferenceTest7)
+U_TEST(ExpectedMutableReference_Test7)
 {
 	// Try mutate member of member member.
 	static const char c_program_text[]=
@@ -139,11 +139,11 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest7)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
-U_TEST(BindingConstReferenceToNonconstReferenceTest8)
+U_TEST(ExpectedMutableReference_Test8)
 {
 	// Try call method with "mutable this" for field, inside "immutable this" method.
 	static const char c_program_text[]=
@@ -184,7 +184,7 @@ U_TEST(ChangeValueArg_Test0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
@@ -204,7 +204,7 @@ U_TEST(ChangeValueArg_Test1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
@@ -243,7 +243,7 @@ U_TEST(ImmutableClassField_Test0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
@@ -268,7 +268,7 @@ U_TEST(ImmutableClassField_Test1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
@@ -293,7 +293,7 @@ U_TEST(ImmutableClassField_Test2)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
@@ -319,7 +319,7 @@ U_TEST(ImmutableClassField_Test3)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 

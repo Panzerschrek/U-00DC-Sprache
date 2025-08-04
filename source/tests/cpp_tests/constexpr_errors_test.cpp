@@ -292,7 +292,7 @@ U_TEST( StaticAssertExpressionIsNotConstantTest1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
-U_TEST( ExpectedReferenceValue_ForConstexpr_Test0 )
+U_TEST( ExpectedMutableReference_ForConstexpr_Test0 )
 {
 	// Try mutate constexpr value.
 	static const char c_program_text[]=
@@ -310,15 +310,15 @@ U_TEST( ExpectedReferenceValue_ForConstexpr_Test0 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( build_result.errors.size() >= 3u );
 
-	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( build_result.errors[0u].src_loc.GetLine() == 6u );
-	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( build_result.errors[1u].src_loc.GetLine() == 7u );
-	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( build_result.errors[2u].src_loc.GetLine() == 8u );
 }
 
-U_TEST( ExpectedReferenceValue_ForConstexpr_Test1 )
+U_TEST( ExpectedMutableReference_ForConstexpr_Test1 )
 {
 	// Try mutate constexpr array.
 	static const char c_program_text[]=
@@ -336,11 +336,11 @@ U_TEST( ExpectedReferenceValue_ForConstexpr_Test1 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( build_result.errors.size() >= 3u );
 
-	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( build_result.errors[0u].src_loc.GetLine() == 6u );
-	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( build_result.errors[1u].src_loc.GetLine() == 7u );
-	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( build_result.errors[2u].src_loc.GetLine() == 8u );
 }
 

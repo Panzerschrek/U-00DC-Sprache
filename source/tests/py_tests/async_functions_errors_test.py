@@ -192,7 +192,7 @@ def ExpectedReferenceValue_ForAsyncFunctionReturn_Test0():
 	assert( HasError( errors_list, "ExpectedReferenceValue", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_ForAsyncFunctionReturn_Test0():
+def ExpectedMutableReference_ForAsyncFunctionReturn_Test0():
 	c_program_text= """
 		fn async Foo( i32& x ) : i32 &mut
 		{
@@ -201,7 +201,7 @@ def BindingConstReferenceToNonconstReference_ForAsyncFunctionReturn_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 4 ) )
 
 
 def NonEmptyYieldInAsyncFunction_Test0():

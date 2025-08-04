@@ -428,8 +428,8 @@ def DecomposedVariableIsImmutable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
 
 
 def DecomposedVariableIsImmutable_Test1():
@@ -445,9 +445,9 @@ def DecomposedVariableIsImmutable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 8 ) )
 
 
 def DecomposedVariableIsImmutable_Test2():
@@ -462,8 +462,8 @@ def DecomposedVariableIsImmutable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
 
 
 def DecomposedVariableIsImmutable_Test3():
@@ -479,9 +479,9 @@ def DecomposedVariableIsImmutable_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 8 ) )
 
 
 def DecomposedVariableIsImmutable_Test4():
@@ -497,8 +497,8 @@ def DecomposedVariableIsImmutable_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
 
 
 def DecomposedVariableIsImmutable_Test5():
@@ -515,9 +515,9 @@ def DecomposedVariableIsImmutable_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 8 ) )
 
 
 def DecomposedVariableIsImmutable_Test6():
@@ -533,8 +533,8 @@ def DecomposedVariableIsImmutable_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
 
 
 def DecomposedVariableIsImmutable_Test7():
@@ -550,8 +550,8 @@ def DecomposedVariableIsImmutable_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
 
 
 def ImmediateValueExpectedInDecomposeDeclaration_Test0():
@@ -1034,7 +1034,7 @@ def DecomposingNonFieldStructMember_Test2():
 	assert( HasError( errors_list, "DecomposingNonFieldStructMember", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test0():
+def ExpectedMutableReference_ForReferenceFieldDecompose_Test0():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1044,10 +1044,10 @@ def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test1():
+def ExpectedMutableReference_ForReferenceFieldDecompose_Test1():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1057,10 +1057,10 @@ def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test2():
+def ExpectedMutableReference_ForReferenceFieldDecompose_Test2():
 	c_program_text= """
 		fn Foo( S mut s )
 		{

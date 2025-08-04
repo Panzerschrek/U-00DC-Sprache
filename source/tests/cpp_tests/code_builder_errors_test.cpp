@@ -1677,7 +1677,7 @@ U_TEST(NoReturnInFunctionReturningNonVoidTest4)
 	U_TEST_ASSERT( build_result.errors.empty() );
 }
 
-U_TEST(ExpectedReferenceValueTest0)
+U_TEST(ExpectedMutableReferenceValueTest0)
 {
 	// Assign to non-reference value.
 	static const char c_program_text[]=
@@ -1693,11 +1693,11 @@ U_TEST(ExpectedReferenceValueTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
-U_TEST(ExpectedReferenceValueTest2)
+U_TEST(ExpectedMutableReferenceTest2)
 {
 	// Assign to value.
 	static const char c_program_text[]=
@@ -1713,11 +1713,11 @@ U_TEST(ExpectedReferenceValueTest2)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
-U_TEST(ExpectedReferenceValueTest3)
+U_TEST(ExpectedMutableReferenceTest3)
 {
 	// Assign to immutable value.
 	static const char c_program_text[]=
@@ -1734,11 +1734,11 @@ U_TEST(ExpectedReferenceValueTest3)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
-U_TEST(ExpectedReferenceValueTest4)
+U_TEST(ExpectedMutableReference4)
 {
 	// Assign to immutable argument.
 	static const char c_program_text[]=
@@ -1754,7 +1754,7 @@ U_TEST(ExpectedReferenceValueTest4)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
@@ -1837,11 +1837,11 @@ U_TEST(ExpectedReferenceValueTest8)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
-U_TEST(ExpectedReferenceValueTest9)
+U_TEST(ExpectedMutableReferenceeValueTest9)
 {
 	// Non "const reference" value used in compound assignment.
 	static const char c_program_text[]=
@@ -1857,7 +1857,7 @@ U_TEST(ExpectedReferenceValueTest9)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 

@@ -250,7 +250,7 @@ def TypesMismatch_InFunctionPointerCall_Test1():
 	assert( errors_list[0].src_loc.line == 6 )
 
 
-def BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0():
+def ExpectedMutableReference_InFunctionPointerCall_Test0():
 	c_program_text= """
 		fn a( i32&mut x ){}
 		fn Foo()
@@ -262,11 +262,11 @@ def BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "BindingConstReferenceToNonconstReference" )
+	assert( errors_list[0].error_code == "ExpectedMutableReference" )
 	assert( errors_list[0].src_loc.line == 7 )
 
 
-def ExpectedReferenceValue_InFunctionPointerCall_Test0():
+def ExpectedMutableReference_InFunctionPointerCall_Test0():
 	c_program_text= """
 		fn a( i32&mut x ){}
 		fn Foo()
@@ -277,7 +277,7 @@ def ExpectedReferenceValue_InFunctionPointerCall_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].error_code == "ExpectedMutableReference" )
 	assert( errors_list[0].src_loc.line == 6 )
 
 

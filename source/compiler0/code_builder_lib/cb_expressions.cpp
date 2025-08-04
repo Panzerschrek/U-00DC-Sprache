@@ -1138,15 +1138,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator )
 {
 	const VariablePtr v= BuildExpressionCodeEnsureVariable( reference_to_raw_pointer_operator.expression, names_scope, function_context );
-	if( v->value_type == ValueType::Value )
-	{
-		REPORT_ERROR( ValueIsNotReference, names_scope.GetErrors(), reference_to_raw_pointer_operator.src_loc );
-		return ErrorValue();
-	}
-	if( v->value_type == ValueType::ReferenceImut )
+	if( v->value_type != ValueType::ReferenceMut )
 	{
 		// Disable immutable reference to pointer conversion, because pointer dereference produces mutable value.
-		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), reference_to_raw_pointer_operator.src_loc );
+		REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), reference_to_raw_pointer_operator.src_loc );
 		return ErrorValue();
 	}
 
@@ -1608,7 +1603,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	if( resolved_variable->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), move_operator.src_loc );
+		REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), move_operator.src_loc );
 		return ErrorValue();
 	}
 
@@ -1703,7 +1698,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( expression_result->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), take_operator.src_loc );
+		REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), take_operator.src_loc );
 		return ErrorValue();
 	}
 	if( function_context.variables_state.HasOutgoingLinks( expression_result ) )
@@ -2686,7 +2681,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		if( l_var->value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
+			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
 			return ErrorValue();
 		}
 
@@ -4093,14 +4088,9 @@ Value CodeBuilder::DoCallFunction(
 
 			if( param.value_type == ValueType::ReferenceMut )
 			{
-				if( expr->value_type == ValueType::Value )
+				if( expr->value_type != ValueType::ReferenceMut )
 				{
-					REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
-					continue;
-				}
-				if( expr->value_type == ValueType::ReferenceImut )
-				{
-					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), src_loc );
+					REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
 					continue;
 				}
 

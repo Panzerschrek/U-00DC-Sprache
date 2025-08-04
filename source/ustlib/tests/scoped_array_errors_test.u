@@ -24,13 +24,13 @@ fn nomangle main() call_conv( "C" ) : i32
 	{ // "array_over_external_memory" preserves mutability - it doesn't allow to modify its elements if it isn't mutable.
 		alloca u64 mem[16s];
 		auto arr= unsafe( ust::array_over_external_memory</u64/>( mem, 16s, 9999u64 ) );
-		++arr[1s]; //##expect_error ExpectedReferenceValue
+		++arr[1s]; //##expect_error ExpectedMutableReference
 	}
 	{ // "array_over_external_memory" preserves mutability - it doesn't allow to modify its elements if it isn't mutable.
 		alloca u64 mem[16s];
 		auto arr= unsafe( ust::array_over_external_memory</u64/>( mem, 16s, 9999u64 ) );
 		auto range= arr.range();
-		--arr.front(); //##expect_error ExpectedReferenceValue
+		--arr.front(); //##expect_error ExpectedMutableReference
 	}
 	{ // "scoped_array" macro creates an immutable range object.
 		scoped_array f64 arr[ 256s ]( 0.0 );

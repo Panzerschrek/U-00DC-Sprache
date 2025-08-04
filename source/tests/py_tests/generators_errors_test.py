@@ -194,7 +194,7 @@ def Yield_ForNonCopyableValue_Test1():
 	tests_lib.build_program( c_program_text )
 
 
-def Yield_BindingConstReferenceToNonconstReference_Test0():
+def Yield_ExpectedMutableReference_Test0():
 	c_program_text= """
 		fn generator Foo(i32& x) : i32 &mut
 		{
@@ -203,7 +203,7 @@ def Yield_BindingConstReferenceToNonconstReference_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 4 ) )
 
 
 def Yield_ExpectedReferenceValue_Test0():
@@ -288,7 +288,7 @@ def IfCoroAdvanceForNonCoroutineValue_Test2():
 	assert( HasError( errors_list, "IfCoroAdvanceForNonCoroutineValue", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test0():
+def ExpectedMutableReferenceOrImmediateValue_For_IfCoroAdvance_Test0():
 	c_program_text= """
 		fn generator SomeGen() : i32;
 		fn Foo()
@@ -299,7 +299,7 @@ def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReferenceOrImmediateValue", 6 ) )
 
 
 def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test1():
@@ -314,7 +314,7 @@ def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test1():
 	tests_lib.build_program( c_program_text )
 
 
-def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test2():
+def ExpectedMutableReference_For_IfCoroAdvance_Test2():
 	c_program_text= """
 		fn generator SomeGen() : i32;
 		fn Foo()
@@ -325,7 +325,7 @@ def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test2():
 	tests_lib.build_program( c_program_text )
 
 
-def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test3():
+def ExpectedMutableReference_For_IfCoroAdvance_Test3():
 	c_program_text= """
 		fn generator SomeGen() : i32 &;
 		fn Foo()
@@ -336,7 +336,7 @@ def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test0():

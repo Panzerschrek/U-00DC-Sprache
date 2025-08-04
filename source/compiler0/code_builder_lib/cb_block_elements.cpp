@@ -317,9 +317,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
-			if( expression_result->value_type == ValueType::ReferenceImut && variable_reference->value_type == ValueType::ReferenceMut )
+			if( expression_result->value_type != ValueType::ReferenceMut && variable_reference->value_type == ValueType::ReferenceMut )
 			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), variable_declaration.src_loc );
+				REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), variable_declaration.src_loc );
 				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
@@ -412,15 +412,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
-		if( initializer_experrsion->value_type == ValueType::ReferenceImut && auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
-		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), auto_variable_declaration.src_loc );
-			function_context.variables_state.RemoveNode( variable_reference );
-			return BlockBuildInfo();
-		}
 		if( initializer_experrsion->value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), auto_variable_declaration.src_loc );
+			function_context.variables_state.RemoveNode( variable_reference );
+			return BlockBuildInfo();
+		}
+		if( initializer_experrsion->value_type != ValueType::ReferenceMut && auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
+		{
+			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), auto_variable_declaration.src_loc );
 			function_context.variables_state.RemoveNode( variable_reference );
 			return BlockBuildInfo();
 		}
@@ -974,9 +974,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.variables_state.RemoveNode( return_value_node );
 			return block_info;
 		}
-		if( expression_result->value_type == ValueType::ReferenceImut && function_context.function_type.return_value_type == ValueType::ReferenceMut )
+		if( expression_result->value_type != ValueType::ReferenceMut && function_context.function_type.return_value_type == ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), return_operator.src_loc );
+			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), return_operator.src_loc );
 		}
 
 		if( function_context.reference_notation_deduction_context != nullptr )
@@ -1090,7 +1090,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( range_for_operator.reference_modifier == ReferenceModifier::Reference )
 			{
 				if( range_for_operator.mutability_modifier == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
-					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), range_for_operator.src_loc );
+					REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), range_for_operator.src_loc );
 
 				variable_reference->llvm_value= CreateTupleElementGEP( function_context, *sequence_expression, element_index );
 
@@ -1599,9 +1599,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( with_operator.reference_modifier == ReferenceModifier::Reference )
 	{
-		if( expr->value_type == ValueType::ReferenceImut && variable_reference->value_type != ValueType::ReferenceImut )
+		if( expr->value_type == ValueType::ReferenceImut && variable_reference->value_type == ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), with_operator.src_loc );
+			REPORT_ERROR( ExpectedMutableReferenceOrImmediateValue, names_scope.GetErrors(), with_operator.src_loc );
 			function_context.variables_state.RemoveNode( variable_reference );
 			return BlockBuildInfo();
 		}
@@ -1868,7 +1868,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( coro_expr->value_type == ValueType::ReferenceImut )
 	{
-		REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), if_coro_advance.src_loc );
+		REPORT_ERROR( ExpectedMutableReferenceOrImmediateValue, names_scope.GetErrors(), if_coro_advance.src_loc );
 		return BlockBuildInfo();
 	}
 
@@ -2088,8 +2088,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			{
 				// Create reference to reference result of coroutine.
 
-				if( result_value_type == ValueType::ReferenceImut && variable_reference->value_type != ValueType::ReferenceImut )
-					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), if_coro_advance.src_loc );
+				if( result_value_type != ValueType::ReferenceMut && variable_reference->value_type != ValueType::ReferenceImut )
+					REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), if_coro_advance.src_loc );
 
 				variable_reference->llvm_value= coroutine_reference_result;
 
@@ -2735,7 +2735,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( l_var->value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), assignment_operator.src_loc );
+			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), assignment_operator.src_loc );
 			return BlockBuildInfo();
 		}
 		if( l_var->type != r_var->type )
@@ -2826,7 +2826,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( l_var->value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), compound_assignment_operator.src_loc );
+			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), compound_assignment_operator.src_loc );
 			return BlockBuildInfo();
 		}
 
@@ -3185,7 +3185,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 
 	if( variable->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
+		REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
 		return;
 	}
 
@@ -3535,7 +3535,7 @@ void CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 
 			if( !field->is_mutable && named_component->mutability_modifier == MutabilityModifier::Mutable )
 			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), named_component->src_loc );
+				REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), named_component->src_loc );
 				continue;
 			}
 

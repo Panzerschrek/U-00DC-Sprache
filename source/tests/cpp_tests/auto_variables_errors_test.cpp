@@ -133,7 +133,7 @@ U_TEST(ExpectedReferenceValueTest1)
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
-U_TEST(BindingConstReferenceToNonconstReferenceTest0)
+U_TEST(ExpectedMutableReference_Test0)
 {
 	// Bind immutable reference to mutable auto-reference.
 	static const char c_program_text[]=
@@ -150,7 +150,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 

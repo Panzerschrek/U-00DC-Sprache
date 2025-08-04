@@ -185,7 +185,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	}
 	else
 	{
-		REPORT_ERROR( ArrayInitializerForNonArray, names_scope.GetErrors(), initializer.src_loc );
+		REPORT_ERROR( SequenceInitializerForNonSequence, names_scope.GetErrors(), initializer.src_loc );
 		return nullptr;
 	}
 
@@ -1346,9 +1346,9 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 	U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
 
-	if( field.is_mutable && initializer_variable->value_type == ValueType::ReferenceImut )
+	if( field.is_mutable && initializer_variable->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), initializer_expression_src_loc );
+		REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), initializer_expression_src_loc );
 		return nullptr;
 	}
 

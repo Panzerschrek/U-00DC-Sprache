@@ -32,15 +32,10 @@ PROCESS_ERROR( UnreachableCode, "Unreachable code." )
 PROCESS_ERROR( UnusedName, "Unreferenced name \"{0}\". Use it or remove it." )
 PROCESS_ERROR( UselessExpressionRoot, "Root of the expression has no effect. Consider removing its parts without side-effects." )
 PROCESS_ERROR( NoReturnInFunctionReturningNonVoid, "Missing \"return\" in function, returning non-void." )
-PROCESS_ERROR( SwitchDuplicatedDefaultLabel, "Duplicated \"default\"." )
-PROCESS_ERROR( SwitchInvalidRange, "Invalid range from {0} to {1}. Second value must not be greater than first one." )
-PROCESS_ERROR( SwitchRangesOverlapping, "Switch range [{0}; {1}] overlaps with range [{2}; {3}]." )
-PROCESS_ERROR( SwitchUndhandledValue, "Value {0} is not handled in switch." )
-PROCESS_ERROR( SwitchUndhandledRange, "Values range [{0}; {1}] is not handled in switch." )
-PROCESS_ERROR( SwitchUnreachableDefaultBranch, "Switch default branch is unreachable - all other cases handle all possible values." )
 PROCESS_ERROR( ExpectedInitializer, "Expected initializer or constructor for \"{0}\"." )
-PROCESS_ERROR( ExpectedReferenceValue, "Expected reference value." )
-PROCESS_ERROR( BindingConstReferenceToNonconstReference, "Binding constant reference to non-constant reference." )
+PROCESS_ERROR( ExpectedReferenceValue, "Expected reference value, got immediate value." )
+PROCESS_ERROR( ExpectedMutableReference, "Expected mutable reference, got immutable reference or immediate value." )
+PROCESS_ERROR( ExpectedMutableReferenceOrImmediateValue, "Expected mutable reference or immediate value, got immutable reference." )
 PROCESS_ERROR( ExpectedVariable, "Expected variable, got \"{0}\"." )
 PROCESS_ERROR( MutableGlobalReferencesAreNotAllowed, "Mutable global references are not allowed." )
 PROCESS_ERROR( InvalidFunctionArgumentCount, "Invalid function argument count. Required {0}, got {1}." )
@@ -83,7 +78,7 @@ PROCESS_ERROR( ArrayIndexOutOfBounds, "Array index out of bounds. Index is {0}, 
 PROCESS_ERROR( TupleIndexOutOfBounds, "Tuple index out of bounds. Index is {0}, but tuple contains only {1} elements." )
 
 // Initializers errors.
-PROCESS_ERROR( ArrayInitializerForNonArray, "Sequence initializer for nor array or tuple." )
+PROCESS_ERROR( SequenceInitializerForNonSequence, "Sequence initializer for nor array or tuple." )
 PROCESS_ERROR( ArrayInitializersCountMismatch, "Array initializers count mismatch. Expected {0}, got {1}." )
 PROCESS_ERROR( TupleInitializersCountMismatch, "Tuple initializers count mismatch. Expected {0}, got {1}." )
 PROCESS_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, "Fundamental types have constructors with exactly one parameter." )
@@ -184,6 +179,14 @@ PROCESS_ERROR( InvalidFirstParamValueTypeForAssignmentLikeOperator, "Invalid val
 // Enums
 PROCESS_ERROR( UnderlyingTypeForEnumIsTooSmall, "Underlying type for enum is too small - enum max value is {0}, but type max value is {1}." )
 
+// Switch operator
+PROCESS_ERROR( SwitchDuplicatedDefaultLabel, "Duplicated \"default\"." )
+PROCESS_ERROR( SwitchInvalidRange, "Invalid range from {0} to {1}. Second value must not be greater than first one." )
+PROCESS_ERROR( SwitchRangesOverlapping, "Switch range [{0}; {1}] overlaps with range [{2}; {3}]." )
+PROCESS_ERROR( SwitchUndhandledValue, "Value {0} is not handled in switch." )
+PROCESS_ERROR( SwitchUndhandledRange, "Values range [{0}; {1}] is not handled in switch." )
+PROCESS_ERROR( SwitchUnreachableDefaultBranch, "Switch default branch is unreachable - all other cases handle all possible values." )
+
 // Inheritance errors
 PROCESS_ERROR( CanNotDeriveFromThisType, "Can not derive from \"{0}\"." )
 PROCESS_ERROR( DuplicatedParentClass, "Parent class \"{0}\" is duplicated." )
@@ -248,7 +251,6 @@ PROCESS_ERROR( ThisMethodCanNotBeUnsafe, "This method can not be unsafe." )
 PROCESS_ERROR( UnsafeExpressionInGlobalContext, "Unsafe expression in global context." )
 
 // Raw pointers
-PROCESS_ERROR( ValueIsNotReference, "Value is not a reference. Expected mutable or immutable reference, got immediate value." )
 PROCESS_ERROR( ValueIsNotPointer, "Value of type \"{0}\" is not a pointer." )
 PROCESS_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, "Raw pointer to reference conversion outside unsafe block or unsafe expression." )
 PROCESS_ERROR( RawPointerArithmeticOutsideUnsafeBlock, "Raw pointer airthmetic outside unsafe block or unsafe expression." )

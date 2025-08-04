@@ -140,9 +140,9 @@ std::pair<llvm::Value*, llvm::Constant*> CodeBuilder::InitializeLambdaField(
 			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
 			return std::make_pair( field_address, nullptr );
 		}
-		if( field.is_mutable && variable->value_type == ValueType::ReferenceImut )
+		if( field.is_mutable && variable->value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), src_loc );
+			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
 			return std::make_pair( field_address, nullptr );
 		}
 
@@ -965,7 +965,7 @@ Value CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 
 	if( resolved_variable->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
+		REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
 		return ErrorValue();
 	}
 	if( function_context.variables_state.HasOutgoingLinks( resolved_variable ) )
