@@ -312,7 +312,7 @@ def CharArrayConcatenationResultIsValue_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 4 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 4 ) )
 
 
 def CharArrayConcatenationReferenceProtection_Test0():

@@ -1,6 +1,6 @@
 from py_tests_common import *
 
-def ValueIsNotReference_Test0():
+def ExpectedMutableReference_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -8,10 +8,10 @@ def ValueIsNotReference_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "ValueIsNotReference", 4 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 4 ) )
 
 
-def ValueIsNotReference_Test1():
+def ExpectedMutableReference_Test1():
 	c_program_text= """
 		fn Foo()
 		{
@@ -20,10 +20,10 @@ def ValueIsNotReference_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "ValueIsNotReference", 5 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 5 ) )
 
 
-def ValueIsNotReference_Test2():
+def ExpectedMutableReference_Test2():
 	c_program_text= """
 		struct S{}
 		fn Foo()
@@ -32,10 +32,10 @@ def ValueIsNotReference_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "ValueIsNotReference", 5 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 5 ) )
 
 
-def ValueIsNotReference_Test3():
+def ExpectedMutableReference_Test3():
 	c_program_text= """
 		fn Bar() : tup[ f32, bool ]
 		{
@@ -48,10 +48,10 @@ def ValueIsNotReference_Test3():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "ValueIsNotReference", 9 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 9 ) )
 
 
-def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test0():
+def ExpectedMutableReference_ForReferenceToRawPointerConversion_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -60,10 +60,10 @@ def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 5 ) )
 
 
-def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test1():
+def ExpectedMutableReference_ForReferenceToRawPointerConversion_Test1():
 	c_program_text= """
 		fn Foo()
 		{
@@ -72,10 +72,10 @@ def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test1():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 5 ) )
 
 
-def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test2():
+def ExpectedMutableReference_ForReferenceToRawPointerConversion_Test2():
 	c_program_text= """
 		struct S{ i32 x; f32 y; }
 		fn Foo()
@@ -85,7 +85,7 @@ def ExpectedReferenceValue_ForReferenceToRawPointerConversion_Test2():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 6 ) )
 
 
 def RawPointerToReferenceConversionOutsideUnsafeBlock_Test0():
@@ -422,7 +422,7 @@ def CompoundAssignmentErrors_ForRawPointers_Test0():
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 5 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 5 ) )
 
 
 def CompoundAssignmentErrors_ForRawPointers_Test1():

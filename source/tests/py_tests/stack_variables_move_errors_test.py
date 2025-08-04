@@ -1,7 +1,7 @@
 from py_tests_common import *
 
 
-def ExpectedReferenceValue_ForMove_Test0():
+def ExpectedMutableReference_ForMove_Test0():
 	c_program_text= """
 		fn Foo()
 		{
@@ -11,11 +11,11 @@ def ExpectedReferenceValue_ForMove_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].error_code == "ExpectedMutableReference" )
 	assert( errors_list[0].src_loc.line == 5 )
 
 
-def ExpectedReferenceValue_ForMove_Test1():
+def ExpectedMutableReference_ForMove_Test1():
 	c_program_text= """
 		fn Foo( i32 imut x )
 		{
@@ -24,11 +24,11 @@ def ExpectedReferenceValue_ForMove_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ExpectedReferenceValue" )
+	assert( errors_list[0].error_code == "ExpectedMutableReference" )
 	assert( errors_list[0].src_loc.line == 4 )
 
 
-def ExpectedReferenceValue_ForMove_Test2():
+def ExpectedMutableReference_ForMove_Test2():
 	c_program_text= """
 		auto constexpr pi= 3.141592535;
 		fn Foo()

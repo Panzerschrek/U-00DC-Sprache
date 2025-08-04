@@ -184,7 +184,7 @@ U_TEST(ChangeValueArg_Test0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
@@ -204,7 +204,7 @@ U_TEST(ChangeValueArg_Test1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
@@ -243,7 +243,7 @@ U_TEST(ImmutableClassField_Test0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
@@ -268,7 +268,7 @@ U_TEST(ImmutableClassField_Test1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
@@ -293,7 +293,7 @@ U_TEST(ImmutableClassField_Test2)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
@@ -319,7 +319,7 @@ U_TEST(ImmutableClassField_Test3)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedMutableReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 

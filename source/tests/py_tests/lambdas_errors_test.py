@@ -558,7 +558,7 @@ def LambdaModifyCapturedVariable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 8 ) )
 
 
 def LambdaModifyCapturedVariable_Test1():
@@ -576,7 +576,7 @@ def LambdaModifyCapturedVariable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 9 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 9 ) )
 
 
 def LambdaModifyCapturedVariable_Test2():
@@ -594,7 +594,7 @@ def LambdaModifyCapturedVariable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 9 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 9 ) )
 
 
 def LambdaModifyCapturedVariable_Test3():
@@ -612,7 +612,7 @@ def LambdaModifyCapturedVariable_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 9 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 9 ) )
 
 
 def LambdaModifyCapturedVariable_Test4():
@@ -630,7 +630,7 @@ def LambdaModifyCapturedVariable_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 9 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 9 ) )
 
 
 def LambdaModifyCapturedVariable_Test5():
@@ -649,7 +649,7 @@ def LambdaModifyCapturedVariable_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 10 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 10 ) )
 
 
 def LambdaModifyCapturedVariable_Test5():
@@ -666,7 +666,7 @@ def LambdaModifyCapturedVariable_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 8 ) )
 
 
 def LambdaMoveCapturedVariable_Test0():
@@ -683,7 +683,7 @@ def LambdaMoveCapturedVariable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedVariable", 8 ) or HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 8 ) or HasError( errors_list, "ExpectedMutableReference", 8 ) )
 
 
 def LambdaMoveCapturedVariable_Test1():
@@ -734,7 +734,7 @@ def LambdaMoveCapturedVariable_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedVariable", 8 ) or HasError( errors_list, "ExpectedReferenceValue", 8 ) )
+	assert( HasError( errors_list, "ExpectedVariable", 8 ) or HasError( errors_list, "ExpectedMutableReference", 8 ) )
 
 
 def LambdaMoveCapturedVariable_Test4():
@@ -1586,7 +1586,7 @@ def LambdaCapturedVariableMoveErrors_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "ExpectedReferenceValue", 7 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 7 ) )
 
 
 def TypesMismtach_ForAutoReturnLambda_Test0():

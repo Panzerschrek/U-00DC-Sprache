@@ -2735,7 +2735,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( l_var->value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), assignment_operator.src_loc );
+			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), assignment_operator.src_loc );
 			return BlockBuildInfo();
 		}
 		if( l_var->type != r_var->type )
@@ -2826,7 +2826,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( l_var->value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), compound_assignment_operator.src_loc );
+			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), compound_assignment_operator.src_loc );
 			return BlockBuildInfo();
 		}
 
@@ -3185,7 +3185,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 
 	if( variable->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
+		REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
 		return;
 	}
 

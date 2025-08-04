@@ -965,7 +965,7 @@ Value CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 
 	if( resolved_variable->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
+		REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
 		return ErrorValue();
 	}
 	if( function_context.variables_state.HasOutgoingLinks( resolved_variable ) )
