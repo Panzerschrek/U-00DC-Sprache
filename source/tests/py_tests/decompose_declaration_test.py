@@ -1034,7 +1034,7 @@ def DecomposingNonFieldStructMember_Test2():
 	assert( HasError( errors_list, "DecomposingNonFieldStructMember", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test0():
+def ExpectedMutableReference_ForReferenceFieldDecompose_Test0():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1044,10 +1044,10 @@ def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test1():
+def ExpectedMutableReference_ForReferenceFieldDecompose_Test1():
 	c_program_text= """
 		fn Foo( S mut s )
 		{
@@ -1057,10 +1057,10 @@ def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 4 ) )
+	assert( HasError( errors_list, "ExpectedMutableReference", 4 ) )
 
 
-def BindingConstReferenceToNonconstReference_ForReferenceFieldDecompose_Test2():
+def ExpectedMutableReference_ForReferenceFieldDecompose_Test2():
 	c_program_text= """
 		fn Foo( S mut s )
 		{

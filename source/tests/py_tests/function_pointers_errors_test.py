@@ -250,7 +250,7 @@ def TypesMismatch_InFunctionPointerCall_Test1():
 	assert( errors_list[0].src_loc.line == 6 )
 
 
-def BindingConstReferenceToNonconstReference_InFunctionPointerCall_Test0():
+def ExpectedMutableReference_InFunctionPointerCall_Test0():
 	c_program_text= """
 		fn a( i32&mut x ){}
 		fn Foo()

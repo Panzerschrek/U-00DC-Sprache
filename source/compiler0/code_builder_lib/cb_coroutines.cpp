@@ -538,9 +538,9 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), src_loc );
 				return;
 			}
-			if( expression_result->value_type == ValueType::ReferenceImut && coroutine_type_description->return_value_type == ValueType::ReferenceMut )
+			if( expression_result->value_type != ValueType::ReferenceMut && coroutine_type_description->return_value_type == ValueType::ReferenceMut )
 			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), src_loc );
+				REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
 			}
 
 			CheckAsyncReturnReferenceIsAllowed( names_scope, function_context, *coroutine_type_description, expression_result, src_loc );
@@ -661,9 +661,9 @@ void CodeBuilder::AsyncReturn( NamesScope& names_scope, FunctionContext& functio
 			function_context.variables_state.RemoveNode( return_value_node );
 			return;
 		}
-		if( expression_result->value_type == ValueType::ReferenceImut && coroutine_type_description->return_value_type == ValueType::ReferenceMut )
+		if( expression_result->value_type != ValueType::ReferenceMut && coroutine_type_description->return_value_type == ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), src_loc );
+			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), src_loc );
 		}
 
 		CheckAsyncReturnReferenceIsAllowed( names_scope, function_context, *coroutine_type_description, expression_result, src_loc );
