@@ -288,7 +288,7 @@ def IfCoroAdvanceForNonCoroutineValue_Test2():
 	assert( HasError( errors_list, "IfCoroAdvanceForNonCoroutineValue", 4 ) )
 
 
-def ExpectedMutableReference_For_IfCoroAdvance_Test0():
+def ExpectedMutableReferenceOrImmediateValue_For_IfCoroAdvance_Test0():
 	c_program_text= """
 		fn generator SomeGen() : i32;
 		fn Foo()
@@ -299,7 +299,7 @@ def ExpectedMutableReference_For_IfCoroAdvance_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "BindingConstReferenceToNonconstReference", 6 ) )
+	assert( HasError( errors_list, "ExpectedMutableReferenceOrImmediateValue", 6 ) )
 
 
 def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test1():

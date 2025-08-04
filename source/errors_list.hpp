@@ -41,7 +41,7 @@ PROCESS_ERROR( SwitchUnreachableDefaultBranch, "Switch default branch is unreach
 PROCESS_ERROR( ExpectedInitializer, "Expected initializer or constructor for \"{0}\"." )
 PROCESS_ERROR( ExpectedReferenceValue, "Expected reference value, got immediate value." )
 PROCESS_ERROR( ExpectedMutableReference, "Expected mutable reference, got immutable reference or immediate value." )
-PROCESS_ERROR( BindingConstReferenceToNonconstReference, "Binding constant reference to non-constant reference." )
+PROCESS_ERROR( ExpectedMutableReferenceOrImmediateValue, "Expected mutable reference or immediate value, got immutable reference." )
 PROCESS_ERROR( ExpectedVariable, "Expected variable, got \"{0}\"." )
 PROCESS_ERROR( MutableGlobalReferencesAreNotAllowed, "Mutable global references are not allowed." )
 PROCESS_ERROR( InvalidFunctionArgumentCount, "Invalid function argument count. Required {0}, got {1}." )

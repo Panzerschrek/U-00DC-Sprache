@@ -1601,8 +1601,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		if( expr->value_type == ValueType::ReferenceImut && variable_reference->value_type == ValueType::ReferenceMut )
 		{
-			// TODO - use other error code.
-			REPORT_ERROR( ExpectedMutableReference, names_scope.GetErrors(), with_operator.src_loc );
+			REPORT_ERROR( ExpectedMutableReferenceOrImmediateValue, names_scope.GetErrors(), with_operator.src_loc );
 			function_context.variables_state.RemoveNode( variable_reference );
 			return BlockBuildInfo();
 		}
@@ -1869,7 +1868,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( coro_expr->value_type == ValueType::ReferenceImut )
 	{
-		REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope.GetErrors(), if_coro_advance.src_loc );
+		REPORT_ERROR( ExpectedMutableReferenceOrImmediateValue, names_scope.GetErrors(), if_coro_advance.src_loc );
 		return BlockBuildInfo();
 	}
 
