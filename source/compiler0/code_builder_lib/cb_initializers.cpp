@@ -185,7 +185,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	}
 	else
 	{
-		REPORT_ERROR( ArrayInitializerForNonArray, names_scope.GetErrors(), initializer.src_loc );
+		REPORT_ERROR( SequenceInitializerForNonSequence, names_scope.GetErrors(), initializer.src_loc );
 		return nullptr;
 	}
 

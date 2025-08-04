@@ -346,7 +346,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		return LLVMValueRef::Null;
 	}
 
-	REPORT_ERROR( ArrayInitializerForNonArray, names_scope, sequence_initializer.src_loc )
+	REPORT_ERROR( SequenceInitializerForNonSequence, names_scope, sequence_initializer.src_loc )
 	return LLVMValueRef::Null;
 }
 

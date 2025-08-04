@@ -78,7 +78,7 @@ PROCESS_ERROR( ArrayIndexOutOfBounds, "Array index out of bounds. Index is {0}, 
 PROCESS_ERROR( TupleIndexOutOfBounds, "Tuple index out of bounds. Index is {0}, but tuple contains only {1} elements." )
 
 // Initializers errors.
-PROCESS_ERROR( ArrayInitializerForNonArray, "Sequence initializer for nor array or tuple." )
+PROCESS_ERROR( SequenceInitializerForNonSequence, "Sequence initializer for nor array or tuple." )
 PROCESS_ERROR( ArrayInitializersCountMismatch, "Array initializers count mismatch. Expected {0}, got {1}." )
 PROCESS_ERROR( TupleInitializersCountMismatch, "Tuple initializers count mismatch. Expected {0}, got {1}." )
 PROCESS_ERROR( FundamentalTypesHaveConstructorsWithExactlyOneParameter, "Fundamental types have constructors with exactly one parameter." )

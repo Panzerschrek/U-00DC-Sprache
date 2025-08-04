@@ -132,7 +132,7 @@ U_TEST(ExpectedInitializerTest5)
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
-U_TEST(ArrayInitializerForNonArrayTest0)
+U_TEST(SequenceInitializerForNonSequenceTest0)
 {
 	// Array initializer for fundamental type.
 	static const char c_program_text[]=
@@ -148,11 +148,11 @@ U_TEST(ArrayInitializerForNonArrayTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializerForNonArray );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::SequenceInitializerForNonSequence );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
-U_TEST(ArrayInitializerForNonArrayTest1)
+U_TEST(SequenceInitializerForNonSequenceTest1)
 {
 	// Array initializer for structes.
 	static const char c_program_text[]=
@@ -169,7 +169,7 @@ U_TEST(ArrayInitializerForNonArrayTest1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArrayInitializerForNonArray );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::SequenceInitializerForNonSequence );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
