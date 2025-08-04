@@ -32,12 +32,6 @@ PROCESS_ERROR( UnreachableCode, "Unreachable code." )
 PROCESS_ERROR( UnusedName, "Unreferenced name \"{0}\". Use it or remove it." )
 PROCESS_ERROR( UselessExpressionRoot, "Root of the expression has no effect. Consider removing its parts without side-effects." )
 PROCESS_ERROR( NoReturnInFunctionReturningNonVoid, "Missing \"return\" in function, returning non-void." )
-PROCESS_ERROR( SwitchDuplicatedDefaultLabel, "Duplicated \"default\"." )
-PROCESS_ERROR( SwitchInvalidRange, "Invalid range from {0} to {1}. Second value must not be greater than first one." )
-PROCESS_ERROR( SwitchRangesOverlapping, "Switch range [{0}; {1}] overlaps with range [{2}; {3}]." )
-PROCESS_ERROR( SwitchUndhandledValue, "Value {0} is not handled in switch." )
-PROCESS_ERROR( SwitchUndhandledRange, "Values range [{0}; {1}] is not handled in switch." )
-PROCESS_ERROR( SwitchUnreachableDefaultBranch, "Switch default branch is unreachable - all other cases handle all possible values." )
 PROCESS_ERROR( ExpectedInitializer, "Expected initializer or constructor for \"{0}\"." )
 PROCESS_ERROR( ExpectedReferenceValue, "Expected reference value, got immediate value." )
 PROCESS_ERROR( ExpectedMutableReference, "Expected mutable reference, got immutable reference or immediate value." )
@@ -184,6 +178,14 @@ PROCESS_ERROR( InvalidFirstParamValueTypeForAssignmentLikeOperator, "Invalid val
 
 // Enums
 PROCESS_ERROR( UnderlyingTypeForEnumIsTooSmall, "Underlying type for enum is too small - enum max value is {0}, but type max value is {1}." )
+
+// Switch operator
+PROCESS_ERROR( SwitchDuplicatedDefaultLabel, "Duplicated \"default\"." )
+PROCESS_ERROR( SwitchInvalidRange, "Invalid range from {0} to {1}. Second value must not be greater than first one." )
+PROCESS_ERROR( SwitchRangesOverlapping, "Switch range [{0}; {1}] overlaps with range [{2}; {3}]." )
+PROCESS_ERROR( SwitchUndhandledValue, "Value {0} is not handled in switch." )
+PROCESS_ERROR( SwitchUndhandledRange, "Values range [{0}; {1}] is not handled in switch." )
+PROCESS_ERROR( SwitchUnreachableDefaultBranch, "Switch default branch is unreachable - all other cases handle all possible values." )
 
 // Inheritance errors
 PROCESS_ERROR( CanNotDeriveFromThisType, "Can not derive from \"{0}\"." )
