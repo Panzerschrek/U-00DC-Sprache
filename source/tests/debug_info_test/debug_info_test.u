@@ -403,6 +403,49 @@ fn DecomposeDeclarationTest()
 	}
 }
 
+fn CallingConventionDefault( i32 x, f32 y, S0 s0 ) call_conv( "default" )
+{
+	return;
+}
+
+fn CallingConventionC( i32 x, f32 y, S0 s0 ) call_conv( "C" )
+{
+	return;
+}
+
+fn CallingConventionFast( i32 x, f32 y, S0 s0 ) call_conv( "fast" )
+{
+	return;
+}
+
+fn CallingConventionCold( i32 x, f32 y, S0 s0 ) call_conv( "cold" )
+{
+	return;
+}
+
+fn CallingConventionSystem( i32 x, f32 y, S0 s0 ) call_conv( "system" )
+{
+	return;
+}
+
+fn CallingConventionsTest()
+{
+	var S0 s0{ .x= 123, .y= -67.5f };
+	CallingConventionDefault( 7534, 0.77f, s0 );
+	CallingConventionC( 7534, 0.77f, s0 );
+	CallingConventionFast( 7534, 0.77f, s0 );
+	CallingConventionCold( 7534, 0.77f, s0 );
+	CallingConventionSystem( 7534, 0.77f, s0 );
+
+	auto p0= CallingConventionDefault;
+	auto p1= CallingConventionC;
+	auto p2= CallingConventionFast;
+	auto p3= CallingConventionCold;
+	auto p4= CallingConventionSystem;
+
+	return;
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	FundamentalTypesTest();
@@ -432,5 +475,6 @@ fn nomangle main() call_conv( "C" ) : i32
 	MixinsTest();
 	AllocaTest();
 	DecomposeDeclarationTest();
+	CallingConventionsTest();
 	return 0;
 }
