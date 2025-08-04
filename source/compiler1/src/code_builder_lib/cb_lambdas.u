@@ -176,9 +176,9 @@ fn CodeBuilder::InitializeLambdaField(
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
 			return ust::make_tuple( field_address, LLVMValueRef::Null );
 		}
-		if( field.is_mutable && v.value_type == ValueType::ReferenceImut )
+		if( field.is_mutable && v.value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
+			REPORT_ERROR( ExpectedMutableReference, names_scope, src_loc )
 			return ust::make_tuple( field_address, LLVMValueRef::Null );
 		}
 
@@ -1188,7 +1188,7 @@ fn CodeBuilder::LambdaPreprocessingHandleCapturedVariableMove(
 
 	if( resolved_variable.value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope, resolved_variable.src_loc )
+		REPORT_ERROR( ExpectedMutableReference, names_scope, resolved_variable.src_loc )
 		return ErrorValue();
 	}
 	if( function_context.references_graph.NodeIsMoved( resolved_variable_ptr ) )

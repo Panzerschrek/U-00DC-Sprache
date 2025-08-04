@@ -564,7 +564,7 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 				}
 				if( return_value_type == ValueType::ReferenceMut && expr.value_type != ValueType::ReferenceMut )
 				{
-					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
+					REPORT_ERROR( ExpectedMutableReference, names_scope, src_loc )
 				}
 
 				CheckAsyncReturnReferenceIsAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );
@@ -694,7 +694,7 @@ fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionConte
 		}
 		if( return_value_type == ValueType::ReferenceMut && expr.value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
+			REPORT_ERROR( ExpectedMutableReference, names_scope, src_loc )
 		}
 
 		CheckAsyncReturnReferenceIsAllowed( names_scope, function_context, coroutine_type_description, expr_ptr, src_loc );

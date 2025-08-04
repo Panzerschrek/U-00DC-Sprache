@@ -314,9 +314,9 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 			function_context.references_graph.RemoveNode( variable_reference );
 			return;
 		}
-		if( is_mutable && expression_result.value_type == ValueType::ReferenceImut )
+		if( is_mutable && expression_result.value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, variable_declaration.src_loc )
+			REPORT_ERROR( ExpectedMutableReference, names_scope, variable_declaration.src_loc )
 			function_context.references_graph.RemoveNode( variable_reference );
 			return;
 		}
@@ -416,7 +416,7 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 		}
 		if( is_mutable && expr.value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, auto_variable_declaration.src_loc )
+			REPORT_ERROR( ExpectedMutableReference, names_scope, auto_variable_declaration.src_loc )
 			function_context.references_graph.RemoveNode( variable_reference );
 			return;
 		}
@@ -1025,7 +1025,7 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 		}
 		if( function_context.function_type.return_value_type == ValueType::ReferenceMut && expr.value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, return_operator.src_loc )
+			REPORT_ERROR( ExpectedMutableReference, names_scope, return_operator.src_loc )
 		}
 		if( expr.value_type == ValueType::Value )
 		{
@@ -1135,7 +1135,7 @@ fn CodeBuilder::BuildAssignmentOperatorImpl( mut this, NamesScopePtr& names_scop
 		}
 		if( l.value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope, assignment_operator.src_loc )
+			REPORT_ERROR( ExpectedMutableReference, names_scope, assignment_operator.src_loc )
 			return;
 		}
 		function_context.references_graph.EnsureHasNoOutgoingLinks( l_ptr, names_scope, assignment_operator.src_loc );
@@ -1187,7 +1187,7 @@ fn CodeBuilder::BuildCompoundAssignmentOperatorImpl( mut this, NamesScopePtr& na
 		var VariableLite l_var= l_var_ptr;
 		if( l_var.value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope, compound_assignment_operator.src_loc )
+			REPORT_ERROR( ExpectedMutableReference, names_scope, compound_assignment_operator.src_loc )
 			return;
 		}
 		function_context.references_graph.EnsureHasNoOutgoingLinks( l_var_ptr, names_scope, compound_assignment_operator.src_loc );
@@ -1447,7 +1447,7 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 	if( coro_expr.value_type == ValueType::ReferenceImut )
 	{
-		REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, if_coro_advance_operator.src_loc )
+		REPORT_ERROR( ExpectedMutableReferenceOrImmediateValue, names_scope, if_coro_advance_operator.src_loc )
 		return BlockElementBuildInfo();
 	}
 
@@ -1666,9 +1666,9 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 				{
 					// Create reference to reference result of coroutine.
 
-					if( result_value_type == ValueType::ReferenceImut && variable_reference.lock_imut().deref().value_type != ValueType::ReferenceImut )
+					if( result_value_type != ValueType::ReferenceMut && variable_reference.lock_imut().deref().value_type != ValueType::ReferenceImut )
 					{
-						REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, if_coro_advance_operator.src_loc )
+						REPORT_ERROR( ExpectedMutableReference, names_scope, if_coro_advance_operator.src_loc )
 					}
 
 					with( mut lock : variable_reference.lock_mut() )
@@ -2572,7 +2572,7 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 					{
 						if( is_mutable && sequence_expression.value_type != ValueType::ReferenceMut )
 						{
-							REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, range_for_operator.src_loc )
+							REPORT_ERROR( ExpectedMutableReference, names_scope, range_for_operator.src_loc )
 						}
 
 						with( mut lock : variable_reference.lock_mut() )
@@ -2974,7 +2974,7 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 	{
 		if( is_mutable && expr.value_type == ValueType::ReferenceImut )
 		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, with_operator.src_loc )
+			REPORT_ERROR( ExpectedMutableReferenceOrImmediateValue, names_scope, with_operator.src_loc )
 			function_context.references_graph.RemoveNode( variable_reference );
 			return BlockElementBuildInfo();
 		}
@@ -3407,7 +3407,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 
 	if( variable.value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
+		REPORT_ERROR( ExpectedMutableReference, names_scope, src_loc )
 		return;
 	}
 	function_context.references_graph.EnsureHasNoOutgoingLinks( variable_ptr, names_scope, src_loc );
@@ -3818,7 +3818,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 
 			if( !field.is_mutable && named_component.mutability_modifier == Synt::MutabilityModifier::Mutable )
 			{
-				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, named_component.src_loc )
+				REPORT_ERROR( ExpectedMutableReference, names_scope, named_component.src_loc )
 				continue;
 			}
 

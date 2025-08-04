@@ -1212,7 +1212,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( reference.value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope, move_operator.src_loc )
+		REPORT_ERROR( ExpectedMutableReference, names_scope, move_operator.src_loc )
 		return ErrorValue();
 	}
 	if( function_context.references_graph.NodeIsMoved( variable_reference_ptr ) )
@@ -1293,7 +1293,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( variable_lock.deref().value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope, take_operator.src_loc )
+		REPORT_ERROR( ExpectedMutableReference, names_scope, take_operator.src_loc )
 		return ErrorValue();
 	}
 	if( function_context.references_graph.HasOutgoingLinks( variable_ptr ) )
@@ -1600,15 +1600,10 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	auto v_lock= v_ptr.lock_imut();
 	var Variable& v= v_lock.deref();
 
-	if( v.value_type == ValueType::Value )
-	{
-		REPORT_ERROR( ValueIsNotReference, names_scope, reference_to_raw_pointer_operator.src_loc )
-		return ErrorValue();
-	}
-	if( v.value_type == ValueType::ReferenceImut )
+	if( v.value_type != ValueType::ReferenceMut )
 	{
 		// Disable immutable reference to pointer conversion, because pointer dereference produces mutable value.
-		REPORT_ERROR( ExpectedReferenceValue, names_scope, reference_to_raw_pointer_operator.src_loc )
+		REPORT_ERROR( ExpectedMutableReference, names_scope, reference_to_raw_pointer_operator.src_loc )
 		return ErrorValue();
 	}
 
@@ -3920,7 +3915,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		}
 		if( l_var.value_type != ValueType::ReferenceMut )
 		{
-			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
+			REPORT_ERROR( ExpectedMutableReference, names_scope, src_loc )
 			return ErrorValue();
 		}
 
@@ -4683,16 +4678,9 @@ fn CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			if( param.value_type == ValueType::ReferenceMut )
+			if( param.value_type == ValueType::ReferenceMut && arg.value_type != ValueType::ReferenceMut )
 			{
-				if( arg.value_type == ValueType::Value )
-				{
-					REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
-				}
-				else if( arg.value_type != ValueType::ReferenceMut )
-				{
-					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, src_loc )
-				}
+				REPORT_ERROR( ExpectedMutableReference, names_scope, src_loc )
 			}
 			if( arg.t != expected_arg_type && !arg.t.ReferenceIsConvertibleTo( expected_arg_type ) )
 			{
