@@ -42,7 +42,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 	{ // optional saves mutability.
 		var ust::optional</ i32 /> imut opt(0);
-		opt.try_deref()= 0; //##expect_error ExpectedReferenceValue
+		opt.try_deref()= 0; //##expect_error ExpectedMutableReference
 	}
 	{ // as_ref creates value linked with original optional
 		var ust::optional</ i32 /> mut opt(12);

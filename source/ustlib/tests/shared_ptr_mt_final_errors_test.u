@@ -24,7 +24,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 	{ // Can not modify value
 		var IntPtr mut ptr(0);
-		++ptr.deref(); //##expect_error ExpectedReferenceValue
+		++ptr.deref(); //##expect_error ExpectedMutableReference
 	}
 	return 0;
 }

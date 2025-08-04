@@ -33,7 +33,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 	{ // Can't modify stored value using "imut" reference to "any".
 		var ust::any a( 1.0f );
-		a.try_get</f32/>() *= 3.5f; //##expect_error ExpectedReferenceValue
+		a.try_get</f32/>() *= 3.5f; //##expect_error ExpectedMutableReference
 	}
 	{ // Can't modify stored value using "imut" reference to "any".
 		var ust::any a( 1.0f );

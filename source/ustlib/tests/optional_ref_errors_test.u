@@ -19,7 +19,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	{
 		auto mut x= 0;
 		var IntRefImut ref(x);
-		++ref.try_deref(); //##expect_error ExpectedReferenceValue
+		++ref.try_deref(); //##expect_error ExpectedMutableReference
 	}
 	{
 		auto x= 0;

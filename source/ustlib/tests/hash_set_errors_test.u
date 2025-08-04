@@ -20,7 +20,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		s.insert( 454u );
 
 		auto i= s.iter();
-		i.first().try_deref() *= 2u; //##expect_error ExpectedReferenceValue
+		i.first().try_deref() *= 2u; //##expect_error ExpectedMutableReference
 	}
 	{ // Iterator has reference to set.
 		var ust::hash_set</i32/> mut s;
