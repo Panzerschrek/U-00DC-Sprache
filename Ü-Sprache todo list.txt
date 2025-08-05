@@ -15,7 +15,6 @@ General:
 *) A way to construct temporary variable with sequence initializer or other initializer kinds,
 	(in expression context)
 *) Function to function pointer assignment with multiple possible functions
-*) Provide calling convention in typeinfo for function types
 *) Static assert message as arbitrary constrant expression (possibility to generate it in compilation time)
 *) Multidimensional [] operator - for accessing elements of multidimensional arrays or as overloaded operator
 *) Allow unsafe code and raw pointers in constexpr functions and perform additional safety checks during constexpr
