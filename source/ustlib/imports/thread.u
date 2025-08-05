@@ -192,7 +192,7 @@ fn enable_if(is_windows) detached_thread_func( $(byte8) func_ptr ) unsafe call_c
 		// Move-call given function.
 		move( func )();
 
-		// Can now exit current thread.
+		// Can now exit current thread. It's fine, since at this moment we have no local variables to destroy.
 		thread_impl::exit_current_thread();
 		halt;
 	}
@@ -214,7 +214,7 @@ fn enable_if(!is_windows) detached_thread_func( $(byte8) func_ptr ) unsafe call_
 		// Move-call given function.
 		move( func )();
 
-		// Can now exit current thread.
+		// Can now exit current thread. It's fine, since at this moment we have no local variables to destroy.
 		thread_impl::exit_current_thread();
 		halt;
 	}
