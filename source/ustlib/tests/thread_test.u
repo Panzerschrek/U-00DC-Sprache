@@ -301,9 +301,12 @@ fn nomangle main() call_conv( "C" ) : i32
 				}
 			} );
 
-		// Perform spin-loop waiting for detachable thread.
+		// Perform spin-loop waiting for detached thread to finish.
 		while( int_shared.lock_imut().deref() == 0 )
 		{
+			// Do some useless work in this loop.
+			// TODO - use some sort of sleep or yield hee.
+			ust::ignore_unused( ust::get_current_thread_id() );
 		}
 	}
 
