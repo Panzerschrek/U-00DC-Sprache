@@ -343,6 +343,38 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		ADD_REFERENCE_NOTATION_FIELD( "return_references", GetReturnReferencesConstant( function_type.return_references ) )
 		ADD_REFERENCE_NOTATION_FIELD( "return_inner_references", GetReturnInnerReferencesConstant( function_type.return_inner_references ) )
 		ADD_REFERENCE_NOTATION_FIELD( "references_pollution", GetReferencesPollutionConstant( function_type.references_pollution ) )
+
+		var ust::string_view8 calling_convention_field_name= KeywordToString( Keyword::call_conv_ );
+		var ust::string_view8 calling_convention_name= CallingConventionToString( function_type.calling_convention );
+
+		var ArrayType calling_convention_field_type
+		{
+			.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
+			.element_count= u64( calling_convention_name.size() ),
+			.llvm_type= unsafe( LLVMArrayType2( fundamental_llvm_types_.char8_, u64( calling_convention_name.size() ) ) )
+		};
+
+		var ClassField mut class_field
+		{
+			.t= calling_convention_field_type,
+			.is_mutable= true,
+			.is_reference= false,
+			.index= u32(fields_llvm_types.size()),
+			.syntax_element= dummy_syntax_element,
+			.source_class= typeinfo_class,
+		};
+
+		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
+
+		fields_initializers.push_back(
+			unsafe( LLVMConstStringInContext(
+				llvm_context_,
+				calling_convention_name.data(),
+				u32( calling_convention_name.size() ),
+				LLVMBool::True ) ) );
+
+		auto mut members_lock= class_members.lock_mut();
+		members_lock.deref().AddName( calling_convention_field_name, move(class_field) );
 	}
 	else if_var( &class_ptr : t.GetClassType() )
 	{

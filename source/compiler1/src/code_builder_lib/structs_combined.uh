@@ -119,6 +119,8 @@ enum CallingConvention
 
 fn StringToCallingConvention( ust::string_view8 s ) : ust::optional</CallingConvention/>;
 
+fn CallingConventionToString( CallingConvention c ) : ust::string_view8;
+
 struct FunctionType
 {
 	// Inner types.

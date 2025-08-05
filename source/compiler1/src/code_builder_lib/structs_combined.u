@@ -228,6 +228,18 @@ fn StringToCallingConvention( ust::string_view8 s ) : ust::optional</CallingConv
 	return ust::null_optional;
 }
 
+fn CallingConventionToString( CallingConvention c ) : ust::string_view8
+{
+	switch( c )
+	{
+	CallingConvention::Default -> { return "default"; },
+	CallingConvention::C -> { return "C"; },
+	CallingConvention::Fast -> { return "fast"; },
+	CallingConvention::Cold -> { return "cold"; },
+	CallingConvention::System -> { return "system"; },
+	}
+}
+
 fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 {
 	if(
