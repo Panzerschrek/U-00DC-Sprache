@@ -1486,3 +1486,72 @@ def ClassFunctionTemplatesList_Test2():
 		static_assert( typeinfo</ typeof( list ) />.element_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoCallingConvention_Test0():
+	c_program_text= """
+		fn FooDefault();
+		fn FooDefaultExplicit() call_conv( "default" );
+		fn FooÜ() call_conv( "Ü" );
+		fn FooC() call_conv( "C" );
+		fn FooFast() call_conv( "fast" );
+		fn FooCold() call_conv( "cold" );
+		fn FooSystem() call_conv( "system" );
+
+		static_assert( typeinfo</ typeof( FooDefault ) />.call_conv == "default" );
+		static_assert( typeinfo</ typeof( FooDefaultExplicit ) />.call_conv == "default" );
+		static_assert( typeinfo</ typeof( FooÜ ) />.call_conv == "default" );
+		static_assert( typeinfo</ typeof( FooC ) />.call_conv == "C" );
+		static_assert( typeinfo</ typeof( FooFast ) />.call_conv == "fast" );
+		static_assert( typeinfo</ typeof( FooFast ) />.call_conv != "cold" );
+		static_assert( typeinfo</ typeof( FooCold ) />.call_conv == "cold" );
+		static_assert( typeinfo</ typeof( FooCold ) />.call_conv != "fast" );
+		static_assert( typeinfo</ typeof( FooSystem ) />.call_conv == "system" );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoCallingConvention_Test1():
+	c_program_text= """
+		struct SomeStruct
+		{
+			fn FooDefault();
+			fn FooDefaultExplicit() call_conv( "default" );
+			fn FooÜ() call_conv( "Ü" );
+			fn FooC() call_conv( "C" );
+			fn FooFast() call_conv( "fast" );
+			fn FooCold() call_conv( "cold" );
+			fn FooSystem() call_conv( "system" );
+		}
+
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		fn Foo()
+		{
+			for( &el : typeinfo</SomeStruct/>.functions_list )
+			{
+				static_if( StringEquals( el.name, "constructor" ) ) { static_assert( el.type.call_conv == "default" ); }
+				static_if( StringEquals( el.name, "destructor" ) ) { static_assert( el.type.call_conv == "default" ); }
+				static_if( StringEquals( el.name, "FooDefault" ) ) { static_assert( el.type.call_conv == "default" ); }
+				static_if( StringEquals( el.name, "FooDefaultExplicit" ) ) { static_assert( el.type.call_conv == "default" ); }
+				static_if( StringEquals( el.name, "FooÜ" ) ) { static_assert( el.type.call_conv == "default" ); }
+				static_if( StringEquals( el.name, "FooC" ) ) { static_assert( el.type.call_conv == "C" ); }
+				static_if( StringEquals( el.name, "FooFast" ) ) { static_assert( el.type.call_conv == "fast" ); }
+				static_if( StringEquals( el.name, "FooCold" ) ) { static_assert( el.type.call_conv == "cold" ); }
+				static_if( StringEquals( el.name, "FooSystem" ) ) { static_assert( el.type.call_conv == "system" ); }
+			}
+		}
+
+	"""
+	tests_lib.build_program( c_program_text )
