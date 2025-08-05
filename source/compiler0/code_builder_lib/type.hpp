@@ -195,6 +195,8 @@ constexpr size_t g_num_calling_conventions= 5;
 
 std::optional<CallingConvention> StringToCallingConvention( std::string_view s );
 
+std::string_view CallingConventionToString( CallingConvention c );
+
 struct FunctionType
 {
 public:

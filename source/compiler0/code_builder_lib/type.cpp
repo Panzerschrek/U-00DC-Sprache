@@ -823,6 +823,21 @@ std::optional<CallingConvention> StringToCallingConvention( const std::string_vi
 	return std::nullopt;
 }
 
+std::string_view CallingConventionToString( const CallingConvention c )
+{
+	switch(c)
+	{
+	case CallingConvention::Default: return "default";
+	case CallingConvention::C: return "C";
+	case CallingConvention::Fast: return "fast";
+	case CallingConvention::Cold: return "cold";
+	case CallingConvention::System: return "system";
+	}
+
+	U_ASSERT(false);
+	return "";
+}
+
 //
 // FunctionType
 //

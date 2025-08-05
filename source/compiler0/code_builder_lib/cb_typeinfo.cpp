@@ -294,6 +294,30 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		add_reference_notation_field( "return_references", GetReturnReferencesConstant( function_type.return_references ) );
 		add_reference_notation_field( "return_inner_references", GetReturnInnerReferencesConstant( function_type.return_inner_references ) );
 		add_reference_notation_field( "references_pollution", GetReferencesPollutionConstant( function_type.references_pollution ) );
+
+		const std::string_view calling_convention_field_name= Keyword( Keywords::call_conv_ );
+		const std::string_view calling_convention_name= CallingConventionToString( function_type.calling_convention );
+
+		ArrayType calling_convention_field_type;
+		calling_convention_field_type.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
+		calling_convention_field_type.element_count= calling_convention_name.size();
+		calling_convention_field_type.llvm_type=
+			llvm::ArrayType::get( fundamental_llvm_types_.char8_, calling_convention_name.size() );
+
+		typeinfo_class->members->AddName(
+			calling_convention_field_name,
+			NamesScopeValue(
+				std::make_shared<ClassField>(
+					std::string(calling_convention_field_name),
+					typeinfo_class,
+					calling_convention_field_type,
+					uint32_t( fields_llvm_types.size() ),
+					true,
+					false ),
+				g_dummy_src_loc ) );
+
+		fields_llvm_types.push_back( calling_convention_field_type.llvm_type );
+		fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, calling_convention_name, false ) );
 	}
 	else U_ASSERT(false);
 
