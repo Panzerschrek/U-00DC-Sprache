@@ -288,11 +288,11 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( results.size() != size_before );
 	}
 
-	{ // Detachable thread.
+	{ // Detached thread.
 
 		var IntShared int_shared( 0 );
 
-		ust::create_detachable_thread(
+		ust::create_detached_thread(
 			lambda[=]()
 			{
 				with( mut lock : int_shared.lock_mut() )
