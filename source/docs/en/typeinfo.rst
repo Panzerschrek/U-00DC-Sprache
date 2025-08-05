@@ -234,6 +234,7 @@ Type information for  coroutines also contains following fields:
 * ``return_references`` - an array with return references description (as in notation with ``@``)
 * ``return_inner_references`` - a tuple with return inner references description (as in notation with ``@``)
 * ``references_pollution`` - an array with references pollution description (as in notation with ``@``)
+* ``call_conv`` - an array of ``char8`` elements with calling convention name
 
 Each parameter description contains:
 
