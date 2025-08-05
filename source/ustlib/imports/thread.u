@@ -184,9 +184,9 @@ fn enable_if(is_windows) detached_thread_func( $(byte8) func_ptr ) unsafe call_c
 	unsafe
 	{
 		// Move function from heap to stack, than free heap memory.
+		// It's necessary for proper call of move-only functions.
 		var Func mut func= uninitialized;
-		move_into_uninitialized( func, $>( byte_ptr_cast</ Func />( func_ptr ) ) );
-
+		memory_copy_aligned( typeinfo</Func/>.align_of, ptr_cast_to_byte8( $<(func) ), func_ptr, typeinfo</Func/>.size_of );
 		memory_free( func_ptr );
 
 		// Move-call given function.
@@ -206,9 +206,9 @@ fn enable_if(!is_windows) detached_thread_func( $(byte8) func_ptr ) unsafe call_
 	unsafe
 	{
 		// Move function from heap to stack, than free heap memory.
+		// It's necessary for proper call of move-only functions.
 		var Func mut func= uninitialized;
-		move_into_uninitialized( func, $>( byte_ptr_cast</ Func />( func_ptr ) ) );
-
+		memory_copy_aligned( typeinfo</Func/>.align_of, ptr_cast_to_byte8( $<(func) ), func_ptr, typeinfo</Func/>.size_of );
 		memory_free( func_ptr );
 
 		// Move-call given function.
