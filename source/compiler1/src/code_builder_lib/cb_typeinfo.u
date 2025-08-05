@@ -347,19 +347,17 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		var ust::string_view8 calling_convention_field_name= KeywordToString( Keyword::call_conv_ );
 		var ust::string_view8 calling_convention_name= CallingConventionToString( function_type.calling_convention );
 
-		var ArrayType calling_convention_field_type
-		{
-			.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
-			.element_count= u64( calling_convention_name.size() ),
-			.llvm_type= unsafe( LLVMArrayType2( fundamental_llvm_types_.char8_, u64( calling_convention_name.size() ) ) )
-		};
-
 		var ClassField mut class_field
 		{
-			.t= calling_convention_field_type,
+			.t= ArrayType
+			{
+				.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
+				.element_count= u64( calling_convention_name.size() ),
+				.llvm_type= unsafe( LLVMArrayType2( fundamental_llvm_types_.char8_, u64( calling_convention_name.size() ) ) )
+			},
 			.is_mutable= true,
 			.is_reference= false,
-			.index= u32(fields_llvm_types.size()),
+			.index= u32( fields_llvm_types.size() ),
 			.syntax_element= dummy_syntax_element,
 			.source_class= typeinfo_class,
 		};
