@@ -157,6 +157,7 @@ fn get_number_of_available_cpus() : u32
 
 // Create detached thread for given function.
 // Function objects with captured references aren't supported.
+// "nodiscard" functions aren't supported too.
 template</ type Func />
 fn create_detached_thread( Func mut func )
 {
@@ -189,7 +190,7 @@ fn enable_if(is_windows) detached_thread_func( $(byte8) func_ptr ) unsafe call_c
 		memory_copy_aligned( typeinfo</Func/>.align_of, ptr_cast_to_byte8( $<(func) ), func_ptr, typeinfo</Func/>.size_of );
 		memory_free( func_ptr );
 
-		// Move-call given function.
+		// Move-call given function, discarding its result (if it has one).
 		move( func )();
 
 		// Can now exit current thread. It's fine, since at this moment we have no local variables to destroy.
@@ -211,7 +212,7 @@ fn enable_if(!is_windows) detached_thread_func( $(byte8) func_ptr ) unsafe call_
 		memory_copy_aligned( typeinfo</Func/>.align_of, ptr_cast_to_byte8( $<(func) ), func_ptr, typeinfo</Func/>.size_of );
 		memory_free( func_ptr );
 
-		// Move-call given function.
+		// Move-call given function, discarding its result (if it has one).
 		move( func )();
 
 		// Can now exit current thread. It's fine, since at this moment we have no local variables to destroy.

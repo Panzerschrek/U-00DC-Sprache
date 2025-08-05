@@ -28,6 +28,11 @@ struct CallableObjectMutThis
 	{}
 }
 
+struct NodiscardFunc
+{
+	op nodiscard ()( this ) {}
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Create thread with "non_sync"-marked function-object.
@@ -73,6 +78,11 @@ fn nomangle main() call_conv( "C" ) : i32
 		// Can't create detached thread for function object, which has references inside.
 		var i32 x= 0;
 		ust::create_detached_thread( lambda[&x]() : i32 { return x; } ); //##expect_error TemplateContext
+	}
+	{
+		// Can't create detached thread for "nodiscard" function.
+		var i32 x= 0;
+		ust::create_detached_thread( NodiscardFunc() ); //##expect_error TemplateContext
 	}
 
 	return 0;
