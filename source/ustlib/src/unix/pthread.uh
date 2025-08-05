@@ -26,6 +26,7 @@ fn nomangle pthread_create(
 fn nomangle pthread_join(
 	pthread_t thread_id,
 	$($(byte8)) ret_val ) unsafe call_conv( "C" ) : i32;
+fn nomangle pthread_exit( $(byte8) ret_val ) unsafe call_conv( "C" );
 
 fn nomangle pthread_mutexattr_init( pthread_mutexattr_t &mut attr ) unsafe call_conv( "C" ) : i32;
 fn nomangle pthread_mutexattr_destroy( pthread_mutexattr_t &mut attr ) unsafe call_conv( "C" ) : i32;

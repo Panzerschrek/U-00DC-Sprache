@@ -288,6 +288,25 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( results.size() != size_before );
 	}
 
+	{ // Detachable thread.
+
+		var IntShared int_shared( 0 );
+
+		ust::create_detachable_thread(
+			lambda[=]()
+			{
+				with( mut lock : int_shared.lock_mut() )
+				{
+					lock.deref()= 1;
+				}
+			} );
+
+		// Perform spin-loop waiting for detachable thread.
+		while( int_shared.lock_imut().deref() == 0 )
+		{
+		}
+	}
+
 	var u32 number_of_available_cpus= ust::get_number_of_available_cpus();
 	ust::stdout_print( ust::concat( "Number of available CPUs: ", ust::to_string8(number_of_available_cpus), "\n" ) );
 	halt if ( number_of_available_cpus == 0u );

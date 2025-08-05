@@ -37,6 +37,10 @@ fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : 
 // Input thread id should be valid and thread shouldn't be joined yet.
 fn join_and_destroy_thread( thread_handle handle ) unsafe;
 
+// Exit current thread.
+// This function never returns, so it should be ensured, that all local variables were destroyed before this call.
+fn exit_current_thread() unsafe;
+
 // Get id of current (caller) thread.
 fn get_current_thread_id() : thread_id;
 

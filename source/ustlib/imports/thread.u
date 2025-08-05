@@ -155,4 +155,48 @@ fn get_number_of_available_cpus() : u32
 	return thread_impl::get_number_of_available_cpus();
 }
 
+// Create detachable thread for given function.
+// Function objects with captured references aren't supported.
+template</ type Func />
+fn create_detachable_thread( Func mut func )
+{
+	static_assert( typeinfo</Func/>.reference_tag_count == 0s, "Detachable threads can't capture references!" );
+
+	unsafe
+	{
+		var $(byte8) func_ptr= memory_allocate( typeinfo</Func/>.size_of );
+		move_into_uninitialized( $>( byte_ptr_cast</ Func />( func_ptr ) ), move( func ) );
+
+		thread_impl::create_and_start_thread(
+			thread_impl::thread_start_function( detachable_thread_impl::detachable_thread_func</Func/> ),
+			func_ptr );
+	}
+}
+
+namespace detachable_thread_impl
+{
+
+// This function accepts a raw pointer to heap-allocated function object, it frees it after it's done using it.
+template</ type Func />
+fn detachable_thread_func( $(byte8) func_ptr ) unsafe call_conv( "C" ) : $(byte8)
+{
+	unsafe
+	{
+		// Move function from heap to stack, than free heap memory.
+		var Func mut func= uninitialized;
+		move_into_uninitialized( func, $>( byte_ptr_cast</ Func />( func_ptr ) ) );
+
+		memory_free( func_ptr );
+
+		// Move-call given function.
+		move( func )();
+
+		// Can now exit current thread.
+		thread_impl::exit_current_thread();
+		halt;
+	}
+}
+
+} // namespace detachable_thread_impl
+
 } // namespace ust
