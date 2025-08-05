@@ -37,6 +37,11 @@ fn join_and_destroy_thread( thread_handle handle ) unsafe
 	unsafe( ::CloseHandle( handle ) );
 }
 
+fn exit_current_thread() unsafe
+{
+	unsafe( ::ExitThread( 0u ) );
+}
+
 fn get_current_thread_id() : thread_id
 {
 	return unsafe( GetCurrentThreadId() );

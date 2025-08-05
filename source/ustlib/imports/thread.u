@@ -179,7 +179,7 @@ namespace detached_thread_impl
 // This function is intended to be used only as detached thread entry point.
 // It accepts a raw pointer to heap-allocated function object, it frees it after it's done using it.
 template</ type Func />
-fn detached_thread_func( $(byte8) func_ptr ) unsafe call_conv( "C" ) : $(byte8)
+fn enable_if(is_windows) detached_thread_func( $(byte8) func_ptr ) unsafe call_conv( "system" ) : u32
 {
 	unsafe
 	{
@@ -197,6 +197,30 @@ fn detached_thread_func( $(byte8) func_ptr ) unsafe call_conv( "C" ) : $(byte8)
 		halt;
 	}
 }
+
+// This function is intended to be used only as detached thread entry point.
+// It accepts a raw pointer to heap-allocated function object, it frees it after it's done using it.
+template</ type Func />
+fn enable_if(!is_windows) detached_thread_func( $(byte8) func_ptr ) unsafe call_conv( "C" ) : $(byte8)
+{
+	unsafe
+	{
+		// Move function from heap to stack, than free heap memory.
+		var Func mut func= uninitialized;
+		move_into_uninitialized( func, $>( byte_ptr_cast</ Func />( func_ptr ) ) );
+
+		memory_free( func_ptr );
+
+		// Move-call given function.
+		move( func )();
+
+		// Can now exit current thread.
+		thread_impl::exit_current_thread();
+		halt;
+	}
+}
+
+auto constexpr is_windows= constexpr_string_equals( compiler::target::os, "windows" );
 
 } // namespace detached_thread_impl
 

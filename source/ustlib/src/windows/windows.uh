@@ -12,6 +12,7 @@ fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle DeleteFileW( LPCWSTR lpFileName ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle DeleteSynchronizationBarrier( LPSYNCHRONIZATION_BARRIER lpBarrier ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle EnterSynchronizationBarrier( LPSYNCHRONIZATION_BARRIER lpBarrier, DWORD dwFlags ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle ExitThread( DWORD dwExitCode ) unsafe call_conv( "system" ) : void;
 fn nomangle FindClose( HANDLE hFindFile ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle FindFirstFileW( LPCWSTR lpFileName, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle FindNextFileW( HANDLE hFindFile, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : BOOL;
