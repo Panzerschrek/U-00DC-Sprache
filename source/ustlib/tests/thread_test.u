@@ -310,6 +310,10 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// Create detached thread for function pointer.
+	unsafe{ some_thread_local_variable = 12345; }
+	ust::create_detached_thread( ModifyThreadLocalVariable );
+
 	var u32 number_of_available_cpus= ust::get_number_of_available_cpus();
 	ust::stdout_print( ust::concat( "Number of available CPUs: ", ust::to_string8(number_of_available_cpus), "\n" ) );
 	halt if ( number_of_available_cpus == 0u );
