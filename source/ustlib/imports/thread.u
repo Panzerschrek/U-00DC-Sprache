@@ -168,9 +168,11 @@ fn create_detached_thread( Func mut func )
 		var $(byte8) func_ptr= memory_allocate( typeinfo</Func/>.size_of );
 		move_into_uninitialized( $>( byte_ptr_cast</ Func />( func_ptr ) ), move( func ) );
 
-		thread_impl::create_and_start_thread(
-			thread_impl::thread_start_function( detached_thread_impl::detached_thread_func</Func/> ),
-			func_ptr );
+		auto [ handle, id ] =
+			thread_impl::create_and_start_thread(
+				thread_impl::thread_start_function( detached_thread_impl::detached_thread_func</Func/> ),
+				func_ptr );
+		thread_impl::detach_thread( handle );
 	}
 }
 
@@ -192,11 +194,9 @@ fn enable_if(is_windows) detached_thread_func( $(byte8) func_ptr ) unsafe call_c
 
 		// Move-call given function, discarding its result (if it has one).
 		move( func )();
-
-		// Can now exit current thread. It's fine, since at this moment we have no local variables to destroy.
-		thread_impl::exit_current_thread();
-		halt;
 	}
+
+	return 0u;
 }
 
 // This function is intended to be used only as detached thread entry point.
@@ -214,11 +214,9 @@ fn enable_if(!is_windows) detached_thread_func( $(byte8) func_ptr ) unsafe call_
 
 		// Move-call given function, discarding its result (if it has one).
 		move( func )();
-
-		// Can now exit current thread. It's fine, since at this moment we have no local variables to destroy.
-		thread_impl::exit_current_thread();
-		halt;
 	}
+
+	return nullptr</byte8/>();
 }
 
 auto constexpr is_windows= constexpr_string_equals( compiler::target::os, "windows" );

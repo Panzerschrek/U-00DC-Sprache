@@ -27,14 +27,14 @@ fn create_and_start_thread( thread_start_function func, $(byte8) arg ) unsafe : 
 	}
 }
 
+fn detach_thread( thread_handle handle ) unsafe
+{
+	halt if( unsafe( ::pthread_detach( handle ) ) != 0 );
+}
+
 fn join_and_destroy_thread( thread_handle handle ) unsafe
 {
 	halt if( unsafe( ::pthread_join( handle, nullptr</$(byte8)/>() ) ) != 0 );
-}
-
-fn exit_current_thread() unsafe
-{
-	unsafe( ::pthread_exit( nullptr</byte8/>() ) );
 }
 
 fn get_current_thread_id() : thread_id
