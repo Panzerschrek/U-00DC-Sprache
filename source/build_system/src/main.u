@@ -1089,9 +1089,12 @@ fn CreatePackageTargetBuildGraphNodes(
 		// Produce an LLVM bitcode file.
 		node.command_line.push_back( "-filetype=bc" );
 
-		// TODO - disable "pic" by default for windows target.
-		node.command_line.push_back( "--relocation-model" );
-		node.command_line.push_back( "pic" );
+		if( target_triple.environment != "gnux32" )
+		{
+			// TODO - disable "pic" by default for windows target.
+			node.command_line.push_back( "--relocation-model" );
+			node.command_line.push_back( "pic" );
+		}
 
 		// Build configuration-dependent options.
 		switch( build_configuration_extended.build_configuration )
@@ -1468,9 +1471,12 @@ fn CreatePackageTargetBuildGraphNodes(
 		},
 	}
 
-	// TODO - disable "pic" by default for windows target.
-	node.command_line.push_back( "--relocation-model" );
-	node.command_line.push_back( "pic" );
+	if( target_triple.environment != "gnux32" )
+	{
+		// TODO - disable "pic" by default for windows target.
+		node.command_line.push_back( "--relocation-model" );
+		node.command_line.push_back( "pic" );
+	}
 
 	// Build configuration-dependent options.
 	switch( build_configuration_extended.build_configuration )
@@ -1679,8 +1685,11 @@ fn CreateUstlibBuildGraphNodes(
 	}
 
 	// TODO - disable "pic" by default for windows target.
-	node.command_line.push_back( "--relocation-model" );
-	node.command_line.push_back( "pic" );
+	if( target_triple.environment != "gnux32" )
+	{
+		node.command_line.push_back( "--relocation-model" );
+		node.command_line.push_back( "pic" );
+	}
 
 	// Build configuration-dependent options.
 	switch( build_configuration_extended.build_configuration )
@@ -1942,7 +1951,8 @@ fn nodiscard BuildUstlibForBuildScripts(
 		compiler_args.push_back( "--target-environment" );
 		compiler_args.push_back( compiler::target::environment );
 
-		if( ust::string_view8( compiler::target::os ) != g_os_windows )
+		if( ust::string_view8( compiler::target::os ) != g_os_windows &&
+			ust::string_view8( compiler::target::environment ) != "gnux32" )
 		{
 			// It seems that position-independent code is always enabled on systems except Windows.
 			// So, use this option for building the shared library.
@@ -2028,7 +2038,7 @@ fn nodiscard BuildSingleFileProgram(
 
 	compiler_args.push_back( "-filetype=exe" );
 
-	if( !target_is_windows )
+	if( !target_is_windows && target_triple.environment != "gnux32" )
 	{
 		compiler_args.push_back( "--relocation-model" );
 		compiler_args.push_back( "pic" );
