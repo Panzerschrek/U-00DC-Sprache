@@ -55,7 +55,11 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 			HasSubstr( target_triple_str, "darwin" ) ||
 			HasSubstr( target_triple_str, "macosx" ) )
 		{
-			// TODO - support x86 calling conventions on GNU/Linux and other systems using System V ABI.
+			var ust::shared_ptr_imut</CallingConventionInfoSystemV_X86/> system_v_x86_info(
+				CallingConventionInfoSystemV_X86() );
+
+			calling_convention_infos[ size_type( CallingConvention::C ) ]= system_v_x86_info;
+			calling_convention_infos[ size_type( CallingConvention::System ) ]= system_v_x86_info;
 		}
 		else if( HasSubstr( target_triple_str, "windows" ) )
 		{
@@ -268,6 +272,95 @@ fn CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( this, Type& 
 
 	// Pass other composites via pointer.
 	return ArgumentPassing( ArgumentPassingKind::ByPointer, unsafe( LLVMPointerType( llvm_type, 0u ) ) );
+}
+
+class CallingConventionInfoSystemV_X86 final : ICallingConventionInfo
+{
+
+public: // ICallingConventionInfo
+	fn virtual override CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing;
+	fn virtual final CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo;
+
+private:
+	fn CalculateValueArgumentPassingInfo( this, Type& t ) : ArgumentPassing;
+}
+
+fn CallingConventionInfoSystemV_X86::CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing
+{
+	if_var( &f : t.GetFundamentalType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, f.llvm_type );
+	}
+	if_var( &e : t.GetEnumType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, e.lock_imut().deref().underlying_type.llvm_type );
+	}
+	if_var( &p : t.GetRawPointerType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, p.llvm_type );
+	}
+	if_var( &fp : t.GetFunctionPointerType() )
+	{
+		return ReturnValuePassing( ReturnValuePassingKind::Direct, fp.llvm_type );
+	}
+
+	// Return composites via sret pointer.
+	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, LLVMTypeRef::Null );
+}
+
+fn CallingConventionInfoSystemV_X86::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
+{
+	var CallInfo mut call_info
+	{
+		.return_value_passing=
+			( function_type.return_value_type == ValueType::Value
+				? CalculateReturnValuePassingInfo( function_type.return_type )
+				: ReturnValuePassing(
+					ReturnValuePassingKind::Direct,
+					unsafe( LLVMPointerType( function_type.return_type.GetLLVMType(), 0u ) ) ) ),
+	};
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	foreach( pair : function_type.params.iter().zip( call_info.arguments_passing.iter() ) )
+	{
+		var FunctionType::Param& param = pair.first;
+		var ArgumentPassing &mut argument_passing= pair.second;
+		if( param.value_type == ValueType::Value )
+		{
+			argument_passing= CalculateValueArgumentPassingInfo( param.t );
+		}
+		else
+		{
+			argument_passing= ArgumentPassing( ArgumentPassingKind::Direct, unsafe( LLVMPointerType( param.t.GetLLVMType(), 0u ) ) );
+		}
+	}
+
+	return call_info;
+}
+
+fn CallingConventionInfoSystemV_X86::CalculateValueArgumentPassingInfo( this, Type& t ) : ArgumentPassing
+{
+	if_var( &f : t.GetFundamentalType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, f.llvm_type );
+	}
+	if_var( &e : t.GetEnumType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, e.lock_imut().deref().underlying_type.llvm_type );
+	}
+	if_var( &p : t.GetRawPointerType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, p.llvm_type );
+	}
+	if_var( &fp : t.GetFunctionPointerType() )
+	{
+		return ArgumentPassing( ArgumentPassingKind::Direct, fp.llvm_type );
+	}
+
+	// Composite types are left.
+	// It seems like they are always passed in stack, including composites consisting of single integers or floats.
+
+	return ArgumentPassing( ArgumentPassingKind::InStack, unsafe( LLVMPointerType( t.GetLLVMType(), 0u ) ) );
 }
 
 class CallingConventionInfoSystemV_X86_64 final : ICallingConventionInfo
