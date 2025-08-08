@@ -169,8 +169,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( typeinfo</StructWithOnlyBitFields/>.size_of == 2s );
 	static_assert( typeinfo</StructWithOnlyBitFields/>.align_of == 2s );
 
-	static_assert( typeinfo</LargeStructWithSingleBitField/>.size_of == 56s );
-	static_assert( typeinfo</LargeStructWithSingleBitField/>.align_of == 8s );
+	static_assert( typeinfo</LargeStructWithSingleBitField/>.size_of == 44s );
+	static_assert( typeinfo</LargeStructWithSingleBitField/>.align_of == 4s );
 
 	static_assert( i32(SequentialEnum::Red) == 0 );
 	static_assert( i32(SequentialEnum::Green) == 1 );
