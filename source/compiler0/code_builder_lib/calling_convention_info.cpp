@@ -219,6 +219,86 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 	return ArgumentPassing{ ArgumentPassingKind::ByPointer, type.GetLLVMType()->getPointerTo() };
 }
 
+class CallingConventionInfoSystemV_X86 final : public ICallingConventionInfo
+{
+public:
+	explicit CallingConventionInfoSystemV_X86( llvm::DataLayout data_layout );
+
+public: // ICallingConventionInfo
+	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
+	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
+
+private:
+	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) const;
+
+private:
+	const llvm::DataLayout data_layout_;
+};
+
+CallingConventionInfoSystemV_X86::CallingConventionInfoSystemV_X86( llvm::DataLayout data_layout )
+	: data_layout_( std::move(data_layout) )
+{}
+
+ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86::CalculateReturnValuePassingInfo( const Type& type )
+{
+	if( const auto f= type.GetFundamentalType() )
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, f->llvm_type };
+
+	if( const auto e= type.GetEnumType() )
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, e->underlying_type.llvm_type };
+
+	if( const auto fp= type.GetFunctionPointerType() )
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, fp->llvm_type };
+
+	if( const auto p= type.GetRawPointerType() )
+		return ReturnValuePassing{ ReturnValuePassingKind::Direct, p->llvm_type };
+
+	// Composite types are always returned via "sret".
+	return ReturnValuePassing{ ReturnValuePassingKind::ByPointer, nullptr };
+}
+
+ICallingConventionInfo::CallInfo CallingConventionInfoSystemV_X86::CalculateFunctionCallInfo( const FunctionType& function_type )
+{
+	CallInfo call_info;
+
+	if( function_type.return_value_type == ValueType::Value )
+		call_info.return_value_passing= CalculateReturnValuePassingInfo( function_type.return_type );
+	else
+		call_info.return_value_passing= ReturnValuePassing{ ReturnValuePassingKind::Direct, function_type.return_type.GetLLVMType()->getPointerTo() };
+
+	call_info.arguments_passing.resize( function_type.params.size() );
+	for( size_t i= 0; i < function_type.params.size(); ++i )
+	{
+		const FunctionType::Param& param= function_type.params[i];
+		if( param.value_type == ValueType::Value )
+			call_info.arguments_passing[i]= CalculateValueArgumentPassingInfo( param.type );
+		else
+			call_info.arguments_passing[i]= ArgumentPassing{ ArgumentPassingKind::Direct, param.type.GetLLVMType()->getPointerTo() };
+	}
+
+	return call_info;
+}
+
+ICallingConventionInfo::ArgumentPassing CallingConventionInfoSystemV_X86::CalculateValueArgumentPassingInfo( const Type& type ) const
+{
+	if( const auto f= type.GetFundamentalType() )
+		return ArgumentPassing{ ArgumentPassingKind::Direct, f->llvm_type };
+
+	if( const auto e= type.GetEnumType() )
+		return ArgumentPassing{ ArgumentPassingKind::Direct, e->underlying_type.llvm_type };
+
+	if( const auto fp= type.GetFunctionPointerType() )
+		return ArgumentPassing{ ArgumentPassingKind::Direct, fp->llvm_type };
+
+	if( const auto p= type.GetRawPointerType() )
+		return ArgumentPassing{ ArgumentPassingKind::Direct, p->llvm_type };
+
+	// Composite types are left.
+	// It seems like they are always passed in stack, including composites consisting of single integers or floats.
+
+	return ArgumentPassing{ ArgumentPassingKind::InStack, type.GetLLVMType()->getPointerTo() };
+}
+
 class CallingConventionInfoSystemV_X86_64 final : public ICallingConventionInfo
 {
 public:
@@ -1097,7 +1177,9 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 			os == llvm::Triple::Darwin ||
 			os == llvm::Triple::MacOSX )
 		{
-			// TODO - support x86 calling conventions on GNU/Linux and other systems using System V ABI.
+			const auto system_v_x86_info= std::make_shared<CallingConventionInfoSystemV_X86>( data_layout );
+			calling_convention_infos[ size_t( CallingConvention::C ) ]= system_v_x86_info;
+			calling_convention_infos[ size_t( CallingConvention::System ) ]= system_v_x86_info;
 		}
 		else if( os == llvm::Triple::Win32 )
 		{
