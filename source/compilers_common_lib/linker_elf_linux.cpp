@@ -166,7 +166,11 @@ bool RunLinkerELFLinux(
 	// TODO - check if this is correct.
 	const bool pic= llvm::codegen::getRelocModel() == llvm::Reloc::PIC_;
 
-	const std::string toolchain_file_path= sysroot + "/usr/lib/" + GetLinuxMultiarchTriple( triple ) + "/";
+	std::string toolchain_file_path;
+	if( triple.getArch() == llvm::Triple::x86 )
+		toolchain_file_path= sysroot + "/usr/lib32/";
+	else
+		toolchain_file_path= sysroot + "/usr/lib/" + GetLinuxMultiarchTriple( triple ) + "/";
 
 	llvm::SmallVector<const char*, 32> args;
 	args.push_back( argv0 );
@@ -219,6 +223,10 @@ bool RunLinkerELFLinux(
 	args.push_back( crtn.data() );
 
 	// TODO - link also against crtbegin.o and crtend.o that are shipped together with GCC.
+
+	// Hack! Remove it, locate GCC installation properly.
+	if( triple.getArch() == llvm::Triple::x86 )
+		args.push_back( "/usr/lib/gcc-cross/i686-linux-gnu/7.5.0/libgcc.a" );
 
 	args.push_back( "-o" );
 	args.push_back( output_file_path.data() );
