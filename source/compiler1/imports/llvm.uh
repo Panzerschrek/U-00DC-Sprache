@@ -9,12 +9,12 @@
 ?macro <? DefineLLVMRef:namespace ?name:ident ?>
 	->
 <?
-	struct ?name
+	// For now violate here language rules, which say, that enums with values other than listed aren't possible.
+	// We can't use a wrapper struct here, because in some C ABIs (x86 System V, for example) structs are returned differently from scalars.
+	// TODO - use a raw pointer instead.
+	enum ?name : size_type
 	{
-		size_type ??ptr_value; // Can't use proper pointer type, since this struct type must be constexpr.
-
-		// Null constant for this type.
-		var ?name constexpr Null { .??ptr_value= 0s };
+		Null,
 	}
 ?>
 
