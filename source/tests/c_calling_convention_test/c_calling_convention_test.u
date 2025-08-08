@@ -3884,7 +3884,9 @@ fn nomangle U_Get_tup_f64_f64_f64_Test0() call_conv( "C" ) : tup[ f64, f64, f64 
 	return res;
 }
 
-var bool c_enable_128bit_int_tests= !constexpr_string_equals( compiler::target::os, "windows" );
+var bool c_enable_128bit_int_tests=
+	!constexpr_string_equals( compiler::target::os, "windows" ) &&
+	!constexpr_string_equals( compiler::target::arch, "i686" );
 
 template</ size_type size0, size_type size1 />
 fn constexpr constexpr_string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
