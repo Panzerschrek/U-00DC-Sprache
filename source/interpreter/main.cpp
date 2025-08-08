@@ -304,9 +304,10 @@ int Main( int argc, const char* argv[] )
 				cpu_name,
 				features_str,
 				target_options,
-				llvm::Reloc::PIC_,
+				std::optional<llvm::Reloc::Model>(),
 				std::optional<llvm::CodeModel::Model>(),
-				llvm::CodeGenOpt::None ) );
+				llvm::CodeGenOpt::None,
+				true /* JIT */ ) );
 
 		if( target_machine == nullptr )
 		{
