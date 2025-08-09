@@ -1,0 +1,107 @@
+#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/InstrTypes.h>
+#include <llvm/Transforms/Utils/IntegerDivision.h>
+#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
+
+#include "div_builtins.hpp"
+
+namespace U
+{
+
+namespace
+{
+
+void GenerateDiv32BuiltIns( llvm::Module& module )
+{
+	llvm::LLVMContext& context= module.getContext();
+
+	llvm::Type* const i32= llvm::Type::getInt32Ty( context );
+	std::array<llvm::Type*, 2> const i32_args{ i32, i32 };
+	llvm::FunctionType* const function_type= llvm::FunctionType::get( i32, i32_args, false );
+
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__udivsi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, div, bb );
+
+		llvm::expandDivision( div );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__divsi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, div, bb );
+
+		llvm::expandDivision( div );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__umodsi3", module );
+		const auto bb= llvm::BasicBlock::Create(context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, rem, bb );
+
+		llvm::expandRemainder( rem );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__modsi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, rem, bb );
+
+		llvm::expandRemainder( rem );
+	}
+}
+
+void GenerateDiv64BuiltIns( llvm::Module& module )
+{
+	llvm::LLVMContext& context= module.getContext();
+
+	llvm::Type* const i64= llvm::Type::getInt64Ty( context );
+	std::array<llvm::Type*, 2> const i64_args{ i64, i64 };
+	llvm::FunctionType* const function_type= llvm::FunctionType::get( i64, i64_args, false );
+
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__udivdi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, div, bb );
+
+		llvm::expandDivision( div );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__divdi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, div, bb );
+
+		llvm::expandDivision( div );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__umoddi3", module );
+		const auto bb= llvm::BasicBlock::Create(context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, rem, bb );
+
+		llvm::expandRemainder( rem );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__moddi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, rem, bb );
+
+		llvm::expandRemainder( rem );
+	}
+}
+
+} // namespace
+
+void GenerateDivBuiltIns( llvm::Module& module )
+{
+	GenerateDiv32BuiltIns( module );
+	GenerateDiv64BuiltIns( module );
+}
+
+} // namespace U
