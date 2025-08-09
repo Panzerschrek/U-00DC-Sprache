@@ -156,7 +156,16 @@ void GenerateDivBuiltIns( llvm::Module& module )
 	GenerateDiv32BuiltIns( module );
 	GenerateDiv64BuiltIns( module );
 	GenerateDiv128BuiltIns( module );
+}
 
+bool IsDivBuiltInLikeFunctionName( const llvm::StringRef name )
+{
+	// Do not list here exact function names. Instead perform prefix checks. Usually it's enough.
+	return
+		name.startswith( "__div" ) ||
+		name.startswith( "__mod" ) ||
+		name.startswith( "__udiv" ) ||
+		name.startswith( "__umod" );
 }
 
 } // namespace U

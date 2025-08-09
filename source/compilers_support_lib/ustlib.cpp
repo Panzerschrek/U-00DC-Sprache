@@ -9,7 +9,6 @@
 #include <llvm/TargetParser/Triple.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "div_builtins.hpp"
 #include "ustlib.hpp"
 
 namespace U
@@ -150,15 +149,6 @@ bool LinkUstLibModules(
 		}
 
 		llvm::Linker::linkModules( result_module, std::move(std_lib_module.get()) );
-	}
-
-	if(
-		// We don't require GNU-style division built-ins on Windows.
-		!is_windows &&
-		// Apple system also don't require these built-ins, and they also don't support comdats.
-		triple.getObjectFormat() != llvm::Triple::MachO )
-	{
-		GenerateDivBuiltIns( result_module );
 	}
 
 	return true;

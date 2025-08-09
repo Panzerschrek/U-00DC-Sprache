@@ -8,4 +8,6 @@ namespace U
 
 void GenerateDivBuiltIns( llvm::Module& module );
 
+bool IsDivBuiltInLikeFunctionName( llvm::StringRef name );
+
 } // namespace U
