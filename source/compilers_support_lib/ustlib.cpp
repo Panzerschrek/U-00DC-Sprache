@@ -152,7 +152,8 @@ bool LinkUstLibModules(
 		llvm::Linker::linkModules( result_module, std::move(std_lib_module.get()) );
 	}
 
-	GenerateDivBuiltIns( result_module );
+	if( !is_windows )
+		GenerateDivBuiltIns( result_module );
 
 	return true;
 }
