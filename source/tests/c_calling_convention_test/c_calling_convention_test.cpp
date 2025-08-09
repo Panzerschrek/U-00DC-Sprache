@@ -5,7 +5,7 @@
 #include <iostream>
 
 #ifdef __GNUC__
-	#if defined __x86_64__
+	#if defined(__x86_64__) || defined(__aarch64__)
 		#define ENABLE_128BIT_INT_TESTS
 	#endif
 #endif
