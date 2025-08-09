@@ -335,6 +335,10 @@ void InternalizeHiddenFunctions( llvm::Module& module )
 	{
 		if( !function.isDeclaration() && function.getVisibility() == llvm::GlobalValue::HiddenVisibility )
 		{
+			// Avoid internalizing div built-ins.
+			if( IsDivBuiltInLikeFunctionName( function.getName() ) )
+				continue;
+
 			function.setLinkage( llvm::GlobalValue::PrivateLinkage );
 			if( const auto comdat = function.getComdat() )
 			{
@@ -364,8 +368,14 @@ void CollectExternalFunctionsForInternalizatioin(
 		return;
 
 	for( const llvm::Function& function : module.functions() )
-		if( !function.isDeclaration() && !function.hasLocalLinkage() )
-			functions.push_back( function.getName().str() );
+	{
+		llvm::StringRef name= function.getName();
+
+		if( !function.isDeclaration() && !function.hasLocalLinkage() &&
+			// Avoid internalizing div built-ins.
+			!IsDivBuiltInLikeFunctionName( name ) )
+			functions.push_back( name.str() );
+	}
 }
 
 void InternalizeCollectedFunctions( llvm::Module& module, const llvm::ArrayRef<std::string> external_functions )
