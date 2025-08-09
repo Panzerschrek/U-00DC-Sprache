@@ -276,7 +276,6 @@ fn CallingConventionInfoDefault::CalculateValueArgumentPassingInfo( this, Type& 
 
 class CallingConventionInfoSystemV_X86 final : ICallingConventionInfo
 {
-
 public: // ICallingConventionInfo
 	fn virtual override CalculateReturnValuePassingInfo( this, Type& t ) : ReturnValuePassing;
 	fn virtual final CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo;

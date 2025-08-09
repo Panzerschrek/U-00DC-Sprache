@@ -221,23 +221,13 @@ ICallingConventionInfo::ArgumentPassing CallingConventionInfoDefault::CalculateV
 
 class CallingConventionInfoSystemV_X86 final : public ICallingConventionInfo
 {
-public:
-	explicit CallingConventionInfoSystemV_X86( llvm::DataLayout data_layout );
-
 public: // ICallingConventionInfo
 	virtual ReturnValuePassing CalculateReturnValuePassingInfo( const Type& type ) override;
 	virtual CallInfo CalculateFunctionCallInfo( const FunctionType& function_type ) override;
 
 private:
 	ArgumentPassing CalculateValueArgumentPassingInfo( const Type& type ) const;
-
-private:
-	const llvm::DataLayout data_layout_;
 };
-
-CallingConventionInfoSystemV_X86::CallingConventionInfoSystemV_X86( llvm::DataLayout data_layout )
-	: data_layout_( std::move(data_layout) )
-{}
 
 ICallingConventionInfo::ReturnValuePassing CallingConventionInfoSystemV_X86::CalculateReturnValuePassingInfo( const Type& type )
 {
@@ -1177,7 +1167,7 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 			os == llvm::Triple::Darwin ||
 			os == llvm::Triple::MacOSX )
 		{
-			const auto system_v_x86_info= std::make_shared<CallingConventionInfoSystemV_X86>( data_layout );
+			const auto system_v_x86_info= std::make_shared<CallingConventionInfoSystemV_X86>();
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= system_v_x86_info;
 			calling_convention_infos[ size_t( CallingConvention::System ) ]= system_v_x86_info;
 		}
