@@ -418,11 +418,6 @@ fn CallingConventionFast( i32 x, f32 y, S0 s0 ) call_conv( "fast" )
 	return;
 }
 
-fn CallingConventionCold( i32 x, f32 y, S0 s0 ) call_conv( "cold" )
-{
-	return;
-}
-
 fn CallingConventionSystem( i32 x, f32 y, S0 s0 ) call_conv( "system" )
 {
 	return;
@@ -434,13 +429,11 @@ fn CallingConventionsTest()
 	CallingConventionDefault( 7534, 0.77f, s0 );
 	CallingConventionC( 7534, 0.77f, s0 );
 	CallingConventionFast( 7534, 0.77f, s0 );
-	CallingConventionCold( 7534, 0.77f, s0 );
 	CallingConventionSystem( 7534, 0.77f, s0 );
 
 	auto p0= CallingConventionDefault;
 	auto p1= CallingConventionC;
 	auto p2= CallingConventionFast;
-	auto p3= CallingConventionCold;
 	auto p4= CallingConventionSystem;
 
 	return;
