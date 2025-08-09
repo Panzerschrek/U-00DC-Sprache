@@ -45,7 +45,49 @@ void RemoveAllComdats( llvm::Module& module )
 	}
 }
 
-void GenerateDivBuiltIns( llvm::Module& module )
+void GenerateDiv32BuiltIns( llvm::Module& module )
+{
+	llvm::LLVMContext& context= module.getContext();
+
+	llvm::Type* const i32= llvm::Type::getInt32Ty( context );
+	std::array<llvm::Type*, 2> const i32_args{ i32, i32 };
+	llvm::FunctionType* const function_type= llvm::FunctionType::get( i32, i32_args, false );
+
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__udivsi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, div, bb );
+
+		llvm::expandDivision( div );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__divsi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, div, bb );
+
+		llvm::expandDivision( div );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__umodsi3", module );
+		const auto bb= llvm::BasicBlock::Create(context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, rem, bb );
+
+		llvm::expandRemainder( rem );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__modsi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, rem, bb );
+
+		llvm::expandRemainder( rem );
+	}
+}
+
+void GenerateDiv64BuiltIns( llvm::Module& module )
 {
 	llvm::LLVMContext& context= module.getContext();
 
@@ -85,6 +127,12 @@ void GenerateDivBuiltIns( llvm::Module& module )
 
 		llvm::expandRemainder( rem );
 	}
+}
+
+void GenerateDivBuiltIns( llvm::Module& module )
+{
+	GenerateDiv32BuiltIns( module );
+	GenerateDiv64BuiltIns( module );
 }
 
 } // namespace
