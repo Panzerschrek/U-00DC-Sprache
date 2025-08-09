@@ -16,9 +16,13 @@ llvm::Function* CreateFunction( llvm::Module& module, llvm::FunctionType* const 
 {
 	const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, name, module );
 
+	// Create comdat. It's necessary in order to avoid redefinition errors, since built-ins are generated in all modules/object files.
 	llvm::Comdat* const comdat= module.getOrInsertComdat( function->getName() );
 	comdat->setSelectionKind( llvm::Comdat::Any );
 	function->setComdat( comdat );
+
+	// Set hidden visibility in order to avoid exporting built-ins in shared libraries.
+	function->setVisibility( llvm::GlobalValue::HiddenVisibility );
 
 	return function;
 }
