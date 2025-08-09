@@ -107,12 +107,56 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 	}
 }
 
+void GenerateDiv128BuiltIns( llvm::Module& module )
+{
+	llvm::LLVMContext& context= module.getContext();
+
+	llvm::Type* const i128= llvm::Type::getInt128Ty( context );
+	std::array<llvm::Type*, 2> const i128_args{ i128, i128 };
+	llvm::FunctionType* const function_type= llvm::FunctionType::get( i128, i128_args, false );
+
+	{
+		const auto function= CreateFunction( module, function_type, "__udivti3" );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, div, bb );
+
+		llvm::expandDivision( div );
+	}
+	{
+		const auto function= CreateFunction( module, function_type, "__divti3" );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, div, bb );
+
+		llvm::expandDivision( div );
+	}
+	{
+		const auto function= CreateFunction( module, function_type, "__umodti3" );
+		const auto bb= llvm::BasicBlock::Create(context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, rem, bb );
+
+		llvm::expandRemainder( rem );
+	}
+	{
+		const auto function= CreateFunction( module, function_type, "__modti3" );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, rem, bb );
+
+		llvm::expandRemainder( rem );
+	}
+}
+
 } // namespace
 
 void GenerateDivBuiltIns( llvm::Module& module )
 {
 	GenerateDiv32BuiltIns( module );
 	GenerateDiv64BuiltIns( module );
+	GenerateDiv128BuiltIns( module );
+
 }
 
 } // namespace U
