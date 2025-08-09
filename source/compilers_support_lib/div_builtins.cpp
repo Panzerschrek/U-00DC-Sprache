@@ -21,7 +21,7 @@ void GenerateDiv32BuiltIns( llvm::Module& module )
 	llvm::FunctionType* const function_type= llvm::FunctionType::get( i32, i32_args, false );
 
 	{
-		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__udivsi3", module );
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::WeakAnyLinkage, "__udivsi3", module );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
 		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, div, bb );
@@ -29,7 +29,7 @@ void GenerateDiv32BuiltIns( llvm::Module& module )
 		llvm::expandDivision( div );
 	}
 	{
-		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__divsi3", module );
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::WeakAnyLinkage, "__divsi3", module );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
 		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, div, bb );
@@ -37,7 +37,7 @@ void GenerateDiv32BuiltIns( llvm::Module& module )
 		llvm::expandDivision( div );
 	}
 	{
-		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__umodsi3", module );
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::WeakAnyLinkage, "__umodsi3", module );
 		const auto bb= llvm::BasicBlock::Create(context, "", function );
 		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, rem, bb );
@@ -45,7 +45,7 @@ void GenerateDiv32BuiltIns( llvm::Module& module )
 		llvm::expandRemainder( rem );
 	}
 	{
-		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__modsi3", module );
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::WeakAnyLinkage, "__modsi3", module );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
 		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, rem, bb );
@@ -63,7 +63,7 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 	llvm::FunctionType* const function_type= llvm::FunctionType::get( i64, i64_args, false );
 
 	{
-		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__udivdi3", module );
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::WeakAnyLinkage, "__udivdi3", module );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
 		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, div, bb );
@@ -71,7 +71,7 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 		llvm::expandDivision( div );
 	}
 	{
-		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__divdi3", module );
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::WeakAnyLinkage, "__divdi3", module );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
 		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, div, bb );
@@ -79,7 +79,7 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 		llvm::expandDivision( div );
 	}
 	{
-		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__umoddi3", module );
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::WeakAnyLinkage, "__umoddi3", module );
 		const auto bb= llvm::BasicBlock::Create(context, "", function );
 		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, rem, bb );
@@ -87,7 +87,7 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 		llvm::expandRemainder( rem );
 	}
 	{
-		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__moddi3", module );
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::WeakAnyLinkage, "__moddi3", module );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
 		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, function->getArg(0), function->getArg(1), "", bb );
 		llvm::ReturnInst::Create( context, rem, bb );
