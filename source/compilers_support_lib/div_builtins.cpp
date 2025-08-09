@@ -35,6 +35,7 @@ void GenerateDiv32BuiltIns( llvm::Module& module )
 	std::array<llvm::Type*, 2> const i32_args{ i32, i32 };
 	llvm::FunctionType* const function_type= llvm::FunctionType::get( i32, i32_args, false );
 
+	if( module.getFunction( "__udivsi3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__udivsi3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
@@ -43,6 +44,8 @@ void GenerateDiv32BuiltIns( llvm::Module& module )
 
 		llvm::expandDivision( div );
 	}
+
+	if( module.getFunction( "__divsi3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__divsi3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
@@ -51,6 +54,8 @@ void GenerateDiv32BuiltIns( llvm::Module& module )
 
 		llvm::expandDivision( div );
 	}
+
+	if( module.getFunction( "__umodsi3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__umodsi3" );
 		const auto bb= llvm::BasicBlock::Create(context, "", function );
@@ -59,6 +64,8 @@ void GenerateDiv32BuiltIns( llvm::Module& module )
 
 		llvm::expandRemainder( rem );
 	}
+
+	if( module.getFunction( "__modsi3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__modsi3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
@@ -77,6 +84,7 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 	std::array<llvm::Type*, 2> const i64_args{ i64, i64 };
 	llvm::FunctionType* const function_type= llvm::FunctionType::get( i64, i64_args, false );
 
+	if( module.getFunction( "__udivdi3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__udivdi3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
@@ -85,6 +93,8 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 
 		llvm::expandDivision( div );
 	}
+
+	if( module.getFunction( "__divdi3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__divdi3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
@@ -93,6 +103,8 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 
 		llvm::expandDivision( div );
 	}
+
+	if( module.getFunction( "__umoddi3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__umoddi3" );
 		const auto bb= llvm::BasicBlock::Create(context, "", function );
@@ -101,6 +113,8 @@ void GenerateDiv64BuiltIns( llvm::Module& module )
 
 		llvm::expandRemainder( rem );
 	}
+
+	if( module.getFunction( "__moddi3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__moddi3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
@@ -119,6 +133,7 @@ void GenerateDiv128BuiltIns( llvm::Module& module )
 	std::array<llvm::Type*, 2> const i128_args{ i128, i128 };
 	llvm::FunctionType* const function_type= llvm::FunctionType::get( i128, i128_args, false );
 
+	if( module.getFunction( "__udivti3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__udivti3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
@@ -127,6 +142,8 @@ void GenerateDiv128BuiltIns( llvm::Module& module )
 
 		llvm::expandDivision( div );
 	}
+
+	if( module.getFunction( "__divti3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__divti3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
@@ -135,6 +152,8 @@ void GenerateDiv128BuiltIns( llvm::Module& module )
 
 		llvm::expandDivision( div );
 	}
+
+	if( module.getFunction( "__umodti3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__umodti3" );
 		const auto bb= llvm::BasicBlock::Create(context, "", function );
@@ -143,6 +162,8 @@ void GenerateDiv128BuiltIns( llvm::Module& module )
 
 		llvm::expandRemainder( rem );
 	}
+
+	if( module.getFunction( "__modti3" ) == nullptr )
 	{
 		const auto function= CreateFunction( module, function_type, "__modti3" );
 		const auto bb= llvm::BasicBlock::Create( context, "", function );
