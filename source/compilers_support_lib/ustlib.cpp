@@ -2,11 +2,14 @@
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Bitcode/BitcodeReader.h>
+#include <llvm/IR/Instructions.h>
+#include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/TargetParser/Triple.h>
+#include <llvm/Transforms/Utils/IntegerDivision.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "ustlib.hpp"
@@ -40,6 +43,25 @@ void RemoveAllComdats( llvm::Module& module )
 				module.getComdatSymbolTable().erase( comdat->getName() );
 		}
 	}
+}
+
+void GenerateDivBuiltIns( llvm::Module& module )
+{
+	llvm::Type* const i64= llvm::Type::getInt64Ty( module.getContext() );
+	std::array<llvm::Type*, 2> const i64_args{ i64, i64 };
+	llvm::FunctionType* const function_type= llvm::FunctionType::get( i64, i64_args, false );
+
+	llvm::Function* const function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__udivdi3", module );
+
+	llvm::BasicBlock* const bb= llvm::BasicBlock::Create( module.getContext(), "", function );
+
+	const auto div_res= llvm::BinaryOperator::CreateUDiv( function->getArg(0), function->getArg(1) );
+	div_res->insertInto( bb, bb->end() );
+
+	const auto ret= llvm::ReturnInst::Create( module.getContext(), div_res );
+	ret->insertInto( bb, bb->end() );
+
+	llvm::expandDivision( div_res );
 }
 
 } // namespace
@@ -150,6 +172,8 @@ bool LinkUstLibModules(
 
 		llvm::Linker::linkModules( result_module, std::move(std_lib_module.get()) );
 	}
+
+	GenerateDivBuiltIns( result_module );
 
 	return true;
 }
