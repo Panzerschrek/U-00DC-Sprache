@@ -152,8 +152,14 @@ bool LinkUstLibModules(
 		llvm::Linker::linkModules( result_module, std::move(std_lib_module.get()) );
 	}
 
-	if( !is_windows )
+	if(
+		// We don't require GNU-style division built-ins on Windows.
+		!is_windows &&
+		// Apple system also don't require these built-ins, and they also don't support comdats.
+		triple.getObjectFormat() != llvm::Triple::MachO )
+	{
 		GenerateDivBuiltIns( result_module );
+	}
 
 	return true;
 }
