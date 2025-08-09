@@ -47,21 +47,44 @@ void RemoveAllComdats( llvm::Module& module )
 
 void GenerateDivBuiltIns( llvm::Module& module )
 {
-	llvm::Type* const i64= llvm::Type::getInt64Ty( module.getContext() );
+	llvm::LLVMContext& context= module.getContext();
+
+	llvm::Type* const i64= llvm::Type::getInt64Ty( context );
 	std::array<llvm::Type*, 2> const i64_args{ i64, i64 };
 	llvm::FunctionType* const function_type= llvm::FunctionType::get( i64, i64_args, false );
 
-	llvm::Function* const function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__udivdi3", module );
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__udivdi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::UDiv, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, div, bb );
 
-	llvm::BasicBlock* const bb= llvm::BasicBlock::Create( module.getContext(), "", function );
+		llvm::expandDivision( div );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__divdi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto div= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SDiv, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, div, bb );
 
-	const auto div_res= llvm::BinaryOperator::CreateUDiv( function->getArg(0), function->getArg(1) );
-	div_res->insertInto( bb, bb->end() );
+		llvm::expandDivision( div );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__umoddi3", module );
+		const auto bb= llvm::BasicBlock::Create(context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::URem, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, rem, bb );
 
-	const auto ret= llvm::ReturnInst::Create( module.getContext(), div_res );
-	ret->insertInto( bb, bb->end() );
+		llvm::expandRemainder( rem );
+	}
+	{
+		const auto function= llvm::Function::Create( function_type, llvm::GlobalValue::ExternalLinkage, "__moddi3", module );
+		const auto bb= llvm::BasicBlock::Create( context, "", function );
+		const auto rem= llvm::BinaryOperator::Create( llvm::Instruction::BinaryOps::SRem, function->getArg(0), function->getArg(1), "", bb );
+		llvm::ReturnInst::Create( context, rem, bb );
 
-	llvm::expandDivision( div_res );
+		llvm::expandRemainder( rem );
+	}
 }
 
 } // namespace
