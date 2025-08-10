@@ -286,37 +286,37 @@ void ElementWrite( const FunctionParam& param ) const
 	}
 }
 
-void ElementWrite( const std::unique_ptr<const BinaryOperator>& binary_operator ) const
+void ElementWrite( const BinaryOperator& binary_operator ) const
 {
-	ElementWrite( binary_operator->left  );
-	stream_ << " " << BinaryOperatorToString(binary_operator->operator_type) << " ";
-	ElementWrite( binary_operator->right );
+	ElementWrite( binary_operator.left  );
+	stream_ << " " << BinaryOperatorToString(binary_operator.operator_type) << " ";
+	ElementWrite( binary_operator.right );
 }
 
-void ElementWrite( const std::unique_ptr<const TernaryOperator>& ternary_operator ) const
+void ElementWrite( const TernaryOperator& ternary_operator ) const
 {
 	stream_ << "( ";
-	ElementWrite( ternary_operator->condition );
+	ElementWrite( ternary_operator.condition );
 	stream_ << " ? ";
-	ElementWrite( ternary_operator->branches[0] );
+	ElementWrite( ternary_operator.branches[0] );
 	stream_ << " : ";
-	ElementWrite( ternary_operator->branches[1] );
+	ElementWrite( ternary_operator.branches[1] );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const ReferenceToRawPointerOperator>& reference_to_raw_pointer_operator ) const
+void ElementWrite( const ReferenceToRawPointerOperator& reference_to_raw_pointer_operator ) const
 {
 	stream_ << "$<";
 	stream_ << "(";
-	ElementWrite( reference_to_raw_pointer_operator->expression );
+	ElementWrite( reference_to_raw_pointer_operator.expression );
 	stream_ << ")";
 }
 
-void ElementWrite( const std::unique_ptr<const RawPointerToReferenceOperator>& raw_pointer_to_reference_operator ) const
+void ElementWrite( const RawPointerToReferenceOperator& raw_pointer_to_reference_operator ) const
 {
 	stream_ << "$>";
 	stream_ << "(";
-	ElementWrite( raw_pointer_to_reference_operator->expression );
+	ElementWrite( raw_pointer_to_reference_operator.expression );
 	stream_ << ")";
 }
 
@@ -334,10 +334,10 @@ void ElementWrite( const FloatingPointNumericConstant& numeric_constant ) const
 	stream_ << numeric_constant.num.type_suffix.data();
 }
 
-void ElementWrite( const std::unique_ptr<const StringLiteral>& string_literal ) const
+void ElementWrite( const StringLiteral& string_literal ) const
 {
-	WriteStringEscaped( string_literal->value );
-	stream_ << string_literal->type_suffix;
+	WriteStringEscaped( string_literal.value );
+	stream_ << string_literal.type_suffix;
 }
 
 void ElementWrite( const CharLiteral& char_literal ) const
@@ -399,253 +399,213 @@ void ElementWrite( const MoveOperatorCompletion& move_operator_completion ) cons
 	stream_ << Keyword( Keywords::move_ ) << "( " << move_operator_completion.var_name << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const TakeOperator>& take_operator ) const
+void ElementWrite( const TakeOperator& take_operator ) const
 {
 	stream_ << Keyword( Keywords::take_ ) << "( ";
-	ElementWrite( take_operator->expression );
+	ElementWrite( take_operator.expression );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const Lambda>& lambda ) const
+void ElementWrite( const Lambda& lambda ) const
 {
 	U_UNUSED(lambda);
 	// For now do not print whole lambda - just create dummy.
 	stream_ << Keyword( Keywords::lambda_ ) << "(){}";
 }
 
-void ElementWrite( const std::unique_ptr<const CastRef>& cast_ref ) const
+void ElementWrite( const CastRef& cast_ref ) const
 {
 	stream_ << Keyword( Keywords::cast_ref_ ) << "</ ";
-	ElementWrite( cast_ref->type );
+	ElementWrite( cast_ref.type );
 	stream_ << " />( ";
-	ElementWrite( cast_ref->expression );
+	ElementWrite( cast_ref.expression );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const CastRefUnsafe>& cast_ref_unsafe ) const
+void ElementWrite( const CastRefUnsafe& cast_ref_unsafe ) const
 {
 	stream_ << Keyword( Keywords::cast_ref_unsafe_ ) << "</ ";
-	ElementWrite( cast_ref_unsafe->type );
+	ElementWrite( cast_ref_unsafe.type );
 	stream_ << " />( ";
-	ElementWrite( cast_ref_unsafe->expression );
+	ElementWrite( cast_ref_unsafe.expression );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const CastImut>& cast_imut ) const
+void ElementWrite( const CastImut& cast_imut ) const
 {
 	stream_ << Keyword( Keywords::cast_imut_ ) << "( ";
-	ElementWrite( cast_imut->expression );
+	ElementWrite( cast_imut.expression );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const CastMut>& cast_mut ) const
+void ElementWrite( const CastMut& cast_mut ) const
 {
 	stream_ << Keyword( Keywords::cast_mut_ ) << "( ";
-	ElementWrite( cast_mut->expression );
+	ElementWrite( cast_mut.expression );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const Embed>& embed ) const
+void ElementWrite( const Embed& embed ) const
 {
 	stream_ << Keyword( Keywords::embed_ );
 
-	if( embed->element_type != std::nullopt )
+	if( embed.element_type != std::nullopt )
 	{
 		stream_ << "</";
-		ElementWrite( *embed->element_type );
+		ElementWrite( *embed.element_type );
 		stream_ << "/>";
 	}
 
 	stream_ << "( ";
-	ElementWrite( embed->expression );
+	ElementWrite( embed.expression );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const ExternalFunctionAccess>& external_function_access ) const
+void ElementWrite( const ExternalFunctionAccess& external_function_access ) const
 {
 	stream_ << Keyword( Keywords::import_ ) << " " << Keyword( Keywords::fn_ );
 
 	stream_ << "</";
-	ElementWrite( external_function_access->type );
+	ElementWrite( external_function_access.type );
 	stream_ << "/>";
 
 	stream_ << "( ";
-	WriteStringEscaped( external_function_access->name );
+	WriteStringEscaped( external_function_access.name );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const ExternalVariableAccess>& external_variable_access ) const
+void ElementWrite( const ExternalVariableAccess& external_variable_access ) const
 {
 	stream_ << Keyword( Keywords::import_ ) << " " << Keyword( Keywords::var_ );
 
 	stream_ << "</";
-	ElementWrite( external_variable_access->type );
+	ElementWrite( external_variable_access.type );
 	stream_ << "/>";
 
 	stream_ << "( ";
-	WriteStringEscaped( external_variable_access->name );
+	WriteStringEscaped( external_variable_access.name );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const TypeInfo>& typeinfo_ ) const
+void ElementWrite( const TypeInfo& typeinfo_ ) const
 {
-	stream_ << "</ ";
-	ElementWrite( typeinfo_->type );
+	stream_ << Keyword( Keywords::typeinfo_ ) << "</ ";
+	ElementWrite( typeinfo_.type );
 	stream_ << " />";
 }
 
-void ElementWrite( const std::unique_ptr<const SameType>& same_type ) const
+void ElementWrite( const SameType& same_type ) const
 {
 	stream_ << Keyword( Keywords::same_type_ ) << "</ ";
-	ElementWrite( same_type->l );
+	ElementWrite( same_type.l );
 	stream_ << ", ";
-	ElementWrite( same_type->r );
+	ElementWrite( same_type.r );
 	stream_ << " />";
 }
 
-void ElementWrite( const std::unique_ptr<const NonSyncExpression>& non_sync_expression ) const
+void ElementWrite( const NonSyncExpression& non_sync_expression ) const
 {
 	stream_ << "</ ";
-	ElementWrite( non_sync_expression->type );
+	ElementWrite( non_sync_expression.type );
 	stream_ << " />";
 }
 
-void ElementWrite( const std::unique_ptr<const SafeExpression>& safe_expression ) const
+void ElementWrite( const SafeExpression& safe_expression ) const
 {
 	stream_ << Keyword( Keywords::safe_ );
 	stream_ << "( ";
-	ElementWrite( safe_expression->expression );
+	ElementWrite( safe_expression.expression );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const UnsafeExpression>& unsafe_expression ) const
+void ElementWrite( const UnsafeExpression& unsafe_expression ) const
 {
 	stream_ << Keyword( Keywords::unsafe_ );
 	stream_ << "( ";
-	ElementWrite( unsafe_expression->expression );
+	ElementWrite( unsafe_expression.expression );
 	stream_ << " )";
 }
 
-void ElementWrite( const std::unique_ptr<const UnaryMinus>& unary_minus ) const
+void ElementWrite( const UnaryMinus& unary_minus ) const
 {
 	stream_ << OverloadedOperatorToString( OverloadedOperator::Sub );
-	ElementWrite( unary_minus->expression );
+	ElementWrite( unary_minus.expression );
 }
 
-void ElementWrite( const std::unique_ptr<const LogicalNot>& logical_not ) const
+void ElementWrite( const LogicalNot& logical_not ) const
 {
 	stream_ << OverloadedOperatorToString( OverloadedOperator::LogicalNot );
-	ElementWrite( logical_not->expression );
+	ElementWrite( logical_not.expression );
 }
 
-void ElementWrite( const std::unique_ptr<const BitwiseNot>& bitwise_not ) const
+void ElementWrite( const BitwiseNot& bitwise_not ) const
 {
 	stream_ << OverloadedOperatorToString( OverloadedOperator::BitwiseNot );
-	ElementWrite( bitwise_not->expression );
+	ElementWrite( bitwise_not.expression );
 }
 
-void ElementWrite( const std::unique_ptr<const IndexationOperator>& indexation_operator ) const
+void ElementWrite( const IndexationOperator& indexation_operator ) const
 {
-	ElementWrite( indexation_operator->expression );
+	ElementWrite( indexation_operator.expression );
 	stream_ << "[ ";
-	ElementWrite( indexation_operator->index );
+	ElementWrite( indexation_operator.index );
 	stream_ << " ]";
 }
 
-void ElementWrite( const std::unique_ptr<const MemberAccessOperator>& member_access_operator ) const
+void ElementWrite( const MemberAccessOperator& member_access_operator ) const
 {
-	ElementWrite( member_access_operator->expression );
-	stream_ << "." << member_access_operator->member_name;
-	if( member_access_operator->has_template_args )
+	ElementWrite( member_access_operator.expression );
+	stream_ << "." << member_access_operator.member_name;
+	if( member_access_operator.has_template_args )
 	{
 		stream_ << "</";
-		for( const Expression& template_arg : member_access_operator->template_args )
+		for( const Expression& template_arg : member_access_operator.template_args )
 		{
 			ElementWrite( template_arg );
-			if( &template_arg != &member_access_operator->template_args.back() )
+			if( &template_arg != &member_access_operator.template_args.back() )
 				stream_ << ", ";
 		}
 		stream_ << "/>";
 	}
 }
 
-void ElementWrite( const std::unique_ptr<const AwaitOperator>& await_operator ) const
+void ElementWrite( const AwaitOperator& await_operator ) const
 {
-	ElementWrite( await_operator->expression );
+	ElementWrite( await_operator.expression );
 	stream_ << "." << Keyword( Keywords::await_ );
 }
 
-void ElementWrite( const std::unique_ptr<const VariableInitialization>& variable_initialization ) const
+void ElementWrite( const VariableInitialization& variable_initialization ) const
 {
-	ElementWrite( variable_initialization->type );
-	ElementWrite( variable_initialization->initializer );
+	ElementWrite( variable_initialization.type );
+	ElementWrite( variable_initialization.initializer );
 }
 
-void ElementWrite( const std::unique_ptr<const MemberAccessOperatorCompletion>& member_access_operator_completion ) const
+void ElementWrite( const MemberAccessOperatorCompletion& member_access_operator_completion ) const
 {
-	ElementWrite( member_access_operator_completion->expression );
-	stream_ << "." << member_access_operator_completion->member_name;
+	ElementWrite( member_access_operator_completion.expression );
+	stream_ << "." << member_access_operator_completion.member_name;
 }
 
-void ElementWrite( const std::unique_ptr<const CallOperator>& call_operator ) const
+void ElementWrite( const CallOperator& call_operator ) const
 {
-	ElementWrite( call_operator->expression );
+	ElementWrite( call_operator.expression );
 	stream_ << "( ";
-	for( const Expression& arg : call_operator->arguments )
+	for( const Expression& arg : call_operator.arguments )
 	{
 		ElementWrite( arg );
 
-		if( &arg != &call_operator->arguments.back() )
+		if( &arg != &call_operator.arguments.back() )
 			stream_ << ", ";
 	}
 	stream_ << ")";
 }
 
-void ElementWrite( const std::unique_ptr<const CallOperatorSignatureHelp>& call_operator_signature_help ) const
+void ElementWrite( const CallOperatorSignatureHelp& call_operator_signature_help ) const
 {
-	ElementWrite( call_operator_signature_help->expression );
+	ElementWrite( call_operator_signature_help.expression );
 	stream_ << "( ";
 	stream_ << ")";
-}
-
-void ElementWrite( const std::unique_ptr<const NamesScopeNameFetch>& names_scope_fetch ) const
-{
-	ElementWrite( *names_scope_fetch );
-}
-
-void ElementWrite( const std::unique_ptr<const TypeofTypeName>& typeof_type_name ) const
-{
-	ElementWrite( *typeof_type_name );
-}
-
-void ElementWrite( const std::unique_ptr<const NamesScopeNameFetchCompletion>& names_scope_fetch_completion ) const
-{
-	ElementWrite( *names_scope_fetch_completion );
-}
-
-void ElementWrite( const std::unique_ptr<const TemplateParameterization>& template_parameterization ) const
-{
-	ElementWrite( *template_parameterization );
-}
-
-void ElementWrite( const std::unique_ptr<const ArrayTypeName>& array_type_name ) const
-{
-	ElementWrite( *array_type_name );
-}
-
-void ElementWrite( const std::unique_ptr<const FunctionType>& function_type ) const
-{
-	ElementWrite( *function_type );
-}
-
-void ElementWrite( const std::unique_ptr<const RawPointerType>& raw_pointer_type ) const
-{
-	ElementWrite( *raw_pointer_type );
-}
-
-void ElementWrite( const std::unique_ptr<const CoroutineType>& coroutine_type ) const
-{
-	ElementWrite( *coroutine_type );
 }
 
 void ElementWrite( const std::unique_ptr<const Mixin>& mixin ) const
