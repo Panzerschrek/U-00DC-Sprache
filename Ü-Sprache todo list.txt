@@ -65,6 +65,7 @@ Lambdas:
 *) Template lambdas
 
 Standart library:
+*) Fix obtaining file size for large files on some GNU/Linux versions (x86, AArch64)
 *) Optimize template functions and classes in order to minimize number of things being compiling and thus speed-up
 	compilation of user programs using ustlib.
 *) Support types with references inside in some containers (variant, result, hash_map)
@@ -151,6 +152,7 @@ Interpreter:
 *) Sdd possibility to provide proper argc/argv (not only stubs for them)
 *) Add possibility to optimize code
 *) Fix working on 32-bit Windows
+*) Fix working on 32-bit GNU/Linux
 *) Fix working on AArch64 OS X
 *) Support math functions
 
@@ -254,7 +256,7 @@ Documentation:
 Targets:
 *) Support targeting Android
 *) Support targeting iOS
-*) Support targeting 32-bit GNU/Linux (including x32 ABI)
+*) Support targeting GNU/Linux with x32 ABI
 *) Support older versions of OS X (prior to 15.0)
 *) Fix broken standard library functionality on OS X (semaphores, some file operations)
 *) Support hosting/targeting OS X on x86_64 CPUs
