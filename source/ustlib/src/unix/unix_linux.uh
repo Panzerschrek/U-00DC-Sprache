@@ -10,12 +10,10 @@ fn nomangle fchmod( i32 ü__fd, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : 
 fn nomangle fdatasync( i32 ü__fildes ) unsafe call_conv( "C" ) : i32;
 fn nomangle fstat( i32 ü__fd, $(stat_) ü__buf ) unsafe call_conv( "C" ) : i32;
 fn nomangle fsync( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
-fn nomangle ftruncate( i32 ü__fd, ü__off_t ü__length ) unsafe call_conv( "C" ) : i32;
 fn nomangle ftruncate64( i32 ü__fd, ü__off64_t ü__length ) unsafe call_conv( "C") : i32;
 fn nomangle getcwd( $(char8) ü__buf, size_t ü__size ) unsafe call_conv( "C" ) : $(char8);
 fn nomangle getenv( $(char8) ü__name ) unsafe call_conv( "C" ) : $(char8);
 fn nomangle getpid() unsafe call_conv( "C" ) : pid_t;
-fn nomangle lseek( i32 ü__fd, ü__off_t ü__offset, i32 ü__whence ) unsafe call_conv( "C" ) : ü__off64_t;
 fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe call_conv( "C") : ü__off64_t;
 fn nomangle lstat( $(char8) ü__file, $(stat_) ü__buf ) unsafe call_conv( "C" ) : i32;
 fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
@@ -31,6 +29,11 @@ fn nomangle stat( $(char8) ü__file, $(stat_) ü__buf ) unsafe call_conv( "C" ) 
 fn nomangle unlink( $(char8) ü__name ) unsafe call_conv( "C" ) : i32;
 fn nomangle unsetenv( $(char8) ü__name ) unsafe call_conv( "C" ) : i32;
 fn nomangle write( i32 ü__fd, $(byte8) ü__buf, size_t ü__n ) unsafe call_conv( "C" ) : ssize_t;
+
+// Use function pointers to create aliases for 64-bit versions of some functions.
+// It's necessary, since on some systems native functions like these have 32-bit arguments and thus can't work with large files properly.
+auto ftruncate= ftruncate64;
+auto lseek= lseek64;
 
 struct dirent ordered
 {
