@@ -903,7 +903,7 @@ void ElementWrite( const ClassField& class_field ) const
 	stream_ << "\t";
 	ElementWrite( class_field.type );
 
-	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.inner_reference_tags_expression ) )
+	if( !std::holds_alternative< EmptyVariant >( class_field.inner_reference_tags_expression ) )
 	{
 		stream_ << " @(";
 		ElementWrite( class_field.inner_reference_tags_expression );
@@ -917,7 +917,7 @@ void ElementWrite( const ClassField& class_field ) const
 	if( class_field.mutability_modifier != MutabilityModifier::None )
 		stream_ << " ";
 
-	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.reference_tag_expression ) )
+	if( !std::holds_alternative< EmptyVariant >( class_field.reference_tag_expression ) )
 	{
 		stream_ << " @(";
 		ElementWrite( class_field.reference_tag_expression );
@@ -961,7 +961,7 @@ void ElementWrite( const ProgramElementsList& elements ) const
 	elements.Iter( [&]( const auto& el ) { ElementWrite(el); } );
 }
 
-void WriteFunctionDeclaration( const Synt::Function& function ) const
+void WriteFunctionDeclaration( const Function& function ) const
 {
 	if( function.overloaded_operator == OverloadedOperator::None )
 		stream_ << Keyword( Keywords::fn_ );
@@ -1030,7 +1030,7 @@ void WriteFunctionDeclaration( const Synt::Function& function ) const
 	}
 }
 
-void WriteFunctionParamsList( const Synt::FunctionType& function_type ) const
+void WriteFunctionParamsList( const FunctionType& function_type ) const
 {
 	if( function_type.params.empty() )
 		stream_ << "()";
