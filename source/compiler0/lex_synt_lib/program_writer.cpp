@@ -16,7 +16,6 @@ namespace
 
 class ProgramWriter
 {
-
 public:
 	ProgramWriter( std::ostream& stream )
 		: stream_(stream)
@@ -983,7 +982,7 @@ void WriteFunctionDeclaration( const Function& function ) const
 			stream_ << "::";
 	}
 
-	ElementWrite( function.type );
+	WriteFunctionParamsList( function.type );
 
 	WriteFunctionTypeEnding( function.type );
 
