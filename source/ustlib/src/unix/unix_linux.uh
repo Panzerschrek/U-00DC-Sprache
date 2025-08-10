@@ -100,21 +100,21 @@ struct stat64_x86_64 ordered
 struct stat64_aarch64 ordered
 {
 	ü__dev_t st_dev;
-	u32 ü__pad1;
-	ü__ino_t ü__st_ino;
+	ü__ino64_t st_ino;
 	ü__mode_t st_mode;
 	ü__nlink_t st_nlink;
 	ü__uid_t st_uid;
 	ü__gid_t st_gid;
 	ü__dev_t st_rdev;
-	u32 ü__pad2;
+	ü__dev_t ü__pad1;
 	ü__off64_t st_size;
 	ü__blksize_t st_blksize;
+	i32 ü__pad2;
 	ü__blkcnt64_t st_blocks;
 	timespec st_atim;
 	timespec st_mtim;
 	timespec st_ctim;
-	ü__ino64_t st_ino;
+	[ i32, 2u ] ü__glibc_reserved;
 }
 
 type stat64_=
