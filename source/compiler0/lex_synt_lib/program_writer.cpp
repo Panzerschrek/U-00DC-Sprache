@@ -23,7 +23,7 @@ void ElementWrite( const NameLookupCompletion& name_lookup_completion, std::ostr
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream );
 void ElementWrite( const NamesScopeNameFetchCompletion& names_scope_fetch_completion, std::ostream& stream );
 void ElementWrite( const TemplateParameterization& template_parameterization, std::ostream& stream );
-void ElementWrite( const ComplexName& complex_name, std::ostream& stream );
+void ElementWriteComplexName( const ComplexName& complex_name, std::ostream& stream );
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
 void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream );
 void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& stream );
@@ -31,8 +31,8 @@ void ElementWrite( const CoroutineType& coroutine_type_name, std::ostream& strea
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
 void ElementWrite( const FunctionType& function_type_name, std::ostream& stream );
 void ElementWrite( const FunctionParam& param, std::ostream& stream );
-void ElementWrite( const TypeName& type_name, std::ostream& stream );
-void ElementWrite( const Expression& expression, std::ostream& stream );
+void ElementWriteTypeName( const TypeName& type_name, std::ostream& stream );
+void ElementWriteExpression( const Expression& expression, std::ostream& stream );
 void ElementWrite( const Initializer& initializer, std::ostream& stream );
 void ElementWrite( const ReferenceModifier& reference_modifier, std::ostream& stream );
 void ElementWrite( const MutabilityModifier& mutability_modifier, std::ostream& stream );
@@ -163,31 +163,31 @@ void ElementWrite( const NameLookupCompletion& name_lookup_completion, std::ostr
 
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream )
 {
-	ElementWrite( names_scope_fetch.base, stream );
+	ElementWriteComplexName( names_scope_fetch.base, stream );
 	stream << "::" << names_scope_fetch.name;
 }
 
 void ElementWrite( const NamesScopeNameFetchCompletion& names_scope_fetch_completion, std::ostream& stream )
 {
-	ElementWrite( names_scope_fetch_completion.base, stream );
+	ElementWriteComplexName( names_scope_fetch_completion.base, stream );
 	stream << "::" << names_scope_fetch_completion.name;
 }
 
 void ElementWrite( const TemplateParameterization& template_parameterization, std::ostream& stream )
 {
-	ElementWrite( template_parameterization.base, stream );
+	ElementWriteComplexName( template_parameterization.base, stream );
 
 	stream << "</ ";
 	for( const Expression& expr : template_parameterization.template_args )
 	{
-		ElementWrite( expr, stream );
+		ElementWriteExpression( expr, stream );
 		if( &expr != &template_parameterization.template_args.back() )
 			stream << ", ";
 	}
 	stream << " />";
 }
 
-void ElementWrite( const ComplexName& complex_name, std::ostream& stream )
+void ElementWriteComplexName( const ComplexName& complex_name, std::ostream& stream )
 {
 	return std::visit( UniversalVisitor(stream), complex_name );
 }
@@ -195,9 +195,9 @@ void ElementWrite( const ComplexName& complex_name, std::ostream& stream )
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream )
 {
 	stream << "[ ";
-	ElementWrite( array_type_name.element_type, stream );
+	ElementWriteTypeName( array_type_name.element_type, stream );
 	stream << ", ";
-	ElementWrite( array_type_name.size, stream );
+	ElementWriteExpression( array_type_name.size, stream );
 	stream << " ]";
 }
 
@@ -211,7 +211,7 @@ void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream )
 		stream << "[ ";
 		for( const TypeName& element_type : tuple_type_name.element_types )
 		{
-			ElementWrite( element_type, stream );
+			ElementWriteTypeName( element_type, stream );
 			if( &element_type != &tuple_type_name.element_types.back() )
 				stream << ", ";
 		}
@@ -223,7 +223,7 @@ void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& st
 {
 	stream << "$";
 	stream << "(";
-	ElementWrite( raw_pointer_type_name.element_type, stream );
+	ElementWriteTypeName( raw_pointer_type_name.element_type, stream );
 	stream << ")";
 }
 
@@ -254,7 +254,7 @@ void ElementWrite( const CoroutineType& coroutine_name, std::ostream& stream )
 	ElementWrite( coroutine_name.non_sync_tag, stream );
 
 	stream << ":";
-	ElementWrite( coroutine_name.return_type, stream );
+	ElementWriteTypeName( coroutine_name.return_type, stream );
 
 	ElementWrite( coroutine_name.return_value_reference_modifier, stream );
 	ElementWrite( coroutine_name.return_value_mutability_modifier, stream );
@@ -263,7 +263,7 @@ void ElementWrite( const CoroutineType& coroutine_name, std::ostream& stream )
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
 {
 	stream << Keyword( Keywords::typeof_ ) << "( ";
-	ElementWrite( typeof_type_name.expression, stream );
+	ElementWriteExpression( typeof_type_name.expression, stream );
 	stream << " )";
 }
 
@@ -290,7 +290,7 @@ void ElementWrite( const FunctionParam& param, std::ostream& stream )
 	}
 	else
 	{
-		ElementWrite( param.type, stream );
+		ElementWriteTypeName( param.type, stream );
 
 		stream << " ";
 
@@ -304,12 +304,12 @@ void ElementWrite( const FunctionParam& param, std::ostream& stream )
 	}
 }
 
-void ElementWrite( const TypeName& type_name, std::ostream& stream )
+void ElementWriteTypeName( const TypeName& type_name, std::ostream& stream )
 {
 	std::visit( UniversalVisitor(stream), type_name );
 }
 
-void ElementWrite( const Expression& expression, std::ostream& stream )
+void ElementWriteExpression( const Expression& expression, std::ostream& stream )
 {
 	class Visitor
 	{
@@ -322,36 +322,32 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const std::unique_ptr<const BinaryOperator>& binary_operator ) const
 		{
-			ElementWrite( binary_operator->left , stream );
+			ElementWriteExpression( binary_operator->left , stream );
 			stream << " " << BinaryOperatorToString(binary_operator->operator_type) << " ";
-			ElementWrite( binary_operator->right, stream );
-		}
-		void operator()( const ComplexName& complex_name ) const
-		{
-			ElementWrite( complex_name, stream );
+			ElementWriteExpression( binary_operator->right, stream );
 		}
 		void operator()( const std::unique_ptr<const TernaryOperator>& ternary_operator ) const
 		{
 			stream << "( ";
-			ElementWrite( ternary_operator->condition, stream );
+			ElementWriteExpression( ternary_operator->condition, stream );
 			stream << " ? ";
-			ElementWrite( ternary_operator->branches[0], stream );
+			ElementWriteExpression( ternary_operator->branches[0], stream );
 			stream << " : ";
-			ElementWrite( ternary_operator->branches[1], stream );
+			ElementWriteExpression( ternary_operator->branches[1], stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const ReferenceToRawPointerOperator>& reference_to_raw_pointer_operator ) const
 		{
 			stream << "$<";
 			stream << "(";
-			ElementWrite( reference_to_raw_pointer_operator->expression, stream );
+			ElementWriteExpression( reference_to_raw_pointer_operator->expression, stream );
 			stream << ")";
 		}
 		void operator()( const std::unique_ptr<const RawPointerToReferenceOperator>& raw_pointer_to_reference_operator ) const
 		{
 			stream << "$>";
 			stream << "(";
-			ElementWrite( raw_pointer_to_reference_operator->expression, stream );
+			ElementWriteExpression( raw_pointer_to_reference_operator->expression, stream );
 			stream << ")";
 		}
 		void operator()( const IntegerNumericConstant& numeric_constant ) const
@@ -429,7 +425,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		void operator()( const std::unique_ptr<const TakeOperator>& take_operator ) const
 		{
 			stream << Keyword( Keywords::take_ ) << "( ";
-			ElementWrite( take_operator->expression, stream );
+			ElementWriteExpression( take_operator->expression, stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const Lambda>& lambda ) const
@@ -441,29 +437,29 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		void operator()( const std::unique_ptr<const CastRef>& cast_ref ) const
 		{
 			stream << Keyword( Keywords::cast_ref_ ) << "</ ";
-			ElementWrite( cast_ref->type, stream );
+			ElementWriteTypeName( cast_ref->type, stream );
 			stream << " />( ";
-			ElementWrite( cast_ref->expression, stream );
+			ElementWriteExpression( cast_ref->expression, stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const CastRefUnsafe>& cast_ref_unsafe ) const
 		{
 			stream << Keyword( Keywords::cast_ref_unsafe_ ) << "</ ";
-			ElementWrite( cast_ref_unsafe->type, stream );
+			ElementWriteTypeName( cast_ref_unsafe->type, stream );
 			stream << " />( ";
-			ElementWrite( cast_ref_unsafe->expression, stream );
+			ElementWriteExpression( cast_ref_unsafe->expression, stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const CastImut>& cast_imut ) const
 		{
 			stream << Keyword( Keywords::cast_imut_ ) << "( ";
-			ElementWrite( cast_imut->expression, stream );
+			ElementWriteExpression( cast_imut->expression, stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const CastMut>& cast_mut ) const
 		{
 			stream << Keyword( Keywords::cast_mut_ ) << "( ";
-			ElementWrite( cast_mut->expression, stream );
+			ElementWriteExpression( cast_mut->expression, stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const Embed>& embed ) const
@@ -473,12 +469,12 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			if( embed->element_type != std::nullopt )
 			{
 				stream << "</";
-				ElementWrite( *embed->element_type, stream );
+				ElementWriteComplexName( *embed->element_type, stream );
 				stream << "/>";
 			}
 
 			stream << "( ";
-			ElementWrite( embed->expression, stream );
+			ElementWriteExpression( embed->expression, stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const ExternalFunctionAccess>& external_function_access ) const
@@ -486,7 +482,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			stream << Keyword( Keywords::import_ ) << " " << Keyword( Keywords::fn_ );
 
 			stream << "</";
-			ElementWrite( external_function_access->type, stream );
+			ElementWriteTypeName( external_function_access->type, stream );
 			stream << "/>";
 
 			stream << "( ";
@@ -498,7 +494,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			stream << Keyword( Keywords::import_ ) << " " << Keyword( Keywords::var_ );
 
 			stream << "</";
-			ElementWrite( external_variable_access->type, stream );
+			ElementWriteTypeName( external_variable_access->type, stream );
 			stream << "/>";
 
 			stream << "( ";
@@ -508,69 +504,69 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		void operator()( const std::unique_ptr<const TypeInfo>& typeinfo_ ) const
 		{
 			stream << "</ ";
-			ElementWrite( typeinfo_->type, stream );
+			ElementWriteTypeName( typeinfo_->type, stream );
 			stream << " />";
 		}
 		void operator()( const std::unique_ptr<const SameType>& same_type ) const
 		{
 			stream << Keyword( Keywords::same_type_ ) << "</ ";
-			ElementWrite( same_type->l, stream );
+			ElementWriteTypeName( same_type->l, stream );
 			stream << ", ";
-			ElementWrite( same_type->r, stream );
+			ElementWriteTypeName( same_type->r, stream );
 			stream << " />";
 		}
 		void operator()( const std::unique_ptr<const NonSyncExpression>& non_sync_expression ) const
 		{
 			stream << "</ ";
-			ElementWrite( non_sync_expression->type, stream );
+			ElementWriteTypeName( non_sync_expression->type, stream );
 			stream << " />";
 		}
 		void operator()( const std::unique_ptr<const SafeExpression>& safe_expression ) const
 		{
 			stream << Keyword( Keywords::safe_ );
 			stream << "( ";
-			ElementWrite( safe_expression->expression, stream );
+			ElementWriteExpression( safe_expression->expression, stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const UnsafeExpression>& unsafe_expression ) const
 		{
 			stream << Keyword( Keywords::unsafe_ );
 			stream << "( ";
-			ElementWrite( unsafe_expression->expression, stream );
+			ElementWriteExpression( unsafe_expression->expression, stream );
 			stream << " )";
 		}
 		void operator()( const std::unique_ptr<const UnaryMinus>& unary_minus ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::Sub );
-			ElementWrite( unary_minus->expression, stream );
+			ElementWriteExpression( unary_minus->expression, stream );
 		}
 		void operator()( const std::unique_ptr<const LogicalNot>& logical_not ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::LogicalNot );
-			ElementWrite( logical_not->expression, stream );
+			ElementWriteExpression( logical_not->expression, stream );
 		}
 		void operator()( const std::unique_ptr<const BitwiseNot>& bitwise_not ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::BitwiseNot );
-			ElementWrite( bitwise_not->expression, stream );
+			ElementWriteExpression( bitwise_not->expression, stream );
 		}
 		void operator()( const std::unique_ptr<const IndexationOperator>& indexation_operator )
 		{
-			ElementWrite( indexation_operator->expression, stream );
+			ElementWriteExpression( indexation_operator->expression, stream );
 			stream << "[ ";
-			ElementWrite( indexation_operator->index, stream );
+			ElementWriteExpression( indexation_operator->index, stream );
 			stream << " ]";
 		}
 		void operator()( const std::unique_ptr<const MemberAccessOperator>& member_access_operator ) const
 		{
-			ElementWrite( member_access_operator->expression, stream );
+			ElementWriteExpression( member_access_operator->expression, stream );
 			stream << "." << member_access_operator->member_name;
 			if( member_access_operator->has_template_args )
 			{
 				stream << "</";
 				for( const Expression& template_arg : member_access_operator->template_args )
 				{
-					ElementWrite( template_arg, stream );
+					ElementWriteExpression( template_arg, stream );
 					if( &template_arg != &member_access_operator->template_args.back() )
 						stream<< ", ";
 				}
@@ -579,26 +575,26 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const std::unique_ptr<const AwaitOperator>& await_operator ) const
 		{
-			ElementWrite( await_operator->expression, stream );
+			ElementWriteExpression( await_operator->expression, stream );
 			stream << "." << Keyword( Keywords::await_ );
 		}
 		void operator()( const std::unique_ptr<const VariableInitialization>& variable_initialization ) const
 		{
-			ElementWrite( variable_initialization->type, stream );
+			ElementWriteExpression( variable_initialization->type, stream );
 			ElementWrite( variable_initialization->initializer, stream );
 		}
 		void operator()( const std::unique_ptr<const MemberAccessOperatorCompletion>& member_access_operator_completion ) const
 		{
-			ElementWrite( member_access_operator_completion->expression, stream );
+			ElementWriteExpression( member_access_operator_completion->expression, stream );
 			stream << "." << member_access_operator_completion->member_name;
 		}
 		void operator()( const std::unique_ptr<const CallOperator>& call_operator ) const
 		{
-			ElementWrite( call_operator->expression, stream );
+			ElementWriteExpression( call_operator->expression, stream );
 			stream << "( ";
 			for( const Expression& arg : call_operator->arguments )
 			{
-				ElementWrite( arg, stream );
+				ElementWriteExpression( arg, stream );
 
 				if( &arg != &call_operator->arguments.back() )
 					stream << ", ";
@@ -607,13 +603,29 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const std::unique_ptr<const CallOperatorSignatureHelp>& call_operator_signature_help ) const
 		{
-			ElementWrite( call_operator_signature_help->expression, stream );
+			ElementWriteExpression( call_operator_signature_help->expression, stream );
 			stream << "( ";
 			stream << ")";
 		}
 		void operator()( const std::unique_ptr<const NamesScopeNameFetch>& names_scope_fetch ) const
 		{
 			ElementWrite( *names_scope_fetch, stream );
+		}
+		void operator()( const RootNamespaceNameLookup& root_namespace_lookup ) const
+		{
+			ElementWrite( root_namespace_lookup, stream );
+		}
+		void operator()( const RootNamespaceNameLookupCompletion& root_namespace_lookup_completion ) const
+		{
+			ElementWrite( root_namespace_lookup_completion, stream );
+		}
+		void operator()( const NameLookup& name_lookup ) const
+		{
+			ElementWrite( name_lookup, stream );
+		}
+		void operator()( const NameLookupCompletion& name_lookup_completion ) const
+		{
+			ElementWrite( name_lookup_completion, stream );
 		}
 		void operator()( const std::unique_ptr<const TypeofTypeName>& typeof_type_name ) const
 		{
@@ -651,7 +663,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			stream << Keyword( Keywords::mixin_ );
 			stream << "( ";
-			ElementWrite( mixin->expression, stream );
+			ElementWriteExpression( mixin->expression, stream );
 			stream << " )";
 		}
 
@@ -675,7 +687,7 @@ void ElementWrite( const Initializer& initializer, std::ostream& stream )
 			stream << "( ";
 			for( const Expression& arg :constructor_initializer->arguments )
 			{
-				ElementWrite( arg, stream );
+				ElementWriteExpression( arg, stream );
 				if( &arg != &constructor_initializer->arguments.back() )
 					stream << ", ";
 			}
@@ -769,7 +781,7 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 		stream << " : ";
 		for( const ComplexName& parent : class_.parents )
 		{
-			ElementWrite( parent, stream );
+			ElementWriteComplexName( parent, stream );
 			if( &parent != &class_.parents.back() )
 				stream << ", ";
 		}
@@ -797,7 +809,7 @@ void ElementWrite( const NonSyncTag& non_sync_tag, std::ostream& stream )
 	else if( const auto expression_ptr = std::get_if< std::unique_ptr<const Expression> >( &non_sync_tag ) )
 	{
 		stream << Keyword( Keywords::non_sync_ ) << " ( ";
-		ElementWrite( **expression_ptr, stream );
+		ElementWriteExpression( **expression_ptr, stream );
 		stream << " )";
 	}
 	else U_ASSERT(false);
@@ -813,7 +825,7 @@ void ElementWrite( const Namespace& namespace_, std::ostream& stream )
 void ElementWrite( const VariablesDeclaration& variables_declaration, std::ostream& stream )
 {
 	stream << Keyword( Keywords::var_ ) << " ";
-	ElementWrite( variables_declaration.type, stream );
+	ElementWriteTypeName( variables_declaration.type, stream );
 
 	if( variables_declaration.variables.size () <= 1 )
 	{
@@ -860,7 +872,7 @@ void ElementWrite( const AutoVariableDeclaration& auto_variable_declaration, std
 
 	stream << auto_variable_declaration.name;
 	stream << " = ";
-	ElementWrite( auto_variable_declaration.initializer_expression, stream );
+	ElementWriteExpression( auto_variable_declaration.initializer_expression, stream );
 	stream << ";\n";
 }
 
@@ -879,7 +891,7 @@ void ElementWrite( const Enum& enum_, std::ostream& stream )
 	if( enum_.underlying_type_name != std::nullopt )
 	{
 		stream << " : ";
-		ElementWrite( *enum_.underlying_type_name, stream );
+		ElementWriteComplexName( *enum_.underlying_type_name, stream );
 	}
 
 	if( enum_.no_discard )
@@ -894,7 +906,7 @@ void ElementWrite( const Enum& enum_, std::ostream& stream )
 void ElementWrite( const TypeAlias& type_alias, std::ostream& stream )
 {
 	stream << Keyword( Keywords::type_ ) << " " << type_alias.name << " = ";
-	ElementWrite( type_alias.value, stream );
+	ElementWriteTypeName( type_alias.value, stream );
 	stream << ";\n";
 }
 
@@ -914,12 +926,12 @@ void ElementWrite( const FunctionTemplate& function_template, std::ostream& stre
 void ElementWrite( const ClassField& class_field, std::ostream& stream )
 {
 	stream << "\t";
-	ElementWrite( class_field.type, stream );
+	ElementWriteTypeName( class_field.type, stream );
 
 	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.inner_reference_tags_expression ) )
 	{
 		stream << " @(";
-		ElementWrite( class_field.inner_reference_tags_expression, stream );
+		ElementWriteExpression( class_field.inner_reference_tags_expression, stream );
 		stream << ") ";
 	}
 
@@ -933,7 +945,7 @@ void ElementWrite( const ClassField& class_field, std::ostream& stream )
 	if( !std::holds_alternative< Synt::EmptyVariant >( class_field.reference_tag_expression ) )
 	{
 		stream << " @(";
-		ElementWrite( class_field.reference_tag_expression, stream );
+		ElementWriteExpression( class_field.reference_tag_expression, stream );
 		stream << ") ";
 	}
 
@@ -960,7 +972,7 @@ void ElementWrite( const Mixin& mixin, std::ostream& stream )
 {
 	stream << Keyword( Keywords::mixin_ );
 	stream << "( ";
-	ElementWrite( mixin.expression, stream );
+	ElementWriteExpression( mixin.expression, stream );
 	stream << " );";
 }
 
@@ -983,12 +995,12 @@ void WriteProgram( const ProgramElementsList& program_elements, std::ostream& st
 
 void WriteExpression( const Synt::Expression& expression, std::ostream& stream )
 {
-	ElementWrite( expression, stream );
+	ElementWriteExpression( expression, stream );
 }
 
 void WriteTypeName( const Synt::TypeName& type_name, std::ostream& stream )
 {
-	ElementWrite( type_name, stream );
+	ElementWriteTypeName( type_name, stream );
 }
 
 void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& stream )
@@ -1032,7 +1044,7 @@ void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& str
 	if( !std::holds_alternative<EmptyVariant>(function.condition) )
 	{
 		stream << Keyword( Keywords::enable_if_ ) << "( ";
-		ElementWrite( function.condition, stream );
+		ElementWriteExpression( function.condition, stream );
 		stream << " ) ";
 	}
 
@@ -1083,7 +1095,7 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 	if( function_type.references_pollution_expression != nullptr )
 	{
 		stream << " @( ";
-		ElementWrite( *function_type.references_pollution_expression, stream );
+		ElementWriteExpression( *function_type.references_pollution_expression, stream );
 		stream << " )";
 	}
 
@@ -1094,20 +1106,20 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 	{
 		stream << Keyword( Keywords::call_conv_ );
 		stream << "( ";
-		ElementWrite( *function_type.calling_convention, stream );
+		ElementWriteExpression( *function_type.calling_convention, stream );
 		stream << ") ";
 	}
 
 	stream << ": ";
 	if( function_type.return_type != nullptr )
-		ElementWrite( *function_type.return_type, stream );
+		ElementWriteTypeName( *function_type.return_type, stream );
 	else
 		stream << Keyword( Keywords::void_ );
 
 	if( function_type.return_value_inner_references_expression != nullptr )
 	{
 		stream << " @( ";
-		ElementWrite( *function_type.return_value_inner_references_expression, stream );
+		ElementWriteExpression( *function_type.return_value_inner_references_expression, stream );
 		stream << " )";
 	}
 
@@ -1121,7 +1133,7 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 		if( function_type.return_value_reference_expression != nullptr )
 		{
 			stream << " @( ";
-			ElementWrite( *function_type.return_value_reference_expression, stream );
+			ElementWriteExpression( *function_type.return_value_reference_expression, stream );
 			stream << " )";
 		}
 	}
@@ -1136,7 +1148,7 @@ void WriteFunctionTemplate( const FunctionTemplate& function_template, std::ostr
 	{
 		if( const auto variable_param_data= std::get_if<TemplateParam::VariableParamData>( &param.kind_data ) )
 		{
-			ElementWrite( variable_param_data->type, stream );
+			ElementWriteTypeName( variable_param_data->type, stream );
 			stream << " ";
 		}
 		else if( std::holds_alternative<TemplateParam::TypeParamData>( param.kind_data ) )

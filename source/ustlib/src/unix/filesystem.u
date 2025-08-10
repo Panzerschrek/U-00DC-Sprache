@@ -897,7 +897,7 @@ fn directory_entry_type_to_file_kind( u8 t ) : file_kind
 
 fn timespec_to_system_time( timespec& t ) unsafe : system_time
 {
-	return unsafe( system_time( system_time::impl_unix{ .seconds= t.tv_sec, .nanoseconds= t.tv_nsec } ) );
+	return unsafe( system_time( system_time::impl_unix{ .seconds( t.tv_sec ), .nanoseconds( t.tv_nsec ) } ) );
 }
 
 fn get_size_impl( native_file_handle handle ) : filesystem_result</u64/>
@@ -1038,24 +1038,49 @@ fn flush_all_impl( native_file_handle handle ) unsafe : filesystem_result</void/
 
 fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : filesystem_result</void/>
 {
-	var i32 res= unsafe( ::ftruncate( handle, i64(new_size) ) );
-	if( res != 0 )
+	static_if( constexpr_string_equals( compiler::target::os, "linux" ) )
 	{
-		return translate_errno( get_errno() );
+		var i32 res= unsafe( ::ftruncate64( handle, i64(new_size) ) );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+	}
+	else
+	{
+		var i32 res= unsafe( ::ftruncate( handle, i64(new_size) ) );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
 	}
 	return void();
 }
 
 fn seek_impl( native_file_handle handle, u64 offset ) unsafe : filesystem_result</void/>
 {
-	var off_t seek_res= unsafe( ::lseek( handle, off_t(offset), SEEK_SET ) );
-
-	if( seek_res < off_t(-1) )
+	static_if( constexpr_string_equals( compiler::target::os, "linux" ) )
 	{
-		return translate_errno( get_errno() );
-	}
+		var ü__off64_t seek_res= unsafe( ::lseek64( handle, ü__off64_t(offset), SEEK_SET ) );
 
-	return void();
+		if( seek_res < ü__off64_t(-1) )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		return void();
+	}
+	else
+	{
+		var off_t seek_res= unsafe( ::lseek( handle, off_t(offset), SEEK_SET ) );
+
+		if( seek_res < off_t(-1) )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		return void();
+	}
 }
 
 fn translate_errno( i32 errno ) : io_error

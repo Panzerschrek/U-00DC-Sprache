@@ -166,7 +166,11 @@ bool RunLinkerELFLinux(
 	// TODO - check if this is correct.
 	const bool pic= llvm::codegen::getRelocModel() == llvm::Reloc::PIC_;
 
-	const std::string toolchain_file_path= sysroot + "/usr/lib/" + GetLinuxMultiarchTriple( triple ) + "/";
+	std::string toolchain_file_path;
+	if( triple.getArch() == llvm::Triple::x86 )
+		toolchain_file_path= sysroot + "/usr/lib32/";
+	else
+		toolchain_file_path= sysroot + "/usr/lib/" + GetLinuxMultiarchTriple( triple ) + "/";
 
 	llvm::SmallVector<const char*, 32> args;
 	args.push_back( argv0 );

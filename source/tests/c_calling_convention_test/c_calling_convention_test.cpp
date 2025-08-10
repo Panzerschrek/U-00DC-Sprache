@@ -5,7 +5,9 @@
 #include <iostream>
 
 #ifdef __GNUC__
-#define ENABLE_128BIT_INT_TESTS
+	#if defined(__x86_64__) || defined(__aarch64__)
+		#define ENABLE_128BIT_INT_TESTS
+	#endif
 #endif
 
 #define TEST_ASSERT(x) { if( !(x) ) { std::cerr << "Line " << __LINE__ << " assertion failed: " << #x << std::endl; std::abort(); } }

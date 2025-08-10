@@ -36,6 +36,7 @@
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../code_builder_lib_common/async_calls_inlining.hpp"
+#include "../compilers_support_lib/div_builtins.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/ustlib.hpp"
@@ -321,6 +322,10 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 		if( name == name_for_preserve )
 			return true;
 
+	// Avoid internalizing div built-ins.
+	if( IsDivBuiltInLikeFunctionName( name ) )
+		return true;
+
 	return false;
 }
 
@@ -330,6 +335,10 @@ void InternalizeHiddenFunctions( llvm::Module& module )
 	{
 		if( !function.isDeclaration() && function.getVisibility() == llvm::GlobalValue::HiddenVisibility )
 		{
+			// Avoid internalizing div built-ins.
+			if( IsDivBuiltInLikeFunctionName( function.getName() ) )
+				continue;
+
 			function.setLinkage( llvm::GlobalValue::PrivateLinkage );
 			if( const auto comdat = function.getComdat() )
 			{
@@ -359,8 +368,14 @@ void CollectExternalFunctionsForInternalizatioin(
 		return;
 
 	for( const llvm::Function& function : module.functions() )
-		if( !function.isDeclaration() && !function.hasLocalLinkage() )
-			functions.push_back( function.getName().str() );
+	{
+		llvm::StringRef name= function.getName();
+
+		if( !function.isDeclaration() && !function.hasLocalLinkage() &&
+			// Avoid internalizing div built-ins.
+			!IsDivBuiltInLikeFunctionName( name ) )
+			functions.push_back( name.str() );
+	}
 }
 
 void InternalizeCollectedFunctions( llvm::Module& module, const llvm::ArrayRef<std::string> external_functions )
@@ -810,6 +825,16 @@ int Main( int argc, const char* argv[] )
 	// Do it before optimization, to encourange inlining of internalized functions.
 	if( Options::internalize_hidden_functions )
 		InternalizeHiddenFunctions( *result_module );
+
+	// Generate necessary builtins. Do this after internalizing hidden functions, since these built-ins shouldn't be internalized.
+	if(
+		// We don't require GNU-style division built-ins on Windows.
+		target_triple.getOS() != llvm::Triple::Win32 &&
+		// Apple system also don't require these built-ins, and they also don't support comdats.
+		target_triple.getObjectFormat() != llvm::Triple::MachO )
+	{
+		GenerateDivBuiltIns( *result_module );
+	}
 
 	// Perform verification after code generation/linking and after special optimizations and internalizations, but before running LLVM optimizations pipeline.
 	if( Options::verify_module )

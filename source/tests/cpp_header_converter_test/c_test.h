@@ -160,7 +160,7 @@ struct LargeStructWithSingleBitField
 	char arr[10];
 	int val;
 	int f: 2;
-	double x;
+	float x;
 	int arr2[5];
 };
 
