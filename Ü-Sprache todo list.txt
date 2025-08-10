@@ -65,7 +65,6 @@ Lambdas:
 *) Template lambdas
 
 Standart library:
-*) Fix obtaining file size for large files on some GNU/Linux versions (x86, AArch64)
 *) Optimize template functions and classes in order to minimize number of things being compiling and thus speed-up
 	compilation of user programs using ustlib.
 *) Support types with references inside in some containers (variant, result, hash_map)
