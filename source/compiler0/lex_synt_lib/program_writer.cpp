@@ -26,69 +26,69 @@ private:
 
 private:
 
-	void WriteStringEscaped( const std::string_view s ) const
+void WriteStringEscaped( const std::string_view s ) const
+{
+	std::string escaped;
+	for( const char c : s )
 	{
-		std::string escaped;
-		for( const char c : s )
+		switch(c)
 		{
-			switch(c)
+		case '"':
+			escaped.push_back( '\\' );
+			escaped.push_back( '\"' );
+			break;
+		case '\'':
+			escaped.push_back( '\'' );
+			break;
+		case '\\':
+			escaped.push_back( '\\' );
+			escaped.push_back( '\\' );
+			break;
+		case '\b':
+			escaped.push_back( '\\' );
+			escaped.push_back( 'b' );
+			break;
+		case '\f':
+			escaped.push_back( '\\' );
+			escaped.push_back( 'f' );
+			break;
+		case '\n':
+			escaped.push_back( '\\' );
+			escaped.push_back( 'n' );
+			break;
+		case '\r':
+			escaped.push_back( '\\' );
+			escaped.push_back( 'r' );
+			break;
+		case '\t':
+			escaped.push_back( '\\' );
+			escaped.push_back( 't' );
+			break;
+		case '\0':
+			escaped.push_back( '\\' );
+			escaped.push_back( '0' );
+			break;
+		default:
+			if( sprache_char(c) < 32 )
 			{
-			case '"':
-				escaped.push_back( '\\' );
-				escaped.push_back( '\"' );
-				break;
-			case '\'':
-				escaped.push_back( '\'' );
-				break;
-			case '\\':
-				escaped.push_back( '\\' );
-				escaped.push_back( '\\' );
-				break;
-			case '\b':
-				escaped.push_back( '\\' );
-				escaped.push_back( 'b' );
-				break;
-			case '\f':
-				escaped.push_back( '\\' );
-				escaped.push_back( 'f' );
-				break;
-			case '\n':
-				escaped.push_back( '\\' );
-				escaped.push_back( 'n' );
-				break;
-			case '\r':
-				escaped.push_back( '\\' );
-				escaped.push_back( 'r' );
-				break;
-			case '\t':
-				escaped.push_back( '\\' );
-				escaped.push_back( 't' );
-				break;
-			case '\0':
-				escaped.push_back( '\\' );
-				escaped.push_back( '0' );
-				break;
-			default:
-				if( sprache_char(c) < 32 )
+				escaped.push_back('\\');
+				escaped.push_back('u');
+				for( uint32_t i= 0u; i < 4u; ++i )
 				{
-					escaped.push_back('\\');
-					escaped.push_back('u');
-					for( uint32_t i= 0u; i < 4u; ++i )
-					{
-						const sprache_char val= ( sprache_char(c) >> ((3u-i) * 4u ) ) & 15u;
-						if( val < 10u )
-							escaped.push_back( char( '0' + int(val) ) );
-						else
-							escaped.push_back( char( 'a' + int(val-10u) ) );
-					}
+					const sprache_char val= ( sprache_char(c) >> ((3u-i) * 4u ) ) & 15u;
+					if( val < 10u )
+						escaped.push_back( char( '0' + int(val) ) );
+					else
+						escaped.push_back( char( 'a' + int(val-10u) ) );
 				}
-				else
-					escaped.push_back(c);
-				break;
-			};
-		}
-		stream_ << "\"" << escaped << "\"";
+			}
+			else
+				escaped.push_back(c);
+			break;
+		};
 	}
+	stream_ << "\"" << escaped << "\"";
+}
 
 void WriteRawMixin( const Mixin& mixin ) const
 {
