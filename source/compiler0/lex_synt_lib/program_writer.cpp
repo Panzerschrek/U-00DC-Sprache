@@ -91,6 +91,14 @@ private:
 		stream_ << "\"" << escaped << "\"";
 	}
 
+void WriteRawMixin( const Mixin& mixin ) const
+{
+	stream_ << Keyword( Keywords::mixin_ );
+	stream_ << "( ";
+	ElementWrite( mixin.expression );
+	stream_ << " )";
+}
+
 public:
 
 template<typename T>
@@ -118,12 +126,24 @@ void ElementWrite( const ComplexName& complex_name ) const
 
 void ElementWrite( const TypeName& type_name ) const
 {
-	ElementWriteVariant( type_name );
+	if( const auto mixin_ptr= std::get_if< std::unique_ptr<const Mixin> >( &type_name ) )
+	{
+		// Hack to distinguish between mixins in type names and in blocks/global space.
+		WriteRawMixin( **mixin_ptr );
+	}
+	else
+		ElementWriteVariant( type_name );
 }
 
 void ElementWrite( const Expression& expression ) const
 {
-	ElementWriteVariant( expression );
+	if( const auto mixin_ptr= std::get_if< std::unique_ptr<const Mixin> >( &expression ) )
+	{
+		// Hack to distinguish between mixins in expressions and in blocks/global space.
+		WriteRawMixin( **mixin_ptr );
+	}
+	else
+		ElementWriteVariant( expression );
 }
 
 void ElementWrite( const EmptyVariant& )  const {}
@@ -608,14 +628,6 @@ void ElementWrite( const CallOperatorSignatureHelp& call_operator_signature_help
 	stream_ << ")";
 }
 
-void ElementWrite( const std::unique_ptr<const Mixin>& mixin ) const
-{
-	stream_ << Keyword( Keywords::mixin_ );
-	stream_ << "( ";
-	ElementWrite( mixin->expression );
-	stream_ << " )";
-}
-
 void ElementWrite( const Initializer& initializer ) const
 {
 	if( const auto constructor_initializer= std::get_if<ConstructorInitializer>( &initializer ) )
@@ -905,10 +917,8 @@ void ElementWrite( const ClassVisibilityLabel& visibility_label ) const
 
 void ElementWrite( const Mixin& mixin ) const
 {
-	stream_ << Keyword( Keywords::mixin_ );
-	stream_ << "( ";
-	ElementWrite( mixin.expression );
-	stream_ << " );";
+	WriteRawMixin( mixin );
+	stream_ << ";";
 }
 
 void ElementWrite( const ClassElementsList& class_elements ) const
