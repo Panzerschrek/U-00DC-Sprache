@@ -8,38 +8,49 @@ fn nomangle close( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
 fn nomangle closedir( $(DIR) ü__dirp ) unsafe call_conv( "C" ) : i32;
 fn nomangle fchmod( i32 ü__fd, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
 fn nomangle fdatasync( i32 ü__fildes ) unsafe call_conv( "C" ) : i32;
-fn nomangle fstat( i32 ü__fd, $(stat_) ü__buf ) unsafe call_conv( "C" ) : i32;
+fn nomangle fstat64( i32 ü__fd, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle fsync( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
-fn nomangle ftruncate( i32 ü__fd, ü__off_t ü__length ) unsafe call_conv( "C" ) : i32;
 fn nomangle ftruncate64( i32 ü__fd, ü__off64_t ü__length ) unsafe call_conv( "C") : i32;
 fn nomangle getcwd( $(char8) ü__buf, size_t ü__size ) unsafe call_conv( "C" ) : $(char8);
 fn nomangle getenv( $(char8) ü__name ) unsafe call_conv( "C" ) : $(char8);
 fn nomangle getpid() unsafe call_conv( "C" ) : pid_t;
-fn nomangle lseek( i32 ü__fd, ü__off_t ü__offset, i32 ü__whence ) unsafe call_conv( "C" ) : ü__off64_t;
 fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe call_conv( "C") : ü__off64_t;
-fn nomangle lstat( $(char8) ü__file, $(stat_) ü__buf ) unsafe call_conv( "C" ) : i32;
+fn nomangle lstat64( $(char8) ü__file, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
 fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
 fn nomangle opendir( $(char8) ü__name ) unsafe call_conv( "C" ) : $(DIR);
 fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe call_conv( "C" ) : ssize_t;
-fn nomangle readdir( $(DIR) ü__dirp ) unsafe call_conv( "C" ) : $(dirent);
+fn nomangle readdir64( $(DIR) ü__dirp ) unsafe call_conv( "C" ) : $(dirent64);
 fn nomangle rename( $(char8) ü__old, $(char8) ü__new ) unsafe call_conv( "C" ) : i32;
 fn nomangle rmdir( $(char8) ü__path ) unsafe call_conv( "C" ) : i32;
-fn nomangle sendfile( i32 ü__out_fd, i32 ü__in_fd, $(off_t) ü__offset, size_t ü__count ) unsafe call_conv( "C" ) : ssize_t; // Linux-specific
+fn nomangle sendfile64( i32 ü__out_fd, i32 ü__in_fd, $(ü__off64_t) ü__offset, size_t ü__count ) unsafe call_conv( "C") : ssize_t; // Linux-specific
 fn nomangle setenv( $(char8) ü__name, $(char8) ü__value, i32 ü__replace ) unsafe call_conv( "C" ) : i32;
-fn nomangle stat( $(char8) ü__file, $(stat_) ü__buf ) unsafe call_conv( "C" ) : i32;
+fn nomangle stat64( $(char8) ü__file, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle unlink( $(char8) ü__name ) unsafe call_conv( "C" ) : i32;
 fn nomangle unsetenv( $(char8) ü__name ) unsafe call_conv( "C" ) : i32;
 fn nomangle write( i32 ü__fd, $(byte8) ü__buf, size_t ü__n ) unsafe call_conv( "C" ) : ssize_t;
 
-struct dirent ordered
+// Use function pointers to create aliases for 64-bit versions of some functions.
+// It's necessary, since on some systems native functions like these have 32-bit arguments and thus can't work with large files properly.
+auto fstat= fstat64;
+auto ftruncate= ftruncate64;
+auto lseek= lseek64;
+auto lstat= lstat64;
+auto stat= stat64;
+auto readdir= readdir64;
+auto sendfile= sendfile64;
+
+struct dirent64 ordered
 {
-	ü__ino_t d_ino;
-	ü__off_t d_off;
+	ü__ino64_t d_ino;
+	ü__off64_t d_off;
 	u16 d_reclen;
 	u8 d_type;
 	[ char8, 256u ] d_name;
 }
+
+// Manually redirect "dirent" to "dirent64".
+type dirent= dirent64;
 
 struct timespec ordered
 {
@@ -47,31 +58,30 @@ struct timespec ordered
 	ü__syscall_slong_t tv_nsec;
 }
 
-struct stat_x86 ordered
+struct stat64_x86 ordered
 {
 	ü__dev_t st_dev;
-	u16 ü__pad1;
-	ü__ino_t st_ino;
+	u32 ü__pad1;
+	ü__ino_t ü__st_ino;
 	ü__mode_t st_mode;
 	ü__nlink_t st_nlink;
 	ü__uid_t st_uid;
 	ü__gid_t st_gid;
 	ü__dev_t st_rdev;
-	u16 ü__pad2;
-	ü__off_t st_size;
+	u32 ü__pad2;
+	ü__off64_t st_size;
 	ü__blksize_t st_blksize;
-	ü__blkcnt_t st_blocks;
+	ü__blkcnt64_t st_blocks;
 	timespec st_atim;
 	timespec st_mtim;
 	timespec st_ctim;
-	u32 ü__glibc_reserved4;
-	u32 ü__glibc_reserved5;
+	ü__ino64_t st_ino;
 }
 
-struct stat_x86_64 ordered
+struct stat64_x86_64 ordered
 {
 	ü__dev_t st_dev;
-	ü__ino_t st_ino;
+	ü__ino64_t st_ino;
 	ü__nlink_t st_nlink;
 	ü__mode_t st_mode;
 	ü__uid_t st_uid;
@@ -80,41 +90,44 @@ struct stat_x86_64 ordered
 	ü__dev_t st_rdev;
 	ü__off_t st_size;
 	ü__blksize_t st_blksize;
-	ü__blkcnt_t st_blocks;
+	ü__blkcnt64_t st_blocks;
 	timespec st_atim;
 	timespec st_mtim;
 	timespec st_ctim;
 	[ ü__syscall_slong_t, 3u ] ü__glibc_reserved;
 }
 
-struct stat_aarch_64 ordered
+struct stat64_aarch64 ordered
 {
 	ü__dev_t st_dev;
-	ü__ino_t st_ino;
+	ü__ino64_t st_ino;
 	ü__mode_t st_mode;
 	ü__nlink_t st_nlink;
 	ü__uid_t st_uid;
 	ü__gid_t st_gid;
 	ü__dev_t st_rdev;
 	ü__dev_t ü__pad1;
-	ü__off_t st_size;
+	ü__off64_t st_size;
 	ü__blksize_t st_blksize;
 	i32 ü__pad2;
-	ü__blkcnt_t st_blocks;
+	ü__blkcnt64_t st_blocks;
 	timespec st_atim;
 	timespec st_mtim;
 	timespec st_ctim;
 	[ i32, 2u ] ü__glibc_reserved;
 }
 
-type stat_=
+type stat64_=
 	ust::type_select</
 		c_arch_is_aarch64,
-		stat_aarch_64,
+		stat64_aarch64,
 		ust::type_select</
 			c_arch_is_i686,
-			stat_x86,
-			stat_x86_64 /> />;
+			stat64_x86,
+			stat64_x86_64 /> />;
+
+// Manually redirect "stat_" to "stat64_".
+type stat_= stat64_;
 
 struct ü__dirstream ordered
 {
@@ -140,16 +153,17 @@ type off_t = ü__off_t;
 type pid_t = ü__pid_t;
 type size_t = size_type;
 type ssize_t = ü__ssize_t;
-type ü__blkcnt_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
+type ü__blkcnt64_t = i64;
 type ü__blksize_t = ust::type_select</ c_arch_is_aarch64, i32, ust::type_select</ c_arch_is_i686, i32, i64 /> />;
 type ü__clockid_t = i32;
 type ü__dev_t = u64;
 type ü__gid_t = u32;
 type ü__ino_t = ust::type_select</ c_arch_is_i686, u32, u64 />;
+type ü__ino64_t = i64;
 type ü__mode_t = u32;
 type ü__nlink_t = ust::type_select</ c_arch_is_aarch64, u32, ust::type_select</ c_arch_is_i686, u32, u64 /> />;
 type ü__off64_t = i64;
-type ü__off_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
+type ü__off_t = i64; // manually changed to "i64", since we always use 64-bit functions.
 type ü__pid_t = i32;
 type ü__ssize_t = ssize_type;
 type ü__syscall_slong_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
