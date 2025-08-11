@@ -43,3 +43,7 @@ python source/annotated_tests_run.py --compiler-executable build_dir/compiler0/C
 python source/annotated_tests_run.py --compiler-executable build_dir/compiler1/Compiler1 --add-library=build_dir/ustlib1/ustlib1.lib --input-dir source/ustlib/tests
 python source/annotated_tests_run.py --compiler-executable build_dir/compiler2/Compiler2 --add-library=build_dir/ustlib2/ustlib2.lib --input-dir source/ustlib/tests
 python source/annotated_tests_run.py --compiler-executable build_dir/compiler3/Compiler3 --add-library=build_dir/ustlib3/ustlib3.lib --input-dir source/ustlib/tests
+
+# install
+mkdir install
+cmake --install build_dir --prefix install
