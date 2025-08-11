@@ -11,6 +11,10 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install ninja-build python3-sphinx sphinx-doc sphinx-common python3-stemmer
         ./ci/build_gnu_linux_x86_64_release_llvm_src.sh
+    - uses: actions/upload-artifact@v4
+      with:
+        name: compiler_gnu_linux_x86_64_llvm_src
+        path: install/
   gnu_linux_x86_release_llvm_src:
     runs-on: ubuntu-22.04
     steps:
@@ -19,3 +23,7 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install g++-multilib libc6-dev-i386 ninja-build python3-sphinx sphinx-doc sphinx-common python3-stemmer
         ./ci/build_gnu_linux_x86_release_llvm_src.sh
+    - uses: actions/upload-artifact@v4
+      with:
+        name: compiler_gnu_linux_x86_llvm_src
+        path: install/
