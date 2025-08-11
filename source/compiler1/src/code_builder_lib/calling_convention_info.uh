@@ -59,7 +59,7 @@ public:
 		LLVMTypeRef llvm_type;
 
 		fn constructor()
-			( kind= ArgumentPassingKind::Direct, llvm_type= LLVMTypeRef::Null )
+			( kind= ArgumentPassingKind::Direct, llvm_type= zero_init )
 		{}
 
 		fn constructor( ArgumentPassingKind k, LLVMTypeRef t )

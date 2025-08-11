@@ -44,7 +44,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 			auto state= SaveFunctionContextState( function_context );
 			with( &index_variable: self.BuildExpressionCodeEnsureVariable( names_scope, function_context, array_type.element_count ).lock_imut().deref() )
 			{
-				if( index_variable.constexpr_value != LLVMValueRef::Null )
+				if( index_variable.constexpr_value != Null::LLVMValueRef() )
 				{
 					{
 						if_var( &fundamental_type : index_variable.t.GetFundamentalType() )
@@ -315,7 +315,7 @@ fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : L
 fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type, ICallingConventionInfo::CallInfo& call_info ) : LLVMTypeRef
 {
 	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
-	var LLVMTypeRef mut ret_llvm_type= LLVMTypeRef::Null;
+	var LLVMTypeRef mut ret_llvm_type= zero_init;
 
 	if( function_type.return_value_type == ValueType::Value )
 	{
@@ -384,9 +384,9 @@ fn CodeBuilder::PrepareCallingConvention(
 		{
 			if( fundamental_type.fundamental_type == U_FundamentalType::char8_ )
 			{
-				if( v.constexpr_value != LLVMValueRef::Null )
+				if( v.constexpr_value != Null::LLVMValueRef() )
 				{
-					if( unsafe( LLVMIsAConstantDataArray( v.constexpr_value ) ) != LLVMValueRef::Null )
+					if( unsafe( LLVMIsAConstantDataArray( v.constexpr_value ) ) != Null::LLVMValueRef() )
 					{
 						var size_type mut str_length= 0s;
 						var $(char8) str_start= unsafe( LLVMGetAsString( v.constexpr_value, str_length ) );

@@ -9,12 +9,23 @@
 ?macro <? DefineLLVMRef:namespace ?name:ident ?>
 	->
 <?
-	// For now violate here language rules, which say, that enums with values other than listed aren't possible.
-	// We can't use a wrapper struct here, because in some C ABIs (x86 System V, for example) structs are returned differently from scalars.
-	// TODO - use a raw pointer instead.
-	enum ?name : size_type
+	// LLVM ref types are pointers to a class, inaccessible in Ü code.
+	type ?name= $(??opaque_class);
+
+	// Since Ü has no opaque types, create a class strub, which can't be constructed.
+	class ??opaque_class
 	{
-		Null,
+		fn constructor() = delete;
+	}
+
+	// Create a helper function to create null ref.
+	namespace Null
+	{
+		fn ?name() : $(??opaque_class)
+		{
+			var $(??opaque_class) p= zero_init;
+			return p;
+		}
 	}
 ?>
 

@@ -43,11 +43,11 @@ private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
 
-	LLVMDIBuilderRef builder_= LLVMDIBuilderRef::Null;
+	LLVMDIBuilderRef builder_= zero_init;
 	ust::vector</LLVMMetadataRef/> source_file_entries_; // Entry for each file in sources graph.
-	LLVMMetadataRef compile_unit_= LLVMMetadataRef::Null;
+	LLVMMetadataRef compile_unit_= zero_init;
 
-	LLVMMetadataRef stub_type_= LLVMMetadataRef::Null;
+	LLVMMetadataRef stub_type_= zero_init;
 
 	// Cache of debug info types for classes and enums.
 	ust::hash_map</ ClassTypePtr, LLVMMetadataRef /> classes_di_types_;

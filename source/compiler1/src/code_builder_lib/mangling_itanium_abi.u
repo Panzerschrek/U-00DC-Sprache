@@ -1007,7 +1007,7 @@ fn EncodeConstexprValue( ManglerState &mut mangler_state, Type& t, LLVMValueRef 
 			is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlying_type.fundamental_type );
 		}
 
-		if( constexpr_value != LLVMValueRef::Null )
+		if( constexpr_value != Null::LLVMValueRef() )
 		{
 			if( is_signed )
 			{

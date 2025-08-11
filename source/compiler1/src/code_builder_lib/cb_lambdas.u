@@ -36,7 +36,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 
 		if( class_type.can_be_constexpr )
 		{
-			constexpr_initializers.resize( class_type.fields_order.size(), LLVMValueRef::Null );
+			constexpr_initializers.resize( class_type.fields_order.size(), Null::LLVMValueRef() );
 		}
 
 		if_var( &capture_list : lambda_.capture.get</Synt::Lambda::CaptureList/>() )
@@ -74,7 +74,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 								}
 							}
 
-							if( class_type.can_be_constexpr && init_value[1] != LLVMValueRef::Null )
+							if( class_type.can_be_constexpr && init_value[1] != Null::LLVMValueRef() )
 							{
 								constexpr_initializers[ size_type(field.index) ]= init_value[1];
 								++num_constexpr_initializers;
@@ -83,7 +83,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 							if( !field.is_reference && // No need to destruct reference fields.
 								ust::ref_cmp_ne( capture, capture_list.back() ) && // No need to register last one.
 								field.t.HasDestructor() && // No need to call destructors.
-								init_value[0] != LLVMValueRef::Null )
+								init_value[0] != Null::LLVMValueRef() )
 							{
 								// Temportary register field value for destruction,
 								// in case if "return" or "await" happens in evaluation of further captrure expressions.
@@ -128,7 +128,7 @@ fn CodeBuilder::BuildLambda( mut this, NamesScopePtr& names_scope, FunctionConte
 						with( &field : field_pair[1].lock_imut().deref() )
 						{
 							auto constant= InitializeLambdaField( names_scope, function_context, field, variable, result, lambda_.src_loc )[1];
-							if( class_type.can_be_constexpr && constant != LLVMValueRef::Null )
+							if( class_type.can_be_constexpr && constant != Null::LLVMValueRef() )
 							{
 								constexpr_initializers[ size_type(field.index) ]= constant;
 								++num_constexpr_initializers;
@@ -174,12 +174,12 @@ fn CodeBuilder::InitializeLambdaField(
 		if( v.value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
-			return ust::make_tuple( field_address, LLVMValueRef::Null );
+			return ust::make_tuple( field_address, Null::LLVMValueRef() );
 		}
 		if( field.is_mutable && v.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( ExpectedMutableReference, names_scope, src_loc )
-			return ust::make_tuple( field_address, LLVMValueRef::Null );
+			return ust::make_tuple( field_address, Null::LLVMValueRef() );
 		}
 
 		// Link references.
@@ -191,12 +191,12 @@ fn CodeBuilder::InitializeLambdaField(
 
 		CreateTypedReferenceStore( function_context, field.t, v.llvm_value, field_address );
 
-		if( v.constexpr_value != LLVMValueRef::Null )
+		if( v.constexpr_value != Null::LLVMValueRef() )
 		{
 			return ust::make_tuple( field_address, AddGlobalConstantVariable( "_temp_const\0", v.t.GetLLVMType(), v.constexpr_value ) );
 		}
 
-		return ust::make_tuple( field_address, LLVMValueRef::Null );
+		return ust::make_tuple( field_address, Null::LLVMValueRef() );
 	}
 	else
 	{
@@ -271,7 +271,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					if( !variable_ptr.empty() )
 					{
 						auto constexpr_value= variable_ptr.try_lock_imut().deref().constexpr_value;
-						if( constexpr_value != LLVMValueRef::Null )
+						if( constexpr_value != Null::LLVMValueRef() )
 						{
 							key.tuple_for_indices.push_back( u32( unsafe( LLVMConstIntGetZExtValue( constexpr_value ) ) ) );
 						}
@@ -461,7 +461,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 					with( &expr_result : expr_result_ptr.lock_imut().deref() )
 					{
 						auto mut llvm_value= expr_result.llvm_value;
-						if( expr_result.location == Variable::Location::LLVMRegister || llvm_value == LLVMValueRef::Null )
+						if( expr_result.location == Variable::Location::LLVMRegister || llvm_value == Null::LLVMValueRef() )
 						{
 							// Create proper address for this variable in order to avoid crashes in preprocessing.
 							// We can't "alloca" in this function, so, create global variable for that.
@@ -484,7 +484,7 @@ fn CodeBuilder::PrepareLambdaClass( mut this, NamesScopePtr& names_scope, Functi
 								.value_type = ( expr_result.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 								.location= Variable::Location::Pointer,
 								.llvm_value= llvm_value,
-								.constexpr_value= LLVMValueRef::Null, // no need to use constexpr in preprocessing.
+								.constexpr_value= zero_init, // no need to use constexpr in preprocessing.
 							}.CreatePtr();
 
 						// No need to add this variable into context of current function, since it is not used in it.

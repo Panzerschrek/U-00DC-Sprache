@@ -105,10 +105,10 @@ public:
 
 	LLVMValueRef imut llvm_function;
 
-	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;
+	LLVMBuilderRef alloca_ir_builder= zero_init;
 
-	LLVMBasicBlockRef function_basic_block= LLVMBasicBlockRef::Null;
-	LLVMBuilderRef llvm_ir_builder= LLVMBuilderRef::Null;
+	LLVMBasicBlockRef function_basic_block= zero_init;
+	LLVMBuilderRef llvm_ir_builder= zero_init;
 
 	// For reference checks.
 	// arg variable node + inner reference nodes.
@@ -118,12 +118,12 @@ public:
 	// This container may have less elements than "arg_nodes" and some values may be null.
 	ust::vector</ ust::vector</ VariableNullablePtr /> /> args_second_order_nodes;
 
-	LLVMValueRef s_ret= LLVMValueRef::Null; // Also promise for coroutines
+	LLVMValueRef s_ret= zero_init; // Also promise for coroutines
 
 	// Specific for coroutines data.
-	LLVMBasicBlockRef coro_final_suspend_bb= LLVMBasicBlockRef::Null; // Used to jump from "return" operator.
-	LLVMBasicBlockRef coro_suspend_bb= LLVMBasicBlockRef::Null; // Used as final destination for "yield" and "return".
-	LLVMBasicBlockRef coro_cleanup_bb= LLVMBasicBlockRef::Null; // Used as final destination after suspention destruction blocks.
+	LLVMBasicBlockRef coro_final_suspend_bb= zero_init; // Used to jump from "return" operator.
+	LLVMBasicBlockRef coro_suspend_bb= zero_init; // Used as final destination for "yield" and "return".
+	LLVMBasicBlockRef coro_cleanup_bb= zero_init; // Used as final destination after suspention destruction blocks.
 
 	VariableNullablePtr this_;
 	ust::vector</bool/> initialized_this_fields; // Non-empty in constructors. element is true, if field is already initialized.
@@ -131,7 +131,7 @@ public:
 
 	bool has_non_constexpr_operations_inside= false; // While building code, may set to "true".
 
-	LLVMBasicBlockRef destructor_end_block= LLVMBasicBlockRef::Null; // For destructors only - used for "Br" instead of "ret"
+	LLVMBasicBlockRef destructor_end_block= zero_init; // For destructors only - used for "Br" instead of "ret"
 
 	ust::vector</LoopFrame/> loops_stack;
 	bool is_in_unsafe_block= false;
@@ -145,7 +145,7 @@ public:
 	// This needed for reducing exponential expression evaluation complexity.
 	ust::hash_map</ ust::shared_ptr_final</Synt::Expression/>, VariableTypeExtended /> args_preevaluation_cache;
 
-	LLVMMetadataRef current_debug_info_scope= LLVMMetadataRef::Null;
+	LLVMMetadataRef current_debug_info_scope= zero_init;
 
 	ust::shared_ptr_nullable_mut</ ReturnTypeDeductionContext /> return_type_deduction_context;
 	ust::shared_ptr_nullable_mut</ ReferenceNotationDeductionContext /> reference_notation_deduction_context;

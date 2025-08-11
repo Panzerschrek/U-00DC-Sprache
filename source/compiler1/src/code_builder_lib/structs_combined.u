@@ -944,7 +944,7 @@ fn Variable::CreateChildPtr( byval mut this, VariablePtr& parent ) : VariablePtr
 
 fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::string8
 {
-	if( constant_value == LLVMValueRef::Null )
+	if( constant_value == Null::LLVMValueRef() )
 	{
 		return "";
 	}

@@ -12,7 +12,7 @@ struct Mixin
 
 	// If non-null - it's proper constexpr string of type ConstantDataArray. Null if mixin is already expanded.
 	// Also is null if this mixin requires no expansion (if it is empty, for example).
-	LLVMValueRef string_constant= LLVMValueRef::Null;
+	LLVMValueRef string_constant= zero_init;
 }
 
 type Mixins= ust::vector</Mixin/>;

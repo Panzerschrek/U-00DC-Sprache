@@ -220,7 +220,7 @@ fn CodeBuilder::PrepareFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, u
 			func_variable.body_syntax_element.try_deref().function_type.IsAutoReturn() )
 		{
 			auto llvm_function= func_variable.llvm_function.lock_imut().deref().function;
-			if( llvm_function == LLVMValueRef::Null || unsafe( LLVMCountBasicBlocks( llvm_function ) ) == 0u )
+			if( llvm_function == Null::LLVMValueRef() || unsafe( LLVMCountBasicBlocks( llvm_function ) ) == 0u )
 			{
 				// Preprocess function in order to deduce return type and reference notation.
 				var ReturnTypeDeductionContext return_type_deduction_context;
@@ -263,7 +263,7 @@ fn CodeBuilder::PrepareFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, u
 
 				// Remove old LLVM function and create new one (with name based on exact deduced function type).
 				auto prev_llvm_function= func_variable.llvm_function.lock_imut().deref().function;
-				if( prev_llvm_function != LLVMValueRef::Null )
+				if( prev_llvm_function != Null::LLVMValueRef() )
 				{
 					unsafe( LLVMDeleteFunction( prev_llvm_function ) );
 				}
@@ -1529,7 +1529,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type )
 {
-	if( enum_type.lock_imut().deref().underlying_type.llvm_type != LLVMTypeRef::Null )
+	if( enum_type.lock_imut().deref().underlying_type.llvm_type != Null::LLVMTypeRef() )
 	{
 		return;
 	}
@@ -1700,13 +1700,13 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 			.name= variable_declaration.name,
 		}.CreatePtr();
 
-	auto mut constexpr_value= LLVMValueRef::Null;
+	var LLVMValueRef mut constexpr_value= zero_init;
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), variable_declaration.name, t, !is_mutable );
 		auto llvm_value= ( is_mutable
 			? AddGlobalMutableVariable( name_mangled, t.GetLLVMType(), variable_declaration.src_loc )
-			: AddGlobalConstantVariable( name_mangled, t.GetLLVMType(), LLVMValueRef::Null ) );
+			: AddGlobalConstantVariable( name_mangled, t.GetLLVMType(), Null::LLVMValueRef() ) );
 
 		if( variable_declaration.is_thread_local )
 		{
@@ -1747,7 +1747,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		}
 		function_context.references_graph.RemoveNode( variable_ptr );
 
-		if( constexpr_value != LLVMValueRef::Null ) // May be in case of error.
+		if( constexpr_value != Null::LLVMValueRef() ) // May be in case of error.
 		{
 			unsafe( LLVMSetInitializer( llvm_value, constexpr_value ) );
 		}
@@ -1810,7 +1810,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	}
 	else{ halt; }
 
-	if( constexpr_value == LLVMValueRef::Null )
+	if( constexpr_value == Null::LLVMValueRef() )
 	{
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, variable_declaration.src_loc )
 		return;
@@ -1878,7 +1878,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	}
 
 	variable.constexpr_value= expr.constexpr_value;
-	if( variable.constexpr_value == LLVMValueRef::Null )
+	if( variable.constexpr_value == Null::LLVMValueRef() )
 	{
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, auto_variable_declaration.src_loc )
 		return;
@@ -1908,7 +1908,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	if( is_mutable )
 	{
 		// Reset constexpr flag for mutable variables.
-		variable.constexpr_value = LLVMValueRef::Null;
+		variable.constexpr_value = Null::LLVMValueRef();
 	}
 
 	// Finally, set result variable.

@@ -1372,9 +1372,9 @@ private:
 	LLVMTypeRef virtual_function_pointer_type_; // Use common type for all function pointers in virtual table - for simplicity.
 	LLVMTypeRef imut polymorph_type_id_table_element_type_;
 
-	LLVMModuleRef module_= LLVMModuleRef::Null;
+	LLVMModuleRef module_= zero_init;
 
-	LLVMValueRef global_llvm_function_= LLVMValueRef::Null; // For global function context
+	LLVMValueRef global_llvm_function_= zero_init; // For global function context
 
 	ErrorsContainerPtr root_errors_container_;
 
@@ -1410,13 +1410,13 @@ private:
 		ust::hash_map</ust::string32, LLVMValueRef/> ]
 		string_literals_cache_;
 
-	LLVMValueRef halt_function_= LLVMValueRef::Null;
+	LLVMValueRef halt_function_= zero_init;
 
-	LLVMValueRef malloc_function_= LLVMValueRef::Null;
-	LLVMValueRef free_function_= LLVMValueRef::Null;
+	LLVMValueRef malloc_function_= zero_init;
+	LLVMValueRef free_function_= zero_init;
 
-	LLVMValueRef stacksave_intrinsic_= LLVMValueRef::Null;
-	LLVMValueRef stackrestore_intrinsic_= LLVMValueRef::Null;
+	LLVMValueRef stacksave_intrinsic_= zero_init;
+	LLVMValueRef stackrestore_intrinsic_= zero_init;
 
 	// For globals loops detection.
 	GlobalThingsStackPtr global_things_stack_ptr_;
@@ -1442,31 +1442,31 @@ private:
 	// Lifetimes.
 	bool imut create_lifetimes_;
 	bool imut generate_lifetime_start_end_debug_calls_;
-	LLVMValueRef lifetime_start_intrinsic_= LLVMValueRef::Null;
-	LLVMValueRef lifetime_end_intrinsic_= LLVMValueRef::Null;
-	LLVMValueRef lifetime_start_debug_func_= LLVMValueRef::Null;
-	LLVMValueRef lifetime_end_debug_func_= LLVMValueRef::Null;
-	LLVMTypeRef lifetime_function_arg_type_= LLVMTypeRef::Null;
+	LLVMValueRef lifetime_start_intrinsic_= zero_init;
+	LLVMValueRef lifetime_end_intrinsic_= zero_init;
+	LLVMValueRef lifetime_start_debug_func_= zero_init;
+	LLVMValueRef lifetime_end_debug_func_= zero_init;
+	LLVMTypeRef lifetime_function_arg_type_= zero_init;
 
-	LLVMValueRef threadlocal_address_intrinsic_= LLVMValueRef::Null;
+	LLVMValueRef threadlocal_address_intrinsic_= zero_init;
 
 	// Coroutines
 	struct Coro
 	{
-		LLVMValueRef id= LLVMValueRef::Null;
-		LLVMValueRef alloc= LLVMValueRef::Null;
-		LLVMValueRef free= LLVMValueRef::Null;
-		LLVMValueRef size= LLVMValueRef::Null;
-		LLVMValueRef begin= LLVMValueRef::Null;
-		LLVMValueRef end= LLVMValueRef::Null;
-		LLVMValueRef suspend= LLVMValueRef::Null;
+		LLVMValueRef id;
+		LLVMValueRef alloc;
+		LLVMValueRef free;
+		LLVMValueRef size;
+		LLVMValueRef begin;
+		LLVMValueRef end;
+		LLVMValueRef suspend;
 
-		LLVMValueRef resume= LLVMValueRef::Null;
-		LLVMValueRef destroy= LLVMValueRef::Null;
-		LLVMValueRef done= LLVMValueRef::Null;
-		LLVMValueRef promise= LLVMValueRef::Null;
+		LLVMValueRef resume;
+		LLVMValueRef destroy;
+		LLVMValueRef done;
+		LLVMValueRef promise;
 	}
-	Coro coro_;
+	Coro coro_= zero_init;
 
 	ust::hash_map</ CoroutineTypeDescription, ClassTypePtr /> coroutine_classes_;
 

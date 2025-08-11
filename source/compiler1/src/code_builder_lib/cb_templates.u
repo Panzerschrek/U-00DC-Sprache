@@ -790,7 +790,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, v.t )
 				return TemplateSignatureParam::Type{ .t= invalid_type_ };
 			}
-			if( v.constexpr_value == LLVMValueRef::Null )
+			if( v.constexpr_value == Null::LLVMValueRef() )
 			{
 				REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 				return TemplateSignatureParam::Type{ .t= invalid_type_ };
@@ -1296,7 +1296,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		mangler_.deref().MangleFunction( function_template.parent_names_scope.upgrade().try_lock_imut().deref(), function_name, function_variable.t, result_template_args );
 	with( &mut lock : function_variable.llvm_function.lock_mut() )
 	{
-		if( lock.deref().function != LLVMValueRef::Null )
+		if( lock.deref().function != Null::LLVMValueRef() )
 		{
 			unsafe( LLVMSetValueName2( lock.deref().function, name_mangled.data(), name_mangled.size() - 1s ) );
 		}
@@ -1519,7 +1519,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			auto given_variable_lock= given_variable_ptr.lock_imut();
 			var Variable& given_variable= given_variable_lock.deref();
 
-			if( !given_variable.t.IsValidForTemplateVariableArgument() || given_variable.constexpr_value == LLVMValueRef::Null )
+			if( !given_variable.t.IsValidForTemplateVariableArgument() || given_variable.constexpr_value == Null::LLVMValueRef() )
 			{
 				// May be in case of error.
 				return false;
@@ -1968,7 +1968,7 @@ fn CodeBuilder::ValueToTemplateArg( NamesScopePtr& names_scope, SrcLoc& src_loc,
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, v.t )
 				return ust::null_optional;
 			}
-			if( v.constexpr_value == LLVMValueRef::Null )
+			if( v.constexpr_value == Null::LLVMValueRef() )
 			{
 				REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 				return ust::null_optional;

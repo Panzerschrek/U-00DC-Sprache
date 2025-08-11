@@ -46,7 +46,7 @@ struct InnerReference
 struct FundamentalType
 {
 	U_FundamentalType fundamental_type= U_FundamentalType::InvalidType;
-	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+	LLVMTypeRef llvm_type= zero_init;
 
 	fn constructor()= default;
 	fn constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type );
@@ -65,7 +65,7 @@ struct ArrayType
 {
 	Type element_type;
 	u64 element_count;
-	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+	LLVMTypeRef llvm_type= zero_init;
 
 	op==( ArrayType& l, ArrayType& r ) : bool;
 
@@ -81,7 +81,7 @@ struct ArrayType
 struct TupleType
 {
 	ust::vector</ Type /> element_types;
-	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+	LLVMTypeRef llvm_type= zero_init;
 
 	op==( TupleType& l, TupleType& r ) : bool;
 
@@ -96,7 +96,7 @@ struct TupleType
 struct RawPointerType
 {
 	Type element_type;
-	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+	LLVMTypeRef llvm_type= zero_init;
 
 	op==( RawPointerType& l, RawPointerType& r ) : bool;
 
@@ -179,7 +179,7 @@ fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) 
 struct FunctionPointerType
 {
 	FunctionType function_type;
-	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+	LLVMTypeRef llvm_type= zero_init;
 
 	op==( FunctionPointerType& l, FunctionPointerType& r ) : bool;
 
@@ -291,7 +291,7 @@ struct ClassType
 	ust::vector</FieldOrdered/> fields_order;
 	u32 field_count= 0u;
 
-	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
+	LLVMTypeRef llvm_type= zero_init;
 
 	bool is_complete= false;
 	bool referenced= false;
@@ -312,9 +312,9 @@ struct ClassType
 	bool parents_list_prepared = false;
 
 	ust::vector</VirtualTableEntry/> virtual_table;
-	LLVMTypeRef virtual_table_llvm_type= LLVMTypeRef::Null;
-	LLVMValueRef virtual_table_llvm_variable= LLVMValueRef::Null; // May be null for interfaces and abstract classes.
-	LLVMValueRef polymorph_type_id_table= LLVMValueRef::Null; // Exists in polymorph classes.
+	LLVMTypeRef virtual_table_llvm_type= zero_init;
+	LLVMValueRef virtual_table_llvm_variable= zero_init; // May be null for interfaces and abstract classes.
+	LLVMValueRef polymorph_type_id_table= zero_init; // Exists in polymorph classes.
 
 	GeneratedClassData generated_class_data;
 
@@ -454,8 +454,8 @@ struct Variable
 	Type t;
 	ValueType value_type;
 	Location location;
-	LLVMValueRef llvm_value= LLVMValueRef::Null;
-	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
+	LLVMValueRef llvm_value= zero_init;
+	LLVMValueRef constexpr_value= zero_init; // Exists only for constant expressions.
 
 	ust::string8 name; // Used only for error reporting and derived variables names.
 	SrcLoc src_loc;
@@ -576,7 +576,7 @@ type LazyLLVMFunctionPtr= ust::shared_ptr_mut</LazyLLVMFunction/>;
 struct LazyLLVMFunction
 {
 	ust::string8 name_mangled;
-	LLVMValueRef function= LLVMValueRef::Null;
+	LLVMValueRef function= zero_init;
 	bool referenced= false; // HACK! Store function referenced flag here, because we need to have immutable FunctionVariable struct.
 
 	fn constructor( ust::string8 mut name ) ( name_mangled= move(name) ) {}
@@ -654,8 +654,8 @@ struct Enum
 
 	struct Element
 	{
-		LLVMValueRef llvm_value= LLVMValueRef::Null; // Pointer to global variable
-		LLVMValueRef constexpr_value= LLVMValueRef::Null;
+		LLVMValueRef llvm_value= zero_init; // Pointer to global variable
+		LLVMValueRef constexpr_value= zero_init;
 	}
 	ust::hash_map</ ust::string8, Element /> elements;
 

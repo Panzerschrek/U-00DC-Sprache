@@ -17,7 +17,7 @@ fn nomangle nodiscard U1_BuildProgram(
 	U1::PrintLexSyntErrors( source_graph );
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
-		return LLVMModuleRef::Null;
+		return Null::LLVMModuleRef();
 	}
 
 	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors), test_vfs );
@@ -27,7 +27,7 @@ fn nomangle nodiscard U1_BuildProgram(
 	if( !code_builder_res.errors.empty() )
 	{
 		unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
-		return LLVMModuleRef::Null;
+		return Null::LLVMModuleRef();
 	}
 
 	return code_builder_res.llvm_module;
@@ -128,7 +128,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
-		return LLVMModuleRef::Null;
+		return Null::LLVMModuleRef();
 	}
 
 	var ust::string8 mut target_triple= unsafe( U1::StringToArrayView( target_triple_str ) );
@@ -149,7 +149,7 @@ fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	{
 		unsafe( U1::ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors ) );
 		unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
-		return LLVMModuleRef::Null;
+		return Null::LLVMModuleRef();
 	}
 
 	foreach( &embedded_file : code_builder_res.embedded_files )
@@ -182,7 +182,7 @@ fn nomangle nodiscard U1_BuildMultisourceProgram(
 
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
-		return LLVMModuleRef::Null;
+		return Null::LLVMModuleRef();
 	}
 
 	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors), test_vfs );
@@ -192,7 +192,7 @@ fn nomangle nodiscard U1_BuildMultisourceProgram(
 	if( !code_builder_res.errors.empty() )
 	{
 		unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
-		return LLVMModuleRef::Null;
+		return Null::LLVMModuleRef();
 	}
 
 	return code_builder_res.llvm_module;
@@ -242,7 +242,7 @@ fn nomangle nodiscard U1_BuildProgramForLifetimesTest(
 	U1::PrintLexSyntErrors( source_graph );
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
-		return LLVMModuleRef::Null;
+		return Null::LLVMModuleRef();
 	}
 
 	var U1::CodeBuilderOptions options
@@ -260,7 +260,7 @@ fn nomangle nodiscard U1_BuildProgramForLifetimesTest(
 	if( !code_builder_res.errors.empty() )
 	{
 		unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
-		return LLVMModuleRef::Null;
+		return Null::LLVMModuleRef();
 	}
 
 	return code_builder_res.llvm_module;
@@ -277,7 +277,7 @@ fn nomangle nodiscard U1_BuildProgramForMSVCManglingTest(
 	U1::PrintLexSyntErrors( source_graph );
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
-		return LLVMModuleRef::Null;
+		return Null::LLVMModuleRef();
 	}
 
 	var U1::CodeBuilderOptions options
@@ -294,7 +294,7 @@ fn nomangle nodiscard U1_BuildProgramForMSVCManglingTest(
 	if( !code_builder_res.errors.empty() )
 	{
 		unsafe(LLVMDisposeModule( code_builder_res.llvm_module ) );
-		return LLVMModuleRef::Null;
+		return Null::LLVMModuleRef();
 	}
 
 	return code_builder_res.llvm_module;

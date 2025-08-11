@@ -436,7 +436,7 @@ fn CodeBuilder::PrepareCoroutineBlocks( this, FunctionContext &mut function_cont
 
 fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc )
 {
-	if( function_context.coro_suspend_bb == LLVMBasicBlockRef::Null )
+	if( function_context.coro_suspend_bb == Null::LLVMBasicBlockRef() )
 	{
 		REPORT_ERROR( YieldOutsideCoroutine, names_scope, src_loc )
 		return;
@@ -582,7 +582,7 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 
 fn CodeBuilder::AsyncReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc )
 {
-	if( function_context.coro_suspend_bb == LLVMBasicBlockRef::Null )
+	if( function_context.coro_suspend_bb == Null::LLVMBasicBlockRef() )
 	{
 		REPORT_ERROR( YieldOutsideCoroutine, names_scope, src_loc )
 		return;
@@ -756,7 +756,7 @@ fn CodeBuilder::BuildAwait( mut this, NamesScopePtr& names_scope, FunctionContex
 	}
 	var CoroutineTypeDescription& coroutine_type_description= coroutine_type_description_opt.try_deref();
 
-	if( function_context.coro_suspend_bb == LLVMBasicBlockRef::Null )
+	if( function_context.coro_suspend_bb == Null::LLVMBasicBlockRef() )
 	{
 		REPORT_ERROR( AwaitOutsideAsyncFunction, names_scope, src_loc )
 		return ErrorValue();
