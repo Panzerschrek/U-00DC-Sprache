@@ -7,6 +7,7 @@
 #include <llvm/Linker/Linker.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/TargetSelect.h>
@@ -408,11 +409,6 @@ int Main( int argc, const char* argv[] )
 				) )
 		return 1;
 
-	{
-		llvm::raw_os_ostream stream(std::cout);
-		result_module->print( stream, nullptr );
-	}
-
 	// TODO - run here optimizations?
 
 	const auto main_function_llvm= result_module->getFunction( entry_point_name );
@@ -454,37 +450,37 @@ int Main( int argc, const char* argv[] )
 			std::cout << "Stdout print address: " << address << std::endl;
 		}
 
-
+		// A workaround of a bug in LLVM code - it can't load symbol names for x86_stdcall functions, since they are decorated like "GetProcessHeap@0".
 		llvm::Mangler mangler;
 		if( get_process_heap != nullptr )
 		{
 			llvm::SmallString<128> name_mangled;
 			mangler.getNameWithPrefix( name_mangled, get_process_heap, true );
-			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &GetProcessHeap ) ) );
+			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &GetProcessHeap ) );
 		}
 		if( heap_alloc != nullptr )
 		{
 			llvm::SmallString<128> name_mangled;
 			mangler.getNameWithPrefix( name_mangled, heap_alloc, true );
-			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &HeapAlloc ) ) );
+			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapAlloc ) );
 		}
 		if( heap_realloc != nullptr )
 		{
 			llvm::SmallString<128> name_mangled;
 			mangler.getNameWithPrefix( name_mangled, heap_realloc, true );
-			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &HeapReAlloc ) ) );
+			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapReAlloc ) );
 		}
 		if( heap_free != nullptr )
 		{
 			llvm::SmallString<128> name_mangled;
 			mangler.getNameWithPrefix( name_mangled, heap_free, true );
-			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &HeapFree ) ) );
+			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapFree ) );
 		}
 		if( abort_func != nullptr )
 		{
 			llvm::SmallString<128> name_mangled;
 			mangler.getNameWithPrefix( name_mangled, abort_func, true );
-			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::abort ) ) );
+			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &std::abort ) );
 		}
 
 		engine->addGlobalMapping( "_memcpy", reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcpy ) ) );
