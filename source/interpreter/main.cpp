@@ -3,10 +3,12 @@
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
+#include <llvm/IR/Mangler.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/InitLLVM.h>
+#include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/SubtargetFeature.h>
@@ -21,6 +23,8 @@
 #include "../compilers_support_lib/ustlib.hpp"
 #include "../compilers_support_lib/vfs.hpp"
 #include "../tests/tests_common.hpp"
+
+#include <windows.h>
 
 namespace U
 {
@@ -156,8 +160,12 @@ llvm::GenericValue Abort( llvm::FunctionType*, const llvm::ArrayRef<llvm::Generi
 namespace JitFuncs
 {
 
-void StdOutPrint( const char* const ptr, const size_t size )
+void __fastcall StdOutPrint( const char* const ptr, const size_t size )
 {
+	std::cout << "stdout print invocated" << std::endl;
+	if(true)
+		return;
+
 	constexpr auto buffer_size= 1024;
 	if( size < buffer_size )
 	{
@@ -178,7 +186,7 @@ void StdOutPrint( const char* const ptr, const size_t size )
 	std::cout.flush();
 }
 
-void StdErrPrint( const char* const ptr, const size_t size )
+void __fastcall StdErrPrint( const char* const ptr, const size_t size )
 {
 	constexpr auto buffer_size= 1024;
 	if( size < buffer_size )
@@ -358,6 +366,7 @@ int Main( int argc, const char* argv[] )
 
 		CodeBuilderOptions options;
 		options.report_about_unused_names= false; // Do not require generating extra errors in interpreter.
+		options.build_debug_info= true;
 
 		CodeBuilder::BuildResult build_result=
 			CodeBuilder::BuildProgram(
@@ -399,6 +408,11 @@ int Main( int argc, const char* argv[] )
 				) )
 		return 1;
 
+	{
+		llvm::raw_os_ostream stream(std::cout);
+		result_module->print( stream, nullptr );
+	}
+
 	// TODO - run here optimizations?
 
 	const auto main_function_llvm= result_module->getFunction( entry_point_name );
@@ -410,6 +424,15 @@ int Main( int argc, const char* argv[] )
 
 	if( use_jit )
 	{
+		llvm::Function* const main_llvm_function= result_module->getFunction( "main" );
+		llvm::Function* const stdout_function= result_module->getFunction( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE" );
+
+		llvm::Function* const get_process_heap= result_module->getFunction( "GetProcessHeap" );
+		llvm::Function* const heap_alloc= result_module->getFunction( "HeapAlloc" );
+		llvm::Function* const heap_realloc= result_module->getFunction( "HeapReAlloc" );
+		llvm::Function* const heap_free= result_module->getFunction( "HeapFree" );
+		llvm::Function* const abort_func= result_module->getFunction( "abort" );
+
 		llvm::EngineBuilder builder(std::move(result_module));
 		std::string engine_creation_error_string;
 		builder.setEngineKind(llvm::EngineKind::JIT);
@@ -423,16 +446,63 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		engine->addGlobalMapping( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
-		engine->addGlobalMapping( "?stdout_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
+		if( stdout_function != nullptr )
+		{
+			std::cout << "Set mapping for stdout print" << std::endl;
+			const auto address= reinterpret_cast<void*>( &JitFuncs::StdOutPrint );
+			engine->addGlobalMapping( stdout_function, address );
+			std::cout << "Stdout print address: " << address << std::endl;
+		}
 
-		engine->addGlobalMapping( "_ZN3ust12stderr_printENS_19random_access_rangeIcLb0EEE", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
-		engine->addGlobalMapping( "?stderr_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
+
+		llvm::Mangler mangler;
+		if( get_process_heap != nullptr )
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, get_process_heap, true );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &GetProcessHeap ) ) );
+		}
+		if( heap_alloc != nullptr )
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, heap_alloc, true );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &HeapAlloc ) ) );
+		}
+		if( heap_realloc != nullptr )
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, heap_realloc, true );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &HeapReAlloc ) ) );
+		}
+		if( heap_free != nullptr )
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, heap_free, true );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &HeapFree ) ) );
+		}
+		if( abort_func != nullptr )
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, abort_func, true );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::abort ) ) );
+		}
+
+		engine->addGlobalMapping( "_memcpy", reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcpy ) ) );
+		engine->addGlobalMapping( "_memcmp", reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcmp ) ) );
+
+		//engine->addGlobalMapping( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
+		//engine->addGlobalMapping( "?stdout_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
+
+		//engine->addGlobalMapping( "_ZN3ust12stderr_printENS_19random_access_rangeIcLb0EEE", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
+		//engine->addGlobalMapping( "?stderr_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
 
 		// No need to add other functions here - llvm interpreter supports other required functions (memory functions, exit, abort).
 
+		engine->finalizeObject();
+
 		using MainFunctionType= int(*)( int argc, const char** argv );
-		const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(entry_point_name));
+		//const uint64_t main_function_int= engine->getFunctionAddress(entry_point_name);
+		const auto main_function= reinterpret_cast<MainFunctionType>( engine->getPointerToFunction( main_llvm_function ) );
 		if( main_function == nullptr )
 		{
 			std::cerr << "Can't find entry point!" << std::endl;
@@ -443,6 +513,7 @@ int Main( int argc, const char* argv[] )
 		// For now just pass empty command line (containing only executable name).
 		const int custom_argc= 1;
 		const char* custom_argv[]= { argv[0], nullptr };
+		std::cout << "Running main" << std::endl;
 		return main_function( custom_argc, custom_argv );
 	}
 	else
