@@ -416,13 +416,41 @@ int Main( int argc, const char* argv[] )
 
 	if( use_jit )
 	{
-		llvm::Function* const stdout_function= result_module->getFunction( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE" );
+		// A workaround of a bug in LLVM code - it can't load symbol names for x86_stdcall functions, since they are decorated like "GetProcessHeap@0".
+		llvm::Mangler mangler;
+		if( const auto get_process_heap= result_module->getFunction( "GetProcessHeap" ) )
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, get_process_heap, true );
+			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &GetProcessHeap ) );
+		}
+		if( const auto heap_alloc= result_module->getFunction( "HeapAlloc" ) )
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, heap_alloc, true );
+			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapAlloc ) );
+		}
+		if( const auto heap_realloc= result_module->getFunction( "HeapReAlloc" ) )
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, heap_realloc, true );
+			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapReAlloc ) );
+		}
+		if( const auto heap_free= result_module->getFunction( "HeapFree" ) )
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, heap_free, true );
+			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapFree ) );
+		}
+		if( const auto abort_func= result_module->getFunction( "abort" ) )
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, abort_func, true );
+			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &std::abort ) );
+		}
 
-		llvm::Function* const get_process_heap= result_module->getFunction( "GetProcessHeap" );
-		llvm::Function* const heap_alloc= result_module->getFunction( "HeapAlloc" );
-		llvm::Function* const heap_realloc= result_module->getFunction( "HeapReAlloc" );
-		llvm::Function* const heap_free= result_module->getFunction( "HeapFree" );
-		llvm::Function* const abort_func= result_module->getFunction( "abort" );
+		llvm::Function* const stdout_function= result_module->getFunction( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE" );
+		llvm::Function* const stderr_function= result_module->getFunction( "_ZN3ust12stderr_printENS_19random_access_rangeIcLb0EEE" );
 
 		llvm::EngineBuilder builder(std::move(result_module));
 		std::string engine_creation_error_string;
@@ -437,55 +465,14 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		if( stdout_function != nullptr )
-		{
-			std::cout << "Set mapping for stdout print" << std::endl;
-			const auto address= reinterpret_cast<void*>( &JitFuncs::StdOutPrint );
-			engine->addGlobalMapping( stdout_function, address );
-			std::cout << "Stdout print address: " << address << std::endl;
-		}
-
-		// A workaround of a bug in LLVM code - it can't load symbol names for x86_stdcall functions, since they are decorated like "GetProcessHeap@0".
-		llvm::Mangler mangler;
-		if( get_process_heap != nullptr )
-		{
-			llvm::SmallString<128> name_mangled;
-			mangler.getNameWithPrefix( name_mangled, get_process_heap, true );
-			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &GetProcessHeap ) );
-		}
-		if( heap_alloc != nullptr )
-		{
-			llvm::SmallString<128> name_mangled;
-			mangler.getNameWithPrefix( name_mangled, heap_alloc, true );
-			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapAlloc ) );
-		}
-		if( heap_realloc != nullptr )
-		{
-			llvm::SmallString<128> name_mangled;
-			mangler.getNameWithPrefix( name_mangled, heap_realloc, true );
-			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapReAlloc ) );
-		}
-		if( heap_free != nullptr )
-		{
-			llvm::SmallString<128> name_mangled;
-			mangler.getNameWithPrefix( name_mangled, heap_free, true );
-			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapFree ) );
-		}
-		if( abort_func != nullptr )
-		{
-			llvm::SmallString<128> name_mangled;
-			mangler.getNameWithPrefix( name_mangled, abort_func, true );
-			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &std::abort ) );
-		}
-
 		engine->addGlobalMapping( "_memcpy", reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcpy ) ) );
 		engine->addGlobalMapping( "_memcmp", reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcmp ) ) );
 
-		//engine->addGlobalMapping( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
-		//engine->addGlobalMapping( "?stdout_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
+		if( stdout_function != nullptr )
+			engine->addGlobalMapping( stdout_function, reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) );
 
-		//engine->addGlobalMapping( "_ZN3ust12stderr_printENS_19random_access_rangeIcLb0EEE", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
-		//engine->addGlobalMapping( "?stderr_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
+		if( stderr_function != nullptr )
+			engine->addGlobalMapping( stderr_function, reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) );
 
 		// No need to add other functions here - llvm interpreter supports other required functions (memory functions, exit, abort).
 
