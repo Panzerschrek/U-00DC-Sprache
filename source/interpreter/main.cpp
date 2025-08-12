@@ -157,7 +157,11 @@ namespace JitFuncs
 {
 
 // In Ü fast calling convention is used as default calling convention.
-#define U_CALLING_CONVENTION __fastcall
+#ifdef __i386__
+	#define U_CALLING_CONVENTION __fastcall
+#else
+	#define U_CALLING_CONVENTION
+#endif
 
 U_CALLING_CONVENTION void StdOutPrint( const char* const ptr, const size_t size )
 {
