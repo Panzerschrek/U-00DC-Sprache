@@ -156,7 +156,10 @@ llvm::GenericValue Abort( llvm::FunctionType*, const llvm::ArrayRef<llvm::Generi
 namespace JitFuncs
 {
 
-void StdOutPrint( const char* const ptr, const size_t size )
+// In Ü fast calling convention is used as default calling convention.
+#define U_CALLING_CONVENTION __fastcall
+
+U_CALLING_CONVENTION void StdOutPrint( const char* const ptr, const size_t size )
 {
 	constexpr auto buffer_size= 1024;
 	if( size < buffer_size )
@@ -178,7 +181,7 @@ void StdOutPrint( const char* const ptr, const size_t size )
 	std::cout.flush();
 }
 
-void StdErrPrint( const char* const ptr, const size_t size )
+U_CALLING_CONVENTION void StdErrPrint( const char* const ptr, const size_t size )
 {
 	constexpr auto buffer_size= 1024;
 	if( size < buffer_size )
