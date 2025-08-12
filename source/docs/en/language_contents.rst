@@ -43,6 +43,7 @@
    lambdas
    mixins
    embed
+   compiler_generated_prelude
    c_interaction
    alloca
    unsafe_code_requirements
