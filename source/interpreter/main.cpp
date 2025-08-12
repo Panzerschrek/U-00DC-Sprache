@@ -163,10 +163,6 @@ namespace JitFuncs
 
 void __fastcall StdOutPrint( const char* const ptr, const size_t size )
 {
-	std::cout << "stdout print invocated" << std::endl;
-	if(true)
-		return;
-
 	constexpr auto buffer_size= 1024;
 	if( size < buffer_size )
 	{
@@ -420,7 +416,6 @@ int Main( int argc, const char* argv[] )
 
 	if( use_jit )
 	{
-		llvm::Function* const main_llvm_function= result_module->getFunction( "main" );
 		llvm::Function* const stdout_function= result_module->getFunction( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE" );
 
 		llvm::Function* const get_process_heap= result_module->getFunction( "GetProcessHeap" );
@@ -497,8 +492,7 @@ int Main( int argc, const char* argv[] )
 		engine->finalizeObject();
 
 		using MainFunctionType= int(*)( int argc, const char** argv );
-		//const uint64_t main_function_int= engine->getFunctionAddress(entry_point_name);
-		const auto main_function= reinterpret_cast<MainFunctionType>( engine->getPointerToFunction( main_llvm_function ) );
+		const auto main_function= reinterpret_cast<MainFunctionType>( engine->getPointerToFunction( main_function_llvm ) );
 		if( main_function == nullptr )
 		{
 			std::cerr << "Can't find entry point!" << std::endl;
@@ -509,7 +503,6 @@ int Main( int argc, const char* argv[] )
 		// For now just pass empty command line (containing only executable name).
 		const int custom_argc= 1;
 		const char* custom_argv[]= { argv[0], nullptr };
-		std::cout << "Running main" << std::endl;
 		return main_function( custom_argc, custom_argv );
 	}
 	else
