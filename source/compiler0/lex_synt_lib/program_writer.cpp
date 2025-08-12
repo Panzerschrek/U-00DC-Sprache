@@ -1034,7 +1034,7 @@ void WriteFunctionTypeEnding( const FunctionType& function_type ) const
 		stream_ << Keyword( Keywords::call_conv_ );
 		stream_ << "( ";
 		ElementWrite( *function_type.calling_convention );
-		stream_ << ") ";
+		stream_ << " ) ";
 	}
 
 	stream_ << ": ";
