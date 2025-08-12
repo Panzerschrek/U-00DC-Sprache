@@ -158,7 +158,11 @@ namespace JitFuncs
 
 // In Ü fast calling convention is used as default calling convention.
 #ifdef __i386__
-	#define U_CALLING_CONVENTION __fastcall
+	#ifdef WIN32
+		#define U_CALLING_CONVENTION __fastcall
+	#else
+		#define U_CALLING_CONVENTION __attribute__((fastcall))
+	#endif
 #else
 	#define U_CALLING_CONVENTION
 #endif
