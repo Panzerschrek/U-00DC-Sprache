@@ -1,0 +1,6 @@
+import "/cpp_converted.u"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	return 0;
+}
