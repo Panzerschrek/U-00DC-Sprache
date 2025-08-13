@@ -594,7 +594,10 @@ void CppAstConsumer::CollectSubrecords()
 			// This may cause renaming due to name conflicts.
 			// But it's not so bad.
 			if( const auto subrecord= llvm::dyn_cast<clang::RecordDecl>( sub_decl ) )
-				record_declarations_.push_back( subrecord );
+			{
+				if( subrecord->isCompleteDefinition() && !subrecord->isTemplated() )
+					record_declarations_.push_back( subrecord );
+			}
 		}
 	}
 }
