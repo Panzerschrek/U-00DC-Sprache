@@ -1764,29 +1764,51 @@ fn CodeBuilder::BuildFuncCode(
 
 		auto& function_type= func_variable.t;
 
-		can_be_constexpr&=
-			!function_type.is_unsafe &&
-			function_type.return_type.CanBeConstexpr() &&
-			function_type.return_type.GetFunctionPointerType().empty();
-
-		foreach( &param : function_type.params )
+		if( function_type.is_unsafe )
 		{
-			can_be_constexpr&=
-				param.t.CanBeConstexpr() &&
-				param.t.GetFunctionPointerType().empty();  // Currently function pointers not supported.
+			can_be_constexpr= false; // Unsafe functions can't be constexpr.
+		}
+
+		if( !function_type.return_type.CanBeConstexpr() )
+		{
+			can_be_constexpr= false; // Functions returning non-constexpr type can't be constexpr.
+		}
+
+		if( !function_type.return_type.GetFunctionPointerType().empty() )
+		{
+			can_be_constexpr= false; // Currently function pointers are not supported (for simplicity).
 		}
 
 		if( !function_context.return_type_deduction_context.empty() )
 		{
-			with( &return_type_deduction_context : function_context.return_type_deduction_context.try_lock_imut().deref() )
+			if_var( &t : function_context.return_type_deduction_context.try_lock_imut().deref().return_type )
 			{
-				if_var( &t : return_type_deduction_context.return_type )
+				if( !t.CanBeConstexpr() )
 				{
-					can_be_constexpr&=
-						t.CanBeConstexpr() &&
-						t.GetFunctionPointerType().empty();
+					can_be_constexpr= false; // Functions returning non-constexpr type can't be constexpr.
+				}
+
+				if( !t.GetFunctionPointerType().empty() )
+				{
+					can_be_constexpr= false; // Currently function pointers are not supported (for simplicity).
 				}
 			}
+		}
+
+		foreach( &param : function_type.params )
+		{
+			if( !param.t.CanBeConstexpr() )
+			{
+				can_be_constexpr= false; // Allow in constexpr functions only constexpr value/reference params.
+			}
+
+			if( !param.t.GetFunctionPointerType().empty() )
+			{
+				can_be_constexpr= false; // Currently function pointers are not supported (for simplicity).
+			}
+
+			// We support constexpr functions with mutable reference-arguments, but such functions can not be used as root for constexpr function evaluation.
+			// We support also constexpr constructors (except constexpr copy constructors), but constexpr constructors currently can not be used for constexpr variables initialization.
 		}
 
 		if( !can_be_constexpr )

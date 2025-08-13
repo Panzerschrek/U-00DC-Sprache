@@ -2010,29 +2010,27 @@ void CodeBuilder::BuildFuncCode(
 		if( !auto_constexpr && !EnsureTypeComplete( function_type.return_type ) )
 			REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, function_type.return_type ); // Completeness required for constexpr possibility check.
 
-		if( function_type.unsafe ||
-			!function_type.return_type.CanBeConstexpr() ||
-			!function_type.references_pollution.empty() ) // Side effects, such pollution, not allowed.
-			can_be_constexpr= false;
+		if( function_type.unsafe )
+			can_be_constexpr= false; // Unsafe functions can't be constexpr.
 
-		if( function_type.return_type.GetFunctionPointerType() != nullptr ) // Currently function pointers not supported.
-			can_be_constexpr= false;
-
-		// If this is preprocessing of auto-return function, check also deduced return type.
+		const Type* return_type= &function_type.return_type;
 		if( function_context.return_type_deduction_context != nullptr &&
-			function_context.return_type_deduction_context->return_type != std::nullopt &&
-			( !function_context.return_type_deduction_context->return_type->CanBeConstexpr() ||
-			   function_context.return_type_deduction_context->return_type->GetFunctionPointerType() != nullptr ) )
-			can_be_constexpr= false;
+			function_context.return_type_deduction_context->return_type != std::nullopt )
+			return_type= &*function_context.return_type_deduction_context->return_type;
+
+		if( !return_type->CanBeConstexpr() )
+			can_be_constexpr= false; // Functions returning non-constexpr type can't be constexpr.
+
+		if( return_type->GetFunctionPointerType() != nullptr )
+			can_be_constexpr= false; // Currently function pointers are not supported (for simplicity).
 
 		for( const FunctionType::Param& param : function_type.params )
 		{
-			if( !auto_constexpr && !EnsureTypeComplete( param.type ) )
-				REPORT_ERROR( UsingIncompleteType, function_names.GetErrors(), func_variable.body_src_loc, param.type ); // Completeness required for constexpr possibility check.
+			if( !param.type.CanBeConstexpr() )
+				can_be_constexpr= false; // Allow in constexpr functions only constexpr value/reference params.
 
-			if( !param.type.CanBeConstexpr() || // Allowed only constexpr types. Incomplete types are not constexpr.
-				param.type.GetFunctionPointerType() != nullptr )
-				can_be_constexpr= false;
+			if( param.type.GetFunctionPointerType() != nullptr )
+				can_be_constexpr= false; // Currently function pointers are not supported (for simplicity).
 
 			// We support constexpr functions with mutable reference-arguments, but such functions can not be used as root for constexpr function evaluation.
 			// We support also constexpr constructors (except constexpr copy constructors), but constexpr constructors currently can not be used for constexpr variables initialization.
