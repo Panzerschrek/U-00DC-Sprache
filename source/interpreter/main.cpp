@@ -416,32 +416,26 @@ int Main( int argc, const char* argv[] )
 
 	if( use_jit )
 	{
-		// A workaround of a bug in LLVM code - it can't load symbol names for x86_stdcall functions, since they are decorated like "GetProcessHeap@0".
 		llvm::Mangler mangler;
-		if( const auto get_process_heap= result_module->getFunction( "GetProcessHeap" ) )
+
+		if( target_triple.getOS() == llvm::Triple::Win32 )
 		{
-			llvm::SmallString<128> name_mangled;
-			mangler.getNameWithPrefix( name_mangled, get_process_heap, true );
-			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &GetProcessHeap ) );
+			// A workaround of a bug in LLVM code - it can't load symbol names for x86_stdcall functions, since they are decorated like "_GetProcessHeap@0".
+			llvm::sys::DynamicLibrary::LoadLibraryPermanently( "kernel32.dll", nullptr );
+			for( const llvm::Function& function : result_module->functions() )
+			{
+				if( function.isDeclaration() && function.getCallingConv() == llvm::CallingConv::X86_StdCall )
+				{
+					if( const auto addr= llvm::sys::DynamicLibrary::SearchForAddressOfSymbol( function.getName().str().c_str() ) )
+					{
+						llvm::SmallString<128> name_mangled;
+						mangler.getNameWithPrefix( name_mangled, &function, true );
+						llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), addr );
+					}
+				}
+			}
 		}
-		if( const auto heap_alloc= result_module->getFunction( "HeapAlloc" ) )
-		{
-			llvm::SmallString<128> name_mangled;
-			mangler.getNameWithPrefix( name_mangled, heap_alloc, true );
-			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapAlloc ) );
-		}
-		if( const auto heap_realloc= result_module->getFunction( "HeapReAlloc" ) )
-		{
-			llvm::SmallString<128> name_mangled;
-			mangler.getNameWithPrefix( name_mangled, heap_realloc, true );
-			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapReAlloc ) );
-		}
-		if( const auto heap_free= result_module->getFunction( "HeapFree" ) )
-		{
-			llvm::SmallString<128> name_mangled;
-			mangler.getNameWithPrefix( name_mangled, heap_free, true );
-			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &HeapFree ) );
-		}
+
 		if( const auto abort_func= result_module->getFunction( "abort" ) )
 		{
 			llvm::SmallString<128> name_mangled;
