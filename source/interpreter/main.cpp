@@ -436,13 +436,6 @@ int Main( int argc, const char* argv[] )
 			}
 		}
 
-		if( const auto abort_func= result_module->getFunction( "abort" ) )
-		{
-			llvm::SmallString<128> name_mangled;
-			mangler.getNameWithPrefix( name_mangled, abort_func, true );
-			llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), reinterpret_cast<void*>( &std::abort ) );
-		}
-
 		llvm::Function* const stdout_function= result_module->getFunction( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE" );
 		llvm::Function* const stderr_function= result_module->getFunction( "_ZN3ust12stderr_printENS_19random_access_rangeIcLb0EEE" );
 
@@ -459,16 +452,27 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		engine->addGlobalMapping( "_memcpy", reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcpy ) ) );
-		engine->addGlobalMapping( "_memcmp", reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcmp ) ) );
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, "abort", data_layout );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::abort ) ) );
+		}
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, "memcpy", data_layout );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcpy ) ) );
+		}
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, "memcmp", data_layout );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcmp ) ) );
+		}
 
 		if( stdout_function != nullptr )
 			engine->addGlobalMapping( stdout_function, reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) );
 
 		if( stderr_function != nullptr )
 			engine->addGlobalMapping( stderr_function, reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) );
-
-		// No need to add other functions here - llvm interpreter supports other required functions (memory functions, exit, abort).
 
 		engine->finalizeObject();
 
