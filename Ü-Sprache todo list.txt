@@ -150,8 +150,6 @@ Compiler:
 Interpreter:
 *) Sdd possibility to provide proper argc/argv (not only stubs for them)
 *) Add possibility to optimize code
-*) Fix working on 32-bit Windows
-*) Fix working on 32-bit GNU/Linux
 *) Fix working on AArch64 OS X
 *) Support math functions
 
