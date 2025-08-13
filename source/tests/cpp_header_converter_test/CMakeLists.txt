@@ -23,11 +23,11 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			${CMAKE_CURRENT_SOURCE_DIR}/c_test.h -- -std=c2x )
 
 	add_custom_command(
-		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpp_header_converter_test.o
-		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/cpp_header_converter_test.u ${CMAKE_CURRENT_BINARY_DIR}/c_converted.u Compiler
+		OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/c_header_converter_test.o
+		DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/c_header_converter_test.u ${CMAKE_CURRENT_BINARY_DIR}/c_converted.u Compiler
 		COMMAND
 			Compiler${CURRENT_COMPILER_GENERATION}
-			${CMAKE_CURRENT_SOURCE_DIR}/cpp_header_converter_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/cpp_header_converter_test.o
+			${CMAKE_CURRENT_SOURCE_DIR}/c_header_converter_test.u -o ${CMAKE_CURRENT_BINARY_DIR}/c_header_converter_test.o
 			${SPRACHE_COMPILER_PIC_OPTIONS}
 			${SPRACHE_COMPILER_OPT_OPTIONS}
 			--allow-unused-names # Allow unused variables - in this test we only check initialization for them.
@@ -35,14 +35,15 @@ if( TARGET CppHeaderConverter AND U_BUILD_CPP_HEADER_CONVERTER )
 			--include-dir ${CMAKE_CURRENT_BINARY_DIR} )
 
 	add_executable(
-		CppHeaderConverterTest${CURRENT_COMPILER_GENERATION}
-			${CMAKE_CURRENT_BINARY_DIR}/cpp_header_converter_test.o
-			${CMAKE_CURRENT_SOURCE_DIR}/cpp_header_converter_test.u
-			${CMAKE_CURRENT_SOURCE_DIR}/c_test.cpp )
-	add_dependencies( CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
+		CHeaderConverterTest${CURRENT_COMPILER_GENERATION}
+			${CMAKE_CURRENT_BINARY_DIR}/c_header_converter_test.o
+			${CMAKE_CURRENT_SOURCE_DIR}/c_header_converter_test.u
+			${CMAKE_CURRENT_SOURCE_DIR}/c_test.cpp
+			${CMAKE_CURRENT_SOURCE_DIR}/c_test.h )
+	add_dependencies( CHeaderConverterTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
 	# Run the test
-	add_custom_command( TARGET CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND CppHeaderConverterTest${CURRENT_COMPILER_GENERATION} )
+	add_custom_command( TARGET CHeaderConverterTest${CURRENT_COMPILER_GENERATION} POST_BUILD COMMAND CHeaderConverterTest${CURRENT_COMPILER_GENERATION} )
 
 	if(WIN32)
 
