@@ -10,8 +10,19 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( ExternCBlockFunc0( 13.5f, 3.0f ) != 13.5f * 3.0f * 3.25f - 0.75f );
 		halt if( ExternCBlockFunc0( -5.0f, 21.25f ) != -5.0f * 21.25f * 3.25f - 0.75f );
 
-		halt if( ExternCBlockFunc1() != 0xEEADBEEFu );
+		halt if( ExternCBlockFunc1() != 0xDEADBEEFu );
 	}
+
+	static_assert( typeinfo</CppEnumClass/>.is_enum );
+	static_assert( typeinfo</CppEnumClass/>.element_count == 7s );
+
+	static_assert( i32( CppEnumClass::S ) == 0 );
+	static_assert( i32( CppEnumClass::Z ) == 1 );
+	static_assert( i32( CppEnumClass::T ) == 2 );
+	static_assert( i32( CppEnumClass::L ) == 3 );
+	static_assert( i32( CppEnumClass::J ) == 4 );
+	static_assert( i32( CppEnumClass::I ) == 5 );
+	static_assert( i32( CppEnumClass::O ) == 6 );
 
 	return 0;
 }
