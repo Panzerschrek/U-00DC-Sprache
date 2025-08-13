@@ -150,7 +150,6 @@ Compiler:
 Interpreter:
 *) Sdd possibility to provide proper argc/argv (not only stubs for them)
 *) Add possibility to optimize code
-*) Fix working on AArch64 OS X
 *) Support math functions
 
 Compiler1:
