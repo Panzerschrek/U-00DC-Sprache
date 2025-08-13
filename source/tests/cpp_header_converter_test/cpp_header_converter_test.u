@@ -32,5 +32,10 @@ fn nomangle main() call_conv( "C" ) : i32
 	// In C++ empty structs aren't really empty - they have one byte size.
 	static_assert( typeinfo</CppEmptyStruct/>.size_of == 1s );
 
+	{
+		// C++ classes should be transformed as structs.
+		var CppClass c{ .b_= false, .x_= 13.2f, .y_= 87 };
+	}
+
 	return 0;
 }

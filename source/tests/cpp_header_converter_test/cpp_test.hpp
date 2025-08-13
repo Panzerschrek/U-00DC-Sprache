@@ -21,3 +21,15 @@ struct Vec2f
 };
 
 struct CppEmptyStruct{};
+
+class CppClass
+{
+public:
+	CppClass();
+	~CppClass();
+
+private:
+	bool b_;
+	float x_;
+	int y_;
+};
