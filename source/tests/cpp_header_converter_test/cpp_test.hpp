@@ -9,6 +9,10 @@ unsigned int ExternCBlockFunc1();
 
 } // extern "C"
 
+using CppStyleTypeAlias= double;
+using CppStyleArrayTypeAlias= unsigned int[4];
+using CppStyleFunctionPointer= int(*)( float x );
+
 enum class CppEnumClass
 {
 	S, Z, T, L, J, I, O,

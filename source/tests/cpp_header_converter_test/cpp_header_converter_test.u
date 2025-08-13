@@ -13,6 +13,10 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( ExternCBlockFunc1() != 0xDEADBEEFu );
 	}
 
+	static_assert( same_type</CppStyleTypeAlias, f64/> );
+	static_assert( same_type</CppStyleArrayTypeAlias, [ u32, 4 ]/> );
+	static_assert( same_type</CppStyleFunctionPointer, ( fn( f32 arg0 ) unsafe call_conv( "C" ) : i32 )/> );
+
 	static_assert( typeinfo</CppEnumClass/>.is_enum );
 	static_assert( typeinfo</CppEnumClass/>.element_count == 7s );
 
