@@ -33,3 +33,10 @@ private:
 	float x_;
 	int y_;
 };
+
+class CppInterface
+{
+public:
+	// Adding virtual destructor creates implicit virtual table pointer field in this class.
+	virtual ~CppInterface()= default;
+};

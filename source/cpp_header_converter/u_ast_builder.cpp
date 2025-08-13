@@ -891,13 +891,42 @@ void CppAstConsumer::EmitRecord(
 				}
 			}
 
+			bool is_empty= record_declaration.fields().empty();
+
+			Synt::ClassElementsList::Builder class_elements;
+
+			if( const auto cxx_record= llvm::dyn_cast<clang::CXXRecordDecl>( &record_declaration ) )
+			{
+				if( cxx_record->isPolymorphic() )
+				{
+					// TODO - avoid creating virtual table pointer if this class has virtual base classes.
+					// TODO - process base classes.
+
+					is_empty= false;
+
+					Synt::ClassField field( g_dummy_src_loc );
+
+					Synt::NameLookup byte8_type( g_dummy_src_loc );
+					byte8_type.name= Keyword( Keywords::byte8_ );
+
+					Synt::RawPointerType raw_pointer_type( g_dummy_src_loc );
+					raw_pointer_type.element_type= std::move(byte8_type);
+
+					field.type= std::make_unique<Synt::RawPointerType>( std::move( raw_pointer_type ) );
+
+					field.name= "ü_vptr";
+
+					class_elements.Append( std::move(field) );
+				}
+			}
+
 			if( has_bitfields )
 			{
 				// Ü has no bitfields support. And generally we can't replace C bitfields with something else.
 				// So, for now just create stub struct.
 				class_.elements= MakeOpaqueRecordElements( record_declaration, "struct_with_bitfields" );
 			}
-			else if( record_declaration.fields().empty() )
+			else if( is_empty )
 			{
 				// If struct has no fields we may still need to create some fields for it.
 				// It may be necessary in C++ mode, where empty structs have size 1.
@@ -905,8 +934,6 @@ void CppAstConsumer::EmitRecord(
 			}
 			else
 			{
-				Synt::ClassElementsList::Builder class_elements;
-
 				for( const clang::FieldDecl* const field_declaration : record_declaration.fields() )
 				{
 					Synt::ClassField field( g_dummy_src_loc );

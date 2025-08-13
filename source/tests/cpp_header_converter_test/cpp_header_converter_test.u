@@ -37,5 +37,11 @@ fn nomangle main() call_conv( "C" ) : i32
 		var CppClass c{ .b_= false, .x_= 13.2f, .y_= 87 };
 	}
 
+	{ // C++ class with virtual method declaration shouldn't be empty and should contain virtual table pointer field.
+		static_assert( typeinfo</CppInterface/>.size_of == typeinfo</$(byte8)/>.size_of );
+		var CppInterface cpp_interface{ .ü_vptr= zero_init };
+		static_assert( same_type</ typeof( cpp_interface.ü_vptr ), $(byte8) /> );
+	}
+
 	return 0;
 }
