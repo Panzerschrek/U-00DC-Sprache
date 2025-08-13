@@ -3,9 +3,11 @@
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
+#include <llvm/IR/Mangler.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/TargetParser/Host.h>
@@ -425,6 +427,29 @@ int Main( int argc, const char* argv[] )
 
 	if( use_jit )
 	{
+		llvm::Mangler mangler;
+
+		if( target_triple.getOS() == llvm::Triple::Win32 )
+		{
+			// A workaround of a bug in LLVM code - it can't load symbol names for x86_stdcall functions, since they are decorated like "_GetProcessHeap@0".
+			llvm::sys::DynamicLibrary::LoadLibraryPermanently( "kernel32.dll", nullptr );
+			for( const llvm::Function& function : result_module->functions() )
+			{
+				if( function.isDeclaration() && function.getCallingConv() == llvm::CallingConv::X86_StdCall )
+				{
+					if( const auto addr= llvm::sys::DynamicLibrary::SearchForAddressOfSymbol( function.getName().str().c_str() ) )
+					{
+						llvm::SmallString<128> name_mangled;
+						mangler.getNameWithPrefix( name_mangled, &function, true );
+						llvm::sys::DynamicLibrary::AddSymbol( name_mangled.str().str().data(), addr );
+					}
+				}
+			}
+		}
+
+		llvm::Function* const stdout_function= result_module->getFunction( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE" );
+		llvm::Function* const stderr_function= result_module->getFunction( "_ZN3ust12stderr_printENS_19random_access_rangeIcLb0EEE" );
+
 		llvm::EngineBuilder builder(std::move(result_module));
 		std::string engine_creation_error_string;
 		builder.setEngineKind(llvm::EngineKind::JIT);
@@ -438,16 +463,32 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		engine->addGlobalMapping( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
-		engine->addGlobalMapping( "?stdout_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, "abort", data_layout );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::abort ) ) );
+		}
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, "memcpy", data_layout );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcpy ) ) );
+		}
+		{
+			llvm::SmallString<128> name_mangled;
+			mangler.getNameWithPrefix( name_mangled, "memcmp", data_layout );
+			engine->addGlobalMapping( name_mangled, reinterpret_cast<uint64_t>( reinterpret_cast<void*>( &std::memcmp ) ) );
+		}
 
-		engine->addGlobalMapping( "_ZN3ust12stderr_printENS_19random_access_rangeIcLb0EEE", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
-		engine->addGlobalMapping( "?stderr_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) ) );
+		if( stdout_function != nullptr )
+			engine->addGlobalMapping( stdout_function, reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) );
 
-		// No need to add other functions here - llvm interpreter supports other required functions (memory functions, exit, abort).
+		if( stderr_function != nullptr )
+			engine->addGlobalMapping( stderr_function, reinterpret_cast<void*>( &JitFuncs::StdErrPrint ) );
+
+		engine->finalizeObject();
 
 		using MainFunctionType= int(*)( int argc, const char** argv );
-		const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(entry_point_name));
+		const auto main_function= reinterpret_cast<MainFunctionType>( engine->getPointerToFunction( main_function_llvm ) );
 		if( main_function == nullptr )
 		{
 			std::cerr << "Can't find entry point!" << std::endl;
