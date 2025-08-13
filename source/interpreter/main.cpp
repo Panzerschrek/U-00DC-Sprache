@@ -157,17 +157,21 @@ namespace JitFuncs
 {
 
 // In Ü fast calling convention is used as default calling convention.
-#ifdef __i386__
-	#ifdef WIN32
+#ifdef WIN32
+	#ifdef _M_IX86
 		#define U_CALLING_CONVENTION __fastcall
 	#else
-		#define U_CALLING_CONVENTION __attribute__((fastcall))
+		#define U_CALLING_CONVENTION
 	#endif
 #else
-	#define U_CALLING_CONVENTION
+	#ifdef __i386__
+		#define U_CALLING_CONVENTION __attribute__((fastcall))
+	#else
+		#define U_CALLING_CONVENTION
+	#endif
 #endif
 
-U_CALLING_CONVENTION void StdOutPrint( const char* const ptr, const size_t size )
+void U_CALLING_CONVENTION StdOutPrint( const char* const ptr, const size_t size )
 {
 	constexpr auto buffer_size= 1024;
 	if( size < buffer_size )
@@ -189,7 +193,7 @@ U_CALLING_CONVENTION void StdOutPrint( const char* const ptr, const size_t size 
 	std::cout.flush();
 }
 
-U_CALLING_CONVENTION void StdErrPrint( const char* const ptr, const size_t size )
+void U_CALLING_CONVENTION StdErrPrint( const char* const ptr, const size_t size )
 {
 	constexpr auto buffer_size= 1024;
 	if( size < buffer_size )
