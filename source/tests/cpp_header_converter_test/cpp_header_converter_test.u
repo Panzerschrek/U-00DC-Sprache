@@ -24,5 +24,13 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( i32( CppEnumClass::I ) == 5 );
 	static_assert( i32( CppEnumClass::O ) == 6 );
 
+	{
+		static_assert( typeinfo</Vec2f/>.size_of == typeinfo</f32/>.size_of * 2s );
+		var Vec2f v{ .x= 78.0f, .y= -1.2345f };
+	}
+
+	// In C++ empty structs aren't really empty - they have one byte size.
+	static_assert( typeinfo</CppEmptyStruct/>.size_of == 1s );
+
 	return 0;
 }

@@ -13,3 +13,11 @@ enum class CppEnumClass
 {
 	S, Z, T, L, J, I, O,
 };
+
+struct Vec2f
+{
+	float x;
+	float y;
+};
+
+struct CppEmptyStruct{};
