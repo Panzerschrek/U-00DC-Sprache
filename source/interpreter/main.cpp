@@ -364,6 +364,7 @@ int Main( int argc, const char* argv[] )
 		CodeBuilderOptions options;
 		options.report_about_unused_names= false; // Do not require generating extra errors in interpreter.
 		options.build_debug_info= true;
+		options.mangling_scheme= ManglingScheme::ItaniumABI; // For simplicity use it even on Windows.
 
 		CodeBuilder::BuildResult build_result=
 			CodeBuilder::BuildProgram(
@@ -499,11 +500,9 @@ int Main( int argc, const char* argv[] )
 		g_interpreter= std::make_unique<Interpreter>( data_layout, options );
 
 		// Memory functions are supported internally (inside interpreter), for other needed functions register our own handlers.
-		g_interpreter->RegisterCustomFunction( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE", InterpreterFuncs::StdOutPrint );
-		g_interpreter->RegisterCustomFunction( "?stdout_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", InterpreterFuncs::StdOutPrint );
 
+		g_interpreter->RegisterCustomFunction( "_ZN3ust12stdout_printENS_19random_access_rangeIcLb0EEE", InterpreterFuncs::StdOutPrint );
 		g_interpreter->RegisterCustomFunction( "_ZN3ust12stderr_printENS_19random_access_rangeIcLb0EEE", InterpreterFuncs::StdErrPrint );
-		g_interpreter->RegisterCustomFunction( "?stderr_print@ust@@YAXU?$random_access_range@D_N$0A@@1@@Z", InterpreterFuncs::StdErrPrint );
 
 		g_interpreter->RegisterCustomFunction( "memcmp", InterpreterFuncs::MemCmp );
 		g_interpreter->RegisterCustomFunction( "abort", InterpreterFuncs::Abort );
