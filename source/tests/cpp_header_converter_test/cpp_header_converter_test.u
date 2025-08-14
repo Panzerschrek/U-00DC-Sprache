@@ -54,6 +54,10 @@ fn nomangle main() call_conv( "C" ) : i32
 		var CppInterface cpp_interface{ .ü_vptr= zero_init };
 		static_assert( same_type</ typeof( cpp_interface.ü_vptr ), $(byte8) /> );
 	}
+	{ // Virtual table pointer isn't created if class has a base, which has a virtual table pointer.
+		var CppDerived cpp_derived{ .ü_base0{ .ü_vptr= zero_init }, .some_field= zero_init };
+		static_assert( typeinfo</CppDerived/>.size_of == typeinfo</ $(byte8) />.size_of * 2s );
+	}
 
 	return 0;
 }

@@ -905,11 +905,48 @@ void CppAstConsumer::EmitRecord(
 
 			if( const auto cxx_record= llvm::dyn_cast<clang::CXXRecordDecl>( &record_declaration ) )
 			{
-				if( cxx_record->isPolymorphic() )
+				size_t num_bases= 0;
+				bool has_polymorphic_base= false;
+				for( const clang::CXXBaseSpecifier& base : cxx_record->bases() )
 				{
-					// TODO - avoid creating virtual table pointer if this class has virtual base classes.
-					// TODO - process base classes.
+					Synt::ClassField field( g_dummy_src_loc );
+					field.type= TranslateType( *base.getType().getTypePtr(), type_names_map );
+					field.name= "ü_base" + std::to_string( num_bases );
 
+					class_elements.Append( std::move(field) );
+
+					++num_bases;
+
+					const clang::Type* base_type= base.getType().getTypePtr();
+					while(true)
+					{
+						if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( base_type ) )
+							base_type= paren_type->getInnerType().getTypePtr();
+						else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( base_type ) )
+							base_type= elaborated_type->desugar().getTypePtr();
+						else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( base_type ) )
+							base_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
+						else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>( base_type ) )
+						{
+							const auto aliased_type= typedef_type->desugar().getTypePtr();
+							if( aliased_type == nullptr )
+								break;
+							base_type= aliased_type;
+						}
+						else
+							break;
+					}
+
+					if( const clang::RecordType* const base_record_type= llvm::dyn_cast<clang::RecordType>( base_type ) )
+					{
+						if( const auto cxx_base_record= llvm::dyn_cast<clang::CXXRecordDecl>( base_record_type->getDecl() ) )
+							has_polymorphic_base|= cxx_base_record->isPolymorphic();
+					}
+				}
+
+
+				if( cxx_record->isPolymorphic() && !has_polymorphic_base )
+				{
 					is_empty= false;
 
 					Synt::ClassField field( g_dummy_src_loc );

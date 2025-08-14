@@ -48,3 +48,9 @@ public:
 	// Adding virtual destructor creates implicit virtual table pointer field in this class.
 	virtual ~CppInterface()= default;
 };
+
+class CppDerived : public CppInterface
+{
+public:
+	int* some_field;
+};
