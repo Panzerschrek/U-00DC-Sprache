@@ -22,6 +22,11 @@ enum class CppEnumClass
 	S, Z, T, L, J, I, O,
 };
 
+enum class CppUnsequentialEnumClass
+{
+	One= 1, TwentyTwo=22, Eight= 8,
+};
+
 struct Vec2f
 {
 	float x;
