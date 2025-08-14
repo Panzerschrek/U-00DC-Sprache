@@ -1435,6 +1435,8 @@ void CppAstConsumer::EmitVariable(
 	}
 	else if( init_val->isInt() )
 	{
+		const llvm::APInt init_val_int= init_val->getInt();
+
 		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
 		variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
 
@@ -1448,9 +1450,22 @@ void CppAstConsumer::EmitVariable(
 
 				{
 					Synt::IntegerNumericConstant integer_initializer( g_dummy_src_loc );
-					integer_initializer.num.value= init_val->getInt().getLimitedValue();
 
-					initializer.arguments.push_back( std::move( integer_initializer ) );
+					if( variable_type->isSignedIntegerType() && init_val_int.isNegative() )
+					{
+						integer_initializer.num.value= uint64_t( -init_val_int.getSExtValue() );
+
+						Synt::UnaryMinus unary_minus( g_dummy_src_loc );
+						unary_minus.expression= std::move( integer_initializer );
+
+						initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+					}
+					else
+					{
+						integer_initializer.num.value= init_val_int.getLimitedValue();
+
+						initializer.arguments.push_back( std::move( integer_initializer ) );
+					}
 				}
 
 				entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
