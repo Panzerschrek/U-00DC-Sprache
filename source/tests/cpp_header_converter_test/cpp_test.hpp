@@ -66,6 +66,7 @@ constexpr unsigned int g_group_constant0= 11, g_group_constant1= 0xFF, g_group_c
 
 const float g_float_constant= -17.5f;
 
+// For now can't convert enum constants.
 const CppEnumClass g_enum_constant= CppEnumClass::I;
 
 // Can't convert this constant, since its initializer isn't constexpr.
@@ -94,6 +95,7 @@ const int g_array_with_zero_filler[100]{};
 // For now can't convert such arrays.
 const double g_array_with_not_enough_initializers[4]{ 1.0f, 2.0f };
 
+// For now don't support constants of struct types.
 const Vec2f g_constant_struct{ 78.2f, -13.3f };
 
 const auto g_cpp_auto_constant= 78767556676333;
@@ -101,3 +103,9 @@ constexpr auto g_cpp_auto_float_constant= -13.2f + 76.0f;
 
 // Can't convert it, since it may be changed.
 auto g_cpp_auto_non_constant= 376766;
+
+// Can't convert this - raw pointers in Ü can't be used for global variables.
+const int* g_ptr_constant= nullptr;
+
+// For now can't convert global references.
+const unsigned int& g_global_const_ref= g_not_a_constant;
