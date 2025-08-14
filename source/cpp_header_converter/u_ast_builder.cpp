@@ -1409,7 +1409,31 @@ void CppAstConsumer::EmitVariable(
 	if( init_val == nullptr )
 		return;
 
-	if( init_val->isInt() )
+	const clang::Type* variable_type= variable.getType().getTypePtr();
+	while(true)
+	{
+		if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( variable_type ) )
+			variable_type= paren_type->getInnerType().getTypePtr();
+		else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( variable_type ) )
+			variable_type= elaborated_type->desugar().getTypePtr();
+		else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( variable_type ) )
+			variable_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
+		else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>( variable_type ) )
+		{
+			const auto aliased_type= typedef_type->desugar().getTypePtr();
+			if( aliased_type == nullptr )
+				break;
+			variable_type= aliased_type;
+		}
+		else
+			break;
+	}
+
+	if( variable_type->isEnumeralType() )
+	{
+		// TODO - emit enums constants properly.
+	}
+	else if( init_val->isInt() )
 	{
 		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
 		variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
