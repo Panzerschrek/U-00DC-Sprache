@@ -96,5 +96,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( g_u64_array[0] == 12345678945u64 );
 	static_assert( g_u64_array[1] == 0xFEDCBA9876543210u64 );
 
+	static_assert( g_cpp_auto_constant == 78767556676333 );
+	static_assert( g_cpp_auto_float_constant == -13.2f + 76.0f );
+
 	return 0;
 }

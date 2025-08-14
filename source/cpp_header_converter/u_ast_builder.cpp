@@ -448,6 +448,12 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 		return TranslateType( *elaborated_type->desugar().getTypePtr(), type_names_map );
 	else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( &in_type ) )
 		return TranslateType( *attributed_type->desugar().getTypePtr(), type_names_map ); // TODO - maybe process attributes?
+	else if( const auto auto_type= llvm::dyn_cast<clang::AutoType>( &in_type ) )
+	{
+		const clang::QualType deduced_type= auto_type->getDeducedType();
+		if( !deduced_type.isNull() )
+			return TranslateType( *deduced_type.getTypePtr(), type_names_map );
+	}
 
 	// Fallback for some unlikely case.
 	return StringToTypeName( Keyword( Keywords::void_ ) );
@@ -1430,6 +1436,14 @@ void CppAstConsumer::EmitVariable(
 			if( aliased_type == nullptr )
 				break;
 			variable_type= aliased_type;
+		}
+		else if( const auto auto_type= llvm::dyn_cast<clang::AutoType>( variable_type ) )
+		{
+			const clang::QualType deduced_type= auto_type->getDeducedType();
+			if( !deduced_type.isNull() )
+				variable_type= deduced_type.getTypePtr();
+			else
+				break;
 		}
 		else
 			break;

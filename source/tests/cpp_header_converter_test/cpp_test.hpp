@@ -95,3 +95,9 @@ const int g_array_with_zero_filler[100]{};
 const double g_array_with_not_enough_initializers[4]{ 1.0f, 2.0f };
 
 const Vec2f g_constant_struct{ 78.2f, -13.3f };
+
+const auto g_cpp_auto_constant= 78767556676333;
+constexpr auto g_cpp_auto_float_constant= -13.2f + 76.0f;
+
+// Can't convert it, since it may be changed.
+auto g_cpp_auto_non_constant= 376766;
