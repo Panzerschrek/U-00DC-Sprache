@@ -753,6 +753,26 @@ CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
 		if( src_name.empty() )
 			continue; // Is it possible?
 
+		// Handle special case - try avoid emitting type alias for "typedef struct Some {} Some;".
+		{
+			const clang::Type* src_type= typedef_decl->getUnderlyingType().getTypePtr();
+
+			while(true)
+			{
+				if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( src_type ) )
+					src_type= elaborated_type->desugar().getTypePtr();
+				else
+					break;
+			}
+
+			if( const auto record_type= llvm::dyn_cast<clang::RecordType>( src_type ) )
+			{
+				if( const auto record_decl= record_type->getDecl() )
+					if( record_decl->getName() == src_name )
+						continue;
+			}
+		}
+
 		std::string name= TranslateIdentifier( src_name );
 
 		// Rename typedef until we have no name conflict.
