@@ -85,5 +85,13 @@ const double g_constant_with_constructor_initializer( 3.1415926535 );
 constexpr int g_constant_with_universal_initializer{ -612 };
 
 const int g_constant_array[5]{ 88, 77, 66, 55, 44 };
+const float g_constant_2d_array[2][3]{ { -1.0f, 0.0f, 32.0f }, { 13.2f, -45.3f, 1111.0f } };
+constexpr long long unsigned int g_u64_array[2]{ 12345678945, 0xFEDCBA9876543210 };
+
+// For now can't convert such arrays.
+const int g_array_with_zero_filler[100]{};
+
+// For now can't convert such arrays.
+const double g_array_with_not_enough_initializers[4]{ 1.0f, 2.0f };
 
 const Vec2f g_constant_struct{ 78.2f, -13.3f };

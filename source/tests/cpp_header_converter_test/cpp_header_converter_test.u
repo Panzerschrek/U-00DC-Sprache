@@ -76,5 +76,25 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( g_constant_with_constructor_initializer == 3.1415926535 );
 	static_assert( g_constant_with_universal_initializer == -612 );
 
+	static_assert( typeinfo</ typeof(g_constant_array) />.element_count == 5s );
+	static_assert( g_constant_array[0] == 88 );
+	static_assert( g_constant_array[1] == 77 );
+	static_assert( g_constant_array[2] == 66 );
+	static_assert( g_constant_array[3] == 55 );
+	static_assert( g_constant_array[4] == 44 );
+
+	static_assert( typeinfo</ typeof(g_constant_2d_array) />.element_count == 2s );
+	static_assert( typeinfo</ typeof(g_constant_2d_array[0]) />.element_count == 3s );
+	static_assert( g_constant_2d_array[0][0] == -1.0f );
+	static_assert( g_constant_2d_array[0][1] == 0.0f );
+	static_assert( g_constant_2d_array[0][2] == 32.0f );
+	static_assert( g_constant_2d_array[1][0] == 13.2f );
+	static_assert( g_constant_2d_array[1][1] == -45.3f );
+	static_assert( g_constant_2d_array[1][2] == 1111.0f );
+
+	static_assert( typeinfo</ typeof(g_u64_array) />.element_count == 2s );
+	static_assert( g_u64_array[0] == 12345678945u64 );
+	static_assert( g_u64_array[1] == 0xFEDCBA9876543210u64 );
+
 	return 0;
 }
