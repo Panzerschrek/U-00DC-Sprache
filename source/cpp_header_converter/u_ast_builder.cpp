@@ -145,9 +145,13 @@ private:
 		const TypeNamesMap& type_names_map,
 		AnonymousEnumMembersSet& out_anonymous_enum_members );
 
-	void EmitVariables( const NamedVariableDeclarations& named_variable_declarations );
+	void EmitVariables(
+		const NamedVariableDeclarations& named_variable_declarations,
+		const TypeNamesMap& type_names_map );
 
-	void EmitVariable( const std::string& name, const clang::VarDecl& variable );
+	void EmitVariable(
+		const std::string& name, const clang::VarDecl& variable,
+		const TypeNamesMap& type_names_map );
 
 	void EmitDefinitionsForMacros(
 		const NamedFunctionDeclarations& named_function_declarations,
@@ -267,7 +271,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	// Build variables as last.
 	const NamedVariableDeclarations variable_names= GenerateVariableNames( function_names, record_names, typedef_names, enum_names, anonymous_enum_members );
-	EmitVariables( variable_names );
+	EmitVariables( variable_names, type_names_map );
 
 	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, anonymous_enum_members, variable_names );
 }
@@ -298,7 +302,10 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 			ProcessDecl( *sub_decl );
 	}
 	else if( const auto var_decl= llvm::dyn_cast<clang::VarDecl>(&decl) )
-		variable_declarations_.push_back( var_decl );
+	{
+		if( var_decl->hasInit() )
+			variable_declarations_.push_back( var_decl );
+	}
 }
 
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const TypeNamesMap& type_names_map )
@@ -1383,29 +1390,84 @@ void CppAstConsumer::EmitEnum(
 	}
 }
 
-void CppAstConsumer::EmitVariables( const NamedVariableDeclarations& named_variable_declarations )
+void CppAstConsumer::EmitVariables(
+	const NamedVariableDeclarations& named_variable_declarations,
+	const TypeNamesMap& type_names_map )
 {
 	for( const auto& pair: named_variable_declarations )
-		EmitVariable( pair.first, *pair.second );
+		EmitVariable( pair.first, *pair.second, type_names_map );
 }
 
-void CppAstConsumer::EmitVariable( const std::string& name, const clang::VarDecl& variable )
+void CppAstConsumer::EmitVariable(
+	const std::string& name,
+	const clang::VarDecl& variable,
+	const TypeNamesMap& type_names_map )
 {
 	std::cout << "Variable declaration: " << name << std::endl;
-	if( variable.hasInit() )
+
+	const clang::APValue* const init_val= variable.evaluateValue();
+	if( init_val == nullptr )
+		return;
+
+	if( init_val->isInt() )
 	{
-		std::cout << "has init" << std::endl;
-		if( const clang::APValue* const init_val= variable.evaluateValue() )
+		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+		variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
+
 		{
-			if( init_val->isInt() )
+			Synt::VariablesDeclaration::VariableEntry entry;
+			entry.src_loc= g_dummy_src_loc;
+			entry.name= name;
+
 			{
-				std::cout << "integer initializer " << init_val->getInt().getLimitedValue() << std::endl;
+				Synt::ConstructorInitializer initializer( g_dummy_src_loc );
+
+				{
+					Synt::IntegerNumericConstant integer_initializer( g_dummy_src_loc );
+					integer_initializer.num.value= init_val->getInt().getLimitedValue();
+
+					initializer.arguments.push_back( std::move( integer_initializer ) );
+				}
+
+				entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
 			}
-			if( init_val->isFloat() )
-			{
-				std::cout << "float initializer " << init_val->getFloat().convertToDouble() << std::endl;
-			}
+
+			variables_declaration.variables.push_back( std::move(entry) );
 		}
+
+		root_program_elements_.Append( std::move( variables_declaration ) );
+	}
+	else if( init_val->isFloat() )
+	{
+		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+		variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
+
+		{
+			Synt::VariablesDeclaration::VariableEntry entry;
+			entry.src_loc= g_dummy_src_loc;
+			entry.name= name;
+
+			{
+				Synt::ConstructorInitializer initializer( g_dummy_src_loc );
+
+				{
+					Synt::FloatingPointNumericConstant integer_initializer( g_dummy_src_loc );
+					integer_initializer.num.value= init_val->getFloat().convertToDouble();
+
+					initializer.arguments.push_back( std::move( integer_initializer ) );
+				}
+
+				entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
+			}
+
+			variables_declaration.variables.push_back( std::move(entry) );
+		}
+
+		root_program_elements_.Append( std::move( variables_declaration ) );
+	}
+	else
+	{
+		// For now unsupported kind.
 	}
 }
 
