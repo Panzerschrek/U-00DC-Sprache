@@ -59,3 +59,31 @@ class CppDerived : public CppInterface
 public:
 	int* some_field;
 };
+
+constexpr int g_some_int_contant= 37;
+
+constexpr unsigned int g_group_constant0= 11, g_group_constant1= 0xFF, g_group_constant2= 2633676, g_group_constant3= g_some_int_contant * 5;
+
+const float g_float_constant= -17.5f;
+
+const CppEnumClass g_enum_constant= CppEnumClass::I;
+
+// Can't convert this constant, since its initializer isn't constexpr.
+const int g_constant_with_dynamic_initializer= ExternCPrefixedFunc( 1 );
+
+constexpr inline char GetChar() { return '7'; }
+
+const char g_constant_with_constexpr_call_initializer= GetChar();
+
+// Initializer is constexpr, but variable itself isn't constant and thus shouldn't be converted.
+unsigned int g_not_a_constant= 797;
+
+extern unsigned int g_extern_non_constant;
+
+const double g_constant_with_constructor_initializer( 3.1415926535 );
+
+constexpr int g_constant_with_universal_initializer{ -612 };
+
+const int g_constant_array[5]{ 88, 77, 66, 55, 44 };
+
+const Vec2f g_constant_struct{ 78.2f, -13.3f };
