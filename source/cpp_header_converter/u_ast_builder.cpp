@@ -303,7 +303,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
 	}
 	else if( const auto var_decl= llvm::dyn_cast<clang::VarDecl>(&decl) )
 	{
-		if( var_decl->hasInit() )
+		if( var_decl->hasInit() && var_decl->hasConstantInitialization() )
 			variable_declarations_.push_back( var_decl );
 	}
 }
@@ -1403,7 +1403,11 @@ void CppAstConsumer::EmitVariable(
 	const clang::VarDecl& variable,
 	const TypeNamesMap& type_names_map )
 {
-	std::cout << "Variable declaration: " << name << std::endl;
+	if( !variable.getType().isConstant( ast_context_ ) )
+	{
+		// Ignore non-constants.
+		return;
+	}
 
 	const clang::APValue* const init_val= variable.evaluateValue();
 	if( init_val == nullptr )
