@@ -664,6 +664,25 @@ void ElementWrite( const Initializer& initializer ) const
 		}
 		stream_ << "}";
 	}
+	else if( const auto sequence_initializer= std::get_if<SequenceInitializer>( &initializer ) )
+	{
+		if( sequence_initializer->initializers.empty() )
+			stream_ << "[]";
+		else
+		{
+			stream_ << "[ ";
+
+			for( const Initializer& element_initializer : sequence_initializer->initializers )
+			{
+				ElementWrite( element_initializer );
+
+				if( &element_initializer != &sequence_initializer->initializers.back() )
+					stream_ << ", ";
+			}
+
+			stream_ << " ]";
+		}
+	}
 	else
 	{
 		U_ASSERT(false);

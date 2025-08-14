@@ -1,0 +1,299 @@
+import "/c_converted.u"
+
+fn SomeLocalFunc( f32 x ) call_conv( "C" ) {}
+
+template</ type char_type, size_type size0, size_type size1 />
+fn constexpr string_equals( [ char_type, size0 ]& s0, [ char_type, size1 ]& s1 ) : bool
+{
+	if( size0 != size1 ) { return false; }
+	var size_type mut i(0);
+	while( i < size0 )
+	{
+		if( s0[i] != s1[i] ) { return false; }
+		++i;
+	}
+	return true;
+}
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	var i32 one= ONE_CONSTANT;
+	static_assert( ONE_CONSTANT == 1 );
+
+	var f64 pi_d= PI_CONSTANT;
+	var f32 pi_f= PI_CONSTANT_F;
+
+	var u32 unsigned_constant= UNSIGNED_CONSTANT;
+	static_assert( UNSIGNED_CONSTANT == 12345u );
+
+	var i32 hex_constant= HEX_CONSTNT;
+	static_assert( HEX_CONSTNT == 0xFF );
+
+	var f64 f64_constants= TWO_CONSTANT_DOUBLE;
+	static_assert( TWO_CONSTANT_DOUBLE == 2.0 );
+
+	var f64 e_ratio= M_E / 2.7182818284590452354;
+	static_assert( e_ratio > 0.999999 && e_ratio < 1.000001 );
+
+	var f64 small_f64= SMALL_CONSTANT, large_f64= LARGE_CONSTANT;
+
+	static_assert( LARGE_INTEGER_CONSTANT == 153124586353854499i64 );
+	static_assert( LARGE_INTEGER_UNSIGNED_CONSTANT == 7655554499878564u64 );
+	static_assert( LARGE_INTEGER_CONSTANT_TRUNCATED == 9876543210 );
+	static_assert( string_equals( STRING_CONSTANT_ASCII, "WTF?009a\u0000" ) );
+	static_assert( string_equals( STRING_CONSTANT_UTF8_IMPLICIT,"Чё?\u0000" ) );
+	static_assert( string_equals( STRING_CONSTANT_WITH_SPECIAL_SYMBOLS, "Ü \u0013 one \t two \n quote ' double \" slash \\ \u0000" ) );
+	static_assert( string_equals( STRING_CONSTANT_UTF8 , " утф8 - наше всё\0"u8 ) );
+	static_assert( string_equals( STRING_CONSTANT_UTF16, "Таки да, utf-16 это\0"u16 ) );
+	static_assert( string_equals( STRING_CONSTANT_UTF32, "да даже utf-32 могём\0"u32 ) );
+	static_assert( CHAR_CONSTANT == 'Z' );
+
+	unsafe
+	{
+		var i32 mut x= 0;
+		Function_ZeroArgs();
+		Function_ArgVal(x);
+		Function_ArgPtr( $<(x) );
+		Function_ArgConstPtr( $<(x) );
+		var i32 r0= Function_RetVal();
+		var $(i32) r1= Function_RetPtr();
+		var $(i32) r2= Function_RetConstPtr();
+		var $($(f32)) ptr_to_ptr_to_f= Function_RetPtrToPtr();
+		Function_ArgPtrToPtr( ptr_to_ptr_to_f );
+		Function_UnnamedArgs( 0, 0.0f, 0.0 );
+		DuplicatedProto(0);
+
+		var char8 mut c= zero_init;
+		ExternallyDeclaredFunction( $<(c) );
+	}
+	{
+		static_assert( same_type</ typeof(Function_ZeroArgs), ( fn() unsafe call_conv( "C" ) ) /> );
+		static_assert( same_type</ typeof(Function_ArgVal), fn( i32 x ) unsafe call_conv( "C" ) /> );
+		static_assert( same_type</ typeof(Function_ArgPtr), fn( $(i32) x ) unsafe call_conv( "C" ) /> );
+		static_assert( same_type</ typeof(Function_ArgConstPtr), fn( $(i32) x ) unsafe call_conv( "C" ) /> );
+		static_assert( same_type</ typeof(Function_ArgPtrToPtr), fn( $($(f32)) f ) unsafe call_conv( "C" ) /> );
+		static_assert( same_type</ typeof(Function_RetVal), fn() unsafe call_conv( "C" ) : i32 /> );
+		static_assert( same_type</ typeof(Function_RetPtr), fn() unsafe call_conv( "C" ) : $(i32) /> );
+		static_assert( same_type</ typeof(Function_RetConstPtr), fn() unsafe call_conv( "C" ) : $(i32) /> );
+		static_assert( same_type</ typeof(Function_RetPtrToPtr), fn() unsafe call_conv( "C" ) : $($(f32)) /> );
+	}
+	{
+		static_assert( same_type</ CPP_char8, char8 /> );
+		static_assert( same_type</ CPP_i8 ,  i8 /> );
+		static_assert( same_type</ CPP_u8 ,  u8 /> );
+		static_assert( same_type</ CPP_i16, i16 /> );
+		static_assert( same_type</ CPP_u16, u16 /> );
+		static_assert( same_type</ CPP_i32, i32 /> );
+		static_assert( same_type</ CPP_u32, u32 /> );
+		static_assert( same_type</ CPP_i64, i64 /> );
+		static_assert( same_type</ CPP_u64, u64 /> );
+		static_assert( same_type</ CPP_f32, f32 /> );
+		static_assert( same_type</ CPP_f64, f64 /> );
+		static_assert( same_type</ ArrayType15, [ i32, 15 ] /> );
+		static_assert( same_type</ MultidimentionalArrayType44, [ [ f32, 4 ], 4 ] /> );
+	}
+	{
+		var i32 mut a= 0, mut b= 0;
+		var $(i32) mut a_ptr= $<(a);
+		var $(byte8) mut a_ptr_as_byte8= unsafe( $<(cast_ref_unsafe</byte8/>(a)) );
+		var RegularStruct s
+		{
+			.x= 0,
+			.y= 0.0f,
+			.ptr_field= $<(a),
+			.const_ptr_field= $<(b),
+			.ptr_to_ptr_field= $<(a_ptr),
+			.function_ptr_field= SomeLocalFunc,
+			.void_ptr_field= a_ptr_as_byte8,
+			.void_ptr_ptr_field= $<(a_ptr_as_byte8),
+		};
+		unsafe{ s.function_ptr_field( 3.14f ); }
+		static_assert( same_type</ typeof( s.function_ptr_field ), fn( f32 arg0 ) unsafe call_conv( "C" ) : void /> );
+	}
+	{
+		var TypedefedStruct mut s{ .data= zero_init };
+		s.data[0u]= 'f';
+	}
+	{
+		var StructWithAnonimousRecordsInside mut s
+		{
+			.anon_struct{ .anon_struct_content= 0 },
+			.anon_union= zero_init,
+			.anon_struct_as_array= zero_init,
+		};
+
+		s.anon_struct_as_array[2u].anon_struct_as_array_content= 66;
+	}
+	{
+		// For now "InnerC" is declared outside "StructWithNamedRecordsInside".
+		// It's too complicated to declare it inside, as in original C code.
+		var InnerC mut inner_c= zero_init;
+		var StructWithNamedRecordsInside s
+		{
+			.a_arr[ { .x=55u, .y= 1.25f }, { .x=66u, .y= 2.5f  } ],
+			.b{ .s= zero_init, .c_ptr= $<(inner_c) }
+		};
+	}
+	{
+		var StupidStuctNaming mut s= zero_init;
+		unsafe( StupidFunc( $<(s) ) );
+	}
+	{
+		var $(StructUsedWithoutDeclaration) ptr= unsafe( FunctionReturningUnknownStruct() );
+	}
+	{
+		type UnknownStruct= StructUsedWithoutDeclaration;
+		unsafe( FunctionReturningUnknownStruct() );
+	}
+
+	{
+		var StructWithName mut s{ .ff= 67u };
+		var TypedefForStructWithName &mut s_ref= s;
+		var PointerTypedefForStructWithName s_ptr= $<(s_ref);
+	}
+
+	static_assert( typeinfo</UnionAlign1/>.size_of == 1s );
+	static_assert( typeinfo</UnionAlign1/>.align_of == 1s );
+	static_assert( typeinfo</UnionAlign2/>.size_of == 2s );
+	static_assert( typeinfo</UnionAlign2/>.align_of == 2s );
+	static_assert( typeinfo</UnionAlign4/>.size_of == 4s );
+	static_assert( typeinfo</UnionAlign4/>.align_of == 4s );
+
+	{
+		var $(UnionForwardDeclaration) u_ptr= zero_init;
+	}
+
+	static_assert( typeinfo</StructWithBitFields/>.size_of == 8s );
+	static_assert( typeinfo</StructWithBitFields/>.align_of == 4s );
+
+	static_assert( typeinfo</StructWithOnlyBitFields/>.size_of == 2s );
+	static_assert( typeinfo</StructWithOnlyBitFields/>.align_of == 2s );
+
+	static_assert( typeinfo</LargeStructWithSingleBitField/>.size_of == 44s );
+	static_assert( typeinfo</LargeStructWithSingleBitField/>.align_of == 4s );
+
+	static_assert( i32(SequentialEnum::Red) == 0 );
+	static_assert( i32(SequentialEnum::Green) == 1 );
+	static_assert( i32(SequentialEnum::Blue) == 2 );
+
+	unsafe( SequentialEnumFunc( SequentialEnum::Blue ) );
+
+	static_assert( NonSequentialEnum::Zero.ü_underlying_value == 0 );
+	static_assert( NonSequentialEnum::One.ü_underlying_value == 1 );
+	static_assert( NonSequentialEnum::Ten.ü_underlying_value == 10 );
+	static_assert( NonSequentialEnum::MinusTwo.ü_underlying_value == -2 );
+	static_assert( NonSequentialEnum::Large32bit.ü_underlying_value == 5000000 );
+	static_assert( NonSequentialEnum::LargeNegative.ü_underlying_value == -142586 );
+
+	unsafe( NonSequentialEnumFunc( NonSequentialEnum::MinusTwo ) );
+
+	var NonSequentialEnum ersatz_enum_value= NonSequentialEnum::Zero;
+
+	var TypedefForEnumABC typedefed_sequential_enum_value= AnonB;
+	unsafe( ABCFunc( typedefed_sequential_enum_value ) );
+
+	var TypedefForEnumXYZ typedefed_non_sequential_enum_value= AnonX;
+	unsafe( XYZFunc( typedefed_non_sequential_enum_value ) );
+
+	auto totally_anonym_enum_value= TotallyAnonym0;
+
+	static_assert( LargeValuesEnum::LV_Large.ü_underlying_value == 987654321u64 );
+	static_assert( LargeValuesEnum::LV_EvenLarger.ü_underlying_value == 123456789101112u64 );
+
+	static_assert( Anon_Large == 88888888888u64 );
+	static_assert( Anon_EvenLarger == 7654321098765u64 );
+
+	var SameNameForStructAndTypedef same_name_for_struct_and_typedef{ .dummy= 666 };
+
+	var DifferentNamesForStructAndTypedef_0 different_names_for_struct_and_typedef_0{ .dummy0= 0, .dummy1= 0.0f };
+	var DifferentNamesForStructAndTypedef_1 different_names_for_struct_and_typedef_1{ .dummy0= 1, .dummy1= 1.0f };
+	static_assert( same_type</ DifferentNamesForStructAndTypedef_0 , DifferentNamesForStructAndTypedef_1 /> );
+
+	{
+		var SomeForwardDeclaration v{ .contents= 2, .contents2= -2.5f };
+		type OpaqueStructUsage= SomeForwardDeclarationWithoutLaterDefinition;
+	}
+
+	static_assert( typeinfo</NumbersEnum/>.is_integer );
+	static_assert( typeinfo</NumbersEnumPtr/>.is_raw_pointer );
+
+	unsafe( SillyFunction( 33.3f ) );
+
+	{
+		var SillyStructWithAStrangeField s{ .SillyName_= zero_init };
+	}
+
+	{
+		var SameNameForStructAndFunc1_ mut s= zero_init;
+		unsafe( SameNameForStructAndFunc1( $<(s) ) );
+	}
+
+	{
+		var $(SameNameForStructAndFunc2_) ptr= unsafe( SameNameForStructAndFunc2() );
+	}
+
+	{
+		var TypedefStructWithSameNameForwardDeclaration s{ .contents= zero_init };
+	}
+
+	{
+		auto x= unsafe( VariadicFunc( 5, $<( cast_mut( "Some string\0"[0] ) ) ) );
+		halt if( x != 55 );
+	}
+
+	unsafe
+	{
+		var [ i32, 4 ] mut arr= zero_init;
+		auto arr_ptr= $<( arr[0] );
+		ArrayArg( arr_ptr );
+		IncompleteArrayArg( arr_ptr );
+	}
+
+	{
+		// Typedefs to function types can't be translated, so, expect void for them.
+		static_assert( typeinfo</ TypedefForFunctionType />.is_void );
+
+		// But ising this typedef in combination with pointer should work.
+		var StructWithFunctionTypePtrField s= zero_init;
+		static_assert( typeinfo</ typeof(s.ptr) />.is_function_pointer );
+		static_assert( same_type</ typeof(s.ptr), fn( i32 arg0, $(byte8) arg1 ) unsafe call_conv("C") : i32 /> );
+	}
+
+	// Should translate type alias for function pointer with no information about params.
+	static_assert( typeinfo</FunctionTypedefNoProto/>.is_function_pointer );
+	static_assert( same_type</ FunctionTypedefNoProto, fn() unsafe call_conv("C") : i32 /> );
+
+	// void* should be translated as $(byte8)
+	unsafe
+	{
+		var $(byte8) res0= VoidPtrRetFunc();
+		var $(byte8) res1= ConstVoidPtrRetFunc();
+
+		VoidPtrParamFunc(res0);
+		ConstVoidPtrParamFunc(res1);
+
+		var MyVoidPtr p2= res0;
+		var void true_void_res= VoidPtrTypedefParamFunc(p2);
+
+		// This pointer is null, avoid actually reading it.
+		if( false )
+		{
+			var MyVoid val2= $>(p2);
+		}
+	}
+
+	// Should retrieve "nodiscard" for some types.
+	static_assert( typeinfo</SomeNoDiscardStruct/>.is_nodiscard );
+	static_assert( typeinfo</SomeNoDiscardEnum/>.is_nodiscard );
+
+	var i32 nodiscard_res= unsafe( CNoDiscardFunc() );
+
+	// C empty struct aren't really empty. At least on some compilers.
+	static_if( string_equals( compiler::target::os, "windows" ) )
+	{
+		static_assert( typeinfo</EmptyStruct/>.size_of > 0s );
+		static_assert( typeinfo</StructOfEmptyStructs/>.size_of == 5s * typeinfo</EmptyStruct/>.size_of );
+	}
+
+	return 0;
+}
