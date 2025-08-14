@@ -66,5 +66,15 @@ fn nomangle main() call_conv( "C" ) : i32
 		static_assert( typeinfo</CppDerived/>.size_of == typeinfo</ $(byte8) />.size_of * 2s );
 	}
 
+	static_assert( g_some_int_contant == 37 );
+	static_assert( g_group_constant0 == 11u );
+	static_assert( g_group_constant1 == 0xFFu );
+	static_assert( g_group_constant2 == 2633676u );
+	static_assert( g_group_constant3 == u32(g_some_int_contant) * 5u );
+	static_assert( g_float_constant == -17.5f );
+	static_assert( g_constant_with_constexpr_call_initializer == '7' );
+	static_assert( g_constant_with_constructor_initializer == 3.1415926535 );
+	static_assert( g_constant_with_universal_initializer == -612 );
+
 	return 0;
 }
