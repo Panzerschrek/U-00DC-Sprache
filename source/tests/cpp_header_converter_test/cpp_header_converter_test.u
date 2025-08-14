@@ -17,6 +17,14 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( same_type</CppStyleArrayTypeAlias, [ u32, 4 ]/> );
 	static_assert( same_type</CppStyleFunctionPointer, ( fn( f32 arg0 ) unsafe call_conv( "C" ) : i32 )/> );
 
+	// Reference params and return types are translated as raw pointers.
+	static_assert( same_type</CppFunctionPointerWithReferences, ( fn( $(i32) a, $(f32) b ) unsafe call_conv( "C" ) : $(i32) )/> );
+
+	// Generally all C+= reference types are translated as raw pointers.
+	static_assert( same_type</CppDoubleReference, $(f64)/> );
+	static_assert( same_type</CppDoubleConstReference, $(f64)/> );
+	static_assert( same_type</CppDoubleRValueReference, $(f64)/> );
+
 	static_assert( typeinfo</CppEnumClass/>.is_enum );
 	static_assert( typeinfo</CppEnumClass/>.element_count == 7s );
 

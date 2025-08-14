@@ -403,6 +403,14 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 		return std::move(raw_pointer_type);
 	}
+	else if( const auto reference_type= llvm::dyn_cast<clang::ReferenceType>(&in_type) )
+	{
+		// Translate C++ references as raw pointers, since they are not so limited as Ü references.
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *reference_type->getPointeeType().getTypePtr(), type_names_map );
+
+		return std::move(raw_pointer_type);
+	}
 	else if( const auto decltype_type= llvm::dyn_cast<clang::DecltypeType>( &in_type ) )
 		return TranslateType( *decltype_type->desugar().getTypePtr(), type_names_map );
 	else if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( &in_type ) )

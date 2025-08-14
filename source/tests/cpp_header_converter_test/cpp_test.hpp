@@ -12,6 +12,10 @@ unsigned int ExternCBlockFunc1();
 using CppStyleTypeAlias= double;
 using CppStyleArrayTypeAlias= unsigned int[4];
 using CppStyleFunctionPointer= int(*)( float x );
+using CppFunctionPointerWithReferences= const int&(*)( int& a, const float& b );
+using CppDoubleReference= CppStyleTypeAlias&;
+using CppDoubleConstReference= const CppStyleTypeAlias&;
+using CppDoubleRValueReference= double&&;
 
 enum class CppEnumClass
 {
