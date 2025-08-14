@@ -153,6 +153,8 @@ private:
 		const std::string& name, const clang::VarDecl& variable,
 		const TypeNamesMap& type_names_map );
 
+	Synt::Initializer TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value );
+
 	void EmitDefinitionsForMacros(
 		const NamedFunctionDeclarations& named_function_declarations,
 		const NamedRecordDeclarations& named_record_declarations,
@@ -1437,96 +1439,133 @@ void CppAstConsumer::EmitVariable(
 	{
 		// TODO - emit enums constants properly.
 	}
-	else if( init_val->isInt() )
-	{
-		const llvm::APInt init_val_int= init_val->getInt();
-
-		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-		variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
-
-		{
-			Synt::VariablesDeclaration::VariableEntry entry;
-			entry.src_loc= g_dummy_src_loc;
-			entry.name= name;
-
-			{
-				Synt::ConstructorInitializer initializer( g_dummy_src_loc );
-
-				{
-					Synt::IntegerNumericConstant integer_initializer( g_dummy_src_loc );
-
-					if( variable_type->isSignedIntegerType() && init_val_int.isNegative() )
-					{
-						integer_initializer.num.value= uint64_t( -init_val_int.getSExtValue() );
-
-						Synt::UnaryMinus unary_minus( g_dummy_src_loc );
-						unary_minus.expression= std::move( integer_initializer );
-
-						initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
-					}
-					else
-					{
-						integer_initializer.num.value= init_val_int.getLimitedValue();
-
-						initializer.arguments.push_back( std::move( integer_initializer ) );
-					}
-				}
-
-				entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
-			}
-
-			variables_declaration.variables.push_back( std::move(entry) );
-		}
-
-		root_program_elements_.Append( std::move( variables_declaration ) );
-	}
-	else if( init_val->isFloat() )
-	{
-		const llvm::APFloat init_val_float= init_val->getFloat();
-
-		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-		variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
-
-		{
-			Synt::VariablesDeclaration::VariableEntry entry;
-			entry.src_loc= g_dummy_src_loc;
-			entry.name= name;
-
-			{
-				Synt::ConstructorInitializer initializer( g_dummy_src_loc );
-
-				{
-					Synt::FloatingPointNumericConstant floating_point_initializer( g_dummy_src_loc );
-
-					if( init_val_float.isNegative() )
-					{
-						floating_point_initializer.num.value= -init_val_float.convertToDouble();
-
-						Synt::UnaryMinus unary_minus( g_dummy_src_loc );
-						unary_minus.expression= std::move( floating_point_initializer );
-
-						initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
-					}
-					else
-					{
-						floating_point_initializer.num.value= init_val_float.convertToDouble();
-						initializer.arguments.push_back( std::move( floating_point_initializer ) );
-					}
-
-				}
-
-				entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
-			}
-
-			variables_declaration.variables.push_back( std::move(entry) );
-		}
-
-		root_program_elements_.Append( std::move( variables_declaration ) );
-	}
 	else
 	{
-		// For now unsupported kind.
+		Synt::Initializer initializer= TranslateVariableInitializer_r( *variable_type, *init_val );
+		if( std::holds_alternative<Synt::EmptyVariant>( initializer ) )
+			return;
+
+		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+		variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
+
+		{
+			Synt::VariablesDeclaration::VariableEntry entry;
+			entry.src_loc= g_dummy_src_loc;
+			entry.name= name;
+			entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
+
+			variables_declaration.variables.push_back( std::move(entry) );
+		}
+
+		root_program_elements_.Append( std::move( variables_declaration ) );
 	}
+}
+
+Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value )
+{
+	if( value.isInt() )
+	{
+		const llvm::APInt init_val_int= value.getInt();
+
+		Synt::ConstructorInitializer initializer( g_dummy_src_loc );
+
+		{
+			Synt::IntegerNumericConstant integer_initializer( g_dummy_src_loc );
+
+			if( variable_type.isSignedIntegerType() && init_val_int.isNegative() )
+			{
+				integer_initializer.num.value= uint64_t( -init_val_int.getSExtValue() );
+
+				Synt::UnaryMinus unary_minus( g_dummy_src_loc );
+				unary_minus.expression= std::move( integer_initializer );
+
+				initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+			}
+			else
+			{
+				integer_initializer.num.value= init_val_int.getLimitedValue();
+
+				initializer.arguments.push_back( std::move( integer_initializer ) );
+			}
+		}
+
+		return std::move(initializer);
+	}
+	else if( value.isFloat() )
+	{
+		const llvm::APFloat init_val_float= value.getFloat();
+
+		Synt::ConstructorInitializer initializer( g_dummy_src_loc );
+
+		{
+			Synt::FloatingPointNumericConstant floating_point_initializer( g_dummy_src_loc );
+
+			if( init_val_float.isNegative() )
+			{
+				floating_point_initializer.num.value= -init_val_float.convertToDouble();
+
+				Synt::UnaryMinus unary_minus( g_dummy_src_loc );
+				unary_minus.expression= std::move( floating_point_initializer );
+
+				initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+			}
+			else
+			{
+				floating_point_initializer.num.value= init_val_float.convertToDouble();
+				initializer.arguments.push_back( std::move( floating_point_initializer ) );
+			}
+
+		}
+
+		return std::move(initializer);
+	}
+	else if( value.isArray() )
+	{
+		if( const auto array_type= llvm::dyn_cast<clang::ConstantArrayType>( &variable_type ) )
+		{
+			if( array_type->getSize() == value.getArraySize() )
+			{
+				const clang::Type* element_type= array_type->getElementType().getTypePtr();
+				while(true)
+				{
+					if( const auto paren_type= llvm::dyn_cast<clang::ParenType>( element_type ) )
+						element_type= paren_type->getInnerType().getTypePtr();
+					else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( element_type ) )
+						element_type= elaborated_type->desugar().getTypePtr();
+					else if( const auto attributed_type= llvm::dyn_cast<clang::AttributedType>( element_type ) )
+						element_type= attributed_type->desugar().getTypePtr(); // TODO - maybe collect such attributes?
+					else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>( element_type ) )
+					{
+						const auto aliased_type= typedef_type->desugar().getTypePtr();
+						if( aliased_type == nullptr )
+							break;
+						element_type= aliased_type;
+					}
+					else
+						break;
+				}
+
+				std::vector<Synt::Initializer> element_initializers;
+				element_initializers.reserve( value.getArraySize() );
+				for( uint32_t i= 0; i < value.getArraySize(); ++i )
+				{
+					Synt::Initializer element_initializer= TranslateVariableInitializer_r( *element_type, value.getArrayInitializedElt( i ) );
+					if( std::holds_alternative<Synt::EmptyVariant>( element_initializer ) )
+						return Synt::EmptyVariant();
+
+					element_initializers.push_back( std::move(element_initializer) );
+				}
+
+				Synt::SequenceInitializer initializer( g_dummy_src_loc );
+				initializer.initializers= std::move(element_initializers);
+
+				return std::move(initializer);
+			}
+		}
+	}
+
+	// For now unsupported kind.
+	return Synt::EmptyVariant();
 }
 
 void CppAstConsumer::EmitDefinitionsForMacros(
