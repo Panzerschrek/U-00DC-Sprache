@@ -1478,6 +1478,8 @@ void CppAstConsumer::EmitVariable(
 	}
 	else if( init_val->isFloat() )
 	{
+		const llvm::APFloat init_val_float= init_val->getFloat();
+
 		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
 		variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
 
@@ -1490,10 +1492,23 @@ void CppAstConsumer::EmitVariable(
 				Synt::ConstructorInitializer initializer( g_dummy_src_loc );
 
 				{
-					Synt::FloatingPointNumericConstant integer_initializer( g_dummy_src_loc );
-					integer_initializer.num.value= init_val->getFloat().convertToDouble();
+					Synt::FloatingPointNumericConstant floating_point_initializer( g_dummy_src_loc );
 
-					initializer.arguments.push_back( std::move( integer_initializer ) );
+					if( init_val_float.isNegative() )
+					{
+						floating_point_initializer.num.value= -init_val_float.convertToDouble();
+
+						Synt::UnaryMinus unary_minus( g_dummy_src_loc );
+						unary_minus.expression= std::move( floating_point_initializer );
+
+						initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+					}
+					else
+					{
+						floating_point_initializer.num.value= init_val_float.convertToDouble();
+						initializer.arguments.push_back( std::move( floating_point_initializer ) );
+					}
+
 				}
 
 				entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
