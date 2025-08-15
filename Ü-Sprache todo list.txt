@@ -195,8 +195,6 @@ Language server:
 *) If necessary run build system executable in some temp directory to obtain workspace information
 
 CPP Header converter:
-*) Fix some enums conversion - struct types for them can't be used, since some ABIs treat structs differently
-	(even with single scalar)
 *) White list of converted symbols
 *) Black list of converted symbols
 *) Ignore some headers or split result into several files
@@ -204,8 +202,8 @@ CPP Header converter:
 *) Handle "wchar_t" type specially, not as regular integer
 *) Support negative constants in defines
 *) Add more satisfying defines conversion - where defined value is a constant expression
-*) Simplify common use case with "typedef struct" - use typedef name directly instead of creating an anonymous struct
-	and type alias for it
+*) Simplify common use case with "typedef struct" and "typedef enum" - use typedef name directly instead of creating an
+	anonymous struct/enum and type alias for it
 *) Support converting constant variables - arrays with fillers
 *) Support converting auto constant variables - arrays
 *) Support converting constant variables - structs
