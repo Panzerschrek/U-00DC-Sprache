@@ -1418,6 +1418,7 @@ void CppAstConsumer::EmitVariable(
 		entry.src_loc= g_dummy_src_loc;
 		entry.name= name;
 		entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
+		entry.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 
 		variables_declaration.variables.push_back( std::move(entry) );
 	}
