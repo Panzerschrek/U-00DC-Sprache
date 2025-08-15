@@ -27,6 +27,11 @@ enum class CppUnsequentialEnumClass
 	One= 1, TwentyTwo=22, Eight= 8,
 };
 
+enum class CppEnumWithUnderlyingType : unsigned char
+{
+	UC0, UC1, UC2, UC45= 45,
+};
+
 struct Vec2f
 {
 	float x;

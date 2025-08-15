@@ -39,6 +39,12 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( CppUnsequentialEnumClass_::TwentyTwo == 22 );
 	static_assert( CppUnsequentialEnumClass_::Eight == 8 );
 
+	static_assert( same_type</CppEnumWithUnderlyingType, u8/> );
+	static_assert( CppEnumWithUnderlyingType_::UC0 == 0u8 );
+	static_assert( CppEnumWithUnderlyingType_::UC1 == 1u8 );
+	static_assert( CppEnumWithUnderlyingType_::UC2 == 2u8 );
+	static_assert( CppEnumWithUnderlyingType_::UC45 == 45u8 );
+
 	{
 		static_assert( typeinfo</Vec2f/>.size_of == typeinfo</f32/>.size_of * 2s );
 		var Vec2f v{ .x= 78.0f, .y= -1.2345f };
