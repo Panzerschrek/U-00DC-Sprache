@@ -1225,47 +1225,42 @@ void CppAstConsumer::EmitEnum(
 		return;
 	}
 
-	const auto enumerators_range= enum_declaration.enumerators();
-
-	if( enum_declaration.getName().empty() )
+	// Create type alias for this enum.
 	{
-		// Anonymous enum. Just create a bunch of constants for it in space, where this enum is located.
+		Synt::TypeAlias type_alias( g_dummy_src_loc );
+		type_alias.name= name;
 
-		// Create type alias for this enum.
+		std::string_view underlying_type_name;
+		if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getIntegerType().getTypePtr() ) )
+			underlying_type_name= GetUFundamentalType( *built_in_type );
+		else if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getPromotionType().getTypePtr() ) )
+			underlying_type_name= GetUFundamentalType( *built_in_type );
+		else
 		{
-			Synt::TypeAlias type_alias( g_dummy_src_loc );
-			type_alias.name= name;
-
-			std::string_view underlying_type_name;
-			if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getIntegerType().getTypePtr() ) )
-				underlying_type_name= GetUFundamentalType( *built_in_type );
-			else if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( enum_declaration.getPromotionType().getTypePtr() ) )
-				underlying_type_name= GetUFundamentalType( *built_in_type );
+			// Some very strange enum. Assume it's int.
+			// This strange code from Darwin header "vm_types.h" produces such enum.
+			/*
+				__enum_decl(mach_vm_range_flavor_t, uint32_t, {
+					MACH_VM_RANGE_FLAVOR_INVALID,
+					MACH_VM_RANGE_FLAVOR_V1,
+				});
+			*/
+			if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( ast_context_.IntTy.getTypePtr() ) )
+				underlying_type_name= GetUFundamentalType(* built_in_type );
 			else
-			{
-				// Some very strange enum. Assume it's int.
-				// This strange code from Darwin header "vm_types.h" produces such enum.
-				/*
-					__enum_decl(mach_vm_range_flavor_t, uint32_t, {
-						MACH_VM_RANGE_FLAVOR_INVALID,
-						MACH_VM_RANGE_FLAVOR_V1,
-					});
-				*/
-				if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>( ast_context_.IntTy.getTypePtr() ) )
-					underlying_type_name= GetUFundamentalType(* built_in_type );
-				else
-					underlying_type_name= Keyword( Keywords::i32_ );
-			}
-
-			type_alias.value= StringToTypeName( underlying_type_name );
-
-			root_program_elements_.Append( std::move(type_alias) );
+				underlying_type_name= Keyword( Keywords::i32_ );
 		}
 
+		type_alias.value= StringToTypeName( underlying_type_name );
+
+		root_program_elements_.Append( std::move(type_alias) );
+	}
+
+	{
 		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
 		variables_declaration.type= StringToTypeName( name );
 
-		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
+		for( const clang::EnumConstantDecl* const enumerator : enum_declaration.enumerators() )
 		{
 			Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
 			const llvm::APSInt val= enumerator->getInitVal();
@@ -1302,119 +1297,6 @@ void CppAstConsumer::EmitEnum(
 		}
 
 		root_program_elements_.Append( std::move(variables_declaration) );
-
-		return;
-	}
-
-	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
-	bool can_be_u_enum= true;
-	if( !enumerators_range.empty() )
-	{
-		auto it= enumerators_range.begin();
-		llvm::APSInt prev_val= it->getInitVal();
-		if( prev_val.getLimitedValue() == 0 )
-		{
-			++it;
-			for(; it != enumerators_range.end(); ++it )
-			{
-				const llvm::APSInt cur_val= it->getInitVal();
-				if( (cur_val - prev_val).getLimitedValue() != 1u )
-				{
-					can_be_u_enum= false;
-					break;
-				}
-				prev_val= cur_val;
-			}
-		}
-		else
-			can_be_u_enum= false;
-	}
-	else
-		can_be_u_enum= false;
-
-	if( can_be_u_enum )
-	{
-		Synt::Enum enum_( g_dummy_src_loc );
-		enum_.name= name;
-
-		if( enum_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
-			enum_.no_discard= true;
-
-		Synt::TypeName type_name= TranslateType( *enum_declaration.getIntegerType().getTypePtr(), type_names_map );
-		if( const auto named_type_name= std::get_if<Synt::NameLookup>( &type_name ) )
-			enum_.underlying_type_name= std::move(*named_type_name);
-
-		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
-		{
-			enum_.members.emplace_back();
-			enum_.members.back().src_loc= g_dummy_src_loc;
-			enum_.members.back().name= TranslateIdentifier( enumerator->getName() );
-		}
-
-		root_program_elements_.Append( std::move(enum_) );
-	}
-	else
-	{
-		// Can't use Ü enum. So, create struct type and a bunch of constants inside.
-		// Since such struct contains singe scalar inside, it is passed via this scalar.
-
-		Synt::Class enum_class_( g_dummy_src_loc );
-		enum_class_.name= name;
-
-		if( enum_declaration.hasAttr<clang::WarnUnusedResultAttr>() )
-			enum_class_.no_discard= true;
-
-		Synt::ClassElementsList::Builder class_elements;
-
-		const std::string field_name= "ü_underlying_value";
-		{
-			Synt::ClassField field( g_dummy_src_loc );
-			field.name= field_name;
-			field.type= TranslateType( *enum_declaration.getIntegerType().getTypePtr(), type_names_map );
-			class_elements.Append( std::move(field) );
-		}
-
-		Synt::NameLookup enum_class_name( g_dummy_src_loc );
-		enum_class_name.name= enum_class_.name;
-
-		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
-		{
-			Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
-			const llvm::APSInt val= enumerator->getInitVal();
-			initializer_number.num.value= val.isNegative() ? uint64_t(val.getExtValue()) : val.getLimitedValue();
-			initializer_number.num.type_suffix[0]= 'u';
-			if( initializer_number.num.value >= 0x7FFFFFFFFu )
-			{
-				initializer_number.num.type_suffix[1]= '6';
-				initializer_number.num.type_suffix[2]= '4';
-			}
-
-			Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
-			constructor_initializer.arguments.push_back( std::move(initializer_number) );
-
-			Synt::StructNamedInitializer::MemberInitializer member_initializer;
-			member_initializer.initializer= std::move(constructor_initializer);
-			member_initializer.name= field_name;
-
-			Synt::StructNamedInitializer initializer( g_dummy_src_loc );
-			initializer.members_initializers.push_back( std::move(member_initializer) );
-
-			Synt::VariablesDeclaration::VariableEntry var;
-			var.src_loc= g_dummy_src_loc;
-			var.name= TranslateIdentifier( enumerator->getName() );
-			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			var.initializer= std::make_unique<Synt::Initializer>( std::move(initializer) );
-
-			Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-			variables_declaration.type= enum_class_name;
-			variables_declaration.variables.push_back( std::move(var) );
-
-			class_elements.Append( std::move(variables_declaration) );
-		}
-
-		enum_class_.elements= class_elements.Build();
-
-		root_program_elements_.Append( std::move(enum_class_) );
 	}
 }
 

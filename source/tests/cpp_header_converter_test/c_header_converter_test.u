@@ -172,33 +172,40 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( typeinfo</LargeStructWithSingleBitField/>.size_of == 44s );
 	static_assert( typeinfo</LargeStructWithSingleBitField/>.align_of == 4s );
 
-	static_assert( i32(SequentialEnum::Red) == 0 );
-	static_assert( i32(SequentialEnum::Green) == 1 );
-	static_assert( i32(SequentialEnum::Blue) == 2 );
+	static_assert( same_type</SequentialEnum, i32/> );
+	static_assert( i32(Red) == 0 );
+	static_assert( i32(Green) == 1 );
+	static_assert( i32(Blue) == 2 );
 
-	unsafe( SequentialEnumFunc( SequentialEnum::Blue ) );
+	unsafe( SequentialEnumFunc( Blue ) );
 
-	static_assert( NonSequentialEnum::Zero.ü_underlying_value == 0 );
-	static_assert( NonSequentialEnum::One.ü_underlying_value == 1 );
-	static_assert( NonSequentialEnum::Ten.ü_underlying_value == 10 );
-	static_assert( NonSequentialEnum::MinusTwo.ü_underlying_value == -2 );
-	static_assert( NonSequentialEnum::Large32bit.ü_underlying_value == 5000000 );
-	static_assert( NonSequentialEnum::LargeNegative.ü_underlying_value == -142586 );
+	static_assert( same_type</NonSequentialEnum, i32/> );
+	static_assert( Zero == 0 );
+	static_assert( One == 1 );
+	static_assert( Ten == 10 );
+	static_assert( MinusTwo == -2 );
+	static_assert( Large32bit == 5000000 );
+	static_assert( LargeNegative == -142586 );
 
-	unsafe( NonSequentialEnumFunc( NonSequentialEnum::MinusTwo ) );
+	unsafe( NonSequentialEnumFunc( MinusTwo ) );
 
-	var NonSequentialEnum ersatz_enum_value= NonSequentialEnum::Zero;
+	var NonSequentialEnum ersatz_enum_value= Zero;
 
+	static_assert( same_type</ TypedefForEnumABC, i32 /> );
 	var TypedefForEnumABC typedefed_sequential_enum_value= AnonB;
 	unsafe( ABCFunc( typedefed_sequential_enum_value ) );
 
+	static_assert( same_type</ TypedefForEnumXYZ, i32 /> );
 	var TypedefForEnumXYZ typedefed_non_sequential_enum_value= AnonX;
 	unsafe( XYZFunc( typedefed_non_sequential_enum_value ) );
 
 	auto totally_anonym_enum_value= TotallyAnonym0;
+	static_assert( TotallyAnonym0 == 0 );
+	static_assert( TotallyAnonym1 == 1 );
 
-	static_assert( LargeValuesEnum::LV_Large.ü_underlying_value == 987654321u64 );
-	static_assert( LargeValuesEnum::LV_EvenLarger.ü_underlying_value == 123456789101112u64 );
+	static_assert( same_type</LargeValuesEnum, u64/> );
+	static_assert( LV_Large == 987654321u64 );
+	static_assert( LV_EvenLarger == 123456789101112u64 );
 
 	static_assert( Anon_Large == 88888888888u64 );
 	static_assert( Anon_EvenLarger == 7654321098765u64 );
@@ -284,7 +291,6 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// Should retrieve "nodiscard" for some types.
 	static_assert( typeinfo</SomeNoDiscardStruct/>.is_nodiscard );
-	static_assert( typeinfo</SomeNoDiscardEnum/>.is_nodiscard );
 
 	var i32 nodiscard_res= unsafe( CNoDiscardFunc() );
 
