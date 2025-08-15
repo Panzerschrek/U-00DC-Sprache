@@ -209,6 +209,12 @@ enum // Anonymous and without typedef
 	TotallyAnonym1,
 };
 
+// Define an anonymous enum and a couple of constants of this enum type.
+enum
+{
+	FullyAnonEnum3= 3, FullyAnonEnum67= 67,
+} const c_fully_anon_enum_var3= FullyAnonEnum3, c_fully_anon_enum_var67= FullyAnonEnum67;
+
 void XYZFunc( TypedefForEnumXYZ arg );
 
 enum LargeValuesEnum : unsigned long long int

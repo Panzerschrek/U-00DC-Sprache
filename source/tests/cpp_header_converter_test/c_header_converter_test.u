@@ -212,6 +212,12 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( TotallyAnonym0 == totally_anonym_enum_type(0) );
 	static_assert( TotallyAnonym1 == totally_anonym_enum_type(1) );
 
+	static_assert( same_type</ typeof(FullyAnonEnum3), i32 /> | same_type</ typeof(FullyAnonEnum3), u32 /> );
+	static_assert( i32(FullyAnonEnum3) == 3 );
+	static_assert( i32(FullyAnonEnum67) == 67 );
+	static_assert( c_fully_anon_enum_var3 == FullyAnonEnum3 );
+	static_assert( c_fully_anon_enum_var67 == FullyAnonEnum67 );
+
 	static_assert( same_type</LargeValuesEnum, u64/> );
 	static_assert( LV_Large == 987654321u64 );
 	static_assert( LV_EvenLarger == 123456789101112u64 );
