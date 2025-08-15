@@ -748,7 +748,7 @@ CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
 		if( src_name.empty() )
 			continue; // Is it possible?
 
-		// Handle special case - try avoid emitting type alias for "typedef struct Some {} Some;".
+		// Handle special case - try avoid emitting type alias for "typedef struct Some {} Some;" or "typedef enum Some {} Some;".
 		{
 			const clang::Type* src_type= typedef_decl->getUnderlyingType().getTypePtr();
 
@@ -764,6 +764,12 @@ CppAstConsumer::NamedTypedefDeclarations CppAstConsumer::GenerateTypedefNames(
 			{
 				if( const auto record_decl= record_type->getDecl() )
 					if( record_decl->getName() == src_name )
+						continue;
+			}
+			if( const auto enum_type= llvm::dyn_cast<clang::EnumType>( src_type ) )
+			{
+				if( const auto enum_decl= enum_type->getDecl() )
+					if( enum_decl->getName() == src_name )
 						continue;
 			}
 		}

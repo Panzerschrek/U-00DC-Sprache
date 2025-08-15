@@ -207,7 +207,6 @@ CPP Header converter:
 *) Support converting constant variables - arrays with fillers
 *) Support converting auto constant variables - arrays
 *) Support converting constant variables - structs
-*) Support converting constant variables - enums
 
 Ü Build system:
 *) Support building "ustlib" into a shared library (dll/so)

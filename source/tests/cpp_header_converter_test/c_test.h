@@ -210,6 +210,11 @@ enum : unsigned long long int
 	Anon_EvenLarger= 7654321098765uLL,
 };
 
+typedef enum SameNameForEnumAndTypedef
+{
+	SameNameEnum0, SameNameEnum1,
+} SameNameForEnumAndTypedef;
+
 typedef struct SameNameForStructAndTypedef
 {
 	int dummy;

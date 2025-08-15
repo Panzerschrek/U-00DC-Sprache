@@ -211,6 +211,10 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( Anon_Large == 88888888888u64 );
 	static_assert( Anon_EvenLarger == 7654321098765u64 );
 
+	static_assert( same_type</ SameNameForEnumAndTypedef, i32 /> | same_type</ SameNameForEnumAndTypedef, u32 /> );
+	static_assert( SameNameEnum0 == SameNameForEnumAndTypedef(0) );
+	static_assert( SameNameEnum1 == SameNameForEnumAndTypedef(1) );
+
 	var SameNameForStructAndTypedef same_name_for_struct_and_typedef{ .dummy= 666 };
 
 	var DifferentNamesForStructAndTypedef_0 different_names_for_struct_and_typedef_0{ .dummy0= 0, .dummy1= 0.0f };
