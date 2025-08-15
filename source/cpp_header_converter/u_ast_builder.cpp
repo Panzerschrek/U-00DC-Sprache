@@ -1328,7 +1328,6 @@ Synt::VariablesDeclaration::VariableEntry CppAstConsumer::TranslateEnumElement(
 	var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 
 	{
-
 		Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
 
 		{
@@ -1402,30 +1401,23 @@ void CppAstConsumer::EmitVariable(
 			break;
 	}
 
-	if( variable_type->isEnumeralType() )
+	Synt::Initializer initializer= TranslateVariableInitializer_r( *variable_type, *init_val );
+	if( std::holds_alternative<Synt::EmptyVariant>( initializer ) )
+		return;
+
+	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+	variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
+
 	{
-		// TODO - emit enums constants properly.
+		Synt::VariablesDeclaration::VariableEntry entry;
+		entry.src_loc= g_dummy_src_loc;
+		entry.name= name;
+		entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
+
+		variables_declaration.variables.push_back( std::move(entry) );
 	}
-	else
-	{
-		Synt::Initializer initializer= TranslateVariableInitializer_r( *variable_type, *init_val );
-		if( std::holds_alternative<Synt::EmptyVariant>( initializer ) )
-			return;
 
-		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-		variables_declaration.type= TranslateType( *variable.getType().getTypePtr(), type_names_map );
-
-		{
-			Synt::VariablesDeclaration::VariableEntry entry;
-			entry.src_loc= g_dummy_src_loc;
-			entry.name= name;
-			entry.initializer= std::make_unique<Synt::Initializer>( std::move(initializer ) );
-
-			variables_declaration.variables.push_back( std::move(entry) );
-		}
-
-		root_program_elements_.Append( std::move( variables_declaration ) );
-	}
+	root_program_elements_.Append( std::move( variables_declaration ) );
 }
 
 Synt::Initializer CppAstConsumer::TranslateVariableInitializer_r( const clang::Type& variable_type, const clang::APValue& value )

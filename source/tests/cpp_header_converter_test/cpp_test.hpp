@@ -71,7 +71,6 @@ constexpr unsigned int g_group_constant0= 11, g_group_constant1= 0xFF, g_group_c
 
 const float g_float_constant= -17.5f;
 
-// For now can't convert enum constants.
 const CppEnumClass g_enum_constant= CppEnumClass::I;
 
 // Can't convert this constant, since its initializer isn't constexpr.
