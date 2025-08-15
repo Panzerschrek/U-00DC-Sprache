@@ -83,7 +83,7 @@ private:
 		const NamedRecordDeclarations& named_record_declarations );
 
 	using NamedEnumDeclarations= NamesMapContainer<std::string, const clang::EnumDecl*>;
-	using AnonymousEnumMembersSet= std::unordered_set<std::string>;
+	using EnumNamesSet= std::unordered_set<std::string>;
 
 	NamedEnumDeclarations GenerateEnumNames(
 		const NamedFunctionDeclarations& named_function_declarations,
@@ -101,7 +101,7 @@ private:
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
-		const AnonymousEnumMembersSet& anonymous_enum_members );
+		const EnumNamesSet& enum_names );
 
 	void EmitFunctions( const NamedFunctionDeclarations& function_declarations, const TypeNamesMap& type_names_map );
 	void EmitFunction( const std::string& name, const clang::FunctionDecl& function_decl, const TypeNamesMap& type_names_map );
@@ -133,7 +133,7 @@ private:
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
 		const TypeNamesMap& type_names_map,
-		AnonymousEnumMembersSet& out_anonymous_enum_members );
+		EnumNamesSet& out_enum_names );
 
 	void EmitEnum(
 		const std::string& name,
@@ -143,7 +143,7 @@ private:
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
 		const TypeNamesMap& type_names_map,
-		AnonymousEnumMembersSet& out_anonymous_enum_members );
+		EnumNamesSet& out_enum_names );
 
 	Synt::VariablesDeclaration::VariableEntry TranslateEnumElement(
 		const clang::EnumConstantDecl& enumerator,
@@ -164,7 +164,7 @@ private:
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
-		const AnonymousEnumMembersSet& anonymous_enum_members,
+		const EnumNamesSet& enum_names,
 		const NamedVariableDeclarations& named_variable_declarations );
 
 private:
@@ -270,16 +270,16 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 	EmitTypedefs( typedef_names, type_names_map );
 
-	// While emitting enums we may emit also variables for members of anonymous enums.
+	// While emitting enums we emit also variables for members of enums.
 	// Use this variables list later to avoid naming conflicts.
-	AnonymousEnumMembersSet anonymous_enum_members;
-	EmitEnums( function_names, record_names, typedef_names, enum_names, type_names_map, anonymous_enum_members );
+	EnumNamesSet extra_enum_names;
+	EmitEnums( function_names, record_names, typedef_names, enum_names, type_names_map, extra_enum_names );
 
 	// Build variables as last.
-	const NamedVariableDeclarations variable_names= GenerateVariableNames( function_names, record_names, typedef_names, enum_names, anonymous_enum_members );
+	const NamedVariableDeclarations variable_names= GenerateVariableNames( function_names, record_names, typedef_names, enum_names, extra_enum_names );
 	EmitVariables( variable_names, type_names_map );
 
-	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, anonymous_enum_members, variable_names );
+	EmitDefinitionsForMacros( function_names, record_names, typedef_names, enum_names, extra_enum_names, variable_names );
 }
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl )
@@ -884,7 +884,7 @@ CppAstConsumer::NamedVariableDeclarations CppAstConsumer::GenerateVariableNames(
 	const NamedRecordDeclarations& named_record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
-	const AnonymousEnumMembersSet& anonymous_enum_members )
+	const EnumNamesSet& enum_names )
 {
 	NamedVariableDeclarations named_declarations;
 
@@ -900,7 +900,7 @@ CppAstConsumer::NamedVariableDeclarations CppAstConsumer::GenerateVariableNames(
 			named_record_declarations.count( name ) != 0 ||
 			named_typedef_declarations.count( name ) != 0 ||
 			named_enum_declarations.count( name ) != 0 ||
-			anonymous_enum_members.count( name ) != 0 ||
+			enum_names.count( name ) != 0 ||
 			named_declarations.count( name ) != 0 )
 			name+= "_";
 
@@ -1189,7 +1189,7 @@ void CppAstConsumer::EmitEnums(
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
 	const TypeNamesMap& type_names_map,
-	AnonymousEnumMembersSet& out_anonymous_enum_members )
+	EnumNamesSet& out_enum_names )
 {
 	for( const auto& pair: named_enum_declarations )
 		EmitEnum(
@@ -1200,7 +1200,7 @@ void CppAstConsumer::EmitEnums(
 			named_typedef_declarations,
 			named_enum_declarations,
 			type_names_map,
-			out_anonymous_enum_members );
+			out_enum_names );
 }
 
 void CppAstConsumer::EmitEnum(
@@ -1211,7 +1211,7 @@ void CppAstConsumer::EmitEnum(
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
 	const TypeNamesMap& type_names_map,
-	AnonymousEnumMembersSet& out_anonymous_enum_members )
+	EnumNamesSet& out_enum_names )
 {
 	if( !enum_declaration.isComplete() )
 	{
@@ -1271,6 +1271,8 @@ void CppAstConsumer::EmitEnum(
 			named_enum_declarations.count( namespace_name ) != 0 )
 			namespace_name+= "_";
 
+		out_enum_names.insert( namespace_name );
+
 		Synt::Namespace namespace_( g_dummy_src_loc );
 		namespace_.name= std::move( namespace_name );
 
@@ -1306,7 +1308,7 @@ void CppAstConsumer::EmitEnum(
 				named_enum_declarations.count( name ) != 0 )
 				name+= "_";
 
-			out_anonymous_enum_members.insert( name );
+			out_enum_names.insert( name );
 
 			variables_declaration.variables.push_back( TranslateEnumElement( *enumerator, std::move(name) ) );
 		}
@@ -1538,7 +1540,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 	const NamedRecordDeclarations& named_record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
-	const AnonymousEnumMembersSet& anonymous_enum_members,
+	const EnumNamesSet& enum_names,
 	const NamedVariableDeclarations& named_variable_declarations )
 {
 	// Dump definitions of simple constants, using "define".
@@ -1577,7 +1579,7 @@ void CppAstConsumer::EmitDefinitionsForMacros(
 			named_record_declarations.count( name ) != 0 ||
 			named_typedef_declarations.count( name ) != 0 ||
 			named_enum_declarations.count( name ) != 0 ||
-			anonymous_enum_members.count( name ) != 0 ||
+			enum_names.count( name ) != 0 ||
 			named_variable_declarations.count( name ) != 0 )
 			name+= "_";
 
