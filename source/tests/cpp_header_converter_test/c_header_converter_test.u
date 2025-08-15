@@ -173,9 +173,9 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( typeinfo</LargeStructWithSingleBitField/>.align_of == 4s );
 
 	static_assert( same_type</SequentialEnum, i32/> | same_type</SequentialEnum, u32/> );
-	static_assert( i32(Red) == SequentialEnum(0) );
-	static_assert( i32(Green) == SequentialEnum(1) );
-	static_assert( i32(Blue) == SequentialEnum(2) );
+	static_assert( Red == SequentialEnum(0) );
+	static_assert( Green == SequentialEnum(1) );
+	static_assert( Blue == SequentialEnum(2) );
 
 	unsafe( SequentialEnumFunc( Blue ) );
 
