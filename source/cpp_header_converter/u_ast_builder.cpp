@@ -132,7 +132,6 @@ private:
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
-		const TypeNamesMap& type_names_map,
 		EnumNamesSet& out_enum_names );
 
 	void EmitEnum(
@@ -142,7 +141,6 @@ private:
 		const NamedRecordDeclarations& named_record_declarations,
 		const NamedTypedefDeclarations& named_typedef_declarations,
 		const NamedEnumDeclarations& named_enum_declarations,
-		const TypeNamesMap& type_names_map,
 		EnumNamesSet& out_enum_names );
 
 	Synt::VariablesDeclaration::VariableEntry TranslateEnumElement(
@@ -273,7 +271,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	// While emitting enums we emit also variables for members of enums.
 	// Use this variables list later to avoid naming conflicts.
 	EnumNamesSet extra_enum_names;
-	EmitEnums( function_names, record_names, typedef_names, enum_names, type_names_map, extra_enum_names );
+	EmitEnums( function_names, record_names, typedef_names, enum_names, extra_enum_names );
 
 	// Build variables as last.
 	const NamedVariableDeclarations variable_names= GenerateVariableNames( function_names, record_names, typedef_names, enum_names, extra_enum_names );
@@ -1188,7 +1186,6 @@ void CppAstConsumer::EmitEnums(
 	const NamedRecordDeclarations& named_record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
-	const TypeNamesMap& type_names_map,
 	EnumNamesSet& out_enum_names )
 {
 	for( const auto& pair: named_enum_declarations )
@@ -1199,7 +1196,6 @@ void CppAstConsumer::EmitEnums(
 			named_record_declarations,
 			named_typedef_declarations,
 			named_enum_declarations,
-			type_names_map,
 			out_enum_names );
 }
 
@@ -1210,7 +1206,6 @@ void CppAstConsumer::EmitEnum(
 	const NamedRecordDeclarations& named_record_declarations,
 	const NamedTypedefDeclarations& named_typedef_declarations,
 	const NamedEnumDeclarations& named_enum_declarations,
-	const TypeNamesMap& type_names_map,
 	EnumNamesSet& out_enum_names )
 {
 	if( !enum_declaration.isComplete() )
