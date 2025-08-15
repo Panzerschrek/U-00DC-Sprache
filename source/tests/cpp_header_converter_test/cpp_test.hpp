@@ -17,6 +17,11 @@ using CppDoubleReference= CppStyleTypeAlias&;
 using CppDoubleConstReference= const CppStyleTypeAlias&;
 using CppDoubleRValueReference= double&&;
 
+enum CppOldStyleEnum
+{
+	OldStyle0, OldStyle1, OldStyle2,
+};
+
 enum class CppEnumClass
 {
 	S, Z, T, L, J, I, O,

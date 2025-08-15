@@ -25,6 +25,11 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( same_type</CppDoubleConstReference, $(f64)/> );
 	static_assert( same_type</CppDoubleRValueReference, $(f64)/> );
 
+	static_assert( same_type</CppOldStyleEnum, i32/> | same_type</CppOldStyleEnum, u32/> );
+	static_assert( OldStyle0 == CppOldStyleEnum(0) );
+	static_assert( OldStyle1 == CppOldStyleEnum(1) );
+	static_assert( OldStyle2 == CppOldStyleEnum(2) );
+
 	static_assert( same_type</CppEnumClass, i32/> | same_type</CppEnumClass, u32/> );
 	static_assert( CppEnumClass_::S == CppEnumClass(0) );
 	static_assert( CppEnumClass_::Z == CppEnumClass(1) );
