@@ -1330,18 +1330,24 @@ Synt::VariablesDeclaration::VariableEntry CppAstConsumer::TranslateEnumElement(
 	{
 		Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
 
+		const llvm::APSInt val= enumerator.getInitVal();
 		{
 			Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
-			const llvm::APSInt val= enumerator.getInitVal();
-			initializer_number.num.value= val.isNegative() ? uint64_t(val.getExtValue()) : val.getLimitedValue();
-			initializer_number.num.type_suffix[0]= 'u';
-			if( initializer_number.num.value >= 0x7FFFFFFFFu )
-			{
-				initializer_number.num.type_suffix[1]= '6';
-				initializer_number.num.type_suffix[2]= '4';
-			}
 
-			constructor_initializer.arguments.push_back( std::move(initializer_number) );
+			if( val.isNegative() )
+			{
+				initializer_number.num.value= uint64_t( -val.getExtValue() );
+
+				Synt::UnaryMinus unary_minus( g_dummy_src_loc );
+				unary_minus.expression= std::move( initializer_number );
+
+				constructor_initializer.arguments.push_back( std::make_unique<const Synt::UnaryMinus>( std::move( unary_minus ) ) );
+			}
+			else
+			{
+				initializer_number.num.value= val.getLimitedValue();
+				constructor_initializer.arguments.push_back( std::move(initializer_number) );
+			}
 		}
 
 		var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
