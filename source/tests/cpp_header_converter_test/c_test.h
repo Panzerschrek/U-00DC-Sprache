@@ -86,6 +86,14 @@ typedef struct
 	char zdf[3];
 } **PointerToPointerToAnonStruct;
 
+// A struct even without typedef, but with a constant variable declared.
+struct
+{
+	int totally_anon_struct_field0;
+	float totally_anon_struct_field1;
+	char totally_anon_struct_field2[4];
+} const anon_struct_variable = { 78, -13.2f, { 'S', 'P', 'Q', 'R' } };
+
 void StupidFunc( StupidStuctNaming* s );
 
 struct StructUsedWithoutDeclaration* FunctionReturningUnknownStruct();
