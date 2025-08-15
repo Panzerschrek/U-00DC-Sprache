@@ -81,6 +81,11 @@ typedef struct StructWithName
 	unsigned int ff;
 } TypedefForStructWithName, *PointerTypedefForStructWithName;
 
+typedef struct
+{
+	char zdf[3];
+} **PointerToPointerToAnonStruct;
+
 void StupidFunc( StupidStuctNaming* s );
 
 struct StructUsedWithoutDeclaration* FunctionReturningUnknownStruct();

@@ -152,6 +152,14 @@ fn nomangle main() call_conv( "C" ) : i32
 		var PointerTypedefForStructWithName s_ptr= $<(s_ref);
 	}
 
+	{
+		static_assert( typeinfo</PointerToPointerToAnonStruct/>.is_raw_pointer );
+		static_assert( typeinfo</PointerToPointerToAnonStruct/>.element_type.is_raw_pointer );
+		static_assert( typeinfo</PointerToPointerToAnonStruct/>.element_type.element_type.is_class );
+
+		var typeof( typeinfo</PointerToPointerToAnonStruct/>.element_type.element_type )::src_type s{ .zdf= "ZDF" };
+	}
+
 	static_assert( typeinfo</UnionAlign1/>.size_of == 1s );
 	static_assert( typeinfo</UnionAlign1/>.align_of == 1s );
 	static_assert( typeinfo</UnionAlign2/>.size_of == 2s );
