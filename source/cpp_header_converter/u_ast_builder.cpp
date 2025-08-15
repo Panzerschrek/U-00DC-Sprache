@@ -1224,7 +1224,12 @@ void CppAstConsumer::EmitEnum(
 		return;
 	}
 
-	// Create type alias for this enum.
+	// Always create a type alias and a bunch of enumerator constants for C and C++ enums.
+	// We can't use Ü enums, since C enums may be unsequentional and it's not guaranteed, that a varible of enum type has one of the listed values.
+	// We can't use a wrapper struct, since on some ABIs structs are passed differently from enums.
+	// For C++ scoped enums we create a namespace with "_" postfix, where all enumerators are stored.
+	// A type alias is created even for an anonymous enum, since such enum may be used inside "typedef" and we need some name for typedef source type (even if it's generated).
+
 	{
 		Synt::TypeAlias type_alias( g_dummy_src_loc );
 		type_alias.name= name;
@@ -1258,7 +1263,7 @@ void CppAstConsumer::EmitEnum(
 	if( enum_declaration.isScoped() )
 	{
 		std::string namespace_name= name;
-		// Avoid name conflicts.
+		// Avoid posssible name conflicts of this namespace with some other names.
 		while(
 			named_function_declarations.count( namespace_name) != 0 ||
 			named_record_declarations.count( namespace_name ) != 0 ||
