@@ -351,12 +351,6 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
 		numeric_constant.num.value= constant_array_type->getSize().getLimitedValue();
-		numeric_constant.num.type_suffix[0]= 'u';
-		if( numeric_constant.num.value >= 0x7FFFFFFFFu )
-		{
-			numeric_constant.num.type_suffix[1]= '6';
-			numeric_constant.num.type_suffix[2]= '4';
-		}
 		array_type->size= std::move(numeric_constant);
 
 		return std::move(array_type);
@@ -369,7 +363,6 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type, const 
 
 		Synt::IntegerNumericConstant numeric_constant( g_dummy_src_loc );
 		numeric_constant.num.value= 0;
-		numeric_constant.num.type_suffix[0]= 'u';
 		out_array_type->size= std::move(numeric_constant);
 
 		return std::move(out_array_type);
