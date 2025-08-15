@@ -17,6 +17,11 @@ using CppDoubleReference= CppStyleTypeAlias&;
 using CppDoubleConstReference= const CppStyleTypeAlias&;
 using CppDoubleRValueReference= double&&;
 
+enum CppOldStyleEnum
+{
+	OldStyle0, OldStyle1, OldStyle2,
+};
+
 enum class CppEnumClass
 {
 	S, Z, T, L, J, I, O,
@@ -25,6 +30,11 @@ enum class CppEnumClass
 enum class CppUnsequentialEnumClass
 {
 	One= 1, TwentyTwo=22, Eight= 8,
+};
+
+enum class CppEnumWithUnderlyingType : unsigned char
+{
+	UC0, UC1, UC2, UC45= 45,
 };
 
 struct Vec2f
@@ -66,7 +76,6 @@ constexpr unsigned int g_group_constant0= 11, g_group_constant1= 0xFF, g_group_c
 
 const float g_float_constant= -17.5f;
 
-// For now can't convert enum constants.
 const CppEnumClass g_enum_constant= CppEnumClass::I;
 
 // Can't convert this constant, since its initializer isn't constexpr.
