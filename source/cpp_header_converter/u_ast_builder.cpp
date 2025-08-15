@@ -1256,48 +1256,71 @@ void CppAstConsumer::EmitEnum(
 		root_program_elements_.Append( std::move(type_alias) );
 	}
 
+	Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+	variables_declaration.type= StringToTypeName( name );
+
+	for( const clang::EnumConstantDecl* const enumerator : enum_declaration.enumerators() )
 	{
-		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-		variables_declaration.type= StringToTypeName( name );
-
-		for( const clang::EnumConstantDecl* const enumerator : enum_declaration.enumerators() )
+		Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
+		const llvm::APSInt val= enumerator->getInitVal();
+		initializer_number.num.value= val.isNegative() ? uint64_t(val.getExtValue()) : val.getLimitedValue();
+		initializer_number.num.type_suffix[0]= 'u';
+		if( initializer_number.num.value >= 0x7FFFFFFFFu )
 		{
-			Synt::IntegerNumericConstant initializer_number( g_dummy_src_loc );
-			const llvm::APSInt val= enumerator->getInitVal();
-			initializer_number.num.value= val.isNegative() ? uint64_t(val.getExtValue()) : val.getLimitedValue();
-			initializer_number.num.type_suffix[0]= 'u';
-			if( initializer_number.num.value >= 0x7FFFFFFFFu )
-			{
-				initializer_number.num.type_suffix[1]= '6';
-				initializer_number.num.type_suffix[2]= '4';
-			}
-
-			Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
-			constructor_initializer.arguments.push_back( std::move(initializer_number) );
-
-			Synt::VariablesDeclaration::VariableEntry var;
-			var.src_loc= g_dummy_src_loc;
-
-			var.name= TranslateIdentifier( enumerator->getName() );
-
-			// Avoid name conflicts.
-			while(
-				named_function_declarations.count( var.name ) != 0 ||
-				named_record_declarations.count( var.name ) != 0 ||
-				named_typedef_declarations.count( var.name ) != 0 ||
-				named_enum_declarations.count( var.name ) != 0 )
-				var.name+= "_";
-
-			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
-			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
-
-			out_anonymous_enum_members.insert( var.name );
-
-			variables_declaration.variables.push_back( std::move(var) );
+			initializer_number.num.type_suffix[1]= '6';
+			initializer_number.num.type_suffix[2]= '4';
 		}
 
-		root_program_elements_.Append( std::move(variables_declaration) );
+		Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
+		constructor_initializer.arguments.push_back( std::move(initializer_number) );
+
+		Synt::VariablesDeclaration::VariableEntry var;
+		var.src_loc= g_dummy_src_loc;
+
+		var.name= TranslateIdentifier( enumerator->getName() );
+
+		// Avoid name conflicts.
+		while(
+			named_function_declarations.count( var.name ) != 0 ||
+			named_record_declarations.count( var.name ) != 0 ||
+			named_typedef_declarations.count( var.name ) != 0 ||
+			named_enum_declarations.count( var.name ) != 0 )
+			var.name+= "_";
+
+		var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+		var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
+
+		// TODO - don't populate it for scoped enums.
+		out_anonymous_enum_members.insert( var.name );
+
+		variables_declaration.variables.push_back( std::move(var) );
 	}
+
+	if( enum_declaration.isScoped() )
+	{
+		std::string namespace_name= name;
+		// Avoid name conflicts.
+		while(
+			named_function_declarations.count( namespace_name) != 0 ||
+			named_record_declarations.count( namespace_name ) != 0 ||
+			named_typedef_declarations.count( namespace_name ) != 0 ||
+			named_enum_declarations.count( namespace_name ) != 0 )
+			namespace_name+= "_";
+
+		Synt::Namespace namespace_( g_dummy_src_loc );
+		namespace_.name= std::move( namespace_name );
+
+		{
+			Synt::ProgramElementsList::Builder builder;
+			builder.Append( std::move(variables_declaration) );
+
+			namespace_.elements= builder.Build();
+		}
+
+		root_program_elements_.Append( std::move(namespace_) );
+	}
+	else
+		root_program_elements_.Append( std::move(variables_declaration) );
 }
 
 void CppAstConsumer::EmitVariables(

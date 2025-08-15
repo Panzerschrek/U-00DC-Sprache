@@ -25,23 +25,19 @@ fn nomangle main() call_conv( "C" ) : i32
 	static_assert( same_type</CppDoubleConstReference, $(f64)/> );
 	static_assert( same_type</CppDoubleRValueReference, $(f64)/> );
 
-	static_assert( typeinfo</CppEnumClass/>.is_enum );
-	static_assert( typeinfo</CppEnumClass/>.element_count == 7s );
+	static_assert( same_type</CppEnumClass, i32/> );
+	static_assert( CppEnumClass_::S == 0 );
+	static_assert( CppEnumClass_::Z == 1 );
+	static_assert( CppEnumClass_::T == 2 );
+	static_assert( CppEnumClass_::L == 3 );
+	static_assert( CppEnumClass_::J == 4 );
+	static_assert( CppEnumClass_::I == 5 );
+	static_assert( CppEnumClass_::O == 6 );
 
-	static_assert( i32( CppEnumClass::S ) == 0 );
-	static_assert( i32( CppEnumClass::Z ) == 1 );
-	static_assert( i32( CppEnumClass::T ) == 2 );
-	static_assert( i32( CppEnumClass::L ) == 3 );
-	static_assert( i32( CppEnumClass::J ) == 4 );
-	static_assert( i32( CppEnumClass::I ) == 5 );
-	static_assert( i32( CppEnumClass::O ) == 6 );
-
-	{
-		static_assert( typeinfo</CppUnsequentialEnumClass/>.is_class );
-		static_assert( CppUnsequentialEnumClass::One.ü_underlying_value == 1 );
-		static_assert( CppUnsequentialEnumClass::TwentyTwo.ü_underlying_value == 22 );
-		static_assert( CppUnsequentialEnumClass::Eight.ü_underlying_value == 8 );
-	}
+	static_assert( same_type</CppUnsequentialEnumClass, i32/> );
+	static_assert( CppUnsequentialEnumClass_::One == 1 );
+	static_assert( CppUnsequentialEnumClass_::TwentyTwo == 22 );
+	static_assert( CppUnsequentialEnumClass_::Eight == 8 );
 
 	{
 		static_assert( typeinfo</Vec2f/>.size_of == typeinfo</f32/>.size_of * 2s );
