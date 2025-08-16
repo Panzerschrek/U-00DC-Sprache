@@ -28,6 +28,8 @@ But there are still a lot of limitations caused by differences between C and Ü:
 * Incomplete types are translated as empty classes with disabled default constructor, since Ü has no incomplete types.
 * Both ``const`` and non-``const`` pointers are translated as raw pointers in Ü, which are always assumed to be mutable (non-``const``).
 * Enums are always translated as their underlying types, enum members are translated as global constant variables.
+* Anonymous structs and enums are translated with a generated name given, since in Ü there are no anonymous structs and enums.
+* Typedefs are translated as Ü type aliases, including typedefs combined with struct/enum declarations.
 * Names except function names may be renamed, if a name can't be valid Ü name or in case of name conflicts.
 * Nested structs are moved into the global namespace (for simplicity), possible with renaming to avoid name conflicts.
 * Global variables are translated, but only if they are ``const`` and have compile-time initializer.
