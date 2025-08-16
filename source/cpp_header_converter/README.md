@@ -2,7 +2,7 @@
 
 *CPPHeaderConverter* - a tool that generates Ü bindings for declarations in C++ header files.
 The main reason for this tool to exist is to automate Ü bindings creation for C functions.
-For now C++ headers support is limited, only C-like declarations can be converted.
+For now C++ headers support is limited, mostly only C-like declarations can be converted.
 
 
 ### How to build
@@ -39,11 +39,10 @@ The tool has a lot of limitations, since C and Ü are pretty different languages
 * Nested structs are moved into the global namespace and (if necessary) renamed, in order to fix some name resolution problems.
 * Fields with names identical to type names are renamed in order to avoid naming conflicts.
 * Contents of unions is replaced with simple byte arrays - Ü doesn't support C-style unions.
-* Sequential named enums are mapped to Ü enums, but other enums - aren't. Variable declarations are used for anonymous enums, wrapper structs used for non-sequential named enums.
 * `size_t` isn't translated like `size_type` in Ü, since in C it's just a type alias for some fundamental integer type.
-* Typedefs for function types are broken. But typedefs for function pointer types work fine.
+* Typedefs for function types are broken, but typedefs for function pointer types work fine.
 * Some C calling conventions aren't supported by Ü, so, functions declarations may have wrong calling conventions.
-* Constants for `#define`s are created, but only limited defines are supported - numeric literals and strings.
+* Constants for `#define`s are created, but only limited defines are supported - numeric literals, char literals and strings.
 
 Also *CPPHeaderConverter* doesn't preserve declarations order, it emits symbols sorted by kind and by name instead.
 It's done due to implementation reasons.

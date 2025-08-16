@@ -11,3 +11,4 @@ Contents
    compiler
    build_system
    language_server
+   cpp_header_converter
