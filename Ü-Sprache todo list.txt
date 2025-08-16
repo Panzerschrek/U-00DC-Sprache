@@ -194,7 +194,7 @@ Language server:
 *) Detect changes in workspace info files and reload them properly
 *) If necessary run build system executable in some temp directory to obtain workspace information
 
-CPP Header converter:
+C++ header converter:
 *) White list of converted symbols
 *) Black list of converted symbols
 *) Ignore some headers or split result into several files
@@ -248,7 +248,6 @@ Documentation:
 *) Other languages (not only russian and english)
 *) Describe more language details
 *) Documentation for interpreter
-*) Documentation for CPP Header converter
 *) Describe undefined behavior
 
 Targets:
