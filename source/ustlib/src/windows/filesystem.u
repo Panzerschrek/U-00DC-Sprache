@@ -298,7 +298,7 @@ fn get_symlink_metadata_for_path( filesystem_path_view path ) : filesystem_resul
 	var BOOL res =
 		unsafe( ::GetFileAttributesExW(
 			path_null_terminated.data(),
-			GET_FILEEX_INFO_LEVELS::GetFileExInfoStandard,
+			GetFileExInfoStandard,
 			ptr_cast_to_byte8( $<(info) ) ) );
 
 	if( res == 0 )
@@ -368,7 +368,7 @@ fn create_directory( filesystem_path_view path ) : filesystem_result</void/>
 		var BOOL res =
 			unsafe( ::GetFileAttributesExW(
 				path_null_terminated.data(),
-				GET_FILEEX_INFO_LEVELS::GetFileExInfoStandard,
+				GetFileExInfoStandard,
 				ptr_cast_to_byte8( $<(info) ) ) );
 
 		if( res == 1 && file_attributes_to_file_kind( info.dwFileAttributes ) == file_kind::directory )
@@ -847,7 +847,7 @@ fn set_permissions_impl( native_file_handle handle, file_permissions permissions
 	var BOOL get_res =
 		unsafe( ::GetFileInformationByHandleEx(
 			handle,
-			FILE_INFO_BY_HANDLE_CLASS::FileBasicInfo,
+			FileBasicInfo,
 			ptr_cast_to_byte8( $<(info) ),
 			DWORD( typeinfo</FILE_BASIC_INFO/>.size_of ) ) );
 	if( get_res == 0 )
@@ -869,7 +869,7 @@ fn set_permissions_impl( native_file_handle handle, file_permissions permissions
 	var BOOL set_res =
 		unsafe( ::SetFileInformationByHandle(
 			handle,
-			FILE_INFO_BY_HANDLE_CLASS::FileBasicInfo,
+			FileBasicInfo,
 			ptr_cast_to_byte8( $<(info) ),
 			DWORD( typeinfo</FILE_BASIC_INFO/>.size_of ) ) );
 	if( set_res == 0 )
@@ -1028,7 +1028,7 @@ fn resize_impl( native_file_handle handle, u64 new_size ) unsafe : filesystem_re
 	var BOOL res =
 		unsafe( ::SetFileInformationByHandle(
 			handle,
-			FILE_INFO_BY_HANDLE_CLASS::FileEndOfFileInfo,
+			FileEndOfFileInfo,
 			ptr_cast_to_byte8( $<(e) ),
 			DWORD( typeinfo</ FILE_END_OF_FILE_INFO />.size_of ) ) );
 

@@ -168,41 +168,39 @@ struct ü_WIN32_FIND_DATAW ordered
 	[ WCHAR, 14u ] cAlternateFileName;
 }
 
-enum ü_FILE_INFO_BY_HANDLE_CLASS : i32
-{
-	FileBasicInfo,
-	FileStandardInfo,
-	FileNameInfo,
-	FileRenameInfo,
-	FileDispositionInfo,
-	FileAllocationInfo,
-	FileEndOfFileInfo,
-	FileStreamInfo,
-	FileCompressionInfo,
-	FileAttributeTagInfo,
-	FileIdBothDirectoryInfo,
-	FileIdBothDirectoryRestartInfo,
-	FileIoPriorityHintInfo,
-	FileRemoteProtocolInfo,
-	FileFullDirectoryInfo,
-	FileFullDirectoryRestartInfo,
-	FileStorageInfo,
-	FileAlignmentInfo,
-	FileIdInfo,
-	FileIdExtdDirectoryInfo,
-	FileIdExtdDirectoryRestartInfo,
-	FileDispositionInfoEx,
-	FileRenameInfoEx,
-	FileCaseSensitiveInfo,
-	FileNormalizedNameInfo,
-	MaximumFileInfoByHandleClass,
-}
+type ü_FILE_INFO_BY_HANDLE_CLASS = i32;
+var ü_FILE_INFO_BY_HANDLE_CLASS
+	constexpr FileBasicInfo( 0 ),
+	constexpr FileStandardInfo( 1 ),
+	constexpr FileNameInfo( 2 ),
+	constexpr FileRenameInfo( 3 ),
+	constexpr FileDispositionInfo( 4 ),
+	constexpr FileAllocationInfo( 5 ),
+	constexpr FileEndOfFileInfo( 6 ),
+	constexpr FileStreamInfo( 7 ),
+	constexpr FileCompressionInfo( 8 ),
+	constexpr FileAttributeTagInfo( 9 ),
+	constexpr FileIdBothDirectoryInfo( 10 ),
+	constexpr FileIdBothDirectoryRestartInfo( 11 ),
+	constexpr FileIoPriorityHintInfo( 12 ),
+	constexpr FileRemoteProtocolInfo( 13 ),
+	constexpr FileFullDirectoryInfo( 14 ),
+	constexpr FileFullDirectoryRestartInfo( 15 ),
+	constexpr FileStorageInfo( 16 ),
+	constexpr FileAlignmentInfo( 17 ),
+	constexpr FileIdInfo( 18 ),
+	constexpr FileIdExtdDirectoryInfo( 19 ),
+	constexpr FileIdExtdDirectoryRestartInfo( 20 ),
+	constexpr FileDispositionInfoEx( 21 ),
+	constexpr FileRenameInfoEx( 22 ),
+	constexpr FileCaseSensitiveInfo( 23 ),
+	constexpr FileNormalizedNameInfo( 24 ),
+	constexpr MaximumFileInfoByHandleClass( 25 );
 
-enum ü_GET_FILEEX_INFO_LEVELS : i32
-{
-	GetFileExInfoStandard,
-	GetFileExMaxInfoLevel,
-}
+type ü_GET_FILEEX_INFO_LEVELS = i32;
+var ü_GET_FILEEX_INFO_LEVELS
+	constexpr GetFileExInfoStandard( 0 ),
+	constexpr GetFileExMaxInfoLevel( 1 );
 
 type wchar_t = char16; // Changed manually from "u16" in order to be able to use ust::string16.
 type BOOL = i32;
