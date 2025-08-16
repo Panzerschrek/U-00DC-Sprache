@@ -4,7 +4,7 @@ C++ header converter
 C++ header converter is a tool, which allows to generate Ü bindings for C or C++ header files.
 C headers are fully supported, but only limited subset of C++ headers may be converted.
 This tool is designed for simplification of C and Ü code interaction.
-The output file, produced by it, may be imported directly in Ü code or it may be first manually tweaked, if it's necessary.
+The output file, produced by it, may be imported directly in Ü code or it may be manually tweaked first, if it's necessary.
 
 C++ header converter is based on *clang* source code and thus can parse any valid C header properly, exactly like real C compilers do this.
 So, there is no problem of mis-parsing some headers, what often happens with some hand-written C parsers.
@@ -34,7 +34,7 @@ But there are still a lot of limitations caused by differences between C and Ü:
   Variables of scalar types are supported.
   Arrays are supported too, but only with number of initializers matching array size.
   Struct/union types aren't supported.
-* Simple defines containing integer, char and string literals are translated as global constants.
+* Simple defines containing integer, char or string literals are translated as global constants.
   More complex defines are ignored, even defines for negative numbers.
 
 Possibilities and limitations for conversion of C++ headers:
@@ -69,9 +69,9 @@ Available command-line options:
 
 ``--skip-declarations-from-includes`` - skip converting declarations from includes.
 
-Additionally C or C++ arguments may be specified after ``--``.
+Additionally C or C++ options may be specified after ``--``.
 Since C++ header converter is based on *clang*, many *clang* options are supported, see its documentation for more details.
-Most common options, used in C++ header converter, are standard options (``-std=c11``, ``-std=c++17``, etc.) and include directories option (``-I``).
+The most common of these options, that are used in C++ header converter, are standard options (``-std=c11``, ``-std=c++17``, etc.) and include directories option (``-I``).
 
 Usually C++ header converter is shipped together with *clang* internal headers, which are located in directory like *lib/clang/17/include* of the Ü installation.
 This directory is automatically added into include search paths.
