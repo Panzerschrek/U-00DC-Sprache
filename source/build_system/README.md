@@ -40,14 +40,15 @@ For now following features are implemented:
 * Imports isolation - in each build target it's allowed to import only own header files or header files of dependencies
 * Isolation of symbols in different libraries - in order to prevent possible name conflicts and have possibility to build different versions of the same library into one result binary
 * Build results caching - if nothing was changed, nothing will be rebuilt, if only some source files were changed, only these files and their dependencies will be rebuilt.
-* Build configurations - debug, release. Each configuration has its own set of compiler flags.
+* Build configurations - debug, release, minimal size release. Each configuration has its own set of compiler flags. Additionaly there are a couple of options for tweaking of these configurations.
 * Multithreaded building - several compilation/custom command processes can be run in parallel.
 * Configuration options - for tweaking build targets
 * Target triple specifying
-* Limited (for now) cross-compilation support - using `--sysroot` option
+* Cross-compilation support - using `--sysroot` option
 * Packages - as subpackages within directories of another packages or as global versioned packages
 * Unification of common dependencies on build targets of global versioned packages (where it's necessary) - to ensure no build target depends directly or indirectly on more than one version of some another build target.
 * Generated sources and headers
+* Custom build steps - for sources/headers generation or external code building
 * Host package dependencies - for building build tools
 * Language server interaction (provide workspace information for language server)
 
@@ -64,5 +65,5 @@ If the build system executable was build using MSVC, Windows SDK installation in
 If the build system executable was build using MinGW, MinGW installation in the system is required and its path should be provided via `--sysroot` option.
 Such dependencies are necessary in order to build build script shared libraries using the same (or at least compatible) runtime libraries as for the build system executable itself.
 
-Building target code for different from host systems/environments is still possible, regardless of how the build system itself was built.
+Building target code for different from host systems/environments is possible, regardless of how the build system itself was built.
 But it may be necessary to specify `--sysroot` in order to do this.
