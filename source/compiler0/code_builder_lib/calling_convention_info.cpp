@@ -1186,7 +1186,9 @@ CallingConventionInfos CreateCallingConventionInfos( const llvm::Triple& target_
 	}
 	else if( arch == llvm::Triple::aarch64 )
 	{
-		if( os == llvm::Triple::Linux || os == llvm::Triple::FreeBSD )
+		if( os == llvm::Triple::Linux ||
+			os == llvm::Triple::FreeBSD ||
+			os == llvm::Triple::Win32 )
 		{
 			const auto system_v_aarch64_info= std::make_shared<CallingConventionInfoSystemV_AArch64>( data_layout, false );
 			calling_convention_infos[ size_t( CallingConvention::C ) ]= system_v_aarch64_info;

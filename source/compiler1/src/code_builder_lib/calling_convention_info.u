@@ -78,7 +78,10 @@ fn CreateCallingConventionInfos( ust::string_view8 target_triple_str, LLVMTarget
 	}
 	else if( HasSubstr( target_triple_str, "aarch64" ) || HasSubstr( target_triple_str, "arm64" ) )
 	{
-		if( HasSubstr( target_triple_str, "linux" ) || HasSubstr( target_triple_str, "freebsd" ) )
+		if(
+			HasSubstr( target_triple_str, "linux" ) ||
+			HasSubstr( target_triple_str, "freebsd" ) ||
+			HasSubstr( target_triple_str, "windows" ) )
 		{
 			var ust::shared_ptr_imut</CallingConventionInfoSystemV_AArch64/> system_v_aarch64_info(
 				CallingConventionInfoSystemV_AArch64( data_layout, false ) );
