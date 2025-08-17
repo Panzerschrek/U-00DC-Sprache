@@ -33,6 +33,12 @@ else()
 	set( DEPFILE_OPTION "" )
 endif()
 
+if( WIN32 )
+	set( SECTIONS_OPTIONS )
+else()
+	set( SECTIONS_OPTIONS --data-sections --function-sections ) # Put symbols into sections in order to remove unused functions during linking.
+endif()
+
 add_custom_command(
 	OUTPUT ${USTLIB_OBJECT}
 	DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
@@ -43,7 +49,7 @@ add_custom_command(
 		-filetype=obj
 		-o ${current_subdir}/ustlib.o
 		-MF ${CMAKE_CURRENT_BINARY_DIR}/ustlib.d
-		--data-sections --function-sections # Put symbols into sections in order to remove unused functions during linking.
+		${SECTIONS_OPTIONS}
 		# Mark the whole ustlib directory as source directory - in order to make all functions hidden and thus avoid exporting them from shared libraries.
 		--source-dir ${CMAKE_CURRENT_SOURCE_DIR}
 		${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}

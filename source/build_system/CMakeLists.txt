@@ -104,6 +104,12 @@ else()
 		set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
 	endif()
 
+	if( WIN32 )
+		set( SECTIONS_OPTIONS )
+	else()
+		set( SECTIONS_OPTIONS --data-sections --function-sections ) # Put symbols into sections in order to remove unused functions during linking.
+	endif()
+
 	# Build rule for "Ü" files.
 	function( CompileUSource u_source_file out_object )
 		file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
@@ -128,7 +134,7 @@ else()
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports
 				# Provide source directories in order to mark symbols declared in headers within these directories as hidden.
 				--source-dir ${CMAKE_CURRENT_SOURCE_DIR}
-				--data-sections --function-sections # Put symbols into sections in order to remove unused functions during linking.
+				${SECTIONS_OPTIONS}
 			${DEPFILE_OPTION}
 			WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "build_system/main.u.o:", but launches custom command in current binary directory
 			COMMENT "Building ${current_subdir}/${u_source_file_relative}.o"

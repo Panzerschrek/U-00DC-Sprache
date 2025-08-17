@@ -76,6 +76,12 @@ else()
 		set( SPRACHE_COMPILER_OPT_OPTIONS -O2 )
 	endif()
 
+	if( WIN32 )
+		set( SECTIONS_OPTIONS )
+	else()
+		set( SECTIONS_OPTIONS --data-sections --function-sections ) # Put symbols into sections in order to remove unused functions during linking.
+	endif()
+
 	# Build rule for "Ü" files.
 	function( CompileUSource u_source_file out_object )
 		file( RELATIVE_PATH current_subdir ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
@@ -125,7 +131,7 @@ else()
 					-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 					--verify-module
 					${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
-					--data-sections --function-sections # Put symbols into sections in order to remove unused functions during linking.
+					${SECTIONS_OPTIONS}
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/imports
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/src/
 					--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/imports/::CodeBuilderLib

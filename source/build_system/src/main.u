@@ -1775,8 +1775,12 @@ fn SetHaltMode( BuildConfigurationExtended::HaltMode halt_mode, ust::vector</ust
 
 fn AddGCSectionsCompilerFlags( TargetTriple& target_triple, ust::vector</ust::string8/> &mut compiler_flags )
 {
-	compiler_flags.push_back( "--function-sections" );
-	compiler_flags.push_back( "--data-sections" );
+	if( target_triple.operating_system != g_os_windows )
+	{
+		compiler_flags.push_back( "--function-sections" );
+		compiler_flags.push_back( "--data-sections" );
+	}
+
 	if( target_triple.operating_system != g_os_windows || target_triple.environment == g_environment_gnu )
 	{
 		if( target_triple.vendor != g_vendor_apple )
