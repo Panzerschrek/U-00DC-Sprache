@@ -2528,7 +2528,11 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 
 	llvm_function->setDoesNotThrow(); // We do not support exceptions.
 
-	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+	if(
+		// Unwind table entry for function needed for debug info.
+		build_debug_info_ ||
+		// It seems like on Windows with AArch64 unwind table entries are also needed.
+		( target_triple_.getOS() == llvm::Triple::Win32 && target_triple_.getArch() == llvm::Triple::aarch64 ) )
 	{
 		llvm::AttrBuilder builder(llvm_context_);
 		builder.addUWTableAttr(llvm::UWTableKind::Async);
