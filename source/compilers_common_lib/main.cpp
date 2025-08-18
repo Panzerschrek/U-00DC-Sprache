@@ -566,12 +566,17 @@ int Main( int argc, const char* argv[] )
 		else if( optimization_level.getSpeedupLevel() == 3 )
 			code_gen_optimization_level= llvm::CodeGenOpt::Aggressive;
 
+		llvm::TargetOptions target_options= llvm::codegen::InitTargetOptionsFromCodeGenFlags( target_triple );
+
+		if( target_triple.getOS() == llvm::Triple::Win32 && target_triple.getArch() == llvm::Triple::aarch64 )
+			target_options.EmitAddrsig= true;
+
 		target_machine.reset(
 			target->createTargetMachine(
 				target_triple_str,
 				llvm::codegen::getMCPU(),
 				llvm::codegen::getFeaturesStr(),
-				llvm::codegen::InitTargetOptionsFromCodeGenFlags( target_triple ),
+				target_options,
 				llvm::codegen::getExplicitRelocModel(),
 				llvm::codegen::getExplicitCodeModel(),
 				code_gen_optimization_level ) );
