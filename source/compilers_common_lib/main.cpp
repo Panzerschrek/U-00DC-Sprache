@@ -351,7 +351,7 @@ void InternalizeHiddenFunctions( llvm::Module& module )
 	}
 }
 
-void CollectExternalFunctionsForInternalizatioin(
+void CollectExternalFunctionsForInternalization(
 	const llvm::Module& module, const std::string& input_file_name, std::vector<std::string>& functions )
 {
 	bool should_internalize= false;
@@ -657,7 +657,7 @@ int Main( int argc, const char* argv[] )
 				continue;
 			}
 
-			CollectExternalFunctionsForInternalizatioin(
+			CollectExternalFunctionsForInternalization(
 				*code_builder_launch_result.llvm_module, input_file, external_functions_for_internalization );
 
 			if( result_module == nullptr )
@@ -759,7 +759,7 @@ int Main( int argc, const char* argv[] )
 
 			deps_list.push_back( input_file );
 
-			CollectExternalFunctionsForInternalizatioin( *module, input_file, external_functions_for_internalization );
+			CollectExternalFunctionsForInternalization( *module, input_file, external_functions_for_internalization );
 
 			if( result_module == nullptr )
 				result_module= std::move( module );
