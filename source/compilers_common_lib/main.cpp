@@ -584,7 +584,7 @@ int Main( int argc, const char* argv[] )
 	}
 	const llvm::DataLayout data_layout= target_machine->createDataLayout();
 
-	const bool is_msvc= target_machine->getTargetTriple().getEnvironment() == llvm::Triple::MSVC;
+	const bool is_msvc= target_triple.getEnvironment() == llvm::Triple::MSVC;
 	const auto errors_format= is_msvc ? ErrorsFormat::MSVC : ErrorsFormat::GCC;
 
 	const ManglingScheme mangling_scheme=
@@ -934,7 +934,7 @@ int Main( int argc, const char* argv[] )
 	}
 
 	// Translate functions with "visibility(default)" into "dllexport" for Windows dynamic libraries.
-	if( file_type == FileType::Dll && target_machine->getTargetTriple().getOS() == llvm::Triple::Win32 )
+	if( file_type == FileType::Dll && target_triple.getOS() == llvm::Triple::Win32 )
 		SetupDLLExport( *result_module );
 
 	// Dump llvm code after optimization passes.
