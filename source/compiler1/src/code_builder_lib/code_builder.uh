@@ -1439,6 +1439,8 @@ private:
 	bool imut build_debug_info_;
 	ust::optional</DebugInfoBuilder/> debug_info_builder_;
 
+	bool imut create_unwind_table_entries_;
+
 	// Lifetimes.
 	bool imut create_lifetimes_;
 	bool imut generate_lifetime_start_end_debug_calls_;

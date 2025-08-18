@@ -29,21 +29,36 @@ fn ClearClassInternals( ClassTypePtr& class_type, NamesScopeMutPtr& dummy_class_
 	class_.generated_class_data= ClassType::NonGeneratedClassTag();
 }
 
-fn IsAppleTarget( ust::string_view8 target_triple_str ) : bool
+// TODO - create a standard library function for this.
+fn HasSubstr( ust::string_view8 where_to_search, ust::string_view8 what_to_search ) : bool
 {
-	// Just search "apple" substring in target triple. This should be fine.
-
-	var ust::string_view8 vendor_name= "apple";
-
-	for( var size_type mut o= 0s; o < target_triple_str.size(); ++o )
+	if( what_to_search.size() > where_to_search.size() )
 	{
-		if( target_triple_str.subrange_start(o).starts_with( vendor_name ) )
+		return false;
+	}
+
+	for( auto mut i= 0s; i <= where_to_search.size() - what_to_search.size(); ++i )
+	{
+		if( where_to_search.subrange_start(i).starts_with( what_to_search ) )
 		{
 			return true;
 		}
 	}
 
 	return false;
+}
+
+fn IsAppleTarget( ust::string_view8 target_triple_str ) : bool
+{
+	// Just search "apple" substring in target triple. This should be fine.
+
+	var ust::string_view8 vendor_name= "apple";
+	return HasSubstr( target_triple_str, "apple" );
+}
+
+fn IsAarch64Windows( ust::string_view8 target_triple_str ) : bool
+{
+	return HasSubstr( target_triple_str, "windows" ) && HasSubstr( target_triple_str, "aarch64" );
 }
 
 fn CodeBuilder::constructor(
@@ -57,6 +72,7 @@ fn CodeBuilder::constructor(
 		data_layout_(data_layout),
 		comdats_supported_= !IsAppleTarget( target_triple_str ),
 		calling_convention_infos_= CreateCallingConventionInfos( target_triple_str, data_layout ),
+		create_unwind_table_entries_( options.build_debug_info || IsAarch64Windows( target_triple_str ) ),
 		target_triple_str_(move(target_triple_str)),
 		create_lifetimes_(options.create_lifetimes),
 		generate_lifetime_start_end_debug_calls_(options.generate_lifetime_start_end_debug_calls),
@@ -2554,7 +2570,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 	// We do not support exceptions. So, mark all functions as "nounwind".
 	AddFunctionAttribute( llvm_function, LLVMAttributeFunctionIndex, "nounwind" );
 
-	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+	if( create_unwind_table_entries_ )
 	{
 		unsafe
 		{
