@@ -50,7 +50,6 @@ struct BuildTargetAbsoluteName
 }
 
 // Workspace info in form which is much better to work with.
-// TODO - use other name?
 struct WorkspaceInfo
 {
 	struct BuildTarget

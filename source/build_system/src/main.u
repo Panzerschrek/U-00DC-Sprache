@@ -105,7 +105,8 @@ fn nodiscard Main( ust::string_view8& first_arg, ust::array_view_imut</ust::stri
 		.build_system_executable_path= ust::path::normalize( MakePathAbsolute( current_executable ) ),
 		.compiler_executable_path= ust::path::normalize(
 			( options.compiler_executable_path.empty()
-				? ust::path::join( exe_directory, "u.._compiler1" ) // For now use "Compiler1" as compiler default. TODO - allow to tune it.
+				// For now use "Compiler1" as compiler default. TODO - use compiler generation used for building this buld system executable.
+				? ust::path::join( exe_directory, "u.._compiler1" )
 				: MakePathAbsolute(options.compiler_executable_path) ) ),
 		.ustlib_path= ust::path::normalize(
 			( options.ustlib_path.empty()
@@ -483,7 +484,6 @@ fn ObtainPackageInfo(
 	PackageAbsoluteName& package_name,
 	ust::filesystem_path_view packages_build_directory ) : ust::optional</PackageInfo/>
 {
-	// TODO - customize it based on package name?
 	auto constexpr entry_func_name = "GetPackageInfoImpl";
 
 	auto shared_library_opt = BuildAndLoadPackageBuildScript(
@@ -553,7 +553,7 @@ fn BuildAndLoadPackageBuildScript(
 
 	var ust::filesystem_path result_shared_library_dependency_file_path = GetDependencyFilePath( result_shared_library_path );
 
-	// TODO - check also if compilation options were changed (including import directories).
+	// Check only dependencies. No need to check compilation options, since they are always the same.
 	if( CheckRebuildIsNeededBasedOnDepFile( logger, result_shared_library_dependency_file_path ) )
 	{
 		logger.LogVerbose( ust::concat( "Building \"", result_shared_library_path, "\"." ) );
