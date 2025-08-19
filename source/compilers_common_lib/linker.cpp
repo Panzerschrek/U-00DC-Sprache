@@ -14,7 +14,6 @@ bool RunLinker(
 	const bool remove_unreferenced_symbols,
 	const bool debug )
 {
-	// TODO - support other linker drivers - MachO, Wasm.
 	if( triple.getOS() == llvm::Triple::Win32 )
 	{
 		if( triple.getEnvironment() == llvm::Triple::GNU )
