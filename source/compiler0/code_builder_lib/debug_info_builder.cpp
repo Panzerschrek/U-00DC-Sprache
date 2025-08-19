@@ -94,6 +94,9 @@ void DebugInfoBuilder::CreateGlobalVariableInfo(
 	{
 		llvm::DIFile* const file= GetDIFile( src_loc );
 
+		const bool is_mutable= !global_variable->isConstant();
+		const bool is_local_to_unit= !is_mutable; // Global constants are local for each unit, but mutable variables aren't really local (for deduplication).
+
 		llvm::DIGlobalVariableExpression* var_info=
 			builder_->createGlobalVariableExpression(
 				file, // TODO - set namespace name
@@ -104,7 +107,7 @@ void DebugInfoBuilder::CreateGlobalVariableInfo(
 				file,
 				src_loc.GetLine(),
 				CreateDIType( variable.type ),
-				false ); // TODO - set local
+				is_local_to_unit );
 
 		global_variable->addDebugInfo( var_info );
 	}
