@@ -83,6 +83,7 @@ void DebugInfoBuilder::CreateVariableInfo(
 }
 
 void DebugInfoBuilder::CreateGlobalVariableInfo(
+	const NamesScope& parent_scope,
 	const Variable& variable,
 	const std::string_view variable_name,
 	const SrcLoc& src_loc )
@@ -92,19 +93,16 @@ void DebugInfoBuilder::CreateGlobalVariableInfo(
 
 	if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( variable.llvm_value ) )
 	{
-		llvm::DIFile* const file= GetDIFile( src_loc );
-
 		const bool is_mutable= !global_variable->isConstant();
 		const bool is_local_to_unit= !is_mutable; // Global constants are local for each unit, but mutable variables aren't really local (for deduplication).
 
 		llvm::DIGlobalVariableExpression* var_info=
 			builder_->createGlobalVariableExpression(
-				file, // TODO - set namespace name
+				GetOrCreateNamespaceScope( parent_scope ),
 				variable_name,
-				// Do not set mangled name, use regular name.
-				// It's needed, since mutable variables displaying doesn't work properly, if this mangled name is specified, presumable doe to file path hash suffix.
-				variable_name,
-				file,
+				// TODO - fix displaying of mutable global variable (having source file path hash suffix).
+				global_variable->getName(),
+				GetDIFile( src_loc ),
 				src_loc.GetLine(),
 				CreateDIType( variable.type ),
 				is_local_to_unit );
@@ -201,6 +199,24 @@ llvm::DIFile* DebugInfoBuilder::GetRootDIFile()
 {
 	U_ASSERT( !source_file_entries_.empty() );
 	return source_file_entries_[0];
+}
+
+llvm::DIScope* DebugInfoBuilder::GetOrCreateNamespaceScope( const NamesScope& names_scope )
+{
+	if( const auto it= namespace_scopes_.find( &names_scope ); it != namespace_scopes_.end() )
+		return it->second;
+
+	const NamesScope* const parent_namespace= names_scope.GetParent();
+
+	llvm::DIScope* const result_scope=
+		builder_->createNameSpace(
+			parent_namespace == nullptr ? GetRootDIFile() : GetOrCreateNamespaceScope( *parent_namespace ),
+			names_scope.GetThisNamespaceName(),
+			true );
+
+	namespace_scopes_.emplace( &names_scope, result_scope );
+
+	return result_scope;
 }
 
 llvm::DIType* DebugInfoBuilder::CreateDIType( const Type& type )
