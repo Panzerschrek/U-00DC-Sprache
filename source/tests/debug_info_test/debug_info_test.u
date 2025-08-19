@@ -446,17 +446,36 @@ var f32 mut some_global_mutable_float= -13.2f;
 auto mut global_auto_mutable_uint= 676671u;
 auto global_auto_string= "Pimmel";
 
+thread_local char8 some_thread_local_char= 'a';
+thread_local bool some_thread_local_bool= false;
+
+namespace GlobalsSpace
+{
+	var u64 global_variable_in_space( 2346 );
+	thread_local size_type global_size= 123s;
+
+	var i32 some_global_constant_int= 22222; // Shadow variable from global space.
+
+	auto global_auto_in_space= 14.4;
+}
+
 fn GlobalVariablesTest()
 {
 	// Read some global constants in order to prevent their removal by optimizer.
 	auto& int_val= some_global_constant_int;
 	auto& string_val= some_global_string;
 	auto& another_string_val= global_auto_string;
+	auto& global_variable_in_space_val= GlobalsSpace::global_variable_in_space;
+	auto& some_global_constant_int2= GlobalsSpace::some_global_constant_int;
+	auto& global_auto_in_space_val= GlobalsSpace::global_auto_in_space;
 
 	unsafe
 	{
 		some_global_mutable_float= 676.2f;
 		global_auto_mutable_uint= 78u;
+		some_thread_local_char= 'q';
+		some_thread_local_bool= true;
+		GlobalsSpace::global_size= 456s;
 	}
 }
 
