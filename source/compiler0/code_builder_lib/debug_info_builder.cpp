@@ -85,26 +85,29 @@ void DebugInfoBuilder::CreateVariableInfo(
 void DebugInfoBuilder::CreateGlobalVariableInfo(
 	const Variable& variable,
 	const std::string_view variable_name,
-	std::string_view mangled_name,
 	const SrcLoc& src_loc )
 {
 	if( builder_ == nullptr )
 		return;
 
-	llvm::DIFile* const file= GetDIFile( src_loc );
-
-	llvm::DIGlobalVariableExpression* var_info=
-		builder_->createGlobalVariableExpression(
-			file, // TODO - set namespace name
-			variable_name,
-			mangled_name,
-			file,
-			src_loc.GetLine(),
-			CreateDIType( variable.type ),
-			false ); // TODO - set local
-
 	if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( variable.llvm_value ) )
+	{
+		llvm::DIFile* const file= GetDIFile( src_loc );
+
+		llvm::DIGlobalVariableExpression* var_info=
+			builder_->createGlobalVariableExpression(
+				file, // TODO - set namespace name
+				variable_name,
+				// Do not set mangled name, use regular name.
+				// It's needed, since mutable variables displaying doesn't work properly, if this mangled name is specified, presumable doe to file path hash suffix.
+				variable_name,
+				file,
+				src_loc.GetLine(),
+				CreateDIType( variable.type ),
+				false ); // TODO - set local
+
 		global_variable->addDebugInfo( var_info );
+	}
 }
 
 void DebugInfoBuilder::CreateReferenceVariableInfo(

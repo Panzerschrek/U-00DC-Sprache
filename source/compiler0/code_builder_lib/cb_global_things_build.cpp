@@ -1500,7 +1500,7 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 			variable_reference->llvm_value= variable->llvm_value;
 			variable_reference->constexpr_value= variable->constexpr_value;
 
-			debug_info_builder_->CreateGlobalVariableInfo( *variable_reference, variable_declaration.name, name_mangled, variable_declaration.src_loc );
+			debug_info_builder_->CreateGlobalVariableInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
