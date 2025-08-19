@@ -207,10 +207,12 @@ llvm::DIScope* DebugInfoBuilder::GetOrCreateNamespaceScope( const NamesScope& na
 		return it->second;
 
 	const NamesScope* const parent_namespace= names_scope.GetParent();
+	if( parent_namespace == nullptr )
+		return GetRootDIFile();
 
 	llvm::DIScope* const result_scope=
 		builder_->createNameSpace(
-			parent_namespace == nullptr ? GetRootDIFile() : GetOrCreateNamespaceScope( *parent_namespace ),
+			GetOrCreateNamespaceScope( *parent_namespace ),
 			names_scope.GetThisNamespaceName(),
 			true );
 
