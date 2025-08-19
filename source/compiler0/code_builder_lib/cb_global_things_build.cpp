@@ -1625,6 +1625,8 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 
 			if( variable_reference->constexpr_value != nullptr )
 				global_variable->setInitializer( variable_reference->constexpr_value );
+
+			debug_info_builder_->CreateGlobalVariableInfo( *variable_reference, auto_variable_declaration->name, auto_variable_declaration->src_loc );
 		}
 		else U_ASSERT(false);
 

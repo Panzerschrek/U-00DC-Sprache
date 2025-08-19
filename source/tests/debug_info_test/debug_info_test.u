@@ -443,13 +443,20 @@ var i32 some_global_constant_int= 73455;
 var [ char8, 27 ] some_global_string= "some global string contents";
 var f32 mut some_global_mutable_float= -13.2f;
 
+auto mut global_auto_mutable_uint= 676671u;
+auto global_auto_string= "Pimmel";
+
 fn GlobalVariablesTest()
 {
+	// Read some global constants in order to prevent their removal by optimizer.
+	auto& int_val= some_global_constant_int;
+	auto& string_val= some_global_string;
+	auto& another_string_val= global_auto_string;
+
 	unsafe
 	{
-		auto int_val= some_global_constant_int;
-		auto string_val= some_global_string;
 		some_global_mutable_float= 676.2f;
+		global_auto_mutable_uint= 78u;
 	}
 }
 
