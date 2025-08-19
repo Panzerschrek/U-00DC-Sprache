@@ -439,6 +439,20 @@ fn CallingConventionsTest()
 	return;
 }
 
+var i32 some_global_constant_int= 73455;
+var [ char8, 27 ] some_global_string= "some global string contents";
+var f32 mut some_global_mutable_float= -13.2f;
+
+fn GlobalVariablesTest()
+{
+	unsafe
+	{
+		auto int_val= some_global_constant_int;
+		auto string_val= some_global_string;
+		some_global_mutable_float= 676.2f;
+	}
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	FundamentalTypesTest();
@@ -469,5 +483,6 @@ fn nomangle main() call_conv( "C" ) : i32
 	AllocaTest();
 	DecomposeDeclarationTest();
 	CallingConventionsTest();
+	GlobalVariablesTest();
 	return 0;
 }

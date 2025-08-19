@@ -30,6 +30,12 @@ public:
 		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
+	void CreateGlobalVariableInfo(
+		const Variable& variable,
+		std::string_view variable_name,
+		std::string_view mangled_name,
+		const SrcLoc& src_loc );
+
 	void CreateReferenceVariableInfo(
 		const Variable& variable,
 		std::string_view variable_name,

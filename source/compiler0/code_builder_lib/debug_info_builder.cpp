@@ -82,6 +82,31 @@ void DebugInfoBuilder::CreateVariableInfo(
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
+void DebugInfoBuilder::CreateGlobalVariableInfo(
+	const Variable& variable,
+	const std::string_view variable_name,
+	std::string_view mangled_name,
+	const SrcLoc& src_loc )
+{
+	if( builder_ == nullptr )
+		return;
+
+	llvm::DIFile* const file= GetDIFile( src_loc );
+
+	llvm::DIGlobalVariableExpression* var_info=
+		builder_->createGlobalVariableExpression(
+			file, // TODO - set namespace name
+			variable_name,
+			mangled_name,
+			file,
+			src_loc.GetLine(),
+			CreateDIType( variable.type ),
+			false ); // TODO - set local
+
+	if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( variable.llvm_value ) )
+		global_variable->addDebugInfo( var_info );
+}
+
 void DebugInfoBuilder::CreateReferenceVariableInfo(
 	const Variable& variable,
 	const std::string_view variable_name,
