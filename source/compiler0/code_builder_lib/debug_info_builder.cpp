@@ -129,8 +129,7 @@ void DebugInfoBuilder::CreateGlobalVariableInfo(
 
 	if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( variable.llvm_value ) )
 	{
-		const bool is_mutable= !global_variable->isConstant();
-		const bool is_local_to_unit= !is_mutable; // Global constants are local for each unit, but mutable variables aren't really local (for deduplication).
+		const bool is_local_to_unit= false; // Consider global variables non-local, since global mutable variables may be deduplicated.
 
 		llvm::DIGlobalVariableExpression* var_info=
 			builder_->createGlobalVariableExpression(
