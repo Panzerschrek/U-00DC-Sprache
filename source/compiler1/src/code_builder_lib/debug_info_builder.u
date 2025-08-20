@@ -21,6 +21,11 @@ fn DebugInfoBuilder::constructor(
 
 	builder_= unsafe( LLVMCreateDIBuilder( mod ) );
 
+	{
+		var ust::string_view8 debug_metadata_name= "dbg";
+		debug_metadata_kind_id_= unsafe( LLVMGetMDKindIDInContext( llvm_context_, debug_metadata_name.data(), u32( debug_metadata_name.size() ) ) );
+	}
+
 	source_file_entries_=
 		ust::make_vector_from_mapped_range(
 			source_graph.nodes,
@@ -257,6 +262,83 @@ fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& fun
 			LLVMDIBuilderCreateExpression( builder_, 0i64, 0s ),
 			debug_location,
 			LLVMGetInsertBlock(function_context.llvm_ir_builder) );
+	}
+}
+
+fn DebugInfoBuilder::CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_scope, Variable& variable, ust::string_view8 variable_name, SrcLoc& src_loc )
+{
+	if( builder_ == Null::LLVMDIBuilderRef() )
+	{
+		return;
+	}
+
+	if( parent_scope.lock_imut().deref().IsInsideTemplate() )
+	{
+		// There is no reason to create debug information for global variables inside templates.
+		// It seems that debuggers struggle to show such global variables.
+		return;
+	}
+
+	unsafe
+	{
+		var LLVMValueRef global_variable= LLVMIsAGlobalVariable( variable.llvm_value );
+		if( global_variable != Null::LLVMValueRef() )
+		{
+			var LLVMMetadataRef scope= GetOrCreateNamespaceScope( parent_scope );
+
+			var size_type mut mangled_name_len= 0s;
+			var $(char8) mangled_name= LLVMGetValueName2( variable.llvm_value, mangled_name_len );
+
+			var LLVMMetadataRef file= source_file_entries_[ size_type(src_loc.GetFileIndex()) ];
+
+			var LLVMMetadataRef type_debug_info= CreateDIType( variable.t );
+
+			var LLVMBool is_local_to_unit= LLVMBool::False; // Consider global variables non-local, since global mutable variables may be deduplicated.
+
+			var LLVMMetadataRef var_info=
+				LLVMDIBuilderCreateGlobalVariableExpression(
+					builder_,
+					scope,
+					variable_name.data(), variable_name.size(),
+					mangled_name, mangled_name_len,
+					file,
+					src_loc.GetLine(),
+					type_debug_info,
+					is_local_to_unit,
+					LLVMDIBuilderCreateExpression( builder_, 0i64, 0s ),
+					Null::LLVMMetadataRef(),
+					0u );
+
+			LLVMGlobalSetMetadata( global_variable, debug_metadata_kind_id_, var_info );
+		}
+	}
+}
+
+fn DebugInfoBuilder::GetOrCreateNamespaceScope( mut this, NamesScopePtr& names_scope ) : LLVMMetadataRef
+{
+	if_var( scope_debug_info : namespace_scopes_.find( names_scope ) )
+	{
+		return scope_debug_info;
+	}
+
+	with( &s : names_scope.lock_imut().deref() )
+	{
+		var ust::shared_ptr_nullable_imut</NamesScope/> parent_scope= s.GetParent();
+		if( parent_scope.empty() )
+		{
+			return source_file_entries_.front();
+		}
+
+		var LLVMMetadataRef parent_scope_debug_info= GetOrCreateNamespaceScope( parent_scope.try_to_non_nullable() );
+
+		var ust::string_view8 name= s.GetThisNamespaceName();
+
+		var LLVMMetadataRef scope_debug_info=
+			unsafe( LLVMDIBuilderCreateNameSpace( builder_, parent_scope_debug_info, name.data(), name.size(), LLVMBool::True ) );
+
+		namespace_scopes_.insert_new( names_scope, scope_debug_info );
+
+		return scope_debug_info;
 	}
 }
 

@@ -1499,6 +1499,10 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 
 			variable_reference->llvm_value= variable->llvm_value;
 			variable_reference->constexpr_value= variable->constexpr_value;
+
+			// Create debug info only for mutable variables. Creating it for constants has no reason.
+			if( is_mutable )
+				debug_info_builder_->CreateGlobalVariableInfo( names_scope, *variable_reference, variable_declaration.name, variable_declaration.src_loc );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
@@ -1623,6 +1627,10 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 
 			if( variable_reference->constexpr_value != nullptr )
 				global_variable->setInitializer( variable_reference->constexpr_value );
+
+			// Create debug info only for mutable variables. Creating it for constants has no reason.
+			if( is_mutable )
+				debug_info_builder_->CreateGlobalVariableInfo( names_scope, *variable_reference, auto_variable_declaration->name, auto_variable_declaration->src_loc );
 		}
 		else U_ASSERT(false);
 

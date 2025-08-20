@@ -36,6 +36,12 @@ public:
 		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
+	void CreateGlobalVariableInfo(
+		const NamesScope& parent_scope,
+		const Variable& variable,
+		std::string_view variable_name,
+		const SrcLoc& src_loc );
+
 	void CreateFunctionInfo( const FunctionVariable& func_variable, std::string_view function_name );
 
 	void SetCurrentLocation( const SrcLoc& src_loc, FunctionContext& function_context );
@@ -46,6 +52,8 @@ public:
 private:
 	llvm::DIFile* GetDIFile( const SrcLoc& src_loc );
 	llvm::DIFile* GetRootDIFile();
+
+	llvm::DIScope* GetOrCreateNamespaceScope( const NamesScope& names_scope );
 
 	llvm::DIType* CreateDIType( const Type& type );
 	llvm::DIType* CreateDIType( const FundamentalType& type );
@@ -64,6 +72,8 @@ private:
 	const llvm::DataLayout data_layout_;
 
 	std::vector<llvm::TypedTrackingMDRef<llvm::DIFile>> source_file_entries_; // Entry for each file in sources graph.
+
+	std::unordered_map<const NamesScope*, llvm::DIScope*> namespace_scopes_;
 
 	// Debug info builder, compile unit, types cache - unique only for current file.
 	std::unique_ptr<llvm::DIBuilder> builder_;
