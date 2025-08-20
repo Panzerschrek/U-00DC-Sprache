@@ -91,6 +91,13 @@ void DebugInfoBuilder::CreateGlobalVariableInfo(
 	if( builder_ == nullptr )
 		return;
 
+	if( parent_scope.IsInsideTemplate() )
+	{
+		// There is no reason to create debug information for global variables inside templates.
+		// It seems that debuggers struggle to show such global variables.
+		return;
+	}
+
 	if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( variable.llvm_value ) )
 	{
 		const bool is_mutable= !global_variable->isConstant();
