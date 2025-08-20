@@ -1754,6 +1754,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 		if( is_mutable )
 		{
+			// Create debug info only for mutable variables. Creating it for constants has no reason.
 			debug_info_builder_.try_deref().CreateGlobalVariableInfo(
 				names_scope_ptr,
 				variable_ptr.lock_imut().deref(),
@@ -1914,6 +1915,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 
 		if( is_mutable )
 		{
+			// Create debug info only for mutable variables. Creating it for constants has no reason.
 			debug_info_builder_.try_deref().CreateGlobalVariableInfo(
 				names_scope_ptr,
 				variable,

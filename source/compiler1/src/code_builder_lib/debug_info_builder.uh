@@ -47,7 +47,7 @@ private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
 
-	u32 debug_metadata_id_= 0u;
+	u32 debug_metadata_kind_id_= 0u;
 
 	LLVMDIBuilderRef builder_= zero_init;
 	ust::vector</LLVMMetadataRef/> source_file_entries_; // Entry for each file in sources graph.

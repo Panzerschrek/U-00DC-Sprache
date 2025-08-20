@@ -131,11 +131,10 @@ void DebugInfoBuilder::CreateGlobalVariableInfo(
 	{
 		const bool is_local_to_unit= false; // Consider global variables non-local, since global mutable variables may be deduplicated.
 
-		llvm::DIGlobalVariableExpression* var_info=
+		llvm::DIGlobalVariableExpression* const var_info=
 			builder_->createGlobalVariableExpression(
 				GetOrCreateNamespaceScope( parent_scope ),
 				variable_name,
-				// TODO - fix displaying of mutable global variable (having source file path hash suffix).
 				global_variable->getName(),
 				GetDIFile( src_loc ),
 				src_loc.GetLine(),

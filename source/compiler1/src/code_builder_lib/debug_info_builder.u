@@ -23,7 +23,7 @@ fn DebugInfoBuilder::constructor(
 
 	{
 		var ust::string_view8 debug_metadata_name= "dbg";
-		debug_metadata_id_= unsafe( LLVMGetMDKindIDInContext( llvm_context_, debug_metadata_name.data(), u32( debug_metadata_name.size() ) ) );
+		debug_metadata_kind_id_= unsafe( LLVMGetMDKindIDInContext( llvm_context_, debug_metadata_name.data(), u32( debug_metadata_name.size() ) ) );
 	}
 
 	source_file_entries_=
@@ -309,18 +309,16 @@ fn DebugInfoBuilder::CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_s
 					Null::LLVMMetadataRef(),
 					0u );
 
-			var ust::string_view8 debug_metadata_name= "dbg";
-
-			LLVMGlobalSetMetadata( global_variable, debug_metadata_id_, var_info );
+			LLVMGlobalSetMetadata( global_variable, debug_metadata_kind_id_, var_info );
 		}
 	}
 }
 
 fn DebugInfoBuilder::GetOrCreateNamespaceScope( mut this, NamesScopePtr& names_scope ) : LLVMMetadataRef
 {
-	if_var( s : namespace_scopes_.find( names_scope ) )
+	if_var( scope_debug_info : namespace_scopes_.find( names_scope ) )
 	{
-		return s;
+		return scope_debug_info;
 	}
 
 	with( &s : names_scope.lock_imut().deref() )
