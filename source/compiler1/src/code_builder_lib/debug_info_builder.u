@@ -305,7 +305,7 @@ fn DebugInfoBuilder::CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_s
 					src_loc.GetLine(),
 					type_debug_info,
 					is_local_to_unit,
-					Null::LLVMMetadataRef(),
+					LLVMDIBuilderCreateExpression( builder_, 0i64, 0s ),
 					Null::LLVMMetadataRef(),
 					0u );
 
