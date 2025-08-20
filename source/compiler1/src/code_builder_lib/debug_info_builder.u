@@ -284,10 +284,12 @@ fn DebugInfoBuilder::CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_s
 		var LLVMValueRef global_variable= LLVMIsAGlobalVariable( variable.llvm_value );
 		if( global_variable != Null::LLVMValueRef() )
 		{
-			var LLVMMetadataRef file= source_file_entries_[ size_type(src_loc.GetFileIndex()) ];
+			var LLVMMetadataRef scope= GetOrCreateNamespaceScope( parent_scope );
 
 			var size_type mut mangled_name_len= 0s;
 			var $(char8) mangled_name= LLVMGetValueName2( variable.llvm_value, mangled_name_len );
+
+			var LLVMMetadataRef file= source_file_entries_[ size_type(src_loc.GetFileIndex()) ];
 
 			var LLVMMetadataRef type_debug_info= CreateDIType( variable.t );
 
@@ -296,7 +298,7 @@ fn DebugInfoBuilder::CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_s
 			var LLVMMetadataRef var_info=
 				LLVMDIBuilderCreateGlobalVariableExpression(
 					builder_,
-					file, // TODO - set scope
+					scope,
 					variable_name.data(), variable_name.size(),
 					mangled_name, mangled_name_len,
 					file,
@@ -311,6 +313,34 @@ fn DebugInfoBuilder::CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_s
 
 			LLVMGlobalSetMetadata( global_variable, debug_metadata_id_, var_info );
 		}
+	}
+}
+
+fn DebugInfoBuilder::GetOrCreateNamespaceScope( mut this, NamesScopePtr& names_scope ) : LLVMMetadataRef
+{
+	if_var( s : namespace_scopes_.find( names_scope ) )
+	{
+		return s;
+	}
+
+	with( &s : names_scope.lock_imut().deref() )
+	{
+		var ust::shared_ptr_nullable_imut</NamesScope/> parent_scope= s.GetParent();
+		if( parent_scope.empty() )
+		{
+			return source_file_entries_.front();
+		}
+
+		var LLVMMetadataRef parent_scope_debug_info= GetOrCreateNamespaceScope( parent_scope.try_to_non_nullable() );
+
+		var ust::string_view8 name= s.GetThisNamespaceName();
+
+		var LLVMMetadataRef scope_debug_info=
+			unsafe( LLVMDIBuilderCreateNameSpace( builder_, parent_scope_debug_info, name.data(), name.size(), LLVMBool::True ) );
+
+		namespace_scopes_.insert_new( names_scope, scope_debug_info );
+
+		return scope_debug_info;
 	}
 }
 

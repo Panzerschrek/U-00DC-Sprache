@@ -638,6 +638,12 @@ fn nomangle LLVMDIBuilderInsertDeclareAtEnd(
 	LLVMMetadataRef DebugLoc,
 	LLVMBasicBlockRef Block) unsafe call_conv( "C" ) : LLVMValueRef;
 
+fn nomangle LLVMDIBuilderCreateNameSpace(
+	LLVMDIBuilderRef Builder,
+	LLVMMetadataRef ParentScope,
+	$(char8) Name, size_type NameLen,
+	LLVMBool ExportSymbols ) unsafe call_conv( "C" ) : LLVMMetadataRef;
+
 fn nomangle LLVMDIBuilderCreateFunction(
 	LLVMDIBuilderRef Builder,
 	LLVMMetadataRef Scope,

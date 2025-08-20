@@ -28,6 +28,8 @@ public:
 	fn CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_scope, Variable& variable, ust::string_view8 variable_name, SrcLoc& src_loc );
 
 private:
+	fn GetOrCreateNamespaceScope( mut this, NamesScopePtr& names_scope ) : LLVMMetadataRef;
+
 	fn CreateDIType( mut this, Type& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef;
@@ -50,6 +52,8 @@ private:
 	LLVMDIBuilderRef builder_= zero_init;
 	ust::vector</LLVMMetadataRef/> source_file_entries_; // Entry for each file in sources graph.
 	LLVMMetadataRef compile_unit_= zero_init;
+
+	ust::hash_map</NamesScopePtr, LLVMMetadataRef/> namespace_scopes_;
 
 	LLVMMetadataRef stub_type_= zero_init;
 
