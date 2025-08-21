@@ -962,7 +962,10 @@ void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const s
 	const NamesScope* current_scope= &names_scope;
 	do
 	{
-		NamesScopeFetchComleteForNamesScope( *current_scope, name );
+		if( const auto class_= current_scope->GetClass() )
+			NamesScopeFetchComleteForClass( class_, name );
+		else
+			NamesScopeFetchComleteForNamesScope( *current_scope, name );
 		current_scope= current_scope->GetParent();
 	} while( current_scope != nullptr );
 }

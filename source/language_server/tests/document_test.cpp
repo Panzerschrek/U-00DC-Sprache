@@ -1249,6 +1249,27 @@ U_TEST( DocumentCompletion_Test36 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test37 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "class A polymorph { struct Some{} } class B : A { fn Foo() {  } }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should suggest a name from parent class.
+	document.UpdateText( DocumentRange{ { 1, 61 }, { 1, 61 } }, "var So" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 67 } );
+	const CompletionItemsNormalized expected_completion_result{ "Some" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;
