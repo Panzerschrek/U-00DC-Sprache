@@ -11,7 +11,7 @@ fn udp_socket::create() : result</udp_socket, io_error/>
 {
 	unsafe
 	{
-		var raw_socket s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
+		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
 		if( s == -1 )
 		{
 			return translate_errno( get_errno() );
@@ -63,7 +63,7 @@ fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_err
 	return socket;
 }
 
-fn udp_socket::constructor( raw_socket s ) unsafe
+fn udp_socket::constructor( native_socket_fd s ) unsafe
 	( socket_= s )
 {}
 

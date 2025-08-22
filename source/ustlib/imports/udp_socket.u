@@ -15,9 +15,10 @@ public:
 	fn create() : result</udp_socket, io_error/>;
 
 	// Create socket and bind it to address specified.
+	// Such socket may be used for messages receiving.
 	fn create_and_bind( socket_address& a ) : result</udp_socket, io_error/>;
 
-	fn constructor( raw_socket s ) unsafe; // constructor for internal usage.
+	fn constructor( native_socket_fd s ) unsafe; // constructor for internal usage.
 	fn destructor();
 
 	// Send data to address, specified earlier in "connect" call.
@@ -42,10 +43,10 @@ public:
 	fn connect( mut this, socket_address& a ) : result</void, io_error/>;
 
 private:
-	type raw_socket= i32;
+	type native_socket_fd= i32;
 
 private:
-	raw_socket socket_;
+	native_socket_fd socket_;
 }
 
 } // namespace net
