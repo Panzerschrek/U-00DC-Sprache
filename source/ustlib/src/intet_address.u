@@ -7,7 +7,7 @@ namespace ust
 namespace net
 {
 
-fn parse_ip_address_v4( array_view_imut</char8/> mut s ) : optional</ip_address_v4/>
+fn parse_ip_address_v4( string_view8 mut s ) : optional</ip_address_v4/>
 {
 	if_var( ip : extract_ip_v4_address(s) )
 	{
@@ -23,14 +23,14 @@ fn parse_ip_address_v4( array_view_imut</char8/> mut s ) : optional</ip_address_
 	return null_optional;
 }
 
-fn parse_ip_address_v6( array_view_imut</char8/> s ) : optional</ip_address_v6/>
+fn parse_ip_address_v6( string_view8 s ) : optional</ip_address_v6/>
 {
 	// TODO
 	ignore_unused( s );
 	return null_optional;
 }
 
-fn parse_socket_address_v4( array_view_imut</char8/> mut s ) : optional</socket_address_v4/>
+fn parse_socket_address_v4( string_view8 mut s ) : optional</socket_address_v4/>
 {
 	if_var( mut ip : extract_ip_v4_address(s) )
 	{
@@ -63,14 +63,14 @@ fn parse_socket_address_v4( array_view_imut</char8/> mut s ) : optional</socket_
 	return null_optional;
 }
 
-fn parse_socket_address_v6( array_view_imut</char8/> s ) : optional</socket_address_v6/>
+fn parse_socket_address_v6( string_view8 s ) : optional</socket_address_v6/>
 {
 	// TODO
 	ignore_unused( s );
 	return null_optional;
 }
 
-fn parse_socket_address( array_view_imut</char8/> mut s ) : optional</socket_address/>
+fn parse_socket_address( string_view8 mut s ) : optional</socket_address/>
 {
 	if_var( mut a : parse_socket_address_v4( s ) )
 	{
@@ -84,7 +84,7 @@ fn parse_socket_address( array_view_imut</char8/> mut s ) : optional</socket_add
 	return null_optional;
 }
 
-fn extract_ip_v4_address( array_view_imut</char8/> &mut s ) : optional</ip_address_v4/>
+fn extract_ip_v4_address( string_view8 &mut s ) : optional</ip_address_v4/>
 {
 	var [ u8, 4 ] mut octets= zero_init;
 
