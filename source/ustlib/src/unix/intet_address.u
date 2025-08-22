@@ -23,10 +23,15 @@ fn parse_ip_address_v4( array_view_imut</char8/> mut s ) : optional</ip_address_
 	return null_optional;
 }
 
-fn parse_socket_address( array_view_imut</char8/> mut s ) : optional</socket_address/>
+fn parse_ip_address_v6( array_view_imut</char8/> s ) : optional</ip_address_v6/>
 {
-	// TODO - parse also IP v4.
+	// TODO
+	ignore_unused( s );
+	return null_optional;
+}
 
+fn parse_socket_address_v4( array_view_imut</char8/> mut s ) : optional</socket_address_v4/>
+{
 	if_var( mut ip : extract_ip_v4_address(s) )
 	{
 		if( !( s.size() >= 1s && s.front() == ':' ) )
@@ -52,7 +57,28 @@ fn parse_socket_address( array_view_imut</char8/> mut s ) : optional</socket_add
 			return null_optional;
 		}
 
-		return socket_address( socket_address_v4( move(ip), port ) );
+		return socket_address_v4( move(ip), port );
+	}
+
+	return null_optional;
+}
+
+fn parse_socket_address_v6( array_view_imut</char8/> s ) : optional</socket_address_v6/>
+{
+	// TODO
+	ignore_unused( s );
+	return null_optional;
+}
+
+fn parse_socket_address( array_view_imut</char8/> mut s ) : optional</socket_address/>
+{
+	if_var( mut a : parse_socket_address_v4( s ) )
+	{
+		return socket_address( move(a) );
+	}
+	if_var( mut a : parse_socket_address_v6( s ) )
+	{
+		return socket_address( move(a) );
 	}
 
 	return null_optional;

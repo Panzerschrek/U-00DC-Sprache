@@ -40,6 +40,16 @@ private:
 	u32 bits_;
 }
 
+class ip_address_v6
+{
+	// TODO
+public:
+	fn constructor( mut this, ip_address_v6& other )= default;
+	op=( mut this, ip_address_v6& other )= default;
+
+	op==( ip_address_v6& l, ip_address_v6& r ) : bool = default;
+}
+
 // Socket address - in IP v4 or IP v6 format.
 type socket_address= variant</ tup[ socket_address_v4, socket_address_v6 ] />;
 
@@ -93,6 +103,15 @@ public:
 
 // Parse IP v4 address. Returns empty optional if failed to parse.
 fn parse_ip_address_v4( array_view_imut</char8/> s ) : optional</ip_address_v4/>;
+
+// Parse IP v6 address. Returns empty optional if failed to parse.
+fn parse_ip_address_v6( array_view_imut</char8/> s ) : optional</ip_address_v6/>;
+
+// Parse socket v4 address. Returns empty optional if failed to parse.
+fn parse_socket_address_v4( array_view_imut</char8/> s ) : optional</socket_address_v4/>;
+
+// Parse socket v6 address. Returns empty optional if failed to parse.
+fn parse_socket_address_v6( array_view_imut</char8/> s ) : optional</socket_address_v6/>;
 
 // Parse socket address. Returns empty optional if failed to parse.
 fn parse_socket_address( array_view_imut</char8/> s ) : optional</socket_address/>;
