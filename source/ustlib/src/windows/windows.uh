@@ -46,7 +46,6 @@ fn nomangle WakeAllConditionVariable( PCONDITION_VARIABLE ConditionVariable ) un
 fn nomangle WakeConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
-fn nomangle inet_pton( INT_ Family, PCSTR pszAddrString, PVOID pAddrBuf ) unsafe call_conv( "system" ) : INT_;
 
 struct ü_BY_HANDLE_FILE_INFORMATION ordered
 {
