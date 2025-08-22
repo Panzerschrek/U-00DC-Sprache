@@ -2,10 +2,13 @@
 import "../imports/assert.u"
 import "../imports/enum_string_conversions.u"
 import "../imports/string.u"
+import "../imports/string_conversions.u"
 import "../imports/udp_socket.u"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
+	var ust::net::ip_address_v4 loopback( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) );
+
 	result_match( ust::net::udp_socket::create() )
 	{
 		Ok( s ) -> {},
@@ -24,5 +27,58 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// Simple sendo/recvfrom test.
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), 59001u16 );
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), 59002u16 );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create_and_bind( sender_address ).try_take();
+
+		auto& message= "Wenn die Sonne untergeht und euer Vater schläft, dann spreche ich ein Stoßgebet in seiner Annegret.";
+		var ust::string_view8 message_range= message;
+
+		result_match( sender_socket.send_to( receiver_address, cast_range_to_bytes_range( message_range ) ) )
+		{
+			Ok( bytes_sent ) ->
+			{
+				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+
+		var typeof(message) mut received_message= zero_init;
+
+		result_match( receiver_socket.receive_from( cast_range_to_bytes_range( ust::array_view_mut</char8/>( received_message ) ) ) )
+		{
+			Ok( mut receive_result ) ->
+			{
+				auto [ address_obtained, bytes_received ]= move( receive_result );
+
+				assert(
+					address_obtained == sender_address || address_obtained == ust::net::socket_address_v4( loopback, sender_address.get_port() ),
+					"Unexpected address obtained in \"receive_from\" call!" );
+
+				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( received_message == message, "Received unexpected message!" );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to receive message from socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+	}
+
 	return 0;
+}
+
+// It's safe to cast between ranges of chars and bytes.
+// TODO - make such conversion functions public.
+template</bool is_mutable/>
+fn cast_range_to_bytes_range( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
+{
+	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
 }

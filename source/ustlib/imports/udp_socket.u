@@ -17,6 +17,10 @@ public:
 	fn constructor( raw_socket s ) unsafe; // constructor for internal usage.
 	fn destructor();
 
+	fn send_to( mut this, socket_address& a, array_view_imut</byte8/> data ) : result</size_type, io_error/>;
+
+	fn receive_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>;
+
 private:
 	type raw_socket= i32;
 
