@@ -38,7 +38,7 @@ fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_err
 			.sin_family( AF_INET ),
 			.sin_port= a_v4.get_port(),
 			.sin_addr{ .s_addr= a_v4.get_ip().get_bits() },
-			.sin_zero= zero_init
+			.sin_zero= zero_init,
 		};
 
 		var i32 res=
@@ -50,8 +50,7 @@ fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_err
 		if( res != 0 )
 		{
 			// Socket will be destroyed on error return.
-			var i32 e= get_errno();
-			return translate_errno( e );
+			return translate_errno( get_errno() );
 		}
 	}
 	else
@@ -93,7 +92,7 @@ fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> da
 			.sin_family( AF_INET ),
 			.sin_port= a_v4.get_port(),
 			.sin_addr{ .s_addr= a_v4.get_ip().get_bits() },
-			.sin_zero= zero_init
+			.sin_zero= zero_init,
 		};
 
 		var ssize_type bytes_written=
@@ -144,6 +143,7 @@ fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</
 
 		if( i32(sender_address.sa_family) == AF_INET )
 		{
+			// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
 			var sockaddr_in mut sender_address_ip_v4= zero_init;
 
 			memory_copy(
@@ -188,7 +188,7 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 			.sin_family( AF_INET ),
 			.sin_port= a_v4.get_port(),
 			.sin_addr{ .s_addr= a_v4.get_ip().get_bits() },
-			.sin_zero= zero_init
+			.sin_zero= zero_init,
 		};
 
 		var i32 res=
@@ -201,7 +201,6 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 		{
 			return translate_errno( get_errno() );
 		}
-
 	}
 	else
 	{
