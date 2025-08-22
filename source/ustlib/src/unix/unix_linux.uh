@@ -7,6 +7,7 @@ fn nomangle chmod( $(char8) ü__file, ü__mode_t ü__mode ) unsafe call_conv( "C
 fn nomangle clock_gettime( clockid_t ü__clock_id, $(timespec) ü__tp ) unsafe call_conv( "C" ) : i32;
 fn nomangle close( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
 fn nomangle closedir( $(DIR) ü__dirp ) unsafe call_conv( "C" ) : i32;
+fn nomangle connect( i32 ü__fd, $(sockaddr) ü__addr, socklen_t ü__len ) unsafe call_conv( "C" ) : i32;
 fn nomangle fchmod( i32 ü__fd, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
 fn nomangle fdatasync( i32 ü__fildes ) unsafe call_conv( "C" ) : i32;
 fn nomangle fstat64( i32 ü__fd, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
@@ -22,10 +23,12 @@ fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe
 fn nomangle opendir( $(char8) ü__name ) unsafe call_conv( "C" ) : $(DIR);
 fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle readdir64( $(DIR) ü__dirp ) unsafe call_conv( "C" ) : $(dirent64);
+fn nomangle recv( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle recvfrom( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags, $(sockaddr) ü__addr, $(socklen_t) ü__addr_len ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle rename( $(char8) ü__old, $(char8) ü__new ) unsafe call_conv( "C" ) : i32;
 fn nomangle rmdir( $(char8) ü__path ) unsafe call_conv( "C" ) : i32;
 fn nomangle sendfile64( i32 ü__out_fd, i32 ü__in_fd, $(ü__off64_t) ü__offset, size_t ü__count ) unsafe call_conv( "C") : ssize_t; // Linux-specific
+fn nomangle send( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle sendto( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags, $(sockaddr) ü__addr, socklen_t ü__addr_len ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle setenv( $(char8) ü__name, $(char8) ü__value, i32 ü__replace ) unsafe call_conv( "C" ) : i32;
 fn nomangle socket( i32 ü__domain, i32 ü__type, i32 ü__protocol ) unsafe call_conv( "C" ) : i32;

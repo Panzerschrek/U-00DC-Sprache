@@ -174,6 +174,48 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// Connect + send/receive.
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create_and_bind( sender_address ).try_take();
+
+		receiver_socket.connect( sender_address ).try_deref();
+		sender_socket.connect( receiver_address ).try_deref();
+
+		auto& message= "Ich steige durchs Fenster, schlüpfe zu Annegret. Nun sei dort nur noch eine Sache die zwischen uns steht.";
+		var ust::string_view8 message_range= message;
+
+		result_match( sender_socket.send( CastRangeToBytesRange( message_range ) ) )
+		{
+			Ok( bytes_sent ) ->
+			{
+				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+
+		var typeof(message) mut received_message= zero_init;
+
+		result_match( receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		{
+			Ok( mut bytes_received ) ->
+			{
+				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( received_message == message, "Received unexpected message!" );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to receive message from socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+	}
+
 	return 0;
 }
 
