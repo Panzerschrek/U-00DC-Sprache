@@ -1,0 +1,37 @@
+//##success_test
+import "../imports/inet_address.u"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	halt if(
+		ust::net::parse_socket_address( "127.0.0.1:12345" ) !=
+		ust::net::socket_address( ust::net::socket_address_v4( ust::net::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ), 12345u16 ) ) );
+
+	halt if(
+		ust::net::parse_socket_address( "1.23.45.67:5" ) !=
+		ust::net::socket_address( ust::net::socket_address_v4( ust::net::ip_address_v4( ust::make_array( 1u8, 23u8, 45u8, 67u8 ) ), 5u16 ) ) );
+
+
+	// Invalid socket address - missing port.
+	halt if( ust::net::parse_socket_address( "1.23.45.67" ) != ust::null_optional );
+
+	// Invalid socket address - port value out of range.
+	halt if( ust::net::parse_socket_address( "1.23.45.67:123456" ) != ust::null_optional );
+
+	// Invalid socket address - extra symbols after port name.
+	halt if( ust::net::parse_socket_address( "1.23.45.67:123q" ) != ust::null_optional );
+
+	// Invalid socket address - extra symbols before port name.
+	halt if( ust::net::parse_socket_address( "1.23.45.67: 123" ) != ust::null_optional );
+
+	// Invalid socket address - extra symbols after ip address.
+	halt if( ust::net::parse_socket_address( "1.23.45.67 :123" ) != ust::null_optional );
+
+	// Invalid socket address - ip address octet out of range.
+	halt if( ust::net::parse_socket_address( "1234.23.45.67:123" ) != ust::null_optional );
+
+	// Invalid socket address - ip address octet out of range.
+	halt if( ust::net::parse_socket_address( "276.23.45.67:123" ) != ust::null_optional );
+
+	return 0;
+}

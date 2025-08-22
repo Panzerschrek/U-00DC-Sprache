@@ -13,19 +13,57 @@ type socket_address= variant</ tup[ socket_address_v4, socket_address_v6 ] />;
 // Parse socket address. Returns empty optional if failed to parse.
 fn parse_socket_address( array_view_imut</char8/> s ) : optional</socket_address/>;
 
+class ip_address_v4
+{
+public:
+	fn constructor( u32 bits )
+		( bits_= bits )
+	{}
+
+	fn constructor( [ u8, 4 ] octets )
+		// TODO - check if it's correct.
+		( bits_= u32(octets[0]) | ( u32(octets[1]) << 8u ) | ( u32(octets[2]) << 16u ) | ( u32(octets[3]) << 24u ) )
+	{}
+
+	fn constructor( mut this, ip_address_v4& other )= default;
+	op=( mut this, ip_address_v4& other )= default;
+
+	op==( ip_address_v4& l, ip_address_v4& r ) : bool = default;
+
+	fn get_bits( this ) : u32
+	{
+		return bits_;
+	}
+
+	fn get_octets( this ) : [ u8, 4 ]
+	{
+		// TODO - check if it's correct.
+		var [ u8, 4 ] octets[ ( bits_ ), ( bits_ >> 8u ), ( bits_ >> 16u ), ( bits_ >> 24u ) ];
+		return octets;
+	}
+
+private:
+	u32 bits_;
+}
+
 class socket_address_v4
 {
 public:
-	fn constructor( u32 ip, u16 port )
+	fn constructor( ip_address_v4 ip, u16 port )
 		( ip_= ip, port_= port )
 	{}
 
-	fn get_ip( this ) : u32
+	fn constructor( mut this, socket_address_v4& other )= default;
+	op=( mut this, socket_address_v4& other )= default;
+
+	op==( socket_address_v4& l, socket_address_v4& r ) : bool = default;
+
+	fn get_ip( this ) : ip_address_v4
 	{
 		return ip_;
 	}
 
-	fn set_ip( mut this, u32 ip )
+	fn set_ip( mut this, ip_address_v4 ip )
 	{
 		ip_= ip;
 	}
@@ -41,13 +79,19 @@ public:
 	}
 
 private:
-	u32 ip_;
+	ip_address_v4 ip_;
 	u16 port_;
 }
 
 class socket_address_v6
 {
 	// TODO
+
+public:
+	fn constructor( mut this, socket_address_v6& other )= default;
+	op=( mut this, socket_address_v6& other )= default;
+
+	op==( socket_address_v6& l, socket_address_v6& r ) : bool = default;
 }
 
 } // namespace net

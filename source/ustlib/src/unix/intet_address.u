@@ -1,0 +1,69 @@
+import "../../imports/inet_address.u"
+import "../../imports/integer_parsing.u"
+
+namespace ust
+{
+
+namespace net
+{
+
+fn parse_socket_address( array_view_imut</char8/> mut s ) : optional</socket_address/>
+{
+	// TODO - parse also IP v6.
+	var [ u8, 4 ] mut octets= zero_init;
+
+	for( var size_type mut i= 0s; i < 3s; ++i )
+	{
+		if_var( o : parse_and_extract_integer</u8/>( s ) )
+		{
+			octets[i]= o;
+		}
+		else
+		{
+			return null_optional;
+		}
+
+		if( !( s.size() >= 1s && s.front() == '.' ) )
+		{
+			return null_optional;
+		}
+		s.drop_front();
+	}
+
+	if_var( o : parse_and_extract_integer</u8/>( s ) )
+	{
+		octets[3]= o;
+	}
+	else
+	{
+		return null_optional;
+	}
+
+	if( !( s.size() >= 1s && s.front() == ':' ) )
+	{
+		return null_optional;
+	}
+	s.drop_front();
+
+	var u16 mut port= zero_init;
+
+	if_var( p : parse_and_extract_integer</u16/>( s ) )
+	{
+		port= p;
+	}
+	else
+	{
+		return null_optional;
+	}
+
+	if( !s.empty() )
+	{
+		return null_optional;
+	}
+
+	return socket_address( socket_address_v4( ip_address_v4( octets ), port ) );
+}
+
+} // namespace net
+
+} // namespace ust
