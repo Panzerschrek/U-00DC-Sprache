@@ -1,0 +1,8 @@
+//##success_test
+import "../imports/udp_socket.u"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+
+	return 0;
+}

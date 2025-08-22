@@ -1,0 +1,26 @@
+import "filesystem.u" // TODO - move io_error enum onto different place.
+import "inet_address.u"
+
+namespace ust
+{
+
+namespace net
+{
+
+class udp_socket
+{
+public:
+	fn create() : result</udp_socket, io_error/>;
+
+	fn create_and_bind( socket_address a ) : result</udp_socket, io_error/>;
+
+private:
+	type raw_socket= i32;
+
+private:
+	raw_socket socket_;
+}
+
+} // namespace net
+
+} // namespace ust
