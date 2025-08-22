@@ -1,5 +1,5 @@
-import "../../imports/inet_address.u"
-import "../../imports/integer_parsing.u"
+import "../imports/inet_address.u"
+import "../imports/integer_parsing.u"
 
 namespace ust
 {
