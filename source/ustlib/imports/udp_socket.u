@@ -10,21 +10,35 @@ namespace net
 class udp_socket
 {
 public:
+	// Create socket without binding an address to it.
+	// It's still useful - one can send messages via it.
 	fn create() : result</udp_socket, io_error/>;
 
+	// Create socket and bind it to address specified.
 	fn create_and_bind( socket_address& a ) : result</udp_socket, io_error/>;
 
 	fn constructor( raw_socket s ) unsafe; // constructor for internal usage.
 	fn destructor();
 
+	// Send data to address, specified earlier in "connect" call.
+	// Returns number of bytes sent.
 	fn send( mut this, array_view_imut</byte8/> data ) : result</size_type, io_error/>;
 
+	// Send data to specified address.
+	// Returns number of bytes sent.
 	fn send_to( mut this, socket_address& a, array_view_imut</byte8/> data ) : result</size_type, io_error/>;
 
+	// Receive data from connected address (if connected) or from anyone who managed to send data.
+	// Returns number of bytes received. If input buffer isn't large enough, remaining data is discarded.
 	fn receive( mut this, array_view_mut</byte8/> data ) : result</ size_type, io_error/>;
 
+	// Receive data and return sender address.
+	// Returns number of bytes received. If input buffer isn't large enough, remaining data is discarded.
 	fn receive_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>;
 
+	// Connect this socket to specific address.
+	// using it prior to "send" call is necessary.
+	// Using it prior to "receive" call is necessary to filter-out all other possible senders.
 	fn connect( mut this, socket_address& a ) : result</void, io_error/>;
 
 private:
