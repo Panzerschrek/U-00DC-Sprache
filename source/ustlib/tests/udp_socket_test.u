@@ -1,8 +1,28 @@
 //##success_test
+import "../imports/assert.u"
+import "../imports/enum_string_conversions.u"
+import "../imports/string.u"
 import "../imports/udp_socket.u"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
+	result_match( ust::net::udp_socket::create() )
+	{
+		Ok( s ) -> {},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to create socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
+
+	result_match( ust::net::udp_socket::create_and_bind( ust::net::socket_address_v4( ust::net::ip_address_v4( 0u ), 59000u16 ) ) )
+	{
+		Ok( s ) -> {},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to create and socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
 
 	return 0;
 }
