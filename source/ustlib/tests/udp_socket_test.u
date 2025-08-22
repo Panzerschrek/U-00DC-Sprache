@@ -9,6 +9,7 @@ fn nomangle main() call_conv( "C" ) : i32
 {
 	var ust::net::ip_address_v4 loopback( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) );
 
+	// Create socket without binding.
 	result_match( ust::net::udp_socket::create() )
 	{
 		Ok( s ) -> {},
@@ -18,19 +19,30 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
-	result_match( ust::net::udp_socket::create_and_bind( ust::net::socket_address_v4( ust::net::ip_address_v4( 0u ), 59000u16 ) ) )
+	// Create and bind socket.
+	result_match( ust::net::udp_socket::create_and_bind( ust::net::socket_address_v4( ust::net::ip_address_v4( 0u ), GetNextPort() ) ) )
 	{
 		Ok( s ) -> {},
 		Err( e ) ->
 		{
-			assert( false, ust::concat( "Failed to create and socket! Error code: ", ust::enum_to_string(e) ) );
+			assert( false, ust::concat( "Failed to create and bind socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
+
+	// Create and bind socket to loopback connection.
+	result_match( ust::net::udp_socket::create_and_bind( ust::net::socket_address_v4( ust::net::ip_address_v4( loopback ), GetNextPort() ) ) )
+	{
+		Ok( s ) -> {},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to create and bind socket to loopback! Error code: ", ust::enum_to_string(e) ) );
 		}
 	}
 
 	// Simple sendo/recvfrom test.
 	{
-		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), 59001u16 );
-		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), 59002u16 );
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
 
 		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
 		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create_and_bind( sender_address ).try_take();
@@ -38,7 +50,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Wenn die Sonne untergeht und euer Vater schläft, dann spreche ich ein Stoßgebet in seiner Annegret.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address, cast_range_to_bytes_range( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address, CastRangeToBytesRange( message_range ) ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -52,7 +64,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var typeof(message) mut received_message= zero_init;
 
-		result_match( receiver_socket.receive_from( cast_range_to_bytes_range( ust::array_view_mut</char8/>( received_message ) ) ) )
+		result_match( receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
 		{
 			Ok( mut receive_result ) ->
 			{
@@ -72,13 +84,115 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// Simple sendo/recvfrom test, but sender was not bound.
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create().try_take();
+
+		auto& message= "Ja Ihr wimmert und Ihr fleht, doch schreit: es ist zu spät. Es bringt Ihr Frohsinn wie Ihr seht, wir ficken bis die Hähne krähen.";
+		var ust::string_view8 message_range= message;
+
+		result_match( sender_socket.send_to( receiver_address, CastRangeToBytesRange( message_range ) ) )
+		{
+			Ok( bytes_sent ) ->
+			{
+				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+
+		var typeof(message) mut received_message= zero_init;
+
+		result_match( receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		{
+			Ok( mut receive_result ) ->
+			{
+				auto [ address_obtained, bytes_received ]= move( receive_result );
+
+				if_var( &a_ip_v4 : address_obtained.get</ust::net::socket_address_v4/>() )
+				{
+					assert( a_ip_v4.get_ip() == loopback, "Unexpected address obtained in \"receive_from\" call!" );
+				}
+
+				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( received_message == message, "Received unexpected message!" );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to receive message from socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+	}
+
+	// Simple sendo/recvfrom test, but sender was not bound and receiver uses loopback address.
+	{
+		var ust::net::socket_address_v4 receiver_address( loopback, GetNextPort() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create().try_take();
+
+		auto& message= "Sir Gernhart reinlunzen, Tor und Tür stehen mir auf, denn ich habe ein Schwert und sie nur einen hölzernen Knauf.";
+		var ust::string_view8 message_range= message;
+
+		result_match( sender_socket.send_to( receiver_address, CastRangeToBytesRange( message_range ) ) )
+		{
+			Ok( bytes_sent ) ->
+			{
+				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+
+		var typeof(message) mut received_message= zero_init;
+
+		result_match( receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		{
+			Ok( mut receive_result ) ->
+			{
+				auto [ address_obtained, bytes_received ]= move( receive_result );
+
+				if_var( &a_ip_v4 : address_obtained.get</ust::net::socket_address_v4/>() )
+				{
+					assert( a_ip_v4.get_ip() == loopback, "Unexpected address obtained in \"receive_from\" call!" );
+				}
+
+				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( received_message == message, "Received unexpected message!" );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to receive message from socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+	}
+
 	return 0;
 }
 
+fn GetNextPort() : u16
+{
+	unsafe
+	{
+		var u16 res= g_port_counter;
+		++g_port_counter;
+		return res;
+	}
+}
+
+var u16 mut g_port_counter= 59000u16;
+
 // It's safe to cast between ranges of chars and bytes.
-// TODO - make such conversion functions public.
+// TODO - create a library function for this?
 template</bool is_mutable/>
-fn cast_range_to_bytes_range( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
+fn CastRangeToBytesRange( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
 {
 	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
 }
