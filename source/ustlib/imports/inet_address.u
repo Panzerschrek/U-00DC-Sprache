@@ -7,12 +7,6 @@ namespace ust
 namespace net
 {
 
-// Socket address - in PI v4 or IP v6 format.
-type socket_address= variant</ tup[ socket_address_v4, socket_address_v6 ] />;
-
-// Parse socket address. Returns empty optional if failed to parse.
-fn parse_socket_address( array_view_imut</char8/> s ) : optional</socket_address/>;
-
 class ip_address_v4
 {
 public:
@@ -45,6 +39,9 @@ public:
 private:
 	u32 bits_;
 }
+
+// Socket address - in IP v4 or IP v6 format.
+type socket_address= variant</ tup[ socket_address_v4, socket_address_v6 ] />;
 
 class socket_address_v4
 {
@@ -93,6 +90,12 @@ public:
 
 	op==( socket_address_v6& l, socket_address_v6& r ) : bool = default;
 }
+
+// Parse IP v4 address. Returns empty optional if failed to parse.
+fn parse_ip_address_v4( array_view_imut</char8/> s ) : optional</ip_address_v4/>;
+
+// Parse socket address. Returns empty optional if failed to parse.
+fn parse_socket_address( array_view_imut</char8/> s ) : optional</socket_address/>;
 
 } // namespace net
 

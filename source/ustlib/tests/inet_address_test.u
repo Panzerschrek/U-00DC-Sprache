@@ -3,6 +3,30 @@ import "../imports/inet_address.u"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
+	halt if( ust::net::parse_ip_address_v4( "0.0.0.0" ) != ust::net::ip_address_v4( ust::make_array( 0u8, 0u8, 0u8, 0u8 ) ) );
+	halt if( ust::net::parse_ip_address_v4( "2.3.4.5" ) != ust::net::ip_address_v4( ust::make_array( 2u8, 3u8, 4u8, 5u8 ) ) );
+	halt if( ust::net::parse_ip_address_v4( "234.56.7.8" ) != ust::net::ip_address_v4( ust::make_array( 234u8, 56u8, 7u8, 8u8 ) ) );
+	halt if( ust::net::parse_ip_address_v4( "67.145.213.7" ) != ust::net::ip_address_v4( ust::make_array( 67u8, 145u8, 213u8, 7u8 ) ) );
+	halt if( ust::net::parse_ip_address_v4( "255.255.255.255" ) != ust::net::ip_address_v4( ust::make_array( 255u8, 255u8, 255u8, 255u8 ) ) );
+
+	// Invalid IP address - not enough octets.
+	halt if( ust::net::parse_ip_address_v4( "1.23.45" ) != ust::null_optional );
+
+	// Invalid IP address - too many octets.
+	halt if( ust::net::parse_ip_address_v4( "1.23.45.67.89" ) != ust::null_optional );
+
+	// Invalid IP address - leading symbols.
+	halt if( ust::net::parse_ip_address_v4( " 1.23.45.67.89" ) != ust::null_optional );
+
+	// Invalid IP address - trailing symbols.
+	halt if( ust::net::parse_ip_address_v4( "1.23.45.67.89 " ) != ust::null_optional );
+
+	// Invalid IP address - octet overflow.
+	halt if( ust::net::parse_ip_address_v4( "1.23.45.678" ) != ust::null_optional );
+
+	// Invalid IP address - octet overflow.
+	halt if( ust::net::parse_ip_address_v4( "257.1.2.3" ) != ust::null_optional );
+
 	halt if(
 		ust::net::parse_socket_address( "127.0.0.1:12345" ) !=
 		ust::net::socket_address( ust::net::socket_address_v4( ust::net::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ), 12345u16 ) ) );
@@ -10,7 +34,6 @@ fn nomangle main() call_conv( "C" ) : i32
 	halt if(
 		ust::net::parse_socket_address( "1.23.45.67:5" ) !=
 		ust::net::socket_address( ust::net::socket_address_v4( ust::net::ip_address_v4( ust::make_array( 1u8, 23u8, 45u8, 67u8 ) ), 5u16 ) ) );
-
 
 	// Invalid socket address - missing port.
 	halt if( ust::net::parse_socket_address( "1.23.45.67" ) != ust::null_optional );

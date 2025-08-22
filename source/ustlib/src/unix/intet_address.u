@@ -7,9 +7,59 @@ namespace ust
 namespace net
 {
 
+fn parse_ip_address_v4( array_view_imut</char8/> mut s ) : optional</ip_address_v4/>
+{
+	if_var( ip : extract_ip_v4_address(s) )
+	{
+		if( !s.empty() )
+		{
+			// Allow no trailing symbols.
+			return null_optional;
+		}
+
+		return ip;
+	}
+
+	return null_optional;
+}
+
 fn parse_socket_address( array_view_imut</char8/> mut s ) : optional</socket_address/>
 {
-	// TODO - parse also IP v6.
+	// TODO - parse also IP v4.
+
+	if_var( mut ip : extract_ip_v4_address(s) )
+	{
+		if( !( s.size() >= 1s && s.front() == ':' ) )
+		{
+			return null_optional;
+		}
+		s.drop_front();
+
+		var u16 mut port= zero_init;
+
+		if_var( p : parse_and_extract_integer</u16/>( s ) )
+		{
+			port= p;
+		}
+		else
+		{
+			return null_optional;
+		}
+
+		if( !s.empty() )
+		{
+			// Allow no trailing symbols.
+			return null_optional;
+		}
+
+		return socket_address( socket_address_v4( move(ip), port ) );
+	}
+
+	return null_optional;
+}
+
+fn extract_ip_v4_address( array_view_imut</char8/> &mut s ) : optional</ip_address_v4/>
+{
 	var [ u8, 4 ] mut octets= zero_init;
 
 	for( var size_type mut i= 0s; i < 3s; ++i )
@@ -39,29 +89,7 @@ fn parse_socket_address( array_view_imut</char8/> mut s ) : optional</socket_add
 		return null_optional;
 	}
 
-	if( !( s.size() >= 1s && s.front() == ':' ) )
-	{
-		return null_optional;
-	}
-	s.drop_front();
-
-	var u16 mut port= zero_init;
-
-	if_var( p : parse_and_extract_integer</u16/>( s ) )
-	{
-		port= p;
-	}
-	else
-	{
-		return null_optional;
-	}
-
-	if( !s.empty() )
-	{
-		return null_optional;
-	}
-
-	return socket_address( socket_address_v4( ip_address_v4( octets ), port ) );
+	return ip_address_v4( octets );
 }
 
 } // namespace net
