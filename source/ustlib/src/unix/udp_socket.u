@@ -21,7 +21,7 @@ fn udp_socket::create() : result</udp_socket, io_error/>
 	}
 }
 
-fn udp_socket::create_and_bind( socket_address a ) : result</udp_socket, io_error/>
+fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_error/>
 {
 	var result</udp_socket, io_error/> mut socket_or_error= create();
 	if( socket_or_error.is_error() )

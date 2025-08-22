@@ -12,7 +12,7 @@ class udp_socket
 public:
 	fn create() : result</udp_socket, io_error/>;
 
-	fn create_and_bind( socket_address a ) : result</udp_socket, io_error/>;
+	fn create_and_bind( socket_address& a ) : result</udp_socket, io_error/>;
 
 	fn constructor( raw_socket s ) unsafe; // constructor for internal usage.
 	fn destructor();
