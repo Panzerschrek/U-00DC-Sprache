@@ -1,0 +1,55 @@
+import "random_access_range.u"
+import "variant.u"
+
+namespace ust
+{
+
+namespace net
+{
+
+// Socket address - in PI v4 or IP v6 format.
+type socket_address= variant</ tup[ socket_address_v4, socket_address_v6 ] />;
+
+// Parse socket address. Returns empty optional if failed to parse.
+fn parse_socket_address( array_view_imut</char8/> s ) : optional</socket_address/>;
+
+class socket_address_v4
+{
+public:
+	fn constructor( u32 ip, u16 port )
+		( ip_= ip, port_= port )
+	{}
+
+	fn get_ip( this ) : u32
+	{
+		return ip_;
+	}
+
+	fn set_ip( mut this, u32 ip )
+	{
+		ip_= ip;
+	}
+
+	fn get_port( this ) : u16
+	{
+		return port_;
+	}
+
+	fn set_port( mut this, u16 port )
+	{
+		port_= port;
+	}
+
+private:
+	u32 ip_;
+	u16 port_;
+}
+
+class socket_address_v6
+{
+	// TODO
+}
+
+} // namespace net
+
+} // namespace ust
