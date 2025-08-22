@@ -1,0 +1,77 @@
+import "../../imports/udp_socket.u"
+import "errno.uh"
+
+namespace ust
+{
+
+namespace net
+{
+
+fn udp_socket::create() : result</udp_socket, io_error/>
+{
+	unsafe
+	{
+		var raw_socket s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
+		if( s == -1 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		return udp_socket( s );
+	}
+}
+
+fn udp_socket::create_and_bind( socket_address a ) : result</udp_socket, io_error/>
+{
+	var result</udp_socket, io_error/> mut socket_or_error= create();
+	if( socket_or_error.is_error() )
+	{
+		return socket_or_error;
+	}
+
+	var udp_socket mut socket= move(socket_or_error).try_take();
+
+	if_var( &a_v4 : a.get</socket_address_v4/>() )
+	{
+		var sockaddr_in mut underlying_address
+		{
+			.sin_family( AF_INET ),
+			.sin_port= a_v4.get_port(),
+			.sin_addr{ .s_addr= a_v4.get_ip().get_bits() },
+			.sin_zero= zero_init
+		};
+
+		var i32 res=
+			unsafe( ::bind(
+				socket.socket_,
+				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+				u32( typeinfo</sockaddr_in/>.size_of ) ) );
+
+		if( res != 0 )
+		{
+			// Socket will be destroyed on error return.
+			var i32 e= get_errno();
+			return translate_errno( e );
+		}
+	}
+	else
+	{
+		// TODO - support IP v6.
+		halt;
+	}
+
+	return socket;
+}
+
+fn udp_socket::constructor( raw_socket s ) unsafe
+	( socket_= s )
+{}
+
+fn udp_socket::destructor()
+{
+	unsafe( ::close( socket_ ) );
+}
+
+} // namespace net
+
+} // namespace ust

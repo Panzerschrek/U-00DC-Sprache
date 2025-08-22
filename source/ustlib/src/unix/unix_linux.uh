@@ -1,6 +1,7 @@
 // This file contains some definitions from Linux headers, which are used inside "ustlib".
 // These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
+fn nomangle bind( i32 ü__fd, $(sockaddr) ü__addr, socklen_t ü__len ) unsafe call_conv( "C" ) : i32;
 fn nomangle chdir( $(char8) ü__path ) unsafe call_conv( "C" ) : i32;
 fn nomangle chmod( $(char8) ü__file, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
 fn nomangle clock_gettime( clockid_t ü__clock_id, $(timespec) ü__tp ) unsafe call_conv( "C" ) : i32;
@@ -25,6 +26,7 @@ fn nomangle rename( $(char8) ü__old, $(char8) ü__new ) unsafe call_conv( "C" )
 fn nomangle rmdir( $(char8) ü__path ) unsafe call_conv( "C" ) : i32;
 fn nomangle sendfile64( i32 ü__out_fd, i32 ü__in_fd, $(ü__off64_t) ü__offset, size_t ü__count ) unsafe call_conv( "C") : ssize_t; // Linux-specific
 fn nomangle setenv( $(char8) ü__name, $(char8) ü__value, i32 ü__replace ) unsafe call_conv( "C" ) : i32;
+fn nomangle socket( i32 ü__domain, i32 ü__type, i32 ü__protocol ) unsafe call_conv( "C" ) : i32;
 fn nomangle stat64( $(char8) ü__file, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle unlink( $(char8) ü__name ) unsafe call_conv( "C" ) : i32;
 fn nomangle unsetenv( $(char8) ü__name ) unsafe call_conv( "C" ) : i32;
@@ -134,6 +136,48 @@ struct ü__dirstream ordered
 fn constructor() : void= delete;
 }
 
+struct sockaddr ordered
+{
+	sa_family_t sa_family;
+	[ char8, 14 ] sa_data;
+}
+
+struct sockaddr_in ordered
+{
+	sa_family_t sin_family;
+	in_port_t sin_port;
+	in_addr sin_addr;
+	[ u8, 8 ] sin_zero;
+}
+struct sockaddr_in6 ordered
+{
+	sa_family_t sin6_family;
+	in_port_t sin6_port;
+	uint32_t sin6_flowinfo;
+	in6_addr sin6_addr;
+	uint32_t sin6_scope_id;
+}
+
+struct in_addr ordered
+{
+	in_addr_t s_addr;
+}
+
+struct in6_addr ordered
+{
+	ü_anon_record_29 ü__in6_u;
+}
+
+struct ü_anon_record_19 ordered
+{
+	[ byte64, 1 ] union_contents;
+}
+
+struct ü_anon_record_29 ordered
+{
+	[ byte32, 4 ] union_contents;
+}
+
 type ü_anon_enum_56 = u32;
 var ü_anon_enum_56
 	constexpr DT_UNKNOWN( 0u ),
@@ -148,11 +192,18 @@ var ü_anon_enum_56
 
 type DIR = ü__dirstream;
 type clockid_t = ü__clockid_t;
+type in_addr_t = uint32_t;
+type in_port_t = uint16_t;
 type mode_t = ü__mode_t;
 type off_t = ü__off_t;
 type pid_t = ü__pid_t;
+type sa_family_t = u16;
 type size_t = size_type;
+type socklen_t = ü__socklen_t;
 type ssize_t = ü__ssize_t;
+type uint16_t = u16;
+type uint32_t = u32;
+type ü__CONST_SOCKADDR_ARG = ü_anon_record_19;
 type ü__blkcnt64_t = i64;
 type ü__blksize_t = ust::type_select</ c_arch_is_aarch64, i32, ust::type_select</ c_arch_is_i686, i32, i64 /> />;
 type ü__clockid_t = i32;
@@ -165,10 +216,25 @@ type ü__nlink_t = ust::type_select</ c_arch_is_aarch64, u32, ust::type_select</
 type ü__off64_t = i64;
 type ü__off_t = i64; // manually changed to "i64", since we always use 64-bit functions.
 type ü__pid_t = i32;
+type ü__socklen_t = u32;
 type ü__ssize_t = ssize_type;
 type ü__syscall_slong_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
 type ü__time_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
 type ü__uid_t = u32;
+
+type ü__socket_type = u32;
+var ü__socket_type
+	constexpr SOCK_STREAM( 1 ),
+	constexpr SOCK_DGRAM( 2 ),
+	constexpr SOCK_RAW( 3 ),
+	constexpr SOCK_RDM( 4 ),
+	constexpr SOCK_SEQPACKET( 5 ),
+	constexpr SOCK_DCCP( 6 ),
+	constexpr SOCK_PACKET( 10 ),
+	constexpr SOCK_CLOEXEC( 524288 ),
+	constexpr SOCK_NONBLOCK( 2048 );
+
+auto constexpr AF_INET = PF_INET;
 
 auto constexpr CLOCK_REALTIME = 0;
 auto constexpr CLOCK_MONOTONIC = 1;
@@ -223,6 +289,9 @@ auto constexpr O_RDWR = 2;
 auto constexpr O_CREAT = 64;
 auto constexpr O_EXCL = 128;
 auto constexpr O_TRUNC = 512;
+
+auto constexpr PF_INET = 2;
+auto constexpr PF_INET6 = 10;
 
 auto constexpr S_IEXEC = 64;
 auto constexpr S_IWRITE = 128;

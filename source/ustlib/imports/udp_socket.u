@@ -14,6 +14,9 @@ public:
 
 	fn create_and_bind( socket_address a ) : result</udp_socket, io_error/>;
 
+	fn constructor( raw_socket s ) unsafe; // constructor for internal usage.
+	fn destructor();
+
 private:
 	type raw_socket= i32;
 
