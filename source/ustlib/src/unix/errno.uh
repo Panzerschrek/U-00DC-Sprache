@@ -14,6 +14,8 @@ fn translate_errno( i32 errno ) : io_error
 	ENOTDIR -> { return io_error::not_a_directory; },
 	EINTR -> { return io_error::interrupted; },
 	ENOTEMPTY -> { return io_error::directory_not_empty; },
+	EDESTADDRREQ -> { return io_error::destination_address_required; },
+	ENOTCONN -> { return io_error::not_connected; },
 	// TODO - support other codes.
 	default -> { return io_error::other; },
 	}

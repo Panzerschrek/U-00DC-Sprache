@@ -305,6 +305,65 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// Use "receive" on unconnected receiver. Should work fine (receive what can be received).
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create_and_bind( sender_address ).try_take();
+
+		auto& message= "Ach Ihr Zimmer liegt in Trümmern, doch sie hört nicht auf zu wimmern. Meine Stöße werden schlimmer, denn darauf beugt sie sich immer.";
+		var ust::string_view8 message_range= message;
+
+		result_match( sender_socket.send_to( receiver_address, CastRangeToBytesRange( message_range ) ) )
+		{
+			Ok( bytes_sent ) ->
+			{
+				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+
+		var typeof(message) mut received_message= zero_init;
+
+		result_match( receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		{
+			Ok( mut bytes_received ) ->
+			{
+				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( received_message == message, "Received unexpected message!" );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to receive message from socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+	}
+
+	// Should fail unsing "send" without prior call to "connect".
+	{
+		var ust::net::udp_socket mut socket= ust::net::udp_socket::create().try_take();
+
+		auto& message= "Bastard Barden";
+		var ust::string_view8 message_range= message;
+
+		result_match( socket.send( CastRangeToBytesRange( message_range ) ) )
+		{
+			Ok( bytes_sent ) ->
+			{
+				assert( false, "Should not send while unconnected!");
+			},
+			Err( e ) ->
+			{
+				assert( e == ust::io_error::destination_address_required, ust::concat( "Unexpected error code: \"", ust::enum_to_string(e), "\"" ) );
+			}
+		}
+	}
+
 	return 0;
 }
 

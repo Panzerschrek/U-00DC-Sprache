@@ -288,6 +288,9 @@ auto constexpr EDOM = 33;
 auto constexpr ERANGE = 34;
 auto constexpr ENOTEMPTY = 39;
 
+auto constexpr EDESTADDRREQ = 89;
+auto constexpr ENOTCONN = 107;
+
 auto constexpr O_RDONLY = 0;
 auto constexpr O_WRONLY = 1;
 auto constexpr O_RDWR = 2;
