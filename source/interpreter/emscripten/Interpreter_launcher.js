@@ -16,6 +16,7 @@ function InterpreterCompileAndRun( program_text )
 		'/ustlib/src/unix/path_utils.u',
 		// ignore stdout.u
 		'/ustlib/src/integer_parsing.u',
+		'/ustlib/src/inet_address.u',
 		'/ustlib/src/string_conversions.u',
 		// ignore stdin.u
 		'/ustlib/src/utf.u',
