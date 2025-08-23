@@ -743,6 +743,22 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// Try to open the same port twice. Should get an error.
+	{
+		var ust::net::socket_address_v4 address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+
+		var ust::net::udp_socket socket0= ust::net::udp_socket::create_and_bind( address ).try_take();
+
+		result_match( ust::net::udp_socket::create_and_bind( address ) )
+		{
+			Ok( s ) -> { assert( false, "Should not open second socket with the same port!" ); },
+			Err( e ) ->
+			{
+				assert( e == ust::io_error::address_already_in_use, ust::concat( "Unexpected error code while binding a socket for already used port: ", ust::enum_to_string(e) ) );
+			},
+		}
+	}
+
 	return 0;
 }
 
