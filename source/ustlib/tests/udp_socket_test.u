@@ -378,6 +378,104 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// send_to, peek_from, receive_from
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create_and_bind( sender_address ).try_take();
+
+		auto& message= "Morgen kann sie nicht mehr stehen und uch kann sie nicht mehr sehen, also schleiche ich fort geschickt - morgen wird wieder gefickt!";
+		var ust::string_view8 message_range= message;
+
+		assert( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ).try_take() == message_range.size() );
+
+		// Can peek input message multiple times.
+		for( var size_type mut i= 0s; i < 4s; ++i )
+		{
+			var typeof(message) mut peeked_message= zero_init;
+
+			result_match( receiver_socket.peek_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( peeked_message ) ) ) )
+			{
+				Ok( mut receive_result ) ->
+				{
+					auto [ address_obtained, bytes_received ]= move( receive_result );
+
+					assert(
+						address_obtained == sender_address || address_obtained == ust::net::socket_address_v4( loopback, sender_address.get_port() ),
+						"Unexpected address obtained in \"receive_from\" call!" );
+
+					assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+					assert( peeked_message == message, "Received unexpected message!" );
+				},
+				Err( e ) ->
+				{
+					assert( false, ust::concat( "Failed to peek message from socket! Error code: ", ust::enum_to_string(e) ) );
+				}
+			}
+		}
+
+		// Should receive data after previous "peek" calls.
+		var typeof(message) mut received_message= zero_init;
+
+		auto [ address_obtained, bytes_received ] = receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ).try_take();
+		assert(
+			address_obtained == sender_address || address_obtained == ust::net::socket_address_v4( loopback, sender_address.get_port() ),
+			"Unexpected address obtained in \"receive_from\" call!" );
+
+		assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+		assert( received_message == message, "Received unexpected message!" );
+	}
+
+	// send, peek, receive
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 sender_address_for_receiver( loopback, sender_address.get_port() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create_and_bind( sender_address ).try_take();
+
+		receiver_socket.connect( sender_address_for_receiver ).try_deref();
+		sender_socket.connect( receiver_address_for_sender ).try_deref();
+
+		auto& message= "Ihr seid als Hofnarr eine Schande, Ja, ihr seid ein Taugenichts, denn ihr bringt mich nie zum Lachen, ihr versäumеt eure Pflicht.";
+		var ust::string_view8 message_range= message;
+
+		assert( sender_socket.send( CastRangeToBytesRange( message_range ) ).try_take() == message_range.size() );
+
+		// Can peek input message multiple times.
+		for( var size_type mut i= 0s; i < 4s; ++i )
+		{
+			var typeof(message) mut peeked_message= zero_init;
+
+			result_match( receiver_socket.peek( CastRangeToBytesRange( ust::array_view_mut</char8/>( peeked_message ) ) ) )
+			{
+				Ok( mut bytes_received ) ->
+				{
+					assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+					assert( peeked_message == message, "Received unexpected message!" );
+				},
+				Err( e ) ->
+				{
+					assert( false, ust::concat( "Failed to peek message from socket! Error code: ", ust::enum_to_string(e) ) );
+				}
+			}
+		}
+
+		// Should receive data after previous "peek" calls.
+		var typeof(message) mut received_message= zero_init;
+
+		var size_type bytes_received = receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ).try_take();
+
+		assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+		assert( received_message == message, "Received unexpected message!" );
+	}
+
 	return 0;
 }
 

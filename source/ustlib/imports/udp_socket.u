@@ -37,6 +37,16 @@ public:
 	// Returns number of bytes received. If input buffer isn't large enough, remaining data is discarded.
 	fn receive_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>;
 
+	// Peek data from connected address (if connected) or from anyone who managed to send data.
+	// Data isn't extracted and may be observed by subsequential "peek" calls or may be extracted via "receive" call.
+	// Returns number of bytes extracted.
+	fn peek( mut this, array_view_mut</byte8/> data ) : result</ size_type, io_error/>;
+
+	// Peek data and return sender address.
+	// Data isn't extracted and may be observed by subsequential "peek" calls or may be extracted via "receive" call.
+	// Returns number of bytes extracted.
+	fn peek_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>;
+
 	// Connect this socket to specific address.
 	// using it prior to "send" call is necessary.
 	// Using it prior to "receive" call is necessary to filter-out all other possible senders.

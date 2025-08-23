@@ -179,6 +179,67 @@ fn udp_socket::receive( mut this, array_view_mut</byte8/> data ) : result</ size
 	return size_type(bytes_read);
 }
 
+fn udp_socket::peek_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>
+{
+	var sockaddr mut sender_address= zero_init;
+	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
+
+	var socklen_t mut socket_address_length( typeinfo</sockaddr/>.size_of );
+
+	unsafe
+	{
+		var ssize_type bytes_read=
+			unsafe( ::recvfrom(
+				socket_,
+				data.data(),
+				data.size(),
+				i32( MSG_PEEK ),
+				$<( sender_address ),
+				$<( socket_address_length ) ) );
+
+		if( bytes_read < ssize_type(0) )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		if( i32(sender_address.sa_family) == AF_INET )
+		{
+			// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+			var sockaddr_in mut sender_address_ip_v4= zero_init;
+
+			memory_copy(
+				ptr_cast_to_byte8( $<(sender_address_ip_v4) ),
+				ptr_cast_to_byte8( $<(sender_address) ),
+				typeinfo</sockaddr_in/>.size_of );
+
+			var tup[ socket_address, size_type ] res
+			[
+				socket_address_v4( ip_address_v4( sender_address_ip_v4.sin_addr.s_addr ), sender_address_ip_v4.sin_port ),
+				( bytes_read )
+			];
+
+			return res;
+		}
+		else
+		{
+			// TODO - support IP v6.
+			return io_error::other;
+		}
+	}
+}
+
+fn udp_socket::peek( mut this, array_view_mut</byte8/> data ) : result</ size_type, io_error/>
+{
+	var ssize_type bytes_read= unsafe( ::recv( socket_, data.data(), data.size(), i32(MSG_PEEK) ) );
+
+	if( bytes_read < ssize_type(0) )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return size_type(bytes_read);
+}
+
 fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 {
 	if_var( &a_v4 : a.get</socket_address_v4/>() )
