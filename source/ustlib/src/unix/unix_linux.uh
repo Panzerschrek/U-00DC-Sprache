@@ -17,6 +17,7 @@ fn nomangle ftruncate64( i32 ü__fd, ü__off64_t ü__length ) unsafe call_conv( 
 fn nomangle getcwd( $(char8) ü__buf, size_t ü__size ) unsafe call_conv( "C" ) : $(char8);
 fn nomangle getenv( $(char8) ü__name ) unsafe call_conv( "C" ) : $(char8);
 fn nomangle getpid() unsafe call_conv( "C" ) : pid_t;
+fn nomangle getsockname( i32 ü__fd, $(sockaddr) ü__addr, $(socklen_t) ü__len ) unsafe call_conv( "C" ) : i32;
 fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe call_conv( "C") : ü__off64_t;
 fn nomangle lstat64( $(char8) ü__file, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;

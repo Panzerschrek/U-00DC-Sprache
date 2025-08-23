@@ -314,6 +314,41 @@ fn udp_socket::set_nonblocking( mut this, bool nonblocking ) : result</void, io_
 	return void();
 }
 
+fn udp_socket::get_local_address( this ) : result</socket_address, io_error/>
+{
+	var sockaddr mut address= zero_init;
+	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
+
+	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
+
+	unsafe
+	{
+		var i32 res= ::getsockname( socket_, $<(address), $<(address_length) );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		if( i32(address.sa_family) == AF_INET )
+		{
+			// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+			var sockaddr_in mut address_ip_v4= zero_init;
+
+			memory_copy(
+				ptr_cast_to_byte8( $<(address_ip_v4) ),
+				ptr_cast_to_byte8( $<(address) ),
+				typeinfo</sockaddr_in/>.size_of );
+
+			return socket_address( socket_address_v4( ip_address_v4( address_ip_v4.sin_addr.s_addr ), address_ip_v4.sin_port ) );
+		}
+		else
+		{
+			// TODO - support IP v6.
+			return io_error::other;
+		}
+	}
+}
+
 } // namespace net
 
 } // namespace ust
