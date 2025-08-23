@@ -2,8 +2,10 @@
 import "../imports/assert.u"
 import "../imports/enum_string_conversions.u"
 import "../imports/hash_set.u"
+import "../imports/semaphore.u"
 import "../imports/string.u"
 import "../imports/string_conversions.u"
+import "../imports/thread.u"
 import "../imports/udp_socket.u"
 
 fn nomangle main() call_conv( "C" ) : i32
@@ -499,6 +501,70 @@ fn nomangle main() call_conv( "C" ) : i32
 				assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while receiving on non-blocking socket: ", ust::enum_to_string(e) ) );
 			}
 		}
+	}
+
+	// Non-blocking socket, use busy loop.
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
+		// Create receiver nonblocking socket.
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var void nonblocking_set_result= receiver_socket.set_nonblocking( true ).try_deref();
+
+		var ust::semaphore semaphore( 0u );
+
+		auto& message= "Wir sind die Bastard Barden";
+
+		// On a background thread receive in loop in non-blocking mode.
+		auto mut t= ust::make_thread(
+			lambda[&]() : size_type
+			{
+				var size_type mut num_retries= 0s;
+
+				loop
+				{
+					var typeof(message) mut message_received= zero_init;
+
+					result_match( receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ) )
+					{
+						Ok( bytes_received ) ->
+						{
+							assert( bytes_received == typeinfo</ typeof(message) />.element_count );
+							assert( message_received == message );
+							return num_retries;
+						},
+						Err( e ) ->
+						{
+							if( e == ust::io_error::would_block )
+							{
+								// Release semaphore after first unsuccessfull retry.
+								if( num_retries == 0s )
+								{
+									semaphore.release();
+								}
+
+								++num_retries;
+								continue;
+							}
+							assert( false, ust::concat( "Unexpected error code while receiving on non-blocking socket: ", ust::enum_to_string(e) ) );
+						}
+					}
+				}
+			} );
+
+		// Wait until the background thread isn't actually running.
+		semaphore.acquire();
+
+		// When the background thread tries to read, create sender socket and send a message via it.
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create().try_take();
+		var size_type bytes_sent= sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( ust::string_view8( message ) ) ).try_deref();
+		assert( bytes_sent == typeinfo</ typeof(message) />.element_count );
+
+		// Should eventually finish this thread.
+		var size_type num_retries= move(t).join();
+
+		ust::stdout_print( ust::concat( "Receive on non-blocking thread using ", ust::to_string8(num_retries), " retries\n" ) );
 	}
 
 	// Receive from multiple senders.
