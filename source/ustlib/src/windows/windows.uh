@@ -46,7 +46,9 @@ fn nomangle WakeAllConditionVariable( PCONDITION_VARIABLE ConditionVariable ) un
 fn nomangle WakeConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle WSACleanup() unsafe call_conv( "system" ) : i32;
 fn nomangle WSAGetLastError() unsafe call_conv( "system" ) : i32;
+fn nomangle WSAStartup( WORD wVersionRequested, LPWSADATA lpWSAData ) unsafe call_conv( "system" ) : i32;
 fn nomangle bind( SOCKET s, $(sockaddr) name, i32 namelen ) unsafe call_conv( "system" ) : i32;
 fn nomangle closesocket( SOCKET s ) unsafe call_conv( "system" ) : i32;
 fn nomangle connect( SOCKET s, $(sockaddr) name, i32 namelen ) unsafe call_conv( "system" ) : i32;
@@ -177,6 +179,17 @@ struct ü_WIN32_FIND_DATAW ordered
 	[ WCHAR, 14u ] cAlternateFileName;
 }
 
+struct WSAData ordered
+{
+	WORD wVersion;
+	WORD wHighVersion;
+	[ char8, 257 ] szDescription;
+	[ char8, 129 ] szSystemStatus;
+	u16 iMaxSockets;
+	u16 iMaxUdpDg;
+	$(char8) lpVendorInfo;
+}
+
 struct sockaddr ordered
 {
 	ADDRESS_FAMILY sa_family;
@@ -265,6 +278,7 @@ type LPSYNCHRONIZATION_BARRIER = PRTL_BARRIER;
 type LPSYSTEM_INFO = $(ü_SYSTEM_INFO);
 type LPVOID = $(byte8);
 type LPWIN32_FIND_DATAW = $(ü_WIN32_FIND_DATAW);
+type LPWSADATA = $(WSAData);
 type LPWSTR = $(WCHAR);
 type OVERLAPPED = ü_OVERLAPPED;
 type PCONDITION_VARIABLE = $(RTL_CONDITION_VARIABLE);

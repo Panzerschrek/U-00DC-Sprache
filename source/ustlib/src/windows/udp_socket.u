@@ -1,3 +1,4 @@
+import "../../imports/atomic.u"
 import "../../imports/udp_socket.u"
 import "windows.uh"
 
@@ -9,6 +10,8 @@ namespace net
 
 fn udp_socket::create() : result</udp_socket, io_error/>
 {
+	call_wsa_startup();
+
 	unsafe
 	{
 		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
@@ -217,6 +220,29 @@ fn translate_errno( i32 errno ) : io_error
 	{
 		WSAENOTCONN -> { return io_error::not_connected; },
 		default -> { return io_error::other; },
+	}
+}
+
+var bool mut wsa_startup_called= false;
+
+fn call_wsa_startup()
+{
+	unsafe
+	{
+		if( atomic_read( wsa_startup_called ) )
+		{
+			return;
+		}
+
+		var WSAData mut wsa_data= zero_init;
+		var i32 res= WSAStartup( u16(0x202), $<(wsa_data) );
+		halt if( res != 0 );
+
+		if( atomic_swap( wsa_startup_called, true ) )
+		{
+			// Some other thread managed to call "WSAStartup" first.
+			WSACleanup();
+		}
 	}
 }
 
