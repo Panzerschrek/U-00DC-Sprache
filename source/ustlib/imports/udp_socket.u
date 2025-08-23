@@ -61,6 +61,9 @@ public:
 	// Get address to which this socket is bound.
 	fn get_local_address( this ) : result</socket_address, io_error/>;
 
+	// Get remote address to which this socket is connected.
+	fn get_peer_address( this ) : result</socket_address, io_error/>;
+
 private:
 	type native_socket_fd= type_select</
 		constexpr_string_equals( compiler::target::os, "windows" ),
