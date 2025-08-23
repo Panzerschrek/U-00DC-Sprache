@@ -42,6 +42,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Simple sendo/recvfrom test.
 	{
 		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
 		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
 
 		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
@@ -50,7 +51,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Wenn die Sonne untergeht und euer Vater schläft, dann spreche ich ein Stoßgebet in seiner Annegret.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address, CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -87,6 +88,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Simple sendo/recvfrom test, but sender was not bound.
 	{
 		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
 
 		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
 		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create().try_take();
@@ -94,7 +96,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Ja Ihr wimmert und Ihr fleht, doch schreit: es ist zu spät. Es bringt Ihr Frohsinn wie Ihr seht, wir ficken bis die Hähne krähen.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address, CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -177,13 +179,16 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Connect + send/receive.
 	{
 		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
 		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 sender_address_for_receiver( loopback, sender_address.get_port() );
 
 		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
 		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create_and_bind( sender_address ).try_take();
 
-		receiver_socket.connect( sender_address ).try_deref();
-		sender_socket.connect( receiver_address ).try_deref();
+		receiver_socket.connect( sender_address_for_receiver ).try_deref();
+		sender_socket.connect( receiver_address_for_sender ).try_deref();
 
 		auto& message= "Ich steige durchs Fenster, schlüpfe zu Annegret. Nun sei dort nur noch eine Sache die zwischen uns steht.";
 		var ust::string_view8 message_range= message;
@@ -219,17 +224,20 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Connect only receiver.
 	{
 		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
 		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 sender_address_for_receiver( loopback, sender_address.get_port() );
 
 		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
 		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create_and_bind( sender_address ).try_take();
 
-		receiver_socket.connect( sender_address ).try_deref();
+		receiver_socket.connect( sender_address_for_receiver ).try_deref();
 
 		auto& message= "Ja es ist Sir Schwanzelot, der nachts an das Fenster klopft, von der holden Annegret, sie bricht die Ehe, ich - das Bett.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address, CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -260,12 +268,14 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Connect only sender.
 	{
 		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
 		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
 
 		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
 		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create_and_bind( sender_address ).try_take();
 
-		sender_socket.connect( receiver_address ).try_deref();
+		sender_socket.connect( receiver_address_for_sender ).try_deref();
 
 		auto& message= "Gestern sah ich sie mit Sir Gernhart Reinlunzen im Gemach, doch hat sie noch nicht genug, also stoße ich sie heute Nacht.";
 		var ust::string_view8 message_range= message;
@@ -308,6 +318,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Use "receive" on unconnected receiver. Should work fine (receive what can be received).
 	{
 		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
 		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
 
 		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
@@ -316,7 +328,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Ach Ihr Zimmer liegt in Trümmern, doch sie hört nicht auf zu wimmern. Meine Stöße werden schlimmer, denn darauf beugt sie sich immer.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address, CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -359,7 +371,9 @@ fn nomangle main() call_conv( "C" ) : i32
 			},
 			Err( e ) ->
 			{
-				assert( e == ust::io_error::destination_address_required, ust::concat( "Unexpected error code: \"", ust::enum_to_string(e), "\"" ) );
+				assert(
+					e == ust::io_error::destination_address_required || e == ust::io_error::not_connected,
+					ust::concat( "Unexpected error code: \"", ust::enum_to_string(e), "\"" ) );
 			}
 		}
 	}
