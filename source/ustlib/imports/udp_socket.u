@@ -52,6 +52,12 @@ public:
 	// Using it prior to "receive" call is necessary to filter-out all other possible senders.
 	fn connect( mut this, socket_address& a ) : result</void, io_error/>;
 
+	// Check if socket is in non-blocking mode.
+	fn is_nonblocking( this ) : result</bool, io_error/>;
+
+	// Set non-blocking mode.
+	fn set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>;
+
 private:
 	type native_socket_fd= type_select</
 		constexpr_string_equals( compiler::target::os, "windows" ),

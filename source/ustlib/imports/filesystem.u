@@ -18,6 +18,7 @@ enum io_error
 	write_zero,
 	destination_address_required,
 	not_connected,
+	would_block,
 	other, // Some non-listed error code.
 	// TODO - add other errors
 }

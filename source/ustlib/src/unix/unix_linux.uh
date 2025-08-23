@@ -9,6 +9,7 @@ fn nomangle close( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
 fn nomangle closedir( $(DIR) ü__dirp ) unsafe call_conv( "C" ) : i32;
 fn nomangle connect( i32 ü__fd, $(sockaddr) ü__addr, socklen_t ü__len ) unsafe call_conv( "C" ) : i32;
 fn nomangle fchmod( i32 ü__fd, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
+fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe call_conv( "C" ) : i32;
 fn nomangle fdatasync( i32 ü__fildes ) unsafe call_conv( "C" ) : i32;
 fn nomangle fstat64( i32 ü__fd, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle fsync( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
@@ -316,12 +317,16 @@ auto constexpr ENOTEMPTY = 39;
 auto constexpr EDESTADDRREQ = 89;
 auto constexpr ENOTCONN = 107;
 
+auto constexpr F_GETFL = 3;
+auto constexpr F_SETFL = 4;
+
 auto constexpr O_RDONLY = 0;
 auto constexpr O_WRONLY = 1;
 auto constexpr O_RDWR = 2;
 auto constexpr O_CREAT = 64;
 auto constexpr O_EXCL = 128;
 auto constexpr O_TRUNC = 512;
+auto constexpr O_NONBLOCK = 2048;
 
 auto constexpr PF_INET = 2;
 auto constexpr PF_INET6 = 10;

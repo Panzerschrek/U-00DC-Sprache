@@ -476,6 +476,30 @@ fn nomangle main() call_conv( "C" ) : i32
 		assert( received_message == message, "Received unexpected message!" );
 	}
 
+	// Non-blocking socket - try receive without anyone sending.
+	{
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( ust::net::socket_address_v4( ust::net::ip_address_v4( 0u ), GetNextPort() ) ).try_take();
+
+		result_match( receiver_socket.set_nonblocking( true ) )
+		{
+			Ok( v ) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to set non-blocking mode for socket! Error code: ", ust::enum_to_string(e) ) ); }
+		}
+
+		assert( receiver_socket.is_nonblocking().try_take(), "Socket isn't non-blocking as expected!" );
+
+		var [ byte8, 64 ] mut message= zero_init;
+
+		result_match( receiver_socket.receive( message ) )
+		{
+			Ok( bytes_received ) -> { assert( bytes_received == 0s, "Unexpected received message length, expected 0!" ); },
+			Err( e ) ->
+			{
+				assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while receiving on non-blocking socket: ", ust::enum_to_string(e) ) );
+			}
+		}
+	}
+
 	return 0;
 }
 
