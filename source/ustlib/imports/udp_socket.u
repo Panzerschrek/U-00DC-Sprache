@@ -43,7 +43,10 @@ public:
 	fn connect( mut this, socket_address& a ) : result</void, io_error/>;
 
 private:
-	type native_socket_fd= i32;
+	type native_socket_fd= type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		size_type,
+		i32 />;
 
 private:
 	native_socket_fd socket_;

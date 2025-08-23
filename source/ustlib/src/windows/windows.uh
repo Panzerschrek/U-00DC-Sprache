@@ -46,6 +46,15 @@ fn nomangle WakeAllConditionVariable( PCONDITION_VARIABLE ConditionVariable ) un
 fn nomangle WakeConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle WSAGetLastError() unsafe call_conv( "system" ) : i32;
+fn nomangle bind( SOCKET s, $(sockaddr) name, i32 namelen ) unsafe call_conv( "system" ) : i32;
+fn nomangle closesocket( SOCKET s ) unsafe call_conv( "system" ) : i32;
+fn nomangle connect( SOCKET s, $(sockaddr) name, i32 namelen ) unsafe call_conv( "system" ) : i32;
+fn nomangle recv( SOCKET s, $(char8) buf, i32 len, i32 flags ) unsafe call_conv( "system" ) : i32;
+fn nomangle recvfrom( SOCKET s, $(char8) buf, i32 len, i32 flags, $(sockaddr) from, $(i32) fromlen ) unsafe call_conv( "system" ) : i32;
+fn nomangle send( SOCKET s, $(char8) buf, i32 len, i32 flags ) unsafe call_conv( "system" ) : i32;
+fn nomangle sendto( SOCKET s, $(char8) buf, i32 len, i32 flags, $(sockaddr) to, i32 tolen ) unsafe call_conv( "system" ) : i32;
+fn nomangle socket( i32 af, i32 type_, i32 protocol ) unsafe call_conv( "system" ) : SOCKET;
 
 struct ü_BY_HANDLE_FILE_INFORMATION ordered
 {
@@ -168,6 +177,20 @@ struct ü_WIN32_FIND_DATAW ordered
 	[ WCHAR, 14u ] cAlternateFileName;
 }
 
+struct sockaddr ordered
+{
+	ADDRESS_FAMILY sa_family;
+	[ CHAR, 14 ] sa_data;
+}
+
+struct sockaddr_in ordered
+{
+	ADDRESS_FAMILY sin_family;
+	USHORT_ sin_port;
+	IN_ADDR sin_addr;
+	[ CHAR, 8 ] sin_zero;
+}
+
 struct in_addr ordered
 {
 	ü_anon_record_381 S_un;
@@ -212,7 +235,9 @@ var ü_GET_FILEEX_INFO_LEVELS
 	constexpr GetFileExInfoStandard( 0 ),
 	constexpr GetFileExMaxInfoLevel( 1 );
 
+type socklen_t = i32;
 type wchar_t = char16; // Changed manually from "u16" in order to be able to use ust::string16.
+type ADDRESS_FAMILY = USHORT_;
 type BOOL = i32;
 type BY_HANDLE_FILE_INFORMATION = ü_BY_HANDLE_FILE_INFORMATION;
 type CHAR = char8;
@@ -252,9 +277,12 @@ type RTL_CONDITION_VARIABLE = ü_RTL_CONDITION_VARIABLE;
 type RTL_SRWLOCK = ü_RTL_SRWLOCK;
 type SECURITY_ATTRIBUTES = ü_SECURITY_ATTRIBUTES;
 type SIZE_T = ULONG_PTR;
+type SOCKET = UINT_PTR;
 type SYSTEM_INFO = ü_SYSTEM_INFO;
+type UINT_PTR = size_type;
 type ULONG = u32;
 type ULONG_PTR = size_type;
+type USHORT_ = u16;
 type WCHAR = wchar_t;
 type WIN32_FILE_ATTRIBUTE_DATA = ü_WIN32_FILE_ATTRIBUTE_DATA;
 type WIN32_FIND_DATAW = ü_WIN32_FIND_DATAW;
@@ -262,6 +290,10 @@ type WORD = u16;
 
 auto constexpr AF_INET = 2;
 auto constexpr AF_INET6 = 23;
+
+auto constexpr PF_INET = AF_INET;
+
+auto constexpr SOCK_DGRAM = 2;
 
 auto constexpr ERROR_SUCCESS = 0;
 auto constexpr NO_ERROR = 0;
@@ -285,6 +317,8 @@ auto constexpr ERROR_DIR_NOT_EMPTY = 145;
 auto constexpr ERROR_ALREADY_EXISTS = 183;
 auto constexpr ERROR_ENVVAR_NOT_FOUND = 203;
 auto constexpr ERROR_DIRECTORY = 267;
+
+auto constexpr WSAENOTCONN = 10057;
 
 auto constexpr FILE_ATTRIBUTE_READONLY = 1;
 auto constexpr FILE_ATTRIBUTE_HIDDEN = 2;

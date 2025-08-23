@@ -1637,7 +1637,7 @@ fn GetUstlibSystemLibrariesToLink( TargetTriple& target_triple ) : ust::vector</
 {
 	if( target_triple.operating_system == g_os_windows )
 	{
-		return ust::vector</ust::string8/>();
+		return ust::make_array</ust::string8/>( "Ws2_32.lib" );
 	}
 	else
 	{
