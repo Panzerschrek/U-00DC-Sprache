@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/assert.u"
 import "../imports/enum_string_conversions.u"
+import "../imports/hash_set.u"
 import "../imports/string.u"
 import "../imports/string_conversions.u"
 import "../imports/udp_socket.u"
@@ -497,6 +498,248 @@ fn nomangle main() call_conv( "C" ) : i32
 			{
 				assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while receiving on non-blocking socket: ", ust::enum_to_string(e) ) );
 			}
+		}
+	}
+
+	// Receive from multiple senders.
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+
+		// Use hash set, since order of transmission in UDP isn't stable.
+		var ust::hash_set</ust::string8/> mut messages;
+		messages.insert( "one" );
+		messages.insert( "two" );
+		messages.insert( "three" );
+
+		foreach( &message : messages )
+		{
+			var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+			var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create_and_bind( sender_address ).try_take();
+
+			var size_type bytes_writtes= sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message.range() ) ).try_take();
+			assert( bytes_writtes == message.size(), "Unexpected number of bytes written!" );
+		}
+
+
+		var ust::hash_set</ust::string8/> mut messages_received;
+
+		for( auto mut i= 0s; i < messages.size(); ++i )
+		{
+			var [ char8, 32 ] mut buff= zero_init;
+			var ust::array_view_mut</char8/> buff_range= buff;
+
+			var size_type bytes_received= receiver_socket.receive( CastRangeToBytesRange( buff_range ) ).try_take();
+
+			messages_received.insert( ust::string_view8( buff_range.subrange_end( bytes_received ) ) );
+		}
+
+		// Should receive all sent messages.
+		assert( messages_received == messages );
+	}
+
+	// Send to multiple receivers from one socket.
+	{
+		var [ ust::net::socket_address_v4, 3 ] receiver_addresses
+		[
+			( ust::net::ip_address_v4( 0u ), GetNextPort() ),
+			( ust::net::ip_address_v4( 0u ), GetNextPort() ),
+			( ust::net::ip_address_v4( 0u ), GetNextPort() ),
+		];
+
+		var [ ust::net::udp_socket, 3 ] mut receiver_sockets
+		[
+			ust::net::udp_socket::create_and_bind( receiver_addresses[0] ).try_take(),
+			ust::net::udp_socket::create_and_bind( receiver_addresses[1] ).try_take(),
+			ust::net::udp_socket::create_and_bind( receiver_addresses[2] ).try_take(),
+		];
+
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create().try_take();
+
+		sender_socket.send_to( receiver_addresses[0], CastRangeToBytesRange( ust::string_view8( "Message zero #0" ) ) ).try_deref();
+		sender_socket.send_to( receiver_addresses[1], CastRangeToBytesRange( ust::string_view8( "#1 message to one" ) ) ).try_deref();
+		sender_socket.send_to( receiver_addresses[2], CastRangeToBytesRange( ust::string_view8( "two #2 message" ) ) ).try_deref();
+
+		{
+			var [ char8, 32 ] mut buff= zero_init;
+			var ust::array_view_mut</char8/> buff_range= buff;
+			var size_type bytes_received= receiver_sockets[0].receive( CastRangeToBytesRange( buff_range ) ).try_deref();
+			assert( ust::string_view8( buff_range.subrange_end( bytes_received ) ) == "Message zero #0" );
+		}
+		{
+			var [ char8, 32 ] mut buff= zero_init;
+			var ust::array_view_mut</char8/> buff_range= buff;
+			var size_type bytes_received= receiver_sockets[1].receive( CastRangeToBytesRange( buff_range ) ).try_deref();
+			assert( ust::string_view8( buff_range.subrange_end( bytes_received ) ) == "#1 message to one" );
+		}
+		{
+			var [ char8, 32 ] mut buff= zero_init;
+			var ust::array_view_mut</char8/> buff_range= buff;
+			var size_type bytes_received= receiver_sockets[2].receive( CastRangeToBytesRange( buff_range ) ).try_deref();
+			assert( ust::string_view8( buff_range.subrange_end( bytes_received ) ) == "two #2 message" );
+		}
+	}
+
+	// Sent to itself.
+	{
+		var ust::net::socket_address_v4 address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 address_for_sender( loopback, address.get_port() );
+
+		var ust::net::udp_socket mut socket= ust::net::udp_socket::create_and_bind( address ).try_take();
+
+		auto& message= "Bite my own tail!";
+
+		var size_type bytes_written= socket.send_to( address_for_sender, CastRangeToBytesRange( ust::string_view8( message ) ) ).try_take();
+		assert( bytes_written == typeinfo</ typeof(message) />.element_count );
+
+		var typeof(message) mut message_received= zero_init;
+
+		var size_type bytes_received= socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+		assert( bytes_received == typeinfo</ typeof(message) />.element_count );
+		assert( message_received == message );
+	}
+
+	// Send empty message.
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create().try_take();
+
+		var size_type bytes_written= sender_socket.send_to( receiver_address_for_sender, ust::array_view_mut</byte8/>() ).try_take();
+		assert( bytes_written == 0s );
+
+		var [ byte8, 16 ] mut message_received= zero_init;
+
+		var size_type bytes_received= receiver_socket.receive(ust::array_view_mut</byte8/>( message_received ) ).try_take();
+		assert( bytes_received == 0s );
+	}
+
+	// Receive with buffer longer than needed.
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create().try_take();
+
+		auto& message= "012345";
+		var size_type message_size= typeinfo</ typeof(message) />.element_count;
+
+		var size_type bytes_written= sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( ust::string_view8( message ) ) ).try_take();
+		assert( bytes_written == message_size );
+
+		var [ char8, 32 ] mut message_received= zero_init;
+
+		var size_type bytes_received= receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+		assert( bytes_received == message_size );
+		assert( ust::string_view8( message_received ).subrange_end( message_size ) == message );
+	}
+
+	// Receive with buffer shorter than needed.
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create().try_take();
+
+		var void should_be_connected= sender_socket.connect( receiver_address_for_sender ).try_take();
+
+		auto& message= "This is a message, which is more than 5 chars long.";
+		var size_type message_size= typeinfo</ typeof(message) />.element_count;
+
+		var size_type bytes_written= sender_socket.send( CastRangeToBytesRange( ust::string_view8( message ) ) ).try_take();
+		assert( bytes_written == message_size );
+
+		var size_type buffer_size= 5s;
+		var [ char8, buffer_size ] mut message_received= zero_init;
+
+		var size_type bytes_received= receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+		assert( bytes_received == buffer_size );
+		assert( ust::string_view8( message_received ) == ust::string_view8( message ).subrange_end( buffer_size ) );
+	}
+
+	// Receive with buffer shorter than needed. At second read should get new message.
+	{
+		var ust::net::socket_address_v4 receiver_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
+
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+
+		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create().try_take();
+
+		var void should_be_connected= sender_socket.connect( receiver_address_for_sender ).try_take();
+
+		auto& first_message= "First message";
+		auto& second_message= "This is the message #2";
+
+		assert( sender_socket.send( CastRangeToBytesRange( ust::string_view8( first_message ) ) ).try_take() == typeinfo</ typeof(first_message) />.element_count );
+		assert( sender_socket.send( CastRangeToBytesRange( ust::string_view8( second_message ) ) ).try_take() == typeinfo</ typeof(second_message) />.element_count );
+
+		{
+			var size_type buffer_size= 5s;
+			var [ char8, buffer_size ] mut message_received= zero_init;
+
+			var size_type bytes_received= receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+			assert( bytes_received == buffer_size );
+			assert( ust::string_view8( message_received ) == ust::string_view8( first_message ).subrange_end( buffer_size ) );
+		}
+		{
+			var size_type buffer_size= 7s;
+			var [ char8, buffer_size ] mut message_received= zero_init;
+
+			var size_type bytes_received= receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+			assert( bytes_received == buffer_size );
+			assert( ust::string_view8( message_received ) == ust::string_view8( second_message ).subrange_end( buffer_size ) );
+		}
+	}
+
+	// Connect to one address, but send to another.
+	{
+		var ust::net::socket_address_v4 receiver_address0( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address0_for_sender( loopback, receiver_address0.get_port() );
+
+		var ust::net::socket_address_v4 receiver_address1( ust::net::ip_address_v4( 0u ), GetNextPort() );
+		var ust::net::socket_address_v4 receiver_address1_for_sender( loopback, receiver_address1.get_port() );
+
+		var ust::net::socket_address_v4 sender_address( ust::net::ip_address_v4( 0u ), GetNextPort() );
+
+		var ust::net::udp_socket mut receiver_socket0= ust::net::udp_socket::create_and_bind( receiver_address0 ).try_take();
+		var ust::net::udp_socket mut receiver_socket1= ust::net::udp_socket::create_and_bind( receiver_address1 ).try_take();
+
+		var ust::net::udp_socket mut sender_socket= ust::net::udp_socket::create().try_take();
+
+		// Connect to receiver #1
+		var void connect_result= sender_socket.connect( receiver_address1_for_sender ).try_take();
+
+		auto& first_message= "Die erste Nachricht";
+		auto& second_message= "Nachricht #2";
+
+		// Send explicitly to receiver #0
+		assert( sender_socket.send_to( receiver_address0_for_sender, CastRangeToBytesRange( ust::string_view8( first_message ) ) ).try_take() == typeinfo</ typeof(first_message) />.element_count );
+		// Send without address provided - should send it to #1.
+		assert( sender_socket.send( CastRangeToBytesRange( ust::string_view8( second_message ) ) ).try_take() == typeinfo</ typeof(second_message) />.element_count );
+
+		{
+			var typeof(first_message) mut message_received= zero_init;
+			var size_type bytes_received= receiver_socket0.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+			assert( message_received == first_message );
+		}
+		{
+			var typeof(second_message) mut message_received= zero_init;
+			var size_type bytes_received= receiver_socket1.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+			assert( message_received == second_message );
 		}
 	}
 
