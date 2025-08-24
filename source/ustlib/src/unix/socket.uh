@@ -13,4 +13,8 @@ fn is_socket_nonblocking( native_socket_fd s ) : result</bool, io_error/>;
 
 fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : result</void, io_error/>;
 
+fn get_socket_local_address( native_socket_fd s ) : result</socket_address, io_error/>;
+
+fn get_socket_peer_address( native_socket_fd s ) : result</socket_address, io_error/>;
+
 } // namespace ust

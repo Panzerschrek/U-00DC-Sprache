@@ -91,4 +91,14 @@ fn tcp_stream::set_nonblocking( mut this, bool nonblocking ) : result</void, io_
 	return set_socket_nonblocking( socket_, nonblocking );
 }
 
+fn tcp_stream::get_local_address( this ) : result</socket_address, io_error/>
+{
+	return get_socket_local_address( socket_ );
+}
+
+fn tcp_stream::get_peer_address( this ) : result</socket_address, io_error/>
+{
+	return get_socket_peer_address( socket_ );
+}
+
 } // namespace ust

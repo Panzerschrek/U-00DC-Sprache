@@ -262,52 +262,12 @@ fn udp_socket::set_nonblocking( mut this, bool nonblocking ) : result</void, io_
 
 fn udp_socket::get_local_address( this ) : result</socket_address, io_error/>
 {
-	var sockaddr mut address= zero_init;
-	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
-
-	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
-
-	unsafe
-	{
-		var i32 res= ::getsockname( socket_, $<(address), $<(address_length) );
-		if( res != 0 )
-		{
-			return translate_errno( get_errno() );
-		}
-
-		auto mut address_translated_opt= translate_socket_address( address );
-		if( address_translated_opt.empty() )
-		{
-			return io_error::other;
-		}
-
-		return address_translated_opt.try_take();
-	}
+	return get_socket_local_address( socket_ );
 }
 
 fn udp_socket::get_peer_address( this ) : result</socket_address, io_error/>
 {
-	var sockaddr mut address= zero_init;
-	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
-
-	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
-
-	unsafe
-	{
-		var i32 res= ::getpeername( socket_, $<(address), $<(address_length) );
-		if( res != 0 )
-		{
-			return translate_errno( get_errno() );
-		}
-
-		auto mut address_translated_opt= translate_socket_address( address );
-		if( address_translated_opt.empty() )
-		{
-			return io_error::other;
-		}
-
-		return address_translated_opt.try_take();
-	}
+	return get_socket_peer_address( socket_ );
 }
 
 fn udp_socket::get_ttl( this ) : result</u32, io_error/>
