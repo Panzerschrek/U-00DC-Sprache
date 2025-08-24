@@ -1,0 +1,125 @@
+//##success_test
+import "../imports/assert.u"
+import "../imports/enum_string_conversions.u"
+import "../imports/string_conversions.u"
+import "../imports/thread.u"
+import "../imports/tcp_listener.u"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	var ust::ip_address_v4 loopback( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) );
+
+	// Create tcp listener.
+	result_match( ust::tcp_listener::create_and_bind( ust::socket_address_v4( loopback, GetNextPort() ) ) )
+	{
+		Ok( l ) -> {},
+		Err( e ) -> { assert( false, ust::concat( "Failed to create TCP listener! Error code: ", ust::enum_to_string(e) ) ); },
+	}
+
+	// Basic server-client interaction.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		// Create server first, in order to be sure that connection works even if listener thread isn't running yet.
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		auto& client_message= "Wer hat Angs vorm schwarzen Mann?";
+		var size_type client_message_size= typeinfo</ typeof(client_message) />.size_of;
+
+		auto& server_message= "Niemand hat Angst vor ihm!";
+		var size_type server_message_size= typeinfo</ typeof(server_message) />.size_of;
+
+		// Perform accept/read/write on a background thread.
+		auto mut server_thread= ust::make_thread(
+			lambda[&]()
+			{
+				// Accept a connection.
+				result_match( listener.accept() )
+				{
+					Ok( mut accept_result ) ->
+					{
+						auto [ mut stream, client_address ]= move(accept_result);
+
+						if_var( &client_address_v4 : client_address.get</ust::socket_address_v4/>() )
+						{
+							assert( client_address_v4.get_ip() == loopback || client_address_v4.get_ip().get_bits() == 0u, "Unexpected client address!" );
+						}
+
+						var typeof(client_message) mut client_message_received= zero_init;
+
+						// Receive a request.
+						result_match( stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( client_message_received ) ) ) )
+						{
+							Ok( bytes_read ) ->
+							{
+								assert( bytes_read == client_message_size, "Invalid number of bytes written!" );
+								assert( client_message_received == client_message );
+							},
+							Err(e) -> { assert( false, ust::concat( "Failed to read from TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
+						}
+
+						// Send responce.
+						result_match( stream.write( CastRangeToBytesRange( ust::string_view8( server_message ) ) ) )
+						{
+							Ok( bytes_written ) -> { assert( bytes_written == server_message_size, "Invalid number of bytes written!" ); },
+							Err(e) -> { assert( false, ust::concat( "Failed to write into TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
+						}
+
+					},
+					Err(e) -> { assert( false, ust::concat( "Failed to accept connection! Error code: ", ust::enum_to_string(e) ) ); },
+				}
+			} );
+
+		// Connect to the server.
+		result_match( ust::tcp_stream::connect( server_address ) )
+		{
+			Ok( mut stream ) ->
+			{
+				// Send a request.
+				result_match( stream.write( CastRangeToBytesRange( ust::string_view8( client_message ) ) ) )
+				{
+					Ok( bytes_written ) -> { assert( bytes_written == client_message_size, "Invalid number of bytes written!" ); },
+					Err(e) -> { assert( false, ust::concat( "Failed to write into TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
+				}
+
+				var typeof(server_message) mut server_message_received= zero_init;
+
+				// Receive a response.
+				result_match( stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( server_message_received ) ) ) )
+				{
+					Ok( bytes_read ) ->
+					{
+						assert( bytes_read == server_message_size, "Invalid number of bytes written!" );
+						assert( server_message_received == server_message );
+					},
+					Err(e) -> { assert( false, ust::concat( "Failed to read from TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
+				}
+			},
+			Err(e) -> { assert( false, ust::concat( "Failed to connect to server! Error code: ", ust::enum_to_string(e) ) ); },
+		}
+
+		move(server_thread).join();
+	}
+
+	return 0;
+}
+
+fn GetNextPort() : u16
+{
+	unsafe
+	{
+		var u16 res= g_port_counter;
+		++g_port_counter;
+		return res;
+	}
+}
+
+var u16 mut g_port_counter= 59000u16;
+
+// It's safe to cast between ranges of chars and bytes.
+// TODO - create a library function for this?
+template</bool is_mutable/>
+fn CastRangeToBytesRange( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
+{
+	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
+}

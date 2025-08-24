@@ -21,6 +21,7 @@ fn nomangle getpid() unsafe call_conv( "C" ) : pid_t;
 fn nomangle getpeername( i32 ü__fd, $(sockaddr) ü__addr, $(socklen_t) ü__len ) unsafe call_conv( "C" ) : i32;
 fn nomangle getsockname( i32 ü__fd, $(sockaddr) ü__addr, $(socklen_t) ü__len ) unsafe call_conv( "C" ) : i32;
 fn nomangle getsockopt( i32 ü__fd, i32 ü__level, i32 ü__optname, $(byte8) ü__optval, $(socklen_t) ü__optlen ) unsafe call_conv( "C" ) : i32;
+fn nomangle listen( i32 ü__fd, i32 ü__n ) unsafe call_conv( "C" ) : i32;
 fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe call_conv( "C") : ü__off64_t;
 fn nomangle lstat64( $(char8) ü__file, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;

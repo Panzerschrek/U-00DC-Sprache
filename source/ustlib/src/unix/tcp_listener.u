@@ -9,7 +9,7 @@ fn tcp_listener::create_and_bind( socket_address& a ) : result</tcp_listener, io
 {
 	unsafe
 	{
-		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
+		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_STREAM), 0 );
 		if( s == -1 )
 		{
 			return translate_errno( get_errno() );
@@ -44,6 +44,16 @@ fn tcp_listener::create_and_bind( socket_address& a ) : result</tcp_listener, io
 			halt;
 		}
 
+		var i32 backlog= 128; // TODO - allow to tune it.
+
+		var i32 listen_res= ::listen( s, backlog );
+		if( listen_res != 0 )
+		{
+			var i32 e= get_errno();
+			::close( s );
+			return translate_errno( e );
+		}
+
 		return tcp_listener( s );
 	}
 }
@@ -64,8 +74,8 @@ fn tcp_listener::accept( mut this ) : result</ tup[ tcp_stream, socket_address ]
 		var sockaddr mut address= zero_init;
 		var socklen_t mut address_size( typeinfo</sockaddr/>.size_of );
 
-		var i32 accept_res= ::accept( socket_, $<(address), $<(address_size) );
-		if( accept_res == -1 )
+		var native_socket_fd client_stream_socket= ::accept( socket_, $<(address), $<(address_size) );
+		if( client_stream_socket == -1 )
 		{
 			return translate_errno( get_errno() );
 		}
@@ -78,7 +88,7 @@ fn tcp_listener::accept( mut this ) : result</ tup[ tcp_stream, socket_address ]
 
 		var tup[ tcp_stream, socket_address ] res
 		[
-			tcp_stream( accept_res ),
+			tcp_stream( client_stream_socket ),
 			address_translated_opt.try_take(),
 		];
 
