@@ -52,10 +52,15 @@ fn nomangle WSAStartup( WORD wVersionRequested, LPWSADATA lpWSAData ) unsafe cal
 fn nomangle bind( SOCKET s, $(sockaddr) name, i32 namelen ) unsafe call_conv( "system" ) : i32;
 fn nomangle closesocket( SOCKET s ) unsafe call_conv( "system" ) : i32;
 fn nomangle connect( SOCKET s, $(sockaddr) name, i32 namelen ) unsafe call_conv( "system" ) : i32;
+fn nomangle getpeername( SOCKET s, $(sockaddr) name, $(i32) namelen ) unsafe call_conv( "system" ) : i32;
+fn nomangle getsockname( SOCKET s, $(sockaddr) name, $(i32) namelen ) unsafe call_conv( "system" ) : i32;
+fn nomangle getsockopt( SOCKET s, i32 level, i32 optname, $(char8) optval, $(i32) optlen ) unsafe call_conv( "system" ) : i32;
+fn nomangle ioctlsocket( SOCKET s, i32 cmd, $(u_long) argp ) unsafe call_conv( "system" ) : i32;
 fn nomangle recv( SOCKET s, $(char8) buf, i32 len, i32 flags ) unsafe call_conv( "system" ) : i32;
 fn nomangle recvfrom( SOCKET s, $(char8) buf, i32 len, i32 flags, $(sockaddr) from, $(i32) fromlen ) unsafe call_conv( "system" ) : i32;
 fn nomangle send( SOCKET s, $(char8) buf, i32 len, i32 flags ) unsafe call_conv( "system" ) : i32;
 fn nomangle sendto( SOCKET s, $(char8) buf, i32 len, i32 flags, $(sockaddr) to, i32 tolen ) unsafe call_conv( "system" ) : i32;
+fn nomangle setsockopt( SOCKET s, i32 level, i32 optname, $(char8) optval, i32 optlen ) unsafe call_conv( "system" ) : i32;
 fn nomangle socket( i32 af, i32 type_, i32 protocol ) unsafe call_conv( "system" ) : SOCKET;
 
 struct ü_BY_HANDLE_FILE_INFORMATION ordered
@@ -249,6 +254,7 @@ var ü_GET_FILEEX_INFO_LEVELS
 	constexpr GetFileExMaxInfoLevel( 1 );
 
 type socklen_t = i32;
+type u_long = u32;
 type wchar_t = char16; // Changed manually from "u16" in order to be able to use ust::string16.
 type ADDRESS_FAMILY = USHORT_;
 type BOOL = i32;
@@ -279,6 +285,7 @@ type LPSYSTEM_INFO = $(ü_SYSTEM_INFO);
 type LPVOID = $(byte8);
 type LPWIN32_FIND_DATAW = $(ü_WIN32_FIND_DATAW);
 type LPWSADATA = $(WSAData);
+type LPWSAOVERLAPPED = $(ü_OVERLAPPED);
 type LPWSTR = $(WCHAR);
 type OVERLAPPED = ü_OVERLAPPED;
 type PCONDITION_VARIABLE = $(RTL_CONDITION_VARIABLE);
@@ -332,6 +339,10 @@ auto constexpr ERROR_ALREADY_EXISTS = 183;
 auto constexpr ERROR_ENVVAR_NOT_FOUND = 203;
 auto constexpr ERROR_DIRECTORY = 267;
 
+auto constexpr WSAEWOULDBLOCK = 10035;
+auto constexpr WSAEMSGSIZE = 10040;
+auto constexpr WSAEADDRINUSE = 10048;
+auto constexpr WSAEADDRNOTAVAIL = 10049;
 auto constexpr WSAENOTCONN = 10057;
 
 auto constexpr FILE_ATTRIBUTE_READONLY = 1;
@@ -365,6 +376,17 @@ auto constexpr FILE_SHARE_READ = 1;
 auto constexpr FILE_SHARE_WRITE = 2;
 auto constexpr FILE_SHARE_DELETE = 4;
 
+auto constexpr FIONBIO = ü_IOW</u_long/>( u32('f'), 126u );
+
+template</type T/>
+fn constexpr ü_IOW( u32 x, u32 y ) : u32
+{
+	return  IOC_IN | ( ( u32( typeinfo</T/>.size_of ) & IOCPARM_MASK ) << 16u ) | ( x << 8u ) | y;
+}
+
+auto constexpr IOCPARM_MASK = 0x7fu;
+auto constexpr IOC_IN = 0x80000000u;
+
 auto constexpr GENERIC_READ = 0x80000000u;
 auto constexpr GENERIC_WRITE = 0x40000000u;
 auto constexpr GENERIC_EXECUTE = 0x20000000u;
@@ -376,6 +398,11 @@ auto constexpr OPEN_EXISTING = 3;
 auto constexpr OPEN_ALWAYS = 4;
 
 auto constexpr INFINITE = -1;
+
+auto constexpr IPPROTO_IP = 0;
+auto constexpr IP_TTL = 4;
+
+auto constexpr MSG_PEEK = 2;
 
 auto constexpr MOVEFILE_REPLACE_EXISTING = 1;
 

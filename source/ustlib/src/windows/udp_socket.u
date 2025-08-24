@@ -130,7 +130,7 @@ fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</
 
 	unsafe
 	{
-		var i32 bytes_read=
+		var i32 mut bytes_read=
 			unsafe( ::recvfrom(
 				socket_,
 				byte_ptr_cast</char8/>( data.data() ),
@@ -141,32 +141,30 @@ fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</
 
 		if( bytes_read < 0 )
 		{
-			return translate_errno( WSAGetLastError() );
+			var i32 e= WSAGetLastError();
+			if( e == WSAEMSGSIZE )
+			{
+				bytes_read= i32( data.size() );
+			}
+			else
+			{
+				return translate_errno( e );
+			}
 		}
 
-		if( i32(sender_address.sa_family) == AF_INET )
+		auto mut address_translated_opt= translate_socket_address( sender_address );
+		if( address_translated_opt.empty() )
 		{
-			// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
-			var sockaddr_in mut sender_address_ip_v4= zero_init;
-
-			memory_copy(
-				ptr_cast_to_byte8( $<(sender_address_ip_v4) ),
-				ptr_cast_to_byte8( $<(sender_address) ),
-				typeinfo</sockaddr_in/>.size_of );
-
-			var tup[ socket_address, size_type ] res
-			[
-				socket_address_v4( ip_address_v4( u32( sender_address_ip_v4.sin_addr.S_un.union_contents[0] ) ), sender_address_ip_v4.sin_port ),
-				( bytes_read )
-			];
-
-			return res;
-		}
-		else
-		{
-			// TODO - support IP v6.
 			return io_error::other;
 		}
+
+		var tup[ socket_address, size_type ] res
+		[
+			address_translated_opt.try_take(),
+			( bytes_read )
+		];
+
+		return res;
 	}
 }
 
@@ -176,7 +174,76 @@ fn udp_socket::receive( mut this, array_view_mut</byte8/> data ) : result</ size
 
 	if( bytes_read < 0 )
 	{
-		return translate_errno( unsafe( WSAGetLastError() ) );
+		var i32 e= unsafe( WSAGetLastError() );
+		if( e == WSAEMSGSIZE )
+		{
+			return data.size();
+		}
+		return translate_errno( e );
+	}
+
+	return size_type(bytes_read);
+}
+
+fn udp_socket::peek_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>
+{
+	var sockaddr mut sender_address= zero_init;
+	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
+
+	var socklen_t mut socket_address_length( typeinfo</sockaddr/>.size_of );
+
+	unsafe
+	{
+		var i32 mut bytes_read=
+			unsafe( ::recvfrom(
+				socket_,
+				byte_ptr_cast</char8/>( data.data() ),
+				i32( data.size() ),
+				MSG_PEEK,
+				$<( sender_address ),
+				$<( socket_address_length ) ) );
+
+		if( bytes_read < 0 )
+		{
+			var i32 e= WSAGetLastError();
+			if( e == WSAEMSGSIZE )
+			{
+				bytes_read= i32( data.size() );
+			}
+			else
+			{
+				return translate_errno( e );
+			}
+		}
+
+		auto mut address_translated_opt= translate_socket_address( sender_address );
+		if( address_translated_opt.empty() )
+		{
+			return io_error::other;
+		}
+
+		var tup[ socket_address, size_type ] res
+		[
+			address_translated_opt.try_take(),
+			( bytes_read )
+		];
+
+		return res;
+	}
+}
+
+fn udp_socket::peek( mut this, array_view_mut</byte8/> data ) : result</ size_type, io_error/>
+{
+	var i32 bytes_read= unsafe( ::recv( socket_, byte_ptr_cast</char8/>( data.data() ),i32( data.size() ), MSG_PEEK ) );
+
+	if( bytes_read < 0 )
+	{
+		var i32 e= unsafe( WSAGetLastError() );
+		if( e == WSAEMSGSIZE )
+		{
+			return data.size();
+		}
+		return translate_errno( e );
 	}
 
 	return size_type(bytes_read);
@@ -214,11 +281,145 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 	return void();
 }
 
+fn udp_socket::is_nonblocking( this ) : result</bool, io_error/>
+{
+	// TODO
+	return true;
+}
+
+fn udp_socket::set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>
+{
+	var i32 mut non_blocking_int= ( nonblocking ? 1 : 0 );
+
+	var i32 res= unsafe( ::ioctlsocket( socket_, i32( FIONBIO ), $<( cast_ref_unsafe</u_long/>( non_blocking_int ) ) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( unsafe( WSAGetLastError() ) );
+	}
+
+	return void();
+}
+
+fn udp_socket::get_local_address( this ) : result</socket_address, io_error/>
+{
+	var sockaddr mut address= zero_init;
+	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
+
+	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
+
+	unsafe
+	{
+		var i32 res= ::getsockname( socket_, $<(address), $<(address_length) );
+		if( res != 0 )
+		{
+			return translate_errno( WSAGetLastError() );
+		}
+
+		auto mut address_translated_opt= translate_socket_address( address );
+		if( address_translated_opt.empty() )
+		{
+			return io_error::other;
+		}
+
+		return address_translated_opt.try_take();
+	}
+}
+
+fn udp_socket::get_peer_address( this ) : result</socket_address, io_error/>
+{
+	var sockaddr mut address= zero_init;
+	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
+
+	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
+
+	unsafe
+	{
+		var i32 res= ::getpeername( socket_, $<(address), $<(address_length) );
+		if( res != 0 )
+		{
+			return translate_errno( WSAGetLastError() );
+		}
+
+		auto mut address_translated_opt= translate_socket_address( address );
+		if( address_translated_opt.empty() )
+		{
+			return io_error::other;
+		}
+
+		return address_translated_opt.try_take();
+	}
+}
+
+fn udp_socket::get_ttl( this ) : result</u32, io_error/>
+{
+	var u32 mut ttl= 0u;
+
+	var socklen_t mut len( typeinfo</u32/>.size_of );
+
+	var i32 res=
+		unsafe( ::getsockopt(
+			socket_,
+			IPPROTO_IP,
+			IP_TTL,
+			$<( cast_ref_unsafe</char8/>( ttl ) ),
+			$<(len) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( unsafe( WSAGetLastError() ) );
+	}
+
+	return ttl;
+}
+
+fn udp_socket::set_ttl( mut this, u32 mut ttl ) : result</void, io_error/>
+{
+	var i32 res=
+		unsafe( ::setsockopt(
+			socket_,
+			IPPROTO_IP,
+			IP_TTL,
+			$<( cast_ref_unsafe</char8/>( ttl ) ),
+			socklen_t( typeinfo</u32/>.size_of ) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( unsafe( WSAGetLastError() ) );
+	}
+
+	return void();
+}
+
+// Convert "sockaddr" into our own representation.
+fn translate_socket_address( sockaddr& address ) : ust::optional</socket_address/>
+{
+	if( i32(address.sa_family) == AF_INET )
+	{
+		// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+		var sockaddr_in mut address_ip_v4= zero_init;
+
+		unsafe( memory_copy(
+			ptr_cast_to_byte8( $<(address_ip_v4) ),
+			ptr_cast_to_byte8( $<( cast_mut(address) ) ),
+			typeinfo</sockaddr_in/>.size_of ) );
+
+		return socket_address( socket_address_v4( ip_address_v4( u32( address_ip_v4.sin_addr.S_un.union_contents[0] ) ), address_ip_v4.sin_port ) );
+	}
+	else
+	{
+		// TODO - support IP v6.
+		return null_optional;
+	}
+}
+
 fn translate_errno( i32 errno ) : io_error
 {
 	switch( errno )
 	{
 		WSAENOTCONN -> { return io_error::not_connected; },
+		WSAEWOULDBLOCK -> { return io_error::would_block; },
+		WSAEADDRINUSE -> { return io_error::address_already_in_use; },
 		default -> { return io_error::other; },
 	}
 }
