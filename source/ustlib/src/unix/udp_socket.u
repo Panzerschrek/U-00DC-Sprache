@@ -394,6 +394,18 @@ fn udp_socket::set_ttl( mut this, u32 mut ttl ) : result</void, io_error/>
 	return void();
 }
 
+fn udp_socket::get_native_fd( this ) unsafe : native_socket_fd
+{
+	return socket_;
+}
+
+fn udp_socket::take_native_fd( byval mut this ) unsafe : native_socket_fd
+{
+	var native_socket_fd s= socket_;
+	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
+	return s;
+}
+
 // Convert "sockaddr" into our own representation.
 fn translate_socket_address( sockaddr& address ) : ust::optional</socket_address/>
 {
