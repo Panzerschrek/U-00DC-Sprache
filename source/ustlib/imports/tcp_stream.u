@@ -20,6 +20,12 @@ public:
 	// Write given buffer. May write less than expected and it's not an error. Returns number of bytes written.
 	fn write( mut this, array_view_imut</byte8/> buf ) : result</size_type, io_error/>;
 
+	// Check if socket is in non-blocking mode.
+	fn is_nonblocking( this ) : result</bool, io_error/>;
+
+	// Set non-blocking mode.
+	fn set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>;
+
 private:
 	native_socket_fd socket_;
 }

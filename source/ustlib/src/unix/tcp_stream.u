@@ -80,4 +80,46 @@ fn tcp_stream::write( mut this, array_view_imut</byte8/> buf ) : result</size_ty
 	return size_type(bytes_written);
 }
 
+fn tcp_stream::is_nonblocking( this ) : result</bool, io_error/>
+{
+	var i32 flags= unsafe( ::fcntl( socket_, F_GETFL, 0 ) );
+
+	if( flags == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return ( flags & O_NONBLOCK ) != 0;
+}
+
+fn tcp_stream::set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>
+{
+	unsafe
+	{
+		var i32 mut flags= ::fcntl( socket_, F_GETFL, 0 );
+
+		if( flags == -1 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		if( nonblocking )
+		{
+			flags |= O_NONBLOCK;
+		}
+		else
+		{
+			flags &= ~O_NONBLOCK;
+		}
+
+		var i32 res= ::fcntl( socket_, F_SETFL, flags );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+	}
+
+	return void();
+}
+
 } // namespace ust
