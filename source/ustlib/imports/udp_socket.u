@@ -1,5 +1,6 @@
 import "filesystem.u" // TODO - move io_error enum onto different place.
 import "inet_address.u"
+import "native_socket.u"
 
 namespace ust
 {
@@ -76,10 +77,5 @@ public:
 private:
 	native_socket_fd socket_;
 }
-
-type native_socket_fd= type_select</
-	constexpr_string_equals( compiler::target::os, "windows" ),
-	size_type,
-	i32 />;
 
 } // namespace ust

@@ -1,4 +1,27 @@
+import "filesystem.u"
+import "inet_address.u"
+import "native_socket.u"
+
 namespace ust
 {
+
+class tcp_stream
+{
+public:
+	// Connect to specified address.
+	fn connect( socket_address& a ) : result</tcp_stream, io_error/>;
+
+	fn constructor( native_socket_fd s ) unsafe; // constructor for internal usage.
+	fn destructor();
+
+	// Read into given buffer. May read less than expected and it's not an error. Returns number of bytes read.
+	fn read( mut this, array_view_mut</byte8/> buf ) : result</size_type, io_error/>;
+
+	// Write given buffer. May write less than expected and it's not an error. Returns number of bytes written.
+	fn write( mut this, array_view_imut</byte8/> buf ) : result</size_type, io_error/>;
+
+private:
+	native_socket_fd socket_;
+}
 
 } // namespace ust

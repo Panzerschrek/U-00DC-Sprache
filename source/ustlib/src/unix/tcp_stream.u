@@ -1,6 +1,83 @@
 import "../../imports/tcp_stream.u"
+import "errno.uh"
 
 namespace ust
 {
+
+fn tcp_stream::connect( socket_address& a ) : result</tcp_stream, io_error/>
+{
+	unsafe
+	{
+		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_STREAM), 0 );
+		if( s == -1 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		if_var( &a_v4 : a.get</socket_address_v4/>() )
+		{
+			var sockaddr_in mut underlying_address
+			{
+				.sin_family( AF_INET ),
+				.sin_port= a_v4.get_port(),
+				.sin_addr{ .s_addr= a_v4.get_ip().get_bits() },
+				.sin_zero= zero_init,
+			};
+
+			var i32 res=
+				unsafe( ::connect(
+					s,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
+
+			if( res != 0 )
+			{
+				var i32 e= get_errno();
+				::close( s );
+				return translate_errno( e );
+			}
+		}
+		else
+		{
+			// TODO - support IP v6.
+			halt;
+		}
+
+		return tcp_stream( s );
+	}
+}
+
+fn tcp_stream::constructor( native_socket_fd s ) unsafe
+	( socket_= s )
+{}
+
+fn tcp_stream::destructor()
+{
+	unsafe( ::close( socket_ ) );
+}
+
+fn tcp_stream::read( mut this, array_view_mut</byte8/> buf ) : result</size_type, io_error/>
+{
+	var ssize_type bytes_read= unsafe( ::recv( socket_, buf.data(), buf.size(), 0 ) );
+
+	if( bytes_read < ssize_type(0) )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return size_type(bytes_read);
+}
+
+fn tcp_stream::write( mut this, array_view_imut</byte8/> buf ) : result</size_type, io_error/>
+{
+	var ssize_type bytes_written= unsafe( ::send( socket_, buf.data(), buf.size(), 0 ) );
+
+	if( bytes_written < ssize_type(0) )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return size_type(bytes_written);
+}
 
 } // namespace ust
