@@ -111,4 +111,16 @@ fn tcp_stream::set_ttl( mut this, u32 ttl ) : result</void, io_error/>
 	return set_socket_ttl( socket_, ttl );
 }
 
+fn tcp_stream::get_native_fd( this ) unsafe : native_socket_fd
+{
+	return socket_;
+}
+
+fn tcp_stream::take_native_fd( byval mut this ) unsafe : native_socket_fd
+{
+	var native_socket_fd s= socket_;
+	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
+	return s;
+}
+
 } // namespace ust
