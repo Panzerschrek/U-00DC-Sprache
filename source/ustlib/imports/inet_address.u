@@ -5,9 +5,6 @@ import "variant.u"
 namespace ust
 {
 
-namespace net
-{
-
 class ip_address_v4
 {
 public:
@@ -116,7 +113,5 @@ fn parse_socket_address_v6( string_view8 s ) : optional</socket_address_v6/>;
 
 // Parse socket address (in v4 or v6 format). Returns empty optional if failed to parse.
 fn parse_socket_address( string_view8 s ) : optional</socket_address/>;
-
-} // namespace net
 
 } // namespace ust

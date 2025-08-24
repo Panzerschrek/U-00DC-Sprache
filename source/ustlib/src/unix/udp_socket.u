@@ -4,9 +4,6 @@ import "errno.uh"
 namespace ust
 {
 
-namespace net
-{
-
 fn udp_socket::create() : result</udp_socket, io_error/>
 {
 	unsafe
@@ -422,7 +419,5 @@ fn translate_socket_address( sockaddr& address ) : ust::optional</socket_address
 		return ust::null_optional;
 	}
 }
-
-} // namespace net
 
 } // namespace ust

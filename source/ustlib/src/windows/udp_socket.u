@@ -5,9 +5,6 @@ import "windows.uh"
 namespace ust
 {
 
-namespace net
-{
-
 fn udp_socket::create() : result</udp_socket, io_error/>
 {
 	call_wsa_startup();
@@ -458,7 +455,5 @@ fn call_wsa_startup()
 		}
 	}
 }
-
-} // namespace net
 
 } // namespace ust

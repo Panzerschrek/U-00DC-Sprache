@@ -4,9 +4,6 @@ import "inet_address.u"
 namespace ust
 {
 
-namespace net
-{
-
 class udp_socket
 {
 public:
@@ -84,7 +81,5 @@ type native_socket_fd= type_select</
 	constexpr_string_equals( compiler::target::os, "windows" ),
 	size_type,
 	i32 />;
-
-} // namespace net
 
 } // namespace ust

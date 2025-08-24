@@ -4,9 +4,6 @@ import "../imports/integer_parsing.u"
 namespace ust
 {
 
-namespace net
-{
-
 fn parse_ip_address_v4( string_view8 mut s ) : optional</ip_address_v4/>
 {
 	if_var( ip : extract_ip_v4_address(s) )
@@ -117,7 +114,5 @@ fn extract_ip_v4_address( string_view8 &mut s ) : optional</ip_address_v4/>
 
 	return ip_address_v4( octets );
 }
-
-} // namespace net
 
 } // namespace ust
