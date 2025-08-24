@@ -164,6 +164,37 @@ fn nomangle main() call_conv( "C" ) : i32
 		move(server_thread).join();
 	}
 
+	// Non-blocking listener - should not block if nobody connects.
+	{
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( ust::socket_address_v4( loopback, GetNextPort() ) ).try_take();
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			assert( !listener.is_nonblocking().try_take(), "Socket isn't blocking as expected!" );
+		}
+
+		result_match( listener.set_nonblocking( true ) )
+		{
+			Ok( v ) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to set non-blocking mode for socket! Error code: ", ust::enum_to_string(e) ) ); }
+		}
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			assert( listener.is_nonblocking().try_take(), "Socket isn't non-blocking as expected!" );
+		}
+
+		result_match( listener.accept() )
+		{
+			Ok( mut accept_result ) ->
+			{
+				assert( false, "Should not accept without anobody trying to connect!" );
+
+			},
+			Err(e) -> { assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while accepting on non-blocking TCP listener: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
 	return 0;
 }
 

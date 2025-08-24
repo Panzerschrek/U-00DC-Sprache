@@ -275,7 +275,7 @@ fn udp_socket::set_nonblocking( mut this, bool nonblocking ) : result</void, io_
 
 		if( nonblocking )
 		{
-			flags|= O_NONBLOCK;
+			flags |= O_NONBLOCK;
 		}
 		else
 		{
