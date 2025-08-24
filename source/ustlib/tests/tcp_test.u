@@ -12,7 +12,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Create tcp listener.
 	result_match( ust::tcp_listener::create_and_bind( ust::socket_address_v4( loopback, GetNextPort() ) ) )
 	{
-		Ok( l ) -> {},
+		Ok( l ) ->{},
 		Err( e ) -> { assert( false, ust::concat( "Failed to create TCP listener! Error code: ", ust::enum_to_string(e) ) ); },
 	}
 
@@ -65,6 +65,31 @@ fn nomangle main() call_conv( "C" ) : i32
 							Err(e) -> { assert( false, ust::concat( "Failed to write into TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
 						}
 
+						// Check address of server stream.
+						result_match( stream.get_local_address() )
+						{
+							Ok( a ) ->
+							{
+								if_var( &a_v4 : a.get</ust::socket_address_v4/>() )
+								{
+									assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+								}
+							},
+							Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream local address! Error code: ", ust::enum_to_string(e) ) ); },
+						}
+
+						// Check address of client.
+						result_match( stream.get_peer_address() )
+						{
+							Ok( a ) ->
+							{
+								if_var( &a_v4 : a.get</ust::socket_address_v4/>() )
+								{
+									assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+								}
+							},
+							Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream remote address! Error code: ", ust::enum_to_string(e) ) ); },
+						}
 					},
 					Err(e) -> { assert( false, ust::concat( "Failed to accept connection! Error code: ", ust::enum_to_string(e) ) ); },
 				}
@@ -93,6 +118,32 @@ fn nomangle main() call_conv( "C" ) : i32
 						assert( server_message_received == server_message );
 					},
 					Err(e) -> { assert( false, ust::concat( "Failed to read from TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
+				}
+
+				// Check address of server stream.
+				result_match( stream.get_peer_address() )
+				{
+					Ok( a ) ->
+					{
+						if_var( &a_v4 : a.get</ust::socket_address_v4/>() )
+						{
+							assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+						}
+					},
+					Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream remote address! Error code: ", ust::enum_to_string(e) ) ); },
+				}
+
+				// Check address of client.
+				result_match( stream.get_local_address() )
+				{
+					Ok( a ) ->
+					{
+						if_var( &a_v4 : a.get</ust::socket_address_v4/>() )
+						{
+							assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+						}
+					},
+					Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream local address! Error code: ", ust::enum_to_string(e) ) ); },
 				}
 			},
 			Err(e) -> { assert( false, ust::concat( "Failed to connect to server! Error code: ", ust::enum_to_string(e) ) ); },
@@ -192,6 +243,18 @@ fn nomangle main() call_conv( "C" ) : i32
 
 			},
 			Err(e) -> { assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while accepting on non-blocking TCP listener: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// "get_local_address" for listener.
+	{
+		var ust::socket_address_v4 address( loopback, GetNextPort() );
+		var ust::tcp_listener listener= ust::tcp_listener::create_and_bind( address ).try_take();
+
+		result_match( listener.get_local_address() )
+		{
+			Ok( a ) -> { assert( a == address, "Unexpected address of TCP listener!" ); },
+			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP listener local address! Error code: ", ust::enum_to_string(e) ) ); },
 		}
 	}
 
