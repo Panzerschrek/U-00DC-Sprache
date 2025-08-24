@@ -29,6 +29,12 @@ public:
 	// Set time to live.
 	fn set_ttl( mut this, u32 ttl ) : result</void, io_error/>;
 
+	// Get handle to perform some system-specific file operations with it. Do not try to close it!
+	fn get_native_fd( this ) unsafe : native_socket_fd;
+
+	// Take native handle and destroy this class instance. Caller is responsible for socket closing.
+	fn take_native_fd( byval this ) unsafe : native_socket_fd;
+
 private:
 	native_socket_fd socket_;
 }
