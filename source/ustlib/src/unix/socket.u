@@ -122,4 +122,44 @@ fn get_socket_peer_address( native_socket_fd s ) : result</socket_address, io_er
 	}
 }
 
+fn get_socket_ttl( native_socket_fd s ) : result</u32, io_error/>
+{
+	var u32 mut ttl= 0u;
+
+	var socklen_t mut len( typeinfo</u32/>.size_of );
+
+	var i32 res=
+		unsafe( ::getsockopt(
+			s,
+			i32( IPPROTO_IP ),
+			i32( IP_TTL ),
+			ptr_cast_to_byte8( $<( ttl ) ),
+			$<(len) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return ttl;
+}
+
+fn set_socket_ttl( native_socket_fd s, u32 mut ttl ) : result</void, io_error/>
+{
+	var i32 res=
+		unsafe( ::setsockopt(
+			s,
+			i32( IPPROTO_IP ),
+			i32( IP_TTL ),
+			ptr_cast_to_byte8( $<( ttl ) ),
+			socklen_t( typeinfo</u32/>.size_of ) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
 } // namespace ust
