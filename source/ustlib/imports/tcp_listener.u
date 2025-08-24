@@ -1,4 +1,20 @@
+import "tcp_stream.u"
+
 namespace ust
 {
+
+class tcp_listener
+{
+public:
+	fn create_and_bind( socket_address& a ) : result</tcp_listener, io_error/>;
+
+	fn constructor( native_socket_fd s ) unsafe; // constructor for internal usage.
+	fn destructor();
+
+	fn accept( mut this ) : result</ tup[ tcp_stream, socket_address ] , io_error />;
+
+private:
+	native_socket_fd socket_;
+}
 
 } // namespace ust

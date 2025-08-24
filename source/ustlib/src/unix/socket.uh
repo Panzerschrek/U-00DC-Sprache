@@ -1,0 +1,10 @@
+import "../../imports/inet_address.u"
+import "unix.uh"
+
+namespace ust
+{
+
+// Convert "sockaddr" into our own representation.
+fn translate_socket_address( sockaddr& address ) : optional</socket_address/>;
+
+} // namespace ust

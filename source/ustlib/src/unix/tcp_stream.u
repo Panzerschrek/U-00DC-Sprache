@@ -25,10 +25,10 @@ fn tcp_stream::connect( socket_address& a ) : result</tcp_stream, io_error/>
 			};
 
 			var i32 res=
-				unsafe( ::connect(
+				::connect(
 					s,
 					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-					socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
+					socklen_t( typeinfo</sockaddr_in/>.size_of ) );
 
 			if( res != 0 )
 			{

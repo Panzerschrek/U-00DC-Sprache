@@ -1,6 +1,7 @@
 // This file contains some definitions from Linux headers, which are used inside "ustlib".
 // These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
+fn nomangle accept( i32 ü__fd, $(sockaddr) ü__addr, $(socklen_t) ü__addr_len ) unsafe call_conv( "C" ) : i32;
 fn nomangle bind( i32 ü__fd, $(sockaddr) ü__addr, socklen_t ü__len ) unsafe call_conv( "C" ) : i32;
 fn nomangle chdir( $(char8) ü__path ) unsafe call_conv( "C" ) : i32;
 fn nomangle chmod( $(char8) ü__file, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;

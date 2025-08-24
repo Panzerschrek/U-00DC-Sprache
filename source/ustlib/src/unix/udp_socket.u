@@ -1,5 +1,6 @@
 import "../../imports/udp_socket.u"
 import "errno.uh"
+import "socket.uh"
 
 namespace ust
 {
@@ -391,33 +392,6 @@ fn udp_socket::take_native_fd( byval mut this ) unsafe : native_socket_fd
 	var native_socket_fd s= socket_;
 	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
 	return s;
-}
-
-// Convert "sockaddr" into our own representation.
-fn translate_socket_address( sockaddr& address ) : ust::optional</socket_address/>
-{
-	if( i32(address.sa_family) == AF_INET )
-	{
-		static_assert( typeinfo</sockaddr/>.size_of >= typeinfo</sockaddr_in/>.size_of );
-
-		// Cast "sockaddr" to "sockaddr_in" using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
-		var sockaddr_in mut address_ip_v4= zero_init;
-
-		unsafe
-		{
-			memory_copy(
-				ptr_cast_to_byte8( $<(address_ip_v4) ),
-				ptr_cast_to_byte8( $<( cast_mut(address) ) ),
-				typeinfo</sockaddr_in/>.size_of );
-		}
-
-		return socket_address( socket_address_v4( ip_address_v4( address_ip_v4.sin_addr.s_addr ), address_ip_v4.sin_port ) );
-	}
-	else
-	{
-		// TODO - support IP v6.
-		return ust::null_optional;
-	}
 }
 
 } // namespace ust

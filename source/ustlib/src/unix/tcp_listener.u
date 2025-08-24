@@ -1,6 +1,89 @@
 import "../../imports/tcp_listener.u"
+import "errno.uh"
+import "socket.uh"
 
 namespace ust
 {
+
+fn tcp_listener::create_and_bind( socket_address& a ) : result</tcp_listener, io_error/>
+{
+	unsafe
+	{
+		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
+		if( s == -1 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		if_var( &a_v4 : a.get</socket_address_v4/>() )
+		{
+			var sockaddr_in mut underlying_address
+			{
+				.sin_family( AF_INET ),
+				.sin_port= a_v4.get_port(),
+				.sin_addr{ .s_addr= a_v4.get_ip().get_bits() },
+				.sin_zero= zero_init,
+			};
+
+			var i32 res=
+				::bind(
+					s,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in/>.size_of ) );
+
+			if( res != 0 )
+			{
+				var i32 e= get_errno();
+				::close( s );
+				return translate_errno( e );
+			}
+		}
+		else
+		{
+			// TODO - support IP v6.
+			halt;
+		}
+
+		return tcp_listener( s );
+	}
+}
+
+fn tcp_listener::constructor( native_socket_fd s ) unsafe
+	( socket_= s )
+{}
+
+fn tcp_listener::destructor()
+{
+	unsafe( ::close( socket_ ) );
+}
+
+fn tcp_listener::accept( mut this ) : result</ tup[ tcp_stream, socket_address ], io_error />
+{
+	unsafe
+	{
+		var sockaddr mut address= zero_init;
+		var socklen_t mut address_size( typeinfo</sockaddr/>.size_of );
+
+		var i32 accept_res= ::accept( socket_, $<(address), $<(address_size) );
+		if( accept_res == -1 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		auto mut address_translated_opt= translate_socket_address( address );
+		if( address_translated_opt.empty() )
+		{
+			return io_error::other;
+		}
+
+		var tup[ tcp_stream, socket_address ] res
+		[
+			tcp_stream( accept_res ),
+			address_translated_opt.try_take(),
+		];
+
+		return res;
+	}
+}
 
 } // namespace ust
