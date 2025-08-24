@@ -483,13 +483,21 @@ fn nomangle main() call_conv( "C" ) : i32
 	{
 		var ust::net::udp_socket mut receiver_socket= ust::net::udp_socket::create_and_bind( ust::net::socket_address_v4( ust::net::ip_address_v4( 0u ), GetNextPort() ) ).try_take();
 
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			assert( !receiver_socket.is_nonblocking().try_take(), "Socket isn't blocking as expected!" );
+		}
+
 		result_match( receiver_socket.set_nonblocking( true ) )
 		{
 			Ok( v ) -> {},
 			Err( e ) -> { assert( false, ust::concat( "Failed to set non-blocking mode for socket! Error code: ", ust::enum_to_string(e) ) ); }
 		}
 
-		assert( receiver_socket.is_nonblocking().try_take(), "Socket isn't non-blocking as expected!" );
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			assert( receiver_socket.is_nonblocking().try_take(), "Socket isn't non-blocking as expected!" );
+		}
 
 		var [ byte8, 64 ] mut message= zero_init;
 

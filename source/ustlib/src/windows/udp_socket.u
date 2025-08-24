@@ -283,8 +283,8 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 
 fn udp_socket::is_nonblocking( this ) : result</bool, io_error/>
 {
-	// TODO
-	return true;
+	// There is no API to retrieve such property.
+	return io_error::other;
 }
 
 fn udp_socket::set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>
