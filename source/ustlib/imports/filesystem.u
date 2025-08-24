@@ -16,6 +16,10 @@ enum io_error
 	interrupted,
 	unexpected_end_of_file,
 	write_zero,
+	destination_address_required,
+	not_connected,
+	would_block,
+	address_already_in_use,
 	other, // Some non-listed error code.
 	// TODO - add other errors
 }

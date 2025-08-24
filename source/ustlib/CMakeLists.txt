@@ -69,7 +69,9 @@ add_library(
 
 set_target_properties( ustlib${CURRENT_COMPILER_GENERATION} PROPERTIES LINKER_LANGUAGE C )
 
-if( NOT WIN32 )
+if( WIN32 )
+	target_link_libraries( ustlib${CURRENT_COMPILER_GENERATION} PRIVATE Ws2_32.lib )
+else()
 	target_link_libraries( ustlib${CURRENT_COMPILER_GENERATION} PRIVATE pthread )
 endif()
 

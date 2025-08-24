@@ -1,0 +1,65 @@
+import "errno.uh"
+
+namespace ust
+{
+
+fn translate_errno( i32 errno ) : io_error
+{
+	switch(errno)
+	{
+	EPERM, EACCES -> { return io_error::permission_denied; },
+	ENOENT -> { return io_error::not_found; },
+	EEXIST -> { return io_error::already_exists; },
+	ENOTDIR -> { return io_error::not_a_directory; },
+	EINTR -> { return io_error::interrupted; },
+	ENOTEMPTY -> { return io_error::directory_not_empty; },
+	EDESTADDRREQ -> { return io_error::destination_address_required; },
+	ENOTCONN -> { return io_error::not_connected; },
+	EAGAIN -> { return io_error::would_block; },
+	EADDRINUSE -> { return io_error::address_already_in_use; },
+	// TODO - support other codes.
+	default -> { return io_error::other; },
+	}
+}
+
+fn get_errno() : i32
+{
+	return unsafe( $>( get_errno_location() ) );
+}
+
+fn set_errno( i32 val )
+{
+	unsafe
+	{
+		$>( get_errno_location() )= val;
+	}
+}
+
+fn get_errno_location() : $(i32)
+{
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) ||
+		constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
+	{
+		unsafe
+		{
+			// "errno" in system C library is accessed via function "__error".
+			// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
+			auto f= import fn</ fn() unsafe call_conv( "C" ) : $(i32) /> ( "__error" );
+			var $(i32) ptr= f();
+			return ptr;
+		}
+	}
+	else
+	{
+		// "errno" in glibc is accessed via function "__errno_location".
+		// We can't declare a prototype for it, since in Ü names can't start with "_", so, use external function access operator to call it.
+		unsafe
+		{
+			auto f= import fn</ fn() unsafe call_conv( "C" ) : $(i32) /> ( "__errno_location" );
+			var $(i32) ptr= f();
+			return ptr;
+		}
+	}
+}
+
+} // namespace ust

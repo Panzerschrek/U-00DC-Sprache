@@ -1573,7 +1573,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"utf.u",
 	];
 
-	var [ ust::filesystem_path_view, 13 ] sources_windows
+	var [ ust::filesystem_path_view, 14 ] sources_windows
 	[
 		"windows/barrier_impl.u",
 		"windows/condition_variable_impl.u",
@@ -1588,13 +1588,15 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"windows/stdout.u",
 		"windows/system_time.u",
 		"windows/thread_impl.u",
+		"windows/udp_socket.u",
 	];
 
-	var [ ust::filesystem_path_view, 12 ] sources_unix
+	var [ ust::filesystem_path_view, 14 ] sources_unix
 	[
 		"unix/barrier_impl.u",
 		"unix/condition_variable_impl.u",
 		"unix/environment.u",
+		"unix/errno.u",
 		"unix/filesystem.u",
 		"unix/main_wrapper.u",
 		"unix/mutex_impl.u",
@@ -1604,6 +1606,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"unix/stdout.u",
 		"unix/system_time.u",
 		"unix/thread_impl.u",
+		"unix/udp_socket.u",
 	];
 
 	var ust::vector</ust::filesystem_path/> mut res;
@@ -1634,7 +1637,7 @@ fn GetUstlibSystemLibrariesToLink( TargetTriple& target_triple ) : ust::vector</
 {
 	if( target_triple.operating_system == g_os_windows )
 	{
-		return ust::vector</ust::string8/>();
+		return ust::make_array</ust::string8/>( "Ws2_32.lib" );
 	}
 	else
 	{
