@@ -15,6 +15,26 @@ fn tcp_listener::create_and_bind( socket_address& a ) : result</tcp_listener, io
 			return translate_errno( get_errno() );
 		}
 
+		// Set an option to allow fast socket reopening.
+		{
+			var i32 mut reuse= 1;
+
+			var i32 set_reuse_res=
+				::setsockopt(
+					s,
+					SOL_SOCKET,
+					SO_REUSEADDR,
+					ptr_cast_to_byte8( $<(reuse) ),
+					socklen_t( typeinfo</i32/>.size_of ) );
+
+			if( set_reuse_res != 0 )
+			{
+				var i32 e= get_errno();
+				::close( s );
+				return translate_errno( e );
+			}
+		}
+
 		if_var( &a_v4 : a.get</socket_address_v4/>() )
 		{
 			var sockaddr_in mut underlying_address

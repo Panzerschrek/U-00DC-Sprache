@@ -369,6 +369,10 @@ auto constexpr O_NONBLOCK = 2048;
 auto constexpr PF_INET = 2;
 auto constexpr PF_INET6 = 10;
 
+auto constexpr SOL_SOCKET = 1;
+
+auto constexpr SO_REUSEADDR = 2;
+
 auto constexpr S_IEXEC = 64;
 auto constexpr S_IWRITE = 128;
 auto constexpr S_IREAD = 256;
