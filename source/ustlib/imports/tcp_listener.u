@@ -23,6 +23,12 @@ public:
 	// Get address to which this socket is bound.
 	fn get_local_address( this ) : result</socket_address, io_error/>;
 
+	// Get time to live.
+	fn get_ttl( this ) : result</u32, io_error/>;
+
+	// Set time to live.
+	fn set_ttl( mut this, u32 ttl ) : result</void, io_error/>;
+
 private:
 	native_socket_fd socket_;
 }
