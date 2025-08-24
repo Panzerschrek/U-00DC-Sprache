@@ -152,6 +152,8 @@ fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</
 			address_translated_opt.try_take(),
 			( bytes_read )
 		];
+
+		return res;
 	}
 }
 
