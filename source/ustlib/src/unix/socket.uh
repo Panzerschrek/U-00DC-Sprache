@@ -1,4 +1,6 @@
 import "../../imports/inet_address.u"
+import "../../imports/filesystem.u"
+import "../../imports/native_socket.u"
 import "unix.uh"
 
 namespace ust
@@ -6,5 +8,9 @@ namespace ust
 
 // Convert "sockaddr" into our own representation.
 fn translate_socket_address( sockaddr& address ) : optional</socket_address/>;
+
+fn is_socket_nonblocking( native_socket_fd s ) : result</bool, io_error/>;
+
+fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : result</void, io_error/>;
 
 } // namespace ust

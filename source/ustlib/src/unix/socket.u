@@ -1,4 +1,5 @@
 import "socket.uh"
+import "errno.uh"
 
 namespace ust
 {
@@ -28,4 +29,47 @@ fn translate_socket_address( sockaddr& address ) : optional</socket_address/>
 		return ust::null_optional;
 	}
 }
+
+fn is_socket_nonblocking( native_socket_fd s ) : result</bool, io_error/>
+{
+	var i32 flags= unsafe( ::fcntl( s, F_GETFL, 0 ) );
+
+	if( flags == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return ( flags & O_NONBLOCK ) != 0;
+}
+
+fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : result</void, io_error/>
+{
+	unsafe
+	{
+		var i32 mut flags= ::fcntl( s, F_GETFL, 0 );
+
+		if( flags == -1 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		if( nonblocking )
+		{
+			flags |= O_NONBLOCK;
+		}
+		else
+		{
+			flags &= ~O_NONBLOCK;
+		}
+
+		var i32 res= ::fcntl( s, F_SETFL, flags );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+	}
+
+	return void();
+}
+
 } // namespace ust
