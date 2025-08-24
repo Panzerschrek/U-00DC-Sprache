@@ -20,6 +20,9 @@ public:
 	// Set non-blocking mode.
 	fn set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>;
 
+	// Get address to which this socket is bound.
+	fn get_local_address( this ) : result</socket_address, io_error/>;
+
 private:
 	native_socket_fd socket_;
 }

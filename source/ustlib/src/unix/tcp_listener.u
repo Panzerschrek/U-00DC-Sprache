@@ -126,4 +126,9 @@ fn tcp_listener::set_nonblocking( mut this, bool nonblocking ) : result</void, i
 	return set_socket_nonblocking( socket_, nonblocking );
 }
 
+fn tcp_listener::get_local_address( this ) : result</socket_address, io_error/>
+{
+	return get_socket_local_address( socket_ );
+}
+
 } // namespace ust
