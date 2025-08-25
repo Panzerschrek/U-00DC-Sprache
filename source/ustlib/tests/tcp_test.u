@@ -5,6 +5,7 @@ import "../imports/semaphore.u"
 import "../imports/string_conversions.u"
 import "../imports/thread.u"
 import "../imports/tcp_listener.u"
+import "../imports/udp_socket.u"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
@@ -581,6 +582,43 @@ fn nomangle main() call_conv( "C" ) : i32
 	{
 		Ok( s ) -> { assert( false, "Should not connect to non-existing address!" ); },
 		Err( e ) -> { assert( e == ust::io_error::connection_refused, ust::concat( "Unexpected error code while connecting to invalid address: ", ust::enum_to_string(e) ) ); },
+	}
+
+	// Try connecting TCP stream to UDP socket - should fail doint this.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::udp_socket socket= ust::udp_socket::create_and_bind( server_address ).try_take();
+
+		result_match( ust::tcp_stream::connect( server_address ) )
+		{
+			Ok( s ) -> { assert( false, "Should not connect TCP stream to UDP socket!" ); },
+			Err( e ) -> { assert( e == ust::io_error::connection_refused, ust::concat( "Unexpected error while connecting TCP stream to UDP socket: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// Try sending UDP packets to TCP listener.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		listener.set_nonblocking( true ).try_deref();
+
+		var ust::udp_socket mut socket= ust::udp_socket::create().try_take();
+
+		// Should successfully send, but it will be rejected.
+		assert( socket.send_to( server_address, CastRangeToBytesRange( ust::string_view8( "Test UDP packet" ) ) ).try_take() == 15s );
+
+		// Try accepting many times in non-blocking mode. Shouldn't accept.
+		for( auto mut i= 0s; i < 256s; ++i )
+		{
+			result_match( listener.accept() )
+			{
+				Ok( accept_result ) -> { assert( false, "Should not accept UDP packet!" ); },
+				Err(e) -> { assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while accepting on non-blocking TCP listener: ", ust::enum_to_string(e) ) ); },
+			}
+		}
 	}
 
 	return 0;
