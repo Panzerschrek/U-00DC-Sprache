@@ -71,7 +71,7 @@ fn tcp_stream::read( mut this, array_view_mut</byte8/> buf ) : result</size_type
 
 fn tcp_stream::write( mut this, array_view_imut</byte8/> buf ) : result</size_type, io_error/>
 {
-	var ssize_type bytes_written= unsafe( ::send( socket_, buf.data(), buf.size(), 0 ) );
+	var ssize_type bytes_written= unsafe( ::send( socket_, buf.data(), buf.size(), i32(MSG_NOSIGNAL) ) );
 
 	if( bytes_written < ssize_type(0) )
 	{

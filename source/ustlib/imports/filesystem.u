@@ -21,6 +21,7 @@ enum io_error
 	would_block,
 	address_already_in_use,
 	connection_reset,
+	broken_pipe,
 	other, // Some non-listed error code.
 	// TODO - add other errors
 }

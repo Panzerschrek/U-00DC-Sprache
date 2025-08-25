@@ -363,6 +363,57 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// Try writing into closed stream.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_steam= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		move( server_stream ); // Destroy stream, causing it to close.
+
+		loop
+		{
+			result_match( client_steam.write( CastRangeToBytesRange( ust::string_view8( "Pest und Eiter - wir ziehen weiter!" ) ) ) )
+			{
+				Ok( bytes_written ) ->
+				{
+					continue; // still can write something. Continue until first error.
+				},
+				Err( e ) ->
+				{
+					assert( e == ust::io_error::broken_pipe, ust::concat( "Invalid error code while writing into closed stream: ", ust::enum_to_string(e) ) );
+					break;
+				},
+			}
+		}
+	}
+
+	// Try reading from closed stream.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_steam= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		move( server_stream ); // Destroy stream, causing it to close.
+
+		var [ byte8, 16 ] mut buff= zero_init;
+
+		// TODO - shouldn't we do this in loop until error occured?
+		result_match( client_steam.read( buff ) )
+		{
+			Ok( bytes_read ) -> { assert( bytes_read == 0s, "Should not read from closed stream!" ); },
+			Err( e ) -> { assert( e == ust::io_error::broken_pipe, ust::concat( "Invalid error code while reading from closed stream: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
 	// Non-blocking listener - should not block if nobody connects.
 	{
 		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( ust::socket_address_v4( loopback, GetNextPort() ) ).try_take();
