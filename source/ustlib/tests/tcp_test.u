@@ -547,6 +547,13 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// Connect to invalid address (with no listener attached to it).
+	result_match( ust::tcp_stream::connect( ust::socket_address_v4( loopback, GetNextPort() ) ) )
+	{
+		Ok( s ) -> { assert( false, "Should not connect to non-existing address!" ); },
+		Err( e ) -> { assert( e == ust::io_error::connection_refused, ust::concat( "Unexpected error code while connecting to invalid address: ", ust::enum_to_string(e) ) ); },
+	}
+
 	return 0;
 }
 

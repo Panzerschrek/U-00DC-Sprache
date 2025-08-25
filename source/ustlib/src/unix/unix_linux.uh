@@ -353,6 +353,7 @@ auto constexpr EDESTADDRREQ = 89;
 auto constexpr EADDRINUSE = 98;
 auto constexpr ECONNRESET = 104;
 auto constexpr ENOTCONN = 107;
+auto constexpr ECONNREFUSED = 111;
 
 auto constexpr F_GETFL = 3;
 auto constexpr F_SETFL = 4;
