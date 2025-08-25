@@ -215,6 +215,74 @@ fn nomangle main() call_conv( "C" ) : i32
 		move(server_thread).join();
 	}
 
+	// 2 writes and 1 read.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		assert( client_stream.write( CastRangeToBytesRange( ust::string_view8( "Some" ) ) ).try_take() == 4s );
+		assert( client_stream.write( CastRangeToBytesRange( ust::string_view8( " message" ) ) ).try_take() == 8s );
+
+		var [ char8, 12 ] mut message_received= zero_init;
+		assert( server_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take() == 12s );
+		assert( message_received == "Some message" );
+	}
+
+	// 1 write and two reads.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		assert( client_stream.write( CastRangeToBytesRange( ust::string_view8( "012345678" ) ) ).try_take() == 9s );
+
+		var [ char8, 9 ] mut message_received= zero_init;
+		assert( server_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ).subrange( 0s, 3s ) ).try_take() == 3s );
+		assert( server_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ).subrange( 3s, 9s ) ).try_take() == 6s );
+		assert( message_received == "012345678" );
+	}
+
+	//
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var size_type message_size= 1024s * 1024s * 16s;
+
+		auto mut server_thread= ust::make_thread(
+			lambda[&]()
+			{
+				auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+			} );
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		var size_type client_buffer_size= 3123s;
+		var [ byte8, client_buffer_size ] mut buffer= zero_init;
+
+		for( auto mut offset= 0s; offset < message_size; offset += client_buffer_size )
+		{
+			var size_type current_chunk_size= ust::min( client_buffer_size, message_size - offset );
+			for( var size_type mut i= 0s, mut end= current_chunk_size; i < end; ++i )
+			{
+				buffer[i]= byte8( u8( ( ( offset + i ) * 37s ) ^ offset ) );
+			}
+
+			assert( client_stream.write( ust::array_view_imut</byte8/>( buffer ).subrange_end( current_chunk_size ) ).try_take() == current_chunk_size );
+		}
+	}
+
 	// Non-blocking listener - should not block if nobody connects.
 	{
 		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( ust::socket_address_v4( loopback, GetNextPort() ) ).try_take();
