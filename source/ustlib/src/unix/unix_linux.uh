@@ -398,5 +398,7 @@ auto constexpr STDIN_FILENO = 0;
 auto constexpr STDOUT_FILENO = 1;
 auto constexpr STDERR_FILENO = 2;
 
+auto constexpr TCP_NODELAY = 1;
+
 var bool c_arch_is_i686= ust::constexpr_string_equals( compiler::target::arch, "i686" );
 var bool c_arch_is_aarch64= ust::constexpr_string_equals( compiler::target::arch, "aarch64" );

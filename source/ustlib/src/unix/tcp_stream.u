@@ -123,6 +123,48 @@ fn tcp_stream::set_ttl( mut this, u32 ttl ) : result</void, io_error/>
 	return set_socket_ttl( socket_, ttl );
 }
 
+fn tcp_stream::get_nodelay( this ) : result</bool, io_error/>
+{
+	var u32 mut nodelay= 0u;
+
+	var socklen_t mut len( typeinfo</u32/>.size_of );
+
+	var i32 res=
+		unsafe( ::getsockopt(
+			socket_,
+			i32( IPPROTO_TCP ),
+			i32( TCP_NODELAY ),
+			ptr_cast_to_byte8( $<( nodelay ) ),
+			$<(len) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return nodelay != 0u;
+}
+
+fn tcp_stream::set_nodelay( mut this, bool nodelay ) : result</void, io_error/>
+{
+	var u32 mut nodelay_int= ( nodelay ? 1u : 0u );
+
+	var i32 res=
+		unsafe( ::setsockopt(
+			socket_,
+			i32( IPPROTO_TCP ),
+			i32( TCP_NODELAY ),
+			ptr_cast_to_byte8( $<( nodelay_int ) ),
+			socklen_t( typeinfo</u32/>.size_of ) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
 fn tcp_stream::get_native_fd( this ) unsafe : native_socket_fd
 {
 	return socket_;

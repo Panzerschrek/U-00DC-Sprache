@@ -41,6 +41,12 @@ public:
 	// Set time to live.
 	fn set_ttl( mut this, u32 ttl ) : result</void, io_error/>;
 
+	// Get nodelay property.
+	fn get_nodelay( this ) : result</bool, io_error/>;
+
+	// Set nodelay property.
+	fn set_nodelay( mut this, bool nodelay ) : result</void, io_error/>;
+
 	// Get handle to perform some system-specific file operations with it. Do not try to close it!
 	fn get_native_fd( this ) unsafe : native_socket_fd;
 
