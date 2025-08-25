@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/assert.u"
 import "../imports/enum_string_conversions.u"
+import "../imports/semaphore.u"
 import "../imports/string_conversions.u"
 import "../imports/thread.u"
 import "../imports/tcp_listener.u"
@@ -443,6 +444,61 @@ fn nomangle main() call_conv( "C" ) : i32
 			},
 			Err(e) -> { assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while accepting on non-blocking TCP listener: ", ust::enum_to_string(e) ) ); },
 		}
+	}
+
+	// Non-blocking listener, which actually accepts a connection.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var void non_blocking_set_result= listener.set_nonblocking( true ).try_take();
+
+		var ust::semaphore sem( 0u );
+
+		auto mut background_thread= ust::make_thread(
+			lambda[&]() : size_type
+			{
+				var size_type mut num_attempts= 0s;
+
+				loop
+				{
+					result_match( listener.accept() )
+					{
+						Ok( mut accept_result ) ->
+						{
+							assert( accept_result[0].write( CastRangeToBytesRange( ust::string_view8( "Hello!" ) ) ).try_take() == 6s );
+							return num_attempts;
+						},
+						Err(e) ->
+						{
+							assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while accepting on non-blocking TCP listener: ", ust::enum_to_string(e) ) );
+
+							if( num_attempts == 0s )
+							{
+								sem.release();
+							}
+
+							++num_attempts;
+
+							continue;
+						},
+					}
+				}
+			} );
+
+		// Wait on a semaphore to ensure at least one "accept" attempt was performed.
+		sem.acquire();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		var [ char8, 6 ] mut message_received= zero_init;
+		assert( client_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take() == 6s );
+		assert( message_received == "Hello!" );
+
+		var size_type num_attempts= move(background_thread).join();
+
+		ust::stdout_print( ust::concat( "Accept a client in ", ust::to_string8( num_attempts ), " attempts\n" ) );
 	}
 
 	// "get_local_address" for listener.
