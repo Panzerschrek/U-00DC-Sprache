@@ -251,35 +251,115 @@ fn nomangle main() call_conv( "C" ) : i32
 		assert( message_received == "012345678" );
 	}
 
-	//
+	// Transmit large amount of data - sender buffer is smaller than receiver buffer.
 	{
 		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
 
 		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
 
-		var size_type message_size= 1024s * 1024s * 16s;
+		var size_type message_size= 32s * 1024s * 1024s;
 
 		auto mut server_thread= ust::make_thread(
 			lambda[&]()
 			{
 				auto [ mut server_stream, client_address ]= listener.accept().try_take();
 
+				var size_type server_buffer_size= 3212s;
+				var [ byte8, server_buffer_size ] mut buffer= zero_init;
+
+				for( auto mut offset= 0s; offset < message_size; )
+				{
+					var size_type current_chunk_size= ust::min( server_buffer_size, message_size - offset );
+
+					var size_type bytes_read= server_stream.read( ust::array_view_mut</byte8/>( buffer ).subrange_end( current_chunk_size ) ).try_take();
+
+					for( auto mut i= 0s; i < bytes_read; ++i )
+					{
+						var size_type x= offset + i;
+						assert( buffer[i] == byte8( u8( ( x * 69431s ) ^ x ) ) );
+					}
+
+					offset+= bytes_read;
+				}
 			} );
 
 		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
 
-		var size_type client_buffer_size= 3123s;
+		var size_type client_buffer_size= 572s;
 		var [ byte8, client_buffer_size ] mut buffer= zero_init;
 
-		for( auto mut offset= 0s; offset < message_size; offset += client_buffer_size )
+		for( auto mut offset= 0s; offset < message_size; offset+= client_buffer_size )
 		{
+			// Generate data for current chunk.
 			var size_type current_chunk_size= ust::min( client_buffer_size, message_size - offset );
-			for( var size_type mut i= 0s, mut end= current_chunk_size; i < end; ++i )
+			for( var size_type mut i= 0s; i < current_chunk_size; ++i )
 			{
-				buffer[i]= byte8( u8( ( ( offset + i ) * 37s ) ^ offset ) );
+				var size_type x= offset + i;
+				buffer[i]= byte8( u8( ( x * 69431s ) ^ x ) );
 			}
 
-			assert( client_stream.write( ust::array_view_imut</byte8/>( buffer ).subrange_end( current_chunk_size ) ).try_take() == current_chunk_size );
+			// Write in loop, since sometimes the whole buffer can't be written in one call.
+			for( var size_type mut i= 0s; i < current_chunk_size; )
+			{
+				var size_type bytes_written= client_stream.write( ust::array_view_imut</byte8/>( buffer ).subrange( i, current_chunk_size ) ).try_take();
+				i+= bytes_written;
+			}
+		}
+	}
+
+	// Transmit large amount of data - receiver buffer is smaller than sender buffer.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var size_type message_size= 32s * 1024s * 1024s;
+
+		auto mut server_thread= ust::make_thread(
+			lambda[&]()
+			{
+				auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+				var size_type server_buffer_size= 321s;
+				var [ byte8, server_buffer_size ] mut buffer= zero_init;
+
+				for( auto mut offset= 0s; offset < message_size; )
+				{
+					var size_type current_chunk_size= ust::min( server_buffer_size, message_size - offset );
+
+					var size_type bytes_read= server_stream.read( ust::array_view_mut</byte8/>( buffer ).subrange_end( current_chunk_size ) ).try_take();
+
+					for( auto mut i= 0s; i < bytes_read; ++i )
+					{
+						var size_type x= offset + i;
+						assert( buffer[i] == byte8( u8( ( x * 71597s ) ^ x ) ) );
+					}
+
+					offset+= bytes_read;
+				}
+			} );
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		var size_type client_buffer_size= 5721s;
+		var [ byte8, client_buffer_size ] mut buffer= zero_init;
+
+		for( auto mut offset= 0s; offset < message_size; offset+= client_buffer_size )
+		{
+			// Generate data for current chunk.
+			var size_type current_chunk_size= ust::min( client_buffer_size, message_size - offset );
+			for( var size_type mut i= 0s; i < current_chunk_size; ++i )
+			{
+				var size_type x= offset + i;
+				buffer[i]= byte8( u8( ( x * 71597s ) ^ x ) );
+			}
+
+			// Write in loop, since sometimes the whole buffer can't be written in one call.
+			for( var size_type mut i= 0s; i < current_chunk_size; )
+			{
+				var size_type bytes_written= client_stream.write( ust::array_view_imut</byte8/>( buffer ).subrange( i, current_chunk_size ) ).try_take();
+				i+= bytes_written;
+			}
 		}
 	}
 
