@@ -7,6 +7,22 @@ import "../imports/thread.u"
 import "../imports/tcp_listener.u"
 import "../imports/udp_socket.u"
 
+// TCP listener and TCP stream class are just thin wrappers around native sockets.
+// And native sockets are just simple handles.
+static_assert( typeinfo</ ust::native_socket_fd />.size_of <= typeinfo</ size_type />.size_of );
+static_assert( typeinfo</ ust::tcp_listener />.size_of == typeinfo</ ust::native_socket_fd />.size_of );
+static_assert( typeinfo</ ust::tcp_stream />.size_of == typeinfo</ ust::native_socket_fd />.size_of );
+
+// TCP classes aren't copyable.
+static_assert( !typeinfo</ ust::tcp_listener />.is_copy_constructible );
+static_assert( !typeinfo</ ust::tcp_listener />.is_copy_assignable );
+static_assert( !typeinfo</ ust::tcp_stream />.is_copy_constructible );
+static_assert( !typeinfo</ ust::tcp_stream />.is_copy_assignable );
+
+// TCP classes aren't equality-comparable.
+static_assert( !typeinfo</ ust::tcp_listener />.is_equality_comparable );
+static_assert( !typeinfo</ ust::tcp_stream />.is_equality_comparable );
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	var ust::ip_address_v4 loopback( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) );

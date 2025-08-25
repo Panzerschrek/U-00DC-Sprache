@@ -8,6 +8,18 @@ import "../imports/string_conversions.u"
 import "../imports/thread.u"
 import "../imports/udp_socket.u"
 
+// UDP socket class is just thin wrapper around native socket.
+// And native socket is just simple handle.
+static_assert( typeinfo</ ust::native_socket_fd />.size_of <= typeinfo</ size_type />.size_of );
+static_assert( typeinfo</ ust::udp_socket />.size_of == typeinfo</ ust::native_socket_fd />.size_of );
+
+// UDP socket isn't copyable.
+static_assert( !typeinfo</ ust::udp_socket />.is_copy_constructible );
+static_assert( !typeinfo</ ust::udp_socket />.is_copy_assignable );
+
+// UDP socket isn't copyable. equality-comparable.
+static_assert( !typeinfo</ ust::udp_socket />.is_equality_comparable );
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	var ust::ip_address_v4 loopback( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) );
