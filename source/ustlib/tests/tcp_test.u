@@ -535,6 +535,35 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// TCP stream "peek" method.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		auto& message= "Testing peek";
+		var size_type message_size= typeinfo</ typeof(message) />.element_count;
+
+		assert( server_stream.write( CastRangeToBytesRange( ust::string_view8( message ) ) ).try_deref() == message_size );
+
+		// Can "peek" without extracting many times.
+		for( var size_type mut i= 0s; i < 16s; ++i )
+		{
+			var typeof(message) mut message_received= zero_init;
+			assert( client_stream.peek( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take() == message_size );
+			assert( message_received == message );
+		}
+
+		// Can still "read".
+		var typeof(message) mut message_received= zero_init;
+		assert( client_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take() == message_size );
+		assert( message_received == message );
+	}
+
 	// "get_local_address" for listener.
 	{
 		var ust::socket_address_v4 address( loopback, GetNextPort() );

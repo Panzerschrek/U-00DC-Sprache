@@ -81,6 +81,18 @@ fn tcp_stream::write( mut this, array_view_imut</byte8/> buf ) : result</size_ty
 	return size_type(bytes_written);
 }
 
+fn tcp_stream::peek( mut this, array_view_mut</byte8/> buf ) : result</size_type, io_error/>
+{
+	var ssize_type bytes_read= unsafe( ::recv( socket_, buf.data(), buf.size(), i32( MSG_PEEK ) ) );
+
+	if( bytes_read < ssize_type(0) )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return size_type(bytes_read);
+}
+
 fn tcp_stream::is_nonblocking( this ) : result</bool, io_error/>
 {
 	return is_socket_nonblocking( socket_ );
