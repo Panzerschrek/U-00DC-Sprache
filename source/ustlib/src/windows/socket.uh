@@ -6,6 +6,8 @@ import "windows.uh"
 namespace ust
 {
 
+// This function needs to be called before any WinSock2 call.
+// Usually it's inside factory methods of network primitives.
 fn call_wsa_startup();
 
 fn translate_wsa_error( i32 e ) : io_error;

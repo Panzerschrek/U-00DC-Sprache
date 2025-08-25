@@ -6,6 +6,9 @@ namespace ust
 
 fn call_wsa_startup()
 {
+	// Use an atomic variable indicating that we already called "WSAStartup".
+	// Atomic variable is necessary in order to avoid race conditions in its reading/updating.
+
 	unsafe
 	{
 		if( atomic_read( wsa_startup_called ) )
@@ -17,9 +20,11 @@ fn call_wsa_startup()
 		var i32 res= WSAStartup( u16(0x202), $<(wsa_data) );
 		halt if( res != 0 );
 
-		if( atomic_swap( wsa_startup_called, true ) )
+		var bool prev_wsa_startup_called= atomic_swap( wsa_startup_called, true );
+		if( prev_wsa_startup_called )
 		{
 			// Some other thread managed to call "WSAStartup" first.
+			// In such case it's a bet practice to call cleanup.
 			WSACleanup();
 		}
 	}
