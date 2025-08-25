@@ -16,6 +16,7 @@ fn translate_errno( i32 errno ) : io_error
 	EDESTADDRREQ -> { return io_error::destination_address_required; },
 	ENOTCONN -> { return io_error::not_connected; },
 	EAGAIN -> { return io_error::would_block; },
+	ECONNRESET -> { return io_error::connection_reset; },
 	EADDRINUSE -> { return io_error::address_already_in_use; },
 	// TODO - support other codes.
 	default -> { return io_error::other; },

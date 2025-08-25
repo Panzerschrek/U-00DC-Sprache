@@ -20,6 +20,7 @@ enum io_error
 	not_connected,
 	would_block,
 	address_already_in_use,
+	connection_reset,
 	other, // Some non-listed error code.
 	// TODO - add other errors
 }
