@@ -501,6 +501,40 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::stdout_print( ust::concat( "Accept a client in ", ust::to_string8( num_attempts ), " attempts\n" ) );
 	}
 
+	// Non-blocking stream - should not block on reading if no data was sent.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			assert( !client_stream.is_nonblocking().try_take(), "Socket isn't blocking as expected!" );
+		}
+
+		result_match( client_stream.set_nonblocking( true ) )
+		{
+			Ok( v ) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to set non-blocking mode for socket! Error code: ", ust::enum_to_string(e) ) ); }
+		}
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			assert( client_stream.is_nonblocking().try_take(), "Socket isn't non-blocking as expected!" );
+		}
+
+		auto [ server_stream, client_address ]= listener.accept().try_take();
+
+		var [ byte8, 16 ] mut data= zero_init;
+		result_match( client_stream.read( data ) )
+		{
+			Ok( bytes_read ) -> { assert( bytes_read == 0s, "Should not read data, which was never sent!" ); },
+			Err( e ) -> { assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while reading from non-blocking TCP stream: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
 	// "get_local_address" for listener.
 	{
 		var ust::socket_address_v4 address( loopback, GetNextPort() );
