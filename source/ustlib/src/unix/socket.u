@@ -26,7 +26,7 @@ fn translate_socket_address( sockaddr& address ) : optional</socket_address/>
 	else
 	{
 		// TODO - support IP v6.
-		return ust::null_optional;
+		return null_optional;
 	}
 }
 
