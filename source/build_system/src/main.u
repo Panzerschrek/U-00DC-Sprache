@@ -1573,7 +1573,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"utf.u",
 	];
 
-	var [ ust::filesystem_path_view, 16 ] sources_windows
+	var [ ust::filesystem_path_view, 17 ] sources_windows
 	[
 		"windows/barrier_impl.u",
 		"windows/condition_variable_impl.u",
@@ -1585,6 +1585,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"windows/path_utils.u",
 		"windows/rwlock_impl.u",
 		"windows/semaphore_impl.u",
+		"windows/socket.u",
 		"windows/stdout.u",
 		"windows/system_time.u",
 		"windows/tcp_listener.u",

@@ -49,6 +49,7 @@ fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWri
 fn nomangle WSACleanup() unsafe call_conv( "system" ) : i32;
 fn nomangle WSAGetLastError() unsafe call_conv( "system" ) : i32;
 fn nomangle WSAStartup( WORD wVersionRequested, LPWSADATA lpWSAData ) unsafe call_conv( "system" ) : i32;
+fn nomangle accept( SOCKET s, $(sockaddr) addr, $(i32) addrlen ) unsafe call_conv( "system" ) : SOCKET;
 fn nomangle bind( SOCKET s, $(sockaddr) name, i32 namelen ) unsafe call_conv( "system" ) : i32;
 fn nomangle closesocket( SOCKET s ) unsafe call_conv( "system" ) : i32;
 fn nomangle connect( SOCKET s, $(sockaddr) name, i32 namelen ) unsafe call_conv( "system" ) : i32;
@@ -56,6 +57,7 @@ fn nomangle getpeername( SOCKET s, $(sockaddr) name, $(i32) namelen ) unsafe cal
 fn nomangle getsockname( SOCKET s, $(sockaddr) name, $(i32) namelen ) unsafe call_conv( "system" ) : i32;
 fn nomangle getsockopt( SOCKET s, i32 level, i32 optname, $(char8) optval, $(i32) optlen ) unsafe call_conv( "system" ) : i32;
 fn nomangle ioctlsocket( SOCKET s, i32 cmd, $(u_long) argp ) unsafe call_conv( "system" ) : i32;
+fn nomangle listen( SOCKET s, i32 backlog ) unsafe call_conv( "system" ) : i32;
 fn nomangle recv( SOCKET s, $(char8) buf, i32 len, i32 flags ) unsafe call_conv( "system" ) : i32;
 fn nomangle recvfrom( SOCKET s, $(char8) buf, i32 len, i32 flags, $(sockaddr) from, $(i32) fromlen ) unsafe call_conv( "system" ) : i32;
 fn nomangle send( SOCKET s, $(char8) buf, i32 len, i32 flags ) unsafe call_conv( "system" ) : i32;
@@ -314,6 +316,7 @@ auto constexpr AF_INET6 = 23;
 
 auto constexpr PF_INET = AF_INET;
 
+auto constexpr SOCK_STREAM = 1;
 auto constexpr SOCK_DGRAM = 2;
 
 auto constexpr ERROR_SUCCESS = 0;

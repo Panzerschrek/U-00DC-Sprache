@@ -1,6 +1,5 @@
-import "../../imports/atomic.u"
 import "../../imports/udp_socket.u"
-import "windows.uh"
+import "socket.uh"
 
 namespace ust
 {
@@ -14,7 +13,7 @@ fn udp_socket::create() : result</udp_socket, io_error/>
 		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
 		if( s == native_socket_fd(-1) )
 		{
-			return translate_errno( WSAGetLastError() );
+			return translate_wsa_error( WSAGetLastError() );
 		}
 
 		return udp_socket( s );
@@ -50,7 +49,7 @@ fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_err
 		if( res != 0 )
 		{
 			// Socket will be destroyed on error return.
-			return translate_errno( unsafe( WSAGetLastError() ) );
+			return translate_wsa_error( unsafe( WSAGetLastError() ) );
 		}
 	}
 	else
@@ -77,7 +76,7 @@ fn udp_socket::send( mut this, array_view_imut</byte8/> data ) : result</size_ty
 
 	if( bytes_written < 0 )
 	{
-		return translate_errno( unsafe( WSAGetLastError() ) );
+		return translate_wsa_error( unsafe( WSAGetLastError() ) );
 	}
 
 	return size_type(bytes_written);
@@ -106,7 +105,7 @@ fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> da
 
 		if( bytes_written < 0 )
 		{
-			return translate_errno( unsafe( WSAGetLastError() ) );
+			return translate_wsa_error( unsafe( WSAGetLastError() ) );
 		}
 
 		return size_type(bytes_written);
@@ -145,7 +144,7 @@ fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</
 			}
 			else
 			{
-				return translate_errno( e );
+				return translate_wsa_error( e );
 			}
 		}
 
@@ -176,7 +175,7 @@ fn udp_socket::receive( mut this, array_view_mut</byte8/> data ) : result</ size
 		{
 			return data.size();
 		}
-		return translate_errno( e );
+		return translate_wsa_error( e );
 	}
 
 	return size_type(bytes_read);
@@ -209,7 +208,7 @@ fn udp_socket::peek_from( mut this, array_view_mut</byte8/> data ) : result</ tu
 			}
 			else
 			{
-				return translate_errno( e );
+				return translate_wsa_error( e );
 			}
 		}
 
@@ -240,7 +239,7 @@ fn udp_socket::peek( mut this, array_view_mut</byte8/> data ) : result</ size_ty
 		{
 			return data.size();
 		}
-		return translate_errno( e );
+		return translate_wsa_error( e );
 	}
 
 	return size_type(bytes_read);
@@ -266,7 +265,7 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 
 		if( res != 0 )
 		{
-			return translate_errno( unsafe( WSAGetLastError() ) );
+			return translate_wsa_error( unsafe( WSAGetLastError() ) );
 		}
 	}
 	else
@@ -280,112 +279,32 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 
 fn udp_socket::is_nonblocking( this ) : result</bool, io_error/>
 {
-	// There is no API to retrieve such property.
-	return io_error::other;
+	return is_socket_nonblocking( socket_ );
 }
 
 fn udp_socket::set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>
 {
-	var i32 mut non_blocking_int= ( nonblocking ? 1 : 0 );
-
-	var i32 res= unsafe( ::ioctlsocket( socket_, i32( FIONBIO ), $<( cast_ref_unsafe</u_long/>( non_blocking_int ) ) ) );
-
-	if( res != 0 )
-	{
-		return translate_errno( unsafe( WSAGetLastError() ) );
-	}
-
-	return void();
+	return set_socket_nonblocking( socket_, nonblocking );
 }
 
 fn udp_socket::get_local_address( this ) : result</socket_address, io_error/>
 {
-	var sockaddr mut address= zero_init;
-	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
-
-	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
-
-	unsafe
-	{
-		var i32 res= ::getsockname( socket_, $<(address), $<(address_length) );
-		if( res != 0 )
-		{
-			return translate_errno( WSAGetLastError() );
-		}
-
-		auto mut address_translated_opt= translate_socket_address( address );
-		if( address_translated_opt.empty() )
-		{
-			return io_error::other;
-		}
-
-		return address_translated_opt.try_take();
-	}
+	return get_socket_local_address( socket_ );
 }
 
 fn udp_socket::get_peer_address( this ) : result</socket_address, io_error/>
 {
-	var sockaddr mut address= zero_init;
-	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
-
-	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
-
-	unsafe
-	{
-		var i32 res= ::getpeername( socket_, $<(address), $<(address_length) );
-		if( res != 0 )
-		{
-			return translate_errno( WSAGetLastError() );
-		}
-
-		auto mut address_translated_opt= translate_socket_address( address );
-		if( address_translated_opt.empty() )
-		{
-			return io_error::other;
-		}
-
-		return address_translated_opt.try_take();
-	}
+	return get_socket_peer_address( socket_ );
 }
 
 fn udp_socket::get_ttl( this ) : result</u32, io_error/>
 {
-	var u32 mut ttl= 0u;
-
-	var socklen_t mut len( typeinfo</u32/>.size_of );
-
-	var i32 res=
-		unsafe( ::getsockopt(
-			socket_,
-			IPPROTO_IP,
-			IP_TTL,
-			$<( cast_ref_unsafe</char8/>( ttl ) ),
-			$<(len) ) );
-
-	if( res != 0 )
-	{
-		return translate_errno( unsafe( WSAGetLastError() ) );
-	}
-
-	return ttl;
+	return get_socket_ttl( socket_ );
 }
 
-fn udp_socket::set_ttl( mut this, u32 mut ttl ) : result</void, io_error/>
+fn udp_socket::set_ttl( mut this, u32 ttl ) : result</void, io_error/>
 {
-	var i32 res=
-		unsafe( ::setsockopt(
-			socket_,
-			IPPROTO_IP,
-			IP_TTL,
-			$<( cast_ref_unsafe</char8/>( ttl ) ),
-			socklen_t( typeinfo</u32/>.size_of ) ) );
-
-	if( res != 0 )
-	{
-		return translate_errno( unsafe( WSAGetLastError() ) );
-	}
-
-	return void();
+	return set_socket_ttl( socket_, ttl );
 }
 
 fn udp_socket::get_native_fd( this ) unsafe : native_socket_fd
@@ -398,62 +317,6 @@ fn udp_socket::take_native_fd( byval mut this ) unsafe : native_socket_fd
 	var native_socket_fd s= socket_;
 	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
 	return s;
-}
-
-// Convert "sockaddr" into our own representation.
-fn translate_socket_address( sockaddr& address ) : ust::optional</socket_address/>
-{
-	if( i32(address.sa_family) == AF_INET )
-	{
-		// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
-		var sockaddr_in mut address_ip_v4= zero_init;
-
-		unsafe( memory_copy(
-			ptr_cast_to_byte8( $<(address_ip_v4) ),
-			ptr_cast_to_byte8( $<( cast_mut(address) ) ),
-			typeinfo</sockaddr_in/>.size_of ) );
-
-		return socket_address( socket_address_v4( ip_address_v4( u32( address_ip_v4.sin_addr.S_un.union_contents[0] ) ), address_ip_v4.sin_port ) );
-	}
-	else
-	{
-		// TODO - support IP v6.
-		return null_optional;
-	}
-}
-
-fn translate_errno( i32 errno ) : io_error
-{
-	switch( errno )
-	{
-		WSAENOTCONN -> { return io_error::not_connected; },
-		WSAEWOULDBLOCK -> { return io_error::would_block; },
-		WSAEADDRINUSE -> { return io_error::address_already_in_use; },
-		default -> { return io_error::other; },
-	}
-}
-
-var bool mut wsa_startup_called= false;
-
-fn call_wsa_startup()
-{
-	unsafe
-	{
-		if( atomic_read( wsa_startup_called ) )
-		{
-			return;
-		}
-
-		var WSAData mut wsa_data= zero_init;
-		var i32 res= WSAStartup( u16(0x202), $<(wsa_data) );
-		halt if( res != 0 );
-
-		if( atomic_swap( wsa_startup_called, true ) )
-		{
-			// Some other thread managed to call "WSAStartup" first.
-			WSACleanup();
-		}
-	}
 }
 
 } // namespace ust
