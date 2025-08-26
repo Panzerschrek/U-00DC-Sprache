@@ -20,11 +20,50 @@ fn parse_ip_address_v4( string_view8 mut s ) : optional</ip_address_v4/>
 	return null_optional;
 }
 
-fn parse_ip_address_v6( string_view8 s ) : optional</ip_address_v6/>
+fn parse_ip_address_v6( string_view8 mut s ) : optional</ip_address_v6/>
 {
-	// TODO
-	ignore_unused( s );
-	return null_optional;
+	var [ u16, 8 ] mut parts= zero_init;
+
+	for( var size_type mut i= 0s; i < 8s; ++i )
+	{
+		var optional</u16/> d= extract_hex_u16( s );
+		if( d.empty() )
+		{
+			return null_optional;
+		}
+
+		parts[i]= d.try_deref();
+
+		if( i != 7s )
+		{
+			if( s.empty() || s.front() != ':' )
+			{
+				return null_optional;
+			}
+			s.drop_front();
+		}
+	}
+
+	if( !s.empty() )
+	{
+		// Allow no trailing symbols.
+		return null_optional;
+	}
+
+	// TODO - check endian-correctness here.
+	var [ u8, 16 ] octets
+	[
+		( parts[0] >> 8u ), ( parts[0] ),
+		( parts[1] >> 8u ), ( parts[1] ),
+		( parts[2] >> 8u ), ( parts[2] ),
+		( parts[3] >> 8u ), ( parts[3] ),
+		( parts[4] >> 8u ), ( parts[4] ),
+		( parts[5] >> 8u ), ( parts[5] ),
+		( parts[6] >> 8u ), ( parts[6] ),
+		( parts[7] >> 8u ), ( parts[7] ),
+	];
+
+	return ip_address_v6( octets );
 }
 
 fn parse_socket_address_v4( string_view8 mut s ) : optional</socket_address_v4/>
@@ -113,6 +152,65 @@ fn extract_ip_v4_address( string_view8 &mut s ) : optional</ip_address_v4/>
 	}
 
 	return ip_address_v4( octets );
+}
+
+fn extract_hex_u16( string_view8 &mut s ) : optional</u16/>
+{
+	// Always parse first digit.
+	var u32 digit0= extract_hex_digit( s );
+	if( digit0 == c_no_digit )
+	{
+		return null_optional;
+	}
+
+	var u32 mut res= digit0;
+
+	// Parse maximum 3 digits.
+	for( auto mut i= 0s; i < 3s; ++i )
+	{
+		auto mut d= extract_hex_digit( s );
+		if( d == c_no_digit )
+		{
+			break;
+		}
+
+		res <<= 4u;
+		res += d;
+	}
+
+	return u16( res );
+}
+
+var u32 c_no_digit= 0xFFFFFFFFu;
+
+fn extract_hex_digit( string_view8 &mut s ) : u32
+{
+	if( s.empty() )
+	{
+		return c_no_digit;
+	}
+
+	var char8 c= s.front();
+
+	if( c >= '0' && c <= '9' )
+	{
+		s.drop_front();
+		return u32( c ) - u32( '0' );
+	}
+
+	if( c >= 'a' && c <= 'f' )
+	{
+		s.drop_front();
+		return u32( c ) - u32( 'a' ) + 10u;
+	}
+
+	if( c >= 'A' && c <= 'F' )
+	{
+		s.drop_front();
+		return u32( c ) - u32( 'A' ) + 10u;
+	}
+
+	return c_no_digit;
 }
 
 } // namespace ust
