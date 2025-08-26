@@ -37,13 +37,7 @@ fn tcp_listener::create_and_bind( socket_address& a ) : result</tcp_listener, io
 
 		if_var( &a_v4 : a.get</socket_address_v4/>() )
 		{
-			var sockaddr_in mut underlying_address
-			{
-				.sin_family( AF_INET ),
-				.sin_port= a_v4.get_port(),
-				.sin_addr{ .s_addr= a_v4.get_ip().get_bits() },
-				.sin_zero= zero_init,
-			};
+			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
 
 			var i32 res=
 				::bind(
@@ -58,11 +52,24 @@ fn tcp_listener::create_and_bind( socket_address& a ) : result</tcp_listener, io
 				return translate_errno( e );
 			}
 		}
-		else
+		else if_var( &a_v6 : a.get</socket_address_v6/>() )
 		{
-			// TODO - support IP v6.
-			halt;
+			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+			var i32 res=
+				::bind(
+					s,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in6/>.size_of ) );
+
+			if( res != 0 )
+			{
+				var i32 e= get_errno();
+				::close( s );
+				return translate_errno( e );
+			}
 		}
+		else { halt; }
 
 		var i32 backlog= 128; // TODO - allow to tune it.
 

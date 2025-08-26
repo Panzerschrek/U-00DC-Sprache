@@ -31,13 +31,7 @@ fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_err
 
 	if_var( &a_v4 : a.get</socket_address_v4/>() )
 	{
-		var sockaddr_in mut underlying_address
-		{
-			.sin_family( AF_INET ),
-			.sin_port= a_v4.get_port(),
-			.sin_addr{ .s_addr= a_v4.get_ip().get_bits() },
-			.sin_zero= zero_init,
-		};
+		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
 
 		var i32 res=
 			unsafe( ::bind(
@@ -53,17 +47,7 @@ fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_err
 	}
 	else if_var( &a_v6 : a.get</socket_address_v6/>() )
 	{
-		var u128 ip_raw= a_v6.get_ip().get_bits();
-
-		var sockaddr_in6 mut underlying_address
-		{
-			.sin6_family( AF_INET6 ),
-			.sin6_port= a_v6.get_port(),
-			// TODO - check if it's correct.
-			.sin6_addr{ .parts[ ( ip_raw ), ( ip_raw >> 32u ), ( ip_raw >> 64u ), ( ip_raw >> 96u ) ] },
-			.sin6_flowinfo= a_v6.get_flow_info(),
-			.sin6_scope_id= a_v6.get_scope_id(),
-		};
+		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
 
 		var i32 res=
 			unsafe( ::bind(
@@ -107,13 +91,7 @@ fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> da
 {
 	if_var( &a_v4 : a.get</socket_address_v4/>() )
 	{
-		var sockaddr_in mut underlying_address
-		{
-			.sin_family( AF_INET ),
-			.sin_port= a_v4.get_port(),
-			.sin_addr{ .s_addr= a_v4.get_ip().get_bits() },
-			.sin_zero= zero_init,
-		};
+		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
 
 		var ssize_type bytes_written=
 			unsafe( ::sendto(
@@ -133,17 +111,7 @@ fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> da
 	}
 	else if_var( &a_v6 : a.get</socket_address_v6/>() )
 	{
-		var u128 ip_raw= a_v6.get_ip().get_bits();
-
-		var sockaddr_in6 mut underlying_address
-		{
-			.sin6_family( AF_INET6 ),
-			.sin6_port= a_v6.get_port(),
-			// TODO - check if it's correct.
-			.sin6_addr{ .parts[ ( ip_raw ), ( ip_raw >> 32u ), ( ip_raw >> 64u ), ( ip_raw >> 96u ) ] },
-			.sin6_flowinfo= a_v6.get_flow_info(),
-			.sin6_scope_id= a_v6.get_scope_id(),
-		};
+		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
 
 		var ssize_type bytes_written=
 			unsafe( ::sendto(
@@ -167,7 +135,6 @@ fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> da
 fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>
 {
 	var sockaddr mut sender_address= zero_init;
-	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
 
 	var socklen_t mut socket_address_length( typeinfo</sockaddr/>.size_of );
 
@@ -218,7 +185,6 @@ fn udp_socket::receive( mut this, array_view_mut</byte8/> data ) : result</ size
 fn udp_socket::peek_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>
 {
 	var sockaddr mut sender_address= zero_init;
-	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
 
 	var socklen_t mut socket_address_length( typeinfo</sockaddr/>.size_of );
 
@@ -270,13 +236,7 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 {
 	if_var( &a_v4 : a.get</socket_address_v4/>() )
 	{
-		var sockaddr_in mut underlying_address
-		{
-			.sin_family( AF_INET ),
-			.sin_port= a_v4.get_port(),
-			.sin_addr{ .s_addr= a_v4.get_ip().get_bits() },
-			.sin_zero= zero_init,
-		};
+		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
 
 		var i32 res=
 			unsafe( ::connect(
@@ -291,17 +251,7 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 	}
 	else if_var( &a_v6 : a.get</socket_address_v6/>() )
 	{
-		var u128 ip_raw= a_v6.get_ip().get_bits();
-
-		var sockaddr_in6 mut underlying_address
-		{
-			.sin6_family( AF_INET6 ),
-			.sin6_port= a_v6.get_port(),
-			// TODO - check if it's correct.
-			.sin6_addr{ .parts[ ( ip_raw ), ( ip_raw >> 32u ), ( ip_raw >> 64u ), ( ip_raw >> 96u ) ] },
-			.sin6_flowinfo= a_v6.get_flow_info(),
-			.sin6_scope_id= a_v6.get_scope_id(),
-		};
+		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
 
 		var i32 res=
 			unsafe( ::connect(
@@ -314,10 +264,7 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 			return translate_errno( get_errno() );
 		}
 	}
-	else
-	{
-		halt;
-	}
+	else { halt; }
 
 	return void();
 }
