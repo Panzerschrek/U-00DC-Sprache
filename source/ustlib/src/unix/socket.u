@@ -4,11 +4,11 @@ import "errno.uh"
 namespace ust
 {
 
-fn translate_socket_address( sockaddr& address ) : optional</socket_address/>
+fn translate_socket_address( sockaddr_storage& address ) : optional</socket_address/>
 {
-	if( i32(address.sa_family) == AF_INET )
+	if( i32(address.ss_family) == AF_INET )
 	{
-		static_assert( typeinfo</sockaddr/>.size_of >= typeinfo</sockaddr_in/>.size_of );
+		static_assert( typeinfo</sockaddr_storage/>.size_of >= typeinfo</sockaddr_in/>.size_of );
 
 		// Cast "sockaddr" to "sockaddr_in" using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
 		var sockaddr_in mut address_ip_v4= zero_init;
@@ -23,10 +23,9 @@ fn translate_socket_address( sockaddr& address ) : optional</socket_address/>
 
 		return socket_address( socket_address_v4( ip_address_v4( address_ip_v4.sin_addr.s_addr ), address_ip_v4.sin_port ) );
 	}
-	else if( i32(address.sa_family) == AF_INET6 )
+	else if( i32(address.ss_family) == AF_INET6 )
 	{
-		// TODO - fix this.
-		// static_assert( typeinfo</sockaddr/>.size_of >= typeinfo</sockaddr_in6/>.size_of );
+		static_assert( typeinfo</sockaddr_storage/>.size_of >= typeinfo</sockaddr_in6/>.size_of );
 
 		// Cast "sockaddr" to "sockaddr_in6" using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
 		var sockaddr_in6 mut address_ip_v6= zero_init;
@@ -130,14 +129,13 @@ fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : result</void
 
 fn get_socket_local_address( native_socket_fd s ) : result</socket_address, io_error/>
 {
-	var sockaddr mut address= zero_init;
-	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
+	var sockaddr_storage mut address= zero_init;
 
-	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
+	var socklen_t mut address_length( typeinfo</sockaddr_storage/>.size_of );
 
 	unsafe
 	{
-		var i32 res= ::getsockname( s, $<(address), $<(address_length) );
+		var i32 res= ::getsockname( s, $<( cast_ref_unsafe</sockaddr/>( address ) ), $<(address_length) );
 		if( res != 0 )
 		{
 			return translate_errno( get_errno() );
@@ -155,14 +153,13 @@ fn get_socket_local_address( native_socket_fd s ) : result</socket_address, io_e
 
 fn get_socket_peer_address( native_socket_fd s ) : result</socket_address, io_error/>
 {
-	var sockaddr mut address= zero_init;
-	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
+	var sockaddr_storage mut address= zero_init;
 
-	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
+	var socklen_t mut address_length( typeinfo</sockaddr_storage/>.size_of );
 
 	unsafe
 	{
-		var i32 res= ::getpeername( s, $<(address), $<(address_length) );
+		var i32 res= ::getpeername( s, $<( cast_ref_unsafe</sockaddr/>( address ) ), $<(address_length) );
 		if( res != 0 )
 		{
 			return translate_errno( get_errno() );

@@ -7,7 +7,7 @@ namespace ust
 {
 
 // Convert "sockaddr" into our own representation.
-fn translate_socket_address( sockaddr& address ) : optional</socket_address/>;
+fn translate_socket_address( sockaddr_storage& address ) : optional</socket_address/>;
 
 fn translate_socket_address( socket_address_v4& address ) : sockaddr_in;
 

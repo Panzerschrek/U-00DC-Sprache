@@ -134,9 +134,9 @@ fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> da
 
 fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>
 {
-	var sockaddr mut sender_address= zero_init;
+	var sockaddr_storage mut sender_address= zero_init;
 
-	var socklen_t mut socket_address_length( typeinfo</sockaddr/>.size_of );
+	var socklen_t mut socket_address_length( typeinfo</sockaddr_storage/>.size_of );
 
 	unsafe
 	{
@@ -146,7 +146,7 @@ fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</
 				data.data(),
 				data.size(),
 				0,
-				$<( sender_address ),
+				$<( cast_ref_unsafe</sockaddr/>( sender_address ) ),
 				$<( socket_address_length ) ) );
 
 		if( bytes_read < ssize_type(0) )
@@ -184,9 +184,9 @@ fn udp_socket::receive( mut this, array_view_mut</byte8/> data ) : result</ size
 
 fn udp_socket::peek_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>
 {
-	var sockaddr mut sender_address= zero_init;
+	var sockaddr_storage mut sender_address= zero_init;
 
-	var socklen_t mut socket_address_length( typeinfo</sockaddr/>.size_of );
+	var socklen_t mut socket_address_length( typeinfo</sockaddr_storage/>.size_of );
 
 	unsafe
 	{
@@ -196,7 +196,7 @@ fn udp_socket::peek_from( mut this, array_view_mut</byte8/> data ) : result</ tu
 				data.data(),
 				data.size(),
 				i32( MSG_PEEK ),
-				$<( sender_address ),
+				$<( cast_ref_unsafe</sockaddr/>( sender_address ) ),
 				$<( socket_address_length ) ) );
 
 		if( bytes_read < ssize_type(0) )

@@ -98,10 +98,12 @@ fn tcp_listener::accept( mut this ) : result</ tup[ tcp_stream, socket_address ]
 {
 	unsafe
 	{
-		var sockaddr mut address= zero_init;
-		var socklen_t mut address_size( typeinfo</sockaddr/>.size_of );
+		var sockaddr_storage mut address= zero_init;
+		var socklen_t mut address_size( typeinfo</sockaddr_storage/>.size_of );
 
-		var native_socket_fd client_stream_socket= ::accept( socket_, $<(address), $<(address_size) );
+		var native_socket_fd client_stream_socket=
+			::accept( socket_, $<( cast_ref_unsafe</sockaddr/>( address ) ), $<(address_size) );
+
 		if( client_stream_socket == -1 )
 		{
 			return translate_errno( get_errno() );
