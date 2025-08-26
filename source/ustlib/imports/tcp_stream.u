@@ -1,0 +1,60 @@
+import "filesystem.u"
+import "inet_address.u"
+import "native_socket.u"
+
+namespace ust
+{
+
+class tcp_stream
+{
+public:
+	// Connect to specified address.
+	fn connect( socket_address& a ) : result</tcp_stream, io_error/>;
+
+	fn constructor( native_socket_fd s ) unsafe; // constructor for internal usage.
+	fn destructor();
+
+	// Read into given buffer. May read less than expected and it's not an error. Returns number of bytes read.
+	fn read( mut this, array_view_mut</byte8/> buf ) : result</size_type, io_error/>;
+
+	// Write given buffer. May write less than expected and it's not an error. Returns number of bytes written.
+	fn write( mut this, array_view_imut</byte8/> buf ) : result</size_type, io_error/>;
+
+	// Read into given buffer, without extracting data from steam. May read less than expected and it's not an error. Returns number of bytes read.
+	fn peek( mut this, array_view_mut</byte8/> buf ) : result</size_type, io_error/>;
+
+	// Check if stream is in non-blocking mode.
+	fn is_nonblocking( this ) : result</bool, io_error/>;
+
+	// Set non-blocking mode.
+	fn set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>;
+
+	// Get address to which this stream is bound.
+	fn get_local_address( this ) : result</socket_address, io_error/>;
+
+	// Get remote address to which this stream is connected.
+	fn get_peer_address( this ) : result</socket_address, io_error/>;
+
+	// Get time to live.
+	fn get_ttl( this ) : result</u32, io_error/>;
+
+	// Set time to live.
+	fn set_ttl( mut this, u32 ttl ) : result</void, io_error/>;
+
+	// Get nodelay property.
+	fn get_nodelay( this ) : result</bool, io_error/>;
+
+	// Set nodelay property.
+	fn set_nodelay( mut this, bool nodelay ) : result</void, io_error/>;
+
+	// Get handle to perform some system-specific file operations with it. Do not try to close it!
+	fn get_native_fd( this ) unsafe : native_socket_fd;
+
+	// Take native handle and destroy this class instance. Caller is responsible for socket closing.
+	fn take_native_fd( byval this ) unsafe : native_socket_fd;
+
+private:
+	native_socket_fd socket_;
+}
+
+} // namespace ust

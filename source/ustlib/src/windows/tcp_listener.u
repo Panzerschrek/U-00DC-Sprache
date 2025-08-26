@@ -1,0 +1,137 @@
+import "../../imports/tcp_listener.u"
+import "socket.uh"
+
+namespace ust
+{
+
+fn tcp_listener::create_and_bind( socket_address& a ) : result</tcp_listener, io_error/>
+{
+	call_wsa_startup();
+
+	unsafe
+	{
+		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_STREAM), 0 );
+		if( s == native_socket_fd(-1) )
+		{
+			return translate_wsa_error( WSAGetLastError() );
+		}
+
+		if_var( &a_v4 : a.get</socket_address_v4/>() )
+		{
+			var sockaddr_in mut underlying_address
+			{
+				.sin_family( AF_INET ),
+				.sin_port= a_v4.get_port(),
+				.sin_addr{ .S_un{ .union_contents[ ( a_v4.get_ip().get_bits() ) ] } },
+				.sin_zero= zero_init,
+			};
+
+			var i32 res=
+				::bind(
+					s,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in/>.size_of ) );
+
+			if( res != 0 )
+			{
+				var i32 e= WSAGetLastError();
+				::closesocket( s );
+				return translate_wsa_error( e );
+			}
+		}
+		else
+		{
+			// TODO - support IP v6.
+			halt;
+		}
+
+		var i32 backlog= 128; // TODO - allow to tune it.
+
+		var i32 listen_res= ::listen( s, backlog );
+		if( listen_res != 0 )
+		{
+			var i32 e= WSAGetLastError();
+			::closesocket( s );
+			return translate_wsa_error( e );
+		}
+
+		return tcp_listener( s );
+	}
+}
+
+fn tcp_listener::constructor( native_socket_fd s ) unsafe
+	( socket_= s )
+{}
+
+fn tcp_listener::destructor()
+{
+	unsafe( ::closesocket( socket_ ) );
+}
+
+fn tcp_listener::accept( mut this ) : result</ tup[ tcp_stream, socket_address ], io_error />
+{
+	unsafe
+	{
+		var sockaddr mut address= zero_init;
+		var socklen_t mut address_size( typeinfo</sockaddr/>.size_of );
+
+		var native_socket_fd client_stream_socket= ::accept( socket_, $<(address), $<(address_size) );
+		if( client_stream_socket == native_socket_fd(-1) )
+		{
+			return translate_wsa_error( WSAGetLastError() );
+		}
+
+		auto mut address_translated_opt= translate_socket_address( address );
+		if( address_translated_opt.empty() )
+		{
+			return io_error::other;
+		}
+
+		var tup[ tcp_stream, socket_address ] res
+		[
+			tcp_stream( client_stream_socket ),
+			address_translated_opt.try_take(),
+		];
+
+		return res;
+	}
+}
+
+fn tcp_listener::is_nonblocking( this ) : result</bool, io_error/>
+{
+	return is_socket_nonblocking( socket_ );
+}
+
+fn tcp_listener::set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>
+{
+	return set_socket_nonblocking( socket_, nonblocking );
+}
+
+fn tcp_listener::get_local_address( this ) : result</socket_address, io_error/>
+{
+	return get_socket_local_address( socket_ );
+}
+
+fn tcp_listener::get_ttl( this ) : result</u32, io_error/>
+{
+	return get_socket_ttl( socket_ );
+}
+
+fn tcp_listener::set_ttl( mut this, u32 ttl ) : result</void, io_error/>
+{
+	return set_socket_ttl( socket_, ttl );
+}
+
+fn tcp_listener::get_native_fd( this ) unsafe : native_socket_fd
+{
+	return socket_;
+}
+
+fn tcp_listener::take_native_fd( byval mut this ) unsafe : native_socket_fd
+{
+	var native_socket_fd s= socket_;
+	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
+	return s;
+}
+
+} // namespace ust
