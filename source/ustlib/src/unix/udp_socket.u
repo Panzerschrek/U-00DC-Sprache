@@ -51,11 +51,33 @@ fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_err
 			return translate_errno( get_errno() );
 		}
 	}
-	else
+	else if_var( &a_v6 : a.get</socket_address_v6/>() )
 	{
-		// TODO - support IP v6.
-		halt;
+		var u128 ip_raw= a_v6.get_ip().get_bits();
+
+		var sockaddr_in6 mut underlying_address
+		{
+			.sin6_family( AF_INET6 ),
+			.sin6_port= a_v6.get_port(),
+			// TODO - check if it's correct.
+			.sin6_addr{ .parts[ ( ip_raw ), ( ip_raw >> 32u ), ( ip_raw >> 64u ), ( ip_raw >> 96u ) ] },
+			.sin6_flowinfo= a_v6.get_flow_info(),
+			.sin6_scope_id= a_v6.get_scope_id(),
+		};
+
+		var i32 res=
+			unsafe( ::bind(
+				socket.socket_,
+				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+				socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
+
+		if( res != 0 )
+		{
+			// Socket will be destroyed on error return.
+			return translate_errno( get_errno() );
+		}
 	}
+	else { halt; }
 
 	return socket;
 }
@@ -109,11 +131,37 @@ fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> da
 
 		return size_type(bytes_written);
 	}
-	else
+	else if_var( &a_v6 : a.get</socket_address_v6/>() )
 	{
-		// TODO - support IP v6.
-		halt;
+		var u128 ip_raw= a_v6.get_ip().get_bits();
+
+		var sockaddr_in6 mut underlying_address
+		{
+			.sin6_family( AF_INET6 ),
+			.sin6_port= a_v6.get_port(),
+			// TODO - check if it's correct.
+			.sin6_addr{ .parts[ ( ip_raw ), ( ip_raw >> 32u ), ( ip_raw >> 64u ), ( ip_raw >> 96u ) ] },
+			.sin6_flowinfo= a_v6.get_flow_info(),
+			.sin6_scope_id= a_v6.get_scope_id(),
+		};
+
+		var ssize_type bytes_written=
+			unsafe( ::sendto(
+				socket_,
+				data.data(),
+				data.size(),
+				0,
+				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+				socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
+
+		if( bytes_written < ssize_type(0) )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		return size_type(bytes_written);
 	}
+	else { halt; }
 }
 
 fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>
@@ -241,9 +289,33 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 			return translate_errno( get_errno() );
 		}
 	}
+	else if_var( &a_v6 : a.get</socket_address_v6/>() )
+	{
+		var u128 ip_raw= a_v6.get_ip().get_bits();
+
+		var sockaddr_in6 mut underlying_address
+		{
+			.sin6_family( AF_INET6 ),
+			.sin6_port= a_v6.get_port(),
+			// TODO - check if it's correct.
+			.sin6_addr{ .parts[ ( ip_raw ), ( ip_raw >> 32u ), ( ip_raw >> 64u ), ( ip_raw >> 96u ) ] },
+			.sin6_flowinfo= a_v6.get_flow_info(),
+			.sin6_scope_id= a_v6.get_scope_id(),
+		};
+
+		var i32 res=
+			unsafe( ::connect(
+				socket_,
+				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+				socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
+
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+	}
 	else
 	{
-		// TODO - support IP v6.
 		halt;
 	}
 
