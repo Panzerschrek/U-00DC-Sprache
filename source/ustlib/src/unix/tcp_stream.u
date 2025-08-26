@@ -9,14 +9,14 @@ fn tcp_stream::connect( socket_address& a ) : result</tcp_stream, io_error/>
 {
 	unsafe
 	{
-		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_STREAM), 0 );
-		if( s == -1 )
-		{
-			return translate_errno( get_errno() );
-		}
-
 		if_var( &a_v4 : a.get</socket_address_v4/>() )
 		{
+			var native_socket_fd s= ::socket( PF_INET, i32(SOCK_STREAM), 0 );
+			if( s == -1 )
+			{
+				return translate_errno( get_errno() );
+			}
+
 			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
 
 			var i32 res=
@@ -31,9 +31,17 @@ fn tcp_stream::connect( socket_address& a ) : result</tcp_stream, io_error/>
 				::close( s );
 				return translate_errno( e );
 			}
+
+			return tcp_stream( s );
 		}
 		else if_var( &a_v6 : a.get</socket_address_v6/>() )
 		{
+			var native_socket_fd s= ::socket( PF_INET6, i32(SOCK_STREAM), 0 );
+			if( s == -1 )
+			{
+				return translate_errno( get_errno() );
+			}
+
 			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
 
 			var i32 res=
@@ -48,10 +56,10 @@ fn tcp_stream::connect( socket_address& a ) : result</tcp_stream, io_error/>
 				::close( s );
 				return translate_errno( e );
 			}
+
+			return tcp_stream( s );
 		}
 		else { halt; }
-
-		return tcp_stream( s );
 	}
 }
 
