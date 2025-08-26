@@ -1566,7 +1566,7 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 	var [ ust::filesystem_path_view, 6 ] sources_common
 	[
 		"file_helpers.u",
-		"intet_address.u",
+		"inet_address.u",
 		"integer_parsing.u",
 		"stdin.u",
 		"string_conversions.u",
