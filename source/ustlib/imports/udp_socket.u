@@ -8,9 +8,13 @@ namespace ust
 class udp_socket
 {
 public:
-	// Create socket without binding an address to it.
+	// Create socket for ip v4 protocol without binding an address to it.
 	// It's still useful - one can send messages via it.
-	fn create() : result</udp_socket, io_error/>;
+	fn create_v4() : result</udp_socket, io_error/>;
+
+	// Create socket for ip v6 protocol without binding an address to it.
+	// It's still useful - one can send messages via it.
+	fn create_v6() : result</udp_socket, io_error/>;
 
 	// Create socket and bind it to address specified.
 	// Such socket may be used for messages receiving.

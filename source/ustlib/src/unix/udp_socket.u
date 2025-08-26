@@ -5,11 +5,25 @@ import "socket.uh"
 namespace ust
 {
 
-fn udp_socket::create() : result</udp_socket, io_error/>
+fn udp_socket::create_v4() : result</udp_socket, io_error/>
 {
 	unsafe
 	{
 		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
+		if( s == -1 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		return udp_socket( s );
+	}
+}
+
+fn udp_socket::create_v6() : result</udp_socket, io_error/>
+{
+	unsafe
+	{
+		var native_socket_fd s= ::socket( PF_INET6, i32(SOCK_DGRAM), 0 );
 		if( s == -1 )
 		{
 			return translate_errno( get_errno() );

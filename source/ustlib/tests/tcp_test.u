@@ -623,7 +623,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		listener.set_nonblocking( true ).try_deref();
 
-		var ust::udp_socket mut socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut socket= ust::udp_socket::create_v4().try_take();
 
 		// Should successfully send, but it will be rejected.
 		assert( socket.send_to( server_address, CastRangeToBytesRange( ust::string_view8( "Test UDP packet" ) ) ).try_take() == 15s );
