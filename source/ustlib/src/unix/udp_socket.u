@@ -21,49 +21,60 @@ fn udp_socket::create() : result</udp_socket, io_error/>
 
 fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_error/>
 {
-	var result</udp_socket, io_error/> mut socket_or_error= create();
-	if( socket_or_error.is_error() )
+	unsafe
 	{
-		return socket_or_error;
-	}
-
-	var udp_socket mut socket= move(socket_or_error).try_take();
-
-	if_var( &a_v4 : a.get</socket_address_v4/>() )
-	{
-		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
-
-		var i32 res=
-			unsafe( ::bind(
-				socket.socket_,
-				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-				socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
-
-		if( res != 0 )
+		if_var( &a_v4 : a.get</socket_address_v4/>() )
 		{
-			// Socket will be destroyed on error return.
-			return translate_errno( get_errno() );
+			var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
+			if( s == -1 )
+			{
+				return translate_errno( get_errno() );
+			}
+
+			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
+
+			var i32 res=
+				::bind(
+					s,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in/>.size_of ) );
+
+			if( res != 0 )
+			{
+				var i32 e= get_errno();
+				::close( s );
+				return translate_errno( e );
+			}
+
+			return udp_socket( s );
 		}
-	}
-	else if_var( &a_v6 : a.get</socket_address_v6/>() )
-	{
-		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
-
-		var i32 res=
-			unsafe( ::bind(
-				socket.socket_,
-				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
-				socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
-
-		if( res != 0 )
+		else if_var( &a_v6 : a.get</socket_address_v6/>() )
 		{
-			// Socket will be destroyed on error return.
-			return translate_errno( get_errno() );
-		}
-	}
-	else { halt; }
+			var native_socket_fd s= ::socket( PF_INET6, i32(SOCK_DGRAM), 0 );
+			if( s == -1 )
+			{
+				return translate_errno( get_errno() );
+			}
 
-	return socket;
+			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+			var i32 res=
+				::bind(
+					s,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in6/>.size_of ) );
+
+			if( res != 0 )
+			{
+				var i32 e= get_errno();
+				::close( s );
+				return translate_errno( e );
+			}
+
+			return udp_socket( s );
+		}
+		else { halt; }
+	}
 }
 
 fn udp_socket::constructor( native_socket_fd s ) unsafe

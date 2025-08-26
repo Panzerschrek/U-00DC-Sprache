@@ -927,6 +927,65 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// IP v6 test.
+	{
+		var ust::ip_address_v6 loopback_v6( 1u128 << 120u );
+
+		var ust::socket_address_v6 receiver_address( ust::ip_address_v6( 0u128 ), GetNextPort(), 0u, 0u );
+
+		var ust::socket_address_v6 receiver_address_for_sender(
+			ust::ip_address_v6( 1u128 << 120u ),
+			receiver_address.get_port(),
+			receiver_address.get_flow_info(),
+			receiver_address.get_scope_id() );
+
+		var ust::socket_address_v6 sender_address( ust::ip_address_v6( 0u128 ), GetNextPort(), 0u, 0u );
+
+		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_and_bind( sender_address ).try_take();
+
+		auto& message= "Trying IP v6 sockets";
+		var ust::string_view8 message_range= message;
+
+		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
+		{
+			Ok( bytes_sent ) ->
+			{
+				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+
+		var typeof(message) mut received_message= zero_init;
+
+		result_match( receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		{
+			Ok( mut receive_result ) ->
+			{
+				auto [ address_obtained, bytes_received ]= move( receive_result );
+
+				if_var( &a_v6 : address_obtained.get</ust::socket_address_v6/>() )
+				{
+					assert( a_v6.get_ip() == loopback_v6 || a_v6.get_ip() == ust::ip_address_v6( 0u128 ), "Invalid sender IP!" );
+					assert( a_v6.get_port() == sender_address.get_port(), "Invalid sender port!" );
+					assert( a_v6.get_flow_info() == sender_address.get_flow_info(), "Invalid sender flow info!" );
+					assert( a_v6.get_scope_id() == sender_address.get_scope_id(), "Invalid sender scope id!" );
+				}
+				else { assert( false, "Sender address should be IP v6!" ); }
+
+				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( received_message == message, "Received unexpected message!" );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to receive message from socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+	}
+
 	return 0;
 }
 
