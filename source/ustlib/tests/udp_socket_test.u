@@ -914,7 +914,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	{
 		var ust::udp_socket mut socket= ust::udp_socket::create().try_take();
 
-		result_match( socket.set_ttl( 37u ) )
+		result_match( socket.set_ttl( 37u8 ) )
 		{
 			Ok( v ) -> {},
 			Err( e ) -> { assert( false, ust::concat( "Failed to set socket ttl: ", ust::enum_to_string(e) ) ); },
@@ -922,7 +922,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		result_match( socket.get_ttl() )
 		{
-			Ok( ttl ) -> { assert( ttl == 37u, "Unexpected socket TTL" ); },
+			Ok( ttl ) -> { assert( ttl == 37u8, "Unexpected socket TTL" ); },
 			Err( e ) -> { assert( false, ust::concat( "Failed to get socket ttl: ", ust::enum_to_string(e) ) ); },
 		}
 	}

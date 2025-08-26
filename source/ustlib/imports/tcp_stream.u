@@ -36,10 +36,10 @@ public:
 	fn get_peer_address( this ) : result</socket_address, io_error/>;
 
 	// Get time to live.
-	fn get_ttl( this ) : result</u32, io_error/>;
+	fn get_ttl( this ) : result</u8, io_error/>;
 
 	// Set time to live.
-	fn set_ttl( mut this, u32 ttl ) : result</void, io_error/>;
+	fn set_ttl( mut this, u8 ttl ) : result</void, io_error/>;
 
 	// Get nodelay property.
 	fn get_nodelay( this ) : result</bool, io_error/>;

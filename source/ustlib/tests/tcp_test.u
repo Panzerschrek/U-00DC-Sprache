@@ -645,7 +645,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
 
-		result_match( listener.set_ttl( 68u ) )
+		result_match( listener.set_ttl( 68u8 ) )
 		{
 			Ok( v ) -> {},
 			Err( e ) -> { assert( false, ust::concat( "Failed to set TCP listener TTL: ", ust::enum_to_string(e) ) ); },
@@ -653,7 +653,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		result_match( listener.get_ttl() )
 		{
-			Ok( ttl ) -> { assert( ttl == 68u, "Unexpected socket TTL" ); },
+			Ok( ttl ) -> { assert( ttl == 68u8, "Unexpected socket TTL" ); },
 			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP listener TTL: ", ust::enum_to_string(e) ) ); },
 		}
 	}
@@ -668,7 +668,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		auto [ mut server_stream, client_address ]= listener.accept().try_take();
 
-		result_match( client_stream.set_ttl( 73u ) )
+		result_match( client_stream.set_ttl( 73u8 ) )
 		{
 			Ok( v ) -> {},
 			Err( e ) -> { assert( false, ust::concat( "Failed to set TCP stream TTL: ", ust::enum_to_string(e) ) ); },
@@ -676,11 +676,11 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		result_match( client_stream.get_ttl() )
 		{
-			Ok( ttl ) -> { assert( ttl == 73u, "Unexpected socket TTL" ); },
+			Ok( ttl ) -> { assert( ttl == 73u8, "Unexpected socket TTL" ); },
 			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream TTL: ", ust::enum_to_string(e) ) ); },
 		}
 
-		result_match( server_stream.set_ttl( 89u ) )
+		result_match( server_stream.set_ttl( 89u8 ) )
 		{
 			Ok( v ) -> {},
 			Err( e ) -> { assert( false, ust::concat( "Failed to set TCP stream TTL: ", ust::enum_to_string(e) ) ); },
@@ -688,7 +688,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		result_match( server_stream.get_ttl() )
 		{
-			Ok( ttl ) -> { assert( ttl == 89u, "Unexpected socket TTL" ); },
+			Ok( ttl ) -> { assert( ttl == 89u8, "Unexpected socket TTL" ); },
 			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream TTL: ", ust::enum_to_string(e) ) ); },
 		}
 	}

@@ -114,12 +114,12 @@ fn tcp_stream::get_peer_address( this ) : result</socket_address, io_error/>
 	return get_socket_peer_address( socket_ );
 }
 
-fn tcp_stream::get_ttl( this ) : result</u32, io_error/>
+fn tcp_stream::get_ttl( this ) : result</u8, io_error/>
 {
 	return get_socket_ttl( socket_ );
 }
 
-fn tcp_stream::set_ttl( mut this, u32 ttl ) : result</void, io_error/>
+fn tcp_stream::set_ttl( mut this, u8 ttl ) : result</void, io_error/>
 {
 	return set_socket_ttl( socket_, ttl );
 }

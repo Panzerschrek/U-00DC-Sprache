@@ -17,8 +17,8 @@ fn get_socket_local_address( native_socket_fd s ) : result</socket_address, io_e
 
 fn get_socket_peer_address( native_socket_fd s ) : result</socket_address, io_error/>;
 
-fn get_socket_ttl( native_socket_fd s ) : result</u32, io_error/>;
+fn get_socket_ttl( native_socket_fd s ) : result</u8, io_error/>;
 
-fn set_socket_ttl( native_socket_fd s, u32 ttl ) : result</void, io_error/>;
+fn set_socket_ttl( native_socket_fd s, u8 ttl ) : result</void, io_error/>;
 
 } // namespace ust

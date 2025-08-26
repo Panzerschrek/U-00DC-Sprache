@@ -137,7 +137,7 @@ fn get_socket_peer_address( native_socket_fd s ) : result</socket_address, io_er
 	}
 }
 
-fn get_socket_ttl( native_socket_fd s ) : result</u32, io_error/>
+fn get_socket_ttl( native_socket_fd s ) : result</u8, io_error/>
 {
 	var u32 mut ttl= 0u;
 
@@ -156,17 +156,19 @@ fn get_socket_ttl( native_socket_fd s ) : result</u32, io_error/>
 		return translate_wsa_error( unsafe( WSAGetLastError() ) );
 	}
 
-	return ttl;
+	return u8( min( ttl, 255u ) );
 }
 
-fn set_socket_ttl( native_socket_fd s, u32 mut ttl ) : result</void, io_error/>
+fn set_socket_ttl( native_socket_fd s, u8 ttl ) : result</void, io_error/>
 {
+	var u32 mut ttl32( ttl );
+
 	var i32 res=
 		unsafe( ::setsockopt(
 			s,
 			IPPROTO_IP,
 			IP_TTL,
-			$<( cast_ref_unsafe</char8/>( ttl ) ),
+			$<( cast_ref_unsafe</char8/>( ttl32 ) ),
 			socklen_t( typeinfo</u32/>.size_of ) ) );
 
 	if( res != 0 )
