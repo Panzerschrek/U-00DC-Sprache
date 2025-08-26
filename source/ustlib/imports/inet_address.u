@@ -64,10 +64,10 @@ public:
 		return bits_;
 	}
 
-	fn get_octets( this ) : [ u16, 16 ]
+	fn get_octets( this ) : [ u8, 16 ]
 	{
 		// TODO - check if it's correct.
-		var [ u16, 16 ] octets
+		var [ u8, 16 ] octets
 		[
 			( bits_ >>  0u ), ( bits_ >>   8u ), ( bits_ >>  16u ), ( bits_ >>  24u ),
 			( bits_ >> 32u ), ( bits_ >>  40u ), ( bits_ >>  48u ), ( bits_ >>  56u ),
