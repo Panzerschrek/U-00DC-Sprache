@@ -255,6 +255,44 @@ var ü_GET_FILEEX_INFO_LEVELS
 	constexpr GetFileExInfoStandard( 0 ),
 	constexpr GetFileExMaxInfoLevel( 1 );
 
+type ü_anon_enum_553 = i32;
+var ü_anon_enum_553
+	constexpr IPPROTO_HOPOPTS( 0 ),
+	constexpr IPPROTO_ICMP( 1 ),
+	constexpr IPPROTO_IGMP( 2 ),
+	constexpr IPPROTO_GGP( 3 ),
+	constexpr IPPROTO_IPV4( 4 ),
+	constexpr IPPROTO_ST( 5 ),
+	constexpr IPPROTO_TCP( 6 ),
+	constexpr IPPROTO_CBT( 7 ),
+	constexpr IPPROTO_EGP( 8 ),
+	constexpr IPPROTO_IGP( 9 ),
+	constexpr IPPROTO_PUP( 12 ),
+	constexpr IPPROTO_UDP( 17 ),
+	constexpr IPPROTO_IDP( 22 ),
+	constexpr IPPROTO_RDP( 27 ),
+	constexpr IPPROTO_IPV6( 41 ),
+	constexpr IPPROTO_ROUTING( 43 ),
+	constexpr IPPROTO_FRAGMENT( 44 ),
+	constexpr IPPROTO_ESP( 50 ),
+	constexpr IPPROTO_AH( 51 ),
+	constexpr IPPROTO_ICMPV6( 58 ),
+	constexpr IPPROTO_NONE( 59 ),
+	constexpr IPPROTO_DSTOPTS( 60 ),
+	constexpr IPPROTO_ND( 77 ),
+	constexpr IPPROTO_ICLFXBM( 78 ),
+	constexpr IPPROTO_PIM( 103 ),
+	constexpr IPPROTO_PGM( 113 ),
+	constexpr IPPROTO_L2TP( 115 ),
+	constexpr IPPROTO_SCTP( 132 ),
+	constexpr IPPROTO_RAW( 255 ),
+	constexpr IPPROTO_MAX( 256 ),
+	constexpr IPPROTO_RESERVED_RAW( 257 ),
+	constexpr IPPROTO_RESERVED_IPSEC( 258 ),
+	constexpr IPPROTO_RESERVED_IPSECOFFLOAD( 259 ),
+	constexpr IPPROTO_RESERVED_WNV( 260 ),
+	constexpr IPPROTO_RESERVED_MAX( 261 );
+
 type socklen_t = i32;
 type u_long = u32;
 type wchar_t = char16; // Changed manually from "u16" in order to be able to use ust::string16.
@@ -346,7 +384,9 @@ auto constexpr WSAEWOULDBLOCK = 10035;
 auto constexpr WSAEMSGSIZE = 10040;
 auto constexpr WSAEADDRINUSE = 10048;
 auto constexpr WSAEADDRNOTAVAIL = 10049;
+auto constexpr WSAECONNABORTED = 10053;
 auto constexpr WSAENOTCONN = 10057;
+auto constexpr WSAECONNREFUSED = 10061;
 
 auto constexpr FILE_ATTRIBUTE_READONLY = 1;
 auto constexpr FILE_ATTRIBUTE_HIDDEN = 2;
@@ -408,5 +448,7 @@ auto constexpr IP_TTL = 4;
 auto constexpr MSG_PEEK = 2;
 
 auto constexpr MOVEFILE_REPLACE_EXISTING = 1;
+
+auto constexpr TCP_NODELAY = 1;
 
 var DWORD MAXDWORD = 4294967295u;

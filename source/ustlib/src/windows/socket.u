@@ -39,6 +39,8 @@ fn translate_wsa_error( i32 e ) : io_error
 		WSAENOTCONN -> { return io_error::not_connected; },
 		WSAEWOULDBLOCK -> { return io_error::would_block; },
 		WSAEADDRINUSE -> { return io_error::address_already_in_use; },
+		WSAECONNABORTED -> { return io_error::connection_aborted; },
+		WSAECONNREFUSED -> { return io_error::connection_refused; },
 		default -> { return io_error::other; },
 	}
 }
