@@ -61,6 +61,45 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( ust::parse_ip_address_v6( "1:23:456:789a:0:01:234:5678" ) != ust::ip_address_v6( expected ) );
 	}
 
+	// Ipv6 - all zeros short form.
+	halt if( ust::parse_ip_address_v6( "::" ) != ust::ip_address_v6( 0u128 ) );
+
+	// Ipv6 - skip zeros at start.
+	{
+		var [ u8, 16 ] expected[ 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x12u8, 0x34u8, 0x56u8, 0x78u8 ];
+		halt if( ust::parse_ip_address_v6( "::1234:5678" ) != ust::ip_address_v6( expected ) );
+	}
+
+	// Ipv6 - localhost in short form.
+	{
+		var [ u8, 16 ] expected[ 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x01u8 ];
+		halt if( ust::parse_ip_address_v6( "::1" ) != ust::ip_address_v6( expected ) );
+	}
+
+	// Ipv6 - zeros at end.
+	{
+		var [ u8, 16 ] expected[ 0xabu8, 0xcdu8, 0xefu8, 0x01u8, 0x23u8, 0x45u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8 ];
+		halt if( ust::parse_ip_address_v6( "abcd:ef01:2345::" ) != ust::ip_address_v6( expected ) );
+	}
+
+	// Ipv6 - zeros in the middle.
+	{
+		var [ u8, 16 ] expected[ 0x55u8, 0x66u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x77u8, 0x88u8, 0x99u8, 0xaau8 ];
+		halt if( ust::parse_ip_address_v6( "5566::7788:99aa" ) != ust::ip_address_v6( expected ) );
+	}
+
+	// Ipv6 - zeros in the middle.
+	{
+		var [ u8, 16 ] expected[ 0x55u8, 0x66u8, 0x77u8, 0x88u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x99u8, 0xaau8 ];
+		halt if( ust::parse_ip_address_v6( "5566:7788::99aa" ) != ust::ip_address_v6( expected ) );
+	}
+
+	// Ipv6 - :: replaces only one zero
+	{
+		var [ u8, 16 ] expected[ 0x22u8, 0x33u8, 0x44u8, 0x55u8, 0x66u8, 0x77u8, 0x88u8, 0x99u8, 0xaau8, 0xbbu8, 0x00u8, 0x00u8, 0xccu8, 0xddu8, 0xeeu8, 0xffu8 ];
+		halt if( ust::parse_ip_address_v6( "2233:4455:6677:8899:aabb::ccdd:eeff" ) != ust::ip_address_v6( expected ) );
+	}
+
 	halt if(
 		ust::parse_socket_address_v4( "37.42.213.178:0" ) !=
 		ust::socket_address_v4( ust::ip_address_v4( ust::make_array( 37u8, 42u8, 213u8, 178u8 ) ), 0u16 ) );

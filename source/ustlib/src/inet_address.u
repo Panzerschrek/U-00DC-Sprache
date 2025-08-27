@@ -24,24 +24,57 @@ fn parse_ip_address_v6( string_view8 mut s ) : optional</ip_address_v6/>
 {
 	var [ u16, 8 ] mut parts= zero_init;
 
-	for( var size_type mut i= 0s; i < 8s; ++i )
+	var size_type mut num_parts_parsed= 0s;
+
+	var size_type mut zeros_position= ~0s;
+
+	for( var size_type mut i= 0s; i < 8s && !s.empty(); ++i )
 	{
-		var optional</u16/> d= extract_hex_u16( s );
-		if( d.empty() )
+		if( i == 0s )
 		{
-			return null_optional;
+			if( s.starts_with( "::" ) )
+			{
+				if( zeros_position != ~0s )
+				{
+					return null_optional;
+				}
+
+				zeros_position= num_parts_parsed;
+
+				s.drop_front();
+				s.drop_front();
+			}
 		}
-
-		parts[i]= d.try_deref();
-
-		if( i != 7s )
+		else
 		{
 			if( s.empty() || s.front() != ':' )
 			{
 				return null_optional;
 			}
 			s.drop_front();
+
+			if( !s.empty() && s.front() == ':' )
+			{
+				if( zeros_position != ~0s )
+				{
+					return null_optional;
+				}
+
+				zeros_position= num_parts_parsed;
+
+				s.drop_front();
+			}
 		}
+
+		var optional</u16/> d= extract_hex_u16( s );
+		if( d.empty() )
+		{
+			break;
+		}
+
+		parts[num_parts_parsed]= d.try_deref();
+
+		++num_parts_parsed;
 	}
 
 	if( !s.empty() )
@@ -50,20 +83,47 @@ fn parse_ip_address_v6( string_view8 mut s ) : optional</ip_address_v6/>
 		return null_optional;
 	}
 
-	// TODO - check endian-correctness here.
-	var [ u8, 16 ] octets
-	[
-		( parts[0] >> 8u ), ( parts[0] ),
-		( parts[1] >> 8u ), ( parts[1] ),
-		( parts[2] >> 8u ), ( parts[2] ),
-		( parts[3] >> 8u ), ( parts[3] ),
-		( parts[4] >> 8u ), ( parts[4] ),
-		( parts[5] >> 8u ), ( parts[5] ),
-		( parts[6] >> 8u ), ( parts[6] ),
-		( parts[7] >> 8u ), ( parts[7] ),
-	];
+	if( zeros_position == ~0s )
+	{
+		if( num_parts_parsed != 8s )
+		{
+			return null_optional;
+		}
 
-	return ip_address_v6( octets );
+		var [ u8, 16 ] octets
+		[
+			( parts[0] >> 8u ), ( parts[0] ),
+			( parts[1] >> 8u ), ( parts[1] ),
+			( parts[2] >> 8u ), ( parts[2] ),
+			( parts[3] >> 8u ), ( parts[3] ),
+			( parts[4] >> 8u ), ( parts[4] ),
+			( parts[5] >> 8u ), ( parts[5] ),
+			( parts[6] >> 8u ), ( parts[6] ),
+			( parts[7] >> 8u ), ( parts[7] ),
+		];
+
+		return ip_address_v6( octets );
+	}
+	else
+	{
+		var [ u8, 16 ] mut octets= zero_init;
+
+		for( var size_type mut i= 0s; i < zeros_position; ++i )
+		{
+			var u16 part= parts[i];
+			octets[ i * 2s + 0s ]= u8( part >> 8u );
+			octets[ i * 2s + 1s ]= u8( part );
+		}
+
+		for( var size_type mut i= zeros_position + 8s - num_parts_parsed; i < 8s; ++i )
+		{
+			var u16 part= parts[ i - 8s + num_parts_parsed ];
+			octets[ i * 2s + 0s ]= u8( part >> 8u );
+			octets[ i * 2s + 1s ]= u8( part );
+		}
+
+		return ip_address_v6( octets );
+	}
 }
 
 fn parse_socket_address_v4( string_view8 mut s ) : optional</socket_address_v4/>
