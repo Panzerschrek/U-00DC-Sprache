@@ -38,6 +38,8 @@ fn udp_socket::create_v6() : result</udp_socket, io_error/>
 
 fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_error/>
 {
+	call_wsa_startup();
+
 	unsafe
 	{
 		if_var( &a_v4 : a.get</socket_address_v4/>() )

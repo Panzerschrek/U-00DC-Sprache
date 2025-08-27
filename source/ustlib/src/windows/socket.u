@@ -117,9 +117,9 @@ fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
 	{
 		.sin6_family( AF_INET6 ),
 		.sin6_port= address.get_port(),
-		// TODO - check if it's correct.
 		.sin6_addr
 		{
+			// TODO - check if it's correct.
 			.parts
 			[
 				( ip_raw >>  0u ), ( ip_raw >> 16u ), ( ip_raw >> 32u ), ( ip_raw >>  48u ),
