@@ -71,6 +71,21 @@ fn constexpr swap_bytes( byte64 x ) : byte64
 	return byte64( swap_bytes( u64(x) ) );
 }
 
+fn constexpr swap_bytes( u128 x ) : u128
+{
+	return ( u128( swap_bytes( u64(x) ) ) << 64u ) | u128( swap_bytes( u64( x >> 64u ) ) );
+}
+
+fn constexpr swap_bytes( i128 x ) : i128
+{
+	return i128( swap_bytes( u128(x) ) );
+}
+
+fn constexpr swap_bytes( byte128 x ) : byte128
+{
+	return byte128( swap_bytes( u128(x) ) );
+}
+
 fn constexpr swap_bytes( ssize_type x ) : ssize_type
 {
 	static_if( typeinfo</ssize_type/>.size_of == typeinfo</i32/>.size_of )
