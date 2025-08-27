@@ -54,7 +54,7 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 	}
 	else
 	{
-		// TODO - support IP v6.
+		// Some unsupported address.
 		return null_optional;
 	}
 }
