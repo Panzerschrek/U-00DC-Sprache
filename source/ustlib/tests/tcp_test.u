@@ -748,9 +748,27 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
 
+		assert( listener.get_local_address() == server_address );
+
 		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
 
+		assert( client_stream.get_peer_address().try_deref() == server_address, "Unexpected peer address of an TCP client stream!" );
+
+		if_var( &a_v6 : client_stream.get_local_address().try_take().get</ust::socket_address_v6/>() )
+		{
+			assert( a_v6.get_ip() == loopback_v6, "Unexpected TCP client address!" );
+		}
+		else { assert( false, "Unexpected client address kind, expected ipv6!" ); }
+
 		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		assert( server_stream.get_local_address().try_deref() == server_address, "Unexpected local address of an TCP server stream!" );
+
+		if_var( &a_v6 : server_stream.get_peer_address().try_take().get</ust::socket_address_v6/>() )
+		{
+			assert( a_v6.get_ip() == loopback_v6, "Unexpected TCP client address!" );
+		}
+		else { assert( false, "Unexpected client address kind, expected ipv6!" ); }
 
 		if_var( &a_v6 : client_address.get</ust::socket_address_v6/>() )
 		{
