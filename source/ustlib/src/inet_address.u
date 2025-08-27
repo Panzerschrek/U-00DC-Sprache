@@ -22,108 +22,18 @@ fn parse_ip_address_v4( string_view8 mut s ) : optional</ip_address_v4/>
 
 fn parse_ip_address_v6( string_view8 mut s ) : optional</ip_address_v6/>
 {
-	var [ u16, 8 ] mut parts= zero_init;
-
-	var size_type mut num_parts_parsed= 0s;
-
-	var size_type mut zeros_position= ~0s;
-
-	for( var size_type mut i= 0s; i < 8s && !s.empty(); ++i )
+	if_var( ip : extract_ip_v6_address(s) )
 	{
-		if( i == 0s )
+		if( !s.empty() )
 		{
-			if( s.starts_with( "::" ) )
-			{
-				if( zeros_position != ~0s )
-				{
-					return null_optional;
-				}
-
-				zeros_position= num_parts_parsed;
-
-				s.drop_front();
-				s.drop_front();
-			}
-		}
-		else
-		{
-			if( s.empty() || s.front() != ':' )
-			{
-				return null_optional;
-			}
-			s.drop_front();
-
-			if( !s.empty() && s.front() == ':' )
-			{
-				if( zeros_position != ~0s )
-				{
-					return null_optional;
-				}
-
-				zeros_position= num_parts_parsed;
-
-				s.drop_front();
-			}
-		}
-
-		var optional</u16/> d= extract_hex_u16( s );
-		if( d.empty() )
-		{
-			break;
-		}
-
-		parts[num_parts_parsed]= d.try_deref();
-
-		++num_parts_parsed;
-	}
-
-	if( !s.empty() )
-	{
-		// Allow no trailing symbols.
-		return null_optional;
-	}
-
-	if( zeros_position == ~0s )
-	{
-		if( num_parts_parsed != 8s )
-		{
+			// Allow no trailing symbols.
 			return null_optional;
 		}
 
-		var [ u8, 16 ] octets
-		[
-			( parts[0] >> 8u ), ( parts[0] ),
-			( parts[1] >> 8u ), ( parts[1] ),
-			( parts[2] >> 8u ), ( parts[2] ),
-			( parts[3] >> 8u ), ( parts[3] ),
-			( parts[4] >> 8u ), ( parts[4] ),
-			( parts[5] >> 8u ), ( parts[5] ),
-			( parts[6] >> 8u ), ( parts[6] ),
-			( parts[7] >> 8u ), ( parts[7] ),
-		];
-
-		return ip_address_v6( octets );
+		return ip;
 	}
-	else
-	{
-		var [ u8, 16 ] mut octets= zero_init;
 
-		for( var size_type mut i= 0s; i < zeros_position; ++i )
-		{
-			var u16 part= parts[i];
-			octets[ i * 2s + 0s ]= u8( part >> 8u );
-			octets[ i * 2s + 1s ]= u8( part );
-		}
-
-		for( var size_type mut i= zeros_position + 8s - num_parts_parsed; i < 8s; ++i )
-		{
-			var u16 part= parts[ i - 8s + num_parts_parsed ];
-			octets[ i * 2s + 0s ]= u8( part >> 8u );
-			octets[ i * 2s + 1s ]= u8( part );
-		}
-
-		return ip_address_v6( octets );
-	}
+	return null_optional;
 }
 
 fn parse_socket_address_v4( string_view8 mut s ) : optional</socket_address_v4/>
@@ -159,11 +69,65 @@ fn parse_socket_address_v4( string_view8 mut s ) : optional</socket_address_v4/>
 	return null_optional;
 }
 
-fn parse_socket_address_v6( string_view8 s ) : optional</socket_address_v6/>
+fn parse_socket_address_v6( string_view8 mut s ) : optional</socket_address_v6/>
 {
-	// TODO
-	ignore_unused( s );
-	return null_optional;
+	if( !( s.size() >= 1s && s.front() == '[' ) )
+	{
+		return null_optional;
+	}
+	s.drop_front();
+
+	auto mut ip_address= extract_ip_v6_address( s );
+	if( ip_address.empty() )
+	{
+		return null_optional;
+	}
+
+	var u32 mut scope_id= 0u;
+	if( !s.empty() && s.front() == '%' )
+	{
+		s.drop_front();
+
+		if_var( i : parse_and_extract_integer</u32/>( s ) )
+		{
+			scope_id= i;
+		}
+		else
+		{
+			return null_optional;
+		}
+	}
+
+	if( !( s.size() >= 1s && s.front() == ']' ) )
+	{
+		return null_optional;
+	}
+	s.drop_front();
+
+	if( !( s.size() >= 1s && s.front() == ':' ) )
+	{
+		return null_optional;
+	}
+	s.drop_front();
+
+	var u16 mut port= zero_init;
+
+	if_var( p : parse_and_extract_integer</u16/>( s ) )
+	{
+		port= p;
+	}
+	else
+	{
+		return null_optional;
+	}
+
+	if( !s.empty() )
+	{
+		// Allow no trailing symbols.
+		return null_optional;
+	}
+
+	return socket_address_v6( ip_address.try_deref(), port, 0u, scope_id );
 }
 
 fn parse_socket_address( string_view8 mut s ) : optional</socket_address/>
@@ -212,6 +176,106 @@ fn extract_ip_v4_address( string_view8 &mut s ) : optional</ip_address_v4/>
 	}
 
 	return ip_address_v4( octets );
+}
+
+fn extract_ip_v6_address( string_view8 &mut s ) : optional</ip_address_v6/>
+{
+	var [ u16, 8 ] mut parts= zero_init;
+
+	var size_type mut num_parts_parsed= 0s;
+
+	var size_type mut zeros_position= ~0s;
+
+	for( var size_type mut i= 0s; i < 8s && !s.empty(); ++i )
+	{
+		if( i == 0s )
+		{
+			if( s.starts_with( "::" ) )
+			{
+				if( zeros_position != ~0s )
+				{
+					return null_optional;
+				}
+
+				zeros_position= num_parts_parsed;
+
+				s.drop_front();
+				s.drop_front();
+			}
+		}
+		else
+		{
+			if( s.empty() || s.front() != ':' )
+			{
+				break;
+			}
+			s.drop_front();
+
+			if( !s.empty() && s.front() == ':' )
+			{
+				if( zeros_position != ~0s )
+				{
+					return null_optional;
+				}
+
+				zeros_position= num_parts_parsed;
+
+				s.drop_front();
+			}
+		}
+
+		var optional</u16/> d= extract_hex_u16( s );
+		if( d.empty() )
+		{
+			break;
+		}
+
+		parts[num_parts_parsed]= d.try_deref();
+
+		++num_parts_parsed;
+	}
+
+	if( zeros_position == ~0s )
+	{
+		if( num_parts_parsed != 8s )
+		{
+			return null_optional;
+		}
+
+		var [ u8, 16 ] octets
+		[
+			( parts[0] >> 8u ), ( parts[0] ),
+			( parts[1] >> 8u ), ( parts[1] ),
+			( parts[2] >> 8u ), ( parts[2] ),
+			( parts[3] >> 8u ), ( parts[3] ),
+			( parts[4] >> 8u ), ( parts[4] ),
+			( parts[5] >> 8u ), ( parts[5] ),
+			( parts[6] >> 8u ), ( parts[6] ),
+			( parts[7] >> 8u ), ( parts[7] ),
+		];
+
+		return ip_address_v6( octets );
+	}
+	else
+	{
+		var [ u8, 16 ] mut octets= zero_init;
+
+		for( var size_type mut i= 0s; i < zeros_position; ++i )
+		{
+			var u16 part= parts[i];
+			octets[ i * 2s + 0s ]= u8( part >> 8u );
+			octets[ i * 2s + 1s ]= u8( part );
+		}
+
+		for( var size_type mut i= zeros_position + 8s - num_parts_parsed; i < 8s; ++i )
+		{
+			var u16 part= parts[ i - 8s + num_parts_parsed ];
+			octets[ i * 2s + 0s ]= u8( part >> 8u );
+			octets[ i * 2s + 1s ]= u8( part );
+		}
+
+		return ip_address_v6( octets );
+	}
 }
 
 fn extract_hex_u16( string_view8 &mut s ) : optional</u16/>
