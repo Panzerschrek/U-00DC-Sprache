@@ -45,10 +45,12 @@ fn translate_wsa_error( i32 e ) : io_error
 	}
 }
 
-fn translate_socket_address( sockaddr& address ) : optional</socket_address/>
+fn translate_socket_address( sockaddr_storage& address ) : optional</socket_address/>
 {
-	if( i32(address.sa_family) == AF_INET )
+	if( i32(address.ss_family) == AF_INET )
 	{
+		static_assert( typeinfo</sockaddr_storage/>.size_of >= typeinfo</sockaddr_in/>.size_of );
+
 		// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
 		var sockaddr_in mut address_ip_v4= zero_init;
 
@@ -59,11 +61,74 @@ fn translate_socket_address( sockaddr& address ) : optional</socket_address/>
 
 		return socket_address( socket_address_v4( ip_address_v4( u32( address_ip_v4.sin_addr.S_un.union_contents[0] ) ), address_ip_v4.sin_port ) );
 	}
+	else if( i32(address.ss_family) == AF_INET6 )
+	{
+		static_assert( typeinfo</sockaddr_storage/>.size_of >= typeinfo</sockaddr_in6/>.size_of );
+
+		// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+		var sockaddr_in6 mut address_ip_v6= zero_init;
+
+		unsafe( memory_copy(
+			ptr_cast_to_byte8( $<(address_ip_v6) ),
+			ptr_cast_to_byte8( $<( cast_mut(address) ) ),
+			typeinfo</sockaddr_in6/>.size_of ) );
+
+		// TODO - check if it's correct.
+		var u128 ip_raw=
+			( u128( address_ip_v6.sin6_addr.parts[0] ) <<   0u ) |
+			( u128( address_ip_v6.sin6_addr.parts[1] ) <<  16u ) |
+			( u128( address_ip_v6.sin6_addr.parts[2] ) <<  32u ) |
+			( u128( address_ip_v6.sin6_addr.parts[3] ) <<  48u ) |
+			( u128( address_ip_v6.sin6_addr.parts[4] ) <<  64u ) |
+			( u128( address_ip_v6.sin6_addr.parts[5] ) <<  80u ) |
+			( u128( address_ip_v6.sin6_addr.parts[6] ) <<  96u ) |
+			( u128( address_ip_v6.sin6_addr.parts[7] ) << 112u );
+
+		return
+			socket_address( socket_address_v6(
+				ip_address_v6(ip_raw ),
+				address_ip_v6.sin6_port,
+				address_ip_v6.sin6_flowinfo,
+				address_ip_v6.sin6_scope_id ) );
+	}
 	else
 	{
 		// TODO - support IP v6.
 		return null_optional;
 	}
+}
+
+fn translate_socket_address( socket_address_v4& address ) : sockaddr_in
+{
+	return sockaddr_in
+	{
+		.sin_family( AF_INET ),
+		.sin_port= address.get_port(),
+		.sin_addr{ .S_un{ .union_contents[ ( address.get_ip().get_bits() ) ] } },
+		.sin_zero= zero_init,
+	};
+}
+
+fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
+{
+	var u128 ip_raw= address.get_ip().get_bits();
+
+	return sockaddr_in6
+	{
+		.sin6_family( AF_INET6 ),
+		.sin6_port= address.get_port(),
+		// TODO - check if it's correct.
+		.sin6_addr
+		{
+			.parts
+			[
+				( ip_raw >>  0u ), ( ip_raw >> 16u ), ( ip_raw >> 32u ), ( ip_raw >>  48u ),
+				( ip_raw >> 64u ), ( ip_raw >> 80u ), ( ip_raw >> 96u ), ( ip_raw >> 112u ),
+			]
+		},
+		.sin6_flowinfo= address.get_flow_info(),
+		.sin6_scope_id= address.get_scope_id(),
+	};
 }
 
 fn is_socket_nonblocking( native_socket_fd s ) : result</bool, io_error/>
@@ -89,14 +154,13 @@ fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : result</void
 
 fn get_socket_local_address( native_socket_fd s ) : result</socket_address, io_error/>
 {
-	var sockaddr mut address= zero_init;
-	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
+	var sockaddr_storage mut address= zero_init;
 
-	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
+	var socklen_t mut address_length( typeinfo</sockaddr_storage/>.size_of );
 
 	unsafe
 	{
-		var i32 res= ::getsockname( s, $<(address), $<(address_length) );
+		var i32 res= ::getsockname( s, $<( cast_ref_unsafe</sockaddr/>( address ) ), $<(address_length) );
 		if( res != 0 )
 		{
 			return translate_wsa_error( WSAGetLastError() );
@@ -114,14 +178,13 @@ fn get_socket_local_address( native_socket_fd s ) : result</socket_address, io_e
 
 fn get_socket_peer_address( native_socket_fd s ) : result</socket_address, io_error/>
 {
-	var sockaddr mut address= zero_init;
-	static_assert( typeinfo</sockaddr_in/>.size_of <= typeinfo</sockaddr/>.size_of );
+	var sockaddr_storage mut address= zero_init;
 
-	var socklen_t mut address_length( typeinfo</sockaddr/>.size_of );
+	var socklen_t mut address_length( typeinfo</sockaddr_storage/>.size_of );
 
 	unsafe
 	{
-		var i32 res= ::getpeername( s, $<(address), $<(address_length) );
+		var i32 res= ::getpeername( s, $<( cast_ref_unsafe</sockaddr/>( address ) ), $<(address_length) );
 		if( res != 0 )
 		{
 			return translate_wsa_error( WSAGetLastError() );

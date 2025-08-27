@@ -211,9 +211,31 @@ struct sockaddr_in ordered
 	[ CHAR, 8 ] sin_zero;
 }
 
+struct sockaddr_in6 ordered
+{
+	ADDRESS_FAMILY sin6_family;
+	USHORT_ sin6_port;
+	ULONG__ sin6_flowinfo;
+	IN6_ADDR sin6_addr;
+	ULONG sin6_scope_id; // Manually tweaked
+}
+
+struct sockaddr_storage ordered
+{
+	ADDRESS_FAMILY ss_family;
+	[ CHAR, 6 ] ü__ss_pad1;
+	i64 ü__ss_align;
+	[ CHAR, 112 ] ü__ss_pad2;
+}
+
 struct in_addr ordered
 {
 	ü_anon_record_381 S_un;
+}
+
+struct in6_addr ordered
+{
+	[ u16, 8 ] parts; // Manually tweaked
 }
 
 struct ü_anon_record_381 ordered
@@ -310,6 +332,7 @@ type FILETIME = ü_FILETIME;
 type HANDLE = $(byte8);
 type INT_ = i32;
 type IN_ADDR = in_addr;
+type IN6_ADDR = in6_addr;
 type LARGE_INTEGER = ü_LARGE_INTEGER;
 type LONG = i32;
 type LPBY_HANDLE_FILE_INFORMATION = $(ü_BY_HANDLE_FILE_INFORMATION);
@@ -342,6 +365,7 @@ type SOCKET = UINT_PTR;
 type SYSTEM_INFO = ü_SYSTEM_INFO;
 type UINT_PTR = size_type;
 type ULONG = u32;
+type ULONG__ = DWORD;
 type ULONG_PTR = size_type;
 type USHORT_ = u16;
 type WCHAR = wchar_t;
@@ -353,6 +377,7 @@ auto constexpr AF_INET = 2;
 auto constexpr AF_INET6 = 23;
 
 auto constexpr PF_INET = AF_INET;
+auto constexpr PF_INET6 = AF_INET6;
 
 auto constexpr SOCK_STREAM = 1;
 auto constexpr SOCK_DGRAM = 2;

@@ -12,8 +12,12 @@ fn call_wsa_startup();
 
 fn translate_wsa_error( i32 e ) : io_error;
 
+fn translate_socket_address( socket_address_v4& address ) : sockaddr_in;
+
+fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6;
+
 // Convert "sockaddr" into our own representation.
-fn translate_socket_address( sockaddr& address ) : optional</socket_address/>;
+fn translate_socket_address( sockaddr_storage& address ) : optional</socket_address/>;
 
 fn is_socket_nonblocking( native_socket_fd s ) : result</bool, io_error/>;
 
