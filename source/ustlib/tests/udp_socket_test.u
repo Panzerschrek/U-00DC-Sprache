@@ -929,12 +929,12 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// IP v6 test.
 	{
-		var ust::ip_address_v6 loopback_v6( 1u128 << 120u );
+		var ust::ip_address_v6 loopback_v6( 1u128 );
 
 		var ust::socket_address_v6 receiver_address( ust::ip_address_v6( 0u128 ), GetNextPort(), 0u, 0u );
 
 		var ust::socket_address_v6 receiver_address_for_sender(
-			ust::ip_address_v6( 1u128 << 120u ),
+			ust::ip_address_v6( loopback_v6 ),
 			receiver_address.get_port(),
 			receiver_address.get_flow_info(),
 			receiver_address.get_scope_id() );

@@ -3,6 +3,10 @@ import "../imports/inet_address.u"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
+	// Should use written (host) order of bytes.
+	halt if( ust::ip_address_v4( 0x7E31FD8Cu ) != ust::ip_address_v4( ust::make_array( 0x7Eu8, 0x31u8, 0xFDu8, 0x8Cu8 ) ) );
+	halt if( ust::ip_address_v4( 0x7F000001u ) != ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ) );
+
 	halt if( ust::parse_ip_address_v4( "0.0.0.0" ) != ust::ip_address_v4( ust::make_array( 0u8, 0u8, 0u8, 0u8 ) ) );
 	halt if( ust::parse_ip_address_v4( "2.3.4.5" ) != ust::ip_address_v4( ust::make_array( 2u8, 3u8, 4u8, 5u8 ) ) );
 	halt if( ust::parse_ip_address_v4( "234.56.7.8" ) != ust::ip_address_v4( ust::make_array( 234u8, 56u8, 7u8, 8u8 ) ) );

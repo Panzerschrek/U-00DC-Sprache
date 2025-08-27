@@ -1,3 +1,4 @@
+import "../../imports/bytes_order.u"
 import "socket.uh"
 import "errno.uh"
 
@@ -21,7 +22,10 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 				typeinfo</sockaddr_in/>.size_of );
 		}
 
-		return socket_address( socket_address_v4( ip_address_v4( address_ip_v4.sin_addr.s_addr ), address_ip_v4.sin_port ) );
+		return
+			socket_address( socket_address_v4(
+				ip_address_v4( to_host_bytes_order( address_ip_v4.sin_addr.s_addr ) ),
+				to_host_bytes_order( address_ip_v4.sin_port ) ) );
 	}
 	else if( i32(address.ss_family) == AF_INET6 )
 	{
@@ -38,19 +42,18 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 				typeinfo</sockaddr_in6/>.size_of );
 		}
 
-		// TODO - check if it's correct.
 		var u128 ip_raw=
-			( u128( address_ip_v6.sin6_addr.parts[0] ) ) |
-			( u128( address_ip_v6.sin6_addr.parts[1] ) << 32u ) |
-			( u128( address_ip_v6.sin6_addr.parts[2] ) << 64u ) |
-			( u128( address_ip_v6.sin6_addr.parts[3] ) << 96u );
+			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[0] ) ) << 96u ) |
+			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[1] ) ) << 64u ) |
+			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[2] ) ) << 32u ) |
+			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[3] ) ) <<  0u );
 
 		return
 			socket_address( socket_address_v6(
-				ip_address_v6(ip_raw ),
-				address_ip_v6.sin6_port,
-				address_ip_v6.sin6_flowinfo,
-				address_ip_v6.sin6_scope_id ) );
+				ip_address_v6( ip_raw ),
+				to_host_bytes_order( address_ip_v6.sin6_port ),
+				to_host_bytes_order( address_ip_v6.sin6_flowinfo ),
+				to_host_bytes_order( address_ip_v6.sin6_scope_id ) ) );
 	}
 	else
 	{
@@ -64,8 +67,8 @@ fn translate_socket_address( socket_address_v4& address ) : sockaddr_in
 	return sockaddr_in
 	{
 		.sin_family( AF_INET ),
-		.sin_port= address.get_port(),
-		.sin_addr{ .s_addr= address.get_ip().get_bits() },
+		.sin_port= to_network_bytes_order( address.get_port() ),
+		.sin_addr{ .s_addr= to_network_bytes_order( address.get_ip().get_bits() ) },
 		.sin_zero= zero_init,
 	};
 }
@@ -77,11 +80,19 @@ fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
 	return sockaddr_in6
 	{
 		.sin6_family( AF_INET6 ),
-		.sin6_port= address.get_port(),
-		// TODO - check if it's correct.
-		.sin6_addr{ .parts[ ( ip_raw ), ( ip_raw >> 32u ), ( ip_raw >> 64u ), ( ip_raw >> 96u ) ] },
-		.sin6_flowinfo= address.get_flow_info(),
-		.sin6_scope_id= address.get_scope_id(),
+		.sin6_port= to_network_bytes_order( address.get_port() ),
+		.sin6_addr
+		{
+			.parts
+			[
+				to_network_bytes_order( u32( ip_raw >> 96u ) ),
+				to_network_bytes_order( u32( ip_raw >> 64u ) ),
+				to_network_bytes_order( u32( ip_raw >> 32u ) ),
+				to_network_bytes_order( u32( ip_raw >>  0u ) ),
+			]
+		},
+		.sin6_flowinfo= to_network_bytes_order( address.get_flow_info() ),
+		.sin6_scope_id= to_network_bytes_order( address.get_scope_id() ),
 	};
 }
 
