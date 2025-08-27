@@ -100,6 +100,24 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( ust::parse_ip_address_v6( "2233:4455:6677:8899:aabb::ccdd:eeff" ) != ust::ip_address_v6( expected ) );
 	}
 
+	// Invalid ipv6 address - empty string.
+	halt if( ust::parse_ip_address_v6( "" ) != ust::null_optional );
+
+	// Invalid ipv6 address - invalid hex digit 'G'.
+	halt if( ust::parse_ip_address_v6( "1112:2233:3444:55G6:6677:7888:999a:aabb" ) != ust::null_optional );
+
+	// Invalid ipv6 address - too few parts.
+	halt if( ust::parse_ip_address_v6( "1112:2233:3444:5556:6677:7888:999a" ) != ust::null_optional );
+
+	// Invalid ipv6 address - too many zero skips.
+	halt if( ust::parse_ip_address_v6( "1111::2222::3333" ) != ust::null_optional );
+
+	// Invalid ipv6 address - too many zero skips.
+	halt if( ust::parse_ip_address_v6( "::2222::3333" ) != ust::null_optional );
+
+	// Invalid ipv6 address - too many zero skips.
+	halt if( ust::parse_ip_address_v6( "1111::2222::" ) != ust::null_optional );
+
 	halt if(
 		ust::parse_socket_address_v4( "37.42.213.178:0" ) !=
 		ust::socket_address_v4( ust::ip_address_v4( ust::make_array( 37u8, 42u8, 213u8, 178u8 ) ), 0u16 ) );
