@@ -118,6 +118,12 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Invalid ipv6 address - too many zero skips.
 	halt if( ust::parse_ip_address_v6( "1111::2222::" ) != ust::null_optional );
 
+	// Invalid ipv6 address - leading spaces.
+	halt if( ust::parse_ip_address_v6( " 0011:2233:4455:6677:8899:aabb:ccdd:eeff" ) != ust::null_optional );
+
+	// Invalid ipv6 address - trailing spaces.
+	halt if( ust::parse_ip_address_v6( " 0011:2233:4455:6677:8899:aabb:ccdd:eeff " ) != ust::null_optional );
+
 	halt if(
 		ust::parse_socket_address_v4( "37.42.213.178:0" ) !=
 		ust::socket_address_v4( ust::ip_address_v4( ust::make_array( 37u8, 42u8, 213u8, 178u8 ) ), 0u16 ) );
@@ -207,6 +213,18 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( a.get_port() != 5u16 );
 		halt if( a.get_scope_id() != 0u );
 	}
+
+	// Invalid Ipv6 socket address - empty string.
+	halt if( ust::parse_socket_address_v6( "" ) != ust::null_optional );
+
+	// Invalid Ipv6 socket address - only ip.
+	halt if( ust::parse_socket_address_v6( "1234::5678" ) != ust::null_optional );
+
+	// Invalid Ipv6 socket address - missing port.
+	halt if( ust::parse_socket_address_v6( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]" ) != ust::null_optional );
+
+	// Invalid Ipv6 socket address - missing scope id after %.
+	halt if( ust::parse_socket_address_v6( "[ffee:ddcc:bbaa::3322:11%]:58" ) != ust::null_optional );
 
 	return 0;
 }
