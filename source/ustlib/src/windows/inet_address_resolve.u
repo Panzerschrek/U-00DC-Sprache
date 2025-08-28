@@ -52,7 +52,7 @@ fn resolve_inet_address( string_view8 name ) : vector</ip_address/>
 					memory_copy(
 						ptr_cast_to_byte8( $<(address_ip_v6) ),
 						ptr_cast_to_byte8( info.ai_addr ),
-						typeinfo</sockaddr_in/>.size_of );
+						typeinfo</sockaddr_in6/>.size_of );
 
 					var u128 ip_raw=
 						( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[0] ) ) << 112u ) |
