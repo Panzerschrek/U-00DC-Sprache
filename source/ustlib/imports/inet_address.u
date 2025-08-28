@@ -5,6 +5,8 @@ import "variant.u"
 namespace ust
 {
 
+type ip_address= variant</ tup[ ip_address_v4, ip_address_v6 ] />;
+
 class ip_address_v4
 {
 public:

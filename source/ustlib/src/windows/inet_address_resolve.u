@@ -1,0 +1,6 @@
+import "../../imports/inet_address_resolve.u"
+
+namespace ust
+{
+
+} // namespace ust

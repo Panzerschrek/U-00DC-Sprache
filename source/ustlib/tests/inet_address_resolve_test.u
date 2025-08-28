@@ -1,0 +1,8 @@
+//##success_test
+import "../imports/inet_address_resolve.u"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+
+	return 0;
+}
