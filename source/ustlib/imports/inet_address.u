@@ -148,6 +148,11 @@ public:
 		( ip_= ip, port_= port, flow_info_= flow_info, scope_id_= scope_id )
 	{}
 
+	fn constructor( mut this, socket_address_v6& other )= default;
+	op=( mut this, socket_address_v6& other )= default;
+
+	op==( socket_address_v6& l, socket_address_v6& r ) : bool = default;
+
 	fn get_ip( this ) : ip_address_v6
 	{
 		return ip_;
@@ -187,12 +192,6 @@ public:
 	{
 		scope_id_= scope_id;
 	}
-
-public:
-	fn constructor( mut this, socket_address_v6& other )= default;
-	op=( mut this, socket_address_v6& other )= default;
-
-	op==( socket_address_v6& l, socket_address_v6& r ) : bool = default;
 
 private:
 	ip_address_v6 ip_;
