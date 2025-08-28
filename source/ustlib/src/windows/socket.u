@@ -68,7 +68,7 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 	{
 		static_assert( typeinfo</sockaddr_storage/>.size_of >= typeinfo</sockaddr_in6/>.size_of );
 
-		// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+		// Cast sockaddr to sockaddr_in6 using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
 		var sockaddr_in6 mut address_ip_v6= zero_init;
 
 		unsafe( memory_copy(
@@ -79,7 +79,7 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 		var u128 ip_raw=
 			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[0] ) ) << 112u ) |
 			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[1] ) ) <<  96u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[2] ) ) <<  72u ) |
+			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[2] ) ) <<  80u ) |
 			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[3] ) ) <<  64u ) |
 			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[4] ) ) <<  48u ) |
 			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[5] ) ) <<  32u ) |
@@ -125,7 +125,7 @@ fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
 			[
 				to_network_bytes_order( u16( ip_raw >> 112u ) ),
 				to_network_bytes_order( u16( ip_raw >>  96u ) ),
-				to_network_bytes_order( u16( ip_raw >>  72u ) ),
+				to_network_bytes_order( u16( ip_raw >>  80u ) ),
 				to_network_bytes_order( u16( ip_raw >>  64u ) ),
 				to_network_bytes_order( u16( ip_raw >>  48u ) ),
 				to_network_bytes_order( u16( ip_raw >>  32u ) ),
