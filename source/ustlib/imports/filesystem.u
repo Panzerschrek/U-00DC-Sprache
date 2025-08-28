@@ -1,82 +1,56 @@
 import "file_metadata.u"
 import "path.u"
-import "result.u"
+import "io_result.u"
 
 namespace ust
 {
 
-enum io_error
-{
-	permission_denied,
-	not_found,
-	not_a_directory,
-	directory_not_empty,
-	already_exists,
-	out_of_memory,
-	interrupted,
-	unexpected_end_of_file,
-	write_zero,
-	destination_address_required,
-	not_connected,
-	would_block,
-	address_already_in_use,
-	connection_reset,
-	broken_pipe,
-	connection_refused,
-	connection_aborted,
-	other, // Some non-listed error code.
-	// TODO - add other errors
-}
-
-template</type T/>
-type filesystem_result= result</T, io_error/>;
-
 // Request metadata for given path (file, directory, etc.).
-fn get_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>;
+fn get_metadata_for_path( filesystem_path_view path ) : io_result</file_metadata/>;
 
 // Request metadata, but not follow symlinks (return metadata for symlink itself).
-fn get_symlink_metadata_for_path( filesystem_path_view path ) : filesystem_result</file_metadata/>;
+fn get_symlink_metadata_for_path( filesystem_path_view path ) : io_result</file_metadata/>;
 
 // Set permissions for given path (file, directory, etc.).
-fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : filesystem_result</void/>;
+fn set_permissions_for_path( filesystem_path_view path, file_permissions permissions ) : io_result</void/>;
 
 // Create a single directory (but only if parent exists).
 // Fails if given path exists but it's not a directory.
-fn create_directory( filesystem_path_view path ) : filesystem_result</void/>;
+fn create_directory( filesystem_path_view path ) : io_result</void/>;
 
 // Create directory, creating also parent directories if necessary.
-fn create_directory_with_parents( filesystem_path_view path ) : filesystem_result</void/>;
+fn create_directory_with_parents( filesystem_path_view path ) : io_result</void/>;
 
 // Copy file from source to destination. Overwrites destination if it already exists.
-fn copy_file( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
+fn copy_file( filesystem_path_view src_path, filesystem_path_view dst_path ) : io_result</void/>;
 
 // Copy file from source to destination. Fails if destination already exists.
-fn copy_file_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
+fn copy_file_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : io_result</void/>;
 
 // Rename or move file or directory into another location. This works only for path within same partition/volume.
 // If destination exists, it replaces it.
-fn rename_file_or_directory( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
+fn rename_file_or_directory( filesystem_path_view src_path, filesystem_path_view dst_path ) : io_result</void/>;
 
 // Rename or move file or directory into another location. This works only for path within same partition/volume.
 // If destination exists, this function fails.
-fn rename_file_or_directory_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : filesystem_result</void/>;
+fn rename_file_or_directory_if_not_exists( filesystem_path_view src_path, filesystem_path_view dst_path ) : io_result</void/>;
 
 // Remove file or link.
-fn remove_file( filesystem_path_view path ) : filesystem_result</void/>;
+fn remove_file( filesystem_path_view path ) : io_result</void/>;
 
 // Remove an empty directory.
 // Returns error if can't do this.
-fn remove_directory( filesystem_path_view path ) : filesystem_result</void/>;
+fn remove_directory( filesystem_path_view path ) : io_result</void/>;
 
 // Remove a directory, including all files and directories within it.
 // Symlinks aren't followed and only removed.
-fn remove_directory_recursive( filesystem_path_view path ) : filesystem_result</void/>;
+fn remove_directory_recursive( filesystem_path_view path ) : io_result</void/>;
 
 // Get current (working) directory, which is used for resolving of relative paths.
 fn get_current_directory() : filesystem_path;
 
 // Set current (working) directory, which is used for resolving of relative paths.
 // Note that this is generally isn't thread safe to change current directory, so it's better to do this only at startup.
-fn set_current_directory( filesystem_path_view path ) : filesystem_result</void/>;
+fn set_current_directory( filesystem_path_view path ) : io_result</void/>;
 
 } // namespace ust

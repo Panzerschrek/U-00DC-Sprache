@@ -5,7 +5,7 @@ import "socket.uh"
 namespace ust
 {
 
-fn udp_socket::create_v4() : result</udp_socket, io_error/>
+fn udp_socket::create_v4() : io_result</udp_socket/>
 {
 	unsafe
 	{
@@ -19,7 +19,7 @@ fn udp_socket::create_v4() : result</udp_socket, io_error/>
 	}
 }
 
-fn udp_socket::create_v6() : result</udp_socket, io_error/>
+fn udp_socket::create_v6() : io_result</udp_socket/>
 {
 	unsafe
 	{
@@ -33,7 +33,7 @@ fn udp_socket::create_v6() : result</udp_socket, io_error/>
 	}
 }
 
-fn udp_socket::create_and_bind( socket_address& a ) : result</udp_socket, io_error/>
+fn udp_socket::create_and_bind( socket_address& a ) : io_result</udp_socket/>
 {
 	unsafe
 	{
@@ -100,7 +100,7 @@ fn udp_socket::destructor()
 	unsafe( ::close( socket_ ) );
 }
 
-fn udp_socket::send( mut this, array_view_imut</byte8/> data ) : result</size_type, io_error/>
+fn udp_socket::send( mut this, array_view_imut</byte8/> data ) : io_result</size_type/>
 {
 	var ssize_type bytes_written= unsafe( ::send( socket_, data.data(), data.size(), 0 ) );
 
@@ -112,7 +112,7 @@ fn udp_socket::send( mut this, array_view_imut</byte8/> data ) : result</size_ty
 	return size_type(bytes_written);
 }
 
-fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> data ) : result</size_type, io_error/>
+fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> data ) : io_result</size_type/>
 {
 	if_var( &a_v4 : a.get</socket_address_v4/>() )
 	{
@@ -157,7 +157,7 @@ fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> da
 	else { halt; }
 }
 
-fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>
+fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : io_result</ tup[ socket_address, size_type ] />
 {
 	var sockaddr_storage mut sender_address= zero_init;
 
@@ -195,7 +195,7 @@ fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : result</
 	}
 }
 
-fn udp_socket::receive( mut this, array_view_mut</byte8/> data ) : result</ size_type, io_error/>
+fn udp_socket::receive( mut this, array_view_mut</byte8/> data ) : io_result</size_type/>
 {
 	var ssize_type bytes_read= unsafe( ::recv( socket_, data.data(), data.size(), 0 ) );
 
@@ -207,7 +207,7 @@ fn udp_socket::receive( mut this, array_view_mut</byte8/> data ) : result</ size
 	return size_type(bytes_read);
 }
 
-fn udp_socket::peek_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>
+fn udp_socket::peek_from( mut this, array_view_mut</byte8/> data ) : io_result</ tup[ socket_address, size_type ] />
 {
 	var sockaddr_storage mut sender_address= zero_init;
 
@@ -245,7 +245,7 @@ fn udp_socket::peek_from( mut this, array_view_mut</byte8/> data ) : result</ tu
 	}
 }
 
-fn udp_socket::peek( mut this, array_view_mut</byte8/> data ) : result</ size_type, io_error/>
+fn udp_socket::peek( mut this, array_view_mut</byte8/> data ) : io_result</size_type/>
 {
 	var ssize_type bytes_read= unsafe( ::recv( socket_, data.data(), data.size(), i32(MSG_PEEK) ) );
 
@@ -257,7 +257,7 @@ fn udp_socket::peek( mut this, array_view_mut</byte8/> data ) : result</ size_ty
 	return size_type(bytes_read);
 }
 
-fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
+fn udp_socket::connect( mut this, socket_address& a ) : io_result</void/>
 {
 	if_var( &a_v4 : a.get</socket_address_v4/>() )
 	{
@@ -294,32 +294,32 @@ fn udp_socket::connect( mut this, socket_address& a ) : result</void, io_error/>
 	return void();
 }
 
-fn udp_socket::is_nonblocking( this ) : result</bool, io_error/>
+fn udp_socket::is_nonblocking( this ) : io_result</bool/>
 {
 	return is_socket_nonblocking( socket_ );
 }
 
-fn udp_socket::set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>
+fn udp_socket::set_nonblocking( mut this, bool nonblocking ) : io_result</void/>
 {
 	return set_socket_nonblocking( socket_, nonblocking );
 }
 
-fn udp_socket::get_local_address( this ) : result</socket_address, io_error/>
+fn udp_socket::get_local_address( this ) : io_result</socket_address/>
 {
 	return get_socket_local_address( socket_ );
 }
 
-fn udp_socket::get_peer_address( this ) : result</socket_address, io_error/>
+fn udp_socket::get_peer_address( this ) : io_result</socket_address/>
 {
 	return get_socket_peer_address( socket_ );
 }
 
-fn udp_socket::get_ttl( this ) : result</u8, io_error/>
+fn udp_socket::get_ttl( this ) : io_result</u8/>
 {
 	return get_socket_ttl( socket_ );
 }
 
-fn udp_socket::set_ttl( mut this, u8 mut ttl ) : result</void, io_error/>
+fn udp_socket::set_ttl( mut this, u8 mut ttl ) : io_result</void/>
 {
 	return set_socket_ttl( socket_, ttl );
 }

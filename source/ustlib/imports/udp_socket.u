@@ -1,5 +1,5 @@
-import "filesystem.u" // TODO - move io_error enum onto different place.
 import "inet_address.u"
+import "io_result.u"
 import "native_socket.u"
 
 namespace ust
@@ -10,67 +10,67 @@ class udp_socket
 public:
 	// Create socket for ip v4 protocol without binding an address to it.
 	// It's still useful - one can send messages via it.
-	fn create_v4() : result</udp_socket, io_error/>;
+	fn create_v4() : io_result</udp_socket/>;
 
 	// Create socket for ip v6 protocol without binding an address to it.
 	// It's still useful - one can send messages via it.
-	fn create_v6() : result</udp_socket, io_error/>;
+	fn create_v6() : io_result</udp_socket/>;
 
 	// Create socket and bind it to address specified.
 	// Such socket may be used for messages receiving.
-	fn create_and_bind( socket_address& a ) : result</udp_socket, io_error/>;
+	fn create_and_bind( socket_address& a ) : io_result</udp_socket/>;
 
 	fn constructor( native_socket_fd s ) unsafe; // constructor for internal usage.
 	fn destructor();
 
 	// Send data to address, specified earlier in "connect" call.
 	// Returns number of bytes sent.
-	fn send( mut this, array_view_imut</byte8/> data ) : result</size_type, io_error/>;
+	fn send( mut this, array_view_imut</byte8/> data ) : io_result</size_type/>;
 
 	// Send data to specified address.
 	// Returns number of bytes sent.
-	fn send_to( mut this, socket_address& a, array_view_imut</byte8/> data ) : result</size_type, io_error/>;
+	fn send_to( mut this, socket_address& a, array_view_imut</byte8/> data ) : io_result</size_type/>;
 
 	// Receive data from connected address (if connected) or from anyone who managed to send data.
 	// Returns number of bytes received. If input buffer isn't large enough, remaining data is discarded.
-	fn receive( mut this, array_view_mut</byte8/> data ) : result</ size_type, io_error/>;
+	fn receive( mut this, array_view_mut</byte8/> data ) : io_result</size_type/>;
 
 	// Receive data and return sender address.
 	// Returns number of bytes received. If input buffer isn't large enough, remaining data is discarded.
-	fn receive_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>;
+	fn receive_from( mut this, array_view_mut</byte8/> data ) : io_result</ tup[ socket_address, size_type ] />;
 
 	// Peek data from connected address (if connected) or from anyone who managed to send data.
 	// Data isn't extracted and may be observed by subsequential "peek" calls or may be extracted via "receive" call.
 	// Returns number of bytes extracted.
-	fn peek( mut this, array_view_mut</byte8/> data ) : result</ size_type, io_error/>;
+	fn peek( mut this, array_view_mut</byte8/> data ) : io_result</size_type/>;
 
 	// Peek data and return sender address.
 	// Data isn't extracted and may be observed by subsequential "peek" calls or may be extracted via "receive" call.
 	// Returns number of bytes extracted.
-	fn peek_from( mut this, array_view_mut</byte8/> data ) : result</ tup[ socket_address, size_type ], io_error/>;
+	fn peek_from( mut this, array_view_mut</byte8/> data ) : io_result</ tup[ socket_address, size_type ]/>;
 
 	// Connect this socket to specific address.
 	// using it prior to "send" call is necessary.
 	// Using it prior to "receive" call is necessary to filter-out all other possible senders.
-	fn connect( mut this, socket_address& a ) : result</void, io_error/>;
+	fn connect( mut this, socket_address& a ) : io_result</void/>;
 
 	// Check if socket is in non-blocking mode.
-	fn is_nonblocking( this ) : result</bool, io_error/>;
+	fn is_nonblocking( this ) : io_result</bool/>;
 
 	// Set non-blocking mode.
-	fn set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>;
+	fn set_nonblocking( mut this, bool nonblocking ) : io_result</void/>;
 
 	// Get address to which this socket is bound.
-	fn get_local_address( this ) : result</socket_address, io_error/>;
+	fn get_local_address( this ) : io_result</socket_address/>;
 
 	// Get remote address to which this socket is connected.
-	fn get_peer_address( this ) : result</socket_address, io_error/>;
+	fn get_peer_address( this ) : io_result</socket_address/>;
 
 	// Get time to live.
-	fn get_ttl( this ) : result</u8, io_error/>;
+	fn get_ttl( this ) : io_result</u8/>;
 
 	// Set time to live.
-	fn set_ttl( mut this, u8 ttl ) : result</void, io_error/>;
+	fn set_ttl( mut this, u8 ttl ) : io_result</void/>;
 
 	// Get handle to perform some system-specific file operations with it. Do not try to close it!
 	fn get_native_fd( this ) unsafe : native_socket_fd;

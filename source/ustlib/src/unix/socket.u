@@ -106,7 +106,7 @@ fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
 	};
 }
 
-fn is_socket_nonblocking( native_socket_fd s ) : result</bool, io_error/>
+fn is_socket_nonblocking( native_socket_fd s ) : io_result</bool/>
 {
 	var i32 flags= unsafe( ::fcntl( s, F_GETFL, 0 ) );
 
@@ -118,7 +118,7 @@ fn is_socket_nonblocking( native_socket_fd s ) : result</bool, io_error/>
 	return ( flags & O_NONBLOCK ) != 0;
 }
 
-fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : result</void, io_error/>
+fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : io_result</void/>
 {
 	unsafe
 	{
@@ -148,7 +148,7 @@ fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : result</void
 	return void();
 }
 
-fn get_socket_local_address( native_socket_fd s ) : result</socket_address, io_error/>
+fn get_socket_local_address( native_socket_fd s ) : io_result</socket_address/>
 {
 	var sockaddr_storage mut address= zero_init;
 
@@ -172,7 +172,7 @@ fn get_socket_local_address( native_socket_fd s ) : result</socket_address, io_e
 	}
 }
 
-fn get_socket_peer_address( native_socket_fd s ) : result</socket_address, io_error/>
+fn get_socket_peer_address( native_socket_fd s ) : io_result</socket_address/>
 {
 	var sockaddr_storage mut address= zero_init;
 
@@ -196,7 +196,7 @@ fn get_socket_peer_address( native_socket_fd s ) : result</socket_address, io_er
 	}
 }
 
-fn get_socket_ttl( native_socket_fd s ) : result</u8, io_error/>
+fn get_socket_ttl( native_socket_fd s ) : io_result</u8/>
 {
 	var u32 mut ttl= 0u;
 
@@ -218,7 +218,7 @@ fn get_socket_ttl( native_socket_fd s ) : result</u8, io_error/>
 	return u8( min( ttl, 255u ) );
 }
 
-fn set_socket_ttl( native_socket_fd s, u8 ttl ) : result</void, io_error/>
+fn set_socket_ttl( native_socket_fd s, u8 ttl ) : io_result</void/>
 {
 	var u32 mut ttl32( ttl );
 

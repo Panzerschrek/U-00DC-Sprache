@@ -1,5 +1,5 @@
 import "../../imports/inet_address.u"
-import "../../imports/filesystem.u"
+import "../../imports/io_result.u"
 import "../../imports/native_socket.u"
 import "windows.uh"
 
@@ -23,16 +23,16 @@ fn translate_socket_address( socket_address_v4& address ) : sockaddr_in;
 
 fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6;
 
-fn is_socket_nonblocking( native_socket_fd s ) : result</bool, io_error/>;
+fn is_socket_nonblocking( native_socket_fd s ) : io_result</bool/>;
 
-fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : result</void, io_error/>;
+fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : io_result</void/>;
 
-fn get_socket_local_address( native_socket_fd s ) : result</socket_address, io_error/>;
+fn get_socket_local_address( native_socket_fd s ) : io_result</socket_address/>;
 
-fn get_socket_peer_address( native_socket_fd s ) : result</socket_address, io_error/>;
+fn get_socket_peer_address( native_socket_fd s ) : io_result</socket_address/>;
 
-fn get_socket_ttl( native_socket_fd s ) : result</u8, io_error/>;
+fn get_socket_ttl( native_socket_fd s ) : io_result</u8/>;
 
-fn set_socket_ttl( native_socket_fd s, u8 ttl ) : result</void, io_error/>;
+fn set_socket_ttl( native_socket_fd s, u8 ttl ) : io_result</void/>;
 
 } // namespace ust

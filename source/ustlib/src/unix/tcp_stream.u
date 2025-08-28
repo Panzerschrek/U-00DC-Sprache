@@ -5,7 +5,7 @@ import "socket.uh"
 namespace ust
 {
 
-fn tcp_stream::connect( socket_address& a ) : result</tcp_stream, io_error/>
+fn tcp_stream::connect( socket_address& a ) : io_result</tcp_stream/>
 {
 	unsafe
 	{
@@ -72,7 +72,7 @@ fn tcp_stream::destructor()
 	unsafe( ::close( socket_ ) );
 }
 
-fn tcp_stream::read( mut this, array_view_mut</byte8/> buf ) : result</size_type, io_error/>
+fn tcp_stream::read( mut this, array_view_mut</byte8/> buf ) : io_result</size_type/>
 {
 	var ssize_type bytes_read= unsafe( ::recv( socket_, buf.data(), buf.size(), 0 ) );
 
@@ -84,7 +84,7 @@ fn tcp_stream::read( mut this, array_view_mut</byte8/> buf ) : result</size_type
 	return size_type(bytes_read);
 }
 
-fn tcp_stream::write( mut this, array_view_imut</byte8/> buf ) : result</size_type, io_error/>
+fn tcp_stream::write( mut this, array_view_imut</byte8/> buf ) : io_result</size_type/>
 {
 	var ssize_type bytes_written= unsafe( ::send( socket_, buf.data(), buf.size(), i32(MSG_NOSIGNAL) ) );
 
@@ -96,7 +96,7 @@ fn tcp_stream::write( mut this, array_view_imut</byte8/> buf ) : result</size_ty
 	return size_type(bytes_written);
 }
 
-fn tcp_stream::peek( mut this, array_view_mut</byte8/> buf ) : result</size_type, io_error/>
+fn tcp_stream::peek( mut this, array_view_mut</byte8/> buf ) : io_result</size_type/>
 {
 	var ssize_type bytes_read= unsafe( ::recv( socket_, buf.data(), buf.size(), i32( MSG_PEEK ) ) );
 
@@ -108,37 +108,37 @@ fn tcp_stream::peek( mut this, array_view_mut</byte8/> buf ) : result</size_type
 	return size_type(bytes_read);
 }
 
-fn tcp_stream::is_nonblocking( this ) : result</bool, io_error/>
+fn tcp_stream::is_nonblocking( this ) : io_result</bool/>
 {
 	return is_socket_nonblocking( socket_ );
 }
 
-fn tcp_stream::set_nonblocking( mut this, bool nonblocking ) : result</void, io_error/>
+fn tcp_stream::set_nonblocking( mut this, bool nonblocking ) : io_result</void/>
 {
 	return set_socket_nonblocking( socket_, nonblocking );
 }
 
-fn tcp_stream::get_local_address( this ) : result</socket_address, io_error/>
+fn tcp_stream::get_local_address( this ) : io_result</socket_address/>
 {
 	return get_socket_local_address( socket_ );
 }
 
-fn tcp_stream::get_peer_address( this ) : result</socket_address, io_error/>
+fn tcp_stream::get_peer_address( this ) : io_result</socket_address/>
 {
 	return get_socket_peer_address( socket_ );
 }
 
-fn tcp_stream::get_ttl( this ) : result</u8, io_error/>
+fn tcp_stream::get_ttl( this ) : io_result</u8/>
 {
 	return get_socket_ttl( socket_ );
 }
 
-fn tcp_stream::set_ttl( mut this, u8 ttl ) : result</void, io_error/>
+fn tcp_stream::set_ttl( mut this, u8 ttl ) : io_result</void/>
 {
 	return set_socket_ttl( socket_, ttl );
 }
 
-fn tcp_stream::get_nodelay( this ) : result</bool, io_error/>
+fn tcp_stream::get_nodelay( this ) : io_result</bool/>
 {
 	var u32 mut nodelay= 0u;
 
@@ -160,7 +160,7 @@ fn tcp_stream::get_nodelay( this ) : result</bool, io_error/>
 	return nodelay != 0u;
 }
 
-fn tcp_stream::set_nodelay( mut this, bool nodelay ) : result</void, io_error/>
+fn tcp_stream::set_nodelay( mut this, bool nodelay ) : io_result</void/>
 {
 	var u32 mut nodelay_int= ( nodelay ? 1u : 0u );
 

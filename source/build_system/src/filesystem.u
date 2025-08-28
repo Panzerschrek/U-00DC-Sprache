@@ -3,6 +3,7 @@
 import "/enum_string_conversions.u"
 import "/file.u"
 import "/file_helpers.u"
+import "/filesystem.u"
 import "/path_utils.u"
 import "filesystem.uh"
 
