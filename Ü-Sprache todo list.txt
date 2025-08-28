@@ -115,7 +115,6 @@ Standart library:
 *) Adapter-container for binary heap (min_heap/max_heap)
 *) Allow setting read/write timeouts on UDP socket
 *) Allow setting/getting broadcast/multicast properties on UDP socket
-*) Add a function for DNS name to IP resolution
 
 Compiler:
 *) Ensure floating-point numbers parsing produces correct result
