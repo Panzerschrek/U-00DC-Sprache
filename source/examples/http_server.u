@@ -33,6 +33,7 @@ pretty_main
 
 		WriteAll( stream, g_http_response_status_line );
 		WriteAll( stream, g_http_respense_headers );
+		WriteAll( stream, ust::concat( "Content-Length: ", ust::to_string8( typeinfo</ typeof(g_html_page_contents) />.size_of ), g_http_line_end ) );
 		WriteAll( stream, g_http_respense_header_end_marker );
 		WriteAll( stream, g_html_page_contents );
 	}
