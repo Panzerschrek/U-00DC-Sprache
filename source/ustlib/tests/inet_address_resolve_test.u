@@ -1,8 +1,48 @@
 //##success_test
+import "../imports/assert.u"
 import "../imports/inet_address_resolve.u"
+import "../imports/string_conversions.u"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
 
+	{
+		var ust::vector</ust::ip_address/> addresses= ust::resolve_inet_address( "github.com" );
+		ust::stdout_print( ust::concat( "Has ", ust::to_string8( addresses.size() ), " addresses\n" ) );
+
+		foreach( &a : addresses )
+		{
+			ust::stdout_print( ust::concat( AddressToString(a), "\n" ) );
+		}
+	}
+
 	return 0;
+}
+
+fn AddressToString( ust::ip_address& a ) : ust::string8
+{
+	variant_visit( &v : a )
+	{
+		return AddressToString(v);
+	}
+	halt;
+}
+
+fn AddressToString( ust::ip_address_v4& a ) : ust::string8
+{
+	return
+		ust::concat(
+			ust::to_string8( u8( a.get_bits() >> 24u ) ),
+			".",
+			ust::to_string8( u8( a.get_bits() >> 16u ) ),
+			".",
+			ust::to_string8( u8( a.get_bits() >>  8u ) ),
+			".",
+			ust::to_string8( u8( a.get_bits() >>  0u ) ) );
+}
+
+fn AddressToString( ust::ip_address_v6& a ) : ust::string8
+{
+	// TODO
+	return "some ipv6";
 }
