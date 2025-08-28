@@ -5,6 +5,22 @@ import "../imports/string_conversions.u"
 namespace ust
 {
 
+fn ip_address_v4::parse( string_view8 mut s ) : optional</ip_address_v4/>
+{
+	if_var( ip : extract_ip_v4_address(s) )
+	{
+		if( !s.empty() )
+		{
+			// Allow no trailing symbols.
+			return null_optional;
+		}
+
+		return ip;
+	}
+
+	return null_optional;
+}
+
 fn ip_address_v4::to_string( this ) : string8
 {
 	return
@@ -16,6 +32,22 @@ fn ip_address_v4::to_string( this ) : string8
 			to_string8( u8( bits_ >>  8u ) ),
 			".",
 			to_string8( u8( bits_ >>  0u ) ) );
+}
+
+fn ip_address_v6::parse( string_view8 mut s ) : optional</ip_address_v6/>
+{
+	if_var( ip : extract_ip_v6_address(s) )
+	{
+		if( !s.empty() )
+		{
+			// Allow no trailing symbols.
+			return null_optional;
+		}
+
+		return ip;
+	}
+
+	return null_optional;
 }
 
 fn ip_address_v6::to_string( this ) : string8
@@ -38,39 +70,7 @@ fn ip_address_v6::to_string( this ) : string8
 	return res;
 }
 
-fn parse_ip_address_v4( string_view8 mut s ) : optional</ip_address_v4/>
-{
-	if_var( ip : extract_ip_v4_address(s) )
-	{
-		if( !s.empty() )
-		{
-			// Allow no trailing symbols.
-			return null_optional;
-		}
-
-		return ip;
-	}
-
-	return null_optional;
-}
-
-fn parse_ip_address_v6( string_view8 mut s ) : optional</ip_address_v6/>
-{
-	if_var( ip : extract_ip_v6_address(s) )
-	{
-		if( !s.empty() )
-		{
-			// Allow no trailing symbols.
-			return null_optional;
-		}
-
-		return ip;
-	}
-
-	return null_optional;
-}
-
-fn parse_socket_address_v4( string_view8 mut s ) : optional</socket_address_v4/>
+fn socket_address_v4::parse( string_view8 mut s ) : optional</socket_address_v4/>
 {
 	if_var( mut ip : extract_ip_v4_address(s) )
 	{
@@ -103,7 +103,7 @@ fn parse_socket_address_v4( string_view8 mut s ) : optional</socket_address_v4/>
 	return null_optional;
 }
 
-fn parse_socket_address_v6( string_view8 mut s ) : optional</socket_address_v6/>
+fn socket_address_v6::parse( string_view8 mut s ) : optional</socket_address_v6/>
 {
 	if( !( s.size() >= 1s && s.front() == '[' ) )
 	{
@@ -166,11 +166,11 @@ fn parse_socket_address_v6( string_view8 mut s ) : optional</socket_address_v6/>
 
 fn parse_socket_address( string_view8 mut s ) : optional</socket_address/>
 {
-	if_var( mut a : parse_socket_address_v4( s ) )
+	if_var( mut a : socket_address_v4::parse( s ) )
 	{
 		return socket_address( move(a) );
 	}
-	if_var( mut a : parse_socket_address_v6( s ) )
+	if_var( mut a : socket_address_v6::parse( s ) )
 	{
 		return socket_address( move(a) );
 	}

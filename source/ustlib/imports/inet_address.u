@@ -10,6 +10,8 @@ type ip_address= variant</ tup[ ip_address_v4, ip_address_v6 ] />;
 class ip_address_v4
 {
 public:
+	fn parse( string_view8 s ) : optional</ip_address_v4/>;
+
 	fn constructor( u32 bits )
 		( bits_= bits )
 	{}
@@ -48,6 +50,8 @@ private:
 class ip_address_v6
 {
 public:
+	fn parse( string_view8 s ) : optional</ip_address_v6/>;
+
 	fn constructor( u128 bits )
 		( bits_= bits )
 	{}
@@ -99,6 +103,8 @@ type socket_address= variant</ tup[ socket_address_v4, socket_address_v6 ] />;
 class socket_address_v4
 {
 public:
+	fn parse( string_view8 s ) : optional</socket_address_v4/>;
+
 	fn constructor( ip_address_v4 ip, u16 port )
 		( ip_= ip, port_= port )
 	{}
@@ -135,6 +141,9 @@ private:
 
 class socket_address_v6
 {
+public:
+	fn parse( string_view8 s ) : optional</socket_address_v6/>;
+
 	fn constructor( ip_address_v6 ip, u16 port, u32 flow_info, u32 scope_id )
 		( ip_= ip, port_= port, flow_info_= flow_info, scope_id_= scope_id )
 	{}
@@ -191,18 +200,6 @@ private:
 	u32 flow_info_;
 	u32 scope_id_;
 }
-
-// Parse IP v4 address. Returns empty optional if failed to parse.
-fn parse_ip_address_v4( string_view8 s ) : optional</ip_address_v4/>;
-
-// Parse IP v6 address. Returns empty optional if failed to parse.
-fn parse_ip_address_v6( string_view8 s ) : optional</ip_address_v6/>;
-
-// Parse socket v4 address. Returns empty optional if failed to parse.
-fn parse_socket_address_v4( string_view8 s ) : optional</socket_address_v4/>;
-
-// Parse socket v6 address. Returns empty optional if failed to parse.
-fn parse_socket_address_v6( string_view8 s ) : optional</socket_address_v6/>;
 
 // Parse socket address (in v4 or v6 format). Returns empty optional if failed to parse.
 fn parse_socket_address( string_view8 s ) : optional</socket_address/>;

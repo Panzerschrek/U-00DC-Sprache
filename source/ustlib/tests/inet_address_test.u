@@ -14,35 +14,35 @@ fn nomangle main() call_conv( "C" ) : i32
 	halt if( ust::ip_address_v4( 0xFFFFFFFFu ).to_string() != "255.255.255.255" );
 	halt if( ust::ip_address_v4( ust::make_array( 13u8, 218u8, 187u8, 44u8 ) ).to_string() != "13.218.187.44" );
 
-	halt if( ust::parse_ip_address_v4( "0.0.0.0" ) != ust::ip_address_v4( ust::make_array( 0u8, 0u8, 0u8, 0u8 ) ) );
-	halt if( ust::parse_ip_address_v4( "2.3.4.5" ) != ust::ip_address_v4( ust::make_array( 2u8, 3u8, 4u8, 5u8 ) ) );
-	halt if( ust::parse_ip_address_v4( "234.56.7.8" ) != ust::ip_address_v4( ust::make_array( 234u8, 56u8, 7u8, 8u8 ) ) );
-	halt if( ust::parse_ip_address_v4( "67.145.213.7" ) != ust::ip_address_v4( ust::make_array( 67u8, 145u8, 213u8, 7u8 ) ) );
-	halt if( ust::parse_ip_address_v4( "255.255.255.255" ) != ust::ip_address_v4( ust::make_array( 255u8, 255u8, 255u8, 255u8 ) ) );
+	halt if( ust::ip_address_v4::parse( "0.0.0.0" ) != ust::ip_address_v4( ust::make_array( 0u8, 0u8, 0u8, 0u8 ) ) );
+	halt if( ust::ip_address_v4::parse( "2.3.4.5" ) != ust::ip_address_v4( ust::make_array( 2u8, 3u8, 4u8, 5u8 ) ) );
+	halt if( ust::ip_address_v4::parse( "234.56.7.8" ) != ust::ip_address_v4( ust::make_array( 234u8, 56u8, 7u8, 8u8 ) ) );
+	halt if( ust::ip_address_v4::parse( "67.145.213.7" ) != ust::ip_address_v4( ust::make_array( 67u8, 145u8, 213u8, 7u8 ) ) );
+	halt if( ust::ip_address_v4::parse( "255.255.255.255" ) != ust::ip_address_v4( ust::make_array( 255u8, 255u8, 255u8, 255u8 ) ) );
 
 	// Invalid IP address - not enough octets.
-	halt if( ust::parse_ip_address_v4( "1.23.45" ) != ust::null_optional );
+	halt if( ust::ip_address_v4::parse( "1.23.45" ) != ust::null_optional );
 
 	// Invalid IP address - too many octets.
-	halt if( ust::parse_ip_address_v4( "1.23.45.67.89" ) != ust::null_optional );
+	halt if( ust::ip_address_v4::parse( "1.23.45.67.89" ) != ust::null_optional );
 
 	// Invalid IP address - leading symbols.
-	halt if( ust::parse_ip_address_v4( " 1.23.45.67.89" ) != ust::null_optional );
+	halt if( ust::ip_address_v4::parse( " 1.23.45.67.89" ) != ust::null_optional );
 
 	// Invalid IP address - trailing symbols.
-	halt if( ust::parse_ip_address_v4( "1.23.45.67.89 " ) != ust::null_optional );
+	halt if( ust::ip_address_v4::parse( "1.23.45.67.89 " ) != ust::null_optional );
 
 	// Invalid IP address - octet overflow.
-	halt if( ust::parse_ip_address_v4( "1.23.45.678" ) != ust::null_optional );
+	halt if( ust::ip_address_v4::parse( "1.23.45.678" ) != ust::null_optional );
 
 	// Invalid IP address - octet overflow.
-	halt if( ust::parse_ip_address_v4( "257.1.2.3" ) != ust::null_optional );
+	halt if( ust::ip_address_v4::parse( "257.1.2.3" ) != ust::null_optional );
 
 	// Invalid IP address - octet overflow.
-	halt if( ust::parse_ip_address_v4( "1111.2.4.4" ) != ust::null_optional );
+	halt if( ust::ip_address_v4::parse( "1111.2.4.4" ) != ust::null_optional );
 
 	// Invalid IP address - octet overflow.
-	halt if( ust::parse_ip_address_v4( "1.2.3.456789" ) != ust::null_optional );
+	halt if( ust::ip_address_v4::parse( "1.2.3.456789" ) != ust::null_optional );
 
 	// Ipv6 string conversions.
 	{
@@ -53,122 +53,122 @@ fn nomangle main() call_conv( "C" ) : i32
 	// Ipv6 - basic form lowercase.
 	{
 		var [ u8, 16 ] expected[ 0x00u8, 0x11u8, 0x22u8, 0x33u8, 0x44u8, 0x55u8, 0x66u8, 0x77u8, 0x88u8, 0x99u8, 0xaau8, 0xbbu8, 0xccu8, 0xddu8, 0xeeu8, 0xffu8 ];
-		halt if( ust::parse_ip_address_v6( "0011:2233:4455:6677:8899:aabb:ccdd:eeff" ) != ust::ip_address_v6( expected ) );
+		halt if( ust::ip_address_v6::parse( "0011:2233:4455:6677:8899:aabb:ccdd:eeff" ) != ust::ip_address_v6( expected ) );
 	}
 
 	// Ipv6 - basic form uppercase.
 	{
 		var [ u8, 16 ] expected[ 0x01u8, 0x23u8, 0x45u8, 0x67u8, 0x89u8, 0xABu8, 0xCDu8, 0xEFu8, 0xFEu8, 0xDCu8, 0xBAu8, 0x98u8, 0x76u8, 0x54u8, 0x32u8, 0x10u8 ];
-		halt if( ust::parse_ip_address_v6( "0123:4567:89AB:CDEF:FEDC:BA98:7654:3210" ) != ust::ip_address_v6( expected ) );
+		halt if( ust::ip_address_v6::parse( "0123:4567:89AB:CDEF:FEDC:BA98:7654:3210" ) != ust::ip_address_v6( expected ) );
 	}
 
 	// Ipv6 - basic form mixed case.
 	{
 		var [ u8, 16 ] expected[ 0x01u8, 0x23u8, 0x45u8, 0x67u8, 0x89u8, 0xabu8, 0xcdu8, 0xefu8, 0xFEu8, 0xDCu8, 0xBAu8, 0x98u8, 0x76u8, 0x54u8, 0x32u8, 0x10u8 ];
-		halt if( ust::parse_ip_address_v6( "0123:4567:89ab:cdef:FEDC:BA98:7654:3210" ) != ust::ip_address_v6( expected ) );
+		halt if( ust::ip_address_v6::parse( "0123:4567:89ab:cdef:FEDC:BA98:7654:3210" ) != ust::ip_address_v6( expected ) );
 	}
 
 	// Ipv6 - leading zeros are sometimes not used (it's fine).
 	{
 		var [ u8, 16 ] expected[ 0x00u8, 0x01u8, 0x00u8, 0x23u8, 0x04u8, 0x56u8, 0x78u8, 0x9au8, 0x00u8, 0x00u8, 0x00u8, 0x01u8, 0x02u8, 0x34u8, 0x56u8, 0x78u8 ];
-		halt if( ust::parse_ip_address_v6( "1:23:456:789a:0:01:234:5678" ) != ust::ip_address_v6( expected ) );
+		halt if( ust::ip_address_v6::parse( "1:23:456:789a:0:01:234:5678" ) != ust::ip_address_v6( expected ) );
 	}
 
 	// Ipv6 - all zeros short form.
-	halt if( ust::parse_ip_address_v6( "::" ) != ust::ip_address_v6( 0u128 ) );
+	halt if( ust::ip_address_v6::parse( "::" ) != ust::ip_address_v6( 0u128 ) );
 
 	// Ipv6 - skip zeros at start.
 	{
 		var [ u8, 16 ] expected[ 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x12u8, 0x34u8, 0x56u8, 0x78u8 ];
-		halt if( ust::parse_ip_address_v6( "::1234:5678" ) != ust::ip_address_v6( expected ) );
+		halt if( ust::ip_address_v6::parse( "::1234:5678" ) != ust::ip_address_v6( expected ) );
 	}
 
 	// Ipv6 - localhost in short form.
 	{
 		var [ u8, 16 ] expected[ 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x01u8 ];
-		halt if( ust::parse_ip_address_v6( "::1" ) != ust::ip_address_v6( expected ) );
+		halt if( ust::ip_address_v6::parse( "::1" ) != ust::ip_address_v6( expected ) );
 	}
 
 	// Ipv6 - zeros at end.
 	{
 		var [ u8, 16 ] expected[ 0xabu8, 0xcdu8, 0xefu8, 0x01u8, 0x23u8, 0x45u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8 ];
-		halt if( ust::parse_ip_address_v6( "abcd:ef01:2345::" ) != ust::ip_address_v6( expected ) );
+		halt if( ust::ip_address_v6::parse( "abcd:ef01:2345::" ) != ust::ip_address_v6( expected ) );
 	}
 
 	// Ipv6 - zeros in the middle.
 	{
 		var [ u8, 16 ] expected[ 0x55u8, 0x66u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x77u8, 0x88u8, 0x99u8, 0xaau8 ];
-		halt if( ust::parse_ip_address_v6( "5566::7788:99aa" ) != ust::ip_address_v6( expected ) );
+		halt if( ust::ip_address_v6::parse( "5566::7788:99aa" ) != ust::ip_address_v6( expected ) );
 	}
 
 	// Ipv6 - zeros in the middle.
 	{
 		var [ u8, 16 ] expected[ 0x55u8, 0x66u8, 0x77u8, 0x88u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x00u8, 0x99u8, 0xaau8 ];
-		halt if( ust::parse_ip_address_v6( "5566:7788::99aa" ) != ust::ip_address_v6( expected ) );
+		halt if( ust::ip_address_v6::parse( "5566:7788::99aa" ) != ust::ip_address_v6( expected ) );
 	}
 
 	// Ipv6 - :: replaces only one zero
 	{
 		var [ u8, 16 ] expected[ 0x22u8, 0x33u8, 0x44u8, 0x55u8, 0x66u8, 0x77u8, 0x88u8, 0x99u8, 0xaau8, 0xbbu8, 0x00u8, 0x00u8, 0xccu8, 0xddu8, 0xeeu8, 0xffu8 ];
-		halt if( ust::parse_ip_address_v6( "2233:4455:6677:8899:aabb::ccdd:eeff" ) != ust::ip_address_v6( expected ) );
+		halt if( ust::ip_address_v6::parse( "2233:4455:6677:8899:aabb::ccdd:eeff" ) != ust::ip_address_v6( expected ) );
 	}
 
 	// Invalid ipv6 address - empty string.
-	halt if( ust::parse_ip_address_v6( "" ) != ust::null_optional );
+	halt if( ust::ip_address_v6::parse( "" ) != ust::null_optional );
 
 	// Invalid ipv6 address - invalid hex digit 'G'.
-	halt if( ust::parse_ip_address_v6( "1112:2233:3444:55G6:6677:7888:999a:aabb" ) != ust::null_optional );
+	halt if( ust::ip_address_v6::parse( "1112:2233:3444:55G6:6677:7888:999a:aabb" ) != ust::null_optional );
 
 	// Invalid ipv6 address - too few parts.
-	halt if( ust::parse_ip_address_v6( "1112:2233:3444:5556:6677:7888:999a" ) != ust::null_optional );
+	halt if( ust::ip_address_v6::parse( "1112:2233:3444:5556:6677:7888:999a" ) != ust::null_optional );
 
 	// Invalid ipv6 address - too many zero skips.
-	halt if( ust::parse_ip_address_v6( "1111::2222::3333" ) != ust::null_optional );
+	halt if( ust::ip_address_v6::parse( "1111::2222::3333" ) != ust::null_optional );
 
 	// Invalid ipv6 address - too many zero skips.
-	halt if( ust::parse_ip_address_v6( "::2222::3333" ) != ust::null_optional );
+	halt if( ust::ip_address_v6::parse( "::2222::3333" ) != ust::null_optional );
 
 	// Invalid ipv6 address - too many zero skips.
-	halt if( ust::parse_ip_address_v6( "1111::2222::" ) != ust::null_optional );
+	halt if( ust::ip_address_v6::parse( "1111::2222::" ) != ust::null_optional );
 
 	// Invalid ipv6 address - leading spaces.
-	halt if( ust::parse_ip_address_v6( " 0011:2233:4455:6677:8899:aabb:ccdd:eeff" ) != ust::null_optional );
+	halt if( ust::ip_address_v6::parse( " 0011:2233:4455:6677:8899:aabb:ccdd:eeff" ) != ust::null_optional );
 
 	// Invalid ipv6 address - trailing spaces.
-	halt if( ust::parse_ip_address_v6( " 0011:2233:4455:6677:8899:aabb:ccdd:eeff " ) != ust::null_optional );
+	halt if( ust::ip_address_v6::parse( " 0011:2233:4455:6677:8899:aabb:ccdd:eeff " ) != ust::null_optional );
 
 	halt if(
-		ust::parse_socket_address_v4( "37.42.213.178:0" ) !=
+		ust::socket_address_v4::parse( "37.42.213.178:0" ) !=
 		ust::socket_address_v4( ust::ip_address_v4( ust::make_array( 37u8, 42u8, 213u8, 178u8 ) ), 0u16 ) );
 
 	halt if(
-		ust::parse_socket_address_v4( "127.0.0.1:12345" ) !=
+		ust::socket_address_v4::parse( "127.0.0.1:12345" ) !=
 		ust::socket_address_v4( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ), 12345u16 ) );
 
 	halt if(
-		ust::parse_socket_address_v4( "1.23.45.67:5" ) !=
+		ust::socket_address_v4::parse( "1.23.45.67:5" ) !=
 		ust::socket_address_v4( ust::ip_address_v4( ust::make_array( 1u8, 23u8, 45u8, 67u8 ) ), 5u16 )  );
 
 	// Invalid socket address - missing port.
-	halt if( ust::parse_socket_address_v4( "1.23.45.67" ) != ust::null_optional );
+	halt if( ust::socket_address_v4::parse( "1.23.45.67" ) != ust::null_optional );
 
 	// Invalid socket address - port value out of range.
-	halt if( ust::parse_socket_address_v4( "1.23.45.67:123456" ) != ust::null_optional );
+	halt if( ust::socket_address_v4::parse( "1.23.45.67:123456" ) != ust::null_optional );
 
 	// Invalid socket address - extra symbols after port name.
-	halt if( ust::parse_socket_address_v4( "1.23.45.67:123q" ) != ust::null_optional );
+	halt if( ust::socket_address_v4::parse( "1.23.45.67:123q" ) != ust::null_optional );
 
 	// Invalid socket address - extra symbols before port name.
-	halt if( ust::parse_socket_address_v4( "1.23.45.67: 123" ) != ust::null_optional );
+	halt if( ust::socket_address_v4::parse( "1.23.45.67: 123" ) != ust::null_optional );
 
 	// Invalid socket address - extra symbols after ip address.
-	halt if( ust::parse_socket_address_v4( "1.23.45.67 :123" ) != ust::null_optional );
+	halt if( ust::socket_address_v4::parse( "1.23.45.67 :123" ) != ust::null_optional );
 
 	// Invalid socket address - ip address octet out of range.
-	halt if( ust::parse_socket_address_v4( "1234.23.45.67:123" ) != ust::null_optional );
+	halt if( ust::socket_address_v4::parse( "1234.23.45.67:123" ) != ust::null_optional );
 
 	// Invalid socket address - ip address octet out of range.
-	halt if( ust::parse_socket_address_v4( "276.23.45.67:123" ) != ust::null_optional );
+	halt if( ust::socket_address_v4::parse( "276.23.45.67:123" ) != ust::null_optional );
 
 	halt if(
 		ust::parse_socket_address( "37.42.213.178:0" ) !=
@@ -205,39 +205,39 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// Ipv6 socket address.
 	{
-		var ust::socket_address_v6 a= ust::parse_socket_address_v6( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" ).try_deref();
-		halt if( a.get_ip() != ust::parse_ip_address_v6( "ffee:ddcc:bbaa:9988:7766:5544:3322:1100" ) );
+		var ust::socket_address_v6 a= ust::socket_address_v6::parse( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]:7823" ).try_deref();
+		halt if( a.get_ip() != ust::ip_address_v6::parse( "ffee:ddcc:bbaa:9988:7766:5544:3322:1100" ) );
 		halt if( a.get_port() != 7823u16 );
 		halt if( a.get_scope_id() != 0u );
 	}
 
 	// Ipv6 socket address with skipped zeros and scope id.
 	{
-		var ust::socket_address_v6 a= ust::parse_socket_address_v6( "[ffee:ddcc:bbaa::3322:11%8456762]:58" ).try_deref();
-		halt if( a.get_ip() != ust::parse_ip_address_v6( "ffee:ddcc:bbaa::3322:11" ) );
+		var ust::socket_address_v6 a= ust::socket_address_v6::parse( "[ffee:ddcc:bbaa::3322:11%8456762]:58" ).try_deref();
+		halt if( a.get_ip() != ust::ip_address_v6::parse( "ffee:ddcc:bbaa::3322:11" ) );
 		halt if( a.get_port() != 58u16 );
 		halt if( a.get_scope_id() != 8456762u );
 	}
 
 	// Ipv6 socket address - localhost.
 	{
-		var ust::socket_address_v6 a= ust::parse_socket_address_v6( "[::1]:5" ).try_deref();
+		var ust::socket_address_v6 a= ust::socket_address_v6::parse( "[::1]:5" ).try_deref();
 		halt if( a.get_ip() != ust::ip_address_v6( 1u128 ) );
 		halt if( a.get_port() != 5u16 );
 		halt if( a.get_scope_id() != 0u );
 	}
 
 	// Invalid Ipv6 socket address - empty string.
-	halt if( ust::parse_socket_address_v6( "" ) != ust::null_optional );
+	halt if( ust::socket_address_v6::parse( "" ) != ust::null_optional );
 
 	// Invalid Ipv6 socket address - only ip.
-	halt if( ust::parse_socket_address_v6( "1234::5678" ) != ust::null_optional );
+	halt if( ust::socket_address_v6::parse( "1234::5678" ) != ust::null_optional );
 
 	// Invalid Ipv6 socket address - missing port.
-	halt if( ust::parse_socket_address_v6( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]" ) != ust::null_optional );
+	halt if( ust::socket_address_v6::parse( "[ffee:ddcc:bbaa:9988:7766:5544:3322:1100]" ) != ust::null_optional );
 
 	// Invalid Ipv6 socket address - missing scope id after %.
-	halt if( ust::parse_socket_address_v6( "[ffee:ddcc:bbaa::3322:11%]:58" ) != ust::null_optional );
+	halt if( ust::socket_address_v6::parse( "[ffee:ddcc:bbaa::3322:11%]:58" ) != ust::null_optional );
 
 	return 0;
 }
