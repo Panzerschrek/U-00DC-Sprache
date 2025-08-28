@@ -5,6 +5,22 @@ import "errno.uh"
 namespace ust
 {
 
+fn translate_ip_address( in_addr& a ) : ip_address_v4
+{
+	return ip_address_v4( to_host_bytes_order( a.s_addr ) );
+}
+
+fn translate_ip_address( in6_addr& a ) : ip_address_v6
+{
+	var u128 ip_raw=
+		( u128( to_host_bytes_order( a.parts[0] ) ) << 96u ) |
+		( u128( to_host_bytes_order( a.parts[1] ) ) << 64u ) |
+		( u128( to_host_bytes_order( a.parts[2] ) ) << 32u ) |
+		( u128( to_host_bytes_order( a.parts[3] ) ) <<  0u );
+
+	return ip_address_v6( ip_raw );
+}
+
 fn translate_socket_address( sockaddr_storage& address ) : optional</socket_address/>
 {
 	if( i32(address.ss_family) == AF_INET )
@@ -24,7 +40,7 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 
 		return
 			socket_address( socket_address_v4(
-				ip_address_v4( to_host_bytes_order( address_ip_v4.sin_addr.s_addr ) ),
+				translate_ip_address( address_ip_v4.sin_addr ),
 				to_host_bytes_order( address_ip_v4.sin_port ) ) );
 	}
 	else if( i32(address.ss_family) == AF_INET6 )
@@ -42,15 +58,9 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 				typeinfo</sockaddr_in6/>.size_of );
 		}
 
-		var u128 ip_raw=
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[0] ) ) << 96u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[1] ) ) << 64u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[2] ) ) << 32u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[3] ) ) <<  0u );
-
 		return
 			socket_address( socket_address_v6(
-				ip_address_v6( ip_raw ),
+				translate_ip_address( address_ip_v6.sin6_addr ),
 				to_host_bytes_order( address_ip_v6.sin6_port ),
 				to_host_bytes_order( address_ip_v6.sin6_flowinfo ),
 				to_host_bytes_order( address_ip_v6.sin6_scope_id ) ) );

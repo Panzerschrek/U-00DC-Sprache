@@ -1573,12 +1573,13 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"utf.u",
 	];
 
-	var [ ust::filesystem_path_view, 17 ] sources_windows
+	var [ ust::filesystem_path_view, 18 ] sources_windows
 	[
 		"windows/barrier_impl.u",
 		"windows/condition_variable_impl.u",
 		"windows/environment.u",
 		"windows/filesystem.u",
+		"windows/inet_address_resolve.u",
 		"windows/main_wrapper.u",
 		"windows/math_missing_functions.u",
 		"windows/mutex_impl.u",
@@ -1594,13 +1595,14 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 		"windows/udp_socket.u",
 	];
 
-	var [ ust::filesystem_path_view, 17 ] sources_unix
+	var [ ust::filesystem_path_view, 18 ] sources_unix
 	[
 		"unix/barrier_impl.u",
 		"unix/condition_variable_impl.u",
 		"unix/environment.u",
 		"unix/errno.u",
 		"unix/filesystem.u",
+		"unix/inet_address_resolve.u",
 		"unix/main_wrapper.u",
 		"unix/mutex_impl.u",
 		"unix/path_utils.u",

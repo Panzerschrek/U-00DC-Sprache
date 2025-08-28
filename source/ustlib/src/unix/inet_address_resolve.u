@@ -1,0 +1,99 @@
+import "../../imports/inet_address_resolve.u"
+import "../../imports/scoped_array.u"
+import "../../imports/sort.u"
+import "socket.uh"
+
+namespace ust
+{
+
+fn resolve_inet_address( string_view8 name ) : vector</ip_address/>
+{
+	var vector</ip_address/> mut res;
+
+	scoped_array char8 name_nt[ name.size() + 1s ]( name.iter().chain( string_view8("\0").iter() ) );
+
+	unsafe
+	{
+		var $(addrinfo) mut infos= zero_init;
+
+		var i32 call_res= ::getaddrinfo( name_nt.data(), nullptr</char8/>(), nullptr</addrinfo/>(), $<(infos) );
+		if( call_res != 0 )
+		{
+			return res;
+		}
+
+		for( var $(addrinfo) mut info_ptr= infos; !is_nullptr( info_ptr ); info_ptr= $>(info_ptr).ai_next )
+		{
+			var addrinfo& info= $>(info_ptr);
+			if( !is_nullptr( info.ai_addr ) )
+			{
+				if( i32( $>( info.ai_addr ).sa_family ) == AF_INET &&
+					size_type( info.ai_addrlen ) >= typeinfo</sockaddr_in/>.size_of )
+				{
+					// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+					var sockaddr_in mut address_ip_v4= zero_init;
+
+					memory_copy(
+						ptr_cast_to_byte8( $<(address_ip_v4) ),
+						ptr_cast_to_byte8( info.ai_addr ),
+						typeinfo</sockaddr_in/>.size_of );
+
+					res.push_back( translate_ip_address( address_ip_v4.sin_addr ) );
+				}
+
+				if( i32( $>( info.ai_addr ).sa_family ) == AF_INET6 &&
+					size_type( info.ai_addrlen ) >= typeinfo</sockaddr_in6/>.size_of )
+				{
+					// Cast sockaddr to sockaddr_in6 using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+					var sockaddr_in6 mut address_ip_v6= zero_init;
+
+					memory_copy(
+						ptr_cast_to_byte8( $<(address_ip_v6) ),
+						ptr_cast_to_byte8( info.ai_addr ),
+						typeinfo</sockaddr_in6/>.size_of );
+
+					res.push_back( translate_ip_address( address_ip_v6.sin6_addr ) );
+				}
+			}
+		}
+	}
+
+	// Ensure unique entries are returned.
+	sort( res.range(), IpAddressCompare );
+	res.remove_adjacent_duplicates();
+
+	return res;
+}
+
+fn IpAddressCompare( ip_address& l, ip_address& r ) : bool
+{
+	if_var( &l_v4 : l.get</ip_address_v4/>() )
+	{
+		if_var( &r_v4 : r.get</ip_address_v4/>() )
+		{
+			return l_v4 < r_v4;
+		}
+		else if( r.has</ip_address_v6/>() )
+		{
+			// v4 addresses are always smaller than v6 addresses.
+			return true;
+		}
+		else{ halt; }
+	}
+	else if_var( &l_v6 : l.get</ip_address_v6/>() )
+	{
+		if( r.has</ip_address_v4/>() )
+		{
+			// v4 addresses are always smaller than v6 addresses.
+			return false;
+		}
+		else if_var( &r_v6 : r.get</ip_address_v6/>() )
+		{
+			return l_v6 < r_v6;
+		}
+		else{ halt; }
+	}
+	else{ halt; }
+}
+
+} // namespace ust

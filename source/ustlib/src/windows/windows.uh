@@ -16,6 +16,7 @@ fn nomangle FindClose( HANDLE hFindFile ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle FindFirstFileW( LPCWSTR lpFileName, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle FindNextFileW( HANDLE hFindFile, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle FlushFileBuffers( HANDLE hFile ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle GetAddrInfoW( PCWSTR pNodeName, PCWSTR pServiceName, $(ADDRINFOW) pHints, $(PADDRINFOW) ppResult ) unsafe call_conv( "system" ) : INT_;
 fn nomangle GetCurrentDirectoryW( DWORD nBufferLength, LPWSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetEnvironmentVariableW( LPCWSTR lpName, LPWSTR lpBuffer, DWORD nSize ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetFileAttributesW( LPCWSTR lpFileName ) unsafe call_conv( "system" ) : DWORD;
@@ -197,6 +198,18 @@ struct WSAData ordered
 	$(char8) lpVendorInfo;
 }
 
+struct addrinfoW ordered
+{
+	i32 ai_flags;
+	i32 ai_family;
+	i32 ai_socktype;
+	i32 ai_protocol;
+	size_t ai_addrlen;
+	PWSTR ai_canonname;
+	$(sockaddr) ai_addr;
+	$(addrinfoW) ai_next;
+}
+
 struct sockaddr ordered
 {
 	ADDRESS_FAMILY sa_family;
@@ -315,10 +328,12 @@ var ü_anon_enum_553
 	constexpr IPPROTO_RESERVED_WNV( 260 ),
 	constexpr IPPROTO_RESERVED_MAX( 261 );
 
+type size_t= size_type;
 type socklen_t = i32;
 type u_long = u32;
 type wchar_t = char16; // Changed manually from "u16" in order to be able to use ust::string16.
 type ADDRESS_FAMILY = USHORT_;
+type ADDRINFOW = addrinfoW;
 type BOOL = i32;
 type BY_HANDLE_FILE_INFORMATION = ü_BY_HANDLE_FILE_INFORMATION;
 type CHAR = char8;
@@ -351,11 +366,14 @@ type LPWSADATA = $(WSAData);
 type LPWSAOVERLAPPED = $(ü_OVERLAPPED);
 type LPWSTR = $(WCHAR);
 type OVERLAPPED = ü_OVERLAPPED;
+type PADDRINFOW = $(addrinfoW);
 type PCONDITION_VARIABLE = $(RTL_CONDITION_VARIABLE);
 type PCSTR = $(CHAR);
+type PCWSTR = $(WCHAR);
 type PLARGE_INTEGER = $(LARGE_INTEGER);
 type PRTL_BARRIER = $(ü_RTL_BARRIER);
 type PSRWLOCK = $(RTL_SRWLOCK);
+type PWSTR = $(WCHAR);
 type PVOID = $(byte8);
 type RTL_CONDITION_VARIABLE = ü_RTL_CONDITION_VARIABLE;
 type RTL_SRWLOCK = ü_RTL_SRWLOCK;
