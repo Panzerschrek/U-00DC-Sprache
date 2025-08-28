@@ -164,7 +164,21 @@ fn socket_address_v6::parse( string_view8 mut s ) : optional</socket_address_v6/
 	return socket_address_v6( ip_address.try_deref(), port, 0u, scope_id );
 }
 
-fn parse_socket_address( string_view8 mut s ) : optional</socket_address/>
+fn parse_ip_address( string_view8 s ) : optional</ip_address/>
+{
+	if_var( mut a : ip_address_v4::parse( s ) )
+	{
+		return ip_address( move(a) );
+	}
+	if_var( mut a : ip_address_v6::parse( s ) )
+	{
+		return ip_address( move(a) );
+	}
+
+	return null_optional;
+}
+
+fn parse_socket_address( string_view8 s ) : optional</socket_address/>
 {
 	if_var( mut a : socket_address_v4::parse( s ) )
 	{

@@ -200,6 +200,9 @@ private:
 	u32 scope_id_;
 }
 
+// Parse ip address (in v4 or v6 format). Returns empty optional if failed to parse.
+fn parse_ip_address( string_view8 s ) : optional</ip_address/>;
+
 // Parse socket address (in v4 or v6 format). Returns empty optional if failed to parse.
 fn parse_socket_address( string_view8 s ) : optional</socket_address/>;
 
