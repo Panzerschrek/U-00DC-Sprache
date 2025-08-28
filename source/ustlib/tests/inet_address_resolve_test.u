@@ -6,9 +6,25 @@ import "../imports/string_conversions.u"
 fn nomangle main() call_conv( "C" ) : i32
 {
 
+	var [ ust::string_view8, 11 ] sites
+	[
+		"localhost",
+		"example.com",
+		"github.com",
+		"microsoft.com",
+		"google.com",
+		"idsoftware.com",
+		"yandex.ru",
+		"wikipedia.org",
+		"bundesregierung.de",
+		"arte.tv",
+		"правительство.рф"
+		];
+
+	foreach( &site : sites )
 	{
-		var ust::vector</ust::ip_address/> addresses= ust::resolve_inet_address( "github.com" );
-		ust::stdout_print( ust::concat( "Has ", ust::to_string8( addresses.size() ), " addresses\n" ) );
+		var ust::vector</ust::ip_address/> addresses= ust::resolve_inet_address( site );
+		ust::stdout_print( ust::concat( "Has ", ust::to_string8( addresses.size() ), " addresses for \"", site, "\"\n" ) );
 
 		foreach( &a : addresses )
 		{
@@ -43,6 +59,34 @@ fn AddressToString( ust::ip_address_v4& a ) : ust::string8
 
 fn AddressToString( ust::ip_address_v6& a ) : ust::string8
 {
-	// TODO
-	return "some ipv6";
+	var ust::string8 mut res;
+
+	var [ u8, 16 ] octets= a.get_octets();
+
+	for( auto mut i= 0s; i < 8s; ++i )
+	{
+		res+= ByteToHex( octets[ i * 2s + 0s ] );
+		res+= ByteToHex( octets[ i * 2s + 1s ] );
+		if( i != 7s )
+		{
+			res+= ".";
+		}
+	}
+
+	return res;
+}
+
+fn ByteToHex( u8 b ) : [ char8, 2 ]
+{
+	var [ char8, 2 ] res[ HexDigit( u32(b) >> 4u ), HexDigit( u32(b) & 15u ) ];
+	return res;
+}
+
+fn HexDigit( u32 d ) : char8
+{
+	if( d < 10u )
+	{
+		return char8( d + u32( '0' ) );
+	}
+	return char8( d - 10u + u32( 'a' ) );
 }
