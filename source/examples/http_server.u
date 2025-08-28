@@ -31,24 +31,40 @@ pretty_main
 			ust::stdout_print( ust::concat( "Incoming connection from ", a_v6.get_ip().to_string(), "\n" ) );
 		}
 
-		var size_type bytes_written= stream.write( CastRangeToBytesRange( ust::string_view8( message ) ) ).try_take();
-		ust::ignore_unused( bytes_written );
+		WriteAll( stream, g_http_response_status_line );
+		WriteAll( stream, g_http_respense_headers );
+		WriteAll( stream, g_http_respense_header_end_marker );
+		WriteAll( stream, g_html_page_contents );
 	}
 }
 
-auto message=
-"HTTP/1.1 200 OK\r\n" +
-"Content-Type: text/html\r\n" +
-"\r\n" +
+fn WriteAll( ust::tcp_stream &mut stream, ust::string_view8 message )
+{
+	for( auto mut offset= 0s; offset < message.size(); )
+	{
+		var size_type bytes_written= stream.write( CastRangeToBytesRange( message ).subrange_start( offset ) ).try_take();
+		offset+= bytes_written;
+	}
+}
+
+auto& g_http_line_end= "\r\n";
+
+auto g_http_response_status_line= "HTTP/1.1 200 OK" + g_http_line_end;
+auto g_http_respense_headers= "Content-Type: text/html" + g_http_line_end;
+auto g_http_respense_header_end_marker= g_http_line_end;
+
+auto g_html_page_contents=
 "<html>" +
 	"<head>" +
 	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />" +
 	"</head>" +
 	"<body>" +
 		"Simple HTTP server example<br>" +
+		"Einfaches Beispiel eines HTTP-Servers<br>" +
 		"Простой пример HTTP сервера<br>" +
 	"</body>" +
-"</html>";
+"</html>" +
+g_http_line_end;
 
 // It's safe to cast between ranges of chars and bytes.
 // TODO - create a library function for this?
