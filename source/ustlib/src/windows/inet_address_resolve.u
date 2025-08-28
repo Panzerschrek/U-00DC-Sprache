@@ -45,7 +45,7 @@ fn resolve_inet_address( string_view8 name ) : vector</ip_address/>
 				if( i32( $>( info.ai_addr ).sa_family ) == AF_INET6 &&
 					info.ai_addrlen >= typeinfo</sockaddr_in6/>.size_of )
 				{
-					// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+					// Cast sockaddr to sockaddr_in6 using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
 					var sockaddr_in6 mut address_ip_v6= zero_init;
 
 					memory_copy(

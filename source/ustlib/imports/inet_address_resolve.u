@@ -4,10 +4,10 @@ import "vector.u"
 namespace ust
 {
 
-// Convers address name (usually domain name) into ip address.
+// Converts address name (usually domain name) into ip address (ipv4 or ipv6).
 // Multiple addresses may be returned.
 // In case of fail returns empty vector.
-// Ineternally it uses system-specific name resolution mechanism, like DNS, hosts file, etc.
+// Internally it uses system-specific name resolution mechanism, like DNS, hosts file, etc.
 fn resolve_inet_address( string_view8 name ) : vector</ip_address/>;
 
 } // namespace ust
