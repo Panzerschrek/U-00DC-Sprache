@@ -60,7 +60,9 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 			ptr_cast_to_byte8( $<( cast_mut(address) ) ),
 			typeinfo</sockaddr_in/>.size_of ) );
 
-		return socket_address( socket_address_v4( ip_address_v4( u32( address_ip_v4.sin_addr.S_un.union_contents[0] ) ), address_ip_v4.sin_port ) );
+		return socket_address( socket_address_v4(
+			ip_address_v4( to_host_bytes_order( u32( address_ip_v4.sin_addr.S_un.union_contents[0] ) ) ),
+			to_host_bytes_order( address_ip_v4.sin_port ) ) );
 	}
 	else if( i32(address.ss_family) == AF_INET6 )
 	{
