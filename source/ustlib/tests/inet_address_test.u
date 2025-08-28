@@ -7,6 +7,13 @@ fn nomangle main() call_conv( "C" ) : i32
 	halt if( ust::ip_address_v4( 0x7E31FD8Cu ) != ust::ip_address_v4( ust::make_array( 0x7Eu8, 0x31u8, 0xFDu8, 0x8Cu8 ) ) );
 	halt if( ust::ip_address_v4( 0x7F000001u ) != ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ) );
 
+	// Ipv4 string conversions.
+	halt if( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ).to_string() != "127.0.0.1" );
+	halt if( ust::ip_address_v4( 0x7E31FD8Cu ).to_string() != "126.49.253.140" );
+	halt if( ust::ip_address_v4( 0u ).to_string() != "0.0.0.0" );
+	halt if( ust::ip_address_v4( 0xFFFFFFFFu ).to_string() != "255.255.255.255" );
+	halt if( ust::ip_address_v4( ust::make_array( 13u8, 218u8, 187u8, 44u8 ) ).to_string() != "13.218.187.44" );
+
 	halt if( ust::parse_ip_address_v4( "0.0.0.0" ) != ust::ip_address_v4( ust::make_array( 0u8, 0u8, 0u8, 0u8 ) ) );
 	halt if( ust::parse_ip_address_v4( "2.3.4.5" ) != ust::ip_address_v4( ust::make_array( 2u8, 3u8, 4u8, 5u8 ) ) );
 	halt if( ust::parse_ip_address_v4( "234.56.7.8" ) != ust::ip_address_v4( ust::make_array( 234u8, 56u8, 7u8, 8u8 ) ) );
@@ -36,6 +43,12 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// Invalid IP address - octet overflow.
 	halt if( ust::parse_ip_address_v4( "1.2.3.456789" ) != ust::null_optional );
+
+	// Ipv6 string conversions.
+	{
+		var [ u8, 16 ] octets[ 34u8, 67u8, 145u8, 13u8, 0u8, 23u8, 0u8, 0u8, 0u8, 2u8, 215u8, 255u8, 26u8, 78u8, 97u8, 36u8 ];
+		halt if( ust::ip_address_v6( octets ).to_string() != "2243:910d:0017:0000:0002:d7ff:1a4e:6124" );
+	}
 
 	// Ipv6 - basic form lowercase.
 	{

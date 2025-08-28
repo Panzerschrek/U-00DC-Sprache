@@ -39,6 +39,8 @@ public:
 		return octets;
 	}
 
+	fn to_string( this ) : string8;
+
 private:
 	u32 bits_;
 }
@@ -84,6 +86,8 @@ public:
 		];
 		return octets;
 	}
+
+	fn to_string( this ) : string8;
 
 private:
 	u128 bits_;

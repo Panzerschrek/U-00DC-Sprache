@@ -1,8 +1,42 @@
 import "../imports/inet_address.u"
 import "../imports/integer_parsing.u"
+import "../imports/string_conversions.u"
 
 namespace ust
 {
+
+fn ip_address_v4::to_string( this ) : string8
+{
+	return
+		concat(
+			to_string8( u8( bits_ >> 24u ) ),
+			".",
+			to_string8( u8( bits_ >> 16u ) ),
+			".",
+			to_string8( u8( bits_ >>  8u ) ),
+			".",
+			to_string8( u8( bits_ >>  0u ) ) );
+}
+
+fn ip_address_v6::to_string( this ) : string8
+{
+	var string8 mut res( 32s + 7s, ':' );
+
+	var [ u8, 16 ] octets= get_octets();
+
+	for( var size_type mut i= 0s; i < 8s; ++i)
+	{
+		var size_type dst= i * 5s;
+		var u32 o0( octets[ i * 2s + 0s ] );
+		res[ dst + 0s ]= get_hex_digit( o0 >> 4u );
+		res[ dst + 1s ]= get_hex_digit( o0 & 15u );
+		var u32 o1( octets[ i * 2s + 1s ] );
+		res[ dst + 2s ]= get_hex_digit( o1 >> 4u );
+		res[ dst + 3s ]= get_hex_digit( o1 & 15u );
+	}
+
+	return res;
+}
 
 fn parse_ip_address_v4( string_view8 mut s ) : optional</ip_address_v4/>
 {
@@ -335,6 +369,16 @@ fn extract_hex_digit( string_view8 &mut s ) : u32
 	}
 
 	return c_no_digit;
+}
+
+// Input number shouldn't be greater than 15!
+fn get_hex_digit( u32 d ) : char8
+{
+	if( d < 10u )
+	{
+		return char8( d + u32( '0' ) );
+	}
+	return char8( d - 10u + u32( 'a' ) );
 }
 
 } // namespace ust
