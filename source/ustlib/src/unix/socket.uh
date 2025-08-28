@@ -6,6 +6,10 @@ import "unix.uh"
 namespace ust
 {
 
+fn translate_ip_address( in_addr& a ) : ip_address_v4;
+
+fn translate_ip_address( in6_addr& a ) : ip_address_v6;
+
 // Convert "sockaddr" into our own representation.
 fn translate_socket_address( sockaddr_storage& address ) : optional</socket_address/>;
 

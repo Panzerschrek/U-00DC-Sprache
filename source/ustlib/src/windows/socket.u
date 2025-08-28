@@ -46,6 +46,26 @@ fn translate_wsa_error( i32 e ) : io_error
 	}
 }
 
+fn translate_ip_address( in_addr& a ) : ip_address_v4
+{
+	return ip_address_v4( to_host_bytes_order( u32( a.S_un.union_contents[0] ) ) );
+}
+
+fn translate_ip_address( in6_addr& a ) : ip_address_v6
+{
+	var u128 ip_raw=
+		( u128( to_host_bytes_order( a.parts[0] ) ) << 112u ) |
+		( u128( to_host_bytes_order( a.parts[1] ) ) <<  96u ) |
+		( u128( to_host_bytes_order( a.parts[2] ) ) <<  80u ) |
+		( u128( to_host_bytes_order( a.parts[3] ) ) <<  64u ) |
+		( u128( to_host_bytes_order( a.parts[4] ) ) <<  48u ) |
+		( u128( to_host_bytes_order( a.parts[5] ) ) <<  32u ) |
+		( u128( to_host_bytes_order( a.parts[6] ) ) <<  16u ) |
+		( u128( to_host_bytes_order( a.parts[7] ) ) <<   0u );
+
+	return ip_address_v6( ip_raw );
+}
+
 fn translate_socket_address( sockaddr_storage& address ) : optional</socket_address/>
 {
 	if( i32(address.ss_family) == AF_INET )
@@ -61,7 +81,7 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 			typeinfo</sockaddr_in/>.size_of ) );
 
 		return socket_address( socket_address_v4(
-			ip_address_v4( to_host_bytes_order( u32( address_ip_v4.sin_addr.S_un.union_contents[0] ) ) ),
+			ip_address_v4( translate_ip_address( address_ip_v4.sin_addr ) ),
 			to_host_bytes_order( address_ip_v4.sin_port ) ) );
 	}
 	else if( i32(address.ss_family) == AF_INET6 )
@@ -76,19 +96,9 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 			ptr_cast_to_byte8( $<( cast_mut(address) ) ),
 			typeinfo</sockaddr_in6/>.size_of ) );
 
-		var u128 ip_raw=
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[0] ) ) << 112u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[1] ) ) <<  96u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[2] ) ) <<  80u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[3] ) ) <<  64u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[4] ) ) <<  48u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[5] ) ) <<  32u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[6] ) ) <<  16u ) |
-			( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[7] ) ) <<   0u );
-
 		return
 			socket_address( socket_address_v6(
-				ip_address_v6( ip_raw ),
+				translate_ip_address( address_ip_v6.sin6_addr ),
 				to_host_bytes_order( address_ip_v6.sin6_port ),
 				to_host_bytes_order( address_ip_v6.sin6_flowinfo ),
 				to_host_bytes_order( address_ip_v6.sin6_scope_id ) ) );

@@ -1,4 +1,3 @@
-import "../../imports/bytes_order.u"
 import "../../imports/inet_address_resolve.u"
 import "socket.uh"
 import "wide_string.uh"
@@ -40,7 +39,7 @@ fn resolve_inet_address( string_view8 name ) : vector</ip_address/>
 						ptr_cast_to_byte8( info.ai_addr ),
 						typeinfo</sockaddr_in/>.size_of );
 
-					res.push_back( ip_address_v4( to_host_bytes_order( u32( address_ip_v4.sin_addr.S_un.union_contents[0] ) ) ) );
+					res.push_back( translate_ip_address( address_ip_v4.sin_addr ) );
 				}
 
 				if( i32( $>( info.ai_addr ).sa_family ) == AF_INET6 &&
@@ -54,17 +53,7 @@ fn resolve_inet_address( string_view8 name ) : vector</ip_address/>
 						ptr_cast_to_byte8( info.ai_addr ),
 						typeinfo</sockaddr_in6/>.size_of );
 
-					var u128 ip_raw=
-						( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[0] ) ) << 112u ) |
-						( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[1] ) ) <<  96u ) |
-						( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[2] ) ) <<  80u ) |
-						( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[3] ) ) <<  64u ) |
-						( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[4] ) ) <<  48u ) |
-						( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[5] ) ) <<  32u ) |
-						( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[6] ) ) <<  16u ) |
-						( u128( to_host_bytes_order( address_ip_v6.sin6_addr.parts[7] ) ) <<   0u );
-
-					res.push_back( ip_address_v6( ip_raw ) );
+					res.push_back( translate_ip_address( address_ip_v6.sin6_addr ) );
 				}
 			}
 		}
