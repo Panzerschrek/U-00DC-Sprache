@@ -59,44 +59,41 @@ fn resolve_inet_address( string_view8 name ) : vector</ip_address/>
 	}
 
 	// Ensure unique entries are returned.
-	sort( res.range(), IpAddressCompare() );
+	sort( res.range(), IpAddressCompare );
 	res.remove_adjacent_duplicates();
 
 	return res;
 }
 
-struct IpAddressCompare
+fn IpAddressCompare( ip_address& l, ip_address& r ) : bool
 {
-	op()( this, ip_address& l, ip_address& r ) : bool
+	if_var( &l_v4 : l.get</ip_address_v4/>() )
 	{
-		if_var( &l_v4 : l.get</ip_address_v4/>() )
+		if_var( &r_v4 : r.get</ip_address_v4/>() )
 		{
-			if_var( &r_v4 : r.get</ip_address_v4/>() )
-			{
-				return l_v4 < r_v4;
-			}
-			else if( r.has</ip_address_v6/>() )
-			{
-				// v4 addresses are always smaller than v6 addresses.
-				return true;
-			}
-			else{ halt; }
+			return l_v4 < r_v4;
 		}
-		else if_var( &l_v6 : l.get</ip_address_v6/>() )
+		else if( r.has</ip_address_v6/>() )
 		{
-			if( r.has</ip_address_v4/>() )
-			{
-				// v4 addresses are always smaller than v6 addresses.
-				return false;
-			}
-			else if_var( &r_v6 : r.get</ip_address_v6/>() )
-			{
-				return l_v6 < r_v6;
-			}
-			else{ halt; }
+			// v4 addresses are always smaller than v6 addresses.
+			return true;
 		}
 		else{ halt; }
 	}
+	else if_var( &l_v6 : l.get</ip_address_v6/>() )
+	{
+		if( r.has</ip_address_v4/>() )
+		{
+			// v4 addresses are always smaller than v6 addresses.
+			return false;
+		}
+		else if_var( &r_v6 : r.get</ip_address_v6/>() )
+		{
+			return l_v6 < r_v6;
+		}
+		else{ halt; }
+	}
+	else{ halt; }
 }
 
 } // namespace ust
