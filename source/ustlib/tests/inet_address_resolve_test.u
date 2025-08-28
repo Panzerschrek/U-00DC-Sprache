@@ -69,7 +69,7 @@ fn AddressToString( ust::ip_address_v6& a ) : ust::string8
 		res+= ByteToHex( octets[ i * 2s + 1s ] );
 		if( i != 7s )
 		{
-			res+= ".";
+			res+= ":";
 		}
 	}
 
