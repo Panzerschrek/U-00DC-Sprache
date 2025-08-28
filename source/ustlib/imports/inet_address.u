@@ -21,6 +21,11 @@ public:
 
 	op==( ip_address_v4& l, ip_address_v4& r ) : bool = default;
 
+	op<=>( ip_address_v4& l, ip_address_v4& r ) : i32
+	{
+		return l.bits_ <=> r.bits_;
+	}
+
 	fn get_bits( this ) : u32
 	{
 		return bits_;
@@ -55,6 +60,11 @@ public:
 	op=( mut this, ip_address_v6& other )= default;
 
 	op==( ip_address_v6& l, ip_address_v6& r ) : bool = default;
+
+	op<=>( ip_address_v6& l, ip_address_v6& r ) : i32
+	{
+		return l.bits_ <=> r.bits_;
+	}
 
 	fn get_bits( this ) : u128
 	{
