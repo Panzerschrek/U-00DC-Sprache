@@ -799,7 +799,7 @@ fn GetNextPort() : u16
 	}
 }
 
-var u16 mut g_port_counter= 59000u16;
+var u16 mut g_port_counter( 59100s + 500s * compiler::generation );
 
 // It's safe to cast between ranges of chars and bytes.
 // TODO - create a library function for this?
