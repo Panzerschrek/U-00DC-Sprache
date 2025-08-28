@@ -25,7 +25,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	var ust::ip_address_v4 loopback( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) );
 
 	// Create socket without binding.
-	result_match( ust::udp_socket::create() )
+	result_match( ust::udp_socket::create_v4() )
 	{
 		Ok( s ) -> {},
 		Err( e ) ->
@@ -106,7 +106,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
 
 		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( receiver_address ).try_take();
-		var ust::udp_socket mut sender_socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
 
 		auto& message= "Ja Ihr wimmert und Ihr fleht, doch schreit: es ist zu spät. Es bringt Ihr Frohsinn wie Ihr seht, wir ficken bis die Hähne krähen.";
 		var ust::string_view8 message_range= message;
@@ -151,7 +151,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::socket_address_v4 receiver_address( loopback, GetNextPort() );
 
 		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( receiver_address ).try_take();
-		var ust::udp_socket mut sender_socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
 
 		auto& message= "Sir Gernhart reinlunzen, Tor und Tür stehen mir auf, denn ich habe ein Schwert und sie nur einen hölzernen Knauf.";
 		var ust::string_view8 message_range= message;
@@ -373,7 +373,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// Should fail unsing "send" without prior call to "connect".
 	{
-		var ust::udp_socket mut socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut socket= ust::udp_socket::create_v4().try_take();
 
 		auto& message= "Bastard Barden";
 		var ust::string_view8 message_range= message;
@@ -577,7 +577,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		semaphore.acquire();
 
 		// When the background thread tries to read, create sender socket and send a message via it.
-		var ust::udp_socket mut sender_socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
 		var size_type bytes_sent= sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( ust::string_view8( message ) ) ).try_deref();
 		assert( bytes_sent == typeinfo</ typeof(message) />.element_count );
 
@@ -641,7 +641,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			ust::udp_socket::create_and_bind( receiver_addresses[2] ).try_take(),
 		];
 
-		var ust::udp_socket mut sender_socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
 
 		sender_socket.send_to( receiver_addresses[0], CastRangeToBytesRange( ust::string_view8( "Message zero #0" ) ) ).try_deref();
 		sender_socket.send_to( receiver_addresses[1], CastRangeToBytesRange( ust::string_view8( "#1 message to one" ) ) ).try_deref();
@@ -694,7 +694,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::socket_address_v4 sender_address( ust::ip_address_v4( 0u ), GetNextPort() );
 
 		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( receiver_address ).try_take();
-		var ust::udp_socket mut sender_socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
 
 		var size_type bytes_written= sender_socket.send_to( receiver_address_for_sender, ust::array_view_mut</byte8/>() ).try_take();
 		assert( bytes_written == 0s );
@@ -713,7 +713,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::socket_address_v4 sender_address( ust::ip_address_v4( 0u ), GetNextPort() );
 
 		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( receiver_address ).try_take();
-		var ust::udp_socket mut sender_socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
 
 		auto& message= "012345";
 		var size_type message_size= typeinfo</ typeof(message) />.element_count;
@@ -736,7 +736,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::socket_address_v4 sender_address( ust::ip_address_v4( 0u ), GetNextPort() );
 
 		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( receiver_address ).try_take();
-		var ust::udp_socket mut sender_socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
 
 		var void should_be_connected= sender_socket.connect( receiver_address_for_sender ).try_take();
 
@@ -762,7 +762,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::socket_address_v4 sender_address( ust::ip_address_v4( 0u ), GetNextPort() );
 
 		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( receiver_address ).try_take();
-		var ust::udp_socket mut sender_socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
 
 		var void should_be_connected= sender_socket.connect( receiver_address_for_sender ).try_take();
 
@@ -803,7 +803,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::udp_socket mut receiver_socket0= ust::udp_socket::create_and_bind( receiver_address0 ).try_take();
 		var ust::udp_socket mut receiver_socket1= ust::udp_socket::create_and_bind( receiver_address1 ).try_take();
 
-		var ust::udp_socket mut sender_socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
 
 		// Connect to receiver #1
 		var void connect_result= sender_socket.connect( receiver_address1_for_sender ).try_take();
@@ -872,7 +872,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// get_local_address - it's not bound.
 	{
-		var ust::udp_socket socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket socket= ust::udp_socket::create_v4().try_take();
 
 		result_match( socket.get_local_address() )
 		{
@@ -888,7 +888,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	{
 		var ust::socket_address_v4 connection_address( ust::ip_address_v4( loopback ), GetNextPort() );
 
-		var ust::udp_socket mut socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut socket= ust::udp_socket::create_v4().try_take();
 
 		var void connection_result= socket.connect( connection_address ).try_take();
 
@@ -901,7 +901,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// get_peer_address - not connected.
 	{
-		var ust::udp_socket socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket socket= ust::udp_socket::create_v4().try_take();
 
 		result_match( socket.get_peer_address() )
 		{
@@ -912,7 +912,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 	// set_ttl.
 	{
-		var ust::udp_socket mut socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut socket= ust::udp_socket::create_v4().try_take();
 
 		result_match( socket.set_ttl( 37u8 ) )
 		{
@@ -924,6 +924,65 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			Ok( ttl ) -> { assert( ttl == 37u8, "Unexpected socket TTL" ); },
 			Err( e ) -> { assert( false, ust::concat( "Failed to get socket ttl: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// IP v6 test.
+	{
+		var ust::ip_address_v6 loopback_v6( 1u128 );
+
+		var ust::socket_address_v6 receiver_address( ust::ip_address_v6( 0u128 ), GetNextPort(), 0u, 0u );
+
+		var ust::socket_address_v6 receiver_address_for_sender(
+			ust::ip_address_v6( loopback_v6 ),
+			receiver_address.get_port(),
+			receiver_address.get_flow_info(),
+			receiver_address.get_scope_id() );
+
+		var ust::socket_address_v6 sender_address( ust::ip_address_v6( 0u128 ), GetNextPort(), 0u, 0u );
+
+		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_and_bind( sender_address ).try_take();
+
+		auto& message= "Trying IP v6 sockets";
+		var ust::string_view8 message_range= message;
+
+		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
+		{
+			Ok( bytes_sent ) ->
+			{
+				assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+			}
+		}
+
+		var typeof(message) mut received_message= zero_init;
+
+		result_match( receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		{
+			Ok( mut receive_result ) ->
+			{
+				auto [ address_obtained, bytes_received ]= move( receive_result );
+
+				if_var( &a_v6 : address_obtained.get</ust::socket_address_v6/>() )
+				{
+					assert( a_v6.get_ip() == loopback_v6 || a_v6.get_ip() == ust::ip_address_v6( 0u128 ), "Invalid sender IP!" );
+					assert( a_v6.get_port() == sender_address.get_port(), "Invalid sender port!" );
+					assert( a_v6.get_flow_info() == sender_address.get_flow_info(), "Invalid sender flow info!" );
+					assert( a_v6.get_scope_id() == sender_address.get_scope_id(), "Invalid sender scope id!" );
+				}
+				else { assert( false, "Sender address should be IP v6!" ); }
+
+				assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+				assert( received_message == message, "Received unexpected message!" );
+			},
+			Err( e ) ->
+			{
+				assert( false, ust::concat( "Failed to receive message from socket! Error code: ", ust::enum_to_string(e) ) );
+			}
 		}
 	}
 

@@ -623,7 +623,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		listener.set_nonblocking( true ).try_deref();
 
-		var ust::udp_socket mut socket= ust::udp_socket::create().try_take();
+		var ust::udp_socket mut socket= ust::udp_socket::create_v4().try_take();
 
 		// Should successfully send, but it will be rejected.
 		assert( socket.send_to( server_address, CastRangeToBytesRange( ust::string_view8( "Test UDP packet" ) ) ).try_take() == 15s );
@@ -738,6 +738,52 @@ fn nomangle main() call_conv( "C" ) : i32
 			Ok( nodelay ) -> { assert( nodelay, "Invalid nodelay property!" ); },
 			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream nodelay: ", ust::enum_to_string(e) ) ); },
 		}
+	}
+
+	// IP v6 test.
+	{
+		var ust::ip_address_v6 loopback_v6( 1u128 );
+
+		var ust::socket_address_v6 server_address( loopback_v6, GetNextPort(), 0u, 0u );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		assert( listener.get_local_address() == server_address );
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		assert( client_stream.get_peer_address().try_deref() == server_address, "Unexpected peer address of an TCP client stream!" );
+
+		if_var( &a_v6 : client_stream.get_local_address().try_take().get</ust::socket_address_v6/>() )
+		{
+			assert( a_v6.get_ip() == loopback_v6, "Unexpected TCP client address!" );
+		}
+		else { assert( false, "Unexpected client address kind, expected ipv6!" ); }
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		assert( server_stream.get_local_address().try_deref() == server_address, "Unexpected local address of an TCP server stream!" );
+
+		if_var( &a_v6 : server_stream.get_peer_address().try_take().get</ust::socket_address_v6/>() )
+		{
+			assert( a_v6.get_ip() == loopback_v6, "Unexpected TCP client address!" );
+		}
+		else { assert( false, "Unexpected client address kind, expected ipv6!" ); }
+
+		if_var( &a_v6 : client_address.get</ust::socket_address_v6/>() )
+		{
+			assert( a_v6.get_ip() == loopback_v6 || a_v6.get_ip() == ust::ip_address_v6( 0u128 ), "Invalid cliend IP!" );
+		}
+		else{ assert( false, "Unexpected client address, expected ip v6!" ); }
+
+		auto& message= "Testing TCP with IP v6 sockets.";
+		var size_type message_size= typeinfo</ typeof(message) />.element_count;
+
+		assert( server_stream.write( CastRangeToBytesRange( ust::string_view8( message ) ) ).try_deref() == message_size );
+
+		var typeof(message) mut message_received= zero_init;
+		assert( client_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take() == message_size );
+		assert( message_received == message );
 	}
 
 	return 0;

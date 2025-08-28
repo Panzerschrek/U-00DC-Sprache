@@ -161,6 +161,7 @@ struct sockaddr_in ordered
 	in_addr sin_addr;
 	[ u8, 8 ] sin_zero;
 }
+
 struct sockaddr_in6 ordered
 {
 	sa_family_t sin6_family;
@@ -170,6 +171,13 @@ struct sockaddr_in6 ordered
 	uint32_t sin6_scope_id;
 }
 
+struct sockaddr_storage ordered
+{
+	sa_family_t ss_family;
+	[ char8, 118 ] ü__ss_padding;
+	u64 ü__ss_align;
+}
+
 struct in_addr ordered
 {
 	in_addr_t s_addr;
@@ -177,17 +185,8 @@ struct in_addr ordered
 
 struct in6_addr ordered
 {
-	ü_anon_record_29 ü__in6_u;
-}
-
-struct ü_anon_record_19 ordered
-{
-	[ byte64, 1 ] union_contents;
-}
-
-struct ü_anon_record_29 ordered
-{
-	[ byte32, 4 ] union_contents;
+	// Manually changed to u32x4 array.
+	[ u32, 4 ] parts;
 }
 
 type ü_anon_enum_56 = u32;
@@ -215,7 +214,6 @@ type socklen_t = ü__socklen_t;
 type ssize_t = ü__ssize_t;
 type uint16_t = u16;
 type uint32_t = u32;
-type ü__CONST_SOCKADDR_ARG = ü_anon_record_19;
 type ü__blkcnt64_t = i64;
 type ü__blksize_t = ust::type_select</ c_arch_is_aarch64, i32, ust::type_select</ c_arch_is_i686, i32, i64 /> />;
 type ü__clockid_t = i32;
@@ -301,6 +299,7 @@ var ü__socket_type
 	constexpr SOCK_NONBLOCK( 2048 );
 
 auto constexpr AF_INET = PF_INET;
+auto constexpr AF_INET6 = PF_INET6;
 
 auto constexpr CLOCK_REALTIME = 0;
 auto constexpr CLOCK_MONOTONIC = 1;

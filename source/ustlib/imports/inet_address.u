@@ -13,8 +13,7 @@ public:
 	{}
 
 	fn constructor( [ u8, 4 ] octets )
-		// TODO - check if it's correct.
-		( bits_= u32(octets[0]) | ( u32(octets[1]) << 8u ) | ( u32(octets[2]) << 16u ) | ( u32(octets[3]) << 24u ) )
+		( bits_= ( u32(octets[0]) << 24u ) | ( u32(octets[1]) << 16u ) | ( u32(octets[2]) << 8u ) | ( u32(octets[3]) << 0u ) )
 	{}
 
 	fn constructor( mut this, ip_address_v4& other )= default;
@@ -29,8 +28,7 @@ public:
 
 	fn get_octets( this ) : [ u8, 4 ]
 	{
-		// TODO - check if it's correct.
-		var [ u8, 4 ] octets[ ( bits_ ), ( bits_ >> 8u ), ( bits_ >> 16u ), ( bits_ >> 24u ) ];
+		var [ u8, 4 ] octets[ ( bits_ >> 24u ), ( bits_ >> 16u ), ( bits_ >> 8u ), ( bits_ >> 0u ) ];
 		return octets;
 	}
 
@@ -40,12 +38,43 @@ private:
 
 class ip_address_v6
 {
-	// TODO
 public:
+	fn constructor( u128 bits )
+		( bits_= bits )
+	{}
+
+	fn constructor( [ u8, 16 ]& octets )
+		( bits_=
+			( u128(octets[ 0]) << 120u ) | ( u128(octets[ 1]) << 112u ) | ( u128(octets[ 2]) << 104u ) | ( u128(octets[ 3]) << 96u ) |
+			( u128(octets[ 4]) <<  88u ) | ( u128(octets[ 5]) <<  80u ) | ( u128(octets[ 6]) <<  72u ) | ( u128(octets[ 7]) << 64u ) |
+			( u128(octets[ 8]) <<  56u ) | ( u128(octets[ 9]) <<  48u ) | ( u128(octets[10]) <<  40u ) | ( u128(octets[11]) << 32u ) |
+			( u128(octets[12]) <<  24u ) | ( u128(octets[13]) <<  16u ) | ( u128(octets[14]) <<   8u ) | ( u128(octets[15]) <<  0u ) )
+	{}
+
 	fn constructor( mut this, ip_address_v6& other )= default;
 	op=( mut this, ip_address_v6& other )= default;
 
 	op==( ip_address_v6& l, ip_address_v6& r ) : bool = default;
+
+	fn get_bits( this ) : u128
+	{
+		return bits_;
+	}
+
+	fn get_octets( this ) : [ u8, 16 ]
+	{
+		var [ u8, 16 ] octets
+		[
+			( bits_ >> 120u ), ( bits_ >> 112u ), ( bits_ >> 104u ), ( bits_ >> 96u ),
+			( bits_ >>  88u ), ( bits_ >>  80u ), ( bits_ >>  72u ), ( bits_ >> 64u ),
+			( bits_ >>  56u ), ( bits_ >>  48u ), ( bits_ >>  40u ), ( bits_ >> 32u ),
+			( bits_ >>  24u ), ( bits_ >>  16u ), ( bits_ >>   8u ), ( bits_ >>  0u ),
+		];
+		return octets;
+	}
+
+private:
+	u128 bits_;
 }
 
 // Socket address - in IP v4 or IP v6 format.
@@ -90,13 +119,61 @@ private:
 
 class socket_address_v6
 {
-	// TODO
+	fn constructor( ip_address_v6 ip, u16 port, u32 flow_info, u32 scope_id )
+		( ip_= ip, port_= port, flow_info_= flow_info, scope_id_= scope_id )
+	{}
+
+	fn get_ip( this ) : ip_address_v6
+	{
+		return ip_;
+	}
+
+	fn set_ip( mut this, ip_address_v6 ip )
+	{
+		ip_= ip;
+	}
+
+	fn get_port( this ) : u16
+	{
+		return port_;
+	}
+
+	fn set_port( mut this, u16 port )
+	{
+		port_= port;
+	}
+
+	fn get_flow_info( this ) : u32
+	{
+		return flow_info_;
+	}
+
+	fn set_flow_info( mut this, u32 flow_info )
+	{
+		flow_info_= flow_info;
+	}
+
+	fn get_scope_id( this ) : u32
+	{
+		return scope_id_;
+	}
+
+	fn set_scope_id( mut this, u32 scope_id )
+	{
+		scope_id_= scope_id;
+	}
 
 public:
 	fn constructor( mut this, socket_address_v6& other )= default;
 	op=( mut this, socket_address_v6& other )= default;
 
 	op==( socket_address_v6& l, socket_address_v6& r ) : bool = default;
+
+private:
+	ip_address_v6 ip_;
+	u16 port_;
+	u32 flow_info_;
+	u32 scope_id_;
 }
 
 // Parse IP v4 address. Returns empty optional if failed to parse.
