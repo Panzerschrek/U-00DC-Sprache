@@ -109,6 +109,20 @@ fn tcp_stream::peek( mut this, array_view_mut</byte8/> buf ) : io_result</size_t
 	return size_type(bytes_read);
 }
 
+fn tcp_stream::close( byval mut this ) : io_result</void/>
+{
+	unsafe
+	{
+		var i32 res= ::closesocket( move(this).take_native_fd() );
+		if( res != 0 )
+		{
+			return translate_wsa_error( WSAGetLastError() );
+		}
+	}
+
+	return void();
+}
+
 fn tcp_stream::is_nonblocking( this ) : io_result</bool/>
 {
 	return is_socket_nonblocking( socket_ );

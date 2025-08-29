@@ -23,6 +23,10 @@ public:
 	// Read into given buffer, without extracting data from steam. May read less than expected and it's not an error. Returns number of bytes read.
 	fn peek( mut this, array_view_mut</byte8/> buf ) : io_result</size_type/>;
 
+	// Explicitly close socket (by moving this class instance) and return possible error.
+	// This is necessary to handle errors, like if data sent previously wasn't delivered.
+	fn close( byval this ) : io_result</void/>;
+
 	// Check if stream is in non-blocking mode.
 	fn is_nonblocking( this ) : io_result</bool/>;
 

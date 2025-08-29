@@ -786,6 +786,50 @@ fn nomangle main() call_conv( "C" ) : i32
 		assert( message_received == message );
 	}
 
+	// Explicit stream close.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		{
+			auto& message= "Testing explicit socket close - server to client.";
+			var size_type message_size= typeinfo</ typeof(message) />.element_count;
+
+			assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
+
+			var typeof(message) mut message_received= zero_init;
+			assert( client_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == message_size );
+			assert( message_received == message );
+		}
+		{
+			auto& message= "Testing explicit socket close - client to server.";
+			var size_type message_size= typeinfo</ typeof(message) />.element_count;
+
+			assert( client_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
+
+			var typeof(message) mut message_received= zero_init;
+			assert( server_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == message_size );
+			assert( message_received == message );
+		}
+
+		result_match( move(client_stream).close() )
+		{
+			Ok(v) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to close client-side TCP stream! Error: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( move(server_stream).close() )
+		{
+			Ok(v) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to close server-side TCP stream! Error: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
 	return 0;
 }
 
