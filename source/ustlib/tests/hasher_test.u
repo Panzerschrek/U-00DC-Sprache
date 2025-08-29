@@ -1,6 +1,7 @@
 //##success_test
 import "../imports/hash_apply.u"
 import "../imports/hasher.u"
+import "../imports/inet_address.u"
 import "../imports/string.u"
 import "../imports/shared_ptr.u"
 import "../imports/shared_ptr_final.u"
@@ -658,6 +659,130 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( res1 == 0s );
 
 		halt if( res0 == res1 );
+	}
+	{ // Hash ipv4 address.
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::ip_address_v4( 0x5632ABEFu ) );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::ip_address_v4( ust::make_array( 0x56u8, 0x32u8, 0xABu8, 0xEFu8 ) ) );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		halt if( res0 != res1 );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::ip_address_v4( 0x7F000001u ) );
+		auto res2= hasher.get();
+		halt if( res2 == 0s );
+
+		halt if( res2 == res0 );
+		halt if( res2 == res1 );
+	}
+	{ // Hash ipv6 address.
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::ip_address_v6::parse( "0011:2233:4455:6677:8899:aabb:ccdd:eeff" ).try_deref() );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		var [ u8, 16 ] octers[ 0x00u8, 0x11u8, 0x22u8, 0x33u8, 0x44u8, 0x55u8, 0x66u8, 0x77u8, 0x88u8, 0x99u8, 0xaau8, 0xbbu8, 0xccu8, 0xddu8, 0xeeu8, 0xffu8 ];
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::ip_address_v6( octers ) );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		halt if( res0 != res1 );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::ip_address_v6( 1u128 ) );
+		auto res2= hasher.get();
+		halt if( res2 == 0s );
+
+		halt if( res2 == res0 );
+		halt if( res2 == res1 );
+	}
+	{ // Hash v4 socket address.
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::socket_address_v4( ust::ip_address_v4( 0x7F000001u ), 78u16 ) );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::socket_address_v4( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ), 78u16 ) );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::socket_address_v4( ust::ip_address_v4( 0x7F000002u ), 78u16 ) );
+		auto res2= hasher.get();
+		halt if( res2 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::socket_address_v4( ust::ip_address_v4( 0x7F000001u ), 178u16 ) );
+		auto res3= hasher.get();
+		halt if( res3 == 0s );
+
+		halt if( res0 != res1 );
+		halt if( res0 == res2 );
+		halt if( res0 == res3 );
+		halt if( res1 == res2 );
+		halt if( res1 == res3 );
+		halt if( res2 == res3 );
+	}
+	{ // Hash v6 socket address.
+
+		var [ u8, 16 ] octers0[ 0x00u8, 0x11u8, 0x22u8, 0x33u8, 0x44u8, 0x55u8, 0x66u8, 0x77u8, 0x88u8, 0x99u8, 0xaau8, 0xbbu8, 0xccu8, 0xddu8, 0xeeu8, 0xffu8 ];
+		var [ u8, 16 ] octers1[ 0x01u8, 0x12u8, 0x23u8, 0x34u8, 0x45u8, 0x56u8, 0x67u8, 0x78u8, 0x89u8, 0x9au8, 0xabu8, 0xbcu8, 0xcdu8, 0xdeu8, 0xefu8, 0xf0u8 ];
+
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::socket_address_v6( ust::ip_address_v6( octers0 ), 78u16, 13u, 64u ) );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::socket_address_v6( ust::ip_address_v6( octers1 ), 78u16, 13u, 64u ) );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::socket_address_v6( ust::ip_address_v6( octers0 ), 768u16, 13u, 64u ) );
+		auto res2= hasher.get();
+		halt if( res2 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::socket_address_v6( ust::ip_address_v6( octers0 ), 78u16, 15u, 64u ) );
+		auto res3= hasher.get();
+		halt if( res3 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::socket_address_v6( ust::ip_address_v6( octers0 ), 78u16, 13u, 1264u ) );
+		auto res4= hasher.get();
+		halt if( res4 == 0s );
+
+		halt if( res0 == res1 );
+		halt if( res0 == res2 );
+		halt if( res0 == res3 );
+		halt if( res0 == res4 );
+		halt if( res1 == res2 );
+		halt if( res1 == res3 );
+		halt if( res1 == res4 );
+		halt if( res2 == res3 );
+		halt if( res2 == res4 );
+		halt if( res3 == res4 );
 	}
 
 	return 0;

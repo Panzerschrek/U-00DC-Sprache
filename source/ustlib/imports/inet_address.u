@@ -30,6 +30,12 @@ public:
 		return l.bits_ <=> r.bits_;
 	}
 
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		apply_value_to_hasher( hasher, bits_ );
+	}
+
 	fn get_bits( this ) : u32
 	{
 		return bits_;
@@ -74,6 +80,12 @@ public:
 		return l.bits_ <=> r.bits_;
 	}
 
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		apply_value_to_hasher( hasher, bits_ );
+	}
+
 	fn get_bits( this ) : u128
 	{
 		return bits_;
@@ -114,6 +126,13 @@ public:
 
 	op==( socket_address_v4& l, socket_address_v4& r ) : bool = default;
 
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		apply_value_to_hasher( hasher, ip_ );
+		apply_value_to_hasher( hasher, port_ );
+	}
+
 	fn get_ip( this ) : ip_address_v4
 	{
 		return ip_;
@@ -152,6 +171,15 @@ public:
 	op=( mut this, socket_address_v6& other )= default;
 
 	op==( socket_address_v6& l, socket_address_v6& r ) : bool = default;
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		apply_value_to_hasher( hasher, ip_ );
+		apply_value_to_hasher( hasher, port_ );
+		apply_value_to_hasher( hasher, flow_info_ );
+		apply_value_to_hasher( hasher, scope_id_ );
+	}
 
 	fn get_ip( this ) : ip_address_v6
 	{
