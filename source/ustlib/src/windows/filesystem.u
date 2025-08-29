@@ -1,5 +1,6 @@
 import "../../imports/directory_iterator.u"
 import "../../imports/file.u"
+import "../../imports/filesystem.u"
 import "../../imports/minmax.u"
 import "../../imports/path_utils.u"
 import "wide_string.uh"
