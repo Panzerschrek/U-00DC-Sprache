@@ -66,7 +66,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Wenn die Sonne untergeht und euer Vater schläft, dann spreche ich ein Stoßgebet in seiner Annegret.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address_for_sender, message_range.to_byte8_range() ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -80,7 +80,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var typeof(message) mut received_message= zero_init;
 
-		result_match( receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		result_match( receiver_socket.receive_from(ust::array_view_mut</char8/>( received_message ).to_byte8_range() ) )
 		{
 			Ok( mut receive_result ) ->
 			{
@@ -111,7 +111,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Ja Ihr wimmert und Ihr fleht, doch schreit: es ist zu spät. Es bringt Ihr Frohsinn wie Ihr seht, wir ficken bis die Hähne krähen.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address_for_sender, message_range.to_byte8_range() ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -125,7 +125,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var typeof(message) mut received_message= zero_init;
 
-		result_match( receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		result_match( receiver_socket.receive_from( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ) )
 		{
 			Ok( mut receive_result ) ->
 			{
@@ -156,7 +156,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Sir Gernhart reinlunzen, Tor und Tür stehen mir auf, denn ich habe ein Schwert und sie nur einen hölzernen Knauf.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address, CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address, message_range.to_byte8_range() ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -170,7 +170,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var typeof(message) mut received_message= zero_init;
 
-		result_match( receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		result_match( receiver_socket.receive_from( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ) )
 		{
 			Ok( mut receive_result ) ->
 			{
@@ -208,7 +208,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Ich steige durchs Fenster, schlüpfe zu Annegret. Nun sei dort nur noch eine Sache die zwischen uns steht.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send( CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send( message_range.to_byte8_range() ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -222,7 +222,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var typeof(message) mut received_message= zero_init;
 
-		result_match( receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		result_match( receiver_socket.receive( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ) )
 		{
 			Ok( mut bytes_received ) ->
 			{
@@ -252,7 +252,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Ja es ist Sir Schwanzelot, der nachts an das Fenster klopft, von der holden Annegret, sie bricht die Ehe, ich - das Bett.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address_for_sender, message_range.to_byte8_range() ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -266,7 +266,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var typeof(message) mut received_message= zero_init;
 
-		result_match( receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		result_match( receiver_socket.receive( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ) )
 		{
 			Ok( mut bytes_received ) ->
 			{
@@ -295,7 +295,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Gestern sah ich sie mit Sir Gernhart Reinlunzen im Gemach, doch hat sie noch nicht genug, also stoße ich sie heute Nacht.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send( CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send( message_range.to_byte8_range() ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -309,7 +309,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var typeof(message) mut received_message= zero_init;
 
-		result_match( receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		result_match( receiver_socket.receive_from( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ) )
 		{
 			Ok( mut receive_result ) ->
 			{
@@ -343,7 +343,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Ach Ihr Zimmer liegt in Trümmern, doch sie hört nicht auf zu wimmern. Meine Stöße werden schlimmer, denn darauf beugt sie sich immer.";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address_for_sender, message_range.to_byte8_range() ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -357,7 +357,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var typeof(message) mut received_message= zero_init;
 
-		result_match( receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		result_match( receiver_socket.receive( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ) )
 		{
 			Ok( mut bytes_received ) ->
 			{
@@ -378,7 +378,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Bastard Barden";
 		var ust::string_view8 message_range= message;
 
-		result_match( socket.send( CastRangeToBytesRange( message_range ) ) )
+		result_match( socket.send( message_range.to_byte8_range() ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -405,14 +405,14 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Morgen kann sie nicht mehr stehen und uch kann sie nicht mehr sehen, also schleiche ich fort geschickt - morgen wird wieder gefickt!";
 		var ust::string_view8 message_range= message;
 
-		assert( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ).try_take() == message_range.size() );
+		assert( sender_socket.send_to( receiver_address_for_sender, message_range.to_byte8_range() ).try_take() == message_range.size() );
 
 		// Can peek input message multiple times.
 		for( var size_type mut i= 0s; i < 4s; ++i )
 		{
 			var typeof(message) mut peeked_message= zero_init;
 
-			result_match( receiver_socket.peek_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( peeked_message ) ) ) )
+			result_match( receiver_socket.peek_from( ust::array_view_mut</char8/>( peeked_message ).to_byte8_range() ) )
 			{
 				Ok( mut receive_result ) ->
 				{
@@ -435,7 +435,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		// Should receive data after previous "peek" calls.
 		var typeof(message) mut received_message= zero_init;
 
-		auto [ address_obtained, bytes_received ] = receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ).try_take();
+		auto [ address_obtained, bytes_received ] = receiver_socket.receive_from( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ).try_take();
 		assert(
 			address_obtained == sender_address || address_obtained == ust::socket_address_v4( loopback, sender_address.get_port() ),
 			"Unexpected address obtained in \"receive_from\" call!" );
@@ -461,14 +461,14 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Ihr seid als Hofnarr eine Schande, Ja, ihr seid ein Taugenichts, denn ihr bringt mich nie zum Lachen, ihr versäumеt eure Pflicht.";
 		var ust::string_view8 message_range= message;
 
-		assert( sender_socket.send( CastRangeToBytesRange( message_range ) ).try_take() == message_range.size() );
+		assert( sender_socket.send( message_range.to_byte8_range() ).try_take() == message_range.size() );
 
 		// Can peek input message multiple times.
 		for( var size_type mut i= 0s; i < 4s; ++i )
 		{
 			var typeof(message) mut peeked_message= zero_init;
 
-			result_match( receiver_socket.peek( CastRangeToBytesRange( ust::array_view_mut</char8/>( peeked_message ) ) ) )
+			result_match( receiver_socket.peek( ust::array_view_mut</char8/>( peeked_message ).to_byte8_range() ) )
 			{
 				Ok( mut bytes_received ) ->
 				{
@@ -485,7 +485,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		// Should receive data after previous "peek" calls.
 		var typeof(message) mut received_message= zero_init;
 
-		var size_type bytes_received = receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ).try_take();
+		var size_type bytes_received = receiver_socket.receive( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ).try_take();
 
 		assert( bytes_received == message_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
 		assert( received_message == message, "Received unexpected message!" );
@@ -546,7 +546,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				{
 					var typeof(message) mut message_received= zero_init;
 
-					result_match( receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ) )
+					result_match( receiver_socket.receive( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ) )
 					{
 						Ok( bytes_received ) ->
 						{
@@ -578,7 +578,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		// When the background thread tries to read, create sender socket and send a message via it.
 		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
-		var size_type bytes_sent= sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( ust::string_view8( message ) ) ).try_deref();
+		var size_type bytes_sent= sender_socket.send_to( receiver_address_for_sender, ust::string_view8( message ).to_byte8_range() ).try_deref();
 		assert( bytes_sent == typeinfo</ typeof(message) />.element_count );
 
 		// Should eventually finish this thread.
@@ -605,7 +605,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			var ust::socket_address_v4 sender_address( ust::ip_address_v4( 0u ), GetNextPort() );
 			var ust::udp_socket mut sender_socket= ust::udp_socket::create_and_bind( sender_address ).try_take();
 
-			var size_type bytes_writtes= sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message.range() ) ).try_take();
+			var size_type bytes_writtes= sender_socket.send_to( receiver_address_for_sender, message.range().to_byte8_range() ).try_take();
 			assert( bytes_writtes == message.size(), "Unexpected number of bytes written!" );
 		}
 
@@ -616,7 +616,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			var [ char8, 32 ] mut buff= zero_init;
 			var ust::array_view_mut</char8/> buff_range= buff;
 
-			var size_type bytes_received= receiver_socket.receive( CastRangeToBytesRange( buff_range ) ).try_take();
+			var size_type bytes_received= receiver_socket.receive( buff_range.to_byte8_range() ).try_take();
 
 			messages_received.insert( ust::string_view8( buff_range.subrange_end( bytes_received ) ) );
 		}
@@ -643,26 +643,26 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
 
-		sender_socket.send_to( receiver_addresses[0], CastRangeToBytesRange( ust::string_view8( "Message zero #0" ) ) ).try_deref();
-		sender_socket.send_to( receiver_addresses[1], CastRangeToBytesRange( ust::string_view8( "#1 message to one" ) ) ).try_deref();
-		sender_socket.send_to( receiver_addresses[2], CastRangeToBytesRange( ust::string_view8( "two #2 message" ) ) ).try_deref();
+		sender_socket.send_to( receiver_addresses[0], ust::string_view8( "Message zero #0" ).to_byte8_range() ).try_deref();
+		sender_socket.send_to( receiver_addresses[1], ust::string_view8( "#1 message to one" ).to_byte8_range() ).try_deref();
+		sender_socket.send_to( receiver_addresses[2], ust::string_view8( "two #2 message" ).to_byte8_range() ).try_deref();
 
 		{
 			var [ char8, 32 ] mut buff= zero_init;
 			var ust::array_view_mut</char8/> buff_range= buff;
-			var size_type bytes_received= receiver_sockets[0].receive( CastRangeToBytesRange( buff_range ) ).try_deref();
+			var size_type bytes_received= receiver_sockets[0].receive( buff_range.to_byte8_range() ).try_deref();
 			assert( ust::string_view8( buff_range.subrange_end( bytes_received ) ) == "Message zero #0" );
 		}
 		{
 			var [ char8, 32 ] mut buff= zero_init;
 			var ust::array_view_mut</char8/> buff_range= buff;
-			var size_type bytes_received= receiver_sockets[1].receive( CastRangeToBytesRange( buff_range ) ).try_deref();
+			var size_type bytes_received= receiver_sockets[1].receive( buff_range.to_byte8_range() ).try_deref();
 			assert( ust::string_view8( buff_range.subrange_end( bytes_received ) ) == "#1 message to one" );
 		}
 		{
 			var [ char8, 32 ] mut buff= zero_init;
 			var ust::array_view_mut</char8/> buff_range= buff;
-			var size_type bytes_received= receiver_sockets[2].receive( CastRangeToBytesRange( buff_range ) ).try_deref();
+			var size_type bytes_received= receiver_sockets[2].receive( buff_range.to_byte8_range() ).try_deref();
 			assert( ust::string_view8( buff_range.subrange_end( bytes_received ) ) == "two #2 message" );
 		}
 	}
@@ -676,12 +676,12 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		auto& message= "Bite my own tail!";
 
-		var size_type bytes_written= socket.send_to( address_for_sender, CastRangeToBytesRange( ust::string_view8( message ) ) ).try_take();
+		var size_type bytes_written= socket.send_to( address_for_sender, ust::string_view8( message ).to_byte8_range() ).try_take();
 		assert( bytes_written == typeinfo</ typeof(message) />.element_count );
 
 		var typeof(message) mut message_received= zero_init;
 
-		var size_type bytes_received= socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+		var size_type bytes_received= socket.receive( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take();
 		assert( bytes_received == typeinfo</ typeof(message) />.element_count );
 		assert( message_received == message );
 	}
@@ -718,12 +718,12 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "012345";
 		var size_type message_size= typeinfo</ typeof(message) />.element_count;
 
-		var size_type bytes_written= sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( ust::string_view8( message ) ) ).try_take();
+		var size_type bytes_written= sender_socket.send_to( receiver_address_for_sender, ust::string_view8( message ).to_byte8_range() ).try_take();
 		assert( bytes_written == message_size );
 
 		var [ char8, 32 ] mut message_received= zero_init;
 
-		var size_type bytes_received= receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+		var size_type bytes_received= receiver_socket.receive( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take();
 		assert( bytes_received == message_size );
 		assert( ust::string_view8( message_received ).subrange_end( message_size ) == message );
 	}
@@ -743,13 +743,13 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "This is a message, which is more than 5 chars long.";
 		var size_type message_size= typeinfo</ typeof(message) />.element_count;
 
-		var size_type bytes_written= sender_socket.send( CastRangeToBytesRange( ust::string_view8( message ) ) ).try_take();
+		var size_type bytes_written= sender_socket.send( ust::string_view8( message ).to_byte8_range() ).try_take();
 		assert( bytes_written == message_size );
 
 		var size_type buffer_size= 5s;
 		var [ char8, buffer_size ] mut message_received= zero_init;
 
-		var size_type bytes_received= receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+		var size_type bytes_received= receiver_socket.receive( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take();
 		assert( bytes_received == buffer_size );
 		assert( ust::string_view8( message_received ) == ust::string_view8( message ).subrange_end( buffer_size ) );
 	}
@@ -769,14 +769,14 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& first_message= "First message";
 		auto& second_message= "This is the message #2";
 
-		assert( sender_socket.send( CastRangeToBytesRange( ust::string_view8( first_message ) ) ).try_take() == typeinfo</ typeof(first_message) />.element_count );
-		assert( sender_socket.send( CastRangeToBytesRange( ust::string_view8( second_message ) ) ).try_take() == typeinfo</ typeof(second_message) />.element_count );
+		assert( sender_socket.send( ust::string_view8( first_message ).to_byte8_range() ).try_take() == typeinfo</ typeof(first_message) />.element_count );
+		assert( sender_socket.send( ust::string_view8( second_message ).to_byte8_range() ).try_take() == typeinfo</ typeof(second_message) />.element_count );
 
 		{
 			var size_type buffer_size= 5s;
 			var [ char8, buffer_size ] mut message_received= zero_init;
 
-			var size_type bytes_received= receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+			var size_type bytes_received= receiver_socket.receive( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take();
 			assert( bytes_received == buffer_size );
 			assert( ust::string_view8( message_received ) == ust::string_view8( first_message ).subrange_end( buffer_size ) );
 		}
@@ -784,7 +784,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			var size_type buffer_size= 7s;
 			var [ char8, buffer_size ] mut message_received= zero_init;
 
-			var size_type bytes_received= receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+			var size_type bytes_received= receiver_socket.receive( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take();
 			assert( bytes_received == buffer_size );
 			assert( ust::string_view8( message_received ) == ust::string_view8( second_message ).subrange_end( buffer_size ) );
 		}
@@ -812,18 +812,18 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& second_message= "Nachricht #2";
 
 		// Send explicitly to receiver #0
-		assert( sender_socket.send_to( receiver_address0_for_sender, CastRangeToBytesRange( ust::string_view8( first_message ) ) ).try_take() == typeinfo</ typeof(first_message) />.element_count );
+		assert( sender_socket.send_to( receiver_address0_for_sender, ust::string_view8( first_message ).to_byte8_range() ).try_take() == typeinfo</ typeof(first_message) />.element_count );
 		// Send without address provided - should send it to #1.
-		assert( sender_socket.send( CastRangeToBytesRange( ust::string_view8( second_message ) ) ).try_take() == typeinfo</ typeof(second_message) />.element_count );
+		assert( sender_socket.send( ust::string_view8( second_message ).to_byte8_range() ).try_take() == typeinfo</ typeof(second_message) />.element_count );
 
 		{
 			var typeof(first_message) mut message_received= zero_init;
-			var size_type bytes_received= receiver_socket0.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+			var size_type bytes_received= receiver_socket0.receive( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take();
 			assert( message_received == first_message );
 		}
 		{
 			var typeof(second_message) mut message_received= zero_init;
-			var size_type bytes_received= receiver_socket1.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take();
+			var size_type bytes_received= receiver_socket1.receive( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take();
 			assert( message_received == second_message );
 		}
 	}
@@ -947,7 +947,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Trying IP v6 sockets";
 		var ust::string_view8 message_range= message;
 
-		result_match( sender_socket.send_to( receiver_address_for_sender, CastRangeToBytesRange( message_range ) ) )
+		result_match( sender_socket.send_to( receiver_address_for_sender, message_range.to_byte8_range() ) )
 		{
 			Ok( bytes_sent ) ->
 			{
@@ -961,7 +961,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var typeof(message) mut received_message= zero_init;
 
-		result_match( receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ) )
+		result_match( receiver_socket.receive_from( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ) )
 		{
 			Ok( mut receive_result ) ->
 			{
@@ -1000,11 +1000,3 @@ fn GetNextPort() : u16
 }
 
 var u16 mut g_port_counter( 59000s + 500s * compiler::generation );
-
-// It's safe to cast between ranges of chars and bytes.
-// TODO - create a library function for this?
-template</bool is_mutable/>
-fn CastRangeToBytesRange( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
-{
-	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
-}

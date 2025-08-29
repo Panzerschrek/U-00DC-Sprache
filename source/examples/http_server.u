@@ -45,7 +45,7 @@ pretty_main
 		// It may be used to process request properly, but for now just ignore it.
 		{
 			var ust::string8 mut request_text( 1024s, '\0' );
-			var size_type bytes_read= stream.read( CastRangeToBytesRange( request_text.range() ) ).try_take();
+			var size_type bytes_read= stream.read( request_text.range().to_byte8_range() ).try_take();
 			request_text.resize( bytes_read, '\0' );
 
 			ust::stdout_print( "\n" );
@@ -72,7 +72,7 @@ fn WriteAll( ust::tcp_stream &mut stream, ust::string_view8 message )
 	// Write in loop, since sometimes the whole message at once can't be written.
 	for( auto mut offset= 0s; offset < message.size(); )
 	{
-		var size_type bytes_written= stream.write( CastRangeToBytesRange( message ).subrange_start( offset ) ).try_take();
+		var size_type bytes_written= stream.write( message.to_byte8_range().subrange_start( offset ) ).try_take();
 		offset+= bytes_written;
 	}
 }
@@ -95,11 +95,3 @@ auto g_html_page_contents=
 	"</body>" +
 "</html>" +
 g_http_line_end;
-
-// It's safe to cast between ranges of chars and bytes.
-// TODO - create a library function for this?
-template</bool is_mutable/>
-fn CastRangeToBytesRange( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
-{
-	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
-}
