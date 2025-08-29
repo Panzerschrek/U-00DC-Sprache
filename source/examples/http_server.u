@@ -35,13 +35,10 @@ pretty_main
 	{
 		auto [ mut stream, client_address ] = listener.accept().try_take();
 
-		if_var( &a_v4 : client_address.get</ust::socket_address_v4/>() )
+		// Print client address in all possible forms - ipv4, ipv6.
+		variant_visit( &a : client_address )
 		{
-			ust::stdout_print( ust::concat( "Incoming connection from ", a_v4.get_ip().to_string(), "\n" ) );
-		}
-		if_var( &a_v6 : client_address.get</ust::socket_address_v4/>() )
-		{
-			ust::stdout_print( ust::concat( "Incoming connection from ", a_v6.get_ip().to_string(), "\n" ) );
+			ust::stdout_print( ust::concat( "Incoming connection from ", a.get_ip().to_string(), "\n" ) );
 		}
 
 		// Receive and print request text.
