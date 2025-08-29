@@ -18,7 +18,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		"wikipedia.org",
 		"bundesregierung.de",
 		"arte.tv",
-		"правительство.рф"
+		"яндекс.рф"
 		];
 
 	foreach( &site : sites )
