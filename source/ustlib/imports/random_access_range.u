@@ -410,6 +410,17 @@ public:
 		}
 	}
 
+	template<//>
+	fn enable_if( !is_mutable && random_access_range_impl::can_cast_to_immutable_byte8_range</T/>() )
+	to_byte8_range( this )
+		: random_access_range</byte8, false/> @( reference_notation::return_inner_references::param0_inner_reference0 )
+	{
+		return
+			unsafe( random_access_range</byte8, false/>(
+				ptr_cast_to_byte8( begin_ ),
+				size_ * typeinfo</T/>.size_of ) );
+	}
+
 private:
 	// Call this only if elements may be correctly casted into sequence of byte8, byte16, byte32, byte64, byte128 elements!
 	// We treat types which can be represented as such sequences in order to speed-up hash calculation for them.
@@ -522,5 +533,48 @@ fn single_element_array_view( T &imut el ) : array_view_imut</T/> @( reference_n
 {
 	return unsafe( array_view_imut</T/>( $<(cast_mut(el)), 1s ) );
 }
+
+namespace random_access_range_impl
+{
+
+template</type T/>
+fn constexpr can_cast_to_immutable_byte8_range() : bool
+{
+	static_if( typeinfo</T/>.is_fundamental )
+	{
+		// Allow reading bytes of integers, chars, byte-types.
+		// Do not allow "void", since it has zero size.
+		// Do not allow "bool", since we should not allow reading upper unused bits of it.
+		return typeinfo</T/>.is_numeric || typeinfo</T/>.is_char || typeinfo</T/>.is_byte;
+	}
+	else static_if( typeinfo</T/>.is_raw_pointer || typeinfo</T/>.is_function_pointer )
+	{
+		// Can read raw pointers and function pointers as bytes.
+		return true;
+	}
+	else static_if( typeinfo</T/>.is_enum )
+	{
+		// Can read enum values as bytes.
+		return true;
+	}
+	else static_if( typeinfo</T/>.is_array )
+	{
+		// Can cast arrays as long as can cast their elements.
+		return can_cast_to_immutable_byte8_range</ typeof( typeinfo</T/>.element_type )::src_type />();
+	}
+	else static_if( typeinfo</T/>.is_tuple || typeinfo</T/>.is_class )
+	{
+		// Can't cast tuples and classes.
+		// Classes can have private fields and reading them as bytes isn't good.
+		// Also padding bytes are possible and we should not allow reading this bytes, since this may cause UB.
+		return false;
+	}
+	else
+	{
+		static_assert( false, "Unhandled type kind!" );
+	}
+}
+
+} // namespace random_access_range_impl
 
 } // namespace ust

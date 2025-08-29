@@ -353,6 +353,21 @@ fn nomangle main() call_conv( "C" ) : i32
 			halt;
 		}
 	}
+	// to_byte8_range - immutable range of byte8-sized elements.
+	{
+		var [ char8, 6 ] arr= "qwerty";
+		var ust::array_view_imut</char8/> range= arr;
+
+		var ust::array_view_imut</byte8/> byte8_range= range.to_byte8_range();
+
+		halt if( byte8_range.size() != range.size() );
+		halt if( byte8_range[0s] != byte8('q') );
+		halt if( byte8_range[1s] != byte8('w') );
+		halt if( byte8_range[2s] != byte8('e') );
+		halt if( byte8_range[3s] != byte8('r') );
+		halt if( byte8_range[4s] != byte8('t') );
+		halt if( byte8_range[5s] != byte8('y') );
+	}
 
 	return 0;
 }
