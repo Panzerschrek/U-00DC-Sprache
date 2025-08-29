@@ -9,6 +9,8 @@ class B : A {}
 
 struct SomeStruct{ i32 x; }
 
+enum SoneEnum{ A, B, C }
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // range itself is immutable by-default.
@@ -71,10 +73,52 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::array_view_imut</ [ SomeStruct, 2 ] /> range= arr;
 		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
 	}
+	// to_byte8_range - mutable range of bools can't be converted to bytes.
+	{
+		var [ bool, 2 ] mut arr[ true, false ];
+		var ust::array_view_mut</ bool /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of tuples can't be converted to bytes.
+	{
+		var [ tup[ i32 ], 2 ] mut arr= zero_init;
+		var ust::array_view_mut</ tup[ i32 ] /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of structs can't be converted to bytes.
+	{
+		var [ SomeStruct, 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ SomeStruct /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of arrays of structs can't be converted to bytes.
+	{
+		var [ [ SomeStruct, 2 ], 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ [ SomeStruct, 2 ] /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of enums can't be converted to bytes.
+	{
+		var [ SoneEnum, 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ SoneEnum /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of raw pointers can't be converted to bytes.
+	{
+		var [ $(f32), 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ $(f32) /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
 	// to_byte8_range - result inner reference is linked to source.
 	{
 		var [ i32, 3 ] mut arr= zero_init;
 		auto bytes_range= ust::array_view_imut</ i32 />( arr ).to_byte8_range();
+		++arr[1]; //##expect_error ReferenceProtectionError
+	}
+	// to_byte8_range - result inner reference is linked to source.
+	{
+		var [ i32, 3 ] mut arr= zero_init;
+		auto bytes_range= ust::array_view_mut</ i32 />( arr ).to_byte8_range();
 		++arr[1]; //##expect_error ReferenceProtectionError
 	}
 

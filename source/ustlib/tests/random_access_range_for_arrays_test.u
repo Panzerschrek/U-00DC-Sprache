@@ -489,6 +489,47 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		halt if( arr != "7q_" );
 	}
+	// to_byte8_range - mutable range of u16-sized elements.
+	{
+		var [ u16, 3 ] mut arr= zero_init;
+
+		{
+			var ust::array_view_mut</byte8/> byte8_range= ust::array_view_mut</u16/>(arr).to_byte8_range();
+
+			halt if( byte8_range.size() != 6s );
+
+			byte8_range[0s]= byte8( 0x34u8 );
+			byte8_range[1s]= byte8( 0x12u8 );
+			byte8_range[2s]= byte8( 0x78u8 );
+			byte8_range[3s]= byte8( 0x56u8 );
+			byte8_range[4s]= byte8( 0xabu8 );
+			byte8_range[5s]= byte8( 0x90u8 );
+		}
+
+		halt if( arr[0] != 0x1234u16 );
+		halt if( arr[1] != 0x5678u16 );
+		halt if( arr[2] != 0x90abu16 );
+	}
+	// to_byte8_range - mutable range of char8 array elements.
+	{
+		var [ [ char8, 3 ], 2 ] mut arr= zero_init;
+
+		{
+			var ust::array_view_mut</byte8/> byte8_range= ust::array_view_mut</ [ char8, 3 ] />(arr).to_byte8_range();
+
+			halt if( byte8_range.size() != 6s );
+
+			byte8_range[0s]= byte8( '0' );
+			byte8_range[1s]= byte8( '1' );
+			byte8_range[2s]= byte8( '2' );
+			byte8_range[3s]= byte8( '3' );
+			byte8_range[4s]= byte8( '4' );
+			byte8_range[5s]= byte8( '5' );
+		}
+
+		halt if( arr[0] != "012" );
+		halt if( arr[1] != "345" );
+	}
 
 	return 0;
 }
