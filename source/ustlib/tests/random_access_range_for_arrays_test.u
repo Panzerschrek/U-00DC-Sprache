@@ -473,6 +473,22 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( byte8_range[2s] != byte8(1u8) );
 		halt if( byte8_range[3s] != byte8(0u8) );
 	}
+	// to_byte8_range - mutable range of byte8-sized elements.
+	{
+		var [ char8, 3 ] mut arr= zero_init;
+
+		{
+			var ust::array_view_mut</byte8/> byte8_range= ust::array_view_mut</char8/>(arr).to_byte8_range();
+
+			halt if( byte8_range.size() != 3s );
+
+			byte8_range[0s]= byte8( '7' );
+			byte8_range[1s]= byte8( 'q' );
+			byte8_range[2s]= byte8( '_' );
+		}
+
+		halt if( arr != "7q_" );
+	}
 
 	return 0;
 }
