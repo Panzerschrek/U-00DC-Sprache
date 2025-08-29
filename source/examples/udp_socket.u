@@ -29,11 +29,11 @@ pretty_main
 
 		auto& message= "sendto message 123";
 
-		sender_socket.send_to( receiver_address, CastRangeToBytesRange( ust::string_view8( message ) ) ).try_deref();
+		sender_socket.send_to( receiver_address, ust::string_view8( message ).to_byte8_range() ).try_deref();
 
 		var typeof(message) mut received_message= zero_init;
 
-		auto [ address, bytes_received ] = receiver_socket.receive_from( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ).try_take();
+		auto [ address, bytes_received ] = receiver_socket.receive_from( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ).try_take();
 
 		ust::ignore_unused( bytes_received );
 
@@ -65,12 +65,12 @@ pretty_main
 
 		auto& message= "connect + send + receive 456 message";
 
-		sender_socket.send( CastRangeToBytesRange( ust::string_view8( message ) ) ).try_deref();
+		sender_socket.send( ust::string_view8( message ).to_byte8_range() ).try_deref();
 
 		var typeof(message) mut received_message= zero_init;
 
 		var size_type bytes_received=
-			receiver_socket.receive( CastRangeToBytesRange( ust::array_view_mut</char8/>( received_message ) ) ).try_deref();
+			receiver_socket.receive( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ).try_deref();
 
 		ust::ignore_unused( bytes_received );
 
@@ -78,12 +78,4 @@ pretty_main
 	}
 
 	return 0;
-}
-
-// It's safe to cast between ranges of chars and bytes.
-// TODO - create a library function for this?
-template</bool is_mutable/>
-fn CastRangeToBytesRange( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
-{
-	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
 }
