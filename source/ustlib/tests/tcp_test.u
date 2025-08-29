@@ -66,7 +66,7 @@ fn nomangle main() call_conv( "C" ) : i32
 						var typeof(client_message) mut client_message_received= zero_init;
 
 						// Receive a request.
-						result_match( stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( client_message_received ) ) ) )
+						result_match( stream.read( ust::array_view_mut</char8/>( client_message_received ).to_byte8_range() ) )
 						{
 							Ok( bytes_read ) ->
 							{
@@ -77,7 +77,7 @@ fn nomangle main() call_conv( "C" ) : i32
 						}
 
 						// Send responce.
-						result_match( stream.write( CastRangeToBytesRange( ust::string_view8( server_message ) ) ) )
+						result_match( stream.write( ust::string_view8( server_message ).to_byte8_range() ) )
 						{
 							Ok( bytes_written ) -> { assert( bytes_written == server_message_size, "Invalid number of bytes written!" ); },
 							Err(e) -> { assert( false, ust::concat( "Failed to write into TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
@@ -119,7 +119,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			Ok( mut stream ) ->
 			{
 				// Send a request.
-				result_match( stream.write( CastRangeToBytesRange( ust::string_view8( client_message ) ) ) )
+				result_match( stream.write( ust::string_view8( client_message ).to_byte8_range() ) )
 				{
 					Ok( bytes_written ) -> { assert( bytes_written == client_message_size, "Invalid number of bytes written!" ); },
 					Err(e) -> { assert( false, ust::concat( "Failed to write into TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
@@ -128,7 +128,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				var typeof(server_message) mut server_message_received= zero_init;
 
 				// Receive a response.
-				result_match( stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( server_message_received ) ) ) )
+				result_match( stream.read( ust::array_view_mut</char8/>( server_message_received ).to_byte8_range() ) )
 				{
 					Ok( bytes_read ) ->
 					{
@@ -204,12 +204,12 @@ fn nomangle main() call_conv( "C" ) : i32
 					var [ char8, 64 ] mut client_message_received= zero_init;
 
 					// Receive a request.
-					var size_type bytes_read= stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( client_message_received ) ) ).try_take();
+					var size_type bytes_read= stream.read( ust::array_view_mut</char8/>( client_message_received ).to_byte8_range() ).try_take();
 					assert( bytes_read == messages[client_index][0].size(), "Invalid number of bytes read!" );
 					assert( ust::string_view8( client_message_received ).subrange_end( bytes_read ) == messages[client_index][0] );
 
 					// Send responce.
-					var size_type bytes_written= stream.write( CastRangeToBytesRange( messages[client_index][1].range() ) ).try_take();
+					var size_type bytes_written= stream.write( messages[client_index][1].range().to_byte8_range() ).try_take();
 					assert( bytes_written == messages[client_index][1].size(), "Invalid number of bytes written!" );
 				}
 			} );
@@ -219,13 +219,13 @@ fn nomangle main() call_conv( "C" ) : i32
 			var ust::tcp_stream mut stream= ust::tcp_stream::connect( server_address ).try_take();
 
 			// Send a request.
-			var size_type bytes_written= stream.write( CastRangeToBytesRange( messages[client_index][0].range() ) ).try_take();
+			var size_type bytes_written= stream.write( messages[client_index][0].range().to_byte8_range() ).try_take();
 			assert( bytes_written == messages[client_index][0].size(), "Invalid number of bytes written!" );
 
 			var [ char8, 64 ] mut server_message_received= zero_init;
 
 			// Receive a response.
-			var size_type bytes_read= stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( server_message_received ) ) ).try_take();
+			var size_type bytes_read= stream.read( ust::array_view_mut</char8/>( server_message_received ).to_byte8_range() ).try_take();
 			assert( bytes_read == messages[client_index][1].size(), "Invalid number of bytes read!" );
 			assert( ust::string_view8( server_message_received ).subrange_end( bytes_read ) == messages[client_index][1] );
 		}
@@ -243,11 +243,11 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		auto [ mut server_stream, client_address ]= listener.accept().try_take();
 
-		assert( client_stream.write( CastRangeToBytesRange( ust::string_view8( "Some" ) ) ).try_take() == 4s );
-		assert( client_stream.write( CastRangeToBytesRange( ust::string_view8( " message" ) ) ).try_take() == 8s );
+		assert( client_stream.write( ust::string_view8( "Some" ).to_byte8_range() ).try_take() == 4s );
+		assert( client_stream.write( ust::string_view8( " message" ).to_byte8_range() ).try_take() == 8s );
 
 		var [ char8, 12 ] mut message_received= zero_init;
-		assert( server_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take() == 12s );
+		assert( server_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == 12s );
 		assert( message_received == "Some message" );
 	}
 
@@ -261,11 +261,11 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		auto [ mut server_stream, client_address ]= listener.accept().try_take();
 
-		assert( client_stream.write( CastRangeToBytesRange( ust::string_view8( "012345678" ) ) ).try_take() == 9s );
+		assert( client_stream.write( ust::string_view8( "012345678" ).to_byte8_range() ).try_take() == 9s );
 
 		var [ char8, 9 ] mut message_received= zero_init;
-		assert( server_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ).subrange( 0s, 3s ) ).try_take() == 3s );
-		assert( server_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ).subrange( 3s, 9s ) ).try_take() == 6s );
+		assert( server_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range().subrange( 0s, 3s ) ).try_take() == 3s );
+		assert( server_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range().subrange( 3s, 9s ) ).try_take() == 6s );
 		assert( message_received == "012345678" );
 	}
 
@@ -395,7 +395,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		loop
 		{
-			result_match( client_steam.write( CastRangeToBytesRange( ust::string_view8( "Pest und Eiter - wir ziehen weiter!" ) ) ) )
+			result_match( client_steam.write( ust::string_view8( "Pest und Eiter - wir ziehen weiter!" ).to_byte8_range() ) )
 			{
 				Ok( bytes_written ) ->
 				{
@@ -486,7 +486,7 @@ fn nomangle main() call_conv( "C" ) : i32
 					{
 						Ok( mut accept_result ) ->
 						{
-							assert( accept_result[0].write( CastRangeToBytesRange( ust::string_view8( "Hello!" ) ) ).try_take() == 6s );
+							assert( accept_result[0].write( ust::string_view8( "Hello!" ).to_byte8_range()).try_take() == 6s );
 							return num_attempts;
 						},
 						Err(e) ->
@@ -512,7 +512,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
 
 		var [ char8, 6 ] mut message_received= zero_init;
-		assert( client_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take() == 6s );
+		assert( client_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == 6s );
 		assert( message_received == "Hello!" );
 
 		var size_type num_attempts= move(background_thread).join();
@@ -567,19 +567,19 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Testing peek";
 		var size_type message_size= typeinfo</ typeof(message) />.element_count;
 
-		assert( server_stream.write( CastRangeToBytesRange( ust::string_view8( message ) ) ).try_deref() == message_size );
+		assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
 
 		// Can "peek" without extracting many times.
 		for( var size_type mut i= 0s; i < 16s; ++i )
 		{
 			var typeof(message) mut message_received= zero_init;
-			assert( client_stream.peek( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take() == message_size );
+			assert( client_stream.peek( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == message_size );
 			assert( message_received == message );
 		}
 
 		// Can still "read".
 		var typeof(message) mut message_received= zero_init;
-		assert( client_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take() == message_size );
+		assert( client_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == message_size );
 		assert( message_received == message );
 	}
 
@@ -626,7 +626,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::udp_socket mut socket= ust::udp_socket::create_v4().try_take();
 
 		// Should successfully send, but it will be rejected.
-		assert( socket.send_to( server_address, CastRangeToBytesRange( ust::string_view8( "Test UDP packet" ) ) ).try_take() == 15s );
+		assert( socket.send_to( server_address, ust::string_view8( "Test UDP packet" ).to_byte8_range() ).try_take() == 15s );
 
 		// Try accepting many times in non-blocking mode. Shouldn't accept.
 		for( auto mut i= 0s; i < 256s; ++i )
@@ -779,10 +779,10 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto& message= "Testing TCP with IP v6 sockets.";
 		var size_type message_size= typeinfo</ typeof(message) />.element_count;
 
-		assert( server_stream.write( CastRangeToBytesRange( ust::string_view8( message ) ) ).try_deref() == message_size );
+		assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
 
 		var typeof(message) mut message_received= zero_init;
-		assert( client_stream.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( message_received ) ) ).try_take() == message_size );
+		assert( client_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == message_size );
 		assert( message_received == message );
 	}
 
@@ -800,11 +800,3 @@ fn GetNextPort() : u16
 }
 
 var u16 mut g_port_counter( 59100s + 500s * compiler::generation );
-
-// It's safe to cast between ranges of chars and bytes.
-// TODO - create a library function for this?
-template</bool is_mutable/>
-fn CastRangeToBytesRange( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
-{
-	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
-}
