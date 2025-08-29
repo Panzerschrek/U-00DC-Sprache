@@ -609,7 +609,7 @@ fn constexpr can_cast_to_mutable_byte8_range() : bool
 	else static_if( typeinfo</T/>.is_array )
 	{
 		// Can cast arrays as long as can cast their elements.
-		return can_cast_to_immutable_byte8_range</ typeof( typeinfo</T/>.element_type )::src_type />();
+		return can_cast_to_mutable_byte8_range</ typeof( typeinfo</T/>.element_type )::src_type />();
 	}
 	else static_if( typeinfo</T/>.is_tuple || typeinfo</T/>.is_class )
 	{
