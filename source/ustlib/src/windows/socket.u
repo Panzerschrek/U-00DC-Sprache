@@ -25,7 +25,7 @@ fn call_wsa_startup()
 		if( prev_wsa_startup_called )
 		{
 			// Some other thread managed to call "WSAStartup" first.
-			// In such case it's a bet practice to call cleanup.
+			// In such case it's a good practice to call cleanup.
 			WSACleanup();
 		}
 	}
@@ -43,6 +43,7 @@ fn translate_wsa_error( i32 e ) : io_error
 		WSAECONNABORTED -> { return io_error::connection_aborted; },
 		WSAECONNREFUSED -> { return io_error::connection_refused; },
 		default -> { return io_error::other; },
+		// TODO - handle other WinSock2 errors.
 	}
 }
 

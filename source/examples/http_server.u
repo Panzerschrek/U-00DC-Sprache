@@ -55,7 +55,7 @@ pretty_main
 		// In this simple example we handle each connection synchronously.
 		// But generally it's preffered to move request processing into another thread(s).
 
-		// Status lines goes first.
+		// Status line goes first.
 		WriteAll( stream, g_http_response_status_line );
 		// Then headers follow.
 		WriteAll( stream, g_http_respense_headers );

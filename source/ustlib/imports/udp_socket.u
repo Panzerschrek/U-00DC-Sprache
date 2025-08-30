@@ -72,7 +72,7 @@ public:
 	// Set time to live.
 	fn set_ttl( mut this, u8 ttl ) : io_result</void/>;
 
-	// Get handle to perform some system-specific file operations with it. Do not try to close it!
+	// Get handle to perform some system-specific operations with it. Do not try to close it!
 	fn get_native_fd( this ) unsafe : native_socket_fd;
 
 	// Take native handle and destroy this class instance. Caller is responsible for socket closing.
