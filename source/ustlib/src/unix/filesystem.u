@@ -4,6 +4,7 @@ import "../../imports/filesystem.u"
 import "../../imports/path_utils.u"
 import "../../imports/scoped_array.u"
 import "errno.uh"
+import "unix.uh"
 
 namespace ust
 {
