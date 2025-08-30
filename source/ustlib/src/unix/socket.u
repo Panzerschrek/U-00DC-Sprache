@@ -71,9 +71,10 @@ fn translate_socket_address( socket_address_v4& address ) : sockaddr_in
 	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) ||
 		constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
+		auto s= typeinfo</sockaddr_in/>.size_of; // TODO - fix Compiler1 crash and simplify this.
 		return sockaddr_in
 		{
-			.sin_len( typeinfo</sockaddr_in/>.size_of ),
+			.sin_len( s ),
 			.sin_family( AF_INET ),
 			.sin_port= to_network_bytes_order( address.get_port() ),
 			.sin_addr{ .s_addr= to_network_bytes_order( address.get_ip().get_bits() ) },
@@ -99,9 +100,10 @@ fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
 	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) ||
 		constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
+		auto s= typeinfo</sockaddr_in6/>.size_of; // TODO - fix Compiler1 crash and simplify this.
 		return sockaddr_in6
 		{
-			.sin6_len( typeinfo</sockaddr_in6/>.size_of ),
+			.sin6_len( s ),
 			.sin6_family( AF_INET6 ),
 			.sin6_port= to_network_bytes_order( address.get_port() ),
 			.sin6_addr
