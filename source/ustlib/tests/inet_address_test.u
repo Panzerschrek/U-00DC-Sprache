@@ -135,7 +135,7 @@ fn nomangle main() call_conv( "C" ) : i32
 	halt if( ust::ip_address_v6::parse( " 0011:2233:4455:6677:8899:aabb:ccdd:eeff" ) != ust::null_optional );
 
 	// Invalid ipv6 address - trailing spaces.
-	halt if( ust::ip_address_v6::parse( " 0011:2233:4455:6677:8899:aabb:ccdd:eeff " ) != ust::null_optional );
+	halt if( ust::ip_address_v6::parse( "0011:2233:4455:6677:8899:aabb:ccdd:eeff " ) != ust::null_optional );
 
 	halt if(
 		ust::socket_address_v4::parse( "37.42.213.178:0" ) !=
