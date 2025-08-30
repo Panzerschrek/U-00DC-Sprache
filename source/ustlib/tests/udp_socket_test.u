@@ -791,6 +791,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	// Connect to one address, but send to another.
+	// For some reason this doesn't work on FreeBSD - it refuses to send to specified address if already connected.
+	if( !ust::constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
 		var ust::socket_address_v4 receiver_address0( ust::ip_address_v4( 0u ), GetNextPort() );
 		var ust::socket_address_v4 receiver_address0_for_sender( loopback, receiver_address0.get_port() );
