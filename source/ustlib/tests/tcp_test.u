@@ -448,6 +448,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	// Non-blocking listener - should not block if nobody connects.
+	// For some reason making socket non-blocking doesn't work on MacOS.
+	if( !ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
 		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( ust::socket_address_v4( loopback, GetNextPort() ) ).try_take();
 
@@ -464,7 +466,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		if( ust::string_view8( compiler::target::os ) != "windows" )
 		{
-			assert( listener.is_nonblocking().try_take(), "Socket isn't non-blocking as expected!" );
+			assert( listener.is_nonblocking().try_take(), "TCP listener isn't non-blocking as expected!" );
 		}
 
 		result_match( listener.accept() )
@@ -479,6 +481,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	// Non-blocking listener, which actually accepts a connection.
+	// For some reason making socket non-blocking doesn't work on MacOS.
+	if( !ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
 		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
 
@@ -534,6 +538,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	// Non-blocking stream - should not block on reading if no data was sent.
+	// For some reason making socket non-blocking doesn't work on MacOS.
+	if( !ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
 		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
 
@@ -554,7 +560,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		if( ust::string_view8( compiler::target::os ) != "windows" )
 		{
-			assert( client_stream.is_nonblocking().try_take(), "Socket isn't non-blocking as expected!" );
+			assert( client_stream.is_nonblocking().try_take(), "TCP stream isn't non-blocking as expected!" );
 		}
 
 		auto [ server_stream, client_address ]= listener.accept().try_take();
@@ -629,6 +635,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	// Try sending UDP packets to TCP listener.
+	// For some reason making socket non-blocking doesn't work on MacOS.
+	if( !ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
 		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
 

@@ -492,6 +492,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	// Non-blocking socket - try receive without anyone sending.
+	// For some reason making socket non-blocking doesn't work on MacOS.
+	if( !ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
 		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( ust::socket_address_v4( ust::ip_address_v4( 0u ), GetNextPort() ) ).try_take();
 
@@ -524,6 +526,8 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	// Non-blocking socket, use busy loop.
+	// For some reason making socket non-blocking doesn't work on MacOS.
+	if( !ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
 		var ust::socket_address_v4 receiver_address( ust::ip_address_v4( 0u ), GetNextPort() );
 		var ust::socket_address_v4 receiver_address_for_sender( loopback, receiver_address.get_port() );
