@@ -68,7 +68,8 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 
 fn translate_socket_address( socket_address_v4& address ) : sockaddr_in
 {
-	static_if( constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) ||
+		constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
 		return sockaddr_in
 		{
@@ -95,7 +96,8 @@ fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
 {
 	var u128 ip_raw= address.get_ip().get_bits();
 
-	static_if( constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) ||
+		constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
 		return sockaddr_in6
 		{

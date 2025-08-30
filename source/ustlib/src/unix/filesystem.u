@@ -1011,7 +1011,7 @@ fn flush_impl( native_file_handle handle ) unsafe : io_result</void/>
 {
 	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) )
 	{
-		var i32 res= unsafe( ::fcntl( handle , F_FULLFSYNC ) );
+		var i32 res= unsafe( ::fcntl( handle , F_FULLFSYNC, 0 ) );
 		if( res != 0 )
 		{
 			return translate_errno( get_errno() );
