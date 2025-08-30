@@ -112,6 +112,7 @@ fn tcp_listener::accept( mut this ) : io_result</ tup[ tcp_stream, socket_addres
 		auto mut address_translated_opt= translate_socket_address( address );
 		if( address_translated_opt.empty() )
 		{
+			::close( client_stream_socket );
 			return io_error::other;
 		}
 
