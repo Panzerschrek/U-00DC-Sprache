@@ -68,36 +68,74 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 
 fn translate_socket_address( socket_address_v4& address ) : sockaddr_in
 {
-	return sockaddr_in
+	static_if( constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
-		.sin_family( AF_INET ),
-		.sin_port= to_network_bytes_order( address.get_port() ),
-		.sin_addr{ .s_addr= to_network_bytes_order( address.get_ip().get_bits() ) },
-		.sin_zero= zero_init,
-	};
+		return sockaddr_in
+		{
+			.sin_len( typeinfo</sockaddr_in/>.size_of ),
+			.sin_family( AF_INET ),
+			.sin_port= to_network_bytes_order( address.get_port() ),
+			.sin_addr{ .s_addr= to_network_bytes_order( address.get_ip().get_bits() ) },
+			.sin_zero= zero_init,
+		};
+	}
+	else
+	{
+		return sockaddr_in
+		{
+			.sin_family( AF_INET ),
+			.sin_port= to_network_bytes_order( address.get_port() ),
+			.sin_addr{ .s_addr= to_network_bytes_order( address.get_ip().get_bits() ) },
+			.sin_zero= zero_init,
+		};
+	}
 }
 
 fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
 {
 	var u128 ip_raw= address.get_ip().get_bits();
 
-	return sockaddr_in6
+	static_if( constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
 	{
-		.sin6_family( AF_INET6 ),
-		.sin6_port= to_network_bytes_order( address.get_port() ),
-		.sin6_addr
+		return sockaddr_in6
 		{
-			.parts
-			[
-				to_network_bytes_order( u32( ip_raw >> 96u ) ),
-				to_network_bytes_order( u32( ip_raw >> 64u ) ),
-				to_network_bytes_order( u32( ip_raw >> 32u ) ),
-				to_network_bytes_order( u32( ip_raw >>  0u ) ),
-			]
-		},
-		.sin6_flowinfo= to_network_bytes_order( address.get_flow_info() ),
-		.sin6_scope_id= to_network_bytes_order( address.get_scope_id() ),
-	};
+			.sin6_len( typeinfo</sockaddr_in6/>.size_of ),
+			.sin6_family( AF_INET6 ),
+			.sin6_port= to_network_bytes_order( address.get_port() ),
+			.sin6_addr
+			{
+				.parts
+				[
+					to_network_bytes_order( u32( ip_raw >> 96u ) ),
+					to_network_bytes_order( u32( ip_raw >> 64u ) ),
+					to_network_bytes_order( u32( ip_raw >> 32u ) ),
+					to_network_bytes_order( u32( ip_raw >>  0u ) ),
+				]
+			},
+			.sin6_flowinfo= to_network_bytes_order( address.get_flow_info() ),
+			.sin6_scope_id= to_network_bytes_order( address.get_scope_id() ),
+		};
+	}
+	else
+	{
+		return sockaddr_in6
+		{
+			.sin6_family( AF_INET6 ),
+			.sin6_port= to_network_bytes_order( address.get_port() ),
+			.sin6_addr
+			{
+				.parts
+				[
+					to_network_bytes_order( u32( ip_raw >> 96u ) ),
+					to_network_bytes_order( u32( ip_raw >> 64u ) ),
+					to_network_bytes_order( u32( ip_raw >> 32u ) ),
+					to_network_bytes_order( u32( ip_raw >>  0u ) ),
+				]
+			},
+			.sin6_flowinfo= to_network_bytes_order( address.get_flow_info() ),
+			.sin6_scope_id= to_network_bytes_order( address.get_scope_id() ),
+		};
+	}
 }
 
 fn is_socket_nonblocking( native_socket_fd s ) : io_result</bool/>
