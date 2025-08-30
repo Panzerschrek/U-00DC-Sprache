@@ -29,5 +29,4 @@ enum io_error
 template</type T/>
 type io_result= result</T, io_error/>;
 
-
 } // namespace ust
