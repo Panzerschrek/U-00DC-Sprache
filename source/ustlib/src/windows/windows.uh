@@ -16,6 +16,7 @@ fn nomangle FindClose( HANDLE hFindFile ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle FindFirstFileW( LPCWSTR lpFileName, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle FindNextFileW( HANDLE hFindFile, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle FlushFileBuffers( HANDLE hFile ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle FreeAddrInfoW( PADDRINFOW pAddrInfo ) unsafe call_conv( "system" ) : void;
 fn nomangle GetAddrInfoW( PCWSTR pNodeName, PCWSTR pServiceName, $(ADDRINFOW) pHints, $(PADDRINFOW) ppResult ) unsafe call_conv( "system" ) : INT_;
 fn nomangle GetCurrentDirectoryW( DWORD nBufferLength, LPWSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetEnvironmentVariableW( LPCWSTR lpName, LPWSTR lpBuffer, DWORD nSize ) unsafe call_conv( "system" ) : DWORD;

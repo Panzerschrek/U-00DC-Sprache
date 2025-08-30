@@ -12,6 +12,7 @@ fn nomangle connect( i32 ü__fd, $(sockaddr) ü__addr, socklen_t ü__len ) unsaf
 fn nomangle fchmod( i32 ü__fd, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
 fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe call_conv( "C" ) : i32;
 fn nomangle fdatasync( i32 ü__fildes ) unsafe call_conv( "C" ) : i32;
+fn nomangle freeaddrinfo( $(addrinfo) ü__ai ) unsafe call_conv( "C" ) : void;
 fn nomangle fstat64( i32 ü__fd, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle fsync( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
 fn nomangle ftruncate64( i32 ü__fd, ü__off64_t ü__length ) unsafe call_conv( "C") : i32;

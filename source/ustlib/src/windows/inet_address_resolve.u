@@ -57,6 +57,8 @@ fn resolve_inet_address( string_view8 name ) : vector</ip_address/>
 				}
 			}
 		}
+
+		::FreeAddrInfoW( infos );
 	}
 
 	return res;
