@@ -247,7 +247,20 @@ fn nomangle main() call_conv( "C" ) : i32
 		assert( client_stream.write( ust::string_view8( " message" ).to_byte8_range() ).try_take() == 8s );
 
 		var [ char8, 12 ] mut message_received= zero_init;
-		assert( server_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == 12s );
+
+		if( ust::constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
+		{
+			// For some reason FreeBSD struggles to return the whole message at once.
+			for( auto mut offset= 0s; offset < 12s; )
+			{
+				var size_type bytes_read= server_stream.read( ust::array_view_mut</char8/>( message_received ).subrange_start( offset ).to_byte8_range() ).try_take();
+				offset+= bytes_read;
+			}
+		}
+		else
+		{
+			assert( server_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == 12s );
+		}
 		assert( message_received == "Some message" );
 	}
 
