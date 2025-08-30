@@ -2,9 +2,9 @@
 import "../imports/hash_apply.u"
 import "../imports/hasher.u"
 import "../imports/inet_address.u"
-import "../imports/string.u"
 import "../imports/shared_ptr.u"
 import "../imports/shared_ptr_final.u"
+import "../imports/string.u"
 import "../imports/variant.u"
 import "../imports/vector.u"
 
