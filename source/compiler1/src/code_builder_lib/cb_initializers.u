@@ -360,6 +360,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 		REPORT_ERROR( StructInitializerForNonStruct, names_scope, struct_named_initializer.src_loc )
 		return Null::LLVMValueRef();
 	}
+	// SHOULD NOT hold this lock!
 	var ClassTypePtr& class_type_ptr= class_type_ref.try_deref();
 	auto class_type_lock= class_type_ptr.lock_imut();
 	var ClassType& class_type= class_type_lock.deref();

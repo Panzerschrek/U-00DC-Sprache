@@ -1,0 +1,12 @@
+struct sockaddr_in
+{
+	u8 sin_len;
+}
+
+fn translate_socket_address()
+{
+	var sockaddr_in s
+	{
+		.sin_len( typeinfo</sockaddr_in/>.size_of ),
+	};
+}

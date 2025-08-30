@@ -139,6 +139,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	if( !class_type_ptr.empty() )
 	{
 		auto mut class_type_ptr_non_null= class_type_ptr.try_to_non_nullable();
+		// TODO - avoid mutable locking here?
 		with( mut lock : class_type_ptr_non_null.lock_mut() )
 		{
 			lock.deref().referenced= true;
