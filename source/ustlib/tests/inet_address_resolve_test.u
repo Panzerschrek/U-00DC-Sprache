@@ -28,18 +28,12 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		foreach( &a : addresses )
 		{
-			ust::stdout_print( ust::concat( AddressToString(a), "\n" ) );
+			variant_visit( &a_specific : a )
+			{
+				ust::stdout_print( ust::concat( a_specific.to_string(), "\n" ) );
+			}
 		}
 	}
 
 	return 0;
-}
-
-fn AddressToString( ust::ip_address& a ) : ust::string8
-{
-	variant_visit( &v : a )
-	{
-		return v.to_string();
-	}
-	halt;
 }
