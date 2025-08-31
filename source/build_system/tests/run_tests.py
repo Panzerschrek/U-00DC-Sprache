@@ -1,5 +1,7 @@
 import argparse
+import concurrent.futures
 import ctypes
+import multiprocessing
 import os
 import platform
 import subprocess
@@ -1483,6 +1485,17 @@ def HostBuildTargetCommandError1Test():
 #
 
 
+def run_test( test_func ):
+	try:
+		test_func()
+		return True
+	except Exception as ex:
+		print( "test " + str(test_func) + " failed" )
+		traceback.print_exc( file= sys.stdout )
+		print()
+		return False
+
+
 def main():
 	parser= argparse.ArgumentParser( description= "Run Bürokratie tests." )
 	parser.add_argument( "--tests-path", help= "path to tests", type=str, required= True )
@@ -1696,15 +1709,21 @@ def main():
 	tests_passed= 0
 	tests_failed= 0
 
-	for test_func in test_funcs:
-		try:
-			test_func()
-			tests_passed+= 1
-		except Exception as ex:
-			print( "test " + str(test_func) + " failed" )
-			traceback.print_exc( file= sys.stdout )
-			print()
-			tests_failed+= 1
+	with concurrent.futures.ThreadPoolExecutor( max_workers = multiprocessing.cpu_count() ) as executor:
+
+		tasks_list = []
+		for test_func in test_funcs:
+			tasks_list.append( executor.submit( run_test, test_func ) )
+
+		for task in tasks_list:
+			try:
+				ok= task.result()
+				if ok:
+					tests_passed+= 1
+				else:
+					tests_failed+= 1
+			except Exception as e:
+				print( "Exception during execution: ", e )
 
 	print( "" )
 	print( str(tests_passed) + " tests passed" )
