@@ -1680,7 +1680,22 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type )
 {
-	auto class_members_ptr= class_type.lock_imut().deref().members;
+	var bool mut has_field_initializers= false;
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
+	{
+		if( !field_pair[1].lock_imut().deref().syntax_element.deref().initializer.has</Synt::EmptyVariant/>() )
+		{
+			has_field_initializers= true;
+			break;
+		}
+	}
+
+	if( !has_field_initializers )
+	{
+		return;
+	}
+
+	var NamesScopePtr class_members_ptr= class_type.lock_imut().deref().members;
 
 	auto mut function_context= CreateGlobalFunctionContext();
 
@@ -1696,9 +1711,18 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 
 	function_context.references_graph.AddNode( this_variable_ptr );
 
-	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
+	// Iterate over class members instead of fields order container,
+	// since we want to avoid holding class lock while evaluating initializers
+	// and since order of iteration is here irrelevant.
+	foreach( &el : class_members_ptr.lock_imut().deref() )
 	{
-		var ClassField class_field= field_pair[1].lock_imut().deref(); // Take copy in order to avoid holding lock object.
+		auto class_field_ptr= el.value().Get</ClassField/>();
+		if( class_field_ptr.empty() )
+		{
+			continue;
+		}
+
+		var ClassField class_field= class_field_ptr.try_lock_imut().deref(); // Take copy in order to avoid holding lock object.
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
@@ -1721,7 +1745,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.llvm_value= CreateClassFieldGEP( function_context, this_variable_ptr, class_field ),
-					.name= field_pair[0],
+					.name= el.key(),
 				}.CreatePtr();
 
 			function_context.references_graph.AddNode( field_variable_ptr );

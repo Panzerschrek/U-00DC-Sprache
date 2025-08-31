@@ -151,7 +151,10 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	// Use initial class members namespace for own fields initializers evaluation.
 	auto class_members_initial= class_type.lock_imut().deref().members_initial;
 
-	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
+	// Copy it to avoid holding lock while evaluating own fields initializers.
+	auto fields_order= class_type.lock_imut().deref().fields_order;
+
+	foreach( &field_pair : fields_order )
 	{
 		auto field_lock= field_pair[1].lock_imut();
 		var ClassField & class_field= field_lock.deref();

@@ -2502,12 +2502,12 @@ fn CodeBuilder::AddFunctionTypeAttribute( this, LLVMValueRef llvm_function, u32 
 
 fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_variable ) : LLVMValueRef
 {
-	auto mut lock= function_variable.llvm_function.lock_mut();
-	var LazyLLVMFunction &mut lazy_function= lock.deref();
-	var LLVMValueRef& mut llvm_function= lazy_function.function;
-	if( llvm_function != Null::LLVMValueRef() )
 	{
-		return llvm_function;
+		var LLVMValueRef prev_function= function_variable.llvm_function.lock_imut().deref().function;
+		if( prev_function != Null::LLVMValueRef() )
+		{
+			return prev_function;
+		}
 	}
 
 	var FunctionType& function_type= function_variable.t;
@@ -2528,11 +2528,16 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 	var ICallingConventionInfo::CallInfo call_info=
 		calling_convention_infos_[ size_type( function_type.calling_convention ) ].lock_imut().deref().CalculateFunctionCallInfo( function_type );
 
-	llvm_function=
+	var LLVMValueRef llvm_function=
 		unsafe( LLVMAddFunction(
 			module_,
-			lazy_function.name_mangled.front(),
+			function_variable.llvm_function.lock_imut().deref().name_mangled.front(),
 			GetLLVMFunctionType( function_type, call_info ) ) );
+
+	with( mut lock : function_variable.llvm_function.lock_mut() )
+	{
+		lock.deref().function= llvm_function;
+	}
 
 	unsafe( LLVMSetFunctionCallConv( llvm_function, GetLLVMCallingConvention( function_type.calling_convention ) ) );
 
