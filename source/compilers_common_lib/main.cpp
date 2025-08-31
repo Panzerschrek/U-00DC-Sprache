@@ -335,10 +335,6 @@ void InternalizeHiddenFunctions( llvm::Module& module )
 	{
 		if( !function.isDeclaration() && function.getVisibility() == llvm::GlobalValue::HiddenVisibility )
 		{
-			// Avoid internalizing div built-ins.
-			if( IsDivBuiltInLikeFunctionName( function.getName() ) )
-				continue;
-
 			function.setLinkage( llvm::GlobalValue::PrivateLinkage );
 			if( const auto comdat = function.getComdat() )
 			{
@@ -369,12 +365,8 @@ void CollectExternalFunctionsForInternalization(
 
 	for( const llvm::Function& function : module.functions() )
 	{
-		llvm::StringRef name= function.getName();
-
-		if( !function.isDeclaration() && !function.hasLocalLinkage() &&
-			// Avoid internalizing div built-ins.
-			!IsDivBuiltInLikeFunctionName( name ) )
-			functions.push_back( name.str() );
+		if( !function.isDeclaration() && !function.hasLocalLinkage() )
+			functions.push_back( function.getName().str() );
 	}
 }
 
@@ -826,14 +818,17 @@ int Main( int argc, const char* argv[] )
 	if( Options::internalize_hidden_functions )
 		InternalizeHiddenFunctions( *result_module );
 
-	// Generate necessary builtins. Do this after internalizing hidden functions, since these built-ins shouldn't be internalized.
-	if(
-		// We don't require GNU-style division built-ins on Windows.
-		target_triple.getOS() != llvm::Triple::Win32 &&
-		// Apple system also don't require these built-ins, and they also don't support comdats.
-		target_triple.getObjectFormat() != llvm::Triple::MachO )
+	if( file_type == FileType::Obj || file_type == FileType::Asm || file_type == FileType::Exe || file_type == FileType::Dll )
 	{
-		GenerateDivBuiltIns( *result_module );
+		// Generate necessary builtins. Do this after internalizing hidden functions, since these built-ins shouldn't be internalized.
+		if(
+			// We don't require GNU-style division built-ins on Windows.
+			target_triple.getOS() != llvm::Triple::Win32 &&
+			// Apple systems also don't require these built-ins, and they also don't support comdats.
+			target_triple.getObjectFormat() != llvm::Triple::MachO )
+		{
+			GenerateDivBuiltIns( *result_module );
+		}
 	}
 
 	// Perform verification after code generation/linking and after special optimizations and internalizations, but before running LLVM optimizations pipeline.
