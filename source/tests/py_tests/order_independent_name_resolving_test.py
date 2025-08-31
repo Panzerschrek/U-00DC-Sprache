@@ -447,3 +447,43 @@ def TypesCompletenessForClass_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "GlobalsLoopDetected", 5 ) )
+
+
+def UseClassNameWithinIt_Test0():
+	c_program_text= """
+		struct S
+		{
+			size_type s;
+		}
+		fn Foo()
+		{
+			var S s{ .s= typeinfo</S/>.size_of };
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UseClassNameWithinIt_Test1():
+	c_program_text= """
+		struct S
+		{
+			size_type s= typeinfo</S/>.size_of;
+			fn constructor()
+				()
+			{}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UseClassNameWithinIt_Test2():
+	c_program_text= """
+		struct S
+		{
+			size_type s;
+			fn constructor()
+				( s= typeinfo</S/>.size_of )
+			{}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
