@@ -25,7 +25,7 @@ else()
 endif()
 
 if( WIN32 )
-	set( COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK "" )
+	set( COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK -Wl,Ws2_32.lib )
 else()
 	set( COMPILER_EXE_RESULT_TEST_SYSTEM_LIBS_TO_LINK -Wl,-lpthread )
 endif()

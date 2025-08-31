@@ -1,0 +1,32 @@
+import "result.u"
+
+namespace ust
+{
+
+enum io_error
+{
+	permission_denied,
+	not_found,
+	not_a_directory,
+	directory_not_empty,
+	already_exists,
+	out_of_memory,
+	interrupted,
+	unexpected_end_of_file,
+	write_zero,
+	destination_address_required,
+	not_connected,
+	would_block,
+	address_already_in_use,
+	connection_reset,
+	broken_pipe,
+	connection_refused,
+	connection_aborted,
+	other, // Some non-listed error code.
+	// TODO - add other errors
+}
+
+template</type T/>
+type io_result= result</T, io_error/>;
+
+} // namespace ust

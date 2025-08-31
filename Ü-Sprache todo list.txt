@@ -96,7 +96,7 @@ Standart library:
 *) More file error kinds
 *) Memory-mapped files
 *) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
-*) Buffered reader/writer wrappers for files
+*) Buffered reader/writer wrappers for files and TCP stream
 *) Examples for file-related functionality
 *) Optimize filesystem functions - avoid unnecessary string conversions (utf16 <-> utf8), null-terminator adding
 *) Support symlinks operations - create symlink, read symlink, handle symlinks
@@ -113,6 +113,10 @@ Standart library:
 *) More binary search functions - index of last element less than given (or equal to it), index of given element,
 	range partition
 *) Adapter-container for binary heap (min_heap/max_heap)
+*) Consider implementing a better error handling for TCP stream closing
+*) Allow setting read/write timeouts on UDP socket
+*) Allow setting/getting broadcast/multicast properties on UDP socket
+*) Fix inet address resolution for non-ASCII domain names on some systems (like GNU/Linux)
 
 Compiler:
 *) Ensure floating-point numbers parsing produces correct result
@@ -255,7 +259,7 @@ Targets:
 *) Support targeting iOS
 *) Support targeting GNU/Linux with x32 ABI
 *) Support older versions of OS X (prior to 15.0)
-*) Fix broken standard library functionality on OS X (semaphores, some file operations)
+*) Fix broken standard library functionality on OS X (semaphores, some file operations, some network functionality)
 *) Support hosting/targeting OS X on x86_64 CPUs
 *) Support hosting/targeting Windows on AArch64 CPUs
 *) Support targeting WASM

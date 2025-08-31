@@ -1,0 +1,156 @@
+import "bit_math.u"
+
+namespace ust
+{
+
+fn to_network_bytes_order( u8 x ) : u8
+{
+	return x;
+}
+
+fn to_network_bytes_order( i8 x ) : i8
+{
+	return x;
+}
+
+fn to_network_bytes_order( byte8 x ) : byte8
+{
+	return x;
+}
+
+fn to_network_bytes_order( u16 x ) : u16
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( i16 x ) : i16
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( byte16 x ) : byte16
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( u32 x ) : u32
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( i32 x ) : i32
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( byte32 x ) : byte32
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( u64 x ) : u64
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( i64 x ) : i64
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( byte64 x ) : byte64
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( u128 x ) : u128
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( i128 x ) : i128
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_network_bytes_order( byte128 x ) : byte128
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( u8 x ) : u8
+{
+	return x;
+}
+
+fn to_host_bytes_order( i8 x ) : i8
+{
+	return x;
+}
+
+fn to_host_bytes_order( byte8 x ) : byte8
+{
+	return x;
+}
+
+fn to_host_bytes_order( u16 x ) : u16
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( i16 x ) : i16
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( byte16 x ) : byte16
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( u32 x ) : u32
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( i32 x ) : i32
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( byte32 x ) : byte32
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( u64 x ) : u64
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( i64 x ) : i64
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( byte64 x ) : byte64
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( u128 x ) : u128
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( i128 x ) : i128
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+fn to_host_bytes_order( byte128 x ) : byte128
+{
+	static_if( compiler::target::is_big_endian ) { return x; } else { return swap_bytes(x); }
+}
+
+} // namespace ust

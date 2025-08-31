@@ -1,19 +1,29 @@
 // This file contains some definitions from Linux headers, which are used inside "ustlib".
 // These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
+fn nomangle accept( i32 ü__fd, $(sockaddr) ü__addr, $(socklen_t) ü__addr_len ) unsafe call_conv( "C" ) : i32;
+fn nomangle bind( i32 ü__fd, $(sockaddr) ü__addr, socklen_t ü__len ) unsafe call_conv( "C" ) : i32;
 fn nomangle chdir( $(char8) ü__path ) unsafe call_conv( "C" ) : i32;
 fn nomangle chmod( $(char8) ü__file, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
 fn nomangle clock_gettime( clockid_t ü__clock_id, $(timespec) ü__tp ) unsafe call_conv( "C" ) : i32;
 fn nomangle close( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
 fn nomangle closedir( $(DIR) ü__dirp ) unsafe call_conv( "C" ) : i32;
+fn nomangle connect( i32 ü__fd, $(sockaddr) ü__addr, socklen_t ü__len ) unsafe call_conv( "C" ) : i32;
 fn nomangle fchmod( i32 ü__fd, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
+fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe call_conv( "C" ) : i32;
 fn nomangle fdatasync( i32 ü__fildes ) unsafe call_conv( "C" ) : i32;
+fn nomangle freeaddrinfo( $(addrinfo) ü__ai ) unsafe call_conv( "C" ) : void;
 fn nomangle fstat64( i32 ü__fd, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle fsync( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
 fn nomangle ftruncate64( i32 ü__fd, ü__off64_t ü__length ) unsafe call_conv( "C") : i32;
+fn nomangle getaddrinfo( $(char8) ü__name, $(char8) ü__service, $(addrinfo) ü__req, $($(addrinfo)) ü__pai ) unsafe call_conv( "C" ) : i32;
 fn nomangle getcwd( $(char8) ü__buf, size_t ü__size ) unsafe call_conv( "C" ) : $(char8);
 fn nomangle getenv( $(char8) ü__name ) unsafe call_conv( "C" ) : $(char8);
 fn nomangle getpid() unsafe call_conv( "C" ) : pid_t;
+fn nomangle getpeername( i32 ü__fd, $(sockaddr) ü__addr, $(socklen_t) ü__len ) unsafe call_conv( "C" ) : i32;
+fn nomangle getsockname( i32 ü__fd, $(sockaddr) ü__addr, $(socklen_t) ü__len ) unsafe call_conv( "C" ) : i32;
+fn nomangle getsockopt( i32 ü__fd, i32 ü__level, i32 ü__optname, $(byte8) ü__optval, $(socklen_t) ü__optlen ) unsafe call_conv( "C" ) : i32;
+fn nomangle listen( i32 ü__fd, i32 ü__n ) unsafe call_conv( "C" ) : i32;
 fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe call_conv( "C") : ü__off64_t;
 fn nomangle lstat64( $(char8) ü__file, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
@@ -21,10 +31,16 @@ fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe
 fn nomangle opendir( $(char8) ü__name ) unsafe call_conv( "C" ) : $(DIR);
 fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle readdir64( $(DIR) ü__dirp ) unsafe call_conv( "C" ) : $(dirent64);
+fn nomangle recv( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle recvfrom( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags, $(sockaddr) ü__addr, $(socklen_t) ü__addr_len ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle rename( $(char8) ü__old, $(char8) ü__new ) unsafe call_conv( "C" ) : i32;
 fn nomangle rmdir( $(char8) ü__path ) unsafe call_conv( "C" ) : i32;
 fn nomangle sendfile64( i32 ü__out_fd, i32 ü__in_fd, $(ü__off64_t) ü__offset, size_t ü__count ) unsafe call_conv( "C") : ssize_t; // Linux-specific
+fn nomangle send( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle sendto( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags, $(sockaddr) ü__addr, socklen_t ü__addr_len ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle setenv( $(char8) ü__name, $(char8) ü__value, i32 ü__replace ) unsafe call_conv( "C" ) : i32;
+fn nomangle setsockopt( i32 ü__fd, i32 ü__level, i32 ü__optname, $(byte8) ü__optval, socklen_t ü__optlen ) unsafe call_conv( "C" ) : i32;
+fn nomangle socket( i32 ü__domain, i32 ü__type, i32 ü__protocol ) unsafe call_conv( "C" ) : i32;
 fn nomangle stat64( $(char8) ü__file, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
 fn nomangle unlink( $(char8) ü__name ) unsafe call_conv( "C" ) : i32;
 fn nomangle unsetenv( $(char8) ü__name ) unsafe call_conv( "C" ) : i32;
@@ -134,6 +150,59 @@ struct ü__dirstream ordered
 fn constructor() : void= delete;
 }
 
+struct addrinfo ordered
+{
+	i32 ai_flags;
+	i32 ai_family;
+	i32 ai_socktype;
+	i32 ai_protocol;
+	socklen_t ai_addrlen;
+	$(sockaddr) ai_addr;
+	$(char8) ai_canonname;
+	$(addrinfo) ai_next;
+}
+
+struct sockaddr ordered
+{
+	sa_family_t sa_family;
+	[ char8, 14 ] sa_data;
+}
+
+struct sockaddr_in ordered
+{
+	sa_family_t sin_family;
+	in_port_t sin_port;
+	in_addr sin_addr;
+	[ u8, 8 ] sin_zero;
+}
+
+struct sockaddr_in6 ordered
+{
+	sa_family_t sin6_family;
+	in_port_t sin6_port;
+	uint32_t sin6_flowinfo;
+	in6_addr sin6_addr;
+	uint32_t sin6_scope_id;
+}
+
+struct sockaddr_storage ordered
+{
+	sa_family_t ss_family;
+	[ char8, 118 ] ü__ss_padding;
+	u64 ü__ss_align;
+}
+
+struct in_addr ordered
+{
+	in_addr_t s_addr;
+}
+
+struct in6_addr ordered
+{
+	// Manually changed to u32x4 array.
+	[ u32, 4 ] parts;
+}
+
 type ü_anon_enum_56 = u32;
 var ü_anon_enum_56
 	constexpr DT_UNKNOWN( 0u ),
@@ -148,11 +217,17 @@ var ü_anon_enum_56
 
 type DIR = ü__dirstream;
 type clockid_t = ü__clockid_t;
+type in_addr_t = uint32_t;
+type in_port_t = uint16_t;
 type mode_t = ü__mode_t;
 type off_t = ü__off_t;
 type pid_t = ü__pid_t;
+type sa_family_t = u16;
 type size_t = size_type;
+type socklen_t = ü__socklen_t;
 type ssize_t = ü__ssize_t;
+type uint16_t = u16;
+type uint32_t = u32;
 type ü__blkcnt64_t = i64;
 type ü__blksize_t = ust::type_select</ c_arch_is_aarch64, i32, ust::type_select</ c_arch_is_i686, i32, i64 /> />;
 type ü__clockid_t = i32;
@@ -165,10 +240,80 @@ type ü__nlink_t = ust::type_select</ c_arch_is_aarch64, u32, ust::type_select</
 type ü__off64_t = i64;
 type ü__off_t = i64; // manually changed to "i64", since we always use 64-bit functions.
 type ü__pid_t = i32;
+type ü__socklen_t = u32;
 type ü__ssize_t = ssize_type;
 type ü__syscall_slong_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
 type ü__time_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
 type ü__uid_t = u32;
+
+type ü_anon_enum_59 = u32;
+var ü_anon_enum_59
+	constexpr IPPROTO_IP( 0 ),
+	constexpr IPPROTO_ICMP( 1 ),
+	constexpr IPPROTO_IGMP( 2 ),
+	constexpr IPPROTO_IPIP( 4 ),
+	constexpr IPPROTO_TCP( 6 ),
+	constexpr IPPROTO_EGP( 8 ),
+	constexpr IPPROTO_PUP( 12 ),
+	constexpr IPPROTO_UDP( 17 ),
+	constexpr IPPROTO_IDP( 22 ),
+	constexpr IPPROTO_TP( 29 ),
+	constexpr IPPROTO_DCCP( 33 ),
+	constexpr IPPROTO_IPV6( 41 ),
+	constexpr IPPROTO_RSVP( 46 ),
+	constexpr IPPROTO_GRE( 47 ),
+	constexpr IPPROTO_ESP( 50 ),
+	constexpr IPPROTO_AH( 51 ),
+	constexpr IPPROTO_MTP( 92 ),
+	constexpr IPPROTO_BEETPH( 94 ),
+	constexpr IPPROTO_ENCAP( 98 ),
+	constexpr IPPROTO_PIM( 103 ),
+	constexpr IPPROTO_COMP( 108 ),
+	constexpr IPPROTO_SCTP( 132 ),
+	constexpr IPPROTO_UDPLITE( 136 ),
+	constexpr IPPROTO_MPLS( 137 ),
+	constexpr IPPROTO_RAW( 255 ),
+	constexpr IPPROTO_MAX( 256 );
+
+type ü_anon_enum_57 = u32;
+var ü_anon_enum_57
+	constexpr MSG_OOB( 1 ),
+	constexpr MSG_PEEK( 2 ),
+	constexpr MSG_DONTROUTE( 4 ),
+	constexpr MSG_TRYHARD( 4 ),
+	constexpr MSG_CTRUNC( 8 ),
+	constexpr MSG_PROXY( 16 ),
+	constexpr MSG_TRUNC( 32 ),
+	constexpr MSG_DONTWAIT( 64 ),
+	constexpr MSG_EOR( 128 ),
+	constexpr MSG_WAITALL( 256 ),
+	constexpr MSG_FIN( 512 ),
+	constexpr MSG_SYN( 1024 ),
+	constexpr MSG_CONFIRM( 2048 ),
+	constexpr MSG_RST( 4096 ),
+	constexpr MSG_ERRQUEUE( 8192 ),
+	constexpr MSG_NOSIGNAL( 16384 ),
+	constexpr MSG_MORE( 32768 ),
+	constexpr MSG_WAITFORONE( 65536 ),
+	constexpr MSG_BATCH( 262144 ),
+	constexpr MSG_ZEROCOPY( 67108864 ),
+	constexpr MSG_FASTOPEN( 536870912 ),
+	constexpr MSG_CMSG_CLOEXEC( 1073741824 );
+
+type ü__socket_type = u32;
+var ü__socket_type
+	constexpr SOCK_STREAM( 1 ),
+	constexpr SOCK_DGRAM( 2 ),
+	constexpr SOCK_RAW( 3 ),
+	constexpr SOCK_RDM( 4 ),
+	constexpr SOCK_SEQPACKET( 5 ),
+	constexpr SOCK_DCCP( 6 ),
+	constexpr SOCK_PACKET( 10 ),
+	constexpr SOCK_CLOEXEC( 524288 ),
+	constexpr SOCK_NONBLOCK( 2048 );
+
+auto constexpr AF_INET = PF_INET;
+auto constexpr AF_INET6 = PF_INET6;
 
 auto constexpr CLOCK_REALTIME = 0;
 auto constexpr CLOCK_MONOTONIC = 1;
@@ -217,12 +362,31 @@ auto constexpr EDOM = 33;
 auto constexpr ERANGE = 34;
 auto constexpr ENOTEMPTY = 39;
 
+auto constexpr EDESTADDRREQ = 89;
+auto constexpr EADDRINUSE = 98;
+auto constexpr ECONNRESET = 104;
+auto constexpr ENOTCONN = 107;
+auto constexpr ECONNREFUSED = 111;
+
+auto constexpr F_GETFL = 3;
+auto constexpr F_SETFL = 4;
+
+auto constexpr IP_TTL = 2;
+
 auto constexpr O_RDONLY = 0;
 auto constexpr O_WRONLY = 1;
 auto constexpr O_RDWR = 2;
 auto constexpr O_CREAT = 64;
 auto constexpr O_EXCL = 128;
 auto constexpr O_TRUNC = 512;
+auto constexpr O_NONBLOCK = 2048;
+
+auto constexpr PF_INET = 2;
+auto constexpr PF_INET6 = 10;
+
+auto constexpr SOL_SOCKET = 1;
+
+auto constexpr SO_REUSEADDR = 2;
 
 auto constexpr S_IEXEC = 64;
 auto constexpr S_IWRITE = 128;
@@ -246,6 +410,8 @@ auto constexpr SEEK_END = 2;
 auto constexpr STDIN_FILENO = 0;
 auto constexpr STDOUT_FILENO = 1;
 auto constexpr STDERR_FILENO = 2;
+
+auto constexpr TCP_NODELAY = 1;
 
 var bool c_arch_is_i686= ust::constexpr_string_equals( compiler::target::arch, "i686" );
 var bool c_arch_is_aarch64= ust::constexpr_string_equals( compiler::target::arch, "aarch64" );

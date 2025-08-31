@@ -1,4 +1,6 @@
-import "filesystem.u"
+import "file_metadata.u"
+import "io_result.u"
+import "path.u"
 
 namespace ust
 {
@@ -14,7 +16,7 @@ struct directory_entry
 // Create an iterator over directory specified.
 // It iterates over all entries (files, subdirectories, etc.) within given directory.
 // "." and ".." are skipped.
-fn open_directory_for_iteration( filesystem_path_view path ) : filesystem_result</ iterator</ directory_raw_iterator /> />
+fn open_directory_for_iteration( filesystem_path_view path ) : io_result</ iterator</ directory_raw_iterator /> />
 {
 	return directory_raw_iterator::open( path );
 }
@@ -23,7 +25,7 @@ class directory_raw_iterator
 {
 public:
 	// Factory method for creating iterator instance.
-	fn open( filesystem_path_view path ) : filesystem_result</ iterator</ directory_raw_iterator /> />;
+	fn open( filesystem_path_view path ) : io_result</ iterator</ directory_raw_iterator /> />;
 
 public:
 	// Constructor for internal usage.
@@ -32,7 +34,7 @@ public:
 	{}
 
 public:
-	fn nodiscard next( mut this ) : optional</ filesystem_result</directory_entry/> />
+	fn nodiscard next( mut this ) : optional</ io_result</directory_entry/> />
 	{
 		return impl_.next();
 	}
@@ -44,7 +46,7 @@ private:
 		fn constructor( $(byte8) handle ) unsafe;
 		fn destructor();
 
-		fn nodiscard next( mut this ) : optional</ filesystem_result</directory_entry/> />;
+		fn nodiscard next( mut this ) : optional</ io_result</directory_entry/> />;
 
 	private:
 		$(byte8) handle_; // DIR struct pointer
@@ -56,7 +58,7 @@ private:
 		fn constructor( $(byte8) handle, optional</directory_entry/> first_entry ) unsafe;
 		fn destructor();
 
-		fn nodiscard next( mut this ) : optional</ filesystem_result</directory_entry/> />;
+		fn nodiscard next( mut this ) : optional</ io_result</directory_entry/> />;
 
 	private:
 		$(byte8) handle_; // HANDLE

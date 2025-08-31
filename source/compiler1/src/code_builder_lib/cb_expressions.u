@@ -469,7 +469,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 			array_size= buff.size();
 
-			constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte8(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
+			constexpr_value= U1_ConstDataArray( element_llvm_type, buff.range().to_byte8_range().data(), array_size * typeinfo</char16/>.size_of, array_size );
 
 			if( !string_literals_cache_[1].exists( buff ) )
 			{
@@ -487,7 +487,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 			array_size= buff.size();
 
-			constexpr_value= U1_ConstDataArray( element_llvm_type, ust::ptr_cast_to_byte8(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
+			constexpr_value= U1_ConstDataArray( element_llvm_type, buff.range().to_byte8_range().data(), array_size * typeinfo</char32/>.size_of, array_size );
 
 			if( !string_literals_cache_[2].exists( buff ) )
 			{

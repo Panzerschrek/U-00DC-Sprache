@@ -1,0 +1,12 @@
+import "../../imports/io_result.u"
+
+namespace ust
+{
+
+fn translate_errno( i32 errno ) : io_error;
+
+fn get_errno() : i32;
+
+fn set_errno( i32 val );
+
+} // namespace ust

@@ -1,0 +1,277 @@
+import "../../imports/bytes_order.u"
+import "errno.uh"
+import "socket.uh"
+
+namespace ust
+{
+
+fn translate_ip_address( in_addr& a ) : ip_address_v4
+{
+	return ip_address_v4( to_host_bytes_order( a.s_addr ) );
+}
+
+fn translate_ip_address( in6_addr& a ) : ip_address_v6
+{
+	var u128 ip_raw=
+		( u128( to_host_bytes_order( a.parts[0] ) ) << 96u ) |
+		( u128( to_host_bytes_order( a.parts[1] ) ) << 64u ) |
+		( u128( to_host_bytes_order( a.parts[2] ) ) << 32u ) |
+		( u128( to_host_bytes_order( a.parts[3] ) ) <<  0u );
+
+	return ip_address_v6( ip_raw );
+}
+
+fn translate_socket_address( sockaddr_storage& address ) : optional</socket_address/>
+{
+	if( i32(address.ss_family) == AF_INET )
+	{
+		static_assert( typeinfo</sockaddr_storage/>.size_of >= typeinfo</sockaddr_in/>.size_of );
+
+		// Cast "sockaddr" to "sockaddr_in" using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+		var sockaddr_in mut address_ip_v4= zero_init;
+
+		unsafe( memory_copy(
+			ptr_cast_to_byte8( $<(address_ip_v4) ),
+			ptr_cast_to_byte8( $<( cast_mut(address) ) ),
+			typeinfo</sockaddr_in/>.size_of ) );
+
+		return
+			socket_address( socket_address_v4(
+				translate_ip_address( address_ip_v4.sin_addr ),
+				to_host_bytes_order( address_ip_v4.sin_port ) ) );
+	}
+	else if( i32(address.ss_family) == AF_INET6 )
+	{
+		static_assert( typeinfo</sockaddr_storage/>.size_of >= typeinfo</sockaddr_in6/>.size_of );
+
+		// Cast "sockaddr" to "sockaddr_in6" using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+		var sockaddr_in6 mut address_ip_v6= zero_init;
+
+		unsafe( memory_copy(
+			ptr_cast_to_byte8( $<(address_ip_v6) ),
+			ptr_cast_to_byte8( $<( cast_mut(address) ) ),
+			typeinfo</sockaddr_in6/>.size_of ) );
+
+		return
+			socket_address( socket_address_v6(
+				translate_ip_address( address_ip_v6.sin6_addr ),
+				to_host_bytes_order( address_ip_v6.sin6_port ),
+				to_host_bytes_order( address_ip_v6.sin6_flowinfo ),
+				to_host_bytes_order( address_ip_v6.sin6_scope_id ) ) );
+	}
+	else
+	{
+		// Some unsupported address.
+		return null_optional;
+	}
+}
+
+fn translate_socket_address( socket_address_v4& address ) : sockaddr_in
+{
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) ||
+		constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
+	{
+		auto s= typeinfo</sockaddr_in/>.size_of; // TODO - fix Compiler1 crash and simplify this.
+		return sockaddr_in
+		{
+			.sin_len( s ),
+			.sin_family( AF_INET ),
+			.sin_port= to_network_bytes_order( address.get_port() ),
+			.sin_addr{ .s_addr= to_network_bytes_order( address.get_ip().get_bits() ) },
+			.sin_zero= zero_init,
+		};
+	}
+	else
+	{
+		return sockaddr_in
+		{
+			.sin_family( AF_INET ),
+			.sin_port= to_network_bytes_order( address.get_port() ),
+			.sin_addr{ .s_addr= to_network_bytes_order( address.get_ip().get_bits() ) },
+			.sin_zero= zero_init,
+		};
+	}
+}
+
+fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
+{
+	var u128 ip_raw= address.get_ip().get_bits();
+
+	static_if( constexpr_string_equals( compiler::target::vendor, "apple" ) ||
+		constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
+	{
+		auto s= typeinfo</sockaddr_in6/>.size_of; // TODO - fix Compiler1 crash and simplify this.
+		return sockaddr_in6
+		{
+			.sin6_len( s ),
+			.sin6_family( AF_INET6 ),
+			.sin6_port= to_network_bytes_order( address.get_port() ),
+			.sin6_addr
+			{
+				.parts
+				[
+					to_network_bytes_order( u32( ip_raw >> 96u ) ),
+					to_network_bytes_order( u32( ip_raw >> 64u ) ),
+					to_network_bytes_order( u32( ip_raw >> 32u ) ),
+					to_network_bytes_order( u32( ip_raw >>  0u ) ),
+				]
+			},
+			.sin6_flowinfo= to_network_bytes_order( address.get_flow_info() ),
+			.sin6_scope_id= to_network_bytes_order( address.get_scope_id() ),
+		};
+	}
+	else
+	{
+		return sockaddr_in6
+		{
+			.sin6_family( AF_INET6 ),
+			.sin6_port= to_network_bytes_order( address.get_port() ),
+			.sin6_addr
+			{
+				.parts
+				[
+					to_network_bytes_order( u32( ip_raw >> 96u ) ),
+					to_network_bytes_order( u32( ip_raw >> 64u ) ),
+					to_network_bytes_order( u32( ip_raw >> 32u ) ),
+					to_network_bytes_order( u32( ip_raw >>  0u ) ),
+				]
+			},
+			.sin6_flowinfo= to_network_bytes_order( address.get_flow_info() ),
+			.sin6_scope_id= to_network_bytes_order( address.get_scope_id() ),
+		};
+	}
+}
+
+fn is_socket_nonblocking( native_socket_fd s ) : io_result</bool/>
+{
+	var i32 flags= unsafe( ::fcntl( s, F_GETFL, 0 ) );
+
+	if( flags == -1 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return ( flags & O_NONBLOCK ) != 0;
+}
+
+fn set_socket_nonblocking( native_socket_fd s, bool nonblocking ) : io_result</void/>
+{
+	unsafe
+	{
+		var i32 mut flags= ::fcntl( s, F_GETFL, 0 );
+
+		if( flags == -1 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		if( nonblocking )
+		{
+			flags |= O_NONBLOCK;
+		}
+		else
+		{
+			flags &= ~O_NONBLOCK;
+		}
+
+		var i32 res= ::fcntl( s, F_SETFL, flags );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+	}
+
+	return void();
+}
+
+fn get_socket_local_address( native_socket_fd s ) : io_result</socket_address/>
+{
+	var sockaddr_storage mut address= zero_init;
+
+	var socklen_t mut address_length( typeinfo</sockaddr_storage/>.size_of );
+
+	unsafe
+	{
+		var i32 res= ::getsockname( s, $<( cast_ref_unsafe</sockaddr/>( address ) ), $<(address_length) );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		auto mut address_translated_opt= translate_socket_address( address );
+		if( address_translated_opt.empty() )
+		{
+			return io_error::other;
+		}
+
+		return address_translated_opt.try_take();
+	}
+}
+
+fn get_socket_peer_address( native_socket_fd s ) : io_result</socket_address/>
+{
+	var sockaddr_storage mut address= zero_init;
+
+	var socklen_t mut address_length( typeinfo</sockaddr_storage/>.size_of );
+
+	unsafe
+	{
+		var i32 res= ::getpeername( s, $<( cast_ref_unsafe</sockaddr/>( address ) ), $<(address_length) );
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+
+		auto mut address_translated_opt= translate_socket_address( address );
+		if( address_translated_opt.empty() )
+		{
+			return io_error::other;
+		}
+
+		return address_translated_opt.try_take();
+	}
+}
+
+fn get_socket_ttl( native_socket_fd s ) : io_result</u8/>
+{
+	var u32 mut ttl= 0u;
+
+	var socklen_t mut len( typeinfo</u32/>.size_of );
+
+	var i32 res=
+		unsafe( ::getsockopt(
+			s,
+			i32( IPPROTO_IP ),
+			i32( IP_TTL ),
+			ptr_cast_to_byte8( $<( ttl ) ),
+			$<(len) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return u8( min( ttl, 255u ) );
+}
+
+fn set_socket_ttl( native_socket_fd s, u8 ttl ) : io_result</void/>
+{
+	var u32 mut ttl32( ttl );
+
+	var i32 res=
+		unsafe( ::setsockopt(
+			s,
+			i32( IPPROTO_IP ),
+			i32( IP_TTL ),
+			ptr_cast_to_byte8( $<( ttl32 ) ),
+			socklen_t( typeinfo</u32/>.size_of ) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
+} // namespace ust

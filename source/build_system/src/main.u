@@ -1563,46 +1563,58 @@ fn GetUstlibSourcesList( TargetTriple& target_triple ) : ust::vector</ust::files
 	// Hardcode all files that we need to compile. There is no other way to do this.
 	// It's not possible to use a usual build script for ustlib, since building it requires building ustlib first.
 
-	var [ ust::filesystem_path_view, 5 ] sources_common
+	var [ ust::filesystem_path_view, 6 ] sources_common
 	[
 		"file_helpers.u",
+		"inet_address.u",
 		"integer_parsing.u",
 		"stdin.u",
 		"string_conversions.u",
 		"utf.u",
 	];
 
-	var [ ust::filesystem_path_view, 13 ] sources_windows
+	var [ ust::filesystem_path_view, 18 ] sources_windows
 	[
 		"windows/barrier_impl.u",
 		"windows/condition_variable_impl.u",
 		"windows/environment.u",
 		"windows/filesystem.u",
+		"windows/inet_address_resolve.u",
 		"windows/main_wrapper.u",
 		"windows/math_missing_functions.u",
 		"windows/mutex_impl.u",
 		"windows/path_utils.u",
 		"windows/rwlock_impl.u",
 		"windows/semaphore_impl.u",
+		"windows/socket.u",
 		"windows/stdout.u",
 		"windows/system_time.u",
+		"windows/tcp_listener.u",
+		"windows/tcp_stream.u",
 		"windows/thread_impl.u",
+		"windows/udp_socket.u",
 	];
 
-	var [ ust::filesystem_path_view, 12 ] sources_unix
+	var [ ust::filesystem_path_view, 18 ] sources_unix
 	[
 		"unix/barrier_impl.u",
 		"unix/condition_variable_impl.u",
 		"unix/environment.u",
+		"unix/errno.u",
 		"unix/filesystem.u",
+		"unix/inet_address_resolve.u",
 		"unix/main_wrapper.u",
 		"unix/mutex_impl.u",
 		"unix/path_utils.u",
 		"unix/rwlock_impl.u",
 		"unix/semaphore_impl.u",
+		"unix/socket.u",
 		"unix/stdout.u",
 		"unix/system_time.u",
+		"unix/tcp_listener.u",
+		"unix/tcp_stream.u",
 		"unix/thread_impl.u",
+		"unix/udp_socket.u",
 	];
 
 	var ust::vector</ust::filesystem_path/> mut res;
@@ -1633,7 +1645,7 @@ fn GetUstlibSystemLibrariesToLink( TargetTriple& target_triple ) : ust::vector</
 {
 	if( target_triple.operating_system == g_os_windows )
 	{
-		return ust::vector</ust::string8/>();
+		return ust::make_array</ust::string8/>( "Ws2_32.lib" );
 	}
 	else
 	{

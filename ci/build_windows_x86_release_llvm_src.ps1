@@ -39,10 +39,10 @@ cmake -S source -B build_dir  -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MODU
 cmake --build build_dir
 
 # Run ustlib tests
-python source/annotated_tests_run.py --compiler-executable build_dir/compiler0/Compiler  --add-library=build_dir/ustlib0/ustlib.lib  --input-dir source/ustlib/tests
-python source/annotated_tests_run.py --compiler-executable build_dir/compiler1/Compiler1 --add-library=build_dir/ustlib1/ustlib1.lib --input-dir source/ustlib/tests
-python source/annotated_tests_run.py --compiler-executable build_dir/compiler2/Compiler2 --add-library=build_dir/ustlib2/ustlib2.lib --input-dir source/ustlib/tests
-python source/annotated_tests_run.py --compiler-executable build_dir/compiler3/Compiler3 --add-library=build_dir/ustlib3/ustlib3.lib --input-dir source/ustlib/tests
+python source/annotated_tests_run.py --compiler-executable build_dir/compiler0/Compiler  --add-library=build_dir/ustlib0/ustlib.lib  --add-library Ws2_32.lib --input-dir source/ustlib/tests
+python source/annotated_tests_run.py --compiler-executable build_dir/compiler1/Compiler1 --add-library=build_dir/ustlib1/ustlib1.lib --add-library Ws2_32.lib --input-dir source/ustlib/tests
+python source/annotated_tests_run.py --compiler-executable build_dir/compiler2/Compiler2 --add-library=build_dir/ustlib2/ustlib2.lib --add-library Ws2_32.lib --input-dir source/ustlib/tests
+python source/annotated_tests_run.py --compiler-executable build_dir/compiler3/Compiler3 --add-library=build_dir/ustlib3/ustlib3.lib --add-library Ws2_32.lib --input-dir source/ustlib/tests
 
 # install
 mkdir install

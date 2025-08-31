@@ -1,0 +1,370 @@
+import "../../imports/udp_socket.u"
+import "socket.uh"
+
+namespace ust
+{
+
+fn udp_socket::create_v4() : io_result</udp_socket/>
+{
+	call_wsa_startup();
+
+	unsafe
+	{
+		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
+		if( s == native_socket_fd(-1) )
+		{
+			return translate_wsa_error( WSAGetLastError() );
+		}
+
+		return udp_socket( s );
+	}
+}
+
+fn udp_socket::create_v6() : io_result</udp_socket/>
+{
+	call_wsa_startup();
+
+	unsafe
+	{
+		var native_socket_fd s= ::socket( PF_INET6, i32(SOCK_DGRAM), 0 );
+		if( s == native_socket_fd(-1) )
+		{
+			return translate_wsa_error( WSAGetLastError() );
+		}
+
+		return udp_socket( s );
+	}
+}
+
+fn udp_socket::create_and_bind( socket_address& a ) : io_result</udp_socket/>
+{
+	call_wsa_startup();
+
+	unsafe
+	{
+		if_var( &a_v4 : a.get</socket_address_v4/>() )
+		{
+			var native_socket_fd s= ::socket( PF_INET, i32(SOCK_DGRAM), 0 );
+			if( s == native_socket_fd(-1) )
+			{
+				return translate_wsa_error( WSAGetLastError() );
+			}
+
+			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
+
+			var i32 res=
+				::bind(
+					s,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in/>.size_of ) );
+
+			if( res != 0 )
+			{
+				var i32 e= WSAGetLastError();
+				::closesocket( s );
+				return translate_wsa_error( e );
+			}
+
+			return udp_socket( s );
+		}
+		else if_var( &a_v6 : a.get</socket_address_v6/>() )
+		{
+			var native_socket_fd s= ::socket( PF_INET6, i32(SOCK_DGRAM), 0 );
+			if( s == native_socket_fd(-1) )
+			{
+				return translate_wsa_error( WSAGetLastError() );
+			}
+
+			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+			var i32 res=
+				::bind(
+					s,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in6/>.size_of ) );
+
+			if( res != 0 )
+			{
+				var i32 e= WSAGetLastError();
+				::closesocket( s );
+				return translate_wsa_error( e );
+			}
+
+			return udp_socket( s );
+		}
+		else { halt; }
+	}
+}
+
+fn udp_socket::constructor( native_socket_fd s ) unsafe
+	( socket_= s )
+{}
+
+fn udp_socket::destructor()
+{
+	unsafe( ::closesocket( socket_ ) );
+}
+
+fn udp_socket::send( mut this, array_view_imut</byte8/> data ) : io_result</size_type/>
+{
+	var i32 bytes_written= unsafe( ::send( socket_,  byte_ptr_cast</char8/>( data.data() ), i32( data.size() ), 0 ) );
+
+	if( bytes_written < 0 )
+	{
+		return translate_wsa_error( unsafe( WSAGetLastError() ) );
+	}
+
+	return size_type(bytes_written);
+}
+
+fn udp_socket::send_to( mut this, socket_address& a, array_view_imut</byte8/> data ) : io_result</size_type/>
+{
+	if_var( &a_v4 : a.get</socket_address_v4/>() )
+	{
+		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
+
+		var i32 bytes_written=
+			unsafe( ::sendto(
+				socket_,
+				byte_ptr_cast</char8/>( data.data() ),
+				i32( data.size() ),
+				0,
+				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+				i32( socklen_t( typeinfo</sockaddr_in/>.size_of ) ) ) );
+
+		if( bytes_written < 0 )
+		{
+			return translate_wsa_error( unsafe( WSAGetLastError() ) );
+		}
+
+		return size_type(bytes_written);
+	}
+	else if_var( &a_v6 : a.get</socket_address_v6/>() )
+	{
+		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+		var i32 bytes_written=
+			unsafe( ::sendto(
+				socket_,
+				byte_ptr_cast</char8/>( data.data() ),
+				i32( data.size() ),
+				0,
+				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+				i32( socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) ) );
+
+		if( bytes_written < 0 )
+		{
+			return translate_wsa_error( unsafe( WSAGetLastError() ) );
+		}
+
+		return size_type(bytes_written);
+	}
+	else { halt; }
+}
+
+fn udp_socket::receive_from( mut this, array_view_mut</byte8/> data ) : io_result</ tup[ socket_address, size_type ] />
+{
+	var sockaddr_storage mut sender_address= zero_init;
+
+	var socklen_t mut socket_address_length( typeinfo</sockaddr_storage/>.size_of );
+
+	unsafe
+	{
+		var i32 mut bytes_read=
+			unsafe( ::recvfrom(
+				socket_,
+				byte_ptr_cast</char8/>( data.data() ),
+				i32( data.size() ),
+				0,
+				$<( cast_ref_unsafe</sockaddr/>( sender_address ) ),
+				$<( socket_address_length ) ) );
+
+		if( bytes_read < 0 )
+		{
+			var i32 e= WSAGetLastError();
+			if( e == WSAEMSGSIZE )
+			{
+				bytes_read= i32( data.size() );
+			}
+			else
+			{
+				return translate_wsa_error( e );
+			}
+		}
+
+		auto mut address_translated_opt= translate_socket_address( sender_address );
+		if( address_translated_opt.empty() )
+		{
+			return io_error::other;
+		}
+
+		var tup[ socket_address, size_type ] res
+		[
+			address_translated_opt.try_take(),
+			( bytes_read )
+		];
+
+		return res;
+	}
+}
+
+fn udp_socket::receive( mut this, array_view_mut</byte8/> data ) : io_result</size_type/>
+{
+	var i32 bytes_read= unsafe( ::recv( socket_, byte_ptr_cast</char8/>( data.data() ),i32( data.size() ), 0 ) );
+
+	if( bytes_read < 0 )
+	{
+		var i32 e= unsafe( WSAGetLastError() );
+		if( e == WSAEMSGSIZE )
+		{
+			return data.size();
+		}
+		return translate_wsa_error( e );
+	}
+
+	return size_type(bytes_read);
+}
+
+fn udp_socket::peek_from( mut this, array_view_mut</byte8/> data ) : io_result</ tup[ socket_address, size_type ] />
+{
+	var sockaddr_storage mut sender_address= zero_init;
+
+	var socklen_t mut socket_address_length( typeinfo</sockaddr_storage/>.size_of );
+
+	unsafe
+	{
+		var i32 mut bytes_read=
+			unsafe( ::recvfrom(
+				socket_,
+				byte_ptr_cast</char8/>( data.data() ),
+				i32( data.size() ),
+				MSG_PEEK,
+				$<( cast_ref_unsafe</sockaddr/>( sender_address ) ),
+				$<( socket_address_length ) ) );
+
+		if( bytes_read < 0 )
+		{
+			var i32 e= WSAGetLastError();
+			if( e == WSAEMSGSIZE )
+			{
+				bytes_read= i32( data.size() );
+			}
+			else
+			{
+				return translate_wsa_error( e );
+			}
+		}
+
+		auto mut address_translated_opt= translate_socket_address( sender_address );
+		if( address_translated_opt.empty() )
+		{
+			return io_error::other;
+		}
+
+		var tup[ socket_address, size_type ] res
+		[
+			address_translated_opt.try_take(),
+			( bytes_read )
+		];
+
+		return res;
+	}
+}
+
+fn udp_socket::peek( mut this, array_view_mut</byte8/> data ) : io_result</ size_type/>
+{
+	var i32 bytes_read= unsafe( ::recv( socket_, byte_ptr_cast</char8/>( data.data() ),i32( data.size() ), MSG_PEEK ) );
+
+	if( bytes_read < 0 )
+	{
+		var i32 e= unsafe( WSAGetLastError() );
+		if( e == WSAEMSGSIZE )
+		{
+			return data.size();
+		}
+		return translate_wsa_error( e );
+	}
+
+	return size_type(bytes_read);
+}
+
+fn udp_socket::connect( mut this, socket_address& a ) : io_result</void/>
+{
+	if_var( &a_v4 : a.get</socket_address_v4/>() )
+	{
+		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
+
+		var i32 res=
+			unsafe( ::connect(
+				socket_,
+				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+				socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
+
+		if( res != 0 )
+		{
+			return translate_wsa_error( unsafe( WSAGetLastError() ) );
+		}
+	}
+	else if_var( &a_v6 : a.get</socket_address_v6/>() )
+	{
+		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+		var i32 res=
+			unsafe( ::connect(
+				socket_,
+				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+				socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
+
+		if( res != 0 )
+		{
+			return translate_wsa_error( unsafe( WSAGetLastError() ) );
+		}
+	}
+	else{ halt; }
+
+	return void();
+}
+
+fn udp_socket::is_nonblocking( this ) : io_result</bool/>
+{
+	return is_socket_nonblocking( socket_ );
+}
+
+fn udp_socket::set_nonblocking( mut this, bool nonblocking ) : io_result</void/>
+{
+	return set_socket_nonblocking( socket_, nonblocking );
+}
+
+fn udp_socket::get_local_address( this ) : io_result</socket_address/>
+{
+	return get_socket_local_address( socket_ );
+}
+
+fn udp_socket::get_peer_address( this ) : io_result</socket_address/>
+{
+	return get_socket_peer_address( socket_ );
+}
+
+fn udp_socket::get_ttl( this ) : io_result</u8/>
+{
+	return get_socket_ttl( socket_ );
+}
+
+fn udp_socket::set_ttl( mut this, u8 ttl ) : io_result</void/>
+{
+	return set_socket_ttl( socket_, ttl );
+}
+
+fn udp_socket::get_native_fd( this ) unsafe : native_socket_fd
+{
+	return socket_;
+}
+
+fn udp_socket::take_native_fd( byval mut this ) unsafe : native_socket_fd
+{
+	var native_socket_fd s= socket_;
+	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
+	return s;
+}
+
+} // namespace ust

@@ -16,6 +16,8 @@ fn nomangle FindClose( HANDLE hFindFile ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle FindFirstFileW( LPCWSTR lpFileName, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : HANDLE;
 fn nomangle FindNextFileW( HANDLE hFindFile, LPWIN32_FIND_DATAW lpFindFileData ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle FlushFileBuffers( HANDLE hFile ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle FreeAddrInfoW( PADDRINFOW pAddrInfo ) unsafe call_conv( "system" ) : void;
+fn nomangle GetAddrInfoW( PCWSTR pNodeName, PCWSTR pServiceName, $(ADDRINFOW) pHints, $(PADDRINFOW) ppResult ) unsafe call_conv( "system" ) : INT_;
 fn nomangle GetCurrentDirectoryW( DWORD nBufferLength, LPWSTR lpBuffer ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetEnvironmentVariableW( LPCWSTR lpName, LPWSTR lpBuffer, DWORD nSize ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle GetFileAttributesW( LPCWSTR lpFileName ) unsafe call_conv( "system" ) : DWORD;
@@ -46,6 +48,24 @@ fn nomangle WakeAllConditionVariable( PCONDITION_VARIABLE ConditionVariable ) un
 fn nomangle WakeConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
 fn nomangle WriteFile( HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle WSACleanup() unsafe call_conv( "system" ) : i32;
+fn nomangle WSAGetLastError() unsafe call_conv( "system" ) : i32;
+fn nomangle WSAStartup( WORD wVersionRequested, LPWSADATA lpWSAData ) unsafe call_conv( "system" ) : i32;
+fn nomangle accept( SOCKET s, $(sockaddr) addr, $(i32) addrlen ) unsafe call_conv( "system" ) : SOCKET;
+fn nomangle bind( SOCKET s, $(sockaddr) name, i32 namelen ) unsafe call_conv( "system" ) : i32;
+fn nomangle closesocket( SOCKET s ) unsafe call_conv( "system" ) : i32;
+fn nomangle connect( SOCKET s, $(sockaddr) name, i32 namelen ) unsafe call_conv( "system" ) : i32;
+fn nomangle getpeername( SOCKET s, $(sockaddr) name, $(i32) namelen ) unsafe call_conv( "system" ) : i32;
+fn nomangle getsockname( SOCKET s, $(sockaddr) name, $(i32) namelen ) unsafe call_conv( "system" ) : i32;
+fn nomangle getsockopt( SOCKET s, i32 level, i32 optname, $(char8) optval, $(i32) optlen ) unsafe call_conv( "system" ) : i32;
+fn nomangle ioctlsocket( SOCKET s, i32 cmd, $(u_long) argp ) unsafe call_conv( "system" ) : i32;
+fn nomangle listen( SOCKET s, i32 backlog ) unsafe call_conv( "system" ) : i32;
+fn nomangle recv( SOCKET s, $(char8) buf, i32 len, i32 flags ) unsafe call_conv( "system" ) : i32;
+fn nomangle recvfrom( SOCKET s, $(char8) buf, i32 len, i32 flags, $(sockaddr) from, $(i32) fromlen ) unsafe call_conv( "system" ) : i32;
+fn nomangle send( SOCKET s, $(char8) buf, i32 len, i32 flags ) unsafe call_conv( "system" ) : i32;
+fn nomangle sendto( SOCKET s, $(char8) buf, i32 len, i32 flags, $(sockaddr) to, i32 tolen ) unsafe call_conv( "system" ) : i32;
+fn nomangle setsockopt( SOCKET s, i32 level, i32 optname, $(char8) optval, i32 optlen ) unsafe call_conv( "system" ) : i32;
+fn nomangle socket( i32 af, i32 type_, i32 protocol ) unsafe call_conv( "system" ) : SOCKET;
 
 struct ü_BY_HANDLE_FILE_INFORMATION ordered
 {
@@ -168,6 +188,75 @@ struct ü_WIN32_FIND_DATAW ordered
 	[ WCHAR, 14u ] cAlternateFileName;
 }
 
+struct WSAData ordered
+{
+	WORD wVersion;
+	WORD wHighVersion;
+	[ char8, 257 ] szDescription;
+	[ char8, 129 ] szSystemStatus;
+	u16 iMaxSockets;
+	u16 iMaxUdpDg;
+	$(char8) lpVendorInfo;
+}
+
+struct addrinfoW ordered
+{
+	i32 ai_flags;
+	i32 ai_family;
+	i32 ai_socktype;
+	i32 ai_protocol;
+	size_t ai_addrlen;
+	PWSTR ai_canonname;
+	$(sockaddr) ai_addr;
+	$(addrinfoW) ai_next;
+}
+
+struct sockaddr ordered
+{
+	ADDRESS_FAMILY sa_family;
+	[ CHAR, 14 ] sa_data;
+}
+
+struct sockaddr_in ordered
+{
+	ADDRESS_FAMILY sin_family;
+	USHORT_ sin_port;
+	IN_ADDR sin_addr;
+	[ CHAR, 8 ] sin_zero;
+}
+
+struct sockaddr_in6 ordered
+{
+	ADDRESS_FAMILY sin6_family;
+	USHORT_ sin6_port;
+	ULONG__ sin6_flowinfo;
+	IN6_ADDR sin6_addr;
+	ULONG sin6_scope_id; // Manually tweaked
+}
+
+struct sockaddr_storage ordered
+{
+	ADDRESS_FAMILY ss_family;
+	[ CHAR, 6 ] ü__ss_pad1;
+	i64 ü__ss_align;
+	[ CHAR, 112 ] ü__ss_pad2;
+}
+
+struct in_addr ordered
+{
+	ü_anon_record_381 S_un;
+}
+
+struct in6_addr ordered
+{
+	[ u16, 8 ] parts; // Manually tweaked
+}
+
+struct ü_anon_record_381 ordered
+{
+	[ byte32, 1 ] union_contents;
+}
+
 type ü_FILE_INFO_BY_HANDLE_CLASS = i32;
 var ü_FILE_INFO_BY_HANDLE_CLASS
 	constexpr FileBasicInfo( 0 ),
@@ -202,9 +291,53 @@ var ü_GET_FILEEX_INFO_LEVELS
 	constexpr GetFileExInfoStandard( 0 ),
 	constexpr GetFileExMaxInfoLevel( 1 );
 
+type ü_anon_enum_553 = i32;
+var ü_anon_enum_553
+	constexpr IPPROTO_HOPOPTS( 0 ),
+	constexpr IPPROTO_ICMP( 1 ),
+	constexpr IPPROTO_IGMP( 2 ),
+	constexpr IPPROTO_GGP( 3 ),
+	constexpr IPPROTO_IPV4( 4 ),
+	constexpr IPPROTO_ST( 5 ),
+	constexpr IPPROTO_TCP( 6 ),
+	constexpr IPPROTO_CBT( 7 ),
+	constexpr IPPROTO_EGP( 8 ),
+	constexpr IPPROTO_IGP( 9 ),
+	constexpr IPPROTO_PUP( 12 ),
+	constexpr IPPROTO_UDP( 17 ),
+	constexpr IPPROTO_IDP( 22 ),
+	constexpr IPPROTO_RDP( 27 ),
+	constexpr IPPROTO_IPV6( 41 ),
+	constexpr IPPROTO_ROUTING( 43 ),
+	constexpr IPPROTO_FRAGMENT( 44 ),
+	constexpr IPPROTO_ESP( 50 ),
+	constexpr IPPROTO_AH( 51 ),
+	constexpr IPPROTO_ICMPV6( 58 ),
+	constexpr IPPROTO_NONE( 59 ),
+	constexpr IPPROTO_DSTOPTS( 60 ),
+	constexpr IPPROTO_ND( 77 ),
+	constexpr IPPROTO_ICLFXBM( 78 ),
+	constexpr IPPROTO_PIM( 103 ),
+	constexpr IPPROTO_PGM( 113 ),
+	constexpr IPPROTO_L2TP( 115 ),
+	constexpr IPPROTO_SCTP( 132 ),
+	constexpr IPPROTO_RAW( 255 ),
+	constexpr IPPROTO_MAX( 256 ),
+	constexpr IPPROTO_RESERVED_RAW( 257 ),
+	constexpr IPPROTO_RESERVED_IPSEC( 258 ),
+	constexpr IPPROTO_RESERVED_IPSECOFFLOAD( 259 ),
+	constexpr IPPROTO_RESERVED_WNV( 260 ),
+	constexpr IPPROTO_RESERVED_MAX( 261 );
+
+type size_t= size_type;
+type socklen_t = i32;
+type u_long = u32;
 type wchar_t = char16; // Changed manually from "u16" in order to be able to use ust::string16.
+type ADDRESS_FAMILY = USHORT_;
+type ADDRINFOW = addrinfoW;
 type BOOL = i32;
 type BY_HANDLE_FILE_INFORMATION = ü_BY_HANDLE_FILE_INFORMATION;
+type CHAR = char8;
 type GET_FILEEX_INFO_LEVELS = ü_GET_FILEEX_INFO_LEVELS;
 type DWORD = u32;
 type DWORD_PTR = ULONG_PTR;
@@ -213,6 +346,9 @@ type FILE_END_OF_FILE_INFO = ü_FILE_END_OF_FILE_INFO;
 type FILE_INFO_BY_HANDLE_CLASS = ü_FILE_INFO_BY_HANDLE_CLASS;
 type FILETIME = ü_FILETIME;
 type HANDLE = $(byte8);
+type INT_ = i32;
+type IN_ADDR = in_addr;
+type IN6_ADDR = in6_addr;
 type LARGE_INTEGER = ü_LARGE_INTEGER;
 type LONG = i32;
 type LPBY_HANDLE_FILE_INFORMATION = $(ü_BY_HANDLE_FILE_INFORMATION);
@@ -227,24 +363,43 @@ type LPSYNCHRONIZATION_BARRIER = PRTL_BARRIER;
 type LPSYSTEM_INFO = $(ü_SYSTEM_INFO);
 type LPVOID = $(byte8);
 type LPWIN32_FIND_DATAW = $(ü_WIN32_FIND_DATAW);
+type LPWSADATA = $(WSAData);
+type LPWSAOVERLAPPED = $(ü_OVERLAPPED);
 type LPWSTR = $(WCHAR);
 type OVERLAPPED = ü_OVERLAPPED;
+type PADDRINFOW = $(addrinfoW);
 type PCONDITION_VARIABLE = $(RTL_CONDITION_VARIABLE);
+type PCSTR = $(CHAR);
+type PCWSTR = $(WCHAR);
 type PLARGE_INTEGER = $(LARGE_INTEGER);
 type PRTL_BARRIER = $(ü_RTL_BARRIER);
 type PSRWLOCK = $(RTL_SRWLOCK);
+type PWSTR = $(WCHAR);
 type PVOID = $(byte8);
 type RTL_CONDITION_VARIABLE = ü_RTL_CONDITION_VARIABLE;
 type RTL_SRWLOCK = ü_RTL_SRWLOCK;
 type SECURITY_ATTRIBUTES = ü_SECURITY_ATTRIBUTES;
 type SIZE_T = ULONG_PTR;
+type SOCKET = UINT_PTR;
 type SYSTEM_INFO = ü_SYSTEM_INFO;
+type UINT_PTR = size_type;
 type ULONG = u32;
+type ULONG__ = DWORD;
 type ULONG_PTR = size_type;
+type USHORT_ = u16;
 type WCHAR = wchar_t;
 type WIN32_FILE_ATTRIBUTE_DATA = ü_WIN32_FILE_ATTRIBUTE_DATA;
 type WIN32_FIND_DATAW = ü_WIN32_FIND_DATAW;
 type WORD = u16;
+
+auto constexpr AF_INET = 2;
+auto constexpr AF_INET6 = 23;
+
+auto constexpr PF_INET = AF_INET;
+auto constexpr PF_INET6 = AF_INET6;
+
+auto constexpr SOCK_STREAM = 1;
+auto constexpr SOCK_DGRAM = 2;
 
 auto constexpr ERROR_SUCCESS = 0;
 auto constexpr NO_ERROR = 0;
@@ -268,6 +423,14 @@ auto constexpr ERROR_DIR_NOT_EMPTY = 145;
 auto constexpr ERROR_ALREADY_EXISTS = 183;
 auto constexpr ERROR_ENVVAR_NOT_FOUND = 203;
 auto constexpr ERROR_DIRECTORY = 267;
+
+auto constexpr WSAEWOULDBLOCK = 10035;
+auto constexpr WSAEMSGSIZE = 10040;
+auto constexpr WSAEADDRINUSE = 10048;
+auto constexpr WSAEADDRNOTAVAIL = 10049;
+auto constexpr WSAECONNABORTED = 10053;
+auto constexpr WSAENOTCONN = 10057;
+auto constexpr WSAECONNREFUSED = 10061;
 
 auto constexpr FILE_ATTRIBUTE_READONLY = 1;
 auto constexpr FILE_ATTRIBUTE_HIDDEN = 2;
@@ -300,6 +463,17 @@ auto constexpr FILE_SHARE_READ = 1;
 auto constexpr FILE_SHARE_WRITE = 2;
 auto constexpr FILE_SHARE_DELETE = 4;
 
+auto constexpr FIONBIO = ü_IOW</u_long/>( u32('f'), 126u );
+
+template</type T/>
+fn constexpr ü_IOW( u32 x, u32 y ) : u32
+{
+	return  IOC_IN | ( ( u32( typeinfo</T/>.size_of ) & IOCPARM_MASK ) << 16u ) | ( x << 8u ) | y;
+}
+
+auto constexpr IOCPARM_MASK = 0x7fu;
+auto constexpr IOC_IN = 0x80000000u;
+
 auto constexpr GENERIC_READ = 0x80000000u;
 auto constexpr GENERIC_WRITE = 0x40000000u;
 auto constexpr GENERIC_EXECUTE = 0x20000000u;
@@ -312,6 +486,13 @@ auto constexpr OPEN_ALWAYS = 4;
 
 auto constexpr INFINITE = -1;
 
+auto constexpr IPPROTO_IP = 0;
+auto constexpr IP_TTL = 4;
+
+auto constexpr MSG_PEEK = 2;
+
 auto constexpr MOVEFILE_REPLACE_EXISTING = 1;
+
+auto constexpr TCP_NODELAY = 1;
 
 var DWORD MAXDWORD = 4294967295u;

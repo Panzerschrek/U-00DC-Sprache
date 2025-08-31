@@ -4,6 +4,7 @@ import "../imports/enum_string_conversions.u"
 import "../imports/directory_iterator.u"
 import "../imports/file.u"
 import "../imports/file_helpers.u"
+import "../imports/filesystem.u"
 import "../imports/path_utils.u"
 
 // Some properties of the file classes.
@@ -172,7 +173,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 			// Read the whole file in one call.
 			var[ char8, 4 ] mut data= zero_init;
-			auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+			auto read_res= f.read( ust::array_view_mut</char8/>( data ).to_byte8_range() );
 			assert( read_res.is_ok(), "Failed to read!" );
 			assert( read_res.try_deref() == 4s );
 			assert( data == "some", "Invalid file contents!" );
@@ -211,7 +212,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			// Try to read more than file size.
 			var[ char8, 9 ] mut data= zero_init;
-			auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+			auto read_res= f.read( ust::array_view_mut</char8/>( data ).to_byte8_range() );
 			assert( read_res.is_ok(), "Failed to read!" );
 			// Should get less than requested.
 			assert( read_res.try_deref() == 4s );
@@ -232,7 +233,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				var[ char8, 4 ] mut data= zero_init;
 				auto seek_res= f.seek( 1u64 );
 				assert( seek_res.is_ok(), "Failed to seek!" );
-				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+				auto read_res= f.read( ust::array_view_mut</char8/>( data ).to_byte8_range() );
 				assert( read_res.is_ok(), "Failed to read!" );
 				// Should read last 3 bytes.
 				assert( read_res.try_deref() == 3s );
@@ -242,7 +243,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				var[ char8, 4 ] mut data= zero_init;
 				auto seek_res= f.seek( 3u64 );
 				assert( seek_res.is_ok(), "Failed to seek!" );
-				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+				auto read_res= f.read( ust::array_view_mut</char8/>( data ).to_byte8_range() );
 				assert( read_res.is_ok(), "Failed to read!" );
 				// Should read last 1 byte.
 				assert( read_res.try_deref() == 1s );
@@ -252,7 +253,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				var[ char8, 4 ] mut data= zero_init;
 				auto seek_res= f.seek( 0u64 );
 				assert( seek_res.is_ok(), "Failed to seek!" );
-				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( data ) ) );
+				auto read_res= f.read( ust::array_view_mut</char8/>( data ).to_byte8_range() );
 				assert( read_res.is_ok(), "Failed to read!" );
 				// Should read last 1 byte.
 				assert( read_res.try_deref() == 4s );
@@ -278,7 +279,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			Ok( mut f ) ->
 			{
 				// Write the whole file in one call.
-				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				auto write_res= f.write( ust::array_view_imut</char8/>( file_data ).to_byte8_range() );
 				assert( write_res.is_ok(), "Failed to write!" );
 				assert( write_res.try_deref() == file_data_size );
 
@@ -329,7 +330,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 				// Read the whole file in one call.
 				var[ char8, file_data_size ] mut expected_file_data= zero_init;
-				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+				auto read_res= f.read( ust::array_view_mut</char8/>( expected_file_data ).to_byte8_range() );
 				assert( read_res.is_ok(), "Failed to read!" );
 				assert( read_res.try_deref() == file_data_size );
 				assert( expected_file_data == file_data, "Invalid file contents!" );
@@ -391,7 +392,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			{
 				// Write the whole file in one call.
 				{
-					auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+					auto write_res= f.write( ust::array_view_imut</char8/>( file_data ).to_byte8_range() );
 					assert( write_res.is_ok(), "Failed to write!" );
 					assert( write_res.try_deref() == file_data_size );
 				}
@@ -414,7 +415,7 @@ fn nomangle main() call_conv( "C" ) : i32
 					auto seek_res= f.seek( 0u64 );
 					assert( seek_res.is_ok(), "Seek failed!" );
 					var[ char8, file_data_size ] mut expected_file_data= zero_init;
-					auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+					auto read_res= f.read( ust::array_view_mut</char8/>( expected_file_data ).to_byte8_range() );
 					assert( read_res.is_ok(), "Failed to read!" );
 					assert( read_res.try_deref() == file_data_size );
 					assert( expected_file_data == file_data, "Invalid file contents!" );
@@ -423,7 +424,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				{ // Write part in the middle.
 					auto seek_res= f.seek( 6u64 );
 					assert( seek_res.is_ok(), "Seek failed!" );
-					auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( "toll" ) ) );
+					auto write_res= f.write( ust::array_view_imut</char8/>( "toll" ).to_byte8_range() );
 					assert( write_res.is_ok(), "Failed to write!" );
 					assert( write_res.try_deref() == 4s );
 				}
@@ -433,7 +434,7 @@ fn nomangle main() call_conv( "C" ) : i32
 					auto seek_res= f.seek( 0u64 );
 					assert( seek_res.is_ok(), "Seek failed!" );
 					var[ char8, file_data_size ] mut expected_file_data= zero_init;
-					auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+					auto read_res= f.read( ust::array_view_mut</char8/>( expected_file_data ).to_byte8_range() );
 					assert( read_res.is_ok(), "Failed to read!" );
 					assert( read_res.try_deref() == file_data_size );
 					assert( expected_file_data == file_data_tweaked, "Invalid file contents!" );
@@ -489,7 +490,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			Ok( mut f ) ->
 			{
 				// Write the whole file in one call.
-				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				auto write_res= f.write( ust::array_view_imut</char8/>( file_data ).to_byte8_range() );
 				assert( write_res.is_ok(), "Failed to write!" );
 				assert( write_res.try_deref() == file_data_size );
 			},
@@ -506,7 +507,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			{
 				// Read the whole file in one call.
 				var[ char8, file_data_size ] mut expected_file_data= zero_init;
-				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+				auto read_res= f.read( ust::array_view_mut</char8/>( expected_file_data ).to_byte8_range() );
 				assert( read_res.is_ok(), "Failed to read!" );
 				assert( read_res.try_deref() == file_data_size );
 				assert( expected_file_data == file_data, "Invalid file contents!" );
@@ -576,7 +577,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				assert( size_res.try_deref() == 0u64, "Unexpected file size!" );
 
 				// Write the whole file in one call.
-				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				auto write_res= f.write( ust::array_view_imut</char8/>( file_data ).to_byte8_range() );
 				assert( write_res.is_ok(), "Failed to write!" );
 				assert( write_res.try_deref() == file_data_size );
 			},
@@ -603,7 +604,7 @@ fn nomangle main() call_conv( "C" ) : i32
 
 				// Read the whole file in one call.
 				var[ char8, file_data_size ] mut expected_file_data= zero_init;
-				auto read_res= f.read( CastRangeToBytesRange( ust::array_view_mut</char8/>( expected_file_data ) ) );
+				auto read_res= f.read( ust::array_view_mut</char8/>( expected_file_data ).to_byte8_range() );
 				assert( read_res.is_ok(), "Failed to read!" );
 				assert( read_res.try_deref() == file_data_size );
 				assert( expected_file_data == file_data, "Invalid file contents!" );
@@ -632,7 +633,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			Ok( mut f ) ->
 			{
 				// Write some contents
-				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				auto write_res= f.write( ust::array_view_imut</char8/>( file_data ).to_byte8_range() );
 				assert( write_res.is_ok(), "Failed to write!" );
 				assert( write_res.try_deref() == file_data_size );
 
@@ -722,7 +723,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			Ok( mut f ) ->
 			{
 				// Write the whole file in one call.
-				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				auto write_res= f.write( ust::array_view_imut</char8/>( file_data ).to_byte8_range() );
 				assert( write_res.is_ok(), "Failed to write!" );
 				assert( write_res.try_deref() == file_data_size );
 
@@ -763,7 +764,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			Ok( mut f ) ->
 			{
 				// Write the whole file in one call.
-				auto write_res= f.write( CastRangeToBytesRange( ust::array_view_imut</char8/>( file_data ) ) );
+				auto write_res= f.write( ust::array_view_imut</char8/>( file_data ).to_byte8_range() );
 				assert( write_res.is_ok(), "Failed to write!" );
 				assert( write_res.try_deref() == file_data_size );
 
@@ -1450,12 +1451,4 @@ fn nomangle main() call_conv( "C" ) : i32
 	}
 
 	return 0;
-}
-
-// It's safe to cast between ranges of chars and bytes.
-// TODO - move this into standart library.
-template</bool is_mutable/>
-fn CastRangeToBytesRange( ust::random_access_range</char8, is_mutable/> r ) : ust::random_access_range</byte8, is_mutable/>
-{
-	return unsafe( ust::random_access_range</byte8, is_mutable/>( ust::ptr_cast_to_byte8( r.data() ), r.size() ) );
 }

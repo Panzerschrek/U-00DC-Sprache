@@ -1,0 +1,39 @@
+//##success_test
+import "../imports/assert.u"
+import "../imports/inet_address_resolve.u"
+import "../imports/string_conversions.u"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+
+	var [ ust::string_view8, 11 ] sites
+	[
+		"localhost",
+		"example.com",
+		"github.com",
+		"microsoft.com",
+		"google.com",
+		"idsoftware.com",
+		"yandex.ru",
+		"wikipedia.org",
+		"bundesregierung.de",
+		"arte.tv",
+		"яндекс.рф"
+		];
+
+	foreach( &site : sites )
+	{
+		var ust::vector</ust::ip_address/> addresses= ust::resolve_inet_address( site );
+		ust::stdout_print( ust::concat( "Has ", ust::to_string8( addresses.size() ), " addresses for \"", site, "\"\n" ) );
+
+		foreach( &a : addresses )
+		{
+			variant_visit( &a_specific : a )
+			{
+				ust::stdout_print( ust::concat( a_specific.to_string(), "\n" ) );
+			}
+		}
+	}
+
+	return 0;
+}

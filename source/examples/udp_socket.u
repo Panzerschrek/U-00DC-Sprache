@@ -1,0 +1,81 @@
+// This example shows basic usage of the UDP socket class.
+
+import "/main_wrapper.u"
+import "/stdout.u"
+import "/string_conversions.u"
+import "/udp_socket.u"
+
+pretty_main
+{
+	auto mut get_next_port=
+		lambda[ next_port_number= 60000u16 ] mut () : u16
+		{
+			var u16 res= next_port_number;
+			++next_port_number;
+			return res;
+		};
+
+	var ust::ip_address_v4 loopback( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) );
+
+	// Simple example of a socket with sendto/recvfrom methods.
+	{
+		var ust::socket_address_v4 receiver_address( loopback, get_next_port() );
+
+		// Create socket and bind it to an address. Binding is necessary to be able to receive messages.
+		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( receiver_address ).try_take();
+
+		// Create socket without binding. It's still useful for sending messages.
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_v4().try_take();
+
+		auto& message= "sendto message 123";
+
+		sender_socket.send_to( receiver_address, ust::string_view8( message ).to_byte8_range() ).try_deref();
+
+		var typeof(message) mut received_message= zero_init;
+
+		auto [ address, bytes_received ] = receiver_socket.receive_from( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ).try_take();
+
+		ust::ignore_unused( bytes_received );
+
+		variant_visit( &a : address )
+		{
+			ust::stdout_print( ust::concat(
+				"Received message \"",
+				received_message,
+				"\" from ip ",
+				a.get_ip().to_string(),
+				" and port ",
+				ust::to_string8( a.get_port() ),
+				"\n" ) );
+		}
+	}
+
+	// Connect + send/receive.
+	{
+		var ust::socket_address_v4 receiver_address( loopback, get_next_port() );
+		var ust::socket_address_v4 sender_address( loopback, get_next_port() );
+
+		var ust::udp_socket mut receiver_socket= ust::udp_socket::create_and_bind( receiver_address ).try_take();
+		var ust::udp_socket mut sender_socket= ust::udp_socket::create_and_bind( sender_address ).try_take();
+
+		// Connection allows to use "send" method to send to datagrams to the peer specified in "connect" call.
+		// Also it allows to reject input datagrams from peers except specified in "connect" call.
+		receiver_socket.connect( sender_address ).try_deref();
+		sender_socket.connect( receiver_address ).try_deref();
+
+		auto& message= "connect + send + receive 456 message";
+
+		sender_socket.send( ust::string_view8( message ).to_byte8_range() ).try_deref();
+
+		var typeof(message) mut received_message= zero_init;
+
+		var size_type bytes_received=
+			receiver_socket.receive( ust::array_view_mut</char8/>( received_message ).to_byte8_range() ).try_deref();
+
+		ust::ignore_unused( bytes_received );
+
+		ust::stdout_print( ust::concat( "Received \"", received_message, "\"\n" ) );
+	}
+
+	return 0;
+}

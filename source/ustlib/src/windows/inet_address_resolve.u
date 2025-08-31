@@ -1,0 +1,67 @@
+import "../../imports/inet_address_resolve.u"
+import "socket.uh"
+import "wide_string.uh"
+
+namespace ust
+{
+
+fn resolve_inet_address( string_view8 name ) : vector</ip_address/>
+{
+	var vector</ip_address/> mut res;
+
+	var wide_string mut name_w_nt= utf8_to_null_terminated_wide_string( name );
+
+	call_wsa_startup();
+
+	unsafe
+	{
+		var PADDRINFOW mut infos= zero_init;
+
+		var i32 call_res= GetAddrInfoW( name_w_nt.data(), nullptr</WCHAR/>(), nullptr</ADDRINFOW/>(), $<(infos) );
+		if( call_res != 0 )
+		{
+			return res;
+		}
+
+		for( var PADDRINFOW mut info_ptr= infos; !is_nullptr( info_ptr ); info_ptr= $>(info_ptr).ai_next )
+		{
+			var ADDRINFOW& info= $>(info_ptr);
+			if( !is_nullptr( info.ai_addr ) )
+			{
+				if( i32( $>( info.ai_addr ).sa_family ) == AF_INET &&
+					info.ai_addrlen >= typeinfo</sockaddr_in/>.size_of )
+				{
+					// Cast sockaddr to sockaddr_in using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+					var sockaddr_in mut address_ip_v4= zero_init;
+
+					memory_copy(
+						ptr_cast_to_byte8( $<(address_ip_v4) ),
+						ptr_cast_to_byte8( info.ai_addr ),
+						typeinfo</sockaddr_in/>.size_of );
+
+					res.push_back( translate_ip_address( address_ip_v4.sin_addr ) );
+				}
+
+				if( i32( $>( info.ai_addr ).sa_family ) == AF_INET6 &&
+					info.ai_addrlen >= typeinfo</sockaddr_in6/>.size_of )
+				{
+					// Cast sockaddr to sockaddr_in6 using memcpy. Just performing "ref_cast" isn't safe due to TBAA.
+					var sockaddr_in6 mut address_ip_v6= zero_init;
+
+					memory_copy(
+						ptr_cast_to_byte8( $<(address_ip_v6) ),
+						ptr_cast_to_byte8( info.ai_addr ),
+						typeinfo</sockaddr_in6/>.size_of );
+
+					res.push_back( translate_ip_address( address_ip_v6.sin6_addr ) );
+				}
+			}
+		}
+
+		::FreeAddrInfoW( infos );
+	}
+
+	return res;
+}
+
+} // namespace ust

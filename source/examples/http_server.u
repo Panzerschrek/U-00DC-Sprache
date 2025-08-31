@@ -1,0 +1,97 @@
+// This example demonstraits usage of TCP listener class, which is used to implement a simple HTTP server.
+
+import "/main_wrapper.u"
+import "/stdout.u"
+import "/string_conversions.u"
+import "/tcp_listener.u"
+
+pretty_main
+{
+	// Use ipv4 address, but ipv6 addresses may be used too.
+	var ust::socket_address_v4 address( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ), 57854u16 );
+
+	ust::stdout_print(
+		ust::concat(
+			"starting TCP server listening on address ",
+			address.get_ip().to_string(),
+			" and port ",
+			ust::to_string8( address.get_port() ),
+			"\n" ) );
+
+	ust::stdout_print(
+		ust::concat(
+			"Open it in browser via link like \"http://",
+			address.get_ip().to_string(),
+			":",
+			ust::to_string8( address.get_port() ),
+			"\"\n",
+			"Press Ctrl+C to stop it\n" ) );
+
+	// Create listener port.
+	var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( address ).try_take();
+
+	// Connections accept loop.
+	loop
+	{
+		auto [ mut stream, client_address ] = listener.accept().try_take();
+
+		// Print client address in all possible forms - ipv4, ipv6.
+		variant_visit( &a : client_address )
+		{
+			ust::stdout_print( ust::concat( "Incoming connection from ", a.get_ip().to_string(), "\n" ) );
+		}
+
+		// Receive and print request text.
+		// It may be used to process request properly, but for now just ignore it.
+		{
+			var ust::string8 mut request_text( 1024s, '\0' );
+			var size_type bytes_read= stream.read( request_text.range().to_byte8_range() ).try_take();
+			request_text.resize( bytes_read, '\0' );
+
+			ust::stdout_print( "\n" );
+			ust::stdout_print( request_text );
+		}
+
+		// In this simple example we handle each connection synchronously.
+		// But generally it's preffered to move request processing into another thread(s).
+
+		// Status line goes first.
+		WriteAll( stream, g_http_response_status_line );
+		// Then headers follow.
+		WriteAll( stream, g_http_respense_headers );
+		WriteAll( stream, ust::concat( "Content-Length: ", ust::to_string8( typeinfo</ typeof(g_html_page_contents) />.size_of ), g_http_line_end ) );
+		// Actual message is separated via empty line.
+		WriteAll( stream, g_http_respense_header_end_marker );
+		// Actual HTML page (or some other contents).
+		WriteAll( stream, g_html_page_contents );
+	}
+}
+
+fn WriteAll( ust::tcp_stream &mut stream, ust::string_view8 message )
+{
+	// Write in loop, since sometimes the whole message at once can't be written.
+	for( auto mut offset= 0s; offset < message.size(); )
+	{
+		var size_type bytes_written= stream.write( message.to_byte8_range().subrange_start( offset ) ).try_take();
+		offset+= bytes_written;
+	}
+}
+
+auto& g_http_line_end= "\r\n";
+
+auto g_http_response_status_line= "HTTP/1.1 200 OK" + g_http_line_end;
+auto g_http_respense_headers= "Content-Type: text/html" + g_http_line_end;
+auto g_http_respense_header_end_marker= g_http_line_end;
+
+auto g_html_page_contents=
+"<html>" +
+	"<head>" +
+	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />" +
+	"</head>" +
+	"<body>" +
+		"Simple HTTP server example<br>" +
+		"Einfaches Beispiel eines HTTP-Servers<br>" +
+		"Простой пример HTTP сервера<br>" +
+	"</body>" +
+"</html>" +
+g_http_line_end;

@@ -14,6 +14,8 @@ fn GetCharRangeSize( ust::random_access_range_imut</char8/> char_range ) : size_
 	return char_range.size();
 }
 
+enum SomeEnum{ EZero, EOne, ETwo, EThree }
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Random access range is empty by-default.
@@ -352,6 +354,181 @@ fn nomangle main() call_conv( "C" ) : i32
 			// Should never enter this loop.
 			halt;
 		}
+	}
+	// to_byte8_range - immutable range of byte8-sized elements.
+	{
+		var [ char8, 6 ] arr= "qwerty";
+		var ust::array_view_imut</char8/> range= arr;
+
+		var ust::array_view_imut</byte8/> byte8_range= range.to_byte8_range();
+
+		halt if( byte8_range.size() != range.size() );
+		halt if( byte8_range[0s] != byte8('q') );
+		halt if( byte8_range[1s] != byte8('w') );
+		halt if( byte8_range[2s] != byte8('e') );
+		halt if( byte8_range[3s] != byte8('r') );
+		halt if( byte8_range[4s] != byte8('t') );
+		halt if( byte8_range[5s] != byte8('y') );
+	}
+	// to_byte8_range - immutable range of byte32-sized elements.
+	{
+		var [ u32, 3 ] arr[ 67444u, 233u, 744519774u ];
+
+		var ust::array_view_imut</u32/> range= arr;
+
+		var ust::array_view_imut</byte8/> byte8_range= range.to_byte8_range();
+
+		// TODO - adopt this for big-ending targets.
+
+		halt if( byte8_range.size() != range.size() * typeinfo</u32/>.size_of );
+
+		halt if( byte8_range[0s] != byte8(0x74u8) );
+		halt if( byte8_range[1s] != byte8(0x07u8) );
+		halt if( byte8_range[2s] != byte8(0x01u8) );
+		halt if( byte8_range[3s] != byte8(0x00u8) );
+
+		halt if( byte8_range[4s] != byte8(0xe9u8) );
+		halt if( byte8_range[5s] != byte8(0x00u8) );
+		halt if( byte8_range[6s] != byte8(0x00u8) );
+		halt if( byte8_range[7s] != byte8(0x00u8) );
+
+		halt if( byte8_range[ 8s] != byte8(0x5Eu8) );
+		halt if( byte8_range[ 9s] != byte8(0x78u8) );
+		halt if( byte8_range[10s] != byte8(0x60u8) );
+		halt if( byte8_range[11s] != byte8(0x2Cu8) );
+	}
+	// to_byte8_range - immutable range of arrays.
+	{
+		var[ [ char8, 5 ], 3 ] arr[ "abcde", "fghij", "klmno" ];
+
+		var ust::array_view_imut</ [ char8, 5 ] /> range= arr;
+
+		var ust::array_view_imut</byte8/> byte8_range= range.to_byte8_range();
+
+		halt if( byte8_range.size() != 15s );
+		halt if( byte8_range[ 0s] != byte8( 'a' ) );
+		halt if( byte8_range[ 1s] != byte8( 'b' ) );
+		halt if( byte8_range[ 2s] != byte8( 'c' ) );
+		halt if( byte8_range[ 3s] != byte8( 'd' ) );
+		halt if( byte8_range[ 4s] != byte8( 'e' ) );
+		halt if( byte8_range[ 5s] != byte8( 'f' ) );
+		halt if( byte8_range[ 6s] != byte8( 'g' ) );
+		halt if( byte8_range[ 7s] != byte8( 'h' ) );
+		halt if( byte8_range[ 8s] != byte8( 'i' ) );
+		halt if( byte8_range[ 9s] != byte8( 'j' ) );
+		halt if( byte8_range[10s] != byte8( 'k' ) );
+		halt if( byte8_range[11s] != byte8( 'l' ) );
+		halt if( byte8_range[12s] != byte8( 'm' ) );
+		halt if( byte8_range[13s] != byte8( 'n' ) );
+		halt if( byte8_range[14s] != byte8( 'o' ) );
+	}
+	// to_byte8_range - immutable range of floats.
+	{
+		var [ f32, 2 ] arr[ 17.5f, -261.2f ];
+
+		var ust::array_view_imut</ f32 /> range= arr;
+
+		var ust::array_view_imut</byte8/> byte8_range= range.to_byte8_range();
+
+		// TODO - adopt this for big-ending targets.
+
+		halt if( byte8_range.size() != 8s );
+		halt if( byte8_range[0s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[1s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[2s] != byte8( 0x8Cu8 ) );
+		halt if( byte8_range[3s] != byte8( 0x41u8 ) );
+		halt if( byte8_range[4s] != byte8( 0x9Au8 ) );
+		halt if( byte8_range[5s] != byte8( 0x99u8 ) );
+		halt if( byte8_range[6s] != byte8( 0x82u8 ) );
+		halt if( byte8_range[7s] != byte8( 0xC3u8 ) );
+	}
+	// to_byte8_range - immutable range of raw pointers.
+	{
+		var i32 mut x= 0, mut y= 0;
+		var [ $(i32), 2 ] arr[ $<(x), $<(y) ];
+
+		var ust::array_view_imut</ $(i32) /> range= arr;
+
+		var ust::array_view_imut</byte8/> byte8_range= range.to_byte8_range();
+
+		halt if( byte8_range.size() != range.size() * typeinfo</ $(i32) />.size_of );
+
+		var [ $(i32), 2 ] mut arr_copy= zero_init;
+
+		unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( $<(arr_copy) ), byte8_range.data(), byte8_range.size() ) );
+
+		halt if( arr_copy != arr );
+	}
+	// to_byte8_range - immutable range of raw enum values.
+	{
+		var [ SomeEnum, 4 ] arr[ SomeEnum::EThree, SomeEnum::ETwo, SomeEnum::EOne, SomeEnum::EZero ];
+
+		var ust::array_view_imut</ SomeEnum /> range= arr;
+
+		var ust::array_view_imut</byte8/> byte8_range= range.to_byte8_range();
+
+		halt if( byte8_range.size() != range.size() );
+		halt if( byte8_range[0s] != byte8(3u8) );
+		halt if( byte8_range[1s] != byte8(2u8) );
+		halt if( byte8_range[2s] != byte8(1u8) );
+		halt if( byte8_range[3s] != byte8(0u8) );
+	}
+	// to_byte8_range - mutable range of byte8-sized elements.
+	{
+		var [ char8, 3 ] mut arr= zero_init;
+
+		{
+			var ust::array_view_mut</byte8/> byte8_range= ust::array_view_mut</char8/>(arr).to_byte8_range();
+
+			halt if( byte8_range.size() != 3s );
+
+			byte8_range[0s]= byte8( '7' );
+			byte8_range[1s]= byte8( 'q' );
+			byte8_range[2s]= byte8( '_' );
+		}
+
+		halt if( arr != "7q_" );
+	}
+	// to_byte8_range - mutable range of u16-sized elements.
+	{
+		var [ u16, 3 ] mut arr= zero_init;
+
+		{
+			var ust::array_view_mut</byte8/> byte8_range= ust::array_view_mut</u16/>(arr).to_byte8_range();
+
+			halt if( byte8_range.size() != 6s );
+
+			byte8_range[0s]= byte8( 0x34u8 );
+			byte8_range[1s]= byte8( 0x12u8 );
+			byte8_range[2s]= byte8( 0x78u8 );
+			byte8_range[3s]= byte8( 0x56u8 );
+			byte8_range[4s]= byte8( 0xabu8 );
+			byte8_range[5s]= byte8( 0x90u8 );
+		}
+
+		halt if( arr[0] != 0x1234u16 );
+		halt if( arr[1] != 0x5678u16 );
+		halt if( arr[2] != 0x90abu16 );
+	}
+	// to_byte8_range - mutable range of char8 array elements.
+	{
+		var [ [ char8, 3 ], 2 ] mut arr= zero_init;
+
+		{
+			var ust::array_view_mut</byte8/> byte8_range= ust::array_view_mut</ [ char8, 3 ] />(arr).to_byte8_range();
+
+			halt if( byte8_range.size() != 6s );
+
+			byte8_range[0s]= byte8( '0' );
+			byte8_range[1s]= byte8( '1' );
+			byte8_range[2s]= byte8( '2' );
+			byte8_range[3s]= byte8( '3' );
+			byte8_range[4s]= byte8( '4' );
+			byte8_range[5s]= byte8( '5' );
+		}
+
+		halt if( arr[0] != "012" );
+		halt if( arr[1] != "345" );
 	}
 
 	return 0;

@@ -1,0 +1,12 @@
+import "type_traits.u"
+
+namespace ust
+{
+
+type native_socket_fd=
+	type_select</
+		constexpr_string_equals( compiler::target::os, "windows" ),
+		size_type,
+		i32 />;
+
+} // namespace ust

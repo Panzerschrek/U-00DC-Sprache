@@ -1,0 +1,44 @@
+import "tcp_stream.u"
+
+namespace ust
+{
+
+class tcp_listener
+{
+public:
+	// Create TCP socket, bind it to specified address and start listening.
+	fn create_and_bind( socket_address& a ) : io_result</tcp_listener/>;
+
+	fn constructor( native_socket_fd s ) unsafe; // constructor for internal usage.
+	fn destructor();
+
+	// Wait for new connection and return it.
+	// May return error if non-blocking mode is enabled and there is no pending connection.
+	fn accept( mut this ) : io_result</ tup[ tcp_stream, socket_address ] />;
+
+	// Check if listener is in non-blocking mode.
+	fn is_nonblocking( this ) : io_result</bool/>;
+
+	// Set non-blocking mode.
+	fn set_nonblocking( mut this, bool nonblocking ) : io_result</void/>;
+
+	// Get address to which this listener is bound.
+	fn get_local_address( this ) : io_result</socket_address/>;
+
+	// Get time to live.
+	fn get_ttl( this ) : io_result</u8/>;
+
+	// Set time to live.
+	fn set_ttl( mut this, u8 ttl ) : io_result</void/>;
+
+	// Get handle to perform some system-specific operations with it. Do not try to close it!
+	fn get_native_fd( this ) unsafe : native_socket_fd;
+
+	// Take native handle and destroy this class instance. Caller is responsible for socket closing.
+	fn take_native_fd( byval this ) unsafe : native_socket_fd;
+
+private:
+	native_socket_fd socket_;
+}
+
+} // namespace ust

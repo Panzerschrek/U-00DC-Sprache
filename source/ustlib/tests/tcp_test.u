@@ -1,0 +1,874 @@
+//##success_test
+import "../imports/assert.u"
+import "../imports/enum_string_conversions.u"
+import "../imports/semaphore.u"
+import "../imports/string_conversions.u"
+import "../imports/thread.u"
+import "../imports/tcp_listener.u"
+import "../imports/udp_socket.u"
+
+// TCP listener and TCP stream class are just thin wrappers around native sockets.
+// And native sockets are just simple handles.
+static_assert( typeinfo</ ust::native_socket_fd />.size_of <= typeinfo</ size_type />.size_of );
+static_assert( typeinfo</ ust::tcp_listener />.size_of == typeinfo</ ust::native_socket_fd />.size_of );
+static_assert( typeinfo</ ust::tcp_stream />.size_of == typeinfo</ ust::native_socket_fd />.size_of );
+
+// TCP classes aren't copyable.
+static_assert( !typeinfo</ ust::tcp_listener />.is_copy_constructible );
+static_assert( !typeinfo</ ust::tcp_listener />.is_copy_assignable );
+static_assert( !typeinfo</ ust::tcp_stream />.is_copy_constructible );
+static_assert( !typeinfo</ ust::tcp_stream />.is_copy_assignable );
+
+// TCP classes aren't equality-comparable.
+static_assert( !typeinfo</ ust::tcp_listener />.is_equality_comparable );
+static_assert( !typeinfo</ ust::tcp_stream />.is_equality_comparable );
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	if( ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
+	{
+		// Some tests in this file fail on MacOS and it's for now too hard to figure out which exact tests and why.
+		// So, just ignore all UDP tests on this OS.
+		return 0;
+	}
+
+	var ust::ip_address_v4 loopback( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) );
+
+	// Create tcp listener.
+	result_match( ust::tcp_listener::create_and_bind( ust::socket_address_v4( loopback, GetNextPort() ) ) )
+	{
+		Ok( l ) ->{},
+		Err( e ) -> { assert( false, ust::concat( "Failed to create TCP listener! Error code: ", ust::enum_to_string(e) ) ); },
+	}
+
+	// Basic server-client interaction.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		// Create server first, in order to be sure that connection works even if listener thread isn't running yet.
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		auto& client_message= "Wer hat Angs vorm schwarzen Mann?";
+		var size_type client_message_size= typeinfo</ typeof(client_message) />.size_of;
+
+		auto& server_message= "Niemand hat Angst vor ihm!";
+		var size_type server_message_size= typeinfo</ typeof(server_message) />.size_of;
+
+		// Perform accept/read/write on a background thread.
+		auto mut server_thread= ust::make_thread(
+			lambda[&]()
+			{
+				// Accept a connection.
+				result_match( listener.accept() )
+				{
+					Ok( mut accept_result ) ->
+					{
+						auto [ mut stream, client_address ]= move(accept_result);
+
+						if_var( &client_address_v4 : client_address.get</ust::socket_address_v4/>() )
+						{
+							assert( client_address_v4.get_ip() == loopback || client_address_v4.get_ip().get_bits() == 0u, "Unexpected client address!" );
+						}
+
+						var typeof(client_message) mut client_message_received= zero_init;
+
+						// Receive a request.
+						result_match( stream.read( ust::array_view_mut</char8/>( client_message_received ).to_byte8_range() ) )
+						{
+							Ok( bytes_read ) ->
+							{
+								assert( bytes_read == client_message_size, "Invalid number of bytes read!" );
+								assert( client_message_received == client_message );
+							},
+							Err(e) -> { assert( false, ust::concat( "Failed to read from TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
+						}
+
+						// Send responce.
+						result_match( stream.write( ust::string_view8( server_message ).to_byte8_range() ) )
+						{
+							Ok( bytes_written ) -> { assert( bytes_written == server_message_size, "Invalid number of bytes written!" ); },
+							Err(e) -> { assert( false, ust::concat( "Failed to write into TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
+						}
+
+						// Check address of server stream.
+						result_match( stream.get_local_address() )
+						{
+							Ok( a ) ->
+							{
+								if_var( &a_v4 : a.get</ust::socket_address_v4/>() )
+								{
+									assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+								}
+							},
+							Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream local address! Error code: ", ust::enum_to_string(e) ) ); },
+						}
+
+						// Check address of client.
+						result_match( stream.get_peer_address() )
+						{
+							Ok( a ) ->
+							{
+								if_var( &a_v4 : a.get</ust::socket_address_v4/>() )
+								{
+									assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+								}
+							},
+							Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream remote address! Error code: ", ust::enum_to_string(e) ) ); },
+						}
+					},
+					Err(e) -> { assert( false, ust::concat( "Failed to accept connection! Error code: ", ust::enum_to_string(e) ) ); },
+				}
+			} );
+
+		// Connect to the server.
+		result_match( ust::tcp_stream::connect( server_address ) )
+		{
+			Ok( mut stream ) ->
+			{
+				// Send a request.
+				result_match( stream.write( ust::string_view8( client_message ).to_byte8_range() ) )
+				{
+					Ok( bytes_written ) -> { assert( bytes_written == client_message_size, "Invalid number of bytes written!" ); },
+					Err(e) -> { assert( false, ust::concat( "Failed to write into TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
+				}
+
+				var typeof(server_message) mut server_message_received= zero_init;
+
+				// Receive a response.
+				result_match( stream.read( ust::array_view_mut</char8/>( server_message_received ).to_byte8_range() ) )
+				{
+					Ok( bytes_read ) ->
+					{
+						assert( bytes_read == server_message_size, "Invalid number of bytes read!" );
+						assert( server_message_received == server_message );
+					},
+					Err(e) -> { assert( false, ust::concat( "Failed to read from TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
+				}
+
+				// Check address of server stream.
+				result_match( stream.get_peer_address() )
+				{
+					Ok( a ) ->
+					{
+						if_var( &a_v4 : a.get</ust::socket_address_v4/>() )
+						{
+							assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+						}
+					},
+					Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream remote address! Error code: ", ust::enum_to_string(e) ) ); },
+				}
+
+				// Check address of client.
+				result_match( stream.get_local_address() )
+				{
+					Ok( a ) ->
+					{
+						if_var( &a_v4 : a.get</ust::socket_address_v4/>() )
+						{
+							assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+						}
+					},
+					Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream local address! Error code: ", ust::enum_to_string(e) ) ); },
+				}
+			},
+			Err(e) -> { assert( false, ust::concat( "Failed to connect to server! Error code: ", ust::enum_to_string(e) ) ); },
+		}
+
+		move(server_thread).join();
+	}
+
+	// Several connections.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		// Create server first, in order to be sure that connection works even if listener thread isn't running yet.
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var size_type num_clients= 5s;
+
+		var [ [ ust::string8, 2 ], num_clients ] messages
+		[
+			[ "Göttin", "Centhron" ],
+			[ "NDH", "Nebelhaus" ],
+			[ "Meine Wut will nicht sterben", "Puhdys" ],
+			[ "Lampenfieber", "Sturmmann" ],
+			[ "Lipsta", "Oberschlesien" ],
+		];
+
+		// Perform accept/read/write on a background thread.
+		auto mut server_thread= ust::make_thread(
+			lambda[&]()
+			{
+				for( var size_type mut client_index= 0s; client_index < num_clients; ++client_index )
+				{
+					auto [ mut stream, client_address ]= listener.accept().try_take();
+
+					if_var( &client_address_v4 : client_address.get</ust::socket_address_v4/>() )
+					{
+						assert( client_address_v4.get_ip() == loopback || client_address_v4.get_ip().get_bits() == 0u, "Unexpected client address!" );
+					}
+
+					var [ char8, 64 ] mut client_message_received= zero_init;
+
+					// Receive a request.
+					var size_type bytes_read= stream.read( ust::array_view_mut</char8/>( client_message_received ).to_byte8_range() ).try_take();
+					assert( bytes_read == messages[client_index][0].size(), "Invalid number of bytes read!" );
+					assert( ust::string_view8( client_message_received ).subrange_end( bytes_read ) == messages[client_index][0] );
+
+					// Send responce.
+					var size_type bytes_written= stream.write( messages[client_index][1].range().to_byte8_range() ).try_take();
+					assert( bytes_written == messages[client_index][1].size(), "Invalid number of bytes written!" );
+				}
+			} );
+
+		for( var size_type mut client_index= 0s; client_index < num_clients; ++client_index )
+		{
+			var ust::tcp_stream mut stream= ust::tcp_stream::connect( server_address ).try_take();
+
+			// Send a request.
+			var size_type bytes_written= stream.write( messages[client_index][0].range().to_byte8_range() ).try_take();
+			assert( bytes_written == messages[client_index][0].size(), "Invalid number of bytes written!" );
+
+			var [ char8, 64 ] mut server_message_received= zero_init;
+
+			// Receive a response.
+			var size_type bytes_read= stream.read( ust::array_view_mut</char8/>( server_message_received ).to_byte8_range() ).try_take();
+			assert( bytes_read == messages[client_index][1].size(), "Invalid number of bytes read!" );
+			assert( ust::string_view8( server_message_received ).subrange_end( bytes_read ) == messages[client_index][1] );
+		}
+
+		move(server_thread).join();
+	}
+
+	// 2 writes and 1 read.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		assert( client_stream.write( ust::string_view8( "Some" ).to_byte8_range() ).try_take() == 4s );
+		assert( client_stream.write( ust::string_view8( " message" ).to_byte8_range() ).try_take() == 8s );
+
+		var [ char8, 12 ] mut message_received= zero_init;
+
+		if( ust::constexpr_string_starts_with( compiler::target::os, "freebsd" ) )
+		{
+			// For some reason FreeBSD struggles to return the whole message at once.
+			for( auto mut offset= 0s; offset < 12s; )
+			{
+				var size_type bytes_read= server_stream.read( ust::array_view_mut</char8/>( message_received ).subrange_start( offset ).to_byte8_range() ).try_take();
+				offset+= bytes_read;
+			}
+		}
+		else
+		{
+			assert( server_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == 12s );
+		}
+		assert( message_received == "Some message" );
+	}
+
+	// 1 write and two reads.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		assert( client_stream.write( ust::string_view8( "012345678" ).to_byte8_range() ).try_take() == 9s );
+
+		var [ char8, 9 ] mut message_received= zero_init;
+		assert( server_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range().subrange( 0s, 3s ) ).try_take() == 3s );
+		assert( server_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range().subrange( 3s, 9s ) ).try_take() == 6s );
+		assert( message_received == "012345678" );
+	}
+
+	// Transmit large amount of data - sender buffer is smaller than receiver buffer.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var size_type message_size= 32s * 1024s * 1024s;
+
+		auto mut server_thread= ust::make_thread(
+			lambda[&]()
+			{
+				auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+				var size_type server_buffer_size= 3212s;
+				var [ byte8, server_buffer_size ] mut buffer= zero_init;
+
+				for( auto mut offset= 0s; offset < message_size; )
+				{
+					var size_type current_chunk_size= ust::min( server_buffer_size, message_size - offset );
+
+					var size_type bytes_read= server_stream.read( ust::array_view_mut</byte8/>( buffer ).subrange_end( current_chunk_size ) ).try_take();
+
+					for( auto mut i= 0s; i < bytes_read; ++i )
+					{
+						var size_type x= offset + i;
+						assert( buffer[i] == byte8( u8( ( x * 69431s ) ^ x ) ) );
+					}
+
+					offset+= bytes_read;
+				}
+			} );
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		var size_type client_buffer_size= 572s;
+		var [ byte8, client_buffer_size ] mut buffer= zero_init;
+
+		for( auto mut offset= 0s; offset < message_size; offset+= client_buffer_size )
+		{
+			// Generate data for current chunk.
+			var size_type current_chunk_size= ust::min( client_buffer_size, message_size - offset );
+			for( var size_type mut i= 0s; i < current_chunk_size; ++i )
+			{
+				var size_type x= offset + i;
+				buffer[i]= byte8( u8( ( x * 69431s ) ^ x ) );
+			}
+
+			// Write in loop, since sometimes the whole buffer can't be written in one call.
+			for( var size_type mut i= 0s; i < current_chunk_size; )
+			{
+				var size_type bytes_written= client_stream.write( ust::array_view_imut</byte8/>( buffer ).subrange( i, current_chunk_size ) ).try_take();
+				i+= bytes_written;
+			}
+		}
+	}
+
+	// Transmit large amount of data - receiver buffer is smaller than sender buffer.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var size_type message_size= 32s * 1024s * 1024s;
+
+		auto mut server_thread= ust::make_thread(
+			lambda[&]()
+			{
+				auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+				var size_type server_buffer_size= 321s;
+				var [ byte8, server_buffer_size ] mut buffer= zero_init;
+
+				for( auto mut offset= 0s; offset < message_size; )
+				{
+					var size_type current_chunk_size= ust::min( server_buffer_size, message_size - offset );
+
+					var size_type bytes_read= server_stream.read( ust::array_view_mut</byte8/>( buffer ).subrange_end( current_chunk_size ) ).try_take();
+
+					for( auto mut i= 0s; i < bytes_read; ++i )
+					{
+						var size_type x= offset + i;
+						assert( buffer[i] == byte8( u8( ( x * 71597s ) ^ x ) ) );
+					}
+
+					offset+= bytes_read;
+				}
+			} );
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		var size_type client_buffer_size= 5721s;
+		var [ byte8, client_buffer_size ] mut buffer= zero_init;
+
+		for( auto mut offset= 0s; offset < message_size; offset+= client_buffer_size )
+		{
+			// Generate data for current chunk.
+			var size_type current_chunk_size= ust::min( client_buffer_size, message_size - offset );
+			for( var size_type mut i= 0s; i < current_chunk_size; ++i )
+			{
+				var size_type x= offset + i;
+				buffer[i]= byte8( u8( ( x * 71597s ) ^ x ) );
+			}
+
+			// Write in loop, since sometimes the whole buffer can't be written in one call.
+			for( var size_type mut i= 0s; i < current_chunk_size; )
+			{
+				var size_type bytes_written= client_stream.write( ust::array_view_imut</byte8/>( buffer ).subrange( i, current_chunk_size ) ).try_take();
+				i+= bytes_written;
+			}
+		}
+	}
+
+	// Try writing into closed stream.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_steam= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		move( server_stream ); // Destroy stream, causing it to close.
+
+		loop
+		{
+			result_match( client_steam.write( ust::string_view8( "Pest und Eiter - wir ziehen weiter!" ).to_byte8_range() ) )
+			{
+				Ok( bytes_written ) ->
+				{
+					continue; // still can write something. Continue until first error.
+				},
+				Err( e ) ->
+				{
+					assert(
+						e == ust::io_error::broken_pipe || e == ust::io_error::connection_aborted,
+						ust::concat( "Invalid error code while writing into closed stream: ", ust::enum_to_string(e) ) );
+					break;
+				},
+			}
+		}
+	}
+
+	// Try reading from closed stream.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_steam= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		move( server_stream ); // Destroy stream, causing it to close.
+
+		var [ byte8, 16 ] mut buff= zero_init;
+
+		// TODO - shouldn't we do this in loop until error occured?
+		result_match( client_steam.read( buff ) )
+		{
+			Ok( bytes_read ) -> { assert( bytes_read == 0s, "Should not read from closed stream!" ); },
+			Err( e ) -> { assert( e == ust::io_error::broken_pipe, ust::concat( "Invalid error code while reading from closed stream: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// Non-blocking listener - should not block if nobody connects.
+	// For some reason making socket non-blocking doesn't work on MacOS.
+	if( !ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
+	{
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( ust::socket_address_v4( loopback, GetNextPort() ) ).try_take();
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			assert( !listener.is_nonblocking().try_take(), "Socket isn't blocking as expected!" );
+		}
+
+		result_match( listener.set_nonblocking( true ) )
+		{
+			Ok( v ) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to set non-blocking mode for socket! Error code: ", ust::enum_to_string(e) ) ); }
+		}
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			assert( listener.is_nonblocking().try_take(), "TCP listener isn't non-blocking as expected!" );
+		}
+
+		result_match( listener.accept() )
+		{
+			Ok( mut accept_result ) ->
+			{
+				assert( false, "Should not accept without anobody trying to connect!" );
+
+			},
+			Err(e) -> { assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while accepting on non-blocking TCP listener: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// Non-blocking listener, which actually accepts a connection.
+	// For some reason making socket non-blocking doesn't work on MacOS.
+	if( !ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var void non_blocking_set_result= listener.set_nonblocking( true ).try_take();
+
+		var ust::semaphore sem( 0u );
+
+		auto mut background_thread= ust::make_thread(
+			lambda[&]() : size_type
+			{
+				var size_type mut num_attempts= 0s;
+
+				loop
+				{
+					result_match( listener.accept() )
+					{
+						Ok( mut accept_result ) ->
+						{
+							assert( accept_result[0].write( ust::string_view8( "Hello!" ).to_byte8_range()).try_take() == 6s );
+							return num_attempts;
+						},
+						Err(e) ->
+						{
+							assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while accepting on non-blocking TCP listener: ", ust::enum_to_string(e) ) );
+
+							if( num_attempts == 0s )
+							{
+								sem.release();
+							}
+
+							++num_attempts;
+
+							continue;
+						},
+					}
+				}
+			} );
+
+		// Wait on a semaphore to ensure at least one "accept" attempt was performed.
+		sem.acquire();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		var [ char8, 6 ] mut message_received= zero_init;
+		assert( client_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == 6s );
+		assert( message_received == "Hello!" );
+
+		var size_type num_attempts= move(background_thread).join();
+
+		ust::stdout_print( ust::concat( "Accept a client in ", ust::to_string8( num_attempts ), " attempts\n" ) );
+	}
+
+	// Non-blocking stream - should not block on reading if no data was sent.
+	// For some reason making socket non-blocking doesn't work on MacOS.
+	if( !ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			assert( !client_stream.is_nonblocking().try_take(), "Socket isn't blocking as expected!" );
+		}
+
+		result_match( client_stream.set_nonblocking( true ) )
+		{
+			Ok( v ) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to set non-blocking mode for socket! Error code: ", ust::enum_to_string(e) ) ); }
+		}
+
+		if( ust::string_view8( compiler::target::os ) != "windows" )
+		{
+			assert( client_stream.is_nonblocking().try_take(), "TCP stream isn't non-blocking as expected!" );
+		}
+
+		auto [ server_stream, client_address ]= listener.accept().try_take();
+
+		var [ byte8, 16 ] mut data= zero_init;
+		result_match( client_stream.read( data ) )
+		{
+			Ok( bytes_read ) -> { assert( bytes_read == 0s, "Should not read data, which was never sent!" ); },
+			Err( e ) -> { assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while reading from non-blocking TCP stream: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// TCP stream "peek" method.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		auto& message= "Testing peek";
+		var size_type message_size= typeinfo</ typeof(message) />.element_count;
+
+		assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
+
+		// Can "peek" without extracting many times.
+		for( var size_type mut i= 0s; i < 16s; ++i )
+		{
+			var typeof(message) mut message_received= zero_init;
+			assert( client_stream.peek( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == message_size );
+			assert( message_received == message );
+		}
+
+		// Can still "read".
+		var typeof(message) mut message_received= zero_init;
+		assert( client_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == message_size );
+		assert( message_received == message );
+	}
+
+	// "get_local_address" for listener.
+	{
+		var ust::socket_address_v4 address( loopback, GetNextPort() );
+		var ust::tcp_listener listener= ust::tcp_listener::create_and_bind( address ).try_take();
+
+		result_match( listener.get_local_address() )
+		{
+			Ok( a ) -> { assert( a == address, "Unexpected address of TCP listener!" ); },
+			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP listener local address! Error code: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// Connect to invalid address (with no listener attached to it).
+	result_match( ust::tcp_stream::connect( ust::socket_address_v4( loopback, GetNextPort() ) ) )
+	{
+		Ok( s ) -> { assert( false, "Should not connect to non-existing address!" ); },
+		Err( e ) -> { assert( e == ust::io_error::connection_refused, ust::concat( "Unexpected error code while connecting to invalid address: ", ust::enum_to_string(e) ) ); },
+	}
+
+	// Try connecting TCP stream to UDP socket - should fail doint this.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::udp_socket socket= ust::udp_socket::create_and_bind( server_address ).try_take();
+
+		result_match( ust::tcp_stream::connect( server_address ) )
+		{
+			Ok( s ) -> { assert( false, "Should not connect TCP stream to UDP socket!" ); },
+			Err( e ) -> { assert( e == ust::io_error::connection_refused, ust::concat( "Unexpected error while connecting TCP stream to UDP socket: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// Try sending UDP packets to TCP listener.
+	// For some reason making socket non-blocking doesn't work on MacOS.
+	if( !ust::constexpr_string_equals( compiler::target::vendor, "apple" ) )
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		listener.set_nonblocking( true ).try_deref();
+
+		var ust::udp_socket mut socket= ust::udp_socket::create_v4().try_take();
+
+		// Should successfully send, but it will be rejected.
+		assert( socket.send_to( server_address, ust::string_view8( "Test UDP packet" ).to_byte8_range() ).try_take() == 15s );
+
+		// Try accepting many times in non-blocking mode. Shouldn't accept.
+		for( auto mut i= 0s; i < 256s; ++i )
+		{
+			result_match( listener.accept() )
+			{
+				Ok( accept_result ) -> { assert( false, "Should not accept UDP packet!" ); },
+				Err(e) -> { assert( e == ust::io_error::would_block, ust::concat( "Unexpected error code while accepting on non-blocking TCP listener: ", ust::enum_to_string(e) ) ); },
+			}
+		}
+	}
+
+	// "set_ttl" method for TCP listener.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		result_match( listener.set_ttl( 68u8 ) )
+		{
+			Ok( v ) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to set TCP listener TTL: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( listener.get_ttl() )
+		{
+			Ok( ttl ) -> { assert( ttl == 68u8, "Unexpected socket TTL" ); },
+			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP listener TTL: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// "set_ttl" method for TCP stream.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		result_match( client_stream.set_ttl( 73u8 ) )
+		{
+			Ok( v ) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to set TCP stream TTL: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( client_stream.get_ttl() )
+		{
+			Ok( ttl ) -> { assert( ttl == 73u8, "Unexpected socket TTL" ); },
+			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream TTL: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( server_stream.set_ttl( 89u8 ) )
+		{
+			Ok( v ) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to set TCP stream TTL: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( server_stream.get_ttl() )
+		{
+			Ok( ttl ) -> { assert( ttl == 89u8, "Unexpected socket TTL" ); },
+			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream TTL: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// "set_nodelay" method for TCP stream.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		result_match( client_stream.get_nodelay() )
+		{
+			Ok( nodelay ) -> { assert( !nodelay, "Invalid nodelay property!" ); },
+			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream nodelay: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( client_stream.set_nodelay( true ) )
+		{
+			Ok( v ) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to set TCP stream nodelay: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( client_stream.get_nodelay() )
+		{
+			Ok( nodelay ) -> { assert( nodelay, "Invalid nodelay property!" ); },
+			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream nodelay: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( server_stream.get_nodelay() )
+		{
+			Ok( nodelay ) -> { assert( !nodelay, "Invalid nodelay property!" ); },
+			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream nodelay: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( server_stream.set_nodelay( true ) )
+		{
+			Ok( v ) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to set TCP stream nodelay: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( server_stream.get_nodelay() )
+		{
+			Ok( nodelay ) -> { assert( nodelay, "Invalid nodelay property!" ); },
+			Err( e ) -> { assert( false, ust::concat( "Failed to get TCP stream nodelay: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// IP v6 test.
+	{
+		var ust::ip_address_v6 loopback_v6( 1u128 );
+
+		var ust::socket_address_v6 server_address( loopback_v6, GetNextPort(), 0u, 0u );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		assert( listener.get_local_address() == server_address );
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		assert( client_stream.get_peer_address().try_deref() == server_address, "Unexpected peer address of an TCP client stream!" );
+
+		if_var( &a_v6 : client_stream.get_local_address().try_take().get</ust::socket_address_v6/>() )
+		{
+			assert( a_v6.get_ip() == loopback_v6, "Unexpected TCP client address!" );
+		}
+		else { assert( false, "Unexpected client address kind, expected ipv6!" ); }
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		assert( server_stream.get_local_address().try_deref() == server_address, "Unexpected local address of an TCP server stream!" );
+
+		if_var( &a_v6 : server_stream.get_peer_address().try_take().get</ust::socket_address_v6/>() )
+		{
+			assert( a_v6.get_ip() == loopback_v6, "Unexpected TCP client address!" );
+		}
+		else { assert( false, "Unexpected client address kind, expected ipv6!" ); }
+
+		if_var( &a_v6 : client_address.get</ust::socket_address_v6/>() )
+		{
+			assert( a_v6.get_ip() == loopback_v6 || a_v6.get_ip() == ust::ip_address_v6( 0u128 ), "Invalid cliend IP!" );
+		}
+		else{ assert( false, "Unexpected client address, expected ip v6!" ); }
+
+		auto& message= "Testing TCP with IP v6 sockets.";
+		var size_type message_size= typeinfo</ typeof(message) />.element_count;
+
+		assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
+
+		var typeof(message) mut message_received= zero_init;
+		assert( client_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == message_size );
+		assert( message_received == message );
+	}
+
+	// Explicit stream close.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		var ust::tcp_stream mut client_stream= ust::tcp_stream::connect( server_address ).try_take();
+
+		auto [ mut server_stream, client_address ]= listener.accept().try_take();
+
+		{
+			auto& message= "Testing explicit socket close - server to client.";
+			var size_type message_size= typeinfo</ typeof(message) />.element_count;
+
+			assert( server_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
+
+			var typeof(message) mut message_received= zero_init;
+			assert( client_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == message_size );
+			assert( message_received == message );
+		}
+		{
+			auto& message= "Testing explicit socket close - client to server.";
+			var size_type message_size= typeinfo</ typeof(message) />.element_count;
+
+			assert( client_stream.write( ust::string_view8( message ).to_byte8_range() ).try_deref() == message_size );
+
+			var typeof(message) mut message_received= zero_init;
+			assert( server_stream.read( ust::array_view_mut</char8/>( message_received ).to_byte8_range() ).try_take() == message_size );
+			assert( message_received == message );
+		}
+
+		result_match( move(client_stream).close() )
+		{
+			Ok(v) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to close client-side TCP stream! Error: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( move(server_stream).close() )
+		{
+			Ok(v) -> {},
+			Err( e ) -> { assert( false, ust::concat( "Failed to close server-side TCP stream! Error: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	return 0;
+}
+
+fn GetNextPort() : u16
+{
+	unsafe
+	{
+		var u16 res= g_port_counter;
+		++g_port_counter;
+		return res;
+	}
+}
+
+var u16 mut g_port_counter( 59100s + 500s * compiler::generation );

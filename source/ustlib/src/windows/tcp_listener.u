@@ -1,0 +1,147 @@
+import "../../imports/tcp_listener.u"
+import "socket.uh"
+
+namespace ust
+{
+
+fn tcp_listener::create_and_bind( socket_address& a ) : io_result</tcp_listener/>
+{
+	call_wsa_startup();
+
+	unsafe
+	{
+		var native_socket_fd s= ::socket( ( a.has</socket_address_v4/>() ? PF_INET : PF_INET6 ), i32(SOCK_STREAM), 0 );
+		if( s == native_socket_fd(-1) )
+		{
+			return translate_wsa_error( WSAGetLastError() );
+		}
+
+		if_var( &a_v4 : a.get</socket_address_v4/>() )
+		{
+			var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
+
+			var i32 res=
+				::bind(
+					s,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in/>.size_of ) );
+
+			if( res != 0 )
+			{
+				var i32 e= WSAGetLastError();
+				::closesocket( s );
+				return translate_wsa_error( e );
+			}
+		}
+		else if_var( &a_v6 : a.get</socket_address_v6/>() )
+		{
+			var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+			var i32 res=
+				::bind(
+					s,
+					$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+					socklen_t( typeinfo</sockaddr_in6/>.size_of ) );
+
+			if( res != 0 )
+			{
+				var i32 e= WSAGetLastError();
+				::closesocket( s );
+				return translate_wsa_error( e );
+			}
+		}
+		else { halt; }
+
+		var i32 backlog= 128; // TODO - allow to tune it.
+
+		var i32 listen_res= ::listen( s, backlog );
+		if( listen_res != 0 )
+		{
+			var i32 e= WSAGetLastError();
+			::closesocket( s );
+			return translate_wsa_error( e );
+		}
+
+		return tcp_listener( s );
+	}
+}
+
+fn tcp_listener::constructor( native_socket_fd s ) unsafe
+	( socket_= s )
+{}
+
+fn tcp_listener::destructor()
+{
+	unsafe( ::closesocket( socket_ ) );
+}
+
+fn tcp_listener::accept( mut this ) : io_result</ tup[ tcp_stream, socket_address ] />
+{
+	unsafe
+	{
+		var sockaddr_storage mut address= zero_init;
+		var socklen_t mut address_size( typeinfo</sockaddr_storage/>.size_of );
+
+		var native_socket_fd client_stream_socket=
+			::accept( socket_, $<( cast_ref_unsafe</sockaddr/>( address ) ), $<(address_size) );
+
+		if( client_stream_socket == native_socket_fd(-1) )
+		{
+			return translate_wsa_error( WSAGetLastError() );
+		}
+
+		auto mut address_translated_opt= translate_socket_address( address );
+		if( address_translated_opt.empty() )
+		{
+			::closesocket( client_stream_socket );
+			return io_error::other;
+		}
+
+		var tup[ tcp_stream, socket_address ] res
+		[
+			tcp_stream( client_stream_socket ),
+			address_translated_opt.try_take(),
+		];
+
+		return res;
+	}
+}
+
+fn tcp_listener::is_nonblocking( this ) : io_result</bool/>
+{
+	return is_socket_nonblocking( socket_ );
+}
+
+fn tcp_listener::set_nonblocking( mut this, bool nonblocking ) : io_result</void/>
+{
+	return set_socket_nonblocking( socket_, nonblocking );
+}
+
+fn tcp_listener::get_local_address( this ) : io_result</socket_address/>
+{
+	return get_socket_local_address( socket_ );
+}
+
+fn tcp_listener::get_ttl( this ) : io_result</u8/>
+{
+	return get_socket_ttl( socket_ );
+}
+
+fn tcp_listener::set_ttl( mut this, u8 ttl ) : io_result</void/>
+{
+	return set_socket_ttl( socket_, ttl );
+}
+
+fn tcp_listener::get_native_fd( this ) unsafe : native_socket_fd
+{
+	return socket_;
+}
+
+fn tcp_listener::take_native_fd( byval mut this ) unsafe : native_socket_fd
+{
+	var native_socket_fd s= socket_;
+	unsafe( move_into_nowhere( move(this) ) ); // Forget about "this" to avoid calling destructor.
+	return s;
+}
+
+} // namespace ust
