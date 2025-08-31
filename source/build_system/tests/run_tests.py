@@ -906,7 +906,7 @@ def BuildScriptHaltTest():
 	res = RunBuildSystemWithErrors( "build_script_halt" )
 	assert( res.returncode != 0 )
 	stderr = str(res.stderr)
-	assert( stderr.find( "Abort signal recieved. Halt in build script file?" ) != -1 )
+	assert( stderr.find( "Abort signal received. Halt in build script file?" ) != -1 )
 
 
 def BrokenBuildFile0Test():

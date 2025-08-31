@@ -14,7 +14,7 @@ fn AbortHandler( i32 s ) unsafe call_conv( "C" )
 	// We use "halt-mode=abort" for build script libraries.
 	// If we caught an abort signal, it's likely halt in a build script.
 	ust::ignore_unused(s);
-	ust::stderr_print( "Abort signal recieved. Halt in build script file?\n" );
+	ust::stderr_print( "Abort signal received. Halt in build script file?\n" );
 
 	// It seems to be fine to return in abort handler.
 }

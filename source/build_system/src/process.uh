@@ -27,7 +27,7 @@ class ProcessGroupInterface interface
 		ust::array_view_imut</ust::string8/> command_line ) : bool;
 
 	// Perform work to manage processes - read their output, finish (if necessary).
-	// This call may block until an input is recieved or at least one of processes finishes.
+	// This call may block until an input is received or at least one of processes finishes.
 	// Returns false on error.
 	fn virtual pure nodiscard DoWork( mut this, Logger &mut logger ) : bool;
 

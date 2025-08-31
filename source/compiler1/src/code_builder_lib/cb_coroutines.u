@@ -576,7 +576,7 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
 		});
 
-	// Suspend generator. Now generator caller will recieve filled promise.
+	// Suspend generator. Now generator caller will receive filled promise.
 	CoroutineSuspend( names_scope, function_context, src_loc );
 }
 
