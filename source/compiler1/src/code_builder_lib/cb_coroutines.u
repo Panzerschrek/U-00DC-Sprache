@@ -497,6 +497,7 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 			}
 		}
 
+		CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, src_loc );
 		CoroutineSuspend( names_scope, function_context, src_loc );
 		return;
 	}
@@ -605,6 +606,8 @@ fn CodeBuilder::CoroutineYield( mut this, NamesScopePtr& names_scope, FunctionCo
 
 			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
 		});
+
+	CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, src_loc );
 
 	// Suspend generator. Now generator caller will receive filled promise.
 	CoroutineSuspend( names_scope, function_context, src_loc );

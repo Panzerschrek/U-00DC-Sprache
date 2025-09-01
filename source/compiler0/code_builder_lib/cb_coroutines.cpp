@@ -473,6 +473,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 		if( !std::holds_alternative<Synt::EmptyVariant>(expression) )
 			REPORT_ERROR( NonEmptyYieldInAsyncFunction, names_scope.GetErrors(), src_loc );
 
+		CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, src_loc );
 		CoroutineSuspend( names_scope, function_context, src_loc );
 		return;
 	}
@@ -487,6 +488,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 		if( !( yield_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
 			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, yield_type, void_type_ );
 
+		CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, src_loc );
 		CoroutineSuspend( names_scope, function_context, src_loc );
 		return;
 	}
@@ -583,6 +585,8 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 		// Destroy temporaries of expression evaluation frame.
 		CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
 	}
+
+	CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, src_loc );
 
 	// Suspend generator. Now generator caller will receive filled promise.
 	CoroutineSuspend( names_scope, function_context, src_loc );

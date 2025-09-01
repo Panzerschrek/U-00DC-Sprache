@@ -1559,11 +1559,14 @@ def NonSyncTypesInsideSyncGenerator_Test5():
 		fn generator Foo() : i32
 		{
 			var S mut s;
-			// Ok - "non_sync" variable is destroyed at "return".
+			// "return" in a generator creates two suspension points.
+			// Local variables are destroyed only at second one, so at first one "s" still sexists.
 			return 1;
 		}
 	"""
-	tests_lib.build_program( c_program_text )
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 8 ) )
 
 
 def NonSyncTypesInsideSyncGenerator_Test6():

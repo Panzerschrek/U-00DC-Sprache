@@ -1081,8 +1081,6 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 
 fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::YieldOperator& yield_operator ) : BlockElementBuildInfo
 {
-	CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, yield_operator.src_loc );
-
 	CoroutineYield( names_scope, function_context, yield_operator.expr, yield_operator.src_loc );
 	return BlockElementBuildInfo();
 }
