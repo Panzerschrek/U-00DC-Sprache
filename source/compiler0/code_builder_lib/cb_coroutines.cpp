@@ -431,10 +431,7 @@ void CodeBuilder::CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint(
 					{
 						if( !function_context.variables_state.NodeMoved( variable ) &&
 							GetTypeNonSync( variable->type, names_scope, src_loc ) )
-						{
-							// TODO - use other error code?
-							REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), src_loc );
-						}
+							REPORT_ERROR( NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync, names_scope.GetErrors(), src_loc, variable->name );
 					}
 				}
 			}

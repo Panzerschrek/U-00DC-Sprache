@@ -694,7 +694,7 @@ def NonSyncTypesInsideSyncAsyncFunction_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 8 ) )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 8 ) )
 
 
 def NonSyncTypesInsideSyncAsyncFunction_Test1():
@@ -711,7 +711,7 @@ def NonSyncTypesInsideSyncAsyncFunction_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 8 ) )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 8 ) )
 
 
 def NonSyncTypesInsideSyncAsyncFunction_Test2():
@@ -729,7 +729,7 @@ def NonSyncTypesInsideSyncAsyncFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 8 ) )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 8 ) )
 
 
 def NonSyncTypesInsideSyncAsyncFunction_Test3():
@@ -747,7 +747,7 @@ def NonSyncTypesInsideSyncAsyncFunction_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 9 ) )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 9 ) )
 
 
 def NonSyncTypesInsideSyncAsyncFunction_Test4():
@@ -765,7 +765,7 @@ def NonSyncTypesInsideSyncAsyncFunction_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 8 ) )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 8 ) )
 
 
 def NonSyncTypesInsideSyncAsyncFunction_Test5():
@@ -784,7 +784,7 @@ def NonSyncTypesInsideSyncAsyncFunction_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 8 ) )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 8 ) )
 
 
 def NonSyncTypesInsideSyncAsyncFunction_Test6():
@@ -806,7 +806,7 @@ def NonSyncTypesInsideSyncAsyncFunction_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 11 ) )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 11 ) )
 
 
 def NonSyncTypesInsideSyncAsyncFunction_Test7():
@@ -827,7 +827,7 @@ def NonSyncTypesInsideSyncAsyncFunction_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HasError( errors_list, "CoroutineNonSyncRequired", 11 ) )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 11 ) )
 
 
 def NonSyncTypesInsideSyncAsyncFunction_Test8():
