@@ -1576,3 +1576,16 @@ def NonSyncTypesInsideSyncGenerator_Test6():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test7():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator non_sync Foo()
+		{
+			var S s;
+			// Ok - the coroutine itself is marked as "non_sync".
+			yield;
+		}
+	"""
+	tests_lib.build_program( c_program_text )

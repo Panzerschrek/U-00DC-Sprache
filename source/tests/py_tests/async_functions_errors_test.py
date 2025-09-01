@@ -940,3 +940,16 @@ def NonSyncTypesInsideSyncAsyncFunction_Test15():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncAsyncFunction_Test16():
+	c_program_text= """
+		struct S non_sync {}
+		fn async non_sync Foo()
+		{
+			var S s;
+			// Ok - the coroutine itself is marked as "non_sync".
+			yield;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
