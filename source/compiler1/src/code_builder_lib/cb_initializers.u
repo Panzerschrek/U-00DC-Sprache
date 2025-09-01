@@ -229,6 +229,8 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 
 			if( requires_destruction )
 			{
+				// Create temp variable for initialized member in order to call destructor in case of return or await during further elements initialization.
+				// Also it's useful for "non_sync" variables detection in coroutines (non_sync types should always have destructors).
 				var VariablePtr temp_initialized_variable_ptr=
 					Variable
 					{
@@ -316,6 +318,8 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 
 			if( element_type.HasDestructor() )
 			{
+				// Create temp variable for initialized member in order to call destructor in case of return or await during further elements initialization.
+				// Also it's useful for "non_sync" variables detection in coroutines (non_sync types should always have destructors).
 				var VariablePtr temp_initialized_variable_ptr=
 					Variable
 					{
@@ -470,6 +474,8 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 
 			if( class_field.t.HasDestructor() )
 			{
+				// Create temp variable for initialized member in order to call destructor in case of return or await during further elements initialization.
+				// Also it's useful for "non_sync" variables detection in coroutines (non_sync types should always have destructors).
 				var VariablePtr temp_initialized_variable_ptr=
 					Variable
 					{

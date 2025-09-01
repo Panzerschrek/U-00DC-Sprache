@@ -1703,6 +1703,7 @@ fn CodeBuilder::BuildFuncCode(
 			if( func_variable.kind == FunctionVariable::Kind::Generator )
 			{
 				// Finish generator function with final suspend.
+				// No need to check here for existing "non_sync" local variables in case of "sync" generator, since all such variables are destroyed at final suspend.
 				CoroutineFinalSuspend( args_names_scope_ptr, function_context, block.end_src_loc );
 			}
 			else if( func_variable.kind == FunctionVariable::Kind::Async )
