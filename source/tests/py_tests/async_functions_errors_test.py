@@ -339,7 +339,7 @@ def VirtualAsyncFunction_Test0():
 def CoroutineNonSyncRequired_Test0():
 	c_program_text= """
 		struct S non_sync {}
-		type AsyncFunc= async : S; // "S" is "non_sync", so, "non_sync" is required for generator type.
+		type AsyncFunc= async : S; // "S" is "non_sync", so, "non_sync" is required for async function type.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -613,7 +613,7 @@ def DestroyedVariableStillHasReferences_ForAsyncFunction_Test3():
 def ReferenceIndirectionDepthExceeded_ForAsyncFunctions_Test0():
 	c_program_text= """
 		struct S{ i32 & x; }
-		fn async Foo( S & s ) : i32; // Can't pass structs with references inside by a reference into a generator.
+		fn async Foo( S & s ) : i32; // Can't pass structs with references inside by a reference into an async function.
 	"""
 	tests_lib.build_program_with_errors( c_program_text )
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -624,7 +624,7 @@ def ReferenceIndirectionDepthExceeded_ForAsyncFunctions_Test0():
 def ReferenceIndirectionDepthExceeded_ForAsyncFunctions_Test1():
 	c_program_text= """
 		struct S{ i32 &mut x; }
-		fn async Foo( S & s ) : i32; // Can't pass structs with references inside by a reference into a generator.
+		fn async Foo( S & s ) : i32; // Can't pass structs with references inside by a reference into an async function.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
