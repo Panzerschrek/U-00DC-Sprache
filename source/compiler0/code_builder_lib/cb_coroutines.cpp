@@ -445,14 +445,11 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 		{
 			for( const VariablePtr& variable : variables_frame->variables_ )
 			{
-				if( ( variable->value_type == ValueType::Value && !function_context.variables_state.NodeMoved( variable ) ) ||
-					variable->value_type == ValueType::ReferenceImut || variable->value_type == ValueType::ReferenceMut )
+				if( !function_context.variables_state.NodeMoved( variable ) &&
+					GetTypeNonSync( variable->type, names_scope, src_loc ) )
 				{
-					if( GetTypeNonSync( variable->type, names_scope, src_loc ) )
-					{
-						// TODO - use other error code?
-						REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), src_loc );
-					}
+					// TODO - use other error code?
+					REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), src_loc );
 				}
 			}
 		}

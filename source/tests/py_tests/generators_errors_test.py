@@ -1439,3 +1439,62 @@ def NonSyncTypesInsideSyncGenerator_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HasError( errors_list, "CoroutineNonSyncRequired", 8 ) )
+
+
+def NonSyncTypesInsideSyncGenerator_Test1():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			auto& s_ref= GetSRef();
+			// Error here - a "non_sync" reference exists at "yield" point in "sync" coroutine.
+			// it's not allowed, since suspended coroutine may be moved to another thread and this isn't allowed for "non_sync" types.
+			yield;
+		}
+		fn GetSRef() :S&;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 8 ) )
+
+
+def NonSyncTypesInsideSyncGenerator_Test2():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			var S mut s;
+			move(s);
+			// Ok - "non_sync" variable is destroyed before "yield".
+			yield;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test3():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			yield;
+			// Ok - "non_sync" variable exists after last "yield".
+			var S mut s;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test4():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			{
+				var S mut s;
+			}
+			// Ok - "non_sync" variable is destroyed before "yield".
+			yield;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
