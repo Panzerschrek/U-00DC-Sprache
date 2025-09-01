@@ -1423,3 +1423,18 @@ def DestroyedVariableStillHasReferences_ForGenerator_Test3():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test0():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			var S s;
+			// Error here - a "non_sync" variable exists at "yield" point in "sync" coroutine.
+			// it's not allowed, since suspended coroutine may be moved to another thread and this isn't allowed for "non_sync" types.
+			yield;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
