@@ -24,11 +24,12 @@ void CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( const Functio
 }
 
 void CodeBuilder::TransformCoroutineFunctionType(
-	FunctionType& coroutine_function_type, FunctionVariable::Kind kind, NamesScope& names_scope, const SrcLoc& src_loc )
+	FunctionType& coroutine_function_type, FunctionVariable::Kind kind, const bool non_sync, NamesScope& names_scope, const SrcLoc& src_loc )
 {
 	CoroutineTypeDescription coroutine_type_description;
 	coroutine_type_description.return_type= coroutine_function_type.return_type;
 	coroutine_type_description.return_value_type= coroutine_function_type.return_value_type;
+	coroutine_type_description.non_sync= non_sync;
 
 	switch( kind )
 	{
@@ -42,19 +43,6 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		coroutine_type_description.kind= CoroutineKind::AsyncFunc;
 		break;
 	}
-
-	// Non-sync property is based on non-sync property of args and return values.
-	// Evaluate it immediately.
-
-	coroutine_type_description.non_sync= false;
-	if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
-		GetTypeNonSync( coroutine_function_type.return_type, names_scope, src_loc ) )
-		coroutine_type_description.non_sync= true;
-
-	for( const FunctionType::Param& param : coroutine_function_type.params )
-		if( EnsureTypeComplete( param.type ) &&
-			GetTypeNonSync( param.type, names_scope, src_loc ) )
-			coroutine_type_description.non_sync= true;
 
 	// Calculate inner references.
 	// Each reference param adds new inner reference.

@@ -1182,7 +1182,13 @@ size_t CodeBuilder::PrepareFunction(
 			// Perform checks before transforming coroutine function type.
 			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
-			TransformCoroutineFunctionType( function_type, func_variable.kind, names_scope, func.src_loc );
+			const bool non_sync= WithGlobalFunctionContext(
+				[&]( FunctionContext& function_context )
+				{
+					return ImmediateEvaluateNonSyncTag( names_scope, function_context, func.coroutine_non_sync_tag );
+				} );
+
+			TransformCoroutineFunctionType( function_type, func_variable.kind, non_sync, names_scope, func.src_loc );
 
 			// Disable auto-coroutines.
 			if( func.type.IsAutoReturn() )
@@ -1613,6 +1619,29 @@ void CodeBuilder::BuildFuncCode(
 		// Call this after types completion request.
 		// Perform this check while function body building, since the check requires type completeness, which can't be requested during prototype preparation.
 		CheckCompleteFunctionReferenceNotation( func_variable.type, parent_names_scope.GetErrors(), func_variable.body_src_loc );
+	}
+
+	if( func_variable.IsCoroutine() )
+	{
+		const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &function_type.return_type.GetClassType()->generated_class_data );
+		U_ASSERT( coroutine_type_description != nullptr );
+
+		if( !EnsureTypeComplete( coroutine_type_description->return_type ) )
+			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc,  coroutine_type_description->return_type  );
+
+		if( !coroutine_type_description->non_sync )
+		{
+			for( const FunctionType::Param& param : function_type.params )
+			{
+				// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
+				// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
+				if( GetTypeNonSync( param.type, parent_names_scope, params.front().src_loc ) )
+					REPORT_ERROR( CoroutineNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc );
+			}
+
+			if( GetTypeNonSync( coroutine_type_description->return_type, parent_names_scope, block.src_loc ) )
+				REPORT_ERROR( CoroutineNonSyncRequired, parent_names_scope.GetErrors(), block.src_loc );
+		}
 	}
 
 	NamesScope function_names( "", &parent_names_scope );
