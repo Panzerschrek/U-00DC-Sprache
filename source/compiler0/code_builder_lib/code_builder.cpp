@@ -2067,6 +2067,7 @@ void CodeBuilder::BuildFuncCode(
 		if( func_variable.kind == FunctionVariable::Kind::Generator )
 		{
 			// Add final suspention point for generators.
+			// No need to check here for existing "non_sync" local variables in case of "sync" generator, since all such variables are destroyed at final suspend.
 			CoroutineFinalSuspend( function_names, function_context, block.end_src_loc );
 		}
 		else if( func_variable.kind == FunctionVariable::Kind::Async )

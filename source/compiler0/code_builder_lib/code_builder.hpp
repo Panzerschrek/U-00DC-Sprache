@@ -1318,6 +1318,7 @@ private:
 	// This function should be called for coroutine function just after aruments preparation.
 	void PrepareCoroutineBlocks( FunctionContext& function_context );
 
+	void CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 	void CoroutineYield( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	void AsyncReturn( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	Value BuildAwait( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );

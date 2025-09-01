@@ -425,6 +425,35 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.SetInsertPoint( func_code_block );
 }
 
+void CodeBuilder::CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+{
+	const ClassPtr coroutine_class= function_context.function_type.return_type.GetClassType();
+	if( coroutine_class != nullptr )
+	{
+		if( const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data ) )
+		{
+			if( !coroutine_type_description->non_sync )
+			{
+				// Check if we have no "non_sync" variables in "sync" coroutine alive at suspension point.
+				// We shouldn't allow such variables, since suspended coroutine may be moved to another thread
+				// and thus such "non_sync" variable may be moved with it, which isn't allowed by langauge rules.
+				for( const auto& variables_frame : function_context.stack_variables_stack )
+				{
+					for( const VariablePtr& variable : variables_frame->variables_ )
+					{
+						if( !function_context.variables_state.NodeMoved( variable ) &&
+							GetTypeNonSync( variable->type, names_scope, src_loc ) )
+						{
+							// TODO - use other error code?
+							REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), src_loc );
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
 	if( function_context.coro_suspend_bb == nullptr )
@@ -437,23 +466,6 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 	U_ASSERT( coroutine_class != nullptr );
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data );
 	U_ASSERT( coroutine_type_description != nullptr );
-
-	if( !coroutine_type_description->non_sync )
-	{
-		// Check if we have no "non_sync" variables in "sync" coroutine alive at suspension point.
-		for( const auto& variables_frame : function_context.stack_variables_stack )
-		{
-			for( const VariablePtr& variable : variables_frame->variables_ )
-			{
-				if( !function_context.variables_state.NodeMoved( variable ) &&
-					GetTypeNonSync( variable->type, names_scope, src_loc ) )
-				{
-					// TODO - use other error code?
-					REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), src_loc );
-				}
-			}
-		}
-	}
 
 	if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
 	{

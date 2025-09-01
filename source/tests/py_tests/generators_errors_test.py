@@ -1498,3 +1498,28 @@ def NonSyncTypesInsideSyncGenerator_Test4():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test5():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo() : i32
+		{
+			var S mut s;
+			// Ok - "non_sync" variable is destroyed at "return".
+			return 1;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test6():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			var S mut s;
+			// Ok - "non_sync" variable is destroyed at "return".
+		}
+	"""
+	tests_lib.build_program( c_program_text )

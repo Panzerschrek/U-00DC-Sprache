@@ -777,6 +777,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				{
 				case CoroutineKind::Generator:
 					// For generators process "return" with value as combination "yield" and empty "return".
+					// No need to check here for existing "non_sync" local variables in case of "sync" generator, since all such variables are destroyed at final suspend.
 					CoroutineYield( names_scope, function_context, return_operator.expression, return_operator.src_loc );
 					CoroutineFinalSuspend( names_scope, function_context, return_operator.src_loc );
 					return block_info;
@@ -1030,6 +1031,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::YieldOperator& yield_operator )
 {
+	CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, yield_operator.src_loc );
+
 	// "Yield" is not a terminal operator. Execution (logically) continues after it.
 	CoroutineYield( names_scope, function_context, yield_operator.expression, yield_operator.src_loc );
 	return BlockBuildInfo();
