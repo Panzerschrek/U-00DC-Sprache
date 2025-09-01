@@ -1258,7 +1258,7 @@ def GlobalsLoopDetected_ForGenerators_Test1():
 def CoroutineNonSyncRequired_Test0():
 	c_program_text= """
 		struct S non_sync {}
-		fn generator Foo(S s){} // Generator value argument is non-sync.
+		fn generator Foo(S s); // Generator value argument is non-sync.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -1268,7 +1268,7 @@ def CoroutineNonSyncRequired_Test0():
 def CoroutineNonSyncRequired_Test1():
 	c_program_text= """
 		struct S non_sync {}
-		fn generator non_sync(false) Foo(S& s){} // Generator reference argument is non-sync.
+		fn generator non_sync(false) Foo(S& s); // Generator reference argument is non-sync.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -1278,7 +1278,7 @@ def CoroutineNonSyncRequired_Test1():
 def CoroutineNonSyncRequired_Test2():
 	c_program_text= """
 		struct S non_sync {}
-		fn generator Foo() : S {} // Generator return value is non-sync.
+		fn generator Foo() : S; // Generator return value is non-sync.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -1288,7 +1288,7 @@ def CoroutineNonSyncRequired_Test2():
 def CoroutineNonSyncRequired_Test3():
 	c_program_text= """
 		struct S non_sync {}
-		fn generator Foo() : S& {} // Generator return reference is non-sync.
+		fn generator Foo() : S&; // Generator return reference is non-sync.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -1299,10 +1299,10 @@ def CoroutineNonSyncRequired_Test4():
 	c_program_text= """
 		struct S non_sync {}
 		// Ok - non_sync tag exists and args/return value are non-sync.
-		fn generator non_sync(true) Foo(S& s){}
-		fn generator non_sync Bar(S s){}
-		fn generator non_sync Baz() : S {}
-		fn generator non_sync Lol() : S& {}
+		fn generator non_sync(true) Foo(S& s);
+		fn generator non_sync Bar(S s);
+		fn generator non_sync Baz() : S;
+		fn generator non_sync Lol() : S&;
 		type Gen= generator non_sync(true) : S &mut;
 	"""
 	tests_lib.build_program( c_program_text )

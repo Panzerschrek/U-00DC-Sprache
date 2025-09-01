@@ -1621,29 +1621,6 @@ void CodeBuilder::BuildFuncCode(
 		CheckCompleteFunctionReferenceNotation( func_variable.type, parent_names_scope.GetErrors(), func_variable.body_src_loc );
 	}
 
-	if( func_variable.IsCoroutine() )
-	{
-		const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &function_type.return_type.GetClassType()->generated_class_data );
-		U_ASSERT( coroutine_type_description != nullptr );
-
-		if( !EnsureTypeComplete( coroutine_type_description->return_type ) )
-			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc,  coroutine_type_description->return_type  );
-
-		if( !coroutine_type_description->non_sync )
-		{
-			for( const FunctionType::Param& param : function_type.params )
-			{
-				// Coroutine is not declared as non-sync, but param is non-sync. This is an error.
-				// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
-				if( GetTypeNonSync( param.type, parent_names_scope, params.front().src_loc ) )
-					REPORT_ERROR( CoroutineNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc );
-			}
-
-			if( GetTypeNonSync( coroutine_type_description->return_type, parent_names_scope, block.src_loc ) )
-				REPORT_ERROR( CoroutineNonSyncRequired, parent_names_scope.GetErrors(), block.src_loc );
-		}
-	}
-
 	NamesScope function_names( "", &parent_names_scope );
 
 	FunctionContext function_context( function_type, llvm_context_, llvm_function );

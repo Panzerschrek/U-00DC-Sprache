@@ -44,6 +44,21 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		break;
 	}
 
+	if( !non_sync )
+	{
+		// If this coroutine is not marked as "non_sync", check "non_sync" property of params and return type right now.
+
+		coroutine_type_description.non_sync= false;
+		if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
+			GetTypeNonSync( coroutine_function_type.return_type, names_scope, src_loc ) )
+			REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), src_loc );
+
+		for( const FunctionType::Param& param : coroutine_function_type.params )
+			if( EnsureTypeComplete( param.type ) &&
+				GetTypeNonSync( param.type, names_scope, src_loc ) )
+				REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), src_loc );
+	}
+
 	// Calculate inner references.
 	// Each reference param adds new inner reference.
 	// Each value param creates number of references equal to number of inner references of its type.
