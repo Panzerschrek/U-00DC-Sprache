@@ -33,6 +33,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 	mut this,
 	FunctionType &mut coroutine_function_type,
 	FunctionVariable::Kind kind,
+	bool non_sync_,
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc )
 {
@@ -41,7 +42,7 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		.kind= CoroutineKind::Generator, // Set later.
 		.return_type= coroutine_function_type.return_type,
 		.return_value_type= coroutine_function_type.return_value_type,
-		.non_sync_= false, // Set later
+		.non_sync_= non_sync_,
 	};
 
 	switch( kind )
@@ -51,20 +52,22 @@ fn CodeBuilder::TransformCoroutineFunctionType(
 		FunctionVariable::Kind::Async -> { coroutine_type_description.kind= CoroutineKind::AsyncFunc; },
 	}
 
-	// Non-sync property is based on non-sync property of args and return values.
-	// Evaluate it immediately.
-	coroutine_type_description.non_sync_= false;
-	if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
-		GetTypeNonSync( coroutine_function_type.return_type, names_scope, src_loc ) )
+	if( !non_sync_ )
 	{
-		coroutine_type_description.non_sync_= true;
-	}
+		// If this coroutine is not marked as "non_sync", check "non_sync" property of params and return type right now.
 
-	foreach( &param : coroutine_function_type.params )
-	{
-		if( EnsureTypeComplete( param.t ) && GetTypeNonSync( param.t, names_scope, src_loc ) )
+		if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
+			GetTypeNonSync( coroutine_function_type.return_type, names_scope, src_loc ) )
 		{
-			coroutine_type_description.non_sync_= true;
+			REPORT_ERROR( CoroutineNonSyncRequired, names_scope, src_loc )
+		}
+
+		foreach( &param : coroutine_function_type.params )
+		{
+			if( EnsureTypeComplete( param.t ) && GetTypeNonSync( param.t, names_scope, src_loc ) )
+			{
+				REPORT_ERROR( CoroutineNonSyncRequired, names_scope, src_loc )
+			}
 		}
 	}
 

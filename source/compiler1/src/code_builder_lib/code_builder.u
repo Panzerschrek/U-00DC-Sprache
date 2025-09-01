@@ -587,7 +587,9 @@ fn CodeBuilder::PrepareFunction(
 		// Perform checks before transforming coroutine function type.
 		PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope_ptr, function_declaration.src_loc );
 
-		TransformCoroutineFunctionType( function_type, function_kind, names_scope_ptr, function_declaration.src_loc );
+		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );
+
+		TransformCoroutineFunctionType( function_type, function_kind, non_sync_, names_scope_ptr, function_declaration.src_loc );
 
 		if_var( &type_name : function_declaration.function_type.return_type )
 		{
