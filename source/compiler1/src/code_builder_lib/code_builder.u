@@ -1703,7 +1703,6 @@ fn CodeBuilder::BuildFuncCode(
 			if( func_variable.kind == FunctionVariable::Kind::Generator )
 			{
 				// Finish generator function with final suspend.
-				// No need to check here for existing "non_sync" local variables in case of "sync" generator, since all such variables are destroyed at final suspend.
 				CoroutineFinalSuspend( args_names_scope_ptr, function_context, block.end_src_loc );
 			}
 			else if( func_variable.kind == FunctionVariable::Kind::Async )
@@ -2100,7 +2099,7 @@ fn CodeBuilder::CheckForUnusedLocalNames( this, NamesScopePtr& names_scope )
 
 fn CodeBuilder::VariableExistenceMayHaveSideEffects( Type& variable_type ) : bool
 {
-	// Normally we should perform deep inspection in order to know, that existance of the variable has sense.
+	// Normally we should perform deep inspection in order to know, that existence of the variable has sense.
 	// For example, "ust::string8" has non-trivial destructor, but it just frees memory.
 	// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
 	var bool destructor_is_trivial=

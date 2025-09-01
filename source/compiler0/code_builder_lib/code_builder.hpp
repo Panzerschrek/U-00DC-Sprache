@@ -1160,7 +1160,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
-	// Check existance of conversion constuctor, but do not trigger its building.
+	// Check existence of conversion constuctor, but do not trigger its building.
 	bool HasConversionConstructor(
 		FunctionType::Param src_type_extended,
 		const Type& dst_type,

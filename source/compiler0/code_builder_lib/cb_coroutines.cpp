@@ -722,7 +722,7 @@ Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& functio
 	if( async_func_variable->type == invalid_type_ )
 		return ErrorValue();
 
-	// Check for "non-sync" variables existance after expression evaluation but before suspension.
+	// Check for "non-sync" variables existence after expression evaluation but before suspension.
 	CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, src_loc );
 
 	if( async_func_variable->value_type != ValueType::Value )

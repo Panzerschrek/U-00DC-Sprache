@@ -1560,7 +1560,7 @@ def NonSyncTypesInsideSyncGenerator_Test5():
 		{
 			var S mut s;
 			// "return" in a generator creates two suspension points.
-			// Local variables are destroyed only at second one, so at first one "s" still sexists.
+			// Local variables are destroyed only at second one, so at first one "s" still exists.
 			return 1;
 		}
 	"""

@@ -1062,7 +1062,7 @@ private:
 	// Fetch and select overloaded conversion constructor.
 	fn GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, VariableTypeExtended src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
-	// Check existance of conversion constuctor, but do not trigger its building.
+	// Check existence of conversion constuctor, but do not trigger its building.
 	fn HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, VariableTypeExtended src, SrcLoc& src_loc ) : bool;
 
 	// Returns index of more specialized or ~0s
