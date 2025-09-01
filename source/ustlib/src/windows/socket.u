@@ -1,4 +1,4 @@
-import "../../imports/bytes_order.u"
+import "../../imports/bit_math.u"
 import "../../imports/atomic.u"
 import "socket.uh"
 
@@ -49,20 +49,20 @@ fn translate_wsa_error( i32 e ) : io_error
 
 fn translate_ip_address( in_addr& a ) : ip_address_v4
 {
-	return ip_address_v4( to_host_bytes_order( u32( a.S_un.union_contents[0] ) ) );
+	return ip_address_v4( swap_bytes_if_little_endian_host( u32( a.S_un.union_contents[0] ) ) );
 }
 
 fn translate_ip_address( in6_addr& a ) : ip_address_v6
 {
 	var u128 ip_raw=
-		( u128( to_host_bytes_order( a.parts[0] ) ) << 112u ) |
-		( u128( to_host_bytes_order( a.parts[1] ) ) <<  96u ) |
-		( u128( to_host_bytes_order( a.parts[2] ) ) <<  80u ) |
-		( u128( to_host_bytes_order( a.parts[3] ) ) <<  64u ) |
-		( u128( to_host_bytes_order( a.parts[4] ) ) <<  48u ) |
-		( u128( to_host_bytes_order( a.parts[5] ) ) <<  32u ) |
-		( u128( to_host_bytes_order( a.parts[6] ) ) <<  16u ) |
-		( u128( to_host_bytes_order( a.parts[7] ) ) <<   0u );
+		( u128( swap_bytes_if_little_endian_host( a.parts[0] ) ) << 112u ) |
+		( u128( swap_bytes_if_little_endian_host( a.parts[1] ) ) <<  96u ) |
+		( u128( swap_bytes_if_little_endian_host( a.parts[2] ) ) <<  80u ) |
+		( u128( swap_bytes_if_little_endian_host( a.parts[3] ) ) <<  64u ) |
+		( u128( swap_bytes_if_little_endian_host( a.parts[4] ) ) <<  48u ) |
+		( u128( swap_bytes_if_little_endian_host( a.parts[5] ) ) <<  32u ) |
+		( u128( swap_bytes_if_little_endian_host( a.parts[6] ) ) <<  16u ) |
+		( u128( swap_bytes_if_little_endian_host( a.parts[7] ) ) <<   0u );
 
 	return ip_address_v6( ip_raw );
 }
@@ -83,7 +83,7 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 
 		return socket_address( socket_address_v4(
 			ip_address_v4( translate_ip_address( address_ip_v4.sin_addr ) ),
-			to_host_bytes_order( address_ip_v4.sin_port ) ) );
+			swap_bytes_if_little_endian_host( address_ip_v4.sin_port ) ) );
 	}
 	else if( i32(address.ss_family) == AF_INET6 )
 	{
@@ -100,9 +100,9 @@ fn translate_socket_address( sockaddr_storage& address ) : optional</socket_addr
 		return
 			socket_address( socket_address_v6(
 				translate_ip_address( address_ip_v6.sin6_addr ),
-				to_host_bytes_order( address_ip_v6.sin6_port ),
-				to_host_bytes_order( address_ip_v6.sin6_flowinfo ),
-				to_host_bytes_order( address_ip_v6.sin6_scope_id ) ) );
+				swap_bytes_if_little_endian_host( address_ip_v6.sin6_port ),
+				swap_bytes_if_little_endian_host( address_ip_v6.sin6_flowinfo ),
+				swap_bytes_if_little_endian_host( address_ip_v6.sin6_scope_id ) ) );
 	}
 	else
 	{
@@ -116,8 +116,8 @@ fn translate_socket_address( socket_address_v4& address ) : sockaddr_in
 	return sockaddr_in
 	{
 		.sin_family( AF_INET ),
-		.sin_port= to_network_bytes_order( address.get_port() ),
-		.sin_addr{ .S_un{ .union_contents[ ( to_network_bytes_order( address.get_ip().get_bits() ) ) ] } },
+		.sin_port= swap_bytes_if_little_endian_host( address.get_port() ),
+		.sin_addr{ .S_un{ .union_contents[ ( swap_bytes_if_little_endian_host( address.get_ip().get_bits() ) ) ] } },
 		.sin_zero= zero_init,
 	};
 }
@@ -129,23 +129,23 @@ fn translate_socket_address( socket_address_v6& address ) : sockaddr_in6
 	return sockaddr_in6
 	{
 		.sin6_family( AF_INET6 ),
-		.sin6_port= to_network_bytes_order( address.get_port() ),
+		.sin6_port= swap_bytes_if_little_endian_host( address.get_port() ),
 		.sin6_addr
 		{
 			.parts
 			[
-				to_network_bytes_order( u16( ip_raw >> 112u ) ),
-				to_network_bytes_order( u16( ip_raw >>  96u ) ),
-				to_network_bytes_order( u16( ip_raw >>  80u ) ),
-				to_network_bytes_order( u16( ip_raw >>  64u ) ),
-				to_network_bytes_order( u16( ip_raw >>  48u ) ),
-				to_network_bytes_order( u16( ip_raw >>  32u ) ),
-				to_network_bytes_order( u16( ip_raw >>  16u ) ),
-				to_network_bytes_order( u16( ip_raw >>   0u ) ),
+				swap_bytes_if_little_endian_host( u16( ip_raw >> 112u ) ),
+				swap_bytes_if_little_endian_host( u16( ip_raw >>  96u ) ),
+				swap_bytes_if_little_endian_host( u16( ip_raw >>  80u ) ),
+				swap_bytes_if_little_endian_host( u16( ip_raw >>  64u ) ),
+				swap_bytes_if_little_endian_host( u16( ip_raw >>  48u ) ),
+				swap_bytes_if_little_endian_host( u16( ip_raw >>  32u ) ),
+				swap_bytes_if_little_endian_host( u16( ip_raw >>  16u ) ),
+				swap_bytes_if_little_endian_host( u16( ip_raw >>   0u ) ),
 			]
 		},
-		.sin6_flowinfo= to_network_bytes_order( address.get_flow_info() ),
-		.sin6_scope_id= to_network_bytes_order( address.get_scope_id() ),
+		.sin6_flowinfo= swap_bytes_if_little_endian_host( address.get_flow_info() ),
+		.sin6_scope_id= swap_bytes_if_little_endian_host( address.get_scope_id() ),
 	};
 }
 

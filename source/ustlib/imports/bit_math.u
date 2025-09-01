@@ -110,6 +110,35 @@ fn constexpr swap_bytes( size_type x ) : size_type
 	}
 }
 
+// Swap bytes if target CPU is big-endian. Return original value if it's little-endian.
+template</type T/>
+fn constexpr swap_bytes_if_big_endian_host( T x ) : T
+{
+	static_if( compiler::target::is_big_endian )
+	{
+		return swap_bytes( x );
+	}
+	else
+	{
+		return x;
+	}
+}
+
+// Swap bytes if target CPU is little-endian. Return original value if it's big-endian.
+// This function is useful for bytes swapping to and from network bytes order (which is big-endian).
+template</type T/>
+fn constexpr swap_bytes_if_little_endian_host( T x ) : T
+{
+	static_if( compiler::target::is_big_endian )
+	{
+		return x;
+	}
+	else
+	{
+		return swap_bytes( x );
+	}
+}
+
 fn constexpr reverse_bits( u8 in_x ) : u8
 {
 	// LLVM optimizer is smart enough to detect bit reverse pattern and use special CPU instructions if they are available.

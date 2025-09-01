@@ -33,7 +33,6 @@ Other functionality:
 * Binary heap routines and heap sorting (binary_heap.u)
 * Binary search routines (binary_seach.u)
 * Bit math functions (bit_math.u)
-* Helper functions for network to host and host to network bytes order swapping (bytes_order.u)
 * Math functions with overflow checks (checked_math.u)
 * Comparators for sorting and binary search (compare.u)
 * Helpers for arrays and tuples construction (composite.u)
