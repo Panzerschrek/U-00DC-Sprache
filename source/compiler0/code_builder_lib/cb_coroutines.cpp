@@ -438,6 +438,26 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 	const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data );
 	U_ASSERT( coroutine_type_description != nullptr );
 
+	if( !coroutine_type_description->non_sync )
+	{
+		// Check if we have no "non_sync" variables in "sync" coroutine alive at suspension point.
+		for( const auto& variables_frame : function_context.stack_variables_stack )
+		{
+			for( const VariablePtr& variable : variables_frame->variables_ )
+			{
+				if( ( variable->value_type == ValueType::Value && !function_context.variables_state.NodeMoved( variable ) ) ||
+					variable->value_type == ValueType::ReferenceImut || variable->value_type == ValueType::ReferenceMut )
+				{
+					if( GetTypeNonSync( variable->type, names_scope, src_loc ) )
+					{
+						// TODO - use other error code?
+						REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), src_loc );
+					}
+				}
+			}
+		}
+	}
+
 	if( coroutine_type_description->kind == CoroutineKind::AsyncFunc )
 	{
 		// Allow empty "yield" for async functions.
