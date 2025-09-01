@@ -637,3 +637,139 @@ def ReferenceIndirectionDepthExceeded_ForForAsyncFunctions_Test2():
 		fn async Foo( S s ) : i32 { return 0; } // Ok - pass struct with reference inside by value.
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncAsyncFunction_Test0():
+	c_program_text= """
+		struct S non_sync {}
+		fn async Foo()
+		{
+			var S s;
+			// Error here - a "non_sync" variable exists at "yield" point in "sync" coroutine.
+			// it's not allowed, since suspended coroutine may be moved to another thread and this isn't allowed for "non_sync" types.
+			yield;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 8 ) )
+
+
+def NonSyncTypesInsideSyncAsyncFunction_Test1():
+	c_program_text= """
+		struct S non_sync {}
+		fn async Foo()
+		{
+			auto& s_ref= GetSRef();
+			// Error here - a "non_sync" reference exists at "yield" point in "sync" coroutine.
+			// It's not allowed, since suspended coroutine may be moved to another thread and this isn't allowed for "non_sync" types.
+			yield;
+		}
+		fn GetSRef() :S&;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 8 ) )
+
+
+def NonSyncTypesInsideSyncAsyncFunction_Test2():
+	c_program_text= """
+		struct S non_sync {}
+		fn async Foo() : i32
+		{
+			var S s;
+			// Error here - a "non_sync" variable exists at "await" point in "sync" async function.
+			// It's not allowed, since suspended coroutine may be moved to another thread and this isn't allowed for "non_sync" types.
+			auto x= Bar().await;
+			return x * 2;
+		}
+		fn async Bar() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 8 ) )
+
+
+def NonSyncTypesInsideSyncAsyncFunction_Test3():
+	c_program_text= """
+		struct S non_sync {}
+		fn async Foo() : i32
+		{
+			var S s;
+			// Error here - a "non_sync" variable exists at "await" point in "sync" async function.
+			// It's not allowed, since suspended coroutine may be moved to another thread and this isn't allowed for "non_sync" types.
+			// It's not allowed even in "return", since await suspension is executed before local variables destruction.
+			return Bar().await;
+		}
+		fn async Bar() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 9 ) )
+
+
+def NonSyncTypesInsideSyncAsyncFunction_Test4():
+	c_program_text= """
+		struct S non_sync {}
+		fn async Foo()
+		{
+			var S mut s;
+			move(s);
+			// Ok - "non_sync" variable is destroyed before "yield".
+			yield;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncAsyncFunction_Test5():
+	c_program_text= """
+		struct S non_sync {}
+		fn async Foo()
+		{
+			yield;
+			// Ok - "non_sync" variable exists after last "yield".
+			var S mut s;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncAsyncFunction_Test6():
+	c_program_text= """
+		struct S non_sync {}
+		fn async Foo()
+		{
+			{
+				var S mut s;
+			}
+			// Ok - "non_sync" variable is destroyed before "yield".
+			yield;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncAsyncFunction_Test7():
+	c_program_text= """
+		struct S non_sync {}
+		fn async Foo() : i32
+		{
+			var S mut s;
+			// Ok - "non_sync" variable is destroyed at "return".
+			return 1;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncAsyncFunction_Test8():
+	c_program_text= """
+		struct S non_sync {}
+		fn async Foo()
+		{
+			var S mut s;
+			// Ok - "non_sync" variable is destroyed at "return".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
