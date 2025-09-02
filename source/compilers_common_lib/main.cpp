@@ -880,6 +880,8 @@ int Main( int argc, const char* argv[] )
 
 					if( o.isOptimizingForSpeed() || o.isOptimizingForSize() )
 					{
+						module_pass_manager.addPass( llvm::GlobalDCEPass() );
+
 						// Run manually constant merge pass and then function merge pass.
 						// Do this in order to deduplicate code, which may be duplicated in case of LTO linking.
 						// Constants merge as first pass is necessary before functions merging,
