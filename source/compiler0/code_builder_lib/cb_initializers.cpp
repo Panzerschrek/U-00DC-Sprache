@@ -89,6 +89,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( requires_destruction )
 			{
 				// Create temp variable for initialized member in order to call destructor in case of return or await during further array elements initialization.
+				// Also it's useful for "non_sync" variables detection in coroutines (non_sync types should always have destructors).
 				const VariableMutPtr temp_initialized_variable=
 					Variable::Create(
 						array_type->element_type,
@@ -160,6 +161,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( element_type.HasDestructor() )
 			{
 				// Create temp variable for initialized member in order to call destructor in case of return or await during further tuple elements initialization.
+				// Also it's useful for "non_sync" variables detection in coroutines (non_sync types should always have destructors).
 				const VariableMutPtr temp_initialized_variable=
 					Variable::Create(
 						element_type,
@@ -285,6 +287,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( field->type.HasDestructor() )
 			{
 				// Create temp variable for initialized member in order to call destructor in case of return or await during further struct elements initialization.
+				// Also it's useful for "non_sync" variables detection in coroutines (non_sync types should always have destructors).
 				const VariableMutPtr temp_initialized_variable=
 					Variable::Create(
 						field->type,

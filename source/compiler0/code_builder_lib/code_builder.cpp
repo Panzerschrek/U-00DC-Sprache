@@ -1042,7 +1042,7 @@ void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
 
 bool CodeBuilder::VariableExistenceMayHaveSideEffects( const Type& variable_type )
 {
-	// Normally we should perform deep inspection in order to know, that existance of the variable has sense.
+	// Normally we should perform deep inspection in order to know, that existence of the variable has sense.
 	// For example, "ust::string8" has non-trivial destructor, but it just frees memory.
 	// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
 	const bool destructor_is_trivial=
@@ -1182,7 +1182,13 @@ size_t CodeBuilder::PrepareFunction(
 			// Perform checks before transforming coroutine function type.
 			PerformCoroutineFunctionReferenceNotationChecks( function_type, names_scope.GetErrors(), func.src_loc );
 
-			TransformCoroutineFunctionType( function_type, func_variable.kind, names_scope, func.src_loc );
+			const bool non_sync= WithGlobalFunctionContext(
+				[&]( FunctionContext& function_context )
+				{
+					return ImmediateEvaluateNonSyncTag( names_scope, function_context, func.coroutine_non_sync_tag );
+				} );
+
+			TransformCoroutineFunctionType( function_type, func_variable.kind, non_sync, names_scope, func.src_loc );
 
 			// Disable auto-coroutines.
 			if( func.type.IsAutoReturn() )

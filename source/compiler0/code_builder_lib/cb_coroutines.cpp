@@ -24,11 +24,12 @@ void CodeBuilder::PerformCoroutineFunctionReferenceNotationChecks( const Functio
 }
 
 void CodeBuilder::TransformCoroutineFunctionType(
-	FunctionType& coroutine_function_type, FunctionVariable::Kind kind, NamesScope& names_scope, const SrcLoc& src_loc )
+	FunctionType& coroutine_function_type, FunctionVariable::Kind kind, const bool non_sync, NamesScope& names_scope, const SrcLoc& src_loc )
 {
 	CoroutineTypeDescription coroutine_type_description;
 	coroutine_type_description.return_type= coroutine_function_type.return_type;
 	coroutine_type_description.return_value_type= coroutine_function_type.return_value_type;
+	coroutine_type_description.non_sync= non_sync;
 
 	switch( kind )
 	{
@@ -43,18 +44,20 @@ void CodeBuilder::TransformCoroutineFunctionType(
 		break;
 	}
 
-	// Non-sync property is based on non-sync property of args and return values.
-	// Evaluate it immediately.
+	if( !non_sync )
+	{
+		// If this coroutine is not marked as "non_sync", check "non_sync" property of params and return type right now.
 
-	coroutine_type_description.non_sync= false;
-	if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
-		GetTypeNonSync( coroutine_function_type.return_type, names_scope, src_loc ) )
-		coroutine_type_description.non_sync= true;
+		coroutine_type_description.non_sync= false;
+		if( EnsureTypeComplete( coroutine_function_type.return_type ) &&
+			GetTypeNonSync( coroutine_function_type.return_type, names_scope, src_loc ) )
+			REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), src_loc );
 
-	for( const FunctionType::Param& param : coroutine_function_type.params )
-		if( EnsureTypeComplete( param.type ) &&
-			GetTypeNonSync( param.type, names_scope, src_loc ) )
-			coroutine_type_description.non_sync= true;
+		for( const FunctionType::Param& param : coroutine_function_type.params )
+			if( EnsureTypeComplete( param.type ) &&
+				GetTypeNonSync( param.type, names_scope, src_loc ) )
+				REPORT_ERROR( CoroutineNonSyncRequired, names_scope.GetErrors(), src_loc );
+	}
 
 	// Calculate inner references.
 	// Each reference param adds new inner reference.
@@ -425,6 +428,31 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 	function_context.llvm_ir_builder.SetInsertPoint( func_code_block );
 }
 
+void CodeBuilder::CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+{
+	if( const ClassPtr coroutine_class= function_context.function_type.return_type.GetClassType() )
+	{
+		if( const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data ) )
+		{
+			if( !coroutine_type_description->non_sync )
+			{
+				// Check if we have no "non_sync" variables in "sync" coroutine alive at suspension point.
+				// We shouldn't allow such variables, since suspended coroutine may be moved to another thread
+				// and thus such "non_sync" variable may be moved with it, which isn't allowed by language rules.
+				for( const auto& variables_frame : function_context.stack_variables_stack )
+				{
+					for( const VariablePtr& variable : variables_frame->variables_ )
+					{
+						if( !function_context.variables_state.NodeMoved( variable ) &&
+							GetTypeNonSync( variable->type, names_scope, src_loc ) )
+							REPORT_ERROR( NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync, names_scope.GetErrors(), src_loc, variable->name );
+					}
+				}
+			}
+		}
+	}
+}
+
 void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
 {
 	if( function_context.coro_suspend_bb == nullptr )
@@ -444,6 +472,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 		if( !std::holds_alternative<Synt::EmptyVariant>(expression) )
 			REPORT_ERROR( NonEmptyYieldInAsyncFunction, names_scope.GetErrors(), src_loc );
 
+		CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, src_loc );
 		CoroutineSuspend( names_scope, function_context, src_loc );
 		return;
 	}
@@ -458,6 +487,7 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 		if( !( yield_type == void_type_ && coroutine_type_description->return_value_type == ValueType::Value ) )
 			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), src_loc, yield_type, void_type_ );
 
+		CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, src_loc );
 		CoroutineSuspend( names_scope, function_context, src_loc );
 		return;
 	}
@@ -554,6 +584,8 @@ void CodeBuilder::CoroutineYield( NamesScope& names_scope, FunctionContext& func
 		// Destroy temporaries of expression evaluation frame.
 		CallDestructors( temp_variables_storage, names_scope, function_context, src_loc );
 	}
+
+	CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, src_loc );
 
 	// Suspend generator. Now generator caller will receive filled promise.
 	CoroutineSuspend( names_scope, function_context, src_loc );
@@ -688,6 +720,9 @@ Value CodeBuilder::BuildAwait( NamesScope& names_scope, FunctionContext& functio
 	const VariablePtr async_func_variable= BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 	if( async_func_variable->type == invalid_type_ )
 		return ErrorValue();
+
+	// Check for "non-sync" variables existence after expression evaluation but before suspension.
+	CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( names_scope, function_context, src_loc );
 
 	if( async_func_variable->value_type != ValueType::Value )
 	{

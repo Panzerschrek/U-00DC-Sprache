@@ -226,7 +226,7 @@ fn CodeBuilder::CheckClassNonSyncTagInheritance( mut this, ClassTypePtr& class_t
 
 	if( !GetTypeNonSync( class_type, class_parent_scope, src_loc ) )
 	{
-		// If type is not "non_sync" - do not care about "non_sync" tag existance on parents.
+		// If type is not "non_sync" - do not care about "non_sync" tag existence on parents.
 		return;
 	}
 

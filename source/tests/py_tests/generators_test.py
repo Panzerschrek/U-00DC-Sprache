@@ -1371,7 +1371,7 @@ def Generator_InnerReferenceTagDeduction_Test3():
 	tests_lib.build_program( c_program_text )
 
 
-def GeneratorNonSync_Test0():
+def GeneratorNonSyncTag_Test0():
 	c_program_text= """
 		fn generator Gen( i32 x, f32 y, [ bool, 2 ] z );
 		static_assert( !non_sync</ typeof( typeinfo</ typeof(Gen) />.return_type )::src_type /> );
@@ -1379,58 +1379,17 @@ def GeneratorNonSync_Test0():
 	tests_lib.build_program( c_program_text )
 
 
-def GeneratorNonSync_Test1():
+def GeneratorNonSyncTag_Test1():
 	c_program_text= """
-		struct S{}
-		struct T{}
-		fn generator Gen( S& a, S b ) : T;
-		static_assert( !non_sync</ typeof( typeinfo</ typeof(Gen) />.return_type )::src_type /> );
+		fn generator non_sync NonSyncGen() : i32;
+		static_assert( non_sync</ typeof(NonSyncGen()) /> );
 	"""
 	tests_lib.build_program( c_program_text )
 
 
-def GeneratorNonSync_Test2():
+def GeneratorNonSyncTag_Test2():
 	c_program_text= """
-		struct S non_sync {}
-		fn generator Gen( S& s );
-		static_assert( non_sync</ typeof( typeinfo</ typeof(Gen) />.return_type )::src_type /> );
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def GeneratorNonSync_Test3():
-	c_program_text= """
-		struct S non_sync {}
-		fn generator Gen( i32 x, S s, f32 y );
-		static_assert( non_sync</ typeof( typeinfo</ typeof(Gen) />.return_type )::src_type /> );
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def GeneratorNonSync_Test4():
-	c_program_text= """
-		struct S non_sync {}
-		fn generator Gen() : S;
-		static_assert( non_sync</ typeof( typeinfo</ typeof(Gen) />.return_type )::src_type /> );
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def GeneratorNonSync_Test5():
-	c_program_text= """
-		struct S non_sync {}
-		fn generator Gen() : S&;
-		static_assert( non_sync</ typeof( typeinfo</ typeof(Gen) />.return_type )::src_type /> );
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def GeneratorNonSync_Test6():
-	c_program_text= """
-		struct S non_sync
-		{
-			fn generator Gen(this);
-		}
-		static_assert( non_sync</ typeof( typeinfo</ typeof(S::Gen) />.return_type )::src_type /> );
+		fn generator non_sync(false) SyncGen() : i32;
+		static_assert( !non_sync</ typeof(SyncGen()) /> );
 	"""
 	tests_lib.build_program( c_program_text )

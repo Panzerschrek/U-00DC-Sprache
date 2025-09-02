@@ -1160,7 +1160,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
-	// Check existance of conversion constuctor, but do not trigger its building.
+	// Check existence of conversion constuctor, but do not trigger its building.
 	bool HasConversionConstructor(
 		FunctionType::Param src_type_extended,
 		const Type& dst_type,
@@ -1311,13 +1311,14 @@ private:
 	void PerformCoroutineFunctionReferenceNotationChecks( const FunctionType& function_type, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	// Make return type - coroutine type and prepare it properly. Modifies given function type.
-	void TransformCoroutineFunctionType( FunctionType& coroutine_function_type, FunctionVariable::Kind kind, NamesScope& names_scope, const SrcLoc& src_loc );
+	void TransformCoroutineFunctionType( FunctionType& coroutine_function_type, FunctionVariable::Kind kind, bool non_sync, NamesScope& names_scope, const SrcLoc& src_loc );
 
 	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 
 	// This function should be called for coroutine function just after aruments preparation.
 	void PrepareCoroutineBlocks( FunctionContext& function_context );
 
+	void CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 	void CoroutineYield( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	void AsyncReturn( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	Value BuildAwait( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );

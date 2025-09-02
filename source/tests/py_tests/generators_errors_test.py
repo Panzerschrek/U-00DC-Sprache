@@ -1258,6 +1258,59 @@ def GlobalsLoopDetected_ForGenerators_Test1():
 def CoroutineNonSyncRequired_Test0():
 	c_program_text= """
 		struct S non_sync {}
+		fn generator Foo(S s); // Generator value argument is non-sync.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+
+
+def CoroutineNonSyncRequired_Test1():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator non_sync(false) Foo(S& s); // Generator reference argument is non-sync.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+
+
+def CoroutineNonSyncRequired_Test2():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo() : S; // Generator return value is non-sync.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+
+
+def CoroutineNonSyncRequired_Test3():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo() : S&; // Generator return reference is non-sync.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "CoroutineNonSyncRequired", 3 ) )
+
+
+def CoroutineNonSyncRequired_Test4():
+	c_program_text= """
+		struct S non_sync {}
+		// Ok - non_sync tag exists and args/return value are non-sync.
+		fn generator non_sync(true) Foo(S& s);
+		fn generator non_sync Bar(S s);
+		fn generator non_sync Baz() : S;
+		fn generator non_sync Lol() : S&;
+		type Gen= generator non_sync(true) : S &mut;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def CoroutineNonSyncRequired_Test5():
+	c_program_text= """
+		struct S non_sync {}
 		type Gen= generator : S; // "S" is "non_sync", so, "non_sync" is required for generator type.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1420,6 +1473,122 @@ def DestroyedVariableStillHasReferences_ForGenerator_Test3():
 		{
 			var i32 some_local= 0;
 			auto gen= SomeGen( MakeS( some_local ) ); // Generator object holds a value of type "S" with a reference to a local variable. This is ok.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test0():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			var S s;
+			// Error here - a "non_sync" variable exists at "yield" point in "sync" coroutine.
+			// it's not allowed, since suspended coroutine may be moved to another thread and this isn't allowed for "non_sync" types.
+			yield;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 8 ) )
+
+
+def NonSyncTypesInsideSyncGenerator_Test1():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			auto& s_ref= GetSRef();
+			// Error here - a "non_sync" reference exists at "yield" point in "sync" coroutine.
+			// it's not allowed, since suspended coroutine may be moved to another thread and this isn't allowed for "non_sync" types.
+			yield;
+		}
+		fn GetSRef() :S&;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 8 ) )
+
+
+def NonSyncTypesInsideSyncGenerator_Test2():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			var S mut s;
+			move(s);
+			// Ok - "non_sync" variable is destroyed before "yield".
+			yield;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test3():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			yield;
+			// Ok - "non_sync" variable exists after last "yield".
+			var S mut s;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test4():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			{
+				var S mut s;
+			}
+			// Ok - "non_sync" variable is destroyed before "yield".
+			yield;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test5():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo() : i32
+		{
+			var S mut s;
+			// "return" in a generator creates two suspension points.
+			// Local variables are destroyed only at second one, so at first one "s" still exists.
+			return 1;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "NonSyncVariableIsAliveAtSuspensionPointOfCoroutineNotMarkedAsNonSync", 8 ) )
+
+
+def NonSyncTypesInsideSyncGenerator_Test6():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator Foo()
+		{
+			var S mut s;
+			// Ok - "non_sync" variable is destroyed at "return".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonSyncTypesInsideSyncGenerator_Test7():
+	c_program_text= """
+		struct S non_sync {}
+		fn generator non_sync Foo()
+		{
+			var S s;
+			// Ok - the coroutine itself is marked as "non_sync".
+			yield;
 		}
 	"""
 	tests_lib.build_program( c_program_text )

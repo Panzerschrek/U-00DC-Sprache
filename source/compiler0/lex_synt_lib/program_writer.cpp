@@ -980,6 +980,8 @@ void WriteFunctionDeclaration( const Function& function ) const
 	else if( function.kind == Function::Kind::Async )
 		stream_ << Keyword( Keywords::async_ ) << " ";
 
+	ElementWrite( function.coroutine_non_sync_tag );
+
 	if( function.constexpr_ )
 		stream_ << Keyword( Keywords::constexpr_ ) << " ";
 	if( function.no_mangle )
