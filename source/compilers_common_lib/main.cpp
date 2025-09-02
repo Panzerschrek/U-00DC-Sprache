@@ -31,6 +31,7 @@
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/ConstantMerge.h>
 #include <llvm/Transforms/IPO/GlobalDCE.h>
+#include <llvm/Transforms/IPO/GlobalOpt.h>
 #include <llvm/Transforms/IPO/Internalize.h>
 #include <llvm/Transforms/IPO/MergeFunctions.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
@@ -880,6 +881,7 @@ int Main( int argc, const char* argv[] )
 
 					if( o.isOptimizingForSpeed() || o.isOptimizingForSize() )
 					{
+						module_pass_manager.addPass( llvm::GlobalOptPass() );
 						module_pass_manager.addPass( llvm::GlobalDCEPass() );
 
 						// Run manually constant merge pass and then function merge pass.
