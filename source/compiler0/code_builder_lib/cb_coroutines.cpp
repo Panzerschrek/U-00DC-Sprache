@@ -430,8 +430,7 @@ void CodeBuilder::PrepareCoroutineBlocks( FunctionContext& function_context )
 
 void CodeBuilder::CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
-	const ClassPtr coroutine_class= function_context.function_type.return_type.GetClassType();
-	if( coroutine_class != nullptr )
+	if( const ClassPtr coroutine_class= function_context.function_type.return_type.GetClassType() )
 	{
 		if( const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &coroutine_class->generated_class_data ) )
 		{
@@ -439,7 +438,7 @@ void CodeBuilder::CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint(
 			{
 				// Check if we have no "non_sync" variables in "sync" coroutine alive at suspension point.
 				// We shouldn't allow such variables, since suspended coroutine may be moved to another thread
-				// and thus such "non_sync" variable may be moved with it, which isn't allowed by langauge rules.
+				// and thus such "non_sync" variable may be moved with it, which isn't allowed by language rules.
 				for( const auto& variables_frame : function_context.stack_variables_stack )
 				{
 					for( const VariablePtr& variable : variables_frame->variables_ )

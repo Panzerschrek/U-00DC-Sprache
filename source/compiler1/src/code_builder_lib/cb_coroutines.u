@@ -447,7 +447,7 @@ fn CodeBuilder::CheckSyncCoroutineHasNoNonSyncLocalVariablesAtSuspensionPoint( m
 			{
 				// Check if we have no "non_sync" variables in "sync" coroutine alive at suspension point.
 				// We shouldn't allow such variables, since suspended coroutine may be moved to another thread
-				// and thus such "non_sync" variable may be moved with it, which isn't allowed by langauge rules.
+				// and thus such "non_sync" variable may be moved with it, which isn't allowed by language rules.
 				foreach( &variables_frame : function_context.variables_frames )
 				{
 					foreach( &variable_ptr : variables_frame.variables )
