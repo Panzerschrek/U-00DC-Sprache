@@ -47,6 +47,8 @@ add_custom_command(
 		# Mark the whole ustlib directory as source directory - in order to make all functions hidden and thus avoid exporting them from shared libraries.
 		--source-dir ${CMAKE_CURRENT_SOURCE_DIR}
 		${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS} ${SPRACHE_COMPILER_ARCH_OPTIONS}
+		# Internalize hidden functions (from src directory) to enable some optimizations
+		--internalize-hidden-functions
 		--verify-module
 	${DEPFILE_OPTION}
 	WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # Hack! cmake produces ninja build file with content like "compiler1/lex_syn_lib/file_pos.u.o:", but launches custom command in current binary directory
