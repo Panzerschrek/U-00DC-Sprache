@@ -2,7 +2,7 @@ Async functions
 ===============
 
 Async functions are coroutines which return single value.
-They are declared with usage of ``async`` keyword.
+They are declared with usage of ``async`` keyword  with optional ``non_sync`` tag after it.
 
 Async functions return values like regular functions - via ``return`` operator.
 Its usage rules are the same as in regular functions.

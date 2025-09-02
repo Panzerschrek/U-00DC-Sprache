@@ -2,7 +2,7 @@ Generators
 ==========
 
 A generator is a coroutine which may return zero or more values.
-Generator-functions are defined with usage of ``generator`` keyword.
+Generator-functions are defined with usage of ``generator`` keyword with optional ``non_sync`` tag after it.
 
 It's possible to use operator ``yield`` inside a generator, which is used for producing of a new value by the generator.
 A value (or a reference) passed into ``yield`` is returned to a code that calls this generator.
