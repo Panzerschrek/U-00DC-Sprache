@@ -7,23 +7,20 @@ public:
 	fn constructor();
 	fn destructor();
 
-	fn allocate( this, size_type size_bytes ) : $(byte8);
+	fn allocate( this, size_type size_bytes ) unsafe : $(byte8);
 
 private:
 	struct internal_state
 	{
-		$(byte8) blocks_list_head; // Blocks are building a linked list.
+		$(byte8) current_block;
+		size_type current_block_size;
+		size_type current_block_position;
+		// Store allocated blocks to free them later.
+		size_type num_allocated_blocks;
+		[ $(byte8), 64 ] allocated_blocks; // TODO - use less blocks, 64 is too many.
 	}
 
-	struct block_header
-	{
-		// Size including header.
-		size_type size_bytes;
-		// In newly-allocated block this is at least header size.
-		size_type current_position;
-		// Blocks are building a linked list.
-		$(byte8) next_block;
-	}
+	var size_type constexpr c_first_block_size = 128s;
 
 private:
 	// Require heap indirection in order to allow allocating in "imut" method.

@@ -8,11 +8,23 @@ namespace ust
 fn arena_allocator::constructor()
 	( s_= zero_init )
 {
+	// Allocate state structure together with first block.
 	unsafe
 	{
-		// Allocate state structure.
-		s_= unsafe( byte_ptr_cast</internal_state/>( memory_allocate( typeinfo</internal_state/>.size_of ) ) );
-		$>(s_).blocks_list_head= nullptr</byte8/>();
+		var size_type internal_state_size= typeinfo</internal_state/>.size_of;
+
+		var $(byte8) mem= memory_allocate( internal_state_size + c_first_block_size );
+
+		s_= byte_ptr_cast</internal_state/>( mem );
+		$>(s_)=
+		internal_state
+		{
+			.current_block= mem + internal_state_size,
+			.current_block_size= c_first_block_size,
+			.current_block_position= 0s,
+			.num_allocated_blocks= 0s, // Don't count first block, since it's allocated with this state structure.
+			.allocated_blocks= zero_init,
+		};
 	}
 }
 
@@ -20,78 +32,48 @@ fn arena_allocator::destructor()
 {
 	unsafe
 	{
-		// Free linked list of blocks.
-		auto mut ptr= $>(s_).blocks_list_head;
-		while( !is_nullptr(ptr) )
+		var internal_state& s= $>(s_);
+
+		// Free allocated blocks.
+		for( auto mut i= 0s; i < s.num_allocated_blocks; ++i )
 		{
-			auto next_ptr= $>( byte_ptr_cast</block_header/>( ptr ) ).next_block;
-			memory_free(ptr);
-			ptr= next_ptr;
+			memory_free( s.allocated_blocks[i] );
 		}
 
-		// Free state structure.
+		// Free state structure (together fith first block).
 		memory_free( ptr_cast_to_byte8( s_ ) );
 	}
 }
 
-fn arena_allocator::allocate( this, size_type size_bytes ) : $(byte8)
+fn arena_allocator::allocate( this, size_type size_bytes ) unsafe : $(byte8)
 {
-	var size_type header_size= typeinfo</block_header/>.size_of;
-
 	unsafe
 	{
 		var internal_state &mut s= $>(s_);
 
-		if( is_nullptr( s.blocks_list_head ) )
+		if( s.current_block_position + size_bytes > s.current_block_size )
 		{
-			// Alocate first block.
+			// Has not enough size in this block - allocate new one.
+			// This wastes remaining space in current block, but this isn't a huge problem.
 
-			// Always use power of two size blocks.
-			var size_type mut first_block_size= 128s;
-			while( first_block_size + header_size < size_bytes )
+			// Exponentially grow block size, so that list of allocated blocks has small limited size.
+			var size_type mut new_block_size= s.current_block_size << 1s;
+			while( new_block_size < size_bytes )
 			{
-				first_block_size <<= 1s;
+				new_block_size <<= 1s;
 			}
 
-			var $(byte8) mem= memory_allocate( first_block_size );
-
-			var block_header &mut header= $>( byte_ptr_cast</block_header/>( mem ) );
-			header.size_bytes= first_block_size;
-			header.current_position= header_size;
-			header.next_block= nullptr</byte8/>();
-
-			s.blocks_list_head= mem;
-		}
-		else
-		{
-			var block_header &mut header= $>( byte_ptr_cast</block_header/>( s.blocks_list_head ) );
-			if( header.current_position + size_bytes > header.size_bytes )
-			{
-				// Has not enough size in this block - allocate new one.
-				// This wastes remaining space in current block, but this isn't a huge problem.
-
-				// Exponentially grow block size, so that linked list of blocks has small limited size.
-				var size_type mut new_block_size= header.size_bytes << 1s;
-				while( new_block_size + header_size < size_bytes )
-				{
-					new_block_size <<= 1s;
-				}
-
-				var $(byte8) mem= memory_allocate( new_block_size );
-
-				var block_header &mut header= $>( byte_ptr_cast</block_header/>( mem ) );
-				header.size_bytes= new_block_size;
-				header.current_position= header_size;
-				header.next_block= s.blocks_list_head;
-
-				s.blocks_list_head= mem;
-			}
+			var $(byte8) mem= memory_allocate( new_block_size );
+			s.allocated_blocks[ s.num_allocated_blocks ]= mem;
+			++s.num_allocated_blocks;
+			s.current_block= mem;
+			s.current_block_position= 0s;
+			s.current_block_size= new_block_size;
 		}
 
 		// Just return current position and adjust it by given size.
-		var block_header &mut header= $>( byte_ptr_cast</block_header/>( s.blocks_list_head ) );
-		var $(byte8) res= s.blocks_list_head + header.current_position;
-		header.current_position+= size_bytes;
+		var $(byte8) res= s.current_block + s.current_block_position;
+		s.current_block_position+= size_bytes;
 
 		return res;
 	}
