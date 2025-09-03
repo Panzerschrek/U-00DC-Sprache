@@ -111,6 +111,26 @@ public:
 		}
 	}
 
+	// Construct from range.
+	// Range elements are copied.
+	fn
+	enable_if( typeinfo</T/>.is_copy_constructible && c_reference_tag_count == 0s && c_enable_range )
+	constructor( mut this, arena_allocator& allocator, random_access_range_imut</T/> r )
+		@( reference_notation::pollution::param0_param_1_reference )
+		( ptr_= zero_init, size_= r.size() )
+	{
+		unsafe
+		{
+			// Multiplication overflow check is needed here.
+			ptr_= byte_ptr_cast</T/>( allocator.allocate( mul_overflow_check_halt( size_, c_element_size_ ) ) );
+
+			for( var size_type mut i(0); i < size_; ++i )
+			{
+				move_into_uninitialized( $>(ptr_ + i), r.index_unchecked(i) ); // Copy-constructor called here.
+			}
+		}
+	}
+
 	fn destructor()
 	{
 		for( var size_type mut i(0); i < size_; ++i )

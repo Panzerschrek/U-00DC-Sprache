@@ -153,6 +153,30 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( a5 == a4 );
 		halt if( a5 != a5 );
 	}
+	{ // Construct from range.
+
+		var [ u32, 5 ] values[ 9u, 87u, 654u, 3210u, 98765u ];
+		var ust::array_view_imut</u32/> values_range= values;
+
+		var ust::arena_allocator allocator;
+
+		var ust::arena_allocated_array</u32/> a( allocator, values_range );
+
+		halt if( a.size() != 5s );
+		halt if( a.range() != values_range );
+	}
+	{ // Construct from mutable range.
+
+		var [ f32, 3 ] mut values[ -12.0f, 25.5f, 56666331200.0f ];
+		var ust::array_view_mut</f32/> values_range= values;
+
+		var ust::arena_allocator allocator;
+
+		var ust::arena_allocated_array</f32/> a( allocator, values_range );
+
+		halt if( a.size() != 3s );
+		halt if( a.range() != values_range );
+	}
 	{ // "from_mapped_range".
 
 		var ust::arena_allocator allocator;
