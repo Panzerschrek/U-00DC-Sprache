@@ -36,6 +36,68 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( !a.empty() );
 		halt if( a.size() != 0s );
 	}
+	{ // Modify contained values.
+
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</u32/> mut a( allocator, 3s, 0u );
+
+		halt if( a.size() != 3s );
+		halt if( a.front() != 0u );
+		halt if( a.back() != 0u );
+		halt if( a[1s] != 0u );
+
+		a.front() = 67u;
+		a[2s]= 873458u;
+
+		halt if( a[0s] != 67u );
+		halt if( a.back() != 873458u );
+		halt if( a[1s] != 0u );
+
+		foreach( &mut v : a )
+		{
+			v+= 10u;
+		}
+
+		halt if( a[0s] != 77u );
+		halt if( a[1s] != 10u );
+		halt if( a[2s] != 873468u );
+	}
+	{ // "range" method.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, 5s, 11 );
+
+		auto r= a.range();
+
+		static_assert( same_type</ typeof(r), ust::random_access_range_imut</i32/> /> );
+
+		halt if( r.size() != 5s );
+		foreach( &el : r )
+		{
+			halt if( el != 11 );
+		}
+	}
+	{ // "range" method for mutable instance.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> mut a( allocator, 52s, -67 );
+
+		{
+			auto r= a.range();
+
+			static_assert( same_type</ typeof(r), ust::random_access_range_mut</i32/> /> );
+
+			halt if( r.size() != 52s );
+			foreach( &mut el : r )
+			{
+				halt if( el != -67 );
+				el*= -2;
+			}
+		}
+
+		foreach( &el : a )
+		{
+			halt if( el != 134 );
+		}
+	}
 
 	return 0;
 }
