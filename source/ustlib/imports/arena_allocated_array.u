@@ -72,6 +72,27 @@ public:
 		( ptr_= ptr, size_= size )
 	{}
 
+	// Constructor with size only (for default-constructible elements).
+	fn
+	enable_if( typeinfo</T/>.is_default_constructible )
+	constructor ( mut this, arena_allocator& allocator, size_type count )
+		@( reference_notation::pollution::param0_param_1_reference )
+		( ptr_= zero_init, size_= count )
+	{
+		if( size_ == 0s ) { return; }
+
+		unsafe
+		{
+			// Multiplication overflow check is needed here.
+			ptr_= byte_ptr_cast</T/>( allocator.allocate( mul_overflow_check_halt( size_, c_element_size_ ) ) );
+
+			for( var size_type mut i(0); i < size_; ++i )
+			{
+				call_default_constructor( $>(ptr_ + i) );
+			}
+		}
+	}
+
 	// Fill constructor.
 	// Disable it for types with mutable references inside, in order to avoid violation of the single mutable reference rule.
 	fn
@@ -94,7 +115,7 @@ public:
 		}
 	}
 
-	// Constructor from array. Moves contents of given array into vector.
+	// Constructor from array. Moves contents of given array into container.
 	template</size_type S/>
 	fn constructor( mut this, arena_allocator& allocator, [ T, S ] mut arr )
 		@( reference_notation::pollution::param0_param_1_reference )

@@ -1,8 +1,19 @@
 //##success_test
 import "../imports/arena_allocated_array.u"
+import "../imports/string.u"
 
 fn nomangle main() call_conv( "C" ) : i32
 {
+	{ // Constructor with size only - for default-constructible types.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</ust::string8/> a( allocator, 896s );
+
+		halt if( a.size() != 896s );
+		foreach( &s : a )
+		{
+			halt if( !s.empty() );
+		}
+	}
 	{ // Fill constructor.
 		var ust::arena_allocator allocator;
 		var ust::arena_allocated_array</i32/> a( allocator, 4s, 561 );
