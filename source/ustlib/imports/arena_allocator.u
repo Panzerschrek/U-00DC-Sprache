@@ -1,7 +1,9 @@
 namespace ust
 {
 
-class arena_allocator
+// Arena allocator class, which may be used together with a special container to speed-up allocations with limited lifetime.
+// It's "non_sync", since it implement interrior mutability.
+class arena_allocator non_sync
 {
 public:
 	fn constructor();
