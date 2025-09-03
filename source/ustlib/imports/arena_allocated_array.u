@@ -36,6 +36,23 @@ public:
 		}
 	}
 
+	// Constructor from array. Moves contents of given array into vector.
+	template</size_type S/>
+	fn constructor( mut this, arena_allocator& allocator, [ T, S ] mut arr )
+		@( reference_notation::pollution::param0_param_1_reference )
+		( ptr_= zero_init, size_= S )
+	{
+		if( size_ == 0s ) { return; }
+
+		unsafe
+		{
+			// Multiplication overflow check is needed here.
+			ptr_= byte_ptr_cast</T/>( allocator.allocate( mul_overflow_check_halt( size_, c_element_size_ ) ) );
+
+			move_into_uninitialized( cast_ref_unsafe</ [ T, S ] />( $>(ptr_) ), move(arr) );
+		}
+	}
+
 	fn destructor()
 	{
 		for( var size_type mut i(0); i < size_; ++i )
@@ -163,7 +180,7 @@ public:
 	{
 		static_if( c_enable_range )
 		{
-			// Usually hash range for vectors.
+			// Usually hash range for range.
 			range().hash( hasher );
 		}
 		else

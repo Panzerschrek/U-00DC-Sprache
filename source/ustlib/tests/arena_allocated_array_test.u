@@ -98,6 +98,61 @@ fn nomangle main() call_conv( "C" ) : i32
 			halt if( el != 134 );
 		}
 	}
+	{ // Construct from array and compare.
+		var ust::arena_allocator allocator;
+
+		var ust::arena_allocated_array</i32/>
+			a0( allocator, ust::make_array</i32/>() ),
+			a1( allocator, ust::make_array( 1, 2, 3 ) ),
+			a2( allocator, ust::make_array( 1, 2, 3 ) ),
+			a3( allocator, ust::make_array( 3, 2, 1 ) ),
+			a4( allocator, ust::make_array( 1, 2, 3, 4 ) ),
+			a5( allocator, ust::make_array( 4 ) );
+
+		halt if( a0.size() != 0s );
+		halt if( a1.size() != 3s );
+		halt if( a2.size() != 3s );
+		halt if( a3.size() != 3s );
+		halt if( a4.size() != 4s );
+		halt if( a5.size() != 1s );
+
+		halt if( a0 != a0 );
+		halt if( a0 == a1 );
+		halt if( a0 == a2 );
+		halt if( a0 == a3 );
+		halt if( a0 == a4 );
+		halt if( a0 == a5 );
+		halt if( a1 == a0 );
+		halt if( a1 != a1 );
+		halt if( a1 != a2 );
+		halt if( a1 == a3 );
+		halt if( a1 == a4 );
+		halt if( a1 == a5 );
+		halt if( a2 == a0 );
+		halt if( a2 != a1 );
+		halt if( a2 != a2 );
+		halt if( a2 == a3 );
+		halt if( a2 == a4 );
+		halt if( a2 == a5 );
+		halt if( a3 == a0 );
+		halt if( a3 == a1 );
+		halt if( a3 == a2 );
+		halt if( a3 != a3 );
+		halt if( a3 == a4 );
+		halt if( a3 == a5 );
+		halt if( a4 == a0 );
+		halt if( a4 == a1 );
+		halt if( a4 == a2 );
+		halt if( a4 == a3 );
+		halt if( a4 != a4 );
+		halt if( a4 == a5 );
+		halt if( a5 == a0 );
+		halt if( a5 == a1 );
+		halt if( a5 == a2 );
+		halt if( a5 == a3 );
+		halt if( a5 == a4 );
+		halt if( a5 != a5 );
+	}
 
 	return 0;
 }
