@@ -14,6 +14,40 @@ public:
 	type this_type= arena_allocated_array</T/>;
 
 public:
+	// Construct array from given range by mapping all elements using given function.
+	// Mapping function should accept single argument of type "ElementT" (value or immutable reference) and return value or immutable reference of type "T".
+	// Mapping function shouldn't be unsafe.
+	// Mapping function is immutable in order to encourage pure mapping (without modifying internal state in process).
+	template</type ElementT, type Func/>
+	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
+	from_mapped_range( arena_allocator& allocator, array_view_imut</ElementT/> r, Func& func )
+		: this_type @( reference_notation::return_inner_references::param0 )
+	{
+		var size_type size= r.size();
+
+		unsafe
+		{
+			// Multiplication overflow check is needed here.
+			var $(T) ptr_= byte_ptr_cast</T/>( allocator.allocate( mul_overflow_check_halt( size, c_element_size_ ) ) );
+
+			for( var size_type mut i= 0s; i < size; ++i )
+			{
+				// Access range element via unsafe indexing (since we know that index is valid),
+				// call mapping function for this element,
+				// move call result directly into array memory.
+				move_into_uninitialized( $>( ptr_ + i ), safe( func( unsafe( r.index_unchecked(i) ) ) ) );
+			}
+
+			return this_type( ptr_, size );
+		}
+	}
+
+public:
+	// Constructor for internal usage.
+	fn constructor( $(T) ptr, size_type size ) unsafe
+		( ptr_= ptr, size_= size )
+	{}
+
 	// Fill constructor.
 	// Disable it for types with mutable references inside, in order to avoid violation of the single mutable reference rule.
 	fn
@@ -249,9 +283,11 @@ public:
 private:
 	auto constexpr c_element_size_= typeinfo</T/>.size_of;
 
+	auto constexpr c_reference_tag_count= typeinfo</T/>.reference_tag_count;
+
 	var tup[] c_return_inner_references; // TODO - support contained types with references inside.
 
-	var bool c_enable_range= true; // TODO - disable it for types with references inside.
+	var bool c_enable_range= typeinfo</T/>.reference_indirection_depth <= 1s && typeinfo</T/>.reference_tag_count <= 1s;
 
 private:
 	// Logically hold an immutable reference to allocator.

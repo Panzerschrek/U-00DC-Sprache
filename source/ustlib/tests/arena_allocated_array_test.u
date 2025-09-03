@@ -153,6 +153,23 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( a5 == a4 );
 		halt if( a5 != a5 );
 	}
+	{ // "from_mapped_range".
+
+		var ust::arena_allocator allocator;
+
+		var [ f32, 4 ] nums[ 78.2f, 13.4f, 86.0f, 125267.2f ];
+
+		auto a= ust::arena_allocated_array</i32/>::from_mapped_range(
+			allocator,
+			ust::array_view_imut</f32/>( nums ),
+			lambda[]( f32 x ) : i32 { return i32(x); } );
+
+		halt if( a.size() != 4s );
+		halt if( a[0s] != 78 );
+		halt if( a[1s] != 13 );
+		halt if( a[2s] != 86 );
+		halt if( a[3s] != 125267 );
+	}
 
 	return 0;
 }
