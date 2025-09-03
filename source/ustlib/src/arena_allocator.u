@@ -1,6 +1,8 @@
 import "../imports/alloc.u"
 import "../imports/arena_allocator.u"
 import "../imports/memory.u"
+import "../imports/minmax.u"
+
 
 namespace ust
 {
@@ -11,7 +13,7 @@ fn arena_allocator::constructor()
 	// Allocate state structure together with first block.
 	unsafe
 	{
-		var size_type first_block_offset= align_size( typeinfo</internal_state/>.size_of, c_allocation_alignment );
+		var size_type first_block_offset= align_size( typeinfo</internal_state/>.size_of );
 
 		var $(byte8) mem= memory_allocate( first_block_offset + c_first_block_size );
 
@@ -47,7 +49,7 @@ fn arena_allocator::destructor()
 
 fn arena_allocator::allocate( this, size_type size_bytes ) unsafe : $(byte8)
 {
-	var size_type size_aligned_bytes= align_size( size_bytes, c_allocation_alignment );
+	var size_type size_aligned_bytes= align_size( size_bytes );
 
 	unsafe
 	{
@@ -81,9 +83,25 @@ fn arena_allocator::allocate( this, size_type size_bytes ) unsafe : $(byte8)
 	}
 }
 
-// Input alignment should be power of two!
-fn constexpr align_size( size_type s, size_type alignment ) : size_type
+var size_type constexpr c_first_block_size = 128s;
+
+// Calculate max alignment among variety of built-in types.
+fn constexpr get_max_alignment() : size_type
 {
+	return
+		max(
+			max(
+				max( typeinfo</size_type/>.align_of, typeinfo</f64/>.align_of ),
+				max( typeinfo</u32/>.align_of, typeinfo</u64/>.align_of ) ),
+			max( typeinfo</u128/>.align_of, typeinfo</$(byte8)/>.align_of ) );
+}
+
+// Round up to be divisible by alignment.
+fn constexpr align_size( size_type s ) : size_type
+{
+	var size_type alignment= get_max_alignment();
+	static_assert( ( alignment & ( alignment - 1s ) ) == 0s, "Alignment should be power of two!" );
+
 	return ( s + ( alignment - 1s ) ) & ~( alignment - 1s );
 }
 

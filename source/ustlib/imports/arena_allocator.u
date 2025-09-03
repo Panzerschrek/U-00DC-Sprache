@@ -24,10 +24,6 @@ private:
 		[ $(byte8), 64 ] allocated_blocks; // TODO - use less blocks, 64 is too many.
 	}
 
-	var size_type constexpr c_first_block_size = 128s;
-
-	var size_type c_allocation_alignment= 16s; // TODO - tune it based on actual type alignments.
-
 private:
 	// Require heap indirection in order to allow allocating in "imut" method.
 	$(internal_state) s_;
