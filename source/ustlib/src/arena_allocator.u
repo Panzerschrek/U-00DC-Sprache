@@ -1,0 +1,100 @@
+import "../imports/alloc.u"
+import "../imports/arena_allocator.u"
+import "../imports/memory.u"
+
+namespace ust
+{
+
+fn arena_allocator::constructor()
+	( s_= zero_init )
+{
+	unsafe
+	{
+		// Allocate state structure.
+		s_= unsafe( byte_ptr_cast</internal_state/>( memory_allocate( typeinfo</internal_state/>.size_of ) ) );
+		$>(s_).blocks_list_head= nullptr</byte8/>();
+	}
+}
+
+fn arena_allocator::destructor()
+{
+	unsafe
+	{
+		// Free linked list of blocks.
+		auto mut ptr= $>(s_).blocks_list_head;
+		while( !is_nullptr(ptr) )
+		{
+			auto next_ptr= $>( byte_ptr_cast</block_header/>( ptr ) ).next_block;
+			memory_free(ptr);
+			ptr= next_ptr;
+		}
+
+		// Free state structure.
+		memory_free( ptr_cast_to_byte8( s_ ) );
+	}
+}
+
+fn arena_allocator::allocate( this, size_type size_bytes ) : $(byte8)
+{
+	var size_type header_size= typeinfo</block_header/>.size_of;
+
+	unsafe
+	{
+		var internal_state &mut s= $>(s_);
+
+		if( is_nullptr( s.blocks_list_head ) )
+		{
+			// Alocate first block.
+
+			// Always use power of two size blocks.
+			var size_type mut first_block_size= 128s;
+			while( first_block_size + header_size < size_bytes )
+			{
+				first_block_size <<= 1s;
+			}
+
+			var $(byte8) mem= memory_allocate( first_block_size );
+
+			var block_header &mut header= $>( byte_ptr_cast</block_header/>( mem ) );
+			header.size_bytes= first_block_size;
+			header.current_position= header_size;
+			header.next_block= nullptr</byte8/>();
+
+			s.blocks_list_head= mem;
+		}
+		else
+		{
+			var block_header &mut header= $>( byte_ptr_cast</block_header/>( s.blocks_list_head ) );
+			if( header.current_position + size_bytes > header.size_bytes )
+			{
+				// Has not enough size in this block - allocate new one.
+				// This wastes remaining space in current block, but this isn't a huge problem.
+
+				// Exponentially grow block size, so that linked list of blocks has small limited size.
+				var size_type mut new_block_size= header.size_bytes << 1s;
+				while( new_block_size + header_size < size_bytes )
+				{
+					new_block_size <<= 1s;
+				}
+
+				var $(byte8) mem= memory_allocate( new_block_size );
+
+				var block_header &mut header= $>( byte_ptr_cast</block_header/>( mem ) );
+				header.size_bytes= new_block_size;
+				header.current_position= header_size;
+				header.next_block= s.blocks_list_head;
+
+				s.blocks_list_head= mem;
+			}
+		}
+
+		// Just return current position and adjust it by given size.
+		var block_header &mut header= $>( byte_ptr_cast</block_header/>( s.blocks_list_head ) );
+		var $(byte8) res= s.blocks_list_head + header.current_position;
+		header.current_position+= size_bytes;
+
+		return res;
+	}
+}
+
+} // namespace ust

@@ -1,0 +1,33 @@
+namespace ust
+{
+
+class arena_allocator
+{
+public:
+	fn constructor();
+	fn destructor();
+
+	fn allocate( this, size_type size_bytes ) : $(byte8);
+
+private:
+	struct internal_state
+	{
+		$(byte8) blocks_list_head; // Blocks are building a linked list.
+	}
+
+	struct block_header
+	{
+		// Size including header.
+		size_type size_bytes;
+		// In newly-allocated block this is at least header size.
+		size_type current_position;
+		// Blocks are building a linked list.
+		$(byte8) next_block;
+	}
+
+private:
+	// Require heap indirection in order to allow allocating in "imut" method.
+	$(internal_state) s_;
+}
+
+} // namespace ust
