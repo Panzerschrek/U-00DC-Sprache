@@ -215,6 +215,27 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( a[3s] != 3u * 3u );
 		halt if( a[4s] != 4u * 4u );
 	}
+	{ // Direct and reverse iteration.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, ust::make_array( 77, 88, 99 ) );
+
+		{
+			var i32 mut i = 77;
+			foreach( &el : a.iter() )
+			{
+				halt if( el != i );
+				i+= 11;
+			}
+		}
+		{
+			var i32 mut i = 99;
+			foreach( &el : a.iter_reverse() )
+			{
+				halt if( el != i );
+				i-= 11;
+			}
+		}
+	}
 
 	return 0;
 }

@@ -323,7 +323,6 @@ public:
 		return ptr_;
 	}
 
-
 private:
 	auto constexpr c_element_size_= typeinfo</T/>.size_of;
 
@@ -339,7 +338,7 @@ private:
 	ReferenceContainerTag</arena_allocator, false/> allocator_reference_tag_;
 
 	$(T) ptr_;
-	size_type size_;
+	size_type imut size_;
 }
 
 } // namespace ust
