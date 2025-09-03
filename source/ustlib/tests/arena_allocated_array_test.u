@@ -1,0 +1,41 @@
+//##success_test
+import "../imports/arena_allocated_array.u"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	{ // Fill constructor.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, 4s, 561 );
+
+		halt if( a.empty() );
+		halt if( a.size() != 4s );
+		halt if( a[0s] != 561 );
+		halt if( a[1s] != 561 );
+		halt if( a[2s] != 561 );
+		halt if( a[3s] != 561 );
+	}
+	{ // Fill constructor for large size.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, 1024s * 1024s * 16s, 13 );
+
+		halt if( a.empty() );
+		halt if( a.size() != 1024s * 1024s * 16s );
+
+		var i32 mut sum= 0;
+		foreach( el : a )
+		{
+			sum+= el;
+		}
+
+		halt if( sum != 13 * i32(1024s * 1024s * 16s) );
+	}
+	{ // Fill constructor for empty array.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</f64/> a( allocator, 0s, 11.2 );
+
+		halt if( !a.empty() );
+		halt if( a.size() != 0s );
+	}
+
+	return 0;
+}

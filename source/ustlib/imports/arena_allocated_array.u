@@ -1,0 +1,248 @@
+import "arena_allocator.u"
+import "checked_math.u"
+import "container_utils.u"
+import "random_access_range.u"
+import "reference_notation.u"
+
+namespace ust
+{
+
+template</type T/>
+class arena_allocated_array
+{
+public:
+	type this_type= arena_allocated_array</T/>;
+
+public:
+	// Fill constructor.
+	// Disable it for types with mutable references inside, in order to avoid violation of the single mutable reference rule.
+	fn
+	enable_if( typeinfo</T/>.is_copy_constructible && !typeinfo</T/>.contains_mutable_references )
+	constructor( mut this, arena_allocator& allocator, size_type count, T& value )
+		@( reference_notation::pollution::param0_param_1_reference )
+		( ptr_= zero_init, size_= count )
+	{
+		if( size_ == 0s ) { return; }
+
+		unsafe
+		{
+			// Multiplication overflow check is needed here.
+			ptr_= byte_ptr_cast</T/>( allocator.allocate( mul_overflow_check_halt( size_, c_element_size_ ) ) );
+
+			for( var size_type mut i(0); i < size_; ++i )
+			{
+				move_into_uninitialized( $>(ptr_ + i), value ); // Copy-constructor called here.
+			}
+		}
+	}
+
+	fn destructor()
+	{
+		for( var size_type mut i(0); i < size_; ++i )
+		{
+			unsafe( call_destructor( $>(ptr_ + i) ) );
+		}
+		// No need to free arena memory.
+	}
+
+	fn size( this ) : size_type
+	{
+		return size_;
+	}
+
+	fn empty( this ) : bool
+	{
+		return size_ == 0s;
+	}
+
+	// Indexing
+
+	op[](  mut this, size_type index )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		halt if( index >= size_ );
+		return unsafe( index_unchecked(index) );
+	}
+
+	op[]( imut this, size_type index )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		halt if( index >= size_ );
+		return unsafe( index_unchecked(index) );
+	}
+
+	fn index_unchecked(  mut this, size_type index ) unsafe
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + index) );
+	}
+
+	fn index_unchecked( imut this, size_type index ) unsafe
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + index) );
+	}
+
+	// front/back
+
+	fn front(  mut this )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( front_unchecked() );
+	}
+
+	fn front( imut this )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( front_unchecked() );
+	}
+
+	fn back(  mut this )
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( back_unchecked() );
+	}
+
+	fn back( imut this )
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		halt if(empty());
+		return unsafe( back_unchecked() );
+	}
+
+	fn front_unchecked(  mut this ) unsafe
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_) );
+	}
+
+	fn front_unchecked( imut this ) unsafe
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_) );
+	}
+
+	fn back_unchecked(  mut this ) unsafe
+		: T @(c_return_inner_references) & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + size_ - 1s) );
+	}
+
+	fn back_unchecked( imut this ) unsafe
+		: T @(c_return_inner_references) &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_ + size_ - 1s) );
+	}
+
+	// ==
+	op enable_if( typeinfo</T/>.is_equality_comparable )
+	==( this_type& l, this_type& r ) : bool
+	{
+		if( l.size() != r.size() )
+		{
+			return false;
+		}
+
+		for( auto mut i= 0s; i < l.size_; ++i )
+		{
+			if( unsafe( l.index_unchecked(i) ) != unsafe( r.index_unchecked(i) ) )
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	// hashing
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		static_if( c_enable_range )
+		{
+			// Usually hash range for vectors.
+			range().hash( hasher );
+		}
+		else
+		{
+			// Backup hashing if "range" isn't available.
+			apply_value_to_hasher( hasher, size_ );
+
+			for( var size_type mut i= 0s; i < size_; ++i )
+			{
+				apply_value_to_hasher( hasher, unsafe( $>( ptr_ + i ) ) );
+			}
+		}
+	}
+
+	// "iter" and "range" methods are declared as zero-param templates to instantiate them lazily and thus avoid instantiation of range and iterator classes where it isn't necessary.
+
+	template<//>
+	fn enable_if( c_enable_range )
+	range(  mut this ) : random_access_range_mut </T/> @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( random_access_range_mut </T/>( ptr_, size_ ) );
+	}
+
+	template<//>
+	fn enable_if( c_enable_range )
+	range( imut this ) : random_access_range_imut</T/> @( reference_notation::return_inner_references::param0 )
+	{
+		return unsafe( random_access_range_imut</T/>( ptr_, size_ ) );
+	}
+
+	template<//>
+	fn enable_if( c_enable_range )
+	iter(  mut this ) : auto
+	{
+		return range().iter();
+	}
+
+	template<//>
+	fn enable_if( c_enable_range )
+	iter( imut this ) : auto
+	{
+		return range().iter();
+	}
+
+	template<//>
+	fn enable_if( c_enable_range )
+	iter_reverse(  mut this ) : auto
+	{
+		return range().iter_reverse();
+	}
+
+	template<//>
+	fn enable_if( c_enable_range )
+	iter_reverse( imut this ) : auto
+	{
+		return range().iter_reverse();
+	}
+
+	// Access raw data.
+	fn data( mut this ) unsafe : $(T)
+	{
+		return ptr_;
+	}
+
+
+private:
+	auto constexpr c_element_size_= typeinfo</T/>.size_of;
+
+	var tup[] c_return_inner_references; // TODO - support contained types with references inside.
+
+	var bool c_enable_range= true; // TODO - disable it for types with references inside.
+
+private:
+	// Logically hold an immutable reference to allocator.
+	// This allows us to ensure, that this class instance is destroyed before arena is destroyed.
+	ReferenceContainerTag</arena_allocator, false/> allocator_reference_tag_;
+
+	$(T) ptr_;
+	size_type size_;
+}
+
+} // namespace ust
