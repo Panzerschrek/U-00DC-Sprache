@@ -42,6 +42,30 @@ public:
 		}
 	}
 
+	// Construct array with given size and fill it with elements obtained via given filler function.
+	// Filler function should return value or immutable reference of type "T".
+	// Filler function shouldn't be unsafe.
+	// Filler function may mutate itself, in order to have possibility to fill different values.
+	template</type Func/>
+	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
+	from_filler_function( arena_allocator& allocator, size_type size, Func mut func )
+		: this_type @( reference_notation::return_inner_references::param0 )
+	{
+		unsafe
+		{
+			// Multiplication overflow check is needed here.
+			var $(T) ptr_= byte_ptr_cast</T/>( allocator.allocate( mul_overflow_check_halt( size, c_element_size_ ) ) );
+
+			for( var size_type mut i= 0s; i < size; ++i )
+			{
+				// Call passed function and move call result directly into vector memory.
+				move_into_uninitialized( $>( ptr_ + i ), safe( func() ) );
+			}
+
+			return this_type( ptr_, size );
+		}
+	}
+
 public:
 	// Constructor for internal usage.
 	fn constructor( $(T) ptr, size_type size ) unsafe

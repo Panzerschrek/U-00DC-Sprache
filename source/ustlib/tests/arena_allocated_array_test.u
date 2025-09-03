@@ -170,6 +170,27 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( a[2s] != 86 );
 		halt if( a[3s] != 125267 );
 	}
+	{ // "from_filler_function".
+
+		var ust::arena_allocator allocator;
+
+		auto a= ust::arena_allocated_array</u32/>::from_filler_function(
+			allocator,
+			5s,
+			lambda[counter= 0u] mut() : u32
+			{
+				auto res= counter * counter;
+				++counter;
+				return res;
+			} );
+
+		halt if( a.size() != 5s );
+		halt if( a[0s] != 0u * 0u );
+		halt if( a[1s] != 1u * 1u );
+		halt if( a[2s] != 2u * 2u );
+		halt if( a[3s] != 3u * 3u );
+		halt if( a[4s] != 4u * 4u );
+	}
 
 	return 0;
 }
