@@ -7,6 +7,10 @@ public:
 	fn constructor();
 	fn destructor();
 
+	// Allocate given numbers of bytes.
+	// Result memory is aligned as needed.
+	// Given memory will be freed after destruction of this class instance.
+	// User should ensure that returned memory isn't used longer as this class instance lives.
 	fn allocate( this, size_type size_bytes ) unsafe : $(byte8);
 
 private:
@@ -21,6 +25,8 @@ private:
 	}
 
 	var size_type constexpr c_first_block_size = 128s;
+
+	var size_type c_allocation_alignment= 16s; // TODO - tune it based on actual type alignments.
 
 private:
 	// Require heap indirection in order to allow allocating in "imut" method.
