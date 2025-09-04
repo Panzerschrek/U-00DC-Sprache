@@ -16,6 +16,9 @@ static_assert( !typeinfo</ ust::arena_allocated_array</i32/> />.is_copy_assignab
 static_assert( typeinfo</ ust::arena_allocated_array</i32/> />.reference_tag_count == 1s );
 static_assert( typeinfo</ ust::arena_allocated_array</R/> />.reference_tag_count == 2s );
 
+// Arena-allocated array is default-constructible, but reassignment is required to make it non-empty.
+static_assert( typeinfo</ ust::arena_allocated_array</i32/> />.is_default_constructible );
+
 struct R
 {
 	i32& r;
@@ -23,6 +26,19 @@ struct R
 
 fn nomangle main() call_conv( "C" ) : i32
 {
+	{ // Default constructor.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</f32/> mut a;
+		halt if( !a.empty() );
+		halt if( a.size() != 0s );
+
+		// Move-assign new value.
+		a= ust::arena_allocated_array</f32/>( allocator, ust::make_array( 111.0f, 222.0f, 333.0f ) );
+		halt if( a.empty() );
+		halt if( a[0s] != 111.0f );
+		halt if( a[1s] != 222.0f );
+		halt if( a[2s] != 333.0f );
+	}
 	{ // Constructor with size only - for default-constructible types.
 		var ust::arena_allocator allocator;
 		var ust::arena_allocated_array</ust::string8/> a( allocator, 896s );

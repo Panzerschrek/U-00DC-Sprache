@@ -72,6 +72,12 @@ public:
 		( ptr_= ptr, size_= size )
 	{}
 
+	// Default constructor.
+	// This isn't very useful, but allows to default-construct this container instance and move-assign it later.
+	fn constructor()
+		( ptr_= zero_init, size_= 0s )
+	{}
+
 	// Constructor with size only (for default-constructible elements).
 	fn
 	enable_if( typeinfo</T/>.is_default_constructible )
