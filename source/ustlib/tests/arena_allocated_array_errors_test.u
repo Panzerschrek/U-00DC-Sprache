@@ -1,0 +1,101 @@
+//##fail_test
+import "../imports/arena_allocated_array.u"
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	{ // Filler constructor holds a reference to allocator instance.
+		var ust::arena_allocator mut allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, 17s, 4 );
+		move( allocator ); //##expect_error MovedVariableHasReferences
+	}
+	{ // Filler constructor for default-constructible elements holds a reference to allocator instance.
+		var ust::arena_allocator mut allocator;
+		var ust::arena_allocated_array</DefaultConstructible/> a( allocator, 4s );
+		move( allocator ); //##expect_error MovedVariableHasReferences
+	}
+	{ // Constructor from array holds a reference to allocator instance.
+		var ust::arena_allocator mut allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, ust::make_array( 1, 2, 3, 4, 5 ) );
+		move( allocator ); //##expect_error MovedVariableHasReferences
+	}
+	{ // Constructor from range holds a reference to allocator instance.
+		var ust::arena_allocator mut allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, ust::single_element_array_view( 1 ) );
+		move( allocator ); //##expect_error MovedVariableHasReferences
+	}
+	{
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> mut a( allocator, 10s, 0 );
+		// Arena-allocated array can't be resized, since arena allocations can't be reallocated.
+		a.resize( 20s, 1 ); //##expect_error NameNotFound
+		// Can't also push elements and pop them.
+		a.push_back( 1 ); //##expect_error NameNotFound
+		a.pop_back(); //##expect_error NameNotFound
+		a.drop_back(); //##expect_error NameNotFound
+	}
+	{ // Element references returned by immtaible array are immutable.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, 10s, 0 );
+		auto &mut x0= a[0s]; //##expect_error ExpectedMutableReference
+		auto &mut x1= a.front(); //##expect_error ExpectedMutableReference
+		auto &mut x2= a.back(); //##expect_error ExpectedMutableReference
+	}
+	{ // Inner references of elements are linked properly by filler constructor.
+		var ust::arena_allocator allocator;
+		var i32 mut x= 0;
+		var ust::arena_allocated_array</ImutRef/> a( allocator, 3s, ImutRef{ .r= x } );
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{ // Inner references of elements are linked properly by from array constructor.
+		var ust::arena_allocator allocator;
+		var i32 mut x= 0;
+		var ust::arena_allocated_array</ImutRef/> a( allocator, ust::make_array( ImutRef{ .r= x } ) );
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{ // Inner references of [] operator result are linked to inner references of array.
+		var ust::arena_allocator allocator;
+		var i32 mut x= 0;
+		var ust::arena_allocated_array</MutRef/> a( allocator, ust::make_array( MutRef{ .r= x } ) );
+		var MutRef& r= a[0s];
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{ // Inner references of [] operator result are linked to inner references of array.
+		var ust::arena_allocator allocator;
+		var i32 mut x= 0;
+		var ust::arena_allocated_array</MutRef/> mut a( allocator, ust::make_array( MutRef{ .r= x } ) );
+		var MutRef& r= a[0s];
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{ // Inner references of "front" method result are linked to inner references of array.
+		var ust::arena_allocator allocator;
+		var i32 mut x= 0;
+		var ust::arena_allocated_array</MutRef/> a( allocator, ust::make_array( MutRef{ .r= x } ) );
+		var MutRef& r= a.front();
+		++x; //##expect_error ReferenceProtectionError
+	}
+	{ // Inner references of "back" method operator result are linked to inner references of array.
+		var ust::arena_allocator allocator;
+		var i32 mut x= 0;
+		var ust::arena_allocated_array</MutRef/> mut a( allocator, ust::make_array( MutRef{ .r= x } ) );
+		var MutRef& r= a.back();
+		++x; //##expect_error ReferenceProtectionError
+	}
+
+	return 0;
+}
+
+struct ImutRef
+{
+	i32 &imut r;
+}
+
+struct MutRef
+{
+	i32 &mut r;
+}
+
+struct DefaultConstructible
+{
+	i32 x;
+	fn constructor();
+}

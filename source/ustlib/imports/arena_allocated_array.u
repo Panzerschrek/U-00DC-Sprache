@@ -381,7 +381,7 @@ private:
 			auto &mut el= result[0s];
 			el[0s][0s]= '0';
 			el[0s][1s]= 'a';
-			el[1s][0s]= char8( size_type('1') + allocator_param );
+			el[1s][0s]= char8( size_type('0') + allocator_param );
 			el[1s][1s]= '_';
 		}
 
