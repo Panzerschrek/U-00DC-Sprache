@@ -98,7 +98,7 @@ public:
 	fn
 	enable_if( typeinfo</T/>.is_copy_constructible && !typeinfo</T/>.contains_mutable_references )
 	constructor( mut this, arena_allocator& allocator, size_type count, T& value )
-		@( reference_notation::pollution::param0_param_1_reference )
+		@( calculate_constructor_pollution( 1s, 3s ) )
 		( ptr_= zero_init, size_= count )
 	{
 		if( size_ == 0s ) { return; }
@@ -118,7 +118,7 @@ public:
 	// Constructor from array. Moves contents of given array into container.
 	template</size_type S/>
 	fn constructor( mut this, arena_allocator& allocator, [ T, S ] mut arr )
-		@( reference_notation::pollution::param0_param_1_reference )
+		@( calculate_constructor_pollution( 1s, 2s ) )
 		( ptr_= zero_init, size_= S )
 	{
 		if( size_ == 0s ) { return; }
@@ -137,7 +137,7 @@ public:
 	fn
 	enable_if( typeinfo</T/>.is_copy_constructible && c_contained_type_reference_tag_count == 0s && c_enable_range )
 	constructor( mut this, arena_allocator& allocator, random_access_range_imut</T/> r )
-		@( reference_notation::pollution::param0_param_1_reference )
+		@( calculate_constructor_pollution( 1s, 2s ) )
 		( ptr_= zero_init, size_= r.size() )
 	{
 		unsafe
@@ -366,6 +366,36 @@ private:
 			el[0][0]= '0'; // Param #0 - this.
 			el[0][1]= char8( size_type('a') + 1s + i ); // Start with offset 1 - to skip allocator reference tag.
 			++i;
+		}
+
+		return result;
+	}
+
+	fn constexpr calculate_constructor_pollution( size_type allocator_param, size_type value_param )
+		: reference_notation::pollution_list</ 1s + c_contained_type_reference_tag_count />
+	{
+		var reference_notation::pollution_list</ 1s + c_contained_type_reference_tag_count /> mut result= zero_init;
+
+		// First pollution element - store reference to allocator inside "this".
+		{
+			auto &mut el= result[0s];
+			el[0s][0s]= '0';
+			el[0s][1s]= 'a';
+			el[1s][0s]= char8( size_type('1') + allocator_param );
+			el[1s][1s]= '_';
+		}
+
+		// Pollution elements for inner reference of value param.
+		for( auto mut i= 0s; i < c_contained_type_reference_tag_count; ++i )
+		{
+			auto &mut el= result[ i + 1s ];
+
+			// Destination - "this" param with tag starting from 1.
+			el[0s][0s]= '0';
+			el[0s][1s]= char8( size_type('a') + i + 1s );
+			// Source - param inner tags.
+			el[1s][0s]= char8( size_type('0') + value_param );
+			el[1s][1s]= char8( size_type('a') + i );
 		}
 
 		return result;
