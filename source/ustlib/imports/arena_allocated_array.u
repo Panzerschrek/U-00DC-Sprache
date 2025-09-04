@@ -19,7 +19,7 @@ public:
 	// Mapping function shouldn't be unsafe.
 	// Mapping function is immutable in order to encourage pure mapping (without modifying internal state in process).
 	template</type ElementT, type Func/>
-	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
+	fn enable_if( c_contained_type_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
 	from_mapped_range( arena_allocator& allocator, array_view_imut</ElementT/> r, Func& func )
 		: this_type @( reference_notation::return_inner_references::param0 )
 	{
@@ -47,7 +47,7 @@ public:
 	// Filler function shouldn't be unsafe.
 	// Filler function may mutate itself, in order to have possibility to fill different values.
 	template</type Func/>
-	fn enable_if( c_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
+	fn enable_if( c_contained_type_reference_tag_count == 0s ) // For now can't process reference tags here - it's too complex.
 	from_filler_function( arena_allocator& allocator, size_type size, Func mut func )
 		: this_type @( reference_notation::return_inner_references::param0 )
 	{
@@ -135,7 +135,7 @@ public:
 	// Construct from range.
 	// Range elements are copied.
 	fn
-	enable_if( typeinfo</T/>.is_copy_constructible && c_reference_tag_count == 0s && c_enable_range )
+	enable_if( typeinfo</T/>.is_copy_constructible && c_contained_type_reference_tag_count == 0s && c_enable_range )
 	constructor( mut this, arena_allocator& allocator, random_access_range_imut</T/> r )
 		@( reference_notation::pollution::param0_param_1_reference )
 		( ptr_= zero_init, size_= r.size() )
@@ -347,16 +347,37 @@ public:
 private:
 	auto constexpr c_element_size_= typeinfo</T/>.size_of;
 
-	auto constexpr c_reference_tag_count= typeinfo</T/>.reference_tag_count;
-
-	var tup[] c_return_inner_references; // TODO - support contained types with references inside.
+	auto constexpr c_contained_type_reference_tag_count= typeinfo</T/>.reference_tag_count;
 
 	var bool c_enable_range= typeinfo</T/>.reference_indirection_depth <= 1s && typeinfo</T/>.reference_tag_count <= 1s;
+
+	auto c_element_type_tags= reference_notation::field_tags::get_sequential_tags</c_contained_type_reference_tag_count/>( 1s );
+	auto c_return_inner_references= calculate_contained_type_return_inner_references();
+
+private:
+	fn constexpr calculate_contained_type_return_inner_references()
+		: homogeneous_tuple</ reference_notation::references_list</1s/>, c_contained_type_reference_tag_count />
+	{
+		var homogeneous_tuple</ reference_notation::references_list</1s/>, c_contained_type_reference_tag_count /> mut result= zero_init;
+
+		auto mut i= 0s;
+		for( &mut el : result )
+		{
+			el[0][0]= '0'; // Param #0 - this.
+			el[0][1]= char8( size_type('a') + 1s + i ); // Start with offset 1 - to skip allocator reference tag.
+			++i;
+		}
+
+		return result;
+	}
 
 private:
 	// Logically hold an immutable reference to allocator.
 	// This allows us to ensure, that this class instance is destroyed before arena is destroyed.
-	ReferenceContainerTag</arena_allocator, false/> allocator_reference_tag_;
+	ReferenceContainerTag</arena_allocator, false/> @("a") allocator_reference_tag_;
+
+	// Logically store container type.
+	ContainerTag</ T /> @(c_element_type_tags) container_tag_;
 
 	$(T) ptr_;
 	size_type imut size_;

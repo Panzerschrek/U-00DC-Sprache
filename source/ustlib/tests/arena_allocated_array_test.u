@@ -2,6 +2,11 @@
 import "../imports/arena_allocated_array.u"
 import "../imports/string.u"
 
+struct R
+{
+	i32& r;
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Constructor with size only - for default-constructible types.
@@ -246,6 +251,14 @@ fn nomangle main() call_conv( "C" ) : i32
 				i-= 11;
 			}
 		}
+	}
+	{ // Type with references inside.
+
+		var ust::arena_allocator allocator;
+
+		var i32 x= 123, y= 4567;
+
+		var ust::arena_allocated_array</R/> a( allocator, ust::make_array( R{ .r= x }, R{ .r=y } ) );
 	}
 
 	return 0;
