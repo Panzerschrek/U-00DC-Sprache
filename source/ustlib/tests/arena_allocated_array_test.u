@@ -2,6 +2,20 @@
 import "../imports/arena_allocated_array.u"
 import "../imports/string.u"
 
+// Arena-allocated array is "non_sync", since it holds a reference to arena allocator, which is "non_sync".
+static_assert( non_sync</ ust::arena_allocated_array</i32/> /> );
+
+// Arena-allocated array has fixed size after it's created. So it has no capacity field and thus has size of only two pointers.
+static_assert( typeinfo</ ust::arena_allocated_array</i32/> />.size_of == typeinfo</ size_type />.size_of * 2s );
+
+// Arena-allocated array isn't copyable, since copying requires passing allocator.
+static_assert( !typeinfo</ ust::arena_allocated_array</i32/> />.is_copy_constructible );
+static_assert( !typeinfo</ ust::arena_allocated_array</i32/> />.is_copy_assignable );
+
+// Arena-allocated array has single reference tag for allocator plus tags for contained type.
+static_assert( typeinfo</ ust::arena_allocated_array</i32/> />.reference_tag_count == 1s );
+static_assert( typeinfo</ ust::arena_allocated_array</R/> />.reference_tag_count == 2s );
+
 struct R
 {
 	i32& r;
