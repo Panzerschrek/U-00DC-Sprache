@@ -1,0 +1,8 @@
+template</ size_type N />
+type int_list= [ i32, N ];
+
+fn constexpr foo( size_type v )
+{
+	var int_list</ 1s + 3s /> r= zero_init;
+	auto x= v;
+}
