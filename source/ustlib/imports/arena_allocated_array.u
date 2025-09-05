@@ -352,11 +352,8 @@ public:
 
 private:
 	auto constexpr c_element_size_= typeinfo</T/>.size_of;
-
 	auto constexpr c_contained_type_reference_tag_count= typeinfo</T/>.reference_tag_count;
-
 	var bool c_enable_range= typeinfo</T/>.reference_indirection_depth <= 1s && typeinfo</T/>.reference_tag_count <= 1s;
-
 	auto c_element_type_tags= reference_notation::field_tags::get_sequential_tags</c_contained_type_reference_tag_count/>( 1s );
 	auto c_return_inner_references= calculate_contained_type_return_inner_references();
 
@@ -412,7 +409,7 @@ private:
 	// This allows us to ensure, that this class instance is destroyed before arena is destroyed.
 	ReferenceContainerTag</arena_allocator, false/> @("a") allocator_reference_tag_;
 
-	// Logically store container type.
+	// Logically store contained type.
 	ContainerTag</ T /> @(c_element_type_tags) container_tag_;
 
 	$(T) ptr_;
