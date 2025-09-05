@@ -28,6 +28,8 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::arena_allocated_array</i32/> mut a( allocator, 10s, 0 );
 		// Arena-allocated array can't be resized, since arena allocations can't be reallocated.
 		a.resize( 20s, 1 ); //##expect_error NameNotFound
+		// It's also not possible to clear it.
+		a.clear(); //##expect_error NameNotFound
 		// Can't also push elements and pop them.
 		a.push_back( 1 ); //##expect_error NameNotFound
 		a.pop_back(); //##expect_error NameNotFound

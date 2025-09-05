@@ -289,6 +289,31 @@ fn nomangle main() call_conv( "C" ) : i32
 		var i32 x= 123, y= 4567;
 
 		var ust::arena_allocated_array</R/> a( allocator, ust::make_array( R{ .r= x }, R{ .r=y } ) );
+
+		halt if( a.size() != 2s );
+		halt if( a[0s].r != x );
+		halt if( a[1s].r != y );
+	}
+	{ // arena_allocated_array of arena_allocated_array objects.
+		var ust::arena_allocator allocator;
+
+		var size_type size= 3s;
+		var [ ust::string_view8, size ] arr[ "some", "strings", "array" ];
+
+		var ust::arena_allocated_array</ ust::arena_allocated_array</char8/> /> mut a( allocator, size );
+
+		// Workaround for ReferencePollutionOfOuterLoopVariable.
+		if( false ) { a[0s]= ust::arena_allocated_array</char8/>( allocator, arr[0s] ); }
+
+		for( auto mut i= 0s; i < size; ++i )
+		{
+			a[i]= ust::arena_allocated_array</char8/>( allocator, arr[i] );
+		}
+
+		halt if( a.size() != 3s );
+		halt if( a[0s].range() != arr[0s] );
+		halt if( a[1s].range() != arr[1s] );
+		halt if( a[2s].range() != arr[2s] );
 	}
 
 	return 0;
