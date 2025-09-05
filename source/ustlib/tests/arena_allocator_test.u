@@ -1,0 +1,43 @@
+//##success_test
+import "../imports/arena_allocator.u"
+
+// Arena allocator is "non_sync", since it uses interrior mutability.
+static_assert( non_sync</ ust::arena_allocator /> );
+
+// Allocation method is unsafe.
+static_assert( typeinfo</ typeof( ust::arena_allocator::allocate ) />.unsafe );
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	{ // Make a lot of small allocations.
+		var ust::arena_allocator allocator;
+		for( auto mut i= 0s; i < 16s * 1024s * 1024s; ++i )
+		{
+			unsafe( allocator.allocate( 3s ) );
+		}
+	}
+	{ // Make small amount of large allocations.
+		var ust::arena_allocator allocator;
+		for( auto mut i= 0s; i < 16s; ++i )
+		{
+			unsafe( allocator.allocate( 1024s * 1024s * 3s ) );
+		}
+	}
+	{ // Make allocations exponentially larger.
+		var ust::arena_allocator allocator;
+		for( auto mut i= 0s; i < 26s; ++i )
+		{
+			unsafe( allocator.allocate( 1s << i ) );
+		}
+	}
+	{ // Make large and small allocations interleaving.
+		var ust::arena_allocator allocator;
+		for( auto mut i= 0s; i < 100s; ++i )
+		{
+			unsafe( allocator.allocate( 3s ) );
+			unsafe( allocator.allocate( 1024s * 16s ) );
+			unsafe( allocator.allocate( 11s ) );
+		}
+	}
+	return 0;
+}
