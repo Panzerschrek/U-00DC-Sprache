@@ -1,3 +1,4 @@
+import "/arena_allocated_array.u"
 import "/assert.u"
 import "/scoped_array.u"
 import "/string_conversions.u"
@@ -49,21 +50,37 @@ public:
 		var i32 pipe_read_end= pipe_fd[0];
 		var i32 pipe_write_end= pipe_fd[1];
 
-		var ust::string8 mut exe_path_null_terminated= ust::concat( exe_path, "\0" );
+		var ust::arena_allocator allocator;
 
-		var ust::vector</ust::string8/> mut args_null_terminated;
-		args_null_terminated.push_back( exe_path_null_terminated ); // Push executable as first arg.
-		foreach( &arg : command_line )
-		{
-			args_null_terminated.push_back( ust::concat( arg, "\0" ) );
+		var ust::arena_allocated_array</ ust::arena_allocated_array</char8/> /> mut
+			args_null_terminated( allocator, 1s + command_line.size() );
+
+		{ // Push executable as first arg.
+			var ust::arena_allocated_array</char8/> mut a( allocator, exe_path.size() + 1s, '\0' );
+			foreach( pair : a.iter().zip( exe_path.iter() ) )
+			{
+				pair.first= pair.second;
+			}
+
+			args_null_terminated.front()= move(a);
 		}
 
-		var ust::vector</$(char8)/> mut argv_vec;
-		foreach( &mut arg_null_terminated : args_null_terminated )
+		foreach( pair : args_null_terminated.range().subrange_start(1s).iter().zip( command_line.iter() ) )
 		{
-			argv_vec.push_back( unsafe( arg_null_terminated.data() ) );
+			var ust::string8& s= pair.second;
+			var ust::arena_allocated_array</char8/> mut a( allocator, s.size() + 1s, '\0' );
+			foreach( pair : a.iter().zip( s.iter() ) )
+			{
+				pair.first= pair.second;
+			}
+			pair.first= move(a);
 		}
-		argv_vec.push_back( ust::nullptr</char8/>() ); // This vector itself is null-terminated.
+
+		var ust::arena_allocated_array</$(char8)/> mut argv_vec( allocator, args_null_terminated.size() + 1s, ust::nullptr</char8/>() );
+		foreach( pair : argv_vec.iter().zip( args_null_terminated.iter() ) )
+		{
+			pair.first= unsafe( pair.second.data() );
+		}
 
 		var posix_spawn_file_actions_t mut file_actions= zero_init;
 		if( unsafe( posix_spawn_file_actions_init( $<(file_actions ) ) ) != 0 )
@@ -104,7 +121,7 @@ public:
 		auto spawn_res =
 			unsafe( ::posix_spawnp(
 				$<(pid),
-				exe_path_null_terminated.data(),
+				argv_vec.front(),
 				$<(file_actions),
 				$<(spawn_attributes),
 				argv_vec.data(),
