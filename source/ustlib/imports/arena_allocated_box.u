@@ -1,0 +1,96 @@
+import "arena_allocator.u"
+import "container_utils.u"
+import "hash_apply.u"
+import "polymorph.u"
+
+namespace ust
+{
+
+template</ type T />
+class arena_allocated_box non_sync( non_sync</T/> )
+{
+	static_assert( typeinfo</T/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
+
+public:
+	fn constructor()= delete;
+
+	fn constructor( mut this, arena_allocator& allocator, T mut val )
+		@( reference_notation::pollution::param0_param_1_reference )
+		( ptr_= unsafe( byte_ptr_cast</T/>( allocator.allocate( typeinfo</T/>.size_of ) ) ) )
+	{
+		unsafe( move_into_uninitialized( $>(ptr_), move(val) ) );
+	}
+
+	template</ type U />
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
+	constructor( mut this, arena_allocator& allocator, arena_allocated_box</U/> mut val )
+		@( reference_notation::pollution::param0_param_1_reference )
+		( ptr_= $<( cast_ref</T/>(val.deref()) ) )
+	{
+		unsafe( move_into_nowhere( move(val) ) );
+	}
+
+	// box is NOT copyable, because copying required memory allocation. Copying must be done manually.
+
+	fn destructor()
+	{
+		unsafe( call_destructor( $>(ptr_) ) );
+		// No need to free arena memory.
+	}
+
+	fn deref(  mut this ) : T & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( deref_unchecked() );
+	}
+
+	fn deref( imut this ) : T &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( deref_unchecked() );
+	}
+
+	fn deref_unchecked(  mut this ) unsafe : T & mut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_) );
+	}
+
+	fn deref_unchecked( imut this ) unsafe : T &imut @( reference_notation::return_references::param0 )
+	{
+		return unsafe( $>(ptr_) );
+	}
+
+	fn get_ptr( this ) unsafe : $(T)
+	{
+		return ptr_;
+	}
+
+	// Take stored value.
+	// Box instance should be moved into this method call.
+	fn nodiscard enable_if( !is_polymorph_non_final_class</T/>() && !is_abstract</T/>() ) take_value( byval mut this ) : T
+	{
+		unsafe
+		{
+			var T mut t= uninitialized;
+			memory_copy_aligned( typeinfo</T/>.align_of, ptr_cast_to_byte8($<(t)), ptr_cast_to_byte8(ptr_), typeinfo</T/>.size_of );
+			// No need to free arena memory.
+			move_into_nowhere( move(this) ); // Forget about the box.
+			return t;
+		}
+	}
+
+	// Hashing.
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		// Just hash stored value.
+		apply_value_to_hasher( hasher, deref() );
+	}
+
+private:
+	// Logically hold an immutable reference to allocator.
+	// This allows us to ensure, that this class instance is destroyed before arena is destroyed.
+	ReferenceContainerTag</arena_allocator, false/> @("a") allocator_reference_tag_;
+
+	$(T) ptr_;
+}
+
+} // namespace ust
