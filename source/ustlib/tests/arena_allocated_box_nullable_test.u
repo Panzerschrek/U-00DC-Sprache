@@ -1,0 +1,76 @@
+//##success_test
+import "../imports/arena_allocated_box_nullable.u"
+
+// arena_allocated_box_nullable holds a reference to allocator.
+static_assert( typeinfo</ ust::arena_allocated_box_nullable</i32/> />.reference_tag_count == 1s );
+
+// arena_allocated_box_nullable has size equal to pointer.
+static_assert( typeinfo</ ust::arena_allocated_box_nullable</i32/> />.size_of == typeinfo</size_type/>.size_of );
+
+// arena_allocated_box_nullable is always "non_sync", since it holds a reference to allocator, whic is "non_sync".
+static_assert( non_sync</ ust::arena_allocated_box_nullable</i32/> /> );
+
+// Can't copy arena_allocated_box_nullable.
+static_assert( !typeinfo</ ust::arena_allocated_box_nullable</i32/> />.is_copy_constructible );
+static_assert( !typeinfo</ ust::arena_allocated_box_nullable</i32/> />.is_copy_assignable );
+
+// arena_allocated_box_nullable is default-constructible.
+static_assert( typeinfo</ ust::arena_allocated_box_nullable</i32/> />.is_default_constructible );
+
+struct S
+{
+	//Convert reference to pointer and use unsafe because references forbidden in box.
+	$(i32) x;
+	fn constructor( mut this, i32 &mut in_x )
+	( x= $<(in_x) ) {}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			++ $>(x);
+		}
+	}
+}
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	{ // Basic usage.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_box_nullable</i32/> b( allocator, 42 );
+		halt if( b.try_deref() != 42 );
+	}
+	{ // Can be empty.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_box_nullable</i32/> mut b;
+		halt if( !b.empty() );
+		b= ust::arena_allocated_box_nullable</i32/>( allocator, 786 );
+		halt if( b.empty() );
+		halt if( b.try_deref() != 786 );
+		b.reset();
+		halt if( !b.empty() );
+	}
+	{ // Can change stored value.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_box_nullable</u32/> mut b( allocator, 422u );
+		halt if( b.try_deref() != 422u );
+		b.try_deref()= 224u;
+		halt if( b.try_deref() != 224u );
+	}
+	{ // arena_allocated_box_nullable calls destructor.
+		var ust::arena_allocator allocator;
+		var i32 mut x= 0;
+		{
+			var ust::arena_allocated_box_nullable</ S /> box( allocator, S(x) );
+		}
+		halt if( x != 1 );
+	}
+	{ // try_take
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_box_nullable</ i32 /> mut box( allocator, 897 );
+		auto val= move(box).try_take_value();
+		halt if( val != 897 );
+	}
+
+	return 0;
+}

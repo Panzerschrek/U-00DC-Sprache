@@ -1,9 +1,6 @@
 //##fail_test
 import "../imports/arena_allocated_box.u"
 
-class A polymorph{}
-class B : A{}
-
 fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Constructor holds a reference to allocator instance.
