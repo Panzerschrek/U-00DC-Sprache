@@ -363,12 +363,15 @@ private:
 	{
 		var homogeneous_tuple</ reference_notation::references_list</1s/>, c_contained_type_reference_tag_count /> mut result= zero_init;
 
-		auto mut i= 0s;
-		for( &mut el : result )
+		static_if( c_contained_type_reference_tag_count > 0s )
 		{
-			el[0][0]= '0'; // Param #0 - this.
-			el[0][1]= char8( size_type('a') + 1s + i ); // Start with offset 1 - to skip allocator reference tag.
-			++i;
+			auto mut i= 0s;
+			for( &mut el : result )
+			{
+				el[0][0]= '0'; // Param #0 - this.
+				el[0][1]= char8( size_type('a') + 1s + i ); // Start with offset 1 - to skip allocator reference tag.
+				++i;
+			}
 		}
 
 		return result;
