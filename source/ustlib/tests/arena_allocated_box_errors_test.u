@@ -11,12 +11,6 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::arena_allocated_box</i32/> b( allocator, 4 );
 		move( allocator ); //##expect_error MovedVariableHasReferences
 	}
-	{ // Constructor holds a reference to allocator instance.
-		var ust::arena_allocator mut allocator;
-		var ust::arena_allocated_box</ B /> mut box_b( allocator, B() );
-		var ust::arena_allocated_box</ A /> mut box_a( allocator, move(box_b) );
-		move( allocator ); //##expect_error MovedVariableHasReferences
-	}
 	{ // Can't mutate stored value having "imut" reference.
 		var ust::arena_allocator mut allocator;
 		var ust::arena_allocated_box</i32/> b( allocator, 4 );

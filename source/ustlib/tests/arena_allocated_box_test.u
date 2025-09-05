@@ -33,9 +33,6 @@ struct S
 	}
 }
 
-class A polymorph{}
-class B : A{}
-
 fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Basic usage.
@@ -57,11 +54,6 @@ fn nomangle main() call_conv( "C" ) : i32
 			var ust::arena_allocated_box</ S /> box( allocator, S(x) );
 		}
 		halt if( x != 1 );
-	}
-	{ // is convertible form other box.
-		var ust::arena_allocator allocator;
-		var ust::arena_allocated_box</ B /> mut box_b( allocator, B() );
-		var ust::arena_allocated_box</ A /> mut box_a( allocator, move(box_b) );
 	}
 	{ // take
 		var ust::arena_allocator allocator;

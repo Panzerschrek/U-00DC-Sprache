@@ -21,16 +21,7 @@ public:
 		unsafe( move_into_uninitialized( $>(ptr_), move(val) ) );
 	}
 
-	template</ type U />
-	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
-	constructor( mut this, arena_allocator& allocator, arena_allocated_box</U/> mut val )
-		@( reference_notation::pollution::param0_param_1_reference )
-		( ptr_= $<( cast_ref</T/>(val.deref()) ) )
-	{
-		unsafe( move_into_nowhere( move(val) ) );
-	}
-
-	// box is NOT copyable, because copying required memory allocation. Copying must be done manually.
+	// arena_allocated_box is NOT copyable, because copying required memory allocation. Copying must be done manually.
 
 	fn destructor()
 	{
