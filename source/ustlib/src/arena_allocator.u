@@ -48,7 +48,7 @@ fn arena_allocator::destructor()
 	}
 }
 
-fn arena_allocator::allocate( this, size_type size_bytes ) unsafe : $(byte8)
+fn nodiscard arena_allocator::allocate( this, size_type size_bytes ) unsafe : $(byte8)
 {
 	var size_type size_aligned_bytes= align_size( size_bytes );
 

@@ -13,30 +13,30 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::arena_allocator allocator;
 		for( auto mut i= 0s; i < 16s * 1024s * 1024s; ++i )
 		{
-			unsafe( allocator.allocate( 3s ) );
+			var $(byte8) mem= unsafe( allocator.allocate( 3s ) );
 		}
 	}
 	{ // Make small amount of large allocations.
 		var ust::arena_allocator allocator;
 		for( auto mut i= 0s; i < 16s; ++i )
 		{
-			unsafe( allocator.allocate( 1024s * 1024s * 3s ) );
+			var $(byte8) mem= unsafe( allocator.allocate( 1024s * 1024s * 3s ) );
 		}
 	}
 	{ // Make allocations exponentially larger.
 		var ust::arena_allocator allocator;
 		for( auto mut i= 0s; i < 26s; ++i )
 		{
-			unsafe( allocator.allocate( 1s << i ) );
+			var $(byte8) mem= unsafe( allocator.allocate( 1s << i ) );
 		}
 	}
 	{ // Make large and small allocations interleaving.
 		var ust::arena_allocator allocator;
 		for( auto mut i= 0s; i < 100s; ++i )
 		{
-			unsafe( allocator.allocate( 3s ) );
-			unsafe( allocator.allocate( 1024s * 16s ) );
-			unsafe( allocator.allocate( 11s ) );
+			var $(byte8) mem0= unsafe( allocator.allocate( 3s ) );
+			var $(byte8) mem1= unsafe( allocator.allocate( 1024s * 16s ) );
+			var $(byte8) mem2= unsafe( allocator.allocate( 11s ) );
 		}
 	}
 	return 0;

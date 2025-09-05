@@ -13,7 +13,8 @@ public:
 	// Result memory is aligned as needed.
 	// Given memory will be freed after destruction of this class instance.
 	// User should ensure that returned memory isn't used longer as this class instance lives.
-	fn allocate( this, size_type size_bytes ) unsafe : $(byte8);
+	// A good way to do this is to hold a logical reference to allocator instance.
+	fn nodiscard allocate( this, size_type size_bytes ) unsafe : $(byte8);
 
 private:
 	struct internal_state
