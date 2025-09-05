@@ -10,6 +10,13 @@ static_assert( typeinfo</ ust::arena_allocated_box</i32/> />.size_of == typeinfo
 // arena_allocated_box is always "non_sync", since it holds a reference to allocator, whic is "non_sync".
 static_assert( non_sync</ ust::arena_allocated_box</i32/> /> );
 
+// Can't copy arena_allocated_box.
+static_assert( !typeinfo</ ust::arena_allocated_box</i32/> />.is_copy_constructible );
+static_assert( !typeinfo</ ust::arena_allocated_box</i32/> />.is_copy_assignable );
+
+// arena_allocated_box isn't default-constructible.
+static_assert( !typeinfo</ ust::arena_allocated_box</i32/> />.is_default_constructible );
+
 struct S
 {
 	//Convert reference to pointer and use unsafe because references forbidden in box.
