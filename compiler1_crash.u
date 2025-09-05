@@ -6,3 +6,9 @@ fn constexpr foo( size_type v )
 	var int_list</ 1s + 3s /> r= zero_init;
 	auto x= v;
 }
+
+fn bar( size_type v )
+{
+	type some= int_list</ 1s + 3s />;
+	auto x= v;
+}
