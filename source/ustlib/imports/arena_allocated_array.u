@@ -146,6 +146,8 @@ public:
 		@( calculate_constructor_pollution( 1s, 2s ) )
 		( ptr_= zero_init, size_= r.size() )
 	{
+		if( size_ == 0s ) { return; }
+
 		unsafe
 		{
 			// Multiplication overflow check is needed here.
