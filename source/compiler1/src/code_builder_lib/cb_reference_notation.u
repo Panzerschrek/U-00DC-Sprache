@@ -248,12 +248,7 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
 
 fn CodeBuilder::EvaluateReferenceNotationExpression( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariableLite
 {
-	return WithVariablesFrame(
-		function_context,
-		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : VariableLite
-		{
-			return self.BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
-		} );
+	return BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
 }
 
 fn CodeBuilder::NormalizeParamReferencesList( FunctionType::ParamReferences &mut param_references )

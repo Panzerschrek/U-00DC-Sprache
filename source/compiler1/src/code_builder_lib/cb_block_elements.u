@@ -148,12 +148,19 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 
 fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo
 {
-	auto t= PrepareType( names_scope, function_context, variables_declaration.t );
-	if( !EnsureTypeComplete( t ) )
-	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, variables_declaration.src_loc, t )
-		return BlockElementBuildInfo();
-	}
+	var Type t= WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : Type
+		{
+			var Type t= self.PrepareType( names_scope, function_context, variables_declaration.t );
+			if( !self.EnsureTypeComplete( t ) )
+			{
+				REPORT_ERROR( UsingIncompleteType, names_scope, variables_declaration.src_loc, t )
+				return self.invalid_type_;
+			}
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, variables_declaration.src_loc );
+			return t;
+		} );
 
 	foreach( &variable_declaration : variables_declaration.variables )
 	{
@@ -3192,10 +3199,19 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, 
 		REPORT_ERROR( UsingKeywordAsName, names_scope, type_alias.src_loc )
 	}
 
+	var Type mut t= WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : Type
+		{
+			var Type t= self.PrepareType( names_scope, function_context, type_alias.type_name );
+			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, type_alias.src_loc );
+			return t;
+		} );
+
 	// Insert "TypeAlias" instead of "type" into namespace in order to check usage (it is performed only for type aliases).
 	var TypeAlias mut out_type_alias
 	{
-		.t( PrepareType( names_scope, function_context, type_alias.type_name ) ),
+		.t= move(t),
 		.syntax_element= type_alias_ptr,
 	};
 
@@ -3277,7 +3293,14 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 
 fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : BlockElementBuildInfo
 {
-	if_var( &block_elements : ExpandBlockMixin( names_scope, function_context, mixin_ ) )
+	auto block_elements_ptr= WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : ust::shared_ptr_final_nullable</ Synt::BlockElements />
+		{
+			return self.ExpandBlockMixin( names_scope, function_context, mixin_ );
+		} );
+
+	if_var( &block_elements : block_elements_ptr )
 	{
 		return BuildBlockElements( names_scope, function_context, block_elements );
 	}

@@ -1522,11 +1522,6 @@ void CodeBuilder::EvaluateTemplateArgs(
 {
 	out_args.reserve( template_arguments.size() );
 
-	const bool prev_is_functionless_context= function_context.is_functionless_context;
-	function_context.is_functionless_context= true;
-
-	const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
 	for( const Synt::Expression& expr : template_arguments )
 	{
 		const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
@@ -1536,7 +1531,6 @@ void CodeBuilder::EvaluateTemplateArgs(
 	}
 
 	DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
-	function_context.is_functionless_context= prev_is_functionless_context;
 }
 
 std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )

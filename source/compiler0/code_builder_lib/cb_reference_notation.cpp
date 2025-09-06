@@ -280,7 +280,6 @@ FunctionType::ReturnInnerReferences CodeBuilder::EvaluateFunctionReturnInnerRefe
 
 VariablePtr CodeBuilder::EvaluateReferenceNotationExpression( NamesScope& names_scope, FunctionContext& function_context, const Synt::Expression& expression )
 {
-	const StackVariablesStorage dummy_stack_variables_storage( function_context );
 	return BuildExpressionCodeEnsureVariable( expression, names_scope, function_context );
 }
 
