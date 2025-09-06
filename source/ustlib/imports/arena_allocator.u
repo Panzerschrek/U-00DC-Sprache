@@ -2,7 +2,7 @@ namespace ust
 {
 
 // Arena allocator class, which may be used together with a special container to speed-up allocations with limited lifetime.
-// It's "non_sync", since it implement interrior mutability.
+// It's marked as "non_sync", since it implements interrior mutability.
 class arena_allocator non_sync
 {
 public:
@@ -17,7 +17,7 @@ public:
 	// Allocate given numbers of bytes.
 	// Result memory is aligned as needed.
 	// Given memory will be freed after destruction of this class instance.
-	// User should ensure that returned memory isn't used longer as this class instance lives.
+	// User should ensure that returned memory isn't used longer than this class instance lives.
 	// A good way to do this is to hold a logical reference to allocator instance.
 	fn nodiscard allocate( this, size_type size_bytes ) unsafe : $(byte8);
 
@@ -47,7 +47,7 @@ private:
 
 private:
 	// Require heap indirection in order to allow allocating in "imut" method.
-	$(internal_state) s_;
+	$(internal_state) imut s_;
 }
 
 } // namespace ust

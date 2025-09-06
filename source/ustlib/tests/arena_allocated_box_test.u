@@ -19,7 +19,7 @@ static_assert( !typeinfo</ ust::arena_allocated_box</i32/> />.is_default_constru
 
 struct S
 {
-	//Convert reference to pointer and use unsafe because references forbidden in box.
+	// Convert reference to pointer and use unsafe because references forbidden in arena_allocated_box.
 	$(i32) x;
 	fn constructor( mut this, i32 &mut in_x )
 	( x= $<(in_x) ) {}

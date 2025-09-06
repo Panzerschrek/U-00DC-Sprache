@@ -12,7 +12,7 @@ class arena_allocated_box_nullable non_sync( non_sync</T/> )
 	static_assert( typeinfo</T/>.reference_tag_count == 0s, "this container doesn't support types with references inside" );
 
 public:
-	// Default initializer = set to zero.
+	// Default constructor - creates empty container.
 	// It's usefull for later move assignment.
 	fn constructor()
 		( ptr_= zero_init )

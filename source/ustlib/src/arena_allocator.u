@@ -9,8 +9,7 @@ namespace ust
 
 fn arena_allocator::constructor()
 	( s_= unsafe( allocate_and_init_internal_state( 1s << c_first_allocation_size_log2 ) ) )
-{
-}
+{}
 
 fn arena_allocator::constructor( size_type initial_capacity )
 	( s_=
@@ -18,8 +17,7 @@ fn arena_allocator::constructor( size_type initial_capacity )
 			max(
 				1s << c_first_allocation_size_log2,
 				align_size( initial_capacity ) ) ) ) )
-{
-}
+{}
 
 fn arena_allocator::destructor()
 {
@@ -33,7 +31,7 @@ fn arena_allocator::destructor()
 			memory_free( s.allocated_blocks[i] );
 		}
 
-		// Free state structure (together fith first block).
+		// Free state structure (together with first block).
 		memory_free( ptr_cast_to_byte8( s_ ) );
 	}
 }
@@ -49,9 +47,11 @@ fn nodiscard arena_allocator::allocate( this, size_type size_bytes ) unsafe : $(
 		if( s.current_block_position + size_aligned_bytes > s.current_block_size )
 		{
 			// Has not enough size in this block - allocate new one.
-			// This wastes remaining space in current block, but this isn't a huge problem.
+			// This wastes remaining space in current block, but this isn't a huge problem,
+			// since amount of waster space is in the worst case only equal to amount of used space.
 
 			// Exponentially grow block size, so that list of allocated blocks has small limited size.
+			// Also exponential grow strategy means asymptotic constant overhead for allocation.
 			var size_type mut new_block_size= s.current_block_size << 1s;
 			while( new_block_size < size_aligned_bytes )
 			{

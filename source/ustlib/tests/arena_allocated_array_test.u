@@ -302,6 +302,9 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		var ust::arena_allocated_array</ ust::arena_allocated_array</char8/> /> mut a( allocator, size );
 
+		// Has 2 reference tag counts - for allocator reference of outer container and for allocator reference of inner container.
+		static_assert( typeinfo</ typeof(a) />.reference_tag_count == 2s );
+
 		// Workaround for ReferencePollutionOfOuterLoopVariable.
 		if( false ) { a[0s]= ust::arena_allocated_array</char8/>( allocator, arr[0s] ); }
 

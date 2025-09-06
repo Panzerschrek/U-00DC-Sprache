@@ -35,7 +35,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		a.pop_back(); //##expect_error NameNotFound
 		a.drop_back(); //##expect_error NameNotFound
 	}
-	{ // Element references returned by immtaible array are immutable.
+	{ // Element references returned by immutable array are immutable.
 		var ust::arena_allocator allocator;
 		var ust::arena_allocated_array</i32/> a( allocator, 10s, 0 );
 		auto &mut x0= a[0s]; //##expect_error ExpectedMutableReference
