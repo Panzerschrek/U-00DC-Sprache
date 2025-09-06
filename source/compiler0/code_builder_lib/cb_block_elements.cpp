@@ -189,7 +189,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::VariablesDeclaration& variables_declaration )
 {
-	const Type type= PrepareType( variables_declaration.type, names_scope, function_context );
+	Type type;
+	{
+		// Destruction frame for temporary variables of type expression.
+		const StackVariablesStorage temp_variables_storage( function_context );
+		type= PrepareType( variables_declaration.type, names_scope, function_context );
+		CallDestructors( temp_variables_storage, names_scope, function_context, variables_declaration.src_loc );
+	}
 
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
@@ -2947,6 +2953,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::TypeAlias& type_alias )
 {
+	// Destruction frame for temporary variables of type expression.
+	const StackVariablesStorage temp_variables_storage( function_context );
+
 	BlockBuildInfo block_info;
 
 	if( IsKeyword( type_alias.name ) )
@@ -2955,6 +2964,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	Type type= PrepareType( type_alias.value, names_scope, function_context );
 	if( names_scope.AddName( type_alias.name, NamesScopeValue( std::move(type), type_alias.src_loc ) ) == nullptr )
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_alias.src_loc, type_alias.name );
+
+	CallDestructors( temp_variables_storage, names_scope, function_context, type_alias.src_loc );
 
 	return block_info;
 }
@@ -3024,7 +3035,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::Mixin& mixin )
 {
+	const StackVariablesStorage temp_variables_storage( function_context );
+
 	const auto block_elements= ExpandBlockMixin( names_scope, function_context, mixin );
+
+	CallDestructors( temp_variables_storage, names_scope, function_context, mixin.src_loc );
+
 	if( block_elements == nullptr )
 		return BlockBuildInfo{};
 

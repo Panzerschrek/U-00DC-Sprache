@@ -78,11 +78,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	const Synt::Expression& num= array_type_name.size;
 	const SrcLoc num_src_loc= Synt::GetSrcLoc( num );
 
-	VariablePtr size_variable;
-	{
-		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-		size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
-	}
+	const VariablePtr size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
 
 	if( size_variable->constexpr_value != nullptr )
 	{

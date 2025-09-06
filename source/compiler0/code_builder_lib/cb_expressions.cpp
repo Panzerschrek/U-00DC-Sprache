@@ -564,6 +564,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), member_access_operator.src_loc );
 			else
 			{
+				// Create temporary variables storage to prevent "this" destruction in template args evaluation.
+				const StackVariablesStorage temp_variables_storage( function_context );
+
 				const OverloadedFunctionsSetPtr parameterized_functions=
 					ParameterizeFunctionTemplate(
 						member_access_operator.src_loc,
@@ -574,6 +577,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 				if( parameterized_functions != nullptr )
 					this_overloaded_methods_set.overloaded_methods_set= parameterized_functions;
+
+				CallDestructors( temp_variables_storage, names_scope, function_context, member_access_operator.src_loc );
 			}
 		}
 
