@@ -189,7 +189,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::VariablesDeclaration& variables_declaration )
 {
-	const Type type= PrepareType( variables_declaration.type, names_scope, function_context );
+	Type type;
+	{
+		// Destruction frame for temporary variables of type expression.
+		const StackVariablesStorage temp_variables_storage( function_context );
+		type= PrepareType( variables_declaration.type, names_scope, function_context );
+		CallDestructors( temp_variables_storage, names_scope, function_context, variables_declaration.src_loc );
+	}
 
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
