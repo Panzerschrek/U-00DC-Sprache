@@ -5,6 +5,8 @@ This directory contains Ü standard library files.
 Containers:
 
 * Constainer for storing a value of an (almost) arbitrary type (any.u)
+* Arena-allocated array container (arena_allocated_array.u)
+* Arena-allocated box (arena_allocated_box.u) and its nullable version (arena_allocated_box_nullable.u)
 * Atomic variable container, which wraps raw atomic operations (atomic_variable.u)
 * Heap-allocated box (box.u) and its nullable version (box_nullabe.u)
 * Hash map (key-value container) (hash_map.u)
@@ -27,6 +29,7 @@ Other functionality:
 
 * Aligned storage, that is used internally for some containers (aligned_storage.u)
 * Allocation/deallocation (alloc.u)
+* Arena allocator class (arena_allocator.u)
 * Asserts (assert.u)
 * Atomic operations support (atomic.u)
 * Barrier synchronization primitive (barrier.u)
