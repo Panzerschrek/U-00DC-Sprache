@@ -6,7 +6,12 @@ namespace ust
 class arena_allocator non_sync
 {
 public:
+	// Construct arena with default first block size.
 	fn constructor();
+
+	// Construct arena with first block size at least equal to given.
+	fn constructor( size_type initial_capacity );
+
 	fn destructor();
 
 	// Allocate given numbers of bytes.
@@ -36,6 +41,9 @@ private:
 
 	// Since we need to allocate internal state, allocate also reasonable large first block with it.
 	var size_type c_first_allocation_size_log2= 9s;
+
+private:
+	fn allocate_and_init_internal_state( size_type first_block_size ) unsafe : $(internal_state);
 
 private:
 	// Require heap indirection in order to allow allocating in "imut" method.

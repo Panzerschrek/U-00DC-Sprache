@@ -39,5 +39,23 @@ fn nomangle main() call_conv( "C" ) : i32
 			var $(byte8) mem2= unsafe( allocator.allocate( 11s ) );
 		}
 	}
+	// Make a lot of small allocations in arena constructed with explicit initial block size.
+	for( auto mut s= 0s; s < 24s; ++s )
+	{
+		var ust::arena_allocator allocator( 1s << s );
+		for( auto mut i= 0s; i < 16s * 1024s * 1024s; ++i )
+		{
+			var $(byte8) mem= unsafe( allocator.allocate( 3s ) );
+		}
+	}
+	// Make small amount of large allocations in arena constructed with explicit initial block size.
+	for( auto mut s= 0s; s < 24s; ++s )
+	{
+		var ust::arena_allocator allocator( 1s << s );
+		for( auto mut i= 0s; i < 16s; ++i )
+		{
+			var $(byte8) mem= unsafe( allocator.allocate( 1024s * 1024s * 3s ) );
+		}
+	}
 	return 0;
 }

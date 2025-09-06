@@ -8,27 +8,17 @@ namespace ust
 {
 
 fn arena_allocator::constructor()
-	( s_= zero_init )
+	( s_= unsafe( allocate_and_init_internal_state( 1s << c_first_allocation_size_log2 ) ) )
 {
-	// Allocate state structure together with first block.
-	unsafe
-	{
-		var size_type first_block_size= 1s << c_first_allocation_size_log2;
-		var size_type first_block_offset= align_size( typeinfo</internal_state/>.size_of );
+}
 
-		var $(byte8) mem= memory_allocate( first_block_offset + first_block_size );
-
-		s_= byte_ptr_cast</internal_state/>( mem );
-		$>(s_)=
-		internal_state
-		{
-			.current_block= mem + first_block_offset,
-			.current_block_size= first_block_size,
-			.current_block_position= 0s,
-			.num_allocated_blocks= 0s, // Don't count first block, since it's allocated with this state structure.
-			.allocated_blocks= zero_init,
-		};
-	}
+fn arena_allocator::constructor( size_type initial_capacity )
+	( s_=
+		unsafe( allocate_and_init_internal_state(
+			max(
+				1s << c_first_allocation_size_log2,
+				align_size( initial_capacity ) ) ) ) )
+{
 }
 
 fn arena_allocator::destructor()
@@ -81,6 +71,30 @@ fn nodiscard arena_allocator::allocate( this, size_type size_bytes ) unsafe : $(
 		s.current_block_position+= size_aligned_bytes;
 
 		return res;
+	}
+}
+
+fn arena_allocator::allocate_and_init_internal_state( size_type first_block_size ) unsafe : $(internal_state)
+{
+	unsafe
+	{
+		var size_type first_block_offset= align_size( typeinfo</internal_state/>.size_of );
+
+		var $(byte8) mem= memory_allocate( first_block_offset + first_block_size );
+
+		var $(internal_state) s= byte_ptr_cast</internal_state/>( mem );
+
+		$>(s) =
+			internal_state
+			{
+				.current_block= mem + first_block_offset,
+				.current_block_size= first_block_size,
+				.current_block_position= 0s,
+				.num_allocated_blocks= 0s, // Don't count first block, since it's allocated with this state structure.
+				.allocated_blocks= zero_init,
+			};
+
+		return s;
 	}
 }
 
