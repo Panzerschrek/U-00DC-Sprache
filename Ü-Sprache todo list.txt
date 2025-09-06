@@ -117,6 +117,7 @@ Standart library:
 *) Allow setting read/write timeouts on UDP socket
 *) Allow setting/getting broadcast/multicast properties on UDP socket
 *) Fix inet address resolution for non-ASCII domain names on some systems (like GNU/Linux)
+*) Implement a thread-safe version of arena_allocator
 
 Compiler:
 *) Ensure floating-point numbers parsing produces correct result
