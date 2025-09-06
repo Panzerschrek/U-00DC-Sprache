@@ -3035,7 +3035,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::Mixin& mixin )
 {
+	const StackVariablesStorage temp_variables_storage( function_context );
+
 	const auto block_elements= ExpandBlockMixin( names_scope, function_context, mixin );
+
+	CallDestructors( temp_variables_storage, names_scope, function_context, mixin.src_loc );
+
 	if( block_elements == nullptr )
 		return BlockBuildInfo{};
 

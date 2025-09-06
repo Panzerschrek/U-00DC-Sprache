@@ -3293,7 +3293,14 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 
 fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::Mixin/>& mixin_ ) : BlockElementBuildInfo
 {
-	if_var( &block_elements : ExpandBlockMixin( names_scope, function_context, mixin_ ) )
+	auto block_elements_ptr= WithVariablesFrame(
+		function_context,
+		lambda[&]( CodeBuilder &mut self, FunctionContext &mut function_context ) : ust::shared_ptr_final_nullable</ Synt::BlockElements />
+		{
+			return self.ExpandBlockMixin( names_scope, function_context, mixin_ );
+		} );
+
+	if_var( &block_elements : block_elements_ptr )
 	{
 		return BuildBlockElements( names_scope, function_context, block_elements );
 	}
