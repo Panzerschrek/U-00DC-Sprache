@@ -34,9 +34,6 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 
 	var u64 mut element_count(0);
 
-	var bool prev_is_functionless_context= function_context.is_functionless_context;
-	function_context.is_functionless_context= true;
-
 	with( &index_variable: BuildExpressionCodeEnsureVariable( names_scope, function_context, array_type.element_count ).lock_imut().deref() )
 	{
 		if( index_variable.constexpr_value != Null::LLVMValueRef() )
@@ -76,8 +73,6 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 		}
 	}
 
-	function_context.is_functionless_context= prev_is_functionless_context;
-
 	return ArrayType
 	{
 		.llvm_type= unsafe( LLVMArrayType2( element_type.GetLLVMType(), element_count ) ),
@@ -85,7 +80,6 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 		.element_count= element_count,
 	};
 }
-
 
 fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TupleType& tuple_type ) : Type
 {
