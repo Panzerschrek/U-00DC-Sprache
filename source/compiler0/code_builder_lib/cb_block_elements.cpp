@@ -2953,6 +2953,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::TypeAlias& type_alias )
 {
+	// Destruction frame for temporary variables of type expression.
+	const StackVariablesStorage temp_variables_storage( function_context );
+
 	BlockBuildInfo block_info;
 
 	if( IsKeyword( type_alias.name ) )
@@ -2961,6 +2964,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	Type type= PrepareType( type_alias.value, names_scope, function_context );
 	if( names_scope.AddName( type_alias.name, NamesScopeValue( std::move(type), type_alias.src_loc ) ) == nullptr )
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_alias.src_loc, type_alias.name );
+
+	CallDestructors( temp_variables_storage, names_scope, function_context, type_alias.src_loc );
 
 	return block_info;
 }
