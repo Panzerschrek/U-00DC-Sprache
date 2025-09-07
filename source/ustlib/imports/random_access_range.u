@@ -449,7 +449,7 @@ public:
 		var size_type count= min( size_, src.size() );
 		for( auto mut i= 0s; i < count; ++i )
 		{
-			// Use uichecked indexing for better performance. We know, that this index is always in range.
+			// Use unchecked indexing for better performance. We ensure, that this index is always in range.
 			// Use "=" to call overloaded copy-assignment operator.
 			unsafe( this.index_unchecked(i) )= unsafe( src.index_unchecked(i) );
 		}
