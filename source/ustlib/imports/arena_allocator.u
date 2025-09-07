@@ -1,0 +1,53 @@
+namespace ust
+{
+
+// Arena allocator class, which may be used together with a special container to speed-up allocations with limited lifetime.
+// It's marked as "non_sync", since it implements interrior mutability.
+class arena_allocator non_sync
+{
+public:
+	// Construct arena with default first block size.
+	fn constructor();
+
+	// Construct arena with first block size at least equal to given.
+	fn constructor( size_type initial_capacity );
+
+	fn destructor();
+
+	// Allocate given numbers of bytes.
+	// Result memory is aligned as needed.
+	// Given memory will be freed after destruction of this class instance.
+	// User should ensure that returned memory isn't used longer than this class instance lives.
+	// A good way to do this is to hold a logical reference to allocator instance.
+	fn nodiscard allocate( this, size_type size_bytes ) unsafe : $(byte8);
+
+private:
+	struct internal_state
+	{
+		$(byte8) current_block;
+		size_type current_block_size;
+		size_type current_block_position;
+		// Store allocated blocks to free them later.
+		size_type num_allocated_blocks;
+		[ $(byte8), c_max_allocations ] allocated_blocks;
+	}
+
+	// Since we use exponential power of two grow strategy, maximum number of allocations is limited.
+	var size_type c_max_allocations= 1s + c_max_allocation_size_log2 - c_first_allocation_size_log2;
+
+	// On 32-bit platforms it's practically impossible to allocate more that half of address space.
+	// On 64-bit platforms we don't need even to reach 64 bit size, 41 bits (2TB) is practically enough.
+	var size_type c_max_allocation_size_log2= ( typeinfo</size_type/>.size_of == 4s ? 31s : 41s );
+
+	// Since we need to allocate internal state, allocate also reasonable large first block with it.
+	var size_type c_first_allocation_size_log2= 9s;
+
+private:
+	fn allocate_and_init_internal_state( size_type first_block_size ) unsafe : $(internal_state);
+
+private:
+	// Require heap indirection in order to allow allocating in "imut" method.
+	$(internal_state) imut s_;
+}
+
+} // namespace ust

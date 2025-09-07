@@ -1,0 +1,121 @@
+import "../imports/alloc.u"
+import "../imports/arena_allocator.u"
+import "../imports/memory.u"
+import "../imports/minmax.u"
+
+
+namespace ust
+{
+
+fn arena_allocator::constructor()
+	( s_= unsafe( allocate_and_init_internal_state( 1s << c_first_allocation_size_log2 ) ) )
+{}
+
+fn arena_allocator::constructor( size_type initial_capacity )
+	( s_=
+		unsafe( allocate_and_init_internal_state(
+			max(
+				1s << c_first_allocation_size_log2,
+				align_size( initial_capacity ) ) ) ) )
+{}
+
+fn arena_allocator::destructor()
+{
+	unsafe
+	{
+		var internal_state& s= $>(s_);
+
+		// Free allocated blocks.
+		for( auto mut i= 0s; i < s.num_allocated_blocks; ++i )
+		{
+			memory_free( s.allocated_blocks[i] );
+		}
+
+		// Free state structure (together with first block).
+		memory_free( ptr_cast_to_byte8( s_ ) );
+	}
+}
+
+fn nodiscard arena_allocator::allocate( this, size_type size_bytes ) unsafe : $(byte8)
+{
+	var size_type size_aligned_bytes= align_size( size_bytes );
+
+	unsafe
+	{
+		var internal_state &mut s= $>(s_);
+
+		if( s.current_block_position + size_aligned_bytes > s.current_block_size )
+		{
+			// Has not enough size in this block - allocate new one.
+			// This wastes remaining space in current block, but this isn't a huge problem,
+			// since amount of waster space is in the worst case only equal to amount of used space.
+
+			// Exponentially grow block size, so that list of allocated blocks has small limited size.
+			// Also exponential grow strategy means asymptotic constant overhead for allocation.
+			var size_type mut new_block_size= s.current_block_size << 1s;
+			while( new_block_size < size_aligned_bytes )
+			{
+				new_block_size <<= 1s;
+			}
+
+			var $(byte8) mem= memory_allocate( new_block_size );
+			s.allocated_blocks[ s.num_allocated_blocks ]= mem;
+			++s.num_allocated_blocks;
+			s.current_block= mem;
+			s.current_block_position= 0s;
+			s.current_block_size= new_block_size;
+		}
+
+		// Just return current position and adjust it by given size.
+		var $(byte8) res= s.current_block + s.current_block_position;
+		s.current_block_position+= size_aligned_bytes;
+
+		return res;
+	}
+}
+
+fn arena_allocator::allocate_and_init_internal_state( size_type first_block_size ) unsafe : $(internal_state)
+{
+	unsafe
+	{
+		var size_type first_block_offset= align_size( typeinfo</internal_state/>.size_of );
+
+		var $(byte8) mem= memory_allocate( first_block_offset + first_block_size );
+
+		var $(internal_state) s= byte_ptr_cast</internal_state/>( mem );
+
+		$>(s) =
+			internal_state
+			{
+				.current_block= mem + first_block_offset,
+				.current_block_size= first_block_size,
+				.current_block_position= 0s,
+				.num_allocated_blocks= 0s, // Don't count first block, since it's allocated with this state structure.
+				.allocated_blocks= zero_init,
+			};
+
+		return s;
+	}
+}
+
+// Calculate max alignment among variety of built-in types.
+fn constexpr get_max_alignment() : size_type
+{
+	return
+		max(
+			max(
+				max( typeinfo</size_type/>.align_of, typeinfo</f64/>.align_of ),
+				max( typeinfo</u32/>.align_of, typeinfo</u64/>.align_of ) ),
+			max( typeinfo</u128/>.align_of, typeinfo</$(byte8)/>.align_of ) );
+}
+
+// Round up to be divisible by alignment.
+fn constexpr align_size( size_type s ) : size_type
+{
+	var size_type alignment= get_max_alignment();
+	static_assert( ( alignment & ( alignment - 1s ) ) == 0s, "Alignment should be power of two!" );
+
+	return ( s + ( alignment - 1s ) ) & ~( alignment - 1s );
+}
+
+} // namespace ust

@@ -1,0 +1,323 @@
+//##success_test
+import "../imports/arena_allocated_array.u"
+import "../imports/string.u"
+
+// Arena-allocated array is "non_sync", since it holds a reference to arena allocator, which is "non_sync".
+static_assert( non_sync</ ust::arena_allocated_array</i32/> /> );
+
+// Arena-allocated array has fixed size after it's created. So it has no capacity field and thus has size of only two pointers.
+static_assert( typeinfo</ ust::arena_allocated_array</i32/> />.size_of == typeinfo</ size_type />.size_of * 2s );
+
+// Arena-allocated array isn't copyable, since copying requires passing allocator.
+static_assert( !typeinfo</ ust::arena_allocated_array</i32/> />.is_copy_constructible );
+static_assert( !typeinfo</ ust::arena_allocated_array</i32/> />.is_copy_assignable );
+
+// Arena-allocated array has single reference tag for allocator plus tags for contained type.
+static_assert( typeinfo</ ust::arena_allocated_array</i32/> />.reference_tag_count == 1s );
+static_assert( typeinfo</ ust::arena_allocated_array</R/> />.reference_tag_count == 2s );
+
+// Arena-allocated array is default-constructible, but reassignment is required to make it non-empty.
+static_assert( typeinfo</ ust::arena_allocated_array</i32/> />.is_default_constructible );
+
+struct R
+{
+	i32& r;
+}
+
+fn nomangle main() call_conv( "C" ) : i32
+{
+	{ // Default constructor.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</f32/> mut a;
+		halt if( !a.empty() );
+		halt if( a.size() != 0s );
+
+		// Move-assign new value.
+		a= ust::arena_allocated_array</f32/>( allocator, ust::make_array( 111.0f, 222.0f, 333.0f ) );
+		halt if( a.empty() );
+		halt if( a[0s] != 111.0f );
+		halt if( a[1s] != 222.0f );
+		halt if( a[2s] != 333.0f );
+	}
+	{ // Constructor with size only - for default-constructible types.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</ust::string8/> a( allocator, 896s );
+
+		halt if( a.size() != 896s );
+		foreach( &s : a )
+		{
+			halt if( !s.empty() );
+		}
+	}
+	{ // Fill constructor.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, 4s, 561 );
+
+		halt if( a.empty() );
+		halt if( a.size() != 4s );
+		halt if( a[0s] != 561 );
+		halt if( a[1s] != 561 );
+		halt if( a[2s] != 561 );
+		halt if( a[3s] != 561 );
+	}
+	{ // Fill constructor for large size.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, 1024s * 1024s * 16s, 13 );
+
+		halt if( a.empty() );
+		halt if( a.size() != 1024s * 1024s * 16s );
+
+		var i32 mut sum= 0;
+		foreach( el : a )
+		{
+			sum+= el;
+		}
+
+		halt if( sum != 13 * i32(1024s * 1024s * 16s) );
+	}
+	{ // Fill constructor for empty array.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</f64/> a( allocator, 0s, 11.2 );
+
+		halt if( !a.empty() );
+		halt if( a.size() != 0s );
+	}
+	{ // Modify contained values.
+
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</u32/> mut a( allocator, 3s, 0u );
+
+		halt if( a.size() != 3s );
+		halt if( a.front() != 0u );
+		halt if( a.back() != 0u );
+		halt if( a[1s] != 0u );
+
+		a.front() = 67u;
+		a[2s]= 873458u;
+
+		halt if( a[0s] != 67u );
+		halt if( a.back() != 873458u );
+		halt if( a[1s] != 0u );
+
+		foreach( &mut v : a )
+		{
+			v+= 10u;
+		}
+
+		halt if( a[0s] != 77u );
+		halt if( a[1s] != 10u );
+		halt if( a[2s] != 873468u );
+	}
+	{ // "range" method.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, 5s, 11 );
+
+		auto r= a.range();
+
+		static_assert( same_type</ typeof(r), ust::random_access_range_imut</i32/> /> );
+
+		halt if( r.size() != 5s );
+		foreach( &el : r )
+		{
+			halt if( el != 11 );
+		}
+	}
+	{ // "range" method for mutable instance.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> mut a( allocator, 52s, -67 );
+
+		{
+			auto r= a.range();
+
+			static_assert( same_type</ typeof(r), ust::random_access_range_mut</i32/> /> );
+
+			halt if( r.size() != 52s );
+			foreach( &mut el : r )
+			{
+				halt if( el != -67 );
+				el*= -2;
+			}
+		}
+
+		foreach( &el : a )
+		{
+			halt if( el != 134 );
+		}
+	}
+	{ // Construct from array and compare.
+		var ust::arena_allocator allocator;
+
+		var ust::arena_allocated_array</i32/>
+			a0( allocator, ust::make_array</i32/>() ),
+			a1( allocator, ust::make_array( 1, 2, 3 ) ),
+			a2( allocator, ust::make_array( 1, 2, 3 ) ),
+			a3( allocator, ust::make_array( 3, 2, 1 ) ),
+			a4( allocator, ust::make_array( 1, 2, 3, 4 ) ),
+			a5( allocator, ust::make_array( 4 ) );
+
+		halt if( a0.size() != 0s );
+		halt if( a1.size() != 3s );
+		halt if( a2.size() != 3s );
+		halt if( a3.size() != 3s );
+		halt if( a4.size() != 4s );
+		halt if( a5.size() != 1s );
+
+		halt if( a0 != a0 );
+		halt if( a0 == a1 );
+		halt if( a0 == a2 );
+		halt if( a0 == a3 );
+		halt if( a0 == a4 );
+		halt if( a0 == a5 );
+		halt if( a1 == a0 );
+		halt if( a1 != a1 );
+		halt if( a1 != a2 );
+		halt if( a1 == a3 );
+		halt if( a1 == a4 );
+		halt if( a1 == a5 );
+		halt if( a2 == a0 );
+		halt if( a2 != a1 );
+		halt if( a2 != a2 );
+		halt if( a2 == a3 );
+		halt if( a2 == a4 );
+		halt if( a2 == a5 );
+		halt if( a3 == a0 );
+		halt if( a3 == a1 );
+		halt if( a3 == a2 );
+		halt if( a3 != a3 );
+		halt if( a3 == a4 );
+		halt if( a3 == a5 );
+		halt if( a4 == a0 );
+		halt if( a4 == a1 );
+		halt if( a4 == a2 );
+		halt if( a4 == a3 );
+		halt if( a4 != a4 );
+		halt if( a4 == a5 );
+		halt if( a5 == a0 );
+		halt if( a5 == a1 );
+		halt if( a5 == a2 );
+		halt if( a5 == a3 );
+		halt if( a5 == a4 );
+		halt if( a5 != a5 );
+	}
+	{ // Construct from range.
+
+		var [ u32, 5 ] values[ 9u, 87u, 654u, 3210u, 98765u ];
+		var ust::array_view_imut</u32/> values_range= values;
+
+		var ust::arena_allocator allocator;
+
+		var ust::arena_allocated_array</u32/> a( allocator, values_range );
+
+		halt if( a.size() != 5s );
+		halt if( a.range() != values_range );
+	}
+	{ // Construct from mutable range.
+
+		var [ f32, 3 ] mut values[ -12.0f, 25.5f, 56666331200.0f ];
+		var ust::array_view_mut</f32/> values_range= values;
+
+		var ust::arena_allocator allocator;
+
+		var ust::arena_allocated_array</f32/> a( allocator, values_range );
+
+		halt if( a.size() != 3s );
+		halt if( a.range() != values_range );
+	}
+	{ // "from_mapped_range".
+
+		var ust::arena_allocator allocator;
+
+		var [ f32, 4 ] nums[ 78.2f, 13.4f, 86.0f, 125267.2f ];
+
+		auto a= ust::arena_allocated_array</i32/>::from_mapped_range(
+			allocator,
+			ust::array_view_imut</f32/>( nums ),
+			lambda[]( f32 x ) : i32 { return i32(x); } );
+
+		halt if( a.size() != 4s );
+		halt if( a[0s] != 78 );
+		halt if( a[1s] != 13 );
+		halt if( a[2s] != 86 );
+		halt if( a[3s] != 125267 );
+	}
+	{ // "from_filler_function".
+
+		var ust::arena_allocator allocator;
+
+		auto a= ust::arena_allocated_array</u32/>::from_filler_function(
+			allocator,
+			5s,
+			lambda[counter= 0u] mut() : u32
+			{
+				auto res= counter * counter;
+				++counter;
+				return res;
+			} );
+
+		halt if( a.size() != 5s );
+		halt if( a[0s] != 0u * 0u );
+		halt if( a[1s] != 1u * 1u );
+		halt if( a[2s] != 2u * 2u );
+		halt if( a[3s] != 3u * 3u );
+		halt if( a[4s] != 4u * 4u );
+	}
+	{ // Direct and reverse iteration.
+		var ust::arena_allocator allocator;
+		var ust::arena_allocated_array</i32/> a( allocator, ust::make_array( 77, 88, 99 ) );
+
+		{
+			var i32 mut i = 77;
+			foreach( &el : a.iter() )
+			{
+				halt if( el != i );
+				i+= 11;
+			}
+		}
+		{
+			var i32 mut i = 99;
+			foreach( &el : a.iter_reverse() )
+			{
+				halt if( el != i );
+				i-= 11;
+			}
+		}
+	}
+	{ // Type with references inside.
+
+		var ust::arena_allocator allocator;
+
+		var i32 x= 123, y= 4567;
+
+		var ust::arena_allocated_array</R/> a( allocator, ust::make_array( R{ .r= x }, R{ .r=y } ) );
+
+		halt if( a.size() != 2s );
+		halt if( a[0s].r != x );
+		halt if( a[1s].r != y );
+	}
+	{ // arena_allocated_array of arena_allocated_array objects.
+		var ust::arena_allocator allocator;
+
+		var size_type size= 3s;
+		var [ ust::string_view8, size ] arr[ "some", "strings", "array" ];
+
+		var ust::arena_allocated_array</ ust::arena_allocated_array</char8/> /> mut a( allocator, size );
+
+		// Has 2 reference tag counts - for allocator reference of outer container and for allocator reference of inner container.
+		static_assert( typeinfo</ typeof(a) />.reference_tag_count == 2s );
+
+		// Workaround for ReferencePollutionOfOuterLoopVariable.
+		if( false ) { a[0s]= ust::arena_allocated_array</char8/>( allocator, arr[0s] ); }
+
+		for( auto mut i= 0s; i < size; ++i )
+		{
+			a[i]= ust::arena_allocated_array</char8/>( allocator, arr[i] );
+		}
+
+		halt if( a.size() != 3s );
+		halt if( a[0s].range() != arr[0s] );
+		halt if( a[1s].range() != arr[1s] );
+		halt if( a[2s].range() != arr[2s] );
+	}
+
+	return 0;
+}
