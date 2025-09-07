@@ -121,6 +121,16 @@ fn nomangle main() call_conv( "C" ) : i32
 		auto bytes_range= ust::array_view_mut</ i32 />( arr ).to_byte8_range();
 		++arr[1]; //##expect_error ReferenceProtectionError
 	}
+	{ // "copy_from" isn't supported for immutable ranges.
+		var [ i32, 3 ] a0= zero_init, a1= zero_init;
+		var ust::array_view_imut</i32/> a0_range(a0);
+		a0_range.copy_from( ust::array_view_imut</i32/>(a1) ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // "copy_from" isn't supported for non-copyable types.
+		var [ A, 3 ] mut a0, a1;
+		var ust::array_view_mut</A/> a0_range(a0);
+		a0_range.copy_from( ust::array_view_imut</A/>(a1) ); //##expect_error CouldNotSelectOverloadedFunction
+	}
 
 	return 0;
 }
