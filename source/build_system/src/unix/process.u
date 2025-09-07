@@ -57,11 +57,7 @@ public:
 
 		{ // Push executable as first arg.
 			var ust::arena_allocated_array</char8/> mut a( allocator, exe_path.size() + 1s, '\0' );
-			foreach( pair : a.iter().zip( exe_path.iter() ) )
-			{
-				pair.first= pair.second;
-			}
-
+			a.range().copy_from( exe_path.range() );
 			args_null_terminated.front()= move(a);
 		}
 
@@ -69,10 +65,7 @@ public:
 		{
 			var ust::string8& s= pair.second;
 			var ust::arena_allocated_array</char8/> mut a( allocator, s.size() + 1s, '\0' );
-			foreach( pair : a.iter().zip( s.iter() ) )
-			{
-				pair.first= pair.second;
-			}
+			a.range().copy_from( s.range() );
 			pair.first= move(a);
 		}
 
