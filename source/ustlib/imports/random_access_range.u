@@ -4,6 +4,7 @@ import "hash_apply.u"
 import "helpers.u"
 import "iterator.u"
 import "memory.u"
+import "minmax.u"
 import "optional_ref.u"
 import "reference_notation.u"
 
@@ -434,6 +435,24 @@ public:
 			unsafe( random_access_range</byte8, true/>(
 				ptr_cast_to_byte8( begin_ ),
 				size_ * typeinfo</T/>.size_of ) );
+	}
+
+	// Copy contents of source into this range.
+	// This works only for types with "=" operator.
+	// If "src" size is less than this size, only first N elements are copied.
+	// If "src" size is greater than this size, excess elements are ignored.
+	template</bool source_is_mutable/>
+	fn
+	enable_if( is_mutable && typeinfo</T/>.is_copy_assignable )
+	copy_from( this, random_access_range</T, source_is_mutable/> src )
+	{
+		var size_type count= min( size_, src.size() );
+		for( auto mut i= 0s; i < count; ++i )
+		{
+			// Use uichecked indexing for better performance. We know, that this index is always in range.
+			// Use "=" to call overloaded copy-assignment operator.
+			unsafe( this.index_unchecked(i) )= unsafe( src.index_unchecked(i) );
+		}
 	}
 
 private:

@@ -530,6 +530,32 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( arr[0] != "012" );
 		halt if( arr[1] != "345" );
 	}
+	{
+		var [ i32, 3 ] mut a0= zero_init;
+		var [ i32, 2 ] a1[ 1, 2 ];
+		var [ i32, 4 ] a2[ 3, 4, 5, 6 ];
+		var [ i32, 3 ] a3[ 7, 8, 9 ];
+
+		var ust::array_view_mut</i32/> a0_range(a0);
+
+		// Copy from range with size less than needed.
+		a0_range.copy_from( ust::array_view_imut</i32/>( a1 ) );
+		halt if( a0_range[0s] != 1 );
+		halt if( a0_range[1s] != 2 );
+		halt if( a0_range[2s] != 0 );
+
+		// Copy from range with size greater than needed.
+		a0_range.copy_from( ust::array_view_imut</i32/>( a2 ) );
+		halt if( a0_range[0s] != 3 );
+		halt if( a0_range[1s] != 4 );
+		halt if( a0_range[2s] != 5 );
+
+		// Copy from range with equal size.
+		a0_range.copy_from( ust::array_view_imut</i32/>( a3 ) );
+		halt if( a0_range[0s] != 7 );
+		halt if( a0_range[1s] != 8 );
+		halt if( a0_range[2s] != 9 );
+	}
 
 	return 0;
 }
