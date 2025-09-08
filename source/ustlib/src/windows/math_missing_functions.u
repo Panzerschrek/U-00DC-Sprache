@@ -36,4 +36,4 @@ fn nomangle enable_if( enable_missing_funcs ) tan( f64 x ) call_conv( "C" ) : f6
 fn nomangle enable_if( enable_missing_funcs ) asin( f64 x ) call_conv( "C" ) : f64;
 fn nomangle enable_if( enable_missing_funcs ) acos( f64 x ) call_conv( "C" ) : f64;
 fn nomangle enable_if( enable_missing_funcs ) atan( f64 x ) call_conv( "C" ) : f64;
-fn nomangle enable_if( enable_missing_funcs ) atan2( f64 y, f64 y ) call_conv( "C" ) : f64;
+fn nomangle enable_if( enable_missing_funcs ) atan2( f64 y, f64 x ) call_conv( "C" ) : f64;
