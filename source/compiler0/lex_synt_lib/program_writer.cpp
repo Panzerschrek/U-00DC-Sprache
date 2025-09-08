@@ -307,9 +307,12 @@ void ElementWrite( const FunctionParam& param ) const
 
 void ElementWrite( const BinaryOperator& binary_operator ) const
 {
+	// Add () to ensure order of evaluation is correct.
+	stream_ << "( ";
 	ElementWrite( binary_operator.left  );
 	stream_ << " " << BinaryOperatorToString(binary_operator.operator_type) << " ";
 	ElementWrite( binary_operator.right );
+	stream_ << " )";
 }
 
 void ElementWrite( const TernaryOperator& ternary_operator ) const
@@ -547,33 +550,51 @@ void ElementWrite( const UnsafeExpression& unsafe_expression ) const
 
 void ElementWrite( const UnaryMinus& unary_minus ) const
 {
+	// Add () to ensure order of evaluation is correct.
+	stream_ << "( ";
 	stream_ << OverloadedOperatorToString( OverloadedOperator::Sub );
 	ElementWrite( unary_minus.expression );
+	stream_ << " )";
 }
 
 void ElementWrite( const LogicalNot& logical_not ) const
 {
+	// Add () to ensure order of evaluation is correct.
+	stream_ << "( ";
 	stream_ << OverloadedOperatorToString( OverloadedOperator::LogicalNot );
 	ElementWrite( logical_not.expression );
+	stream_ << " )";
 }
 
 void ElementWrite( const BitwiseNot& bitwise_not ) const
 {
+	// Add () to ensure order of evaluation is correct.
+	stream_ << "( ";
 	stream_ << OverloadedOperatorToString( OverloadedOperator::BitwiseNot );
 	ElementWrite( bitwise_not.expression );
+	stream_ << " )";
 }
 
 void ElementWrite( const IndexationOperator& indexation_operator ) const
 {
+	// Add () to ensure order of evaluation is correct.
+	stream_ << "( ";
+
 	ElementWrite( indexation_operator.expression );
 	stream_ << "[ ";
 	ElementWrite( indexation_operator.index );
 	stream_ << " ]";
+
+	stream_ << " )";
 }
 
 void ElementWrite( const MemberAccessOperator& member_access_operator ) const
 {
+	// Add () to ensure order of evaluation is correct.
+	stream_ << "( ";
+
 	ElementWrite( member_access_operator.expression );
+
 	stream_ << "." << member_access_operator.member_name;
 	if( member_access_operator.has_template_args )
 	{
@@ -586,29 +607,45 @@ void ElementWrite( const MemberAccessOperator& member_access_operator ) const
 		}
 		stream_ << "/>";
 	}
+
+	stream_ << " )";
 }
 
 void ElementWrite( const AwaitOperator& await_operator ) const
 {
+	// Add () to ensure order of evaluation is correct.
+	stream_ << "( ";
 	ElementWrite( await_operator.expression );
 	stream_ << "." << Keyword( Keywords::await_ );
+	stream_ << " )";
 }
 
 void ElementWrite( const VariableInitialization& variable_initialization ) const
 {
+	// Add () to ensure order of evaluation is correct.
+	stream_ << "( ";
 	ElementWrite( variable_initialization.type );
 	ElementWrite( variable_initialization.initializer );
+	stream_ << " )";
 }
 
 void ElementWrite( const MemberAccessOperatorCompletion& member_access_operator_completion ) const
 {
+	// Add () to ensure order of evaluation is correct.
+	stream_ << "( ";
 	ElementWrite( member_access_operator_completion.expression );
+	stream_ << " )";
+
 	stream_ << "." << member_access_operator_completion.member_name;
 }
 
 void ElementWrite( const CallOperator& call_operator ) const
 {
+	// Add () to ensure order of evaluation is correct.
+	stream_ << "( ";
+
 	ElementWrite( call_operator.expression );
+
 	stream_ << "( ";
 	for( const Expression& arg : call_operator.arguments )
 	{
@@ -618,6 +655,8 @@ void ElementWrite( const CallOperator& call_operator ) const
 			stream_ << ", ";
 	}
 	stream_ << ")";
+
+	stream_ << " )";
 }
 
 void ElementWrite( const CallOperatorSignatureHelp& call_operator_signature_help ) const
