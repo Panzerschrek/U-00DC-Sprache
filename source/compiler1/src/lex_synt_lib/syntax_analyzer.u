@@ -137,7 +137,7 @@ private:
 		}
 		else
 		{
-			auto mut l= SyntaxAnalyzer::TryParseBinaryOperator</priority + 1s/>();
+			auto mut l= TryParseBinaryOperator</priority + 1s/>();
 			return TryParseBinaryOperatorRightPart</priority/>( move(l) );
 		}
 	}
@@ -155,11 +155,11 @@ private:
 				{
 					.src_loc= src_loc,
 					.l( move(l) ),
-					.r( SyntaxAnalyzer::TryParseBinaryOperator</priority + 1s/>() ),
+					.r( TryParseBinaryOperator</priority + 1s/>() ),
 					.operator( op_pair[1] ),
 				};
 
-				return SyntaxAnalyzer::TryParseBinaryOperatorRightPart</priority/>( move(operator) );
+				return TryParseBinaryOperatorRightPart</priority/>( move(operator) );
 			}
 		}
 
