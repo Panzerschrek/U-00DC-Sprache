@@ -589,3 +589,12 @@ def MacroExpansionContext_Test3():
 	assert( errors_list[0].template_errors.errors[0].src_loc.line == 7 )
 	assert( errors_list[0].template_errors.errors[0].template_errors.errors[0].error_code == "NameNotFound" )
 	assert( errors_list[0].template_errors.errors[0].template_errors.errors[0].src_loc.line == 7 )
+
+
+def MacroExpressionExpansionPriority_Test0():
+	c_program_text= """
+		?macro <? SQUARE:expr ( ?x:expr ) ?> -> <? ?x * ?x ?>
+		static_assert( SQUARE( 3 + 7 ) == ( 3 + 7 ) * ( 3 + 7 ) );
+		static_assert( SQUARE( 3 + 7 ) != 3 + 7 * 3 + 7 );
+	"""
+	tests_lib.build_program( c_program_text )
