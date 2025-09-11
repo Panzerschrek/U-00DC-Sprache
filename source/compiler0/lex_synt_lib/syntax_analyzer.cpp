@@ -158,6 +158,7 @@ private:
 		Lexems::const_iterator end;
 		std::vector< MacroVariablesMap > sub_elements;
 		Macro::MatchElementKind kind= Macro::MatchElementKind::Lexem;
+		bool need_to_add_brackets_in_expansion= false;
 	};
 
 	struct MacroNamesMap
@@ -4624,6 +4625,7 @@ SyntaxAnalyzer::MacroVariablesMap SyntaxAnalyzer::MatchMacroBlock(
 					push_macro_error();
 					return out_elements;
 				}
+				element.need_to_add_brackets_in_expansion= true;
 			}
 			break;
 
@@ -4784,7 +4786,13 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					return result_lexems;
 				}
 
+				if( element->need_to_add_brackets_in_expansion )
+					result_lexems.push_back( Lexem{ "(", SrcLoc(), Lexem::Type::BracketLeft } );
+
 				result_lexems.insert( result_lexems.end(), element->begin, element->end );
+
+				if( element->need_to_add_brackets_in_expansion )
+					result_lexems.push_back( Lexem{ ")", SrcLoc(), Lexem::Type::BracketRight } );
 			}
 			break;
 
