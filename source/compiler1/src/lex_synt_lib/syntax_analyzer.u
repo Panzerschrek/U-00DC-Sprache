@@ -4407,7 +4407,7 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro, ust::string8& macro_
 	auto macro_variables_map_opt= MatchMacroBlock( macro.match_template_elements );
 	if( macro_variables_map_opt.empty() )
 	{
-		return Lexems();
+		return Lexems(  2s, Lexem{ .lexem_type= Lexem::Type::EndOfFile } );
 	}
 
 	var MacroVariablesMapsStack mut macro_variables_maps_stack;
