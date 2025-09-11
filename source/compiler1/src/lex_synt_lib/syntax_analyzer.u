@@ -249,6 +249,7 @@ private:
 	struct ParsedMacroElement
 	{
 		Lexems lexems;
+		bool need_to_add_brackets_in_expansion= false;
 		Macro::MatchElementKind kind;
 		ust::vector</ ust::shared_ptr_final</ MacroVariablesMap /> /> sub_elements; // 0 for simple macro variables, 0 or 1 for optionals, 0-many for sequences
 	}
@@ -4481,7 +4482,11 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, Macro::MatchElements& match_elemen
 				NextLexem();
 			},
 			Macro::MatchElementKind::Typename -> { ParseTypeName(); },
-			Macro::MatchElementKind::Expression -> { ParseExpression(); },
+			Macro::MatchElementKind::Expression ->
+			{
+				ParseExpression();
+				element.need_to_add_brackets_in_expansion= true;
+			},
 			Macro::MatchElementKind::Block -> { ParseBlock(); },
 			Macro::MatchElementKind::IfAlternative -> { ParseIfAlternative(); },
 			Macro::MatchElementKind::Optional ->
@@ -4647,7 +4652,17 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 		{
 			if_var( &variable : FetchMacroVariable( macro_variables_maps_stack, result_element.name ) )
 			{
+				if( variable.need_to_add_brackets_in_expansion )
+				{
+					lexems_expanded.push_back( Lexem{ .lexem_type= Lexem::Type::BracketLeft } );
+				}
+
 				lexems_expanded.append( variable.lexems.iter() );
+
+				if( variable.need_to_add_brackets_in_expansion )
+				{
+					lexems_expanded.push_back( Lexem{ .lexem_type= Lexem::Type::BracketRight } );
+				}
 			}
 			else
 			{
