@@ -1,11 +1,24 @@
 ![](source/docs/logo-Gebrochene-Grotesk.png)
 
 ## The Ü programming language
-Experimental programming language.  
-It is a compilable, statically-typed C++/Rust-like language.
 
-The sources of the compiler for this language and some related tools are located here.
-Also standard library sources and documentation sources are located in this repository.
+Ü is a statically-typed compiled programming language, designed for writing programs, which should be both reliable and fast.
+It has safe and unsafe code separation, compile-time correctness checks, powerful abstractions like RAII and templates, encapsulation, rich type system, lambdas, coroutines and many other useful features.
+Ü uses RAII for memory and resources management (no GC is involved), but manual memory management may be still used in unsafe code.
+Ü is memory-safe and race-condition-safe, as long as no unsafe code is involved at all or as long as unsafe code is correctly written.
+
+Ü is heavily inspired by C++, but doesn't have its downsides.
+Also it was influenced by Rust, but only slightly and thus is way easier to use in comparison to Rust.
+Any possible coincidence with design and features of other programming languages is unintentional.
+
+Ü compiler is based on LLVM library and thus leverages many its powers, including numerous optimizations and code generation support for many CPU architectures and operating systems.
+Even more, there are two Ü compilers, the first one is written in C++ and the second one is mostly written in Ü itself (frontend part, backend is still LLVM).
+
+Besides the compiler Ü has a lot of other components.
+Ü provides its own standard library containing basic containers, helpers and operation system interaction functionality.
+There is a build system, which simplifies complex Ü programs building and (partially) package management.
+For better developing experience there is a language server and variety of syntax highlighting files for some IDEs and text editors.
+Last but not least, Ü has a tool for C headers conversion, which allows to simplify interaction with foreign code.
 
 
 ### Supported systems
@@ -28,13 +41,18 @@ GNU/Linux with x32 ABI isn't supported due to some bugs in LLVM library.
 
 ### Documentation
 
-Documentation is available here: [russian](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/ru/contents.html), [english](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/en/contents.html).
+Documentation is available here: [english](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/en/contents.html), [russian](https://panzerschrek.github.io/U-00DC-Sprache-site/docs/ru/contents.html).
+The language itself is described in details, other components have basic, but not very deep documentation.
+Additionally there are some basic usage [examples](source/examples/README.md).
 
 
 ### How to build
 
+A modern C++ compiler (clang, GCC, MSVC) is required for building the project.
+CMake and Ninja are also necessary.
+
 #### Option 0 - build with LLVM sources.
-* Download LLVM sources [here](https://github.com/llvm/llvm-project/releases/) (llvm 17.0.6 is used in this project).
+* Download LLVM sources [here](https://github.com/llvm/llvm-project/releases/) (version 17.0.6 is used in this project).
 * Run cmake for *source/CMakeLists.txt* and generate project for your favorite IDE or build system. You must set *LLVM_SRC_DIR* in cmake arguments.
 * In order to speed-up the build you may disable building of unnecessary targets via *LLVM_TARGETS_TO_BUILD* cmake variable. For example set it to *X86* only.
 * It is recommended to disable LLVM tests and benchmarks. See LLVM documentation for more information.
@@ -46,15 +64,12 @@ Documentation is available here: [russian](https://panzerschrek.github.io/U-00DC
 * Perform the build.
 
 Some components are optional and may be disabled via cmake options (see *source/CMakeLists.txt*).
-
 Python 3 is required to build and run tests, written in Python.
-
 Sphynx is required to build documentation.
-
 For more information/examples see build scripts in *ci* directory.
 
 
-### Components
+### Component readmes
 
 [compiler](source/compilers_common_lib/README.md)
 
@@ -82,11 +97,11 @@ For more information/examples see build scripts in *ci* directory.
 ### IDE support
 
 [Ecode](https://github.com/SpartanJ/ecode/) has built-in Ü syntax highlighting, Ü language server support, debugging support.
-It's recommeded at least to try using it.
+It's recommended at least to try using it.
 
 [QtCreator](https://www.qt.io/product/development-tools) may be used as Ü IDE.
 There is a [syntax highlighting file](source/syntax_highlighting/README.md) for it.
-Also it supports cutom language servers, which allows using Ü language server.
+Also it supports custom language servers, which allows using Ü language server.
 
 There is Ü extension for Microsoft Visual Studio.
 See [corresponding readme](source/visual_studio_extension/README.md) for details.
@@ -99,7 +114,9 @@ Some IDEs allow also creating custom syntax highlighting rules, one can create i
 ### Downloads
 
 The compiler downloads are available on the actions page - as action artifacts.
-It's recommended to use latest build of the *master* branch.
+It's recommended to use one of the latest builds of the *master* branch.
+
 
 ### Authors
+
 Copyright © 2016-2025 "Panzerschrek".
