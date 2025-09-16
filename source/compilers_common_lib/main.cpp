@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
@@ -409,6 +410,10 @@ void SetupDLLExport( llvm::Module& module )
 
 int Main( int argc, const char* argv[] )
 {
+	using Clock= std::chrono::steady_clock;
+
+	const auto time_point_start= Clock::now();
+
 	const llvm::InitLLVM llvm_initializer(argc, argv);
 
 	// Options
@@ -589,6 +594,8 @@ int Main( int argc, const char* argv[] )
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
 	std::vector<std::string> external_functions_for_internalization;
+
+	const auto time_point_start_frontend_work= Clock::now();
 
 	if( Options::input_files_type == Options::InputFileType::Source )
 	{
@@ -772,6 +779,8 @@ int Main( int argc, const char* argv[] )
 	else
 		U_ASSERT(false);
 
+	const auto time_point_start_intermediate_tweaks= Clock::now();
+
 	if( result_module == nullptr )
 	{
 		// No input files. Allow this and produce empty module.
@@ -842,6 +851,8 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 	}
+
+	const auto time_point_start_optimization_passes= Clock::now();
 
 	// Create and run optimization passes.
 	{
@@ -927,6 +938,8 @@ int Main( int argc, const char* argv[] )
 		// Optimize the IR!
 		module_pass_manager.run( *result_module, module_analysis_manager );
 	}
+
+	const auto time_point_start_output_file_emitting= Clock::now();
 
 	// Translate functions with "visibility(default)" into "dllexport" for Windows dynamic libraries.
 	if( file_type == FileType::Dll && target_triple.getOS() == llvm::Triple::Win32 )
@@ -1075,6 +1088,16 @@ int Main( int argc, const char* argv[] )
 	if( !Options::dep_file_name.empty() &&
 		!WriteDepFile( Options::output_file_name, deps_list, Options::dep_file_name ) )
 		return 1;
+
+	const auto time_point_end= Clock::now();
+
+	std::cout << "Time stats:" << std::endl;
+	std::cout << "\tinitialization: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_frontend_work - time_point_start ).count() << " ms" << std::endl;
+	std::cout << "\tfiles loading and compiler frontend: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_intermediate_tweaks - time_point_start_frontend_work ).count() << " ms" << std::endl;
+	std::cout << "\tintermediate tweaks: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_optimization_passes - time_point_start_intermediate_tweaks ).count() << " ms" << std::endl;
+	std::cout << "\toptimizations: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_output_file_emitting - time_point_start_optimization_passes ).count() << " ms" << std::endl;
+	std::cout << "\toptput file emitting: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_end - time_point_start_output_file_emitting ).count() << " ms" << std::endl;
+	std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_end - time_point_start ).count() << " ms" << std::endl;
 
 	return 0;
 }
