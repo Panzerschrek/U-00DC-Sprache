@@ -45,6 +45,7 @@ General:
 	mutability/reference modifiers for params and return values
 *) Allow accessing type templates of a class using "." operator for a class instance
 *) Support target-specific types like "long double", "__m64", "__m64" and intrinsics for these types.
+*) Consider supporting types with custom alignment
 
 References:
 *) Support second order inner references for coroutine types
@@ -120,12 +121,13 @@ Standart library:
 *) Implement a thread-safe version of arena_allocator
 
 Compiler:
-*) Ensure floating-point numbers parsing produces correct result
+*) Ensure floating-point numbers parsing always produces correct result
 *) Support parsing 128-bit integers
 *) Prevent infinite or near-infinite templates instantiation, possibly via a hard limit for total number of template
 	instantiations. This may prevent stack overflow in some cases.
 *) Limit number of lex/synt errors printed - to avoid printing too many of them
 *) Generate a parsing error if line count/line length limits are reached
+*) Add hard limit for input file size (like 10MB)
 *) Investigate optimization possibility - avoid mangling private functions
 *) Fix possible overflows in SrcLoc and/or try to optimize its size (use only 4 bytes)
 *) Speed-up references graph code - try using faster hash-map implementation
@@ -212,6 +214,7 @@ C++ header converter:
 *) Support converting constant variables - arrays with fillers
 *) Support converting auto constant variables - arrays
 *) Support converting constant variables - structs
+*) Consider a better way of translating identifiers starting with "_", currently-used "ü_" prefix is too ugly
 
 Ü Build system:
 *) Support building "ustlib" into a shared library (dll/so)
