@@ -306,6 +306,13 @@ cl::opt<std::string> sysroot(
 	cl::Optional,
 	cl::cat(options_category) );
 
+cl::opt<bool> show_time_stats(
+	"show-time-stats",
+	cl::desc("Show compilation time statistics."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+
 } // namespace Options
 
 bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
@@ -477,6 +484,8 @@ int Main( int argc, const char* argv[] )
 	Options::internalize_functions_from.removeArgument();
 	Options::lto_mode.removeArgument();
 	Options::linker_args.removeArgument();
+	Options::sysroot.removeArgument();
+	Options::show_time_stats.removeArgument();
 
 	if( Options::output_file_name.empty() && file_type != FileType::Null )
 	{
@@ -1091,13 +1100,16 @@ int Main( int argc, const char* argv[] )
 
 	const auto time_point_end= Clock::now();
 
-	std::cout << "Time stats:" << std::endl;
-	std::cout << "\tinitialization: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_frontend_work - time_point_start ).count() << " ms" << std::endl;
-	std::cout << "\tfiles loading and compiler frontend: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_intermediate_tweaks - time_point_start_frontend_work ).count() << " ms" << std::endl;
-	std::cout << "\tintermediate tweaks: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_optimization_passes - time_point_start_intermediate_tweaks ).count() << " ms" << std::endl;
-	std::cout << "\toptimizations: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_output_file_emitting - time_point_start_optimization_passes ).count() << " ms" << std::endl;
-	std::cout << "\toptput file emitting: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_end - time_point_start_output_file_emitting ).count() << " ms" << std::endl;
-	std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_end - time_point_start ).count() << " ms" << std::endl;
+	if( Options::show_time_stats )
+	{
+		std::cout << "Time stats:" << std::endl;
+		std::cout << "\tinitialization: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_frontend_work - time_point_start ).count() << " ms" << std::endl;
+		std::cout << "\tfiles loading and compiler frontend: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_intermediate_tweaks - time_point_start_frontend_work ).count() << " ms" << std::endl;
+		std::cout << "\tintermediate tweaks: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_optimization_passes - time_point_start_intermediate_tweaks ).count() << " ms" << std::endl;
+		std::cout << "\toptimizations: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_output_file_emitting - time_point_start_optimization_passes ).count() << " ms" << std::endl;
+		std::cout << "\toptput file emitting: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_end - time_point_start_output_file_emitting ).count() << " ms" << std::endl;
+		std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_end - time_point_start ).count() << " ms" << std::endl;
+	}
 
 	return 0;
 }
