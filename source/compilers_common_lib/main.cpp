@@ -1102,13 +1102,13 @@ int Main( int argc, const char* argv[] )
 
 	if( Options::show_time_stats )
 	{
-		std::cout << "Time stats:" << std::endl;
-		std::cout << "\tinitialization: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_frontend_work - time_point_start ).count() << " ms" << std::endl;
-		std::cout << "\tfiles loading and compiler frontend: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_intermediate_tweaks - time_point_start_frontend_work ).count() << " ms" << std::endl;
-		std::cout << "\tintermediate tweaks: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_optimization_passes - time_point_start_intermediate_tweaks ).count() << " ms" << std::endl;
-		std::cout << "\toptimizations: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_output_file_emitting - time_point_start_optimization_passes ).count() << " ms" << std::endl;
-		std::cout << "\toptput file emitting: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_end - time_point_start_output_file_emitting ).count() << " ms" << std::endl;
-		std::cout << "Total time: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_end - time_point_start ).count() << " ms" << std::endl;
+		std::cout << "Time stats:\n";
+		std::cout << "\tinitialization: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_frontend_work - time_point_start ).count() << " ms\n";
+		std::cout << "\tfiles loading and compiler frontend: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_intermediate_tweaks - time_point_start_frontend_work ).count() << " ms\n";
+		std::cout << "\tintermediate tweaks: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_optimization_passes - time_point_start_intermediate_tweaks ).count() << " ms\n";
+		std::cout << "\toptimizations: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_output_file_emitting - time_point_start_optimization_passes ).count() << " ms\n";
+		std::cout << "\toptput file emitting: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_end - time_point_start_output_file_emitting ).count() << " ms\n";
+		std::cout << "total time: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_end - time_point_start ).count() << " ms" << std::endl;
 	}
 
 	return 0;
