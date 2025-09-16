@@ -306,9 +306,9 @@ cl::opt<std::string> sysroot(
 	cl::Optional,
 	cl::cat(options_category) );
 
-cl::opt<bool> show_time_stats(
-	"show-time-stats",
-	cl::desc("Show compilation time statistics."),
+cl::opt<bool> print_time_stats(
+	"print-time-stats",
+	cl::desc("Print compilation time statistics."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -485,7 +485,7 @@ int Main( int argc, const char* argv[] )
 	Options::lto_mode.removeArgument();
 	Options::linker_args.removeArgument();
 	Options::sysroot.removeArgument();
-	Options::show_time_stats.removeArgument();
+	Options::print_time_stats.removeArgument();
 
 	if( Options::output_file_name.empty() && file_type != FileType::Null )
 	{
@@ -1100,7 +1100,7 @@ int Main( int argc, const char* argv[] )
 
 	const auto time_point_end= Clock::now();
 
-	if( Options::show_time_stats )
+	if( Options::print_time_stats )
 	{
 		std::cout << "Time stats:\n";
 		std::cout << "\tinitialization: " << std::chrono::duration_cast<std::chrono::milliseconds>( time_point_start_frontend_work - time_point_start ).count() << " ms\n";
