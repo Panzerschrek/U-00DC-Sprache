@@ -1,4 +1,5 @@
 //##success_test
+import "../imports/duration.u"
 import "../imports/hash_apply.u"
 import "../imports/hasher.u"
 import "../imports/inet_address.u"
@@ -783,6 +784,27 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( res2 == res3 );
 		halt if( res2 == res4 );
 		halt if( res3 == res4 );
+	}
+	{
+		var ust::default_hasher mut hasher;
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::duration::from_nanoseconds( 112233445566778899u64 ) );
+		auto res0= hasher.get();
+		halt if( res0 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::duration::from_nanoseconds( 112233445566778899u64 ) );
+		auto res1= hasher.get();
+		halt if( res1 == 0s );
+
+		hasher.reset();
+		ust::apply_value_to_hasher( hasher, ust::duration::from_nanoseconds( 998877665544332211u64 ) );
+		auto res2= hasher.get();
+		halt if( res2 == 0s );
+
+		halt if( res0 != res1 );
+		halt if( res0 == res2 );
 	}
 
 	return 0;

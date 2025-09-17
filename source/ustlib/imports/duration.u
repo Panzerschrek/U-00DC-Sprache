@@ -1,3 +1,5 @@
+import "hash_apply.u"
+
 namespace ust
 {
 
@@ -56,6 +58,12 @@ public:
 	op+=( mut this, duration& other )
 	{
 		this.nanoseconds_+= other.nanoseconds_;
+	}
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		apply_value_to_hasher( hasher, nanoseconds_ );
 	}
 
 	//
