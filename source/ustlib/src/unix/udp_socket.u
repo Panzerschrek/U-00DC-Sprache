@@ -324,6 +324,58 @@ fn udp_socket::set_ttl( mut this, u8 mut ttl ) : io_result</void/>
 	return set_socket_ttl( socket_, ttl );
 }
 
+fn udp_socket::set_read_timeout( mut this, duration d ) : io_result</void/>
+{
+	var u64 microseconds= d.ceil_to_microseconds();
+
+	var timeval mut t
+	{
+		.tv_sec ( microseconds / 1000000u64 ),
+		.tv_usec( microseconds % 1000000u64 ),
+	};
+
+	var i32 res=
+		unsafe( ::setsockopt(
+			socket_ ,
+			i32(SOL_SOCKET),
+			i32(SO_RCVTIMEO),
+			ptr_cast_to_byte8( $<(t) ),
+			socklen_t( typeinfo</timeval/>.size_of ) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
+fn udp_socket::set_write_timeout( mut this, duration d ) : io_result</void/>
+{
+	var u64 microseconds= d.ceil_to_microseconds();
+
+	var timeval mut t
+	{
+		.tv_sec ( microseconds / 1000000u64 ),
+		.tv_usec( microseconds % 1000000u64 ),
+	};
+
+	var i32 res=
+		unsafe( ::setsockopt(
+			socket_ ,
+			i32(SOL_SOCKET),
+			i32(SO_SNDTIMEO),
+			ptr_cast_to_byte8( $<(t) ),
+			socklen_t( typeinfo</timeval/>.size_of ) ) );
+
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
+}
+
 fn udp_socket::get_native_fd( this ) unsafe : native_socket_fd
 {
 	return socket_;

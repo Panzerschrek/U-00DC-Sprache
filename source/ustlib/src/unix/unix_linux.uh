@@ -76,6 +76,12 @@ struct timespec ordered
 	ü__syscall_slong_t tv_nsec;
 }
 
+struct timeval ordered
+{
+	ü__time_t tv_sec;
+	ü__suseconds_t tv_usec;
+}
+
 struct stat64_x86 ordered
 {
 	ü__dev_t st_dev;
@@ -245,6 +251,7 @@ type ü__pid_t = i32;
 type ü__socklen_t = u32;
 type ü__ssize_t = ssize_type;
 type ü__syscall_slong_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
+type ü__suseconds_t = i64;
 type ü__time_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
 type ü__uid_t = u32;
 
@@ -389,6 +396,8 @@ auto constexpr PF_INET6 = 10;
 auto constexpr SOL_SOCKET = 1;
 
 auto constexpr SO_REUSEADDR = 2;
+auto constexpr SO_RCVTIMEO = 20;
+auto constexpr SO_SNDTIMEO = 21;
 
 auto constexpr S_IEXEC = 64;
 auto constexpr S_IWRITE = 128;
