@@ -251,7 +251,7 @@ type ü__pid_t = i32;
 type ü__socklen_t = u32;
 type ü__ssize_t = ssize_type;
 type ü__syscall_slong_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
-type ü__suseconds_t = i64;
+type ü__suseconds_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
 type ü__time_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
 type ü__uid_t = u32;
 
