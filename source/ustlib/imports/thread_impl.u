@@ -1,6 +1,7 @@
 // This file is used internally for low-level thread manipulations.
 // Do not use types/functions from this file directly!
 
+import "duration.u"
 import "type_traits.u"
 
 namespace ust
@@ -41,6 +42,10 @@ fn join_and_destroy_thread( thread_handle handle ) unsafe;
 fn get_current_thread_id() : thread_id;
 
 fn get_number_of_available_cpus() : u32;
+
+fn sleep( duration d );
+
+fn yield_current_thread();
 
 } // namespace thread_impl
 
