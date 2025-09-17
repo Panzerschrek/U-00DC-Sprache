@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
@@ -305,6 +306,13 @@ cl::opt<std::string> sysroot(
 	cl::Optional,
 	cl::cat(options_category) );
 
+cl::opt<bool> print_time_stats(
+	"print-time-stats",
+	cl::desc("Print compilation time statistics."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+
 } // namespace Options
 
 bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
@@ -409,6 +417,10 @@ void SetupDLLExport( llvm::Module& module )
 
 int Main( int argc, const char* argv[] )
 {
+	using Clock= std::chrono::steady_clock;
+
+	const auto time_point_start= Clock::now();
+
 	const llvm::InitLLVM llvm_initializer(argc, argv);
 
 	// Options
@@ -472,6 +484,8 @@ int Main( int argc, const char* argv[] )
 	Options::internalize_functions_from.removeArgument();
 	Options::lto_mode.removeArgument();
 	Options::linker_args.removeArgument();
+	Options::sysroot.removeArgument();
+	Options::print_time_stats.removeArgument();
 
 	if( Options::output_file_name.empty() && file_type != FileType::Null )
 	{
@@ -589,6 +603,8 @@ int Main( int argc, const char* argv[] )
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
 	std::vector<std::string> external_functions_for_internalization;
+
+	const auto time_point_start_frontend_work= Clock::now();
 
 	if( Options::input_files_type == Options::InputFileType::Source )
 	{
@@ -772,6 +788,8 @@ int Main( int argc, const char* argv[] )
 	else
 		U_ASSERT(false);
 
+	const auto time_point_start_intermediate_tweaks= Clock::now();
+
 	if( result_module == nullptr )
 	{
 		// No input files. Allow this and produce empty module.
@@ -842,6 +860,8 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 	}
+
+	const auto time_point_start_optimization_passes= Clock::now();
 
 	// Create and run optimization passes.
 	{
@@ -927,6 +947,8 @@ int Main( int argc, const char* argv[] )
 		// Optimize the IR!
 		module_pass_manager.run( *result_module, module_analysis_manager );
 	}
+
+	const auto time_point_start_output_file_emitting= Clock::now();
 
 	// Translate functions with "visibility(default)" into "dllexport" for Windows dynamic libraries.
 	if( file_type == FileType::Dll && target_triple.getOS() == llvm::Triple::Win32 )
@@ -1075,6 +1097,25 @@ int Main( int argc, const char* argv[] )
 	if( !Options::dep_file_name.empty() &&
 		!WriteDepFile( Options::output_file_name, deps_list, Options::dep_file_name ) )
 		return 1;
+
+	const auto time_point_end= Clock::now();
+
+	if( Options::print_time_stats )
+	{
+		using std::chrono::duration_cast;
+		using std::chrono::milliseconds;
+
+		std::cout << "Time stats:\n";
+		std::cout << "\tinitialization: " << duration_cast<milliseconds>( time_point_start_frontend_work - time_point_start ).count() << " ms\n";
+		if( Options::input_files_type == Options::InputFileType::Source )
+			std::cout << "\tinput files loading and compiler frontend: " << duration_cast<milliseconds>( time_point_start_intermediate_tweaks - time_point_start_frontend_work ).count() << " ms\n";
+		else
+			std::cout << "\tinput files loading: " << duration_cast<milliseconds>( time_point_start_intermediate_tweaks - time_point_start_frontend_work ).count() << " ms\n";
+		std::cout << "\tintermediate tweaks: " << duration_cast<milliseconds>( time_point_start_optimization_passes - time_point_start_intermediate_tweaks ).count() << " ms\n";
+		std::cout << "\toptimizations: " << duration_cast<milliseconds>( time_point_start_output_file_emitting - time_point_start_optimization_passes ).count() << " ms\n";
+		std::cout << "\toptput file emitting: " << duration_cast<milliseconds>( time_point_end - time_point_start_output_file_emitting ).count() << " ms\n";
+		std::cout << "total time: " << duration_cast<milliseconds>( time_point_end - time_point_start ).count() << " ms" << std::endl;
+	}
 
 	return 0;
 }
