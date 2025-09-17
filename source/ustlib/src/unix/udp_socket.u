@@ -324,12 +324,12 @@ fn udp_socket::set_ttl( mut this, u8 mut ttl ) : io_result</void/>
 	return set_socket_ttl( socket_, ttl );
 }
 
-fn udp_socket::set_read_timeout( mut this, duration d ) : io_result</void/>
+fn udp_socket::set_read_timeout( mut this, optional</duration/> d ) : io_result</void/>
 {
 	return set_socket_read_timeout( socket_, d );
 }
 
-fn udp_socket::set_write_timeout( mut this, duration d ) : io_result</void/>
+fn udp_socket::set_write_timeout( mut this, optional</duration/> d ) : io_result</void/>
 {
 	return set_socket_write_timeout( socket_, d );
 }
