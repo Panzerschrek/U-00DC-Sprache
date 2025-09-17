@@ -30,8 +30,8 @@ fn get_socket_ttl( native_socket_fd s ) : io_result</u8/>;
 
 fn set_socket_ttl( native_socket_fd s, u8 ttl ) : io_result</void/>;
 
-fn set_socket_read_timeout( native_socket_fd s, optional</duration/> d ) : io_result</void/>;
+fn set_socket_read_timeout( native_socket_fd s, optional</duration/> timeout ) : io_result</void/>;
 
-fn set_socket_write_timeout( native_socket_fd s, optional</duration/> d ) : io_result</void/>;
+fn set_socket_write_timeout( native_socket_fd s, optional</duration/> timeout ) : io_result</void/>;
 
 } // namespace ust

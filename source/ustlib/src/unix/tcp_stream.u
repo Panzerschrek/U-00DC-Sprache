@@ -152,14 +152,14 @@ fn tcp_stream::set_ttl( mut this, u8 ttl ) : io_result</void/>
 	return set_socket_ttl( socket_, ttl );
 }
 
-fn tcp_stream::set_read_timeout( mut this, optional</duration/> d ) : io_result</void/>
+fn tcp_stream::set_read_timeout( mut this, optional</duration/> timeout ) : io_result</void/>
 {
-	return set_socket_read_timeout( socket_, d );
+	return set_socket_read_timeout( socket_, timeout );
 }
 
-fn tcp_stream::set_write_timeout( mut this, optional</duration/> d ) : io_result</void/>
+fn tcp_stream::set_write_timeout( mut this, optional</duration/> timeout ) : io_result</void/>
 {
-	return set_socket_write_timeout( socket_, d );
+	return set_socket_write_timeout( socket_, timeout );
 }
 
 fn tcp_stream::get_nodelay( this ) : io_result</bool/>

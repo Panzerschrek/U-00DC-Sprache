@@ -272,10 +272,10 @@ fn set_socket_ttl( native_socket_fd s, u8 ttl ) : io_result</void/>
 	return void();
 }
 
-fn set_socket_read_timeout( native_socket_fd s, optional</duration/> d ) : io_result</void/>
+fn set_socket_read_timeout( native_socket_fd s, optional</duration/> timeout ) : io_result</void/>
 {
 	// Do not allow timeout 0, since 0 means infinite timeout. So, limit non-empty timeout to 1.
-	var u64 microseconds= ( d.empty() ? 0u64 : max( 1u64, d.try_deref().ceil_to_microseconds() ) );
+	var u64 microseconds= ( timeout.empty() ? 0u64 : max( 1u64, timeout.try_deref().ceil_to_microseconds() ) );
 
 	var timeval mut t
 	{
@@ -299,10 +299,10 @@ fn set_socket_read_timeout( native_socket_fd s, optional</duration/> d ) : io_re
 	return void();
 }
 
-fn set_socket_write_timeout( native_socket_fd s, optional</duration/> d ) : io_result</void/>
+fn set_socket_write_timeout( native_socket_fd s, optional</duration/> timeout ) : io_result</void/>
 {
 	// Do not allow timeout 0, since 0 means infinite timeout. So, limit non-empty timeout to 1.
-	var u64 microseconds= ( d.empty() ? 0u64 : max( 1u64, d.try_deref().ceil_to_microseconds() ) );
+	var u64 microseconds= ( timeout.empty() ? 0u64 : max( 1u64, timeout.try_deref().ceil_to_microseconds() ) );
 
 	var timeval mut t
 	{
