@@ -964,6 +964,24 @@ fn nomangle main() call_conv( "C" ) : i32
 					ust::concat( "Unexpected error code while reading from socket wit htimeout: ", ust::enum_to_string(e) ) );
 			},
 		}
+
+		// Set to 0 timeout. Should wait only a little bit.
+		result_match( socket.set_read_timeout( ust::duration::from_milliseconds( 0u64 ) ) )
+		{
+			Ok(r) -> {},
+			Err(e) -> { assert( false, ust::concat( "Failed to set socket read timeout: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( socket.receive_from( buff ) )
+		{
+			Ok(r) -> { assert( false, "Should not succeed reading from am UDP socket without anybody send!" ); },
+			Err(e) ->
+			{
+				assert(
+					e == ust::io_error::would_block,
+					ust::concat( "Unexpected error code while reading from socket wit htimeout: ", ust::enum_to_string(e) ) );
+			},
+		}
 	}
 
 	// Write timeout.
