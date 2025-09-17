@@ -300,5 +300,10 @@ fn nomangle main() call_conv( "C" ) : i32
 		ust::stdout_print( "Done sleeping\n" );
 	}
 
+	// Yielding.
+	ust::stdout_print( "Going to yield\n" );
+	ust::yield_current_thread();
+	ust::stdout_print( "Done yielding\n" );
+
 	return 0;
 }

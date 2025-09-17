@@ -17,4 +17,9 @@ fn sleep( duration d )
 	unsafe( ::nanosleep( $<(t), nullptr</timespec/>() ) );
 }
 
+fn yield_current_thread()
+{
+	unsafe( ::sched_yield() );
+}
+
 } // namespace ust
