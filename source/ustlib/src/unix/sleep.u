@@ -1,0 +1,20 @@
+import "../../imports/thread.u"
+import "unix.uh"
+
+namespace ust
+{
+
+fn sleep( duration d )
+{
+	var u64 nanoseconds= d.floor_to_nanoseconds();
+
+	var timespec mut t
+	{
+		.tv_sec( nanoseconds / 1000000000u64 ),
+		.tv_nsec( nanoseconds % 1000000000u64 ),
+	};
+
+	unsafe( ::nanosleep( $<(t), nullptr</timespec/>() ) );
+}
+
+} // namespace ust

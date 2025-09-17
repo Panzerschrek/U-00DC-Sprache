@@ -2,6 +2,7 @@
 import "../imports/thread.u"
 import "../imports/shared_ptr_mt.u"
 import "../imports/sort.u"
+import "../imports/stdout.u"
 import "../imports/string_conversions.u"
 import "../imports/vector.u"
 
@@ -291,6 +292,13 @@ fn nomangle main() call_conv( "C" ) : i32
 	var u32 number_of_available_cpus= ust::get_number_of_available_cpus();
 	ust::stdout_print( ust::concat( "Number of available CPUs: ", ust::to_string8(number_of_available_cpus), "\n" ) );
 	halt if ( number_of_available_cpus == 0u );
+
+	// Sleep.
+	{
+		ust::stdout_print( "Going to sleep for 2.5 seconds\n" );
+		ust::sleep( ust::duration::from_milliseconds( 2500u64 ) );
+		ust::stdout_print( "Done sleeping\n" );
+	}
 
 	return 0;
 }
