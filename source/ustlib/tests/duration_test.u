@@ -1,0 +1,127 @@
+//##success_test
+import "../imports/duration.u"
+
+// Duration has size and alignment of "u64">
+static_assert( typeinfo</ ust::duration />.size_of == typeinfo</u64/>.size_of );
+static_assert( typeinfo</ ust::duration />.align_of == typeinfo</u64/>.align_of );
+
+// Duration is copyable and comparable.
+static_assert( typeinfo</ ust::duration />.is_copy_constructible );
+static_assert( typeinfo</ ust::duration />.is_copy_assignable );
+static_assert( typeinfo</ ust::duration />.is_equality_comparable );
+
+fn nomangle main() : i32
+{
+	// Factory methods.
+	halt if( ust::duration::from_nanoseconds( 112233445566778899u64 ).floor_to_nanoseconds() != 112233445566778899u64 );
+	halt if( ust::duration::from_microseconds( 11223344556677u64 ).floor_to_nanoseconds() != 11223344556677000u64 );
+	halt if( ust::duration::from_milliseconds( 112233445566u64 ).floor_to_nanoseconds() != 112233445566000000u64 );
+	halt if( ust::duration::from_seconds( 987654321u64 ).floor_to_nanoseconds() != 987654321000000000u64 );
+
+	{ // Duration is copy-constructible.
+		var ust::duration d0= ust::duration::from_nanoseconds( 998877665544332211u64 );
+		var ust::duration d1= d0, d2(d0);
+		auto d3= d2;
+
+		halt if( d0 != d0 );
+		halt if( d0 != d1 );
+		halt if( d0 != d2 );
+		halt if( d0 != d3 );
+		halt if( d1 != d0 );
+		halt if( d1 != d1 );
+		halt if( d1 != d2 );
+		halt if( d1 != d3 );
+		halt if( d2 != d0 );
+		halt if( d2 != d1 );
+		halt if( d2 != d2 );
+		halt if( d2 != d3 );
+		halt if( d3 != d0 );
+		halt if( d3 != d1 );
+		halt if( d3 != d2 );
+		halt if( d3 != d3 );
+	}
+	{ // Operator = for duration.
+		var ust::duration d0= ust::duration::from_nanoseconds( 998877665544332211u64 ), mut d1= ust::duration::from_nanoseconds( 11223344556677889900u64 );
+		halt if( d0 == d1 );
+
+		d1= d0;
+		halt if( d0 != d1 );
+	}
+	{ // Has order compare.
+		var ust::duration d0= ust::duration::from_nanoseconds( 123u64 ), d1= ust::duration::from_nanoseconds( 456u64 ), d2= ust::duration::from_nanoseconds( 456u64 ), d3= ust::duration::from_nanoseconds( 789u64 );
+
+		halt if( d0 < d0 );
+		halt if( !( d0 < d1 ) );
+		halt if( !( d0 < d2 ) );
+		halt if( !( d0 < d3 ) );
+		halt if( d1 < d0 );
+		halt if( d1 < d1 );
+		halt if( d1 < d2 );
+		halt if( !( d1 < d3 ) );
+		halt if( d2 < d0 );
+		halt if( d2 < d1 );
+		halt if( d2 < d2 );
+		halt if( !( d1 < d3 ) );
+		halt if( d3 < d0 );
+		halt if( d3 < d1 );
+		halt if( d3 < d2 );
+		halt if( d3 < d3 );
+	}
+
+	// Can add durations.
+	{
+		var ust::duration mut d0= ust::duration::from_nanoseconds( 123u64 ), d1= ust::duration::from_nanoseconds( 456u64 ), d2= ust::duration::from_nanoseconds( 456u64 );
+
+		halt if( d0 + d1 != ust::duration::from_nanoseconds( 579u64 ) );
+
+		d0+= d1;
+		halt if( d0 != ust::duration::from_nanoseconds( 579u64 ) );
+	}
+
+	// Floor.
+	halt if( ust::duration::from_nanoseconds( 112233445566778899u64 ).floor_to_nanoseconds() != 112233445566778899u64 );
+	halt if( ust::duration::from_nanoseconds( 44000u64 ).floor_to_microseconds() != 44u64 );
+	halt if( ust::duration::from_nanoseconds( 44111u64 ).floor_to_microseconds() != 44u64 );
+	halt if( ust::duration::from_nanoseconds( 44500u64 ).floor_to_microseconds() != 44u64 );
+	halt if( ust::duration::from_nanoseconds( 44999u64 ).floor_to_microseconds() != 44u64 );
+	halt if( ust::duration::from_nanoseconds( 23000000u64 ).floor_to_milliseconds() != 23u64 );
+	halt if( ust::duration::from_nanoseconds( 23111111u64 ).floor_to_milliseconds() != 23u64 );
+	halt if( ust::duration::from_nanoseconds( 23500000u64 ).floor_to_milliseconds() != 23u64 );
+	halt if( ust::duration::from_nanoseconds( 23999999u64 ).floor_to_milliseconds() != 23u64 );
+	halt if( ust::duration::from_nanoseconds( 67000000000u64 ).floor_to_seconds() != 67u64 );
+	halt if( ust::duration::from_nanoseconds( 67111111111u64 ).floor_to_seconds() != 67u64 );
+	halt if( ust::duration::from_nanoseconds( 67500000000u64 ).floor_to_seconds() != 67u64 );
+	halt if( ust::duration::from_nanoseconds( 67999999999u64 ).floor_to_seconds() != 67u64 );
+
+	// Round.
+	halt if( ust::duration::from_nanoseconds( 112233445566778899u64 ).round_to_nanoseconds() != 112233445566778899u64 );
+	halt if( ust::duration::from_nanoseconds( 44000u64 ).round_to_microseconds() != 44u64 );
+	halt if( ust::duration::from_nanoseconds( 44111u64 ).round_to_microseconds() != 44u64 );
+	halt if( ust::duration::from_nanoseconds( 44500u64 ).round_to_microseconds() != 45u64 );
+	halt if( ust::duration::from_nanoseconds( 44999u64 ).round_to_microseconds() != 45u64 );
+	halt if( ust::duration::from_nanoseconds( 23000000u64 ).round_to_milliseconds() != 23u64 );
+	halt if( ust::duration::from_nanoseconds( 23111111u64 ).round_to_milliseconds() != 23u64 );
+	halt if( ust::duration::from_nanoseconds( 23500000u64 ).round_to_milliseconds() != 24u64 );
+	halt if( ust::duration::from_nanoseconds( 23999999u64 ).round_to_milliseconds() != 24u64 );
+	halt if( ust::duration::from_nanoseconds( 67000000000u64 ).round_to_seconds() != 67u64 );
+	halt if( ust::duration::from_nanoseconds( 67111111111u64 ).round_to_seconds() != 67u64 );
+	halt if( ust::duration::from_nanoseconds( 67500000000u64 ).round_to_seconds() != 68u64 );
+	halt if( ust::duration::from_nanoseconds( 67999999999u64 ).round_to_seconds() != 68u64 );
+
+	// Ceil.
+	halt if( ust::duration::from_nanoseconds( 112233445566778899u64 ).ceil_to_nanoseconds() != 112233445566778899u64 );
+	halt if( ust::duration::from_nanoseconds( 44000u64 ).ceil_to_microseconds() != 44u64 );
+	halt if( ust::duration::from_nanoseconds( 44111u64 ).ceil_to_microseconds() != 45u64 );
+	halt if( ust::duration::from_nanoseconds( 44500u64 ).ceil_to_microseconds() != 45u64 );
+	halt if( ust::duration::from_nanoseconds( 44999u64 ).ceil_to_microseconds() != 45u64 );
+	halt if( ust::duration::from_nanoseconds( 23000000u64 ).ceil_to_milliseconds() != 23u64 );
+	halt if( ust::duration::from_nanoseconds( 23111111u64 ).ceil_to_milliseconds() != 24u64 );
+	halt if( ust::duration::from_nanoseconds( 23500000u64 ).ceil_to_milliseconds() != 24u64 );
+	halt if( ust::duration::from_nanoseconds( 23999999u64 ).ceil_to_milliseconds() != 24u64 );
+	halt if( ust::duration::from_nanoseconds( 67000000000u64 ).ceil_to_seconds() != 67u64 );
+	halt if( ust::duration::from_nanoseconds( 67111111111u64 ).ceil_to_seconds() != 68u64 );
+	halt if( ust::duration::from_nanoseconds( 67500000000u64 ).ceil_to_seconds() != 68u64 );
+	halt if( ust::duration::from_nanoseconds( 67999999999u64 ).ceil_to_seconds() != 68u64 );
+
+	return 0;
+}
