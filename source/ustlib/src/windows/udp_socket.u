@@ -355,6 +355,48 @@ fn udp_socket::set_ttl( mut this, u8 ttl ) : io_result</void/>
 	return set_socket_ttl( socket_, ttl );
 }
 
+fn udp_socket::set_read_timeout( mut this, optional</duration/> timeout ) : io_result</void/>
+{
+	// Do not allow timeout 0, since 0 means infinite timeout. So, limit non-empty timeout to 1.
+	var DWORD mut milliseconds( ( timeout.empty() ? 0u64 : max( 1u64, timeout.try_deref().ceil_to_milliseconds() ) ) );
+
+	var i32 res=
+		unsafe( ::setsockopt(
+			socket_,
+			SOL_SOCKET,
+			SO_RCVTIMEO,
+			$<( cast_ref_unsafe</char8/>( milliseconds ) ),
+			i32( typeinfo</DWORD/>.size_of ) ) );
+
+	if( res != 0 )
+	{
+		return translate_wsa_error( unsafe( WSAGetLastError() ) );
+	}
+
+	return void();
+}
+
+fn udp_socket::set_write_timeout( mut this, optional</duration/> timeout ) : io_result</void/>
+{
+	// Do not allow timeout 0, since 0 means infinite timeout. So, limit non-empty timeout to 1.
+	var DWORD mut milliseconds( ( timeout.empty() ? 0u64 : max( 1u64, timeout.try_deref().ceil_to_milliseconds() ) ) );
+
+	var i32 res=
+		unsafe( ::setsockopt(
+			socket_,
+			SOL_SOCKET,
+			SO_SNDTIMEO,
+			$<( cast_ref_unsafe</char8/>( milliseconds ) ),
+			i32( typeinfo</DWORD/>.size_of ) ) );
+
+	if( res != 0 )
+	{
+		return translate_wsa_error( unsafe( WSAGetLastError() ) );
+	}
+
+	return void();
+}
+
 fn udp_socket::get_native_fd( this ) unsafe : native_socket_fd
 {
 	return socket_;

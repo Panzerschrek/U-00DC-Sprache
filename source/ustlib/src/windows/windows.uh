@@ -403,6 +403,11 @@ auto constexpr PF_INET6 = AF_INET6;
 auto constexpr SOCK_STREAM = 1;
 auto constexpr SOCK_DGRAM = 2;
 
+auto constexpr SO_SNDTIMEO = 4101;
+auto constexpr SO_RCVTIMEO = 4102;
+
+auto constexpr SOL_SOCKET = 65535;
+
 auto constexpr ERROR_SUCCESS = 0;
 auto constexpr NO_ERROR = 0;
 auto constexpr ERROR_INVALID_FUNCTION = 1;
@@ -432,6 +437,7 @@ auto constexpr WSAEADDRINUSE = 10048;
 auto constexpr WSAEADDRNOTAVAIL = 10049;
 auto constexpr WSAECONNABORTED = 10053;
 auto constexpr WSAENOTCONN = 10057;
+auto constexpr WSAETIMEDOUT = 10060;
 auto constexpr WSAECONNREFUSED = 10061;
 
 auto constexpr FILE_ATTRIBUTE_READONLY = 1;

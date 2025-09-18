@@ -949,7 +949,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		result_match( socket.set_read_timeout( ust::duration::from_milliseconds( 500u64 ) ) )
 		{
 			Ok(r) -> {},
-			Err(e) -> { assert( false, ust::concat( "Failed to set socket read timeout: ", ust::enum_to_string(e) ) ); },
+			Err(e) -> { assert( false, ust::concat( "Failed to set UDP socket read timeout: ", ust::enum_to_string(e) ) ); },
 		}
 
 		var [ byte8, 16 ] mut buff= zero_init;
@@ -960,8 +960,8 @@ fn nomangle main() call_conv( "C" ) : i32
 			Err(e) ->
 			{
 				assert(
-					e == ust::io_error::would_block,
-					ust::concat( "Unexpected error code while reading from socket wit htimeout: ", ust::enum_to_string(e) ) );
+					e == ust::io_error::would_block | e == ust::io_error::timed_out,
+					ust::concat( "Unexpected error code while reading from UDP socket with timeout: ", ust::enum_to_string(e) ) );
 			},
 		}
 
@@ -969,7 +969,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		result_match( socket.set_read_timeout( ust::duration::from_milliseconds( 0u64 ) ) )
 		{
 			Ok(r) -> {},
-			Err(e) -> { assert( false, ust::concat( "Failed to set socket read timeout: ", ust::enum_to_string(e) ) ); },
+			Err(e) -> { assert( false, ust::concat( "Failed to set UDP socket read timeout: ", ust::enum_to_string(e) ) ); },
 		}
 
 		result_match( socket.receive_from( buff ) )
@@ -978,8 +978,8 @@ fn nomangle main() call_conv( "C" ) : i32
 			Err(e) ->
 			{
 				assert(
-					e == ust::io_error::would_block,
-					ust::concat( "Unexpected error code while reading from socket wit htimeout: ", ust::enum_to_string(e) ) );
+					e == ust::io_error::would_block | e == ust::io_error::timed_out,
+					ust::concat( "Unexpected error code while reading from UDP socket with timeout: ", ust::enum_to_string(e) ) );
 			},
 		}
 	}

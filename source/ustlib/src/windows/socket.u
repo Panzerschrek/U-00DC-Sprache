@@ -42,6 +42,7 @@ fn translate_wsa_error( i32 e ) : io_error
 		WSAEADDRINUSE -> { return io_error::address_already_in_use; },
 		WSAECONNABORTED -> { return io_error::connection_aborted; },
 		WSAECONNREFUSED -> { return io_error::connection_refused; },
+		WSAETIMEDOUT ->  { return io_error::timed_out; },
 		default -> { return io_error::other; },
 		// TODO - handle other WinSock2 errors.
 	}
