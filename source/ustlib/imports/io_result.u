@@ -22,6 +22,7 @@ enum io_error
 	broken_pipe,
 	connection_refused,
 	connection_aborted,
+	timed_out,
 	other, // Some non-listed error code.
 	// TODO - add other errors
 }

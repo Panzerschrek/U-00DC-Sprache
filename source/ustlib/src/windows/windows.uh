@@ -43,7 +43,9 @@ fn nomangle SetEnvironmentVariableW( LPCWSTR lpName, LPCWSTR lpValue ) unsafe ca
 fn nomangle SetFileAttributesW( LPCWSTR lpFileName, DWORD dwFileAttributes ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle SetFileInformationByHandle( HANDLE hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, LPVOID lpFileInformation, DWORD dwBufferSize ) unsafe call_conv( "system" ) : BOOL;
 fn nomangle SetFilePointerEx( HANDLE hFile, LARGE_INTEGER liDistanceToMove, PLARGE_INTEGER lpNewFilePointer, DWORD dwMoveMethod ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle Sleep( DWORD dwMilliseconds ) unsafe call_conv( "system" ) : void;
 fn nomangle SleepConditionVariableSRW( PCONDITION_VARIABLE ConditionVariable, PSRWLOCK SRWLock, DWORD dwMilliseconds, ULONG Flags ) unsafe call_conv( "system" ) : BOOL;
+fn nomangle SwitchToThread() unsafe call_conv( "system" ) : BOOL;
 fn nomangle WakeAllConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WakeConditionVariable( PCONDITION_VARIABLE ConditionVariable ) unsafe call_conv( "system" ) : void;
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
@@ -401,6 +403,11 @@ auto constexpr PF_INET6 = AF_INET6;
 auto constexpr SOCK_STREAM = 1;
 auto constexpr SOCK_DGRAM = 2;
 
+auto constexpr SO_SNDTIMEO = 4101;
+auto constexpr SO_RCVTIMEO = 4102;
+
+auto constexpr SOL_SOCKET = 65535;
+
 auto constexpr ERROR_SUCCESS = 0;
 auto constexpr NO_ERROR = 0;
 auto constexpr ERROR_INVALID_FUNCTION = 1;
@@ -430,6 +437,7 @@ auto constexpr WSAEADDRINUSE = 10048;
 auto constexpr WSAEADDRNOTAVAIL = 10049;
 auto constexpr WSAECONNABORTED = 10053;
 auto constexpr WSAENOTCONN = 10057;
+auto constexpr WSAETIMEDOUT = 10060;
 auto constexpr WSAECONNREFUSED = 10061;
 
 auto constexpr FILE_ATTRIBUTE_READONLY = 1;

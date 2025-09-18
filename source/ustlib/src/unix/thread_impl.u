@@ -2,6 +2,7 @@ import "../../imports/memory.u"
 import "../../imports/thread_impl.u"
 import "../../imports/type_traits.u"
 import "pthread.uh"
+import "unix.uh"
 
 namespace ust
 {
@@ -42,11 +43,30 @@ fn get_number_of_available_cpus() : u32
 	return u32( unsafe( ::sysconf( i32( ü_SC_NPROCESSORS_ONLN ) ) ) );
 }
 
+fn sleep( duration d )
+{
+	var u64 nanoseconds= d.floor_to_nanoseconds();
+
+	var timespec mut t
+	{
+		.tv_sec( nanoseconds / 1000000000u64 ),
+		.tv_nsec( nanoseconds % 1000000000u64 ),
+	};
+
+	unsafe( ::nanosleep( $<(t), nullptr</timespec/>() ) );
+}
+
+fn yield_current_thread()
+{
+	unsafe( ::sched_yield() );
+}
+
 } // namespace thread_impl
 
 } // namespace ust
 
 // Function from "unistd.h".
+// TODO - move it into "unix.uh".
 fn nomangle sysconf( i32 ü__name ) unsafe call_conv( "C" ) : i64;
 
 // Numeric value of this constant is different on different Unix systems.

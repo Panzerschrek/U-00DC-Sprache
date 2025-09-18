@@ -49,6 +49,17 @@ fn get_number_of_available_cpus() : u32
 	return sysinfo.dwNumberOfProcessors;
 }
 
+fn sleep( duration d )
+{
+	var u32 milliseconds( d.ceil_to_milliseconds() );
+	unsafe( ::Sleep( milliseconds ) );
+}
+
+fn yield_current_thread()
+{
+	unsafe( ::SwitchToThread() );
+}
+
 } // namespace thread_impl
 
 } // namespace us

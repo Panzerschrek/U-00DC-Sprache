@@ -940,6 +940,68 @@ fn nomangle main() call_conv( "C" ) : i32
 		}
 	}
 
+	// Read timeout.
+	{
+		var ust::socket_address_v4 address( ust::ip_address_v4( loopback ), GetNextPort() );
+
+		var ust::udp_socket mut socket= ust::udp_socket::create_and_bind( address ).try_take();
+
+		result_match( socket.set_read_timeout( ust::duration::from_milliseconds( 500u64 ) ) )
+		{
+			Ok(r) -> {},
+			Err(e) -> { assert( false, ust::concat( "Failed to set UDP socket read timeout: ", ust::enum_to_string(e) ) ); },
+		}
+
+		var [ byte8, 16 ] mut buff= zero_init;
+
+		result_match( socket.receive_from( buff ) )
+		{
+			Ok(r) -> { assert( false, "Should not succeed reading from am UDP socket without anybody send!" ); },
+			Err(e) ->
+			{
+				assert(
+					e == ust::io_error::would_block | e == ust::io_error::timed_out,
+					ust::concat( "Unexpected error code while reading from UDP socket with timeout: ", ust::enum_to_string(e) ) );
+			},
+		}
+
+		// Set to 0 timeout. Should wait only a little bit.
+		result_match( socket.set_read_timeout( ust::duration::from_milliseconds( 0u64 ) ) )
+		{
+			Ok(r) -> {},
+			Err(e) -> { assert( false, ust::concat( "Failed to set UDP socket read timeout: ", ust::enum_to_string(e) ) ); },
+		}
+
+		result_match( socket.receive_from( buff ) )
+		{
+			Ok(r) -> { assert( false, "Should not succeed reading from am UDP socket without anybody send!" ); },
+			Err(e) ->
+			{
+				assert(
+					e == ust::io_error::would_block | e == ust::io_error::timed_out,
+					ust::concat( "Unexpected error code while reading from UDP socket with timeout: ", ust::enum_to_string(e) ) );
+			},
+		}
+
+		// Reset read timeout.
+		result_match( socket.set_read_timeout( ust::null_optional ) )
+		{
+			Ok(r) -> {},
+			Err(e) -> { assert( false, ust::concat( "Failed to reset UDP socket read timeout: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
+	// Write timeout.
+	{
+		var ust::udp_socket mut socket= ust::udp_socket::create_v4().try_take();
+
+		result_match( socket.set_write_timeout( ust::duration::from_milliseconds( 500u64 ) ) )
+		{
+			Ok(r) -> {},
+			Err(e) -> { assert( false, ust::concat( "Failed to set socket write timeout: ", ust::enum_to_string(e) ) ); },
+		}
+	}
+
 	// IP v6 test.
 	{
 		var ust::ip_address_v6 loopback_v6( 1u128 );

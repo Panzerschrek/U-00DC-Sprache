@@ -1,0 +1,137 @@
+import "hash_apply.u"
+
+namespace ust
+{
+
+// A class representing some sort of duration (for timeouts, sleeps, etc).
+// Can represent around 500 years with nanosecond precision.
+class duration
+{
+public:
+	//
+	// Construct from physical units.
+	//
+
+	fn from_nanoseconds( u64 nanoseconds ) : duration
+	{
+		return unsafe( duration( nanoseconds ) );
+	}
+
+	fn from_microseconds( u64 microseconds ) : duration
+	{
+		return unsafe( duration( microseconds * 1000u64 ) );
+	}
+
+	fn from_milliseconds( u64 milliseconds ) : duration
+	{
+		return unsafe( duration( milliseconds * 1000000u64 ) );
+	}
+
+	fn from_seconds( u64 seconds ) : duration
+	{
+		return unsafe( duration( seconds * 1000000000u64 ) );
+	}
+
+	// Constructor for internal usage. Don't use it directly, use factory methods instead.
+	fn constructor( u64 nanoseconds ) unsafe
+		( nanoseconds_= nanoseconds )
+	{}
+
+	fn constructor( mut this, duration& other ) = default;
+	op=( mut this, duration& other ) = default;
+
+	op==( duration& l, duration& r ) : bool = default;
+
+	op<=>( duration& l, duration& r ) : i32
+	{
+		return l.nanoseconds_ <=> r.nanoseconds_;
+	}
+
+	// Add two durations. Overflow isn't checked, so, use it with caution.
+	op+( duration& l, duration& r ) : duration
+	{
+		auto sum= l.nanoseconds_ + r.nanoseconds_;
+		return unsafe( duration( sum ) );
+	}
+
+	// Add another duration to this. Overflow isn't checked, so, use it with caution.
+	op+=( mut this, duration& other )
+	{
+		this.nanoseconds_+= other.nanoseconds_;
+	}
+
+	template</type Hasher/>
+	fn hash( this, Hasher &mut hasher )
+	{
+		apply_value_to_hasher( hasher, nanoseconds_ );
+	}
+
+	//
+	// Convert to physical units.
+	//
+
+	fn floor_to_nanoseconds( byval this ) : u64
+	{
+		return nanoseconds_;
+	}
+
+	fn floor_to_microseconds( byval this ) : u64
+	{
+		return nanoseconds_ / 1000u64;
+	}
+
+	fn floor_to_milliseconds( byval this ) : u64
+	{
+		return nanoseconds_ / 1000000u64;
+	}
+
+	fn floor_to_seconds( byval this ) : u64
+	{
+		return nanoseconds_ / 1000000000u64;
+	}
+
+	fn round_to_nanoseconds( byval this ) : u64
+	{
+		return nanoseconds_;
+	}
+
+	fn round_to_microseconds( byval this ) : u64
+	{
+		return ( nanoseconds_ + 500u64 ) / 1000u64;
+	}
+
+	fn round_to_milliseconds( byval this ) : u64
+	{
+		return ( nanoseconds_ + 500000u64 ) / 1000000u64;
+	}
+
+	fn round_to_seconds( byval this ) : u64
+	{
+		return ( nanoseconds_ + 500000000u64 ) / 1000000000u64;
+	}
+
+	fn ceil_to_nanoseconds( byval this ) : u64
+	{
+		return nanoseconds_;
+	}
+
+	fn ceil_to_microseconds( byval this ) : u64
+	{
+		return ( nanoseconds_ + 999u64 ) / 1000u64;
+	}
+
+	fn ceil_to_milliseconds( byval this ) : u64
+	{
+		return ( nanoseconds_ + 999999u64 ) / 1000000u64;
+	}
+
+	fn ceil_to_seconds( byval this ) : u64
+	{
+		return ( nanoseconds_ + 999999999u64 ) / 1000000000u64;
+	}
+
+private:
+	u64 nanoseconds_;
+}
+
+} // namespace ust

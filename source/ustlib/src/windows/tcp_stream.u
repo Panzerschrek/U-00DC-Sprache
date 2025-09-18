@@ -175,6 +175,16 @@ fn tcp_stream::get_nodelay( this ) : io_result</bool/>
 	return nodelay != 0u;
 }
 
+fn tcp_stream::set_read_timeout( mut this, optional</duration/> timeout ) : io_result</void/>
+{
+	return set_socket_read_timeout( socket_, timeout );
+}
+
+fn tcp_stream::set_write_timeout( mut this, optional</duration/> timeout ) : io_result</void/>
+{
+	return set_socket_write_timeout( socket_, timeout );
+}
+
 fn tcp_stream::set_nodelay( mut this, bool nodelay ) : io_result</void/>
 {
 	var u32 mut nodelay_int= ( nodelay ? 1u : 0u );

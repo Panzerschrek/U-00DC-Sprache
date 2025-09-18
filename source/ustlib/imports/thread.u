@@ -155,4 +155,17 @@ fn get_number_of_available_cpus() : u32
 	return thread_impl::get_number_of_available_cpus();
 }
 
+// Sleep given amout of time.
+// May sleep slighlty less or more due to OS scheduling or much less due to interrupt.
+fn sleep( duration d )
+{
+	thread_impl::sleep( d );
+}
+
+// Ask the OS to switch to another thread/process (if can).
+fn yield_current_thread()
+{
+	thread_impl::yield_current_thread();
+}
+
 } // namespace ust
