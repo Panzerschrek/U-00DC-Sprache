@@ -982,6 +982,13 @@ fn nomangle main() call_conv( "C" ) : i32
 					ust::concat( "Unexpected error code while reading from UDP socket with timeout: ", ust::enum_to_string(e) ) );
 			},
 		}
+
+		// Reset read timeout.
+		result_match( socket.set_read_timeout( ust::null_optional ) )
+		{
+			Ok(r) -> {},
+			Err(e) -> { assert( false, ust::concat( "Failed to reset UDP socket read timeout: ", ust::enum_to_string(e) ) ); },
+		}
 	}
 
 	// Write timeout.

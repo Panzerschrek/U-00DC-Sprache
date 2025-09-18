@@ -874,7 +874,6 @@ fn nomangle main() call_conv( "C" ) : i32
 			Err(e) -> { assert( false, ust::concat( "Failed to set TCP stream read timeout: ", ust::enum_to_string(e) ) ); },
 		}
 
-
 		var [ byte8, 64 ] mut message_received= zero_init;
 
 		result_match( client_stream.read( message_received ) )
@@ -904,6 +903,13 @@ fn nomangle main() call_conv( "C" ) : i32
 					e == ust::io_error::would_block | e == ust::io_error::timed_out,
 					ust::concat( "Unexpected error code while reading from TCP stream with timeout: ", ust::enum_to_string(e) ) );
 			},
+		}
+
+		// Reset read timeout.
+		result_match( client_stream.set_read_timeout( ust::null_optional ) )
+		{
+			Ok(r) -> {},
+			Err(e) -> { assert( false, ust::concat( "Failed to reset TCP stream read timeout: ", ust::enum_to_string(e) ) ); },
 		}
 	}
 
