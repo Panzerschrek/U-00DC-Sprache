@@ -883,7 +883,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			Err(e) ->
 			{
 				assert(
-					e == ust::io_error::would_block,
+					e == ust::io_error::would_block | e == ust::io_error::timed_out,
 					ust::concat( "Unexpected error code while reading from TCP stream with timeout: ", ust::enum_to_string(e) ) );
 			},
 		}
@@ -901,7 +901,7 @@ fn nomangle main() call_conv( "C" ) : i32
 			Err(e) ->
 			{
 				assert(
-					e == ust::io_error::would_block,
+					e == ust::io_error::would_block | e == ust::io_error::timed_out,
 					ust::concat( "Unexpected error code while reading from TCP stream with timeout: ", ust::enum_to_string(e) ) );
 			},
 		}

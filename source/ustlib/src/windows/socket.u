@@ -261,4 +261,46 @@ fn set_socket_ttl( native_socket_fd s, u8 ttl ) : io_result</void/>
 	return void();
 }
 
+fn set_socket_read_timeout( native_socket_fd s, optional</duration/> timeout ) : io_result</void/>
+{
+	// Do not allow timeout 0, since 0 means infinite timeout. So, limit non-empty timeout to 1.
+	var DWORD mut milliseconds( ( timeout.empty() ? 0u64 : max( 1u64, timeout.try_deref().ceil_to_milliseconds() ) ) );
+
+	var i32 res=
+		unsafe( ::setsockopt(
+			s,
+			SOL_SOCKET,
+			SO_RCVTIMEO,
+			$<( cast_ref_unsafe</char8/>( milliseconds ) ),
+			i32( typeinfo</DWORD/>.size_of ) ) );
+
+	if( res != 0 )
+	{
+		return translate_wsa_error( unsafe( WSAGetLastError() ) );
+	}
+
+	return void();
+}
+
+fn set_socket_write_timeout( native_socket_fd s, optional</duration/> timeout ) : io_result</void/>
+{
+	// Do not allow timeout 0, since 0 means infinite timeout. So, limit non-empty timeout to 1.
+	var DWORD mut milliseconds( ( timeout.empty() ? 0u64 : max( 1u64, timeout.try_deref().ceil_to_milliseconds() ) ) );
+
+	var i32 res=
+		unsafe( ::setsockopt(
+			s,
+			SOL_SOCKET,
+			SO_SNDTIMEO,
+			$<( cast_ref_unsafe</char8/>( milliseconds ) ),
+			i32( typeinfo</DWORD/>.size_of ) ) );
+
+	if( res != 0 )
+	{
+		return translate_wsa_error( unsafe( WSAGetLastError() ) );
+	}
+
+	return void();
+}
+
 } // namespace ust
