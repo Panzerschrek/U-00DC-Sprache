@@ -29,6 +29,7 @@ if you want to learn more, read its sources yourself.
 * Various container utils (container_utils.u).
 * Coroutines helpers (coro.u).
 * Directory iterator (directory_iterator.u).
+* Duration class (duration.u).
 * Functions for conversion of enums into strings and strings into enums (enum_string_conversions.u).
 * File classes (file.u).
 * Additional functions for files reading/writing (file_helpers.u).
