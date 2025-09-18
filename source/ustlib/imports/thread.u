@@ -156,7 +156,7 @@ fn get_number_of_available_cpus() : u32
 }
 
 // Sleep given amout of time.
-// Can sleep more due to OS scheduling or less due to interrupt.
+// May sleep slighlty less or more due to OS scheduling or much less due to interrupt.
 fn sleep( duration d )
 {
 	thread_impl::sleep( d );

@@ -46,10 +46,14 @@ public:
 	// Set time to live.
 	fn set_ttl( mut this, u8 ttl ) : io_result</void/>;
 
-	// Set read timeout for this stream. If it's none, wait forever. Otherwise may return an error on read operations, if given time passes.
+	// Set read timeout for this stream.
+	// If it's empty - wait forever.
+	// Otherwise may return an error on read operations, if given timeout passes.
 	fn set_read_timeout( mut this, optional</duration/> timeout ) : io_result</void/>;
 
-	// Set write timeout for this stream. If it's none, wait forever. Otherwise may return an error on write operations, if given time passes.
+	// Set write timeout for this stream.
+	// If it's empty - wait forever.
+	// Otherwise may return an error on write operations, if given timeout passes.
 	fn set_write_timeout( mut this, optional</duration/> timeout ) : io_result</void/>;
 
 	// Get nodelay property.

@@ -1,7 +1,7 @@
 //##success_test
 import "../imports/duration.u"
 
-// Duration has size and alignment of "u64">
+// Duration has size and alignment of "u64".
 static_assert( typeinfo</ ust::duration />.size_of == typeinfo</u64/>.size_of );
 static_assert( typeinfo</ ust::duration />.align_of == typeinfo</u64/>.align_of );
 
