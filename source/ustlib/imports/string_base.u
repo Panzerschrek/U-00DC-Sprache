@@ -475,7 +475,7 @@ public:
 		range().hash( hasher );
 	}
 
-	// String is hash-compatible with range of chars (mutable and immutable), char arrays of different types.
+	// String is hash-compatible with range of chars (mutable and immutable), char arrays of different sizes.
 	// Other types aren't supported.
 	template</type OtherType/>
 	fn constexpr is_hash_compatible_type() : bool
