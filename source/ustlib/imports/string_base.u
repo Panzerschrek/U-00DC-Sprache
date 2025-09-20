@@ -446,6 +446,8 @@ public:
 		range().hash( hasher );
 	}
 
+	// String is hash-compatible with range of chars (mutable and immutable), char arrays of different types.
+	// Other types aren't supported.
 	template</type OtherType/>
 	fn constexpr is_hash_compatible_type() : bool
 	{
@@ -458,14 +460,7 @@ public:
 		}
 		else static_if( typeinfo</OtherType/>.is_array )
 		{
-			static_if( same_type</ typeof( typeinfo</OtherType/>.element_type )::src_type, char_type /> )
-			{
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			return same_type</ typeof( typeinfo</OtherType/>.element_type )::src_type, char_type />;
 		}
 		else
 		{
