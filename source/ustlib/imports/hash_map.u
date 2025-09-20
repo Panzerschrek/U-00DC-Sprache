@@ -510,7 +510,8 @@ public:
 	// Removes given key, if it existis.
 	// Returns "true" if value was removed and "false" otherwise.
 	template</type GivenKeyType/>
-	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() ) drop_if_exists( mut this, GivenKeyType& key ) : bool
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	drop_if_exists( mut this, GivenKeyType& key ) : bool
 	{
 		if( empty() )
 		{

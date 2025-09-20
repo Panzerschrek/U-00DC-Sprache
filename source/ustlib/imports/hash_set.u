@@ -55,19 +55,25 @@ public:
 	}
 
 	// Returns "true" if new value was inserted.
-	fn insert( mut this, T& key ) : bool
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	insert( mut this, GivenKeyType& key ) : bool
 	{
 		return impl_.insert_new( key, void() );
 	}
 
-	fn exists( this, T& key ) : bool
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	exists( this, GivenKeyType& key ) : bool
 	{
 		return impl_.exists(key);
 	}
 
 	// Removes given key, if it existis.
 	// Returns "true" if key was removed and "false" otherwise.
-	fn drop_if_exists( mut this, T& key ) : bool
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	drop_if_exists( mut this, GivenKeyType& key ) : bool
 	{
 		return impl_.drop_if_exists(key);
 	}
