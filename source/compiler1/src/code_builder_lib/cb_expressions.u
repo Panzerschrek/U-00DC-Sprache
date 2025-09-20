@@ -2739,7 +2739,7 @@ fn CodeBuilder::AccessClassField(
 	FunctionContext &mut function_context,
 	VariablePtr& variable_ptr,
 	ClassField& field,
-	ust::string8& field_name,
+	ust::string_view8 field_name,
 	SrcLoc& src_loc ) : Value
 {
 	if( field.index == ~0u ) { return ErrorValue(); }
@@ -2767,7 +2767,7 @@ fn CodeBuilder::AccessDirectClassField(
 	FunctionContext &mut function_context,
 	VariablePtr& variable_ptr,
 	ClassField& field,
-	ust::string8& field_name,
+	ust::string_view8 field_name,
 	SrcLoc& src_loc ) : VariablePtr
 {
 	var VariableLite variable= variable_ptr;
