@@ -416,5 +416,20 @@ fn nomangle main() call_conv( "C" ) : i32
 		// Lock class is "non_sync" - in order to avoid move itto another thread and performing unlocking on a thread different from a thread which performed locking.
 		static_assert( non_sync</ lock_type /> );
 	}
+
+	// is_hash_compatible_type
+	static_assert(  IntPtr::is_hash_compatible_type</IntPtr/>() );
+	static_assert( !IntPtr::is_hash_compatible_type</IntPtrNullable/>() );
+	static_assert(  IntPtrNullable::is_hash_compatible_type</IntPtr/>() );
+	static_assert(  IntPtrNullable::is_hash_compatible_type</IntPtrNullable/>() );
+	static_assert( !IntPtr::is_hash_compatible_type</ ust::shared_ptr_mt_mutex</f32/> />() );
+	static_assert( !IntPtr::is_hash_compatible_type</ ust::shared_ptr_mt_mutex_nullable</f32/> />() );
+	static_assert( !IntPtrNullable::is_hash_compatible_type</ ust::shared_ptr_mt_mutex</f32/> />() );
+	static_assert( !IntPtrNullable::is_hash_compatible_type</ ust::shared_ptr_mt_mutex_nullable</f32/> />() );
+	static_assert( !IntPtr::is_hash_compatible_type</ i32 />() );
+	static_assert( !IntPtrNullable::is_hash_compatible_type</ i32 />() );
+	static_assert( !IntPtr::is_hash_compatible_type</ $(i32) />() );
+	static_assert( !IntPtrNullable::is_hash_compatible_type</ $(i32) />() );
+
 	return 0;
 }
