@@ -446,6 +446,33 @@ public:
 		range().hash( hasher );
 	}
 
+	template</type OtherType/>
+	fn constexpr is_hash_compatible_type() : bool
+	{
+		static_if(
+			same_type</ OtherType, this_type /> |
+			same_type</ OtherType, range_imut /> |
+			same_type</ OtherType, range_mut /> )
+		{
+			return true;
+		}
+		else static_if( typeinfo</OtherType/>.is_array )
+		{
+			static_if( same_type</ typeof( typeinfo</OtherType/>.element_type )::src_type, char_type /> )
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+
 	// modificators
 
 	fn swap( mut this, size_type i0, size_type i1 )
