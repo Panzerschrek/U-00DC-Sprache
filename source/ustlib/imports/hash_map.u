@@ -151,7 +151,8 @@ public:
 	// Insert a value for given key.
 	// If there is already a value for given key, preserve it and discard new value.
 	// Returns "true" if value was inserted and "false" if it was discarded.
-	fn insert_new( mut this, key_type& key, value_type mut value ) : bool
+	template</type GivenKeyType/>
+	fn insert_new( mut this, GivenKeyType& key, value_type mut value ) : bool
 	{
 		unsafe( try_rehash_on_insert() );
 
@@ -219,7 +220,8 @@ public:
 	// Insert a value for given key.
 	// If there is already a value for given key, replace it with new value.
 	// Returns "true" if value was inserted and "false" if existing value was updated.
-	fn insert_or_update( mut this, key_type& key, value_type mut value ) : bool
+	template</type GivenKeyType/>
+	fn insert_or_update( mut this, GivenKeyType& key, value_type mut value ) : bool
 	{
 		unsafe( try_rehash_on_insert() );
 
@@ -287,8 +289,8 @@ public:
 
 	// Find a value for given key.
 	// If there is no such key, call the given function to construct new value and insert it into the container.
-	template</type Func/>
-	fn find_or_construct_new( mut this, key_type& key, Func mut construction_func ) : value_type &mut @( reference_notation::return_references::param0 )
+	template</type Func, type GivenKeyType/>
+	fn find_or_construct_new( mut this, GivenKeyType& key, Func mut construction_func ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
 		unsafe( try_rehash_on_insert() );
 
@@ -357,15 +359,17 @@ public:
 
 	// Find a value for given key.
 	// If there is no such key, construct new value using default constructor.
+	template</type GivenKeyType/>
 	fn enable_if( typeinfo</value_type/>.is_default_constructible )
-	find_or_construct_default( mut this, key_type& key ) : value_type &mut @( reference_notation::return_references::param0 )
+	find_or_construct_default( mut this, GivenKeyType& key ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
 		return find_or_construct_new( key, lambda() : value_type { return value_type(); } );
 	}
 
 	// Removes value for given key and returns it.
 	// Halts if value not found.
-	fn nodiscard remove_existing( mut this, key_type& key ) : value_type
+	template</type GivenKeyType/>
+	fn nodiscard remove_existing( mut this, GivenKeyType& key ) : value_type
 	{
 		if( empty() )
 		{
@@ -432,7 +436,8 @@ public:
 
 	// Removes value for given key and returns it, if it exists.
 	// Returns empty optional if value not found.
-	fn nodiscard remove_if_exists( mut this, key_type& key ) : optional</value_type/>
+	template</type GivenKeyType/>
+	fn nodiscard remove_if_exists( mut this, GivenKeyType& key ) : optional</value_type/>
 	{
 		if( empty() )
 		{
@@ -499,7 +504,8 @@ public:
 
 	// Removes given key, if it existis.
 	// Returns "true" if value was removed and "false" otherwise.
-	fn drop_if_exists( mut this, key_type& key ) : bool
+	template</type GivenKeyType/>
+	fn drop_if_exists( mut this, GivenKeyType& key ) : bool
 	{
 		if( empty() )
 		{
@@ -622,17 +628,20 @@ public:
 	}
 
 	// Check if given key exists in this hash_map.
-	fn exists( this, key_type& key ) : bool
+	template</type GivenKeyType/>
+	fn exists( this, GivenKeyType& key ) : bool
 	{
 		return !is_nullptr( unsafe( cast_mut(this).find_key( key ) ) );
 	}
 
-	fn find( imut this, key_type& key ) : optional_ref_imut</ value_type /> @( reference_notation::return_inner_references::param0 )
+	template</type GivenKeyType/>
+	fn find( imut this, GivenKeyType& key ) : optional_ref_imut</ value_type /> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( cast_mut(this).find(key) );
 	}
 
-	fn find(  mut this, key_type& key ) : optional_ref_mut</ value_type /> @( reference_notation::return_inner_references::param0 )
+	template</type GivenKeyType/>
+	fn find(  mut this, GivenKeyType& key ) : optional_ref_mut</ value_type /> @( reference_notation::return_inner_references::param0 )
 	{
 		unsafe
 		{
@@ -646,12 +655,14 @@ public:
 		return null_optional_ref;
 	}
 
-	op[](  mut this, key_type& key ) : value_type & mut @( reference_notation::return_references::param0 )
+	template</type GivenKeyType/>
+	op[](  mut this, GivenKeyType& key ) : value_type & mut @( reference_notation::return_references::param0 )
 	{
 		return find(key).try_deref(); // "try_deref" will halt, if "find" returns empty result.
 	}
 
-	op[]( imut this, key_type& key ) : value_type &imut @( reference_notation::return_references::param0 )
+	template</type GivenKeyType/>
+	op[]( imut this, GivenKeyType& key ) : value_type &imut @( reference_notation::return_references::param0 )
 	{
 		return find(key).try_deref(); // "try_deref" will halt, if "find" returns empty result.
 	}
@@ -816,7 +827,8 @@ private:
 	}
 
 	// Returns bucket for specific key. Returns 'null', if key not found.
-	fn find_key( mut this, key_type& key ) : TableValuePtr
+	template</type GivenKeyType/>
+	fn find_key( mut this, GivenKeyType& key ) : TableValuePtr
 	{
 		if( empty() ){ return nullptr</TableValue/>(); }
 
