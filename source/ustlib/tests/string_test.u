@@ -26,6 +26,19 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( s8  != "jedem das seine" );
 		halt if( s16 != "u16 строка"u16 );
 	}
+	{ // string is constructible from mutable char array.
+		auto mut val= "heute feiern wir";
+		var ust::array_view_mut</char8/> val_range= val;
+
+		var ust::string8 s0= val_range, s1(val_range);
+
+		halt if( s0 != "heute feiern wir" );
+		halt if( s1 != "heute feiern wir" );
+		halt if( s0 != val_range );
+		halt if( s1 != val_range );
+		halt if( val_range != s0 );
+		halt if( val_range != s1 );
+	}
 	{ // Char array convertible to string.
 		AcceptStringOnly( "rtgbg__" );
 
