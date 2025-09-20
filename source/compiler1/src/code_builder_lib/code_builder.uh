@@ -149,17 +149,17 @@ private:
 	// Value with scope where it was found.
 	type NameLookupResult= ust::optional</tup[NamesScopePtr, NamesScopeValue]/>;
 
-	fn LookupName( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::string8& name, SrcLoc& src_loc ) : NameLookupResult;
+	fn LookupName( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::string_view8 name, SrcLoc& src_loc ) : NameLookupResult;
 
 	// Returns value itself, visibility label, namespace of class where this value was found (class itself or one of parents).
 	fn ResolveClassValue(
 		mut this,
 		ClassTypePtr& class_type,
-		ust::string8& name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />;
+		ust::string_view8 name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />;
 	fn ResolveClassValueImpl(
 		mut this,
 		ClassTypePtr& class_type,
-		ust::string8& name,
+		ust::string_view8 name,
 		bool recursive_call ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />;
 
 	//
