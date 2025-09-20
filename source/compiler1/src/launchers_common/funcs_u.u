@@ -446,14 +446,14 @@ public:
 public:
 	fn virtual override NormalizeFilePath(
 		mut this,
-		ust::string8& file_path,
-		ust::string8& parent_file_path_normalized ) : ust::string8
+		ust::string_view8 file_path,
+		ust::string_view8 parent_file_path_normalized ) : ust::string8
 	{
 		ust::ignore_unused(parent_file_path_normalized);
 		return file_path;
 	}
 
-	fn virtual override LoadFile( mut this, ust::string8& full_file_path ) : ust::optional</ust::string8/>
+	fn virtual override LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
 	{
 		foreach( &entry : source_entries_ )
 		{
@@ -465,13 +465,13 @@ public:
 		return ust::null_optional;
 	}
 
-	fn virtual override IsImportingFileAllowed( this, ust::string8& full_file_path ) : bool
+	fn virtual override IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool
 	{
 		ust::ignore_unused(full_file_path);
 		return true;
 	}
 
-	fn virtual override IsFileFromSourcesDirectory( this, ust::string8& full_file_path ) : bool
+	fn virtual override IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool
 	{
 		ust::ignore_unused(full_file_path);
 		return true;
@@ -491,15 +491,15 @@ public:
 public:
 	fn virtual override NormalizeFilePath(
 		mut this,
-		ust::string8& file_path,
-		ust::string8& parent_file_path_normalized ) : ust::string8
+		ust::string_view8 file_path,
+		ust::string_view8 parent_file_path_normalized ) : ust::string8
 	{
 		unsafe
 		{
 			var ust::string8 mut result;
 
-			var U1_StringView file_path_view{ .data= cast_mut(file_path).data(), .size= file_path.size() };
-			var U1_StringView parent_file_path_normalized_view{ .data= cast_mut(parent_file_path_normalized).data(), .size= parent_file_path_normalized.size() };
+			var U1_StringView file_path_view{ .data= file_path.data(), .size= file_path.size() };
+			var U1_StringView parent_file_path_normalized_view{ .data= parent_file_path_normalized.data(), .size= parent_file_path_normalized.size() };
 
 			vfs_interface_.normalize_path_function(
 				vfs_interface_.this_,
@@ -511,13 +511,13 @@ public:
 		}
 	}
 
-	fn virtual override LoadFile( mut this, ust::string8& full_file_path ) : ust::optional</ust::string8/>
+	fn virtual override LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>
 	{
 		unsafe
 		{
 			var ust::string8 mut result;
 
-			var U1_StringView full_file_path_view{ .data= cast_mut(full_file_path).data(), .size= full_file_path.size() };
+			var U1_StringView full_file_path_view{ .data= full_file_path.data(), .size= full_file_path.size() };
 
 			var bool ok= vfs_interface_.load_file_content_function(
 				vfs_interface_.this_,
@@ -532,18 +532,18 @@ public:
 		return ust::null_optional;
 	}
 
-	fn virtual override IsImportingFileAllowed( this, ust::string8& full_file_path ) : bool
+	fn virtual override IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool
 	{
 		return unsafe( vfs_interface_.is_importing_file_allowed_function(
 			vfs_interface_.this_,
-			U1_StringView{ .data= cast_mut(full_file_path).data(), .size= full_file_path.size() } ) );
+			U1_StringView{ .data= full_file_path.data(), .size= full_file_path.size() } ) );
 	}
 
-	fn virtual override IsFileFromSourcesDirectory( this, ust::string8& full_file_path ) : bool
+	fn virtual override IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool
 	{
 		return unsafe( vfs_interface_.is_file_from_sources_directory_function(
 			vfs_interface_.this_,
-			U1_StringView{ .data= cast_mut(full_file_path).data(), .size= full_file_path.size() } ) );
+			U1_StringView{ .data= full_file_path.data(), .size= full_file_path.size() } ) );
 	}
 
 private:

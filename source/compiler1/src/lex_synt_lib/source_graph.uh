@@ -7,17 +7,17 @@ class IVfs interface
 {
 	fn virtual pure NormalizeFilePath(
 		mut this,
-		ust::string8& file_path,
-		ust::string8& parent_file_path_normalized ) : ust::string8;
+		ust::string_view8 file_path,
+		ust::string_view8 parent_file_path_normalized ) : ust::string8;
 
 	// Empty "full_parent_file_path" means root file.
-	fn virtual pure LoadFile( mut this, ust::string8& full_file_path ) : ust::optional</ust::string8/>;
+	fn virtual pure LoadFile( mut this, ust::string_view8 full_file_path ) : ust::optional</ust::string8/>;
 
 	// Returns "false" if it isn't allowed to import file given.
-	fn virtual pure IsImportingFileAllowed( this, ust::string8& full_file_path ) : bool;
+	fn virtual pure IsImportingFileAllowed( this, ust::string_view8 full_file_path ) : bool;
 
 	// Returns "true" if file given is located within one of source directories.
-	fn virtual pure IsFileFromSourcesDirectory( this, ust::string8& full_file_path ) : bool;
+	fn virtual pure IsFileFromSourcesDirectory( this, ust::string_view8 full_file_path ) : bool;
 }
 
 type IVfsSharedPtr= ust::shared_ptr_mut</IVfs/>;
@@ -50,7 +50,7 @@ type SourceFilePathHashigFunction= fn( ust::string_view8 source_file_contents ) 
 fn LoadSourceGraph(
 	IVfsSharedPtr& vfs,
 	SourceFilePathHashigFunction source_file_path_hashing_function,
-	ust::string8& root_file_path,
+	ust::string_view8 root_file_path,
 	ust::string_view8 prelude_code ) : SourceGraph;
 
 } // namespace U1
