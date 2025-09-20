@@ -1572,7 +1572,7 @@ fn NamesScope::constructor(
 {
 }
 
-fn NamesScope::GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue /> @(ret_tags)
+fn NamesScope::GetThisScopeValue( this, ust::string_view8 name ) : ust::optional_ref_imut</ NamesScopeValue /> @(ret_tags)
 {
 	return names_map_.find( name );
 }
