@@ -257,7 +257,7 @@ private:
 	type MacroVariablesMap= ust::hash_map</ ust::string8, ParsedMacroElement />;
 	type MacroVariablesMapsStack= ust::vector</ ust::shared_ptr_final</MacroVariablesMap/> />;
 
-	fn FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>;
+	fn FetchMacro( this, ust::string_view8 name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>;
 
 	template</type T/>
 	fn ExpandMacro( mut this, Macro& macro, ( fn ( SyntaxAnalyzer &mut self_ ) : T ) parse_method ) : T
@@ -319,7 +319,7 @@ private:
 		return result;
 	}
 
-	fn ExpandMacroImpl( mut this, Macro& macro, ust::string8& macro_unique_identifiers_base_name ) : Lexems;
+	fn ExpandMacroImpl( mut this, Macro& macro, ust::string_view8 macro_unique_identifiers_base_name ) : Lexems;
 	fn MatchMacroBlock( mut this, Macro::MatchElements& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>;
 
 	type UniqueMacroIdentifiersMap= ust::hash_map</ ust::string8, ust::string8 />;
@@ -329,10 +329,10 @@ private:
 		Macro::ResultElements& result_elements,
 		MacroVariablesMapsStack &mut macro_variables_maps_stack,
 		UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
-		ust::string8& macro_unique_identifiers_base_name,
+		ust::string_view8 macro_unique_identifiers_base_name,
 		SrcLoc& expansion_src_loc ) : Lexems;
 
-	fn FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>;
+	fn FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string_view8 variable_name ) : ust::optional</ParsedMacroElement/>;
 
 	// Utilities.
 	fn ExpectSemicolon( mut this );
@@ -4387,7 +4387,7 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : Macro::ResultElements
 	return result_elements;
 }
 
-fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>
+fn SyntaxAnalyzer::FetchMacro( this, ust::string_view8 name, Macro::Context context ) : ust::shared_ptr_final_nullable</Macro/>
 {
 	if_var( &macro_map : macros_.lock_imut().deref().find( context ) )
 	{
@@ -4400,7 +4400,7 @@ fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context 
 	return ust::shared_ptr_final_nullable</Macro/>();
 }
 
-fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro, ust::string8& macro_unique_identifiers_base_name ) : Lexems
+fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro, ust::string_view8 macro_unique_identifiers_base_name ) : Lexems
 {
 	var SrcLoc expansion_src_loc= it_.front().src_loc;
 	NextLexem(); // Skip macro name itself.
@@ -4609,7 +4609,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 	Macro::ResultElements& result_elements,
 	MacroVariablesMapsStack &mut macro_variables_maps_stack,
 	UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
-	ust::string8& macro_unique_identifiers_base_name,
+	ust::string_view8 macro_unique_identifiers_base_name,
 	SrcLoc& expansion_src_loc ) : Lexems
 {
 	var Lexems mut lexems_expanded;
@@ -4715,7 +4715,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 	return lexems_expanded;
 }
 
-fn SyntaxAnalyzer::FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>
+fn SyntaxAnalyzer::FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string_view8 variable_name ) : ust::optional</ParsedMacroElement/>
 {
 	// Search variable from top to bottom.
 	foreach( &macro_variables_map_ptr : macro_variables_maps_stack.iter_reverse() )
