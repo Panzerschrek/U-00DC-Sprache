@@ -893,7 +893,9 @@ private:
 		return unsafe( byte_ptr_cast</TableValue/>( ptr_ + capacity_ ) );
 	}
 
-	fn calculate_hash( this, key_type& key ) : size_type
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	calculate_hash( this, GivenKeyType& key ) : size_type
 	{
 		auto mut hasher= hasher_factory_();
 		apply_value_to_hasher( hasher, key );
