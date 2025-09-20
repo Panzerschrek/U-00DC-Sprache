@@ -1143,6 +1143,12 @@ fn get_nearest_power_of_two_size( size_type s ) : size_type
 	return res;
 }
 
+// Check if given key type is compatible with stored key type.
+// Identical types are (obviously) compatible.
+// Compatible also are types, which are explicitly marked as compatible by stored key type.
+// If it's not so, assume given key isn't compatible.
+// This is done in such way in order to allow fetching from hash map using only compatible key types,
+// not just given key types, which may be converted into stored type.
 template</type StoredKey, type GivenKey/>
 fn constexpr is_hash_compatible_key() : bool
 {
@@ -1152,6 +1158,9 @@ fn constexpr is_hash_compatible_key() : bool
 	}
 	else static_if( typeinfo</StoredKey/>.is_class )
 	{
+		// If we have a class, check if it provides template method named "is_hash_compatible_type".
+		// Assume it has one template argument of type kind, zero params, it's constexpr and it returns "bool".
+
 		if( true )
 		{
 			for( &f : typeinfo</StoredKey/>.function_templates_list )
