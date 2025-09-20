@@ -270,8 +270,8 @@ struct ClassType
 	// Methods
 	//
 
-	fn GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility;
-	fn SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility );
+	fn GetMemberVisibility( this, ust::string_view8 member_name ) : Synt::ClassVisibility;
+	fn SetMemberVisibility( mut this, ust::string_view8 member_name, Synt::ClassVisibility visibility );
 
 	fn HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool;
 

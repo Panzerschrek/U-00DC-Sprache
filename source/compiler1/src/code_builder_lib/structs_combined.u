@@ -878,12 +878,12 @@ op Type::==( Type& l, Type& r ) : bool
 // ClassType
 //
 
-fn ClassType::GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility
+fn ClassType::GetMemberVisibility( this, ust::string_view8 member_name ) : Synt::ClassVisibility
 {
 	return members_visibility.find(member_name).deref_or( Synt::ClassVisibility::Public );
 }
 
-fn ClassType::SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility )
+fn ClassType::SetMemberVisibility( mut this, ust::string_view8 member_name, Synt::ClassVisibility visibility )
 {
 	if( visibility == Synt::ClassVisibility::Public )
 	{
