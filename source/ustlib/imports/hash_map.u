@@ -151,7 +151,9 @@ public:
 	// Insert a value for given key.
 	// If there is already a value for given key, preserve it and discard new value.
 	// Returns "true" if value was inserted and "false" if it was discarded.
-	fn insert_new( mut this, key_type& key, value_type mut value ) : bool
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	insert_new( mut this, GivenKeyType& key, value_type mut value ) : bool
 	{
 		unsafe( try_rehash_on_insert() );
 
@@ -219,7 +221,9 @@ public:
 	// Insert a value for given key.
 	// If there is already a value for given key, replace it with new value.
 	// Returns "true" if value was inserted and "false" if existing value was updated.
-	fn insert_or_update( mut this, key_type& key, value_type mut value ) : bool
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	insert_or_update( mut this, GivenKeyType& key, value_type mut value ) : bool
 	{
 		unsafe( try_rehash_on_insert() );
 
@@ -287,8 +291,9 @@ public:
 
 	// Find a value for given key.
 	// If there is no such key, call the given function to construct new value and insert it into the container.
-	template</type Func/>
-	fn find_or_construct_new( mut this, key_type& key, Func mut construction_func ) : value_type &mut @( reference_notation::return_references::param0 )
+	template</type Func, type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	find_or_construct_new( mut this, GivenKeyType& key, Func mut construction_func ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
 		unsafe( try_rehash_on_insert() );
 
@@ -357,15 +362,18 @@ public:
 
 	// Find a value for given key.
 	// If there is no such key, construct new value using default constructor.
-	fn enable_if( typeinfo</value_type/>.is_default_constructible )
-	find_or_construct_default( mut this, key_type& key ) : value_type &mut @( reference_notation::return_references::param0 )
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() && typeinfo</value_type/>.is_default_constructible )
+	find_or_construct_default( mut this, GivenKeyType& key ) : value_type &mut @( reference_notation::return_references::param0 )
 	{
 		return find_or_construct_new( key, lambda() : value_type { return value_type(); } );
 	}
 
 	// Removes value for given key and returns it.
 	// Halts if value not found.
-	fn nodiscard remove_existing( mut this, key_type& key ) : value_type
+	template</type GivenKeyType/>
+	fn nodiscard enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	remove_existing( mut this, GivenKeyType& key ) : value_type
 	{
 		if( empty() )
 		{
@@ -432,7 +440,9 @@ public:
 
 	// Removes value for given key and returns it, if it exists.
 	// Returns empty optional if value not found.
-	fn nodiscard remove_if_exists( mut this, key_type& key ) : optional</value_type/>
+	template</type GivenKeyType/>
+	fn nodiscard enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	remove_if_exists( mut this, GivenKeyType& key ) : optional</value_type/>
 	{
 		if( empty() )
 		{
@@ -499,7 +509,9 @@ public:
 
 	// Removes given key, if it existis.
 	// Returns "true" if value was removed and "false" otherwise.
-	fn drop_if_exists( mut this, key_type& key ) : bool
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	drop_if_exists( mut this, GivenKeyType& key ) : bool
 	{
 		if( empty() )
 		{
@@ -622,17 +634,23 @@ public:
 	}
 
 	// Check if given key exists in this hash_map.
-	fn exists( this, key_type& key ) : bool
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	exists( this, GivenKeyType& key ) : bool
 	{
 		return !is_nullptr( unsafe( cast_mut(this).find_key( key ) ) );
 	}
 
-	fn find( imut this, key_type& key ) : optional_ref_imut</ value_type /> @( reference_notation::return_inner_references::param0 )
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	find( imut this, GivenKeyType& key ) : optional_ref_imut</ value_type /> @( reference_notation::return_inner_references::param0 )
 	{
 		return unsafe( cast_mut(this).find(key) );
 	}
 
-	fn find(  mut this, key_type& key ) : optional_ref_mut</ value_type /> @( reference_notation::return_inner_references::param0 )
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	find(  mut this, GivenKeyType& key ) : optional_ref_mut</ value_type /> @( reference_notation::return_inner_references::param0 )
 	{
 		unsafe
 		{
@@ -646,12 +664,16 @@ public:
 		return null_optional_ref;
 	}
 
-	op[](  mut this, key_type& key ) : value_type & mut @( reference_notation::return_references::param0 )
+	template</type GivenKeyType/>
+	op enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	[](  mut this, GivenKeyType& key ) : value_type & mut @( reference_notation::return_references::param0 )
 	{
 		return find(key).try_deref(); // "try_deref" will halt, if "find" returns empty result.
 	}
 
-	op[]( imut this, key_type& key ) : value_type &imut @( reference_notation::return_references::param0 )
+	template</type GivenKeyType/>
+	op enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	[]( imut this, GivenKeyType& key ) : value_type &imut @( reference_notation::return_references::param0 )
 	{
 		return find(key).try_deref(); // "try_deref" will halt, if "find" returns empty result.
 	}
@@ -816,7 +838,9 @@ private:
 	}
 
 	// Returns bucket for specific key. Returns 'null', if key not found.
-	fn find_key( mut this, key_type& key ) : TableValuePtr
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	find_key( mut this, GivenKeyType& key ) : TableValuePtr
 	{
 		if( empty() ){ return nullptr</TableValue/>(); }
 
@@ -870,7 +894,9 @@ private:
 		return unsafe( byte_ptr_cast</TableValue/>( ptr_ + capacity_ ) );
 	}
 
-	fn calculate_hash( this, key_type& key ) : size_type
+	template</type GivenKeyType/>
+	fn enable_if( hash_map_impl::is_hash_compatible_key</key_type, GivenKeyType/>() )
+	calculate_hash( this, GivenKeyType& key ) : size_type
 	{
 		auto mut hasher= hasher_factory_();
 		apply_value_to_hasher( hasher, key );
@@ -1118,6 +1144,42 @@ fn get_nearest_power_of_two_size( size_type s ) : size_type
 		res <<= 1u;
 	}
 	return res;
+}
+
+// Check if given key type is compatible with stored key type.
+// Identical types are (obviously) compatible.
+// Compatible also are types, which are explicitly marked as compatible by stored key type.
+// If it's not so, assume given key isn't compatible.
+// This is done in such way in order to allow fetching from hash map using only compatible key types,
+// not just given key types, which may be converted into stored type.
+template</type StoredKey, type GivenKey/>
+fn constexpr is_hash_compatible_key() : bool
+{
+	static_if( same_type</StoredKey, GivenKey/> )
+	{
+		return true;
+	}
+	else static_if( typeinfo</StoredKey/>.is_class )
+	{
+		// If we have a class, check if it provides template method named "is_hash_compatible_type".
+		// Assume it has one template argument of type kind, zero params, it's constexpr and it returns "bool".
+
+		if( true )
+		{
+			for( &f : typeinfo</StoredKey/>.function_templates_list )
+			{
+				static_if( constexpr_string_equals( f.name, "is_hash_compatible_type" ) )
+				{
+					return StoredKey::is_hash_compatible_type</GivenKey/>();
+				}
+			}
+		}
+		return false;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 } // namespace hash_map_impl

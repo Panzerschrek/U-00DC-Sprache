@@ -149,17 +149,17 @@ private:
 	// Value with scope where it was found.
 	type NameLookupResult= ust::optional</tup[NamesScopePtr, NamesScopeValue]/>;
 
-	fn LookupName( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::string8& name, SrcLoc& src_loc ) : NameLookupResult;
+	fn LookupName( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::string_view8 name, SrcLoc& src_loc ) : NameLookupResult;
 
 	// Returns value itself, visibility label, namespace of class where this value was found (class itself or one of parents).
 	fn ResolveClassValue(
 		mut this,
 		ClassTypePtr& class_type,
-		ust::string8& name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />;
+		ust::string_view8 name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />;
 	fn ResolveClassValueImpl(
 		mut this,
 		ClassTypePtr& class_type,
-		ust::string8& name,
+		ust::string_view8 name,
 		bool recursive_call ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />;
 
 	//
@@ -204,7 +204,7 @@ private:
 	fn NamesScopeMergeValues(
 		NamesScopeValue& dst,
 		NamesScopeValue& src,
-		ust::string8& name,
+		ust::string_view8 name,
 		NamesScopePtr& target_names_scope,
 		ClassesMembersNamespacesTable& src_classes_members_namespaces_table );
 
@@ -350,7 +350,7 @@ private:
 	fn ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef;
 	fn ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef;
 	fn ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptre, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
-	fn ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef;
+	fn ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string_view8 variable_name, SrcLoc& src_loc ) : LLVMValueRef;
 	fn ApplyConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> /> args, SrcLoc& src_loc )  : LLVMValueRef;
 
 	fn InitializeFunctionPointer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& initializer_expression ) : LLVMValueRef;
@@ -558,7 +558,7 @@ private:
 		FunctionContext &mut function_context,
 		VariablePtr& variable_ptr,
 		ClassField& field,
-		ust::string8& field_name,
+		ust::string_view8 field_name,
 		SrcLoc& src_loc ) : Value;
 
 	fn AccessDirectClassField(
@@ -567,7 +567,7 @@ private:
 		FunctionContext &mut function_context,
 		VariablePtr& variable_ptr,
 		ClassField& field,
-		ust::string8& field_name,
+		ust::string_view8 field_name,
 		SrcLoc& src_loc ) : VariablePtr;
 
 	fn BuildBinaryOperator(
@@ -1125,10 +1125,10 @@ private:
 	fn GetLambdaPreprocessingDummyClass( mut this, NamesScopePtr& names_scope ) : ClassTypePtr;
 	fn GetLambdaBaseName( this, Synt::Lambda& lambda_, ust::array_view_imut</u32/> tuple_for_indices ) : ust::string8;
 	fn CollectCurrentFunctionVariables( FunctionContext &mut function_context ) : ust::hash_set</VariablePtr/>;
-	fn LambdaPreprocessingCheckVariableUsage( NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name, SrcLoc& src_loc );
-	fn LambdaPreprocessingAccessExternalVariable( mut this, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name ) : VariablePtr;
+	fn LambdaPreprocessingCheckVariableUsage( NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable, ust::string_view8 name, SrcLoc& src_loc );
+	fn LambdaPreprocessingAccessExternalVariable( mut this, FunctionContext &mut function_context, VariablePtr& variable, ust::string_view8 name ) : VariablePtr;
 	fn LambdaPreprocessingEnsureCapturedVariableRegistered( FunctionContext &mut function_context, LambdaPreprocessingContext::CapturedVariableData& captured_variable );
-	fn LambdaPreprocessingHandleCapturedVariableMove( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable, ust::string8& name, SrcLoc& src_loc ) : Value;
+	fn LambdaPreprocessingHandleCapturedVariableMove( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable, ust::string_view8 name, SrcLoc& src_loc ) : Value;
 
 	// Methods generation
 

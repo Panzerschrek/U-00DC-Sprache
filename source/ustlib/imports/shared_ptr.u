@@ -209,6 +209,47 @@ public:
 		apply_value_to_hasher( hasher, unsafe( storage_.get_ptr() ) );
 	}
 
+	// Hashing is compatible only if types are equal (derived-base conversions aren't supported).
+	// Some nullabiliy and mutability conversions are possible.
+	template</type OtherType/>
+	fn constexpr is_hash_compatible_type() : bool
+	{
+		static_if( same_type</ OtherType, this_type /> )
+		{
+			return true;
+		}
+		else static_if( is_nullable )
+		{
+			static_if( is_mutable )
+			{
+				return
+					same_type</OtherType, shared_ptr_base</ T, false, true  /> /> ||
+					same_type</OtherType, shared_ptr_base</ T, true , true  /> />;
+			}
+			else
+			{
+				return
+					same_type</OtherType, shared_ptr_base</ T, false, true  /> /> ||
+					same_type</OtherType, shared_ptr_base</ T, false, false /> /> ||
+					same_type</OtherType, shared_ptr_base</ T, true , true  /> /> ||
+					same_type</OtherType, shared_ptr_base</ T, true , false /> />;
+			}
+		}
+		else
+		{
+			static_if( is_mutable )
+			{
+				return false;
+			}
+			else
+			{
+				return
+					same_type</OtherType, shared_ptr_base</ T, false, true  /> /> ||
+					same_type</OtherType, shared_ptr_base</ T, false, false /> />;
+			}
+		}
+	}
+
 public: // Methods for internal usage.
 	fn get_storage( this ) unsafe : storage_type
 	{

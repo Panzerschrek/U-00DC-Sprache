@@ -657,7 +657,7 @@ fn CodeBuilder::BuildGlobalThingDuringResolveIfNecessary(mut this, NamesScopePtr
 	}
 }
 
-fn CodeBuilder::LookupName( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::string8& name, SrcLoc& src_loc ) : NameLookupResult
+fn CodeBuilder::LookupName( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::string_view8 name, SrcLoc& src_loc ) : NameLookupResult
 {
 	var NamesScopePtr mut current_scope(names_scope);
 
@@ -708,7 +708,7 @@ fn CodeBuilder::LookupName( mut this, NamesScopePtr& names_scope, FunctionContex
 fn CodeBuilder::ResolveClassValue(
 	mut this,
 	ClassTypePtr& class_type,
-	ust::string8& name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />
+	ust::string_view8 name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />
 {
 	return ResolveClassValueImpl( class_type, name, false );
 }
@@ -716,7 +716,7 @@ fn CodeBuilder::ResolveClassValue(
 fn CodeBuilder::ResolveClassValueImpl(
 	mut this,
 	ClassTypePtr& class_type,
-	ust::string8& name, bool recursive_call ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />
+	ust::string_view8 name, bool recursive_call ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />
 {
 	var bool is_special_method=
 		name == KeywordToString( Keyword::constructor_ ) ||

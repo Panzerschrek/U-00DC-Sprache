@@ -1,5 +1,6 @@
 //##success_test
 import "../imports/hash_set.u"
+import "../imports/string.u"
 
 type IntSet = ust::hash_set</i32/>;
 
@@ -51,6 +52,55 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( s.exists( 555 ) );
 		halt if( s.exists( 4 ) );
 		halt if( s.exists( 22 ) );
+	}
+	{ // Compatible keys.
+
+		var ust::hash_set</ ust::string8 /> mut s;
+
+		auto mut first= "first";
+		auto mut second= "second";
+		auto mut third= "third";
+		auto mut fourth= "fourth";
+		auto mut fifth= "fifth";
+
+		s.insert( ust::string8( "first" ) );
+		s.insert( ust::array_view_imut</char8/>( "second" ) );
+		s.insert( ust::array_view_mut</char8/>( third ) );
+		s.insert( "fourth" );
+
+		halt if( !s.exists( ust::string8( "first" ) ) );
+		halt if( !s.exists( ust::string8( "second" ) ) );
+		halt if( !s.exists( ust::string8( "third" ) ) );
+		halt if( !s.exists( ust::string8( "fourth" ) ) );
+		halt if(  s.exists( ust::string8( "fifth" ) ) );
+
+		halt if( !s.exists( ust::array_view_imut</char8/>( "first" ) ) );
+		halt if( !s.exists( ust::array_view_imut</char8/>( "second" ) ) );
+		halt if( !s.exists( ust::array_view_imut</char8/>( "third" ) ) );
+		halt if( !s.exists( ust::array_view_imut</char8/>( "fourth" ) ) );
+		halt if(  s.exists( ust::array_view_imut</char8/>( "fifth" ) ) );
+
+		halt if( !s.exists( ust::array_view_mut</char8/>( first ) ) );
+		halt if( !s.exists( ust::array_view_mut</char8/>( second ) ) );
+		halt if( !s.exists( ust::array_view_mut</char8/>( third ) ) );
+		halt if( !s.exists( ust::array_view_mut</char8/>( fourth ) ) );
+		halt if(  s.exists( ust::array_view_mut</char8/>( fifth ) ) );
+
+		halt if( !s.exists( "first" ) );
+		halt if( !s.exists( "second" ) );
+		halt if( !s.exists( "third" ) );
+		halt if( !s.exists( "fourth" ) );
+		halt if(  s.exists( "fifth" ) );
+
+		halt if( !s.drop_if_exists( ust::array_view_imut</char8/>( "first" ) ) );
+		halt if( !s.drop_if_exists( ust::array_view_mut</char8/>( second ) ) );
+		halt if( !s.drop_if_exists( "third" ) );
+		halt if( !s.drop_if_exists( ust::string8( "fourth" ) ) );
+
+		halt if( s.drop_if_exists( ust::string8( "fifth" ) ) );
+		halt if( s.drop_if_exists( ust::array_view_imut</char8/>( "fifth" ) ) );
+		halt if( s.drop_if_exists( ust::array_view_mut</char8/>( fifth ) ) );
+		halt if( s.drop_if_exists( "fifth" ) );
 	}
 	{ // Copy constructor.
 

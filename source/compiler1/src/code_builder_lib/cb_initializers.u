@@ -735,7 +735,7 @@ fn CodeBuilder::ApplyInitializerImpl( mut this, NamesScopePtr& names_scope, Func
 	return Null::LLVMValueRef();
 }
 
-fn CodeBuilder::ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef
+fn CodeBuilder::ApplyEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string_view8 variable_name, SrcLoc& src_loc ) : LLVMValueRef
 {
 	var VariableLite variable= variable_ptr;
 

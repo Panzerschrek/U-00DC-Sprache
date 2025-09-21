@@ -178,7 +178,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</Mixins/>& mixins )
 fn CodeBuilder::NamesScopeMergeValues(
 	NamesScopeValue& dst,
 	NamesScopeValue& src,
-	ust::string8& name,
+	ust::string_view8 name,
 	NamesScopePtr& target_names_scope,
 	ClassesMembersNamespacesTable& src_classes_members_namespaces_table )
 {

@@ -270,8 +270,8 @@ struct ClassType
 	// Methods
 	//
 
-	fn GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility;
-	fn SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility );
+	fn GetMemberVisibility( this, ust::string_view8 member_name ) : Synt::ClassVisibility;
+	fn SetMemberVisibility( mut this, ust::string_view8 member_name, Synt::ClassVisibility visibility );
 
 	fn HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool;
 
@@ -1117,7 +1117,7 @@ class NamesScope
 public:
 	fn constructor( ust::string8 mut name, ust::shared_ptr_nullable_imut</NamesScope/>& parent );
 
-	fn GetThisScopeValue( this, ust::string8& name ) : ust::optional_ref_imut</ NamesScopeValue /> @(ret_tags);
+	fn GetThisScopeValue( this, ust::string_view8 name ) : ust::optional_ref_imut</ NamesScopeValue /> @(ret_tags);
 
 	// Returns false if failed to add (due to redefinition).
 	fn AddName( mut this, ust::string8 mut name, NamesScopeValue mut value ) : bool;

@@ -469,5 +469,31 @@ fn nomangle main() call_conv( "C" ) : i32
 		static_assert( non_sync</ imut_lock_type /> );
 		static_assert( non_sync</ mut_lock_type /> );
 	}
+
+	// is_hash_compatible_type
+	static_assert(  IntPtrImut::is_hash_compatible_type</IntPtrImut/>() );
+	static_assert(  IntPtrImut::is_hash_compatible_type</IntPtrMut/>() );
+	static_assert( !IntPtrImut::is_hash_compatible_type</IntPtrNullableImut/>() );
+	static_assert( !IntPtrImut::is_hash_compatible_type</IntPtrNullableMut/>() );
+	static_assert( !IntPtrMut::is_hash_compatible_type</IntPtrImut/>() );
+	static_assert(  IntPtrMut::is_hash_compatible_type</IntPtrMut/>() );
+	static_assert( !IntPtrMut::is_hash_compatible_type</IntPtrNullableImut/>() );
+	static_assert( !IntPtrMut::is_hash_compatible_type</IntPtrNullableMut/>() );
+	static_assert(  IntPtrNullableImut::is_hash_compatible_type</IntPtrImut/>() );
+	static_assert(  IntPtrNullableImut::is_hash_compatible_type</IntPtrMut/>() );
+	static_assert(  IntPtrNullableImut::is_hash_compatible_type</IntPtrNullableImut/>() );
+	static_assert(  IntPtrNullableImut::is_hash_compatible_type</IntPtrNullableMut/>() );
+	static_assert( !IntPtrNullableMut::is_hash_compatible_type</IntPtrImut/>() );
+	static_assert(  IntPtrNullableMut::is_hash_compatible_type</IntPtrMut/>() );
+	static_assert( !IntPtrNullableMut::is_hash_compatible_type</IntPtrNullableImut/>() );
+	static_assert(  IntPtrNullableMut::is_hash_compatible_type</IntPtrNullableMut/>() );
+
+	static_assert( !IntPtrImut::is_hash_compatible_type</ i32 />() );
+	static_assert( !IntPtrImut::is_hash_compatible_type</ $(i32) />() );
+	static_assert( !IntPtrImut::is_hash_compatible_type</ [ i32, 1 ] />() );
+	static_assert( !IntPtrImut::is_hash_compatible_type</ ust::shared_ptr_imut</f32/> />() );
+	static_assert( !ust::shared_ptr_imut</I0/>::is_hash_compatible_type</ ust::shared_ptr_imut</Impl/> />() );
+	static_assert( !ust::shared_ptr_imut</Impl/>::is_hash_compatible_type</ ust::shared_ptr_imut</I0/> />() );
+
 	return 0;
 }

@@ -165,6 +165,22 @@ public:
 		}
 	}
 
+	// Construct from mutable range.
+	fn conversion_constructor( range_mut range )
+		( size_(range.size()) )
+	{
+		if( size_ == 0s ){ return; }
+
+		unsafe
+		{
+			capacity_= max( c_first_allocation_size_, size_ );
+			// It's impossible to get multiplication overflow here - source range should not occupy more than address space size.
+			ptr_= byte_ptr_cast</char_type/>( memory_allocate( capacity_ * c_element_size_ ) );
+
+			memory_copy_aligned( c_element_alignment_, ptr_cast_to_byte8( ptr_ ), ptr_cast_to_byte8( range.data() ), size_ * c_element_size_ );
+		}
+	}
+
 	// Fill constructor.
 	fn constructor( size_type count, char_type value )
 		( size_(count) )
@@ -382,6 +398,19 @@ public:
 		return r == l;
 	}
 
+	op==( this_type& l, range_mut r ) : bool
+	{
+		if( l.size() != r.size() ) { return false; }
+
+		auto size= l.size();
+		return unsafe( memory_equals( ptr_cast_to_byte8( l.ptr_ ), ptr_cast_to_byte8( r.data() ), size * c_element_size_ ) );
+	}
+
+	op==( range_mut l, this_type& r ) : bool
+	{
+		return r == l;
+	}
+
 	// order compare
 	op<=>( this_type& l, this_type& r ) : i32
 	{
@@ -444,6 +473,28 @@ public:
 	fn hash( this, Hasher &mut hasher )
 	{
 		range().hash( hasher );
+	}
+
+	// String is hash-compatible with range of chars (mutable and immutable), char arrays of different sizes.
+	// Other types aren't supported.
+	template</type OtherType/>
+	fn constexpr is_hash_compatible_type() : bool
+	{
+		static_if(
+			same_type</ OtherType, this_type /> |
+			same_type</ OtherType, range_imut /> |
+			same_type</ OtherType, range_mut /> )
+		{
+			return true;
+		}
+		else static_if( typeinfo</OtherType/>.is_array )
+		{
+			return same_type</ typeof( typeinfo</OtherType/>.element_type )::src_type, char_type />;
+		}
+		else
+		{
+			return false;
+		}
 	}
 
 	// modificators

@@ -103,21 +103,21 @@ fn DebugInfoBuilder::CreateFunctionInfo( mut this, FunctionVariable& func_variab
 
 	var Synt::Function& syntax_element= func_variable.body_syntax_element.try_deref();
 	var SrcLoc& src_loc= syntax_element.src_loc;
-	var ust::string8& name= syntax_element.name.back();
+	var ust::string_view8 name= syntax_element.name.back();
 
 	with( &lazy_function : func_variable.llvm_function.lock_imut().deref() )
 	{
 		var LLVMMetadataRef file= source_file_entries_[ size_type(src_loc.GetFileIndex()) ];
 
-		var ust::string8& linkage_name= lazy_function.name_mangled;
+		var ust::string_view8 linkage_name= lazy_function.name_mangled;
 
 		unsafe
 		{
 			auto di_function= LLVMDIBuilderCreateFunction(
 				builder_,
 				file,
-				cast_mut(name).data(), name.size(),
-				cast_mut(linkage_name).data(), linkage_name.size(),
+				name.data(), name.size(),
+				linkage_name.data(), linkage_name.size(),
 				file,
 				src_loc.GetLine(),
 				CreateFunctionDIType( func_variable.t ),
@@ -179,7 +179,7 @@ fn DebugInfoBuilder::EndBlock( mut this, FunctionContext &mut function_context, 
 	function_context.current_debug_info_scope= prev_block;
 }
 
-fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string8& name, SrcLoc& src_loc )
+fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string_view8 name, SrcLoc& src_loc )
 {
 	if( builder_ == Null::LLVMDIBuilderRef() )
 	{
@@ -216,7 +216,7 @@ fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_con
 	}
 }
 
-fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string8& name, SrcLoc& src_loc )
+fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string_view8 name, SrcLoc& src_loc )
 {
 	if( builder_ == Null::LLVMDIBuilderRef() )
 	{
@@ -679,7 +679,7 @@ fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_
 	{
 		foreach( &field_pair : class_type.fields_order )
 		{
-			var ust::string8& field_name= field_pair[0];
+			var ust::string_view8 field_name= field_pair[0];
 			auto field_lock= field_pair[1].lock_imut();
 			var ClassField& field= field_lock.deref();
 
@@ -705,7 +705,7 @@ fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_
 				unsafe( LLVMDIBuilderCreateMemberType(
 					builder_,
 					di_file,
-					cast_mut(field_name).data(), field_name.size(),
+					field_name.data(), field_name.size(),
 					di_file,
 					0u, // Line
 					LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,

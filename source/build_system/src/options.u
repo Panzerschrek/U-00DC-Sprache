@@ -254,7 +254,7 @@ public:
 
 		while( !args.empty() ) label args_non_empty
 		{
-			var ust::string8 arg= args.drop_and_get_front();
+			var ust::string_view8 arg= args.drop_and_get_front();
 
 			// Ensure no args are duplicated.
 			if( !prev_args.insert( arg ) )

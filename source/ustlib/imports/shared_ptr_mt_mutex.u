@@ -194,6 +194,24 @@ public:
 		apply_value_to_hasher( hasher, unsafe( storage_.get_ptr() ) );
 	}
 
+	template</type OtherType/>
+	fn constexpr is_hash_compatible_type() : bool
+	{
+		static_if( same_type</ OtherType, this_type /> )
+		{
+			return true;
+		}
+		else static_if( is_nullable )
+		{
+			// "shared_ptr_mt_mutex_nullable" is hash-compatible with "shared_ptr_mt_mutex_base" (non-nullable).
+			return same_type</OtherType, shared_ptr_mt_mutex_base</ T, false /> />;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
 public: // Methods for internal usage.
 
 	fn get_storage( this ) unsafe : storage_type
