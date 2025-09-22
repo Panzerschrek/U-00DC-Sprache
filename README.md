@@ -46,6 +46,31 @@ The language itself is described in details, other components have basic, but no
 Additionally there are some basic usage [examples](source/examples/README.md).
 
 
+### Why choosing Ü?
+
+The table below compares features, advantages and disadvantages of various programming languages, including Ü.
+It lists only languages, which may be directly compared to Ü - statically-timed compiled languages without heavy runtime or GC.
+
+| Feature/Language                                                            | C | C++| Swift| Zig| Rust| Ü |
+|-----------------------------------------------------------------------------|---|----|------|----|-----|---|
+| constructors (special methods for construction, not just factory methods)   | - | +  | ?    | ?  | -   | + |
+| destructors (special methods called automatically at object destruction)    | - | +  | +?   | -? | +   | + |
+| encapsulation (possibility to disable accessing some names in some scopes)  | - | +  | +    | +? | +   | + |
+| memory-safety                                                               | - | -  | +    | -  | +   | + |
+| thread-safety (no race conditions)                                          | - | -  | -    | -  | +   | + |
+| type templates                                                              | - | +  | +    | +  | +   | + |
+| function templates                                                          | - | +  | +    | ?  | +   | + |
+| duck-typing in templates (without mandatory templatetype requirements)      | - | +  | ?    | ?  | -   | + |
+| reference semantics (with auto reference creation and dereference)          | - | +  | +    | ?  | -   | + |
+| operators overloading                                                       | - | +  | +    | ?  | +   | + |
+| frictionless copying ( ability to perform deep copy values via operator =)  | +?| +  | +?   | ?  | -   | + |
+| compile-time calculations                                                   | - | +  | ?    | +  | ?   | + |
+| compile-time type information                                               | - | -  | ?    | ?  | +-  | + |
+| no exceptions (means no possibility to implicitly skip control flow passing)| - | -  | -    | ?  | -   | + |
+| async functions                                                             | - | +  | +    | ?  | +   | + |
+| lambdas (anonymous functions)                                               |   | +  | +?   | ?  | +   | + |
+
+
 ### How to build
 
 A modern C++ compiler (clang, GCC, MSVC) is required for building the project.
