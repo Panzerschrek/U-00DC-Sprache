@@ -1,6 +1,6 @@
 ### About
 
-This directory contains basic usage examples of some Ü features/constructions.
+This directory contains basic usage examples of some Ü features and standard library functionality.
 Each file is a self-contained example.
 
 Note that these examples contain only limited set of all Ü features.

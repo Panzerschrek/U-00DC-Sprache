@@ -15,9 +15,9 @@ Any possible coincidence with design and features of other programming languages
 Even more, there are two Ü compilers, the first one is written in C++ and the second one is mostly written in Ü itself (frontend part, backend is still LLVM).
 
 Besides the compiler Ü has a lot of other components.
-Ü provides its own standard library containing basic containers, helpers and operation system interaction functionality.
+Ü provides its own standard library containing basic container classes, helpers and operating system interaction functionality.
 There is a build system, which simplifies complex Ü programs building and (partially) package management.
-For better developing experience there is a language server and variety of syntax highlighting files for some IDEs and text editors.
+For better development experience there is a language server and variety of syntax highlighting files for some IDEs and text editors.
 Last but not least, Ü has a tool for C headers conversion, which allows to simplify interaction with foreign code.
 
 
@@ -33,7 +33,7 @@ The table below lists supported operating systems and architectures for Ü compi
 | GNU/Linux        | x86_64       |  ✅                 | ✅         |                                                                                    |
 | GNU/Linux        | AArch64      |  ✅                 | ✅         |                                                                                    |
 | FreeBSD          | x86_64       |  ✅                 | ✅         |                                                                                    |
-| OS X             | AArch64      |  ✅                 | ✅         | Still experimental, some standard library functionality may not work properly.     |
+| OS X             | AArch64      |  ✅                 | ✅➖        | Still experimental, some standard library functionality may not work properly.     |
 
 CPU architectures besides x86, x86_64 and AArch64 aren't tested, but they may work if Ü compiler is built with these architecture support (see *LLVM_TARGETS_TO_BUILD* option).
 GNU/Linux with x32 ABI isn't supported due to some bugs in LLVM library.
@@ -51,16 +51,16 @@ Additionally there are some basic usage [examples](source/examples/README.md).
 A modern C++ compiler (clang, GCC, MSVC) is required for building the project.
 CMake and Ninja are also necessary.
 
-#### Option 0 - build with LLVM sources.
+#### Option 0 - build with LLVM sources
 * Download LLVM sources [here](https://github.com/llvm/llvm-project/releases/) (version 17.0.6 is used in this project).
-* Run cmake for *source/CMakeLists.txt* and generate project for your favorite IDE or build system. You must set *LLVM_SRC_DIR* in cmake arguments.
+* Run cmake for *source/CMakeLists.txt* file to generate a project for your favorite IDE or build system. You must set *LLVM_SRC_DIR* in cmake arguments.
 * In order to speed-up the build you may disable building of unnecessary targets via *LLVM_TARGETS_TO_BUILD* cmake variable. For example set it to *X86* only.
-* It is recommended to disable LLVM tests and benchmarks. See LLVM documentation for more information.
-* Perform the build
+* It's recommended to disable LLVM tests and benchmarks. See LLVM documentation for more information.
+* Perform the build.
 
-#### Option 1 - build with LLVM binary libraries.
-* Install proper version of LLVM libraries via your system packet manager or download it manually [here](https://github.com/llvm/llvm-project/releases/).
-* Run cmake for *source/CMakeLists.txt* with *LLVM_LIB_DIR* specified.
+#### Option 1 - build with LLVM binary libraries
+* Install proper version of LLVM libraries via your system package manager or download it manually [here](https://github.com/llvm/llvm-project/releases/).
+* Run cmake for *source/CMakeLists.txt* file with *LLVM_LIB_DIR* cmake variable specified.
 * Perform the build.
 
 Some components are optional and may be disabled via cmake options (see *source/CMakeLists.txt*).
@@ -101,14 +101,14 @@ It's recommended at least to try using it.
 
 [QtCreator](https://www.qt.io/product/development-tools) may be used as Ü IDE.
 There is a [syntax highlighting file](source/syntax_highlighting/README.md) for it.
-Also it supports custom language servers, which allows using Ü language server.
+Also it supports custom language servers, which allows using the Ü language server.
 
-There is Ü extension for Microsoft Visual Studio.
+There is an Ü extension for Microsoft Visual Studio.
 See [corresponding readme](source/visual_studio_extension/README.md) for details.
 
 Many other IDEs may be used too.
-Any IDE with possibility to specify custom language server may be used for Ü code writing.
-Some IDEs allow also creating custom syntax highlighting rules, one can create it themselves.
+Any IDE with possibility to specify a custom language server may be used for Ü code writing.
+Some IDEs also allow creating custom syntax highlighting rules, one can create it themselves.
 
 
 ### Downloads
