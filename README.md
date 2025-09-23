@@ -52,26 +52,26 @@ The short answer is: Ü is superior in comparison to many other programming lang
 The table below compares important features, advantages and disadvantages of various programming languages, including Ü.
 It lists only languages, which may be directly compared to Ü - statically-typed compiled languages without heavy runtime and/or GC.
 
-| Feature/Language                                                                                 | C  | C++ | Swift | Zig  | Odin | Rust | Ü |
-|--------------------------------------------------------------------------------------------------|----|-----|-------|------|------|------|---|
-| constructors (special methods for construction, not just factory methods with user-defined name) | -  | +   | +     | -    | -    | -    | + |
-| destructors (special methods called automatically at object destruction)                         | -  | +   | +     | -    | -    | +    | + |
-| encapsulation (possibility to restrict access to some items only from some scopes)               | -  | +   | +     | +    | +    | +    | + |
-| memory-safety (no out-of bounds read/writes, no use-after-free errors, etc.)                     | -  | -   | +⁶    | -    | -    | +    | + |
-| thread-safety (no race conditions)                                                               | -  | -   | -     | -    | -    | +    | + |
-| type templates                                                                                   | -  | +   | +     | +    | +    | +    | + |
-| function templates                                                                               | -  | +   | +     | +    | +    | +    | + |
-| duck-typing in templates (without mandatory template type requirements specification)            | -  | +⁴  | -     | +    | +    | -    | + |
-| references (with auto reference creation and dereference)                                        | -  | +   | -⁷    | -    | -    | -¹⁵  | + |
-| functions overloading                                                                            | -  | +   | +     | -    | +¹¹  | -    | + |
-| operators overloading                                                                            | -  | +   | +     | -    | -    | +    | + |
-| frictionless copying (ability to perform deep copy values via operator `=`)                      | -¹ | +   | +     | -⁹   | -¹²  | -¹⁶  | + |
-| compile-time calculations                                                                        | -² | +   | -     | +    | +    | +    | + |
-| compile-time type information                                                                    | -  | -   | -     | +    | -    | -    | + |
-| class inheritance and runtime polymorphism based on it                                           | -  | +   | +     | -    | -¹³  | -    | + |
-| no exceptions (means no possibility to implicitly skip control flow passing)                     | +³ | -   | +⁸    | +    | +    | +-¹⁷ | + |
-| async functions                                                                                  | -  | +⁵  | +     | +-¹⁰ | -    | +    | + |
-| lambdas (anonymous functions defined within expression context, sometimes named closures)        | -  | +   | +     | -    | -¹⁴  | +    | + |
+| Feature/Language                                                                                 | C  | C++ | Swift | Zig | Odin | Rust | Ü |
+|--------------------------------------------------------------------------------------------------|----|-----|-------|-----|------|------|---|
+| constructors (special methods for construction, not just factory methods with user-defined name) | -  | +   | +     | -   | -    | -    | + |
+| destructors (special methods called automatically at object destruction)                         | -  | +   | +     | -   | -    | +    | + |
+| encapsulation (possibility to restrict access to some items only from some scopes)               | -  | +   | +     | +   | +    | +    | + |
+| memory-safety (no out-of bounds read/writes, no use-after-free errors, etc.)                     | -  | -   | +⁶    | -   | -    | +    | + |
+| thread-safety (no race conditions)                                                               | -  | -   | -     | -   | -    | +    | + |
+| type templates                                                                                   | -  | +   | +     | +   | +    | +    | + |
+| function templates                                                                               | -  | +   | +     | +   | +    | +    | + |
+| duck-typing in templates (without mandatory template type requirements specification)            | -  | +⁴  | -     | +   | +    | -    | + |
+| references (with auto reference creation and dereference)                                        | -  | +   | -⁷    | -   | -    | -¹⁵  | + |
+| functions overloading                                                                            | -  | +   | +     | -   | +¹¹  | -    | + |
+| operators overloading                                                                            | -  | +   | +     | -   | -    | +    | + |
+| frictionless copying (ability to perform deep copy values via operator `=`)                      | -¹ | +   | +     | -⁹  | -¹²  | -¹⁶  | + |
+| compile-time calculations                                                                        | -² | +   | -     | +   | +    | +    | + |
+| compile-time type information                                                                    | -  | -   | -     | +   | -    | -    | + |
+| class inheritance and runtime polymorphism based on it                                           | -  | +   | +     | -   | -¹³  | -    | + |
+| no exceptions (means no possibility to implicitly skip control flow passing)                     | +³ | -   | +⁸    | +   | +    | ±¹⁷  | + |
+| async functions                                                                                  | -  | +⁵  | +     | ±¹⁰ | -    | +    | + |
+| lambdas (anonymous functions defined within expression context, sometimes named closures)        | -  | +   | +     | -   | -¹⁴  | +    | + |
 
 Footnotes:<br>
 <small>
