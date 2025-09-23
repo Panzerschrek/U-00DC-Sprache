@@ -76,23 +76,23 @@ It lists only languages, which may be directly compared to Ü - statically-typed
 <details>
 <summary>footnotes</summary>
 
-1 - structs may be copied via `=`, but it's only shallow copy.<br>
-2 - there is only limited compile-time evaluation of constants like (1 + 2), but without compile-time variable constants and compile-time functions evaluation.<br>
-3 - `setjump`/`longjump` is still possible, but generally speaking it's not a language feature and this may be implemented almost in any language.<br>
+1 - structs may be copied via `=`, but it's only a shallow copy.<br>
+2 - there is only limited compile-time evaluation of constants like `1 + 2`, but without compile-time variable constants and compile-time functions evaluation.<br>
+3 - `setjump`/`longjump` is still possible, but generally speaking it's not a language feature and it may be implemented almost in any language.<br>
 4 - in some rare cases `typename` keyword is needed in templates. There are also concepts in newer C++ standards, but one can just avoid using them if duck-typing is needed.<br>
 5 - C++ has somewhat lower-level coroutines, which allow implementing not only async functions, but generators and other constructions.<br>
-6 - Memory safety was added in new versions of the language.<br>
-7 - There are generally no references, there are `inout` function parameters, but they require specifying `&` for parameter passing.<br>
-8 - Swift has `throw` keyword, `throws` function specifier and `catch` statement, but there is no unexpected control flow, since each possible error value must be explicitly handled or passed further. So, what it does is more likely a second function return channel rather than proper exceptions.<br>
+6 - memory safety was added in new versions of the language.<br>
+7 - there are generally no references, there are `inout` function parameters, but they require specifying `&` for parameter passing.<br>
+8 - Swift has `throw` keyword, `throws` function specifier and `catch` statement, but there is no unexpected control flow, since each possible error value must be explicitly handled or passed further. So, what it does is more like a second function return channel rather than proper exceptions.<br>
 9 - operator `=` only creates shallow copy, just like in C.<br>
 10 - async functions are now in development.<br>
 11 - overloading is explicit and requires adding extra code.<br>
 12 - operator `=` only creates shallow copy, just like in C.<br>
 13 - there is subtype polymorphism, but no proper inheritance-based polymorphism with runtime dispatching based on actual runtime type (via virtual functions or something similar).<br>
-14 - there is only non-capturing functions defined within other functions.<br>
+14 - there are only non-capturing functions defined within other functions.<br>
 15 - Rust so-called "references" are really just pointers, one need to add `&` to create a reference and use `*` for dereferencing.<br>
-16 - all types are split into two categories, the first one allows copying via = (which is basically `memcpy`), the second one requires explicitly calling `clone` method.<br>
-17 - exceptions can't be thrown within Rust code, but Rust supports stack unwinding (with destructors calling) if an exception was thrown from foreign code (like C++). Code should be written with unwinding possibility in mind.<br>
+16 - all types are split into two categories, the first one allows copying via `=` (which is basically `memcpy`), the second one requires explicitly calling `clone` method.<br>
+17 - exceptions can't be thrown within Rust code, but Rust supports stack unwinding (with destructors calling) if an exception is thrown from foreign code (like C++). Code should be written with unwinding possibility in mind.<br>
 
 </details>
 
