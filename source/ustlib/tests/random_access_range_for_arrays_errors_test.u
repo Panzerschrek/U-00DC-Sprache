@@ -131,6 +131,14 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::array_view_mut</A/> a0_range(a0);
 		a0_range.copy_from( ust::array_view_imut</A/>(a1) ); //##expect_error CouldNotSelectOverloadedFunction
 	}
+	{ // "copy_from" for types with references inside it's not supported.
+
+		var i32 x= 11, y= 222;
+		var [ ust::optional_ref_imut</i32/>, 1 ] mut a0[ (x) ], a1[ (y) ];
+		var ust::array_view_mut</ust::optional_ref_imut</i32/>/> r0= a0;
+		var ust::array_view_imut</ust::optional_ref_imut</i32/>/> r1= a1;
+		r0.copy_from(r1); //##expect_error CouldNotSelectOverloadedFunction
+	}
 
 	return 0;
 }

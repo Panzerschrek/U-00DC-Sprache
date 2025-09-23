@@ -443,7 +443,7 @@ public:
 	// If "src" size is greater than this size, excess elements are ignored.
 	template</bool source_is_mutable/>
 	fn
-	enable_if( is_mutable && typeinfo</T/>.is_copy_assignable )
+	enable_if( is_mutable && typeinfo</T/>.is_copy_assignable && typeinfo</T/>.reference_tag_count == 0s )
 	copy_from( this, random_access_range</T, source_is_mutable/> src )
 	{
 		var size_type count= min( size_, src.size() );
