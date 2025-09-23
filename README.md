@@ -51,26 +51,26 @@ Additionally there are some basic usage [examples](source/examples/README.md).
 The table below compares features, advantages and disadvantages of various programming languages, including Ü.
 It lists only languages, which may be directly compared to Ü - statically-typed compiled languages without heavy runtime and/or GC.
 
-| Feature/Language                                                                                | C | C++ | Swift | Zig | Odin | Rust | Ü |
-|-------------------------------------------------------------------------------------------------|---|-----|-------|-----|------|------|---|
-| constructors (special methods for construction, not just factory methods with user-defined name)| - | +   | +     | -   | -    | -    | + |
-| destructors (special methods called automatically at object destruction)                        | - | +   | +     | -   | -    | +    | + |
-| encapsulation (possibility to restrict access to some items only from some scopes)              | - | +   | +     | +   | +    | +    | + |
-| memory-safety (no out-of bounds read/writes, no use-after-free errors)                          | - | -   | +⁶    | -   | -    | +    | + |
-| thread-safety (no race conditions)                                                              | - | -   | -     | -   | -    | +    | + |
-| type templates                                                                                  | - | +   | +     | +   | +    | +    | + |
-| function templates                                                                              | - | +   | +     | +   | +    | +    | + |
-| duck-typing in templates (without mandatory template type requirements specification)           | - | +⁴  | -     | +   | +    | -    | + |
-| references (with auto reference creation and dereference)                                       | - | +   | -⁷    | -   | -    | -    | + |
-| functions overloading                                                                           | - | +   | +     | -   | +¹¹  | -    | + |
-| operators overloading                                                                           | - | +   | +     | -   | -    | +    | + |
-| frictionless copying (ability to perform deep copy values via operator =)                       | -¹| +   | +     | -⁹  | -¹²  | -    | + |
-| compile-time calculations                                                                       | -²| +   | -     | +   | +    | ?    | + |
-| compile-time type information                                                                   | - | -   | -     | +   | -    | +-   | + |
-| class inheritance                                                                               | - | +   | +     | -   | -¹³  | -    | + |
-| no exceptions (means no possibility to implicitly skip control flow passing)                    | +³| -   | +⁸    | +   | +    | -    | + |
-| async functions                                                                                 | - | +⁵  | +     | +-¹⁰| -    | +    | + |
-| lambdas (anonymous functions, sometimes named closures)                                         | - | +   | +     | -   | -¹⁴  | +    | + |
+| Feature/Language                                                                                | C  | C++ | Swift | Zig | Odin | Rust | Ü |
+|-------------------------------------------------------------------------------------------------|----|-----|-------|-----|------|------|---|
+| constructors (special methods for construction, not just factory methods with user-defined name)| -  | +   | +     | -   | -    | -    | + |
+| destructors (special methods called automatically at object destruction)                        | -  | +   | +     | -   | -    | +    | + |
+| encapsulation (possibility to restrict access to some items only from some scopes)              | -  | +   | +     | +   | +    | +    | + |
+| memory-safety (no out-of bounds read/writes, no use-after-free errors)                          | -  | -   | +⁶    | -   | -    | +    | + |
+| thread-safety (no race conditions)                                                              | -  | -   | -     | -   | -    | +    | + |
+| type templates                                                                                  | -  | +   | +     | +   | +    | +    | + |
+| function templates                                                                              | -  | +   | +     | +   | +    | +    | + |
+| duck-typing in templates (without mandatory template type requirements specification)           | -  | +⁴  | -     | +   | +    | -    | + |
+| references (with auto reference creation and dereference)                                       | -  | +   | -⁷    | -   | -    | -¹⁵  | + |
+| functions overloading                                                                           | -  | +   | +     | -   | +¹¹  | -    | + |
+| operators overloading                                                                           | -  | +   | +     | -   | -    | +    | + |
+| frictionless copying (ability to perform deep copy values via operator =)                       | -¹ | +   | +     | -⁹  | -¹²  | -¹⁶  | + |
+| compile-time calculations                                                                       | -² | +   | -     | +   | +    | +    | + |
+| compile-time type information                                                                   | -  | -   | -     | +   | -    | -    | + |
+| class inheritance                                                                               | -  | +   | +     | -   | -¹³  | -    | + |
+| no exceptions (means no possibility to implicitly skip control flow passing)                    | +³ | -   | +⁸    | +   | +    | +-¹⁷ | + |
+| async functions                                                                                 | -  | +⁵  | +     | +-¹⁰| -    | +    | + |
+| lambdas (anonymous functions, sometimes named closures)                                         | -  | +   | +     | -   | -¹⁴  | +    | + |
 
 ¹ - structs may be copied via =, but it's only shallow copy.
 ² - there is only limited compile-time evaluation of constants like (1 + 2), but without compile-time variable constants and compile-time functions evaluation.
@@ -86,6 +86,9 @@ It lists only languages, which may be directly compared to Ü - statically-typed
 ¹² - operator = only creates shallow copy, just like in C.
 ¹³ - there is subtype polymorphism, but no proper inheritance-based polymorphism with runtime dispatching based on actual runtime type (like via virtual functions).
 ¹⁴ - there is only non-capturing functions defined within other functions.
+¹⁵ - Rust so-called "references" are really just pointers, one need to add `&` to create a reference and use `*` for dereferencing.
+¹⁶ - all types are split into two categories, the first one allows copying via = (which is basically memcpy), the second one requires calling `clone` method.
+¹⁷ - exceptions can't be thrown within Rust code, but Rust supports stack unwinding (with destructors calling) if an exception was thrown from foreign code (like C++). Code should be written with unwinding possibility in mind.
 
 ⁰¹²³⁴⁵⁶⁷⁸⁹
 
