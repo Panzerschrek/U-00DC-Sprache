@@ -51,26 +51,26 @@ Additionally there are some basic usage [examples](source/examples/README.md).
 The table below compares features, advantages and disadvantages of various programming languages, including Ü.
 It lists only languages, which may be directly compared to Ü - statically-typed compiled languages without heavy runtime and/or GC.
 
-| Feature/Language                                                                     | C  | C++| Swift | Zig | Odin | Rust| Ü |
-|--------------------------------------------------------------------------------------|----|----|-------|-----|------|-----|---|
-| constructors (special methods for construction, not just factory methods)            | -  | +  | +     | ?   | ?    | -   | + |
-| destructors (special methods called automatically at object destruction)             | -  | +  | +     | -?  | ?    | +   | + |
-| encapsulation (possibility to restrict accessing some names only from some scopes)   | -  | +  | +     | +?  | ?    | +   | + |
-| memory-safety                                                                        | -  | -  | +⁶    | -   | ?    | +   | + |
-| thread-safety (no race conditions)                                                   | -  | -  | -     | -   | ?    | +   | + |
-| type templates                                                                       | -  | +  | +     | +   | ?    | +   | + |
-| function templates                                                                   | -  | +  | +     | ?   | ?    | +   | + |
-| duck-typing in templates (without mandatory template type requirements specification)| -  | +⁴ | -     | ?   | ?    | -   | + |
-| references (with auto reference creation and dereference)                            | -  | +  | -⁷    | ?   | ?    | -   | + |
-| functions overloading                                                                | -  | +  | +     | ?   | ?    | -   | + |
-| operators overloading                                                                | -  | +  | +     | ?   | ?    | +   | + |
-| frictionless copying (ability to perform deep copy values via operator =)            | -¹ | +  | +     | ?   | ?    | -   | + |
-| compile-time calculations                                                            | -² | +  | -     | +   | ?    | ?   | + |
-| compile-time type information                                                        | -  | -  | -     | ?   | ?    | +-  | + |
-| class inheritance                                                                    | -  | +  | +     | ?   | ?    | -   | + |
-| no exceptions (means no possibility to implicitly skip control flow passing)         | +³ | -  | +⁸    | ?   | ?    | -   | + |
-| async functions                                                                      | -  | +⁵ | +     | ?   | ?    | +   | + |
-| lambdas (anonymous functions, sometimes named closures)                              | -  | +  | +     | ?   | ?    | +   | + |
+| Feature/Language                                                                     | C  | C++ | Swift | Zig  | Odin | Rust | Ü |
+|--------------------------------------------------------------------------------------|----|-----|-------|------|------|------|---|
+| constructors (special methods for construction, not just factory methods)            | -  | +   | +     | -    | ?    | -    | + |
+| destructors (special methods called automatically at object destruction)             | -  | +   | +     | -    | ?    | +    | + |
+| encapsulation (possibility to restrict accessing some names only from some scopes)   | -  | +   | +     | +    | ?    | +    | + |
+| memory-safety                                                                        | -  | -   | +⁶    | -    | ?    | +    | + |
+| thread-safety (no race conditions)                                                   | -  | -   | -     | -    | ?    | +    | + |
+| type templates                                                                       | -  | +   | +     | +    | ?    | +    | + |
+| function templates                                                                   | -  | +   | +     | +    | ?    | +    | + |
+| duck-typing in templates (without mandatory template type requirements specification)| -  | +⁴  | -     | +    | ?    | -    | + |
+| references (with auto reference creation and dereference)                            | -  | +   | -⁷    | -    | ?    | -    | + |
+| functions overloading                                                                | -  | +   | +     | -    | ?    | -    | + |
+| operators overloading                                                                | -  | +   | +     | -    | ?    | +    | + |
+| frictionless copying (ability to perform deep copy values via operator =)            | -¹ | +   | +     | -⁹   | ?    | -    | + |
+| compile-time calculations                                                            | -² | +   | -     | +    | ?    | ?    | + |
+| compile-time type information                                                        | -  | -   | -     | +    | ?    | +-   | + |
+| class inheritance                                                                    | -  | +   | +     | -    | ?    | -    | + |
+| no exceptions (means no possibility to implicitly skip control flow passing)         | +³ | -   | +⁸    | +    | ?    | -    | + |
+| async functions                                                                      | -  | +⁵  | +     | +-¹⁰ | ?    | +    | + |
+| lambdas (anonymous functions, sometimes named closures)                              | -  | +   | +     | -    | ?    | +    | + |
 
 ¹ - structs may be copied via =, but it's only shallow copy.
 ² - there is only limited compile-time evaluation of constants like (1 + 2), but without compile-time variable constants and compile-time functions evaluation.
@@ -80,6 +80,8 @@ It lists only languages, which may be directly compared to Ü - statically-typed
 ⁶ - Memory safety was added in new versions of the language.
 ⁷ - There are generally no references, there are `inout` function parameters, but they require specifying `&` for parameter passing.
 ⁸ - Swift has `throw` keyword, `throws` function specifier and `catch` statement, but there is no unexpected control flow, since each possible error value must be explicitly handled or passed further. So, what it does is more likely a second function return channel rather than proper exceptions.
+⁹ - operator = only creates shallow copy, just like in C.
+¹⁰ - async functions are now in development.
 
 ⁰¹²³⁴⁵⁶⁷⁸⁹
 
