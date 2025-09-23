@@ -96,6 +96,9 @@ It lists only languages, which may be directly compared to Ü - statically-typed
 
 </details>
 
+As it can be seen, only Ü has both strong safety/reliability guarantees and many necessary and easy to use features and abstractions.
+Other languages are unsafe and/or have some important for effective programming features missing.
+
 
 ### How to build
 
