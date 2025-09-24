@@ -22,6 +22,25 @@ class NonCopyableKey
 
 type BrokenHashMap= ust::hash_map</NonCopyableKey, i32/>; //##expect_error TemplateContext
 
+struct StructA
+{}
+
+struct StructB
+{
+	fn conversion_constructor( StructA a ){}
+}
+
+struct StructC
+{
+	fn conversion_constructor( StructA a ){}
+
+	template</type T/>
+	fn constexpr is_hash_compatible_type() : bool
+	{
+		return same_type</T, StructC/>;
+	}
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 
@@ -94,6 +113,21 @@ fn nomangle main() call_conv( "C" ) : i32
 	{ // A value given to "retain" method is not a function.
 		var ust::hash_map</u32, f32/> mut m;
 		m.retain( 76u ); //##expect_error TemplateContext
+	}
+	{
+		var ust::hash_map</StructB, i32/> mut m;
+		// "StructA" and "StructB" aren't hash-compatible, even if "StructB" is convertible from "StructA".
+		m.insert_new( StructA{}, 2 ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{
+		var ust::hash_map</StructC, i32/> mut m;
+		// "StructA" and "StructC" aren't hash-compatible, even if "StructC" is convertible from "StructA".
+		m.insert_or_update( StructA{}, 2 ); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{
+		var ust::hash_map</StructB, i32/> mut m;
+		// "f32" and "StructB" aren't hash-compatible.
+		m.find( 0.5f ); //##expect_error CouldNotSelectOverloadedFunction
 	}
 
 	return 0;
