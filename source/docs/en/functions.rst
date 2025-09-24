@@ -113,7 +113,7 @@ But if after the function declaration follows a body block, this is a function i
    }
 
 *****************************
-*return value type deduction*
+*Return value type deduction*
 *****************************
 
 It's possible to specify ``auto`` as function return type.

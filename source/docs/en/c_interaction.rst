@@ -8,7 +8,7 @@ C functions may be called from Ü.
 For C interaction Ü has some mechanisms.
 
 *********************************
-*functions without name mangling*
+*Functions without name mangling*
 *********************************
 
 Unlike in C function names in Ü are specially encoded in order to produce different symbol names for overloaded functions and functions with the same name in different scopes.

@@ -12,7 +12,7 @@ All ``void`` values are equal.
 It's possible to assign ``void`` values, pass them by value or by reference into a function, return values and references of this type.
 
 **************
-*boolean type*
+*Boolean type*
 **************
 
 Ü has ``bool`` type.
@@ -77,7 +77,7 @@ The result of the division for floating point values is nearest floating point v
 For integers division result by zero is undefined, for floating point types result is ±infinity or ``NaN``.
 
 **************************************
-*bitwise operations for integer types*
+*Bitwise operations for integer types*
 **************************************
 
 For values of integer types following bitwise operations may be used:
@@ -128,7 +128,7 @@ Unlike numeric types there is no arithmetic and bitwise operations for char type
 But it is possible to compare values of char types.
 
 *******************************
-*raw data representation types*
+*Raw data representation types*
 *******************************
 
 Ü has following types for raw data representation:
@@ -193,7 +193,7 @@ It works like this: evaluates first expression (that should be of ``bool`` type,
    }
 
 ********************
-*operators priority*
+*Operators priority*
 ********************
 
 In a complex expressions consisting of multiple operators calculation is performed in order of operators priority.

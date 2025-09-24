@@ -10,7 +10,7 @@ This allows, for example, to create a code, which isn't possible to create using
 
 
 **********************
-*mixin usage contexts*
+*Mixin usage contexts*
 **********************
 
 ``mixin`` may be used in namespaces:
@@ -67,7 +67,7 @@ It's also possible to use ``mixin`` in structs and classes:
 
 
 ********************
-*mixins limitations*
+*Mixins limitations*
 ********************
 
 ``import`` inside ``mixin`` isn't possible.

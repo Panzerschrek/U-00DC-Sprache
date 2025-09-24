@@ -1,4 +1,4 @@
-Halt
+halt
 ====
 
 ``halt`` is a special operator for abnormal program termination.

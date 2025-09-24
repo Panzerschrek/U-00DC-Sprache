@@ -325,7 +325,7 @@ If no condition is specified a loop is considered to be unconditional - ends onl
    }
 
 *************
-*simple loop*
+*Simple loop*
 *************
 
 Ü has simple unconditional loop - ``loop``
@@ -358,7 +358,7 @@ It's important to know that if ``loop`` has no ``break`` (for this loop) any cod
    auto x = 0; // The compiler will produce here an error, because this code is unreachable.
 
 **********************
-*return from function*
+*Return from function*
 **********************
 
 The execution of a function that returns no value ends when control flow reaches the end of the function.

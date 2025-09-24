@@ -1,4 +1,4 @@
-Embed
+embed
 =====
 
 ``embed`` is a special language operator, which is used to embed contents of a given file into a program as ``constexpr`` array.
