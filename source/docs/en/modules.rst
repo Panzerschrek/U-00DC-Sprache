@@ -5,9 +5,9 @@ Modules
 *Build model*
 *************
 
-An Ü program consists of one or more source files.
-Each file is built by the compiler into platform-specific object file.
-Result object files are linked together into result executable, static or shared library.
+An Ü program consists of one or more compiled source files.
+Each file is built by the compiler into platform-specific object file or intermediate code file.
+Result compiled files are linked together into result executable, static or shared library.
 
 Technically linking is possible with object files produced by compilers of other languages like C or C++.
 
@@ -34,15 +34,15 @@ If a path is relative it will be searched relative to the current file.
 *How imports works*
 *******************
 
-An imported file is compiled as usual, sometimes even with imports of another files.
-Than definitions/declarations from each imported files are merged into this file.
+An imported file is processed as usual, sometimes even with imports of another files.
+Than definitions/declarations from each imported files are merged into current file.
 Import order doesn't matter for both imported files and current file.
 With any imports order result imported names set will be the same.
 
-Functions defined in imported files have ``private`` linkage in order to avoid linkage conflicts in linking of several object files produced by compilation of source files that all import some common file.
-Also generated functions (class methods), template function and any functions within templates have ``private`` linkage.
+Functions defined in imported files have ``private`` linkage in order to avoid linkage conflicts while linking several object files produced by compilation of source files that all import some common file.
+Also generated functions (class methods), template functions and any functions within templates have ``private`` linkage.
 
-Usage of ``private`` linkage allows to define functions in common imported files without linking problems.
+Usage of ``private`` linkage allows to define functions in common imported files without linking conflicts.
 For example, there are three files and contents of one of them is imported by two others:
 
 .. code-block:: u_spr
@@ -60,10 +60,10 @@ For example, there are three files and contents of one of them is imported by tw
 
    import "a.u"
 
-In program linking from ``"b.u"`` and ``"c.u"`` files there will be no linking conflicts caused by ``GetX()`` function.
+In a program linked from ``"b.u"`` and ``"c.u"`` files there will be no linking conflicts caused by ``GetX()`` function.
 
-Also ``private`` visibility have functions defined in a main (compiled) file if they have no prototype in one of imported files.
-The only exception - ``nomangle`` functions.
+Also functions defined in a main (compiled) file have ``private`` visibility, if they have no prototype in one of imported files.
+The only exception are ``nomangle`` functions.
 Such feature allows to define functions with private visibility without linking conflicts even if another function(s) with the same name and signature exists in other files.
 
 .. code-block:: u_spr
@@ -76,7 +76,7 @@ Such feature allows to define functions with private visibility without linking 
 
    fn SomeLocal(){}
 
-In program linking from ``"b.u"`` and ``"c.u"`` files there will be no linking conflicts caused by ``SomeLocal()`` function.
+In a program linked from ``"b.u"`` and ``"c.u"`` files there will be no linking conflicts caused by ``SomeLocal()`` function.
 
 *********************
 *One definition rule*
