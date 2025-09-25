@@ -34,6 +34,7 @@
 #include <llvm/Transforms/IPO/GlobalDCE.h>
 #include <llvm/Transforms/IPO/Internalize.h>
 #include <llvm/Transforms/IPO/MergeFunctions.h>
+#include "llvm/Transforms/Instrumentation/GCOVProfiler.h"
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../code_builder_lib_common/async_calls_inlining.hpp"
@@ -312,6 +313,11 @@ cl::opt<bool> print_time_stats(
 	cl::init(false),
 	cl::cat(options_category) );
 
+cl::opt<bool> coverage(
+	"coverage",
+	cl::desc("Enable code coverage."),
+	cl::init(false),
+	cl::cat(options_category) );
 
 } // namespace Options
 
@@ -486,6 +492,7 @@ int Main( int argc, const char* argv[] )
 	Options::linker_args.removeArgument();
 	Options::sysroot.removeArgument();
 	Options::print_time_stats.removeArgument();
+	Options::coverage.removeArgument();
 
 	if( Options::output_file_name.empty() && file_type != FileType::Null )
 	{
@@ -918,6 +925,16 @@ int Main( int argc, const char* argv[] )
 						}
 					}
 				};
+
+		if( Options::coverage )
+		{
+			pass_builder.registerPipelineStartEPCallback(
+				[]( llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel o )
+				{
+					U_UNUSED(o);
+					module_pass_manager.addPass( llvm::GCOVProfilerPass() );
+				} );
+		}
 
 		// Create the pass manager.
 		llvm::ModulePassManager module_pass_manager;
