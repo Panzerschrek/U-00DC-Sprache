@@ -5,7 +5,7 @@
 .. toctree::
    :maxdepth: 1
 
-   basics
+   getting_started
    language_contents
    standard_library
    compiler
