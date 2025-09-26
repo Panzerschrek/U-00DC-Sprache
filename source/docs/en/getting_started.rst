@@ -63,3 +63,12 @@ After project creation you can build it:
 
 Having a ``build.u`` file is necessary for building complex programs - with multiple source files, with dependencies, non-trivial properties, etc.
 See build system documentation for more details.
+
+
+**********
+*Examples*
+**********
+
+There are many examples of basic Ü language usage available `here <https://github.com/Panzerschrek/U-00DC-Sprache/tree/master/source/examples>`_.
+Each Ü file in the directory above may be compiled just like a *hello world* program shown previously.
+It's recommended to see these examples and read documentation, describing features used in each example.
