@@ -6,8 +6,8 @@ Getting started
 *********
 
 Ü is a compiled statically-typed general purpose programming language with C-like syntax.
-Ü supports object-oriented paradigm, allows to write generic code, has some functional programming elements and many other useful elements.
-Ü is created with error prevention in mind and because of that has safe/unsafe code separation and thus is memory-safe and thread-safe.
+Ü supports object-oriented paradigm, allows to write generic code, has some functional programming elements and many other useful features.
+Ü is created with error prevention in mind, has safe/unsafe code separation and thus is memory-safe and thread-safe.
 
 
 *******************
@@ -42,7 +42,7 @@ For cross-compiling you may also require additional SDKs for the target platform
        return 0;
    }
 
-You can compile it, using Ü build system executable via following command:
+You can compile it, using Ü build system executable via the following command:
 
 .. code-block:: sh
 
