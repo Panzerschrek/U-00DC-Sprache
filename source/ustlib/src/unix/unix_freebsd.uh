@@ -51,11 +51,11 @@ struct dirent ordered
 {
 	ino_t d_fileno;
 	off_t d_off;
-	ü__uint16_t d_reclen;
-	ü__uint8_t d_type;
-	ü__uint8_t d_pad0;
-	ü__uint16_t d_namlen;
-	ü__uint16_t d_pad1;
+	uint16_t__ d_reclen;
+	uint8_t__ d_type;
+	uint8_t__ d_pad0;
+	uint16_t__ d_namlen;
+	uint16_t__ d_pad1;
 	[ char8, 256u ] d_name;
 }
 
@@ -77,10 +77,10 @@ struct stat_ ordered
 	ino_t st_ino;
 	nlink_t st_nlink;
 	mode_t st_mode;
-	ü__int16_t st_bsdflags;
+	int16_t__ st_bsdflags;
 	uid_t st_uid;
 	gid_t st_gid;
-	ü__int32_t st_padding1;
+	int32_t__ st_padding1;
 	dev_t st_rdev;
 	timespec st_atim;
 	timespec st_mtim;
@@ -90,12 +90,12 @@ struct stat_ ordered
 	blkcnt_t st_blocks;
 	blksize_t st_blksize;
 	fflags_t st_flags;
-	ü__uint64_t st_gen;
-	ü__uint64_t st_filerev;
-	[ ü__uint64_t, 9u ] st_spare;
+	uint64_t__ st_gen;
+	uint64_t__ st_filerev;
+	[ uint64_t__, 9u ] st_spare;
 }
 
-struct ü_dirdesc ordered
+struct dirdesc_ ordered
 {
 fn constructor() : void= delete;
 }
@@ -142,9 +142,9 @@ struct sockaddr_storage ordered
 {
 	u8 ss_len;
 	sa_family_t ss_family;
-	[ char8, 6 ] ü__ss_pad1;
-	ü__int64_t ü__ss_align;
-	[ char8, 112 ] ü__ss_pad2;
+	[ char8, 6 ] ss_pad1__;
+	int64_t__ ss_align__;
+	[ char8, 112 ] ss_pad2__;
 }
 
 struct in_addr ordered
@@ -161,54 +161,54 @@ struct in6_addr ordered
 auto constexpr DT_DIR = 4;
 auto constexpr DT_LNK = 10;
 
-type DIR = ü_dirdesc;
-type blkcnt_t = ü__blkcnt_t;
-type blksize_t = ü__blksize_t;
-type clockid_t = ü__clockid_t;
-type dev_t = ü__dev_t;
-type fflags_t = ü__fflags_t;
-type gid_t = ü__gid_t;
-type in_addr_t = ü__uint32_t;
-type in_port_t = ü__uint16_t;
-type ino_t = ü__ino_t;
-type mode_t = ü__mode_t;
-type nlink_t = ü__nlink_t;
-type off64_t = ü__off64_t;
-type off_t = ü__off_t;
-type sa_family_t = ü__sa_family_t;
-type size_t = ü__size_t;
-type socklen_t = ü__socklen_t;
-type ssize_t = ü__ssize_t;
-type suseconds_t = ü__suseconds_t;
-type time_t = ü__time_t;
-type uid_t = ü__uid_t;
-type uint32_t = ü__uint32_t;
-type uint8_t = ü__uint8_t;
-type ü__blkcnt_t = ü__int64_t;
-type ü__blksize_t = ü__int32_t;
-type ü__clockid_t = ü__int32_t;
-type ü__dev_t = ü__uint64_t;
-type ü__fflags_t = ü__uint32_t;
-type ü__gid_t = ü__uint32_t;
-type ü__ino_t = ü__uint64_t;
-type ü__int16_t = i16;
-type ü__int32_t = i32;
-type ü__int64_t = i64;
-type ü__mode_t = ü__uint16_t;
-type ü__nlink_t = ü__uint64_t;
-type ü__off64_t = ü__int64_t;
-type ü__off_t = ü__int64_t;
-type ü__sa_family_t = ü__uint8_t;
-type ü__size_t = size_type;
-type ü__socklen_t = ü__uint32_t;
-type ü__ssize_t = ssize_type;
-type ü__suseconds_t = i64;
-type ü__time_t = ü__int64_t;
-type ü__uid_t = ü__uint32_t;
-type ü__uint16_t = u16;
-type ü__uint32_t = u32;
-type ü__uint64_t = u64;
-type ü__uint8_t = u8;
+type DIR = dirdesc_;
+type blkcnt_t = blkcnt_t__;
+type blksize_t = blksize_t__;
+type clockid_t = clockid_t__;
+type dev_t = dev_t__;
+type fflags_t = fflags_t__;
+type gid_t = gid_t__;
+type in_addr_t = uint32_t__;
+type in_port_t = uint16_t__;
+type ino_t = ino_t__;
+type mode_t = mode_t__;
+type nlink_t = nlink_t__;
+type off64_t = off64_t__;
+type off_t = off_t__;
+type sa_family_t = sa_family_t__;
+type size_t = size_t__;
+type socklen_t = socklen_t__;
+type ssize_t = ssize_t__;
+type suseconds_t = suseconds_t__;
+type time_t = time_t__;
+type uid_t = uid_t__;
+type uint32_t = uint32_t__;
+type uint8_t = uint8_t__;
+type blkcnt_t__ = int64_t__;
+type blksize_t__ = int32_t__;
+type clockid_t__ = int32_t__;
+type dev_t__ = uint64_t__;
+type fflags_t__ = uint32_t__;
+type gid_t__ = uint32_t__;
+type ino_t__ = uint64_t__;
+type int16_t__ = i16;
+type int32_t__ = i32;
+type int64_t__ = i64;
+type mode_t__ = uint16_t__;
+type nlink_t__ = uint64_t__;
+type off64_t__ = int64_t__;
+type off_t__ = int64_t__;
+type sa_family_t__ = uint8_t__;
+type size_t__ = size_type;
+type socklen_t__ = uint32_t__;
+type ssize_t__ = ssize_type;
+type suseconds_t__ = i64;
+type time_t__ = int64_t__;
+type uid_t__ = uint32_t__;
+type uint16_t__ = u16;
+type uint32_t__ = u32;
+type uint64_t__ = u64;
+type uint8_t__ = u8;
 
 auto constexpr AF_INET = 2;
 auto constexpr AF_INET6 = 28;
