@@ -1,26 +1,26 @@
 // This file contains some definitions from UNIX (pparticulary Linux) headers, which are used inside the build system.
 // These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
-fn nomangle close( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
+fn nomangle close( i32 fd__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle dlerror() unsafe call_conv( "C" ) : $(char8);
-fn nomangle dlopen( $(char8) ü__file, i32 ü__mode ) unsafe call_conv( "C" ) : $(byte8);
-fn nomangle dlsym( $(byte8) ü__handle, $(char8) ü__name ) unsafe call_conv( "C" ) : $(byte8);
-fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe call_conv( "C" ) : i32;
-fn nomangle pipe( $(i32) ü__pipedes ) unsafe call_conv( "C" ) : i32;
-fn nomangle poll( $(pollfd) ü__fds, nfds_t ü__nfds, i32 ü__timeout ) unsafe call_conv( "C" ) : i32;
-fn nomangle posix_spawn( $(pid_t) ü__pid, $(char8) ü__path, $(posix_spawn_file_actions_t) ü__file_actions, $(posix_spawnattr_t) ü__attrp, $($(char8)) ü__argv, $($(char8)) ü__envp ) unsafe call_conv( "C" ) : i32;
-fn nomangle posix_spawn_file_actions_addclose( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd ) unsafe call_conv( "C" ) : i32;
-fn nomangle posix_spawn_file_actions_adddup2( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd, i32 ü__newfd ) unsafe call_conv( "C" ) : i32;
-fn nomangle posix_spawn_file_actions_addopen( $(posix_spawn_file_actions_t) ü__file_actions, i32 ü__fd, $(char8) ü__path, i32 ü__oflag, mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
-fn nomangle posix_spawn_file_actions_destroy( $(posix_spawn_file_actions_t) ü__file_actions ) unsafe call_conv( "C" ) : i32;
-fn nomangle posix_spawn_file_actions_init( $(posix_spawn_file_actions_t) ü__file_actions ) unsafe call_conv( "C" ) : i32;
-fn nomangle posix_spawnattr_destroy( $(posix_spawnattr_t) ü__attr ) unsafe call_conv( "C" ) : i32;
-fn nomangle posix_spawnattr_init( $(posix_spawnattr_t) ü__attr ) unsafe call_conv( "C" ) : i32;
-fn nomangle posix_spawnattr_setflags( $(posix_spawnattr_t) ü_attr, i16 ü__flags ) unsafe call_conv( "C" ) : i32;
-fn nomangle posix_spawnp( $(pid_t) ü__pid, $(char8) ü__file, $(posix_spawn_file_actions_t) ü__file_actions, $(posix_spawnattr_t) ü__attrp, $($(char8)) ü__argv, $($(char8)) ü__envp ) unsafe call_conv( "C" ) : i32;
-fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe call_conv( "C" ) : ssize_t;
-fn nomangle readlink( $(char8) ü__path, $(char8) ü__buf, size_t ü__len ) unsafe call_conv( "C" ) : ssize_t;
-fn nomangle waitpid( ü__pid_t ü__pid, $(i32) ü__stat_loc, i32 ü__options ) unsafe call_conv( "C" ) : ü__pid_t;
+fn nomangle dlopen( $(char8) file__, i32 mode__ ) unsafe call_conv( "C" ) : $(byte8);
+fn nomangle dlsym( $(byte8) handle__, $(char8) name__ ) unsafe call_conv( "C" ) : $(byte8);
+fn nomangle fcntl( i32 fd__, i32 cmd__, i32 flags ) unsafe call_conv( "C" ) : i32;
+fn nomangle pipe( $(i32) pipedes__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle poll( $(pollfd) fd__s, nfds_t nfds__, i32 timeout__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn( $(pid_t) pid__, $(char8) path__, $(posix_spawn_file_actions_t) file_actions__, $(posix_spawnattr_t) attrp__, $($(char8)) argv__, $($(char8)) envp__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn_file_actions_addclose( $(posix_spawn_file_actions_t) file_actions__, i32 fd__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn_file_actions_adddup2( $(posix_spawn_file_actions_t) file_actions__, i32 fd__, i32 newfd__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn_file_actions_addopen( $(posix_spawn_file_actions_t) file_actions__, i32 fd__, $(char8) path__, i32 oflag__, mode_t mode__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn_file_actions_destroy( $(posix_spawn_file_actions_t) file_actions__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawn_file_actions_init( $(posix_spawn_file_actions_t) file_actions__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawnattr_destroy( $(posix_spawnattr_t) attr__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawnattr_init( $(posix_spawnattr_t) attr__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawnattr_setflags( $(posix_spawnattr_t) attr__, i16 flags__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle posix_spawnp( $(pid_t) pid__, $(char8) file__, $(posix_spawn_file_actions_t) file_actions__, $(posix_spawnattr_t) attrp__, $($(char8)) argv__, $($(char8)) envp__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle read( i32 fd__, $(byte8) buf__, size_t nbytes__ ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle readlink( $(char8) path__, $(char8) buf__, size_t len__ ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle waitpid( pid_t__ pid__, $(i32) stat_loc__, i32 options__ ) unsafe call_conv( "C" ) : pid_t__;
 
 struct pollfd ordered
 {
@@ -31,21 +31,21 @@ struct pollfd ordered
 
 struct posix_spawnattr_t ordered
 {
-	i16 ü__flags;
-	pid_t ü__pgrp;
-	sigset_t ü__sd;
-	sigset_t ü__ss;
-	sched_param ü__sp;
-	i32 ü__policy;
-	[ i32, 16u ] ü__pad;
+	i16 flags__;
+	pid_t pgrp__;
+	sigset_t sd__;
+	sigset_t ss__;
+	sched_param sp__;
+	i32 policy__;
+	[ i32, 16u ] pad__;
 }
 
 struct posix_spawn_file_actions_t ordered
 {
-	i32 ü__allocated;
-	i32 ü__used;
-	$(ü__spawn_action_) ü__actions;
-	[ i32, 16u ] ü__pad;
+	i32 allocated__;
+	i32 used__;
+	$(spawn_action__) actions__;
+	[ i32, 16 ] pad__;
 }
 
 struct sched_param ordered
@@ -53,25 +53,25 @@ struct sched_param ordered
 	i32 sched_priority;
 }
 
-struct ü__sigset_t ordered
+struct sigset_t__ ordered
 {
-	[ u64, 16u ] ü__val;
+	[ u64, 16u ] val__;
 }
 
-struct ü__spawn_action_ ordered
+struct spawn_action__ ordered
 {
 	fn constructor() : void= delete;
 }
 
-type mode_t = ü__mode_t;
+type mode_t = mode_t__;
 type nfds_t = u64;
-type pid_t = ü__pid_t;
-type sigset_t = ü__sigset_t;
+type pid_t = pid_t__;
+type sigset_t = sigset_t__;
 type size_t = size_type;
-type ssize_t = ü__ssize_t;
-type ü__mode_t = u32;
-type ü__pid_t = i32;
-type ü__ssize_t = ssize_type;
+type ssize_t = ssize_t__;
+type mode_t__ = u32;
+type pid_t__ = i32;
+type ssize_t__ = ssize_type;
 
 auto constexpr ENOENT = 2;
 
