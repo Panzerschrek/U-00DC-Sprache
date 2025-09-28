@@ -684,7 +684,7 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 
 		std::string name;
 		if( src_name.empty() )
-			name= "ü_anon_record_" + std::to_string( ++unique_name_index_ );
+			name= "anon_record_" + std::to_string( ++unique_name_index_ );
 		else
 			name= TranslateIdentifier( src_name );
 
@@ -730,7 +730,7 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 
 		std::string name;
 		if( src_name.empty() )
-			name= "ü_anon_record_" + std::to_string( ++unique_name_index_ );
+			name= "anon_record_" + std::to_string( ++unique_name_index_ );
 		else
 			name= TranslateIdentifier( src_name );
 
@@ -849,7 +849,7 @@ CppAstConsumer::NamedEnumDeclarations CppAstConsumer::GenerateEnumNames(
 
 		std::string name;
 		if( src_name.empty() )
-			name= "ü_anon_enum_" + std::to_string( ++unique_name_index_ );
+			name= "anon_enum_" + std::to_string( ++unique_name_index_ );
 		else
 			name= TranslateIdentifier( src_name );
 
@@ -1084,7 +1084,7 @@ void CppAstConsumer::EmitRecord(
 
 					const auto src_name= field_declaration->getName();
 					if( src_name.empty() )
-						field.name= "ü_anon_field_" + std::to_string( ++unique_name_index_ );
+						field.name= "anon_field_" + std::to_string( ++unique_name_index_ );
 					else
 						field.name= TranslateIdentifier( src_name );
 
