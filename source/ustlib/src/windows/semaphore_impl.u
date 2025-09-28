@@ -16,7 +16,7 @@ fn create_semaphore( u32 initial_value ) unsafe : semaphore_handle_t
 	{
 		var HANDLE handle=
 			::CreateSemaphoreW(
-				nullptr</ü_SECURITY_ATTRIBUTES/>(),
+				nullptr</SECURITY_ATTRIBUTES_/>(),
 				i32(initial_value),
 				i32(0x7FFFFFFFu),
 				nullptr</WCHAR/>() );
