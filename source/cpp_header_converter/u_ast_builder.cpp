@@ -608,9 +608,19 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 {
 	U_ASSERT( !identifier.empty() );
 
-	// In Ü identifier can not start with "_", shadow it. "_" in C++ used for impl identiferes, so, it may not needed.
-	if( identifier[0] == '_' )
-		return ( "ü" + identifier ).str();
+	size_t num_underscores= 0;
+	while( num_underscores < identifier.size() && identifier[num_underscores] == '_' )
+		++num_underscores;
+
+	// In Ü identifier can not start with "_", so, move all leading underscores to the end.
+	if( num_underscores > 0 )
+	{
+		std::string res;
+		res.resize( identifier.size() );
+		std::memcpy( res.data(), identifier.data() + num_underscores, identifier.size() - num_underscores );
+		std::memset( res.data() + identifier.size() - num_underscores, '_', num_underscores );
+		return res;
+	}
 
 	// Avoid using keywords as names.
 	if( IsKeyword( identifier ) )
