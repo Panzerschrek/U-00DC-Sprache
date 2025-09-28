@@ -196,8 +196,8 @@ struct sockaddr_in6 ordered
 struct sockaddr_storage ordered
 {
 	sa_family_t ss_family;
-	[ char8, 118 ] ü__ss_padding;
-	u64 ü__ss_align;
+	[ char8, 118 ] ss_padding__;
+	u64 ss_align__;
 }
 
 struct in_addr ordered
@@ -211,8 +211,8 @@ struct in6_addr ordered
 	[ u32, 4 ] parts;
 }
 
-type ü_anon_enum_56 = u32;
-var ü_anon_enum_56
+type anon_enum_56 = u32;
+var anon_enum_56
 	constexpr DT_UNKNOWN( 0u ),
 	constexpr DT_FIFO( 1u ),
 	constexpr DT_CHR( 2u ),
@@ -255,8 +255,8 @@ type suseconds_t__ = ust::type_select</ c_arch_is_i686, i32, i64 />;
 type time_t__ = ust::type_select</ c_arch_is_i686, i32, i64 />;
 type uid_t__ = u32;
 
-type ü_anon_enum_59 = u32;
-var ü_anon_enum_59
+type anon_enum_59 = u32;
+var anon_enum_59
 	constexpr IPPROTO_IP( 0 ),
 	constexpr IPPROTO_ICMP( 1 ),
 	constexpr IPPROTO_IGMP( 2 ),
@@ -284,8 +284,8 @@ var ü_anon_enum_59
 	constexpr IPPROTO_RAW( 255 ),
 	constexpr IPPROTO_MAX( 256 );
 
-type ü_anon_enum_57 = u32;
-var ü_anon_enum_57
+type anon_enum_57 = u32;
+var anon_enum_57
 	constexpr MSG_OOB( 1 ),
 	constexpr MSG_PEEK( 2 ),
 	constexpr MSG_DONTROUTE( 4 ),
@@ -309,8 +309,8 @@ var ü_anon_enum_57
 	constexpr MSG_FASTOPEN( 536870912 ),
 	constexpr MSG_CMSG_CLOEXEC( 1073741824 );
 
-type ü__socket_type = u32;
-var ü__socket_type
+type socket_type__ = u32;
+var socket_type__
 	constexpr SOCK_STREAM( 1 ),
 	constexpr SOCK_DGRAM( 2 ),
 	constexpr SOCK_RAW( 3 ),
