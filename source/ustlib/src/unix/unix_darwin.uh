@@ -5,7 +5,7 @@ fn nomangle accept( i32 param0, $(sockaddr) param1, $(socklen_t) param2 ) unsafe
 fn nomangle bind( i32 param0, $(sockaddr) param1, socklen_t param2 ) unsafe call_conv( "C" ) : i32;
 fn nomangle chdir( $(char8) param0 ) unsafe call_conv( "C" ) : i32;
 fn nomangle chmod( $(char8) param0, mode_t param1 ) unsafe call_conv( "C" ) : i32;
-fn nomangle clock_gettime( clockid_t ü__clock_id, $(timespec) ü__tp ) unsafe call_conv( "C" ) : i32;
+fn nomangle clock_gettime( clockid_t clock_id__, $(timespec) tp__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle close( i32 param0 ) unsafe call_conv( "C" ) : i32;
 fn nomangle closedir( $(DIR) param0 ) unsafe call_conv( "C" ) : i32;
 fn nomangle connect( i32 param0, $(sockaddr) param1, socklen_t param2 ) unsafe call_conv( "C" ) : i32;
@@ -27,33 +27,33 @@ fn nomangle listen( i32 param0, i32 param1 ) unsafe call_conv( "C" ) : i32;
 fn nomangle lseek( i32 param0, off_t param1, i32 param2 ) unsafe call_conv( "C" ) : off_t;
 fn nomangle lstat( $(char8) param0, $(stat_) param1 ) unsafe call_conv( "C" ) : i32;
 fn nomangle mkdir( $(char8) param0, mode_t param1 ) unsafe call_conv( "C" ) : i32;
-fn nomangle nanosleep( $(timespec) ü__rqtp, $(timespec) ü__rmtp ) unsafe call_conv( "C" ) : i32;
+fn nomangle nanosleep( $(timespec) rqtp__, $(timespec) rmtp__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle open( $(char8) param0, i32 param1, mode_t param2 ) unsafe call_conv( "C" ) : i32;
 fn nomangle opendir( $(char8) param0 ) unsafe call_conv( "C" ) : $(DIR);
 fn nomangle read( i32 param0, $(byte8) param1, size_t param2 ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle readdir( $(DIR) param0 ) unsafe call_conv( "C" ) : $(dirent);
 fn nomangle recv( i32 param0, $(byte8) param1, size_t param2, i32 param3 ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle recvfrom( i32 param0, $(byte8) param1, size_t param2, i32 param3, $(sockaddr) param4, $(socklen_t) param5 ) unsafe call_conv( "C" ) : ssize_t;
-fn nomangle rename( $(char8) ü__old, $(char8) ü__new ) unsafe call_conv( "C" ) : i32;
+fn nomangle rename( $(char8) old__, $(char8) new__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle rmdir( $(char8) param0 ) unsafe call_conv( "C" ) : i32;
 fn nomangle sched_yield() unsafe call_conv( "C" ) : i32;
 fn nomangle send( i32 param0, $(byte8) param1, size_t param2, i32 param3 ) unsafe call_conv( "C" ) : ssize_t;
 fn nomangle sendto( i32 param0, $(byte8) param1, size_t param2, i32 param3, $(sockaddr) param4, socklen_t param5 ) unsafe call_conv( "C" ) : ssize_t;
-fn nomangle setenv( $(char8) ü__name, $(char8) ü__value, i32 ü__overwrite ) unsafe call_conv( "C" ) : i32;
+fn nomangle setenv( $(char8) name__, $(char8) value__, i32 overwrite__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle setsockopt( i32 param0, i32 param1, i32 param2, $(byte8) param3, socklen_t param4 ) unsafe call_conv( "C" ) : i32;
 fn nomangle socket( i32 param0, i32 param1, i32 param2 ) unsafe call_conv( "C" ) : i32;
 fn nomangle stat( $(char8) param0, $(stat_) param1 ) unsafe call_conv( "C" ) : i32;
 fn nomangle unlink( $(char8) param0 ) unsafe call_conv( "C" ) : i32;
 fn nomangle unsetenv( $(char8) param0 ) unsafe call_conv( "C" ) : i32;
-fn nomangle write( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbyte ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle write( i32 fd__, $(byte8) buf__, size_t nbyte__ ) unsafe call_conv( "C" ) : ssize_t;
 
 struct dirent ordered
 {
-	ü__uint64_t d_ino;
-	ü__uint64_t d_seekoff;
-	ü__uint16_t d_reclen;
-	ü__uint16_t d_namlen;
-	ü__uint8_t d_type;
+	uint64_t__ d_ino;
+	uint64_t__ d_seekoff;
+	uint16_t__ d_reclen;
+	uint16_t__ d_namlen;
+	uint8_t__ d_type;
 	[ char8, 1024u ] d_name;
 }
 
@@ -62,7 +62,7 @@ struct stat_ ordered
 	dev_t st_dev;
 	mode_t st_mode;
 	nlink_t st_nlink;
-	ü__darwin_ino64_t st_ino;
+	darwin_ino64_t__ st_ino;
 	uid_t st_uid;
 	gid_t st_gid;
 	dev_t st_rdev;
@@ -73,45 +73,45 @@ struct stat_ ordered
 	off_t st_size;
 	blkcnt_t st_blocks;
 	blksize_t st_blksize;
-	ü__uint32_t st_flags;
-	ü__uint32_t st_gen;
-	ü__int32_t st_lspare;
-	[ ü__int64_t, 2u ] st_qspare;
+	uint32_t__ st_flags;
+	uint32_t__ st_gen;
+	int32_t__ st_lspare;
+	[ int64_t__, 2u ] st_qspare;
 }
 
 struct timespec ordered
 {
-	ü__darwin_time_t tv_sec;
+	darwin_time_t__ tv_sec;
 	i64 tv_nsec;
 }
 
 struct timeval ordered
 {
-	ü__darwin_time_t tv_sec;
-	ü__darwin_suseconds_t tv_usec;
+	darwin_time_t__ tv_sec;
+	darwin_suseconds_t__ tv_usec;
 }
 
-struct ü_anon_record_30 ordered
+struct anon_record_30 ordered
 {
-	i32 ü__dd_fd;
-	i64 ü__dd_loc;
-	i64 ü__dd_size;
-	$(char8) ü__dd_buf;
-	i32 ü__dd_len;
-	i64 ü__dd_seek;
-	i64 ü__padding;
-	i32 ü__dd_flags;
-	ü__darwin_pthread_mutex_t ü__dd_lock;
-	$(ü_telldir) ü__dd_td;
+	i32 dd_fd__;
+	i64 dd_loc__;
+	i64 dd_size__;
+	$(char8) dd_buf__;
+	i32 dd_len__;
+	i64 dd_seek__;
+	i64 padding__;
+	i32 dd_flags__;
+	darwin_pthread_mutex_t__ dd_lock__;
+	$(telldir_) dd_td__;
 }
 
-struct ü_opaque_pthread_mutex_t ordered
+struct opaque_pthread_mutex_t_ ordered
 {
-	i64 ü__sig;
-	[ char8, 56u ] ü__opaque;
+	i64 sig__;
+	[ char8, 56u ] opaque__;
 }
 
-struct ü_telldir ordered
+struct telldir_ ordered
 {
 	fn constructor() : void= delete;
 }
@@ -130,14 +130,14 @@ struct addrinfo ordered
 
 struct sockaddr ordered
 {
-	ü__uint8_t sa_len;
+	uint8_t__ sa_len;
 	sa_family_t sa_family;
 	[ char8, 14 ] sa_data;
 }
 
 struct sockaddr_in ordered
 {
-	ü__uint8_t sin_len;
+	uint8_t__ sin_len;
 	sa_family_t sin_family;
 	in_port_t sin_port;
 	in_addr sin_addr;
@@ -146,21 +146,21 @@ struct sockaddr_in ordered
 
 struct sockaddr_in6 ordered
 {
-	ü__uint8_t sin6_len;
+	uint8_t__ sin6_len;
 	sa_family_t sin6_family;
 	in_port_t sin6_port;
-	ü__uint32_t sin6_flowinfo;
+	uint32_t__ sin6_flowinfo;
 	in6_addr sin6_addr;
-	ü__uint32_t sin6_scope_id;
+	uint32_t__ sin6_scope_id;
 }
 
 struct sockaddr_storage ordered
 {
-	ü__uint8_t ss_len;
+	uint8_t__ ss_len;
 	sa_family_t ss_family;
-	[ char8, 6 ] ü__ss_pad1;
-	ü__int64_t ü__ss_align;
-	[ char8, 112 ] ü__ss_pad2;
+	[ char8, 6 ] ss_pad1__;
+	int64_t__ ss_align__;
+	[ char8, 112 ] ss_pad2__;
 }
 
 struct in_addr ordered
@@ -174,47 +174,47 @@ struct in6_addr ordered
 	[ u32, 4 ] parts;
 }
 
-type DIR = ü_anon_record_30;
-type blkcnt_t = ü__darwin_blkcnt_t;
-type blksize_t = ü__darwin_blksize_t;
-type clockid_t = ü_anon_enum_40;
-type dev_t = ü__darwin_dev_t;
-type gid_t = ü__darwin_gid_t;
-type in_addr_t = ü__uint32_t;
-type in_port_t = ü__uint16_t;
-type mode_t = ü__darwin_mode_t;
-type nlink_t = ü__uint16_t;
-type off_t = ü__darwin_off_t;
-type pid_t = ü__darwin_pid_t;
-type sa_family_t = ü__uint8_t;
-type size_t = ü__darwin_size_t;
-type socklen_t = ü__darwin_socklen_t;
-type ssize_t = ü__darwin_ssize_t;
-type uid_t = ü__darwin_uid_t;
-type ü__darwin_blkcnt_t = ü__int64_t;
-type ü__darwin_blksize_t = ü__int32_t;
-type ü__darwin_dev_t = ü__int32_t;
-type ü__darwin_gid_t = ü__uint32_t;
-type ü__darwin_ino64_t = ü__uint64_t;
-type ü__darwin_mode_t = ü__uint16_t;
-type ü__darwin_off_t = ü__int64_t;
-type ü__darwin_pid_t = ü__int32_t;
-type ü__darwin_pthread_mutex_t = ü_opaque_pthread_mutex_t;
-type ü__darwin_size_t = size_type;
-type ü__darwin_socklen_t = ü__uint32_t;
-type ü__darwin_ssize_t = ssize_type;
-type ü__darwin_suseconds_t = ü__int32_t;
-type ü__darwin_time_t = i64;
-type ü__darwin_uid_t = ü__uint32_t;
-type ü__int32_t = i32;
-type ü__int64_t = i64;
-type ü__uint16_t = u16;
-type ü__uint32_t = u32;
-type ü__uint64_t = u64;
-type ü__uint8_t = u8;
+type DIR = anon_record_30;
+type blkcnt_t = darwin_blkcnt_t__;
+type blksize_t = darwin_blksize_t__;
+type clockid_t = anon_enum_40;
+type dev_t = darwin_dev_t__;
+type gid_t = darwin_gid_t__;
+type in_addr_t = uint32_t__;
+type in_port_t = uint16_t__;
+type mode_t = darwin_mode_t__;
+type nlink_t = uint16_t__;
+type off_t = darwin_off_t__;
+type pid_t = darwin_pid_t__;
+type sa_family_t = uint8_t__;
+type size_t = darwin_size_t__;
+type socklen_t = darwin_socklen_t__;
+type ssize_t = darwin_ssize_t__;
+type uid_t = darwin_uid_t__;
+type darwin_blkcnt_t__ = int64_t__;
+type darwin_blksize_t__ = int32_t__;
+type darwin_dev_t__ = int32_t__;
+type darwin_gid_t__ = uint32_t__;
+type darwin_ino64_t__ = uint64_t__;
+type darwin_mode_t__ = uint16_t__;
+type darwin_off_t__ = int64_t__;
+type darwin_pid_t__ = int32_t__;
+type darwin_pthread_mutex_t__ = opaque_pthread_mutex_t_;
+type darwin_size_t__ = size_type;
+type darwin_socklen_t__ = uint32_t__;
+type darwin_ssize_t__ = ssize_type;
+type darwin_suseconds_t__ = int32_t__;
+type darwin_time_t__ = i64;
+type darwin_uid_t__ = uint32_t__;
+type int32_t__ = i32;
+type int64_t__ = i64;
+type uint16_t__ = u16;
+type uint32_t__ = u32;
+type uint64_t__ = u64;
+type uint8_t__ = u8;
 
-type ü_anon_enum_40 = u32;
-var ü_anon_enum_40
+type anon_enum_40 = u32;
+var anon_enum_40
 	constexpr CLOCK_REALTIME( 0u ),
 	constexpr CLOCK_MONOTONIC( 6u ),
 	constexpr CLOCK_MONOTONIC_RAW( 4u ),
