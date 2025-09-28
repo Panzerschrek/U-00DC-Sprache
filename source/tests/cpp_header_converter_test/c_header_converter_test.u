@@ -325,6 +325,7 @@ fn nomangle main() call_conv( "C" ) : i32
 		var UnderscoredStruct_ underscored_struct{ .x= 0 };
 		var TripleUnderscoredStruct___ triple_underscored_struct{ .y= 1.0f, .z= 'Y' };
 	}
+	static_assert( same_type</ n64_int_from_c__, u64 /> );
 
 	return 0;
 }

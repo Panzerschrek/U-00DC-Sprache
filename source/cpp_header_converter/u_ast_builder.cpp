@@ -619,6 +619,14 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 		res.resize( identifier.size() );
 		std::memcpy( res.data(), identifier.data() + num_underscores, identifier.size() - num_underscores );
 		std::memset( res.data() + identifier.size() - num_underscores, '_', num_underscores );
+
+		if( res.front() >= '0' && res.front() <= '9' )
+		{
+			// After dropping underscores it may happen that identifier starts with numeric symbol.
+			// In such case we need to prefix it with some other valid identifier start char.
+			res.insert( res.begin(), 'n' );
+		}
+
 		return res;
 	}
 

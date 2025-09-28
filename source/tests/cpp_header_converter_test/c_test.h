@@ -402,3 +402,6 @@ struct ___TripleUnderscoredStruct
 	float y;
 	char z;
 };
+
+// Should proper handle identifiers with underscore prefix followed by number.
+typedef unsigned long long int __64_int_from_c;
