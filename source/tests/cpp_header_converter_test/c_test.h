@@ -391,3 +391,14 @@ struct StructOfEmptyStructs
 	struct EmptyStruct b;
 	struct EmptyStruct c[3];
 };
+
+struct _UnderscoredStruct
+{
+	int x;
+};
+
+struct ___TripleUnderscoredStruct
+{
+	float y;
+	char z;
+};

@@ -320,5 +320,11 @@ fn nomangle main() call_conv( "C" ) : i32
 		static_assert( typeinfo</StructOfEmptyStructs/>.size_of == 5s * typeinfo</EmptyStruct/>.size_of );
 	}
 
+	// Leading underscore should be moved to identifier end.
+	{
+		var UnderscoredStruct_ underscored_struct{ .x= 0 };
+		var TripleUnderscoredStruct___ triple_underscored_struct{ .y= 1.0f, .z= 'Y' };
+	}
+
 	return 0;
 }
