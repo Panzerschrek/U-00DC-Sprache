@@ -1,52 +1,52 @@
 // This file contains some definitions from Linux headers, which are used inside "ustlib".
 // These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
-fn nomangle accept( i32 ü__fd, $(sockaddr) ü__addr, $(socklen_t) ü__addr_len ) unsafe call_conv( "C" ) : i32;
-fn nomangle bind( i32 ü__fd, $(sockaddr) ü__addr, socklen_t ü__len ) unsafe call_conv( "C" ) : i32;
-fn nomangle chdir( $(char8) ü__path ) unsafe call_conv( "C" ) : i32;
-fn nomangle chmod( $(char8) ü__file, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
-fn nomangle clock_gettime( clockid_t ü__clock_id, $(timespec) ü__tp ) unsafe call_conv( "C" ) : i32;
-fn nomangle close( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
-fn nomangle closedir( $(DIR) ü__dirp ) unsafe call_conv( "C" ) : i32;
-fn nomangle connect( i32 ü__fd, $(sockaddr) ü__addr, socklen_t ü__len ) unsafe call_conv( "C" ) : i32;
-fn nomangle fchmod( i32 ü__fd, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
-fn nomangle fcntl( i32 ü__fd, i32 ü__cmd, i32 flags ) unsafe call_conv( "C" ) : i32;
-fn nomangle fdatasync( i32 ü__fildes ) unsafe call_conv( "C" ) : i32;
-fn nomangle freeaddrinfo( $(addrinfo) ü__ai ) unsafe call_conv( "C" ) : void;
-fn nomangle fstat64( i32 ü__fd, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
-fn nomangle fsync( i32 ü__fd ) unsafe call_conv( "C" ) : i32;
-fn nomangle ftruncate64( i32 ü__fd, ü__off64_t ü__length ) unsafe call_conv( "C") : i32;
-fn nomangle getaddrinfo( $(char8) ü__name, $(char8) ü__service, $(addrinfo) ü__req, $($(addrinfo)) ü__pai ) unsafe call_conv( "C" ) : i32;
-fn nomangle getcwd( $(char8) ü__buf, size_t ü__size ) unsafe call_conv( "C" ) : $(char8);
-fn nomangle getenv( $(char8) ü__name ) unsafe call_conv( "C" ) : $(char8);
+fn nomangle accept( i32 fd__, $(sockaddr) addr__, $(socklen_t) addr___len ) unsafe call_conv( "C" ) : i32;
+fn nomangle bind( i32 fd__, $(sockaddr) addr__, socklen_t len__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle chdir( $(char8) path__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle chmod( $(char8) file__, mode_t__ mode__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle clock_gettime( clockid_t clock_id__, $(timespec)tp__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle close( i32 fd__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle closedir( $(DIR) dirp__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle connect( i32 fd__, $(sockaddr) addr__, socklen_t len__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle fchmod( i32 fd__, mode_t__ mode__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle fcntl( i32 fd__, i32 cmd__, i32 flags ) unsafe call_conv( "C" ) : i32;
+fn nomangle fdatasync( i32 fildes__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle freeaddrinfo( $(addrinfo) ai__ ) unsafe call_conv( "C" ) : void;
+fn nomangle fstat64( i32 fd__, $(stat64_) buf__ ) unsafe call_conv( "C") : i32;
+fn nomangle fsync( i32 fd__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle ftruncate64( i32 fd__, off64_t__ len__gth ) unsafe call_conv( "C") : i32;
+fn nomangle getaddrinfo( $(char8) name__, $(char8) service__, $(addrinfo) req__, $($(addrinfo)) pai__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle getcwd( $(char8) buf__, size_t size__ ) unsafe call_conv( "C" ) : $(char8);
+fn nomangle getenv( $(char8) name__ ) unsafe call_conv( "C" ) : $(char8);
 fn nomangle getpid() unsafe call_conv( "C" ) : pid_t;
-fn nomangle getpeername( i32 ü__fd, $(sockaddr) ü__addr, $(socklen_t) ü__len ) unsafe call_conv( "C" ) : i32;
-fn nomangle getsockname( i32 ü__fd, $(sockaddr) ü__addr, $(socklen_t) ü__len ) unsafe call_conv( "C" ) : i32;
-fn nomangle getsockopt( i32 ü__fd, i32 ü__level, i32 ü__optname, $(byte8) ü__optval, $(socklen_t) ü__optlen ) unsafe call_conv( "C" ) : i32;
-fn nomangle listen( i32 ü__fd, i32 ü__n ) unsafe call_conv( "C" ) : i32;
-fn nomangle lseek64( i32 ü__fd, ü__off64_t ü__offset, i32 ü__whence ) unsafe call_conv( "C") : ü__off64_t;
-fn nomangle lstat64( $(char8) ü__file, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
-fn nomangle nanosleep( $(timespec) ü__requested_time, $(timespec) ü__remaining ) unsafe call_conv( "C" ) : i32;
-fn nomangle mkdir( $(char8) ü__path, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
-fn nomangle open( $(char8) ü__file, i32 ü__oflag, ü__mode_t ü__mode ) unsafe call_conv( "C" ) : i32;
-fn nomangle opendir( $(char8) ü__name ) unsafe call_conv( "C" ) : $(DIR);
-fn nomangle read( i32 ü__fd, $(byte8) ü__buf, size_t ü__nbytes ) unsafe call_conv( "C" ) : ssize_t;
-fn nomangle readdir64( $(DIR) ü__dirp ) unsafe call_conv( "C" ) : $(dirent64);
-fn nomangle recv( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags ) unsafe call_conv( "C" ) : ssize_t;
-fn nomangle recvfrom( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags, $(sockaddr) ü__addr, $(socklen_t) ü__addr_len ) unsafe call_conv( "C" ) : ssize_t;
-fn nomangle rename( $(char8) ü__old, $(char8) ü__new ) unsafe call_conv( "C" ) : i32;
-fn nomangle rmdir( $(char8) ü__path ) unsafe call_conv( "C" ) : i32;
+fn nomangle getpeername( i32 fd__, $(sockaddr) addr__, $(socklen_t) len__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle getsockname( i32 fd__, $(sockaddr) addr__, $(socklen_t) len__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle getsockopt( i32 fd__, i32 level__, i32 optname__, $(byte8) optval__, $(socklen_t) optlen__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle listen( i32 fd__, i32 n__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle lseek64( i32 fd__, off64_t__ offset__, i32 whence__ ) unsafe call_conv( "C") : off64_t__;
+fn nomangle lstat64( $(char8) file__, $(stat64_) buf__ ) unsafe call_conv( "C") : i32;
+fn nomangle nanosleep( $(timespec) requested_time__, $(timespec) remaining__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle mkdir( $(char8) path__, mode_t__ mode__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle open( $(char8) file__, i32 oflag__, mode_t__ mode__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle opendir( $(char8) name__ ) unsafe call_conv( "C" ) : $(DIR);
+fn nomangle read( i32 fd__, $(byte8) buf__, size_t nbytes__ ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle readdir64( $(DIR) dirp__ ) unsafe call_conv( "C" ) : $(dirent64);
+fn nomangle recv( i32 fd__, $(byte8) buf__, size_t n__, i32 flags__ ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle recvfrom( i32 fd__, $(byte8) buf__, size_t n__, i32 flags__, $(sockaddr) addr__, $(socklen_t) addr___len ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle rename( $(char8) old__, $(char8) new__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle rmdir( $(char8) path__ ) unsafe call_conv( "C" ) : i32;
 fn nomangle sched_yield() unsafe call_conv( "C" ) : i32;
-fn nomangle sendfile64( i32 ü__out_fd, i32 ü__in_fd, $(ü__off64_t) ü__offset, size_t ü__count ) unsafe call_conv( "C") : ssize_t; // Linux-specific
-fn nomangle send( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags ) unsafe call_conv( "C" ) : ssize_t;
-fn nomangle sendto( i32 ü__fd, $(byte8) ü__buf, size_t ü__n, i32 ü__flags, $(sockaddr) ü__addr, socklen_t ü__addr_len ) unsafe call_conv( "C" ) : ssize_t;
-fn nomangle setenv( $(char8) ü__name, $(char8) ü__value, i32 ü__replace ) unsafe call_conv( "C" ) : i32;
-fn nomangle setsockopt( i32 ü__fd, i32 ü__level, i32 ü__optname, $(byte8) ü__optval, socklen_t ü__optlen ) unsafe call_conv( "C" ) : i32;
-fn nomangle socket( i32 ü__domain, i32 ü__type, i32 ü__protocol ) unsafe call_conv( "C" ) : i32;
-fn nomangle stat64( $(char8) ü__file, $(stat64_) ü__buf ) unsafe call_conv( "C") : i32;
-fn nomangle unlink( $(char8) ü__name ) unsafe call_conv( "C" ) : i32;
-fn nomangle unsetenv( $(char8) ü__name ) unsafe call_conv( "C" ) : i32;
-fn nomangle write( i32 ü__fd, $(byte8) ü__buf, size_t ü__n ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle sendfile64( i32 out_fd__, i32 in_fd__, $(off64_t__) offset__, size_t count__ ) unsafe call_conv( "C") : ssize_t; // Linux-specific
+fn nomangle send( i32 fd__, $(byte8) buf__, size_t n__, i32 flags__ ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle sendto( i32 fd__, $(byte8) buf__, size_t n__, i32 flags__, $(sockaddr) addr__, socklen_t addr___len ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle setenv( $(char8) name__, $(char8) value__, i32 replace__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle setsockopt( i32 fd__, i32 level__, i32 optname__, $(byte8) optval__, socklen_t optlen__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle socket( i32 domain__, i32 type__, i32 protocol__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle stat64( $(char8) file__, $(stat64_) buf__ ) unsafe call_conv( "C") : i32;
+fn nomangle unlink( $(char8) name__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle unsetenv( $(char8) name__ ) unsafe call_conv( "C" ) : i32;
+fn nomangle write( i32 fd__, $(byte8) buf__, size_t n__ ) unsafe call_conv( "C" ) : ssize_t;
 
 // Use function pointers to create aliases for 64-bit versions of some functions.
 // It's necessary, since on some systems native functions like these have 32-bit arguments and thus can't work with large files properly.
@@ -60,8 +60,8 @@ auto sendfile= sendfile64;
 
 struct dirent64 ordered
 {
-	ü__ino64_t d_ino;
-	ü__off64_t d_off;
+	ino64_t__ d_ino;
+	off64_t__ d_off;
 	u16 d_reclen;
 	u8 d_type;
 	[ char8, 256u ] d_name;
@@ -72,73 +72,73 @@ type dirent= dirent64;
 
 struct timespec ordered
 {
-	ü__time_t tv_sec;
-	ü__syscall_slong_t tv_nsec;
+	time_t__ tv_sec;
+	syscall_slong_t__ tv_nsec;
 }
 
 struct timeval ordered
 {
-	ü__time_t tv_sec;
-	ü__suseconds_t tv_usec;
+	time_t__ tv_sec;
+	suseconds_t__ tv_usec;
 }
 
 struct stat64_x86 ordered
 {
-	ü__dev_t st_dev;
-	u32 ü__pad1;
-	ü__ino_t ü__st_ino;
-	ü__mode_t st_mode;
-	ü__nlink_t st_nlink;
-	ü__uid_t st_uid;
-	ü__gid_t st_gid;
-	ü__dev_t st_rdev;
-	u32 ü__pad2;
-	ü__off64_t st_size;
-	ü__blksize_t st_blksize;
-	ü__blkcnt64_t st_blocks;
+	dev_t__ st_dev;
+	u32 pad1__;
+	ino_t__ st_ino__;
+	mode_t__ st_mode;
+	nlink_t__ st_nlink;
+	uid_t__ st_uid;
+	gid_t__ st_gid;
+	dev_t__ st_rdev;
+	u32 pad2__;
+	off64_t__ st_size;
+	blksize_t__ st_blksize;
+	blkcnt64_t__ st_blocks;
 	timespec st_atim;
 	timespec st_mtim;
 	timespec st_ctim;
-	ü__ino64_t st_ino;
+	ino64_t__ st_ino;
 }
 
 struct stat64_x86_64 ordered
 {
-	ü__dev_t st_dev;
-	ü__ino64_t st_ino;
-	ü__nlink_t st_nlink;
-	ü__mode_t st_mode;
-	ü__uid_t st_uid;
-	ü__gid_t st_gid;
-	i32 ü__pad0;
-	ü__dev_t st_rdev;
-	ü__off_t st_size;
-	ü__blksize_t st_blksize;
-	ü__blkcnt64_t st_blocks;
+	dev_t__ st_dev;
+	ino64_t__ st_ino;
+	nlink_t__ st_nlink;
+	mode_t__ st_mode;
+	uid_t__ st_uid;
+	gid_t__ st_gid;
+	i32 pad0__;
+	dev_t__ st_rdev;
+	off_t__ st_size;
+	blksize_t__ st_blksize;
+	blkcnt64_t__ st_blocks;
 	timespec st_atim;
 	timespec st_mtim;
 	timespec st_ctim;
-	[ ü__syscall_slong_t, 3u ] ü__glibc_reserved;
+	[ syscall_slong_t__, 3u ] glibc_reserved__;
 }
 
 struct stat64_aarch64 ordered
 {
-	ü__dev_t st_dev;
-	ü__ino64_t st_ino;
-	ü__mode_t st_mode;
-	ü__nlink_t st_nlink;
-	ü__uid_t st_uid;
-	ü__gid_t st_gid;
-	ü__dev_t st_rdev;
-	ü__dev_t ü__pad1;
-	ü__off64_t st_size;
-	ü__blksize_t st_blksize;
-	i32 ü__pad2;
-	ü__blkcnt64_t st_blocks;
+	dev_t__ st_dev;
+	ino64_t__ st_ino;
+	mode_t__ st_mode;
+	nlink_t__ st_nlink;
+	uid_t__ st_uid;
+	gid_t__ st_gid;
+	dev_t__ st_rdev;
+	dev_t__ pad1__;
+	off64_t__ st_size;
+	blksize_t__ st_blksize;
+	i32 pad2__;
+	blkcnt64_t__ st_blocks;
 	timespec st_atim;
 	timespec st_mtim;
 	timespec st_ctim;
-	[ i32, 2u ] ü__glibc_reserved;
+	[ i32, 2u ] glibc_reserved__;
 }
 
 type stat64_=
@@ -153,7 +153,7 @@ type stat64_=
 // Manually redirect "stat_" to "stat64_".
 type stat_= stat64_;
 
-struct ü__dirstream ordered
+struct dirstream__ ordered
 {
 fn constructor() : void= delete;
 }
@@ -223,37 +223,37 @@ var ü_anon_enum_56
 	constexpr DT_SOCK( 12u ),
 	constexpr DT_WHT( 14u );
 
-type DIR = ü__dirstream;
-type clockid_t = ü__clockid_t;
+type DIR = dirstream__;
+type clockid_t = clockid_t__;
 type in_addr_t = uint32_t;
 type in_port_t = uint16_t;
-type mode_t = ü__mode_t;
-type off_t = ü__off_t;
-type pid_t = ü__pid_t;
+type mode_t = mode_t__;
+type off_t = off_t__;
+type pid_t = pid_t__;
 type sa_family_t = u16;
 type size_t = size_type;
-type socklen_t = ü__socklen_t;
-type ssize_t = ü__ssize_t;
+type socklen_t = socklen_t__;
+type ssize_t = ssize_t__;
 type uint16_t = u16;
 type uint32_t = u32;
-type ü__blkcnt64_t = i64;
-type ü__blksize_t = ust::type_select</ c_arch_is_aarch64, i32, ust::type_select</ c_arch_is_i686, i32, i64 /> />;
-type ü__clockid_t = i32;
-type ü__dev_t = u64;
-type ü__gid_t = u32;
-type ü__ino_t = ust::type_select</ c_arch_is_i686, u32, u64 />;
-type ü__ino64_t = i64;
-type ü__mode_t = u32;
-type ü__nlink_t = ust::type_select</ c_arch_is_aarch64, u32, ust::type_select</ c_arch_is_i686, u32, u64 /> />;
-type ü__off64_t = i64;
-type ü__off_t = i64; // manually changed to "i64", since we always use 64-bit functions.
-type ü__pid_t = i32;
-type ü__socklen_t = u32;
-type ü__ssize_t = ssize_type;
-type ü__syscall_slong_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
-type ü__suseconds_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
-type ü__time_t = ust::type_select</ c_arch_is_i686, i32, i64 />;
-type ü__uid_t = u32;
+type blkcnt64_t__ = i64;
+type blksize_t__ = ust::type_select</ c_arch_is_aarch64, i32, ust::type_select</ c_arch_is_i686, i32, i64 /> />;
+type clockid_t__ = i32;
+type dev_t__ = u64;
+type gid_t__ = u32;
+type ino_t__ = ust::type_select</ c_arch_is_i686, u32, u64 />;
+type ino64_t__ = i64;
+type mode_t__ = u32;
+type nlink_t__ = ust::type_select</ c_arch_is_aarch64, u32, ust::type_select</ c_arch_is_i686, u32, u64 /> />;
+type off64_t__ = i64;
+type off_t__ = i64; // manually changed to "i64", since we always use 64-bit functions.
+type pid_t__ = i32;
+type socklen_t__ = u32;
+type ssize_t__ = ssize_type;
+type syscall_slong_t__ = ust::type_select</ c_arch_is_i686, i32, i64 />;
+type suseconds_t__ = ust::type_select</ c_arch_is_i686, i32, i64 />;
+type time_t__ = ust::type_select</ c_arch_is_i686, i32, i64 />;
+type uid_t__ = u32;
 
 type ü_anon_enum_59 = u32;
 var ü_anon_enum_59
