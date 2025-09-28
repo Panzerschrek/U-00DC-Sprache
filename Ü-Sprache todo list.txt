@@ -213,7 +213,6 @@ C++ header converter:
 *) Support converting constant variables - arrays with fillers
 *) Support converting auto constant variables - arrays
 *) Support converting constant variables - structs
-*) Consider a better way of translating identifiers starting with "_", currently-used "ü_" prefix is too ugly
 
 Ü Build system:
 *) Support building "ustlib" into a shared library (dll/so)
