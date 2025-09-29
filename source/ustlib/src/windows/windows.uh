@@ -213,6 +213,21 @@ struct addrinfoW ordered
 	$(addrinfoW) ai_next;
 }
 
+struct in_addr ordered
+{
+	struct anon_record_381 ordered
+	{
+		[ byte32, 1 ] union_contents;
+	}
+
+	anon_record_381 S_un;
+}
+
+struct in6_addr ordered
+{
+	[ u16, 8 ] parts; // Manually tweaked
+}
+
 struct sockaddr ordered
 {
 	ADDRESS_FAMILY sa_family;
@@ -242,21 +257,6 @@ struct sockaddr_storage ordered
 	[ CHAR, 6 ] ss_pad1__;
 	i64 ss_align__;
 	[ CHAR, 112 ] ss_pad2__;
-}
-
-struct in_addr ordered
-{
-	anon_record_381 S_un;
-}
-
-struct in6_addr ordered
-{
-	[ u16, 8 ] parts; // Manually tweaked
-}
-
-struct anon_record_381 ordered
-{
-	[ byte32, 1 ] union_contents;
 }
 
 type FILE_INFO_BY_HANDLE_CLASS_ = i32;
@@ -376,8 +376,8 @@ type PCWSTR = $(WCHAR);
 type PLARGE_INTEGER = $(LARGE_INTEGER);
 type PRTL_BARRIER = $(RTL_BARRIER_);
 type PSRWLOCK = $(RTL_SRWLOCK);
-type PWSTR = $(WCHAR);
 type PVOID = $(byte8);
+type PWSTR = $(WCHAR);
 type RTL_CONDITION_VARIABLE = RTL_CONDITION_VARIABLE_;
 type RTL_SRWLOCK = RTL_SRWLOCK_;
 type SECURITY_ATTRIBUTES = SECURITY_ATTRIBUTES_;

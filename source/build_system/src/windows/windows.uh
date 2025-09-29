@@ -2,40 +2,23 @@
 // These definitions are manually copypasted from the result of the CPPHeaderConverter tool execution and somewhat tweaked.
 
 fn nomangle CloseHandle( HANDLE hObject ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle ConnectNamedPipe( HANDLE hNamedPipe, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle CreateFileW( LPCWSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile ) unsafe call_conv( "system" ) : HANDLE;
-
 fn nomangle CreateIoCompletionPort( HANDLE FileHandle, HANDLE ExistingCompletionPort, ULONG_PTR CompletionKey, DWORD NumberOfConcurrentThreads ) unsafe call_conv( "system" ) : HANDLE;
-
 fn nomangle CreateNamedPipeW( LPCWSTR lpName, DWORD dwOpenMode, DWORD dwPipeMode, DWORD nMaxInstances, DWORD nOutBufferSize, DWORD nInBufferSize, DWORD nDefaultTimeOut, LPSECURITY_ATTRIBUTES lpSecurityAttributes ) unsafe call_conv( "system" ) : HANDLE;
-
 fn nomangle CreateProcessW( LPCWSTR lpApplicationName, LPWSTR lpCommandLine, LPSECURITY_ATTRIBUTES lpProcessAttributes, LPSECURITY_ATTRIBUTES lpThreadAttributes, BOOL bInheritHandles, DWORD dwCreationFlags, LPVOID lpEnvironment, LPCWSTR lpCurrentDirectory, LPSTARTUPINFOW lpStartupInfo, LPPROCESS_INFORMATION lpProcessInformation ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle DuplicateHandle( HANDLE hSourceProcessHandle, HANDLE hSourceHandle, HANDLE hTargetProcessHandle, LPHANDLE lpTargetHandle, DWORD dwDesiredAccess, BOOL bInheritHandle, DWORD dwOptions ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle GetCurrentProcess() unsafe call_conv( "system" ) : HANDLE;
 fn nomangle GetCurrentProcessId() unsafe call_conv( "system" ) : DWORD;
-
 fn nomangle GetExitCodeProcess( HANDLE hProcess, LPDWORD lpExitCode ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle GetLastError() unsafe call_conv( "system" ) : DWORD;
-
 fn nomangle GetModuleFileNameW( HMODULE hModule, LPWSTR lpFilename, DWORD nSize ) unsafe call_conv( "system" ) : DWORD;
-
 fn nomangle GetOverlappedResult( HANDLE hFile, LPOVERLAPPED lpOverlapped, LPDWORD lpNumberOfBytesTransferred, BOOL bWait ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle GetProcAddress( HMODULE hModule, LPCSTR lpProcName ) unsafe call_conv( "system" ) : $(byte8);
-
 fn nomangle GetQueuedCompletionStatus( HANDLE CompletionPort, LPDWORD lpNumberOfBytesTransferred, PULONG_PTR lpCompletionKey, $(LPOVERLAPPED) lpOverlapped, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle LoadLibraryW( LPCWSTR lpLibFileName ) unsafe call_conv( "system" ) : HMODULE;
-
 fn nomangle PathFindOnPathW( LPWSTR pszPath, PZPCWSTR ppszOtherDirs ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle ReadFile( HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped ) unsafe call_conv( "system" ) : BOOL;
-
 fn nomangle WaitForSingleObject( HANDLE hHandle, DWORD dwMilliseconds ) unsafe call_conv( "system" ) : DWORD;
 
 struct HINSTANCE__ ordered
