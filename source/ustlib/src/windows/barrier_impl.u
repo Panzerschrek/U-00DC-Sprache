@@ -7,8 +7,8 @@ namespace ust
 namespace barrier_impl
 {
 
-static_assert( typeinfo</barrier_t/>.size_of == typeinfo</ü_RTL_BARRIER/>.size_of );
-static_assert( typeinfo</barrier_t/>.align_of >= typeinfo</ü_RTL_BARRIER/>.align_of );
+static_assert( typeinfo</barrier_t/>.size_of == typeinfo</RTL_BARRIER_/>.size_of );
+static_assert( typeinfo</barrier_t/>.align_of >= typeinfo</RTL_BARRIER_/>.align_of );
 
 fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe
 {
@@ -16,7 +16,7 @@ fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe
 	{
 		var BOOL res=
 			::InitializeSynchronizationBarrier(
-				$<( cast_ref_unsafe</ü_RTL_BARRIER/>(b) ),
+				$<( cast_ref_unsafe</RTL_BARRIER_/>(b) ),
 				LONG(num_threads),
 				LONG(-1) );
 		halt if( res != 1 );
@@ -25,12 +25,12 @@ fn initialize_barrier( barrier_t &mut b, u32 num_threads ) unsafe
 
 fn destroy_barrier( barrier_t &mut b ) unsafe
 {
-	unsafe( ::DeleteSynchronizationBarrier( $<( cast_ref_unsafe</ü_RTL_BARRIER/>(b) ) ) );
+	unsafe( ::DeleteSynchronizationBarrier( $<( cast_ref_unsafe</RTL_BARRIER_/>(b) ) ) );
 }
 
 fn wait_barrier( barrier_t &mut b ) unsafe
 {
-	unsafe( ::EnterSynchronizationBarrier( $<( cast_ref_unsafe</ü_RTL_BARRIER/>(b) ), DWORD(0) ) );
+	unsafe( ::EnterSynchronizationBarrier( $<( cast_ref_unsafe</RTL_BARRIER_/>(b) ), DWORD(0) ) );
 }
 
 } // namespace barrier_impl

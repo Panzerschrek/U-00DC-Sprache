@@ -391,3 +391,17 @@ struct StructOfEmptyStructs
 	struct EmptyStruct b;
 	struct EmptyStruct c[3];
 };
+
+struct _UnderscoredStruct
+{
+	int x;
+};
+
+struct ___TripleUnderscoredStruct
+{
+	float y;
+	char z;
+};
+
+// Should proper handle identifiers with underscore prefix followed by number.
+typedef unsigned long long int __64_int_from_c;

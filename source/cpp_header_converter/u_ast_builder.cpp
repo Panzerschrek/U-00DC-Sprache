@@ -608,9 +608,27 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 {
 	U_ASSERT( !identifier.empty() );
 
-	// In Ü identifier can not start with "_", shadow it. "_" in C++ used for impl identiferes, so, it may not needed.
-	if( identifier[0] == '_' )
-		return ( "ü" + identifier ).str();
+	size_t num_underscores= 0;
+	while( num_underscores < identifier.size() && identifier[num_underscores] == '_' )
+		++num_underscores;
+
+	// In Ü identifier can not start with "_", so, move all leading underscores to the end.
+	if( num_underscores > 0 )
+	{
+		std::string res;
+		res.resize( identifier.size() );
+		std::memcpy( res.data(), identifier.data() + num_underscores, identifier.size() - num_underscores );
+		std::memset( res.data() + identifier.size() - num_underscores, '_', num_underscores );
+
+		if( res.front() >= '0' && res.front() <= '9' )
+		{
+			// After dropping underscores it may happen that identifier starts with numeric symbol.
+			// In such case we need to prefix it with some other valid identifier start char.
+			res.insert( res.begin(), 'n' );
+		}
+
+		return res;
+	}
 
 	// Avoid using keywords as names.
 	if( IsKeyword( identifier ) )
@@ -674,7 +692,7 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 
 		std::string name;
 		if( src_name.empty() )
-			name= "ü_anon_record_" + std::to_string( ++unique_name_index_ );
+			name= "anon_record_" + std::to_string( ++unique_name_index_ );
 		else
 			name= TranslateIdentifier( src_name );
 
@@ -720,7 +738,7 @@ CppAstConsumer::NamedRecordDeclarations CppAstConsumer::GenerateRecordNames( con
 
 		std::string name;
 		if( src_name.empty() )
-			name= "ü_anon_record_" + std::to_string( ++unique_name_index_ );
+			name= "anon_record_" + std::to_string( ++unique_name_index_ );
 		else
 			name= TranslateIdentifier( src_name );
 
@@ -839,7 +857,7 @@ CppAstConsumer::NamedEnumDeclarations CppAstConsumer::GenerateEnumNames(
 
 		std::string name;
 		if( src_name.empty() )
-			name= "ü_anon_enum_" + std::to_string( ++unique_name_index_ );
+			name= "anon_enum_" + std::to_string( ++unique_name_index_ );
 		else
 			name= TranslateIdentifier( src_name );
 
@@ -1074,7 +1092,7 @@ void CppAstConsumer::EmitRecord(
 
 					const auto src_name= field_declaration->getName();
 					if( src_name.empty() )
-						field.name= "ü_anon_field_" + std::to_string( ++unique_name_index_ );
+						field.name= "anon_field_" + std::to_string( ++unique_name_index_ );
 					else
 						field.name= TranslateIdentifier( src_name );
 

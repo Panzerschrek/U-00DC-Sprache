@@ -43,21 +43,21 @@ struct HINSTANCE__ ordered
 	i32 unused;
 }
 
-struct ü_OVERLAPPED ordered
+struct OVERLAPPED_ ordered
 {
 	ULONG_PTR Internal;
 	ULONG_PTR InternalHigh;
 
-	struct ü_anon_record_190 ordered
+	struct anon_record_190 ordered
 	{
 		[ byte32, 2 ] union_contents;
 	}
-	ü_anon_record_190 ü_anon_field_636;
+	anon_record_190 anon_field_636;
 
 	HANDLE hEvent;
 }
 
-struct ü_PROCESS_INFORMATION ordered
+struct PROCESS_INFORMATION_ ordered
 {
 	HANDLE hProcess;
 	HANDLE hThread;
@@ -65,14 +65,14 @@ struct ü_PROCESS_INFORMATION ordered
 	DWORD dwThreadId;
 }
 
-struct ü_SECURITY_ATTRIBUTES ordered
+struct SECURITY_ATTRIBUTES_ ordered
 {
 	DWORD nLength;
 	LPVOID lpSecurityDescriptor;
 	BOOL bInheritHandle;
 }
 
-struct ü_STARTUPINFOW ordered
+struct STARTUPINFOW_ ordered
 {
 	DWORD cb;
 	LPWSTR lpReserved;
@@ -109,20 +109,20 @@ type LPCVOID = $(byte8);
 type LPCWSTR = $(WCHAR);
 type LPDWORD = $(DWORD);
 type LPHANDLE = $(HANDLE);
-type LPOVERLAPPED = $(ü_OVERLAPPED);
-type LPPROCESS_INFORMATION = $(ü_PROCESS_INFORMATION);
-type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
-type LPSTARTUPINFOW = $(ü_STARTUPINFOW);
+type LPOVERLAPPED = $(OVERLAPPED_);
+type LPPROCESS_INFORMATION = $(PROCESS_INFORMATION_);
+type LPSECURITY_ATTRIBUTES = $(SECURITY_ATTRIBUTES_);
+type LPSTARTUPINFOW = $(STARTUPINFOW_);
 type LPSTR = $(CHAR);
 type LPVOID = $(byte8);
 type LPWSTR = $(WCHAR);
-type OVERLAPPED = ü_OVERLAPPED;
-type PROCESS_INFORMATION = ü_PROCESS_INFORMATION;
+type OVERLAPPED = OVERLAPPED_;
+type PROCESS_INFORMATION = PROCESS_INFORMATION_;
 type PCWSTR = $(WCHAR);
 type PULONG_PTR = $(ULONG_PTR);
 type PZPCWSTR = $(PCWSTR);
-type SECURITY_ATTRIBUTES = ü_SECURITY_ATTRIBUTES;
-type STARTUPINFOW = ü_STARTUPINFOW;
+type SECURITY_ATTRIBUTES = SECURITY_ATTRIBUTES_;
+type STARTUPINFOW = STARTUPINFOW_;
 type ULONG_PTR = size_type;
 type WCHAR = wchar_t;
 type WORD = u16;

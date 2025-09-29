@@ -69,7 +69,7 @@ fn nomangle sendto( SOCKET s, $(char8) buf, i32 len, i32 flags, $(sockaddr) to, 
 fn nomangle setsockopt( SOCKET s, i32 level, i32 optname, $(char8) optval, i32 optlen ) unsafe call_conv( "system" ) : i32;
 fn nomangle socket( i32 af, i32 type_, i32 protocol ) unsafe call_conv( "system" ) : SOCKET;
 
-struct ü_BY_HANDLE_FILE_INFORMATION ordered
+struct BY_HANDLE_FILE_INFORMATION_ ordered
 {
 	DWORD dwFileAttributes;
 	FILETIME ftCreationTime;
@@ -83,7 +83,7 @@ struct ü_BY_HANDLE_FILE_INFORMATION ordered
 	DWORD nFileIndexLow;
 }
 
-struct ü_FILE_BASIC_INFO ordered
+struct FILE_BASIC_INFO_ ordered
 {
 	LARGE_INTEGER CreationTime;
 	LARGE_INTEGER LastAccessTime;
@@ -92,37 +92,37 @@ struct ü_FILE_BASIC_INFO ordered
 	DWORD FileAttributes;
 }
 
-struct ü_FILE_END_OF_FILE_INFO ordered
+struct FILE_END_OF_FILE_INFO_ ordered
 {
 	LARGE_INTEGER EndOfFile;
 }
 
-struct ü_FILETIME ordered
+struct FILETIME_ ordered
 {
 	DWORD dwLowDateTime;
 	DWORD dwHighDateTime;
 }
 
-struct ü_LARGE_INTEGER ordered
+struct LARGE_INTEGER_ ordered
 {
 	[ byte64, 1 ] union_contents;
 }
 
-struct ü_OVERLAPPED ordered
+struct OVERLAPPED_ ordered
 {
 	ULONG_PTR Internal;
 	ULONG_PTR InternalHigh;
 
-	struct ü_anon_record_190 ordered
+	struct anon_record_190 ordered
 	{
 		[ byte32, 2 ] union_contents;
 	}
-	ü_anon_record_190 ü_anon_field_636;
+	anon_record_190 anon_field_636;
 
 	HANDLE hEvent;
 }
 
-struct ü_RTL_BARRIER ordered
+struct RTL_BARRIER_ ordered
 {
 	DWORD Reserved1;
 	DWORD Reserved2;
@@ -131,30 +131,30 @@ struct ü_RTL_BARRIER ordered
 	DWORD Reserved5;
 }
 
-struct ü_RTL_CONDITION_VARIABLE ordered
+struct RTL_CONDITION_VARIABLE_ ordered
 {
 	PVOID Ptr;
 }
 
-struct ü_RTL_SRWLOCK ordered
+struct RTL_SRWLOCK_ ordered
 {
 	PVOID Ptr;
 }
 
-struct ü_SECURITY_ATTRIBUTES ordered
+struct SECURITY_ATTRIBUTES_ ordered
 {
 	DWORD nLength;
 	LPVOID lpSecurityDescriptor;
 	BOOL bInheritHandle;
 }
 
-struct ü_SYSTEM_INFO ordered
+struct SYSTEM_INFO_ ordered
 {
-	struct ü_anon_record_194 ordered
+	struct anon_record_194 ordered
 	{
 		[ byte32, 1 ] union_contents;
 	}
-	ü_anon_record_194 ü_anon_field_700;
+	anon_record_194 anon_field_700;
 	DWORD dwPageSize;
 	LPVOID lpMinimumApplicationAddress;
 	LPVOID lpMaximumApplicationAddress;
@@ -166,7 +166,7 @@ struct ü_SYSTEM_INFO ordered
 	WORD wProcessorRevision;
 }
 
-struct ü_WIN32_FILE_ATTRIBUTE_DATA ordered
+struct WIN32_FILE_ATTRIBUTE_DATA_ ordered
 {
 	DWORD dwFileAttributes;
 	FILETIME ftCreationTime;
@@ -176,7 +176,7 @@ struct ü_WIN32_FILE_ATTRIBUTE_DATA ordered
 	DWORD nFileSizeLow;
 }
 
-struct ü_WIN32_FIND_DATAW ordered
+struct WIN32_FIND_DATAW_ ordered
 {
 	DWORD dwFileAttributes;
 	FILETIME ftCreationTime;
@@ -239,14 +239,14 @@ struct sockaddr_in6 ordered
 struct sockaddr_storage ordered
 {
 	ADDRESS_FAMILY ss_family;
-	[ CHAR, 6 ] ü__ss_pad1;
-	i64 ü__ss_align;
-	[ CHAR, 112 ] ü__ss_pad2;
+	[ CHAR, 6 ] ss_pad1__;
+	i64 ss_align__;
+	[ CHAR, 112 ] ss_pad2__;
 }
 
 struct in_addr ordered
 {
-	ü_anon_record_381 S_un;
+	anon_record_381 S_un;
 }
 
 struct in6_addr ordered
@@ -254,13 +254,13 @@ struct in6_addr ordered
 	[ u16, 8 ] parts; // Manually tweaked
 }
 
-struct ü_anon_record_381 ordered
+struct anon_record_381 ordered
 {
 	[ byte32, 1 ] union_contents;
 }
 
-type ü_FILE_INFO_BY_HANDLE_CLASS = i32;
-var ü_FILE_INFO_BY_HANDLE_CLASS
+type FILE_INFO_BY_HANDLE_CLASS_ = i32;
+var FILE_INFO_BY_HANDLE_CLASS_
 	constexpr FileBasicInfo( 0 ),
 	constexpr FileStandardInfo( 1 ),
 	constexpr FileNameInfo( 2 ),
@@ -288,13 +288,13 @@ var ü_FILE_INFO_BY_HANDLE_CLASS
 	constexpr FileNormalizedNameInfo( 24 ),
 	constexpr MaximumFileInfoByHandleClass( 25 );
 
-type ü_GET_FILEEX_INFO_LEVELS = i32;
-var ü_GET_FILEEX_INFO_LEVELS
+type GET_FILEEX_INFO_LEVELS_ = i32;
+var GET_FILEEX_INFO_LEVELS_
 	constexpr GetFileExInfoStandard( 0 ),
 	constexpr GetFileExMaxInfoLevel( 1 );
 
-type ü_anon_enum_553 = i32;
-var ü_anon_enum_553
+type anon_enum_553 = i32;
+var anon_enum_553
 	constexpr IPPROTO_HOPOPTS( 0 ),
 	constexpr IPPROTO_ICMP( 1 ),
 	constexpr IPPROTO_IGMP( 2 ),
@@ -338,60 +338,60 @@ type wchar_t = char16; // Changed manually from "u16" in order to be able to use
 type ADDRESS_FAMILY = USHORT_;
 type ADDRINFOW = addrinfoW;
 type BOOL = i32;
-type BY_HANDLE_FILE_INFORMATION = ü_BY_HANDLE_FILE_INFORMATION;
+type BY_HANDLE_FILE_INFORMATION = BY_HANDLE_FILE_INFORMATION_;
 type CHAR = char8;
-type GET_FILEEX_INFO_LEVELS = ü_GET_FILEEX_INFO_LEVELS;
+type GET_FILEEX_INFO_LEVELS = GET_FILEEX_INFO_LEVELS_;
 type DWORD = u32;
 type DWORD_PTR = ULONG_PTR;
-type FILE_BASIC_INFO = ü_FILE_BASIC_INFO;
-type FILE_END_OF_FILE_INFO = ü_FILE_END_OF_FILE_INFO;
-type FILE_INFO_BY_HANDLE_CLASS = ü_FILE_INFO_BY_HANDLE_CLASS;
-type FILETIME = ü_FILETIME;
+type FILE_BASIC_INFO = FILE_BASIC_INFO_;
+type FILE_END_OF_FILE_INFO = FILE_END_OF_FILE_INFO_;
+type FILE_INFO_BY_HANDLE_CLASS = FILE_INFO_BY_HANDLE_CLASS_;
+type FILETIME = FILETIME_;
 type HANDLE = $(byte8);
 type INT_ = i32;
 type IN_ADDR = in_addr;
 type IN6_ADDR = in6_addr;
-type LARGE_INTEGER = ü_LARGE_INTEGER;
+type LARGE_INTEGER = LARGE_INTEGER_;
 type LONG = i32;
-type LPBY_HANDLE_FILE_INFORMATION = $(ü_BY_HANDLE_FILE_INFORMATION);
+type LPBY_HANDLE_FILE_INFORMATION = $(BY_HANDLE_FILE_INFORMATION_);
 type LPCVOID = $(byte8);
 type LPCWSTR = $(WCHAR);
 type LPDWORD = $(DWORD);
-type LPFILETIME = $(ü_FILETIME);
+type LPFILETIME = $(FILETIME_);
 type LPLONG = $(i32);
-type LPOVERLAPPED = $(ü_OVERLAPPED);
-type LPSECURITY_ATTRIBUTES = $(ü_SECURITY_ATTRIBUTES);
+type LPOVERLAPPED = $(OVERLAPPED_);
+type LPSECURITY_ATTRIBUTES = $(SECURITY_ATTRIBUTES_);
 type LPSYNCHRONIZATION_BARRIER = PRTL_BARRIER;
-type LPSYSTEM_INFO = $(ü_SYSTEM_INFO);
+type LPSYSTEM_INFO = $(SYSTEM_INFO_);
 type LPVOID = $(byte8);
-type LPWIN32_FIND_DATAW = $(ü_WIN32_FIND_DATAW);
+type LPWIN32_FIND_DATAW = $(WIN32_FIND_DATAW_);
 type LPWSADATA = $(WSAData);
-type LPWSAOVERLAPPED = $(ü_OVERLAPPED);
+type LPWSAOVERLAPPED = $(OVERLAPPED_);
 type LPWSTR = $(WCHAR);
-type OVERLAPPED = ü_OVERLAPPED;
+type OVERLAPPED = OVERLAPPED_;
 type PADDRINFOW = $(addrinfoW);
 type PCONDITION_VARIABLE = $(RTL_CONDITION_VARIABLE);
 type PCSTR = $(CHAR);
 type PCWSTR = $(WCHAR);
 type PLARGE_INTEGER = $(LARGE_INTEGER);
-type PRTL_BARRIER = $(ü_RTL_BARRIER);
+type PRTL_BARRIER = $(RTL_BARRIER_);
 type PSRWLOCK = $(RTL_SRWLOCK);
 type PWSTR = $(WCHAR);
 type PVOID = $(byte8);
-type RTL_CONDITION_VARIABLE = ü_RTL_CONDITION_VARIABLE;
-type RTL_SRWLOCK = ü_RTL_SRWLOCK;
-type SECURITY_ATTRIBUTES = ü_SECURITY_ATTRIBUTES;
+type RTL_CONDITION_VARIABLE = RTL_CONDITION_VARIABLE_;
+type RTL_SRWLOCK = RTL_SRWLOCK_;
+type SECURITY_ATTRIBUTES = SECURITY_ATTRIBUTES_;
 type SIZE_T = ULONG_PTR;
 type SOCKET = UINT_PTR;
-type SYSTEM_INFO = ü_SYSTEM_INFO;
+type SYSTEM_INFO = SYSTEM_INFO_;
 type UINT_PTR = size_type;
 type ULONG = u32;
 type ULONG__ = DWORD;
 type ULONG_PTR = size_type;
 type USHORT_ = u16;
 type WCHAR = wchar_t;
-type WIN32_FILE_ATTRIBUTE_DATA = ü_WIN32_FILE_ATTRIBUTE_DATA;
-type WIN32_FIND_DATAW = ü_WIN32_FIND_DATAW;
+type WIN32_FILE_ATTRIBUTE_DATA = WIN32_FILE_ATTRIBUTE_DATA_;
+type WIN32_FIND_DATAW = WIN32_FIND_DATAW_;
 type WORD = u16;
 
 auto constexpr AF_INET = 2;
@@ -471,10 +471,10 @@ auto constexpr FILE_SHARE_READ = 1;
 auto constexpr FILE_SHARE_WRITE = 2;
 auto constexpr FILE_SHARE_DELETE = 4;
 
-auto constexpr FIONBIO = ü_IOW</u_long/>( u32('f'), 126u );
+auto constexpr FIONBIO = IOW_</u_long/>( u32('f'), 126u );
 
 template</type T/>
-fn constexpr ü_IOW( u32 x, u32 y ) : u32
+fn constexpr IOW_( u32 x, u32 y ) : u32
 {
 	return  IOC_IN | ( ( u32( typeinfo</T/>.size_of ) & IOCPARM_MASK ) << 16u ) | ( x << 8u ) | y;
 }
