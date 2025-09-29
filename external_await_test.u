@@ -1,0 +1,98 @@
+// Compile it with following command:
+//	./build-release-clang-llvm-src/compiler0/Compiler external_await_test.u -o other/test.ll -filetype=ll -O2
+//
+// With async calls inlining enabled "Bar.resume" doesn't contain "malloc" for "Foo" frame.
+// The same is true for "Baz.resume".
+
+import "source/ustlib/imports/memory.u"
+
+fn async Foo( i32 x ) : i32
+{
+	yield;
+	yield;
+	yield;
+	return 11 * x;
+}
+
+fn async Foo64( i64 x ) : i64
+{
+	yield;
+	return 1523i64 * x + x;
+}
+
+fn async nomangle Bar() : f32
+{
+	var i32 res= ExternalAwait( Foo(15) ).await;
+	return f32(res) * 1.5f;
+}
+
+fn async nomangle Baz() : i64
+{
+	var tup[ i32, i64 ] res= ExternalAwait2( Foo(25), Foo64(637i64) ).await;
+	return i64(res[0]) * res[1];
+}
+
+template</type T/>
+fn async ExternalAwait( ( async : T ) mut f ) : T
+{
+	unsafe
+	{
+		var raw_coro_handle handle= cast_ref_unsafe</coro_struct/>(f).handle;
+
+		ExternalAwaitImpl( handle );
+
+		yield; // Consumer of "ExternalAwaitImpl" results ensures that given async function will be ready after this "yield".
+
+		var T mut res= uninitialized;
+
+		ust::memory_copy_aligned(
+			typeinfo</T/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res) ),
+			handle + typeinfo</size_type/>.size_of * 2s,
+			typeinfo</T/>.size_of );
+
+		return res;
+	}
+}
+
+fn ExternalAwaitImpl( raw_coro_handle coro_handle ) unsafe;
+
+template</type A, type B/>
+fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
+{
+	unsafe
+	{
+		var raw_coro_handle handle_a= cast_ref_unsafe</coro_struct/>(a).handle;
+		var raw_coro_handle handle_b= cast_ref_unsafe</coro_struct/>(b).handle;
+
+		ExternalAwaitImpl2( handle_a, handle_b );
+
+		yield; // Consumer of "ExternalAwaitImpl2" results ensures that given async functions will be ready after this "yield".
+
+		var tup[ A, B ] mut res= uninitialized;
+
+
+		ust::memory_copy_aligned(
+			typeinfo</A/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[0]) ),
+			handle_a + typeinfo</size_type/>.size_of * 2s,
+			typeinfo</A/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</B/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[1]) ),
+			handle_b + typeinfo</size_type/>.size_of * 2s,
+			typeinfo</B/>.size_of );
+
+		return res;
+	}
+}
+
+fn ExternalAwaitImpl2( raw_coro_handle a, raw_coro_handle b ) unsafe;
+
+struct coro_struct
+{
+	raw_coro_handle handle;
+}
+
+type raw_coro_handle= $(byte8);
