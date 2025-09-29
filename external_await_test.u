@@ -4,7 +4,7 @@
 // With async calls inlining enabled "Bar.resume" doesn't contain "malloc" for "Foo" frame.
 // The same is true for "Baz.resume".
 
-import "source/ustlib/imports/memory.u"
+import "source/ustlib/imports/vector.u"
 
 fn async Foo( i32 x ) : i32
 {
@@ -30,6 +30,30 @@ fn async nomangle Baz() : i64
 {
 	var tup[ i32, i64 ] res= ExternalAwait2( Foo(25), Foo64(637i64) ).await;
 	return i64(res[0]) * res[1];
+}
+
+fn async nomangle Lol() : i32
+{
+	var [ i32, 4 ] res= ExternalAwaitMultiple( ust::make_array( Foo( 2 ), Foo( 3 ), Foo( 5 ), Foo( 7 ) ) ).await;
+	return res[0] * res[1] * res[2] * res[3];
+}
+
+fn async nomangle Wtf( ust::array_view_imut</i32/> nums ) : i32
+{
+	auto res=
+		ExternalAwaitMultipleVec( ust::make_vector_from_mapped_range(
+			nums,
+			lambda( i32 x ) : (async : i32)
+			{
+				return Foo(x);
+			} ) ).await;
+
+	var i32 mut product= 0;
+	foreach( n : res )
+	{
+		product *= n;
+	}
+	return product;
 }
 
 template</type T/>
@@ -96,7 +120,6 @@ fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B 
 
 		var tup[ A, B ] mut res= uninitialized;
 
-
 		ust::memory_copy_aligned(
 			typeinfo</A/>.align_of,
 			ust::ptr_cast_to_byte8( $<(res[0]) ),
@@ -113,7 +136,104 @@ fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B 
 	}
 }
 
-fn ExternalAwaitImpl2( raw_coro_handle a, raw_coro_handle b ) unsafe;
+ fn ExternalAwaitImpl2( raw_coro_handle a, raw_coro_handle b ) unsafe;
+
+template</type T, size_type S/>
+fn async ExternalAwaitMultiple( [ ( async : T ), S ] mut a ) : [ T, S ]
+{
+	unsafe
+	{
+		var [ raw_coro_handle, S ] mut handles= uninitialized;
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			var raw_coro_handle handle= cast_ref_unsafe</coro_struct/>( a[i] ).handle;
+
+			halt if( coro_done_impl( handle ) );
+
+			handles[i]= handle;
+		}
+
+		ExternalAwaitMultipleImpl( handles );
+
+		// Perform yield loop until given functions aren't done.
+		loop
+		{
+			yield;
+
+			var bool mut done= true;
+			for( auto mut i= 0s; i < S; ++i )
+			{
+				done &= coro_done_impl( handles[i] );
+			}
+			if(done)
+			{
+				break;
+			}
+		}
+
+		var [ T, S ] mut res= uninitialized;
+
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			ust::memory_copy_aligned(
+				typeinfo</T/>.align_of,
+				ust::ptr_cast_to_byte8( $<(res[i]) ),
+				handles[i] + typeinfo</size_type/>.size_of * 2s,
+				typeinfo</T/>.size_of );
+		}
+
+		return res;
+	}
+}
+
+template</type T />
+fn async ExternalAwaitMultipleVec( ust::vector</ ( async : T ) /> mut a ) : ust::vector</T/>
+{
+	unsafe
+	{
+		for( auto mut i= 0s; i < a.size(); ++i )
+		{
+			halt if( coro_done_impl( cast_ref_unsafe</coro_struct/>( a[i] ).handle  ) );
+		}
+
+		// Coro struct contains single handle - raw pointer. Just cast arrays here.
+		ExternalAwaitMultipleImpl(
+			ust::array_view_imut</raw_coro_handle/>(
+				cast_ref_unsafe</ $(raw_coro_handle) />( a.data() ),
+				a.size() ) );
+
+		// Perform yield loop until given functions aren't done.
+		loop
+		{
+			yield;
+
+			var bool mut done= true;
+			foreach( &h : a )
+			{
+				done &= coro_done_impl( cast_ref_unsafe</coro_struct/>( h ).handle );
+			}
+			if(done)
+			{
+				break;
+			}
+		}
+
+		var ust::vector</T/> mut res( a.size(), T(0) );
+
+		for( auto mut i= 0s; i < a.size(); ++i )
+		{
+			ust::memory_copy_aligned(
+				typeinfo</T/>.align_of,
+				ust::ptr_cast_to_byte8( $<(res[i]) ),
+				cast_ref_unsafe</coro_struct/>( a[i] ).handle + typeinfo</size_type/>.size_of * 2s,
+				typeinfo</T/>.size_of );
+		}
+
+		return res;
+	}
+}
+
+fn ExternalAwaitMultipleImpl( ust::array_view_imut</raw_coro_handle/> a ) unsafe;
 
 struct coro_struct
 {
