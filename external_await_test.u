@@ -39,9 +39,21 @@ fn async ExternalAwait( ( async : T ) mut f ) : T
 	{
 		var raw_coro_handle handle= cast_ref_unsafe</coro_struct/>(f).handle;
 
+		// Ensure given async function isn't done yet (we can resume it).
+		halt if( coro_done_impl( handle ) );
+
 		ExternalAwaitImpl( handle );
 
-		yield; // Consumer of "ExternalAwaitImpl" results ensures that given async function will be ready after this "yield".
+		// Perform yield loop until given function isn't done.
+		loop
+		{
+			yield;
+
+			if( coro_done_impl( handle ) )
+			{
+				break;
+			}
+		}
 
 		var T mut res= uninitialized;
 
@@ -65,9 +77,22 @@ fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B 
 		var raw_coro_handle handle_a= cast_ref_unsafe</coro_struct/>(a).handle;
 		var raw_coro_handle handle_b= cast_ref_unsafe</coro_struct/>(b).handle;
 
+		// Ensure given async functions aren't done yet (we can resume them).
+		halt if( coro_done_impl( handle_a ) );
+		halt if( coro_done_impl( handle_b ) );
+
 		ExternalAwaitImpl2( handle_a, handle_b );
 
-		yield; // Consumer of "ExternalAwaitImpl2" results ensures that given async functions will be ready after this "yield".
+		// Perform yield loop until given functions aren't done.
+		loop
+		{
+			yield;
+
+			if( coro_done_impl( handle_a ) & coro_done_impl( handle_b ) )
+			{
+				break;
+			}
+		}
 
 		var tup[ A, B ] mut res= uninitialized;
 
@@ -96,3 +121,5 @@ struct coro_struct
 }
 
 type raw_coro_handle= $(byte8);
+
+fn nomangle coro_done_impl( raw_coro_handle coro_handle ) unsafe : bool;
