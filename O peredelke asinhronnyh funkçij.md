@@ -138,3 +138,32 @@ Boleje togo, navernäka tak budet lucše, cem podderžka množestva soketov dlä
 Vozmožno, imejet smysl dobavitj v `await` zascitu ot duraka.
 Daby daže jesli asinhronnaja funkçija byla vozobnovlena na tocke s `await`, kogda ne vse zapuscennyje cerez etot `await` docernije asinhronnyje funkçii zaveršilisj, nicego ne lomalosj.
 V takom slucaje možno, naprimer, zanovo vyzvatj `await` s deskriptorami teh docernih asinhronnyh funkçij, cto jescö ne zaveršilisj.
+
+
+### Aljtarnativnyj podhod
+
+Možno uže v tekuscem variante realizaçii asinhronnyh funkçij realizovatj funkçiju, analogicnuju množestvennomu `await` - kak bibliotecnuju funkçiju, vzaimodejstvujuscuju s tekuscim ispolnitelem asinhronnyh funkçij.
+Eta funkçija možet stavitj na pauzu vypolnenije zapuskajuscej funkçii i effektivno zapuskatj/vozobnovlätj docernije funkçii.
+Interfejs etoj funkçii možet vyglädetj kak-to tak:
+
+```
+template</type A, type B/>
+fn async multiple_await( (async : A) &mut a, (async : B) &mut b ) : tup[ A, B ];
+
+template</type T, size_type S/>
+fn async multiple_await( [ (async : T), S ] &mut f ) : [ T, S ];
+
+template</type />
+fn async multiple_await( array_view_mut</ (async : T) /> f ) : vector</T/>;
+```
+
+Imä možet bytj drugim - vrode `async_parallel` ili kak-to tak.
+
+Vnutri eti funkçii mogut bytj realizovany dostatocno prosto.
+Po suti tam dolžna bytj zapisj peredannyh deskriptorov kuda-to s posledujuscim `yield`.
+Posle `yield` idöt bezuslovnoje vytaskivanije rezuljtatov iz `promise` peredannyh asinhronnyh funkçij i ih vozvrat.
+
+Postrojenije i obhod grafa vyzovov možet bytj takim že, kak i v podhode so množestvennym `await` kak osobennosti jazyka.
+
+Ostojotsä voprosom, kak razrušatj rezuljtaty teh funkçij, kotoryje uže zaveršilisj, no rezuljtat kotoryh ne byl izvlecön.
+Možno dlä etogo vmeste s deskriptorom asinhronnoj funkçii sohranätj ukazatelj na funkçiju - razrušitelj tipa reazuljtata peredannoj asinhronnoj funkçii.
