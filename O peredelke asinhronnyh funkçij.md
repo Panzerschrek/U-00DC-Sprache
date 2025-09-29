@@ -66,6 +66,10 @@ Sejcas dlä etogo nicego osobogo ne nado, `if_coro_advance` provoracivajet vsü 
 S peredelkoj že, opisannoj vyše, nužno v každom teste realizovyvatj nekij bazovyj vypolnitelj asinhronnyh funkçij.
 Kak minimum nado kak-to, nevernäka s ispoljzovanijem `unsafe`, polucatj deskriptory docernih asinhronnyh funkçij i zapuskatj ih.
 
+Sejcas nascityvajetsä okolo 120 testov s ispoljzovanijem `await`.
+navernäka oni vse nuždajutsä v pererabotke.
+Krome etogo mogut bytj napisany množestvo drugih testov.
+
 
 #### Dizajn ispolniteljä asinhronnyh funkçij
 
@@ -88,3 +92,49 @@ Biblioteka "LLVM", naskoljko ja mogu suditj, umejet zamenätj allokaçiju iz kuc
 Vstraivanije asinhronnyh vyzovov, cto realizovano sejcas otdeljnym samopisnym prohodom, stanovitsä ne stolj važno.
 Problema çepocki `switch` instrukçij pri vozobnovlenii asinhronnoj funkçii (po instrukçii na každuju funkçiju v steke vyzovov) ne stoit tak ostro - ibo vozobnovläjutsä naprämuju te asinhronnyje funkçii, kotoryje dolžny vozobnovitjsä, a ne ih roditeljskije funkçii.
 No vsö že eta optimizaçija možet bytj polezna dlä slucaja peredaci upravlenija cerez `await` dlä jedinstvennoj docernej funkçii - ctoby sekonomitj nemnogo pamäti na strukturu sostojanija korutiny i sekonomitj na pereklücenii ot odnoj funkçii k drugoj.
+
+
+#### Razrušenije neispoljzovannyh vozvrascajemyh znacenij
+
+V vyšeizložennom podhode voznikajet problema, kogda castj asinhronnyh funkçij, zapuscenyh cerez `await`, otrabotala i soderžit vozvrascajemoje znacenija, a castj - jescö net.
+Pri etom v etot moment roditeljskaja asinhronnaja fukçija možet bytj razrušena (eto ne zapresceno), i kak sledstvije, budut razrušeny docernije asinhronnyje funkçii.
+No uže gotovyje vozvrascajemyje znacenija pri etom ne razrušajutsä - predpolagajetsä, cto oni vsegda izvlekajutsä do etogo vyzyvajemoj storonoj.
+Poetomu nužno kak-to razrušatj gotovyje vozvrascajemyje znacenija iz vyzyvajuscego koda.
+
+Odno iz rešenij - na `destroy` puti tocki ostanova operatora `await` proverätj status vseh zapuscennyh asinhronnyh funkçij, i jesli kakije-to uže otrabotali - vyzyvatj destruktory dlä ih vozvrascajemogo znacenija.
+Po ideje, eto ne siljko dorogo i etot kod budet zapuskatjsä vesjma redko - toljko jesli asinhronnaja funkçija razrušilasj v proçesse.
+
+
+#### Rucnoj "yield" i vyzov "if_coro_advance"
+
+Nado predusmotretj slucai, kogda vnutri asinhronnoj funkçii vrucnuju vyzyvajetsä `yield`.
+V etom slucaje spisok deskriptorov zavisimyh asinhronnyh funkçij, vozvrascajemyj vyzyvajemomu kodu, dolžen bytj pust.
+On dolžet daže bytj zanulön na každom vyzove `yield`, v slucaje, jesli tam ostalsä musor ot kakoj-to drugoj asinhronnoj funkçii.
+
+Asinhronnaja funkçija, kotoraja priostanovilasj cerez `yield`, možet bytj tut že snova zapuscena, ibo ona nicego ne ožidajet.
+Isklücenije - jesli ona pered etim kuda-to zapisala identifikator soketa (soketov), kotoryje nado ožidatj.
+V takom slucaje upravlenije peredastsä etoj asinhronnoj funkçii toljko posle vyzova `poll` (ili cego-to podobnogo).
+
+Takže nado predusmotretj, ctoby `if_coro_advacne` vnutri asinhronnoj funkçii, vyzvannoj dlä drugoj asinhronnoj funkçii, nicego ne lomal.
+On dolžen rabotatj, pustj jego ispoljzovanije vmesto `await` i neeffektivno.
+
+
+#### Peredaca soketov dlä ožidanija
+
+Nizkourovnevyje primitivy asinhronnyh operaçij (sokety i proceje) dolžny kak-to soobscatj vypolnitelü asinhronnyh funkçij, cego oni ožidajut.
+Naprimer, oni ožidajut ctenija/zapisi na ukazannom sokete.
+Eta informaçija kak-to dolžna peredavatjsä ispolnitelü asinhronnyh funkçij, daby on mog vyzyvatj `poll` ili cto-to shožeje.
+
+Sejcas viditsä, cto kanal peredaci možno realizovatj cerez globaljnyje `thread_local` peremennyje.
+Važno pri etom, ctoby ispolnitelj asinhronnyh funkçij ociscal takuju `thread_local` peremennuju, kogda on izvlekajet iz nejo identifikator soketa.
+
+Po-nacalu, dumaju, možno realizovatj podderžku ne boleje odnogo soketa na asinhronnuju funkçiju.
+jesli nado boljše - mogut bytj sozdany boljše odnoj asinhronnoj funkçii, kotoryje zapuskajutsä cerez odin `await`.
+Boleje togo, navernäka tak budet lucše, cem podderžka množestva soketov dlä odnoj asinhronnoj funkçii - ibo vozobnovlenije koda tak budet bystreje rabotatj (budet vyzvano ctenije/zapisj na nužnom sokete).
+
+
+#### Zascita ot vozobnovlenija roditeljskoj asinhronnoj funkçii do zaveršenija docernih funkçij
+
+Vozmožno, imejet smysl dobavitj v `await` zascitu ot duraka.
+Daby daže jesli asinhronnaja funkçija byla vozobnovlena na tocke s `await`, kogda ne vse zapuscennyje cerez etot `await` docernije asinhronnyje funkçii zaveršilisj, nicego ne lomalosj.
+V takom slucaje možno, naprimer, zanovo vyzvatj `await` s deskriptorami teh docernih asinhronnyh funkçij, cto jescö ne zaveršilisj.
