@@ -18,6 +18,14 @@ coro_resume( T &mut coroutine ) unsafe
 	unsafe( ::coro_resume_impl( cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle ) );
 }
 
+// Returns address of storage are of given coroutine, where return value (or reference) is placed.
+template</type T/>
+fn enable_if( coro_impl::is_coroutine</T/>() )
+coro_return_value_address( T &mut coroutine ) unsafe : $(byte8)
+{
+	return unsafe( ::coro_return_value_address_impl( cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle ) );
+}
+
 namespace coro_impl
 {
 
@@ -48,3 +56,4 @@ template</type T/> fn constexpr is_coroutine() : bool
 // External implementation functions. Do not use directly!
 fn nomangle coro_done_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : bool;
 fn nomangle coro_resume_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe;
+fn nomangle coro_return_value_address_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
