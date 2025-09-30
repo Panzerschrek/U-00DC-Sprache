@@ -48,7 +48,7 @@ fn async nomangle Wtf( ust::array_view_imut</i32/> nums ) : i32
 				return Foo(x);
 			} ) ).await;
 
-	var i32 mut product= 0;
+	var i32 mut product= 1;
 	foreach( n : res )
 	{
 		product *= n;
@@ -61,7 +61,7 @@ fn async ExternalAwait( ( async : T ) mut f ) : T
 {
 	unsafe
 	{
-		var raw_coro_handle handle= cast_ref_unsafe</coro_struct/>(f).handle;
+		var raw_coro_handle handle= LoadCoroHandle(f);
 
 		// Ensure given async function isn't done yet (we can resume it).
 		halt if( coro_done_impl( handle ) );
@@ -91,21 +91,20 @@ fn async ExternalAwait( ( async : T ) mut f ) : T
 	}
 }
 
-fn ExternalAwaitImpl( raw_coro_handle coro_handle ) unsafe;
-
 template</type A, type B/>
 fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
 {
 	unsafe
 	{
-		var raw_coro_handle handle_a= cast_ref_unsafe</coro_struct/>(a).handle;
-		var raw_coro_handle handle_b= cast_ref_unsafe</coro_struct/>(b).handle;
+		var raw_coro_handle handle_a= LoadCoroHandle(a);
+		var raw_coro_handle handle_b= LoadCoroHandle(b);
 
 		// Ensure given async functions aren't done yet (we can resume them).
 		halt if( coro_done_impl( handle_a ) );
 		halt if( coro_done_impl( handle_b ) );
 
-		ExternalAwaitMultipleImpl( ust::make_array( handle_a, handle_b ) );
+		ExternalAwaitImpl( handle_a );
+		ExternalAwaitImpl( handle_b );
 
 		// Perform yield loop until given functions aren't done.
 		loop
@@ -136,28 +135,16 @@ fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B 
 	}
 }
 
-// fn ExternalAwaitImpl2( raw_coro_handle a, raw_coro_handle b ) unsafe;
-
 template</type T, size_type S/>
 fn async ExternalAwaitMultiple( [ ( async : T ), S ] mut a ) : [ T, S ]
 {
 	unsafe
 	{
-		// Reading handles into a separate array is necessary here - without it heap allocation isn't optimized-out.
-		// Why it happens is unclear.
-		// It seems like if input array of async functions is passed into ExternalAwaitMultipleImpl function directly, cleanup calls aren't inlined.
+		for( auto mut i= 0s; i < S; ++i )
 		{
-			var [ raw_coro_handle, S ] mut handles= uninitialized;
-			for( auto mut i= 0s; i < S; ++i )
-			{
-				var raw_coro_handle handle= cast_ref_unsafe</coro_struct/>( a[i] ).handle;
-
-				halt if( coro_done_impl( handle ) );
-
-				handles[i]= handle;
-			}
-
-			ExternalAwaitMultipleImpl( handles );
+			var raw_coro_handle handle= LoadCoroHandle( a[i] );
+			halt if( coro_done_impl( handle ) );
+			ExternalAwaitImpl( handle );
 		}
 
 		// Perform yield loop until given functions aren't done.
@@ -168,7 +155,7 @@ fn async ExternalAwaitMultiple( [ ( async : T ), S ] mut a ) : [ T, S ]
 			var bool mut done= true;
 			for( auto mut i= 0s; i < S; ++i )
 			{
-				done &= coro_done_impl( cast_ref_unsafe</coro_struct/>( a[i] ).handle );
+				done &= coro_done_impl( LoadCoroHandle( a[i] ) );
 			}
 			if(done)
 			{
@@ -183,7 +170,7 @@ fn async ExternalAwaitMultiple( [ ( async : T ), S ] mut a ) : [ T, S ]
 			ust::memory_copy_aligned(
 				typeinfo</T/>.align_of,
 				ust::ptr_cast_to_byte8( $<(res[i]) ),
-				cast_ref_unsafe</coro_struct/>( a[i] ).handle + typeinfo</size_type/>.size_of * 2s,
+				LoadCoroHandle( a[i] ) + typeinfo</size_type/>.size_of * 2s,
 				typeinfo</T/>.size_of );
 		}
 
@@ -198,14 +185,10 @@ fn async ExternalAwaitMultipleVec( ust::vector</ ( async : T ) /> mut a ) : ust:
 	{
 		for( auto mut i= 0s; i < a.size(); ++i )
 		{
-			halt if( coro_done_impl( cast_ref_unsafe</coro_struct/>( a[i] ).handle  ) );
+			var raw_coro_handle handle= LoadCoroHandle( a[i] );
+			halt if( coro_done_impl( handle ) );
+			ExternalAwaitImpl( handle );
 		}
-
-		// Coro struct contains single handle - raw pointer. Just cast arrays here.
-		ExternalAwaitMultipleImpl(
-			ust::array_view_imut</raw_coro_handle/>(
-				cast_ref_unsafe</ $(raw_coro_handle) />( a.data() ),
-				a.size() ) );
 
 		// Perform yield loop until given functions aren't done.
 		loop
@@ -215,7 +198,7 @@ fn async ExternalAwaitMultipleVec( ust::vector</ ( async : T ) /> mut a ) : ust:
 			var bool mut done= true;
 			foreach( &h : a )
 			{
-				done &= coro_done_impl( cast_ref_unsafe</coro_struct/>( h ).handle );
+				done &= coro_done_impl( LoadCoroHandle(h) );
 			}
 			if(done)
 			{
@@ -229,8 +212,8 @@ fn async ExternalAwaitMultipleVec( ust::vector</ ( async : T ) /> mut a ) : ust:
 		{
 			ust::memory_copy_aligned(
 				typeinfo</T/>.align_of,
-				ust::ptr_cast_to_byte8( $<(res[i]) ),
-				cast_ref_unsafe</coro_struct/>( a[i] ).handle + typeinfo</size_type/>.size_of * 2s,
+				ust::ptr_cast_to_byte8( res.data() + i ),
+				LoadCoroHandle( a[i] ) + typeinfo</size_type/>.size_of * 2s,
 				typeinfo</T/>.size_of );
 		}
 
@@ -238,11 +221,28 @@ fn async ExternalAwaitMultipleVec( ust::vector</ ( async : T ) /> mut a ) : ust:
 	}
 }
 
-fn ExternalAwaitMultipleImpl( ust::array_view_imut</raw_coro_handle/> a ) unsafe;
+// Registers an async function as child function of current running one.
+// You need to call it for each child async function to be registered.
+// Use a function accepting single coroutine argument directly, because passing an array of coroutines may surprisingly lead to deoptimization of coroutine heap allocations.
+fn ExternalAwaitImpl( raw_coro_handle coro_handle ) unsafe;
 
-struct coro_struct
+template</type C/>
+fn LoadCoroHandle( C& c ) : raw_coro_handle
 {
-	raw_coro_handle handle;
+	static_assert( typeinfo</C/>.is_coroutine );
+	static_assert( typeinfo</C/>.size_of == typeinfo</raw_coro_handle/>.size_of );
+
+	// use "memcpy" instead of "cast_ref_unsafe", because this allows to avoid problems with TBAA.
+	unsafe
+	{
+		var raw_coro_handle mut res= uninitialized;
+		ust::memory_copy_aligned(
+			typeinfo</raw_coro_handle/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res) ),
+			ust::ptr_cast_to_byte8( $<( cast_mut(c) ) ),
+			typeinfo</raw_coro_handle/>.size_of );
+		return res;
+	}
 }
 
 type raw_coro_handle= $(byte8);
