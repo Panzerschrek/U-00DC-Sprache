@@ -3,6 +3,7 @@
 ;
 
 declare i1 @llvm.coro.done(i8* %handle)
+declare void @llvm.coro.resume(i8* %handle)
 
 ;
 ; Impl functions
@@ -11,6 +12,13 @@ declare i1 @llvm.coro.done(i8* %handle)
 $coro_done_impl = comdat any
 define linkonce_odr hidden fastcc i1 @coro_done_impl( i8* %handle ) unnamed_addr comdat
 {
-	%res = call i1@llvm.coro.done( i8* %handle )
+	%res = call i1 @llvm.coro.done( i8* %handle )
 	ret i1 %res
+}
+
+$coro_resume_impl = comdat any
+define linkonce_odr hidden fastcc void @coro_resume_impl( i8* %handle ) unnamed_addr comdat
+{
+	call void @llvm.coro.resume( i8* %handle )
+	ret void
 }

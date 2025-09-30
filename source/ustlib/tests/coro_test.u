@@ -19,6 +19,10 @@ fn generator MultipleValuesGen(u32 max) : u32
 	}
 }
 
+fn generator VoidGen()
+{
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	{
@@ -47,6 +51,12 @@ fn nomangle main() call_conv( "C" ) : i32
 			}
 		}
 		halt if( advanced != 17u );
+	}
+	{
+		auto mut g= VoidGen();
+		halt if( ust::coro_done( g ) );
+		unsafe( ust::coro_resume( g ) ); // Safe to do so, since "VoidGen" returns "void", which shouldn't be destroyed.
+		halt if( !ust::coro_done( g ) );
 	}
 	return 0;
 }

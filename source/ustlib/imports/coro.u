@@ -8,6 +8,16 @@ coro_done( T& coroutine ) : bool
 	return unsafe( ::coro_done_impl( cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle ) );
 }
 
+// Resume given coroutine.
+// Given coroutine shouldn't be done.
+// Caller is responsible for result extraction.
+template</type T/>
+fn enable_if( coro_impl::is_coroutine</T/>() )
+coro_resume( T &mut coroutine ) unsafe
+{
+	unsafe( ::coro_resume_impl( cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle ) );
+}
+
 namespace coro_impl
 {
 
@@ -37,3 +47,4 @@ template</type T/> fn constexpr is_coroutine() : bool
 
 // External implementation functions. Do not use directly!
 fn nomangle coro_done_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : bool;
+fn nomangle coro_resume_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe;
