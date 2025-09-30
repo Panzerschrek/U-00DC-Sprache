@@ -6,6 +6,25 @@
 
 import "source/ustlib/imports/vector.u"
 
+class Destructible
+{
+public:
+	fn constructor(i32 x)
+		( x_= x )
+	{}
+
+	fn destructor()
+	{
+		DestroyImpl(x_);
+	}
+
+private:
+	fn DestroyImpl(i32 x);
+
+private:
+	i32 x_;
+}
+
 fn async Foo( i32 x ) : i32
 {
 	yield;
@@ -22,21 +41,44 @@ fn async Foo64( i64 x ) : i64
 
 fn async nomangle Bar() : f32
 {
+	var Destructible d(1111);
 	var i32 res= ExternalAwait( Foo(15) ).await;
+	BarEnd();
 	return f32(res) * 1.5f;
 }
 
+fn BarEnd();
+
 fn async nomangle Baz() : i64
 {
+	var Destructible d(2222);
 	var tup[ i32, i64 ] res= ExternalAwait2( Foo(25), Foo64(637i64) ).await;
+	BazEnd();
 	return i64(res[0]) * res[1];
 }
 
+fn BazEnd();
+
 fn async nomangle Lol() : i32
 {
+	var Destructible d(3333);
 	var [ i32, 8 ] res= ExternalAwaitMultiple( ust::make_array( Foo( 2 ), Foo( 3 ), Foo( 5 ), Foo( 7 ), Foo( 11 ), Foo( 13 ), Foo( 17 ), Foo( 19 ) ) ).await;
+	LolEnd();
 	return res[0] * res[1] * res[2] * res[3] * res[4] * res[5] * res[6] * res[7];
 }
+
+fn LolEnd();
+
+fn async nomangle BarBazLol() : f64
+{
+	var Destructible d(112233);
+	// Multiple await with async functions containing other multiple awaits inside.
+	var tup[ f32, i64, i32 ] res= ExternalAwait3( Bar(), Baz(), Lol() ).await;
+	BarBazLolEnd();
+	return f64(res[0]) * f64(res[1]) + f64(res[2]);
+}
+
+fn BarBazLolEnd();
 
 fn async nomangle Wtf( ust::array_view_imut</i32/> nums ) : i32
 {
@@ -130,6 +172,59 @@ fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B 
 			ust::ptr_cast_to_byte8( $<(res[1]) ),
 			handle_b + typeinfo</size_type/>.size_of * 2s,
 			typeinfo</B/>.size_of );
+
+		return res;
+	}
+}
+
+template</type A, type B, type C/>
+fn async ExternalAwait3( ( async : A ) mut a, ( async : B ) mut b, ( async : C ) mut c ) : tup[ A, B, C ]
+{
+	unsafe
+	{
+		var raw_coro_handle handle_a= LoadCoroHandle(a);
+		var raw_coro_handle handle_b= LoadCoroHandle(b);
+		var raw_coro_handle handle_c= LoadCoroHandle(c);
+
+		// Ensure given async functions aren't done yet (we can resume them).
+		halt if( coro_done_impl( handle_a ) );
+		halt if( coro_done_impl( handle_b ) );
+		halt if( coro_done_impl( handle_c ) );
+
+		ExternalAwaitImpl( handle_a );
+		ExternalAwaitImpl( handle_b );
+		ExternalAwaitImpl( handle_c );
+
+		// Perform yield loop until given functions aren't done.
+		loop
+		{
+			yield;
+
+			if( coro_done_impl( handle_a ) & coro_done_impl( handle_b ) & coro_done_impl( handle_c ) )
+			{
+				break;
+			}
+		}
+
+		var tup[ A, B, C ] mut res= uninitialized;
+
+		ust::memory_copy_aligned(
+			typeinfo</A/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[0]) ),
+			handle_a + typeinfo</size_type/>.size_of * 2s,
+			typeinfo</A/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</B/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[1]) ),
+			handle_b + typeinfo</size_type/>.size_of * 2s,
+			typeinfo</B/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</C/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[2]) ),
+			handle_c + typeinfo</size_type/>.size_of * 2s,
+			typeinfo</C/>.size_of );
 
 		return res;
 	}
