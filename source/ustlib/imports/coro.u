@@ -18,12 +18,29 @@ coro_resume( T &mut coroutine ) unsafe
 	unsafe( ::coro_resume_impl( cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle ) );
 }
 
-// Returns address of storage are of given coroutine, where return value (or reference) is placed.
+// Returns address of storage of given coroutine, where return value (or reference) is placed.
 template</type T/>
 fn enable_if( coro_impl::is_coroutine</T/>() )
 coro_return_value_address( T &mut coroutine ) unsafe : $(byte8)
 {
-	return unsafe( ::coro_return_value_address_impl( cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle ) );
+	var size_type constexpr alignment=
+		( typeinfo</T/>.coroutine_return_value_is_reference
+			? typeinfo</$(byte8)/>.align_of
+			: typeinfo</T/>.coroutine_return_type.align_of );
+
+	unsafe
+	{
+		var coro_impl::raw_coro_handle h= cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle;
+		switch( alignment )
+		{
+			1s -> { return coro_return_value_address_impl_align1( h ); },
+			2s -> { return coro_return_value_address_impl_align2( h ); },
+			4s -> { return coro_return_value_address_impl_align4( h ); },
+			8s -> { return coro_return_value_address_impl_align8( h ); },
+			16s -> { return coro_return_value_address_impl_align16( h ); },
+			default -> { return coro_return_value_address_impl_align16( h ); },
+		}
+	}
 }
 
 namespace coro_impl
@@ -56,4 +73,8 @@ template</type T/> fn constexpr is_coroutine() : bool
 // External implementation functions. Do not use directly!
 fn nomangle coro_done_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : bool;
 fn nomangle coro_resume_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe;
-fn nomangle coro_return_value_address_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align1( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align2( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align4( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align8( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align16( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
