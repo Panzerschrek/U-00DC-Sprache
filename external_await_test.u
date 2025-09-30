@@ -34,8 +34,8 @@ fn async nomangle Baz() : i64
 
 fn async nomangle Lol() : i32
 {
-	var [ i32, 4 ] res= ExternalAwaitMultiple( ust::make_array( Foo( 2 ), Foo( 3 ), Foo( 5 ), Foo( 7 ) ) ).await;
-	return res[0] * res[1] * res[2] * res[3];
+	var [ i32, 8 ] res= ExternalAwaitMultiple( ust::make_array( Foo( 2 ), Foo( 3 ), Foo( 5 ), Foo( 7 ), Foo( 11 ), Foo( 13 ), Foo( 17 ), Foo( 19 ) ) ).await;
+	return res[0] * res[1] * res[2] * res[3] * res[4] * res[5] * res[6] * res[7];
 }
 
 fn async nomangle Wtf( ust::array_view_imut</i32/> nums ) : i32
@@ -105,7 +105,7 @@ fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B 
 		halt if( coro_done_impl( handle_a ) );
 		halt if( coro_done_impl( handle_b ) );
 
-		ExternalAwaitImpl2( handle_a, handle_b );
+		ExternalAwaitMultipleImpl( ust::make_array( handle_a, handle_b ) );
 
 		// Perform yield loop until given functions aren't done.
 		loop
@@ -136,24 +136,29 @@ fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B 
 	}
 }
 
- fn ExternalAwaitImpl2( raw_coro_handle a, raw_coro_handle b ) unsafe;
+// fn ExternalAwaitImpl2( raw_coro_handle a, raw_coro_handle b ) unsafe;
 
 template</type T, size_type S/>
 fn async ExternalAwaitMultiple( [ ( async : T ), S ] mut a ) : [ T, S ]
 {
 	unsafe
 	{
-		var [ raw_coro_handle, S ] mut handles= uninitialized;
-		for( auto mut i= 0s; i < S; ++i )
+		// Reading handles into a separate array is necessary here - without it heap allocation isn't optimized-out.
+		// Why it happens is unclear.
+		// It seems like if input array of async functions is passed into ExternalAwaitMultipleImpl function directly, cleanup calls aren't inlined.
 		{
-			var raw_coro_handle handle= cast_ref_unsafe</coro_struct/>( a[i] ).handle;
+			var [ raw_coro_handle, S ] mut handles= uninitialized;
+			for( auto mut i= 0s; i < S; ++i )
+			{
+				var raw_coro_handle handle= cast_ref_unsafe</coro_struct/>( a[i] ).handle;
 
-			halt if( coro_done_impl( handle ) );
+				halt if( coro_done_impl( handle ) );
 
-			handles[i]= handle;
+				handles[i]= handle;
+			}
+
+			ExternalAwaitMultipleImpl( handles );
 		}
-
-		ExternalAwaitMultipleImpl( handles );
 
 		// Perform yield loop until given functions aren't done.
 		loop
@@ -163,7 +168,7 @@ fn async ExternalAwaitMultiple( [ ( async : T ), S ] mut a ) : [ T, S ]
 			var bool mut done= true;
 			for( auto mut i= 0s; i < S; ++i )
 			{
-				done &= coro_done_impl( handles[i] );
+				done &= coro_done_impl( cast_ref_unsafe</coro_struct/>( a[i] ).handle );
 			}
 			if(done)
 			{
@@ -178,7 +183,7 @@ fn async ExternalAwaitMultiple( [ ( async : T ), S ] mut a ) : [ T, S ]
 			ust::memory_copy_aligned(
 				typeinfo</T/>.align_of,
 				ust::ptr_cast_to_byte8( $<(res[i]) ),
-				handles[i] + typeinfo</size_type/>.size_of * 2s,
+				cast_ref_unsafe</coro_struct/>( a[i] ).handle + typeinfo</size_type/>.size_of * 2s,
 				typeinfo</T/>.size_of );
 		}
 
