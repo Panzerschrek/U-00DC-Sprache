@@ -17,8 +17,10 @@ else()
 	set( SYSROOT_OPTION "" )
 endif()
 
-add_custom_target(
-	sm_async_net ALL
+set( TESTS_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURATION}/tests )
+
+add_custom_command(
+	OUTPUT ${TESTS_EXECUTABLE}
 	DEPENDS Compiler
 	DEPENDS BuildSystem
 	COMMAND
@@ -32,3 +34,5 @@ add_custom_target(
 		${SYSROOT_OPTION}
 	USES_TERMINAL
 		)
+
+add_custom_target( sm_async_net_run ALL COMMAND ${TESTS_EXECUTABLE} DEPENDS ${TESTS_EXECUTABLE} )
