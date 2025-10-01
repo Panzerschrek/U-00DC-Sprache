@@ -1,5 +1,6 @@
 //##success_test
 import "../imports/coro.u"
+import "../imports/memory.u"
 import "../imports/helpers.u"
 
 fn generator EmptyGen() : i32
@@ -17,6 +18,10 @@ fn generator MultipleValuesGen(u32 max) : u32
 	{
 		yield i;
 	}
+}
+
+fn generator VoidGen()
+{
 }
 
 fn nomangle main() call_conv( "C" ) : i32
@@ -47,6 +52,31 @@ fn nomangle main() call_conv( "C" ) : i32
 			}
 		}
 		halt if( advanced != 17u );
+	}
+	{
+		auto mut g= VoidGen();
+		halt if( ust::coro_done( g ) );
+		unsafe( ust::coro_resume( g ) ); // Safe to do so, since "VoidGen" returns "void", which shouldn't be destroyed.
+		halt if( !ust::coro_done( g ) );
+	}
+	{
+		auto mut g= SingleValueGen();
+		halt if( ust::coro_done( g ) );
+		unsafe
+		{
+			ust::coro_resume( g );
+			halt if( ust::coro_done( g ) );
+
+			var $(byte8) res_ptr= ust::coro_return_value_address( g );
+			halt if( ust::is_nullptr(res_ptr) );
+
+			var i32 mut res= 0;
+			ust::memory_copy( ust::ptr_cast_to_byte8( $<(res) ), res_ptr, typeinfo</i32/>.size_of );
+			halt if( res != 44 );
+
+			ust::coro_resume( g );
+			halt if( !ust::coro_done( g ) );
+		}
 	}
 	return 0;
 }
