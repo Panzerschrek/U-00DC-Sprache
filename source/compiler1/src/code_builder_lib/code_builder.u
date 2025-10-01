@@ -435,8 +435,26 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	var SourceGraphNodeBuildResult mut out_node_build_result{ .names_scope= move(global_names_scope) };
 
 	// Fill result classes members namespaces table.
+
 	foreach( &class_type : class_table_ )
 	{
+		out_node_build_result.classes_members_namespaces_table.insert_new( class_type, class_type.lock_imut().deref().members );
+	}
+
+	foreach( &class_type : typeinfo_class_table_ )
+	{
+		out_node_build_result.classes_members_namespaces_table.insert_new( class_type, class_type.lock_imut().deref().members );
+	}
+
+	foreach( &el : coroutine_classes_ )
+	{
+		var ClassTypePtr& class_type= el.value();
+		out_node_build_result.classes_members_namespaces_table.insert_new( class_type, class_type.lock_imut().deref().members );
+	}
+
+	foreach( &el : lambda_classes_table_ )
+	{
+		var ClassTypePtr& class_type= el.value();
 		out_node_build_result.classes_members_namespaces_table.insert_new( class_type, class_type.lock_imut().deref().members );
 	}
 

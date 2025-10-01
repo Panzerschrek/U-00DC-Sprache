@@ -729,6 +729,38 @@ U_TEST( ImportsTest17_NewSymbolsNotVisibleInImportedClassTemplate )
 	U_TEST_ASSERT( static_cast<uint64_t>(999) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( ImportsTest18_ImportSpecialClassAlias )
+{
+	static const char c_program_text_a[]=
+	R"(
+		// Should hanlde importing type alias for async function.
+		type Task= async : void;
+		// Should hanlde importing type alias for generator.
+		type Gen= generator non_sync : i32 &;
+
+		// Should hanlde importing type alias for lambda class.
+		auto some_lambda= lambda( i32 x ) : i32 { return x * 2; };
+		type SomeLambdaType= typeof(some_lambda);
+
+		// Should hanlde importing type alias for typeinfo class.
+		type IntTypeinfoType= typeof( typeinfo</i32/> );
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+	)";
+
+	const EnginePtr engine=
+		CreateEngine(
+			BuildMultisourceProgram(
+				{
+					{ "a", c_program_text_a },
+					{ "root", c_program_text_root }
+				},
+				"root" ) );
+}
+
 U_TEST( ImportMacro_Test0 )
 {
 	static const char c_program_text_a[]=

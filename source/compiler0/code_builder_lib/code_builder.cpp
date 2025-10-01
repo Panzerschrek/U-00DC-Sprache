@@ -400,8 +400,18 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	generated_template_things_sequence_.clear();
 
 	// Fill result classes members namespaces table.
+
 	for( const auto& class_ptr : classes_table_ )
 		result.classes_members_namespaces_table.emplace( class_ptr.get(), class_ptr->members );
+
+	for( const auto& class_ptr : typeinfo_class_table_ )
+		result.classes_members_namespaces_table.emplace( class_ptr.get(), class_ptr->members );
+
+	for( const auto& class_pair : coroutine_classes_table_ )
+		result.classes_members_namespaces_table.emplace( class_pair.second.get(), class_pair.second->members );
+
+	for( const auto& class_pair : lambda_classes_table_ )
+		result.classes_members_namespaces_table.emplace( class_pair.second.get(), class_pair.second->members );
 }
 
 void CodeBuilder::MergeNameScopes(
