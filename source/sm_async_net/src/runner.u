@@ -49,6 +49,7 @@ op runner::RunnerThreadFunction::()( byval this )
 
 				if( next_task.empty() )
 				{
+					// TODO - ensure we always can wake here on shutdown (no race condition is possible).
 					tasks_queue_condition_variable_.wait( l );
 
 					if( shutdown_flag_.read() )
