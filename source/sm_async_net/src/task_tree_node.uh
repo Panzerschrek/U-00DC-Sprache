@@ -1,0 +1,22 @@
+import "/coro.u"
+import "/shared_ptr.u"
+import "/vector.u"
+
+namespace sm_async_net
+{
+
+struct TaskTreeNode
+{
+	ust::coro_impl::raw_coro_handle async_function_handle;
+
+	// Store strong shared pointers to children and weak pointer to parent (to avoid strong loops).
+
+	TaskTreeNodeWeakPtr parent;
+	ust::vector</ TaskTreeNodePtr /> running_children;
+	ust::vector</ TaskTreeNodePtr /> done_children;
+}
+
+type TaskTreeNodePtr= ust::shared_ptr_mut</TaskTreeNode/>;
+type TaskTreeNodeWeakPtr= ust::weak_ptr_mut</TaskTreeNode/>;
+
+} // namespace sm_async_net
