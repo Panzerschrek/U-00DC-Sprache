@@ -7,27 +7,72 @@ fn runner::constructor()
 	(
 		tasks_queue_( TasksQueue() ),
 		shutdown_flag_( false ),
-		runner_thread_= ust::make_thread( RunnerThreadFunction( tasks_queue_, shutdown_flag_ ) )
+		runner_thread_=
+			ust::make_thread( RunnerThreadFunction( tasks_queue_, tasks_queue_condition_variable_, shutdown_flag_ ) )
 	)
 {
 }
 
 fn runner::destructor()
 {
+	// Set shudown flag first, than notify all runner threads waiting on the condition variable associated with the tasks queue.
+	// Doing so we trigger stopping runner thread loops.
 	shutdown_flag_.write( true );
+	tasks_queue_condition_variable_.notify_all();
+
+	// Destructors of runner threads execute "join" here. So we gracefully perform the shutdown sequence.
 }
 
 fn runner::add_task( this, root_task_type mut t )
 {
-	auto mut l= tasks_queue_.lock_mut();
+	// Lock tasks queue, add a task and notify condition variable to wake one of the runner threads.
+	auto mut l= tasks_queue_.lock();
 	l.deref().Push( move(t) );
+	tasks_queue_condition_variable_.notify_one();
 }
 
 op runner::RunnerThreadFunction::()( byval this )
 {
 	while( !shutdown_flag_.read() )
 	{
-		ust::yield_current_thread();
+		var ust::optional</root_task_type/> mut next_task;
+
+		// Lock tasks queue, try popping a task.
+		// If no task is available, wait on condition variable for the tasks queue, than try popping a task again.
+		// Break this loop if a new task is available or if shutdown flag is specified.
+		{
+			auto mut l= tasks_queue_.lock();
+			loop
+			{
+				next_task= l.deref().TryPop();
+
+				if( next_task.empty() )
+				{
+					tasks_queue_condition_variable_.wait( l );
+
+					if( shutdown_flag_.read() )
+					{
+						return;
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+
+		// For now execute a task without any pause until it's possible.
+		// Break only if shudown is requested.
+		var root_task_type &mut task= next_task.try_deref();
+		while( !shutdown_flag_.read() )
+		{
+			if_coro_advance( v : task )
+			{
+				ust::ignore_unused(v);
+				break;
+			}
+		}
 	}
 }
 

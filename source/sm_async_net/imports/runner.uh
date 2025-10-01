@@ -1,5 +1,7 @@
-import "/shared_ptr_mt.u"
 import "/shared_atomic_variable.u"
+import "/shared_condition_variable.u"
+import "/shared_ptr_final.u"
+import "/shared_ptr_mt_mutex.u"
 import "/thread.u"
 import "queue.uh"
 
@@ -24,25 +26,37 @@ public:
 
 private:
 	type TasksQueue= Queue</root_task_type/>;
-	type TasksQueuePtr= ust::shared_ptr_mt_mut</TasksQueue/>;
+	type TasksQueuePtr= ust::shared_ptr_mt_mutex</TasksQueue/>;
+	type TasksQueueConditionVariablePtr= ust::shared_condition_variable;
 	type ShutdownFlagPtr= ust::shared_atomic_variable</bool/>;
 
 	class RunnerThreadFunction
 	{
 	public:
-		fn constructor( TasksQueuePtr mut q, ShutdownFlagPtr mut shutdown_flag )
-			( tasks_queue_= move(q), shutdown_flag_= move(shutdown_flag) )
+		fn constructor(
+			TasksQueuePtr mut tasks_queue,
+			TasksQueueConditionVariablePtr mut tasks_queue_condition_variable,
+			ShutdownFlagPtr mut shutdown_flag )
+			(
+				tasks_queue_= move(tasks_queue),
+				tasks_queue_condition_variable_= move(tasks_queue_condition_variable),
+				shutdown_flag_= move(shutdown_flag),
+
+			)
 		{}
 
+		// Thread entry point.
 		op()( byval this );
 
 	private:
 		TasksQueuePtr tasks_queue_;
+		TasksQueueConditionVariablePtr tasks_queue_condition_variable_;
 		ShutdownFlagPtr shutdown_flag_;
 	}
 
 private:
 	TasksQueuePtr tasks_queue_;
+	TasksQueueConditionVariablePtr tasks_queue_condition_variable_;
 	ShutdownFlagPtr shutdown_flag_;
 	ust::thread</RunnerThreadFunction, void/> runner_thread_;
 }
