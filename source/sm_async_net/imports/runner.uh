@@ -1,0 +1,16 @@
+namespace sm_async_net
+{
+
+class runner
+{
+public:
+	// Create runner instance, incliding background thread(s) for actual tasks running.
+	fn constructor();
+
+	// Destructor cancels all running tasks.
+	fn destructor();
+
+private:
+}
+
+} // namespace sm_async_net

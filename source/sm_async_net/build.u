@@ -8,6 +8,8 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	{
 		.name= "sm_async_net",
 		.target_type= BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ ust::string8 />( "src/runner.u" ),
+		.public_include_directories= ust::make_array</ust::filesystem_path/>( "imports" ),
 	};
 
 	var BK::BuildTarget mut tests_target

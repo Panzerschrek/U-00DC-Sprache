@@ -1,0 +1,14 @@
+import "/sm_async_net/runner.uh"
+
+namespace sm_async_net
+{
+
+fn runner::constructor()
+{
+}
+
+fn runner::destructor()
+{
+}
+
+} // namespace sm_async_net

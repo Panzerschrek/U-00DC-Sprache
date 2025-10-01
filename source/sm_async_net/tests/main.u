@@ -1,8 +1,27 @@
 import "/main_wrapper.u"
 import "/stdout.u"
+import "/sm_async_net/runner.uh"
 
 pretty_main
 {
+	return sm_async_net::Main();
+}
+
+namespace sm_async_net
+{
+
+fn Main() : i32
+{
 	ust::stdout_print( "sm_async_net tests\n" );
+
+	BasicRunnerCreation();
+
 	return 0;
 }
+
+fn BasicRunnerCreation()
+{
+	var runner r;
+}
+
+} // namespace sm_async_net
