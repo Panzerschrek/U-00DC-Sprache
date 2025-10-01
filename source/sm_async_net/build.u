@@ -1,0 +1,18 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	ust::ignore_unused( build_system_interface );
+
+	// Single build target.
+	var BK::BuildTarget mut target
+	{
+		.target_type = BK::BuildTargetType::Executable,
+		// You may change name here.
+		.name= "hello_world",
+		// You may change/add source files.
+		.source_files= ust::make_array</ ust::string8 />( "main.u" ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+}
