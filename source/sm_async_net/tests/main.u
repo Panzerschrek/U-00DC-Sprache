@@ -16,6 +16,7 @@ fn Main() : i32
 
 	BasicRunnerCreation();
 	BasicRunnerTaskAdd();
+	BasicRunnerAddAndEnsureExecution();
 
 	return 0;
 }
@@ -34,5 +35,32 @@ fn BasicRunnerTaskAdd()
 }
 
 fn async SimplesAsyncFunction() {}
+
+fn BasicRunnerAddAndEnsureExecution()
+{
+	var runner r;
+
+	var ust::shared_atomic_variable</bool/> v(false);
+
+	r.add_task( BasicRunnerAddAndEnsureExecutionFunc(v) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !v.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async BasicRunnerAddAndEnsureExecutionFunc( ust::shared_atomic_variable</bool/> v )
+{
+	yield;
+	yield;
+	ust::stdout_print( "BasicRunnerAddAndEnsureExecutionFunc\n" );
+	yield;
+	yield;
+	yield;
+	ust::stdout_print( "BasicRunnerAddAndEnsureExecutionFunc - finish\n" );
+	v.write( true );
+}
 
 } // namespace sm_async_net
