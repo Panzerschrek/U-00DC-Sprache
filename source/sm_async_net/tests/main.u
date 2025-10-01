@@ -3,6 +3,6 @@ import "/stdout.u"
 
 pretty_main
 {
-	ust::stdout_print( "Hello, world!\n" );
+	ust::stdout_print( "sm_async_net tests\n" );
 	return 0;
 }

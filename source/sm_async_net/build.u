@@ -4,15 +4,19 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 {
 	ust::ignore_unused( build_system_interface );
 
-	// Single build target.
-	var BK::BuildTarget mut target
+	var BK::BuildTarget mut library_target
 	{
-		.target_type = BK::BuildTargetType::Executable,
-		// You may change name here.
-		.name= "hello_world",
-		// You may change/add source files.
-		.source_files= ust::make_array</ ust::string8 />( "main.u" ),
+		.name= "sm_async_net",
+		.target_type= BK::BuildTargetType::Library,
 	};
 
-	return BK::PackageInfo{ .build_targets= ust::make_array( move(target) ) };
+	var BK::BuildTarget mut tests_target
+	{
+		.name= "tests",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ ust::string8 />( "tests/main.u" ),
+		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
+	};
+
+	return BK::PackageInfo{ .build_targets= ust::make_array( move(library_target), move(tests_target) ) };
 }
