@@ -1,3 +1,6 @@
+import "/shared_ptr_mt.u"
+import "/shared_atomic_variable.u"
+import "/thread.u"
 import "queue.uh"
 
 namespace sm_async_net
@@ -6,17 +9,42 @@ namespace sm_async_net
 class runner
 {
 public:
+	type root_task_type= (async : void);
+
+public:
 	// Create runner instance, incliding background thread(s) for actual tasks running.
 	fn constructor();
 
 	// Destructor cancels all running tasks.
 	fn destructor();
 
-private:
-	type RootTask= (async : void);
+	// Add tasks for execution.
+	// This function returns without waiting for task to finish.
+	fn add_task( this, root_task_type t );
 
 private:
-	Queue</RootTaks/> tasks_queue_;
+	type TasksQueue= Queue</root_task_type/>;
+	type TasksQueuePtr= ust::shared_ptr_mt_mut</TasksQueue/>;
+	type ShutdownFlagPtr= ust::shared_atomic_variable</bool/>;
+
+	class RunnerThreadFunction
+	{
+	public:
+		fn constructor( TasksQueuePtr mut q, ShutdownFlagPtr mut shutdown_flag )
+			( tasks_queue_= move(q), shutdown_flag_= move(shutdown_flag) )
+		{}
+
+		op()( byval this );
+
+	private:
+		TasksQueuePtr tasks_queue_;
+		ShutdownFlagPtr shutdown_flag_;
+	}
+
+private:
+	TasksQueuePtr tasks_queue_;
+	ShutdownFlagPtr shutdown_flag_;
+	ust::thread</RunnerThreadFunction, void/> runner_thread_;
 }
 
 } // namespace sm_async_net

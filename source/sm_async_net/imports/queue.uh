@@ -33,7 +33,7 @@ public:
 		return ust::null_optional;
 	}
 
-	fn IsEmpty( this )
+	fn IsEmpty( this ) : bool
 	{
 		return in_stack_.empty() && out_stack_.empty();
 	}

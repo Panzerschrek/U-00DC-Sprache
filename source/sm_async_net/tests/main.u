@@ -15,6 +15,7 @@ fn Main() : i32
 	ust::stdout_print( "sm_async_net tests\n" );
 
 	BasicRunnerCreation();
+	BasicRunnerTaskAdd();
 
 	return 0;
 }
@@ -23,5 +24,15 @@ fn BasicRunnerCreation()
 {
 	var runner r;
 }
+
+fn BasicRunnerTaskAdd()
+{
+	var runner r;
+
+	// Adding a task doesn't require "r" instance to be mutable.
+	r.add_task( SimplesAsyncFunction() );
+}
+
+fn async SimplesAsyncFunction() {}
 
 } // namespace sm_async_net

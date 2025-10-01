@@ -4,11 +4,31 @@ namespace sm_async_net
 {
 
 fn runner::constructor()
+	(
+		tasks_queue_( TasksQueue() ),
+		shutdown_flag_( false ),
+		runner_thread_= ust::make_thread( RunnerThreadFunction( tasks_queue_, shutdown_flag_ ) )
+	)
 {
 }
 
 fn runner::destructor()
 {
+	shutdown_flag_.write( true );
+}
+
+fn runner::add_task( this, root_task_type mut t )
+{
+	auto mut l= tasks_queue_.lock_mut();
+	l.deref().Push( move(t) );
+}
+
+op runner::RunnerThreadFunction::()( byval this )
+{
+	while( !shutdown_flag_.read() )
+	{
+		ust::yield_current_thread();
+	}
 }
 
 } // namespace sm_async_net
