@@ -98,6 +98,39 @@ fn async nomangle Wtf( ust::array_view_imut</i32/> nums ) : i32
 	return product;
 }
 
+class SomeClass
+{
+public:
+	fn constructor();
+	fn destructor();
+
+	fn GetX( this ) : i32
+	{
+		return i32(x_) + i32(y_) * i32(z_);
+	}
+
+private:
+	i32 x_;
+	f32 y_;
+	size_type z_;
+}
+
+fn async SomeClassCreator() : SomeClass
+{
+	return SomeClass();
+}
+
+fn async nomangle SomeClassCreatorCaller() : i32
+{
+	return ExternalAwait( SomeClassCreator() ).await.GetX();
+}
+
+fn async nomangle SomeClassCreatorArrayCaller() : i32
+{
+	var [ SomeClass, 8 ] a= ExternalAwaitMultiple( ust::make_array( SomeClassCreator(), SomeClassCreator(), SomeClassCreator(), SomeClassCreator(), SomeClassCreator(), SomeClassCreator(), SomeClassCreator(), SomeClassCreator() ) ).await;
+	return a[0].GetX() + a[1].GetX() + a[2].GetX() + a[3].GetX() + a[4].GetX() + a[5].GetX() + a[6].GetX() + a[7].GetX();
+}
+
 template</type T/>
 fn async ExternalAwait( ( async : T ) mut f ) : T
 {
@@ -110,6 +143,8 @@ fn async ExternalAwait( ( async : T ) mut f ) : T
 
 		ExternalAwaitImpl( handle );
 
+		var CoroResultDestroyer</T/> mut result_destroyer( f );
+
 		// Perform yield loop until given function isn't done.
 		loop
 		{
@@ -120,6 +155,8 @@ fn async ExternalAwait( ( async : T ) mut f ) : T
 				break;
 			}
 		}
+
+		move(result_destroyer).PreventResultDestruction();
 
 		var T mut res= uninitialized;
 
@@ -148,6 +185,9 @@ fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B 
 		ExternalAwaitImpl( handle_a );
 		ExternalAwaitImpl( handle_b );
 
+		var CoroResultDestroyer</A/> mut result_destroyer_a( a );
+		var CoroResultDestroyer</B/> mut result_destroyer_b( b );
+
 		// Perform yield loop until given functions aren't done.
 		loop
 		{
@@ -158,6 +198,9 @@ fn async ExternalAwait2( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B 
 				break;
 			}
 		}
+
+		move(result_destroyer_a).PreventResultDestruction();
+		move(result_destroyer_b).PreventResultDestruction();
 
 		var tup[ A, B ] mut res= uninitialized;
 
@@ -195,6 +238,10 @@ fn async ExternalAwait3( ( async : A ) mut a, ( async : B ) mut b, ( async : C )
 		ExternalAwaitImpl( handle_b );
 		ExternalAwaitImpl( handle_c );
 
+		var CoroResultDestroyer</A/> mut result_destroyer_a( a );
+		var CoroResultDestroyer</B/> mut result_destroyer_b( b );
+		var CoroResultDestroyer</C/> mut result_destroyer_c( c );
+
 		// Perform yield loop until given functions aren't done.
 		loop
 		{
@@ -205,6 +252,10 @@ fn async ExternalAwait3( ( async : A ) mut a, ( async : B ) mut b, ( async : C )
 				break;
 			}
 		}
+
+		move(result_destroyer_a).PreventResultDestruction();
+		move(result_destroyer_b).PreventResultDestruction();
+		move(result_destroyer_c).PreventResultDestruction();
 
 		var tup[ A, B, C ] mut res= uninitialized;
 
@@ -242,6 +293,8 @@ fn async ExternalAwaitMultiple( [ ( async : T ), S ] mut a ) : [ T, S ]
 			ExternalAwaitImpl( handle );
 		}
 
+		var CoroResultArrayDestroyer</T, S/> mut result_destroyer( a );
+
 		// Perform yield loop until given functions aren't done.
 		loop
 		{
@@ -257,6 +310,8 @@ fn async ExternalAwaitMultiple( [ ( async : T ), S ] mut a ) : [ T, S ]
 				break;
 			}
 		}
+
+		move(result_destroyer).PreventResultDestruction();
 
 		var [ T, S ] mut res= uninitialized;
 
@@ -338,6 +393,76 @@ fn LoadCoroHandle( C& c ) : raw_coro_handle
 			typeinfo</raw_coro_handle/>.size_of );
 		return res;
 	}
+}
+
+template</type T/>
+class CoroResultDestroyer
+{
+public:
+	fn constructor( ( async : T )& c ) unsafe
+		( h_= LoadCoroHandle(c) )
+	{
+	}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			if( coro_done_impl( h_ ) )
+			{
+				var $(byte8) ret_ptr= h_ + typeinfo</size_type/>.size_of * 2s;
+				var T &mut ret= $>( ust::byte_ptr_cast</T/>( ret_ptr ) );
+				ust::call_destructor( ret );
+			}
+		}
+	}
+
+	fn PreventResultDestruction( byval mut this )
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+
+private:
+	raw_coro_handle h_;
+}
+
+template</type T, size_type S/>
+class CoroResultArrayDestroyer
+{
+public:
+	fn constructor( [ ( async : T ), S ] & c ) unsafe
+		( handles_= zero_init )
+	{
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			handles_[i]= LoadCoroHandle( c[i] );
+		}
+	}
+
+	fn destructor()
+	{
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			var raw_coro_handle h= handles_[i];
+			unsafe
+			{
+				if( coro_done_impl( h ) )
+				{
+					var $(byte8) ret_ptr= h + typeinfo</size_type/>.size_of * 2s;
+					var T &mut ret= $>( ust::byte_ptr_cast</T/>( ret_ptr ) );
+					ust::call_destructor( ret );
+				}
+			}
+		}
+	}
+
+	fn PreventResultDestruction( byval mut this )
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+
+private:
+	[ raw_coro_handle, S ] handles_;
 }
 
 type raw_coro_handle= $(byte8);
