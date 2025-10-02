@@ -123,7 +123,7 @@ Nested decomposition is also possible:
 ******************
 
 It's possible to define variables outside functions - in the root namespace, namespaces, inside structs and classes.
-But these variables have a limitation - they must be compile-time constants (``constexpr``).
+But these variables have a limitation - they must be compile-time constants (``constexpr``) or they should be of raw pointer type with ``zero_init`` initializer.
 
 .. code-block:: u_spr
 
@@ -147,7 +147,7 @@ But these variables have a limitation - they must be compile-time constants (``c
 **************************
 
 Global mutable variables are similar to immutable global variables.
-They must be a ``constexpr`` type and have ``constexpr`` initializer.
+They must be a ``constexpr`` type and have ``constexpr`` initializer or they may be raw pointers with ``zero_init`` initializer.
 
 Access to global mutable variables is possible only in ``unsafe`` code - including reading and writing.
 It's necessary, since there is no reference checking or any synchronization mechanisms for global variables.
@@ -159,6 +159,7 @@ Global mutable variables are declared like immutable ones, but with ``mut`` modi
 
    auto mut global_int = 66;
    var f32 mut global_float = 0.25f;
+   var $(f64) mut global_ptr= zero_init;
 
 The only substantial difference between mutable and immutable global variables is a possibility of mutable references creation.
 There are forbidden, since it's not possible to synchronize access properly.
@@ -168,7 +169,7 @@ thread_local variables
 -----------------------
 
 ``thread_local`` variables are just global mutable variables, but having only one difference - each thread has its own copy of such variable.
-They have the same limitations as regular global mutable variables - it's allowed to access them only in ``unsafe`` code, only ``constexpr`` types are allowed for them.
+They have the same limitations as regular global mutable variables - it's allowed to access them only in ``unsafe`` code, only ``constexpr`` types are allowed for them (or raw pointer types with ``zero_init`` intializer).
 Their syntax is different from regular variables - it's necessary to specify ``thread_local`` keyword, following by type name and list of variables (with initializers), separated by comma. Reference and mutability modifiers aren't allowed.
 
 .. code-block:: u_spr
