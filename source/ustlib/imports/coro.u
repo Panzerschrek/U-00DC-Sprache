@@ -1,3 +1,5 @@
+import "memory.u"
+
 namespace ust
 {
 
@@ -5,7 +7,7 @@ template</type T/>
 fn enable_if( coro_impl::is_coroutine</T/>() )
 coro_done( T& coroutine ) : bool
 {
-	return unsafe( ::coro_done_impl( cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle ) );
+	return unsafe( ::coro_done_impl( get_raw_coro_handle( coroutine ) ) );
 }
 
 // Resume given coroutine.
@@ -15,7 +17,7 @@ template</type T/>
 fn enable_if( coro_impl::is_coroutine</T/>() )
 coro_resume( T &mut coroutine ) unsafe
 {
-	unsafe( ::coro_resume_impl( cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle ) );
+	unsafe( ::coro_resume_impl( get_raw_coro_handle( coroutine ) ) );
 }
 
 // Returns address of storage of given coroutine, where return value (or reference) is placed.
@@ -30,7 +32,7 @@ coro_return_value_address( T &mut coroutine ) unsafe : $(byte8)
 
 	unsafe
 	{
-		var coro_impl::raw_coro_handle h= cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle;
+		var raw_coro_handle h= get_raw_coro_handle( coroutine );
 		switch( alignment )
 		{
 			1s -> { return coro_return_value_address_impl_align1( h ); },
@@ -43,16 +45,30 @@ coro_return_value_address( T &mut coroutine ) unsafe : $(byte8)
 	}
 }
 
-namespace coro_impl
-{
+// Type representing raw coroutine handle, used internally by the compiler.
+type raw_coro_handle= $(byte8);
 
-// If internal compiler representation of coroutine type is changed, this mush be changed too!
-struct coro_struct
+// Extract raw coroutine handle from given coroutine object.
+template</type T/>
+fn enable_if( coro_impl::is_coroutine</T/>() )
+get_raw_coro_handle( T& coroutine ) : raw_coro_handle
 {
-	raw_coro_handle handle;
+	static_assert( typeinfo</T/>.size_of == typeinfo</raw_coro_handle/>.size_of );
+
+	// Use "memcpy" to workaround TBAA.
+	unsafe
+	{
+		var raw_coro_handle mut res= uninitialized;
+		memory_copy(
+			ptr_cast_to_byte8( $<( res ) ),
+			ptr_cast_to_byte8( $<( cast_mut( coroutine ) ) ),
+			typeinfo</raw_coro_handle/>.size_of );
+		return res;
+	}
 }
 
-type raw_coro_handle= $(byte8);
+namespace coro_impl
+{
 
 template</type T/> fn constexpr is_coroutine() : bool
 {
@@ -71,10 +87,10 @@ template</type T/> fn constexpr is_coroutine() : bool
 } // namespace ust
 
 // External implementation functions. Do not use directly!
-fn nomangle coro_done_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : bool;
-fn nomangle coro_resume_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe;
-fn nomangle coro_return_value_address_impl_align1( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
-fn nomangle coro_return_value_address_impl_align2( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
-fn nomangle coro_return_value_address_impl_align4( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
-fn nomangle coro_return_value_address_impl_align8( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
-fn nomangle coro_return_value_address_impl_align16( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_done_impl( ust::raw_coro_handle coro_handle ) unsafe : bool;
+fn nomangle coro_resume_impl( ust::raw_coro_handle coro_handle ) unsafe;
+fn nomangle coro_return_value_address_impl_align1( ust::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align2( ust::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align4( ust::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align8( ust::raw_coro_handle coro_handle ) unsafe : $(byte8);
+fn nomangle coro_return_value_address_impl_align16( ust::raw_coro_handle coro_handle ) unsafe : $(byte8);

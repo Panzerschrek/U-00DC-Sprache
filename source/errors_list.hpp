@@ -94,6 +94,7 @@ PROCESS_ERROR( InitializerForNonfieldStructMember, "Initializer for member \"{0}
 PROCESS_ERROR( InitializerForBaseClassField, "Initializer for class member \"{0}\", which is not this class field." )
 PROCESS_ERROR( DuplicatedStructMemberInitializer, "Duplicated initializer for field \"{0}\"." )
 PROCESS_ERROR( InitializerDisabledBecauseClassHasExplicitNoncopyConstructors, "This kind of initializer disabled for this class, because it has explicit noncopy constructor(s)." )
+PROCESS_ERROR( UnsupportedInitializerForGlobalRawPointerVariable, "Unsupported initializer for a global variable of raw pointer type. Only zero initializer is allowed." )
 
 // Constructors errors
 PROCESS_ERROR( ConstructorOrDestructorOutsideClass, "Constructor or destructor outside class." )

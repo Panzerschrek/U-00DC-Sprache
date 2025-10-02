@@ -78,5 +78,12 @@ fn nomangle main() call_conv( "C" ) : i32
 			halt if( !ust::coro_done( g ) );
 		}
 	}
+	{ // Use raw coro handle.
+		auto mut g= VoidGen();
+		var ust::raw_coro_handle h= ust::get_raw_coro_handle( g );
+		halt if( unsafe( coro_done_impl( h ) ) );
+		unsafe( coro_resume_impl( h ) );
+		halt if( !unsafe( coro_done_impl( h ) ) );
+	}
 	return 0;
 }

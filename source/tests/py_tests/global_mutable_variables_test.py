@@ -235,16 +235,6 @@ def GobalMutableVariableShouldHaveConstexprType_Test1():
 	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 3 ) )
 
 
-def GobalMutableVariableShouldHaveConstexprType_Test2():
-	c_program_text= """
-		// Raw pointer type is not "constexpr" type.
-		// So, now it's not possible to use raw pointers in global variables.
-		var $(i32) mut ptr= zero_init;
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 4 ) )
-
-
 def MutableGlobalReferencesAreNotAllowed_Test0():
 	c_program_text= """
 		var i32 mut x= 0;
@@ -504,13 +494,3 @@ def ThreadLocalVariableShouldHaveConstexprType_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 3 ) )
-
-
-def ThreadLocalVariableShouldHaveConstexprType_Test2():
-	c_program_text= """
-		// Raw pointer type is not "constexpr" type.
-		// So, now it's not possible to use raw pointers in thread-local variables.
-		thread_local $(i32) ptr= zero_init;
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 4 ) )

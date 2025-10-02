@@ -84,6 +84,7 @@ private:
 static_assert( !typeinfo</NonCopyableByvalThisFunctor/>.is_copy_constructible );
 
 thread_local i32 some_thread_local_variable= 9999;
+thread_local $(i32) some_thread_local_raw_poineter= zero_init;
 
 fn ModifyThreadLocalVariable() : i32
 {
@@ -91,6 +92,9 @@ fn ModifyThreadLocalVariable() : i32
 	{
 		// Should have initial value of the variable.
 		halt if( some_thread_local_variable != 9999 );
+		halt if( !ust::is_nullptr( some_thread_local_raw_poineter ) );
+
+		some_thread_local_raw_poineter= $<(some_thread_local_variable);
 
 		for( auto mut i= 0s; i < 65536s; ++i )
 		{
@@ -228,7 +232,14 @@ fn nomangle main() call_conv( "C" ) : i32
 	{
 		// Run several threads, each of them works with its own copy of a thread-local variable.
 
-		unsafe{ some_thread_local_variable = 123456; }
+		unsafe
+		{
+			halt if( some_thread_local_variable != 9999 );
+			halt if( !ust::is_nullptr( some_thread_local_raw_poineter ) );
+
+			some_thread_local_variable = 123456;
+			some_thread_local_raw_poineter= $<(some_thread_local_variable);
+		}
 
 		var ust::vector</ ust::thread</ fn() : i32, i32 /> /> mut threads;
 		for( auto mut i= 0s; i < 16s; ++i )
