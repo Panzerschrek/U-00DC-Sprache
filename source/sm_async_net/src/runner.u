@@ -18,8 +18,12 @@ fn runner::destructor()
 {
 	// Set shudown flag first, than notify all runner threads waiting on the condition variable associated with the tasks queue.
 	// Doing so we trigger stopping runner thread loops.
-	shutdown_flag_.write( true );
-	tasks_queue_condition_variable_.notify_all();
+	// Do this uder a lock to avoid race conditions with worker threads.
+	with( l : tasks_queue_.lock() )
+	{
+		shutdown_flag_.write( true );
+		tasks_queue_condition_variable_.notify_all();
+	}
 
 	// Destructors of runner threads execute "join" here. So we gracefully perform the shutdown sequence.
 }
@@ -41,26 +45,24 @@ op runner::RunnerThreadFunction::()( byval this )
 		// Lock tasks queue, try popping a task.
 		// If no task is available, wait on condition variable for the tasks queue, than try popping a task again.
 		// Break this loop if a new task is available or if shutdown flag is specified.
+		// Since shutdown flag is set under the mutex lock, we are sure it's not possible for it to be changed between reading it and waiting on the condition variable.
 		{
 			auto mut l= tasks_queue_.lock();
 			loop
 			{
+				if( shutdown_flag_.read() )
+				{
+					return;
+				}
+
 				next_task= l.deref().TryPop();
 
-				if( next_task.empty() )
-				{
-					// TODO - ensure we always can wake here on shutdown (no race condition is possible).
-					tasks_queue_condition_variable_.wait( l );
-
-					if( shutdown_flag_.read() )
-					{
-						return;
-					}
-				}
-				else
+				if( !next_task.empty() )
 				{
 					break;
 				}
+
+				tasks_queue_condition_variable_.wait( l );
 			}
 		}
 
