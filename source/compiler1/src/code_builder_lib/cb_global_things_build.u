@@ -1685,7 +1685,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		REPORT_ERROR( UsingIncompleteType, names_scope_ptr, variables_declaration.src_loc, t )
 		return;
 	}
-	if( !t.CanBeConstexpr() )
+	if( !( t.CanBeConstexpr() || ( !t.GetRawPointerType().empty() && variable_declaration.reference_modifier == Synt::ReferenceModifier::None ) ) )
 	{
 		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope_ptr, variable_declaration.src_loc )
 		return;
@@ -1720,6 +1720,21 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		}
 
 		function_context.references_graph.AddNode( variable_ptr );
+
+		if_var( &raw_pointer_type : t.GetRawPointerType() )
+		{
+			// Allow global variables of raw pointer types (even if raw pointers aren't constexpr), but only with zero initializer.
+			if( variable_declaration.initializer.has</Synt::ZeroInitializer/>() )
+			{
+				constexpr_value= unsafe( LLVMConstNull( raw_pointer_type.llvm_type ) );
+			}
+			else
+			{
+				REPORT_ERROR( UnsupportedInitializerForGlobalRawPointerVariable, names_scope_ptr, variable_declaration.src_loc )
+				return;
+			}
+		}
+		else
 		{
 			var VariablePtr variable_for_initialization_ptr=
 				Variable
