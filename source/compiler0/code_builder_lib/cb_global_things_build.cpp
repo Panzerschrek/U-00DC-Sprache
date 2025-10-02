@@ -1480,8 +1480,7 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 					variable->constexpr_value= llvm::ConstantPointerNull::get( raw_pionter_type->llvm_type );
 				else
 				{
-					// TODO - use other error code.
-					REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), variable_declaration.src_loc );
+					REPORT_ERROR( UnsupportedInitializerForGlobalRawPointerVariable, names_scope.GetErrors(), variable_declaration.src_loc );
 					FAIL_RETURN;
 				}
 			}
