@@ -1001,3 +1001,88 @@ def RawPointerGlobalVariable_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointerGlobalVariable_Test1():
+	c_program_text= """
+		// Global immutable variable of raw pointer type to non-constexpr type with zero initializer.
+		var $(C) global_ptr= zero_init;
+		fn Foo()
+		{
+			var $(C) z= zero_init;
+			halt if( global_ptr != z );
+		}
+		// Class with custom destructor isn't constexpr.
+		class C
+		{
+			fn destructor();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointerGlobalVariable_Test2():
+	c_program_text= """
+		// Global mutable variable of raw pointer type with zero initializer.
+		var $(i32) mut global_ptr= zero_init;
+		fn Foo()
+		{
+			var $(i32) z= zero_init;
+			unsafe{ halt if( global_ptr != z ); }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointerGlobalVariable_Test3():
+	c_program_text= """
+		// Global mutable variable of raw pointer type to non-constexpr type with zero initializer.
+		var $(C) mut global_ptr= zero_init;
+		fn Foo()
+		{
+			var $(C) z= zero_init;
+			unsafe{ halt if( global_ptr != z ); }
+		}
+		// Class with custom destructor isn't constexpr.
+		class C
+		{
+			fn destructor();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointerGlobalVariable_Test4():
+	c_program_text= """
+		// Global thread-local mutable variable of raw pointer type with zero initializer.
+		thread_local $(i32) global_ptr= zero_init;
+		fn Foo()
+		{
+			var $(i32) z= zero_init;
+			unsafe{ halt if( global_ptr != z ); }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointerGlobalVariable_Test5():
+	c_program_text= """
+		// Global thread-local mutable variable of raw pointer type to non-constexpr type with zero initializer.
+		thread_local $(C) global_ptr= zero_init;
+		fn Foo()
+		{
+			var $(C) z= zero_init;
+			unsafe{ halt if( global_ptr != z ); }
+		}
+		// Class with custom destructor isn't constexpr.
+		class C
+		{
+			fn destructor();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
