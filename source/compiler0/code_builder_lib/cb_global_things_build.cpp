@@ -1431,7 +1431,7 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 			FAIL_RETURN;
 		}
 
-		if( !( type.CanBeConstexpr() || type.GetRawPointerType() != nullptr ) )
+		if( !( type.CanBeConstexpr() || ( type.GetRawPointerType() != nullptr && variable_declaration.reference_modifier == Synt::ReferenceModifier::None ) ) )
 		{
 			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), variable_declaration.src_loc );
 			FAIL_RETURN;

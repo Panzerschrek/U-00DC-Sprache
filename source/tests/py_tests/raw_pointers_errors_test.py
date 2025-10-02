@@ -648,3 +648,12 @@ def UnsupportedInitializerForGlobalRawPointerVariable_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HasError( errors_list, "UnsupportedInitializerForGlobalRawPointerVariable", 3 ) )
+
+
+def InvalidTypeForConstantExpressionVariable_ForRawPointerReference_Test0():
+	c_program_text= """
+		var $(i32) global_ptr= zero_init;
+		var $(i32) & global_ptr_ref= global_ptr;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HasError( errors_list, "InvalidTypeForConstantExpressionVariable", 3 ) )
