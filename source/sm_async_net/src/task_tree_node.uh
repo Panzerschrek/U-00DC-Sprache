@@ -7,7 +7,7 @@ namespace sm_async_net
 
 struct TaskTreeNode
 {
-	ust::coro_impl::raw_coro_handle async_function_handle;
+	ust::raw_coro_handle async_function_handle;
 
 	// Store strong shared pointers to children and weak pointer to parent (to avoid strong loops).
 
