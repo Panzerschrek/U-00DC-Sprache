@@ -1431,7 +1431,7 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 			FAIL_RETURN;
 		}
 
-		if( !type.CanBeConstexpr() )
+		if( !( type.CanBeConstexpr() || type.GetRawPointerType() != nullptr ) )
 		{
 			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), variable_declaration.src_loc );
 			FAIL_RETURN;
@@ -1472,6 +1472,20 @@ void CodeBuilder::GlobalThingBuildVariableImpl( NamesScope& names_scope, Value& 
 					global_variable );
 			function_context.variables_state.AddNode( variable );
 
+			if( const RawPointerType* const raw_pionter_type= type.GetRawPointerType() )
+			{
+				// Allow global variables of raw pointer types (even if raw pointers aren't constexpr), but only with zero initializer.
+				if( variable_declaration.initializer != nullptr &&
+					std::holds_alternative<Synt::ZeroInitializer>( *variable_declaration.initializer ) )
+					variable->constexpr_value= llvm::ConstantPointerNull::get( raw_pionter_type->llvm_type );
+				else
+				{
+					// TODO - use other error code.
+					REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), variable_declaration.src_loc );
+					FAIL_RETURN;
+				}
+			}
+			else
 			{
 				const VariablePtr variable_for_initialization=
 					Variable::Create(

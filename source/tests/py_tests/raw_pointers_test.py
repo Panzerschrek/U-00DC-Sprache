@@ -987,3 +987,17 @@ def RawPointerTemplateFunctionSpecialization_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def RawPointerGlobalVariable_Test0():
+	c_program_text= """
+		// Global immutable variable of raw pointer type with zero initializer.
+		var $(i32) global_ptr= zero_init;
+		fn Foo()
+		{
+			var $(i32) z= zero_init;
+			halt if( global_ptr != z );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
