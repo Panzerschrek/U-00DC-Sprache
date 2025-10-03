@@ -11,9 +11,6 @@ namespace sm_async_net
 class runner
 {
 public:
-	type root_task_type= (async : void);
-
-public:
 	// Create runner instance, incliding background thread(s) for actual tasks running.
 	fn constructor();
 
@@ -25,40 +22,46 @@ public:
 	fn add_task( this, root_task_type t );
 
 private:
-	type TasksQueue= Queue</root_task_type/>;
-	type TasksQueuePtr= ust::shared_ptr_mt_mutex</TasksQueue/>;
-	type TasksQueueConditionVariablePtr= ust::shared_condition_variable;
-	type ShutdownFlagPtr= ust::shared_atomic_variable</bool/>;
-
 	class RunnerThreadFunction
 	{
 	public:
-		fn constructor(
-			TasksQueuePtr mut tasks_queue,
-			TasksQueueConditionVariablePtr mut tasks_queue_condition_variable,
-			ShutdownFlagPtr mut shutdown_flag )
-			(
-				tasks_queue_= move(tasks_queue),
-				tasks_queue_condition_variable_= move(tasks_queue_condition_variable),
-				shutdown_flag_= move(shutdown_flag),
-
-			)
+		fn constructor( SharedState mut state )
+			( state_= move(state) )
 		{}
 
 		// Thread entry point.
 		op()( byval this );
 
 	private:
-		TasksQueuePtr tasks_queue_;
-		TasksQueueConditionVariablePtr tasks_queue_condition_variable_;
-		ShutdownFlagPtr shutdown_flag_;
+		SharedState state_;
 	}
 
 private:
-	TasksQueuePtr tasks_queue_;
-	TasksQueueConditionVariablePtr tasks_queue_condition_variable_;
-	ShutdownFlagPtr shutdown_flag_;
+	SharedState state_;
 	ust::thread</RunnerThreadFunction, void/> runner_thread_;
 }
+
+type root_task_type= (async : void);
+
+// TODO - move internal structures definitions somewhere else.
+
+type TasksQueue= Queue</root_task_type/>;
+type TasksQueuePtr= ust::shared_ptr_mt_mutex</TasksQueue/>;
+type TasksQueueConditionVariablePtr= ust::shared_condition_variable;
+type ShutdownFlagPtr= ust::shared_atomic_variable</bool/>;
+
+struct SharedState
+{
+	TasksQueuePtr tasks_queue;
+	TasksQueueConditionVariablePtr tasks_queue_condition_variable;
+	ShutdownFlagPtr shutdown_flag;
+}
+
+// Add a task into currently-active runner.
+// This call is non-blocking, it doesn't wait until the added task is done.
+// You should call this function only within another async task, so that the new one will be added into the same runner.
+// The added task may be moved for execution to another thread.
+// TODO - maybe return an error in case of addition fail?
+fn add_task( root_task_type t );
 
 } // namespace sm_async_net

@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/sm_async_net/runner.uh"
 import "task_tree_node.uh"
 
@@ -6,10 +7,12 @@ namespace sm_async_net
 
 fn runner::constructor()
 	(
-		tasks_queue_( TasksQueue() ),
-		shutdown_flag_( false ),
-		runner_thread_=
-			ust::make_thread( RunnerThreadFunction( tasks_queue_, tasks_queue_condition_variable_, shutdown_flag_ ) )
+		state_
+		{
+			.tasks_queue( TasksQueue() ),
+			.shutdown_flag( false ),
+		},
+		runner_thread_= ust::make_thread( RunnerThreadFunction( state_ ) )
 	)
 {
 }
@@ -19,10 +22,10 @@ fn runner::destructor()
 	// Set shudown flag first, than notify all runner threads waiting on the condition variable associated with the tasks queue.
 	// Doing so we trigger stopping runner thread loops.
 	// Do this uder a lock to avoid race conditions with worker threads.
-	with( l : tasks_queue_.lock() )
+	with( l : state_.tasks_queue.lock() )
 	{
-		shutdown_flag_.write( true );
-		tasks_queue_condition_variable_.notify_all();
+		state_.shutdown_flag.write( true );
+		state_.tasks_queue_condition_variable.notify_all();
 	}
 
 	// Destructors of runner threads execute "join" here. So we gracefully perform the shutdown sequence.
@@ -31,14 +34,14 @@ fn runner::destructor()
 fn runner::add_task( this, root_task_type mut t )
 {
 	// Lock tasks queue, add a task and notify condition variable to wake one of the runner threads.
-	auto mut l= tasks_queue_.lock();
+	auto mut l= state_.tasks_queue.lock();
 	l.deref().Push( move(t) );
-	tasks_queue_condition_variable_.notify_one();
+	state_.tasks_queue_condition_variable.notify_one();
 }
 
 op runner::RunnerThreadFunction::()( byval this )
 {
-	while( !shutdown_flag_.read() )
+	while( !state_.shutdown_flag.read() )
 	{
 		var ust::optional</root_task_type/> mut next_task;
 
@@ -47,10 +50,10 @@ op runner::RunnerThreadFunction::()( byval this )
 		// Break this loop if a new task is available or if shutdown flag is specified.
 		// Since shutdown flag is set under the mutex lock, we are sure it's not possible for it to be changed between reading it and waiting on the condition variable.
 		{
-			auto mut l= tasks_queue_.lock();
+			auto mut l= state_.tasks_queue.lock();
 			loop
 			{
-				if( shutdown_flag_.read() )
+				if( state_.shutdown_flag.read() )
 				{
 					return;
 				}
@@ -62,20 +65,55 @@ op runner::RunnerThreadFunction::()( byval this )
 					break;
 				}
 
-				tasks_queue_condition_variable_.wait( l );
+				state_.tasks_queue_condition_variable.wait( l );
 			}
 		}
 
 		// For now execute a task without any pause until it's possible.
 		// Break only if shudown is requested.
 		var root_task_type &mut task= next_task.try_deref();
-		while( !shutdown_flag_.read() )
+
+		// Set shared state global variable.
+		// Since this global variable is thread-local and this function is running on a separate thread, it's not impossible here to overwrite someone else's variable instance.
+		unsafe{ g_current_runner_thread_shared_state= $<( cast_mut(state_) ); }
+
+		while( !state_.shutdown_flag.read() )
 		{
 			if_coro_advance( v : task )
 			{
 				ust::ignore_unused(v);
 				break;
 			}
+		}
+
+		unsafe{ g_current_runner_thread_shared_state= ust::nullptr</SharedState/>(); }
+	}
+}
+
+// Store here a raw pointer to shared state structure, when entering async function execution.
+// Don't forget to zero it back when leaving an async function execution!
+// Actual state isn't mutated by users of this variable.
+thread_local $(SharedState) g_current_runner_thread_shared_state= zero_init;
+
+fn add_task( root_task_type mut t )
+{
+	unsafe
+	{
+		var $(SharedState) state_ptr= g_current_runner_thread_shared_state;
+		assert( !ust::is_nullptr( state_ptr ), "The \"add_task\" function is called outside a runner thread!" );
+
+		var SharedState& state= $>(state_ptr);
+
+		with( mut l : state.tasks_queue.lock() )
+		{
+			if( state.shutdown_flag.read() )
+			{
+				// Do not add new tasks while shutting down.
+				return;
+			}
+
+			l.deref().Push( move(t) );
+			state.tasks_queue_condition_variable.notify_one();
 		}
 	}
 }

@@ -7,7 +7,6 @@ This list contains features to be implemented and cases to be considered:
 * Implement async TCP stream class.
 * Use `poll` function for sockets for waiting and dispatching of running async functions.
 * Add a way to wake up a runner thread waiting on `poll` call if new task is added into the tasks queue.
-* Add a free function like `add_task`, which may be used from currently running async function and which adds a task into current async unner.
 * Add a function like `async_sleep` - for effective delaying with possibility to swith to execution of another async functions.
 * Support multiple runner threads.
 * Consider a case where a registered child async function is transferred out of current runner context and executed there.
@@ -27,3 +26,4 @@ This list contains features to be implemented and cases to be considered:
 * Consider supporting execution of tasks with captured references.
 * Add a method like `execute_task_blocking` to wait for a task to finish.
 * Consider adding a method for adding a task, which returns a handle, which can be awaited to receive execution result.
+* Consider a possibility for the `add_task` free function to return an error - in case if no active runner thread is present, in case of shutdown, if tasks queue is full, etc.

@@ -18,6 +18,8 @@ fn Main() : i32
 	RunnerTaskAdd_Test0::Run();
 	RunnerTaskAdd_Test1::Run();
 	RunnerTaskAdd_Test2::Run();
+	AddTaskFreeFunction_Test0::Run();
+	AddTaskFreeFunction_Test1::Run();
 
 	return 0;
 }
@@ -113,6 +115,77 @@ fn async Func( ust::shared_atomic_variable</u32/> v )
 	yield;
 	v.inc();
 	yield;
+}
+
+}
+
+namespace AddTaskFreeFunction_Test0
+{
+
+fn Run()
+{
+	// Add a task, which internally adds a new root task via "add_task" free function.
+
+	var runner r;
+
+	var ust::shared_atomic_variable</u32/> v(0u);
+
+	r.add_task( Func0(v) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( v.read() != 3u )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func0( ust::shared_atomic_variable</u32/> v )
+{
+	add_task( Func1( v ) );
+	v.add( 1u );
+}
+
+fn async Func1( ust::shared_atomic_variable</u32/> v )
+{
+	v.add( 2u );
+}
+
+}
+
+namespace AddTaskFreeFunction_Test1
+{
+
+fn Run()
+{
+	// Add several tasks, each of them internally adds several new root tasks via "add_task" free function.
+
+	var runner r;
+
+	var ust::shared_atomic_variable</u32/> v(0u);
+
+	for( auto mut i= 0u; i < 4u; ++i )
+	{
+		r.add_task( Func0(v) );
+	}
+
+	// Use a crude way to wait - via "thread_yield".
+	while( v.read() < 12u )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func0( ust::shared_atomic_variable</u32/> v )
+{
+	for( auto mut i= 0u; i < 3u; ++i )
+	{
+		add_task( Func1( v ) );
+	}
+}
+
+fn async Func1( ust::shared_atomic_variable</u32/> v )
+{
+	v.inc();
 }
 
 }
