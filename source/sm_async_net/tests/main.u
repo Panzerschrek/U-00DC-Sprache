@@ -14,35 +14,53 @@ fn Main() : i32
 {
 	ust::stdout_print( "sm_async_net tests\n" );
 
-	BasicRunnerCreation();
-	BasicRunnerTaskAdd();
-	BasicRunnerAddAndEnsureExecution();
+	RunnerCreation_Test0::Run();
+	RunnerTaskAdd_Test0::Run();
+	RunnerTaskAdd_Test1::Run();
+	RunnerTaskAdd_Test2::Run();
 
 	return 0;
 }
 
-fn BasicRunnerCreation()
+namespace RunnerCreation_Test0
 {
+
+fn Run()
+{
+	// Runner is default-constructible.
+
 	var runner r;
 }
 
-fn BasicRunnerTaskAdd()
+}
+
+namespace RunnerTaskAdd_Test0
+{
+
+fn Run()
 {
 	var runner r;
 
 	// Adding a task doesn't require "r" instance to be mutable.
-	r.add_task( SimplesAsyncFunction() );
+	r.add_task( Func() );
 }
 
-fn async SimplesAsyncFunction() {}
+fn async Func() {}
 
-fn BasicRunnerAddAndEnsureExecution()
+}
+
+namespace RunnerTaskAdd_Test1
 {
+
+fn Run()
+{
+	// Add a single task into a runner and wait for it to finishe.
+
 	var runner r;
 
 	var ust::shared_atomic_variable</bool/> v(false);
 
-	r.add_task( BasicRunnerAddAndEnsureExecutionFunc(v) );
+	r.add_task( Func(v) );
 
 	// Use a crude way to wait - via "thread_yield".
 	while( !v.read() )
@@ -51,7 +69,7 @@ fn BasicRunnerAddAndEnsureExecution()
 	}
 }
 
-fn async BasicRunnerAddAndEnsureExecutionFunc( ust::shared_atomic_variable</bool/> v )
+fn async Func( ust::shared_atomic_variable</bool/> v )
 {
 	yield;
 	yield;
@@ -61,6 +79,42 @@ fn async BasicRunnerAddAndEnsureExecutionFunc( ust::shared_atomic_variable</bool
 	yield;
 	ust::stdout_print( "BasicRunnerAddAndEnsureExecutionFunc - finish\n" );
 	v.write( true );
+}
+
+}
+
+namespace RunnerTaskAdd_Test2
+{
+
+fn Run()
+{
+	// Add multiple tasks into a runner and wait for them to finishe.
+
+	var runner r;
+
+	var ust::shared_atomic_variable</u32/> v(0u);
+
+	var u32 count= 1024u;
+
+	for( auto mut i= 0u; i < count; ++i )
+	{
+		r.add_task( Func(v) );
+	}
+
+	// Use a crude way to wait - via "thread_yield".
+	while( v.read() < count )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</u32/> v )
+{
+	yield;
+	v.inc();
+	yield;
+}
+
 }
 
 } // namespace sm_async_net
