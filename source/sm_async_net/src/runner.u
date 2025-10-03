@@ -21,7 +21,7 @@ fn runner::destructor()
 {
 	// Set shudown flag first, than notify all runner threads waiting on the condition variable associated with the tasks queue.
 	// Doing so we trigger stopping runner thread loops.
-	// Do this uder a lock to avoid race conditions with worker threads.
+	// Do this under a lock to avoid race conditions with runner threads.
 	with( l : state_.tasks_queue.lock() )
 	{
 		state_.shutdown_flag.write( true );
@@ -29,6 +29,7 @@ fn runner::destructor()
 	}
 
 	// Destructors of runner threads execute "join" here. So we gracefully perform the shutdown sequence.
+	// Generally it shouldn't be long, since runner threads may usually stop executing async functions after shutdown signal is set.
 }
 
 fn runner::add_task( this, root_task_type mut t )
