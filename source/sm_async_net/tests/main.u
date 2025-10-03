@@ -18,6 +18,7 @@ fn Main() : i32
 	RunnerTaskAdd_Test0::Run();
 	RunnerTaskAdd_Test1::Run();
 	RunnerTaskAdd_Test2::Run();
+	RunnerTaskAdd_Test3::Run();
 	AddTaskFreeFunction_Test0::Run();
 	AddTaskFreeFunction_Test1::Run();
 
@@ -56,7 +57,7 @@ namespace RunnerTaskAdd_Test1
 
 fn Run()
 {
-	// Add a single task into a runner and wait for it to finishe.
+	// Add a single task into a runner and wait for it to finish.
 
 	var runner r;
 
@@ -90,7 +91,7 @@ namespace RunnerTaskAdd_Test2
 
 fn Run()
 {
-	// Add multiple tasks into a runner and wait for them to finishe.
+	// Add multiple tasks into a runner and wait for them to finish.
 
 	var runner r;
 
@@ -115,6 +116,48 @@ fn async Func( ust::shared_atomic_variable</u32/> v )
 	yield;
 	v.inc();
 	yield;
+}
+
+}
+
+namespace RunnerTaskAdd_Test3
+{
+
+fn Run()
+{
+	// Add a single task having internal async calls into a runner and wait for it to finish.
+
+	var runner r;
+
+	var ust::shared_atomic_variable</bool/> v(false);
+
+	r.add_task( Func0(v) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !v.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func0( ust::shared_atomic_variable</bool/> mut v )
+{
+	Func1( move(v) ).await;
+}
+
+fn async Func1( ust::shared_atomic_variable</bool/> mut v )
+{
+	Func2( move(v) ).await;
+}
+
+fn async Func2( ust::shared_atomic_variable</bool/> mut v )
+{
+	Func3( move(v) ).await;
+}
+
+fn async Func3( ust::shared_atomic_variable</bool/> v )
+{
+	v.write( true );
 }
 
 }
