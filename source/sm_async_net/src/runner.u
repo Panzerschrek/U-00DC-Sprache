@@ -34,6 +34,8 @@ fn runner::destructor()
 
 fn runner::add_task( this, root_task_type mut t )
 {
+	assert( !ust::coro_done( t ), "A finished task is added!" );
+
 	// Lock tasks queue, add a task and notify condition variable to wake one of the runner threads.
 	auto mut l= state_.tasks_queue.lock();
 	l.deref().Push( move(t) );
@@ -110,6 +112,8 @@ thread_local $(SharedState) g_current_runner_thread_shared_state= zero_init;
 
 fn add_task( root_task_type mut t )
 {
+	assert( !ust::coro_done( t ), "A finished task is added!" );
+
 	unsafe
 	{
 		var $(SharedState) state_ptr= g_current_runner_thread_shared_state;
