@@ -41,7 +41,10 @@ fn runner::add_task( this, root_task_type mut t )
 
 op runner::RunnerThreadFunction::()( byval this )
 {
-	while( !state_.shutdown_flag.read() )
+	// Main runner loop.
+	// Do not return from it, break instead!
+	// It's necessary to perform necessary cleanup steps before exiting!
+	loop label main_loop
 	{
 		var ust::optional</root_task_type/> mut next_task;
 
@@ -49,13 +52,13 @@ op runner::RunnerThreadFunction::()( byval this )
 		// If no task is available, wait on condition variable for the tasks queue, than try popping a task again.
 		// Break this loop if a new task is available or if shutdown flag is specified.
 		// Since shutdown flag is set under the mutex lock, we are sure it's not possible for it to be changed between reading it and waiting on the condition variable.
+		with( mut l : state_.tasks_queue.lock() )
 		{
-			auto mut l= state_.tasks_queue.lock();
 			loop
 			{
 				if( state_.shutdown_flag.read() )
 				{
-					return;
+					break label main_loop;
 				}
 
 				next_task= l.deref().TryPop();
@@ -69,16 +72,22 @@ op runner::RunnerThreadFunction::()( byval this )
 			}
 		}
 
-		// For now execute a task without any pause until it's possible.
-		// Break only if shudown is requested.
 		var root_task_type &mut task= next_task.try_deref();
 
 		// Set shared state global variable.
 		// Since this global variable is thread-local and this function is running on a separate thread, it's not impossible here to overwrite someone else's variable instance.
 		unsafe{ g_current_runner_thread_shared_state= $<( cast_mut(state_) ); }
 
-		while( !state_.shutdown_flag.read() )
+		// For now execute a task without any pause until it's possible.
+		// Break early only if shudown is requested.
+		loop
 		{
+			if( state_.shutdown_flag.read() )
+			{
+				unsafe{ g_current_runner_thread_shared_state= ust::nullptr</SharedState/>(); }
+				break label main_loop;
+			}
+
 			if_coro_advance( v : task )
 			{
 				ust::ignore_unused(v);
@@ -88,6 +97,9 @@ op runner::RunnerThreadFunction::()( byval this )
 
 		unsafe{ g_current_runner_thread_shared_state= ust::nullptr</SharedState/>(); }
 	}
+
+	// Cleanup steps may be implemented here.
+	return;
 }
 
 // Store here a raw pointer to shared state structure, when entering async function execution.
