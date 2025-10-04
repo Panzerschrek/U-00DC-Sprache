@@ -14,7 +14,8 @@ fn runner::constructor()
 			.tasks_queue( TasksQueue() ),
 			.shutdown_flag( false ),
 		},
-		runner_thread_= ust::make_thread( RunnerThreadFunction( state_ ) )
+		runner_thread_poll_waker_( PollWaker() ),
+		runner_thread_= ust::make_thread( RunnerThreadFunction( state_, runner_thread_poll_waker_ ) )
 	)
 {
 }
@@ -30,6 +31,9 @@ fn runner::destructor()
 		state_.tasks_queue_condition_variable.notify_all();
 	}
 
+	// Wake all threads waiting on "poll" call.
+	runner_thread_poll_waker_.deref().Wake();
+
 	// Destructors of runner threads execute "join" here. So we gracefully perform the shutdown sequence.
 	// Generally it shouldn't be long, since runner threads may usually stop executing async functions after shutdown signal is set.
 }
@@ -42,6 +46,10 @@ fn runner::add_task( this, root_task_type mut t )
 	auto mut l= state_.tasks_queue.lock();
 	l.deref().Push( move(t) );
 	state_.tasks_queue_condition_variable.notify_one();
+
+	// Wake all threads waiting on "poll" call.
+	// For now we have no way to wake only one of them.
+	runner_thread_poll_waker_.deref().Wake();
 }
 
 op runner::RunnerThreadFunction::()( byval this )
@@ -175,6 +183,70 @@ fn add_task( root_task_type mut t )
 			state.tasks_queue_condition_variable.notify_one();
 		}
 	}
+}
+
+fn PollWaker::constructor()
+	( pipe_write_end_= zero_init, pipe_read_end_= zero_init, wakeup_in_progress_(false) )
+{
+	unsafe
+	{
+		var [ i32, 2 ] mut pipe_ends= zero_init;
+		var i32 res= ::pipe2( $<(pipe_ends[0]), O_NONBLOCK );
+		halt if( res != 0 );
+
+		pipe_read_end_= pipe_ends[0];
+		pipe_write_end_= pipe_ends[1];
+	}
+}
+
+fn PollWaker::destructor()
+{
+	unsafe
+	{
+		::close( pipe_write_end_ );
+		::close( pipe_read_end_ );
+	}
+}
+
+fn PollWaker::Wake( this )
+{
+	if( wakeup_in_progress_.swap( true ) )
+	{
+		// Wakeup is already in progress, nothing to do.
+		return;
+	}
+
+	// Write a single byte into the pipe, to trigger wakeup of a "poll" call waiting on the writing end.
+
+	unsafe
+	{
+		var byte8 mut b= zero_init;
+		var ssize_t res= ::write( pipe_write_end_, $<(b), size_t(1) );
+		halt if( res != ssize_t(1) );
+	}
+}
+
+fn PollWaker::ResetWake( this )
+{
+	if( !wakeup_in_progress_.swap( false ) )
+	{
+		// No wakeup was scheduled, don't need to cancel it.
+		return;
+	}
+
+	// Read a single byte from the pipe, which should possible if previos wakeup was scheduled.
+
+	unsafe
+	{
+		var byte8 mut b= zero_init;
+		var ssize_t res= ::read( pipe_read_end_, $<(b), size_t(1) );
+		halt if( res != ssize_t(1) );
+	}
+}
+
+fn PollWaker::GetWakeHandle( this ) : ust::native_file_handle
+{
+	return pipe_read_end_;
 }
 
 } // namespace sm_async_net

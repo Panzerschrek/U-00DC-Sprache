@@ -1,7 +1,9 @@
+import "/atomic_variable.u"
 import "/shared_atomic_variable.u"
 import "/shared_condition_variable.u"
-import "/shared_ptr_final.u"
+import "/shared_ptr_mt_final.u"
 import "/shared_ptr_mt_mutex.u"
+import "/file.u"
 import "/thread.u"
 import "queue.uh"
 
@@ -25,8 +27,8 @@ private:
 	class RunnerThreadFunction
 	{
 	public:
-		fn constructor( SharedState mut state )
-			( state_= move(state) )
+		fn constructor( SharedState mut state, PollWakerSharedPtr mut waker )
+			( state_= move(state), waker_= move(waker) )
 		{}
 
 		// Thread entry point.
@@ -34,10 +36,12 @@ private:
 
 	private:
 		SharedState state_;
+		PollWakerSharedPtr waker_;
 	}
 
 private:
 	SharedState state_;
+	PollWakerSharedPtr runner_thread_poll_waker_;
 	ust::thread</RunnerThreadFunction, void/> runner_thread_;
 }
 
@@ -55,6 +59,30 @@ struct SharedState
 	TasksQueuePtr tasks_queue;
 	TasksQueueConditionVariablePtr tasks_queue_condition_variable;
 	ShutdownFlagPtr shutdown_flag;
+}
+
+type PollWakerSharedPtr= ust::shared_ptr_mt_final</PollWaker/>;
+
+class PollWaker
+{
+public:
+	fn constructor();
+	fn destructor();
+
+	// Wake a thread, which is potentially waiting on "poll" and using the handle obtained via "GetWakeHandle" call in this "poll" call.
+	fn Wake( this );
+
+	// Reset awaken state.
+	// You need to call it if "poll" indicates that data can be read from handle, returned via "GetWakeHandle" call.
+	fn ResetWake( this );
+
+	// Get handle used for "poll" call.
+	fn GetWakeHandle( this ) : ust::native_file_handle;
+
+private:
+	ust::native_file_handle pipe_write_end_;
+	ust::native_file_handle pipe_read_end_;
+	ust::atomic_variable</bool/> wakeup_in_progress_;
 }
 
 // Each root task or subtask receives an unique identifier.
