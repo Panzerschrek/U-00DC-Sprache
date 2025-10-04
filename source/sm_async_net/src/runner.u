@@ -75,6 +75,8 @@ op runner::RunnerThreadFunction::()( byval this )
 
 				if( !next_task.empty() )
 				{
+					move(l); // Unlock mutex as soon as possible.
+
 					with( id : GetNewTaskId() )
 					{
 						tasks_map.insert_new( id, next_task.try_take() );
