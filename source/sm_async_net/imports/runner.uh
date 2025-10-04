@@ -57,6 +57,12 @@ struct SharedState
 	ShutdownFlagPtr shutdown_flag;
 }
 
+// Each root task or subtask receives an unique identifier.
+// This idintifier is unique even in different runner instances.
+// Idenrifiers aren't recycled and reused.
+// Zero indicates no task (it can't be assigned to some task).
+type TaskUniqueId= u64;
+
 // Add a task into currently-active runner.
 // This call is non-blocking, it doesn't wait until the added task is done.
 // You should call this function only within another async task, so that the new one will be added into the same runner.

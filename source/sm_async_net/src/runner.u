@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/hash_map.u"
 import "/sm_async_net/runner.uh"
 import "task_tree_node.uh"
 
@@ -44,6 +45,10 @@ fn runner::add_task( this, root_task_type mut t )
 
 op runner::RunnerThreadFunction::()( byval this )
 {
+	var ust::hash_map</TaskUniqueId, root_task_type/> mut tasks_map;
+
+	var ust::vector</TaskUniqueId/> mut ready_for_execution_tasks;
+
 	// Main runner loop.
 	// Do not return from it, break instead!
 	// It's necessary to perform necessary cleanup steps before exiting!
@@ -75,15 +80,16 @@ op runner::RunnerThreadFunction::()( byval this )
 			}
 		}
 
-		var root_task_type &mut task= next_task.try_deref();
+		with( id : GetNewTaskId() )
+		{
+			tasks_map.insert_new( id, next_task.try_take() );
+			move(next_task);
+			// Initially a task is ready for execution (it waits for no event, no timeout, no socket, etc.).
+			ready_for_execution_tasks.push_back( id );
+		}
 
-		// Set shared state global variable.
-		// Since this global variable is thread-local and this function is running on a separate thread, it's not impossible here to overwrite someone else's variable instance.
-		unsafe{ g_current_runner_thread_shared_state= $<( cast_mut(state_) ); }
-
-		// For now execute a task without any pause until it's possible.
-		// Break early only if shudown is requested.
-		loop
+		// Execute all ready tasks.
+		foreach( id : ready_for_execution_tasks )
 		{
 			if( state_.shutdown_flag.read() )
 			{
@@ -91,19 +97,58 @@ op runner::RunnerThreadFunction::()( byval this )
 				break label main_loop;
 			}
 
-			if_coro_advance( v : task )
 			{
-				ust::ignore_unused(v);
-				break;
+				var root_task_type &mut task= tasks_map[id];
+
+				// Set shared state global variable.
+				// Since this global variable is thread-local and this function is running on a separate thread, it's not impossible here to overwrite someone else's variable instance.
+				unsafe{ g_current_runner_thread_shared_state= $<( cast_mut(state_) ); }
+
+				// For now execute a task without any pause until it's possible.
+				// Break early only if shudown is requested.
+				loop
+				{
+					if( state_.shutdown_flag.read() )
+					{
+						unsafe{ g_current_runner_thread_shared_state= ust::nullptr</SharedState/>(); }
+						break label main_loop;
+					}
+
+					if_coro_advance( v : task )
+					{
+						// The task is finished.
+						ust::ignore_unused(v);
+						break;
+					}
+				}
+
+				unsafe{ g_current_runner_thread_shared_state= ust::nullptr</SharedState/>(); }
+			}
+
+			if( ust::coro_done( tasks_map[id] ) )
+			{
+				tasks_map.drop_if_exists( id );
 			}
 		}
 
-		unsafe{ g_current_runner_thread_shared_state= ust::nullptr</SharedState/>(); }
+		// After we processed all tasks, there should be no task ready for execution.
+		// This list may be populated later, like via "poll" call, timeout or something similar.
+		ready_for_execution_tasks.clear();
 	}
 
 	// Cleanup steps may be implemented here.
 	return;
 }
+
+fn GetNewTaskId() : TaskUniqueId
+{
+	// Atomically increment global counter of tasks.
+	// Return previous counter value.
+	return unsafe( ust::atomic_inc( g_next_task_id ) );
+}
+
+// Start from 1, since 0 indicates no task.
+var TaskUniqueId mut g_next_task_id= 1u64;
 
 // Store here a raw pointer to shared state structure, when entering async function execution.
 // Don't forget to zero it back when leaving an async function execution!
