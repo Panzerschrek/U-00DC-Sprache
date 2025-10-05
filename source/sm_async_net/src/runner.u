@@ -180,7 +180,7 @@ op runner::RunnerThreadFunction::()( byval this )
 			assert( poll_res >= 0, "Unexpected \"poll\" call result!" );
 
 			// If we have a read even on the wake handle, reset wake state.
-			if( ( u32( poll_descriptors[0].revents ) | u32( POLLIN ) ) != 0u )
+			if( ( u32( poll_descriptors[0].revents ) & u32( POLLIN ) ) != 0u )
 			{
 				waker.ResetWake();
 			}
@@ -297,7 +297,8 @@ fn PollWaker::ResetWake( this )
 	{
 		var byte8 mut b= zero_init;
 		var ssize_t res= ::read( pipe_read_end_, $<(b), size_t(1) );
-		halt if( res != ssize_t(1) );
+		// "res" may be still zero, if previous "write" result didn't come yet.
+		ust::ignore_unused( res );
 	}
 }
 
