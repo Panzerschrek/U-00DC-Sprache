@@ -3,6 +3,7 @@ import "/shared_atomic_variable.u"
 import "/shared_ptr_mt_final.u"
 import "/shared_ptr_mt_mutex.u"
 import "/file.u"
+import "/native_socket.u"
 import "/thread.u"
 import "queue.uh"
 
@@ -56,6 +57,24 @@ struct SharedState
 	TasksQueuePtr tasks_queue;
 	ust::vector</PollWakerSharedPtr/> runner_thread_wakers; // Wakers of all threads using this state.
 	ShutdownFlagPtr shutdown_flag;
+}
+
+// Root task or subtask.
+struct RunningTask
+{
+	// Task handle (what is executed).
+	root_task_type task;
+
+	// If non-empty, this task shouldn't be resumed until given socket isn't ready.
+	ust::optional</SocketForWaiting/> socket_to_wait; // TODO - use some sort of null socket value?
+}
+
+struct SocketForWaiting
+{
+	enum Operations{ Read, Write, ReadWrite }
+
+	ust::native_socket_fd fd;
+	Operations operations;
 }
 
 type PollWakerSharedPtr= ust::shared_ptr_mt_final</PollWaker/>;

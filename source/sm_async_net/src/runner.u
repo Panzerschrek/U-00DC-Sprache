@@ -58,7 +58,7 @@ op runner::RunnerThreadFunction::()( byval this )
 	// Since this global variable is thread-local and this function is running on a separate thread, it's not impossible here to overwrite someone else's variable instance.
 	unsafe{ g_current_runner_thread_shared_state= $<( cast_mut(state_) ); }
 
-	var ust::hash_map</TaskUniqueId, root_task_type/> mut tasks_map;
+	var ust::hash_map</TaskUniqueId, RunningTask/> mut tasks_map;
 
 	var ust::vector</TaskUniqueId/> mut ready_for_execution_tasks;
 
@@ -71,7 +71,7 @@ op runner::RunnerThreadFunction::()( byval this )
 		foreach( id : ready_for_execution_tasks )
 		{
 			{
-				var root_task_type &mut task= tasks_map[id];
+				var root_task_type &mut task= tasks_map[id].task;
 
 				// For now execute a task without any pause until it's possible.
 				// Break early only if shudown is requested.
@@ -91,7 +91,7 @@ op runner::RunnerThreadFunction::()( byval this )
 				}
 			}
 
-			if( ust::coro_done( tasks_map[id] ) )
+			if( ust::coro_done( tasks_map[id].task ) )
 			{
 				// Remove a finished task from the tasks container.
 				tasks_map.drop_if_exists( id );
@@ -148,7 +148,7 @@ op runner::RunnerThreadFunction::()( byval this )
 					{
 						var TaskUniqueId id= GetNewTaskId();
 
-						tasks_map.insert_new( id, task_opt.try_take() );
+						tasks_map.insert_new( id, RunningTask{ .task= task_opt.try_take() } );
 
 						// Initially a task is ready for execution (it waits for no event, no timeout, no socket, etc.).
 						ready_for_execution_tasks.push_back( id );
