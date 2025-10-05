@@ -1,11 +1,25 @@
-#include "cpp_tests.hpp"
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/IR/Verifier.h>
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "cpp_tests.hpp"
 
 namespace U
 {
 
 namespace
 {
+
+void EnsureModuleIsValid( const llvm::Module& module )
+{
+	std::string err_stream_str;
+	llvm::raw_string_ostream err_stream( err_stream_str );
+	if( llvm::verifyModule( module, &err_stream ) )
+	{
+		std::cerr << "Module verify error:\n" << err_stream.str() << std::endl;
+		U_TEST_ASSERT(false);
+	}
+}
 
 U_TEST(AsyncCallInlining_Test0)
 {
@@ -34,7 +48,9 @@ U_TEST(AsyncCallInlining_Test0)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -71,7 +87,9 @@ U_TEST(AsyncCallInlining_Test1)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -108,7 +126,9 @@ U_TEST(AsyncCallInlining_Test2)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -145,7 +165,9 @@ U_TEST(AsyncCallInlining_Test3)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -182,7 +204,9 @@ U_TEST(AsyncCallInlining_Test4)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -223,7 +247,9 @@ U_TEST(AsyncCallInlining_Test5)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -265,7 +291,9 @@ U_TEST(AsyncCallInlining_Test6)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -310,7 +338,9 @@ U_TEST(AsyncCallInlining_Test7)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -358,7 +388,9 @@ U_TEST(AsyncCallInlining_Test8)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -407,7 +439,9 @@ U_TEST(AsyncCallInlining_Test9)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -449,7 +483,9 @@ U_TEST(AsyncCallInlining_Test10)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -505,7 +541,9 @@ U_TEST(AsyncCallInlining_Test11)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -577,7 +615,9 @@ U_TEST(AsyncCallInlining_Test12)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -622,7 +662,9 @@ U_TEST(AsyncCallInliningFail_Test0)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -659,7 +701,9 @@ U_TEST(AsyncCallInliningFail_Test1)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -699,7 +743,9 @@ U_TEST(AsyncCallInliningFail_Test2)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -744,7 +790,9 @@ U_TEST(AsyncCallInliningFail_Test3)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -788,7 +836,9 @@ U_TEST(AsyncCallInliningFail_Test4)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -828,7 +878,9 @@ U_TEST(AsyncCallInliningFail_Test5)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -865,7 +917,9 @@ U_TEST(AsyncCallInliningFail_Test6)
 		}
 	)";
 
-	const EnginePtr engine= CreateEngine( BuildProgramForAsyncFunctionsInliningTest( c_program_text ) );
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
