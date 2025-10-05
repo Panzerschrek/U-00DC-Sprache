@@ -73,39 +73,6 @@ op runner::RunnerThreadFunction::()( byval this )
 	// It's necessary to perform necessary cleanup steps before exiting!
 	loop label main_loop
 	{
-		// Lock tasks queue, try popping a task.
-		// If no task is available, wait on condition variable for the tasks queue, than try popping a task again.
-		// Break this loop if a new task is available or if shutdown flag is specified.
-		// Since shutdown flag is set under the mutex lock, we are sure it's not possible for it to be changed between reading it and waiting on the condition variable.
-		with( mut l : state_.tasks_queue.lock() )
-		{
-			loop
-			{
-				if( state_.shutdown_flag.read() )
-				{
-					break label main_loop;
-				}
-
-				var ust::optional</root_task_type/> mut next_task= l.deref().TryPop();
-
-				if( !next_task.empty() )
-				{
-					move(l); // Unlock mutex as soon as possible.
-
-					with( id : GetNewTaskId() )
-					{
-						tasks_map.insert_new( id, next_task.try_take() );
-
-						// Initially a task is ready for execution (it waits for no event, no timeout, no socket, etc.).
-						ready_for_execution_tasks.push_back( id );
-					}
-					break;
-				}
-
-				state_.tasks_queue_condition_variable.wait( l );
-			}
-		}
-
 		// Execute all ready tasks.
 		foreach( id : ready_for_execution_tasks )
 		{
@@ -140,6 +107,66 @@ op runner::RunnerThreadFunction::()( byval this )
 		// After we processed all tasks, there should be no task ready for execution.
 		// This list may be populated later, like via "poll" call, timeout or something similar.
 		ready_for_execution_tasks.clear();
+
+		if( state_.shutdown_flag.read() )
+		{
+			break label main_loop;
+		}
+
+		var bool mut has_tasks_in_queue= false;
+
+		with( mut l : state_.tasks_queue.lock() )
+		{
+			var TasksQueue &mut queue= l.deref();
+
+			// Take half of present tasks or at least one task.
+			// Doing so we prevent taking too much tasks in one thread.
+			// Taking only half allows other threads to take other tasks.
+			// This strategy leads to slight queue waiting time increase, but allows somewhat even distribution of workload among threads.
+			var size_type num_tasks_to_take= ust::max( 1s, queue.GetSize() / 2s );
+
+			for( auto mut i= 0s; i < num_tasks_to_take; ++i )
+			{
+				if( state_.shutdown_flag.read() )
+				{
+					break label main_loop;
+				}
+
+				var ust::optional</root_task_type/> mut task_opt= queue.TryPop();
+				if( !task_opt.empty() )
+				{
+					var TaskUniqueId id= GetNewTaskId();
+
+					tasks_map.insert_new( id, task_opt.try_take() );
+
+					// Initially a task is ready for execution (it waits for no event, no timeout, no socket, etc.).
+					ready_for_execution_tasks.push_back( id );
+				}
+			}
+
+			has_tasks_in_queue= !queue.IsEmpty();
+		}
+
+		// Perform "poll".
+		// If has tasks in the queue, set zero timeout.
+		// Otherwise set infinite timeout.
+		// This thread still may be awaked via awaker.
+		{
+			var PollWaker& waker= waker_.deref();
+
+			var ust::native_file_handle wake_handle= waker.GetWakeHandle();
+			var [ pollfd, 1 ] mut poll_descriptors[ { .fd= wake_handle, .events( POLLIN ), .revents(0) } ];
+
+			var i32 timeout_ms= ( has_tasks_in_queue ? 0 : -1 );
+
+			var i32 res= unsafe( ::poll( $<( poll_descriptors[0] ), nfds_t(1), timeout_ms ) );
+			assert( res >= 0, "Unexpected \"poll\" call result!" );
+
+			if( ( u32( poll_descriptors[0].revents ) | u32( POLLIN ) ) != 0u )
+			{
+				waker.ResetWake();
+			}
+		}
 	}
 
 	// Perform cleanup steps.

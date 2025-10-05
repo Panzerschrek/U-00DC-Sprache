@@ -33,6 +33,11 @@ public:
 		return ust::null_optional;
 	}
 
+	fn GetSize( this ) : size_type
+	{
+		return in_stack_.size() + out_stack_.size();
+	}
+
 	fn IsEmpty( this ) : bool
 	{
 		return in_stack_.empty() && out_stack_.empty();
