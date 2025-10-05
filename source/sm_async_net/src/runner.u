@@ -22,14 +22,8 @@ fn runner::constructor()
 
 fn runner::destructor()
 {
-	// Set shudown flag first, than notify all runner threads waiting on the condition variable associated with the tasks queue.
-	// Doing so we trigger stopping runner thread loops.
-	// Do this under a lock to avoid race conditions with runner threads.
-	with( l : state_.tasks_queue.lock() )
-	{
-		state_.shutdown_flag.write( true );
-		state_.tasks_queue_condition_variable.notify_all();
-	}
+	// Set shudown flag first.
+	state_.shutdown_flag.write( true );
 
 	// Wake all threads waiting on "poll" call.
 	foreach( &waker_ptr : state_.runner_thread_wakers )
@@ -45,10 +39,10 @@ fn runner::add_task( this, root_task_type mut t )
 {
 	assert( !ust::coro_done( t ), "A finished task is added!" );
 
-	// Lock tasks queue, add a task and notify condition variable to wake one of the runner threads.
-	auto mut l= state_.tasks_queue.lock();
-	l.deref().Push( move(t) );
-	state_.tasks_queue_condition_variable.notify_one();
+	with( mut l : state_.tasks_queue.lock() )
+	{
+		l.deref().Push( move(t) );
+	}
 
 	// Wake all threads waiting on "poll" call.
 	// For now we have no way to wake only one of them.
@@ -206,16 +200,15 @@ fn add_task( root_task_type mut t )
 
 		var SharedState& state= $>(state_ptr);
 
+		if( state.shutdown_flag.read() )
+		{
+			// Do not add new tasks while shutting down.
+			return;
+		}
+
 		with( mut l : state.tasks_queue.lock() )
 		{
-			if( state.shutdown_flag.read() )
-			{
-				// Do not add new tasks while shutting down.
-				return;
-			}
-
 			l.deref().Push( move(t) );
-			state.tasks_queue_condition_variable.notify_one();
 		}
 
 		// Wake all threads waiting on "poll" call.

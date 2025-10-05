@@ -1,6 +1,5 @@
 import "/atomic_variable.u"
 import "/shared_atomic_variable.u"
-import "/shared_condition_variable.u"
 import "/shared_ptr_mt_final.u"
 import "/shared_ptr_mt_mutex.u"
 import "/file.u"
@@ -50,13 +49,11 @@ type root_task_type= (async : void);
 
 type TasksQueue= Queue</root_task_type/>;
 type TasksQueuePtr= ust::shared_ptr_mt_mutex</TasksQueue/>;
-type TasksQueueConditionVariablePtr= ust::shared_condition_variable;
 type ShutdownFlagPtr= ust::shared_atomic_variable</bool/>;
 
 struct SharedState
 {
 	TasksQueuePtr tasks_queue;
-	TasksQueueConditionVariablePtr tasks_queue_condition_variable;
 	ust::vector</PollWakerSharedPtr/> runner_thread_wakers; // Wakers of all threads using this state.
 	ShutdownFlagPtr shutdown_flag;
 }
