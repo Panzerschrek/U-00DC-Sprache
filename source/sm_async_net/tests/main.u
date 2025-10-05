@@ -1,6 +1,10 @@
+import "/assert.u"
+import "/enum_string_conversions.u"
 import "/main_wrapper.u"
 import "/stdout.u"
+import "/string_conversions.u"
 import "/sm_async_net/runner.uh"
+import "/sm_async_net/udp_socket.uh"
 
 pretty_main
 {
@@ -21,6 +25,7 @@ fn Main() : i32
 	RunnerTaskAdd_Test3::Run();
 	AddTaskFreeFunction_Test0::Run();
 	AddTaskFreeFunction_Test1::Run();
+	UDPSocket_Test0::Run();
 
 	return 0;
 }
@@ -232,5 +237,77 @@ fn async Func1( ust::shared_atomic_variable</u32/> v )
 }
 
 }
+
+namespace UDPSocket_Test0
+{
+
+fn Run()
+{
+	// Create regular socket on the main thread, create an async one on runner thread.
+	// Use blocking operation on the main thread.
+
+	var runner r;
+
+	var ust::socket_address_v4 address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var ust::udp_socket mut server_socket= ust::udp_socket::create_and_bind( address ).try_take();
+
+	r.add_task( Func( address ) );
+
+	var [ char8, 32 ] mut buf= zero_init;
+	var ust::array_view_mut</char8/> buf_range= buf;
+
+	result_match( server_socket.receive( buf_range.to_byte8_range() ) )
+	{
+		Ok( bytes_received ) ->
+		{
+			assert( bytes_received == buf_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+		},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to receive message to from socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
+}
+
+auto& message= "Hello from async UDP socket!";
+
+fn async Func( ust::socket_address_v4 server_address )
+{
+	var udp_socket mut client_socket= udp_socket::create_v4().try_take();
+
+	var ust::string_view8 message_range= message;
+
+	result_match( client_socket.send_to( server_address, message_range.to_byte8_range() ).await )
+	{
+		Ok( bytes_sent ) ->
+		{
+			assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+		},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
+}
+
+}
+
+fn GetLoopbackIpAddress() : ust::ip_address_v4
+{
+	return ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) );
+}
+
+fn GetNextPort() : u16
+{
+	unsafe
+	{
+		var u16 res= g_port_counter;
+		++g_port_counter;
+		return res;
+	}
+}
+
+var u16 mut g_port_counter( 59000s + 500s * compiler::generation );
 
 } // namespace sm_async_net
