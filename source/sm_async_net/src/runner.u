@@ -13,9 +13,9 @@ fn runner::constructor()
 		{
 			.tasks_queue( TasksQueue() ),
 			.shutdown_flag( false ),
+			.runner_thread_wakers= ust::make_array( PollWakerSharedPtr( PollWaker() ) )
 		},
-		runner_thread_poll_waker_( PollWaker() ),
-		runner_thread_= ust::make_thread( RunnerThreadFunction( state_, runner_thread_poll_waker_ ) )
+		runner_thread_= ust::make_thread( RunnerThreadFunction( state_, state_.runner_thread_wakers.front() ) )
 	)
 {
 }
@@ -32,7 +32,10 @@ fn runner::destructor()
 	}
 
 	// Wake all threads waiting on "poll" call.
-	runner_thread_poll_waker_.deref().Wake();
+	foreach( &waker_ptr : state_.runner_thread_wakers )
+	{
+		waker_ptr.deref().Wake();
+	}
 
 	// Destructors of runner threads execute "join" here. So we gracefully perform the shutdown sequence.
 	// Generally it shouldn't be long, since runner threads may usually stop executing async functions after shutdown signal is set.
@@ -49,7 +52,10 @@ fn runner::add_task( this, root_task_type mut t )
 
 	// Wake all threads waiting on "poll" call.
 	// For now we have no way to wake only one of them.
-	runner_thread_poll_waker_.deref().Wake();
+	foreach( &waker_ptr : state_.runner_thread_wakers )
+	{
+		waker_ptr.deref().Wake();
+	}
 }
 
 op runner::RunnerThreadFunction::()( byval this )
@@ -181,6 +187,13 @@ fn add_task( root_task_type mut t )
 
 			l.deref().Push( move(t) );
 			state.tasks_queue_condition_variable.notify_one();
+		}
+
+		// Wake all threads waiting on "poll" call.
+		// For now we have no way to wake only one of them.
+		foreach( &waker_ptr : state.runner_thread_wakers )
+		{
+			waker_ptr.deref().Wake();
 		}
 	}
 }
