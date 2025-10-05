@@ -99,7 +99,7 @@ op runner::RunnerThreadFunction::()( byval this )
 		}
 
 		// After we processed all tasks, there should be no task ready for execution.
-		// This list may be populated later, like via "poll" call, timeout or something similar.
+		// This list may be populated later, like via new task addition, a "poll" call, a timeout or something similar.
 		ready_for_execution_tasks.clear();
 
 		if( state_.shutdown_flag.read() )
@@ -107,34 +107,52 @@ op runner::RunnerThreadFunction::()( byval this )
 			break label main_loop;
 		}
 
+		// On each iteration perform both tasks extraction an "poll" calling.
+		// Doing so is necessary to somewhat balance new tasks starting and present tasks processing.
+		// If we only process present tasks until we can, we don't let new tasks to start.
+		// If we only extract tasks from the queue, we don't get present tasks time to perform their work.
+		// It's unclear exactly, how to achieve perfect balance, but doing both extraction/polling on each iteration should work roughly fine.
+
 		var bool mut has_tasks_in_queue= false;
 
 		with( mut l : state_.tasks_queue.lock() )
 		{
 			var TasksQueue &mut queue= l.deref();
 
-			// Take half of present tasks or at least one task.
-			// Doing so we prevent taking too much tasks in one thread.
-			// Taking only half allows other threads to take other tasks.
-			// This strategy leads to slight queue waiting time increase, but allows somewhat even distribution of workload among threads.
-			var size_type num_tasks_to_take= ust::max( 1s, queue.GetSize() / 2s );
+			var size_type num_tasks_in_queue= queue.GetSize();
 
-			for( auto mut i= 0s; i < num_tasks_to_take; ++i )
+			if( num_tasks_in_queue > 0s )
 			{
-				if( state_.shutdown_flag.read() )
+				// Take half of tasks present in the queue or at least one task.
+				// Doing so we prevent taking too much tasks in one thread.
+				// Taking only half allows other threads to take other tasks.
+				//
+				// This strategy leads to slight queue waiting time increase
+				// but allows somewhat even distribution of workload among threads.
+				//
+				// Perfect balancing may be hard to achieve,
+				// but at least threads doing less work have more chance to extract more tasks,
+				// since their main iteration loop is shorter and they perform tasks extraction more often.
+
+				var size_type num_tasks_to_take= ust::max( 1s, num_tasks_in_queue / 2s );
+
+				for( auto mut i= 0s; i < num_tasks_to_take; ++i )
 				{
-					break label main_loop;
-				}
+					if( state_.shutdown_flag.read() )
+					{
+						break label main_loop;
+					}
 
-				var ust::optional</root_task_type/> mut task_opt= queue.TryPop();
-				if( !task_opt.empty() )
-				{
-					var TaskUniqueId id= GetNewTaskId();
+					var ust::optional</root_task_type/> mut task_opt= queue.TryPop();
+					if( !task_opt.empty() )
+					{
+						var TaskUniqueId id= GetNewTaskId();
 
-					tasks_map.insert_new( id, task_opt.try_take() );
+						tasks_map.insert_new( id, task_opt.try_take() );
 
-					// Initially a task is ready for execution (it waits for no event, no timeout, no socket, etc.).
-					ready_for_execution_tasks.push_back( id );
+						// Initially a task is ready for execution (it waits for no event, no timeout, no socket, etc.).
+						ready_for_execution_tasks.push_back( id );
+					}
 				}
 			}
 
@@ -142,7 +160,7 @@ op runner::RunnerThreadFunction::()( byval this )
 		}
 
 		// Perform "poll".
-		// If has tasks in the queue or has tasks to execute, set zero timeout.
+		// If we have tasks in the queue or has tasks to execute, set zero timeout.
 		// Otherwise set infinite timeout.
 		// This thread still may be awaked via awaker.
 		{
@@ -155,9 +173,13 @@ op runner::RunnerThreadFunction::()( byval this )
 
 			var i32 timeout_ms= ( should_sleep ? -1 : 0 );
 
-			var i32 res= unsafe( ::poll( $<( poll_descriptors[0] ), nfds_t(1), timeout_ms ) );
-			assert( res >= 0, "Unexpected \"poll\" call result!" );
+			var i32 poll_res= unsafe( ::poll( $<( poll_descriptors[0] ), nfds_t(1), timeout_ms ) );
 
+			// "poll" returns negative value on error, 0 in case of timeout and non-negative value in case if one of descriptors is ready.
+			// For now we can't handle errors, so, just assert in case of error.
+			assert( poll_res >= 0, "Unexpected \"poll\" call result!" );
+
+			// If we have a read even on the wake handle, reset wake state.
 			if( ( u32( poll_descriptors[0].revents ) | u32( POLLIN ) ) != 0u )
 			{
 				waker.ResetWake();
