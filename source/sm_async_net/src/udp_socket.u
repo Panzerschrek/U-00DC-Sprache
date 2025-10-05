@@ -1,0 +1,93 @@
+import "/sm_async_net/udp_socket.uh"
+
+namespace sm_async_net
+{
+
+fn udp_socket::create_v4() : ust::io_result</udp_socket/>
+{
+	// Just wrap uderlying socket creation, but set non-blocking mode.
+	result_unwrap_or_return( mut socket : ust::udp_socket::create_v4() );
+	result_unwrap_or_return( v : socket.set_nonblocking( true ) );
+	ust::ignore_unused(v);
+	return unsafe( udp_socket( move( socket ) ) );
+}
+
+fn udp_socket::create_v6() : ust::io_result</udp_socket/>
+{
+	// Just wrap uderlying socket creation, but set non-blocking mode.
+	result_unwrap_or_return( mut socket : ust::udp_socket::create_v6() );
+	result_unwrap_or_return( v : socket.set_nonblocking( true ) );
+	ust::ignore_unused(v);
+	return unsafe( udp_socket( move( socket ) ) );
+}
+
+fn udp_socket::create_and_bind( ust::socket_address& a ) : ust::io_result</udp_socket/>
+{
+	// Just wrap uderlying socket creation, but set non-blocking mode.
+	result_unwrap_or_return( mut socket : ust::udp_socket::create_and_bind( a ) );
+	result_unwrap_or_return( v : socket.set_nonblocking( true ) );
+	ust::ignore_unused(v);
+	return unsafe( udp_socket( move( socket ) ) );
+}
+
+fn udp_socket::constructor( ust::udp_socket mut s ) unsafe
+	( socket_= move(s) )
+{
+}
+
+fn udp_socket::connect( mut this, ust::socket_address& a ) : ust::io_result</void/>
+{
+	return socket_.connect( a );
+}
+
+
+fn udp_socket::get_local_address( this ) : ust::io_result</ust::socket_address/>
+{
+	return socket_.get_local_address();
+}
+
+fn udp_socket::get_peer_address( this ) : ust::io_result</ust::socket_address/>
+{
+	return socket_.get_peer_address();
+}
+
+
+fn udp_socket::get_ttl( this ) : ust::io_result</u8/>
+{
+	return socket_.get_ttl();
+}
+
+fn udp_socket::set_ttl( mut this, u8 ttl ) : ust::io_result</void/>
+{
+	return socket_.set_ttl( ttl );
+}
+
+fn udp_socket::get_uderlying_socket( this ) unsafe : ust::udp_socket&
+{
+	return socket_;
+}
+
+fn udp_socket::get_uderlying_socket( mut this ) unsafe : ust::udp_socket &mut
+{
+	return socket_;
+}
+
+fn udp_socket::take_underlying_socket( byval mut this ) : ust::udp_socket
+{
+	unsafe
+	{
+		var ust::udp_socket mut socket= uninitialized;
+
+		ust::memory_copy_aligned(
+			typeinfo</ust::udp_socket/>.align_of,
+			ust::ptr_cast_to_byte8( $<(socket) ),
+			ust::ptr_cast_to_byte8( $<(socket_) ),
+			typeinfo</ust::udp_socket/>.size_of );
+
+		ust::move_into_nowhere( move(this) );
+		return socket;
+	}
+}
+
+
+} // namespace sm_async_net

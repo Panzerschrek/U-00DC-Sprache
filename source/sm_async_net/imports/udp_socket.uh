@@ -1,0 +1,194 @@
+import "/udp_socket.u"
+
+namespace sm_async_net
+{
+
+// Async version of UDP socket class.
+// It mostly exposes the same API as ustlib version, but in async form.
+// Some APIs are hidden, since they shouldn't be used diectly in async code.
+class udp_socket
+{
+public:
+	fn create_v4() : ust::io_result</udp_socket/>;
+
+	fn create_v6() : ust::io_result</udp_socket/>;
+	fn create_and_bind( ust::socket_address& a ) : ust::io_result</udp_socket/>;
+
+	fn constructor( ust::udp_socket s ) unsafe; // constructor for internal usage.
+
+	fn async send( mut this, ust::array_view_imut</byte8/> data ) : ust::io_result</size_type/>
+	{
+		// Optimistically expect that a read operation may be performed witohut blocking.
+		// So we make a send request first, before going waiting.
+		loop
+		{
+			var ust::io_result</size_type/> res= socket_.send( data );
+			if( res.is_ok() )
+			{
+				return res;
+			}
+
+			var ust::io_error e= res.try_deref_error();
+			if( e != ust::io_error::would_block )
+			{
+				// Unexpected error code - return it.
+				return res;
+			}
+
+			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+			// We need to wait here.
+			// TODO - register/unregister socket for waiting.
+			yield;
+		}
+	}
+
+	fn async send_to( mut this, ust::socket_address& a, ust::array_view_imut</byte8/> data ) : ust::io_result</size_type/>
+	{
+		// Optimistically expect that a read operation may be performed witohut blocking.
+		// So we make a send request first, before going waiting.
+		loop
+		{
+			var ust::io_result</size_type/> res= socket_.send_to( a, data );
+			if( res.is_ok() )
+			{
+				return res;
+			}
+
+			var ust::io_error e= res.try_deref_error();
+			if( e != ust::io_error::would_block )
+			{
+				// Unexpected error code - return it.
+				return res;
+			}
+
+			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+			// We need to wait here.
+			// TODO - register/unregister socket for waiting.
+			yield;
+		}
+	}
+
+	fn async receive( mut this, ust::array_view_mut</byte8/> data ) : ust::io_result</size_type/>
+	{
+		// In a write operation expect that data to read isn't arriven yet.
+		// So go waiting first.
+		loop
+		{
+			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+			// We need to wait here.
+			// TODO - register/unregister socket for waiting.
+			yield;
+
+			var ust::io_result</size_type/> res= socket_.receive( data );
+			if( res.is_ok() )
+			{
+				return res;
+			}
+
+			var ust::io_error e= res.try_deref_error();
+			if( e != ust::io_error::would_block )
+			{
+				// Unexpected error code - return it.
+				return res;
+			}
+		}
+	}
+
+	fn async receive_from( mut this, ust::array_view_mut</byte8/> data ) : ust::io_result</ tup[ ust::socket_address, size_type ] />
+	{
+		// In a write operation expect that data to read isn't arriven yet.
+		// So go waiting first.
+		loop
+		{
+			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+			// We need to wait here.
+			// TODO - register/unregister socket for waiting.
+			yield;
+
+			var ust::io_result</ tup[ ust::socket_address, size_type ] /> res= socket_.receive_from( data );
+			if( res.is_ok() )
+			{
+				return res;
+			}
+
+			var ust::io_error e= res.try_deref_error();
+			if( e != ust::io_error::would_block )
+			{
+				// Unexpected error code - return it.
+				return res;
+			}
+		}
+	}
+
+	fn async peek( mut this, ust::array_view_mut</byte8/> data ) : ust::io_result</size_type/>
+	{
+		// In a write operation expect that data to read isn't arriven yet.
+		// So go waiting first.
+		loop
+		{
+			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+			// We need to wait here.
+			// TODO - register/unregister socket for waiting.
+			yield;
+
+			var ust::io_result</size_type/> res= socket_.peek( data );
+			if( res.is_ok() )
+			{
+				return res;
+			}
+
+			var ust::io_error e= res.try_deref_error();
+			if( e != ust::io_error::would_block )
+			{
+				// Unexpected error code - return it.
+				return res;
+			}
+		}
+	}
+
+	fn async peek_from( mut this, ust::array_view_mut</byte8/> data ) : ust::io_result</ tup[ ust::socket_address, size_type ]/>
+	{
+		// In a write operation expect that data to read isn't arriven yet.
+		// So go waiting first.
+		loop
+		{
+			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+			// We need to wait here.
+			// TODO - register/unregister socket for waiting.
+			yield;
+
+			var ust::io_result</ tup[ ust::socket_address, size_type ] /> res= socket_.peek_from( data );
+			if( res.is_ok() )
+			{
+				return res;
+			}
+
+			var ust::io_error e= res.try_deref_error();
+			if( e != ust::io_error::would_block )
+			{
+				// Unexpected error code - return it.
+				return res;
+			}
+		}
+	}
+
+	fn connect( mut this, ust::socket_address& a ) : ust::io_result</void/>;
+
+	fn get_local_address( this ) : ust::io_result</ust::socket_address/>;
+	fn get_peer_address( this ) : ust::io_result</ust::socket_address/>;
+
+	fn get_ttl( this ) : ust::io_result</u8/>;
+	fn set_ttl( mut this, u8 ttl ) : ust::io_result</void/>;
+
+	// Get underlying socket.
+	// Use it with caution, don't attempt to change it to non-blocking mode!
+	fn get_uderlying_socket( this ) unsafe : ust::udp_socket&;
+	fn get_uderlying_socket( mut this ) unsafe : ust::udp_socket &mut;
+
+	fn take_underlying_socket( byval this ) : ust::udp_socket;
+
+private:
+	ust::udp_socket socket_;
+}
+
+} // namespace sm_async_net
