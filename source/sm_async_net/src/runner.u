@@ -148,7 +148,7 @@ op runner::RunnerThreadFunction::()( byval this )
 		}
 
 		// Perform "poll".
-		// If has tasks in the queue, set zero timeout.
+		// If has tasks in the queue or has tasks to execute, set zero timeout.
 		// Otherwise set infinite timeout.
 		// This thread still may be awaked via awaker.
 		{
@@ -157,7 +157,9 @@ op runner::RunnerThreadFunction::()( byval this )
 			var ust::native_file_handle wake_handle= waker.GetWakeHandle();
 			var [ pollfd, 1 ] mut poll_descriptors[ { .fd= wake_handle, .events( POLLIN ), .revents(0) } ];
 
-			var i32 timeout_ms= ( has_tasks_in_queue ? 0 : -1 );
+			var bool should_sleep= !has_tasks_in_queue && ready_for_execution_tasks.empty();
+
+			var i32 timeout_ms= ( should_sleep ? -1 : 0 );
 
 			var i32 res= unsafe( ::poll( $<( poll_descriptors[0] ), nfds_t(1), timeout_ms ) );
 			assert( res >= 0, "Unexpected \"poll\" call result!" );
