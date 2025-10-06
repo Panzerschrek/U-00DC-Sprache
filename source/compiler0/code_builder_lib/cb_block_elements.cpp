@@ -2148,7 +2148,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		alternative_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
-		// Destroy temporarie in coroutine expression.
+		// Destroy temporaries of coroutine expression.
 		CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
 	}
 	else
@@ -2158,7 +2158,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
-			// Destroy temporarie in coroutine expression.
+			// Destroy temporaries of coroutine expression.
 			CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
 
 			function_context.llvm_ir_builder.CreateBr( block_after_if );
