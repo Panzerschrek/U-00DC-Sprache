@@ -300,6 +300,40 @@ fn nomangle nodiscard U1_BuildProgramForMSVCManglingTest(
 	return code_builder_res.llvm_module;
 }
 
+fn nomangle nodiscard U1_BuildProgramForAsyncCallsInliningTest(
+	U1_StringView& program_text,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) unsafe call_conv( "C" ) : LLVMModuleRef
+{
+	var U1::IVfsSharedPtr test_vfs= ust::make_shared_ptr( U1::TestVfs( unsafe( U1::StringToArrayView( program_text ) ) ) );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::CalculateLongStableHash, "_", "" );
+
+	U1::PrintLexSyntErrors( source_graph );
+	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
+	{
+		return Null::LLVMModuleRef();
+	}
+
+	var U1::CodeBuilderOptions options
+	{
+		.build_debug_info= false, // Debug info can't be now handled properly in async calls inlining code.
+		.mangling_scheme= U1::ManglingScheme::ItaniumABI,
+		.report_about_unused_names= false
+	};
+
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options, test_vfs );
+	auto code_builder_res= code_builder.BuildProgram( source_graph );
+
+	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
+	if( !code_builder_res.errors.empty() )
+	{
+		unsafe(LLVMDisposeModule( code_builder_res.llvm_module ) );
+		return Null::LLVMModuleRef();
+	}
+
+	return code_builder_res.llvm_module;
+}
+
 namespace U1
 {
 
