@@ -1,0 +1,10 @@
+fn async Bar() : i32;
+
+fn Foo() : i32
+{
+	if_coro_advance( r : Bar() )
+	{
+		return r;
+	}
+	halt;
+}
