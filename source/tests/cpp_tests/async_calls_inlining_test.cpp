@@ -627,6 +627,94 @@ U_TEST(AsyncCallInlining_Test12)
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 }
 
+U_TEST(AsyncCallInlining_Test13)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			i32 y;
+
+			fn async SomeMethod( this ) : i32
+			{
+				return x * y;
+			}
+		}
+
+		fn async Bar() : i32
+		{
+			// Should properly inline here a call to a method with "this" argument, where "this" fields are accessed inside.
+			var S s{ .x= 2, .y= 3 };
+			return s.SomeMethod().await;
+		}
+
+		fn Foo() : i32
+		{
+			if_coro_advance( r : Bar() )
+			{
+				return r;
+			}
+			halt;
+		}
+	)";
+
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z8DoubleItj" ) == nullptr ); // Should inline it.
+
+	const llvm::GenericValue val= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( val.IntVal.getLimitedValue() == 6 );
+}
+
+U_TEST(AsyncCallInlining_Test14)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			i32 y;
+
+			fn async SomeMethod( this ) : i32
+			{
+				return x * y;
+			}
+		}
+
+		fn async Bar( [ S, 1 ]& s_arr ) : i32
+		{
+			// Should properly inline here a call to a method with "this" argument, where "this" fields are accessed inside.
+			return s_arr[0].SomeMethod().await;
+		}
+
+		fn Foo() : i32
+		{
+			var [ S, 1 ] s_arr[ { .x= 5, .y= 7 } ];
+			if_coro_advance( r : Bar( s_arr ) )
+			{
+				return r;
+			}
+			halt;
+		}
+	)";
+
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z8DoubleItj" ) == nullptr ); // Should inline it.
+
+	const llvm::GenericValue val= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( val.IntVal.getLimitedValue() == 35 );
+}
+
 U_TEST(AsyncCallInliningFail_Test0)
 {
 	static const char c_program_text[]=
