@@ -420,6 +420,9 @@ fn nomangle LLVMCountBasicBlocks(LLVMValueRef Fn) unsafe call_conv( "C" ) : u32;
 fn nomangle LLVMGetLastBasicBlock(LLVMValueRef Fn) unsafe call_conv( "C" ) : LLVMBasicBlockRef;
 fn nomangle LLVMDeleteFunction(LLVMValueRef Fn) unsafe call_conv( "C" );
 
+fn nomangle LLVMGetFirstBasicBlock(LLVMValueRef Fn) unsafe call_conv( "C" ) : LLVMBasicBlockRef;
+fn nomangle LLVMGetNextBasicBlock(LLVMBasicBlockRef BB) unsafe call_conv( "C" ) : LLVMBasicBlockRef;
+
 // Basic block
 
 fn nomangle LLVMInstructionEraseFromParent(LLVMValueRef Inst) unsafe call_conv( "C" );
