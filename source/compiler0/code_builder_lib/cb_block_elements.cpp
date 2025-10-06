@@ -2148,7 +2148,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		alternative_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
+		function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names_scope.GetErrors(), if_coro_advance.end_src_loc );
+
 		// Destroy temporaries of coroutine expression.
+		// For "if_coro_advance" without an alternative branch emit this code only once - at the beginning of the block after "if_coro_advance".
 		CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
 	}
 	else
@@ -2192,9 +2195,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 			delete block_after_if;
-	}
 
-	function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names_scope.GetErrors(), if_coro_advance.end_src_loc );
+		function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names_scope.GetErrors(), if_coro_advance.end_src_loc );
+	}
 
 	return block_build_info;
 }
