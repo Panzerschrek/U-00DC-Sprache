@@ -715,6 +715,52 @@ U_TEST(AsyncCallInlining_Test14)
 	U_TEST_ASSERT( val.IntVal.getLimitedValue() == 35 );
 }
 
+U_TEST(AsyncCallInlining_Test15)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			i32 y;
+
+			fn async SomeMethod( this ) : i32
+			{
+				return x * y;
+			}
+		}
+
+		fn Pass( S& s ) : S& { return s; }
+
+		fn async Bar() : i32
+		{
+			// Should properly inline here a call to a method with "this" argument, where "this" fields are accessed inside.
+			var S s{ .x= 2, .y= 3 };
+			return Pass(s).SomeMethod().await;
+		}
+
+		fn Foo() : i32
+		{
+			if_coro_advance( r : Bar() )
+			{
+				return r;
+			}
+			halt;
+		}
+	)";
+
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z8DoubleItj" ) == nullptr ); // Should inline it.
+
+	const llvm::GenericValue val= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( val.IntVal.getLimitedValue() == 6 );
+}
+
 U_TEST(AsyncCallInliningFail_Test0)
 {
 	static const char c_program_text[]=
