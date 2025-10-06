@@ -584,52 +584,6 @@ bool IsAsyncFunctionCallWithSingleFurtherAwait( llvm::CallInst& call_instruction
 	return GetAwaitOperatorCoroutineInstructions( *coroutine_object ) != std::nullopt;
 }
 
-void FixDebugInfoParentFunction( llvm::Function& function )
-{
-	// For now just remove mismatching debug info metadata.
-	// It's not a big deal, since debug async calls inlining shouldn't be used together with debug info.
-
-	llvm::SmallVector<llvm::CallInst*, 16> debug_declare_calls_to_remove;
-
-	for( llvm::BasicBlock& bb : function )
-	{
-		for( llvm::Instruction& instruction : bb )
-		{
-			if( const llvm::MDNode* const md_node= instruction.getMetadata( llvm::LLVMContext::MD_dbg ) )
-			{
-				if( const llvm::DILocation* const location = llvm::dyn_cast_or_null<llvm::DILocation>( md_node ) )
-				{
-					if( const llvm::Metadata* const scope= location->getRawScope() )
-					{
-						if( const llvm::DILocalScope* const local_scope= llvm::dyn_cast<llvm::DILocalScope>( scope ) )
-						{
-							if( local_scope->getSubprogram() != function.getSubprogram() )
-							{
-								//instruction.eraseMetadata( llvm::LLVMContext::MD_dbg );
-								instruction.setDebugLoc( llvm::DebugLoc() );
-							}
-						}
-					}
-				}
-			}
-			if( llvm::CallInst* const call_instruction= llvm::dyn_cast<llvm::CallInst>( &instruction ) )
-			{
-				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( GetCallee( *call_instruction ) ) )
-				{
-					if( callee_function->getIntrinsicID() == llvm::Intrinsic::dbg_declare )
-					{
-						debug_declare_calls_to_remove.push_back( call_instruction );
-					}
-				}
-			}
-		}
-
-		for( llvm::CallInst* const call_instruction : debug_declare_calls_to_remove )
-			call_instruction->eraseFromParent();
-		debug_declare_calls_to_remove.clear();
-	}
-}
-
 void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instruction )
 {
 	llvm::AllocaInst* const coroutine_object= GetCoroutineObject( call_instruction );
@@ -860,8 +814,6 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 
 	// Erase temporary inlined function clone, since all basic blocks were moved into the destination.
 	callee_clone->eraseFromParent();
-
-	FixDebugInfoParentFunction( function );
 }
 
 struct AsyncFunctionCall
