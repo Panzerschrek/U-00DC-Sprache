@@ -2148,7 +2148,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		alternative_block->insertInto( function_context.function );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
-		// Destroy temporarie in coroutine expression.
+		function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names_scope.GetErrors(), if_coro_advance.end_src_loc );
+
+		// Destroy temporaries of coroutine expression.
+		// For "if_coro_advance" without an alternative branch emit this code only once - at the beginning of the block after "if_coro_advance".
 		CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
 	}
 	else
@@ -2158,7 +2161,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( !if_block_build_info.has_terminal_instruction_inside )
 		{
-			// Destroy temporarie in coroutine expression.
+			// Destroy temporaries of coroutine expression.
 			CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
 
 			function_context.llvm_ir_builder.CreateBr( block_after_if );
@@ -2171,13 +2174,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		function_context.variables_state= std::move( variables_state_before_branching );
 
-		// Destroy temporarie in coroutine expression.
-		CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
+		// Trigger destruction of temporaries of the coroutine expression earlier,
+		// so that variables locked by these temporaries or even the coroutine itslef may me modified or even moved.
+		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), if_coro_advance.src_loc );
 
 		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, *if_coro_advance.alternative );
 
 		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
+			// Destroy temporaries of coroutine expression.
+			CallDestructors( variables_storage, names_scope, function_context, if_coro_advance.end_src_loc );
+
 			function_context.llvm_ir_builder.CreateBr( block_after_if );
 			branches_variable_states.push_back( function_context.variables_state );
 		}
@@ -2192,9 +2199,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 			delete block_after_if;
-	}
 
-	function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names_scope.GetErrors(), if_coro_advance.end_src_loc );
+		if( !branches_variable_states.empty() )
+			function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names_scope.GetErrors(), if_coro_advance.end_src_loc );
+	}
 
 	return block_build_info;
 }
