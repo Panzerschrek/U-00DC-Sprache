@@ -303,6 +303,43 @@ def ReturnForAsyncFunction_Test8():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def TemporaryAsyncFunctionInIfCoroAdvance_Test0():
+	c_program_text= """
+		fn async Bar() : i32{ return 7788; }
+		fn Foo() : i32
+		{
+			if_coro_advance( r : Bar() )
+			{
+				return r;
+			}
+			halt;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	res= tests_lib.run_function( "_Z3Foov" )
+	assert( res == 7788 )
+
+
+def TemporaryAsyncFunctionInIfCoroAdvance_Test1():
+	c_program_text= """
+		fn async Bar() : i32{ yield; return 222; }
+		fn Foo() : i32
+		{
+			if_coro_advance( r : Bar() )
+			{
+				return r;
+			}
+			else
+			{
+				return 111;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	res= tests_lib.run_function( "_Z3Foov" )
+	assert( res == 111 )
+
+
 def AsyncFunctionTypeName_Test0():
 	c_program_text= """
 		fn async SimpleFunc() : u32 { return 0u; }

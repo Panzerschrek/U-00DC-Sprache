@@ -1748,13 +1748,17 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 
 		function_context.references_graph= move(references_graph_before_branching);
 
-		// Destroy temporarie in coroutine expression.
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
+		// Trigger destruction of temporaries of the coroutine expression earlier,
+		// so that variables locked by these temporaries or even the coroutine itslef may me modified or even moved.
+		DestroyUnusedTemporaryVariables( names_scope, function_context, if_coro_advance_operator.src_loc );
 
 		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_coro_advance_operator.alternative );
 
 		if( !alternative_block_build_info.has_terminal_instruction_inside )
 		{
+			// Destroy temporaries in coroutine expression.
+			CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
+
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
 			references_graphs.push_back( function_context.references_graph );
 		}
@@ -1772,6 +1776,11 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
 			unsafe( LLVMDeleteBasicBlock( block_after_if ) );
 		}
+
+		if( !references_graphs.empty() )
+		{
+			function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs, names_scope, if_coro_advance_operator.end_src_loc );
+		}
 	}
 	else
 	{
@@ -1788,13 +1797,11 @@ fn CodeBuilder::BuildIfCoroAdvanceOperatorImpl( mut this, NamesScopePtr& names_s
 		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
 		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
 
-		// Destroy temporarie in coroutine expression.
-		CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
-	}
-
-	if( !references_graphs.empty() )
-	{
 		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs, names_scope, if_coro_advance_operator.end_src_loc );
+
+		// Destroy temporaries of coroutine expression.
+		// For "if_coro_advance" without an alternative branch emit this code only once - at the beginning of the block after "if_coro_advance".
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
 	}
 
 	return block_element_build_info;

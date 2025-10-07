@@ -251,13 +251,37 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const std::string
 
 std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const std::string_view text )
 {
-	auto module= BuildProgram( text );
-	if( module == nullptr )
+	const std::string file_path= "_";
+	const auto vfs= std::make_shared<MultiFileVfs>( file_path, text );
+	SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateLongStableHash, file_path );
+
+	PrintLexSyntErrors( source_graph );
+	U_TEST_ASSERT( source_graph.errors.empty() );
+
+	CodeBuilderOptions options;
+	options.build_debug_info= false; // Async calls inlining can't for now handle debug information properly.
+	options.generate_tbaa_metadata= true;
+	options.create_lifetimes= true;
+	options.report_about_unused_names= false; // It is easier to silence such errors, rather than fixing a lot of tests.
+
+	CodeBuilder::BuildResult build_result=
+		CodeBuilder::BuildProgram(
+			*g_llvm_context,
+			llvm::DataLayout( GetTestsDataLayout() ),
+			GetTestsTargetTriple(),
+			options,
+			std::make_shared<SourceGraph>( std::move(source_graph) ),
+			vfs );
+
+	PrinteErrors_r( build_result.errors );
+	U_TEST_ASSERT( build_result.errors.empty() );
+
+	if( build_result.module == nullptr )
 		return nullptr;
 
-	InlineAsyncCalls( *module );
+	InlineAsyncCalls( *build_result.module );
 
-	return module;
+	return std::move( build_result.module );
 }
 
 bool HasError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const uint32_t line )

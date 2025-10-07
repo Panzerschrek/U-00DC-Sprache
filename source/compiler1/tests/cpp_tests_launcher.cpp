@@ -221,13 +221,22 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const std::string
 
 std::unique_ptr<llvm::Module> BuildProgramForAsyncFunctionsInliningTest( const std::string_view text )
 {
-	auto module= BuildProgram( text );
-	if( module == nullptr )
-		return nullptr;
+	const U1_StringView text_view{ text.data(), text.size() };
 
-	InlineAsyncCalls( *module );
+	llvm::LLVMContext& llvm_context= *g_llvm_context;
 
-	return module;
+	llvm::DataLayout data_layout( GetTestsDataLayout() );
+
+	llvm::Module* const ptr=
+		llvm::unwrap( U1_BuildProgramForAsyncCallsInliningTest(
+			text_view,
+			llvm::wrap(&llvm_context),
+			llvm::wrap(&data_layout) ) );
+	U_TEST_ASSERT( ptr != nullptr );
+
+	InlineAsyncCalls( *ptr );
+
+	return std::unique_ptr<llvm::Module>( ptr );
 }
 
 bool HasError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const uint32_t line )

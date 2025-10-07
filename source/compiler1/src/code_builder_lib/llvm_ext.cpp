@@ -42,6 +42,13 @@ void U1_InsertInstructionAfterAnother( const LLVMValueRef src_instructuon, const
 	llvm::dyn_cast<llvm::Instruction>( llvm::unwrap(instruction_for_insert) )->insertAfter( llvm::dyn_cast<llvm::Instruction>( llvm::unwrap( src_instructuon ) ) );
 }
 
+void U1_InsertInstructionAtBasicBlockStart( const LLVMBasicBlockRef basic_block, const LLVMValueRef instruction )
+{
+	llvm::BasicBlock* const bb= llvm::unwrap(basic_block);
+	llvm::Instruction& i= *llvm::dyn_cast<llvm::Instruction>( llvm::unwrap(instruction) );
+	i.insertInto( bb, bb->begin() );
+}
+
 void U1_FunctionAddDereferenceableAttr(const LLVMValueRef function, const uint32_t index, const uint64_t bytes)
 {
 	const auto f= llvm::dyn_cast<llvm::Function>(llvm::unwrap(function));

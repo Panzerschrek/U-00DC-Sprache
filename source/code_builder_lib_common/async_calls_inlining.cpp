@@ -4,6 +4,7 @@
 
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/Transforms/Utils/Cloning.h>
