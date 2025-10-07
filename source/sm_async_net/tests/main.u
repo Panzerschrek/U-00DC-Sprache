@@ -3,6 +3,7 @@ import "/enum_string_conversions.u"
 import "/main_wrapper.u"
 import "/stdout.u"
 import "/string_conversions.u"
+import "/shared_barrier.u"
 import "/sm_async_net/runner.uh"
 import "/sm_async_net/udp_socket.uh"
 
@@ -26,6 +27,9 @@ fn Main() : i32
 	AddTaskFreeFunction_Test0::Run();
 	AddTaskFreeFunction_Test1::Run();
 	UDPSocket_Test0::Run();
+	UDPSocket_Test1::Run();
+	UDPSocket_Test2::Run();
+	UDPSocket_Test3::Run();
 
 	return 0;
 }
@@ -290,6 +294,175 @@ fn async Func( ust::socket_address_v4 server_address )
 			assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
 		}
 	}
+}
+
+}
+
+namespace UDPSocket_Test1
+{
+
+fn Run()
+{
+	// Create regular socket on the main thread, create an async one on runner thread.
+	// Use blocking operation on the main thread.
+	// Send a message using async UDP socket class, receive it using sync UDP socket class.
+	// Connect socket first, before sending a message.
+
+	var runner r;
+
+	var ust::socket_address_v4 address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var ust::udp_socket mut server_socket= ust::udp_socket::create_and_bind( address ).try_take();
+
+	r.add_task( Func( address ) );
+
+	var [ char8, 64 ] mut buf= zero_init;
+
+	result_match( server_socket.receive( ust::array_view_mut</char8/>(buf).to_byte8_range() ) )
+	{
+		Ok( bytes_received ) ->
+		{
+			assert( bytes_received == ust::string_view8(message).size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+			assert( ust::string_view8(buf).subrange_end( bytes_received ) == message, "Unexpected message!" );
+		},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to receive message to from socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
+}
+
+auto& message= "Stich um Stich, meinen Wein kriegst du nicht!";
+
+fn async Func( ust::socket_address_v4 server_address )
+{
+	var udp_socket mut client_socket= udp_socket::create_v4().try_take();
+
+	result_match( client_socket.connect( server_address ) )
+	{
+		Ok( v ) -> { ust::ignore_unused(v); },
+		Err( e ) -> { assert( false, ust::concat( "Failed to connect UDP socket! Error: ", ust::enum_to_string(e) ) ); }
+	}
+
+	var ust::string_view8 message_range= message;
+
+	result_match( client_socket.send( message_range.to_byte8_range() ).await )
+	{
+		Ok( bytes_sent ) ->
+		{
+			assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+		},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
+}
+
+}
+
+namespace UDPSocket_Test2
+{
+
+fn Run()
+{
+	// Create regular socket on the main thread, create an async one on runner thread.
+	// Use blocking operation on the main thread.
+	// Send a message using sync UDP socket class, receive it using async UDP socket class.
+
+	var runner r;
+
+	var ust::shared_barrier barrier( 2u );
+
+	var ust::socket_address_v4 address( GetLoopbackIpAddress(), GetNextPort() );
+
+	r.add_task( Func( barrier, address ) );
+
+	var ust::udp_socket mut socket= ust::udp_socket::create_v4().try_take();
+
+	barrier.wait();
+
+	var ust::string_view8 message_buffer= message;
+
+	assert( socket.send_to( address, message_buffer.to_byte8_range() ).try_take() == message_buffer.size() );
+
+	barrier.wait();
+}
+
+auto& message= "1000 Milen und noch mehr - bis zum Ende dieser Welt.";
+
+fn async Func( ust::shared_barrier barrier, ust::socket_address_v4 address )
+{
+	var udp_socket mut socket= udp_socket::create_and_bind( address ).try_take();
+
+	barrier.wait();
+
+	var [ char8, 64 ] mut buf= zero_init;
+
+	var ust::string_view8 message_buffer= message;
+
+	auto[ sender_address, size ]= socket.receive_from( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
+	assert( size == message_buffer.size() );
+	assert( ust::string_view8( buf ).subrange_end( size ) == message );
+
+	barrier.wait();
+}
+
+}
+
+namespace UDPSocket_Test3
+{
+
+fn Run()
+{
+	// Create regular socket on the main thread, create an async one on runner thread.
+	// Use blocking operation on the main thread.
+	// Send a message using sync UDP socket class, receive it using async UDP socket class.
+	// Connect sender first.
+
+	var runner r;
+
+	var ust::shared_barrier barrier( 2u );
+
+	var ust::socket_address_v4 address0( GetLoopbackIpAddress(), GetNextPort() );
+	var ust::socket_address_v4 address1( GetLoopbackIpAddress(), GetNextPort() );
+
+	r.add_task( Func( barrier, address0, address1 ) );
+
+	var ust::udp_socket mut socket= ust::udp_socket::create_and_bind( address1 ).try_take();
+
+	barrier.wait();
+
+	var void v= socket.connect( address0 ).try_take();
+	ust::ignore_unused(v);
+
+	var ust::string_view8 message_buffer= message;
+
+	assert( socket.send( message_buffer.to_byte8_range() ).try_take() == message_buffer.size() );
+
+	barrier.wait();
+}
+
+auto& message= "Bis zu Unsterblichkeit!";
+
+fn async Func( ust::shared_barrier barrier, ust::socket_address_v4 my_address, ust::socket_address_v4 other_address )
+{
+	var udp_socket mut socket= udp_socket::create_and_bind( my_address ).try_take();
+
+	var void v= socket.connect( other_address ).try_take();
+	ust::ignore_unused(v);
+
+	barrier.wait();
+
+	var [ char8, 64 ] mut buf= zero_init;
+
+	var ust::string_view8 message_buffer= message;
+
+	var size_type size = socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
+	assert( size == message_buffer.size() );
+	assert( ust::string_view8( buf ).subrange_end( size ) == message );
+
+	barrier.wait();
 }
 
 }
