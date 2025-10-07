@@ -86,6 +86,11 @@ fn nomangle nodiscard U1_BuildProgramForMSVCManglingTest(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe call_conv( "C" ) : LLVMModuleRef;
 
+fn nomangle nodiscard U1_BuildProgramForAsyncCallsInliningTest(
+	U1_StringView& program_text,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) unsafe call_conv( "C" ) : LLVMModuleRef;
+
 fn nomangle nodiscard U1_BuildProgramUsingVFS(
 	U1_IVfsInterface& vfs_interface,
 	U1_StringView& root_file_path,

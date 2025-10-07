@@ -2394,12 +2394,16 @@ llvm::Value* CodeBuilder::ForceCreateConstantIndexGEP( FunctionContext& function
 
 	const auto gep= llvm::GetElementPtrInst::CreateInBounds( type, value, { GetZeroGEPIndex(), index_value } );
 
-	// Try to insert "GEP" instruction with constant index directly after of value calculation.
-	// This is needed in order to have possibility to reuse this instruction in diffirent basic blocks.
-	if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( value ) )
+	// Generally insert this "gep" after its base instruction.
+	// But for argument and "alloca" bases insert "gep" into the first block after allocations block,
+	// since we can't insert instruction after an argument and we shouldn't place instructions other than allocations inside allocations block.
+	if( llvm::isa<llvm::Argument>( value ) || llvm::isa<llvm::AllocaInst>( value ) )
+	{
+		llvm::BasicBlock& first_block_after_allocations= *std::next(function_context.function->begin());
+		gep->insertInto( &first_block_after_allocations, first_block_after_allocations.begin() );
+	}
+	else if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( value ) )
 		gep->insertAfter( instruction );
-	else if( llvm::isa<llvm::Argument>( value ) )
-		function_context.alloca_ir_builder.Insert( gep );
 	else
 		function_context.llvm_ir_builder.Insert( gep ); // TODO - maybe add assert here?
 
