@@ -245,6 +245,7 @@ fn Run()
 {
 	// Create regular socket on the main thread, create an async one on runner thread.
 	// Use blocking operation on the main thread.
+	// Send a message using async UDP socket class, receive it using sync UDP socket class.
 
 	var runner r;
 
@@ -255,13 +256,13 @@ fn Run()
 	r.add_task( Func( address ) );
 
 	var [ char8, 32 ] mut buf= zero_init;
-	var ust::array_view_mut</char8/> buf_range= buf;
 
-	result_match( server_socket.receive( buf_range.to_byte8_range() ) )
+	result_match( server_socket.receive( ust::array_view_mut</char8/>(buf).to_byte8_range() ) )
 	{
 		Ok( bytes_received ) ->
 		{
-			assert( bytes_received == buf_range.size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+			assert( bytes_received == ust::string_view8(message).size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+			assert( ust::string_view8(buf).subrange_end( bytes_received ) == message, "Unexpected message!" );
 		},
 		Err( e ) ->
 		{
