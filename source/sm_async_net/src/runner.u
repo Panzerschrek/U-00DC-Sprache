@@ -64,8 +64,8 @@ op runner::RunnerThreadFunction::()( byval this )
 
 	// Reuse container for poll descriptors, avoid creating it for each "poll" call.
 	var ust::vector</pollfd/> mut poll_descriptors;
-	// Maintain a map socket -> task, in order to determine which tasks should be waked.
-	var ust::hash_map</ust::native_socket_fd, TaskUniqueId/> mut socket_to_task_id_map;
+	// Maintain a vector of task identifiers for poll descriptiors, in order to determine which tasks should be waked.
+	var ust::vector</TaskUniqueId/> mut tasks_for_poll_descriptirs;
 
 	// Main runner loop.
 	// Do not return from it, break instead!
@@ -170,7 +170,7 @@ op runner::RunnerThreadFunction::()( byval this )
 		// This thread still may be awaked via awaker.
 		{
 			poll_descriptors.clear();
-			socket_to_task_id_map.clear();
+			tasks_for_poll_descriptirs.clear();
 
 			var PollWaker& waker= waker_.deref();
 
@@ -178,6 +178,7 @@ op runner::RunnerThreadFunction::()( byval this )
 
 			// Push waker handle as first.
 			poll_descriptors.push_back( pollfd{ .fd= wake_handle, .events( POLLIN ), .revents(0) } );
+			tasks_for_poll_descriptirs.push_back( TaskUniqueId(0) );
 
 			// Iterate over all tasks and get file descriptors for them.
 			// This uses hash-map order, but this isn't a huge problem.
@@ -198,11 +199,11 @@ op runner::RunnerThreadFunction::()( byval this )
 					}
 
 					poll_descriptors.push_back( pollfd{ .fd= socket_for_waiting.fd, .events( event_flags ), .revents(0) } );
-
-					var bool inserted= socket_to_task_id_map.insert_new( socket_for_waiting.fd, task_id );
-					assert( inserted, "A socket descriptor is assigned to more than one task!" );
+					tasks_for_poll_descriptirs.push_back( task_id );
 				}
 			}
+
+			debug_assert( tasks_for_poll_descriptirs.size() == poll_descriptors.size() );
 
 			var bool should_sleep= !has_tasks_in_queue && ready_for_execution_tasks.empty();
 
@@ -222,16 +223,17 @@ op runner::RunnerThreadFunction::()( byval this )
 					waker.ResetWake();
 				}
 
-				foreach( &poll_descriptor : poll_descriptors )
+				// Process poll descriptors other than the first one (for wake handle).
+				foreach( &pair : poll_descriptors.iter().zip( tasks_for_poll_descriptirs.iter() ).skip( 1s ) )
 				{
+					var pollfd& poll_descriptor= pair.first;
+					var TaskUniqueId task_id= pair.second;
+
 					// Check if result events contain flags for all requested events.
 					// If it's true, we can resume the task.
 					if( ( poll_descriptor.revents & poll_descriptor.events ) == poll_descriptor.events )
 					{
-						if_var( &task_id : socket_to_task_id_map.find( poll_descriptor.fd ) )
-						{
-							ready_for_execution_tasks.push_back( task_id );
-						}
+						ready_for_execution_tasks.push_back( task_id );
 					}
 				}
 			}
