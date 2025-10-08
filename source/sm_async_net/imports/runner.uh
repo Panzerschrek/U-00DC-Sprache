@@ -77,6 +77,34 @@ struct SocketForWaiting
 	Operations operations;
 }
 
+// Class for internal usage.
+class TaskSocketOperationHolder
+{
+public:
+	fn constructor( ust::native_socket_fd socket, SocketForWaiting::Operations operations ) unsafe
+		( task_id_= unsafe( RegisterCurrentTaskSocketOperation( socket, operations ) ) )
+	{
+	}
+
+	fn destructor()
+	{
+		unsafe( CancelTaskSocketOperation( task_id_ ) );
+	}
+
+private:
+	TaskUniqueId task_id_;
+}
+
+// Register socket operation for currently running task.
+// This function may be called only within a running task.
+// It halts if current task already has an active socket operation or children tasks.
+// It returns current task id.
+fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketForWaiting::Operations operations ) unsafe : TaskUniqueId;
+
+// Cncels currently-active socket operation.
+// This function may be called only within a running task - for this task or for its children.
+fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe;
+
 type PollWakerSharedPtr= ust::shared_ptr_mt_final</PollWaker/>;
 
 class PollWaker

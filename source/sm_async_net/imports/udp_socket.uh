@@ -1,4 +1,5 @@
 import "/udp_socket.u"
+import "runner.uh"
 
 namespace sm_async_net
 {
@@ -18,156 +19,256 @@ public:
 
 	fn async send( mut this, ust::array_view_imut</byte8/> data ) : ust::io_result</size_type/>
 	{
-		// Optimistically expect that a read operation may be performed witohut blocking.
+		// Optimistically expect that a write operation may be performed witohut blocking.
 		// So we make a send request first, before going waiting.
-		loop
 		{
 			var ust::io_result</size_type/> res= socket_.send( data );
 			if( res.is_ok() )
 			{
 				return res;
 			}
-
-			var ust::io_error e= res.try_deref_error();
-			if( e != ust::io_error::would_block )
+			if( res.try_deref_error() != ust::io_error::would_block )
 			{
 				// Unexpected error code - return it.
 				return res;
 			}
-
-			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
-			// We need to wait here.
-			// TODO - register/unregister socket for waiting.
-			yield;
 		}
+
+		unsafe // Because of TaskSocketOperationHolder.
+		{
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Write );
+
+			loop
+			{
+				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// We need to wait here.
+				yield;
+
+				var ust::io_result</size_type/> res= socket_.send( data );
+				if( res.is_ok() )
+				{
+					return res;
+				}
+
+				if( res.try_deref_error() != ust::io_error::would_block )
+				{
+					// Unexpected error code - return it.
+					return res;
+				}
+			}
+		}
+
 	}
 
 	fn async send_to( mut this, ust::socket_address& a, ust::array_view_imut</byte8/> data ) : ust::io_result</size_type/>
 	{
-		// Optimistically expect that a read operation may be performed witohut blocking.
+		// Optimistically expect that a write operation may be performed witohut blocking.
 		// So we make a send request first, before going waiting.
-		loop
 		{
 			var ust::io_result</size_type/> res= socket_.send_to( a, data );
 			if( res.is_ok() )
 			{
 				return res;
 			}
-
-			var ust::io_error e= res.try_deref_error();
-			if( e != ust::io_error::would_block )
+			if( res.try_deref_error() != ust::io_error::would_block )
 			{
 				// Unexpected error code - return it.
 				return res;
 			}
+		}
 
-			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
-			// We need to wait here.
-			// TODO - register/unregister socket for waiting.
-			yield;
+		unsafe // Because of TaskSocketOperationHolder.
+		{
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Write );
+
+			loop
+			{
+				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// We need to wait here.
+				yield;
+
+				var ust::io_result</size_type/> res= socket_.send_to( a, data );
+				if( res.is_ok() )
+				{
+					return res;
+				}
+
+				if( res.try_deref_error() != ust::io_error::would_block )
+				{
+					// Unexpected error code - return it.
+					return res;
+				}
+			}
 		}
 	}
 
 	fn async receive( mut this, ust::array_view_mut</byte8/> data ) : ust::io_result</size_type/>
 	{
-		// In a write operation expect that data to read isn't arriven yet.
-		// So go waiting first.
-		loop
+		// Try reading first, before waiting.
+		// Doing so we avoid current task switching if data is already available.
 		{
-			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
-			// We need to wait here.
-			// TODO - register/unregister socket for waiting.
-			yield;
-
 			var ust::io_result</size_type/> res= socket_.receive( data );
 			if( res.is_ok() )
 			{
 				return res;
 			}
-
-			var ust::io_error e= res.try_deref_error();
-			if( e != ust::io_error::would_block )
+			if( res.try_deref_error() != ust::io_error::would_block )
 			{
 				// Unexpected error code - return it.
 				return res;
+			}
+		}
+
+		unsafe // Because of TaskSocketOperationHolder.
+		{
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Read );
+
+			loop
+			{
+				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// We need to wait here.
+				yield;
+
+				var ust::io_result</size_type/> res= socket_.receive( data );
+				if( res.is_ok() )
+				{
+					return res;
+				}
+
+				if( res.try_deref_error() != ust::io_error::would_block )
+				{
+					// Unexpected error code - return it.
+					return res;
+				}
 			}
 		}
 	}
 
 	fn async receive_from( mut this, ust::array_view_mut</byte8/> data ) : ust::io_result</ tup[ ust::socket_address, size_type ] />
 	{
-		// In a write operation expect that data to read isn't arriven yet.
-		// So go waiting first.
-		loop
+		// Try reading first, before waiting.
+		// Doing so we avoid current task switching if data is already available.
 		{
-			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
-			// We need to wait here.
-			// TODO - register/unregister socket for waiting.
-			yield;
-
 			var ust::io_result</ tup[ ust::socket_address, size_type ] /> res= socket_.receive_from( data );
 			if( res.is_ok() )
 			{
 				return res;
 			}
 
-			var ust::io_error e= res.try_deref_error();
-			if( e != ust::io_error::would_block )
+			if( res.try_deref_error() != ust::io_error::would_block )
 			{
 				// Unexpected error code - return it.
 				return res;
+			}
+		}
+
+		unsafe // Because of TaskSocketOperationHolder.
+		{
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Read );
+
+			loop
+			{
+				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// We need to wait here.
+				yield;
+
+				var ust::io_result</ tup[ ust::socket_address, size_type ] /> res= socket_.receive_from( data );
+				if( res.is_ok() )
+				{
+					return res;
+				}
+
+				if( res.try_deref_error() != ust::io_error::would_block )
+				{
+					// Unexpected error code - return it.
+					return res;
+				}
 			}
 		}
 	}
 
 	fn async peek( mut this, ust::array_view_mut</byte8/> data ) : ust::io_result</size_type/>
 	{
-		// In a write operation expect that data to read isn't arriven yet.
-		// So go waiting first.
-		loop
+		// Try reading first, before waiting.
+		// Doing so we avoid current task switching if data is already available.
 		{
-			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
-			// We need to wait here.
-			// TODO - register/unregister socket for waiting.
-			yield;
-
 			var ust::io_result</size_type/> res= socket_.peek( data );
 			if( res.is_ok() )
 			{
 				return res;
 			}
 
-			var ust::io_error e= res.try_deref_error();
-			if( e != ust::io_error::would_block )
+			if( res.try_deref_error() != ust::io_error::would_block )
 			{
 				// Unexpected error code - return it.
 				return res;
+			}
+		}
+
+		unsafe // Because of TaskSocketOperationHolder.
+		{
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Read );
+
+			loop
+			{
+				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// We need to wait here.
+				yield;
+
+				var ust::io_result</size_type/> res= socket_.peek( data );
+				if( res.is_ok() )
+				{
+					return res;
+				}
+
+				if( res.try_deref_error() != ust::io_error::would_block )
+				{
+					// Unexpected error code - return it.
+					return res;
+				}
 			}
 		}
 	}
 
 	fn async peek_from( mut this, ust::array_view_mut</byte8/> data ) : ust::io_result</ tup[ ust::socket_address, size_type ]/>
 	{
-		// In a write operation expect that data to read isn't arriven yet.
-		// So go waiting first.
-		loop
+		// Try reading first, before waiting.
+		// Doing so we avoid current task switching if data is already available.
 		{
-			// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
-			// We need to wait here.
-			// TODO - register/unregister socket for waiting.
-			yield;
-
 			var ust::io_result</ tup[ ust::socket_address, size_type ] /> res= socket_.peek_from( data );
 			if( res.is_ok() )
 			{
 				return res;
 			}
 
-			var ust::io_error e= res.try_deref_error();
-			if( e != ust::io_error::would_block )
+			if( res.try_deref_error() != ust::io_error::would_block )
 			{
 				// Unexpected error code - return it.
 				return res;
+			}
+		}
+
+		unsafe // Because of TaskSocketOperationHolder.
+		{
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Read );
+
+			loop
+			{
+				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// We need to wait here.
+				yield;
+
+				var ust::io_result</ tup[ ust::socket_address, size_type ] /> res= socket_.peek_from( data );
+				if( res.is_ok() )
+				{
+					return res;
+				}
+
+				if( res.try_deref_error() != ust::io_error::would_block )
+				{
+					// Unexpected error code - return it.
+					return res;
+				}
 			}
 		}
 	}
