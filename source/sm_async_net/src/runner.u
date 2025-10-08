@@ -83,12 +83,14 @@ op runner::RunnerThreadFunction::()( byval this )
 		{
 			unsafe // Because we access global variables here.
 			{
-				var RunningTask &mut runnig_task= tasks_map[id];
+				// Access current task in this block using each time op[] of the tasks map.
+				// We can't hold a reference to current task,
+				// since tasks may be added and removed during this task execution and this may invalidate such reference.
 
 				g_currently_running_task_id= id;
 
-				// For now execute a task without any pause until it's possible.
-				// Break early only if shudown is requested.
+				// Execute a task without any pause until it's possible.
+				// Break early only if this task needs to wait for something shudown is requested.
 				loop
 				{
 					if( state_.shutdown_flag.read() )
@@ -97,15 +99,16 @@ op runner::RunnerThreadFunction::()( byval this )
 						break label main_loop;
 					}
 
-					if_coro_advance( v : runnig_task.task )
+					// This call may add new tasks and modify fields of current task structure.
+					// But the coroutine object pointer itself can't be changed.
+					if_coro_advance( v : tasks_map[id].task )
 					{
 						// The task is finished.
 						ust::ignore_unused(v);
 						break;
 					}
 
-
-					if( !runnig_task.socket_to_wait.empty() )
+					if( !tasks_map[id].socket_to_wait.empty() )
 					{
 						// This task has registered a socket to wait during its exection.
 						// We shouldn't execute it further, but wait instead.
