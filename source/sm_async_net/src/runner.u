@@ -1,5 +1,4 @@
 import "/assert.u"
-import "/hash_map.u"
 import "/sm_async_net/runner.uh"
 import "task_tree_node.uh"
 import "unix.uh"
@@ -54,11 +53,18 @@ fn runner::add_task( this, root_task_type mut t )
 
 op runner::RunnerThreadFunction::()( byval this )
 {
-	// Set shared state global variable.
-	// Since this global variable is thread-local and this function is running on a separate thread, it's not impossible here to overwrite someone else's variable instance.
-	unsafe{ g_current_runner_thread_shared_state= $<( cast_mut(state_) ); }
+	var TasksMap mut tasks_map;
 
-	var ust::hash_map</TaskUniqueId, RunningTask/> mut tasks_map;
+	unsafe
+	{
+
+		// Set shared state global variable.
+		// Since this global variable is thread-local and this function is running on a separate thread, it's not impossible here to overwrite someone else's variable instance.
+		g_current_runner_thread_shared_state= $<( cast_mut(state_) );
+
+		// Set also pointer to tasks map.
+		g_current_runner_thread_tasks_map= $<( tasks_map );
+	}
 
 	var ust::vector</TaskUniqueId/> mut ready_for_execution_tasks;
 
@@ -77,7 +83,9 @@ op runner::RunnerThreadFunction::()( byval this )
 		{
 			unsafe // Because we access global variables here.
 			{
-				var root_task_type &mut task= tasks_map[id].task;
+				var RunningTask &mut runnig_task= tasks_map[id];
+
+				debug_assert( runnig_task.socket_to_wait.empty(), "A task waiting on a socket shouldn't be ready!" );
 
 				g_currently_running_task_id= id;
 
@@ -91,10 +99,18 @@ op runner::RunnerThreadFunction::()( byval this )
 						break label main_loop;
 					}
 
-					if_coro_advance( v : task )
+					if_coro_advance( v : runnig_task.task )
 					{
 						// The task is finished.
 						ust::ignore_unused(v);
+						break;
+					}
+
+
+					if( !runnig_task.socket_to_wait.empty() )
+					{
+						// This task has registered a socket to wait during its exection.
+						// We shouldn't execute it further, but wait instead.
 						break;
 					}
 				}
@@ -248,9 +264,16 @@ op runner::RunnerThreadFunction::()( byval this )
 
 	// Perform cleanup steps.
 
-	// Reset shared state global pointer.
-	// It's strictly-speaking not necessary, but it's better to do so.
-	unsafe{ g_current_runner_thread_shared_state= ust::nullptr</SharedState/>(); }
+	ready_for_execution_tasks.clear();
+	tasks_map.clear();
+
+	unsafe
+	{
+		// Reset shared state global pointer.
+		// It's strictly-speaking not necessary, but it's better to do so.
+		g_current_runner_thread_shared_state= ust::nullptr</SharedState/>();
+		g_current_runner_thread_tasks_map= ust::nullptr</TasksMap/>();
+	}
 
 	return;
 }
@@ -273,6 +296,50 @@ var TaskUniqueId mut g_next_task_id= 1u64;
 // Don't forget to zero it back when leaving an async function execution!
 // Actual state isn't mutated by users of this variable.
 thread_local $(SharedState) g_current_runner_thread_shared_state= zero_init;
+
+thread_local $(TasksMap) g_current_runner_thread_tasks_map= zero_init;
+
+fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketForWaiting::Operations operations ) unsafe : TaskUniqueId
+{
+	unsafe
+	{
+		var TaskUniqueId task_id= g_currently_running_task_id;
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Registering a socket operation with no active task!" );
+
+		var TasksMap &mut tasks_map= $>( tasks_map_ptr );
+
+		if_var( &mut task : tasks_map.find( task_id ) )
+		{
+			assert( task.socket_to_wait.empty(), "Registering a socket operation for a task, that already has an active socket operation!" );
+
+			task.socket_to_wait= SocketForWaiting{ .fd= socket, .operations= operations };
+		}
+		else
+		{
+			assert( false, "Current task isn't present in tasks map!" );
+		}
+
+		return task_id;
+	}
+}
+
+fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe
+{
+	unsafe
+	{
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Canceling a socket operation outside tasks runner!" );
+
+		var TasksMap &mut tasks_map= $>( tasks_map_ptr );
+		if_var( &mut task : tasks_map.find( task_id ) )
+		{
+			task.socket_to_wait.reset();
+		}
+	}
+}
 
 fn add_task( root_task_type mut t )
 {
