@@ -75,8 +75,11 @@ op runner::RunnerThreadFunction::()( byval this )
 		// Execute all ready tasks.
 		foreach( id : ready_for_execution_tasks )
 		{
+			unsafe // Because we access global variables here.
 			{
 				var root_task_type &mut task= tasks_map[id].task;
+
+				g_currently_running_task_id= id;
 
 				// For now execute a task without any pause until it's possible.
 				// Break early only if shudown is requested.
@@ -84,6 +87,7 @@ op runner::RunnerThreadFunction::()( byval this )
 				{
 					if( state_.shutdown_flag.read() )
 					{
+						g_currently_running_task_id= TaskUniqueId(0);
 						break label main_loop;
 					}
 
@@ -94,6 +98,8 @@ op runner::RunnerThreadFunction::()( byval this )
 						break;
 					}
 				}
+
+				g_currently_running_task_id= TaskUniqueId(0);
 			}
 
 			if( ust::coro_done( tasks_map[id].task ) )
@@ -248,6 +254,10 @@ op runner::RunnerThreadFunction::()( byval this )
 
 	return;
 }
+
+// When a control flow is passed to a task, this variable should be set to its ID.
+// It should be set to 0, if no active task is executing right now.
+thread_local TaskUniqueId g_currently_running_task_id(0);
 
 fn GetNewTaskId() : TaskUniqueId
 {
