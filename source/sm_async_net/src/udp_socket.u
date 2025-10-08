@@ -51,7 +51,6 @@ fn udp_socket::get_peer_address( this ) : ust::io_result</ust::socket_address/>
 	return socket_.get_peer_address();
 }
 
-
 fn udp_socket::get_ttl( this ) : ust::io_result</u8/>
 {
 	return socket_.get_ttl();
@@ -88,6 +87,5 @@ fn udp_socket::take_underlying_socket( byval mut this ) : ust::udp_socket
 		return socket;
 	}
 }
-
 
 } // namespace sm_async_net

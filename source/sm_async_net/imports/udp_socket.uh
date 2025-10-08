@@ -58,7 +58,6 @@ public:
 				}
 			}
 		}
-
 	}
 
 	fn async send_to( mut this, ust::socket_address& a, ust::array_view_imut</byte8/> data ) : ust::io_result</size_type/>
