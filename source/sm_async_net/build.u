@@ -8,7 +8,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 	{
 		.name= "sm_async_net",
 		.target_type= BK::BuildTargetType::Library,
-		.source_files= ust::make_array</ ust::string8 />( "src/runner.u",  "src/tcp_stream.u", "src/udp_socket.u" ),
+		.source_files= ust::make_array</ ust::string8 />( "src/runner.u", "src/tcp_listener.u", "src/tcp_stream.u", "src/udp_socket.u" ),
 		.public_include_directories= ust::make_array</ust::filesystem_path/>( "imports" ),
 	};
 
