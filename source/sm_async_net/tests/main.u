@@ -479,25 +479,6 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_barrier barrier( 2u );
-
-	var ust::socket_address_v4 address0( GetLoopbackIpAddress(), GetNextPort() );
-	var ust::socket_address_v4 address1( GetLoopbackIpAddress(), GetNextPort() );
-
-	r.add_task( Func( barrier, address0, address1 ) );
-	r.add_task( Func( barrier, address1, address0 ) );
-
-	barrier.wait();
-
-	barrier.wait();
-}
-
-fn async Func( ust::shared_barrier barrier, ust::socket_address_v4 my_address, ust::socket_address_v4 other_address )
-{
-	var udp_socket mut socket= udp_socket::create_and_bind( my_address ).try_take();
-
-	barrier.wait();
-
 	var ust::hash_set</ust::string8/> mut expected_messages;
 	expected_messages.insert( "Quick" );
 	expected_messages.insert( "brown" );
@@ -508,6 +489,28 @@ fn async Func( ust::shared_barrier barrier, ust::socket_address_v4 my_address, u
 	expected_messages.insert( "lazy" );
 	expected_messages.insert( "dog" );
 
+
+	var ust::shared_atomic_variable</u32/> completed_counter( 0u );
+
+	var ust::socket_address_v4 address0( GetLoopbackIpAddress(), GetNextPort() );
+	var ust::socket_address_v4 address1( GetLoopbackIpAddress(), GetNextPort() );
+
+	r.add_task( Func( expected_messages, completed_counter, udp_socket::create_and_bind( address0 ).try_take(), address1 ) );
+	r.add_task( Func( expected_messages, completed_counter, udp_socket::create_and_bind( address1 ).try_take(), address0 ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( completed_counter.read() < 2u )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func(
+	ust::hash_set</ust::string8/> expected_messages,
+	ust::shared_atomic_variable</u32/> completed_counter,
+	udp_socket mut socket,
+	ust::socket_address_v4 other_address )
+{
 	var ust::hash_set</ust::string8/> mut received_messages;
 
 	var [ char8, 128 ] mut buf= zero_init;
@@ -516,14 +519,20 @@ fn async Func( ust::shared_barrier barrier, ust::socket_address_v4 my_address, u
 	{
 		assert( socket.send_to( other_address, message.range().to_byte8_range() ).await.try_take() == message.size() );
 
-		var size_type size= socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
+		ust::stdout_print( ust::concat( "Sent message \"", message, "\" to port ", ust::to_string8( other_address.get_port() ), ".\n" ) );
 
-		received_messages.insert( ust::string_view8( buf ).subrange_end( size ) );
+		var size_type size= socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
+		var ust::string_view8 received_message= ust::string_view8( buf ).subrange_end( size );
+
+		received_messages.insert( received_message );
+
+		ust::stdout_print( ust::concat( "Received message \"", received_message, " from port ", ust::to_string8( other_address.get_port() ), ".\n" ) );
 	}
 
+	assert( expected_messages.size() == received_messages.size() );
 	assert( expected_messages == received_messages );
 
-	barrier.wait();
+	completed_counter.inc();
 }
 
 }
