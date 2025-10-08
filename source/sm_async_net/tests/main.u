@@ -535,13 +535,13 @@ fn async SenderReceiver(
 
 		received_messages.insert( received_message );
 
-		ust::stdout_print( ust::concat( "Received message \"", received_message, " from port ", other_port_str, ".\n" ) );
+		ust::stdout_print( ust::concat( "Received message \"", received_message, "\" from port ", other_port_str, ".\n" ) );
 	}
 
 	assert( expected_messages.size() == received_messages.size() );
 	assert( expected_messages == received_messages );
 
-	ust::stdout_print( ust::concat( "Finished sending to and receiving from port \"", other_port_str, "\".\n" ) );
+	ust::stdout_print( ust::concat( "Finished sending to and receiving from port ", other_port_str, ".\n" ) );
 
 	completed_counter.inc();
 }
