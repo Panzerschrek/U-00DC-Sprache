@@ -85,8 +85,6 @@ op runner::RunnerThreadFunction::()( byval this )
 			{
 				var RunningTask &mut runnig_task= tasks_map[id];
 
-				debug_assert( runnig_task.socket_to_wait.empty(), "A task waiting on a socket shouldn't be ready!" );
-
 				g_currently_running_task_id= id;
 
 				// For now execute a task without any pause until it's possible.
