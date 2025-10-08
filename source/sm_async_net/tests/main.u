@@ -1,5 +1,6 @@
 import "/assert.u"
 import "/enum_string_conversions.u"
+import "/hash_set.u"
 import "/main_wrapper.u"
 import "/stdout.u"
 import "/string_conversions.u"
@@ -30,6 +31,7 @@ fn Main() : i32
 	UDPSocket_Test1::Run();
 	UDPSocket_Test2::Run();
 	UDPSocket_Test3::Run();
+	UDPSocket_Test4::Run();
 
 	return 0;
 }
@@ -461,6 +463,65 @@ fn async Func( ust::shared_barrier barrier, ust::socket_address_v4 my_address, u
 	var size_type size = socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
 	assert( size == message_buffer.size() );
 	assert( ust::string_view8( buf ).subrange_end( size ) == message );
+
+	barrier.wait();
+}
+
+}
+
+namespace UDPSocket_Test4
+{
+
+fn Run()
+{
+	// Create two tasks, each of them sends several messages to another.
+	// At the end check if all expected messages are received.
+
+	var runner r;
+
+	var ust::shared_barrier barrier( 2u );
+
+	var ust::socket_address_v4 address0( GetLoopbackIpAddress(), GetNextPort() );
+	var ust::socket_address_v4 address1( GetLoopbackIpAddress(), GetNextPort() );
+
+	r.add_task( Func( barrier, address0, address1 ) );
+	r.add_task( Func( barrier, address1, address0 ) );
+
+	barrier.wait();
+
+	barrier.wait();
+}
+
+fn async Func( ust::shared_barrier barrier, ust::socket_address_v4 my_address, ust::socket_address_v4 other_address )
+{
+	var udp_socket mut socket= udp_socket::create_and_bind( my_address ).try_take();
+
+	barrier.wait();
+
+	var ust::hash_set</ust::string8/> mut expected_messages;
+	expected_messages.insert( "Quick" );
+	expected_messages.insert( "brown" );
+	expected_messages.insert( "fox" );
+	expected_messages.insert( "jumps" );
+	expected_messages.insert( "over" );
+	expected_messages.insert( "the" );
+	expected_messages.insert( "lazy" );
+	expected_messages.insert( "dog" );
+
+	var ust::hash_set</ust::string8/> mut received_messages;
+
+	var [ char8, 128 ] mut buf= zero_init;
+
+	foreach( &message : expected_messages )
+	{
+		assert( socket.send_to( other_address, message.range().to_byte8_range() ).await.try_take() == message.size() );
+
+		var size_type size= socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
+
+		received_messages.insert( ust::string_view8( buf ).subrange_end( size ) );
+	}
+
+	assert( expected_messages == received_messages );
 
 	barrier.wait();
 }
