@@ -42,6 +42,7 @@ public:
 			{
 				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
 				// We need to wait here.
+				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
 
 				var ust::io_result</size_type/> res= socket_.send( data );
@@ -85,6 +86,7 @@ public:
 			{
 				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
 				// We need to wait here.
+				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
 
 				var ust::io_result</size_type/> res= socket_.send_to( a, data );
@@ -127,6 +129,7 @@ public:
 			{
 				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
 				// We need to wait here.
+				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
 
 				var ust::io_result</size_type/> res= socket_.receive( data );
@@ -170,6 +173,7 @@ public:
 			{
 				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
 				// We need to wait here.
+				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
 
 				var ust::io_result</ tup[ ust::socket_address, size_type ] /> res= socket_.receive_from( data );
@@ -213,6 +217,7 @@ public:
 			{
 				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
 				// We need to wait here.
+				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
 
 				var ust::io_result</size_type/> res= socket_.peek( data );
@@ -256,6 +261,7 @@ public:
 			{
 				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
 				// We need to wait here.
+				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
 
 				var ust::io_result</ tup[ ust::socket_address, size_type ] /> res= socket_.peek_from( data );

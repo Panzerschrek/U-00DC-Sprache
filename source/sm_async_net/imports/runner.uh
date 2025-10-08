@@ -81,6 +81,8 @@ struct SocketForWaiting
 type TasksMap= ust::hash_map</TaskUniqueId, RunningTask/>;
 
 // Class for internal usage.
+// This class registers a socket operation to wait and un-registers it in its destructor.
+// This destructor may be called in normal path (after a socket operation was performed successfully or with error), or in case of cancellation.
 class TaskSocketOperationHolder
 {
 public:
