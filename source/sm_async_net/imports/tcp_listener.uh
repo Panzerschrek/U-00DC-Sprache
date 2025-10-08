@@ -21,6 +21,10 @@ public:
 			Ok( mut ok ) ->
 			{
 				auto [ mut s, mut a ]= move(ok);
+
+				result_unwrap_or_return( v : s.set_nonblocking( true ) );
+				ust::ignore_unused(v);
+
 				var tup[ tcp_stream, ust::socket_address ] t[ unsafe( tcp_stream( move(s) ) ), move(a) ];
 				return t;
 			},
@@ -50,6 +54,10 @@ public:
 					Ok( mut ok ) ->
 					{
 						auto [ mut s, mut a ]= move(ok);
+
+						result_unwrap_or_return( v : s.set_nonblocking( true ) );
+						ust::ignore_unused(v);
+
 						var tup[ tcp_stream, ust::socket_address ] t[ unsafe( tcp_stream( move(s) ) ), move(a) ];
 						return t;
 					},
