@@ -71,6 +71,13 @@ public:
 	fn get_ttl( this ) : ust::io_result</u8/>;
 	fn set_ttl( mut this, u8 ttl ) : ust::io_result</void/>;
 
+	// Get underlying listener.
+	// Use it with caution, don't attempt to change it to non-blocking mode!
+	fn get_uderlying_listener( this ) unsafe : ust::tcp_listener&;
+	fn get_uderlying_listener( mut this ) unsafe : ust::tcp_listener &mut;
+
+	fn take_underlying_listener( byval this ) : ust::tcp_listener;
+
 private:
 	ust::tcp_listener listener_;
 }
