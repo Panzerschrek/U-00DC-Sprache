@@ -36,6 +36,7 @@ fn Main() : i32
 	UDPSocket_Test4::Run();
 	TCP_Test0::Run();
 	TCP_Test1::Run();
+	TCP_Test2::Run();
 
 	return 0;
 }
@@ -699,6 +700,81 @@ fn async Func( tcp_listener mut listener )
 		assert( stream.write( message1_view.to_byte8_range() ).await.try_take() == message1_view.size() );
 		ust::stdout_print( ust::concat( "Sent message \"", message1_view, "\" to TCP client.\n" ) );
 	}
+}
+
+}
+
+namespace TCP_Test2
+{
+
+fn Run()
+{
+	// Run an async server and create a bunch of clients.
+	// Peroform message exchange between clients and the server.
+
+	var ust::shared_atomic_variable</u32/> clients_finished_counter(0u);
+
+	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var runner r;
+
+	r.add_task( ServerListenerFunc( tcp_listener::create_and_bind( server_address ).try_take() ) );
+
+	var u32 num_clients= 32u;
+
+	for( auto mut i= 0u; i < num_clients; ++i )
+	{
+		r.add_task( ClientFunc( i, server_address, clients_finished_counter ) );
+	}
+
+	// Use a crude way to wait - via "thread_yield".
+	while( clients_finished_counter.read() < num_clients )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async ServerListenerFunc( tcp_listener mut listener )
+{
+	// Simple server loop - wait for new clinet and spawn a new task for it.
+	loop
+	{
+		auto [ mut stream, client_address ]= listener.accept().await.try_take();
+		ust::stdout_print( "Got a client.\n" );
+
+		add_task( ServerProcessorFunc( move(stream) ) );
+	}
+}
+
+fn async ServerProcessorFunc( tcp_stream mut stream )
+{
+	var [ char8, 64 ] mut buf= zero_init;
+	var size_type bytes_received= stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
+	var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( bytes_received );
+	ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP client.\n" ) );
+
+	var ust::string8 message1= ust::concat( "Response to ", message_received );
+	assert( stream.write( message1.range().to_byte8_range() ).await.try_take() == message1.size() );
+	ust::stdout_print( ust::concat( "Sent message \"", message1, "\" to TCP client.\n" ) );
+}
+
+fn async ClientFunc( u32 client_index, ust::socket_address_v4 server_address, ust::shared_atomic_variable</u32/> clients_finished_counter )
+{
+	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
+
+	var ust::string8 message0= "client hello " + ust::to_string8( client_index );
+	assert( stream.write( message0.range().to_byte8_range() ).await.try_take() == message0.size() );
+	ust::stdout_print( ust::concat( "Sent message \"", message0, "\" to TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) );
+
+	var ust::string8 message1= "Response to " + message0;
+
+	var [ char8, 64 ] mut buf= zero_init;
+	assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take() == message1.size() );
+	var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message1.size() );
+	ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) );
+	assert( message_received == message1 );
+
+	clients_finished_counter.inc();
 }
 
 }
