@@ -83,7 +83,7 @@ fn nomangle main() call_conv( "C" ) : i32
 							Err(e) -> { assert( false, ust::concat( "Failed to read from TCP stream! Error code: ", ust::enum_to_string(e) ) ); }
 						}
 
-						// Send responce.
+						// Send response.
 						result_match( stream.write( ust::string_view8( server_message ).to_byte8_range() ) )
 						{
 							Ok( bytes_written ) -> { assert( bytes_written == server_message_size, "Invalid number of bytes written!" ); },
@@ -215,7 +215,7 @@ fn nomangle main() call_conv( "C" ) : i32
 					assert( bytes_read == messages[client_index][0].size(), "Invalid number of bytes read!" );
 					assert( ust::string_view8( client_message_received ).subrange_end( bytes_read ) == messages[client_index][0] );
 
-					// Send responce.
+					// Send response.
 					var size_type bytes_written= stream.write( messages[client_index][1].range().to_byte8_range() ).try_take();
 					assert( bytes_written == messages[client_index][1].size(), "Invalid number of bytes written!" );
 				}
