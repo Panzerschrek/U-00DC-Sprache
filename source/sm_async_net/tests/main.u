@@ -35,6 +35,7 @@ fn Main() : i32
 	UDPSocket_Test3::Run();
 	UDPSocket_Test4::Run();
 	TCP_Test0::Run();
+	TCP_Test1::Run();
 
 	return 0;
 }
@@ -644,6 +645,60 @@ fn async Func( ust::socket_address_v4 server_address, ust::shared_atomic_variabl
 	}
 
 	finish_flag.write(true);
+}
+
+}
+
+namespace TCP_Test1
+{
+
+fn Run()
+{
+	// Create a async TCP listener on runner thread, connect to it on main thread.
+	// Send a message from client to the server and back.
+
+	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var runner r;
+
+	r.add_task( Func( tcp_listener::create_and_bind( server_address ).try_take() ) );
+
+	var ust::tcp_stream mut stream= ust::tcp_stream::connect( server_address ).try_take();
+	{
+		var ust::string_view8 message0_view= message0;
+		assert( stream.write( message0_view.to_byte8_range() ).try_take() == message0_view.size() );
+		ust::stdout_print( ust::concat( "Sent message \"", message0_view, "\" to TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) );
+	}
+	{
+		var [ char8, 64 ] mut buf= zero_init;
+		var ust::string_view8 message1_view= message1;
+		assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).try_take() == message1_view.size() );
+		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message1_view.size() );
+		ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) );
+		assert( message_received == message1 );
+	}
+}
+
+auto& message0= "Hello from a TCP client!";
+auto& message1= "Hello from async TCP server!";
+
+fn async Func( tcp_listener mut listener )
+{
+	auto [ mut stream, client_address ]= listener.accept().await.try_take();
+
+	{
+		var [ char8, 64 ] mut buf= zero_init;
+		var ust::string_view8 message0_view= message0;
+		assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take() == message0_view.size() );
+		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message0_view.size() );
+		ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP client.\n" ) );
+		assert( message_received == message0 );
+	}
+	{
+		var ust::string_view8 message1_view= message1;
+		assert( stream.write( message1_view.to_byte8_range() ).await.try_take() == message1_view.size() );
+		ust::stdout_print( ust::concat( "Sent message \"", message1_view, "\" to TCP client.\n" ) );
+	}
 }
 
 }
