@@ -36,7 +36,11 @@ fn runner::destructor()
 
 fn runner::add_task( this, root_task_type mut t )
 {
-	assert( !ust::coro_done( t ), "A finished task is added!" );
+	if( ust::coro_done( t ) )
+	{
+		// There is no reason to add already done task.
+		return;
+	}
 
 	with( mut l : state_.tasks_queue.lock() )
 	{
@@ -344,7 +348,11 @@ fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe
 
 fn add_task( root_task_type mut t )
 {
-	assert( !ust::coro_done( t ), "A finished task is added!" );
+	if( ust::coro_done( t ) )
+	{
+		// There is no reason to add already done task.
+		return;
+	}
 
 	unsafe
 	{
