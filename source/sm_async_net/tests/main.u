@@ -720,6 +720,9 @@ fn Run()
 
 	r.add_task( ServerListenerFunc( tcp_listener::create_and_bind( server_address ).try_take() ) );
 
+	// TODO - make it way bigger (1024 or more).
+	// Right now it's not possible to do so, since proper nonblocking connection isn't implemented yet.
+	// And thus connection hangs the whole runner thread, because the connection queue of the TCP listener overflows at around 128 pending connections.
 	var u32 num_clients= 32u;
 
 	for( auto mut i= 0u; i < num_clients; ++i )
