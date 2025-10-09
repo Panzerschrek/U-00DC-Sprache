@@ -979,6 +979,73 @@ fn nomangle main() call_conv( "C" ) : i32
 		move(server_thread).join();
 	}
 
+	// Separate client stream creation and connection - connection is non-blocking.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		auto& client_message= "Pepe";
+		var size_type client_message_size= typeinfo</ typeof(client_message) />.size_of;
+
+		auto& server_message= "Kek";
+		var size_type server_message_size= typeinfo</ typeof(server_message) />.size_of;
+
+		// Perform accept/read/write on a background thread.
+		auto mut server_thread= ust::make_thread(
+			lambda[&]()
+			{
+				auto [ mut stream, client_address ]= listener.accept().try_take();
+
+				// Receive a request.
+				var typeof(client_message) mut client_message_received= zero_init;
+				assert( stream.read( ust::array_view_mut</char8/>( client_message_received ).to_byte8_range() ).try_take() == client_message_size );
+				assert( client_message_received == client_message );
+
+				// Send response.
+				assert( stream.write( ust::string_view8( server_message ).to_byte8_range() ).try_take() == server_message_size );
+			} );
+
+		// Create client stream and connect it in two separate calls.
+		var ust::tcp_stream mut stream= ust::tcp_stream::create_unconnected_v4().try_take();
+		assert( stream.set_nonblocking( true ).is_ok() );
+
+		var size_type mut num_attempts= 0s;
+		loop
+		{
+			++num_attempts;
+			result_match( stream.connect_unconnected( server_address ) )
+			{
+				Ok(v) ->
+				{
+					ust::stdout_print( ust::concat( "Connected to the server in ", ust::to_string8( num_attempts ), " attempts\n" ) );
+					break;
+				},
+				Err(e) ->
+				{
+					if( e == ust::io_error::in_progress )
+					{
+						continue;
+					}
+					assert( false, ust::concat( "Failed to connect in non-blocking mode! Error code: ", ust::enum_to_string(e) ) );
+				}
+			}
+		}
+
+		// Make blocking after connection.
+		assert( stream.set_nonblocking( false ).is_ok() );
+
+		// Send a request.
+		assert( stream.write( ust::string_view8( client_message ).to_byte8_range() ).try_take() == client_message_size );
+
+		// Receive a response.
+		var typeof(server_message) mut server_message_received= zero_init;
+		assert( stream.read( ust::array_view_mut</char8/>( server_message_received ).to_byte8_range() ).try_take() == server_message_size );
+		assert( server_message_received == server_message );
+
+		move(server_thread).join();
+	}
+
 	return 0;
 }
 

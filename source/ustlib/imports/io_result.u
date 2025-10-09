@@ -23,6 +23,7 @@ enum io_error
 	connection_refused,
 	connection_aborted,
 	timed_out,
+	in_progress,
 	other, // Some non-listed error code.
 	// TODO - add other errors
 }
