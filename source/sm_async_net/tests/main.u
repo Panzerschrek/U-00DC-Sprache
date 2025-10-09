@@ -25,6 +25,7 @@ fn Main() : i32
 	RunnerTaskAdd_Test1::Run();
 	RunnerTaskAdd_Test2::Run();
 	RunnerTaskAdd_Test3::Run();
+	RunnerTaskAdd_Test4::Run();
 	AddTaskFreeFunction_Test0::Run();
 	AddTaskFreeFunction_Test1::Run();
 	UDPSocket_Test0::Run();
@@ -169,6 +170,36 @@ fn async Func2( ust::shared_atomic_variable</bool/> mut v )
 fn async Func3( ust::shared_atomic_variable</bool/> v )
 {
 	v.write( true );
+}
+
+}
+
+namespace RunnerTaskAdd_Test4
+{
+
+fn Run()
+{
+	// Spawn a task wich never ends.
+	// But since it yields, it is stopped when runner is destructoyed.
+
+	var runner r;
+
+	r.add_task( Func() );
+
+	// Let the added task to run some time.
+	ust::sleep( ust::duration::from_milliseconds( 15u64 ) );
+
+	// Call runner destructor here, which ends the erernal task.
+}
+
+fn async Func()
+{
+	var u64 mut x(0);
+	loop
+	{
+		++x;
+		yield;
+	}
 }
 
 }
