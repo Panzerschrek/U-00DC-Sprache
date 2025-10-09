@@ -63,6 +63,69 @@ fn tcp_stream::connect( socket_address& a ) : io_result</tcp_stream/>
 	}
 }
 
+fn tcp_stream::create_unconnected_v4() : io_result</tcp_stream/>
+{
+	unsafe
+	{
+		var native_socket_fd s= ::socket( PF_INET, i32(SOCK_STREAM), 0 );
+		if( s == -1 )
+		{
+			return translate_errno( get_errno() );
+		}
+		return tcp_stream( s );
+	}
+}
+
+fn tcp_stream::create_unconnected_v6() : io_result</tcp_stream/>
+{
+	unsafe
+	{
+		var native_socket_fd s= ::socket( PF_INET6, i32(SOCK_STREAM), 0 );
+		if( s == -1 )
+		{
+			return translate_errno( get_errno() );
+		}
+		return tcp_stream( s );
+	}
+}
+
+fn tcp_stream::connect_unconnected( mut this, socket_address& a ) : io_result</void/>
+{
+	if_var( &a_v4 : a.get</socket_address_v4/>() )
+	{
+		var sockaddr_in mut underlying_address= translate_socket_address( a_v4 );
+
+		var i32 res=
+			unsafe( ::connect(
+				socket_,
+				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+				socklen_t( typeinfo</sockaddr_in/>.size_of ) ) );
+
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+	}
+	else if_var( &a_v6 : a.get</socket_address_v6/>() )
+	{
+		var sockaddr_in6 mut underlying_address= translate_socket_address( a_v6 );
+
+		var i32 res=
+			unsafe( ::connect(
+				socket_,
+				$<( cast_ref_unsafe</sockaddr/>( underlying_address ) ),
+				socklen_t( typeinfo</sockaddr_in6/>.size_of ) ) );
+
+		if( res != 0 )
+		{
+			return translate_errno( get_errno() );
+		}
+	}
+	else { halt; }
+
+	return void();
+}
+
 fn tcp_stream::constructor( native_socket_fd s ) unsafe
 	( socket_= s )
 {}
