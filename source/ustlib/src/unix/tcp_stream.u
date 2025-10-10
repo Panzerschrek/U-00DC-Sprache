@@ -103,7 +103,12 @@ fn tcp_stream::connect_unconnected( mut this, socket_address& a ) : io_result</v
 
 		if( res != 0 )
 		{
-			return translate_errno( get_errno() );
+			auto e= get_errno();
+			if( e == EISCONN )
+			{
+				return void();
+			}
+			return translate_errno( e );
 		}
 	}
 	else if_var( &a_v6 : a.get</socket_address_v6/>() )
@@ -118,7 +123,12 @@ fn tcp_stream::connect_unconnected( mut this, socket_address& a ) : io_result</v
 
 		if( res != 0 )
 		{
-			return translate_errno( get_errno() );
+			auto e= get_errno();
+			if( e == EISCONN )
+			{
+				return void();
+			}
+			return translate_errno( e );
 		}
 	}
 	else { halt; }
