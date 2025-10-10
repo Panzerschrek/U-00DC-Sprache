@@ -722,7 +722,8 @@ fn Run()
 
 	// TODO - make it even bigger by increasing per-process file descriptors limit.
 	// Currently on Linux we have maximum 1024 active file descriptors.
-	var u32 num_clients= 768u;
+	// Since we need two descriptors per client - one for client-side stream and one for server-side stream, we can use less than half of that.
+	var u32 num_clients= 512u - 32u;
 
 	for( auto mut i= 0u; i < num_clients; ++i )
 	{
@@ -743,8 +744,9 @@ fn async ServerListenerFunc( tcp_listener mut listener )
 	loop
 	{
 		auto [ mut stream, client_address ]= listener.accept().await.try_take();
-		++num_client_accepted;
+
 		ust::stdout_print( ust::concat( "Got a client with sequential number ", ust::to_string8(num_client_accepted), ".\n" ) );
+		++num_client_accepted;
 
 		add_task( ServerProcessorFunc( move(stream) ) );
 	}
