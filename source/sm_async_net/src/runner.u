@@ -469,6 +469,44 @@ fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe : TaskUniqueId
 	}
 }
 
+fn CancelSubtask( TaskUniqueId task_id ) unsafe
+{
+	unsafe
+	{
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Cancelling a subtask outside tasks runner!" );
+
+		var TasksMap &mut tasks_map= $>( tasks_map_ptr );
+		var RunningTestConnections connections= tasks_map[task_id].connections;
+
+		tasks_map.drop_if_exists( task_id );
+
+		assert( connections.last_child == TaskUniqueId(0), "A cancelled task still has children!" );
+
+		// Remove this task from linked list of siblings.
+		if( connections.prev_sibling != TaskUniqueId(0) )
+		{
+			debug_assert( connections.parent != TaskUniqueId(0), "A task with siblings with no parent!" );
+			tasks_map[connections.prev_sibling].connections.next_sibling= connections.next_sibling;
+		}
+		if( connections.next_sibling != TaskUniqueId(0) )
+		{
+			debug_assert( connections.parent != TaskUniqueId(0), "A task with siblings with no parent!" );
+			tasks_map[connections.next_sibling].connections.prev_sibling= connections.prev_sibling;
+		}
+
+		assert( connections.parent != TaskUniqueId(0), "Subtask with zero parent!" );
+
+		var RunningTestConnections &mut parent_connection= tasks_map[connections.parent].connections;
+		if( parent_connection.last_child == task_id )
+		{
+			// If this task was the last child of its parent - set last child of the parent to previous sibling.
+			parent_connection.last_child= connections.prev_sibling;
+		}
+	}
+}
+
 fn GetTaskRawHandle( ust::variant</ tup[ root_task_type, ust::raw_coro_handle ] /> & t ) : ust::raw_coro_handle
 {
 	variant_visit( &v : t )

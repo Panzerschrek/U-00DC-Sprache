@@ -129,6 +129,10 @@ fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe;
 // It returns identifier for this newly-added task.
 fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe : TaskUniqueId;
 
+// Cancel subtask of some task.
+// This subtask should be previously registered!
+fn CancelSubtask( TaskUniqueId task_id ) unsafe;
+
 type PollWakerSharedPtr= ust::shared_ptr_mt_final</PollWaker/>;
 
 class PollWaker
