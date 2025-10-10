@@ -1023,7 +1023,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				},
 				Err(e) ->
 				{
-					if( e == ust::io_error::in_progress )
+					if( e == ust::io_error::in_progress || e == ust::io_error::would_block )
 					{
 						continue;
 					}
