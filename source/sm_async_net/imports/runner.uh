@@ -72,6 +72,17 @@ struct RunningTask
 
 	// If non-empty, this task shouldn't be resumed until given socket isn't ready.
 	ust::optional</SocketForWaiting/> socket_to_wait; // TODO - use some sort of null socket value?
+
+	// Connections to other tasks (parent, siblings, children).
+	RunningTestConnections connections;
+}
+
+struct RunningTestConnections
+{
+	TaskUniqueId parent; // Zero for root task.
+	TaskUniqueId prev_sibling; // Points to previous sibling or is zero if has no previous sibling or no siblings at all.
+	TaskUniqueId next_sibling; // Points to next sibling or is zero if has no next sibling or no siblings at all.
+	TaskUniqueId last_child; // The most recent added child, zero if has no children.
 }
 
 struct SocketForWaiting

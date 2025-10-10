@@ -185,7 +185,14 @@ op runner::RunnerThreadFunction::()( byval this )
 					{
 						var TaskUniqueId id= GetNewTaskId();
 
-						tasks_map.insert_new( id, RunningTask{ .task= task_opt.try_take() } );
+						tasks_map.insert_new(
+							id,
+							RunningTask
+							{
+								.task= task_opt.try_take(),
+								// Root task has no parents and siblings, initially it has no children.
+								.connections{ .parent(0), .prev_sibling(0), .next_sibling(0), .last_child(0) },
+							} );
 
 						// Initially a task is ready for execution (it waits for no event, no timeout, no socket, etc.).
 						ready_for_execution_tasks.push_back( id );
@@ -322,7 +329,9 @@ fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketForWa
 
 		if_var( &mut task : tasks_map.find( task_id ) )
 		{
+			// A task may wait for no more than one socket operation or can have children, but not both.
 			assert( task.socket_to_wait.empty(), "Registering a socket operation for a task, that already has an active socket operation!" );
+			assert( task.connections.last_child == TaskUniqueId(0), "Registering a socket operation for a task, that has a child task and waits for it!" );
 
 			task.socket_to_wait= SocketForWaiting{ .fd= socket, .operations= operations };
 		}
