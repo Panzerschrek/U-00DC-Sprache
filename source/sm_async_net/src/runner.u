@@ -72,6 +72,10 @@ op runner::RunnerThreadFunction::()( byval this )
 
 	var ust::vector</TaskUniqueId/> mut ready_for_execution_tasks;
 
+	// After task execution we may need to execute its children tasks or its parent task.
+	// Use a stack for this (last-in, first-out) for better data and code cache locality.
+	var ust::vector</TaskUniqueId/> mut tasks_for_next_execution_stack;
+
 	// Reuse container for poll descriptors, avoid creating it for each "poll" call.
 	var ust::vector</pollfd/> mut poll_descriptors;
 	// Maintain a vector of task identifiers for poll descriptiors, in order to determine which tasks should be waked.
@@ -83,57 +87,117 @@ op runner::RunnerThreadFunction::()( byval this )
 	loop label main_loop
 	{
 		// Execute all ready tasks.
-		foreach( id : ready_for_execution_tasks )
+		foreach( initial_id : ready_for_execution_tasks )
 		{
-			unsafe // Because we access global variables here.
+			// Start with initially-ready task.
+			// if necessary execute its children and its parent in last-in first-out order.
+			debug_assert( tasks_for_next_execution_stack.empty() );
+			tasks_for_next_execution_stack.push_back( initial_id );
+
+			while( !tasks_for_next_execution_stack.empty() )
 			{
-				// Access current task in this block using each time op[] of the tasks map.
-				// We can't hold a reference to current task,
-				// since tasks may be added and removed during this task execution and this may invalidate such reference.
+				var TaskUniqueId id= tasks_for_next_execution_stack.pop_back();
 
-				g_currently_running_task_id= id;
-
-				// Execute a task without any pause until it's possible.
-				// Break early only if this task needs to wait for something shudown is requested.
-				loop
+				unsafe // Because we access global variables here.
 				{
-					if( state_.shutdown_flag.read() )
+					// Access current task in this block using each time op[] of the tasks map.
+					// We can't hold a reference to current task,
+					// since tasks may be added and removed during this task execution and this may invalidate such reference.
+
+					g_currently_running_task_id= id;
+
+					// Execute a task without any pause until it's possible.
+					// Break early only if this task needs to wait for something shudown is requested.
+					loop
 					{
-						g_currently_running_task_id= TaskUniqueId(0);
-						break label main_loop;
+						if( state_.shutdown_flag.read() )
+						{
+							g_currently_running_task_id= TaskUniqueId(0);
+							break label main_loop;
+						}
+
+						var ust::raw_coro_handle handle= GetTaskRawHandle( tasks_map[id].task );
+
+						// This call may add new tasks and modify fields of current task structure.
+						// But the coroutine object pointer itself can't be changed.
+						coro_resume_impl( handle );
+
+						if( unsafe( coro_done_impl( handle ) ) )
+						{
+							// Don't care to handle here results of finished tasks.
+							// Root tasks have "void" return type, which requires no handling.
+							// Results of children tasks are handled when their parent task is resumed or destryed.
+							break;
+						}
+
+						var RunningTask& task= tasks_map[id];
+
+						if( !task.socket_to_wait.empty() )
+						{
+							// This task has registered a socket to wait during its exection.
+							// We shouldn't execute it further, but wait instead.
+							break;
+						}
+
+						if( task.connections.last_child != TaskUniqueId(0) )
+						{
+							// This task has registered one or more child tasks to execute.
+							// We shouldn't execute it further, but wait for children completion instead.
+
+							// Iterate children in reverse order to push them into the stack, which will lead to direct children execution order.
+							for( var TaskUniqueId mut c= task.connections.last_child; c != TaskUniqueId(0); c= cast_imut(tasks_map)[c].connections.prev_sibling )
+							{
+								tasks_for_next_execution_stack.push_back(c);
+							}
+
+							break;
+						}
 					}
 
-					var ust::raw_coro_handle handle= GetTaskRawHandle( tasks_map[id].task );
-
-					// This call may add new tasks and modify fields of current task structure.
-					// But the coroutine object pointer itself can't be changed.
-					coro_resume_impl( handle );
-
-					if( unsafe( coro_done_impl( handle ) ) )
-					{
-						// Don't care to handle here results of finished tasks.
-						// Root tasks have "void" return type, which requires no handling.
-						// Results of children tasks are handled when their parent task is resumed or destryed.
-						break;
-					}
-
-					if( !tasks_map[id].socket_to_wait.empty() )
-					{
-						// This task has registered a socket to wait during its exection.
-						// We shouldn't execute it further, but wait instead.
-						break;
-					}
+					g_currently_running_task_id= TaskUniqueId(0);
 				}
 
-				g_currently_running_task_id= TaskUniqueId(0);
-			}
+				if( unsafe( coro_done_impl( safe( GetTaskRawHandle( tasks_map[id].task ) ) ) ) )
+				{
+					// Remove a finished task from the tasks container.
+					var RunningTestConnections connections= tasks_map[id].connections;
+					tasks_map.drop_if_exists( id );
 
-			if( unsafe( coro_done_impl( safe( GetTaskRawHandle( tasks_map[id].task ) ) ) ) )
-			{
-				// Remove a finished task from the tasks container.
-				tasks_map.drop_if_exists( id );
+					assert( connections.last_child == TaskUniqueId(0), "A finished task still has children!" );
+
+					// Remove this task from linked list of siblings.
+					if( connections.prev_sibling != TaskUniqueId(0) )
+					{
+						debug_assert( connections.parent != TaskUniqueId(0), "A task with siblings with no parent!" );
+						tasks_map[connections.prev_sibling].connections.next_sibling= connections.next_sibling;
+					}
+					if( connections.next_sibling != TaskUniqueId(0) )
+					{
+						debug_assert( connections.parent != TaskUniqueId(0), "A task with siblings with no parent!" );
+						tasks_map[connections.next_sibling].connections.prev_sibling= connections.prev_sibling;
+					}
+
+					if( connections.parent != TaskUniqueId(0) )
+					{
+						var RunningTestConnections &mut parent_connection= tasks_map[connections.parent].connections;
+						if( parent_connection.last_child == id )
+						{
+							// If this task was the last child of its parent - set last child of the parent to previous sibling.
+							parent_connection.last_child= connections.prev_sibling;
+
+							if( parent_connection.last_child == TaskUniqueId(0) )
+							{
+								// This was the last child task of this parent.
+								// We can continue execution of the parent task now.
+								tasks_for_next_execution_stack.push_back( connections.parent );
+							}
+						}
+					}
+				}
 			}
 		}
+
+		debug_assert( tasks_for_next_execution_stack.empty() );
 
 		// After we processed all tasks, there should be no task ready for execution.
 		// This list may be populated later, like via new task addition, a "poll" call, a timeout or something similar.
