@@ -98,6 +98,8 @@ op runner::RunnerThreadFunction::()( byval this )
 			{
 				var TaskUniqueId id= tasks_for_next_execution_stack.pop_back();
 
+				debug_assert( tasks_map[id].connections.last_child == TaskUniqueId(0), "A task ready to execute should not have children!" );
+
 				unsafe // Because we access global variables here.
 				{
 					// Access current task in this block using each time op[] of the tasks map.
@@ -165,33 +167,35 @@ op runner::RunnerThreadFunction::()( byval this )
 
 					assert( connections.last_child == TaskUniqueId(0), "A finished task still has children!" );
 
-					// Remove this task from linked list of siblings.
-					if( connections.prev_sibling != TaskUniqueId(0) )
-					{
-						debug_assert( connections.parent != TaskUniqueId(0), "A task with siblings with no parent!" );
-						tasks_map[connections.prev_sibling].connections.next_sibling= connections.next_sibling;
-					}
-					if( connections.next_sibling != TaskUniqueId(0) )
-					{
-						debug_assert( connections.parent != TaskUniqueId(0), "A task with siblings with no parent!" );
-						tasks_map[connections.next_sibling].connections.prev_sibling= connections.prev_sibling;
-					}
-
 					if( connections.parent != TaskUniqueId(0) )
 					{
-						var RunningTestConnections &mut parent_connection= tasks_map[connections.parent].connections;
-						if( parent_connection.last_child == id )
+						// Remove this task from linked list of siblings.
+						if( connections.prev_sibling != TaskUniqueId(0) )
 						{
-							// If this task was the last child of its parent - set last child of the parent to previous sibling.
-							parent_connection.last_child= connections.prev_sibling;
+							tasks_map[connections.prev_sibling].connections.next_sibling= connections.next_sibling;
+						}
+						if( connections.next_sibling != TaskUniqueId(0) )
+						{
+							tasks_map[connections.next_sibling].connections.prev_sibling= connections.prev_sibling;
+						}
 
-							if( parent_connection.last_child == TaskUniqueId(0) )
+						var RunningTestConnections &mut parent_connections= tasks_map[connections.parent].connections;
+						if( parent_connections.last_child == id )
+						{
+							// If this task was the last child of its parent - set last child of the parent to previous sibling of this task.
+							parent_connections.last_child= connections.prev_sibling;
+
+							if( parent_connections.last_child == TaskUniqueId(0) )
 							{
-								// This was the last child task of this parent.
+								// This was the last child task of its parent.
 								// We can continue execution of the parent task now.
 								tasks_for_next_execution_stack.push_back( connections.parent );
 							}
 						}
+					}
+					else
+					{
+						debug_assert( connections.prev_sibling == TaskUniqueId(0) && connections.next_sibling == TaskUniqueId(0), "A task with no parent has siblings!" );
 					}
 				}
 			}
