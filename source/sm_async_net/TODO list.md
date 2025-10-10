@@ -2,8 +2,6 @@ This list contains features to be implemented and cases to be considered:
 
 * Add a function like `await_all` for effective awaiting for multiple async functions.
 * Build, maintain and evaluate async functions tree.
-* Implement async TCP listener class.
-* Implement async TCP stream class.
 * Add a function like `async_sleep` - for effective delaying with possibility to swith to execution of another async functions.
 * Support multiple runner threads.
 * Consider a case where a registered child async function is transferred out of current runner context and executed there.
@@ -24,4 +22,7 @@ This list contains features to be implemented and cases to be considered:
 * Add a method like `execute_task_blocking` to wait for a task to finish.
 * Consider adding a method for adding a task, which returns a handle, which can be awaited to receive execution result.
 * Consider a possibility for the `add_task` free function to return an error - in case if no active runner thread is present, in case of shutdown, if tasks queue is full, etc.
-* Consider implementing asyn versions of synchronization primitives like "barrier" and "semaphore", which perform yielding instead of blocking.
+* Consider implementing async versions of synchronization primitives like "barrier" and "semaphore", which perform yielding instead of blocking.
+* Handle cases where a subtask is cancelled via actions of its parents task, so that there is no concurrent mutable access to the tasks map.
+* Handle proper runner cancellation, including cancellation of registered socket operations and subtasks, so that there is no concurrent mutable access to the tasks map.
+* Consider adding a function for file descriptors limit increasing.
