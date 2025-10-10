@@ -255,6 +255,7 @@ auto constexpr EALREADY = 37;
 auto constexpr EDESTADDRREQ = 39;
 auto constexpr EADDRINUSE = 48;
 auto constexpr ECONNRESET = 54;
+auto constexpr EISCONN = 56;
 auto constexpr ENOTCONN = 57;
 auto constexpr ECONNREFUSED = 61;
 auto constexpr ENOTEMPTY = 66;
