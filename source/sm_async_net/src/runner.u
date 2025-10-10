@@ -103,12 +103,17 @@ op runner::RunnerThreadFunction::()( byval this )
 						break label main_loop;
 					}
 
+					var ust::raw_coro_handle handle= GetTaskRawHandle( tasks_map[id].task );
+
 					// This call may add new tasks and modify fields of current task structure.
 					// But the coroutine object pointer itself can't be changed.
-					if_coro_advance( v : tasks_map[id].task )
+					coro_resume_impl( handle );
+
+					if( unsafe( coro_done_impl( handle ) ) )
 					{
-						// The task is finished.
-						ust::ignore_unused(v);
+						// Don't care to handle here results of finished tasks.
+						// Root tasks have "void" return type, which requires no handling.
+						// Results of children tasks are handled when their parent task is resumed or destryed.
 						break;
 					}
 
@@ -123,7 +128,7 @@ op runner::RunnerThreadFunction::()( byval this )
 				g_currently_running_task_id= TaskUniqueId(0);
 			}
 
-			if( ust::coro_done( tasks_map[id].task ) )
+			if( unsafe( coro_done_impl( safe( GetTaskRawHandle( tasks_map[id].task ) ) ) ) )
 			{
 				// Remove a finished task from the tasks container.
 				tasks_map.drop_if_exists( id );
@@ -344,6 +349,25 @@ fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe
 			task.socket_to_wait.reset();
 		}
 	}
+}
+
+fn GetTaskRawHandle( ust::variant</ tup[ root_task_type, ust::raw_coro_handle ] /> & t ) : ust::raw_coro_handle
+{
+	variant_visit( &v : t )
+	{
+		return GetTaskRawHandleImpl( v );
+	}
+	halt;
+}
+
+fn GetTaskRawHandleImpl( root_task_type& t ) : ust::raw_coro_handle
+{
+	return ust::get_raw_coro_handle( t );
+}
+
+fn GetTaskRawHandleImpl( ust::raw_coro_handle h ) : ust::raw_coro_handle
+{
+	return h;
 }
 
 fn add_task( root_task_type mut t )

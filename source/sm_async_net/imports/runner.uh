@@ -1,4 +1,5 @@
 import "/atomic_variable.u"
+import "/coro.u"
 import "/hash_map.u"
 import "/shared_atomic_variable.u"
 import "/shared_ptr_mt_final.u"
@@ -6,6 +7,7 @@ import "/shared_ptr_mt_mutex.u"
 import "/file.u"
 import "/native_socket.u"
 import "/thread.u"
+import "/variant.u"
 import "queue.uh"
 
 namespace sm_async_net
@@ -64,7 +66,9 @@ struct SharedState
 struct RunningTask
 {
 	// Task handle (what is executed).
-	root_task_type task;
+	// Store async function object itself for root tasks,
+	// store raw handle for tasks which are subtasks of other tasks and thus are owned by them (parent tasks are responsible for their deletion ).
+	ust::variant</ tup[ root_task_type, ust::raw_coro_handle ] /> task;
 
 	// If non-empty, this task shouldn't be resumed until given socket isn't ready.
 	ust::optional</SocketForWaiting/> socket_to_wait; // TODO - use some sort of null socket value?
