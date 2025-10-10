@@ -36,7 +36,7 @@ fn async Fun1( i32 x ) : i32
 	for( auto mut i= 0; i < x; ++i )
 	{
 		// "yield" operator pauses async function execution, it may be resumed layer.
-		// It may be used for different purposes. For example, to pause execution when waiting for a network responce.
+		// It may be used for different purposes. For example, to pause execution when waiting for a network response.
 		yield;
 		r+= i * i;
 	}

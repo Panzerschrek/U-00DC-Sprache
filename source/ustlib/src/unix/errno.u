@@ -21,6 +21,7 @@ fn translate_errno( i32 errno ) : io_error
 	EADDRINUSE -> { return io_error::address_already_in_use; },
 	EPIPE -> { return io_error::broken_pipe; },
 	ECONNREFUSED -> { return io_error::connection_refused; },
+	EALREADY, EINPROGRESS -> { return io_error::in_progress; },
 	// TODO - support other codes.
 	default -> { return io_error::other; },
 	}

@@ -12,6 +12,16 @@ public:
 	// Connect to specified address.
 	fn connect( socket_address& a ) : io_result</tcp_stream/>;
 
+	// Create unconnected stream.
+	// read/write methods for an unconnected stream will return an error, but some properties may be set before connection.
+	fn create_unconnected_v4() : io_result</tcp_stream/>;
+	fn create_unconnected_v6() : io_result</tcp_stream/>;
+
+	// Connect a stream created without connection.
+	// Note that address kind (v4/v6) should match creation method used previously!
+	// This method may return immediately if non-blocking mode was enabled.
+	fn connect_unconnected( mut this, socket_address& a ) : io_result</void/>;
+
 	fn constructor( native_socket_fd s ) unsafe; // constructor for internal usage.
 	fn destructor();
 

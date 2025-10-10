@@ -432,10 +432,12 @@ auto constexpr ERROR_ENVVAR_NOT_FOUND = 203;
 auto constexpr ERROR_DIRECTORY = 267;
 
 auto constexpr WSAEWOULDBLOCK = 10035;
+auto constexpr WSAEALREADY = 10037;
 auto constexpr WSAEMSGSIZE = 10040;
 auto constexpr WSAEADDRINUSE = 10048;
 auto constexpr WSAEADDRNOTAVAIL = 10049;
 auto constexpr WSAECONNABORTED = 10053;
+auto constexpr WSAEISCONN = 10056;
 auto constexpr WSAENOTCONN = 10057;
 auto constexpr WSAETIMEDOUT = 10060;
 auto constexpr WSAECONNREFUSED = 10061;
