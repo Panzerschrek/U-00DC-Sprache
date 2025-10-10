@@ -424,7 +424,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				Err( e ) ->
 				{
 					assert(
-						e == ust::io_error::broken_pipe || e == ust::io_error::connection_aborted,
+						e == ust::io_error::broken_pipe || e == ust::io_error::connection_aborted || e == ust::io_error::connection_reset,
 						ust::concat( "Invalid error code while writing into closed stream: ", ust::enum_to_string(e) ) );
 					break;
 				},
@@ -911,6 +911,139 @@ fn nomangle main() call_conv( "C" ) : i32
 			Ok(r) -> {},
 			Err(e) -> { assert( false, ust::concat( "Failed to reset TCP stream read timeout: ", ust::enum_to_string(e) ) ); },
 		}
+	}
+
+	// Separate client stream creation and connection.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		auto& client_message= "Mauer? Welche Mauer?";
+		var size_type client_message_size= typeinfo</ typeof(client_message) />.size_of;
+
+		auto& server_message= "Niemand hat die Absicht, eine Mauer zu errichten!";
+		var size_type server_message_size= typeinfo</ typeof(server_message) />.size_of;
+
+		// Perform accept/read/write on a background thread.
+		auto mut server_thread= ust::make_thread(
+			lambda[&]()
+			{
+				auto [ mut stream, client_address ]= listener.accept().try_take();
+
+				// Receive a request.
+				var typeof(client_message) mut client_message_received= zero_init;
+				assert( stream.read( ust::array_view_mut</char8/>( client_message_received ).to_byte8_range() ).try_take() == client_message_size );
+				assert( client_message_received == client_message );
+
+				// Send response.
+				assert( stream.write( ust::string_view8( server_message ).to_byte8_range() ).try_take() == server_message_size );
+
+				// Check address of server stream.
+				if_var( &a_v4 : stream.get_local_address().try_take().get</ust::socket_address_v4/>() )
+				{
+					assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+				}
+
+				// Check address of client.
+				if_var( &a_v4 : stream.get_peer_address().try_take().get</ust::socket_address_v4/>() )
+				{
+					assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+				}
+			} );
+
+		// Create client stream and connect it in two separate calls.
+		var ust::tcp_stream mut stream= ust::tcp_stream::create_unconnected_v4().try_take();
+		assert( stream.connect_unconnected( server_address ).is_ok() );
+
+		// Send a request.
+		assert( stream.write( ust::string_view8( client_message ).to_byte8_range() ).try_take() == client_message_size );
+
+		// Receive a response.
+		var typeof(server_message) mut server_message_received= zero_init;
+		assert( stream.read( ust::array_view_mut</char8/>( server_message_received ).to_byte8_range() ).try_take() == server_message_size );
+		assert( server_message_received == server_message );
+
+		// Check address of server stream.
+		if_var( &a_v4 : stream.get_peer_address().try_take().get</ust::socket_address_v4/>() )
+		{
+			assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+		}
+
+		// Check address of client.
+		if_var( &a_v4 : stream.get_local_address().try_take().get</ust::socket_address_v4/>() )
+		{
+			assert( a_v4.get_ip() == loopback, "Unexpected IP address of TCP stream!" );
+		}
+
+		move(server_thread).join();
+	}
+
+	// Separate client stream creation and connection - connection is non-blocking.
+	{
+		var ust::socket_address_v4 server_address( loopback, GetNextPort() );
+
+		var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+		auto& client_message= "Pepe";
+		var size_type client_message_size= typeinfo</ typeof(client_message) />.size_of;
+
+		auto& server_message= "Kek";
+		var size_type server_message_size= typeinfo</ typeof(server_message) />.size_of;
+
+		// Perform accept/read/write on a background thread.
+		auto mut server_thread= ust::make_thread(
+			lambda[&]()
+			{
+				auto [ mut stream, client_address ]= listener.accept().try_take();
+
+				// Receive a request.
+				var typeof(client_message) mut client_message_received= zero_init;
+				assert( stream.read( ust::array_view_mut</char8/>( client_message_received ).to_byte8_range() ).try_take() == client_message_size );
+				assert( client_message_received == client_message );
+
+				// Send response.
+				assert( stream.write( ust::string_view8( server_message ).to_byte8_range() ).try_take() == server_message_size );
+			} );
+
+		// Create client stream and connect it in two separate calls.
+		var ust::tcp_stream mut stream= ust::tcp_stream::create_unconnected_v4().try_take();
+		assert( stream.set_nonblocking( true ).is_ok() );
+
+		var size_type mut num_attempts= 0s;
+		loop
+		{
+			++num_attempts;
+			result_match( stream.connect_unconnected( server_address ) )
+			{
+				Ok(v) ->
+				{
+					ust::stdout_print( ust::concat( "Connected to the server in ", ust::to_string8( num_attempts ), " attempts\n" ) );
+					break;
+				},
+				Err(e) ->
+				{
+					if( e == ust::io_error::in_progress || e == ust::io_error::would_block )
+					{
+						continue;
+					}
+					assert( false, ust::concat( "Failed to connect in non-blocking mode! Error code: ", ust::enum_to_string(e) ) );
+				}
+			}
+		}
+
+		// Make blocking after connection.
+		assert( stream.set_nonblocking( false ).is_ok() );
+
+		// Send a request.
+		assert( stream.write( ust::string_view8( client_message ).to_byte8_range() ).try_take() == client_message_size );
+
+		// Receive a response.
+		var typeof(server_message) mut server_message_received= zero_init;
+		assert( stream.read( ust::array_view_mut</char8/>( server_message_received ).to_byte8_range() ).try_take() == server_message_size );
+		assert( server_message_received == server_message );
+
+		move(server_thread).join();
 	}
 
 	return 0;
