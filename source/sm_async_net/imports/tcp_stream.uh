@@ -9,11 +9,38 @@ class tcp_stream
 public:
 	fn async connect( ust::socket_address& a ) : ust::io_result</tcp_stream/>
 	{
-		// TODO - implement proper async connection.
-		result_unwrap_or_return( mut stream : ust::tcp_stream::connect( a ) );
+		// Create stream without connecting it, make it non-blocking and then initiate connection.
+		// Wait until it isn't done.
+
+		result_unwrap_or_return( mut stream : ( a.has</ust::socket_address_v4/>() ? ust::tcp_stream::create_unconnected_v4() : ust::tcp_stream::create_unconnected_v6() ) );
 		result_unwrap_or_return( v : stream.set_nonblocking( true ) );
-		ust::ignore_unused(v);
-		return unsafe( tcp_stream( move(stream) ) );
+		ust::ignore_unused( v );
+
+		unsafe // Because of TaskSocketOperationHolder.
+		{
+			var TaskSocketOperationHolder op_holder( stream.get_native_fd(), SocketForWaiting::Operations::Write );
+			loop
+			{
+				var ust::io_result</void/> coonection_res= stream.connect_unconnected( a );
+				if( coonection_res.is_ok() )
+				{
+					return tcp_stream( move(stream) );
+				}
+
+				var ust::io_error e= coonection_res.try_deref_error();
+				if( e == ust::io_error::in_progress || e == ust::io_error::would_block )
+				{
+
+					// Wait until connection isn't completed.
+					yield;
+				}
+				else
+				{
+					// Unexpected error code - return it.
+					return e;
+				}
+			}
+		}
 	}
 
 	fn constructor( ust::tcp_stream s ) unsafe; // constructor for internal usage.
