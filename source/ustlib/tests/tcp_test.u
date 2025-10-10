@@ -424,7 +424,7 @@ fn nomangle main() call_conv( "C" ) : i32
 				Err( e ) ->
 				{
 					assert(
-						e == ust::io_error::broken_pipe || e == ust::io_error::connection_aborted,
+						e == ust::io_error::broken_pipe || e == ust::io_error::connection_aborted || e == ust::io_error::connection_reset,
 						ust::concat( "Invalid error code while writing into closed stream: ", ust::enum_to_string(e) ) );
 					break;
 				},
