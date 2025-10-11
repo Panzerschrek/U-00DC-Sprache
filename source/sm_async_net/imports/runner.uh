@@ -74,10 +74,10 @@ struct RunningTask
 	ust::optional</SocketForWaiting/> socket_to_wait; // TODO - use some sort of null socket value?
 
 	// Connections to other tasks (parent, siblings, children).
-	RunningTestConnections connections;
+	RunningTaskConnections connections;
 }
 
-struct RunningTestConnections
+struct RunningTaskConnections
 {
 	TaskUniqueId parent; // Zero for root task.
 	TaskUniqueId prev_sibling; // Points to previous sibling or is zero if has no previous sibling or no siblings at all.
@@ -126,12 +126,13 @@ fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketForWa
 fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe;
 
 // Add a subtask for currently-running task.
-// It returns identifier for this newly-added task.
-fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe : TaskUniqueId;
+// The subtask added will be automatically removed after it finishes.
+fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe;
 
-// Cancel subtask of some task.
-// This subtask should be previously registered!
-fn CancelSubtask( TaskUniqueId task_id ) unsafe;
+// Call this in case of subtasks destruction.
+// Don't call on normal subtasks completion.
+// This function checks if it's valid to cancel a subtask, which is valid only during runner shutdown.
+fn HandleTaskSubtasksCancellation() unsafe;
 
 type PollWakerSharedPtr= ust::shared_ptr_mt_final</PollWaker/>;
 

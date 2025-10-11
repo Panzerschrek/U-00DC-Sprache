@@ -98,13 +98,25 @@ op runner::RunnerThreadFunction::()( byval this )
 			{
 				var TaskUniqueId id= tasks_for_next_execution_stack.pop_back();
 
-				debug_assert( tasks_map[id].connections.last_child == TaskUniqueId(0), "A task ready to execute should not have children!" );
+				var ust::raw_coro_handle mut handle= zero_init;
+
+				if_var( &task : tasks_map.find(id) )
+				{
+					debug_assert( task.connections.last_child == TaskUniqueId(0), "A task ready to execute should not have children!" );
+					handle= GetTaskRawHandle( task.task );
+				}
+				else
+				{
+					assert( false, "A task scheduled for execution was removed!" );
+				}
+
+				var bool mut is_done= false;
 
 				unsafe // Because we access global variables here.
 				{
 					// Access current task in this block using each time op[] of the tasks map.
 					// We can't hold a reference to current task,
-					// since tasks may be added and removed during this task execution and this may invalidate such reference.
+					// since tasks may be added during this task execution and this may invalidate such reference.
 
 					g_currently_running_task_id= id;
 
@@ -118,54 +130,62 @@ op runner::RunnerThreadFunction::()( byval this )
 							break label main_loop;
 						}
 
-						var ust::raw_coro_handle handle= GetTaskRawHandle( tasks_map[id].task );
-
 						// This call may add new tasks and modify fields of current task structure.
 						// But the coroutine object pointer itself can't be changed.
 						coro_resume_impl( handle );
 
-						if( unsafe( coro_done_impl( handle ) ) )
+						if( coro_done_impl( handle ) )
 						{
 							// Don't care to handle here results of finished tasks.
 							// Root tasks have "void" return type, which requires no handling.
 							// Results of children tasks are handled when their parent task is resumed or destryed.
+							is_done= true;
 							break;
 						}
 
-						var RunningTask& task= tasks_map[id];
-
-						if( !task.socket_to_wait.empty() )
+						if_var( &task : cast_imut(tasks_map).find( id ) )
 						{
-							// This task has registered a socket to wait during its exection.
-							// We shouldn't execute it further, but wait instead.
-							break;
-						}
-
-						if( task.connections.last_child != TaskUniqueId(0) )
-						{
-							// This task has registered one or more child tasks to execute.
-							// We shouldn't execute it further, but wait for children completion instead.
-
-							// Iterate children in reverse order to push them into the stack, which will lead to direct children execution order.
-							for( var TaskUniqueId mut c= task.connections.last_child; c != TaskUniqueId(0); c= cast_imut(tasks_map)[c].connections.prev_sibling )
+							if( !task.socket_to_wait.empty() )
 							{
-								tasks_for_next_execution_stack.push_back(c);
+								// This task has registered a socket to wait during its exection.
+								// We shouldn't execute it further, but wait instead.
+								break;
 							}
 
-							break;
+							if( task.connections.last_child != TaskUniqueId(0) )
+							{
+								// This task has registered one or more child tasks to execute.
+								// We shouldn't execute it further, but wait for children completion instead.
+
+								// Iterate children in reverse order to push them into the stack, which will lead to direct children execution order.
+								for( var TaskUniqueId mut c= task.connections.last_child; c != TaskUniqueId(0); c= cast_imut(tasks_map)[c].connections.prev_sibling )
+								{
+									tasks_for_next_execution_stack.push_back(c);
+								}
+
+								break;
+							}
+						}
+						else
+						{
+							assert( false, "A task was removed during its execution!" );
 						}
 					}
 
 					g_currently_running_task_id= TaskUniqueId(0);
 				}
 
-				if( unsafe( coro_done_impl( safe( GetTaskRawHandle( tasks_map[id].task ) ) ) ) )
+				if( is_done )
 				{
 					// Remove a finished task from the tasks container.
-					var RunningTestConnections connections= tasks_map[id].connections;
-					tasks_map.drop_if_exists( id );
+					var RunningTask task_removed= tasks_map.remove_existing( id );
 
-					assert( connections.last_child == TaskUniqueId(0), "A finished task still has children!" );
+					// It's still possible for user code to register a socket operation or create a child task(s) and than finish.
+					// Don't allow this, since it breaks a lot of assumptions.
+					assert( task_removed.socket_to_wait.empty(), "A finished task still has an active socket operation!" );
+					assert( task_removed.connections.last_child == TaskUniqueId(0), "A finished task still has children!" );
+
+					var RunningTaskConnections& connections= task_removed.connections;
 
 					if( connections.parent != TaskUniqueId(0) )
 					{
@@ -179,7 +199,7 @@ op runner::RunnerThreadFunction::()( byval this )
 							tasks_map[connections.next_sibling].connections.prev_sibling= connections.prev_sibling;
 						}
 
-						var RunningTestConnections &mut parent_connections= tasks_map[connections.parent].connections;
+						var RunningTaskConnections &mut parent_connections= tasks_map[connections.parent].connections;
 						if( parent_connections.last_child == id )
 						{
 							// If this task was the last child of its parent - set last child of the parent to previous sibling of this task.
@@ -349,16 +369,22 @@ op runner::RunnerThreadFunction::()( byval this )
 
 	// Perform cleanup steps.
 
-	ready_for_execution_tasks.clear();
-	tasks_map.clear();
-
 	unsafe
 	{
 		// Reset shared state global pointer.
 		// It's strictly-speaking not necessary, but it's better to do so.
 		g_current_runner_thread_shared_state= ust::nullptr</SharedState/>();
 		g_current_runner_thread_tasks_map= ust::nullptr</TasksMap/>();
+
+		// Set shutdow flag, so that destructors of task don't attempt to cancel socket operations and subtasks.
+		g_runner_thread_is_shutting_down= true;
 	}
+
+	ready_for_execution_tasks.clear();
+
+	// This destroys all tasks.
+	// Since we set shutdown flag to true, all attempts to cleanup functions are ignored.
+	tasks_map.clear();
 
 	return;
 }
@@ -383,6 +409,8 @@ var TaskUniqueId mut g_next_task_id= 1u64;
 thread_local $(SharedState) g_current_runner_thread_shared_state= zero_init;
 
 thread_local $(TasksMap) g_current_runner_thread_tasks_map= zero_init;
+
+thread_local bool g_runner_thread_is_shutting_down= false;
 
 fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketForWaiting::Operations operations ) unsafe : TaskUniqueId
 {
@@ -418,7 +446,18 @@ fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe
 	{
 		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
 
-		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Canceling a socket operation outside tasks runner!" );
+		if( task_id == TaskUniqueId(0) || ust::is_nullptr( tasks_map_ptr ) )
+		{
+			if( g_runner_thread_is_shutting_down )
+			{
+				return;
+			}
+			else
+			{
+				assert( false, "Canceling a socket operation outside tasks runner!" );
+			}
+		}
+
 
 		var TasksMap &mut tasks_map= $>( tasks_map_ptr );
 		if_var( &mut task : tasks_map.find( task_id ) )
@@ -428,7 +467,7 @@ fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe
 	}
 }
 
-fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe : TaskUniqueId
+fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe
 {
 	unsafe
 	{
@@ -468,46 +507,22 @@ fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe : TaskUniqueId
 				.task= handle,
 				.connections{ .parent= task_id, .prev_sibling= prev_sibling, .next_sibling(0), .last_child(0), },
 			} );
-
-		return subtask_id;
 	}
 }
 
-fn CancelSubtask( TaskUniqueId task_id ) unsafe
+fn HandleTaskSubtasksCancellation() unsafe
 {
+	// It's only fine to cancel subtasks during runner shutdown.
+	// In all other cases it isn't allowed - a task should finish, which triggers its removal.
+
 	unsafe
 	{
-		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
-
-		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Cancelling a subtask outside tasks runner!" );
-
-		var TasksMap &mut tasks_map= $>( tasks_map_ptr );
-		var RunningTestConnections connections= tasks_map[task_id].connections;
-
-		tasks_map.drop_if_exists( task_id );
-
-		assert( connections.last_child == TaskUniqueId(0), "A cancelled task still has children!" );
-
-		// Remove this task from linked list of siblings.
-		if( connections.prev_sibling != TaskUniqueId(0) )
+		if( g_runner_thread_is_shutting_down )
 		{
-			debug_assert( connections.parent != TaskUniqueId(0), "A task with siblings with no parent!" );
-			tasks_map[connections.prev_sibling].connections.next_sibling= connections.next_sibling;
-		}
-		if( connections.next_sibling != TaskUniqueId(0) )
-		{
-			debug_assert( connections.parent != TaskUniqueId(0), "A task with siblings with no parent!" );
-			tasks_map[connections.next_sibling].connections.prev_sibling= connections.prev_sibling;
+			return;
 		}
 
-		assert( connections.parent != TaskUniqueId(0), "Subtask with zero parent!" );
-
-		var RunningTestConnections &mut parent_connection= tasks_map[connections.parent].connections;
-		if( parent_connection.last_child == task_id )
-		{
-			// If this task was the last child of its parent - set last child of the parent to previous sibling.
-			parent_connection.last_child= connections.prev_sibling;
-		}
+		assert( false, "One or more subtasks of some task were cancelled, which isn't allowed otuside runner shutdown procedure!" );
 	}
 }
 
