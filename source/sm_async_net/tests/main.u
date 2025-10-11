@@ -39,6 +39,9 @@ fn Main() : i32
 	TCP_Test2::Run();
 	Join_Test0::Run();
 	Join_Test1::Run();
+	Join_Test2::Run();
+	Join_Test3::Run();
+	Join_Test4::Run();
 
 	return 0;
 }
@@ -868,6 +871,182 @@ fn async FuncB() : ust::string16
 {
 	yield;
 	return "FuncB результат"u16;
+}
+
+}
+
+namespace Join_Test2
+{
+
+fn Run()
+{
+	// Use "join_subtasks" more than once.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var tup[ u32, f32 ] res0= join_subtasks( FuncA( 265u ), FuncB( 13.2f ) ).await;
+	assert( res0[0] == 265u * 3u );
+	assert( res0[1] == 13.2f - 1.0f );
+
+	var tup[ f32, u32 ] res1= join_subtasks( FuncB( -25.5f ), FuncA( 74u ) ).await;
+	assert( res1[0] == -25.5f - 1.0f );
+	assert( res1[1] == 74u * 3u );
+
+	finish_flag.write( true );
+}
+
+fn async FuncA( u32 x ) : u32
+{
+	yield;
+	yield;
+	return x * 3u;
+}
+
+fn async FuncB( f32 y ) : f32
+{
+	yield;
+	return y - 1.0f;
+}
+
+}
+
+namespace Join_Test3
+{
+
+fn Run()
+{
+	// Create a couple of tasks with "join_subtasks", which of them uses "join_subtasks" internally.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var tup[ tup[ f32, f64 ], tup[ u32, i64 ] ] res= join_subtasks( FuncA(), FuncB() ).await;
+	assert( res[0][0] == -13.0f );
+	assert( res[0][1] == 15.0 );
+	assert( res[1][0] == 20u );
+	assert( res[1][1] == 11i64 );
+
+	finish_flag.write( true );
+}
+
+fn async FuncA() : tup[ f32, f64 ]
+{
+	yield;
+	yield;
+	return join_subtasks( Func0( 13.0f ), Func1( 3.0, 5.0 ) ).await;
+}
+
+fn async FuncB() : tup[ u32, i64 ]
+{
+	yield;
+	return join_subtasks( Func2( 17u ), Func3( 34i64 ) ).await;
+}
+
+fn async Func0( f32 x ) : f32
+{
+	yield;
+	return -x;
+}
+
+fn async Func1( f64 x, f64 y ) : f64
+{
+	yield;
+	yield;
+	return x * y;
+}
+
+fn async Func2( u32 x ) : u32
+{
+	return x + 3u;
+}
+
+fn async Func3( i64 x ) : i64
+{
+	yield;
+	return x / 3i64;
+}
+
+}
+
+namespace Join_Test4
+{
+
+fn Run()
+{
+	// Pass "join_subtasks" call results into another "join_subtasks" call.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var tup[ tup[ f32, f64 ], tup[ u32, i64 ] ] res=
+		join_subtasks(
+			join_subtasks( Func0( 15.0f ), Func1( 7.0, 5.0 ) ),
+			join_subtasks( Func2( 37u ), Func3( 55i64 ) ) ).await;
+
+	assert( res[0][0] == -15.0f );
+	assert( res[0][1] == 35.0 );
+	assert( res[1][0] == 40u );
+	assert( res[1][1] == 18i64 );
+
+	finish_flag.write( true );
+}
+
+fn async Func0( f32 x ) : f32
+{
+	yield;
+	return -x;
+}
+
+fn async Func1( f64 x, f64 y ) : f64
+{
+	yield;
+	yield;
+	return x * y;
+}
+
+fn async Func2( u32 x ) : u32
+{
+	return x + 3u;
+}
+
+fn async Func3( i64 x ) : i64
+{
+	yield;
+	return x / 3i64;
 }
 
 }
