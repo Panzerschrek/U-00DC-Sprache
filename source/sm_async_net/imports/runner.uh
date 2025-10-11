@@ -190,6 +190,9 @@ fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
 		AddCurrentTaskSubtask( handle_a );
 		AddCurrentTaskSubtask( handle_b );
 
+		// Use a helper class to handle cancellation (check if it's correct).
+		var SubtasksCancellationHandler mut cancellation_handler( SubtasksCancellationHandler::UnsafeConstructorMarker{} );
+
 		// Use a helper class, which destroys result of the passed async function, if it's already finished.
 		// This is needed to call destructor of the result value in case of cancellation.
 		var AsyncFunctionObjectResultDestroyer</A/> mut destroyer_a( handle_a );
@@ -199,9 +202,10 @@ fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
 		// The runner should ensure it's resumed only after all subtasks are done.
 		yield;
 
-		assert( coro_done_impl( handle_a ) & coro_done_impl( handle_b ), "Subtasks execution method is resumed without waiting for subtasks to finish" );
+		assert( coro_done_impl( handle_a ) & coro_done_impl( handle_b ), "Subtasks execution function is resumed without waiting for subtasks to finish!" );
 
-		// TODO - prevent cancellation of this async function in normal case.
+		// Further cancellation isn't possible if all subtasks are finished and control flow is passed back to this function.
+		move(cancellation_handler).SkipCancellation();
 
 		// Now we don't need to destroy the results, but take them.
 		move(destroyer_a).SkipDesruction();
@@ -270,6 +274,29 @@ public:
 
 private:
 	ust::raw_coro_handle handle_;
+}
+
+// Class for internal usage.
+class SubtasksCancellationHandler
+{
+public:
+	struct UnsafeConstructorMarker{}
+
+public:
+	fn constructor( UnsafeConstructorMarker m ) unsafe
+	{
+		ust::ignore_unused(m);
+	}
+
+	fn destructor()
+	{
+		unsafe( HandleTaskSubtasksCancellation() );
+	}
+
+	fn SkipCancellation( byval mut this )
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
 }
 
 } // namespace sm_async_net
