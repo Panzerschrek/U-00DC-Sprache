@@ -400,8 +400,8 @@ fn GetNewTaskId() : TaskUniqueId
 	return unsafe( ust::atomic_inc( g_next_task_id ) );
 }
 
-// Start from 1, since 0 indicates no task.
-var TaskUniqueId mut g_next_task_id= 1u64;
+// Start from a very large number (above 32-bit unsinged integer range) in order to catch errors with truncation quickly.
+var TaskUniqueId mut g_next_task_id= 10000000000u64;
 
 // Store here a raw pointer to shared state structure, when entering async function execution.
 // Don't forget to zero it back when leaving an async function execution!
