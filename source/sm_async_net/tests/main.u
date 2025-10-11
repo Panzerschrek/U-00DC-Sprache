@@ -38,6 +38,7 @@ fn Main() : i32
 	TCP_Test1::Run();
 	TCP_Test2::Run();
 	Join_Test0::Run();
+	Join_Test1::Run();
 
 	return 0;
 }
@@ -824,6 +825,49 @@ fn async FuncB() : f32
 	yield;
 	yield;
 	return 7.3f;
+}
+
+}
+
+namespace Join_Test1
+{
+
+fn Run()
+{
+	// Joint two subtasks, which just return a value of comosite type (maybe yielding a couple of times) without performing a socket operation.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var tup [ ust::string8, ust::string16 ] res= join_subtasks( FuncA(), FuncB() ).await;
+	assert( res[0] == "FuncA result" );
+	assert( res[1] == "FuncB результат"u16 );
+
+	finish_flag.write( true );
+}
+
+fn async FuncA() : ust::string8
+{
+	yield;
+	yield;
+	return "FuncA result";
+}
+
+fn async FuncB() : ust::string16
+{
+	yield;
+	return "FuncB результат"u16;
 }
 
 }

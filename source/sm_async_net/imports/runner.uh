@@ -190,14 +190,22 @@ fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
 		AddCurrentTaskSubtask( handle_a );
 		AddCurrentTaskSubtask( handle_b );
 
+		// Use a helper class, which destroys result of the passed async function, if it's already finished.
+		// This is needed to call destructor of the result value in case of cancellation.
+		var AsyncFunctionObjectResultDestroyer</A/> mut destroyer_a( handle_a );
+		var AsyncFunctionObjectResultDestroyer</B/> mut destroyer_b( handle_b );
+
 		// Pause execution.
 		// The runner should ensure it's resumed only after all subtasks are done.
 		yield;
 
 		assert( coro_done_impl( handle_a ) & coro_done_impl( handle_b ), "Subtasks execution method is resumed without waiting for subtasks to finish" );
 
-		// TODO - prevent cancellation of this async function.
-		// TODO - destroy results of finished subtasks on cancellation.
+		// TODO - prevent cancellation of this async function in normal case.
+
+		// Now we don't need to destroy the results, but take them.
+		move(destroyer_a).SkipDesruction();
+		move(destroyer_b).SkipDesruction();
 
 		// Extract results.
 
@@ -217,6 +225,51 @@ fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
 
 		return res;
 	}
+}
+
+// A class which destroys result of the given async function, if it's finished.
+// It's for internal usage only.
+template</type T/>
+class AsyncFunctionObjectResultDestroyer
+{
+public:
+	// Construct with non-owning handle to async function returning a value (not reference) of type "T".
+	fn constructor( ust::raw_coro_handle handle ) unsafe
+		( handle_= handle )
+	{}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			if( coro_done_impl( handle_ ) )
+			{
+				var $(byte8) mut ret_ptr= zero_init;
+
+				switch( typeinfo</T/>.align_of )
+				{
+					1s -> { ret_ptr= coro_return_value_address_impl_align1( handle_ ); },
+					2s -> { ret_ptr= coro_return_value_address_impl_align2( handle_ ); },
+					4s -> { ret_ptr= coro_return_value_address_impl_align4( handle_ ); },
+					8s -> { ret_ptr= coro_return_value_address_impl_align8( handle_ ); },
+					16s -> { ret_ptr= coro_return_value_address_impl_align16( handle_ ); },
+					default -> { ret_ptr= coro_return_value_address_impl_align16( handle_); },
+				}
+
+				var T &mut ret= $>( ust::byte_ptr_cast</T/>( ret_ptr ) );
+				ust::call_destructor( ret );
+			}
+		}
+	}
+
+	// Call if if you need to take the result instead of ignoring it.
+	fn SkipDesruction( byval mut this ) unsafe
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+
+private:
+	ust::raw_coro_handle handle_;
 }
 
 } // namespace sm_async_net
