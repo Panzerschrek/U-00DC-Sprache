@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/atomic_variable.u"
 import "/coro.u"
 import "/hash_map.u"
@@ -170,5 +171,52 @@ type TaskUniqueId= u64;
 // The added task may be moved for execution to another thread.
 // TODO - maybe return an error in case of addition fail?
 fn add_task( root_task_type t );
+
+// Execute given two async functions concurrently, but on the same thread.
+// Given async function objects should return value, not reference, returning references isn't supported.
+template</type A, type B/>
+fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
+{
+	unsafe
+	{
+		var ust::raw_coro_handle handle_a= ust::get_raw_coro_handle(a);
+		var ust::raw_coro_handle handle_b= ust::get_raw_coro_handle(b);
+
+		// Ensure given async functions aren't done yet (we can resume them).
+		halt if( coro_done_impl( handle_a ) );
+		halt if( coro_done_impl( handle_b ) );
+
+		// Register subtasks for given assync functions.
+		AddCurrentTaskSubtask( handle_a );
+		AddCurrentTaskSubtask( handle_b );
+
+		// Pause execution.
+		// The runner should ensure it's resumed only after all subtasks are done.
+		yield;
+
+		assert( coro_done_impl( handle_a ) & coro_done_impl( handle_b ), "Subtasks execution method is resumed without waiting for subtasks to finish" );
+
+		// TODO - prevent cancellation of this async function.
+		// TODO - destroy results of finished subtasks on cancellation.
+
+		// Extract results.
+
+		var tup[ A, B ] mut res= uninitialized;
+
+		ust::memory_copy_aligned(
+			typeinfo</A/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[0]) ),
+			ust::coro_return_value_address( a ),
+			typeinfo</A/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</B/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[1]) ),
+			ust::coro_return_value_address( b ),
+			typeinfo</B/>.size_of );
+
+		return res;
+	}
+}
 
 } // namespace sm_async_net

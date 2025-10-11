@@ -37,6 +37,7 @@ fn Main() : i32
 	TCP_Test0::Run();
 	TCP_Test1::Run();
 	TCP_Test2::Run();
+	Join_Test0::Run();
 
 	return 0;
 }
@@ -781,6 +782,48 @@ fn async ClientFunc( u32 client_index, ust::socket_address_v4 server_address, us
 	assert( message_received == message1 );
 
 	clients_finished_counter.inc();
+}
+
+}
+
+namespace Join_Test0
+{
+
+fn Run()
+{
+	// Joint two subtasks, which just return a value (maybe yielding a couple of times) without performing a socket operation.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var tup [ i32, f32 ] res= join_subtasks( FuncA(), FuncB() ).await;
+	assert( res[0] == 5 );
+	assert( res[1] == 7.3f );
+
+	finish_flag.write( true );
+}
+
+fn async FuncA() : i32
+{
+	return 5;
+}
+
+fn async FuncB() : f32
+{
+	yield;
+	yield;
+	return 7.3f;
 }
 
 }
