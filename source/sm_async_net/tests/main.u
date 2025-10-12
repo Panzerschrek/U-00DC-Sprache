@@ -42,6 +42,7 @@ fn Main() : i32
 	Join_Test2::Run();
 	Join_Test3::Run();
 	Join_Test4::Run();
+	Join_Test5::Run();
 
 	return 0;
 }
@@ -1047,6 +1048,58 @@ fn async Func3( i64 x ) : i64
 {
 	yield;
 	return x / 3i64;
+}
+
+}
+
+namespace Join_Test5
+{
+
+fn Run()
+{
+	// Run a task, which creates two subtasks, each of them sends and receives using an UDP socket.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var ust::socket_address_v4 address0( GetLoopbackIpAddress(), GetNextPort() );
+	var ust::socket_address_v4 address1( GetLoopbackIpAddress(), GetNextPort() );
+
+	var tup[ ust::string8, ust::string8 ] res=
+		join_subtasks(
+			Func( udp_socket::create_and_bind( address0 ).try_take(), address1, "Zero to one" ),
+			Func( udp_socket::create_and_bind( address1 ).try_take(), address0, "One to zero" ) ).await;
+
+	ust::stdout_print( "Joined UDP messages exchange\n" );
+	assert( res[0] == "One to zero" );
+	assert( res[1] == "Zero to one" );
+
+	finish_flag.write( true );
+}
+
+fn async Func( udp_socket mut socket, ust::socket_address_v4 other_address, ust::string8 message ) : ust::string8
+{
+	// Send given message to other socket.
+	assert( socket.send_to( other_address, message.range().to_byte8_range() ).await.try_deref() == message.size() );
+	ust::stdout_print( ust::concat( "Sent message \"", message, "\" to port ", ust::to_string8( other_address.get_port() ), "\n" ) );
+
+	// Receive a message from other socket.
+	var [ char8, 64 ] mut buf= zero_init;
+	var size_type size= socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_deref();
+	var ust::string8 result= ust::string_view8( buf ).subrange_end( size );
+	ust::stdout_print( ust::concat( "Received message \"", result, "\" from port ", ust::to_string8( other_address.get_port() ), "\n" ) );
+	return result;
 }
 
 }
