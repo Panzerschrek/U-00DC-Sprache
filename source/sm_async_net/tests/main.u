@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/box.u"
 import "/enum_string_conversions.u"
 import "/hash_set.u"
 import "/main_wrapper.u"
@@ -47,6 +48,7 @@ fn Main() : i32
 	Join_Test5::Run();
 	Join_Test6::Run();
 	Join_Test7::Run();
+	Join_Test8::Run();
 
 	return 0;
 }
@@ -1300,6 +1302,66 @@ fn async FuncC() : f64
 	yield;
 	yield;
 	return -2.52;
+}
+
+}
+
+namespace Join_Test8
+{
+
+fn Run()
+{
+	// Joint four subtasks.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var tup[ ust::string8, ust::vector</f32/>, u64, ust::box</f64/> ] res=
+		join_subtasks( FuncA(), FuncB(), FuncC(), FuncD() ).await;
+
+	assert( res[0] == "some" );
+	assert( res[1] == ust::make_array( 2.0f, 6.4f, -24.1f ) );
+	assert( res[2] == 12345678900u );
+	assert( res[3].deref() == 34631.2 );
+
+	finish_flag.write( true );
+}
+
+fn async FuncA() : ust::string8
+{
+	yield;
+	return "some";
+}
+
+fn async FuncB() : ust::vector</f32/>
+{
+	return ust::make_array( 2.0f, 6.4f, -24.1f );
+}
+
+fn async FuncC() : u64
+{
+	yield;
+	yield;
+	return 12345678900u;
+}
+
+fn async FuncD() : ust::box</f64/>
+{
+	yield;
+	yield;
+	yield;
+	return ust::make_box( 34631.2 );
 }
 
 }
