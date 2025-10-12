@@ -37,6 +37,7 @@ fn Main() : i32
 	TCP_Test0::Run();
 	TCP_Test1::Run();
 	TCP_Test2::Run();
+	TCP_Test3::Run();
 	Join_Test0::Run();
 	Join_Test1::Run();
 	Join_Test2::Run();
@@ -787,6 +788,85 @@ fn async ClientFunc( u32 client_index, ust::socket_address_v4 server_address, us
 	assert( message_received == message1 );
 
 	clients_finished_counter.inc();
+}
+
+}
+
+namespace TCP_Test3
+{
+
+fn Run()
+{
+	// Create two tasks, one for TCP server and one for TCP client.
+	// Transmit large quantities of data.
+	var ust::shared_atomic_variable</u32/> finished_counter(0u);
+
+	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var runner r;
+
+	r.add_task( ServerFunc( tcp_listener::create_and_bind( server_address ).try_take(), finished_counter ) );
+	r.add_task( ClientFunc( server_address , finished_counter ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( finished_counter.read() < 2u )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+var size_type g_num_ints= 1024s * 1024s * 16s;
+
+fn async ServerFunc( tcp_listener mut listener, ust::shared_atomic_variable</u32/> finished_counter )
+{
+	auto [ mut stream, client_address ]= listener.accept().await.try_take();
+
+	var ust::vector</u32/> data=
+		ust::make_vector_from_filler_function(
+			g_num_ints,
+			lambda [i=0u] mut  () : u32
+			{
+				var u32 res= i;
+				++i;
+				return res;
+			} );
+
+	var ust::array_view_imut</byte8/> data_view= data.range().to_byte8_range();
+
+	for( var size_type mut offset= 0s; offset < data_view.size(); )
+	{
+		var size_type bytes_written= stream.write( data_view.subrange_start( offset ) ).await.try_take();
+		assert( bytes_written > 0s );
+		offset+= bytes_written;
+	}
+
+	finished_counter.inc();
+}
+
+fn async ClientFunc( ust::socket_address_v4 server_address, ust::shared_atomic_variable</u32/> finished_counter )
+{
+	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
+
+	var ust::vector</byte8/> mut data( g_num_ints * typeinfo</u32/>.size_of, byte8(0u8) );
+
+	for( var size_type mut offset= 0s; offset < data.size(); )
+	{
+		var size_type bytes_read= stream.read( data.range().subrange_start( offset ) ).await.try_take();
+		assert( bytes_read > 0s );
+		offset+= bytes_read;
+	}
+
+	for( auto mut i= 0s; i < g_num_ints; ++i )
+	{
+		var byte8 v0= data[ i * 4s + 0s ];
+		var byte8 v1= data[ i * 4s + 1s ];
+		var byte8 v2= data[ i * 4s + 2s ];
+		var byte8 v3= data[ i * 4s + 3s ];
+		var u32 val= ( u32(u8(v0)) << 0u ) | ( u32(u8(v1)) << 8u ) | ( u32(u8(v2)) << 16u ) | ( u32(u8(v3)) << 24u );
+		assert( val == u32(i) );
+	}
+
+	finished_counter.inc();
 }
 
 }
