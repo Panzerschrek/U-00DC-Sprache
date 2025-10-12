@@ -22,12 +22,12 @@ fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
 		AddCurrentTaskSubtask( handle_b );
 
 		// Use a helper class to handle cancellation (check if it's correct).
-		var SubtasksCancellationHandler mut cancellation_handler( SubtasksCancellationHandler::UnsafeConstructorMarker{} );
+		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
 
 		// Use a helper class, which destroys result of the passed async function, if it's already finished.
 		// This is needed to call destructor of the result value in case of cancellation.
-		var AsyncFunctionObjectResultDestroyer</A/> mut destroyer_a( handle_a );
-		var AsyncFunctionObjectResultDestroyer</B/> mut destroyer_b( handle_b );
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</A/> mut destroyer_a( handle_a );
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</B/> mut destroyer_b( handle_b );
 
 		// Pause execution.
 		// The runner should ensure it's resumed only after all subtasks are done.
@@ -61,6 +61,9 @@ fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
 		return res;
 	}
 }
+
+namespace JoinSubtasksImpl
+{
 
 // A class which destroys result of the given async function, if it's finished.
 // It's for internal usage only.
@@ -129,5 +132,7 @@ public:
 		unsafe( ust::move_into_nowhere( move(this) ) );
 	}
 }
+
+} // namespace JoinSubtasksImpl
 
 } // namespace sm_async_net
