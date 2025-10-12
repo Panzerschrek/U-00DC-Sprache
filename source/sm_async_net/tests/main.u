@@ -46,6 +46,7 @@ fn Main() : i32
 	Join_Test4::Run();
 	Join_Test5::Run();
 	Join_Test6::Run();
+	Join_Test7::Run();
 
 	return 0;
 }
@@ -1250,6 +1251,55 @@ fn async ClientFunc( ust::socket_address_v4& server_address, size_type message_s
 	}
 
 	return res;
+}
+
+}
+
+namespace Join_Test7
+{
+
+fn Run()
+{
+	// Joint three subtasks.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var tup [ i32, char8, f64 ] res= join_subtasks( FuncA(), FuncB(), FuncC() ).await;
+	assert( res[0] == 2565 );
+	assert( res[1] == 'q' );
+	assert( res[2] == -2.52 );
+
+	finish_flag.write( true );
+}
+
+fn async FuncA() : i32
+{
+	yield;
+	return 2565;
+}
+
+fn async FuncB() : char8
+{
+	return 'q';
+}
+
+fn async FuncC() : f64
+{
+	yield;
+	yield;
+	return -2.52;
 }
 
 }
