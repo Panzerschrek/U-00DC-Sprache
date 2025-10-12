@@ -1,0 +1,133 @@
+import "runner.uh"
+
+namespace sm_async_net
+{
+
+// Execute given two async functions concurrently, but on the same thread.
+// Given async function objects should return value, not reference, returning references isn't supported.
+template</type A, type B/>
+fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
+{
+	unsafe
+	{
+		var ust::raw_coro_handle handle_a= ust::get_raw_coro_handle(a);
+		var ust::raw_coro_handle handle_b= ust::get_raw_coro_handle(b);
+
+		// Ensure given async functions aren't done yet (we can resume them).
+		halt if( coro_done_impl( handle_a ) );
+		halt if( coro_done_impl( handle_b ) );
+
+		// Register subtasks for given assync functions.
+		AddCurrentTaskSubtask( handle_a );
+		AddCurrentTaskSubtask( handle_b );
+
+		// Use a helper class to handle cancellation (check if it's correct).
+		var SubtasksCancellationHandler mut cancellation_handler( SubtasksCancellationHandler::UnsafeConstructorMarker{} );
+
+		// Use a helper class, which destroys result of the passed async function, if it's already finished.
+		// This is needed to call destructor of the result value in case of cancellation.
+		var AsyncFunctionObjectResultDestroyer</A/> mut destroyer_a( handle_a );
+		var AsyncFunctionObjectResultDestroyer</B/> mut destroyer_b( handle_b );
+
+		// Pause execution.
+		// The runner should ensure it's resumed only after all subtasks are done.
+		yield;
+
+		assert( coro_done_impl( handle_a ) & coro_done_impl( handle_b ), "Subtasks execution function is resumed without waiting for subtasks to finish!" );
+
+		// Further cancellation isn't possible if all subtasks are finished and control flow is passed back to this function.
+		move(cancellation_handler).SkipCancellation();
+
+		// Now we don't need to destroy the results, but take them.
+		move(destroyer_a).SkipDesruction();
+		move(destroyer_b).SkipDesruction();
+
+		// Extract results.
+
+		var tup[ A, B ] mut res= uninitialized;
+
+		ust::memory_copy_aligned(
+			typeinfo</A/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[0]) ),
+			ust::coro_return_value_address( a ),
+			typeinfo</A/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</B/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[1]) ),
+			ust::coro_return_value_address( b ),
+			typeinfo</B/>.size_of );
+
+		return res;
+	}
+}
+
+// A class which destroys result of the given async function, if it's finished.
+// It's for internal usage only.
+template</type T/>
+class AsyncFunctionObjectResultDestroyer
+{
+public:
+	// Construct with non-owning handle to async function returning a value (not reference) of type "T".
+	fn constructor( ust::raw_coro_handle handle ) unsafe
+		( handle_= handle )
+	{}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			if( coro_done_impl( handle_ ) )
+			{
+				var $(byte8) mut ret_ptr= zero_init;
+
+				switch( typeinfo</T/>.align_of )
+				{
+					1s -> { ret_ptr= coro_return_value_address_impl_align1( handle_ ); },
+					2s -> { ret_ptr= coro_return_value_address_impl_align2( handle_ ); },
+					4s -> { ret_ptr= coro_return_value_address_impl_align4( handle_ ); },
+					8s -> { ret_ptr= coro_return_value_address_impl_align8( handle_ ); },
+					16s -> { ret_ptr= coro_return_value_address_impl_align16( handle_ ); },
+					default -> { ret_ptr= coro_return_value_address_impl_align16( handle_); },
+				}
+
+				var T &mut ret= $>( ust::byte_ptr_cast</T/>( ret_ptr ) );
+				ust::call_destructor( ret );
+			}
+		}
+	}
+
+	// Call if if you need to take the result instead of ignoring it.
+	fn SkipDesruction( byval mut this ) unsafe
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+
+private:
+	ust::raw_coro_handle handle_;
+}
+
+// Class for internal usage.
+class SubtasksCancellationHandler
+{
+public:
+	struct UnsafeConstructorMarker{}
+
+public:
+	fn constructor( UnsafeConstructorMarker m ) unsafe
+	{
+		ust::ignore_unused(m);
+	}
+
+	fn destructor()
+	{
+		unsafe( HandleTaskSubtasksCancellation() );
+	}
+
+	fn SkipCancellation( byval mut this )
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+}
+
+} // namespace sm_async_net
