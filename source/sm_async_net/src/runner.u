@@ -476,38 +476,86 @@ fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe
 
 		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Adding a subtask with no active task!" );
 
-		var TasksMap &mut tasks_map= $>( tasks_map_ptr );
-
-		var TaskUniqueId subtask_id= GetNewTaskId();
-
-		var TaskUniqueId mut prev_sibling= TaskUniqueId(0);
-
-		if_var( &mut task : tasks_map.find( task_id ) )
-		{
-			// A task may wait for no more than one socket operation or can have children, but not both.
-			assert( task.socket_to_wait.empty(), "Adding a subtask a task, that already has an active socket operation!" );
-
-			prev_sibling= task.connections.last_child;
-			task.connections.last_child= subtask_id;
-		}
-		else
-		{
-			assert( false, "Current task isn't present in tasks map!" );
-		}
-
-		if( prev_sibling != TaskUniqueId(0) )
-		{
-			tasks_map[prev_sibling].connections.next_sibling= subtask_id;
-		}
-
-		tasks_map.insert_new(
-			subtask_id,
-			RunningTask
-			{
-				.task= handle,
-				.connections{ .parent= task_id, .prev_sibling= prev_sibling, .next_sibling(0), .last_child(0), },
-			} );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle );
 	}
+}
+
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1 ) unsafe
+{
+	unsafe
+	{
+		var TaskUniqueId task_id= g_currently_running_task_id;
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Adding a subtask with no active task!" );
+
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle0 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle1 );
+	}
+}
+
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1, ust::raw_coro_handle handle2 ) unsafe
+{
+	unsafe
+	{
+		var TaskUniqueId task_id= g_currently_running_task_id;
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Adding a subtask with no active task!" );
+
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle0 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle1 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle2 );
+	}
+}
+
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1, ust::raw_coro_handle handle2, ust::raw_coro_handle handle3 ) unsafe
+{
+	unsafe
+	{
+		var TaskUniqueId task_id= g_currently_running_task_id;
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Adding a subtask with no active task!" );
+
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle0 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle1 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle2 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle3 );
+	}
+}
+
+fn AddCurrentTaskSubtaskImpl( TasksMap &mut tasks_map, TaskUniqueId task_id, ust::raw_coro_handle handle ) unsafe
+{
+	var TaskUniqueId subtask_id= GetNewTaskId();
+
+	var TaskUniqueId mut prev_sibling= TaskUniqueId(0);
+
+	if_var( &mut task : tasks_map.find( task_id ) )
+	{
+		// A task may wait for no more than one socket operation or can have children, but not both.
+		assert( task.socket_to_wait.empty(), "Adding a subtask a task, that already has an active socket operation!" );
+
+		prev_sibling= task.connections.last_child;
+		task.connections.last_child= subtask_id;
+	}
+	else
+	{
+		assert( false, "Current task isn't present in tasks map!" );
+	}
+
+	if( prev_sibling != TaskUniqueId(0) )
+	{
+		tasks_map[prev_sibling].connections.next_sibling= subtask_id;
+	}
+
+	tasks_map.insert_new(
+		subtask_id,
+		RunningTask
+		{
+			.task= handle,
+			.connections{ .parent= task_id, .prev_sibling= prev_sibling, .next_sibling(0), .last_child(0), },
+		} );
 }
 
 fn HandleTaskSubtasksCancellation() unsafe

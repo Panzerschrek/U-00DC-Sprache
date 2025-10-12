@@ -129,6 +129,9 @@ fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe;
 // Add a subtask for currently-running task.
 // The subtask added will be automatically removed after it finishes.
 fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe;
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1 ) unsafe;
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1, ust::raw_coro_handle handle2 ) unsafe;
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1, ust::raw_coro_handle handle2, ust::raw_coro_handle handle3 ) unsafe;
 
 // Call this in case of subtasks destruction.
 // Don't call on normal subtasks completion.

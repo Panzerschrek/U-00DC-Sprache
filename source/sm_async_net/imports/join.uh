@@ -29,8 +29,7 @@ join_subtasks( FuncTypeA mut a, FuncTypeB mut b )
 		halt if( coro_done_impl( handle_b ) );
 
 		// Register subtasks for given async functions.
-		AddCurrentTaskSubtask( handle_a );
-		AddCurrentTaskSubtask( handle_b );
+		AddCurrentTaskSubtasks( handle_a, handle_b );
 
 		// Use a helper class to handle cancellation (check if it's correct).
 		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
@@ -104,9 +103,7 @@ join_subtasks( FuncTypeA mut a, FuncTypeB mut b, FuncTypeC mut c )
 		halt if( coro_done_impl( handle_c ) );
 
 		// Register subtasks for given async functions.
-		AddCurrentTaskSubtask( handle_a );
-		AddCurrentTaskSubtask( handle_b );
-		AddCurrentTaskSubtask( handle_c );
+		AddCurrentTaskSubtasks( handle_a, handle_b, handle_c );
 
 		// Use a helper class to handle cancellation (check if it's correct).
 		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
@@ -195,10 +192,7 @@ join_subtasks( FuncTypeA mut a, FuncTypeB mut b, FuncTypeC mut c, FuncTypeD mut 
 		halt if( coro_done_impl( handle_d ) );
 
 		// Register subtasks for given async functions.
-		AddCurrentTaskSubtask( handle_a );
-		AddCurrentTaskSubtask( handle_b );
-		AddCurrentTaskSubtask( handle_c );
-		AddCurrentTaskSubtask( handle_d );
+		AddCurrentTaskSubtasks( handle_a, handle_b, handle_c, handle_d );
 
 		// Use a helper class to handle cancellation (check if it's correct).
 		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
