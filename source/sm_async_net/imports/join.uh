@@ -5,9 +5,20 @@ namespace sm_async_net
 
 // Execute given two async functions concurrently, but on the same thread.
 // Given async function objects should return value, not reference, returning references isn't supported.
-template</type A, type B/>
-fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
+// Async function objects with references itself are supported.
+template</type FuncTypeA, type FuncTypeB/>
+fn async
+enable_if(
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeA/>() &
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeB/>() )
+join_subtasks( FuncTypeA mut a, FuncTypeB mut b )
+	: tup[
+		typeof( typeinfo</FuncTypeA/>.coroutine_return_type )::src_type,
+		typeof( typeinfo</FuncTypeB/>.coroutine_return_type )::src_type ]
 {
+	type RetA= typeof( typeinfo</FuncTypeA/>.coroutine_return_type )::src_type;
+	type RetB= typeof( typeinfo</FuncTypeB/>.coroutine_return_type )::src_type;
+
 	unsafe
 	{
 		var ust::raw_coro_handle handle_a= ust::get_raw_coro_handle(a);
@@ -26,8 +37,8 @@ fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
 
 		// Use a helper class, which destroys result of the passed async function, if it's already finished.
 		// This is needed to call destructor of the result value in case of cancellation.
-		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</A/> mut destroyer_a( handle_a );
-		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</B/> mut destroyer_b( handle_b );
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetA/> mut destroyer_a( handle_a );
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetB/> mut destroyer_b( handle_b );
 
 		// Pause execution.
 		// The runner should ensure it's resumed only after all subtasks are done.
@@ -44,19 +55,19 @@ fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
 
 		// Extract results.
 
-		var tup[ A, B ] mut res= uninitialized;
+		var tup[ RetA, RetB ] mut res= uninitialized;
 
 		ust::memory_copy_aligned(
-			typeinfo</A/>.align_of,
+			typeinfo</RetA/>.align_of,
 			ust::ptr_cast_to_byte8( $<(res[0]) ),
 			ust::coro_return_value_address( a ),
-			typeinfo</A/>.size_of );
+			typeinfo</RetA/>.size_of );
 
 		ust::memory_copy_aligned(
-			typeinfo</B/>.align_of,
+			typeinfo</RetB/>.align_of,
 			ust::ptr_cast_to_byte8( $<(res[1]) ),
 			ust::coro_return_value_address( b ),
-			typeinfo</B/>.size_of );
+			typeinfo</RetB/>.size_of );
 
 		return res;
 	}
@@ -64,6 +75,50 @@ fn async join_subtasks( ( async : A ) mut a, ( async : B ) mut b ) : tup[ A, B ]
 
 namespace JoinSubtasksImpl
 {
+
+template</type T/>
+fn constexpr IsSupportedForSubtasksJoinigAsyncFunctionType() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		static_if( typeinfo</T/>.is_coroutine )
+		{
+			static_if( typeinfo</T/>.is_async_func )
+			{
+				static_if( typeinfo</T/>.coroutine_return_value_is_reference )
+				{
+					// Don't support async functions returning references.
+					return false;
+				}
+				else
+				{
+					static_if( non_sync</T/> )
+					{
+						// Don't support non-sync async functions.
+						return false;
+					}
+					else
+					{
+						// Allow async function capturing references.
+						return true;
+					}
+				}
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
 
 // A class which destroys result of the given async function, if it's finished.
 // It's for internal usage only.

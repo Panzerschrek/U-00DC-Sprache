@@ -983,6 +983,7 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 	assert( res0[0] == 265u * 3u );
 	assert( res0[1] == 13.2f - 1.0f );
 
+	// Passing an async function object with captured references is supported.
 	var tup[ f32, u32 ] res1= join_subtasks( FuncB( -25.5f ), FuncA( 74u ) ).await;
 	assert( res1[0] == -25.5f - 1.0f );
 	assert( res1[1] == 74u * 3u );
@@ -990,7 +991,7 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 	finish_flag.write( true );
 }
 
-fn async FuncA( u32 x ) : u32
+fn async FuncA( u32& x ) : u32
 {
 	yield;
 	yield;
@@ -1039,6 +1040,7 @@ fn async FuncA() : tup[ f32, f64 ]
 {
 	yield;
 	yield;
+	// Passing an async function object with captured references is supported.
 	return join_subtasks( Func0( 13.0f ), Func1( 3.0, 5.0 ) ).await;
 }
 
@@ -1054,7 +1056,7 @@ fn async Func0( f32 x ) : f32
 	return -x;
 }
 
-fn async Func1( f64 x, f64 y ) : f64
+fn async Func1( f64& x, f64& y ) : f64
 {
 	yield;
 	yield;
@@ -1170,10 +1172,10 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 	finish_flag.write( true );
 }
 
-fn async Func( udp_socket mut socket, ust::socket_address_v4 other_address, ust::string8 message ) : ust::string8
+fn async Func( udp_socket mut socket, ust::socket_address_v4& other_address, ust::string_view8 message ) : ust::string8
 {
 	// Send given message to other socket.
-	assert( socket.send_to( other_address, message.range().to_byte8_range() ).await.try_deref() == message.size() );
+	assert( socket.send_to( other_address, message.to_byte8_range() ).await.try_deref() == message.size() );
 	ust::stdout_print( ust::concat( "Sent message \"", message, "\" to port ", ust::to_string8( other_address.get_port() ), "\n" ) );
 
 	// Receive a message from other socket.
@@ -1222,19 +1224,19 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 	finish_flag.write( true );
 }
 
-fn async ServerFunc( tcp_listener mut listener, ust::string8 message )
+fn async ServerFunc( tcp_listener mut listener, ust::string_view8 message )
 {
 	auto [ mut stream, client_address ]= listener.accept().await.try_take();
 
 	for( var size_type mut offset= 0s; offset < message.size(); )
 	{
-		var size_type bytes_written= stream.write( message.range().subrange_start( offset ).to_byte8_range() ).await.try_take();
+		var size_type bytes_written= stream.write( message.subrange_start( offset ).to_byte8_range() ).await.try_take();
 		assert( bytes_written > 0s );
 		offset+= bytes_written;
 	}
 }
 
-fn async ClientFunc( ust::socket_address_v4 server_address, size_type message_size ) : ust::string8
+fn async ClientFunc( ust::socket_address_v4& server_address, size_type message_size ) : ust::string8
 {
 	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
 
