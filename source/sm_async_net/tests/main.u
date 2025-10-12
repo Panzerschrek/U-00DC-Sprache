@@ -44,6 +44,7 @@ fn Main() : i32
 	Join_Test3::Run();
 	Join_Test4::Run();
 	Join_Test5::Run();
+	Join_Test6::Run();
 
 	return 0;
 }
@@ -1180,6 +1181,72 @@ fn async Func( udp_socket mut socket, ust::socket_address_v4 other_address, ust:
 	var ust::string8 result= ust::string_view8( buf ).subrange_end( size );
 	ust::stdout_print( ust::concat( "Received message \"", result, "\" from port ", ust::to_string8( other_address.get_port() ), "\n" ) );
 	return result;
+}
+
+}
+
+namespace Join_Test6
+{
+
+fn Run()
+{
+	// Run a task, which creates two subtasks - TCP client and server.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
+	var tcp_listener mut listener= tcp_listener::create_and_bind( server_address ).try_take();
+
+	var ust::string_view8 message= "Some message to transfer";
+
+	var tup[ void, ust::string8 ] res=
+		join_subtasks(
+			ServerFunc( move(listener), message ),
+			ClientFunc( server_address, message.size() ) ).await;
+
+	assert( res[1] == message );
+
+	finish_flag.write( true );
+}
+
+fn async ServerFunc( tcp_listener mut listener, ust::string8 message )
+{
+	auto [ mut stream, client_address ]= listener.accept().await.try_take();
+
+	for( var size_type mut offset= 0s; offset < message.size(); )
+	{
+		var size_type bytes_written= stream.write( message.range().subrange_start( offset ).to_byte8_range() ).await.try_take();
+		assert( bytes_written > 0s );
+		offset+= bytes_written;
+	}
+}
+
+fn async ClientFunc( ust::socket_address_v4 server_address, size_type message_size ) : ust::string8
+{
+	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
+
+	var ust::string8 mut res( message_size, '\0' );
+
+	for( var size_type mut offset= 0s; offset < res.size(); )
+	{
+		var size_type bytes_read= stream.read( res.range().subrange_start( offset ).to_byte8_range() ).await.try_take();
+		assert( bytes_read > 0s );
+		offset+= bytes_read;
+	}
+
+	return res;
 }
 
 }
