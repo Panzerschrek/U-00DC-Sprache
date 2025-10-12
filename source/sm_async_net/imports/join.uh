@@ -259,6 +259,68 @@ join_subtasks( FuncTypeA mut a, FuncTypeB mut b, FuncTypeC mut c, FuncTypeD mut 
 	}
 }
 
+// Execute given async functions concurrently, but on the same thread.
+// Given async function objects should return value, not reference, returning references isn't supported.
+// Async function objects with references itself are supported.
+template</type FuncType, size_type S/>
+fn async
+enable_if(
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncType/>() )
+join_subtasks( [ FuncType, S ] mut funcs )
+	: [ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type, S]
+{
+	type RetType= typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type;
+
+	unsafe
+	{
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			var ust::raw_coro_handle handle= ust::get_raw_coro_handle( funcs[i] );
+			// Ensure given async function isn't done yet (we can resume them).
+			halt if( coro_done_impl( handle ) );
+			// Register subtask for given async function.
+			AddCurrentTaskSubtask( handle );
+		}
+
+		// Use a helper class to handle cancellation (check if it's correct).
+		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
+
+		// Use a helper class, which destroys result of the passed async functions, if they are already finished.
+		// This is needed to call destructor of the result value in case of cancellation.
+		var JoinSubtasksImpl::AsyncFunctionObjectArrayResultDestroyer</FuncType, S/> mut destroyer( funcs );
+
+		// Pause execution.
+		// The runner should ensure it's resumed only after all subtasks are done.
+		yield;
+
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			assert( ust::coro_done( funcs[i] ), "Subtasks execution function is resumed without waiting for subtasks to finish!" );
+		}
+
+		// Further cancellation isn't possible if all subtasks are finished and control flow is passed back to this function.
+		move(cancellation_handler).SkipCancellation();
+
+		// Now we don't need to destroy the results, but take them.
+		move(destroyer).SkipDesruction();
+
+		// Extract results.
+
+		var [ RetType, S ] mut res= uninitialized;
+
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			ust::memory_copy_aligned(
+				typeinfo</RetType/>.align_of,
+				ust::ptr_cast_to_byte8( $<(res[i]) ),
+				ust::coro_return_value_address( funcs[i] ),
+				typeinfo</RetType/>.size_of );
+		}
+
+		return res;
+	}
+}
+
 namespace JoinSubtasksImpl
 {
 
@@ -349,6 +411,59 @@ public:
 
 private:
 	ust::raw_coro_handle handle_;
+}
+
+// A class which destroys result of the given async functions, if they are finished.
+// It's for internal usage only.
+template</type FuncType, size_type S/>
+class AsyncFunctionObjectArrayResultDestroyer
+{
+public:
+	fn constructor( [ FuncType, S ] & funcs ) unsafe
+		( handles_= zero_init )
+	{
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			handles_[i]= ust::get_raw_coro_handle( funcs[i] );
+		}
+	}
+
+	fn destructor()
+	{
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			var ust::raw_coro_handle handle= handles_[i];
+			unsafe
+			{
+				if( coro_done_impl( handle ) )
+				{
+					var $(byte8) mut ret_ptr= zero_init;
+
+					switch( typeinfo</FuncType/>.coroutine_return_type.align_of )
+					{
+						1s -> { ret_ptr= coro_return_value_address_impl_align1( handle ); },
+						2s -> { ret_ptr= coro_return_value_address_impl_align2( handle ); },
+						4s -> { ret_ptr= coro_return_value_address_impl_align4( handle ); },
+						8s -> { ret_ptr= coro_return_value_address_impl_align8( handle ); },
+						16s -> { ret_ptr= coro_return_value_address_impl_align16( handle ); },
+						default -> { ret_ptr= coro_return_value_address_impl_align16( handle); },
+					}
+
+					auto &mut ret= $>( ust::byte_ptr_cast</ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type />( ret_ptr ) );
+					ust::call_destructor( ret );
+				}
+			}
+		}
+	}
+
+	// Call if if you need to take the result instead of ignoring it.
+	fn SkipDesruction( byval mut this ) unsafe
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+
+private:
+	[ ust::raw_coro_handle, S ] handles_;
 }
 
 // Class for internal usage.

@@ -49,6 +49,7 @@ fn Main() : i32
 	Join_Test6::Run();
 	Join_Test7::Run();
 	Join_Test8::Run();
+	Join_Test9::Run();
 
 	return 0;
 }
@@ -1311,7 +1312,7 @@ namespace Join_Test8
 
 fn Run()
 {
-	// Joint four subtasks.
+	// Join four subtasks.
 
 	var ust::shared_atomic_variable</bool/> finish_flag(false);
 
@@ -1362,6 +1363,57 @@ fn async FuncD() : ust::box</f64/>
 	yield;
 	yield;
 	return ust::make_box( 34631.2 );
+}
+
+}
+
+namespace Join_Test9
+{
+
+fn Run()
+{
+	// Joint an array of subtasks.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var [ ust::string8, 7s ] res=
+		join_subtasks(
+			ust::make_array(
+				DoubleIt( "Ich" ),
+				DoubleIt( "sehe" ),
+				DoubleIt( "einen" ),
+				DoubleIt( "Apfel" ),
+				DoubleIt( "oben" ),
+				DoubleIt( "im" ),
+				DoubleIt( "Geäst" ) ) ).await;
+
+	assert( res[0] == "IchIch" );
+	assert( res[1] == "sehesehe" );
+	assert( res[2] == "eineneinen" );
+	assert( res[3] == "ApfelApfel" );
+	assert( res[4] == "obenoben" );
+	assert( res[5] == "imim" );
+	assert( res[6] == "GeästGeäst" );
+
+	finish_flag.write( true );
+}
+
+fn async DoubleIt( ust::string_view8 s ) : ust::string8
+{
+	yield;
+	return ust::concat( s, s );
 }
 
 }
