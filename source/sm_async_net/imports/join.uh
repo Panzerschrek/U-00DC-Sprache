@@ -6,7 +6,8 @@ namespace sm_async_net
 
 // Execute given two async functions concurrently, but on the same thread.
 // Given async function objects should return value, not reference, returning references isn't supported.
-// Async function objects with references itself are supported.
+// Return types with references inside are also not supported.
+// Async function objects with references inside are supported.
 template</type FuncTypeA, type FuncTypeB/>
 fn async
 enable_if(
@@ -400,8 +401,17 @@ fn constexpr IsSupportedForSubtasksJoinigAsyncFunctionType() : bool
 					}
 					else
 					{
-						// Allow async function capturing references.
-						return true;
+						static_if( typeinfo</T/>.coroutine_return_type.reference_tag_count > 0s )
+						{
+							// For now don't support tasks with return type containing references inside.
+							// It's too complex to deal with reference notation for them.
+							return false;
+						}
+						else
+						{
+							// Allow async function capturing references.
+							return true;
+						}
 					}
 				}
 			}
