@@ -665,7 +665,7 @@ U_TEST(AsyncCallInlining_Test13)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z8DoubleItj" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S10SomeMethodERKS_" ) == nullptr ); // Should inline it.
 
 	const llvm::GenericValue val= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 	U_TEST_ASSERT( val.IntVal.getLimitedValue() == 6 );
@@ -709,7 +709,7 @@ U_TEST(AsyncCallInlining_Test14)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z8DoubleItj" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S10SomeMethodERKS_" ) == nullptr ); // Should inline it.
 
 	const llvm::GenericValue val= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 	U_TEST_ASSERT( val.IntVal.getLimitedValue() == 35 );
@@ -755,7 +755,7 @@ U_TEST(AsyncCallInlining_Test15)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z8DoubleItj" ) == nullptr ); // Should inline it.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1S10SomeMethodERKS_" ) == nullptr ); // Should inline it.
 
 	const llvm::GenericValue val= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 	U_TEST_ASSERT( val.IntVal.getLimitedValue() == 6 );
@@ -788,6 +788,9 @@ U_TEST(AsyncCallInlining_Test16)
 
 	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
 	EnsureModuleIsValid( *module );
+	const EnginePtr engine= CreateEngine( std::move(module) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3BarA4_1S" ) == nullptr ); // Should inline it.
 }
 
 U_TEST(AsyncCallInliningFail_Test0)
