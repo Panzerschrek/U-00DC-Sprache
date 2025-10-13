@@ -1,3 +1,4 @@
+import "/vector.u"
 import "runner.uh"
 
 namespace sm_async_net
@@ -258,10 +259,9 @@ join_subtasks( FuncTypeA mut a, FuncTypeB mut b, FuncTypeC mut c, FuncTypeD mut 
 // Async function objects with references itself are supported.
 template</type FuncType, size_type S/>
 fn async
-enable_if(
-	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncType/>() )
+enable_if( JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncType/>() )
 join_subtasks( [ FuncType, S ] mut funcs )
-	: [ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type, S]
+	: [ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type, S ]
 {
 	type RetType= typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type;
 
@@ -312,6 +312,72 @@ join_subtasks( [ FuncType, S ] mut funcs )
 		}
 
 		return res;
+	}
+}
+
+
+// Execute given async functions concurrently, but on the same thread.
+// Given async function objects should return value, not reference, returning references isn't supported.
+// Async function objects with references itself are supported.
+template</type FuncType/>
+fn async
+enable_if( JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncType/>() )
+join_subtasks( ust::vector</FuncType/> mut funcs )
+	: ust::vector</ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type />
+{
+	type RetType= typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type;
+
+	unsafe
+	{
+		foreach( &mut func : funcs )
+		{
+			var ust::raw_coro_handle handle= ust::get_raw_coro_handle( func );
+			// Ensure given async function isn't done yet (we can resume them).
+			halt if( coro_done_impl( handle ) );
+			// Register subtask for given async function.
+			AddCurrentTaskSubtask( handle );
+		}
+
+		// Use a helper class to handle cancellation (check if it's correct).
+		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
+
+		// Use a helper class, which destroys result of the passed async functions, if they are already finished.
+		// This is needed to call destructor of the result value in case of cancellation.
+		var JoinSubtasksImpl::AsyncFunctionObjectVectorResultDestroyer</FuncType/> mut destroyer( funcs );
+
+		// Pause execution.
+		// The runner should ensure it's resumed only after all subtasks are done.
+		yield;
+
+		foreach( &func : funcs )
+		{
+			assert( ust::coro_done( func ), "Subtasks execution function is resumed without waiting for subtasks to finish!" );
+		}
+
+		// Further cancellation isn't possible if all subtasks are finished and control flow is passed back to this function.
+		move(cancellation_handler).SkipCancellation();
+
+		// Now we don't need to destroy the results, but take them.
+		move(destroyer).SkipDesruction();
+
+		// Extract results.
+
+		return
+			ust::make_vector_from_mapped_range(
+				funcs.range(),
+				lambda( FuncType& func ) : RetType
+				{
+					unsafe
+					{
+						var RetType mut res= uninitialized;
+						ust::memory_copy_aligned(
+							typeinfo</RetType/>.align_of,
+							ust::ptr_cast_to_byte8( $<(res) ),
+							ust::coro_return_value_address( cast_mut(func) ),
+							typeinfo</RetType/>.size_of );
+						return res;
+					}
+				} );
 	}
 }
 
@@ -458,6 +524,60 @@ public:
 
 private:
 	[ ust::raw_coro_handle, S ] handles_;
+}
+
+// A class which destroys result of the given async functions, if they are finished.
+// It's for internal usage only.
+// It holds a raw pointer to vector storage, so, don't modifty the vector itself when this class instance is alive!
+template</type FuncType/>
+class AsyncFunctionObjectVectorResultDestroyer
+{
+public:
+	fn constructor( ust::vector</FuncType/> &mut v ) unsafe
+		(
+			handles_= unsafe( ust::byte_ptr_cast</ust::raw_coro_handle />( ust::ptr_cast_to_byte8( v.data() ) ) ),
+			num_handles_= v.size()
+		)
+	{}
+
+	fn destructor()
+	{
+		for( auto mut i= 0s; i < num_handles_; ++i )
+		{
+			unsafe
+			{
+				var ust::raw_coro_handle handle= $>( handles_ + i );
+
+				if( coro_done_impl( handle ) )
+				{
+					var $(byte8) mut ret_ptr= zero_init;
+
+					switch( typeinfo</FuncType/>.coroutine_return_type.align_of )
+					{
+						1s -> { ret_ptr= coro_return_value_address_impl_align1( handle ); },
+						2s -> { ret_ptr= coro_return_value_address_impl_align2( handle ); },
+						4s -> { ret_ptr= coro_return_value_address_impl_align4( handle ); },
+						8s -> { ret_ptr= coro_return_value_address_impl_align8( handle ); },
+						16s -> { ret_ptr= coro_return_value_address_impl_align16( handle ); },
+						default -> { ret_ptr= coro_return_value_address_impl_align16( handle); },
+					}
+
+					auto &mut ret= $>( ust::byte_ptr_cast</ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type />( ret_ptr ) );
+					ust::call_destructor( ret );
+				}
+			}
+		}
+	}
+
+	// Call if if you need to take the result instead of ignoring it.
+	fn SkipDesruction( byval mut this ) unsafe
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+
+private:
+	$(ust::raw_coro_handle) handles_;
+	size_type num_handles_;
 }
 
 // Class for internal usage.

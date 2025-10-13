@@ -3,6 +3,7 @@ import "/box.u"
 import "/enum_string_conversions.u"
 import "/hash_set.u"
 import "/main_wrapper.u"
+import "/sort.u"
 import "/stdout.u"
 import "/string_conversions.u"
 import "/shared_barrier.u"
@@ -50,6 +51,7 @@ fn Main() : i32
 	Join_Test7::Run();
 	Join_Test8::Run();
 	Join_Test9::Run();
+	Join_Test10::Run();
 
 	return 0;
 }
@@ -1414,6 +1416,114 @@ fn async DoubleIt( ust::string_view8 s ) : ust::string8
 {
 	yield;
 	return ust::concat( s, s );
+}
+
+}
+
+namespace Join_Test10
+{
+
+fn Run()
+{
+	// Create a vector of tasks and join this vector.
+	// Each task sends a message to all other tasks and to itself.
+
+	var ust::shared_atomic_variable</bool/> finish_flag(false);
+
+	var runner r;
+	r.add_task( Func( finish_flag ) );
+
+	// Use a crude way to wait - via "thread_yield".
+	while( !finish_flag.read() )
+	{
+		ust::yield_current_thread();
+	}
+}
+
+fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+{
+	var size_type num_sockets= 12s;
+
+	var [ ust::string8, num_sockets ] mut messages
+	[
+		"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"
+	];
+
+	ust::sort( messages );
+
+	auto loopback= GetLoopbackIpAddress();
+
+	var [ ust::socket_address, num_sockets ] addresses
+	[
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+	];
+
+	var ust::vector</ async : ust::vector</ust::string8/> /> mut funcs;
+
+	for( auto mut i= 0s; i < num_sockets; ++i )
+	{
+		funcs.push_back(
+			SocketFunc(
+				udp_socket::create_and_bind( addresses[i] ).try_take(),
+				addresses,
+				messages[i] ) );
+	}
+
+	var ust::vector</ ust::vector</ust::string8/> /> results= join_subtasks( move(funcs) ).await;
+
+	ust::stdout_print( "Finished UDP messages exchange\n" );
+
+	assert( results.size() == num_sockets );
+
+	foreach( &messages_received : results )
+	{
+		assert( messages_received.size() == num_sockets );
+		foreach( pair : messages_received.iter().zip( ust::array_view_imut</ust::string8/>( messages ).iter() ) )
+		{
+			assert( pair.first == pair.second );
+		}
+	}
+
+	finish_flag.write( true );
+}
+
+fn async SocketFunc(
+	udp_socket mut socket,
+	ust::vector</ ust::socket_address /> addresses,
+	ust::string8 message ) : ust::vector</ust::string8/>
+{
+	var ust::socket_address socket_address= socket.get_local_address().try_take();
+	var ust::string8 port_str= ust::to_string8( socket_address.try_get</ust::socket_address_v4/>().get_port() );
+
+	var ust::vector</ust::string8/> mut res;
+
+	var [ char8, 64 ] mut buf= zero_init;
+
+	foreach( &address : addresses )
+	{
+		assert( socket.send_to( address, message.range().to_byte8_range() ).await.try_take() == message.size() );
+		ust::stdout_print(  ust::concat( "Sent message \"", message, "\" to port ", ust::to_string8( address.try_get</ust::socket_address_v4/>().get_port() ), "\n" ) );
+
+		var size_type size= socket.receive( ust::array_view_mut</char8/>(buf).to_byte8_range() ).await.try_take();
+		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( size );
+		ust::stdout_print( ust::concat( "Received message \"", message_received, "\" on port ", port_str, "\n" ) );
+		res.push_back( message_received );
+	}
+
+	ust::sort( res );
+
+	return res;
 }
 
 }
