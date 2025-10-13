@@ -1,0 +1,14 @@
+import "/string.u"
+import "/coro.u"
+
+fn async nomangle Func()
+{
+	var [ async : void, 1s ] mut arr[ DoubleIt() ];
+	join_subtasks( move(arr) ).await;
+}
+
+fn async DoubleIt();
+
+fn async join_subtasks( [ async : void, 1s ] mut funcs )
+{
+}
