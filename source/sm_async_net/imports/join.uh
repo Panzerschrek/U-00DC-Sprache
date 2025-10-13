@@ -73,9 +73,7 @@ join_subtasks( FuncTypeA mut a, FuncTypeB mut b )
 	}
 }
 
-// Execute given three async functions concurrently, but on the same thread.
-// Given async function objects should return value, not reference, returning references isn't supported.
-// Async function objects with references itself are supported.
+// Same as "join_subtasks" for two tasks, but for three tasks.
 template</type FuncTypeA, type FuncTypeB, type FuncTypeC/>
 fn async
 enable_if(
@@ -157,9 +155,7 @@ join_subtasks( FuncTypeA mut a, FuncTypeB mut b, FuncTypeC mut c )
 	}
 }
 
-// Execute given three async functions concurrently, but on the same thread.
-// Given async function objects should return value, not reference, returning references isn't supported.
-// Async function objects with references itself are supported.
+// Same as "join_subtasks" for two tasks, but for four tasks.
 template</type FuncTypeA, type FuncTypeB, type FuncTypeC, type FuncTypeD/>
 fn async
 enable_if(
@@ -254,9 +250,7 @@ join_subtasks( FuncTypeA mut a, FuncTypeB mut b, FuncTypeC mut c, FuncTypeD mut 
 	}
 }
 
-// Execute given async functions concurrently, but on the same thread.
-// Given async function objects should return value, not reference, returning references isn't supported.
-// Async function objects with references itself are supported.
+// Same as "join_subtasks" for two tasks, but for fixed number of tasks having the same type.
 template</type FuncType, size_type S/>
 fn async
 enable_if( JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncType/>() )
@@ -316,12 +310,11 @@ join_subtasks( [ FuncType, S ] mut funcs )
 }
 
 
-// Execute given async functions concurrently, but on the same thread.
-// Given async function objects should return value, not reference, returning references isn't supported.
-// Async function objects with references itself are supported.
+// Same as "join_subtasks" for arrays of tasks, but for vector of tasks (with arbitraty size).
+// Function objects with references inside aren't supported yet.
 template</type FuncType/>
 fn async
-enable_if( JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncType/>() )
+enable_if( JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncType/>() && typeinfo</FuncType/>.reference_tag_count == 0s )
 join_subtasks( ust::vector</FuncType/> mut funcs )
 	: ust::vector</ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type />
 {
