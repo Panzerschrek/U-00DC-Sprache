@@ -3,6 +3,7 @@ import "/box.u"
 import "/enum_string_conversions.u"
 import "/hash_set.u"
 import "/main_wrapper.u"
+import "/semaphore.u"
 import "/sort.u"
 import "/stdout.u"
 import "/string_conversions.u"
@@ -886,25 +887,21 @@ fn Run()
 {
 	// Joint two subtasks, which just return a value (maybe yielding a couple of times) without performing a socket operation.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var tup [ i32, f32 ] res= join_subtasks( FuncA(), FuncB() ).await;
 	assert( res[0] == 5 );
 	assert( res[1] == 7.3f );
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
 fn async FuncA() : i32
@@ -928,25 +925,21 @@ fn Run()
 {
 	// Joint two subtasks, which just return a value of comosite type (maybe yielding a couple of times) without performing a socket operation.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var tup [ ust::string8, ust::string16 ] res= join_subtasks( FuncA(), FuncB() ).await;
 	assert( res[0] == "FuncA result" );
 	assert( res[1] == "FuncB результат"u16 );
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
 fn async FuncA() : ust::string8
@@ -971,19 +964,15 @@ fn Run()
 {
 	// Use "join_subtasks" more than once.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var tup[ u32, f32 ] res0= join_subtasks( FuncA( 265u ), FuncB( 13.2f ) ).await;
 	assert( res0[0] == 265u * 3u );
@@ -994,7 +983,7 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 	assert( res1[0] == -25.5f - 1.0f );
 	assert( res1[1] == 74u * 3u );
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
 fn async FuncA( u32& x ) : u32
@@ -1019,19 +1008,15 @@ fn Run()
 {
 	// Create a couple of tasks with "join_subtasks", which of them uses "join_subtasks" internally.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var tup[ tup[ f32, f64 ], tup[ u32, i64 ] ] res= join_subtasks( FuncA(), FuncB() ).await;
 	assert( res[0][0] == -13.0f );
@@ -1039,7 +1024,7 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 	assert( res[1][0] == 20u );
 	assert( res[1][1] == 11i64 );
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
 fn async FuncA() : tup[ f32, f64 ]
@@ -1089,19 +1074,15 @@ fn Run()
 {
 	// Pass "join_subtasks" call results into another "join_subtasks" call.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var tup[ tup[ f32, f64 ], tup[ u32, i64 ] ] res=
 		join_subtasks(
@@ -1113,7 +1094,7 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 	assert( res[1][0] == 40u );
 	assert( res[1][1] == 18i64 );
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
 fn async Func0( f32 x ) : f32
@@ -1149,36 +1130,32 @@ fn Run()
 {
 	// Run a task, which creates two subtasks, each of them sends and receives using an UDP socket.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var ust::socket_address_v4 address0( GetLoopbackIpAddress(), GetNextPort() );
 	var ust::socket_address_v4 address1( GetLoopbackIpAddress(), GetNextPort() );
 
 	var tup[ ust::string8, ust::string8 ] res=
 		join_subtasks(
-			Func( udp_socket::create_and_bind( address0 ).try_take(), address1, "Zero to one" ),
-			Func( udp_socket::create_and_bind( address1 ).try_take(), address0, "One to zero" ) ).await;
+			FuncInner( udp_socket::create_and_bind( address0 ).try_take(), address1, "Zero to one" ),
+			FuncInner( udp_socket::create_and_bind( address1 ).try_take(), address0, "One to zero" ) ).await;
 
 	ust::stdout_print( "Joined UDP messages exchange\n" );
 	assert( res[0] == "One to zero" );
 	assert( res[1] == "Zero to one" );
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
-fn async Func( udp_socket mut socket, ust::socket_address_v4& other_address, ust::string_view8 message ) : ust::string8
+fn async FuncInner( udp_socket mut socket, ust::socket_address_v4& other_address, ust::string_view8 message ) : ust::string8
 {
 	// Send given message to other socket.
 	assert( socket.send_to( other_address, message.to_byte8_range() ).await.try_deref() == message.size() );
@@ -1201,19 +1178,15 @@ fn Run()
 {
 	// Run a task, which creates two subtasks - TCP client and server.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
 	var tcp_listener mut listener= tcp_listener::create_and_bind( server_address ).try_take();
@@ -1227,7 +1200,7 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 
 	assert( res[1] == message );
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
 fn async ServerFunc( tcp_listener mut listener, ust::string_view8 message )
@@ -1267,26 +1240,22 @@ fn Run()
 {
 	// Joint three subtasks.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var tup [ i32, char8, f64 ] res= join_subtasks( FuncA(), FuncB(), FuncC() ).await;
 	assert( res[0] == 2565 );
 	assert( res[1] == 'q' );
 	assert( res[2] == -2.52 );
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
 fn async FuncA() : i32
@@ -1316,19 +1285,15 @@ fn Run()
 {
 	// Join four subtasks.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var tup[ ust::string8, ust::vector</f32/>, u64, ust::box</f64/> ] res=
 		join_subtasks( FuncA(), FuncB(), FuncC(), FuncD() ).await;
@@ -1338,7 +1303,7 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 	assert( res[2] == 12345678900u );
 	assert( res[3].deref() == 34631.2 );
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
 fn async FuncA() : ust::string8
@@ -1376,19 +1341,15 @@ fn Run()
 {
 	// Joint an array of subtasks.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var [ ust::string8, 7s ] res=
 		join_subtasks(
@@ -1409,7 +1370,7 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 	assert( res[5] == "imim" );
 	assert( res[6] == "GeästGeäst" );
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
 fn async DoubleIt( ust::string_view8 s ) : ust::string8
@@ -1428,19 +1389,15 @@ fn Run()
 	// Create a vector of tasks and join this vector.
 	// Each task sends a message to all other tasks and to itself.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var runner r;
-	r.add_task( Func( finish_flag ) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var size_type num_sockets= 12s;
 
@@ -1495,7 +1452,7 @@ fn async Func( ust::shared_atomic_variable</bool/> finish_flag )
 		}
 	}
 
-	finish_flag.write( true );
+	finish_semaphore.deref().release();
 }
 
 fn async SocketFunc(
