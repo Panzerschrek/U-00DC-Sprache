@@ -761,6 +761,35 @@ U_TEST(AsyncCallInlining_Test15)
 	U_TEST_ASSERT( val.IntVal.getLimitedValue() == 6 );
 }
 
+U_TEST(AsyncCallInlining_Test16)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn constructor();
+			fn destructor();
+			i32 x;
+		}
+
+		fn Some();
+
+		fn async Bar( [ S, 4s ] mut funcs )
+		{
+			Some();
+		}
+
+		fn async nomangle Foo()
+		{
+			var [ S, 4s ] mut arr;
+			Bar( move(arr) ).await;
+		}
+	)";
+
+	auto module= BuildProgramForAsyncFunctionsInliningTest( c_program_text );
+	EnsureModuleIsValid( *module );
+}
+
 U_TEST(AsyncCallInliningFail_Test0)
 {
 	static const char c_program_text[]=
