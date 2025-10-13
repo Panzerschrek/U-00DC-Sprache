@@ -1,14 +1,12 @@
-import "/string.u"
-import "/coro.u"
+class S{}
 
-fn async nomangle Func()
+fn async Bar( [ S, 1s ] mut funcs )
 {
-	var [ async : void, 1s ] mut arr[ DoubleIt() ];
-	join_subtasks( move(arr) ).await;
+	if( typeinfo</ typeof(funcs) />.is_array ){}
 }
 
-fn async DoubleIt();
-
-fn async join_subtasks( [ async : void, 1s ] mut funcs )
+fn async nomangle Foo()
 {
+	var [ S, 1s ] mut arr;
+	Bar( move(arr) ).await;
 }
