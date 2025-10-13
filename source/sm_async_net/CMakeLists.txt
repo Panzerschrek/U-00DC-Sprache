@@ -3,7 +3,7 @@ if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 else()
 	set( BUILD_SYSTEM_BUILD_CONFIGURATION "release" )
 endif()
-set( BUILD_SYSTEM_BUILD_CONFIGURATION "debug" )
+
 if( MINGW )
 	# We need to provide path to MinGW libraries for linking.
 	# Detect MinGW installation using g++ path.
