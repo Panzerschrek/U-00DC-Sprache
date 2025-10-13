@@ -777,32 +777,11 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	await_loop_block->replaceAllUsesWith( source_initial_suspend_point->normal_block );
 	await_loop_block->eraseFromParent();
 
-	// Destruction block of initial suspend point may contain break to another block, which uses PHI nodes.
-	// In such cases we need to replace these PHI nodes with undef values.
-	// It's fine, since these blocks are unreachable.
-	{
-		llvm::SmallVector<llvm::PHINode*, 4> phi_nodes_to_remove;
+	// Destruction block of the initial suspend point may contain a break to another block, which uses PHI nodes.
+	// In such cases we need to remove mention of the block in these PHI nodes.
+	for( llvm::BasicBlock* const successor : llvm::successors( source_initial_suspend_point->destroy_block ) )
+		successor->removePredecessor( source_initial_suspend_point->destroy_block );
 
-		if( llvm::Instruction* const terminator= source_initial_suspend_point->destroy_block->getTerminator() )
-		{
-			if( llvm::BranchInst* const branch_instruction= llvm::dyn_cast<llvm::BranchInst>( terminator ) )
-			{
-				const uint32_t num_successors= branch_instruction->getNumSuccessors();
-				for( uint32_t i= 0; i < num_successors; ++i )
-				{
-					for( llvm::Instruction& instruction : *branch_instruction->getSuccessor(i) )
-						if( llvm::PHINode* const phi= llvm::dyn_cast<llvm::PHINode>( &instruction ) )
-							phi_nodes_to_remove.push_back(phi);
-				}
-			}
-		}
-
-		for( llvm::PHINode* const phi : phi_nodes_to_remove )
-		{
-			phi->replaceAllUsesWith( llvm::UndefValue::get( phi->getType() ) );
-			phi->eraseFromParent();
-		}
-	}
 	source_initial_suspend_point->destroy_block->eraseFromParent(); // It is unreachable.
 
 	await_loop_block_parsed->not_done_block->eraseFromParent(); // Not done block (which triggers suspend and goes to await block) is not needed anymore.
