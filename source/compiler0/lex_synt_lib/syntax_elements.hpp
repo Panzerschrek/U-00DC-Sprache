@@ -411,7 +411,7 @@ struct NameLookupCompletion
 
 struct IntegerNumericConstant
 {
-	IntegerNumericConstant( const SrcLoc& src_loc )
+	explicit IntegerNumericConstant( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
@@ -420,7 +420,7 @@ struct IntegerNumericConstant
 
 struct FloatingPointNumericConstant
 {
-	FloatingPointNumericConstant( const SrcLoc& src_loc )
+	explicit FloatingPointNumericConstant( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;

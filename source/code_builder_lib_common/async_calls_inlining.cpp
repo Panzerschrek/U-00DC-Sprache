@@ -777,6 +777,11 @@ void TryToInlineAsyncCall( llvm::Function& function, llvm::CallInst& call_instru
 	await_loop_block->replaceAllUsesWith( source_initial_suspend_point->normal_block );
 	await_loop_block->eraseFromParent();
 
+	// Destruction block of the initial suspend point may contain a break to another block, which uses PHI nodes.
+	// In such cases we need to remove mention of the block in these PHI nodes.
+	for( llvm::BasicBlock* const successor : llvm::successors( source_initial_suspend_point->destroy_block ) )
+		successor->removePredecessor( source_initial_suspend_point->destroy_block );
+
 	source_initial_suspend_point->destroy_block->eraseFromParent(); // It is unreachable.
 
 	await_loop_block_parsed->not_done_block->eraseFromParent(); // Not done block (which triggers suspend and goes to await block) is not needed anymore.
