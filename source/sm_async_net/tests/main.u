@@ -728,7 +728,7 @@ fn Run()
 	// Run an async server and create a bunch of clients.
 	// Peroform message exchange between clients and the server.
 
-	var ust::shared_atomic_variable</u32/> clients_finished_counter(0u);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
 
@@ -743,13 +743,12 @@ fn Run()
 
 	for( auto mut i= 0u; i < num_clients; ++i )
 	{
-		r.add_task( ClientFunc( i, server_address, clients_finished_counter ) );
+		r.add_task( ClientFunc( i, server_address, finish_semaphore ) );
 	}
 
-	// Use a crude way to wait - via "thread_yield".
-	while( clients_finished_counter.read() < num_clients )
+	for( auto mut i= 0u; i < num_clients; ++i )
 	{
-		ust::yield_current_thread();
+		finish_semaphore.deref().acquire();
 	}
 }
 
@@ -780,7 +779,7 @@ fn async ServerProcessorFunc( tcp_stream mut stream )
 	ust::stdout_print( ust::concat( "Sent message \"", message1, "\" to TCP client.\n" ) );
 }
 
-fn async ClientFunc( u32 client_index, ust::socket_address_v4 server_address, ust::shared_atomic_variable</u32/> clients_finished_counter )
+fn async ClientFunc( u32 client_index, ust::socket_address_v4 server_address, ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
 
@@ -796,7 +795,7 @@ fn async ClientFunc( u32 client_index, ust::socket_address_v4 server_address, us
 	ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) );
 	assert( message_received == message1 );
 
-	clients_finished_counter.inc();
+	finish_semaphore.deref().release();
 }
 
 }
@@ -808,25 +807,22 @@ fn Run()
 {
 	// Create two tasks, one for TCP server and one for TCP client.
 	// Transmit large quantities of data.
-	var ust::shared_atomic_variable</u32/> finished_counter(0u);
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
 
 	var runner r;
 
-	r.add_task( ServerFunc( tcp_listener::create_and_bind( server_address ).try_take(), finished_counter ) );
-	r.add_task( ClientFunc( server_address , finished_counter ) );
+	r.add_task( ServerFunc( tcp_listener::create_and_bind( server_address ).try_take(), finish_semaphore ) );
+	r.add_task( ClientFunc( server_address , finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( finished_counter.read() < 2u )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
+	finish_semaphore.deref().acquire();
 }
 
 var size_type g_num_ints= 1024s * 1024s * 16s;
 
-fn async ServerFunc( tcp_listener mut listener, ust::shared_atomic_variable</u32/> finished_counter )
+fn async ServerFunc( tcp_listener mut listener, ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	auto [ mut stream, client_address ]= listener.accept().await.try_take();
 
@@ -849,10 +845,10 @@ fn async ServerFunc( tcp_listener mut listener, ust::shared_atomic_variable</u32
 		offset+= bytes_written;
 	}
 
-	finished_counter.inc();
+	finish_semaphore.deref().release();
 }
 
-fn async ClientFunc( ust::socket_address_v4 server_address, ust::shared_atomic_variable</u32/> finished_counter )
+fn async ClientFunc( ust::socket_address_v4 server_address, ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
 {
 	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
 
@@ -875,7 +871,7 @@ fn async ClientFunc( ust::socket_address_v4 server_address, ust::shared_atomic_v
 		assert( val == u32(i) );
 	}
 
-	finished_counter.inc();
+	finish_semaphore.deref().release();
 }
 
 }
