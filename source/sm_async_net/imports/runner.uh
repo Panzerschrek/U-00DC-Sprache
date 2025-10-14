@@ -3,6 +3,15 @@ import "/box.u"
 namespace sm_async_net
 {
 
+// Task type used by the runner class.
+// Return type should be void, since runner shouldn't bother handling return values (it can't do so).
+// It's not "non_sync", since a task may be passed to another thread for execution.
+// Caputured references aren't supported, since passed task may outlive such captured references.
+type root_task_type= (async : void);
+
+// The main class, needed for async tasks execution.
+// Usually you only need to create one runner.
+//
 // Use an interface for runner class to hide internals.
 // It requires a little bit of overhead in "add_task" call, but this is not a huge problem.
 class runner_interface interface
@@ -18,8 +27,6 @@ public:
 
 // Create runner instance, incliding background thread(s) for actual tasks running.
 fn create_runner() : ust::box</runner_interface/>;
-
-type root_task_type= (async : void);
 
 // Add a task into currently-active runner.
 // This call is non-blocking, it doesn't wait until the added task is done.

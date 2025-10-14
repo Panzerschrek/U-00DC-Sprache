@@ -14,6 +14,7 @@ namespace sm_async_net
 // Zero indicates no task (it can't be assigned to some task).
 type TaskUniqueId= u64;
 
+// What kind of operations are expected for a socket (what to wait for).
 enum SocketOperationsForWaiting
 {
 	Read,
