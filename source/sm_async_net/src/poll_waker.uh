@@ -1,0 +1,29 @@
+import "/atomic_variable.u"
+import "/file.u"
+
+namespace sm_async_net
+{
+
+class PollWaker
+{
+public:
+	fn constructor();
+	fn destructor();
+
+	// Wake a thread, which is potentially waiting on "poll" and using the handle obtained via "GetWakeHandle" call in this "poll" call.
+	fn Wake( this );
+
+	// Reset awaken state.
+	// You need to call it if "poll" indicates that data can be read from handle, returned via "GetWakeHandle" call.
+	fn ResetWake( this );
+
+	// Get handle used for "poll" call.
+	fn GetWakeHandle( this ) : ust::native_file_handle;
+
+private:
+	ust::native_file_handle pipe_write_end_;
+	ust::native_file_handle pipe_read_end_;
+	ust::atomic_variable</bool/> wakeup_in_progress_;
+}
+
+} // namespace sm_async_net
