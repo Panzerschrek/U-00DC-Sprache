@@ -10,7 +10,6 @@ import "/sm_async_net/runner.uh"
 import "/sm_async_net/runner_internal.uh"
 import "queue.uh"
 import "poll_waker.uh"
-import "task_tree_node.uh"
 import "unix.uh"
 
 namespace sm_async_net
