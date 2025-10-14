@@ -38,6 +38,80 @@ struct SocketForWaiting
 
 type TasksMap= ust::hash_map</TaskUniqueId, RunningTask/>;
 
+type TasksQueue= Queue</root_task_type/>;
+type TasksQueuePtr= ust::shared_ptr_mt_mutex</TasksQueue/>;
+type ShutdownFlagPtr= ust::shared_atomic_variable</bool/>;
+
+struct SharedState
+{
+	TasksQueuePtr tasks_queue;
+	ust::vector</PollWakerSharedPtr/> runner_thread_wakers; // Wakers of all threads using this state.
+	ShutdownFlagPtr shutdown_flag;
+}
+
+type PollWakerSharedPtr= ust::shared_ptr_mt_final</PollWaker/>;
+
+class PollWaker
+{
+public:
+	fn constructor();
+	fn destructor();
+
+	// Wake a thread, which is potentially waiting on "poll" and using the handle obtained via "GetWakeHandle" call in this "poll" call.
+	fn Wake( this );
+
+	// Reset awaken state.
+	// You need to call it if "poll" indicates that data can be read from handle, returned via "GetWakeHandle" call.
+	fn ResetWake( this );
+
+	// Get handle used for "poll" call.
+	fn GetWakeHandle( this ) : ust::native_file_handle;
+
+private:
+	ust::native_file_handle pipe_write_end_;
+	ust::native_file_handle pipe_read_end_;
+	ust::atomic_variable</bool/> wakeup_in_progress_;
+}
+
+class runner final : runner_interface
+{
+public:
+	// Create runner instance, incliding background thread(s) for actual tasks running.
+	fn constructor();
+
+	// Destructor cancels all running tasks.
+	fn virtual override destructor();
+
+	// Add tasks for execution.
+	// This function returns without waiting for task to finish.
+	fn virtual override add_task( this, root_task_type t );
+
+private:
+	class RunnerThreadFunction
+	{
+	public:
+		fn constructor( SharedState mut state, PollWakerSharedPtr mut waker )
+			( state_= move(state), waker_= move(waker) )
+		{}
+
+		// Thread entry point.
+		op()( byval this );
+
+	private:
+		SharedState state_;
+		PollWakerSharedPtr waker_;
+	}
+
+private:
+	SharedState state_;
+	ust::thread</RunnerThreadFunction, void/> runner_thread_;
+}
+
+fn create_runner() : ust::box</runner_interface/>
+{
+	return ust::make_box( runner() );
+}
+
 fn runner::constructor()
 	(
 		state_
@@ -49,6 +123,8 @@ fn runner::constructor()
 		runner_thread_= ust::make_thread( RunnerThreadFunction( state_, state_.runner_thread_wakers.front() ) )
 	)
 {
+	// We initialize it, but never read.
+	ust::ignore_unused(runner_thread_);
 }
 
 fn runner::destructor()
