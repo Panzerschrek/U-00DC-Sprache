@@ -1,6 +1,4 @@
-import "/assert.u"
 import "/atomic_variable.u"
-import "/hash_map.u"
 import "/shared_atomic_variable.u"
 import "/shared_ptr_mt_final.u"
 import "/shared_ptr_mt_mutex.u"
@@ -61,38 +59,6 @@ struct SharedState
 	ust::vector</PollWakerSharedPtr/> runner_thread_wakers; // Wakers of all threads using this state.
 	ShutdownFlagPtr shutdown_flag;
 }
-
-// Root task or subtask.
-struct RunningTask
-{
-	// Task handle (what is executed).
-	// Store async function object itself for root tasks,
-	// store raw handle for tasks which are subtasks of other tasks and thus are owned by them (parent tasks are responsible for their deletion ).
-	ust::variant</ tup[ root_task_type, ust::raw_coro_handle ] /> task;
-
-	// If non-empty, this task shouldn't be resumed until given socket isn't ready.
-	ust::optional</SocketForWaiting/> socket_to_wait; // TODO - use some sort of null socket value?
-
-	// Connections to other tasks (parent, siblings, children).
-	RunningTaskConnections connections;
-}
-
-struct RunningTaskConnections
-{
-	TaskUniqueId parent; // Zero for root task.
-	TaskUniqueId prev_sibling; // Points to previous sibling or is zero if has no previous sibling or no siblings at all.
-	TaskUniqueId next_sibling; // Points to next sibling or is zero if has no next sibling or no siblings at all.
-	TaskUniqueId last_child; // The most recent added child, zero if has no children.
-}
-
-struct SocketForWaiting
-{
-	ust::native_socket_fd fd;
-	SocketOperationsForWaiting operations;
-}
-
-type TasksMap= ust::hash_map</TaskUniqueId, RunningTask/>;
-
 
 type PollWakerSharedPtr= ust::shared_ptr_mt_final</PollWaker/>;
 

@@ -1,10 +1,42 @@
 import "/assert.u"
+import "/hash_map.u"
 import "/sm_async_net/runner.uh"
 import "task_tree_node.uh"
 import "unix.uh"
 
 namespace sm_async_net
 {
+
+// Root task or subtask.
+struct RunningTask
+{
+	// Task handle (what is executed).
+	// Store async function object itself for root tasks,
+	// store raw handle for tasks which are subtasks of other tasks and thus are owned by them (parent tasks are responsible for their deletion ).
+	ust::variant</ tup[ root_task_type, ust::raw_coro_handle ] /> task;
+
+	// If non-empty, this task shouldn't be resumed until given socket isn't ready.
+	ust::optional</SocketForWaiting/> socket_to_wait; // TODO - use some sort of null socket value?
+
+	// Connections to other tasks (parent, siblings, children).
+	RunningTaskConnections connections;
+}
+
+struct RunningTaskConnections
+{
+	TaskUniqueId parent; // Zero for root task.
+	TaskUniqueId prev_sibling; // Points to previous sibling or is zero if has no previous sibling or no siblings at all.
+	TaskUniqueId next_sibling; // Points to next sibling or is zero if has no next sibling or no siblings at all.
+	TaskUniqueId last_child; // The most recent added child, zero if has no children.
+}
+
+struct SocketForWaiting
+{
+	ust::native_socket_fd fd;
+	SocketOperationsForWaiting operations;
+}
+
+type TasksMap= ust::hash_map</TaskUniqueId, RunningTask/>;
 
 fn runner::constructor()
 	(
