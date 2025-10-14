@@ -93,14 +93,14 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
 
 	r.add_task( Func( finish_semaphore ) );
 
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	yield;
 	yield;
@@ -123,7 +123,7 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
 
 	var u32 count= 1024u;
 
@@ -139,7 +139,7 @@ fn Run()
 	}
 }
 
-fn async Func( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	yield;
 	yield;
@@ -157,29 +157,29 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
 
 	r.add_task( Func0( finish_semaphore ) );
 
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func0( ust::shared_ptr_mt_final</ust::semaphore/> mut finish_semaphore )
+fn async Func0( SemaphorePtr mut finish_semaphore )
 {
 	Func1( move(finish_semaphore) ).await;
 }
 
-fn async Func1( ust::shared_ptr_mt_final</ust::semaphore/> mut finish_semaphore )
+fn async Func1( SemaphorePtr mut finish_semaphore )
 {
 	Func2( move(finish_semaphore) ).await;
 }
 
-fn async Func2( ust::shared_ptr_mt_final</ust::semaphore/> mut finish_semaphore )
+fn async Func2( SemaphorePtr mut finish_semaphore )
 {
 	Func3( move(finish_semaphore) ).await;
 }
 
-fn async Func3( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
+fn async Func3( SemaphorePtr finish_semaphore )
 {
 	finish_semaphore.deref().release();
 }
@@ -225,7 +225,7 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
 
 	r.add_task( Func0( finish_semaphore ) );
 
@@ -235,13 +235,13 @@ fn Run()
 	}
 }
 
-fn async Func0( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
+fn async Func0( SemaphorePtr finish_semaphore )
 {
 	add_task( Func1( finish_semaphore ) );
 	finish_semaphore.deref().release();
 }
 
-fn async Func1( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
+fn async Func1( SemaphorePtr finish_semaphore )
 {
 	finish_semaphore.deref().release();
 }
@@ -257,7 +257,7 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
 
 	for( auto mut i= 0u; i < 4u; ++i )
 	{
@@ -270,7 +270,7 @@ fn Run()
 	}
 }
 
-fn async Func0( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
+fn async Func0( SemaphorePtr finish_semaphore )
 {
 	for( auto mut i= 0u; i < 3u; ++i )
 	{
@@ -278,7 +278,7 @@ fn async Func0( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 	}
 }
 
-fn async Func1( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
+fn async Func1( SemaphorePtr finish_semaphore )
 {
 	finish_semaphore.deref().release();
 }
@@ -520,7 +520,7 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
 
 	r.add_task( Entry( finish_semaphore ) );
 
@@ -530,7 +530,7 @@ fn Run()
 	}
 }
 
-fn async Entry( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
+fn async Entry( SemaphorePtr finish_semaphore )
 {
 	var ust::hash_set</ust::string8/> mut expected_messages;
 	expected_messages.insert( "Quick" );
@@ -554,7 +554,7 @@ fn async Entry( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 
 fn async SenderReceiver(
 	ust::hash_set</ust::string8/> expected_messages,
-	ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore,
+	SemaphorePtr finish_semaphore,
 	udp_socket mut socket,
 	ust::socket_address_v4 other_address )
 {
@@ -596,7 +596,7 @@ fn Run()
 	// Create a synchronous TCP listener on current thread, create a task with async TCP client on runner thread.
 	// Send a message from client to the server and back.
 
-	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
 
 	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
 
@@ -628,7 +628,7 @@ fn Run()
 auto& message0= "Hello from an async TCP client!";
 auto& message1= "Hello from TCP server!";
 
-fn async Func( ust::socket_address_v4 server_address, ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
+fn async Func( ust::socket_address_v4 server_address, SemaphorePtr finish_semaphore )
 {
 	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
 
@@ -1482,5 +1482,7 @@ fn GetNextPort() : u16
 }
 
 var u16 mut g_port_counter( 59000s + 500s * compiler::generation );
+
+type SemaphorePtr= ust::shared_ptr_mt_final</ust::semaphore/>;
 
 } // namespace sm_async_net
