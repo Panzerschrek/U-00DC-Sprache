@@ -40,7 +40,7 @@ public:
 
 		unsafe // Because of TaskSocketOperationHolder.
 		{
-			var TaskSocketOperationHolder op_holder( listener_.get_native_fd(), SocketForWaiting::Operations::Read );
+			var TaskSocketOperationHolder op_holder( listener_.get_native_fd(), SocketOperationsForWaiting::Read );
 
 			loop
 			{

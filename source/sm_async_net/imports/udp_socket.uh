@@ -36,7 +36,7 @@ public:
 
 		unsafe // Because of TaskSocketOperationHolder.
 		{
-			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Write );
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketOperationsForWaiting::Write );
 
 			loop
 			{
@@ -79,7 +79,7 @@ public:
 
 		unsafe // Because of TaskSocketOperationHolder.
 		{
-			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Write );
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketOperationsForWaiting::Write );
 
 			loop
 			{
@@ -122,7 +122,7 @@ public:
 
 		unsafe // Because of TaskSocketOperationHolder.
 		{
-			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Read );
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketOperationsForWaiting::Read );
 
 			loop
 			{
@@ -166,7 +166,7 @@ public:
 
 		unsafe // Because of TaskSocketOperationHolder.
 		{
-			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Read );
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketOperationsForWaiting::Read );
 
 			loop
 			{
@@ -210,7 +210,7 @@ public:
 
 		unsafe // Because of TaskSocketOperationHolder.
 		{
-			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Read );
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketOperationsForWaiting::Read );
 
 			loop
 			{
@@ -254,7 +254,7 @@ public:
 
 		unsafe // Because of TaskSocketOperationHolder.
 		{
-			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketForWaiting::Operations::Read );
+			var TaskSocketOperationHolder op_holder( socket_.get_native_fd(), SocketOperationsForWaiting::Read );
 
 			loop
 			{

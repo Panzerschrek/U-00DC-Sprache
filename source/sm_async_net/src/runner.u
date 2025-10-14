@@ -320,9 +320,9 @@ op runner::RunnerThreadFunction::()( byval this )
 					var u32 mut event_flags= 0u;
 					switch( socket_for_waiting.operations )
 					{
-						SocketForWaiting::Operations::Read -> { event_flags= u32( POLLIN ); },
-						SocketForWaiting::Operations::Write -> { event_flags= u32( POLLOUT ); },
-						SocketForWaiting::Operations::ReadWrite -> { event_flags= u32( POLLIN | POLLOUT ); },
+						SocketOperationsForWaiting::Read -> { event_flags= u32( POLLIN ); },
+						SocketOperationsForWaiting::Write -> { event_flags= u32( POLLOUT ); },
+						SocketOperationsForWaiting::ReadWrite -> { event_flags= u32( POLLIN | POLLOUT ); },
 					}
 
 					poll_descriptors.push_back( pollfd{ .fd= socket_for_waiting.fd, .events( event_flags ), .revents(0) } );
@@ -412,7 +412,7 @@ thread_local $(TasksMap) g_current_runner_thread_tasks_map= zero_init;
 
 thread_local bool g_runner_thread_is_shutting_down= false;
 
-fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketForWaiting::Operations operations ) unsafe : TaskUniqueId
+fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketOperationsForWaiting operations ) unsafe : TaskUniqueId
 {
 	unsafe
 	{

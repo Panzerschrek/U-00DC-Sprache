@@ -86,12 +86,17 @@ struct RunningTaskConnections
 	TaskUniqueId last_child; // The most recent added child, zero if has no children.
 }
 
+enum SocketOperationsForWaiting
+{
+	Read,
+	Write,
+	ReadWrite,
+}
+
 struct SocketForWaiting
 {
-	enum Operations{ Read, Write, ReadWrite }
-
 	ust::native_socket_fd fd;
-	Operations operations;
+	SocketOperationsForWaiting operations;
 }
 
 type TasksMap= ust::hash_map</TaskUniqueId, RunningTask/>;
@@ -102,7 +107,7 @@ type TasksMap= ust::hash_map</TaskUniqueId, RunningTask/>;
 class TaskSocketOperationHolder
 {
 public:
-	fn constructor( ust::native_socket_fd socket, SocketForWaiting::Operations operations ) unsafe
+	fn constructor( ust::native_socket_fd socket, SocketOperationsForWaiting operations ) unsafe
 		( task_id_= unsafe( RegisterCurrentTaskSocketOperation( socket, operations ) ) )
 	{
 	}
@@ -120,7 +125,7 @@ private:
 // This function may be called only within a running task.
 // It halts if current task already has an active socket operation or children tasks.
 // It returns current task id.
-fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketForWaiting::Operations operations ) unsafe : TaskUniqueId;
+fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketOperationsForWaiting operations ) unsafe : TaskUniqueId;
 
 // Cncels currently-active socket operation.
 // This function may be called only within a running task - for this task or for its children.
