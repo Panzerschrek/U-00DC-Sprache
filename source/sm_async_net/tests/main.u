@@ -23,8 +23,35 @@ pretty_main
 namespace sm_async_net
 {
 
+struct rlimit64 ordered
+{
+	i64 rlim_cur;
+	i64 rlim_max;
+}
+
 fn Main() : i32
 {
+	// Increase maximum number of file descriptors on GNU/Linux.
+	// It's necessary for some tests involving large amouts of concurrent connections.
+	unsafe
+	{
+		var i32 RLIMIT_NOFILE = 7;
+		auto getrlimit= import fn</ ( fn( i32 resource, $(rlimit64) limit ) unsafe call_conv("C" ) : i32 ) />( "getrlimit64" );
+		auto setrlimit= import fn</ ( fn( i32 resource, $(rlimit64) limit ) unsafe call_conv("C" ) : i32 ) />( "setrlimit64" );
+
+		var rlimit64 mut limit
+		{
+			.rlim_cur(0),
+			.rlim_max(0),
+		};
+		ust::ignore_unused( limit.rlim_cur );
+		ust::ignore_unused( limit.rlim_max );
+
+		getrlimit( RLIMIT_NOFILE, $<(limit) );
+		limit.rlim_cur= 32767i64;
+		setrlimit( RLIMIT_NOFILE, $<(limit) );
+	}
+
 	ust::stdout_print( "sm_async_net tests\n" );
 
 	RunnerCreation_Test0::Run();
@@ -723,10 +750,8 @@ fn Run()
 
 	r.deref().add_task( ServerListenerFunc( tcp_listener::create_and_bind( server_address ).try_take() ) );
 
-	// TODO - make it even bigger by increasing per-process file descriptors limit.
-	// Currently on Linux we have maximum 1024 active file descriptors.
-	// Since we need two descriptors per client - one for client-side stream and one for server-side stream, we can use less than half of that.
-	var u32 num_clients= 512u - 32u;
+	// Create really large number of clients.
+	var u32 num_clients= 8192u;
 
 	for( auto mut i= 0u; i < num_clients; ++i )
 	{
