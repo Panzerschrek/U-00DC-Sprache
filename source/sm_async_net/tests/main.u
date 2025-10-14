@@ -93,18 +93,14 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_atomic_variable</bool/> v(false);
+	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
 
-	r.add_task( Func(v) );
+	r.add_task( Func( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !v.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_atomic_variable</bool/> v )
+fn async Func( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 {
 	yield;
 	yield;
@@ -113,7 +109,7 @@ fn async Func( ust::shared_atomic_variable</bool/> v )
 	yield;
 	yield;
 	ust::stdout_print( "BasicRunnerAddAndEnsureExecutionFunc - finish\n" );
-	v.write( true );
+	finish_semaphore.deref().release();
 }
 
 }
@@ -127,27 +123,27 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_atomic_variable</u32/> v(0u);
+	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
 
 	var u32 count= 1024u;
 
 	for( auto mut i= 0u; i < count; ++i )
 	{
-		r.add_task( Func(v) );
+		r.add_task( Func( finish_semaphore ) );
 	}
 
 	// Use a crude way to wait - via "thread_yield".
-	while( v.read() < count )
+	for( auto mut i= 0u; i < count; ++i )
 	{
-		ust::yield_current_thread();
+		finish_semaphore.deref().acquire();
 	}
 }
 
-fn async Func( ust::shared_atomic_variable</u32/> v )
+fn async Func( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 {
 	yield;
-	v.inc();
 	yield;
+	finish_semaphore.deref().release();
 }
 
 }
@@ -161,35 +157,31 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_atomic_variable</bool/> v(false);
+	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
 
-	r.add_task( Func0(v) );
+	r.add_task( Func0( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !v.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
-fn async Func0( ust::shared_atomic_variable</bool/> mut v )
+fn async Func0( ust::shared_ptr_mt_final</ust::semaphore/> mut finish_semaphore )
 {
-	Func1( move(v) ).await;
+	Func1( move(finish_semaphore) ).await;
 }
 
-fn async Func1( ust::shared_atomic_variable</bool/> mut v )
+fn async Func1( ust::shared_ptr_mt_final</ust::semaphore/> mut finish_semaphore )
 {
-	Func2( move(v) ).await;
+	Func2( move(finish_semaphore) ).await;
 }
 
-fn async Func2( ust::shared_atomic_variable</bool/> mut v )
+fn async Func2( ust::shared_ptr_mt_final</ust::semaphore/> mut finish_semaphore )
 {
-	Func3( move(v) ).await;
+	Func3( move(finish_semaphore) ).await;
 }
 
-fn async Func3( ust::shared_atomic_variable</bool/> v )
+fn async Func3( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 {
-	v.write( true );
+	finish_semaphore.deref().release();
 }
 
 }
@@ -233,26 +225,25 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_atomic_variable</u32/> v(0u);
+	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
 
-	r.add_task( Func0(v) );
+	r.add_task( Func0( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( v.read() != 3u )
+	for( auto mut i= 0u; i < 2u; ++i )
 	{
-		ust::yield_current_thread();
+		finish_semaphore.deref().acquire();
 	}
 }
 
-fn async Func0( ust::shared_atomic_variable</u32/> v )
+fn async Func0( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 {
-	add_task( Func1( v ) );
-	v.add( 1u );
+	add_task( Func1( finish_semaphore ) );
+	finish_semaphore.deref().release();
 }
 
-fn async Func1( ust::shared_atomic_variable</u32/> v )
+fn async Func1( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 {
-	v.add( 2u );
+	finish_semaphore.deref().release();
 }
 
 }
@@ -266,31 +257,30 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_atomic_variable</u32/> v(0u);
+	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
 
 	for( auto mut i= 0u; i < 4u; ++i )
 	{
-		r.add_task( Func0(v) );
+		r.add_task( Func0( finish_semaphore ) );
 	}
 
-	// Use a crude way to wait - via "thread_yield".
-	while( v.read() < 12u )
+	for( auto mut i= 0u; i < 12u; ++i )
 	{
-		ust::yield_current_thread();
+		finish_semaphore.deref().acquire();
 	}
 }
 
-fn async Func0( ust::shared_atomic_variable</u32/> v )
+fn async Func0( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 {
 	for( auto mut i= 0u; i < 3u; ++i )
 	{
-		add_task( Func1( v ) );
+		add_task( Func1( finish_semaphore ) );
 	}
 }
 
-fn async Func1( ust::shared_atomic_variable</u32/> v )
+fn async Func1( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 {
-	v.inc();
+	finish_semaphore.deref().release();
 }
 
 }
@@ -530,18 +520,17 @@ fn Run()
 
 	var runner r;
 
-	var ust::shared_atomic_variable</u32/> completed_counter( 0u );
+	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
 
-	r.add_task( Entry( completed_counter ) );
+	r.add_task( Entry( finish_semaphore ) );
 
-	// Use a crude way to wait - via "thread_yield".
-	while( completed_counter.read() < 2u )
+	for( auto mut i= 0u; i < 2u; ++i )
 	{
-		ust::yield_current_thread();
+		finish_semaphore.deref().acquire();
 	}
 }
 
-fn async Entry( ust::shared_atomic_variable</u32/> completed_counter )
+fn async Entry( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 {
 	var ust::hash_set</ust::string8/> mut expected_messages;
 	expected_messages.insert( "Quick" );
@@ -559,13 +548,13 @@ fn async Entry( ust::shared_atomic_variable</u32/> completed_counter )
 
 	// Create two sockets and only then start working with them.
 	// Doing so we make sure messages are sent after sockets are created.
-	add_task( SenderReceiver( expected_messages, completed_counter, udp_socket::create_and_bind( address0 ).try_take(), address1 ) );
-	add_task( SenderReceiver( expected_messages, completed_counter, udp_socket::create_and_bind( address1 ).try_take(), address0 ) );
+	add_task( SenderReceiver( expected_messages, finish_semaphore, udp_socket::create_and_bind( address0 ).try_take(), address1 ) );
+	add_task( SenderReceiver( expected_messages, finish_semaphore, udp_socket::create_and_bind( address1 ).try_take(), address0 ) );
 }
 
 fn async SenderReceiver(
 	ust::hash_set</ust::string8/> expected_messages,
-	ust::shared_atomic_variable</u32/> completed_counter,
+	ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore,
 	udp_socket mut socket,
 	ust::socket_address_v4 other_address )
 {
@@ -594,7 +583,7 @@ fn async SenderReceiver(
 
 	ust::stdout_print( ust::concat( "Finished sending to and receiving from port ", other_port_str, ".\n" ) );
 
-	completed_counter.inc();
+	finish_semaphore.deref().release();
 }
 
 }
@@ -607,7 +596,7 @@ fn Run()
 	// Create a synchronous TCP listener on current thread, create a task with async TCP client on runner thread.
 	// Send a message from client to the server and back.
 
-	var ust::shared_atomic_variable</bool/> finish_flag(false);
+	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
 
 	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
 
@@ -615,7 +604,7 @@ fn Run()
 
 	var runner r;
 
-	r.add_task( Func( server_address, finish_flag ) );
+	r.add_task( Func( server_address, finish_semaphore ) );
 
 	auto [ mut stream, client_address ]= listener.accept().try_take();
 
@@ -633,17 +622,13 @@ fn Run()
 		ust::stdout_print( ust::concat( "Sent message \"", message1_view, "\" to TCP client.\n" ) );
 	}
 
-	// Use a crude way to wait - via "thread_yield".
-	while( !finish_flag.read() )
-	{
-		ust::yield_current_thread();
-	}
+	finish_semaphore.deref().acquire();
 }
 
 auto& message0= "Hello from an async TCP client!";
 auto& message1= "Hello from TCP server!";
 
-fn async Func( ust::socket_address_v4 server_address, ust::shared_atomic_variable</bool/> finish_flag )
+fn async Func( ust::socket_address_v4 server_address, ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
 {
 	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
 
@@ -661,7 +646,7 @@ fn async Func( ust::socket_address_v4 server_address, ust::shared_atomic_variabl
 		assert( message_received == message1 );
 	}
 
-	finish_flag.write(true);
+	finish_semaphore.deref().release();
 }
 
 }
