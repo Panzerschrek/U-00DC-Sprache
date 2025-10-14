@@ -1,5 +1,5 @@
 import "/udp_socket.u"
-import "runner.uh"
+import "runner_internal.uh"
 
 namespace sm_async_net
 {
