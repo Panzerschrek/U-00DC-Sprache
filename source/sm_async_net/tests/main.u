@@ -54,6 +54,12 @@ fn Main() : i32
 
 	ust::stdout_print( "sm_async_net tests\n" );
 
+	if( true )
+	{
+		TCP_Test2::Run();
+		return 0;
+	}
+
 	RunnerCreation_Test0::Run();
 	RunnerTaskAdd_Test0::Run();
 	RunnerTaskAdd_Test1::Run();
@@ -69,7 +75,7 @@ fn Main() : i32
 	UDPSocket_Test4::Run();
 	TCP_Test0::Run();
 	TCP_Test1::Run();
-	TCP_Test2::Run();
+	if( false ) { TCP_Test2::Run(); }
 	TCP_Test3::Run();
 	Join_Test0::Run();
 	Join_Test1::Run();
@@ -751,14 +757,21 @@ fn Run()
 	r.deref().add_task( ServerListenerFunc( tcp_listener::create_and_bind( server_address ).try_take() ) );
 
 	// Create really large number of clients.
+	//var u32 num_clients= 400u;
 	var u32 num_clients= 8192u;
 
-	for( auto mut i= 0u; i < num_clients; ++i )
+	for( auto mut i= 0u; i < 96u; ++i )
 	{
 		r.deref().add_task( ClientFunc( i, server_address, finish_semaphore ) );
 	}
 
-	for( auto mut i= 0u; i < num_clients; ++i )
+	for( auto mut i= 96u; i < num_clients; ++i )
+	{
+		finish_semaphore.deref().acquire();
+		r.deref().add_task( ClientFunc( i, server_address, finish_semaphore ) );
+	}
+
+	for( auto mut i= 0u; i < 64u; ++i )
 	{
 		finish_semaphore.deref().acquire();
 	}

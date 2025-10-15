@@ -12,6 +12,8 @@ import "queue.uh"
 import "poll_waker.uh"
 import "unix.uh"
 
+import "/string_conversions.u"
+
 namespace sm_async_net
 {
 
@@ -353,7 +355,7 @@ op runner::RunnerThreadFunction::()( byval this )
 				// but at least threads doing less work have more chance to extract more tasks,
 				// since their main iteration loop is shorter and they perform tasks extraction more often.
 
-				var size_type num_tasks_to_take= ust::max( 1s, num_tasks_in_queue / 2s );
+				var size_type num_tasks_to_take= num_tasks_in_queue;//ust::max( 1s, num_tasks_in_queue / 2s );
 
 				for( auto mut i= 0s; i < num_tasks_to_take; ++i )
 				{
@@ -429,7 +431,24 @@ op runner::RunnerThreadFunction::()( byval this )
 
 			var i32 timeout_ms= ( should_sleep ? -1 : 0 );
 
+			var size_type mut num_read_ops= 0s, mut num_write_ops= 0s;
+			foreach( &d : poll_descriptors )
+			{
+				if( (i32(d.events) & POLLIN) != 0 )
+				{
+					++num_read_ops;
+				}
+				if( (i32(d.events) & POLLOUT) != 0 )
+				{
+					++num_write_ops;
+				}
+			}
+
+			//ust::stdout_print( ust::concat( "Poll waiting on ", ust::to_string8(poll_descriptors.size()), " descriptors with timeout ", ust::to_string8(timeout_ms), "\n" ) );
+			//ust::stdout_print( ust::concat( "Pass ", ust::to_string8( num_read_ops ), " read ops and ", ust::to_string8( num_write_ops ), " write ops\n" ) );
 			var i32 poll_res= unsafe( ::poll( poll_descriptors.data(), nfds_t( poll_descriptors.size() ), timeout_ms ) );
+			//ust::stdout_print( ust::concat( "Poll returned ", ust::to_string8( poll_res ) ) );
+			//ust::stdout_print( "  ----....\n" );
 
 			// "poll" returns negative value on error, 0 in case of timeout and non-negative value in case if one of descriptors is ready.
 			// For now we can't handle errors, so, just assert in case of error.
@@ -437,6 +456,21 @@ op runner::RunnerThreadFunction::()( byval this )
 
 			if( poll_res > 0 )
 			{
+				num_read_ops= 0s;
+				num_write_ops= 0s;
+				foreach( &d : poll_descriptors )
+				{
+					if( (i32(d.revents) & POLLIN) != 0 )
+					{
+						++num_read_ops;
+					}
+					if( (i32(d.revents) & POLLOUT) != 0 )
+					{
+						++num_write_ops;
+					}
+				}
+				//ust::stdout_print( ust::concat( "Returned ", ust::to_string8( num_read_ops ), " read ops and ", ust::to_string8( num_write_ops ), " write ops\n" ) );
+
 				// If we have a read event on the wake handle, reset wake state.
 				if( ( u32( poll_descriptors.front().revents ) & u32( POLLIN ) ) != 0u )
 				{
