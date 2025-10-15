@@ -447,8 +447,7 @@ op runner::RunnerThreadFunction::()( byval this )
 			//ust::stdout_print( ust::concat( "Poll waiting on ", ust::to_string8(poll_descriptors.size()), " descriptors with timeout ", ust::to_string8(timeout_ms), "\n" ) );
 			//ust::stdout_print( ust::concat( "Pass ", ust::to_string8( num_read_ops ), " read ops and ", ust::to_string8( num_write_ops ), " write ops\n" ) );
 			var i32 poll_res= unsafe( ::poll( poll_descriptors.data(), nfds_t( poll_descriptors.size() ), timeout_ms ) );
-			//ust::stdout_print( ust::concat( "Poll returned ", ust::to_string8( poll_res ) ) );
-			//ust::stdout_print( "  ----....\n" );
+			//ust::stdout_print( ust::concat( "Poll returned ", ust::to_string8( poll_res ), "  ----....\n" ) );
 
 			// "poll" returns negative value on error, 0 in case of timeout and non-negative value in case if one of descriptors is ready.
 			// For now we can't handle errors, so, just assert in case of error.

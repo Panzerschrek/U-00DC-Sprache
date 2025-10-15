@@ -747,37 +747,35 @@ fn Run()
 {
 	// Run an async server and create a bunch of clients.
 	// Peroform message exchange between clients and the server.
+	//
+	// Run server on separate runner to ensure it's executed on another thread, so it's fast enough to accept all connections without filling TCP listener backlog.
+	// Process clients on third runner - to ensure server runner only performs "accept".
 
 	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
 
-	var ust::box</runner_interface/> r= create_runner();
+	var ust::box</runner_interface/> server_runner= create_runner();
+	var ust::box</runner_interface/> mut clinet_processing_runner= create_runner();
+	var ust::box</runner_interface/> client_runner= create_runner();
 
-	r.deref().add_task( ServerListenerFunc( tcp_listener::create_and_bind( server_address ).try_take() ) );
+	server_runner.deref().add_task( ServerListenerFunc( tcp_listener::create_and_bind( server_address ).try_take(), move(clinet_processing_runner) ) );
 
 	// Create really large number of clients.
-	//var u32 num_clients= 400u;
 	var u32 num_clients= 8192u;
 
-	for( auto mut i= 0u; i < 96u; ++i )
+	for( auto mut i= 0u; i < num_clients; ++i )
 	{
-		r.deref().add_task( ClientFunc( i, server_address, finish_semaphore ) );
+		client_runner.deref().add_task( ClientFunc( i, server_address, finish_semaphore ) );
 	}
 
-	for( auto mut i= 96u; i < num_clients; ++i )
-	{
-		finish_semaphore.deref().acquire();
-		r.deref().add_task( ClientFunc( i, server_address, finish_semaphore ) );
-	}
-
-	for( auto mut i= 0u; i < 64u; ++i )
+	for( auto mut i= 0u; i < num_clients; ++i )
 	{
 		finish_semaphore.deref().acquire();
 	}
 }
 
-fn async ServerListenerFunc( tcp_listener mut listener )
+fn async ServerListenerFunc( tcp_listener mut listener, ust::box</runner_interface/> clinet_processing_runner )
 {
 	// Simple server loop - wait for new clinet and spawn a new task for it.
 	var size_type mut num_client_accepted = 0s;
@@ -788,7 +786,7 @@ fn async ServerListenerFunc( tcp_listener mut listener )
 		if( false ){ ust::stdout_print( ust::concat( "Got a client with sequential number ", ust::to_string8(num_client_accepted), ".\n" ) ); }
 		++num_client_accepted;
 
-		add_task( ServerProcessorFunc( move(stream) ) );
+		clinet_processing_runner.deref().add_task( ServerProcessorFunc( move(stream) ) );
 	}
 }
 
