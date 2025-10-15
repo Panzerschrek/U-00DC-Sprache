@@ -19,7 +19,6 @@ enum SocketOperationsForWaiting
 {
 	Read,
 	Write,
-	ReadWrite,
 }
 
 // This class registers a socket operation to wait and un-registers it in its destructor.

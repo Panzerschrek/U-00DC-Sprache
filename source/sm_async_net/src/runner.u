@@ -416,7 +416,6 @@ op runner::RunnerThreadFunction::()( byval this )
 					{
 						SocketOperationsForWaiting::Read -> { event_flags= u32( POLLIN ); },
 						SocketOperationsForWaiting::Write -> { event_flags= u32( POLLOUT ); },
-						SocketOperationsForWaiting::ReadWrite -> { event_flags= u32( POLLIN | POLLOUT ); },
 					}
 
 					poll_descriptors.push_back( pollfd{ .fd= socket_for_waiting.fd, .events( event_flags ), .revents(0) } );
@@ -450,9 +449,11 @@ op runner::RunnerThreadFunction::()( byval this )
 					var pollfd& poll_descriptor= pair.first;
 					var TaskUniqueId task_id= pair.second;
 
-					// Check if result events contain flags for all requested events.
+					// Check if result events contain flags for at least some of requested events.
 					// If it's true, we can resume the task.
-					if( ( poll_descriptor.revents & poll_descriptor.events ) == poll_descriptor.events )
+					// Also resume the task if has some error-like event.
+					if( ( i32(poll_descriptor.revents) & i32(poll_descriptor.events) ) != 0 ||
+						( i32(poll_descriptor.revents) & ( POLLERR | POLLHUP ) ) != 0 )
 					{
 						ready_for_execution_tasks.push_back( task_id );
 					}
