@@ -71,6 +71,7 @@ fn Main() : i32
 	TCP_Test1::Run();
 	TCP_Test2::Run();
 	TCP_Test3::Run();
+	TCP_Test4::Run();
 	Join_Test0::Run();
 	Join_Test1::Run();
 	Join_Test2::Run();
@@ -886,6 +887,41 @@ fn async ClientFunc( ust::socket_address_v4 server_address, ust::shared_ptr_mt_f
 		var byte8 v3= data[ i * 4s + 3s ];
 		var u32 val= ( u32(u8(v0)) << 0u ) | ( u32(u8(v1)) << 8u ) | ( u32(u8(v2)) << 16u ) | ( u32(u8(v3)) << 24u );
 		assert( val == u32(i) );
+	}
+
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace TCP_Test4
+{
+
+fn Run()
+{
+	// Try connecting to an non-existing server.
+
+	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	r.deref().add_task( ClientFunc( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async ClientFunc(  ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+{
+	result_match( tcp_stream::connect( ust::socket_address_v4( GetLoopbackIpAddress(), 5678u16 ) ).await )
+	{
+		Ok(c) ->
+		{
+			assert( false, "Should not connect to a non-existing server!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::connection_refused, "Unexpected error code while connecting to non-existing server!" );
+		},
 	}
 
 	finish_semaphore.deref().release();
