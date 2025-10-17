@@ -69,6 +69,7 @@ struct WorkspaceInfo
 		ust::vector</ust::filesystem_path/> generated_public_header_files;
 
 		// Calculated based on source file paths.
+		// May be empty if this build target contains no regular source files.
 		ust::filesystem_path sources_directory;
 
 		// Paths are normalized and the whole list is sorted.
