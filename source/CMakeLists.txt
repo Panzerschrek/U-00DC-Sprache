@@ -236,59 +236,69 @@ endif()
 add_subdirectory( compiler0 )
 
 if( U_BUILD_COMPILER )
+
 	set( CURRENT_COMPILER_GENERATION "" )
 	add_subdirectory( ustlib ustlib0 ) # Build ustlib with compiler0
-endif()
 
-if( U_BUILD_COMPILER AND U_BUILD_BUILD_SYSTEM )
-	set( CURRENT_COMPILER_GENERATION "" )
-	add_subdirectory( build_system build_system0 )
-endif()
-
-#
-# Compiler1 and other generations
-#
-if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
-
-	set( CURRENT_COMPILER_GENERATION "" )
-	set( NEXT_COMPILER_GENERATION "1" )
-	add_subdirectory( compiler1 )
-
-	set( CURRENT_COMPILER_GENERATION "1" )
-	add_subdirectory( ustlib ustlib1 ) # Build ustlib with compiler1
 	if( U_BUILD_BUILD_SYSTEM )
-		add_subdirectory( build_system build_system1 ) # Build build system with compiler1.
+		add_subdirectory( build_system build_system0 )
 	endif()
 
-	if( U_BUILD_COMPILER2 )
+	if( U_BUILD_BUILD_SYSTEM )
+		add_subdirectory( extra_libs )
+	endif()
+
+	#
+	# Compiler1 and other generations
+	#
+	if( U_BUILD_COMPILER1 )
+
+		set( NEXT_COMPILER_GENERATION "1" )
+		add_subdirectory( compiler1 )
 
 		set( CURRENT_COMPILER_GENERATION "1" )
-		set( NEXT_COMPILER_GENERATION "2" )
-		add_subdirectory( compiler1 compiler2 )
+		add_subdirectory( ustlib ustlib1 ) # Build ustlib with compiler1
 
-		set( CURRENT_COMPILER_GENERATION "2" )
-		add_subdirectory( ustlib ustlib2 ) # Build ustlib with compiler2
 		if( U_BUILD_BUILD_SYSTEM )
-			add_subdirectory( build_system build_system2 ) # Build build system with compiler2.
+			add_subdirectory( build_system build_system1 ) # Build build system with compiler1.
 		endif()
 
-		if( U_BUILD_COMPILER3 )
+		if( U_BUILD_BUILD_SYSTEM )
+			add_subdirectory( extra_libs extra_libs1 )
+		endif()
+
+		if( U_BUILD_COMPILER2 )
+
+			set( CURRENT_COMPILER_GENERATION "1" )
+			set( NEXT_COMPILER_GENERATION "2" )
+			add_subdirectory( compiler1 compiler2 )
 
 			set( CURRENT_COMPILER_GENERATION "2" )
-			set( NEXT_COMPILER_GENERATION "3" )
-			add_subdirectory( compiler1 compiler3 )
+			add_subdirectory( ustlib ustlib2 ) # Build ustlib with compiler2
 
-			set( CURRENT_COMPILER_GENERATION "3" )
-			add_subdirectory( ustlib ustlib3 ) # Build ustlib with compiler3
+			if( U_BUILD_BUILD_SYSTEM )
+				add_subdirectory( build_system build_system2 ) # Build build system with compiler2.
+			endif()
+
+			if( U_BUILD_BUILD_SYSTEM )
+				add_subdirectory( extra_libs extra_libs2 )
+			endif()
+
+			if( U_BUILD_COMPILER3 )
+
+				set( CURRENT_COMPILER_GENERATION "2" )
+				set( NEXT_COMPILER_GENERATION "3" )
+				add_subdirectory( compiler1 compiler3 )
+
+				set( CURRENT_COMPILER_GENERATION "3" )
+				add_subdirectory( ustlib ustlib3 ) # Build ustlib with compiler3
+
+			endif()
 
 		endif()
 
 	endif()
 
-endif()
-
-if( U_BUILD_COMPILER AND U_BUILD_BUILD_SYSTEM )
-	add_subdirectory( extra_libs )
 endif()
 
 #

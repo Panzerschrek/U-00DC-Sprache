@@ -23,13 +23,13 @@ set( TESTS_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURA
 
 add_custom_command(
 	OUTPUT ${TESTS_EXECUTABLE}
-	DEPENDS Compiler
+	DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
 	DEPENDS BuildSystem
 	DEPENDS ${ALL_LIB_SOURCES}
 	COMMAND
 		BuildSystem build
 		--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
-		--compiler-executable $<TARGET_FILE:Compiler>
+		--compiler-executable $<TARGET_FILE:Compiler${CURRENT_COMPILER_GENERATION}>
 		--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/../../build_system/imports/
 		--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../../ustlib/
 		--project-directory ${CMAKE_CURRENT_SOURCE_DIR}
@@ -39,7 +39,7 @@ add_custom_command(
 		)
 
 add_custom_target(
-	sm_async_net_run ALL
+	sm_async_net_run${CURRENT_COMPILER_GENERATION} ALL
 	COMMAND ${TESTS_EXECUTABLE}
 	DEPENDS ${TESTS_EXECUTABLE}
 	SOURCES ${ALL_LIB_SOURCES}
