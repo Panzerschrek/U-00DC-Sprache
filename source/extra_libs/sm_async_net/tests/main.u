@@ -38,6 +38,7 @@ fn Main() : i32
 	RunnerTaskAdd_Test2::Run();
 	RunnerTaskAdd_Test3::Run();
 	RunnerTaskAdd_Test4::Run();
+	RunnerTaskAdd_Test5::Run();
 	AddTaskFreeFunction_Test0::Run();
 	AddTaskFreeFunction_Test1::Run();
 	UDPSocket_Test0::Run();
@@ -220,6 +221,42 @@ fn async Func()
 		++x;
 		yield;
 	}
+}
+
+}
+
+namespace RunnerTaskAdd_Test5
+{
+
+fn Run()
+{
+	// Create a runner within another runner.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
+
+	r.deref().add_task( Func0( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func0( SemaphorePtr finish_semaphore )
+{
+	var ust::box</runner_interface/> r= create_runner();
+
+	var SemaphorePtr inner_finish_semaphore( ust::semaphore(0u) );
+
+	r.deref().add_task( Func1( inner_finish_semaphore ) );
+
+	inner_finish_semaphore.deref().acquire();
+
+	finish_semaphore.deref().release();
+}
+
+fn async Func1( SemaphorePtr finish_semaphore )
+{
+	finish_semaphore.deref().release();
 }
 
 }

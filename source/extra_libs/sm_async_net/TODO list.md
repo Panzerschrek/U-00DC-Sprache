@@ -1,7 +1,6 @@
 This list contains features to be implemented and cases to be considered:
 
 * Add a function like `async_sleep` - for effective delaying with possibility to swith to execution of another async functions.
-* Handle a case where an async runner is created inside an async function runned by another async runner instance.
 * Stabilize naming of various classes, functions, types, etc.
 * Write stress-tests for large quantities of concurrent async functions.
 * Limit tasks queue size.
