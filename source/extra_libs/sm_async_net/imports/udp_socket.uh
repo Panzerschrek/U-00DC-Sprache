@@ -7,6 +7,7 @@ namespace sm_async_net
 // Async version of UDP socket class.
 // It mostly exposes the same API as ustlib version, but in async form.
 // Some APIs are hidden, since they shouldn't be used diectly in async code.
+// Note that async methods should be executed only within a task runner thread.
 class udp_socket
 {
 public:

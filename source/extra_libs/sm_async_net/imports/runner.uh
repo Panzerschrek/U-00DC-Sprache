@@ -11,14 +11,17 @@ type root_task_type= (async : void);
 
 // The main class, needed for async tasks execution.
 // Usually you only need to create one runner.
+// But it may be benefitial to create a dedicated runner for some async function, which should respond quickly, like a for TCP listener.
 //
 // Use an interface for runner class to hide internals.
 // It requires a little bit of overhead in "add_task" call, but this is not a huge problem.
+//
 class runner_interface interface
 {
 public:
 	// Destructor cancels all running tasks.
-	fn virtual destructor(){}
+	// But it does this in a controlled way - a task is destroyed only at one of its "yield" points.
+	fn virtual destructor() {}
 
 	// Add a task for execution.
 	// This function returns without waiting for task to finish.
@@ -31,14 +34,14 @@ public:
 	fn virtual pure add_task( this, root_task_type t );
 }
 
-// Create runner instance, incliding background thread(s) for actual tasks running.
+// Create a singlethreaded runner instance, having one background thread for actual tasks running.
 fn create_runner() : ust::box</runner_interface/>;
 
-// Create runner which uses multiple threads.
-// You can create it for the numer of available CPU cores, using "ust::get_number_of_available_cpus" function.
+// Create a runner which uses multiple background threads.
+// You can create it for the number of available CPU cores, using "ust::get_number_of_available_cpus" function.
 fn create_multithreaded_runner( u32 num_threads ) : ust::box</runner_interface/>;
 
-// Add a task into currently-active runner.
+// Add a task into the currently-active runner.
 // It halts if it's called outside a runner thread, so you can call it only within an async function running on some runner.
 // See "runner_interface::add_task" method for more details.
 fn add_task( root_task_type t );

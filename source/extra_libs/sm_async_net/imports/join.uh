@@ -9,6 +9,10 @@ namespace sm_async_net
 // Given async function objects should return value, not reference, returning references isn't supported.
 // Return types with references inside are also not supported.
 // Async function objects with references inside are supported.
+//
+// This function should be called only within a runner thread.
+// It's only allowed to do ".await" for it, storing returning coroutine object for later usage isn't allowed.
+//
 template</type FuncTypeA, type FuncTypeB/>
 fn async
 enable_if(
@@ -376,6 +380,7 @@ join_subtasks( ust::vector</FuncType/> mut funcs )
 	}
 }
 
+// Namespace for classes/functions used internally.
 namespace JoinSubtasksImpl
 {
 
@@ -433,7 +438,8 @@ fn constexpr IsSupportedForSubtasksJoinigAsyncFunctionType() : bool
 }
 
 // A class which destroys result of the given async function, if it's finished.
-// It's for internal usage only.
+// It assumes that a finished async function contains its result (it's not extracted yet).
+// Given async function shouldn't outlive this class instance!
 template</type T/>
 class AsyncFunctionObjectResultDestroyer
 {
@@ -477,8 +483,7 @@ private:
 	ust::raw_coro_handle handle_;
 }
 
-// A class which destroys result of the given async functions, if they are finished.
-// It's for internal usage only.
+// Like "AsyncFunctionObjectResultDestroyer", but for an array.
 template</type FuncType, size_type S/>
 class AsyncFunctionObjectArrayResultDestroyer
 {
@@ -530,8 +535,7 @@ private:
 	[ ust::raw_coro_handle, S ] handles_;
 }
 
-// A class which destroys result of the given async functions, if they are finished.
-// It's for internal usage only.
+// Like "AsyncFunctionObjectArrayResultDestroyer", but for a vector.
 // It holds a raw pointer to vector storage, so, don't modifty the vector itself when this class instance is alive!
 template</type FuncType/>
 class AsyncFunctionObjectVectorResultDestroyer
@@ -584,7 +588,7 @@ private:
 	size_type num_handles_;
 }
 
-// Class for internal usage.
+// A helper class used for detection of inproper subtask cancellation.
 class SubtasksCancellationHandler
 {
 public:
