@@ -151,7 +151,7 @@ fn Run()
 {
 	// Add multiple tasks into a runner and wait for them to finish.
 
-	var ust::box</runner_interface/> r= create_runner();
+	var ust::box</runner_interface/> r= create_multithreaded_runner( ust::get_number_of_available_cpus() );
 
 	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
 
@@ -285,7 +285,7 @@ fn Run()
 {
 	// Add several tasks, each of them internally adds several new root tasks via "add_task" free function.
 
-	var ust::box</runner_interface/> r= create_runner();
+	var ust::box</runner_interface/> r= create_multithreaded_runner( ust::get_number_of_available_cpus() );
 
 	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
 
@@ -751,7 +751,7 @@ fn Run()
 	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
 
 	var ust::box</runner_interface/> server_runner= create_runner();
-	var ust::box</runner_interface/> mut clinet_processing_runner= create_runner();
+	var ust::box</runner_interface/> mut clinet_processing_runner= create_multithreaded_runner( ust::max( 3u, ust::get_number_of_available_cpus() ) - 2u );
 	var ust::box</runner_interface/> client_runner= create_runner();
 
 	server_runner.deref().add_task( ServerListenerFunc( tcp_listener::create_and_bind( server_address ).try_take(), move(clinet_processing_runner) ) );

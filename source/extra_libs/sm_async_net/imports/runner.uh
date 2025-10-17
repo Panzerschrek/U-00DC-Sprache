@@ -28,6 +28,10 @@ public:
 // Create runner instance, incliding background thread(s) for actual tasks running.
 fn create_runner() : ust::box</runner_interface/>;
 
+// Create runner which uses multiple threads.
+// You can create it for the numer of available CPU cores, using "ust::get_number_of_available_cpus" function.
+fn create_multithreaded_runner( u32 num_threads ) : ust::box</runner_interface/>;
+
 // Add a task into currently-active runner.
 // This call is non-blocking, it doesn't wait until the added task is done.
 // You should call this function only within another async task, so that the new one will be added into the same runner.

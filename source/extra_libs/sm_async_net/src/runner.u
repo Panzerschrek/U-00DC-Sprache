@@ -63,7 +63,7 @@ class runner final : runner_interface
 {
 public:
 	// Create runner instance, incliding background thread(s) for actual tasks running.
-	fn constructor();
+	fn constructor( u32 num_threads );
 
 	// Destructor cancels all running tasks.
 	fn virtual override destructor();
@@ -90,27 +90,33 @@ private:
 
 private:
 	SharedState state_;
-	ust::thread</RunnerThreadFunction, void/> runner_thread_;
+	ust::vector</ust::thread</RunnerThreadFunction, void/>/> runner_threads_;
 }
 
 fn create_runner() : ust::box</runner_interface/>
 {
-	return ust::make_box( runner() );
+	return ust::make_box( runner( 1u ) );
 }
 
-fn runner::constructor()
-	(
-		state_
-		{
-			.tasks_queue( TasksQueue() ),
-			.shutdown_flag( false ),
-			.runner_thread_wakers= ust::make_array( PollWakerSharedPtr( PollWaker() ) )
-		},
-		runner_thread_= ust::make_thread( RunnerThreadFunction( state_, state_.runner_thread_wakers.front() ) )
-	)
+fn create_multithreaded_runner( u32 num_threads ) : ust::box</runner_interface/>
 {
-	// We initialize it, but never read.
-	ust::ignore_unused(runner_thread_);
+	return ust::make_box( runner( num_threads ) );
+}
+
+fn runner::constructor( u32 num_threads )
+	( state_{ .tasks_queue( TasksQueue() ), .shutdown_flag( false ) } )
+{
+	var u32 num_threads_limited= ust::max( 1u, ust::min( num_threads, 128u ) );
+
+	for( auto mut i= 0u; i < num_threads_limited; ++i )
+	{
+		state_.runner_thread_wakers.push_back( PollWakerSharedPtr( PollWaker() ) );
+	}
+
+	for( auto mut i= 0u; i < num_threads_limited; ++i )
+	{
+		runner_threads_.push_back( ust::make_thread( RunnerThreadFunction( state_, state_.runner_thread_wakers[ size_type(i) ] ) ) );
+	}
 }
 
 fn runner::destructor()

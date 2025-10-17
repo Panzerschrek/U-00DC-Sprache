@@ -1,7 +1,6 @@
 This list contains features to be implemented and cases to be considered:
 
 * Add a function like `async_sleep` - for effective delaying with possibility to swith to execution of another async functions.
-* Support multiple runner threads.
 * Consider a case where a registered child async function is transferred out of current runner context and executed there.
 * Handle cases when an async function finishes prior to its children functions.
 * Handle destruction of async functions (including children functions) during runner shutdown.
