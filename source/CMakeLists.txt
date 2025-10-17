@@ -288,7 +288,7 @@ if( U_BUILD_COMPILER AND U_BUILD_COMPILER1 )
 endif()
 
 if( U_BUILD_COMPILER AND U_BUILD_BUILD_SYSTEM )
-	add_subdirectory( sm_async_net )
+	add_subdirectory( extra_libs )
 endif()
 
 #

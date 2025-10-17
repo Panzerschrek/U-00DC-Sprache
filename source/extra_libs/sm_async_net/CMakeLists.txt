@@ -30,8 +30,8 @@ add_custom_command(
 		BuildSystem build
 		--build-configuration ${BUILD_SYSTEM_BUILD_CONFIGURATION}
 		--compiler-executable $<TARGET_FILE:Compiler>
-		--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/../build_system/imports/
-		--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
+		--build-system-imports-path ${CMAKE_CURRENT_SOURCE_DIR}/../../build_system/imports/
+		--ustlib-path ${CMAKE_CURRENT_SOURCE_DIR}/../../ustlib/
 		--project-directory ${CMAKE_CURRENT_SOURCE_DIR}
 		--build-directory ${CMAKE_CURRENT_BINARY_DIR}
 		${SYSROOT_OPTION}
