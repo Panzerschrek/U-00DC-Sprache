@@ -9,8 +9,8 @@ import "/variant.u"
 import "/sm_async_net_sys/unix.uh"
 import "/sm_async_net/runner.uh"
 import "/sm_async_net/runner_internal.uh"
-import "queue.uh"
 import "poll_waker.uh"
+import "queue.uh"
 
 namespace sm_async_net
 {
@@ -407,10 +407,8 @@ op runner::RunnerThreadFunction::()( byval this )
 
 			var PollWaker& waker= waker_.deref();
 
-			var ust::native_file_handle wake_handle= waker.GetWakeHandle();
-
 			// Push waker handle as first.
-			poll_descriptors.push_back( pollfd{ .fd= wake_handle, .events( POLLIN ), .revents(0) } );
+			poll_descriptors.push_back( pollfd{ .fd= waker.GetWakeHandle(), .events( POLLIN ), .revents(0) } );
 			tasks_for_poll_descriptirs.push_back( TaskUniqueId(0) );
 
 			// Iterate over all tasks and get socket descriptors for them.
@@ -418,10 +416,7 @@ op runner::RunnerThreadFunction::()( byval this )
 			// Problematic may be large number of active tasks, which increates complexity of this code linearly.
 			foreach( &running_task_pair : cast_imut(tasks_map) )
 			{
-				var TaskUniqueId& task_id= running_task_pair.key();
-				var RunningTask& running_task= running_task_pair.value();
-
-				if_var( &socket_for_waiting : running_task.socket_to_wait )
+				if_var( &socket_for_waiting : running_task_pair.value().socket_to_wait )
 				{
 					var u32 mut event_flags= 0u;
 					switch( socket_for_waiting.operations )
@@ -431,7 +426,7 @@ op runner::RunnerThreadFunction::()( byval this )
 					}
 
 					poll_descriptors.push_back( pollfd{ .fd= socket_for_waiting.fd, .events( event_flags ), .revents(0) } );
-					tasks_for_poll_descriptirs.push_back( task_id );
+					tasks_for_poll_descriptirs.push_back( running_task_pair.key() );
 				}
 			}
 
@@ -563,7 +558,6 @@ fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe
 				assert( false, "Canceling a socket operation outside tasks runner!" );
 			}
 		}
-
 
 		var TasksMap &mut tasks_map= $>( tasks_map_ptr );
 		if_var( &mut task : tasks_map.find( task_id ) )
