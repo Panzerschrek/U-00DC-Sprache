@@ -20,8 +20,14 @@ public:
 	// Destructor cancels all running tasks.
 	fn virtual destructor(){}
 
-	// Add tasks for execution.
+	// Add a task for execution.
 	// This function returns without waiting for task to finish.
+	// if you need to wait, you can use some synchrononization primitive in order to do this.
+	//
+	// Use this function with caution if large number of tasks are added.
+	// There is no hard limit for task count, so adding too much tasks may lead to degraded performance up do denial of service.
+	// If it may be a problem, consider implementing some sort of mechanism for monitoring the number of active/scheduled tasks and limiting them.
+	//
 	fn virtual pure add_task( this, root_task_type t );
 }
 
@@ -33,10 +39,8 @@ fn create_runner() : ust::box</runner_interface/>;
 fn create_multithreaded_runner( u32 num_threads ) : ust::box</runner_interface/>;
 
 // Add a task into currently-active runner.
-// This call is non-blocking, it doesn't wait until the added task is done.
-// You should call this function only within another async task, so that the new one will be added into the same runner.
-// The added task may be moved for execution to another thread.
-// TODO - maybe return an error in case of addition fail?
+// It halts if it's called outside a runner thread, so you can call it only within an async function running on some runner.
+// See "runner_interface::add_task" method for more details.
 fn add_task( root_task_type t );
 
 } // namespace sm_async_net

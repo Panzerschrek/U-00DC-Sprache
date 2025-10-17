@@ -348,16 +348,18 @@ op runner::RunnerThreadFunction::()( byval this )
 
 			if( num_tasks_in_queue > 0s )
 			{
-				// Take half of tasks present in the queue or at least one task.
+				// Take a half of the tasks present in the queue or at least one task.
 				// Doing so we prevent taking too much tasks in one thread.
-				// Taking only half allows other threads to take other tasks.
+				// Taking only a half allows other threads to take other tasks.
 				//
-				// This strategy leads to slight queue waiting time increase
+				// This strategy leads to slight queue waiting time increase,
 				// but allows somewhat even distribution of workload among threads.
 				//
 				// Perfect balancing may be hard to achieve,
 				// but at least threads doing less work have more chance to extract more tasks,
 				// since their main iteration loop is shorter and they perform tasks extraction more often.
+				//
+				// Do not limit tasks map size here, if it may be a problem, it's the user code responsible for such limiting.
 
 				var size_type num_tasks_to_take= ust::max( 1s, num_tasks_in_queue / 2s );
 
