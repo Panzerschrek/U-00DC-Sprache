@@ -60,7 +60,10 @@ fn PopulateWorkspaceDirectoryGroups(
 		{
 			var JsonValue::Array mut directories_json;
 
-			directories_json.push_back( ust::path::normalize( ust::path::join( package_source_directory, build_target.sources_directory ) ) );
+			if( !build_target.sources_directory.empty() )
+			{
+				directories_json.push_back( ust::path::normalize( ust::path::join( package_source_directory, build_target.sources_directory ) ) );
+			}
 
 			if( !generated_sources_dir.empty() )
 			{

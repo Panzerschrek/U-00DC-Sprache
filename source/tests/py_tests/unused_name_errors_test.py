@@ -581,6 +581,33 @@ def UnusedLocalVariable_Test15():
 	assert( HasError( errors_list, "UnusedName", 6 ) )
 
 
+def UnusedLocalVariable_Test16():
+	c_program_text= """
+		fn Bar() : tup[ char16 ];
+		fn nomangle Foo()
+		{
+			// A variable of fundamental type defind via decompose declaration is unused.
+			auto [ c ] = Bar();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HasError( errors_list, "UnusedName", 6 ) )
+
+
+def UnusedLocalVariable_Test17():
+	c_program_text= """
+		class C{}
+		fn Bar() : tup[ C ];
+		fn nomangle Foo()
+		{
+			// A variable of class type may have a non-trivial destructor. Not using such variable may be intended.
+			auto [ c ] = Bar();
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
 def UnusedLocalReference_Test0():
 	c_program_text= """
 		fn nomangle Foo(i32 x)
