@@ -10,11 +10,14 @@ fn PollWaker::constructor()
 	unsafe
 	{
 		var [ i32, 2 ] mut pipe_ends= zero_init;
-		var i32 res= ::pipe2( $<(pipe_ends[0]), O_NONBLOCK );
+		var i32 res= ::pipe( $<(pipe_ends[0]) );
 		halt if( res != 0 );
 
 		pipe_read_end_= pipe_ends[0];
 		pipe_write_end_= pipe_ends[1];
+
+		SetPipeEndNonblocking( pipe_read_end_ );
+		SetPipeEndNonblocking( pipe_write_end_ );
 	}
 }
 
@@ -67,6 +70,20 @@ fn PollWaker::ResetWake( this )
 fn PollWaker::GetWakeHandle( this ) : ust::native_file_handle
 {
 	return pipe_read_end_;
+}
+
+fn SetPipeEndNonblocking( ust::native_file_handle h ) unsafe
+{
+	unsafe
+	{
+		var i32 mut flags= ::fcntl( h, F_GETFL, 0 );
+		halt if( flags == -1 );
+
+		flags |= O_NONBLOCK;
+
+		var i32 res= ::fcntl( h, F_SETFL, flags );
+		halt if( res != 0 );
+	}
 }
 
 } // namespace sm_async_net
