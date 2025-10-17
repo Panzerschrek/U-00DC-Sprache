@@ -3621,6 +3621,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 			.constexpr_value= constexpr_value,
 			.name= component.name,
 			.src_loc= component.src_loc,
+			.referenced= VariableExistenceMayHaveSideEffects( initializer_variable_lite.t ),
 		}.CreatePtr();
 
 	function_context.references_graph.AddNode( variable_reference );
