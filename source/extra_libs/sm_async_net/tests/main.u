@@ -1,5 +1,6 @@
 import "/assert.u"
 import "/box.u"
+import "/binary_search.u"
 import "/enum_string_conversions.u"
 import "/hash_set.u"
 import "/main_wrapper.u"
@@ -46,6 +47,7 @@ fn Main() : i32
 	UDPSocket_Test2::Run();
 	UDPSocket_Test3::Run();
 	UDPSocket_Test4::Run();
+	UDPSocket_Test5::Run();
 	TCP_Test0::Run();
 	TCP_Test1::Run();
 	TCP_Test2::Run();
@@ -627,6 +629,84 @@ fn async SenderReceiver(
 	assert( expected_messages == received_messages );
 
 	ust::stdout_print( ust::concat( "Finished sending to and receiving from port ", other_port_str, ".\n" ) );
+
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace UDPSocket_Test5
+{
+
+fn Run()
+{
+	// Create many UDP sockets, each socket sends a message to another one.
+	// Overall number of transmitted messages is equal to number of sockets squared.
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var size_type count= 256s;
+
+	var ust::vector</ust::socket_address/> addresses=
+		ust::make_vector_from_filler_function(
+			count,
+			lambda() : ust::socket_address
+			{
+				return ust::socket_address_v4( GetLoopbackIpAddress(), GetNextPort() );
+			} );
+
+	// Create sockets before starting any task - to avoid spawned task sending messages to not started yet sockets.
+	var ust::vector</udp_socket/> mut sockets=
+		ust::make_vector_from_mapped_range(
+			addresses,
+			lambda( ust::socket_address& address ) : udp_socket
+			{
+				return udp_socket::create_and_bind( address ).try_take();
+			} );
+
+	sockets.range().reverse();
+
+	for( auto mut i= 0s; i < count; ++i )
+	{
+		r.deref().add_task( SocketFunc( sockets.pop_back(), addresses, i, finish_semaphore ) );
+	}
+
+	for( auto mut i= 0s; i < count; ++i )
+	{
+		finish_semaphore.deref().acquire();
+	}
+}
+
+fn async SocketFunc(
+	udp_socket mut socket,
+	ust::vector</ ust::socket_address /> addresses,
+	size_type this_index,
+	SemaphorePtr finish_semaphore )
+{
+	var ust::vector</ust::string8/> mut received_messages( addresses.size() );
+
+	var [ char8, 64 ] mut buf= zero_init;
+
+	// Send to all addresses and receive from all addresses.
+	for( auto mut i= 0s; i < addresses.size(); ++i )
+	{
+		var ust::string8 message= ust::concat( "Message from ", ust::to_string8(this_index), " to ", ust::to_string8(i) );
+		assert( socket.send_to( addresses[i], message.range().to_byte8_range() ).await.try_take() == message.size() );
+
+		var size_type size= socket.receive( ust::array_view_mut</char8/>(buf).to_byte8_range() ).await.try_take();
+		received_messages[i]= ust::string_view8( buf ).subrange_end( size );
+	}
+
+	// Sort to be able to use binary search.
+	ust::sort( received_messages );
+
+	// Should get messages from all addresses.
+	for( auto mut i= 0s; i < addresses.size(); ++i )
+	{
+		var ust::string8 message= ust::concat( "Message from ", ust::to_string8(i), " to ", ust::to_string8(this_index) );
+		assert( ust::binary_search::is_present( received_messages, message ) );
+	}
 
 	finish_semaphore.deref().release();
 }
