@@ -2,7 +2,26 @@ import "/build_system.uh"
 
 fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
 {
-	ust::ignore_unused( build_system_interface );
+	var BK::TargetTriple target_trple= build_system_interface.GetTargetTriple();
+
+	var BK::BuildTarget mut sys_library_target
+	{
+		.name= "sm_async_net_sys",
+		.target_type= BK::BuildTargetType::Library,
+	};
+
+	if( target_trple.operating_system == "linux" )
+	{
+		sys_library_target.public_include_directories.push_back( "sys/linux" );
+	}
+	else if( target_trple.vendor == "apple" )
+	{
+		sys_library_target.public_include_directories.push_back( "sys/darwin" );
+	}
+	else if( target_trple.operating_system.starts_with( "freebsd" ) )
+	{
+		sys_library_target.public_include_directories.push_back( "sys/freebsd" );
+	}
 
 	var BK::BuildTarget mut library_target
 	{
@@ -10,6 +29,7 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.target_type= BK::BuildTargetType::Library,
 		.source_files= ust::make_array</ ust::string8 />( "src/poll_waker.u", "src/runner.u", "src/tcp_listener.u", "src/tcp_stream.u", "src/udp_socket.u" ),
 		.public_include_directories= ust::make_array</ust::filesystem_path/>( "imports" ),
+		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= sys_library_target.name } ),
 	};
 
 	var BK::BuildTarget mut tests_target
@@ -20,5 +40,8 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
 	};
 
-	return BK::PackageInfo{ .build_targets= ust::make_array( move(library_target), move(tests_target) ) };
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array( move(sys_library_target), move(library_target), move(tests_target) )
+	};
 }
