@@ -23,6 +23,7 @@ enum SocketOperationsForWaiting
 
 // This class registers a socket operation to wait and un-registers it in its destructor.
 // This destructor may be called in normal path (after a socket operation was performed successfully or with error), or in case of cancellation.
+// It can be created only within a running task.
 class TaskSocketOperationHolder
 {
 public:
@@ -40,7 +41,7 @@ private:
 	TaskUniqueId task_id_;
 }
 
-// Register socket operation for currently running task.
+// Register a socket operation for currently running task.
 // This function may be called only within a running task.
 // It halts if current task already has an active socket operation or children tasks.
 // It returns current task id.

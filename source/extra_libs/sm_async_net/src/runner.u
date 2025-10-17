@@ -20,13 +20,15 @@ struct RunningTask
 {
 	// Task handle (what is executed).
 	// Store async function object itself for root tasks,
-	// store raw handle for tasks which are subtasks of other tasks and thus are owned by them (parent tasks are responsible for their deletion ).
+	// store raw handle for tasks which are subtasks of other tasks and thus are owned by them (parent tasks are responsible for their destruction ).
 	ust::variant</ tup[ root_task_type, ust::raw_coro_handle ] /> task;
 
 	// If non-empty, this task shouldn't be resumed until given socket isn't ready.
-	ust::optional</SocketForWaiting/> socket_to_wait; // TODO - use some sort of null socket value?
+	ust::optional</SocketForWaiting/> socket_to_wait; // TODO - use some sort of null socket value instead of optional?
 
 	// Connections to other tasks (parent, siblings, children).
+	// Subtasks aren't stored in a task directly, insterad only ID of the last child is stored.
+	// Children of one particular task (siblings) form a double-linked list based on such IDs.
 	RunningTaskConnections connections;
 }
 
@@ -44,6 +46,10 @@ struct SocketForWaiting
 	SocketOperationsForWaiting operations;
 }
 
+// All tasks and subtasks of a runner thread are stored in a single hash-map.
+// This allows to minimize memory fragmentation and allocation overhead,
+// no additional memory is required to store subtasks of a task,
+// if this hash-map still has free space in it.
 type TasksMap= ust::hash_map</TaskUniqueId, RunningTask/>;
 
 type TasksQueue= Queue</root_task_type/>;
@@ -62,14 +68,10 @@ type PollWakerSharedPtr= ust::shared_ptr_mt_final</PollWaker/>;
 class runner final : runner_interface
 {
 public:
-	// Create runner instance, incliding background thread(s) for actual tasks running.
 	fn constructor( u32 num_threads );
 
-	// Destructor cancels all running tasks.
 	fn virtual override destructor();
 
-	// Add tasks for execution.
-	// This function returns without waiting for task to finish.
 	fn virtual override add_task( this, root_task_type t );
 
 private:
@@ -106,6 +108,7 @@ fn create_multithreaded_runner( u32 num_threads ) : ust::box</runner_interface/>
 fn runner::constructor( u32 num_threads )
 	( state_{ .tasks_queue( TasksQueue() ), .shutdown_flag( false ) } )
 {
+	// Don't allow 0 threads and set a reasonable upper bound.
 	var u32 num_threads_limited= ust::max( 1u, ust::min( num_threads, 128u ) );
 
 	for( auto mut i= 0u; i < num_threads_limited; ++i )
@@ -170,9 +173,10 @@ op runner::RunnerThreadFunction::()( byval this )
 		g_current_runner_thread_tasks_map= $<( tasks_map );
 	}
 
+	// Push IDs of tasks after they were extracted from the queue or if a task socket operation is ready.
 	var ust::vector</TaskUniqueId/> mut ready_for_execution_tasks;
 
-	// After task execution we may need to execute its children tasks or its parent task.
+	// After the execution of a task we may need to execute its children tasks or its parent task.
 	// Use a stack for this (last-in, first-out) for better data and code cache locality.
 	var ust::vector</TaskUniqueId/> mut tasks_for_next_execution_stack;
 
@@ -214,7 +218,7 @@ op runner::RunnerThreadFunction::()( byval this )
 
 				unsafe // Because we access global variables here.
 				{
-					// Access current task in this block using each time op[] of the tasks map.
+					// Access current task in this block using each time methods op[]/find of the tasks map.
 					// We can't hold a reference to current task,
 					// since tasks may be added during this task execution and this may invalidate such reference.
 
@@ -335,7 +339,7 @@ op runner::RunnerThreadFunction::()( byval this )
 		// On each iteration perform both tasks extraction an "poll" calling.
 		// Doing so is necessary to somewhat balance new tasks starting and present tasks processing.
 		// If we only process present tasks until we can, we don't let new tasks to start.
-		// If we only extract tasks from the queue, we don't get present tasks time to perform their work.
+		// If we only extract tasks from the queue, we don't get present tasks enough time to perform their work.
 		// It's unclear exactly, how to achieve perfect balance, but doing both extraction/polling on each iteration should work roughly fine.
 
 		var bool mut has_tasks_in_queue= false;
@@ -394,7 +398,7 @@ op runner::RunnerThreadFunction::()( byval this )
 		}
 
 		// Perform "poll".
-		// If we have tasks in the queue or has tasks to execute, set zero timeout.
+		// If we have tasks in the queue or have tasks to execute, set zero timeout.
 		// Otherwise set infinite timeout.
 		// This thread still may be awaked via awaker.
 		{
@@ -409,7 +413,7 @@ op runner::RunnerThreadFunction::()( byval this )
 			poll_descriptors.push_back( pollfd{ .fd= wake_handle, .events( POLLIN ), .revents(0) } );
 			tasks_for_poll_descriptirs.push_back( TaskUniqueId(0) );
 
-			// Iterate over all tasks and get file descriptors for them.
+			// Iterate over all tasks and get socket descriptors for them.
 			// This uses hash-map order, but this isn't a huge problem.
 			// Problematic may be large number of active tasks, which increates complexity of this code linearly.
 			foreach( &running_task_pair : cast_imut(tasks_map) )
@@ -475,11 +479,10 @@ op runner::RunnerThreadFunction::()( byval this )
 	unsafe
 	{
 		// Reset shared state global pointer.
-		// It's strictly-speaking not necessary, but it's better to do so.
 		g_current_runner_thread_shared_state= ust::nullptr</SharedState/>();
 		g_current_runner_thread_tasks_map= ust::nullptr</TasksMap/>();
 
-		// Set shutdow flag, so that destructors of task don't attempt to cancel socket operations and subtasks.
+		// Set shutdow flag, so that destructors of tasks don't attempt to cancel socket operations and subtasks.
 		g_runner_thread_is_shutting_down= true;
 	}
 

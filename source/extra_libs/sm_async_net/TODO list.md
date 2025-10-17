@@ -3,7 +3,6 @@ This list contains features to be implemented and cases to be considered:
 * Add a function like `async_sleep` - for effective delaying with possibility to swith to execution of another async functions.
 * Stabilize naming of various classes, functions, types, etc.
 * Write stress-tests for large quantities of concurrent async functions.
-* Optimize allocations usage, try perform as few allocations as possible, but without using fixed-sized buffers for everything.
 * Consider supporting execution of tasks with captured references.
 * Add a method like `execute_task_blocking` to wait for a task to finish.
 * Consider adding a method for adding a task, which returns a handle, which can be awaited to receive execution result.
