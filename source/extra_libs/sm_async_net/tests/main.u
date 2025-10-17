@@ -757,6 +757,7 @@ fn Run()
 	server_runner.deref().add_task( ServerListenerFunc( tcp_listener::create_and_bind( server_address ).try_take(), move(clinet_processing_runner) ) );
 
 	// Create large number of clients. Not insane, but large.
+	// Note that this causes valgrind to crash, since it can't handle large file descriptors for some reason, even if we increase descriptors limit.
 	var u32 num_clients= 4096u;
 
 	for( auto mut i= 0u; i < num_clients; ++i )
