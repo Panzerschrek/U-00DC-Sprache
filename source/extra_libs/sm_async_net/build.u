@@ -10,19 +10,6 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.target_type= BK::BuildTargetType::Library,
 	};
 
-	if( target_trple.operating_system == "linux" )
-	{
-		sys_library_target.public_include_directories.push_back( "sys/linux" );
-	}
-	else if( target_trple.vendor == "apple" )
-	{
-		sys_library_target.public_include_directories.push_back( "sys/darwin" );
-	}
-	else if( target_trple.operating_system.starts_with( "freebsd" ) )
-	{
-		sys_library_target.public_include_directories.push_back( "sys/freebsd" );
-	}
-
 	var BK::BuildTarget mut library_target
 	{
 		.name= "sm_async_net",
@@ -39,6 +26,22 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.source_files= ust::make_array</ ust::string8 />( "tests/main.u" ),
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
 	};
+
+	if( target_trple.operating_system == "linux" )
+	{
+		sys_library_target.public_include_directories.push_back( "sys/linux" );
+		tests_target.source_files.push_back( "tests/utils_linux.u" );
+	}
+	else if( target_trple.vendor == "apple" )
+	{
+		sys_library_target.public_include_directories.push_back( "sys/darwin" );
+		tests_target.source_files.push_back( "tests/utils_darwin.u" );
+	}
+	else if( target_trple.operating_system.starts_with( "freebsd" ) )
+	{
+		sys_library_target.public_include_directories.push_back( "sys/freebsd" );
+		tests_target.source_files.push_back( "tests/utils_freebsd.u" );
+	}
 
 	return BK::PackageInfo
 	{
