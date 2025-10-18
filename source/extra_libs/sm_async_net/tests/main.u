@@ -843,7 +843,7 @@ fn Run()
 	// Run server on separate runner to ensure it's executed on another thread, so it's fast enough to accept all connections without filling TCP listener backlog.
 	// Process clients on third runner - to ensure server runner only performs "accept".
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
 
@@ -896,7 +896,7 @@ fn async ServerProcessorFunc( tcp_stream mut stream )
 	if( false ){ ust::stdout_print( ust::concat( "Sent message \"", message1, "\" to TCP client.\n" ) ); }
 }
 
-fn async ClientFunc( u32 client_index, ust::socket_address_v4 server_address, ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async ClientFunc( u32 client_index, ust::socket_address_v4 server_address, SemaphorePtr finish_semaphore )
 {
 	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
 
@@ -924,7 +924,7 @@ fn Run()
 {
 	// Create two tasks, one for TCP server and one for TCP client.
 	// Transmit large quantities of data.
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
 
@@ -939,7 +939,7 @@ fn Run()
 
 var size_type g_num_ints= 1024s * 1024s * 16s;
 
-fn async ServerFunc( tcp_listener mut listener, ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async ServerFunc( tcp_listener mut listener, SemaphorePtr finish_semaphore )
 {
 	auto [ mut stream, client_address ]= listener.accept().await.try_take();
 
@@ -965,7 +965,7 @@ fn async ServerFunc( tcp_listener mut listener, ust::shared_ptr_mt_final</ ust::
 	finish_semaphore.deref().release();
 }
 
-fn async ClientFunc( ust::socket_address_v4 server_address, ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async ClientFunc( ust::socket_address_v4 server_address, SemaphorePtr finish_semaphore )
 {
 	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
 
@@ -1000,7 +1000,7 @@ fn Run()
 {
 	// Try connecting to an non-existing server.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 
@@ -1009,7 +1009,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async ClientFunc(  ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async ClientFunc( SemaphorePtr finish_semaphore )
 {
 	result_match( tcp_stream::connect( ust::socket_address_v4( GetLoopbackIpAddress(), 5678u16 ) ).await )
 	{
@@ -1035,7 +1035,7 @@ fn Run()
 {
 	// Joint two subtasks, which just return a value (maybe yielding a couple of times) without performing a socket operation.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1043,7 +1043,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var tup [ i32, f32 ] res= join_subtasks( FuncA(), FuncB() ).await;
 	assert( res[0] == 5 );
@@ -1073,7 +1073,7 @@ fn Run()
 {
 	// Joint two subtasks, which just return a value of comosite type (maybe yielding a couple of times) without performing a socket operation.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1081,7 +1081,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var tup [ ust::string8, ust::string16 ] res= join_subtasks( FuncA(), FuncB() ).await;
 	assert( res[0] == "FuncA result" );
@@ -1112,7 +1112,7 @@ fn Run()
 {
 	// Use "join_subtasks" more than once.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1120,7 +1120,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var tup[ u32, f32 ] res0= join_subtasks( FuncA( 265u ), FuncB( 13.2f ) ).await;
 	assert( res0[0] == 265u * 3u );
@@ -1156,7 +1156,7 @@ fn Run()
 {
 	// Create a couple of tasks with "join_subtasks", which of them uses "join_subtasks" internally.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1164,7 +1164,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var tup[ tup[ f32, f64 ], tup[ u32, i64 ] ] res= join_subtasks( FuncA(), FuncB() ).await;
 	assert( res[0][0] == -13.0f );
@@ -1222,7 +1222,7 @@ fn Run()
 {
 	// Pass "join_subtasks" call results into another "join_subtasks" call.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1230,7 +1230,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var tup[ tup[ f32, f64 ], tup[ u32, i64 ] ] res=
 		join_subtasks(
@@ -1278,7 +1278,7 @@ fn Run()
 {
 	// Run a task, which creates two subtasks, each of them sends and receives using an UDP socket.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1286,7 +1286,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var ust::socket_address_v4 address0( GetLoopbackIpAddress(), GetNextPort() );
 	var ust::socket_address_v4 address1( GetLoopbackIpAddress(), GetNextPort() );
@@ -1326,7 +1326,7 @@ fn Run()
 {
 	// Run a task, which creates two subtasks - TCP client and server.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1334,7 +1334,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
 	var tcp_listener mut listener= tcp_listener::create_and_bind( server_address ).try_take();
@@ -1388,7 +1388,7 @@ fn Run()
 {
 	// Joint three subtasks.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1396,7 +1396,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var tup [ i32, char8, f64 ] res= join_subtasks( FuncA(), FuncB(), FuncC() ).await;
 	assert( res[0] == 2565 );
@@ -1433,7 +1433,7 @@ fn Run()
 {
 	// Join four subtasks.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1441,7 +1441,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var tup[ ust::string8, ust::vector</f32/>, u64, ust::box</f64/> ] res=
 		join_subtasks( FuncA(), FuncB(), FuncC(), FuncD() ).await;
@@ -1489,7 +1489,7 @@ fn Run()
 {
 	// Joint an array of subtasks.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1497,7 +1497,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var [ ust::string8, 7s ] res=
 		join_subtasks(
@@ -1537,7 +1537,7 @@ fn Run()
 	// Create a vector of tasks and join this vector.
 	// Each task sends a message to all other tasks and to itself.
 
-	var ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore( ust::semaphore( 0u ) );
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
 
 	var ust::box</runner_interface/> r= create_runner();
 	r.deref().add_task( Func( finish_semaphore ) );
@@ -1545,7 +1545,7 @@ fn Run()
 	finish_semaphore.deref().acquire();
 }
 
-fn async Func( ust::shared_ptr_mt_final</ ust::semaphore /> finish_semaphore )
+fn async Func( SemaphorePtr finish_semaphore )
 {
 	var size_type num_sockets= 12s;
 
