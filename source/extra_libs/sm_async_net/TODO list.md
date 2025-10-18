@@ -1,10 +1,11 @@
 This list contains features to be implemented and cases to be considered:
 
+* Support Windows (using *Auxillary Function Driver* mechanisms).
+* Use `epoll` on Linux.
+* Use `kqueue` on FreeBSD.
 * Add a function like `async_sleep` - for effective delaying with possibility to swith to execution of another async functions.
-* Stabilize naming of various classes, functions, types, etc.
+* Support network operations with timeout.
 * Consider supporting execution of tasks with captured references.
-* Add a method like `execute_task_blocking` to wait for a task to finish.
+* Add a runner method like `execute_task_blocking` to wait for a task to finish.
 * Consider adding a method for adding a task, which returns a handle, which can be awaited to receive execution result.
-* Consider a possibility for the `add_task` free function to return an error - in case if no active runner thread is present, in case of shutdown, if tasks queue is full, etc.
-* Consider implementing async versions of synchronization primitives like "barrier" and "semaphore", which perform yielding instead of blocking.
-* Consider adding a function for file descriptors limit increasing.
+* Consider implementing async versions of synchronization primitives like barrier and semaphore, which perform yielding instead of blocking.
