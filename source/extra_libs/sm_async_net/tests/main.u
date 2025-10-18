@@ -65,6 +65,8 @@ fn Main() : i32
 	Join_Test9::Run();
 	Join_Test10::Run();
 
+	ust::stdout_print( "Successfully finished all sm_async_net tests!\n" );
+
 	return 0;
 }
 
