@@ -19,8 +19,8 @@ fn IncreaseFileDescriptorsLimit()
 	}
 }
 
-fn nomangle getrlimit64( i32 resource, $(rlimit64) limit ) unsafe call_conv("C" ) : i32;
-fn nomangle setrlimit64( i32 resource, $(rlimit64) limit ) unsafe call_conv("C" ) : i32;
+fn nomangle getrlimit64( i32 resource, $(rlimit64) limit ) unsafe call_conv( "C" ) : i32;
+fn nomangle setrlimit64( i32 resource, $(rlimit64) limit ) unsafe call_conv( "C" ) : i32;
 
 struct rlimit64 ordered
 {

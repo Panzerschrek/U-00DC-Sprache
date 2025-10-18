@@ -1,4 +1,33 @@
+import "/helpers.u"
 import "utils.uh"
 
 fn IncreaseFileDescriptorsLimit()
-{}
+{
+	unsafe
+	{
+		var rlimit mut limit
+		{
+			.rlim_cur(0),
+			.rlim_max(0),
+		};
+		ust::ignore_unused( limit.rlim_cur );
+		ust::ignore_unused( limit.rlim_max );
+
+		getrlimit( RLIMIT_NOFILE, $<(limit) );
+		limit.rlim_cur= 32767i64;
+		setrlimit( RLIMIT_NOFILE, $<(limit) );
+	}
+}
+
+fn nomangle getrlimit( i32 resource, $(rlimit) limit ) unsafe call_conv( "C" ) : i32;
+fn nomangle setrlimit( i32 resource, $(rlimit) limit ) unsafe call_conv( "C" ) : i32;
+
+struct rlimit ordered
+{
+	rlim_t rlim_cur;
+	rlim_t rlim_max;
+}
+
+type rlim_t = i64;
+
+var i32 constexpr RLIMIT_NOFILE = 8;
