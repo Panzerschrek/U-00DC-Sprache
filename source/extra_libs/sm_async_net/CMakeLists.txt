@@ -43,9 +43,18 @@ add_custom_command(
 	USES_TERMINAL
 		)
 
+set( TIMESTAMP_FILE ${CMAKE_CURRENT_BINARY_DIR}/tests_timestamp )
+
+add_custom_command(
+	OUTPUT ${TIMESTAMP_FILE}
+	DEPENDS ${TESTS_EXECUTABLE}
+	COMMAND ${TESTS_EXECUTABLE}
+	COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE} # A hacky step to produce a marker file for this command.
+	)
+
+# A custom target which is needed only to execute the custom command above.
 add_custom_target(
 	sm_async_net_run${CURRENT_COMPILER_GENERATION} ALL
-	COMMAND ${TESTS_EXECUTABLE}
-	DEPENDS ${TESTS_EXECUTABLE}
+	DEPENDS ${TIMESTAMP_FILE}
 	SOURCES ${ALL_LIB_SOURCES}
 	)
