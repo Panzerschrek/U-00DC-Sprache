@@ -23,6 +23,8 @@ else()
 endif()
 
 file( GLOB_RECURSE ALL_LIB_SOURCES "*" )
+file( GLOB LIB_CMAKE_FILE "CMakeLists.txt" )
+list( REMOVE_ITEM ALL_LIB_SOURCES ${LIB_CMAKE_FILE} )
 
 set( TESTS_EXECUTABLE ${CMAKE_CURRENT_BINARY_DIR}/${BUILD_SYSTEM_BUILD_CONFIGURATION}/tests )
 
@@ -58,3 +60,8 @@ add_custom_target(
 	DEPENDS ${TIMESTAMP_FILE}
 	SOURCES ${ALL_LIB_SOURCES}
 	)
+
+# Install the library sources.
+if( CURRENT_COMPILER_GENERATION STREQUAL "" )
+	install( CODE " file( INSTALL ${CMAKE_CURRENT_SOURCE_DIR} DESTINATION \${CMAKE_INSTALL_PREFIX}/extra_libs/ ) " )
+endif()
