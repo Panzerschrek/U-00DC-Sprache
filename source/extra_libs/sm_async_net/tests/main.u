@@ -855,7 +855,8 @@ fn Run()
 
 	// Create large number of clients. Not insane, but large.
 	// Note that this causes valgrind to crash, since it can't handle large file descriptors for some reason, even if we increase descriptors limit.
-	var u32 num_clients= 4096u;
+	// On FreeBSD we can't create so many connections, since this OS discards connections if backlog is full instead of letting clients to retry.
+	var u32 num_clients= ( ust::string_view8( compiler::target::os ).starts_with( "freebsd" ) ? 256u : 4096u );
 
 	for( auto mut i= 0u; i < num_clients; ++i )
 	{
