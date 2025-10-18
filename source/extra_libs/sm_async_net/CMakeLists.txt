@@ -1,3 +1,8 @@
+if(WIN32)
+	# For now Windows isn't supported.
+	return()
+endif()
+
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	set( BUILD_SYSTEM_BUILD_CONFIGURATION "debug" )
 else()
