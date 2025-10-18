@@ -1,0 +1,31 @@
+fn nomangle close( i32 param0 ) unsafe call_conv( "C" ) : i32;
+fn nomangle fcntl( i32 param0, i32 param1, i32 flags ) unsafe call_conv( "C" ) : i32;
+fn nomangle pipe( $(i32) param0 ) unsafe call_conv( "C" ) : i32;
+fn nomangle poll( $(pollfd) pfd_, nfds_t nfds_, i32 timeout_ ) unsafe call_conv( "C" ) : i32;
+fn nomangle read( i32 param0, $(byte8) param1, size_t param2 ) unsafe call_conv( "C" ) : ssize_t;
+fn nomangle write( i32 param0, $(byte8) param1, size_t param2 ) unsafe call_conv( "C" ) : ssize_t;
+
+struct pollfd ordered
+{
+	i32 fd;
+	i16 events;
+	i16 revents;
+}
+
+type nfds_t = u32;
+type size_t = size_t__;
+type ssize_t = ssize_t__;
+type size_t__ = size_type;
+type ssize_t__ = ssize_type;
+
+auto constexpr F_GETFL = 3;
+auto constexpr F_SETFL = 4;
+
+auto constexpr O_NONBLOCK = 4;
+
+auto constexpr POLLIN = 1;
+auto constexpr POLLPRI = 2;
+auto constexpr POLLOUT = 4;
+auto constexpr POLLERR = 8;
+auto constexpr POLLHUP = 16;
+auto constexpr POLLNVAL = 32;
