@@ -1,9 +1,8 @@
 import "/assert.u"
-import "/atomic_variable.u"
 import "/hash_map.u"
 import "/shared_atomic_variable.u"
 import "/shared_ptr_mt_final.u"
-import "/shared_ptr_mt_mutex.u"
+import "/shared_ptr_mt.u"
 import "/thread.u"
 import "/variant.u"
 import "/sm_async_net_sys/unix.uh"
@@ -53,7 +52,7 @@ struct SocketForWaiting
 type TasksMap= ust::hash_map</TaskUniqueId, RunningTask/>;
 
 type TasksQueue= Queue</root_task_type/>;
-type TasksQueuePtr= ust::shared_ptr_mt_mutex</TasksQueue/>;
+type TasksQueuePtr= ust::shared_ptr_mt_mut</TasksQueue/>;
 type ShutdownFlagPtr= ust::shared_atomic_variable</bool/>;
 
 struct SharedState
@@ -145,7 +144,7 @@ fn runner::add_task( this, root_task_type mut t )
 		return;
 	}
 
-	with( mut l : state_.tasks_queue.lock() )
+	with( mut l : state_.tasks_queue.lock_mut() )
 	{
 		l.deref().Push( move(t) );
 	}
@@ -344,7 +343,7 @@ op runner::RunnerThreadFunction::()( byval this )
 
 		var bool mut has_tasks_in_queue= false;
 
-		with( mut l : state_.tasks_queue.lock() )
+		with( mut l : state_.tasks_queue.lock_mut() )
 		{
 			var TasksQueue &mut queue= l.deref();
 
@@ -714,7 +713,7 @@ fn add_task( root_task_type mut t )
 			return;
 		}
 
-		with( mut l : state.tasks_queue.lock() )
+		with( mut l : state.tasks_queue.lock_mut() )
 		{
 			l.deref().Push( move(t) );
 		}
