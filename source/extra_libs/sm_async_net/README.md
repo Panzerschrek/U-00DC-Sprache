@@ -15,9 +15,9 @@ In your project you can access it as a versioned package or place it within your
 ### Supported systems
 
 For now only 64-bit GNU/Linux and FreeBSD are supported.
-Windows support isn't implemented yet (since it a little bit more complex).
+Windows support isn't implemented yet (since it's a little bit more complex).
 
-*sm_async_net* uses `poll` call to wait for sockets to be ready and dispatch control flow to async functions waiting on these sockets.
+*sm_async_net* uses `poll` call to wait for sockets to be ready and to dispatch control flow to the async functions waiting on these sockets.
 It's slightly less performant compared to mechanisms like `epoll` or `kqueue`, but still reasonably fast.
 
 
@@ -84,7 +84,7 @@ fn async FuncB() : f32
 ### Usage limitations
 
 Networking classes provided by this library should be only used within a running task executed by a runner.
-It's possible to create some of them (where a factory method is non-async) in synchronous code, but async methods should be used only within a running task.
+It's possible to create some of them in synchronous code (where a factory method is non-async), but async methods should be used only within a running task.
 
 All async functions and methods provided by this library should be used only via `await` expression directly following the function/method call itself.
 It's not supported to store an async function object somehow and manually calling `if_coro_advance` for it.
