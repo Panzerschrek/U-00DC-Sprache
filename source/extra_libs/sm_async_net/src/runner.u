@@ -74,22 +74,6 @@ public:
 	fn virtual override add_task( this, root_task_type t );
 
 private:
-	class RunnerThreadFunction
-	{
-	public:
-		fn constructor( SharedState mut state, PollWakerSharedPtr mut waker )
-			( state_= move(state), waker_= move(waker) )
-		{}
-
-		// Thread entry point.
-		op()( byval this );
-
-	private:
-		SharedState state_;
-		PollWakerSharedPtr waker_;
-	}
-
-private:
 	SharedState state_;
 	ust::vector</ust::thread</RunnerThreadFunction, void/>/> runner_threads_;
 }
@@ -157,7 +141,22 @@ fn runner::add_task( this, root_task_type mut t )
 	}
 }
 
-op runner::RunnerThreadFunction::()( byval this )
+class RunnerThreadFunction
+{
+public:
+	fn constructor( SharedState mut state, PollWakerSharedPtr mut waker )
+		( state_= move(state), waker_= move(waker) )
+	{}
+
+	// Thread entry point.
+	op()( byval this );
+
+private:
+	SharedState state_;
+	PollWakerSharedPtr waker_;
+}
+
+op RunnerThreadFunction::()( byval this )
 {
 	var TasksMap mut tasks_map;
 
