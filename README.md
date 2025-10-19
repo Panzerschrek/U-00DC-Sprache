@@ -147,6 +147,8 @@ For more information/examples see build scripts in *ci* directory.
 
 [examples](source/examples/README.md)
 
+[extra libraries](source/extra_libs/README.md)
+
 
 ### IDE support
 
