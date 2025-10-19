@@ -72,7 +72,7 @@ public:
 
 			loop
 			{
-				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
 				// We need to wait here.
 				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
@@ -94,7 +94,7 @@ public:
 
 	fn async write( mut this, ust::array_view_imut</byte8/> buf ) : ust::io_result</size_type/>
 	{
-		// Optimistically expect that a write operation may be performed witohut blocking.
+		// Optimistically expect that a write operation may be performed without blocking.
 		// So we make a write request first, before going waiting.
 		{
 			var ust::io_result</size_type/> res= stream_.write( buf );
@@ -115,7 +115,7 @@ public:
 
 			loop
 			{
-				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
 				// We need to wait here.
 				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
@@ -158,7 +158,7 @@ public:
 
 			loop
 			{
-				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
 				// We need to wait here.
 				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;

@@ -10,11 +10,11 @@ namespace sm_async_net
 type root_task_type= (async : void);
 
 // The main class, needed for async tasks execution.
-// Usually you only need to create one runner.
-// But it may be benefitial to create a dedicated runner for some async function, which should respond quickly, like a for TCP listener.
+// Usually you only need to create one runner instance.
+// But it may be benefitial to create a dedicated runner for some async function, which should respond quickly, like for a TCP listener.
 //
 // Use an interface for runner class to hide internals.
-// It requires a little bit of overhead in "add_task" call, but this is not a huge problem.
+// It requires a little bit of virtual overhead in "add_task" call, but this is not a huge problem.
 //
 class runner_interface interface
 {
@@ -25,9 +25,9 @@ public:
 
 	// Add a task for execution.
 	// This function returns without waiting for task to finish.
-	// if you need to wait, you can use some synchrononization primitive in order to do this.
+	// If you need to wait, you can use some synchronization primitive in order to do this.
 	//
-	// Use this function with caution if large number of tasks are added.
+	// Use this function with caution if large number of tasks may be added.
 	// There is no hard limit for task count, so adding too much tasks may lead to degraded performance up do denial of service.
 	// If it may be a problem, consider implementing some sort of mechanism for monitoring the number of active/scheduled tasks and limiting them.
 	//

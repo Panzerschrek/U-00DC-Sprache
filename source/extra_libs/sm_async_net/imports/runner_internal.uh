@@ -9,8 +9,8 @@ namespace sm_async_net
 {
 
 // Each root task or subtask receives an unique identifier.
-// This idintifier is unique even in different runner instances.
-// Idenrifiers aren't recycled and reused.
+// This identifier is unique even in different runner instances.
+// Identifiers aren't recycled and reused.
 // Zero indicates no task (it can't be assigned to some task).
 type TaskUniqueId= u64;
 

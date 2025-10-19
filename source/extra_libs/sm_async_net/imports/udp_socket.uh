@@ -20,7 +20,7 @@ public:
 
 	fn async send( mut this, ust::array_view_imut</byte8/> data ) : ust::io_result</size_type/>
 	{
-		// Optimistically expect that a write operation may be performed witohut blocking.
+		// Optimistically expect that a write operation may be performed without blocking.
 		// So we make a send request first, before going waiting.
 		{
 			var ust::io_result</size_type/> res= socket_.send( data );
@@ -41,7 +41,7 @@ public:
 
 			loop
 			{
-				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
 				// We need to wait here.
 				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
@@ -63,7 +63,7 @@ public:
 
 	fn async send_to( mut this, ust::socket_address& a, ust::array_view_imut</byte8/> data ) : ust::io_result</size_type/>
 	{
-		// Optimistically expect that a write operation may be performed witohut blocking.
+		// Optimistically expect that a write operation may be performed without blocking.
 		// So we make a send request first, before going waiting.
 		{
 			var ust::io_result</size_type/> res= socket_.send_to( a, data );
@@ -84,7 +84,7 @@ public:
 
 			loop
 			{
-				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
 				// We need to wait here.
 				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
@@ -127,7 +127,7 @@ public:
 
 			loop
 			{
-				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
 				// We need to wait here.
 				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
@@ -171,7 +171,7 @@ public:
 
 			loop
 			{
-				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
 				// We need to wait here.
 				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
@@ -215,7 +215,7 @@ public:
 
 			loop
 			{
-				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
 				// We need to wait here.
 				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;
@@ -259,7 +259,7 @@ public:
 
 			loop
 			{
-				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
 				// We need to wait here.
 				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;

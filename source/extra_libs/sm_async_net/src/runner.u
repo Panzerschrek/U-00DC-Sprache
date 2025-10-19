@@ -28,6 +28,7 @@ struct RunningTask
 	// Connections to other tasks (parent, siblings, children).
 	// Subtasks aren't stored in a task directly, insterad only ID of the last child is stored.
 	// Children of one particular task (siblings) form a double-linked list based on such IDs.
+	// Parent ID is also stored.
 	RunningTaskConnections connections;
 }
 
@@ -55,6 +56,7 @@ type TasksQueue= Queue</root_task_type/>;
 type TasksQueuePtr= ust::shared_ptr_mt_mut</TasksQueue/>;
 type ShutdownFlagPtr= ust::shared_atomic_variable</bool/>;
 
+// State shared by all runner threads.
 struct SharedState
 {
 	TasksQueuePtr tasks_queue;
@@ -117,7 +119,8 @@ fn runner::destructor()
 	}
 
 	// Destructors of runner threads execute "join" here. So we gracefully perform the shutdown sequence.
-	// Generally it shouldn't be long, since runner threads may usually stop executing async functions after shutdown signal is set.
+	// Generally it shouldn't be long, since runner threads usually stop executing async functions after shutdown signal is set,
+	// unless some async function is stuck in an endless loop without yielding.
 }
 
 fn runner::add_task( this, root_task_type mut t )
@@ -162,9 +165,8 @@ op RunnerThreadFunction::()( byval this )
 
 	unsafe
 	{
-
 		// Set shared state global variable.
-		// Since this global variable is thread-local and this function is running on a separate thread, it's not impossible here to overwrite someone else's variable instance.
+		// Since this global variable is thread-local and this function is running on a separate thread, it's impossible here to overwrite someone else's variable instance.
 		g_current_runner_thread_shared_state= $<( cast_mut(state_) );
 
 		// Set also pointer to tasks map.
@@ -192,7 +194,7 @@ op RunnerThreadFunction::()( byval this )
 		foreach( initial_id : ready_for_execution_tasks )
 		{
 			// Start with initially-ready task.
-			// if necessary execute its children and its parent in last-in first-out order.
+			// If necessary execute its children and its parent in last-in first-out order.
 			debug_assert( tasks_for_next_execution_stack.empty() );
 			tasks_for_next_execution_stack.push_back( initial_id );
 
@@ -223,7 +225,7 @@ op RunnerThreadFunction::()( byval this )
 					g_currently_running_task_id= id;
 
 					// Execute a task without any pause until it's possible.
-					// Break early only if this task needs to wait for something shudown is requested.
+					// Break early only if this task needs to wait for something or if shudown is requested.
 					loop
 					{
 						if( state_.shutdown_flag.read() )
@@ -398,20 +400,20 @@ op RunnerThreadFunction::()( byval this )
 		// Perform "poll".
 		// If we have tasks in the queue or have tasks to execute, set zero timeout.
 		// Otherwise set infinite timeout.
-		// This thread still may be awaked via awaker.
+		// This thread still may be awaken via waker.
 		{
 			poll_descriptors.clear();
 			tasks_for_poll_descriptirs.clear();
 
 			var PollWaker& waker= waker_.deref();
 
-			// Push waker handle as first.
+			// Push waker handle as first descriptor.
 			poll_descriptors.push_back( pollfd{ .fd= waker.GetWakeHandle(), .events( POLLIN ), .revents(0) } );
 			tasks_for_poll_descriptirs.push_back( TaskUniqueId(0) );
 
 			// Iterate over all tasks and get socket descriptors for them.
 			// This uses hash-map order, but this isn't a huge problem.
-			// Problematic may be large number of active tasks, which increates complexity of this code linearly.
+			// Problematic may be large number of active tasks, which increases complexity of this code linearly.
 			foreach( &running_task_pair : cast_imut(tasks_map) )
 			{
 				if_var( &socket_for_waiting : running_task_pair.value().socket_to_wait )
@@ -436,7 +438,7 @@ op RunnerThreadFunction::()( byval this )
 
 			var i32 poll_res= unsafe( ::poll( poll_descriptors.data(), nfds_t( poll_descriptors.size() ), timeout_ms ) );
 
-			// "poll" returns negative value on error, 0 in case of timeout and non-negative value in case if one of descriptors is ready.
+			// "poll" returns negative value on error, 0 in case of timeout and non-negative value indicating the number of ready descriptors.
 			// For now we can't handle errors, so, just assert in case of error.
 			assert( poll_res >= 0, "Unexpected \"poll\" call result!" );
 
@@ -504,7 +506,7 @@ var TaskUniqueId mut g_next_task_id= 10000000000u64;
 
 // Store here a raw pointer to shared state structure, when entering async function execution.
 // Don't forget to zero it back when leaving an async function execution!
-// Actual state isn't mutated by users of this variable.
+// State structure itself isn't mutated by users of this variable, but its internals (accessed via indirection) are mutated.
 thread_local $(SharedState) g_current_runner_thread_shared_state= zero_init;
 
 thread_local $(TasksMap) g_current_runner_thread_tasks_map= zero_init;

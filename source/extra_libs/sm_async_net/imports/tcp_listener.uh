@@ -47,7 +47,7 @@ public:
 
 			loop
 			{
-				// "WOULDBLOCK"/"EGAIN" error codes means that operation can't be performed yet.
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
 				// We need to wait here.
 				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
 				yield;

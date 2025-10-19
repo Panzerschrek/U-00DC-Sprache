@@ -473,7 +473,7 @@ public:
 		}
 	}
 
-	// Call if if you need to take the result instead of ignoring it.
+	// Call it if you need to take the result instead of ignoring it.
 	fn SkipDesruction( byval mut this ) unsafe
 	{
 		unsafe( ust::move_into_nowhere( move(this) ) );
@@ -525,7 +525,7 @@ public:
 		}
 	}
 
-	// Call if if you need to take the result instead of ignoring it.
+	// Call it if you need to take the result instead of ignoring it.
 	fn SkipDesruction( byval mut this ) unsafe
 	{
 		unsafe( ust::move_into_nowhere( move(this) ) );
@@ -577,7 +577,7 @@ public:
 		}
 	}
 
-	// Call if if you need to take the result instead of ignoring it.
+	// Call it if you need to take the result instead of ignoring it.
 	fn SkipDesruction( byval mut this ) unsafe
 	{
 		unsafe( ust::move_into_nowhere( move(this) ) );
@@ -588,7 +588,7 @@ private:
 	size_type num_handles_;
 }
 
-// A helper class used for detection of inproper subtask cancellation.
+// A helper class used for detection of improper subtask cancellation.
 class SubtasksCancellationHandler
 {
 public:

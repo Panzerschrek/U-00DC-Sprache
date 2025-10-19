@@ -145,7 +145,6 @@ fn Run()
 		r.deref().add_task( Func( finish_semaphore ) );
 	}
 
-	// Use a crude way to wait - via "thread_yield".
 	for( auto mut i= 0u; i < count; ++i )
 	{
 		finish_semaphore.deref().acquire();
@@ -211,10 +210,10 @@ fn Run()
 
 	r.deref().add_task( Func() );
 
-	// Let the added task to run some time.
+	// Let the added task running a bit.
 	ust::sleep( ust::duration::from_milliseconds( 15u64 ) );
 
-	// Call runner destructor here, which ends the erernal task.
+	// Call runner destructor here, which ends the eternal task.
 }
 
 fn async Func()
@@ -980,6 +979,7 @@ fn async ClientFunc( ust::socket_address_v4 server_address, SemaphorePtr finish_
 
 	for( auto mut i= 0s; i < g_num_ints; ++i )
 	{
+		// TODO - ensure this test is always correct with all possible byte orders.
 		var byte8 v0= data[ i * 4s + 0s ];
 		var byte8 v1= data[ i * 4s + 1s ];
 		var byte8 v2= data[ i * 4s + 2s ];
