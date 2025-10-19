@@ -50,6 +50,10 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		sys_library_target.public_include_directories.push_back( "sys/freebsd" );
 		tests_target.source_files.push_back( "tests/utils_freebsd.u" );
 	}
+	else
+	{
+		build_system_interface.LogInfo( "Unknown target system, \"sm_async_net\" library may not work properly on it!" );
+	}
 
 	return BK::PackageInfo
 	{
