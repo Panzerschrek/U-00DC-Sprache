@@ -32,14 +32,12 @@ fn udp_socket::create_and_bind( ust::socket_address& a ) : ust::io_result</udp_s
 
 fn udp_socket::constructor( ust::udp_socket mut s ) unsafe
 	( socket_= move(s) )
-{
-}
+{}
 
 fn udp_socket::connect( mut this, ust::socket_address& a ) : ust::io_result</void/>
 {
 	return socket_.connect( a );
 }
-
 
 fn udp_socket::get_local_address( this ) : ust::io_result</ust::socket_address/>
 {

@@ -8,8 +8,6 @@ template</type T/>
 class Queue
 {
 public:
-	fn constructor()= default;
-
 	fn Push( mut this, T mut t )
 	{
 		in_stack_.push_back( move(t) );
