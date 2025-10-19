@@ -27,6 +27,14 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
 	};
 
+	var BK::BuildTarget mut http_server_example_target
+	{
+		.name= "http_server_example",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ ust::string8 />( "http_server_example/main.u" ),
+		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
+	};
+
 	if( target_trple.operating_system == "linux" )
 	{
 		sys_library_target.public_include_directories.push_back( "sys/linux" );
@@ -45,6 +53,10 @@ fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::
 
 	return BK::PackageInfo
 	{
-		.build_targets= ust::make_array( move(sys_library_target), move(library_target), move(tests_target) )
+		.build_targets= ust::make_array(
+			move(sys_library_target),
+			move(library_target),
+			move(tests_target),
+			move(http_server_example_target) )
 	};
 }

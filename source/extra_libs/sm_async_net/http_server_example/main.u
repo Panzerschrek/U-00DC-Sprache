@@ -1,0 +1,132 @@
+import "/enum_string_conversions.u"
+import "/main_wrapper.u"
+import "/semaphore.u"
+import "/shared_ptr_mt_final.u"
+import "/stdout.u"
+import "/string_conversions.u"
+import "/sm_async_net/runner.uh"
+import "/sm_async_net/tcp_listener.uh"
+
+pretty_main
+{
+	var ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore( ust::semaphore(0u) );
+
+	auto runner_ptr= sm_async_net::create_runner();
+
+	runner_ptr.deref().add_task( ServerFunc( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+
+	return 0;
+}
+
+fn async ServerFunc( ust::shared_ptr_mt_final</ust::semaphore/> finish_semaphore )
+{
+	// Use ipv4 address, but ipv6 addresses may be used too.
+	var ust::socket_address_v4 address( ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) ), 57854u16 );
+
+	ust::stdout_print(
+		ust::concat(
+			"starting TCP server listening on address ",
+			address.get_ip().to_string(),
+			" and port ",
+			ust::to_string8( address.get_port() ),
+			"\n" ) );
+
+	ust::stdout_print(
+		ust::concat(
+			"Open it in browser via link like \"http://",
+			address.get_ip().to_string(),
+			":",
+			ust::to_string8( address.get_port() ),
+			"\"\n",
+			"Press Ctrl+C to stop it\n" ) );
+
+	// Create listener port.
+	var sm_async_net::tcp_listener mut listener= sm_async_net::tcp_listener::create_and_bind( address ).try_take();
+
+	// Connections accept loop.
+	loop
+	{
+		result_match( listener.accept().await )
+		{
+			Ok( mut r ) ->
+			{
+				auto [ mut stream, client_address ] = move(r);
+
+				// Create a separate task to handle clients.
+				// Doing so allows us accepting other clients while handling this one.
+				sm_async_net::add_task( ClientHandlerFunc( move(stream), client_address ) );
+			},
+			Err( e ) ->
+			{
+				ust::stdout_print( ust::concat( "Server error encounted: ", ust::enum_to_string(e), "\n" ) );
+				break;
+			}
+		}
+	}
+
+	finish_semaphore.deref().release();
+}
+
+fn async ClientHandlerFunc( sm_async_net::tcp_stream mut stream, ust::socket_address client_address )
+{
+	// Print client address in all possible forms - ipv4, ipv6.
+	variant_visit( &a : client_address )
+	{
+		ust::stdout_print( ust::concat( "Incoming connection from ", a.get_ip().to_string(), "\n" ) );
+	}
+
+	// Receive and print request text.
+	// It may be used to process request properly, but for now just ignore it.
+	{
+		var ust::string8 mut request_text( 1024s, '\0' );
+		var size_type bytes_read= stream.read( request_text.range().to_byte8_range() ).await.try_take();
+		request_text.resize( bytes_read, '\0' );
+
+		ust::stdout_print( "\n" );
+		ust::stdout_print( request_text );
+	}
+
+	// In this simple example we handle each connection synchronously.
+	// But generally it's preffered to move request processing into another thread(s).
+
+	// Status line goes first.
+	WriteAll( stream, g_http_response_status_line ).await;
+	// Then headers follow.
+	WriteAll( stream, g_http_respense_headers ).await;
+	WriteAll( stream, ust::concat( "Content-Length: ", ust::to_string8( typeinfo</ typeof(g_html_page_contents) />.size_of ), g_http_line_end ) ).await;
+	// Actual message is separated via empty line.
+	WriteAll( stream, g_http_respense_header_end_marker ).await;
+	// Actual HTML page (or some other contents).
+	WriteAll( stream, g_html_page_contents ).await;
+}
+
+fn async WriteAll( sm_async_net::tcp_stream &mut stream, ust::string_view8 message )
+{
+	// Write in loop, since sometimes the whole message at once can't be written.
+	for( auto mut offset= 0s; offset < message.size(); )
+	{
+		var size_type bytes_written= stream.write( message.to_byte8_range().subrange_start( offset ) ).await.try_take();
+		offset+= bytes_written;
+	}
+}
+
+auto& g_http_line_end= "\r\n";
+
+auto g_http_response_status_line= "HTTP/1.1 200 OK" + g_http_line_end;
+auto g_http_respense_headers= "Content-Type: text/html" + g_http_line_end;
+auto g_http_respense_header_end_marker= g_http_line_end;
+
+auto g_html_page_contents=
+"<html>" +
+	"<head>" +
+	"<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />" +
+	"</head>" +
+	"<body>" +
+		"Simple HTTP async server example<br>" +
+		"Einfaches Beispiel eines asynchronen HTTP-Servers<br>" +
+		"Простой пример асинхронного HTTP сервера<br>" +
+	"</body>" +
+"</html>" +
+g_http_line_end;
