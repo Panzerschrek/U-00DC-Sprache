@@ -3,6 +3,17 @@ if(WIN32)
 	return()
 endif()
 
+if( CMAKE_SIZEOF_VOID_P EQUAL 4 )
+	# For now don't support 32-bit platforms - we require 64-bit atomic operations for unique task ID counter.
+	return()
+endif()
+
+if( LLVM_DEFAULT_TARGET_TRIPLE STREQUAL "i686-unknown-linux-gnu" )
+	# Fuck you Cmake!
+	# Why can't you set CMAKE_SIZEOF_VOID_P to 4 if -m32 option is specified?
+	return()
+endif()
+
 if( ${CMAKE_BUILD_TYPE} STREQUAL Debug )
 	set( BUILD_SYSTEM_BUILD_CONFIGURATION "debug" )
 else()

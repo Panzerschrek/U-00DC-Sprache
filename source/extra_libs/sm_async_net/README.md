@@ -14,7 +14,7 @@ In your project you can access it as a versioned package or place it within your
 
 ### Supported systems
 
-For now only GNU/Linux and FreeBSD are supported.
+For now only 64-bit GNU/Linux and FreeBSD are supported.
 Windows support isn't implemented yet (since it a little bit more complex).
 
 *sm_async_net* uses `poll` call to wait for sockets to be ready and dispatch control flow to async functions waiting on these sockets.
