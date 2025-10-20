@@ -47,7 +47,7 @@ struct BuildGraph
 
 	// Edges aren't stored explicitly - input/output edges (files) are stored in nodes.
 	// Edges without start nodes are possible - like for source files.
-	// Edges witohut end nodes are possible too - like for result files (executables, shared libraries, etc.).
+	// Edges without end nodes are possible too - like for result files (executables, shared libraries, etc.).
 }
 
 // Perform the build, possibly rebuilding only necessary parts of the graph.

@@ -937,7 +937,7 @@ void CppAstConsumer::EmitFunction( const std::string& name, const clang::Functio
 
 	func.name.push_back( Synt::Function::NameComponent{ name, g_dummy_src_loc } );
 
-	func.no_mangle= true; // For now import only C functions witohut mangling.
+	func.no_mangle= true; // For now import only C functions without mangling.
 
 	if( function_decl.hasAttr<clang::WarnUnusedResultAttr>() )
 		func.no_discard= true;
