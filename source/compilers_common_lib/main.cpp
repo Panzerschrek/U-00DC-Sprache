@@ -37,10 +37,10 @@
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../code_builder_lib_common/async_calls_inlining.hpp"
+#include "../compilers_support_lib/compiler_builtins.hpp"
 #include "../compilers_support_lib/div_builtins.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
-#include "../compilers_support_lib/ustlib.hpp"
 #include "../compilers_support_lib/vfs.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
 #include "../sprache_version/sprache_version.hpp"
@@ -809,7 +809,7 @@ int Main( int argc, const char* argv[] )
 			llvm::LLVMConstants::DEBUG_METADATA_VERSION );
 	}
 
-	if( !LinkUstLibModules( *result_module, Options::halt_mode, Options::no_system_alloc ) )
+	if( !LinkCompilerBuiltinModules( *result_module, Options::halt_mode, Options::no_system_alloc ) )
 		return 1;
 
 	// Dump llvm code before optimization passes.

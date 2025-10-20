@@ -9,7 +9,7 @@
 #include <llvm/TargetParser/Triple.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "ustlib.hpp"
+#include "compiler_builtins.hpp"
 
 namespace U
 {
@@ -44,7 +44,7 @@ void RemoveAllComdats( llvm::Module& module )
 
 } // namespace
 
-bool LinkUstLibModules(
+bool LinkCompilerBuiltinModules(
 	llvm::Module& result_module,
 	const HaltMode halt_mode,
 	const bool no_system_alloc )

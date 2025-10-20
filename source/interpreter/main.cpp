@@ -18,9 +18,9 @@
 #include "../code_builder_lib_common/long_stable_hash.hpp"
 #include "../code_builder_lib_common/interpreter.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
+#include "../compilers_support_lib/compiler_builtins.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
-#include "../compilers_support_lib/ustlib.hpp"
 #include "../compilers_support_lib/vfs.hpp"
 #include "../tests/tests_common.hpp"
 
@@ -410,7 +410,7 @@ int Main( int argc, const char* argv[] )
 	if( have_some_errors )
 		return 1;
 
-	if( !LinkUstLibModules(
+	if( !LinkCompilerBuiltinModules(
 			*result_module,
 			HaltMode::Abort,
 			false // Enable system allocations
