@@ -954,7 +954,7 @@ def OperatorsWithNodeLock_Test2():
 		fn Foo( size_type i )
 		{
 			var [ i32, 4 ] mut arr= zero_init;
-			arr[ move(arr)[i] ]; // indexation operator locks indexed variable and makes moving/chanhing of it impossible during index calculation.
+			arr[ move(arr)[i] ]; // Subscript operator locks indexed variable and makes moving/chanhing of it impossible during index calculation.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -1843,7 +1843,7 @@ def AccessingVariableHavingMutableReference_Test28():
 			var u32 mut x= 1u;
 			auto &mut x_ref= x;
 			var [ i32, 4 ] arr= zero_init;
-			auto arr_x= arr[ x ]; // Reading variable having a mutable reference in indexation operator.
+			auto arr_x= arr[ x ]; // Reading variable having a mutable reference in subscript operator.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

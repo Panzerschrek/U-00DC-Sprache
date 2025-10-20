@@ -62,7 +62,7 @@ struct SameType;
 struct NonSyncExpression;
 struct CallOperator;
 struct CallOperatorSignatureHelp;
-struct IndexationOperator;
+struct SubscriptOperator;
 struct MemberAccessOperator;
 struct MemberAccessOperatorCompletion;
 struct VariableInitialization;
@@ -191,7 +191,7 @@ using Expression= std::variant<
 	std::unique_ptr<const NonSyncExpression>,
 	std::unique_ptr<const CallOperator>,
 	std::unique_ptr<const CallOperatorSignatureHelp>,
-	std::unique_ptr<const IndexationOperator>,
+	std::unique_ptr<const SubscriptOperator>,
 	std::unique_ptr<const MemberAccessOperator>,
 	std::unique_ptr<const MemberAccessOperatorCompletion>,
 	std::unique_ptr<const VariableInitialization>,
@@ -642,9 +642,9 @@ struct CallOperatorSignatureHelp
 	// For now no need to parse arguments.
 };
 
-struct IndexationOperator
+struct SubscriptOperator
 {
-	explicit IndexationOperator( const SrcLoc& src_loc )
+	explicit SubscriptOperator( const SrcLoc& src_loc )
 		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;

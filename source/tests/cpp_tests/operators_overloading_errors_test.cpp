@@ -182,7 +182,7 @@ U_TEST( InvalidReturnTypeForOperator_Test )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 13u ) );
 }
 
-U_TEST( IndexationOperatorHaveFirstArgumentOfNonparentClass )
+U_TEST( SubscriptOperatorHaveFirstArgumentOfNonparentClass )
 {
 	static const char c_program_text[]=
 	R"(

@@ -740,7 +740,7 @@ fn SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( mut this, Exp
 
 			ExpectLexem( Lexem::Type::SquareBracketRight );
 
-			return TryParseBinaryOperatorComponentPostfixOperator( IndexationOperator{ .src_loc= src_loc, .value(move(expr)), .index(move(index)) } );
+			return TryParseBinaryOperatorComponentPostfixOperator( SubscriptOperator{ .src_loc= src_loc, .value(move(expr)), .index(move(index)) } );
 		},
 		Lexem::Type::BracketLeft ->
 		{

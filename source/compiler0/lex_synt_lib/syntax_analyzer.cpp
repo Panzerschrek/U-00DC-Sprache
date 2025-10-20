@@ -939,15 +939,15 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 	{
 	case Lexem::Type::SquareBracketLeft:
 		{
-			auto indexation_opearator= std::make_unique<IndexationOperator>( it_->src_loc );
+			auto subscript_opearator= std::make_unique<SubscriptOperator>( it_->src_loc );
 			NextLexem();
 
-			indexation_opearator->expression= std::move(expr);
-			indexation_opearator->index= ParseExpression();
+			subscript_opearator->expression= std::move(expr);
+			subscript_opearator->index= ParseExpression();
 
 			ExpectLexem( Lexem::Type::SquareBracketRight );
 
-			return TryParseBinaryOperatorComponentPostfixOperator(std::move(indexation_opearator));
+			return TryParseBinaryOperatorComponentPostfixOperator(std::move(subscript_opearator));
 		}
 
 	case Lexem::Type::BracketLeft:

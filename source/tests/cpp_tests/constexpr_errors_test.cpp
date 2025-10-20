@@ -355,7 +355,7 @@ U_TEST( ArrayIndexOutOfBoundsTest0 )
 			auto x= arr[5u]; // index= size
 			auto y= arr[6u]; // index > size
 			auto z= arr[8278282u]; // index >> size
-			auto w= zero_arr[0u]; // indexation of zero-size array
+			auto w= zero_arr[0u]; // Subscript operator for zero-size array
 			auto q= arr[ -1 ];
 		}
 	)";

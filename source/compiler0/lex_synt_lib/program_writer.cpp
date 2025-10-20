@@ -575,14 +575,14 @@ void ElementWrite( const BitwiseNot& bitwise_not ) const
 	stream_ << " )";
 }
 
-void ElementWrite( const IndexationOperator& indexation_operator ) const
+void ElementWrite( const SubscriptOperator& subscript_operator ) const
 {
 	// Add () to ensure order of evaluation is correct.
 	stream_ << "( ";
 
-	ElementWrite( indexation_operator.expression );
+	ElementWrite( subscript_operator.expression );
 	stream_ << "[ ";
-	ElementWrite( indexation_operator.index );
+	ElementWrite( subscript_operator.index );
 	stream_ << " ]";
 
 	stream_ << " )";

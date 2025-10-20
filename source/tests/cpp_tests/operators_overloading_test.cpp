@@ -804,7 +804,7 @@ U_TEST( OperatorsOverloadingTest_EqualityOperatorsConstexpr )
 	BuildProgram( c_program_text );
 }
 
-U_TEST( OperatorsOverloadingTest_IndexationOperator0 )
+U_TEST( OperatorsOverloadingTest_SubscriptOperator0 )
 {
 	static const char c_program_text[]=
 	R"(
@@ -841,7 +841,7 @@ U_TEST( OperatorsOverloadingTest_IndexationOperator0 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 654 ) == result_value.IntVal.getLimitedValue() );
 }
 
-U_TEST( OperatorsOverloadingTest_IndexationOperator1 )
+U_TEST( OperatorsOverloadingTest_SubscriptOperator1 )
 {
 	static const char c_program_text[]=
 	R"(

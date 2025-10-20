@@ -91,10 +91,10 @@ void FindImpl( const Synt::CallOperatorSignatureHelp& call_operator_signature_he
 	}
 }
 
-void FindImpl( const Synt::IndexationOperator& indexation_operator )
+void FindImpl( const Synt::SubscriptOperator& subscript_operator )
 {
-	FindImpl( indexation_operator.expression );
-	FindImpl( indexation_operator.index );
+	FindImpl( subscript_operator.expression );
+	FindImpl( subscript_operator.index );
 }
 
 void FindImpl( const Synt::MemberAccessOperator& member_access_operator )

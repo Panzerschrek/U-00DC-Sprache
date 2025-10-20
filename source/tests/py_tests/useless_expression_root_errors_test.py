@@ -116,7 +116,7 @@ def UselessExpressionRoot_Test9():
 	c_program_text= """
 		fn Foo( [i32, 1024]& arr, u32 index )
 		{
-			arr[index]; // Useless indexation for array.
+			arr[index]; // Useless subscript for array.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -128,7 +128,7 @@ def UselessExpressionRoot_Test10():
 	c_program_text= """
 		fn Foo( tup[f32, bool, i32]& t )
 		{
-			t[1]; // Useless indexation for tuple.
+			t[1]; // Useless subscript for tuple.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

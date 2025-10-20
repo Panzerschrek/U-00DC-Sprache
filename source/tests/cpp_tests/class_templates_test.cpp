@@ -827,9 +827,9 @@ U_TEST( ClassPrepass_Test0 )
 
 				loc3( 45 ); // dependent on T call operator.
 				Baz( loc1 ); // dependent on T argument.
-				loc0[42u]; // dependent on T indexation
+				loc0[42u]; // dependent on T subscript
 
-				// dependent on T indexation
+				// dependent on T subscript
 				var [ i32, 2 ] mut arr= zero_init;
 				arr[ loc3 ];
 

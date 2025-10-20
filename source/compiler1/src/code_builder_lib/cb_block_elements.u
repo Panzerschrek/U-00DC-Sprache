@@ -4000,7 +4000,7 @@ fn SingleExpressionIsUselessImpl( Synt::EmptyVariant& e ) : bool { ust::ignore_u
 // So, in order to avoid generating too many errors, assume, that all calls are not useless.
 fn SingleExpressionIsUselessImpl( Synt::CallOperator& e ) : bool { ust::ignore_unused(e); return false; }
 // It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
-fn SingleExpressionIsUselessImpl( Synt::IndexationOperator& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::SubscriptOperator& e ) : bool { ust::ignore_unused(e); return true; }
 fn SingleExpressionIsUselessImpl( Synt::MemberAccessOperator& e ) : bool { ust::ignore_unused(e); return true; }
 // It's useless to initialize new variable and not using it.
 fn SingleExpressionIsUselessImpl( Synt::VariableInitialization& e ) : bool { ust::ignore_unused(e); return true; }

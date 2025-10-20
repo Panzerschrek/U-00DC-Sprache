@@ -669,7 +669,7 @@ U_TEST(OperationNotSupportedForThisTypeTest0)
 
 U_TEST(OperationNotSupportedForThisTypeTest1)
 {
-	// Indexation operators.
+	// Subscript operators.
 	static const char c_program_text[]=
 	R"(
 		struct S{}
@@ -678,8 +678,8 @@ U_TEST(OperationNotSupportedForThisTypeTest1)
 		{
 			var f32 variable= 0.0f32;
 			var S s= zero_init;
-			variable[ 42u32 ]; // Indexation of variable.
-			s[ 45u32 ]; // Indexation of struct variable.
+			variable[ 42u32 ]; // Subscript operator for non-array variable.
+			s[ 45u32 ]; // Subscript operator for struct variable withot op[] overloaded.
 		}
 	)";
 

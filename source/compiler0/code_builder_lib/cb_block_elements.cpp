@@ -29,7 +29,7 @@ bool SingleExpressionIsUselessImpl( const Synt::EmptyVariant& ) { return false; 
 bool SingleExpressionIsUselessImpl( const Synt::CallOperator& ) { return false; }
 bool SingleExpressionIsUselessImpl( const Synt::CallOperatorSignatureHelp& ) { return false; }
 // It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
-bool SingleExpressionIsUselessImpl( const Synt::IndexationOperator& ) { return true; }
+bool SingleExpressionIsUselessImpl( const Synt::SubscriptOperator& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::MemberAccessOperator& ) { return true; }
 bool SingleExpressionIsUselessImpl( const Synt::MemberAccessOperatorCompletion& ) { return true; }
 // It's useless to initialize new variable and not using it.

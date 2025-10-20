@@ -253,23 +253,23 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const Synt::IndexationOperator& indexation_operator )
+	const Synt::SubscriptOperator& subscript_operator )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( indexation_operator.expression, names_scope, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( subscript_operator.expression, names_scope, function_context );
 
 	if( variable->type.GetClassType() != nullptr ) // If this is class - try call overloaded [] operator.
 	{
 		if( auto res=
 				TryCallOverloadedPostfixOperator(
 					variable,
-					llvm::ArrayRef<Synt::Expression>(indexation_operator.index),
+					llvm::ArrayRef<Synt::Expression>(subscript_operator.index),
 					OverloadedOperator::Indexing,
-					indexation_operator.src_loc,
+					subscript_operator.src_loc,
 					names_scope,
 					function_context ) )
 			return std::move(*res);
 
-		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), indexation_operator.src_loc, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), subscript_operator.src_loc, variable->type );
 		return ErrorValue();
 	}
 
@@ -284,23 +284,23 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				variable->location,
 				variable->name + " lock" );
 		function_context.variables_state.AddNode( variable_lock );
-		function_context.variables_state.TryAddLink( variable, variable_lock, names_scope.GetErrors(), indexation_operator.src_loc );
-		function_context.variables_state.TryAddInnerLinks( variable, variable_lock, names_scope.GetErrors(), indexation_operator.src_loc );
+		function_context.variables_state.TryAddLink( variable, variable_lock, names_scope.GetErrors(), subscript_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable, variable_lock, names_scope.GetErrors(), subscript_operator.src_loc );
 
 		variable_lock->preserve_temporary= true;
 		RegisterTemporaryVariable( function_context, variable_lock );
 
-		const VariablePtr index= BuildExpressionCodeEnsureVariable( indexation_operator.index, names_scope, function_context );
+		const VariablePtr index= BuildExpressionCodeEnsureVariable( subscript_operator.index, names_scope, function_context );
 
 		if( function_context.variables_state.HasOutgoingMutableNodes( index ) )
-			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), indexation_operator.src_loc, variable->name );
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), subscript_operator.src_loc, variable->name );
 
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
 		if( !( index_fundamental_type != nullptr && (
 			( index->constexpr_value != nullptr && IsInteger( index_fundamental_type->fundamental_type ) ) ||
 			( index->constexpr_value == nullptr && IsUnsignedInteger( index_fundamental_type->fundamental_type ) ) ) ) )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), indexation_operator.src_loc, "any unsigned integer", index->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), subscript_operator.src_loc, "any unsigned integer", index->type );
 			return ErrorValue();
 		}
 
@@ -311,19 +311,19 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( IsSignedInteger(index_fundamental_type->fundamental_type) )
 			{
 				if( index_value.getLimitedValue() >= array_type->element_count || index_value.isNegative() )
-					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope.GetErrors(), indexation_operator.src_loc, index_value.getSExtValue(), array_type->element_count );
+					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope.GetErrors(), subscript_operator.src_loc, index_value.getSExtValue(), array_type->element_count );
 			}
 			else
 			{
 				if( index_value.getLimitedValue() >= array_type->element_count )
-					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope.GetErrors(), indexation_operator.src_loc, index_value.getLimitedValue(), array_type->element_count );
+					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope.GetErrors(), subscript_operator.src_loc, index_value.getLimitedValue(), array_type->element_count );
 			}
 		}
 
 		// Make first index = 0 for array to pointer conversion.
 		llvm::Value* index_value= CreateMoveToLLVMRegisterInstruction( *index, function_context );
 
-		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), indexation_operator.src_loc ); // Destroy temporaries of index expression.
+		DestroyUnusedTemporaryVariables( function_context, names_scope.GetErrors(), subscript_operator.src_loc ); // Destroy temporaries of index expression.
 
 		const VariableMutPtr result=
 			Variable::Create(
@@ -366,8 +366,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->llvm_value= CreateArrayElementGEP( function_context, *variable, index_value );
 
 		function_context.variables_state.AddNode( result );
-		function_context.variables_state.TryAddLink( variable_lock, result, names_scope.GetErrors(), indexation_operator.src_loc );
-		function_context.variables_state.TryAddInnerLinks( variable_lock, result, names_scope.GetErrors(), indexation_operator.src_loc );
+		function_context.variables_state.TryAddLink( variable_lock, result, names_scope.GetErrors(), subscript_operator.src_loc );
+		function_context.variables_state.TryAddInnerLinks( variable_lock, result, names_scope.GetErrors(), subscript_operator.src_loc );
 
 		function_context.variables_state.MoveNode( variable_lock );
 
@@ -382,15 +382,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// This is needed to properly access multiple mutable child nodes of same tuple variable.
 		{
 			const StackVariablesStorage temp_variables_storage( function_context );
-			index= BuildExpressionCodeEnsureVariable( indexation_operator.index, names_scope, function_context );
-			CallDestructors( temp_variables_storage, names_scope, function_context, indexation_operator.src_loc );
+			index= BuildExpressionCodeEnsureVariable( subscript_operator.index, names_scope, function_context );
+			CallDestructors( temp_variables_storage, names_scope, function_context, subscript_operator.src_loc );
 			// It is fine if "index" will be destroyed here. We needed only "constexpr" value of index here.
 		}
 
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
 		if( index_fundamental_type == nullptr || !IsInteger( index_fundamental_type->fundamental_type ) )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), indexation_operator.src_loc, "any integer", index->type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), subscript_operator.src_loc, "any integer", index->type );
 			return ErrorValue();
 		}
 
@@ -403,7 +403,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// For tuple indexing only constexpr indices are valid.
 		if( index->constexpr_value == nullptr )
 		{
-			REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), indexation_operator.src_loc );
+			REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), subscript_operator.src_loc );
 			return ErrorValue();
 		}
 		const llvm::APInt index_value_raw= index->constexpr_value->getUniqueInteger();
@@ -412,7 +412,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			if( index_value >= uint64_t(tuple_type->element_types.size()) || index_value_raw.isNegative() )
 			{
-				REPORT_ERROR( TupleIndexOutOfBounds, names_scope.GetErrors(), indexation_operator.src_loc, index_value_raw.getSExtValue(), tuple_type->element_types.size() );
+				REPORT_ERROR( TupleIndexOutOfBounds, names_scope.GetErrors(), subscript_operator.src_loc, index_value_raw.getSExtValue(), tuple_type->element_types.size() );
 				return ErrorValue();
 			}
 		}
@@ -420,7 +420,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			if( index_value >= uint64_t(tuple_type->element_types.size()) )
 			{
-				REPORT_ERROR( TupleIndexOutOfBounds, names_scope.GetErrors(), indexation_operator.src_loc, index_value, tuple_type->element_types.size() );
+				REPORT_ERROR( TupleIndexOutOfBounds, names_scope.GetErrors(), subscript_operator.src_loc, index_value, tuple_type->element_types.size() );
 				return ErrorValue();
 			}
 		}
@@ -467,7 +467,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), indexation_operator.src_loc, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), subscript_operator.src_loc, variable->type );
 		return ErrorValue();
 	}
 }

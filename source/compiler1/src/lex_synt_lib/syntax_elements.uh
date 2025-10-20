@@ -250,7 +250,7 @@ struct BinaryOperator
 	BinaryOperatorType operator;
 }
 
-struct IndexationOperator
+struct SubscriptOperator
 {
 	SrcLoc src_loc;
 	ust::shared_ptr_final</Expression/> value;
@@ -332,7 +332,7 @@ type Expression= ust::variant</ tup[
 	ust::box</ReferenceToRawPointerOperator/>,
 	ust::box</RawPointerToReferenceOperator/>,
 	BinaryOperator,
-	IndexationOperator,
+	SubscriptOperator,
 	CallOperator,
 	ust::box</MemberAccessOperator/>,
 	ust::box</VariableInitialization/>,
