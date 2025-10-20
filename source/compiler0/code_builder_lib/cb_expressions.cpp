@@ -612,6 +612,27 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion )
 {
 	const VariablePtr variable= BuildExpressionCodeEnsureVariable( member_access_operator_completion.expression, names_scope, function_context );
+
+	if( const auto class_= variable->type.GetClassType() )
+	{
+		if( const auto coroutine_description= std::get_if<CoroutineTypeDescription>( &class_->generated_class_data ) )
+		{
+			if( coroutine_description->kind == CoroutineKind::AsyncFunc )
+			{
+				// For async function objects complete ".await" keyword to suggest ".await" operator.
+				// Suggest nothing more for them, since it's practically useless.
+				CompletionItem item;
+				item.name= Keyword( Keywords::await_ );
+				item.sort_text= item.name;
+				item.kind= CompletionItemKind::Keyword;
+
+				completion_items_.push_back( std::move(item) );
+
+				return ErrorValue();
+			}
+		}
+	}
+
 	MemberAccessCompleteImpl( variable, member_access_operator_completion.member_name );
 	return ErrorValue();
 }

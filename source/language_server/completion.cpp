@@ -19,6 +19,7 @@ CompletionItemKind TranslateCompletionItemKind( const CodeBuilder::CompletionIte
 	case InKind::ClassField: return OutKind::Field;
 	case InKind::NamesScope: return OutKind::Module; // TODO - maybe use something else here?
 	case InKind::TypeTemplatesSet: return OutKind::Class; // TODO - maybe use something else here?
+	case InKind::Keyword: return OutKind::Keyword;
 	};
 
 	U_ASSERT(false);

@@ -1270,6 +1270,27 @@ U_TEST( DocumentCompletion_Test37 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test39 )
+{
+	DocumentsContainer documents;
+	const auto vfs= std::make_shared<TestVfs>(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "fn Foo() {  } fn async Bar(); " );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should suggest ".await" operator.
+	document.UpdateText( DocumentRange{ { 1, 12 }, { 1, 12 } }, "Bar()." );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 18 } );
+	const CompletionItemsNormalized expected_completion_result{ "await" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;

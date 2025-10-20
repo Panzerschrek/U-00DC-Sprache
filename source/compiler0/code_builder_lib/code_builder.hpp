@@ -65,6 +65,7 @@ public:
 		ClassField,
 		NamesScope,
 		TypeTemplatesSet,
+		Keyword,
 	};
 
 	struct CompletionItem
