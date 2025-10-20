@@ -73,7 +73,7 @@ else()
 
 	# A custom target which is needed only to execute the custom command above.
 	add_custom_target(
-		sm_async_net_run${CURRENT_COMPILER_GENERATION} ALL
+		sm_async_net_tests_run${CURRENT_COMPILER_GENERATION} ALL
 		DEPENDS ${TIMESTAMP_FILE}
 		SOURCES ${ALL_LIB_SOURCES}
 		)
