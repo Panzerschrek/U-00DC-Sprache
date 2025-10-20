@@ -9,7 +9,7 @@ namespace rwlock_impl
 
 static_assert( same_type</ rwlock, pthread_rwlock_t />, "Types mismatch!" );
 
-fn rwlock_init( rwlock &mut l ) unsafe
+fn init_rwlock( rwlock &mut l ) unsafe
 {
 	unsafe
 	{
@@ -18,27 +18,27 @@ fn rwlock_init( rwlock &mut l ) unsafe
 	}
 }
 
-fn rwlock_destroy( rwlock &mut l ) unsafe
+fn destroy_rwlock( rwlock &mut l ) unsafe
 {
 	halt if( unsafe( ::pthread_rwlock_destroy( l ) ) != 0 );
 }
 
-fn rwlock_lock_shared( rwlock &mut l ) unsafe
+fn lock_rwlock_shared( rwlock &mut l ) unsafe
 {
 	halt if( unsafe( ::pthread_rwlock_rdlock( l ) ) != 0 );
 }
 
-fn rwlock_unlock_shared( rwlock &mut l ) unsafe
+fn unlock_rwlock_shared( rwlock &mut l ) unsafe
 {
 	halt if( unsafe( ::pthread_rwlock_unlock( l ) ) != 0 );
 }
 
-fn rwlock_lock_exclusive( rwlock &mut l ) unsafe
+fn lock_rwlock_exclusive( rwlock &mut l ) unsafe
 {
 	halt if( unsafe( ::pthread_rwlock_wrlock( l ) ) != 0 );
 }
 
-fn rwlock_unlock_exclusive( rwlock &mut l ) unsafe
+fn unlock_rwlock_exclusive( rwlock &mut l ) unsafe
 {
 	halt if( unsafe( ::pthread_rwlock_unlock( l ) ) != 0 );
 }

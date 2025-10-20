@@ -113,7 +113,7 @@ public:
 			}
 			if( atomic_dec( $>(control_block_ptr).use_count_total ) == 1u )
 			{
-				rwlock_impl::rwlock_destroy( $>(control_block_ptr).rwlock );
+				rwlock_impl::destroy_rwlock( $>(control_block_ptr).rwlock );
 				// Free counter together with control_block_ptr allocated object.
 				memory_free( ptr_cast_to_byte8( control_block_ptr ) );
 			}
@@ -352,7 +352,7 @@ public:
 				auto control_block_ptr= storage_.get_control_block_ptr();
 				if( atomic_dec( $>(control_block_ptr).use_count_total ) == 1u )
 				{
-					rwlock_impl::rwlock_destroy( $>(control_block_ptr).rwlock );
+					rwlock_impl::destroy_rwlock( $>(control_block_ptr).rwlock );
 					// Free counter together with initial allocated object.
 					memory_free( ptr_cast_to_byte8( control_block_ptr) );
 				}
@@ -457,12 +457,12 @@ public:
 	fn constructor( mut this, storage_type storage ) unsafe
 		( storage_= storage )
 	{
-		unsafe( rwlock_impl::rwlock_lock_exclusive( $>( storage_.get_control_block_ptr() ).rwlock ) );
+		unsafe( rwlock_impl::lock_rwlock_exclusive( $>( storage_.get_control_block_ptr() ).rwlock ) );
 	}
 
 	fn destructor()
 	{
-		unsafe( rwlock_impl::rwlock_unlock_exclusive( $>( storage_.get_control_block_ptr() ).rwlock ) );
+		unsafe( rwlock_impl::unlock_rwlock_exclusive( $>( storage_.get_control_block_ptr() ).rwlock ) );
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -491,12 +491,12 @@ public:
 	fn constructor( mut this, storage_type storage )  unsafe
 		( storage_= storage )
 	{
-		unsafe( rwlock_impl::rwlock_lock_shared( $>( storage_.get_control_block_ptr() ).rwlock ) );
+		unsafe( rwlock_impl::lock_rwlock_shared( $>( storage_.get_control_block_ptr() ).rwlock ) );
 	}
 
 	fn destructor()
 	{
-		unsafe( rwlock_impl::rwlock_unlock_shared( $>( storage_.get_control_block_ptr() ).rwlock ) );
+		unsafe( rwlock_impl::unlock_rwlock_shared( $>( storage_.get_control_block_ptr() ).rwlock ) );
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
@@ -538,7 +538,7 @@ public:
 			c.use_count_total= 1u;
 			c.use_count_strong= 1u;
 
-			rwlock_impl::rwlock_init( c.rwlock );
+			rwlock_impl::init_rwlock( c.rwlock );
 
 			move_into_uninitialized( $>( byte_ptr_cast</T/>( mem + c_object_offset ) ), move(value) );
 
