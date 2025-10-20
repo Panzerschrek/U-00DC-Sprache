@@ -353,3 +353,151 @@ def EnableIf_ForPrototypeAndBody_Test4():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 12481632 )
+
+
+def EnableIf_FalseValueAllowsSpecialMethodGeneration_Test0():
+	c_program_text= """
+		struct S
+		{
+			// "enable_if" with false value lets the compiler to generate default constructor by itself.
+			fn enable_if(false) constructor();
+
+			i32 x= 633;
+		}
+		fn Foo()
+		{
+			var S s;
+			halt if( s.x != 633 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def EnableIf_FalseValueAllowsSpecialMethodGeneration_Test1():
+	c_program_text= """
+		struct S
+		{
+			// "enable_if" with false value lets the compiler to generate copy constructor by itself.
+			fn enable_if(false) constructor( mut this, S& other );
+
+			i32 x;
+		}
+		fn Foo()
+		{
+			var S s{ .x= 6311 };
+			var S s_copy= s;
+			halt if( s_copy.x != 6311 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def EnableIf_FalseValueAllowsSpecialMethodGeneration_Test2():
+	c_program_text= """
+		struct S
+		{
+			// "enable_if" with false value lets the compiler to generate copy-assignment operator by itself.
+			op enable_if(false) =( mut this, S& other );
+
+			i32 x;
+		}
+		fn Foo()
+		{
+			var S s0{ .x= 943 }, mut s1{ .x= 711 };
+			s1= s0;
+			halt if( s1.x != 943 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def EnableIf_FalseValueAllowsSpecialMethodGeneration_Test3():
+	c_program_text= """
+		struct S
+		{
+			// "enable_if" with false value lets the compiler to generate equality-compare operator by itself.
+			op enable_if(false) ==( S& l, S& r ) : bool;
+
+			i32 x;
+		}
+		fn Foo()
+		{
+			var S s0{ .x= 895 }, s1{ .x= 271 }, s2{ .x= 895 };
+			halt if( s0 != s0 );
+			halt if( s0 == s1 );
+			halt if( s0 != s2 );
+			halt if( s1 == s0 );
+			halt if( s1 != s1 );
+			halt if( s1 == s2 );
+			halt if( s2 != s0 );
+			halt if( s2 == s1 );
+			halt if( s2 != s2 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def EnableIf_ForDeletedMethod_Test0():
+	c_program_text= """
+		template</bool enable_default_constructor/>
+		struct S
+		{
+			fn enable_if( enable_default_constructor ) constructor() = default;
+			fn enable_if( !enable_default_constructor ) constructor() = delete;
+		}
+		static_assert( !typeinfo</ S</false/> />.is_default_constructible );
+		static_assert(  typeinfo</ S</true /> />.is_default_constructible );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def EnableIf_ForDeletedMethod_Test1():
+	c_program_text= """
+		template</bool enable_copy_constructor/>
+		struct S
+		{
+			type ThisType= S</enable_copy_constructor/>;
+
+			fn enable_if( enable_copy_constructor ) constructor( mut this, ThisType& other ) = default;
+			fn enable_if( !enable_copy_constructor ) constructor( mut this, ThisType& other ) = delete;
+		}
+		static_assert( !typeinfo</ S</false/> />.is_copy_constructible );
+		static_assert(  typeinfo</ S</true /> />.is_copy_constructible );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def EnableIf_ForDeletedMethod_Test2():
+	c_program_text= """
+		template</bool enable_copy_assignment/>
+		struct S
+		{
+			type ThisType= S</enable_copy_assignment/>;
+
+			op enable_if( enable_copy_assignment ) =( mut this, ThisType& other ) = default;
+			op enable_if( !enable_copy_assignment ) =( mut this, ThisType& other ) = delete;
+		}
+		static_assert( !typeinfo</ S</false/> />.is_copy_assignable );
+		static_assert(  typeinfo</ S</true /> />.is_copy_assignable );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def EnableIf_ForDeletedMethod_Test3():
+	c_program_text= """
+		template</bool enable_equality_compare/>
+		struct S
+		{
+			type ThisType= S</enable_equality_compare/>;
+
+			op enable_if( enable_equality_compare ) ==( ThisType& l, ThisType& r ) : bool = default;
+			op enable_if( !enable_equality_compare ) ==( ThisType& l, ThisType& r ) : bool = delete;
+		}
+		static_assert( !typeinfo</ S</false/> />.is_equality_comparable );
+		static_assert(  typeinfo</ S</true /> />.is_equality_comparable );
+	"""
+	tests_lib.build_program( c_program_text )
