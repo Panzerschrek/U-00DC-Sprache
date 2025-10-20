@@ -1,0 +1,89 @@
+import "/sm_async_net_sys/unix.uh"
+import "poll_waker.uh"
+
+namespace sm_async_net
+{
+
+fn PollWaker::constructor()
+	( pipe_write_end_= zero_init, pipe_read_end_= zero_init, wakeup_in_progress_(false) )
+{
+	unsafe
+	{
+		var [ i32, 2 ] mut pipe_ends= zero_init;
+		var i32 res= ::pipe( $<(pipe_ends[0]) );
+		halt if( res != 0 );
+
+		pipe_read_end_= pipe_ends[0];
+		pipe_write_end_= pipe_ends[1];
+
+		SetPipeEndNonblocking( pipe_read_end_ );
+		SetPipeEndNonblocking( pipe_write_end_ );
+	}
+}
+
+fn PollWaker::destructor()
+{
+	unsafe
+	{
+		::close( pipe_write_end_ );
+		::close( pipe_read_end_ );
+	}
+}
+
+fn PollWaker::Wake( this )
+{
+	if( wakeup_in_progress_.swap( true ) )
+	{
+		// Wakeup is already in progress, nothing to do.
+		return;
+	}
+
+	// Write a single byte into the pipe, to trigger wakeup of a "poll" call waiting on the writing end.
+
+	unsafe
+	{
+		var byte8 mut b= zero_init;
+		var ssize_t res= ::write( pipe_write_end_, $<(b), size_t(1) );
+		halt if( res != ssize_t(1) );
+	}
+}
+
+fn PollWaker::ResetWake( this )
+{
+	if( !wakeup_in_progress_.swap( false ) )
+	{
+		// No wakeup was scheduled, don't need to cancel it.
+		return;
+	}
+
+	// Read a single byte from the pipe, which should possible if previos wakeup was scheduled.
+
+	unsafe
+	{
+		var byte8 mut b= zero_init;
+		var ssize_t res= ::read( pipe_read_end_, $<(b), size_t(1) );
+		// "res" may be still zero, if previous "write" result didn't come yet.
+		ust::ignore_unused( res );
+	}
+}
+
+fn PollWaker::GetWakeHandle( this ) : ust::native_file_handle
+{
+	return pipe_read_end_;
+}
+
+fn SetPipeEndNonblocking( ust::native_file_handle h ) unsafe
+{
+	unsafe
+	{
+		var i32 mut flags= ::fcntl( h, F_GETFL, 0 );
+		halt if( flags == -1 );
+
+		flags |= O_NONBLOCK;
+
+		var i32 res= ::fcntl( h, F_SETFL, flags );
+		halt if( res != 0 );
+	}
+}
+
+} // namespace sm_async_net

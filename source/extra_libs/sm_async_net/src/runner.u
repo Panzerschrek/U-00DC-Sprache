@@ -1,0 +1,731 @@
+import "/assert.u"
+import "/hash_map.u"
+import "/shared_atomic_variable.u"
+import "/shared_ptr_mt_final.u"
+import "/shared_ptr_mt.u"
+import "/thread.u"
+import "/variant.u"
+import "/sm_async_net_sys/unix.uh"
+import "/sm_async_net/runner.uh"
+import "/sm_async_net/runner_internal.uh"
+import "poll_waker.uh"
+import "queue.uh"
+
+namespace sm_async_net
+{
+
+// Root task or subtask.
+struct RunningTask
+{
+	// Task handle (what is executed).
+	// Store async function object itself for root tasks,
+	// store raw handle for tasks which are subtasks of other tasks and thus are owned by them (parent tasks are responsible for their destruction ).
+	ust::variant</ tup[ root_task_type, ust::raw_coro_handle ] /> task;
+
+	// If non-empty, this task shouldn't be resumed until given socket isn't ready.
+	ust::optional</SocketForWaiting/> socket_to_wait; // TODO - use some sort of null socket value instead of optional?
+
+	// Connections to other tasks (parent, siblings, children).
+	// Subtasks aren't stored in a task directly, insterad only ID of the last child is stored.
+	// Children of one particular task (siblings) form a double-linked list based on such IDs.
+	// Parent ID is also stored.
+	RunningTaskConnections connections;
+}
+
+struct RunningTaskConnections
+{
+	TaskUniqueId parent; // Zero for root task.
+	TaskUniqueId prev_sibling; // Points to previous sibling or is zero if has no previous sibling or no siblings at all.
+	TaskUniqueId next_sibling; // Points to next sibling or is zero if has no next sibling or no siblings at all.
+	TaskUniqueId last_child; // The most recent added child, zero if has no children.
+}
+
+struct SocketForWaiting
+{
+	ust::native_socket_fd fd;
+	SocketOperationsForWaiting operations;
+}
+
+// All tasks and subtasks of a runner thread are stored in a single hash-map.
+// This allows to minimize memory fragmentation and allocation overhead,
+// no additional memory is required to store subtasks of a task,
+// if this hash-map still has free space in it.
+type TasksMap= ust::hash_map</TaskUniqueId, RunningTask/>;
+
+type TasksQueue= Queue</root_task_type/>;
+type TasksQueuePtr= ust::shared_ptr_mt_mut</TasksQueue/>;
+type ShutdownFlagPtr= ust::shared_atomic_variable</bool/>;
+
+// State shared by all runner threads.
+struct SharedState
+{
+	TasksQueuePtr tasks_queue;
+	ust::vector</PollWakerSharedPtr/> runner_thread_wakers; // Wakers of all threads using this state.
+	ShutdownFlagPtr shutdown_flag;
+}
+
+type PollWakerSharedPtr= ust::shared_ptr_mt_final</PollWaker/>;
+
+class runner final : runner_interface
+{
+public:
+	fn constructor( u32 num_threads );
+
+	fn virtual override destructor();
+
+	fn virtual override add_task( this, root_task_type t );
+
+private:
+	SharedState state_;
+	ust::vector</ust::thread</RunnerThreadFunction, void/>/> runner_threads_;
+}
+
+fn create_runner() : ust::box</runner_interface/>
+{
+	return ust::make_box( runner( 1u ) );
+}
+
+fn create_multithreaded_runner( u32 num_threads ) : ust::box</runner_interface/>
+{
+	return ust::make_box( runner( num_threads ) );
+}
+
+fn runner::constructor( u32 num_threads )
+	( state_{ .tasks_queue( TasksQueue() ), .shutdown_flag( false ) } )
+{
+	// Don't allow 0 threads and set a reasonable upper bound.
+	var u32 num_threads_limited= ust::max( 1u, ust::min( num_threads, 128u ) );
+
+	for( auto mut i= 0u; i < num_threads_limited; ++i )
+	{
+		state_.runner_thread_wakers.push_back( PollWakerSharedPtr( PollWaker() ) );
+	}
+
+	for( auto mut i= 0u; i < num_threads_limited; ++i )
+	{
+		runner_threads_.push_back( ust::make_thread( RunnerThreadFunction( state_, state_.runner_thread_wakers[ size_type(i) ] ) ) );
+	}
+}
+
+fn runner::destructor()
+{
+	// Set shudown flag first.
+	state_.shutdown_flag.write( true );
+
+	// Wake all threads waiting on "poll" call.
+	foreach( &waker_ptr : state_.runner_thread_wakers )
+	{
+		waker_ptr.deref().Wake();
+	}
+
+	// Destructors of runner threads execute "join" here. So we gracefully perform the shutdown sequence.
+	// Generally it shouldn't be long, since runner threads usually stop executing async functions after shutdown signal is set,
+	// unless some async function is stuck in an endless loop without yielding.
+}
+
+fn runner::add_task( this, root_task_type mut t )
+{
+	if( ust::coro_done( t ) )
+	{
+		// There is no reason to add already done task.
+		return;
+	}
+
+	with( mut l : state_.tasks_queue.lock_mut() )
+	{
+		l.deref().Push( move(t) );
+	}
+
+	// Wake all threads waiting on "poll" call.
+	// For now we have no way to wake only one of them.
+	foreach( &waker_ptr : state_.runner_thread_wakers )
+	{
+		waker_ptr.deref().Wake();
+	}
+}
+
+class RunnerThreadFunction
+{
+public:
+	fn constructor( SharedState mut state, PollWakerSharedPtr mut waker )
+		( state_= move(state), waker_= move(waker) )
+	{}
+
+	// Thread entry point.
+	op()( byval this );
+
+private:
+	SharedState state_;
+	PollWakerSharedPtr waker_;
+}
+
+op RunnerThreadFunction::()( byval this )
+{
+	var TasksMap mut tasks_map;
+
+	unsafe
+	{
+		// Set shared state global variable.
+		// Since this global variable is thread-local and this function is running on a separate thread, it's impossible here to overwrite someone else's variable instance.
+		g_current_runner_thread_shared_state= $<( cast_mut(state_) );
+
+		// Set also pointer to tasks map.
+		g_current_runner_thread_tasks_map= $<( tasks_map );
+	}
+
+	// Push IDs of tasks after they were extracted from the queue or if a task socket operation is ready.
+	var ust::vector</TaskUniqueId/> mut ready_for_execution_tasks;
+
+	// After the execution of a task we may need to execute its children tasks or its parent task.
+	// Use a stack for this (last-in, first-out) for better data and code cache locality.
+	var ust::vector</TaskUniqueId/> mut tasks_for_next_execution_stack;
+
+	// Reuse container for poll descriptors, avoid creating it for each "poll" call.
+	var ust::vector</pollfd/> mut poll_descriptors;
+	// Maintain a vector of task identifiers for poll descriptiors, in order to determine which tasks should be waked.
+	var ust::vector</TaskUniqueId/> mut tasks_for_poll_descriptirs;
+
+	// Main runner loop.
+	// Do not return from it, break instead!
+	// It's necessary to perform necessary cleanup steps before exiting!
+	loop label main_loop
+	{
+		// Execute all ready tasks.
+		foreach( initial_id : ready_for_execution_tasks )
+		{
+			// Start with initially-ready task.
+			// If necessary execute its children and its parent in last-in first-out order.
+			debug_assert( tasks_for_next_execution_stack.empty() );
+			tasks_for_next_execution_stack.push_back( initial_id );
+
+			while( !tasks_for_next_execution_stack.empty() )
+			{
+				var TaskUniqueId id= tasks_for_next_execution_stack.pop_back();
+
+				var ust::raw_coro_handle mut handle= zero_init;
+
+				if_var( &task : tasks_map.find(id) )
+				{
+					debug_assert( task.connections.last_child == TaskUniqueId(0), "A task ready to execute should not have children!" );
+					handle= GetTaskRawHandle( task.task );
+				}
+				else
+				{
+					assert( false, "A task scheduled for execution was removed!" );
+				}
+
+				var bool mut is_done= false;
+
+				unsafe // Because we access global variables here.
+				{
+					// Access current task in this block using each time methods op[]/find of the tasks map.
+					// We can't hold a reference to current task,
+					// since tasks may be added during this task execution and this may invalidate such reference.
+
+					g_currently_running_task_id= id;
+
+					// Execute a task without any pause until it's possible.
+					// Break early only if this task needs to wait for something or if shudown is requested.
+					loop
+					{
+						if( state_.shutdown_flag.read() )
+						{
+							g_currently_running_task_id= TaskUniqueId(0);
+							break label main_loop;
+						}
+
+						// This call may add new tasks and modify fields of current task structure.
+						// But the coroutine object pointer itself can't be changed.
+						coro_resume_impl( handle );
+
+						if( coro_done_impl( handle ) )
+						{
+							// Don't care to handle here results of finished tasks.
+							// Root tasks have "void" return type, which requires no handling.
+							// Results of children tasks are handled when their parent task is resumed or destryed.
+							is_done= true;
+							break;
+						}
+
+						if_var( &task : cast_imut(tasks_map).find( id ) )
+						{
+							if( !task.socket_to_wait.empty() )
+							{
+								// This task has registered a socket to wait during its exection.
+								// We shouldn't execute it further, but wait instead.
+								break;
+							}
+
+							if( task.connections.last_child != TaskUniqueId(0) )
+							{
+								// This task has registered one or more child tasks to execute.
+								// We shouldn't execute it further, but wait for children completion instead.
+
+								// Iterate children in reverse order to push them into the stack, which will lead to direct children execution order.
+								for( var TaskUniqueId mut c= task.connections.last_child; c != TaskUniqueId(0); c= cast_imut(tasks_map)[c].connections.prev_sibling )
+								{
+									tasks_for_next_execution_stack.push_back(c);
+								}
+
+								break;
+							}
+						}
+						else
+						{
+							assert( false, "A task was removed during its execution!" );
+						}
+					}
+
+					g_currently_running_task_id= TaskUniqueId(0);
+				}
+
+				if( is_done )
+				{
+					// Remove a finished task from the tasks container.
+					var RunningTask task_removed= tasks_map.remove_existing( id );
+
+					// It's still possible for user code to register a socket operation or create a child task(s) and than finish.
+					// Don't allow this, since it breaks a lot of assumptions.
+					assert( task_removed.socket_to_wait.empty(), "A finished task still has an active socket operation!" );
+					assert( task_removed.connections.last_child == TaskUniqueId(0), "A finished task still has children!" );
+
+					var RunningTaskConnections& connections= task_removed.connections;
+
+					if( connections.parent != TaskUniqueId(0) )
+					{
+						// Remove this task from linked list of siblings.
+						if( connections.prev_sibling != TaskUniqueId(0) )
+						{
+							tasks_map[connections.prev_sibling].connections.next_sibling= connections.next_sibling;
+						}
+						if( connections.next_sibling != TaskUniqueId(0) )
+						{
+							tasks_map[connections.next_sibling].connections.prev_sibling= connections.prev_sibling;
+						}
+
+						var RunningTaskConnections &mut parent_connections= tasks_map[connections.parent].connections;
+						if( parent_connections.last_child == id )
+						{
+							// If this task was the last child of its parent - set last child of the parent to previous sibling of this task.
+							parent_connections.last_child= connections.prev_sibling;
+
+							if( parent_connections.last_child == TaskUniqueId(0) )
+							{
+								// This was the last child task of its parent.
+								// We can continue execution of the parent task now.
+								tasks_for_next_execution_stack.push_back( connections.parent );
+							}
+						}
+					}
+					else
+					{
+						debug_assert( connections.prev_sibling == TaskUniqueId(0) && connections.next_sibling == TaskUniqueId(0), "A task with no parent has siblings!" );
+					}
+				}
+			}
+		}
+
+		debug_assert( tasks_for_next_execution_stack.empty() );
+
+		// After we processed all tasks, there should be no task ready for execution.
+		// This list may be populated later, like via new task addition, a "poll" call, a timeout or something similar.
+		ready_for_execution_tasks.clear();
+
+		if( state_.shutdown_flag.read() )
+		{
+			break label main_loop;
+		}
+
+		// On each iteration perform both tasks extraction an "poll" calling.
+		// Doing so is necessary to somewhat balance new tasks starting and present tasks processing.
+		// If we only process present tasks until we can, we don't let new tasks to start.
+		// If we only extract tasks from the queue, we don't get present tasks enough time to perform their work.
+		// It's unclear exactly, how to achieve perfect balance, but doing both extraction/polling on each iteration should work roughly fine.
+
+		var bool mut has_tasks_in_queue= false;
+
+		with( mut l : state_.tasks_queue.lock_mut() )
+		{
+			var TasksQueue &mut queue= l.deref();
+
+			var size_type num_tasks_in_queue= queue.GetSize();
+
+			if( num_tasks_in_queue > 0s )
+			{
+				// Take a half of the tasks present in the queue or at least one task.
+				// Doing so we prevent taking too much tasks in one thread.
+				// Taking only a half allows other threads to take other tasks.
+				//
+				// This strategy leads to slight queue waiting time increase,
+				// but allows somewhat even distribution of workload among threads.
+				//
+				// Perfect balancing may be hard to achieve,
+				// but at least threads doing less work have more chance to extract more tasks,
+				// since their main iteration loop is shorter and they perform tasks extraction more often.
+				//
+				// Do not limit tasks map size here, if it may be a problem, it's the user code responsible for such limiting.
+
+				var size_type num_tasks_to_take= ust::max( 1s, num_tasks_in_queue / 2s );
+
+				for( auto mut i= 0s; i < num_tasks_to_take; ++i )
+				{
+					if( state_.shutdown_flag.read() )
+					{
+						break label main_loop;
+					}
+
+					var ust::optional</root_task_type/> mut task_opt= queue.TryPop();
+					if( !task_opt.empty() )
+					{
+						var TaskUniqueId id= GetNewTaskId();
+
+						tasks_map.insert_new(
+							id,
+							RunningTask
+							{
+								.task= task_opt.try_take(),
+								// Root task has no parents and siblings, initially it has no children.
+								.connections{ .parent(0), .prev_sibling(0), .next_sibling(0), .last_child(0) },
+							} );
+
+						// Initially a task is ready for execution (it waits for no event, no timeout, no socket, etc.).
+						ready_for_execution_tasks.push_back( id );
+					}
+				}
+			}
+
+			has_tasks_in_queue= !queue.IsEmpty();
+		}
+
+		// Perform "poll".
+		// If we have tasks in the queue or have tasks to execute, set zero timeout.
+		// Otherwise set infinite timeout.
+		// This thread still may be awaken via waker.
+		{
+			poll_descriptors.clear();
+			tasks_for_poll_descriptirs.clear();
+
+			var PollWaker& waker= waker_.deref();
+
+			// Push waker handle as first descriptor.
+			poll_descriptors.push_back( pollfd{ .fd= waker.GetWakeHandle(), .events( POLLIN ), .revents(0) } );
+			tasks_for_poll_descriptirs.push_back( TaskUniqueId(0) );
+
+			// Iterate over all tasks and get socket descriptors for them.
+			// This uses hash-map order, but this isn't a huge problem.
+			// Problematic may be large number of active tasks, which increases complexity of this code linearly.
+			foreach( &running_task_pair : cast_imut(tasks_map) )
+			{
+				if_var( &socket_for_waiting : running_task_pair.value().socket_to_wait )
+				{
+					var u32 mut event_flags= 0u;
+					switch( socket_for_waiting.operations )
+					{
+						SocketOperationsForWaiting::Read -> { event_flags= u32( POLLIN ); },
+						SocketOperationsForWaiting::Write -> { event_flags= u32( POLLOUT ); },
+					}
+
+					poll_descriptors.push_back( pollfd{ .fd= socket_for_waiting.fd, .events( event_flags ), .revents(0) } );
+					tasks_for_poll_descriptirs.push_back( running_task_pair.key() );
+				}
+			}
+
+			debug_assert( tasks_for_poll_descriptirs.size() == poll_descriptors.size() );
+
+			var bool should_sleep= !has_tasks_in_queue && ready_for_execution_tasks.empty();
+
+			var i32 timeout_ms= ( should_sleep ? -1 : 0 );
+
+			var i32 poll_res= unsafe( ::poll( poll_descriptors.data(), nfds_t( poll_descriptors.size() ), timeout_ms ) );
+
+			// "poll" returns negative value on error, 0 in case of timeout and non-negative value indicating the number of ready descriptors.
+			// For now we can't handle errors, so, just assert in case of error.
+			assert( poll_res >= 0, "Unexpected \"poll\" call result!" );
+
+			if( poll_res > 0 )
+			{
+				// If we have a read event on the wake handle, reset wake state.
+				if( ( u32( poll_descriptors.front().revents ) & u32( POLLIN ) ) != 0u )
+				{
+					waker.ResetWake();
+				}
+
+				// Process poll descriptors other than the first one (for wake handle).
+				foreach( &pair : poll_descriptors.iter().zip( tasks_for_poll_descriptirs.iter() ).skip( 1s ) )
+				{
+					var pollfd& poll_descriptor= pair.first;
+					var TaskUniqueId task_id= pair.second;
+
+					// Check if result events contain flags for at least some of requested events.
+					// If it's true, we can resume the task.
+					// Also resume the task if has some error-like event.
+					if( ( i32(poll_descriptor.revents) & i32(poll_descriptor.events) ) != 0 ||
+						( i32(poll_descriptor.revents) & ( POLLERR | POLLHUP ) ) != 0 )
+					{
+						ready_for_execution_tasks.push_back( task_id );
+					}
+				}
+			}
+		}
+	}
+
+	// Perform cleanup steps.
+
+	unsafe
+	{
+		// Reset shared state global pointer.
+		g_current_runner_thread_shared_state= ust::nullptr</SharedState/>();
+		g_current_runner_thread_tasks_map= ust::nullptr</TasksMap/>();
+
+		// Set shutdow flag, so that destructors of tasks don't attempt to cancel socket operations and subtasks.
+		g_runner_thread_is_shutting_down= true;
+	}
+
+	ready_for_execution_tasks.clear();
+
+	// This destroys all tasks.
+	// Since we set shutdown flag to true, all attempts to cleanup functions are ignored.
+	tasks_map.clear();
+
+	return;
+}
+
+// When a control flow is passed to a task, this variable should be set to its ID.
+// It should be set to 0, if no active task is executing right now.
+thread_local TaskUniqueId g_currently_running_task_id(0);
+
+fn GetNewTaskId() : TaskUniqueId
+{
+	// Atomically increment global counter of tasks.
+	// Return previous counter value.
+	return unsafe( ust::atomic_inc( g_next_task_id ) );
+}
+
+// Start from a very large number (above 32-bit unsinged integer range) in order to catch errors with truncation quickly.
+var TaskUniqueId mut g_next_task_id= 10000000000u64;
+
+// Store here a raw pointer to shared state structure, when entering async function execution.
+// Don't forget to zero it back when leaving an async function execution!
+// State structure itself isn't mutated by users of this variable, but its internals (accessed via indirection) are mutated.
+thread_local $(SharedState) g_current_runner_thread_shared_state= zero_init;
+
+thread_local $(TasksMap) g_current_runner_thread_tasks_map= zero_init;
+
+thread_local bool g_runner_thread_is_shutting_down= false;
+
+fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketOperationsForWaiting operations ) unsafe : TaskUniqueId
+{
+	unsafe
+	{
+		var TaskUniqueId task_id= g_currently_running_task_id;
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Registering a socket operation with no active task!" );
+
+		var TasksMap &mut tasks_map= $>( tasks_map_ptr );
+
+		if_var( &mut task : tasks_map.find( task_id ) )
+		{
+			// A task may wait for no more than one socket operation or can have children, but not both.
+			assert( task.socket_to_wait.empty(), "Registering a socket operation for a task, that already has an active socket operation!" );
+			assert( task.connections.last_child == TaskUniqueId(0), "Registering a socket operation for a task, that has a child task and waits for it!" );
+
+			task.socket_to_wait= SocketForWaiting{ .fd= socket, .operations= operations };
+		}
+		else
+		{
+			assert( false, "Current task isn't present in tasks map!" );
+		}
+
+		return task_id;
+	}
+}
+
+fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe
+{
+	unsafe
+	{
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		if( task_id == TaskUniqueId(0) || ust::is_nullptr( tasks_map_ptr ) )
+		{
+			if( g_runner_thread_is_shutting_down )
+			{
+				return;
+			}
+			else
+			{
+				assert( false, "Canceling a socket operation outside tasks runner!" );
+			}
+		}
+
+		var TasksMap &mut tasks_map= $>( tasks_map_ptr );
+		if_var( &mut task : tasks_map.find( task_id ) )
+		{
+			task.socket_to_wait.reset();
+		}
+	}
+}
+
+fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe
+{
+	unsafe
+	{
+		var TaskUniqueId task_id= g_currently_running_task_id;
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Adding a subtask with no active task!" );
+
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle );
+	}
+}
+
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1 ) unsafe
+{
+	unsafe
+	{
+		var TaskUniqueId task_id= g_currently_running_task_id;
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Adding a subtask with no active task!" );
+
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle0 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle1 );
+	}
+}
+
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1, ust::raw_coro_handle handle2 ) unsafe
+{
+	unsafe
+	{
+		var TaskUniqueId task_id= g_currently_running_task_id;
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Adding a subtask with no active task!" );
+
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle0 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle1 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle2 );
+	}
+}
+
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1, ust::raw_coro_handle handle2, ust::raw_coro_handle handle3 ) unsafe
+{
+	unsafe
+	{
+		var TaskUniqueId task_id= g_currently_running_task_id;
+		var $(TasksMap) tasks_map_ptr= g_current_runner_thread_tasks_map;
+
+		assert( ( task_id != TaskUniqueId(0) && !ust::is_nullptr( tasks_map_ptr ) ), "Adding a subtask with no active task!" );
+
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle0 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle1 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle2 );
+		AddCurrentTaskSubtaskImpl( $>( tasks_map_ptr ), task_id, handle3 );
+	}
+}
+
+fn AddCurrentTaskSubtaskImpl( TasksMap &mut tasks_map, TaskUniqueId task_id, ust::raw_coro_handle handle ) unsafe
+{
+	var TaskUniqueId subtask_id= GetNewTaskId();
+
+	var TaskUniqueId mut prev_sibling= TaskUniqueId(0);
+
+	if_var( &mut task : tasks_map.find( task_id ) )
+	{
+		// A task may wait for no more than one socket operation or can have children, but not both.
+		assert( task.socket_to_wait.empty(), "Adding a subtask a task, that already has an active socket operation!" );
+
+		prev_sibling= task.connections.last_child;
+		task.connections.last_child= subtask_id;
+	}
+	else
+	{
+		assert( false, "Current task isn't present in tasks map!" );
+	}
+
+	if( prev_sibling != TaskUniqueId(0) )
+	{
+		tasks_map[prev_sibling].connections.next_sibling= subtask_id;
+	}
+
+	tasks_map.insert_new(
+		subtask_id,
+		RunningTask
+		{
+			.task= handle,
+			.connections{ .parent= task_id, .prev_sibling= prev_sibling, .next_sibling(0), .last_child(0), },
+		} );
+}
+
+fn HandleTaskSubtasksCancellation() unsafe
+{
+	// It's only fine to cancel subtasks during runner shutdown.
+	// In all other cases it isn't allowed - a task should finish, which triggers its removal.
+
+	unsafe
+	{
+		if( g_runner_thread_is_shutting_down )
+		{
+			return;
+		}
+
+		assert( false, "One or more subtasks of some task were cancelled, which isn't allowed otuside runner shutdown procedure!" );
+	}
+}
+
+fn GetTaskRawHandle( ust::variant</ tup[ root_task_type, ust::raw_coro_handle ] /> & t ) : ust::raw_coro_handle
+{
+	variant_visit( &v : t )
+	{
+		return GetTaskRawHandleImpl( v );
+	}
+	halt;
+}
+
+fn GetTaskRawHandleImpl( root_task_type& t ) : ust::raw_coro_handle
+{
+	return ust::get_raw_coro_handle( t );
+}
+
+fn GetTaskRawHandleImpl( ust::raw_coro_handle h ) : ust::raw_coro_handle
+{
+	return h;
+}
+
+fn add_task( root_task_type mut t )
+{
+	if( ust::coro_done( t ) )
+	{
+		// There is no reason to add already done task.
+		return;
+	}
+
+	unsafe
+	{
+		var $(SharedState) state_ptr= g_current_runner_thread_shared_state;
+		assert( !ust::is_nullptr( state_ptr ), "The \"add_task\" function is called outside a runner thread!" );
+
+		var SharedState& state= $>(state_ptr);
+
+		if( state.shutdown_flag.read() )
+		{
+			// Do not add new tasks while shutting down.
+			return;
+		}
+
+		with( mut l : state.tasks_queue.lock_mut() )
+		{
+			l.deref().Push( move(t) );
+		}
+
+		// Wake all threads waiting on "poll" call.
+		// For now we have no way to wake only one of them.
+		foreach( &waker_ptr : state.runner_thread_wakers )
+		{
+			waker_ptr.deref().Wake();
+		}
+	}
+}
+
+} // namespace sm_async_net

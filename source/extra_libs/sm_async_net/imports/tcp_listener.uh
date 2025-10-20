@@ -1,0 +1,96 @@
+import "/tcp_listener.u"
+import "tcp_stream.uh"
+
+namespace sm_async_net
+{
+
+// Async version of TCP listener class.
+// It mostly exposes the same API as ustlib version, but in async form.
+// Some APIs are hidden, since they shouldn't be used diectly in async code.
+// Note that async methods should be executed only within a task runner thread.
+class tcp_listener
+{
+public:
+	fn create_and_bind( ust::socket_address& a ) : ust::io_result</tcp_listener/>;
+
+	fn constructor( ust::tcp_listener l ) unsafe; // constructor for internal usage.
+
+	fn async accept( mut this ) : ust::io_result</ tup[ tcp_stream, ust::socket_address ] />
+	{
+		// Try accepting first, before waiting.
+		// Doing so we avoid current task switching if data is already available.
+		result_match( listener_.accept() )
+		{
+			Ok( mut ok ) ->
+			{
+				auto [ mut s, mut a ]= move(ok);
+
+				result_unwrap_or_return( v : s.set_nonblocking( true ) );
+				ust::ignore_unused(v);
+
+				var tup[ tcp_stream, ust::socket_address ] t[ unsafe( tcp_stream( move(s) ) ), move(a) ];
+				return t;
+			},
+			Err( e ) ->
+			{
+				if( e != ust::io_error::would_block )
+				{
+					// Unexpected error code - return it.
+					return e;
+				}
+			}
+		}
+
+		unsafe // Because of TaskSocketOperationHolder.
+		{
+			var TaskSocketOperationHolder op_holder( listener_.get_native_fd(), SocketOperationsForWaiting::Read );
+
+			loop
+			{
+				// "WOULDBLOCK"/"EGAIN" error codes mean that operation can't be performed yet.
+				// We need to wait here.
+				// If all works as expected, this async function will be resumed only when socket operation may be performed, but for case if it's not so, use a loop here.
+				yield;
+
+				result_match( listener_.accept() )
+				{
+					Ok( mut ok ) ->
+					{
+						auto [ mut s, mut a ]= move(ok);
+
+						result_unwrap_or_return( v : s.set_nonblocking( true ) );
+						ust::ignore_unused(v);
+
+						var tup[ tcp_stream, ust::socket_address ] t[ unsafe( tcp_stream( move(s) ) ), move(a) ];
+						return t;
+					},
+					Err( e ) ->
+					{
+						if( e != ust::io_error::would_block )
+						{
+							// Unexpected error code - return it.
+							return e;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	fn get_local_address( this ) : ust::io_result</ust::socket_address/>;
+
+	fn get_ttl( this ) : ust::io_result</u8/>;
+	fn set_ttl( mut this, u8 ttl ) : ust::io_result</void/>;
+
+	// Get underlying listener.
+	// Use it with caution, don't attempt to change it to non-blocking mode!
+	fn get_uderlying_listener( this ) unsafe : ust::tcp_listener&;
+	fn get_uderlying_listener( mut this ) unsafe : ust::tcp_listener &mut;
+
+	fn take_underlying_listener( byval this ) : ust::tcp_listener;
+
+private:
+	ust::tcp_listener listener_;
+}
+
+} // namespace sm_async_net

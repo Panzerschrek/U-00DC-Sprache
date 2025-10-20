@@ -1,0 +1,66 @@
+//
+// This file contains type and function declarations for internal usage.
+//
+
+import "/coro.u"
+import "/native_socket.u"
+
+namespace sm_async_net
+{
+
+// Each root task or subtask receives an unique identifier.
+// This identifier is unique even in different runner instances.
+// Identifiers aren't recycled and reused.
+// Zero indicates no task (it can't be assigned to some task).
+type TaskUniqueId= u64;
+
+// What kind of operations are expected for a socket (what to wait for).
+enum SocketOperationsForWaiting
+{
+	Read,
+	Write,
+}
+
+// This class registers a socket operation to wait and un-registers it in its destructor.
+// This destructor may be called in normal path (after a socket operation was performed successfully or with error), or in case of cancellation.
+// It can be created only within a running task.
+class TaskSocketOperationHolder
+{
+public:
+	fn constructor( ust::native_socket_fd socket, SocketOperationsForWaiting operations ) unsafe
+		( task_id_= unsafe( RegisterCurrentTaskSocketOperation( socket, operations ) ) )
+	{
+	}
+
+	fn destructor()
+	{
+		unsafe( CancelTaskSocketOperation( task_id_ ) );
+	}
+
+private:
+	TaskUniqueId task_id_;
+}
+
+// Register a socket operation for currently running task.
+// This function may be called only within a running task.
+// It halts if current task already has an active socket operation or children tasks.
+// It returns current task id.
+fn RegisterCurrentTaskSocketOperation( ust::native_socket_fd socket, SocketOperationsForWaiting operations ) unsafe : TaskUniqueId;
+
+// Cancels currently-active socket operation.
+// This function may be called only within a running task - for this task or for its children.
+fn CancelTaskSocketOperation( TaskUniqueId task_id ) unsafe;
+
+// Add a subtask for currently-running task.
+// The subtask added will be automatically removed after it finishes.
+fn AddCurrentTaskSubtask( ust::raw_coro_handle handle ) unsafe;
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1 ) unsafe;
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1, ust::raw_coro_handle handle2 ) unsafe;
+fn AddCurrentTaskSubtasks( ust::raw_coro_handle handle0, ust::raw_coro_handle handle1, ust::raw_coro_handle handle2, ust::raw_coro_handle handle3 ) unsafe;
+
+// Call this in case of subtasks destruction.
+// Don't call on normal subtasks completion.
+// This function checks if it's valid to cancel a subtask, which is valid only during runner shutdown.
+fn HandleTaskSubtasksCancellation() unsafe;
+
+} // namespace sm_async_net

@@ -1,0 +1,616 @@
+import "/assert.u"
+import "/vector.u"
+import "runner_internal.uh"
+
+namespace sm_async_net
+{
+
+// Execute given two async functions concurrently, but on the same thread.
+// Given async function objects should return value, not reference, returning references isn't supported.
+// Return types with references inside are also not supported.
+// Async function objects with references inside are supported.
+//
+// This function should be called only within a runner thread.
+// It's only allowed to do ".await" for it, storing returning coroutine object for later usage isn't allowed.
+//
+template</type FuncTypeA, type FuncTypeB/>
+fn async
+enable_if(
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeA/>() &
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeB/>() )
+join_subtasks( FuncTypeA mut a, FuncTypeB mut b )
+	: tup[
+		typeof( typeinfo</FuncTypeA/>.coroutine_return_type )::src_type,
+		typeof( typeinfo</FuncTypeB/>.coroutine_return_type )::src_type ]
+{
+	type RetA= typeof( typeinfo</FuncTypeA/>.coroutine_return_type )::src_type;
+	type RetB= typeof( typeinfo</FuncTypeB/>.coroutine_return_type )::src_type;
+
+	unsafe
+	{
+		var ust::raw_coro_handle handle_a= ust::get_raw_coro_handle(a);
+		var ust::raw_coro_handle handle_b= ust::get_raw_coro_handle(b);
+
+		// Ensure given async functions aren't done yet (we can resume them).
+		halt if( coro_done_impl( handle_a ) );
+		halt if( coro_done_impl( handle_b ) );
+
+		// Register subtasks for given async functions.
+		AddCurrentTaskSubtasks( handle_a, handle_b );
+
+		// Use a helper class to handle cancellation (check if it's correct).
+		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
+
+		// Use a helper class, which destroys result of the passed async function, if it's already finished.
+		// This is needed to call destructor of the result value in case of cancellation.
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetA/> mut destroyer_a( handle_a );
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetB/> mut destroyer_b( handle_b );
+
+		// Pause execution.
+		// The runner should ensure it's resumed only after all subtasks are done.
+		yield;
+
+		assert( coro_done_impl( handle_a ) & coro_done_impl( handle_b ), "Subtasks execution function is resumed without waiting for subtasks to finish!" );
+
+		// Further cancellation isn't possible if all subtasks are finished and control flow is passed back to this function.
+		move(cancellation_handler).SkipCancellation();
+
+		// Now we don't need to destroy the results, but take them.
+		move(destroyer_a).SkipDesruction();
+		move(destroyer_b).SkipDesruction();
+
+		// Extract results.
+
+		var tup[ RetA, RetB ] mut res= uninitialized;
+
+		ust::memory_copy_aligned(
+			typeinfo</RetA/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[0]) ),
+			ust::coro_return_value_address( a ),
+			typeinfo</RetA/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</RetB/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[1]) ),
+			ust::coro_return_value_address( b ),
+			typeinfo</RetB/>.size_of );
+
+		return res;
+	}
+}
+
+// Same as "join_subtasks" for two tasks, but for three tasks.
+template</type FuncTypeA, type FuncTypeB, type FuncTypeC/>
+fn async
+enable_if(
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeA/>() &
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeB/>() &
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeC/>() )
+join_subtasks( FuncTypeA mut a, FuncTypeB mut b, FuncTypeC mut c )
+	: tup[
+		typeof( typeinfo</FuncTypeA/>.coroutine_return_type )::src_type,
+		typeof( typeinfo</FuncTypeB/>.coroutine_return_type )::src_type,
+		typeof( typeinfo</FuncTypeC/>.coroutine_return_type )::src_type ]
+{
+	type RetA= typeof( typeinfo</FuncTypeA/>.coroutine_return_type )::src_type;
+	type RetB= typeof( typeinfo</FuncTypeB/>.coroutine_return_type )::src_type;
+	type RetC= typeof( typeinfo</FuncTypeC/>.coroutine_return_type )::src_type;
+
+	unsafe
+	{
+		var ust::raw_coro_handle handle_a= ust::get_raw_coro_handle(a);
+		var ust::raw_coro_handle handle_b= ust::get_raw_coro_handle(b);
+		var ust::raw_coro_handle handle_c= ust::get_raw_coro_handle(c);
+
+		// Ensure given async functions aren't done yet (we can resume them).
+		halt if( coro_done_impl( handle_a ) );
+		halt if( coro_done_impl( handle_b ) );
+		halt if( coro_done_impl( handle_c ) );
+
+		// Register subtasks for given async functions.
+		AddCurrentTaskSubtasks( handle_a, handle_b, handle_c );
+
+		// Use a helper class to handle cancellation (check if it's correct).
+		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
+
+		// Use a helper class, which destroys result of the passed async function, if it's already finished.
+		// This is needed to call destructor of the result value in case of cancellation.
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetA/> mut destroyer_a( handle_a );
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetB/> mut destroyer_b( handle_b );
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetC/> mut destroyer_c( handle_c );
+
+		// Pause execution.
+		// The runner should ensure it's resumed only after all subtasks are done.
+		yield;
+
+		assert(
+			coro_done_impl( handle_a ) & coro_done_impl( handle_b ) & coro_done_impl( handle_c ),
+			"Subtasks execution function is resumed without waiting for subtasks to finish!" );
+
+		// Further cancellation isn't possible if all subtasks are finished and control flow is passed back to this function.
+		move(cancellation_handler).SkipCancellation();
+
+		// Now we don't need to destroy the results, but take them.
+		move(destroyer_a).SkipDesruction();
+		move(destroyer_b).SkipDesruction();
+		move(destroyer_c).SkipDesruction();
+
+		// Extract results.
+
+		var tup[ RetA, RetB, RetC ] mut res= uninitialized;
+
+		ust::memory_copy_aligned(
+			typeinfo</RetA/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[0]) ),
+			ust::coro_return_value_address( a ),
+			typeinfo</RetA/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</RetB/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[1]) ),
+			ust::coro_return_value_address( b ),
+			typeinfo</RetB/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</RetC/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[2]) ),
+			ust::coro_return_value_address( c ),
+			typeinfo</RetC/>.size_of );
+
+		return res;
+	}
+}
+
+// Same as "join_subtasks" for two tasks, but for four tasks.
+template</type FuncTypeA, type FuncTypeB, type FuncTypeC, type FuncTypeD/>
+fn async
+enable_if(
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeA/>() &
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeB/>() &
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeC/>() &
+	JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncTypeD/>() )
+join_subtasks( FuncTypeA mut a, FuncTypeB mut b, FuncTypeC mut c, FuncTypeD mut d )
+	: tup[
+		typeof( typeinfo</FuncTypeA/>.coroutine_return_type )::src_type,
+		typeof( typeinfo</FuncTypeB/>.coroutine_return_type )::src_type,
+		typeof( typeinfo</FuncTypeC/>.coroutine_return_type )::src_type,
+		typeof( typeinfo</FuncTypeD/>.coroutine_return_type )::src_type ]
+{
+	type RetA= typeof( typeinfo</FuncTypeA/>.coroutine_return_type )::src_type;
+	type RetB= typeof( typeinfo</FuncTypeB/>.coroutine_return_type )::src_type;
+	type RetC= typeof( typeinfo</FuncTypeC/>.coroutine_return_type )::src_type;
+	type RetD= typeof( typeinfo</FuncTypeD/>.coroutine_return_type )::src_type;
+
+	unsafe
+	{
+		var ust::raw_coro_handle handle_a= ust::get_raw_coro_handle(a);
+		var ust::raw_coro_handle handle_b= ust::get_raw_coro_handle(b);
+		var ust::raw_coro_handle handle_c= ust::get_raw_coro_handle(c);
+		var ust::raw_coro_handle handle_d= ust::get_raw_coro_handle(d);
+
+		// Ensure given async functions aren't done yet (we can resume them).
+		halt if( coro_done_impl( handle_a ) );
+		halt if( coro_done_impl( handle_b ) );
+		halt if( coro_done_impl( handle_c ) );
+		halt if( coro_done_impl( handle_d ) );
+
+		// Register subtasks for given async functions.
+		AddCurrentTaskSubtasks( handle_a, handle_b, handle_c, handle_d );
+
+		// Use a helper class to handle cancellation (check if it's correct).
+		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
+
+		// Use a helper class, which destroys result of the passed async function, if it's already finished.
+		// This is needed to call destructor of the result value in case of cancellation.
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetA/> mut destroyer_a( handle_a );
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetB/> mut destroyer_b( handle_b );
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetC/> mut destroyer_c( handle_c );
+		var JoinSubtasksImpl::AsyncFunctionObjectResultDestroyer</RetD/> mut destroyer_d( handle_d );
+
+		// Pause execution.
+		// The runner should ensure it's resumed only after all subtasks are done.
+		yield;
+
+		assert(
+			coro_done_impl( handle_a ) & coro_done_impl( handle_b ) & coro_done_impl( handle_c ),
+			"Subtasks execution function is resumed without waiting for subtasks to finish!" );
+
+		// Further cancellation isn't possible if all subtasks are finished and control flow is passed back to this function.
+		move(cancellation_handler).SkipCancellation();
+
+		// Now we don't need to destroy the results, but take them.
+		move(destroyer_a).SkipDesruction();
+		move(destroyer_b).SkipDesruction();
+		move(destroyer_c).SkipDesruction();
+		move(destroyer_d).SkipDesruction();
+
+		// Extract results.
+
+		var tup[ RetA, RetB, RetC, RetD ] mut res= uninitialized;
+
+		ust::memory_copy_aligned(
+			typeinfo</RetA/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[0]) ),
+			ust::coro_return_value_address( a ),
+			typeinfo</RetA/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</RetB/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[1]) ),
+			ust::coro_return_value_address( b ),
+			typeinfo</RetB/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</RetC/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[2]) ),
+			ust::coro_return_value_address( c ),
+			typeinfo</RetC/>.size_of );
+
+		ust::memory_copy_aligned(
+			typeinfo</RetD/>.align_of,
+			ust::ptr_cast_to_byte8( $<(res[3]) ),
+			ust::coro_return_value_address( d ),
+			typeinfo</RetD/>.size_of );
+
+		return res;
+	}
+}
+
+// Same as "join_subtasks" for two tasks, but for fixed number of tasks having the same type.
+template</type FuncType, size_type S/>
+fn async
+enable_if( JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncType/>() )
+join_subtasks( [ FuncType, S ] mut funcs )
+	: [ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type, S ]
+{
+	type RetType= typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type;
+
+	unsafe
+	{
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			var ust::raw_coro_handle handle= ust::get_raw_coro_handle( funcs[i] );
+			// Ensure given async function isn't done yet (we can resume them).
+			halt if( coro_done_impl( handle ) );
+			// Register subtask for given async function.
+			AddCurrentTaskSubtask( handle );
+		}
+
+		// Use a helper class to handle cancellation (check if it's correct).
+		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
+
+		// Use a helper class, which destroys result of the passed async functions, if they are already finished.
+		// This is needed to call destructor of the result value in case of cancellation.
+		var JoinSubtasksImpl::AsyncFunctionObjectArrayResultDestroyer</FuncType, S/> mut destroyer( funcs );
+
+		// Pause execution.
+		// The runner should ensure it's resumed only after all subtasks are done.
+		yield;
+
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			assert( ust::coro_done( funcs[i] ), "Subtasks execution function is resumed without waiting for subtasks to finish!" );
+		}
+
+		// Further cancellation isn't possible if all subtasks are finished and control flow is passed back to this function.
+		move(cancellation_handler).SkipCancellation();
+
+		// Now we don't need to destroy the results, but take them.
+		move(destroyer).SkipDesruction();
+
+		// Extract results.
+
+		var [ RetType, S ] mut res= uninitialized;
+
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			ust::memory_copy_aligned(
+				typeinfo</RetType/>.align_of,
+				ust::ptr_cast_to_byte8( $<(res[i]) ),
+				ust::coro_return_value_address( funcs[i] ),
+				typeinfo</RetType/>.size_of );
+		}
+
+		return res;
+	}
+}
+
+
+// Same as "join_subtasks" for arrays of tasks, but for vector of tasks (with arbitraty size).
+// Function objects with references inside aren't supported yet.
+template</type FuncType/>
+fn async
+enable_if( JoinSubtasksImpl::IsSupportedForSubtasksJoinigAsyncFunctionType</FuncType/>() && typeinfo</FuncType/>.reference_tag_count == 0s )
+join_subtasks( ust::vector</FuncType/> mut funcs )
+	: ust::vector</ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type />
+{
+	type RetType= typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type;
+
+	unsafe
+	{
+		foreach( &mut func : funcs )
+		{
+			var ust::raw_coro_handle handle= ust::get_raw_coro_handle( func );
+			// Ensure given async function isn't done yet (we can resume them).
+			halt if( coro_done_impl( handle ) );
+			// Register subtask for given async function.
+			AddCurrentTaskSubtask( handle );
+		}
+
+		// Use a helper class to handle cancellation (check if it's correct).
+		var JoinSubtasksImpl::SubtasksCancellationHandler mut cancellation_handler( JoinSubtasksImpl::SubtasksCancellationHandler::UnsafeConstructorMarker{} );
+
+		// Use a helper class, which destroys result of the passed async functions, if they are already finished.
+		// This is needed to call destructor of the result value in case of cancellation.
+		var JoinSubtasksImpl::AsyncFunctionObjectVectorResultDestroyer</FuncType/> mut destroyer( funcs );
+
+		// Pause execution.
+		// The runner should ensure it's resumed only after all subtasks are done.
+		yield;
+
+		foreach( &func : funcs )
+		{
+			assert( ust::coro_done( func ), "Subtasks execution function is resumed without waiting for subtasks to finish!" );
+		}
+
+		// Further cancellation isn't possible if all subtasks are finished and control flow is passed back to this function.
+		move(cancellation_handler).SkipCancellation();
+
+		// Now we don't need to destroy the results, but take them.
+		move(destroyer).SkipDesruction();
+
+		// Extract results.
+
+		return
+			ust::make_vector_from_mapped_range(
+				funcs.range(),
+				lambda( FuncType& func ) : RetType
+				{
+					unsafe
+					{
+						var RetType mut res= uninitialized;
+						ust::memory_copy_aligned(
+							typeinfo</RetType/>.align_of,
+							ust::ptr_cast_to_byte8( $<(res) ),
+							ust::coro_return_value_address( cast_mut(func) ),
+							typeinfo</RetType/>.size_of );
+						return res;
+					}
+				} );
+	}
+}
+
+// Namespace for classes/functions used internally.
+namespace JoinSubtasksImpl
+{
+
+template</type T/>
+fn constexpr IsSupportedForSubtasksJoinigAsyncFunctionType() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		static_if( typeinfo</T/>.is_coroutine )
+		{
+			static_if( typeinfo</T/>.is_async_func )
+			{
+				static_if( typeinfo</T/>.coroutine_return_value_is_reference )
+				{
+					// Don't support async functions returning references.
+					return false;
+				}
+				else
+				{
+					static_if( non_sync</T/> )
+					{
+						// Don't support non-sync async functions.
+						return false;
+					}
+					else
+					{
+						static_if( typeinfo</T/>.coroutine_return_type.reference_tag_count > 0s )
+						{
+							// For now don't support tasks with return type containing references inside.
+							// It's too complex to deal with reference notation for them.
+							return false;
+						}
+						else
+						{
+							// Allow async function capturing references.
+							return true;
+						}
+					}
+				}
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
+
+// A class which destroys result of the given async function, if it's finished.
+// It assumes that a finished async function contains its result (it's not extracted yet).
+// Given async function shouldn't outlive this class instance!
+template</type T/>
+class AsyncFunctionObjectResultDestroyer
+{
+public:
+	// Construct with non-owning handle to async function returning a value (not reference) of type "T".
+	fn constructor( ust::raw_coro_handle handle ) unsafe
+		( handle_= handle )
+	{}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			if( coro_done_impl( handle_ ) )
+			{
+				var $(byte8) mut ret_ptr= zero_init;
+
+				switch( typeinfo</T/>.align_of )
+				{
+					1s -> { ret_ptr= coro_return_value_address_impl_align1( handle_ ); },
+					2s -> { ret_ptr= coro_return_value_address_impl_align2( handle_ ); },
+					4s -> { ret_ptr= coro_return_value_address_impl_align4( handle_ ); },
+					8s -> { ret_ptr= coro_return_value_address_impl_align8( handle_ ); },
+					16s -> { ret_ptr= coro_return_value_address_impl_align16( handle_ ); },
+					default -> { ret_ptr= coro_return_value_address_impl_align16( handle_); },
+				}
+
+				var T &mut ret= $>( ust::byte_ptr_cast</T/>( ret_ptr ) );
+				ust::call_destructor( ret );
+			}
+		}
+	}
+
+	// Call it if you need to take the result instead of ignoring it.
+	fn SkipDesruction( byval mut this ) unsafe
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+
+private:
+	ust::raw_coro_handle handle_;
+}
+
+// Like "AsyncFunctionObjectResultDestroyer", but for an array.
+template</type FuncType, size_type S/>
+class AsyncFunctionObjectArrayResultDestroyer
+{
+public:
+	fn constructor( [ FuncType, S ] & funcs ) unsafe
+		( handles_= zero_init )
+	{
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			handles_[i]= ust::get_raw_coro_handle( funcs[i] );
+		}
+	}
+
+	fn destructor()
+	{
+		for( auto mut i= 0s; i < S; ++i )
+		{
+			var ust::raw_coro_handle handle= handles_[i];
+			unsafe
+			{
+				if( coro_done_impl( handle ) )
+				{
+					var $(byte8) mut ret_ptr= zero_init;
+
+					switch( typeinfo</FuncType/>.coroutine_return_type.align_of )
+					{
+						1s -> { ret_ptr= coro_return_value_address_impl_align1( handle ); },
+						2s -> { ret_ptr= coro_return_value_address_impl_align2( handle ); },
+						4s -> { ret_ptr= coro_return_value_address_impl_align4( handle ); },
+						8s -> { ret_ptr= coro_return_value_address_impl_align8( handle ); },
+						16s -> { ret_ptr= coro_return_value_address_impl_align16( handle ); },
+						default -> { ret_ptr= coro_return_value_address_impl_align16( handle); },
+					}
+
+					auto &mut ret= $>( ust::byte_ptr_cast</ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type />( ret_ptr ) );
+					ust::call_destructor( ret );
+				}
+			}
+		}
+	}
+
+	// Call it if you need to take the result instead of ignoring it.
+	fn SkipDesruction( byval mut this ) unsafe
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+
+private:
+	[ ust::raw_coro_handle, S ] handles_;
+}
+
+// Like "AsyncFunctionObjectArrayResultDestroyer", but for a vector.
+// It holds a raw pointer to vector storage, so, don't modifty the vector itself when this class instance is alive!
+template</type FuncType/>
+class AsyncFunctionObjectVectorResultDestroyer
+{
+public:
+	fn constructor( ust::vector</FuncType/> &mut v ) unsafe
+		(
+			handles_= unsafe( ust::byte_ptr_cast</ust::raw_coro_handle />( ust::ptr_cast_to_byte8( v.data() ) ) ),
+			num_handles_= v.size()
+		)
+	{}
+
+	fn destructor()
+	{
+		for( auto mut i= 0s; i < num_handles_; ++i )
+		{
+			unsafe
+			{
+				var ust::raw_coro_handle handle= $>( handles_ + i );
+
+				if( coro_done_impl( handle ) )
+				{
+					var $(byte8) mut ret_ptr= zero_init;
+
+					switch( typeinfo</FuncType/>.coroutine_return_type.align_of )
+					{
+						1s -> { ret_ptr= coro_return_value_address_impl_align1( handle ); },
+						2s -> { ret_ptr= coro_return_value_address_impl_align2( handle ); },
+						4s -> { ret_ptr= coro_return_value_address_impl_align4( handle ); },
+						8s -> { ret_ptr= coro_return_value_address_impl_align8( handle ); },
+						16s -> { ret_ptr= coro_return_value_address_impl_align16( handle ); },
+						default -> { ret_ptr= coro_return_value_address_impl_align16( handle); },
+					}
+
+					auto &mut ret= $>( ust::byte_ptr_cast</ typeof( typeinfo</FuncType/>.coroutine_return_type )::src_type />( ret_ptr ) );
+					ust::call_destructor( ret );
+				}
+			}
+		}
+	}
+
+	// Call it if you need to take the result instead of ignoring it.
+	fn SkipDesruction( byval mut this ) unsafe
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+
+private:
+	$(ust::raw_coro_handle) handles_;
+	size_type num_handles_;
+}
+
+// A helper class used for detection of improper subtask cancellation.
+class SubtasksCancellationHandler
+{
+public:
+	struct UnsafeConstructorMarker{}
+
+public:
+	fn constructor( UnsafeConstructorMarker m ) unsafe
+	{
+		ust::ignore_unused(m);
+	}
+
+	fn destructor()
+	{
+		unsafe( HandleTaskSubtasksCancellation() );
+	}
+
+	fn SkipCancellation( byval mut this )
+	{
+		unsafe( ust::move_into_nowhere( move(this) ) );
+	}
+}
+
+} // namespace JoinSubtasksImpl
+
+} // namespace sm_async_net

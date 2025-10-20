@@ -1,0 +1,66 @@
+import "/build_system.uh"
+
+fn GetPackageInfo( BK::BuildSystemInterface &mut build_system_interface ) : BK::PackageInfo
+{
+	var BK::TargetTriple target_trple= build_system_interface.GetTargetTriple();
+
+	var BK::BuildTarget mut sys_library_target
+	{
+		.name= "sm_async_net_sys",
+		.target_type= BK::BuildTargetType::Library,
+	};
+
+	var BK::BuildTarget mut library_target
+	{
+		.name= "sm_async_net",
+		.target_type= BK::BuildTargetType::Library,
+		.source_files= ust::make_array</ ust::string8 />( "src/poll_waker.u", "src/runner.u", "src/tcp_listener.u", "src/tcp_stream.u", "src/udp_socket.u" ),
+		.public_include_directories= ust::make_array</ust::filesystem_path/>( "imports" ),
+		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= sys_library_target.name } ),
+	};
+
+	var BK::BuildTarget mut tests_target
+	{
+		.name= "tests",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ ust::string8 />( "tests/main.u" ),
+		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
+	};
+
+	var BK::BuildTarget mut http_server_example_target
+	{
+		.name= "http_server_example",
+		.target_type = BK::BuildTargetType::Executable,
+		.source_files= ust::make_array</ ust::string8 />( "http_server_example/main.u" ),
+		.private_dependencies= ust::make_array</BK::DependencyName/>( BK::DependencyName{ .name= library_target.name } ),
+	};
+
+	if( target_trple.operating_system == "linux" )
+	{
+		sys_library_target.public_include_directories.push_back( "sys/linux" );
+		tests_target.source_files.push_back( "tests/utils_linux.u" );
+	}
+	else if( target_trple.vendor == "apple" )
+	{
+		sys_library_target.public_include_directories.push_back( "sys/darwin" );
+		tests_target.source_files.push_back( "tests/utils_darwin.u" );
+	}
+	else if( target_trple.operating_system.starts_with( "freebsd" ) )
+	{
+		sys_library_target.public_include_directories.push_back( "sys/freebsd" );
+		tests_target.source_files.push_back( "tests/utils_freebsd.u" );
+	}
+	else
+	{
+		build_system_interface.LogInfo( "Unknown target system, \"sm_async_net\" library may not work properly on it!" );
+	}
+
+	return BK::PackageInfo
+	{
+		.build_targets= ust::make_array(
+			move(sys_library_target),
+			move(library_target),
+			move(tests_target),
+			move(http_server_example_target) )
+	};
+}

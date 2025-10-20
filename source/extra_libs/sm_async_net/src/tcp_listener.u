@@ -1,0 +1,60 @@
+import "/sm_async_net/tcp_listener.uh"
+
+namespace sm_async_net
+{
+
+fn tcp_listener::create_and_bind( ust::socket_address& a ) : ust::io_result</tcp_listener/>
+{
+	result_unwrap_or_return( mut l : ust::tcp_listener::create_and_bind( a ) );
+	result_unwrap_or_return( v : l.set_nonblocking( true ) );
+	ust::ignore_unused(v);
+	return unsafe( tcp_listener( move(l) ) );
+}
+
+fn tcp_listener::constructor( ust::tcp_listener mut l ) unsafe
+	( listener_= move(l) )
+{}
+
+fn tcp_listener::get_local_address( this ) : ust::io_result</ust::socket_address/>
+{
+	return listener_.get_local_address();
+}
+
+fn tcp_listener::get_ttl( this ) : ust::io_result</u8/>
+{
+	return listener_.get_ttl();
+}
+
+fn tcp_listener::set_ttl( mut this, u8 ttl ) : ust::io_result</void/>
+{
+	return listener_.set_ttl( ttl );
+}
+
+fn tcp_listener::get_uderlying_listener( this ) unsafe : ust::tcp_listener&
+{
+	return listener_;
+}
+
+fn tcp_listener::get_uderlying_listener( mut this ) unsafe : ust::tcp_listener &mut
+{
+	return listener_;
+}
+
+fn tcp_listener::take_underlying_listener( byval mut this ) : ust::tcp_listener
+{
+	unsafe
+	{
+		var ust::tcp_listener mut listener= uninitialized;
+
+		ust::memory_copy_aligned(
+			typeinfo</ust::tcp_listener/>.align_of,
+			ust::ptr_cast_to_byte8( $<(listener) ),
+			ust::ptr_cast_to_byte8( $<(listener_) ),
+			typeinfo</ust::tcp_listener/>.size_of );
+
+		ust::move_into_nowhere( move(this) );
+		return listener;
+	}
+}
+
+} // namespace sm_async_net

@@ -1,0 +1,49 @@
+import "/vector.u"
+
+namespace sm_async_net
+{
+
+// Simple first-in first-out unlimited size queue.
+template</type T/>
+class Queue
+{
+public:
+	fn Push( mut this, T mut t )
+	{
+		in_stack_.push_back( move(t) );
+	}
+
+	fn TryPop( mut this ) : ust::optional</T/>
+	{
+		if( out_stack_.empty() )
+		{
+			while( !in_stack_.empty() )
+			{
+				out_stack_.push_back( in_stack_.pop_back() );
+			}
+		}
+
+		if( !out_stack_.empty() )
+		{
+			return out_stack_.pop_back();
+		}
+
+		return ust::null_optional;
+	}
+
+	fn GetSize( this ) : size_type
+	{
+		return in_stack_.size() + out_stack_.size();
+	}
+
+	fn IsEmpty( this ) : bool
+	{
+		return in_stack_.empty() && out_stack_.empty();
+	}
+
+private:
+	ust::vector</T/> in_stack_;
+	ust::vector</T/> out_stack_;
+}
+
+} // namespace sm_async_net

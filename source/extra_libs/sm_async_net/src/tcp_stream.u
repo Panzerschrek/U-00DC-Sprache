@@ -1,0 +1,67 @@
+import "/sm_async_net/tcp_stream.uh"
+
+namespace sm_async_net
+{
+
+fn tcp_stream::constructor( ust::tcp_stream mut s ) unsafe
+	( stream_( move(s) ) )
+{}
+
+fn tcp_stream::get_local_address( this ) : ust::io_result</ust::socket_address/>
+{
+	return stream_.get_local_address();
+}
+
+fn tcp_stream::get_peer_address( this ) : ust::io_result</ust::socket_address/>
+{
+	return stream_.get_peer_address();
+}
+
+fn tcp_stream::get_ttl( this ) : ust::io_result</u8/>
+{
+	return stream_.get_ttl();
+}
+
+fn tcp_stream::set_ttl( mut this, u8 ttl ) : ust::io_result</void/>
+{
+	return stream_.set_ttl( ttl );
+}
+
+fn tcp_stream::get_nodelay( this ) : ust::io_result</bool/>
+{
+	return stream_.get_nodelay();
+}
+
+fn tcp_stream::set_nodelay( mut this, bool nodelay ) : ust::io_result</void/>
+{
+	return stream_.set_nodelay( nodelay );
+}
+
+fn tcp_stream::get_uderlying_stream( this ) unsafe : ust::tcp_stream&
+{
+	return stream_;
+}
+
+fn tcp_stream::get_uderlying_stream( mut this ) unsafe : ust::tcp_stream &mut
+{
+	return stream_;
+}
+
+fn tcp_stream::take_underlying_stream( byval mut this ) : ust::tcp_stream
+{
+	unsafe
+	{
+		var ust::tcp_stream mut stream= uninitialized;
+
+		ust::memory_copy_aligned(
+			typeinfo</ust::tcp_stream/>.align_of,
+			ust::ptr_cast_to_byte8( $<(stream) ),
+			ust::ptr_cast_to_byte8( $<(stream_) ),
+			typeinfo</ust::tcp_stream/>.size_of );
+
+		ust::move_into_nowhere( move(this) );
+		return stream;
+	}
+}
+
+} // namespace sm_async_net

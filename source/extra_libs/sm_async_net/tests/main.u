@@ -1,0 +1,1653 @@
+import "/binary_search.u"
+import "/enum_string_conversions.u"
+import "/hash_set.u"
+import "/main_wrapper.u"
+import "/semaphore.u"
+import "/sort.u"
+import "/shared_barrier.u"
+import "/shared_ptr_mt_final.u"
+import "/stdout.u"
+import "/string_conversions.u"
+import "/thread.u"
+import "/sm_async_net/join.uh"
+import "/sm_async_net/runner.uh"
+import "/sm_async_net/tcp_listener.uh"
+import "/sm_async_net/udp_socket.uh"
+import "utils.uh"
+
+pretty_main
+{
+	return sm_async_net::Main();
+}
+
+namespace sm_async_net
+{
+
+fn Main() : i32
+{
+	// Increase maximum number of file descriptors on GNU/Linux.
+	// It's necessary for some tests involving large amouts of concurrent connections.
+	IncreaseFileDescriptorsLimit();
+
+	ust::stdout_print( "Run sm_async_net tests...\n" );
+
+	RunnerCreation_Test0::Run();
+	RunnerTaskAdd_Test0::Run();
+	RunnerTaskAdd_Test1::Run();
+	RunnerTaskAdd_Test2::Run();
+	RunnerTaskAdd_Test3::Run();
+	RunnerTaskAdd_Test4::Run();
+	RunnerTaskAdd_Test5::Run();
+	AddTaskFreeFunction_Test0::Run();
+	AddTaskFreeFunction_Test1::Run();
+	UDPSocket_Test0::Run();
+	UDPSocket_Test1::Run();
+	UDPSocket_Test2::Run();
+	UDPSocket_Test3::Run();
+	UDPSocket_Test4::Run();
+	UDPSocket_Test5::Run();
+	TCP_Test0::Run();
+	TCP_Test1::Run();
+	TCP_Test2::Run();
+	TCP_Test3::Run();
+	TCP_Test4::Run();
+	Join_Test0::Run();
+	Join_Test1::Run();
+	Join_Test2::Run();
+	Join_Test3::Run();
+	Join_Test4::Run();
+	Join_Test5::Run();
+	Join_Test6::Run();
+	Join_Test7::Run();
+	Join_Test8::Run();
+	Join_Test9::Run();
+	Join_Test10::Run();
+
+	ust::stdout_print( "Successfully finished all sm_async_net tests!\n" );
+
+	return 0;
+}
+
+namespace RunnerCreation_Test0
+{
+
+fn Run()
+{
+	// Runner is default-constructible.
+
+	var ust::box</runner_interface/> r= create_runner();
+}
+
+}
+
+namespace RunnerTaskAdd_Test0
+{
+
+fn Run()
+{
+	var ust::box</runner_interface/> r= create_runner();
+
+	// Adding a task doesn't require "r" instance to be mutable.
+	r.deref().add_task( Func() );
+}
+
+fn async Func() {}
+
+}
+
+namespace RunnerTaskAdd_Test1
+{
+
+fn Run()
+{
+	// Add a single task into a runner and wait for it to finish.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
+
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	yield;
+	yield;
+	if( false ) { ust::stdout_print( "BasicRunnerAddAndEnsureExecutionFunc\n" ); }
+	yield;
+	yield;
+	yield;
+	if( false ) { ust::stdout_print( "BasicRunnerAddAndEnsureExecutionFunc - finish\n" ); }
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace RunnerTaskAdd_Test2
+{
+
+fn Run()
+{
+	// Add multiple tasks into a runner and wait for them to finish.
+
+	var ust::box</runner_interface/> r= create_multithreaded_runner( ust::get_number_of_available_cpus() );
+
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
+
+	var u32 count= 1024u;
+
+	for( auto mut i= 0u; i < count; ++i )
+	{
+		r.deref().add_task( Func( finish_semaphore ) );
+	}
+
+	for( auto mut i= 0u; i < count; ++i )
+	{
+		finish_semaphore.deref().acquire();
+	}
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	yield;
+	yield;
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace RunnerTaskAdd_Test3
+{
+
+fn Run()
+{
+	// Add a single task having internal async calls into a runner and wait for it to finish.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
+
+	r.deref().add_task( Func0( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func0( SemaphorePtr mut finish_semaphore )
+{
+	Func1( move(finish_semaphore) ).await;
+}
+
+fn async Func1( SemaphorePtr mut finish_semaphore )
+{
+	Func2( move(finish_semaphore) ).await;
+}
+
+fn async Func2( SemaphorePtr mut finish_semaphore )
+{
+	Func3( move(finish_semaphore) ).await;
+}
+
+fn async Func3( SemaphorePtr finish_semaphore )
+{
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace RunnerTaskAdd_Test4
+{
+
+fn Run()
+{
+	// Spawn a task wich never ends.
+	// But since it yields, it is stopped when runner is destructoyed.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	r.deref().add_task( Func() );
+
+	// Let the added task running a bit.
+	ust::sleep( ust::duration::from_milliseconds( 15u64 ) );
+
+	// Call runner destructor here, which ends the eternal task.
+}
+
+fn async Func()
+{
+	var u64 mut x(0);
+	loop
+	{
+		++x;
+		yield;
+	}
+}
+
+}
+
+namespace RunnerTaskAdd_Test5
+{
+
+fn Run()
+{
+	// Create a runner within another runner.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
+
+	r.deref().add_task( Func0( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func0( SemaphorePtr finish_semaphore )
+{
+	var ust::box</runner_interface/> r= create_runner();
+
+	var SemaphorePtr inner_finish_semaphore( ust::semaphore(0u) );
+
+	r.deref().add_task( Func1( inner_finish_semaphore ) );
+
+	inner_finish_semaphore.deref().acquire();
+
+	finish_semaphore.deref().release();
+}
+
+fn async Func1( SemaphorePtr finish_semaphore )
+{
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace AddTaskFreeFunction_Test0
+{
+
+fn Run()
+{
+	// Add a task, which internally adds a new root task via "add_task" free function.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
+
+	r.deref().add_task( Func0( finish_semaphore ) );
+
+	for( auto mut i= 0u; i < 2u; ++i )
+	{
+		finish_semaphore.deref().acquire();
+	}
+}
+
+fn async Func0( SemaphorePtr finish_semaphore )
+{
+	add_task( Func1( finish_semaphore ) );
+	finish_semaphore.deref().release();
+}
+
+fn async Func1( SemaphorePtr finish_semaphore )
+{
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace AddTaskFreeFunction_Test1
+{
+
+fn Run()
+{
+	// Add several tasks, each of them internally adds several new root tasks via "add_task" free function.
+
+	var ust::box</runner_interface/> r= create_multithreaded_runner( ust::get_number_of_available_cpus() );
+
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
+
+	for( auto mut i= 0u; i < 4u; ++i )
+	{
+		r.deref().add_task( Func0( finish_semaphore ) );
+	}
+
+	for( auto mut i= 0u; i < 12u; ++i )
+	{
+		finish_semaphore.deref().acquire();
+	}
+}
+
+fn async Func0( SemaphorePtr finish_semaphore )
+{
+	for( auto mut i= 0u; i < 3u; ++i )
+	{
+		add_task( Func1( finish_semaphore ) );
+	}
+}
+
+fn async Func1( SemaphorePtr finish_semaphore )
+{
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace UDPSocket_Test0
+{
+
+fn Run()
+{
+	// Create regular socket on the main thread, create an async one on runner thread.
+	// Use blocking operation on the main thread.
+	// Send a message using async UDP socket class, receive it using sync UDP socket class.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var ust::socket_address_v4 address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var ust::udp_socket mut server_socket= ust::udp_socket::create_and_bind( address ).try_take();
+
+	r.deref().add_task( Func( address ) );
+
+	var [ char8, 32 ] mut buf= zero_init;
+
+	result_match( server_socket.receive( ust::array_view_mut</char8/>(buf).to_byte8_range() ) )
+	{
+		Ok( bytes_received ) ->
+		{
+			assert( bytes_received == ust::string_view8(message).size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+			assert( ust::string_view8(buf).subrange_end( bytes_received ) == message, "Unexpected message!" );
+		},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to receive message to from socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
+}
+
+auto& message= "Hello from async UDP socket!";
+
+fn async Func( ust::socket_address_v4 server_address )
+{
+	var udp_socket mut client_socket= udp_socket::create_v4().try_take();
+
+	var ust::string_view8 message_range= message;
+
+	result_match( client_socket.send_to( server_address, message_range.to_byte8_range() ).await )
+	{
+		Ok( bytes_sent ) ->
+		{
+			assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+		},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
+}
+
+}
+
+namespace UDPSocket_Test1
+{
+
+fn Run()
+{
+	// Create regular socket on the main thread, create an async one on runner thread.
+	// Use blocking operation on the main thread.
+	// Send a message using async UDP socket class, receive it using sync UDP socket class.
+	// Connect socket first, before sending a message.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var ust::socket_address_v4 address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var ust::udp_socket mut server_socket= ust::udp_socket::create_and_bind( address ).try_take();
+
+	r.deref().add_task( Func( address ) );
+
+	var [ char8, 64 ] mut buf= zero_init;
+
+	result_match( server_socket.receive( ust::array_view_mut</char8/>(buf).to_byte8_range() ) )
+	{
+		Ok( bytes_received ) ->
+		{
+			assert( bytes_received == ust::string_view8(message).size(), ust::concat( "Received unexpected number of bytes ", ust::to_string8(bytes_received) ) );
+			assert( ust::string_view8(buf).subrange_end( bytes_received ) == message, "Unexpected message!" );
+		},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to receive message to from socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
+}
+
+auto& message= "Stich um Stich, meinen Wein kriegst du nicht!";
+
+fn async Func( ust::socket_address_v4 server_address )
+{
+	var udp_socket mut client_socket= udp_socket::create_v4().try_take();
+
+	result_match( client_socket.connect( server_address ) )
+	{
+		Ok( v ) -> { ust::ignore_unused(v); },
+		Err( e ) -> { assert( false, ust::concat( "Failed to connect UDP socket! Error: ", ust::enum_to_string(e) ) ); }
+	}
+
+	var ust::string_view8 message_range= message;
+
+	result_match( client_socket.send( message_range.to_byte8_range() ).await )
+	{
+		Ok( bytes_sent ) ->
+		{
+			assert( bytes_sent == message_range.size(), ust::concat( "Sent unexpected number of bytes ", ust::to_string8(bytes_sent) ) );
+		},
+		Err( e ) ->
+		{
+			assert( false, ust::concat( "Failed to send message to socket! Error code: ", ust::enum_to_string(e) ) );
+		}
+	}
+}
+
+}
+
+namespace UDPSocket_Test2
+{
+
+fn Run()
+{
+	// Create regular socket on the main thread, create an async one on runner thread.
+	// Use blocking operation on the main thread.
+	// Send a message using sync UDP socket class, receive it using async UDP socket class.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var ust::shared_barrier barrier( 2u );
+
+	var ust::socket_address_v4 address( GetLoopbackIpAddress(), GetNextPort() );
+
+	r.deref().add_task( Func( barrier, address ) );
+
+	var ust::udp_socket mut socket= ust::udp_socket::create_v4().try_take();
+
+	barrier.wait();
+
+	var ust::string_view8 message_buffer= message;
+
+	assert( socket.send_to( address, message_buffer.to_byte8_range() ).try_take() == message_buffer.size() );
+
+	barrier.wait();
+}
+
+auto& message= "1000 Milen und noch mehr - bis zum Ende dieser Welt.";
+
+fn async Func( ust::shared_barrier barrier, ust::socket_address_v4 address )
+{
+	var udp_socket mut socket= udp_socket::create_and_bind( address ).try_take();
+
+	barrier.wait();
+
+	var [ char8, 64 ] mut buf= zero_init;
+
+	var ust::string_view8 message_buffer= message;
+
+	auto[ sender_address, size ]= socket.receive_from( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
+	assert( size == message_buffer.size() );
+	assert( ust::string_view8( buf ).subrange_end( size ) == message );
+
+	barrier.wait();
+}
+
+}
+
+namespace UDPSocket_Test3
+{
+
+fn Run()
+{
+	// Create regular socket on the main thread, create an async one on runner thread.
+	// Use blocking operation on the main thread.
+	// Send a message using sync UDP socket class, receive it using async UDP socket class.
+	// Connect sender first.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var ust::shared_barrier barrier( 2u );
+
+	var ust::socket_address_v4 address0( GetLoopbackIpAddress(), GetNextPort() );
+	var ust::socket_address_v4 address1( GetLoopbackIpAddress(), GetNextPort() );
+
+	r.deref().add_task( Func( barrier, address0, address1 ) );
+
+	var ust::udp_socket mut socket= ust::udp_socket::create_and_bind( address1 ).try_take();
+
+	barrier.wait();
+
+	var void v= socket.connect( address0 ).try_take();
+	ust::ignore_unused(v);
+
+	var ust::string_view8 message_buffer= message;
+
+	assert( socket.send( message_buffer.to_byte8_range() ).try_take() == message_buffer.size() );
+
+	barrier.wait();
+}
+
+auto& message= "Bis zu Unsterblichkeit!";
+
+fn async Func( ust::shared_barrier barrier, ust::socket_address_v4 my_address, ust::socket_address_v4 other_address )
+{
+	var udp_socket mut socket= udp_socket::create_and_bind( my_address ).try_take();
+
+	var void v= socket.connect( other_address ).try_take();
+	ust::ignore_unused(v);
+
+	barrier.wait();
+
+	var [ char8, 64 ] mut buf= zero_init;
+
+	var ust::string_view8 message_buffer= message;
+
+	var size_type size = socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
+	assert( size == message_buffer.size() );
+	assert( ust::string_view8( buf ).subrange_end( size ) == message );
+
+	barrier.wait();
+}
+
+}
+
+namespace UDPSocket_Test4
+{
+
+fn Run()
+{
+	// Create two tasks, each of them sends several messages to another.
+	// At the end check if all expected messages are received.
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
+
+	r.deref().add_task( Entry( finish_semaphore ) );
+
+	for( auto mut i= 0u; i < 2u; ++i )
+	{
+		finish_semaphore.deref().acquire();
+	}
+}
+
+fn async Entry( SemaphorePtr finish_semaphore )
+{
+	var ust::hash_set</ust::string8/> mut expected_messages;
+	expected_messages.insert( "Quick" );
+	expected_messages.insert( "brown" );
+	expected_messages.insert( "fox" );
+	expected_messages.insert( "jumps" );
+	expected_messages.insert( "over" );
+	expected_messages.insert( "the" );
+	expected_messages.insert( "lazy" );
+	expected_messages.insert( "dog" );
+
+	var ust::ip_address_v4 loopback= GetLoopbackIpAddress();
+	var ust::socket_address_v4 address0( loopback, GetNextPort() );
+	var ust::socket_address_v4 address1( loopback, GetNextPort() );
+
+	// Create two sockets and only then start working with them.
+	// Doing so we make sure messages are sent after sockets are created.
+	add_task( SenderReceiver( expected_messages, finish_semaphore, udp_socket::create_and_bind( address0 ).try_take(), address1 ) );
+	add_task( SenderReceiver( expected_messages, finish_semaphore, udp_socket::create_and_bind( address1 ).try_take(), address0 ) );
+}
+
+fn async SenderReceiver(
+	ust::hash_set</ust::string8/> expected_messages,
+	SemaphorePtr finish_semaphore,
+	udp_socket mut socket,
+	ust::socket_address_v4 other_address )
+{
+	var ust::string8 other_port_str= ust::to_string8( other_address.get_port() );
+
+	var ust::hash_set</ust::string8/> mut received_messages;
+
+	var [ char8, 128 ] mut buf= zero_init;
+
+	foreach( &message : expected_messages )
+	{
+		assert( socket.send_to( other_address, message.range().to_byte8_range() ).await.try_take() == message.size() );
+
+		if( false ) { ust::stdout_print( ust::concat( "Sent message \"", message, "\" to port ", other_port_str, ".\n" ) ); }
+
+		var size_type size= socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
+		var ust::string_view8 received_message= ust::string_view8( buf ).subrange_end( size );
+
+		received_messages.insert( received_message );
+
+		if( false ) { ust::stdout_print( ust::concat( "Received message \"", received_message, "\" from port ", other_port_str, ".\n" ) ); }
+	}
+
+	assert( expected_messages.size() == received_messages.size() );
+	assert( expected_messages == received_messages );
+
+	if( false ) { ust::stdout_print( ust::concat( "Finished sending to and receiving from port ", other_port_str, ".\n" ) ); }
+
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace UDPSocket_Test5
+{
+
+fn Run()
+{
+	// Create many UDP sockets, each socket sends a message to another one.
+	// Overall number of transmitted messages is equal to number of sockets squared.
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	var size_type count= 256s;
+
+	var ust::vector</ust::socket_address/> addresses=
+		ust::make_vector_from_filler_function(
+			count,
+			lambda() : ust::socket_address
+			{
+				return ust::socket_address_v4( GetLoopbackIpAddress(), GetNextPort() );
+			} );
+
+	// Create sockets before starting any task - to avoid spawned task sending messages to not started yet sockets.
+	var ust::vector</udp_socket/> mut sockets=
+		ust::make_vector_from_mapped_range(
+			addresses,
+			lambda( ust::socket_address& address ) : udp_socket
+			{
+				return udp_socket::create_and_bind( address ).try_take();
+			} );
+
+	sockets.range().reverse();
+
+	for( auto mut i= 0s; i < count; ++i )
+	{
+		r.deref().add_task( SocketFunc( sockets.pop_back(), addresses, i, finish_semaphore ) );
+	}
+
+	for( auto mut i= 0s; i < count; ++i )
+	{
+		finish_semaphore.deref().acquire();
+	}
+}
+
+fn async SocketFunc(
+	udp_socket mut socket,
+	ust::vector</ ust::socket_address /> addresses,
+	size_type this_index,
+	SemaphorePtr finish_semaphore )
+{
+	var ust::vector</ust::string8/> mut received_messages( addresses.size() );
+
+	var [ char8, 64 ] mut buf= zero_init;
+
+	// Send to all addresses and receive from all addresses.
+	for( auto mut i= 0s; i < addresses.size(); ++i )
+	{
+		var ust::string8 message= ust::concat( "Message from ", ust::to_string8(this_index), " to ", ust::to_string8(i) );
+		assert( socket.send_to( addresses[i], message.range().to_byte8_range() ).await.try_take() == message.size() );
+
+		var size_type size= socket.receive( ust::array_view_mut</char8/>(buf).to_byte8_range() ).await.try_take();
+		received_messages[i]= ust::string_view8( buf ).subrange_end( size );
+	}
+
+	// Sort to be able to use binary search.
+	ust::sort( received_messages );
+
+	// Should get messages from all addresses.
+	for( auto mut i= 0s; i < addresses.size(); ++i )
+	{
+		var ust::string8 message= ust::concat( "Message from ", ust::to_string8(i), " to ", ust::to_string8(this_index) );
+		assert( ust::binary_search::is_present( received_messages, message ) );
+	}
+
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace TCP_Test0
+{
+
+fn Run()
+{
+	// Create a synchronous TCP listener on current thread, create a task with async TCP client on runner thread.
+	// Send a message from client to the server and back.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore(0u) );
+
+	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var ust::tcp_listener mut listener= ust::tcp_listener::create_and_bind( server_address ).try_take();
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	r.deref().add_task( Func( server_address, finish_semaphore ) );
+
+	auto [ mut stream, client_address ]= listener.accept().try_take();
+
+	{
+		var [ char8, 64 ] mut buf= zero_init;
+		var ust::string_view8 message0_view= message0;
+		assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).try_take() == message0_view.size() );
+		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message0_view.size() );
+		if( false ) { ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP client.\n" ) ); }
+		assert( message_received == message0 );
+	}
+	{
+		var ust::string_view8 message1_view= message1;
+		assert( stream.write( message1_view.to_byte8_range() ).try_take() == message1_view.size() );
+		if( false ) { ust::stdout_print( ust::concat( "Sent message \"", message1_view, "\" to TCP client.\n" ) ); }
+	}
+
+	finish_semaphore.deref().acquire();
+}
+
+auto& message0= "Hello from an async TCP client!";
+auto& message1= "Hello from TCP server!";
+
+fn async Func( ust::socket_address_v4 server_address, SemaphorePtr finish_semaphore )
+{
+	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
+
+	{
+		var ust::string_view8 message0_view= message0;
+		assert( stream.write( message0_view.to_byte8_range() ).await.try_take() == message0_view.size() );
+		if( false ) { ust::stdout_print( ust::concat( "Sent message \"", message0_view, "\" to TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) ); }
+	}
+	{
+		var [ char8, 64 ] mut buf= zero_init;
+		var ust::string_view8 message1_view= message1;
+		assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take() == message1_view.size() );
+		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message1_view.size() );
+		if( false ) { ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) ); }
+		assert( message_received == message1 );
+	}
+
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace TCP_Test1
+{
+
+fn Run()
+{
+	// Create a async TCP listener on runner thread, connect to it on main thread.
+	// Send a message from client to the server and back.
+
+	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	r.deref().add_task( Func( tcp_listener::create_and_bind( server_address ).try_take() ) );
+
+	var ust::tcp_stream mut stream= ust::tcp_stream::connect( server_address ).try_take();
+	{
+		var ust::string_view8 message0_view= message0;
+		assert( stream.write( message0_view.to_byte8_range() ).try_take() == message0_view.size() );
+		if( false ) { ust::stdout_print( ust::concat( "Sent message \"", message0_view, "\" to TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) ); }
+	}
+	{
+		var [ char8, 64 ] mut buf= zero_init;
+		var ust::string_view8 message1_view= message1;
+		assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).try_take() == message1_view.size() );
+		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message1_view.size() );
+		if( false ) { ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) ); }
+		assert( message_received == message1 );
+	}
+}
+
+auto& message0= "Hello from a TCP client!";
+auto& message1= "Hello from async TCP server!";
+
+fn async Func( tcp_listener mut listener )
+{
+	auto [ mut stream, client_address ]= listener.accept().await.try_take();
+
+	{
+		var [ char8, 64 ] mut buf= zero_init;
+		var ust::string_view8 message0_view= message0;
+		assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take() == message0_view.size() );
+		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message0_view.size() );
+		if( false ) { ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP client.\n" ) ); }
+		assert( message_received == message0 );
+	}
+	{
+		var ust::string_view8 message1_view= message1;
+		assert( stream.write( message1_view.to_byte8_range() ).await.try_take() == message1_view.size() );
+		if( false ) { ust::stdout_print( ust::concat( "Sent message \"", message1_view, "\" to TCP client.\n" ) ); }
+	}
+}
+
+}
+
+namespace TCP_Test2
+{
+
+fn Run()
+{
+	// Run an async server and create a bunch of clients.
+	// Peroform message exchange between clients and the server.
+	//
+	// Run server on separate runner to ensure it's executed on another thread, so it's fast enough to accept all connections without filling TCP listener backlog.
+	// Process clients on third runner - to ensure server runner only performs "accept".
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var ust::box</runner_interface/> server_runner= create_runner();
+	var ust::box</runner_interface/> mut clinet_processing_runner= create_multithreaded_runner( ust::max( 3u, ust::get_number_of_available_cpus() ) - 2u );
+	var ust::box</runner_interface/> client_runner= create_runner();
+
+	server_runner.deref().add_task( ServerListenerFunc( tcp_listener::create_and_bind( server_address ).try_take(), move(clinet_processing_runner) ) );
+
+	// Create large number of clients. Not insane, but large.
+	// Note that this causes valgrind to crash, since it can't handle large file descriptors for some reason, even if we increase descriptors limit.
+	// On FreeBSD we can't create so many connections, since this OS discards connections if backlog is full instead of letting clients to retry.
+	var u32 num_clients= ( ust::string_view8( compiler::target::os ).starts_with( "freebsd" ) ? 256u : 4096u );
+
+	for( auto mut i= 0u; i < num_clients; ++i )
+	{
+		client_runner.deref().add_task( ClientFunc( i, server_address, finish_semaphore ) );
+	}
+
+	for( auto mut i= 0u; i < num_clients; ++i )
+	{
+		finish_semaphore.deref().acquire();
+	}
+}
+
+fn async ServerListenerFunc( tcp_listener mut listener, ust::box</runner_interface/> clinet_processing_runner )
+{
+	// Simple server loop - wait for new clinet and spawn a new task for it.
+	var size_type mut num_client_accepted = 0s;
+	loop
+	{
+		auto [ mut stream, client_address ]= listener.accept().await.try_take();
+
+		if( false ){ ust::stdout_print( ust::concat( "Got a client with sequential number ", ust::to_string8(num_client_accepted), ".\n" ) ); }
+		++num_client_accepted;
+
+		clinet_processing_runner.deref().add_task( ServerProcessorFunc( move(stream) ) );
+	}
+}
+
+fn async ServerProcessorFunc( tcp_stream mut stream )
+{
+	var [ char8, 64 ] mut buf= zero_init;
+	var size_type bytes_received= stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take();
+	var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( bytes_received );
+	if( false ){ ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP client.\n" ) ); }
+
+	var ust::string8 message1= ust::concat( "Response to ", message_received );
+	assert( stream.write( message1.range().to_byte8_range() ).await.try_take() == message1.size() );
+	if( false ){ ust::stdout_print( ust::concat( "Sent message \"", message1, "\" to TCP client.\n" ) ); }
+}
+
+fn async ClientFunc( u32 client_index, ust::socket_address_v4 server_address, SemaphorePtr finish_semaphore )
+{
+	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
+
+	var ust::string8 message0= "client hello " + ust::to_string8( client_index );
+	assert( stream.write( message0.range().to_byte8_range() ).await.try_take() == message0.size() );
+	if( false ){ ust::stdout_print( ust::concat( "Sent message \"", message0, "\" to TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) ); }
+
+	var ust::string8 message1= "Response to " + message0;
+
+	var [ char8, 64 ] mut buf= zero_init;
+	assert( stream.read( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_take() == message1.size() );
+	var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( message1.size() );
+	if( false ){ ust::stdout_print( ust::concat( "Got message \"", message_received, "\" from TCP server at port ", ust::to_string8( server_address.get_port() ), ".\n" ) ); }
+	assert( message_received == message1 );
+
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace TCP_Test3
+{
+
+fn Run()
+{
+	// Create two tasks, one for TCP server and one for TCP client.
+	// Transmit large quantities of data.
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	r.deref().add_task( ServerFunc( tcp_listener::create_and_bind( server_address ).try_take(), finish_semaphore ) );
+	r.deref().add_task( ClientFunc( server_address , finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+	finish_semaphore.deref().acquire();
+}
+
+var size_type g_num_ints= 1024s * 1024s * 16s;
+
+fn async ServerFunc( tcp_listener mut listener, SemaphorePtr finish_semaphore )
+{
+	auto [ mut stream, client_address ]= listener.accept().await.try_take();
+
+	var ust::vector</u32/> data=
+		ust::make_vector_from_filler_function(
+			g_num_ints,
+			lambda [i=0u] mut  () : u32
+			{
+				var u32 res= i;
+				++i;
+				return res;
+			} );
+
+	var ust::array_view_imut</byte8/> data_view= data.range().to_byte8_range();
+
+	for( var size_type mut offset= 0s; offset < data_view.size(); )
+	{
+		var size_type bytes_written= stream.write( data_view.subrange_start( offset ) ).await.try_take();
+		assert( bytes_written > 0s );
+		offset+= bytes_written;
+	}
+
+	finish_semaphore.deref().release();
+}
+
+fn async ClientFunc( ust::socket_address_v4 server_address, SemaphorePtr finish_semaphore )
+{
+	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
+
+	var ust::vector</byte8/> mut data( g_num_ints * typeinfo</u32/>.size_of, byte8(0u8) );
+
+	for( var size_type mut offset= 0s; offset < data.size(); )
+	{
+		var size_type bytes_read= stream.read( data.range().subrange_start( offset ) ).await.try_take();
+		assert( bytes_read > 0s );
+		offset+= bytes_read;
+	}
+
+	for( auto mut i= 0s; i < g_num_ints; ++i )
+	{
+		// TODO - ensure this test is always correct with all possible byte orders.
+		var byte8 v0= data[ i * 4s + 0s ];
+		var byte8 v1= data[ i * 4s + 1s ];
+		var byte8 v2= data[ i * 4s + 2s ];
+		var byte8 v3= data[ i * 4s + 3s ];
+		var u32 val= ( u32(u8(v0)) << 0u ) | ( u32(u8(v1)) << 8u ) | ( u32(u8(v2)) << 16u ) | ( u32(u8(v3)) << 24u );
+		assert( val == u32(i) );
+	}
+
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace TCP_Test4
+{
+
+fn Run()
+{
+	// Try connecting to an non-existing server.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+
+	r.deref().add_task( ClientFunc( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async ClientFunc( SemaphorePtr finish_semaphore )
+{
+	result_match( tcp_stream::connect( ust::socket_address_v4( GetLoopbackIpAddress(), 5678u16 ) ).await )
+	{
+		Ok(c) ->
+		{
+			assert( false, "Should not connect to a non-existing server!" );
+		},
+		Err(e) ->
+		{
+			assert( e == ust::io_error::connection_refused, "Unexpected error code while connecting to non-existing server!" );
+		},
+	}
+
+	finish_semaphore.deref().release();
+}
+
+}
+
+namespace Join_Test0
+{
+
+fn Run()
+{
+	// Joint two subtasks, which just return a value (maybe yielding a couple of times) without performing a socket operation.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var tup [ i32, f32 ] res= join_subtasks( FuncA(), FuncB() ).await;
+	assert( res[0] == 5 );
+	assert( res[1] == 7.3f );
+
+	finish_semaphore.deref().release();
+}
+
+fn async FuncA() : i32
+{
+	return 5;
+}
+
+fn async FuncB() : f32
+{
+	yield;
+	yield;
+	return 7.3f;
+}
+
+}
+
+namespace Join_Test1
+{
+
+fn Run()
+{
+	// Joint two subtasks, which just return a value of comosite type (maybe yielding a couple of times) without performing a socket operation.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var tup [ ust::string8, ust::string16 ] res= join_subtasks( FuncA(), FuncB() ).await;
+	assert( res[0] == "FuncA result" );
+	assert( res[1] == "FuncB результат"u16 );
+
+	finish_semaphore.deref().release();
+}
+
+fn async FuncA() : ust::string8
+{
+	yield;
+	yield;
+	return "FuncA result";
+}
+
+fn async FuncB() : ust::string16
+{
+	yield;
+	return "FuncB результат"u16;
+}
+
+}
+
+namespace Join_Test2
+{
+
+fn Run()
+{
+	// Use "join_subtasks" more than once.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var tup[ u32, f32 ] res0= join_subtasks( FuncA( 265u ), FuncB( 13.2f ) ).await;
+	assert( res0[0] == 265u * 3u );
+	assert( res0[1] == 13.2f - 1.0f );
+
+	// Passing an async function object with captured references is supported.
+	var tup[ f32, u32 ] res1= join_subtasks( FuncB( -25.5f ), FuncA( 74u ) ).await;
+	assert( res1[0] == -25.5f - 1.0f );
+	assert( res1[1] == 74u * 3u );
+
+	finish_semaphore.deref().release();
+}
+
+fn async FuncA( u32& x ) : u32
+{
+	yield;
+	yield;
+	return x * 3u;
+}
+
+fn async FuncB( f32 y ) : f32
+{
+	yield;
+	return y - 1.0f;
+}
+
+}
+
+namespace Join_Test3
+{
+
+fn Run()
+{
+	// Create a couple of tasks with "join_subtasks", which of them uses "join_subtasks" internally.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var tup[ tup[ f32, f64 ], tup[ u32, i64 ] ] res= join_subtasks( FuncA(), FuncB() ).await;
+	assert( res[0][0] == -13.0f );
+	assert( res[0][1] == 15.0 );
+	assert( res[1][0] == 20u );
+	assert( res[1][1] == 11i64 );
+
+	finish_semaphore.deref().release();
+}
+
+fn async FuncA() : tup[ f32, f64 ]
+{
+	yield;
+	yield;
+	// Passing an async function object with captured references is supported.
+	return join_subtasks( Func0( 13.0f ), Func1( 3.0, 5.0 ) ).await;
+}
+
+fn async FuncB() : tup[ u32, i64 ]
+{
+	yield;
+	return join_subtasks( Func2( 17u ), Func3( 34i64 ) ).await;
+}
+
+fn async Func0( f32 x ) : f32
+{
+	yield;
+	return -x;
+}
+
+fn async Func1( f64& x, f64& y ) : f64
+{
+	yield;
+	yield;
+	return x * y;
+}
+
+fn async Func2( u32 x ) : u32
+{
+	return x + 3u;
+}
+
+fn async Func3( i64 x ) : i64
+{
+	yield;
+	return x / 3i64;
+}
+
+}
+
+namespace Join_Test4
+{
+
+fn Run()
+{
+	// Pass "join_subtasks" call results into another "join_subtasks" call.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var tup[ tup[ f32, f64 ], tup[ u32, i64 ] ] res=
+		join_subtasks(
+			join_subtasks( Func0( 15.0f ), Func1( 7.0, 5.0 ) ),
+			join_subtasks( Func2( 37u ), Func3( 55i64 ) ) ).await;
+
+	assert( res[0][0] == -15.0f );
+	assert( res[0][1] == 35.0 );
+	assert( res[1][0] == 40u );
+	assert( res[1][1] == 18i64 );
+
+	finish_semaphore.deref().release();
+}
+
+fn async Func0( f32 x ) : f32
+{
+	yield;
+	return -x;
+}
+
+fn async Func1( f64 x, f64 y ) : f64
+{
+	yield;
+	yield;
+	return x * y;
+}
+
+fn async Func2( u32 x ) : u32
+{
+	return x + 3u;
+}
+
+fn async Func3( i64 x ) : i64
+{
+	yield;
+	return x / 3i64;
+}
+
+}
+
+namespace Join_Test5
+{
+
+fn Run()
+{
+	// Run a task, which creates two subtasks, each of them sends and receives using an UDP socket.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var ust::socket_address_v4 address0( GetLoopbackIpAddress(), GetNextPort() );
+	var ust::socket_address_v4 address1( GetLoopbackIpAddress(), GetNextPort() );
+
+	var tup[ ust::string8, ust::string8 ] res=
+		join_subtasks(
+			FuncInner( udp_socket::create_and_bind( address0 ).try_take(), address1, "Zero to one" ),
+			FuncInner( udp_socket::create_and_bind( address1 ).try_take(), address0, "One to zero" ) ).await;
+
+	if( false ) { ust::stdout_print( "Joined UDP messages exchange\n" ); }
+	assert( res[0] == "One to zero" );
+	assert( res[1] == "Zero to one" );
+
+	finish_semaphore.deref().release();
+}
+
+fn async FuncInner( udp_socket mut socket, ust::socket_address_v4& other_address, ust::string_view8 message ) : ust::string8
+{
+	// Send given message to other socket.
+	assert( socket.send_to( other_address, message.to_byte8_range() ).await.try_deref() == message.size() );
+	if( false ) { ust::stdout_print( ust::concat( "Sent message \"", message, "\" to port ", ust::to_string8( other_address.get_port() ), "\n" ) ); }
+
+	// Receive a message from other socket.
+	var [ char8, 64 ] mut buf= zero_init;
+	var size_type size= socket.receive( ust::array_view_mut</char8/>( buf ).to_byte8_range() ).await.try_deref();
+	var ust::string8 result= ust::string_view8( buf ).subrange_end( size );
+	if( false ) { ust::stdout_print( ust::concat( "Received message \"", result, "\" from port ", ust::to_string8( other_address.get_port() ), "\n" ) ); }
+	return result;
+}
+
+}
+
+namespace Join_Test6
+{
+
+fn Run()
+{
+	// Run a task, which creates two subtasks - TCP client and server.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var ust::socket_address_v4 server_address( GetLoopbackIpAddress(), GetNextPort() );
+	var tcp_listener mut listener= tcp_listener::create_and_bind( server_address ).try_take();
+
+	var ust::string_view8 message= "Some message to transfer";
+
+	var tup[ void, ust::string8 ] res=
+		join_subtasks(
+			ServerFunc( move(listener), message ),
+			ClientFunc( server_address, message.size() ) ).await;
+
+	assert( res[1] == message );
+
+	finish_semaphore.deref().release();
+}
+
+fn async ServerFunc( tcp_listener mut listener, ust::string_view8 message )
+{
+	auto [ mut stream, client_address ]= listener.accept().await.try_take();
+
+	for( var size_type mut offset= 0s; offset < message.size(); )
+	{
+		var size_type bytes_written= stream.write( message.subrange_start( offset ).to_byte8_range() ).await.try_take();
+		assert( bytes_written > 0s );
+		offset+= bytes_written;
+	}
+}
+
+fn async ClientFunc( ust::socket_address_v4& server_address, size_type message_size ) : ust::string8
+{
+	var tcp_stream mut stream= tcp_stream::connect( server_address ).await.try_take();
+
+	var ust::string8 mut res( message_size, '\0' );
+
+	for( var size_type mut offset= 0s; offset < res.size(); )
+	{
+		var size_type bytes_read= stream.read( res.range().subrange_start( offset ).to_byte8_range() ).await.try_take();
+		assert( bytes_read > 0s );
+		offset+= bytes_read;
+	}
+
+	return res;
+}
+
+}
+
+namespace Join_Test7
+{
+
+fn Run()
+{
+	// Joint three subtasks.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var tup [ i32, char8, f64 ] res= join_subtasks( FuncA(), FuncB(), FuncC() ).await;
+	assert( res[0] == 2565 );
+	assert( res[1] == 'q' );
+	assert( res[2] == -2.52 );
+
+	finish_semaphore.deref().release();
+}
+
+fn async FuncA() : i32
+{
+	yield;
+	return 2565;
+}
+
+fn async FuncB() : char8
+{
+	return 'q';
+}
+
+fn async FuncC() : f64
+{
+	yield;
+	yield;
+	return -2.52;
+}
+
+}
+
+namespace Join_Test8
+{
+
+fn Run()
+{
+	// Join four subtasks.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var tup[ ust::string8, ust::vector</f32/>, u64, ust::box</f64/> ] res=
+		join_subtasks( FuncA(), FuncB(), FuncC(), FuncD() ).await;
+
+	assert( res[0] == "some" );
+	assert( res[1] == ust::make_array( 2.0f, 6.4f, -24.1f ) );
+	assert( res[2] == 12345678900u );
+	assert( res[3].deref() == 34631.2 );
+
+	finish_semaphore.deref().release();
+}
+
+fn async FuncA() : ust::string8
+{
+	yield;
+	return "some";
+}
+
+fn async FuncB() : ust::vector</f32/>
+{
+	return ust::make_array( 2.0f, 6.4f, -24.1f );
+}
+
+fn async FuncC() : u64
+{
+	yield;
+	yield;
+	return 12345678900u;
+}
+
+fn async FuncD() : ust::box</f64/>
+{
+	yield;
+	yield;
+	yield;
+	return ust::make_box( 34631.2 );
+}
+
+}
+
+namespace Join_Test9
+{
+
+fn Run()
+{
+	// Joint an array of subtasks.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var [ ust::string8, 7s ] res=
+		join_subtasks(
+			ust::make_array(
+				DoubleIt( "Ich" ),
+				DoubleIt( "sehe" ),
+				DoubleIt( "einen" ),
+				DoubleIt( "Apfel" ),
+				DoubleIt( "oben" ),
+				DoubleIt( "im" ),
+				DoubleIt( "Geäst" ) ) ).await;
+
+	assert( res[0] == "IchIch" );
+	assert( res[1] == "sehesehe" );
+	assert( res[2] == "eineneinen" );
+	assert( res[3] == "ApfelApfel" );
+	assert( res[4] == "obenoben" );
+	assert( res[5] == "imim" );
+	assert( res[6] == "GeästGeäst" );
+
+	finish_semaphore.deref().release();
+}
+
+fn async DoubleIt( ust::string_view8 s ) : ust::string8
+{
+	yield;
+	return ust::concat( s, s );
+}
+
+}
+
+namespace Join_Test10
+{
+
+fn Run()
+{
+	// Create a vector of tasks and join this vector.
+	// Each task sends a message to all other tasks and to itself.
+
+	var SemaphorePtr finish_semaphore( ust::semaphore( 0u ) );
+
+	var ust::box</runner_interface/> r= create_runner();
+	r.deref().add_task( Func( finish_semaphore ) );
+
+	finish_semaphore.deref().acquire();
+}
+
+fn async Func( SemaphorePtr finish_semaphore )
+{
+	var size_type num_sockets= 12s;
+
+	var [ ust::string8, num_sockets ] mut messages
+	[
+		"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"
+	];
+
+	ust::sort( messages );
+
+	auto loopback= GetLoopbackIpAddress();
+
+	var [ ust::socket_address, num_sockets ] addresses
+	[
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+		ust::socket_address_v4( loopback, GetNextPort() ),
+	];
+
+	var ust::vector</ async : ust::vector</ust::string8/> /> mut funcs;
+
+	for( auto mut i= 0s; i < num_sockets; ++i )
+	{
+		funcs.push_back(
+			SocketFunc(
+				udp_socket::create_and_bind( addresses[i] ).try_take(),
+				addresses,
+				messages[i] ) );
+	}
+
+	var ust::vector</ ust::vector</ust::string8/> /> results= join_subtasks( move(funcs) ).await;
+
+	if( false ) { ust::stdout_print( "Finished UDP messages exchange\n" ); }
+
+	assert( results.size() == num_sockets );
+
+	foreach( &messages_received : results )
+	{
+		assert( messages_received.size() == num_sockets );
+		foreach( pair : messages_received.iter().zip( ust::array_view_imut</ust::string8/>( messages ).iter() ) )
+		{
+			assert( pair.first == pair.second );
+		}
+	}
+
+	finish_semaphore.deref().release();
+}
+
+fn async SocketFunc(
+	udp_socket mut socket,
+	ust::vector</ ust::socket_address /> addresses,
+	ust::string8 message ) : ust::vector</ust::string8/>
+{
+	var ust::socket_address socket_address= socket.get_local_address().try_take();
+	var ust::string8 port_str= ust::to_string8( socket_address.try_get</ust::socket_address_v4/>().get_port() );
+
+	var ust::vector</ust::string8/> mut res;
+
+	var [ char8, 64 ] mut buf= zero_init;
+
+	foreach( &address : addresses )
+	{
+		assert( socket.send_to( address, message.range().to_byte8_range() ).await.try_take() == message.size() );
+		if( false ) { ust::stdout_print(  ust::concat( "Sent message \"", message, "\" to port ", ust::to_string8( address.try_get</ust::socket_address_v4/>().get_port() ), "\n" ) ); }
+
+		var size_type size= socket.receive( ust::array_view_mut</char8/>(buf).to_byte8_range() ).await.try_take();
+		var ust::string_view8 message_received= ust::string_view8( buf ).subrange_end( size );
+		if( false ) { ust::stdout_print( ust::concat( "Received message \"", message_received, "\" on port ", port_str, "\n" ) ); }
+		res.push_back( message_received );
+	}
+
+	ust::sort( res );
+
+	return res;
+}
+
+}
+
+fn GetLoopbackIpAddress() : ust::ip_address_v4
+{
+	return ust::ip_address_v4( ust::make_array( 127u8, 0u8, 0u8, 1u8 ) );
+}
+
+fn GetNextPort() : u16
+{
+	unsafe
+	{
+		var u16 res= g_port_counter;
+		++g_port_counter;
+		return res;
+	}
+}
+
+var u16 mut g_port_counter( 59000s + 500s * compiler::generation );
+
+type SemaphorePtr= ust::shared_ptr_mt_final</ust::semaphore/>;
+
+} // namespace sm_async_net
