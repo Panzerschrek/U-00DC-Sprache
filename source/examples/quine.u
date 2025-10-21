@@ -1,11 +1,12 @@
+import "/main_wrapper.u"
 import "/stdout.u"
 import "/string.u"
-fn nomangle main() : i32
+pretty_main
 {
-	var ust::string_view8 str= "import \"/stdout.u\"\nimport \"/string.u\"\nfn nomangle main() : i32\n{\n\tvar ust::string_view8 str= \"\";\n\tust::stdout_print( str.subrange(0s, 94s) );\n\tust::stdout_print( EscapeString(str).range() );\n\tust::stdout_print( str.subrange(94s, str.size()) );\n\treturn 0;\n}\nfn EscapeString(ust::string_view8 str) : ust::string8\n{\n\tvar ust::string8 mut result;\n\tforeach(c : str)\n\t{\n\t\tif(c == char8(0x0A)){ result.push_back(char8(0x5C)); result.push_back(char8(0x6E)); }\n\t\telse if(c == char8(0x22)){ result.push_back(char8(0x5C)); result.push_back(char8(0x22)); }\n\t\telse if(c == char8(0x09)){ result.push_back(char8(0x5C)); result.push_back(char8(0x74)); }\n\t\telse { result.push_back(c); }\n\t}\n\treturn move(result);\n}\n";
-	ust::stdout_print( str.subrange(0s, 94s) );
-	ust::stdout_print( EscapeString(str).range() );
-	ust::stdout_print( str.subrange(94s, str.size()) );
+	var ust::string_view8 str= "import \"/main_wrapper.u\"\nimport \"/stdout.u\"\nimport \"/string.u\"\npretty_main\n{\n\tvar ust::string_view8 str= \"\";\n\tust::stdout_print( str.subrange_end(106s) );\n\tust::stdout_print( EscapeString(str) );\n\tust::stdout_print( str.subrange_start(106s) );\n\treturn 0;\n}\nfn EscapeString(ust::string_view8 str) : ust::string8\n{\n\tvar ust::string8 mut result;\n\tforeach(c : str)\n\t{\n\t\tif(c == char8(0x0A)){ result.push_back(char8(0x5C)); result.push_back(char8(0x6E)); }\n\t\telse if(c == char8(0x22)){ result.push_back(char8(0x5C)); result.push_back(char8(0x22)); }\n\t\telse if(c == char8(0x09)){ result.push_back(char8(0x5C)); result.push_back(char8(0x74)); }\n\t\telse { result.push_back(c); }\n\t}\n\treturn result;\n}\n";
+	ust::stdout_print( str.subrange_end(106s) );
+	ust::stdout_print( EscapeString(str) );
+	ust::stdout_print( str.subrange_start(106s) );
 	return 0;
 }
 fn EscapeString(ust::string_view8 str) : ust::string8
@@ -18,5 +19,5 @@ fn EscapeString(ust::string_view8 str) : ust::string8
 		else if(c == char8(0x09)){ result.push_back(char8(0x5C)); result.push_back(char8(0x74)); }
 		else { result.push_back(c); }
 	}
-	return move(result);
+	return result;
 }
