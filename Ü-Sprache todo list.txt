@@ -3,7 +3,7 @@ Features are split into groups - for some major language parts and components.
 Delete a feature from the list as soon as it's implemented.
 
 General:
-*) build-in "for" for array types.
+*) Consider supporting array types in built-in "for" operator.
 *) More float types ( 16 bit, 128 bit )
 *) More integer types ( 256 bit, 512 bit )
 *) Constructor initializer for constexpr structs
@@ -11,11 +11,11 @@ General:
 	statement, etc
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) More advanced macros - more context, elements, stringification, string manipulations
-*) switch-style operator for expression context
+*) switch-like operator for expression context
 *) A way to construct temporary variable with sequence initializer or other initializer kinds,
 	(in expression context)
 *) Function to function pointer assignment with multiple possible functions
-*) Static assert message as arbitrary constrant expression (possibility to generate it in compilation time)
+*) Static assert message as arbitrary constant expression (possibility to generate it in compilation time)
 *) Multidimensional [] operator - for accessing elements of multidimensional arrays or as overloaded operator
 *) Allow unsafe code and raw pointers in constexpr functions and perform additional safety checks during constexpr
 	execution in order to check no UB or non-determinism is possible, like uninitialized memory usage, pointer
@@ -24,7 +24,6 @@ General:
 *) A way to hide some names in common (imported) files - for implementation details
 *) A way to disable structs, type aliases, static asserts, other stuff in namespaces - similar to "enable_if"
 *) Investigate possibility of conditional imports
-*) Functions with named parameters and ability to specify arguments in any order at call side usinig such names
 *) Create for each function a string variable constant like "__PRETTY_FUNCTION__" in order to fetch function
 	name inside it
 *) Allow default constructors for interfaces
@@ -66,11 +65,8 @@ Lambdas:
 *) Template lambdas
 
 Standart library:
-*) Optimize template functions and classes in order to minimize number of things being compiling and thus speed-up
-	compilation of user programs using ustlib.
 *) Support types with references inside in some containers (variant, result, hash_map)
 *) Make clear separation between standard library and some intrinsics built-in into the compiler
-*) switch-like macro for variant
 *) Associative (ordered) containers - map, set, string_map
 *) More algorithms
 *) More iterator class methods - like "enumerate" and others
@@ -84,7 +80,6 @@ Standart library:
 *) String formatting library
 *) Support casting "shared_ptr_final</A/>" to "shared_ptr_final</B/>" if A and B are polymorph related types
 *) Formatted console output functions
-*) Executor for async functions, possible multithreaded
 *) More type traits
 *) More math functions
 *) "result"-like container for reference results
@@ -94,7 +89,7 @@ Standart library:
 *) Fix "get_metadata_for_path" implementation for Windows - follow symbolic links
 *) Fix non-ASCII input on Windows (in CMD consoles)
 *) More file kinds - fifo, block device, etc.
-*) More file error kinds
+*) More io error kinds
 *) Memory-mapped files
 *) "read_at"/"write_at" methods for files (as more effective alternative to "seek" + "read"/"write")
 *) Buffered reader/writer wrappers for files and TCP stream
@@ -109,7 +104,7 @@ Standart library:
 *) Support recursive types with usage of "vector" without need to use additional indirection (via "box")
 *) String/vector-like containers with limited number of elements (32-bit or 16-bit sizes)
 *) Compact vector-like container - with size/capacity stored in allocated memory block
-*) Optimize sorting - use faster algorithm for small number of elements, select median element wisely
+*) Optimize quicksort implementation - use faster algorithm for small number of elements, select median element wisely
 *) Detachable thread
 *) More binary search functions - index of last element less than given (or equal to it), index of given element,
 	range partition
@@ -121,7 +116,8 @@ Standart library:
 
 Compiler:
 *) Ensure floating-point numbers parsing always produces correct result
-*) Support parsing 128-bit integers
+	(as the floating point numbers standard requires)
+*) Support parsing 128-bit integers (store parse result in a 12-8bit unsinged integer)
 *) Prevent infinite or near-infinite templates instantiation, possibly via a hard limit for total number of template
 	instantiations. This may prevent stack overflow in some cases.
 *) Limit number of lex/synt errors printed - to avoid printing too many of them
@@ -132,7 +128,7 @@ Compiler:
 *) Speed-up references graph code - try using faster hash-map implementation
 *) Avoid recursion in VariantLinkedList destructor - it causes stack overflow for long lists
 *) Find a way to detect recursive mixins in blocks, type names, expressions
-*) Print full mixin text on error within mixin
+*) Print full mixin text on error within a mixin
 *) Imporve TBAA - use struct path-based TBAA.
 *) Use TBAA metadata for load/store instructions, used for some composite arguments and return values.
 *) Use target-specific calling-convention knowledge (available registers) to determine the most effective way of
@@ -177,7 +173,8 @@ Language server:
 *) Fix possible crashes due to accessing source graph instance stored within CodeBuilder class instance while
 	performing completion or signature help. It's wrong, since new syntax elements are constructed for completion or
 	signature help and accessing source graph based on source location from new syntax elements is incorrect.
-*) Reduce memory usage - avoid building unnecessary code, clear unused internal data structures, make mangled names shorter, etc.
+*) Reduce memory usage even more - avoid building unnecessary code, clear unused internal data structures, make mangled
+	names shorter, etc.
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened
 	documents. Maybe obtain list of workspace files from build system and scan them.
 *) Go to definition - pick definition of function, defined in other document (that is not imported directly)
