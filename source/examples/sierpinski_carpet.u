@@ -1,0 +1,88 @@
+// This example program generates a Sierpiński carpet and prints it into the console.
+// Make sure it's wide enough to display it!
+
+import "/main_wrapper.u"
+import "/stdout.u"
+
+pretty_main
+{
+	var Carpet mut carpet= zero_init;
+
+	GenerateCarpet( carpet );
+
+	var [ [ char8, c_carpet_size * 2s ], c_carpet_size ] mut buf= zero_init;
+
+	for( var size_type mut row= 0s; row < c_carpet_size; ++row )
+	{
+		var CarpetRow src_row= carpet[row];
+		var [ char8, c_carpet_size * 2s ] &mut dst_row= buf[row];
+
+		for( var size_type mut column= 0s; column < c_carpet_size ; ++column )
+		{
+			var char8 c= ( src_row[column] ? '#' : ' ' );
+			dst_row[column * 2s + 0s]= c;
+			dst_row[column * 2s + 1s]= c;
+		}
+	}
+
+	ust::stdout_print( "Here is your Sierpiński carpet:\n" );
+
+	for( var size_type mut row= 0s; row < c_carpet_size; ++row )
+	{
+		ust::stdout_print( buf[row] );
+		ust::stdout_print( "\n" );
+	}
+
+	return 0;
+}
+
+var size_type c_carpet_power= 4s;
+var size_type c_carpet_size= Pow3( c_carpet_power );
+
+type CarpetRow= [ bool, c_carpet_size ];
+type Carpet= [ CarpetRow, c_carpet_size ];
+
+fn GenerateCarpet( Carpet &mut carpet )
+{
+	carpet[0s][0s]= true;
+	for( var size_type mut level= 0s, mut region_size= 1s; level < c_carpet_power; ++level, region_size *= 3s )
+	{
+		CopyRegion( carpet, 0s, 0s, 1s * region_size, 0s * region_size, region_size, region_size );
+		CopyRegion( carpet, 0s, 0s, 2s * region_size, 0s * region_size, region_size, region_size );
+
+		CopyRegion( carpet, 0s, 0s, 0s * region_size, 1s * region_size, region_size, region_size );
+		CopyRegion( carpet, 0s, 0s, 2s * region_size, 1s * region_size, region_size, region_size );
+
+		CopyRegion( carpet, 0s, 0s, 0s * region_size, 2s * region_size, region_size, region_size );
+		CopyRegion( carpet, 0s, 0s, 1s * region_size, 2s * region_size, region_size, region_size );
+		CopyRegion( carpet, 0s, 0s, 2s * region_size, 2s * region_size, region_size, region_size );
+	}
+}
+
+fn CopyRegion(
+	Carpet &mut carpet,
+	size_type src_x, size_type src_y,
+	size_type dst_x, size_type dst_y,
+	size_type size_x, size_type size_y )
+{
+	for( var size_type mut dy= 0s; dy < size_y; ++dy )
+	{
+		var size_type src_row_index= src_y + dy;
+		var size_type dst_row_index= dst_y + dy;
+		for( var size_type mut dx= 0s; dx < size_x; ++dx )
+		{
+			auto val= carpet[src_row_index][src_x + dx];
+			carpet[dst_row_index][dst_x + dx]= val;
+		}
+	}
+}
+
+fn constexpr Pow3( size_type p ) : size_type
+{
+	var size_type mut res= 1s;
+	for( var size_type mut i= 0s; i < p; ++i )
+	{
+		res *= 3s;
+	}
+	return res;
+}
