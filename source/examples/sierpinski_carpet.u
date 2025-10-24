@@ -3,6 +3,7 @@
 
 import "/main_wrapper.u"
 import "/stdout.u"
+import "/utf.u"
 
 pretty_main
 {
@@ -10,28 +11,36 @@ pretty_main
 
 	GenerateCarpet( carpet );
 
-	var [ [ char8, c_carpet_size * 2s ], c_carpet_size ] mut buf= zero_init;
+	ust::stdout_print( "Here is your Sierpiński carpet:\n\n" );
 
-	for( var size_type mut row= 0s; row < c_carpet_size; ++row )
+	var ust::string8 mut s;
+
+	for( var size_type mut dst_row= 0s; dst_row < c_carpet_size / 2s; ++dst_row )
 	{
-		var CarpetRow src_row= carpet[row];
-		var [ char8, c_carpet_size * 2s ] &mut dst_row= buf[row];
-
-		for( var size_type mut column= 0s; column < c_carpet_size ; ++column )
+		for( var size_type mut column= 0s; column < c_carpet_size; ++column )
 		{
-			var char8 c= ( src_row[column] ? '#' : ' ' );
-			dst_row[column * 2s + 0s]= c;
-			dst_row[column * 2s + 1s]= c;
+			var bool b0= carpet[ dst_row * 2s + 0s ][column];
+			var bool b1= carpet[ dst_row * 2s + 1s ][column];
+			var char32 mut c= ' 'c32;
+			if( b0 & b1 ) { c= '█'c32; }
+			if( b0 & !b1 ) { c= '▀'c32; }
+			if( !b0 & b1 ) { c= '▄'c32; }
+			ust::utf::push_code_point_to_string( s, c );
 		}
+		s.push_back( '\n' );
+		ust::stdout_print( s );
+		s.clear();
 	}
 
-	ust::stdout_print( "Here is your Sierpiński carpet:\n" );
-
-	for( var size_type mut row= 0s; row < c_carpet_size; ++row )
+	for( var size_type mut column= 0s; column < c_carpet_size; ++column )
 	{
-		ust::stdout_print( buf[row] );
-		ust::stdout_print( "\n" );
+		var bool b= carpet[ c_carpet_size - 1s ][column];
+		var char32 c= ( b ? '▀'c32 : ' 'c32 );
+		ust::utf::push_code_point_to_string( s, c );
 	}
+
+	s.push_back( '\n' );
+	ust::stdout_print( s );
 
 	return 0;
 }
