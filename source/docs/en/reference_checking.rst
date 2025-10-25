@@ -1,39 +1,39 @@
 Reference checking
 ==================
 
-Reference checking is one of the key features of Ü, which allows to reduce number of errors in programs.
+Reference checking is one of the key features of Ü, which allow to reduce number of errors in programs.
 This mechanism allows to find in compile-time use-after-free errors, aliasing errors, dangling references errors, etc.
 
 **************************
 *Reference checking rules*
 **************************
 
-The main rule of the reference checking is the following: in each point of the control flow each variable or reference should have zero or many derived immutable references or only one derived mutable reference.
-The compiler ensures in compile-time that this rule is not violated and may produce error(s) otherwise.
+The main rule of the reference checking is the following: in each point of the control flow each variable or reference should have only one derived mutable reference or zero or more derived immutable references.
+The compiler ensures in compile-time that this rule is not violated and generates error(s) otherwise.
 
 ********************
 *Derived references*
 ********************
 
-Derived reference is a reference produced with source variable or reference.
+A derived reference is a reference produced with usage of source variable or reference.
 
 .. code-block:: u_spr
 
    fn Foo()
    {
        var i32 x = 0;
-       var i32 &y= x; // "у" - derived from "x" reference
-       var i32 &z= y; // "z" - derived form "y" reference
+       var i32 &y= x; // "у" is a derived from "x" reference
+       var i32 &z= y; // "z" is a derived form "y" reference
    }
 
-Reference to an array element is a derived from this array reference.
+A reference to an array element is a derived from this array reference.
 
 .. code-block:: u_spr
 
    fn Foo()
    {
        var [ f64, 4 ] a= zero_init;
-       var f64 &a_ref= a[2]; // "a_ref" - derived from "a" reference
+       var f64 &a_ref= a[2]; // "a_ref" is a derived from "a" reference
    }
 
 A reference that is a function call result is considered to be derived from reference arguments of the function.
@@ -55,13 +55,13 @@ Such reference may be derived from more than one source variable/reference.
    fn Foo()
    {
        var f32 mut f= 0.5f;
-       var f32 &mut f_ref= Pass(f); // "f_ref" - derived from "f" reference
-   
+       var f32 &mut f_ref= Pass(f); // "f_ref" is a derived from "f" reference
+       
        var i32 a= 8, b= 7;
-       var i32 &ab_ref= Min(a, b); // "ab_ref" - derived from both "a" and "b" reference
+       var i32 &ab_ref= Min(a, b); // "ab_ref" is a derived from both "a" and "b" reference
    }
 
-A reference inside a struct value is also derived.
+A reference stored inside a struct value is also may be derived from another variable/reference.
 
 .. code-block:: u_spr
 
@@ -69,8 +69,8 @@ A reference inside a struct value is also derived.
    fn Foo()
    {
        var i32 x= 0;
-       var S s{ .r= x }; // "s.r" - derived from "x" reference
-       var i32& r2= s.r; // "r2" - derived from "s.r" reference
+       var S s{ .r= x }; // "s.r" is a derived from "x" reference
+       var i32& r2= s.r; // "r2" is a derived from "s.r" reference
    }
 
 ******************
@@ -79,8 +79,8 @@ A reference inside a struct value is also derived.
 
 Child references are different from derived references.
 A child reference is a reference to a non-reference struct or class field or to a tuple element.
-The main difference with derived references is that it's allowed to create more than one mutable child reference to a variable, but only if these references are to different variable members (fields or tuple elements).
-This allows, for example, simultaneously to change different fields of the same struct instance.
+The main difference compared to derived references is that it's allowed to create more than one mutable child reference to a variable, but only if these references are created for different variable members (fields or tuple elements).
+This allows, for example, to change simultaneously different fields of the same struct instance.
 
 .. code-block:: u_spr
 
@@ -92,23 +92,23 @@ This allows, for example, simultaneously to change different fields of the same 
        var tup[i32, i32] mut t= zero_init;
        var i32 &mut x_ref= s.x; // First child reference is created - to "x" struct field.
        var i32 &mut y_ref= s.y; // Second child reference is created - to different field "y".
-       Swap( t[0], t[1] ); // Simultaneously mutate different elements of the same tuple instance.
+       Swap( t[0], t[1] ); // Mutate simultaneously different elements of the same tuple instance.
    }
 
 ******************************************
 *Managing derived references in functions*
 ******************************************
 
-By-default it's assumed that a reference result of a function is derived from all reference arguments.
-But there are functions which return references that are derived only from some of the arguments.
-There is a way to annotate a function in order to avoid creating unnecessary derived references for its result.
+By-default it's assumed that a reference result of a function is derived from all its reference arguments.
+But there are functions which really return references that are derived only from some of the arguments.
+For such cases there is a way to annotate a function in a special way in order to avoid creating unnecessary derived references for its result.
 
-After specifying of the return reference modifier it's possible to specify ``@`` symbol with following expression in ``()``.
+In a function declaration after specifying the return reference modifier it's possible to specify ``@`` character with a following expression in ``()``.
 The expression must be constant and be an array of ``[ char8, 2 ]`` elements.
 Each element of the array is a description of one of the function parameter references in some special format.
-The first value is a symbol from ``0`` to ``9`` for parameter index designating.
-The second value is ``_`` symbol for designating of reference of the parameter itself or a symbol in a range from ``a`` to ``z`` for designating of one of the inner reference tags of the parameter type.
-The whole array designates a possible set of a references which this function returns.
+The first value is a character in the range ``0`` to ``9`` for parameter index designating.
+The second value is ``_`` character for designating the reference of the parameter itself or a character in the range from ``a`` to ``z`` for designating one of the inner reference tags of the parameter type.
+The whole array designates a possible set of references which this function returns.
 
 .. code-block:: u_spr
 
@@ -121,8 +121,8 @@ The whole array designates a possible set of a references which this function re
    {
        var i32 i0= 0, i1= 0;
        var f32 f0= 0.0f, f1= 0.0f, f2= 0.0f;
-       var i32 &i_ref= Foo(i0, i1); // "i_ref" is a derived from "i0" reference, but not from "i1"
-       var f32 &f_ref= Bar(f0, f1, f2); // "f_ref" is a derived from "f0" and "f2" reference, but not from "f1"
+       var i32 &i_ref= Foo(i0, i1); // "i_ref" is a derived from "i0" but not from "i1" reference
+       var f32 &f_ref= Bar(f0, f1, f2); // "f_ref" is a derived from "f0" and "f2" but not from "f1" reference
    }
 
 The compiler ensures that only allowed references are returned:
@@ -135,9 +135,9 @@ The compiler ensures that only allowed references are returned:
       return b; // An error will be produced - returning unallowed reference
    }
 
-It's possible to specify an expression inside ``@()`` after the type of the return value.
+It's possible to specify an expression inside ``@()`` after specifying a type for the return value.
 This expression should be a tuple of arrays of ``[ char8, 2 ]`` elements.
-Each tuple element designates a set of references for corresponding inner reference tag of the return value.
+Each tuple element designates a set of references for the corresponding inner reference tag of the return value.
 
 .. code-block:: u_spr
 
@@ -162,10 +162,10 @@ Each tuple element designates a set of references for corresponding inner refere
 *Reference pollution*
 *********************
 
-Some functions may create derived references from their arguments inside other arguments.
+Some functions may create derived from their arguments references inside other arguments.
 This is named "reference pollution".
-For a function that performs reference pollution special notation is required - via expression in ``@()`` after the parameters list.
-This expression must be constant array of ``[ [ char8, 2 ], 2 ]`` elements.
+For a function that performs reference pollution a special notation is required - via an expression in ``@()`` after the parameters list.
+This expression must be a constant array of ``[ [ char8, 2 ], 2 ]`` elements.
 Each element is a pair of reference descriptions - for the destination and for the source.
 References are designated like in return references notation.
 
@@ -173,16 +173,16 @@ References are designated like in return references notation.
 
    struct S{ i32& r; }
    var [ [ [ char8, 2 ], 2 ], 1 ] pollution[ [ "0a", "1_" ] ];
-   fn Foo( S &mut s, i32& r ) @(pollution); // Function creates derived from "r" argument reference inside "s" argument.
+   fn Foo( S &mut s, i32& r ) @(pollution); // This function creates a derived from "r" argument reference inside "s" argument.
 
    fn Bar()
    {
        var i32 x= 0, y= 0;
-       var S mut s{ .r= x }; // "s.r" is derived from "x" reference
-       Foo( s, y ); // Now "s.r" is also derived from "y" reference
+       var S mut s{ .r= x }; // "s.r" is a derived from "x" reference
+       Foo( s, y ); // After this call "s.r" is also a derived from "y" reference
    }
 
-If a function performs reference pollution but this is not specified, the compiler will produce an error.
+If a function performs reference pollution but it is not specified, the compiler will produce an error.
 
 .. code-block:: u_spr
 
@@ -203,30 +203,30 @@ The compiler generates such notation automatically according to the copying sema
 *******************************
 
 Structs and classes may also have references inside.
-And there is a necessity for the compiler to track them.
+And there is a necessity for the compiler to track these references.
 Because of that the compiler creates logical references for such types (named reference tags).
 
 A struct without reference fields and fields with references inside has 0 inner reference tags.
 A struct with single reference field has 1 reference tag.
 A struct with single field that contains N reference tags (N > 0) has N reference tags.
 
-It's more complicated with a struct that contain several reference fields and/or fields with references inside.
-There is a special notation in order to perform mapping of these references to struct's reference tags.
+It's more complicated with a struct that contains several reference fields and/or fields with references inside.
+There is a special notation in order to perform mapping of these references to the struct's reference tags.
 
-For reference fields it's possible to specify an expression in ``@()`` after a reference modifier.
+For reference fields it's possible to specify an expression in ``@()`` after the reference modifier.
 The expression should be constant and be of ``char8`` type.
-Allowed values are symbols in a range from ``a`` up to ``z`` that designate corresponding inner reference tags of the struct.
+Allowed values are characters in the range from ``a`` up to ``z`` that designate corresponding inner reference tags of the struct.
 This expression allows to associate a reference field with a reference tag of the struct.
 
 For non-reference fields it's possible to specify an expression in ``@()`` after the type of the field.
 The expression should be constant and be an array of ``char8`` elements.
-Allowed values are symbols in a range from ``a`` up to ``z`` that designate corresponding inner reference tags of the struct.
-This expression allows to associate inner reference tags of the type with reference tags of the struct.
+Allowed values are characters in the range from ``a`` up to ``z`` that designate corresponding inner reference tags of the struct.
+This expression allows to associate inner reference tags of the field type with reference tags of the struct.
 
-Eventually a struct will have a number of reference tags one more than maximum index of the specified tags.
+Eventually a struct will have the number of reference tags one more than maximum index of the specified tags.
 But skipping some reference tags isn't allowed.
 
-The way described above allows to specify mapping between struct fields and reference tags that are specified in the reference notation(s) of functions.
+The way described above allows to specify a mapping between struct fields and reference tags that are specified in the reference notation(s) of functions.
 Example:
 
 .. code-block:: u_spr
@@ -261,7 +261,7 @@ Example:
    }
 
    // Function writes a reference to "i" argument into reference tag "e" of "t" argument.
-   // This tag corresponds to reference field "i0".
+   // This tag corresponds to reference fields "i0" and "i1".
    var [ [ [ char8, 2 ], 2 ], 1 ] pollution_seti0[ [ "0e", "1_" ] ];
    fn Seti0( T &mut t, u64& i ) @(pollution_seti0);
 
@@ -275,15 +275,15 @@ Example:
 *Reference checking rule violation detection*
 *********************************************
 
-It's shown in examples below how reference protection rule is enforced.
+It's shown in the examples below how reference protection rule is enforced.
 
 .. code-block:: u_spr
 
    fn Foo()
    {
        var i32 mut x= 0;
-       var i32 &mut r0= x; // "r0" is derived from "x" mutable reference
-       var i32 &imut r1= x; // Create derived from "x" reference when another derived mutable reference exists. An error will be produced.
+       var i32 &mut r0= x; // "r0" is a derived from "x" mutable reference
+       var i32 &imut r1= x; // Create a derived from "x" reference while another derived mutable reference exists. An error will be produced.
    }
 
 .. code-block:: u_spr
@@ -291,8 +291,8 @@ It's shown in examples below how reference protection rule is enforced.
    fn Foo()
    {
        var f32 mut x= 0.0f;
-       var f32 &imut r0= x; // "r0" is derived from "x" immutable reference
-       var f32 &mut r1= x; // Create derived from "x" mutable reference when another derived reference exists. An error will be produced.
+       var f32 &imut r0= x; // "r0" is a derived from "x" immutable reference
+       var f32 &mut r1= x; // Create a derived from "x" mutable reference while another derived reference exists. An error will be produced.
    }
 
 .. code-block:: u_spr
@@ -302,7 +302,7 @@ It's shown in examples below how reference protection rule is enforced.
    fn Foo()
    {
        var f64 mut x= 0.0;
-       MutateArgs( x, x ); // An error will be produced. Two mutable derived from "x" references are required for the call.
+       MutateArgs( x, x ); // An error will be produced. Two derived from "x" mutable references are required for the call.
    }
 
 ******************************
