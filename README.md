@@ -62,10 +62,10 @@ It lists only languages, which may be directly compared to Ü - statically-typed
 | type templates                                                                                   | -  | +   | +     | +   | +    | +    | + |
 | function templates                                                                               | -  | +   | +     | +   | +    | +    | + |
 | duck-typing in templates (without mandatory template type requirements specification)            | -  | +⁴  | -     | +   | +    | -    | + |
-| references (with auto reference creation and dereference)                                        | -  | +   | -⁷    | -   | -    | -¹⁵  | + |
+| references (with auto reference creation and dereferencing)                                      | -  | +   | -⁷    | -   | -    | -¹⁵  | + |
 | functions overloading                                                                            | -  | +   | +     | -   | +¹¹  | -    | + |
 | operators overloading                                                                            | -  | +   | +     | -   | -    | +    | + |
-| frictionless copying (ability to perform deep copy values via operator `=`)                      | -¹ | +   | +     | -⁹  | -¹²  | -¹⁶  | + |
+| frictionless copying (ability to take deep copy of a value via operator `=`)                     | -¹ | +   | +     | -⁹  | -¹²  | -¹⁶  | + |
 | compile-time calculations                                                                        | -² | +   | -     | +   | +    | +    | + |
 | compile-time type information                                                                    | -  | -   | -     | +   | -    | -    | + |
 | class inheritance and runtime polymorphism based on it                                           | -  | +   | +     | -   | -¹³  | -    | + |
@@ -118,9 +118,9 @@ CMake and Ninja are also necessary.
 * Perform the build.
 
 Some components are optional and may be disabled via cmake options (see *source/CMakeLists.txt*).
-Python 3 is required to build and run tests, written in Python.
+Python 3 is required to build and run tests written in Python.
 Sphynx is required to build documentation.
-For more information/examples see build scripts in *ci* directory.
+For more information/examples see build scripts in the *ci* directory.
 
 
 ### Component readmes
