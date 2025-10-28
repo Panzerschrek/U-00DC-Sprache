@@ -1,0 +1,84 @@
+// This example program generates a Sierpiński triangle and prints it into the console.
+// Make sure it's wide enough to display it!
+
+import "/main_wrapper.u"
+import "/stdout.u"
+import "/utf.u"
+
+pretty_main
+{
+	var Triangle triangle= GenerateTriangle();
+
+	ust::stdout_print( "Here is your Sierpiński triangle:\n\n" );
+
+	var ust::string8 mut s;
+
+	// use Braille symbols to output result pixels.
+
+	var [ [ u8, 2 ], 4 ] constexpr c_pos_to_bit[ [ (0), (3) ], [ (1), (4) ], [ (2), (5) ], [ (6), (7) ] ];
+
+	for( var size_type mut dst_row= 0s; dst_row < c_triangle_size / 4s; ++dst_row )
+	{
+		for( var size_type mut column= 0s; column < c_triangle_size / 2s; ++column )
+		{
+			var u32 mut index= 0u;
+			for( var size_type mut dy= 0s; dy < 4s; ++dy )
+			{
+				for( var size_type mut dx= 0s; dx < 2s; ++dx )
+				{
+					if( triangle[ dst_row * 4s + dy ][ column * 2s + dx ] )
+					{
+						index |= 1u << c_pos_to_bit[dy][dx];
+					}
+				}
+			}
+
+			var char32 c= char32( index + 0x2800u );
+			ust::utf::push_code_point_to_string( s, c );
+		}
+
+		s.push_back( '\n' );
+		ust::stdout_print( s );
+		s.clear();
+	}
+
+	return 0;
+}
+
+var size_type c_triangle_power= 8s;
+var size_type c_triangle_size= 1s << c_triangle_power;
+
+type TriangleRow= [ bool, c_triangle_size ];
+type Triangle= [ TriangleRow, c_triangle_size ];
+
+fn GenerateTriangle() : Triangle
+{
+	var Triangle mut triangle= zero_init;
+
+	triangle[0s][0s]= true;
+	for( var size_type mut level= 0s, mut region_size= 1s; level < c_triangle_power; ++level, region_size <<= 1s )
+	{
+		CopyRegion( triangle, 0s, 0s, 1s * region_size, 0s * region_size, region_size, region_size );
+		CopyRegion( triangle, 0s, 0s, 0s * region_size, 1s * region_size, region_size, region_size );
+	}
+
+	return triangle;
+}
+
+fn CopyRegion(
+	Triangle &mut triangle,
+	size_type src_x, size_type src_y,
+	size_type dst_x, size_type dst_y,
+	size_type size_x, size_type size_y )
+{
+	for( var size_type mut dy= 0s; dy < size_y; ++dy )
+	{
+		var size_type src_row_index= src_y + dy;
+		var size_type dst_row_index= dst_y + dy;
+		for( var size_type mut dx= 0s; dx < size_x; ++dx )
+		{
+			auto val= triangle[src_row_index][src_x + dx];
+			triangle[dst_row_index][dst_x + dx]= val;
+		}
+	}
+}
