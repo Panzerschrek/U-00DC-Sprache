@@ -87,6 +87,19 @@ U_TEST( InvalidTypeOfTemplateVariableArgumentTest3 )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 3u ) );
 }
 
+U_TEST( InvalidTypeOfTemplateVariableArgumentTest4 )
+{
+	// "void" can't be used for template variable arguments.
+	static const char c_program_text[]=
+	R"(
+		template</void X/> struct S{}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::InvalidTypeOfTemplateVariableArgument, 2u ) );
+}
+
+
 U_TEST( NameNotFound_ForClassTemplateSingatureArguments_Test0 )
 {
 	static const char c_program_text[]=
