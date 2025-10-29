@@ -136,8 +136,8 @@ In that case the compiler can automatically deduce the return type.
 Functions with return type deduction have some limitations:
 
 * They must have a body
-* They can't recursively call itself
-* They can't be struct or class members
+* They can't be recursive
+* They can't be coroutines (generators or async functions)
 
 *******************************
 *Conditional function presence*
