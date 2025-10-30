@@ -17,7 +17,7 @@ fn CodeBuilder::EvaluateReferenceFieldTag( mut this, NamesScopePtr& names_scope,
 		REPORT_ERROR( TypesMismatch, names_scope, src_loc, Type(expected_type), variable.t )
 		return ust::null_optional;
 	}
-	if( variable.constexpr_value == Null::LLVMValueRef() )
+	if( variable.constexpr_value == Null::LLVMValueRef )
 	{
 		REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 		return ust::null_optional;
@@ -47,7 +47,7 @@ fn CodeBuilder::EvaluateReferenceFieldInnerTags( mut this, NamesScopePtr& names_
 			REPORT_ERROR( TypesMismatch, names_scope, src_loc, Type(expected_type), variable.t )
 			return ust::null_optional;
 		}
-		if( variable.constexpr_value == Null::LLVMValueRef() )
+		if( variable.constexpr_value == Null::LLVMValueRef )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 			return ust::null_optional;
@@ -97,7 +97,7 @@ fn CodeBuilder::EvaluateFunctionReferencePollution(
 			REPORT_ERROR( TypesMismatch, names_scope, src_loc, reference_notation_pollution_element_type_, variable.t )
 			return result;
 		}
-		if( variable.constexpr_value == Null::LLVMValueRef() )
+		if( variable.constexpr_value == Null::LLVMValueRef )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 			return result;
@@ -163,7 +163,7 @@ fn CodeBuilder::EvaluateFunctionReturnReferences(
 			REPORT_ERROR( TypesMismatch, names_scope, src_loc, reference_notation_pollution_element_type_, variable.t )
 			return result;
 		}
-		if( variable.constexpr_value == Null::LLVMValueRef() )
+		if( variable.constexpr_value == Null::LLVMValueRef )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 			return result;
@@ -199,7 +199,7 @@ fn CodeBuilder::EvaluateFunctionReturnInnerReferences(
 	var VariableLite variable= EvaluateReferenceNotationExpression( names_scope, function_context, expression );
 	var SrcLoc src_loc= Synt::GetSrcLoc( expression );
 
-	if( variable.constexpr_value == Null::LLVMValueRef() )
+	if( variable.constexpr_value == Null::LLVMValueRef )
 	{
 		REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 		return result;
@@ -263,7 +263,7 @@ fn CodeBuilder::NormalizeReferencesPollution( FunctionType::ReferencesPollution 
 
 fn CodeBuilder::GetReturnReferencesConstant( this, FunctionType::ParamReferences& return_references ) : ReferenceNotationConstant
 {
-	scoped_array LLVMValueRef mut constant_initializers[ return_references.size() ]( Null::LLVMValueRef() );
+	scoped_array LLVMValueRef mut constant_initializers[ return_references.size() ]( Null::LLVMValueRef );
 
 	for( auto mut i= 0s; i < return_references.size(); ++i )
 	{
@@ -286,8 +286,8 @@ fn CodeBuilder::GetReturnReferencesConstant( this, FunctionType::ParamReferences
 fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInnerReferences& return_inner_references ) : ReferenceNotationConstant
 {
 	var TupleType mut tuple_type;
-	scoped_array LLVMTypeRef mut elements_llvm_types[ return_inner_references.size() ]( Null::LLVMTypeRef() );
-	scoped_array LLVMValueRef mut constant_initializers[ return_inner_references.size() ]( Null::LLVMValueRef() );
+	scoped_array LLVMTypeRef mut elements_llvm_types[ return_inner_references.size() ]( Null::LLVMTypeRef );
+	scoped_array LLVMValueRef mut constant_initializers[ return_inner_references.size() ]( Null::LLVMValueRef );
 
 	for( auto mut i= 0s; i < return_inner_references.size(); ++i )
 	{
@@ -306,7 +306,7 @@ fn CodeBuilder::GetReturnInnerReferencesConstant( this, FunctionType::ReturnInne
 
 fn CodeBuilder::GetReferencesPollutionConstant( this, FunctionType::ReferencesPollution& references_pollution ) : ReferenceNotationConstant
 {
-	scoped_array LLVMValueRef mut constant_initializers[ references_pollution.size() ]( Null::LLVMValueRef() );
+	scoped_array LLVMValueRef mut constant_initializers[ references_pollution.size() ]( Null::LLVMValueRef );
 
 	var LLVMTypeRef pair_element_llvm_type= reference_notation_param_reference_description_type_.GetLLVMType();
 	for( auto mut i= 0s; i < references_pollution.size(); ++i )

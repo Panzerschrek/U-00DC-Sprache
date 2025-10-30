@@ -172,7 +172,7 @@ fn CodeBuilder::BuildExpressionCodeForValueReturn(
 											.location= reference.location,
 											.llvm_value= reference.llvm_value,
 											// Preserve "constexpr" value (if has one) for immutable variables.
-											.constexpr_value= ( reference.value_type == ValueType::ReferenceImut ? reference.constexpr_value : Null::LLVMValueRef() ),
+											.constexpr_value= ( reference.value_type == ValueType::ReferenceImut ? reference.constexpr_value : Null::LLVMValueRef ),
 											.name= "moved " + reference.name,
 										}.CreatePtr();
 
@@ -645,7 +645,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		auto this_lock= this_ptr.lock_imut();
 		var Variable& this_= this_lock.deref();
 
-		if( function_context.destructor_end_block != Null::LLVMBasicBlockRef() && this_.t.ContainsMutableReferences() )
+		if( function_context.destructor_end_block != Null::LLVMBasicBlockRef && this_.t.ContainsMutableReferences() )
 		{
 			// Forbid accessing "base" in destructors of types with mutable references inside, since it's possible to access such mutable fields via a virtual call.
 			REPORT_ERROR( BaseUnavailable, names_scope, src_loc )
@@ -860,14 +860,14 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		return ErrorValue();
 	}
 
-	if( variable.constexpr_value == Null::LLVMValueRef() )
+	if( variable.constexpr_value == Null::LLVMValueRef )
 	{
 		REPORT_ERROR( ExpectedConstantExpression, names_scope, embed_.src_loc )
 		return ErrorValue();
 	}
 
 	var ust::string8 mut file_path;
-	if( unsafe( LLVMIsAConstantDataArray( variable.constexpr_value ) ) != Null::LLVMValueRef() )
+	if( unsafe( LLVMIsAConstantDataArray( variable.constexpr_value ) ) != Null::LLVMValueRef )
 	{
 		unsafe
 		{
@@ -876,7 +876,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 			file_path= ust::string_view8( str_start, str_length );
 		}
 	}
-	else if( unsafe( LLVMIsAConstantAggregateZero( variable.constexpr_value ) ) != Null::LLVMValueRef() )
+	else if( unsafe( LLVMIsAConstantAggregateZero( variable.constexpr_value ) ) != Null::LLVMValueRef )
 	{
 		file_path= "";
 	}
@@ -1005,7 +1005,7 @@ fn CodeBuilder::BuildExpressionCodeImpl(
 	var LLVMValueRef mut function= zero_init;
 
 	var LLVMValueRef prev_function= unsafe( LLVMGetNamedFunction( module_, name_nt.front() ) );
-	if( prev_function != Null::LLVMValueRef() )
+	if( prev_function != Null::LLVMValueRef )
 	{
 		if( unsafe( U1_GetFunctionType( prev_function ) ) != function_llvm_type )
 		{
@@ -1061,7 +1061,7 @@ fn CodeBuilder::BuildExpressionCodeImpl(
 	var LLVMValueRef mut variable= zero_init;
 
 	var LLVMValueRef prev_variable= unsafe( LLVMGetNamedGlobal( module_, name_nt.front() ) );
-	if( prev_variable != Null::LLVMValueRef() )
+	if( prev_variable != Null::LLVMValueRef )
 	{
 		if( t.GetLLVMType() != unsafe( LLVMGlobalGetValueType( prev_variable ) ) )
 		{
@@ -1120,7 +1120,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	{
 		auto variable_lock= variable_ptr.lock_imut();
 		var Variable& variable= variable_lock.deref();
-		if( variable.constexpr_value != Null::LLVMValueRef() )
+		if( variable.constexpr_value != Null::LLVMValueRef )
 		{
 			var VariablePtr variable_copy_ptr=
 				Variable
@@ -1578,7 +1578,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		}
 	}
 
-	if( condition_constexpr_value != Null::LLVMValueRef() )
+	if( condition_constexpr_value != Null::LLVMValueRef )
 	{
 		with( mut lock : result_ptr.lock_mut() )
 		{
@@ -1668,8 +1668,8 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 	// where this pointer may be null and dereference happens only in a non-null branch.
 	// Generally more deep control flow analysis is required, but same basic block check is fine enough.
 	// Non-null marking is needed in order to give a hint to the optimizer that possible further null checks are not needed.
-	if( llvm_value != Null::LLVMValueRef() &&
-		unsafe( LLVMIsAInstruction( llvm_value ) ) != Null::LLVMValueRef() &&
+	if( llvm_value != Null::LLVMValueRef &&
+		unsafe( LLVMIsAInstruction( llvm_value ) ) != Null::LLVMValueRef &&
 		unsafe( LLVMGetInstructionParent( llvm_value ) ) == unsafe( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ) )
 	{
 		auto opcode= unsafe( LLVMGetInstructionOpcode( llvm_value ) );
@@ -1737,7 +1737,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				};
 
 				auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-				if( value_in_register != Null::LLVMValueRef() )
+				if( value_in_register != Null::LLVMValueRef )
 				{
 					unsafe
 					{
@@ -1765,7 +1765,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				};
 
 				var LLVMValueRef value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-				if( value_in_register != Null::LLVMValueRef() )
+				if( value_in_register != Null::LLVMValueRef )
 				{
 					auto zero= unsafe( LLVMConstInt( variable.t.GetLLVMType(), 0u64, LLVMBool::False ) );
 					switch( binary_operator.operator )
@@ -1790,7 +1790,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 					}
 				}
 
-				if( result.llvm_value != Null::LLVMValueRef() && unsafe(LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+				if( result.llvm_value != Null::LLVMValueRef && unsafe(LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
 				{
 					result.constexpr_value= result.llvm_value;
 				}
@@ -1869,7 +1869,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		{
 			if( !(
 				IsUnsignedInteger( index_fundamental_type.fundamental_type ) ||
-				( IsSignedInteger( index_fundamental_type.fundamental_type ) && index.constexpr_value != Null::LLVMValueRef() ) ) )
+				( IsSignedInteger( index_fundamental_type.fundamental_type ) && index.constexpr_value != Null::LLVMValueRef ) ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, subscript_operator.src_loc, "any unsigned integer", index.t )
 				return ErrorValue();
@@ -1882,7 +1882,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 			var LLVMValueRef index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
 			DestroyUnusedTemporaryVariables( names_scope, function_context, subscript_operator.src_loc ); // Destroy index.
-			if( index.constexpr_value != Null::LLVMValueRef() )
+			if( index.constexpr_value != Null::LLVMValueRef )
 			{
 				// Statically check index.
 				auto index_value_num= unsafe( LLVMConstIntGetZExtValue( index_value ) );
@@ -1936,7 +1936,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				.name= variable_ptr.lock_imut().deref().name + "[]",
 			};
 
-			if( variable.constexpr_value != Null::LLVMValueRef() && index.constexpr_value != Null::LLVMValueRef() )
+			if( variable.constexpr_value != Null::LLVMValueRef && index.constexpr_value != Null::LLVMValueRef )
 			{
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32( LLVMConstIntGetZExtValue( index_value ) ) ) );
 			}
@@ -1972,7 +1972,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				REPORT_ERROR( TypesMismatch, names_scope, subscript_operator.src_loc, "any unsigned integer", index.t )
 				return ErrorValue();
 			}
-			if( index.constexpr_value == Null::LLVMValueRef() )
+			if( index.constexpr_value == Null::LLVMValueRef )
 			{
 				REPORT_ERROR( ExpectedConstantExpression, names_scope, subscript_operator.src_loc )
 				return ErrorValue();
@@ -2026,7 +2026,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 				.llvm_value= ForceCreateConstantIndexGEP( function_context, tuple_type.llvm_type, v.llvm_value, u32(type_index) ),
 				.name= ust::concat( v.name, "[", ust::to_string8(type_index), "]" ),
 			};
-			if( variable.constexpr_value != Null::LLVMValueRef() )
+			if( variable.constexpr_value != Null::LLVMValueRef )
 			{
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(type_index) ) );
 			}
@@ -2155,7 +2155,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		{
 			var VariablePtr fetch_result= fetch_result_opt.try_to_non_nullable();
 			function_context.references_graph.AddNodeIfNotExists( fetch_result );
-			if( variable.constexpr_value != Null::LLVMValueRef() )
+			if( variable.constexpr_value != Null::LLVMValueRef )
 			{
 				// Pass constexpr fetch result for constexpr typeinfo variable.
 				return fetch_result;
@@ -2451,14 +2451,14 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 
 	if( IsInteger( t ) )
 	{
-		if( value_in_register != Null::LLVMValueRef() )
+		if( value_in_register != Null::LLVMValueRef )
 		{
 			result.llvm_value= unsafe( LLVMBuildNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
 		}
 	}
 	else if( IsFloatingPoint( t ) )
 	{
-		if( value_in_register != Null::LLVMValueRef() )
+		if( value_in_register != Null::LLVMValueRef )
 		{
 			result.llvm_value= unsafe( LLVMBuildFNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
 		}
@@ -2469,7 +2469,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		return ErrorValue();
 	}
 
-	if( result.llvm_value != Null::LLVMValueRef() && unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+	if( result.llvm_value != Null::LLVMValueRef && unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
 	{
 		result.constexpr_value= result.llvm_value;
 	}
@@ -2510,7 +2510,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.name= "!",
 	};
 
-	if( value_in_register != Null::LLVMValueRef() )
+	if( value_in_register != Null::LLVMValueRef )
 	{
 		result.llvm_value= unsafe( LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] ) );
 		if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
@@ -2556,7 +2556,7 @@ fn CodeBuilder::BuildExpressionCodeImpl( mut this, NamesScopePtr& names_scope, F
 		.name= "~",
 	};
 
-	if( value_in_register != Null::LLVMValueRef() )
+	if( value_in_register != Null::LLVMValueRef )
 	{
 		result.llvm_value= unsafe( LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] ) );
 		if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
@@ -2657,7 +2657,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 		{
 			if( allow_unsafe )
 			{
-				if( src_llvm_value != Null::LLVMValueRef() )
+				if( src_llvm_value != Null::LLVMValueRef )
 				{
 					unsafe
 					{
@@ -2787,7 +2787,7 @@ fn CodeBuilder::AccessDirectClassField(
 			.name= ust::concat( variable_ptr.lock_imut().deref().name, ".", field_name ),
 		};
 
-		if( variable.constexpr_value != Null::LLVMValueRef() )
+		if( variable.constexpr_value != Null::LLVMValueRef )
 		{
 			// Create constant "extractvalue" instead of "load" for constexpr structs.
 			if( EnsureTypeComplete( field.t ) )
@@ -2798,7 +2798,7 @@ fn CodeBuilder::AccessDirectClassField(
 
 					// References in constexpr structs should be implementing, using global variables or ConstantGEP for global variables.
 					var LLVMValueRef constant_expression= LLVMIsAConstantExpr( result.llvm_value ) ;
-					if( constant_expression != Null::LLVMValueRef() )
+					if( constant_expression != Null::LLVMValueRef )
 					{
 						// Assume constant GEP.
 						var LLVMValueRef global_variable= LLVMGetOperand( constant_expression, 0u );
@@ -2891,7 +2891,7 @@ fn CodeBuilder::AccessDirectClassField(
 			.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, field.index ),
 			.name= ust::concat( v.name, ".", field_name ),
 		};
-		if( variable.constexpr_value != Null::LLVMValueRef() )
+		if( variable.constexpr_value != Null::LLVMValueRef )
 		{
 			result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 		}
@@ -3170,7 +3170,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		result.t= l_type;
 
-		if( l_in_register != Null::LLVMValueRef() && r_in_register != Null::LLVMValueRef() )
+		if( l_in_register != Null::LLVMValueRef && r_in_register != Null::LLVMValueRef )
 		{
 			switch( operator )
 			{
@@ -3246,7 +3246,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 				if( unsafe( LLVMIsUndef( result.constexpr_value ) ) == LLVMBool::True )
 				{
-					result.constexpr_value= Null::LLVMValueRef();
+					result.constexpr_value= Null::LLVMValueRef;
 					REPORT_ERROR( ConstantExpressionResultIsUndefined, names_scope, src_loc )
 				}
 			}
@@ -3275,7 +3275,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		result.t= l_type;
 
-		if( l_in_register != Null::LLVMValueRef() && r_in_register != Null::LLVMValueRef() )
+		if( l_in_register != Null::LLVMValueRef && r_in_register != Null::LLVMValueRef )
 		{
 			switch( operator )
 			{
@@ -3313,7 +3313,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		result.t= l_type;
 
-		if( l_in_register != Null::LLVMValueRef() && r_in_register != Null::LLVMValueRef() )
+		if( l_in_register != Null::LLVMValueRef && r_in_register != Null::LLVMValueRef )
 		{
 			var u32 l_size= GetFundamentalTypeSize( l_fundamental_type.try_deref().fundamental_type );
 			var u32 r_size= GetFundamentalTypeSize( r_fundamental_type.try_deref().fundamental_type );
@@ -3374,7 +3374,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		result.t= bool_type_;
 
-		if( l_in_register != Null::LLVMValueRef() && r_in_register != Null::LLVMValueRef() )
+		if( l_in_register != Null::LLVMValueRef && r_in_register != Null::LLVMValueRef )
 		{
 			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
 			unsafe
@@ -3394,7 +3394,7 @@ fn CodeBuilder::BuildBinaryOperator(
 					{
 						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l_in_register, r_in_register, "==\0"[0] );
 					}
-					else if( l_function != Null::LLVMValueRef() && r_function != Null::LLVMValueRef() )
+					else if( l_function != Null::LLVMValueRef && r_function != Null::LLVMValueRef )
 					{
 						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, ( l_function == r_function ? 1u64 : 0u64 ), LLVMBool::False );
 					}
@@ -3413,7 +3413,7 @@ fn CodeBuilder::BuildBinaryOperator(
 					{
 						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::UNE, l_in_register, r_in_register, "!=\0"[0] );
 					}
-					else if( l_function != Null::LLVMValueRef() && r_function != Null::LLVMValueRef() )
+					else if( l_function != Null::LLVMValueRef && r_function != Null::LLVMValueRef )
 					{
 						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, ( l_function != r_function ? 1u64 : 0u64 ), LLVMBool::False );
 					}
@@ -3451,7 +3451,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		result.t= bool_type_;
 
-		if( l_in_register != Null::LLVMValueRef() && r_in_register != Null::LLVMValueRef() )
+		if( l_in_register != Null::LLVMValueRef && r_in_register != Null::LLVMValueRef )
 		{
 			switch( operator )
 			{
@@ -3540,7 +3540,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		auto result_fundamental_type= U_FundamentalType::i32_;
 		var LLVMTypeRef result_llvm_type= GetFundamentalLLVMType( result_fundamental_type );
-		if( l_in_register != Null::LLVMValueRef() && r_in_register != Null::LLVMValueRef() )
+		if( l_in_register != Null::LLVMValueRef && r_in_register != Null::LLVMValueRef )
 		{
 			unsafe
 			{
@@ -3578,8 +3578,8 @@ fn CodeBuilder::BuildBinaryOperator(
 	}
 	else{ halt; }
 
-	if( l_var.constexpr_value != Null::LLVMValueRef() &&
-		r_var.constexpr_value != Null::LLVMValueRef() &&
+	if( l_var.constexpr_value != Null::LLVMValueRef &&
+		r_var.constexpr_value != Null::LLVMValueRef &&
 		unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
 	{
 		result.constexpr_value= result.llvm_value;
@@ -3689,8 +3689,8 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 
 	unsafe
 	{
-		if( l_var_in_register != Null::LLVMValueRef() && LLVMIsConstant( l_var_in_register ) == LLVMBool::True &&
-			r_var_in_register != Null::LLVMValueRef() && LLVMIsConstant( r_var_in_register ) == LLVMBool::True )
+		if( l_var_in_register != Null::LLVMValueRef && LLVMIsConstant( l_var_in_register ) == LLVMBool::True &&
+			r_var_in_register != Null::LLVMValueRef && LLVMIsConstant( r_var_in_register ) == LLVMBool::True )
 		{
 			if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
 			{
@@ -3981,7 +3981,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		unsafe
 		{
-			if( l_var.constexpr_value != Null::LLVMValueRef() && r_var.constexpr_value != Null::LLVMValueRef() )
+			if( l_var.constexpr_value != Null::LLVMValueRef && r_var.constexpr_value != Null::LLVMValueRef )
 			{
 				result.constexpr_value= ConstexprCompareEqual( names_scope, function_context, l_var.constexpr_value, r_var.constexpr_value, l_var.t, src_loc );
 				result.llvm_value= result.constexpr_value;
@@ -4116,7 +4116,7 @@ fn CodeBuilder::ConcatenateCharArrays(
 		result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, result_array_type.llvm_type, "temp +\0"[0] ) );
 		CreateLifetimeStart( function_context, result.llvm_value );
 
-		if( l_var.llvm_value != Null::LLVMValueRef() && r_var.llvm_value != Null::LLVMValueRef() )
+		if( l_var.llvm_value != Null::LLVMValueRef && r_var.llvm_value != Null::LLVMValueRef )
 		{
 			unsafe
 			{
@@ -4143,11 +4143,11 @@ fn CodeBuilder::ConcatenateCharArrays(
 			}
 		}
 	}
-	if( l_var.constexpr_value != Null::LLVMValueRef() && r_var.constexpr_value != Null::LLVMValueRef() )
+	if( l_var.constexpr_value != Null::LLVMValueRef && r_var.constexpr_value != Null::LLVMValueRef )
 	{
 		// TODO - speed-up this, handle the case where both constexpr values are llvm::ConstantDataArray instances.
 
-		scoped_array LLVMValueRef mut constants[ size_type(result_array_type.element_count) ]( Null::LLVMValueRef() );
+		scoped_array LLVMValueRef mut constants[ size_type(result_array_type.element_count) ]( Null::LLVMValueRef );
 
 		for( auto mut i= 0u; i < u32(l_array_type.element_count); ++i )
 		{
@@ -4487,12 +4487,12 @@ fn CodeBuilder::DoCallFunction(
 	}
 
 	auto first_llvm_arg_number= ( return_value_is_sret ? 1s : 0s );
-	llvm_args.resize( first_llvm_arg_number + total_args, Null::LLVMValueRef() );
+	llvm_args.resize( first_llvm_arg_number + total_args, Null::LLVMValueRef );
 
 	var ust::vector</ LLVMValueRef /> mut constexpr_args;
 	if( is_constexpr && function_type.return_value_type == ValueType::Value && function_type.return_type.ReferenceTagCount() == 0u )
 	{
-		constexpr_args.resize( llvm_args.size(), Null::LLVMValueRef() );
+		constexpr_args.resize( llvm_args.size(), Null::LLVMValueRef );
 	}
 	else
 	{
@@ -4539,7 +4539,7 @@ fn CodeBuilder::DoCallFunction(
 
 		var VariableLite arg= arg_ptr;
 
-		if( arg.constexpr_value == Null::LLVMValueRef() || param.value_type == ValueType::ReferenceMut )
+		if( arg.constexpr_value == Null::LLVMValueRef || param.value_type == ValueType::ReferenceMut )
 		{
 			is_constexpr= false;
 		}
@@ -4570,7 +4570,7 @@ fn CodeBuilder::DoCallFunction(
 
 			if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
 			{
-				if( is_constexpr && arg.constexpr_value != Null::LLVMValueRef() )
+				if( is_constexpr && arg.constexpr_value != Null::LLVMValueRef )
 				{
 					constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
 				}
@@ -4660,7 +4660,7 @@ fn CodeBuilder::DoCallFunction(
 			}
 			else
 			{
-				if( is_constexpr && arg.constexpr_value != Null::LLVMValueRef() )
+				if( is_constexpr && arg.constexpr_value != Null::LLVMValueRef )
 				{
 					constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
 				}
@@ -4688,7 +4688,7 @@ fn CodeBuilder::DoCallFunction(
 				return ErrorValue();
 			}
 
-			if( is_constexpr && arg.constexpr_value != Null::LLVMValueRef() && param.value_type != ValueType::ReferenceMut )
+			if( is_constexpr && arg.constexpr_value != Null::LLVMValueRef && param.value_type != ValueType::ReferenceMut )
 			{
 				// TODO - what about types conversion in constexpr call?
 				constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
@@ -4857,7 +4857,7 @@ fn CodeBuilder::DoCallFunction(
 	}
 	else if( !function_context.is_functionless_context )
 	{
-		var bool is_function= unsafe( LLVMIsAFunction( function ) ) != Null::LLVMValueRef();
+		var bool is_function= unsafe( LLVMIsAFunction( function ) ) != Null::LLVMValueRef;
 
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		var LLVMTypeRef function_llvm_type=
@@ -5287,7 +5287,7 @@ fn CodeBuilder::EvaluateBoolConstantExpression( mut this, NamesScopePtr& names_s
 			REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( expression ), bool_type_, v.t )
 			return false;
 		}
-		if( v.constexpr_value == Null::LLVMValueRef() )
+		if( v.constexpr_value == Null::LLVMValueRef )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( expression ) )
 			return false;

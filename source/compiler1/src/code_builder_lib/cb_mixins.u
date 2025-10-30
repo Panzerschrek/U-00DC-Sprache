@@ -157,7 +157,7 @@ fn CodeBuilder::ExpandClassMixins_r( mut this, ClassTypePtr& class_type )
 
 fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_ptr, Mixin &mut mixin_ )
 {
-	if( mixin_.string_constant == Null::LLVMValueRef() )
+	if( mixin_.string_constant == Null::LLVMValueRef )
 	{
 		return;
 	}
@@ -167,7 +167,7 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 
 	auto mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
 
-	mixin_.string_constant= Null::LLVMValueRef();
+	mixin_.string_constant= Null::LLVMValueRef;
 
 	var MixinExpansionKey key{ .mixin_src_loc= mixin_.src_loc, .mixin_text= mixin_text };
 
@@ -217,7 +217,7 @@ fn CodeBuilder::ExpandNamespaceMixin( mut this, NamesScopeMutPtr& names_scope_pt
 
 fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut mixin_ )
 {
-	if( mixin_.string_constant == Null::LLVMValueRef() )
+	if( mixin_.string_constant == Null::LLVMValueRef )
 	{
 		return;
 	}
@@ -229,7 +229,7 @@ fn CodeBuilder::ExpandClassMixin( mut this, ClassTypePtr& class_type, Mixin &mut
 
 	auto mixin_text= unsafe( ust::string_view8( str_start, str_length ) );
 
-	mixin_.string_constant= Null::LLVMValueRef();
+	mixin_.string_constant= Null::LLVMValueRef;
 
 	var MixinExpansionKey key{ .mixin_src_loc= mixin_.src_loc, .mixin_text= mixin_text };
 
@@ -281,7 +281,7 @@ fn CodeBuilder::ExpandBlockMixin( mut this, NamesScopePtr& names_scope_ptr, Func
 
 	EvaluateMixinExpression( names_scope_ptr, function_context, temp_mixin );
 
-	if( temp_mixin.string_constant == Null::LLVMValueRef() )
+	if( temp_mixin.string_constant == Null::LLVMValueRef )
 	{
 		return ust::shared_ptr_final_nullable</Synt::BlockElements/>();
 	}
@@ -337,7 +337,7 @@ fn CodeBuilder::ExpandTypeNameMixin( mut this, NamesScopePtr& names_scope_ptr, F
 	EvaluateMixinExpression( names_scope_ptr, function_context, temp_mixin );
 
 	var ust::string_view8 mut mixin_text;
-	if( temp_mixin.string_constant != Null::LLVMValueRef() )
+	if( temp_mixin.string_constant != Null::LLVMValueRef )
 	{
 		var size_type mut str_length= 0s;
 		var $(char8) str_start= unsafe( LLVMGetAsString( temp_mixin.string_constant, str_length ) );
@@ -391,7 +391,7 @@ fn CodeBuilder::ExpandExpressionMixin( mut this, NamesScopePtr& names_scope_ptr,
 	EvaluateMixinExpression( names_scope_ptr, function_context, temp_mixin );
 
 	var ust::string_view8 mut mixin_text;
-	if( temp_mixin.string_constant != Null::LLVMValueRef() )
+	if( temp_mixin.string_constant != Null::LLVMValueRef )
 	{
 		var size_type mut str_length= 0s;
 		var $(char8) str_start= unsafe( LLVMGetAsString( temp_mixin.string_constant, str_length ) );
@@ -450,7 +450,7 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 
 	mixin_.syntax_element.reset();
 
-	if( variable.constexpr_value == Null::LLVMValueRef() )
+	if( variable.constexpr_value == Null::LLVMValueRef )
 	{
 		REPORT_ERROR( ExpectedConstantExpression, names_scope_ptr, syntax_element.deref().src_loc )
 		return;
@@ -470,7 +470,7 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 		return;
 	}
 
-	if( unsafe( LLVMIsAConstantDataArray( variable.constexpr_value ) ) != Null::LLVMValueRef() )
+	if( unsafe( LLVMIsAConstantDataArray( variable.constexpr_value ) ) != Null::LLVMValueRef )
 	{
 		unsafe
 		{
@@ -485,7 +485,7 @@ fn CodeBuilder::EvaluateMixinExpression( mut this, NamesScopePtr& names_scope_pt
 
 		mixin_.string_constant= variable.constexpr_value;
 	}
-	else if( unsafe( LLVMIsAConstantAggregateZero( variable.constexpr_value ) ) != Null::LLVMValueRef() )
+	else if( unsafe( LLVMIsAConstantAggregateZero( variable.constexpr_value ) ) != Null::LLVMValueRef )
 	{
 		// Ignore mixins containing zeros. Their expansion leads to nothing.
 	}

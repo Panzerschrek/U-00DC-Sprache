@@ -69,7 +69,7 @@ fn DebugInfoBuilder::constructor(
 
 fn DebugInfoBuilder::destructor()
 {
-	if( builder_ == Null::LLVMDIBuilderRef() )
+	if( builder_ == Null::LLVMDIBuilderRef )
 	{
 		return;
 	}
@@ -96,7 +96,7 @@ fn DebugInfoBuilder::destructor()
 
 fn DebugInfoBuilder::CreateFunctionInfo( mut this, FunctionVariable& func_variable )
 {
-	if( builder_ == Null::LLVMDIBuilderRef() )
+	if( builder_ == Null::LLVMDIBuilderRef )
 	{
 		return;
 	}
@@ -134,7 +134,7 @@ fn DebugInfoBuilder::CreateFunctionInfo( mut this, FunctionVariable& func_variab
 
 fn DebugInfoBuilder::SetCurrentLocation( mut this, FunctionContext& function_context, SrcLoc& src_loc )
 {
-	if( builder_ == Null::LLVMDIBuilderRef() )
+	if( builder_ == Null::LLVMDIBuilderRef )
 	{
 		return;
 	}
@@ -146,16 +146,16 @@ fn DebugInfoBuilder::SetCurrentLocation( mut this, FunctionContext& function_con
 			src_loc.GetLine(),
 			src_loc.GetColumn(),
 			function_context.current_debug_info_scope,
-			Null::LLVMMetadataRef() );
+			Null::LLVMMetadataRef );
 		LLVMSetCurrentDebugLocation2( function_context.llvm_ir_builder, debug_location );
 	}
 }
 
 fn nodiscard DebugInfoBuilder::StartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef
 {
-	if( builder_ == Null::LLVMDIBuilderRef() )
+	if( builder_ == Null::LLVMDIBuilderRef )
 	{
-		return Null::LLVMMetadataRef();
+		return Null::LLVMMetadataRef;
 	}
 
 	auto prev= function_context.current_debug_info_scope;
@@ -171,7 +171,7 @@ fn nodiscard DebugInfoBuilder::StartBlock( mut this, FunctionContext &mut functi
 
 fn DebugInfoBuilder::EndBlock( mut this, FunctionContext &mut function_context, LLVMMetadataRef prev_block )
 {
-	if( builder_ == Null::LLVMDIBuilderRef() )
+	if( builder_ == Null::LLVMDIBuilderRef )
 	{
 		return;
 	}
@@ -181,7 +181,7 @@ fn DebugInfoBuilder::EndBlock( mut this, FunctionContext &mut function_context, 
 
 fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string_view8 name, SrcLoc& src_loc )
 {
-	if( builder_ == Null::LLVMDIBuilderRef() )
+	if( builder_ == Null::LLVMDIBuilderRef )
 	{
 		return;
 	}
@@ -204,7 +204,7 @@ fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_con
 			src_loc.GetLine(),
 			src_loc.GetColumn(),
 			function_context.current_debug_info_scope,
-			Null::LLVMMetadataRef() );
+			Null::LLVMMetadataRef );
 
 		LLVMDIBuilderInsertDeclareAtEnd(
 			builder_,
@@ -218,7 +218,7 @@ fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_con
 
 fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string_view8 name, SrcLoc& src_loc )
 {
-	if( builder_ == Null::LLVMDIBuilderRef() )
+	if( builder_ == Null::LLVMDIBuilderRef )
 	{
 		return;
 	}
@@ -253,7 +253,7 @@ fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& fun
 			src_loc.GetLine(),
 			src_loc.GetColumn(),
 			function_context.current_debug_info_scope,
-			Null::LLVMMetadataRef() );
+			Null::LLVMMetadataRef );
 
 		LLVMDIBuilderInsertDeclareAtEnd(
 			builder_,
@@ -267,7 +267,7 @@ fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& fun
 
 fn DebugInfoBuilder::CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_scope, Variable& variable, ust::string_view8 variable_name, SrcLoc& src_loc )
 {
-	if( builder_ == Null::LLVMDIBuilderRef() )
+	if( builder_ == Null::LLVMDIBuilderRef )
 	{
 		return;
 	}
@@ -282,7 +282,7 @@ fn DebugInfoBuilder::CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_s
 	unsafe
 	{
 		var LLVMValueRef global_variable= LLVMIsAGlobalVariable( variable.llvm_value );
-		if( global_variable != Null::LLVMValueRef() )
+		if( global_variable != Null::LLVMValueRef )
 		{
 			var LLVMMetadataRef scope= GetOrCreateNamespaceScope( parent_scope );
 
@@ -306,7 +306,7 @@ fn DebugInfoBuilder::CreateGlobalVariableInfo( mut this, NamesScopePtr& parent_s
 					type_debug_info,
 					is_local_to_unit,
 					LLVMDIBuilderCreateExpression( builder_, 0i64, 0s ),
-					Null::LLVMMetadataRef(),
+					Null::LLVMMetadataRef,
 					0u );
 
 			LLVMGlobalSetMetadata( global_variable, debug_metadata_kind_id_, var_info );
@@ -394,10 +394,10 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMeta
 			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
 			LLVMDIFlags(0),
-			Null::LLVMMetadataRef(), // DerivedFrom
+			Null::LLVMMetadataRef, // DerivedFrom
 			ust::nullptr</LLVMMetadataRef/>(), 0u, // elements
 			0u, // RuntimeLang
-			Null::LLVMMetadataRef(),// VTableHolder
+			Null::LLVMMetadataRef,// VTableHolder
 			ust::nullptr</char8/>(), 0s ) );
 	}
 
@@ -443,7 +443,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRe
 		return stub_type_;
 	}
 
-	scoped_array LLVMMetadataRef mut elements[ t.element_types.size() ]( Null::LLVMMetadataRef() );
+	scoped_array LLVMMetadataRef mut elements[ t.element_types.size() ]( Null::LLVMMetadataRef );
 
 	auto di_file= source_file_entries_.front();
 
@@ -479,10 +479,10 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRe
 		LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 		LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
 		LLVMDIFlags(0),
-		Null::LLVMMetadataRef(), // DerivedFrom
+		Null::LLVMMetadataRef, // DerivedFrom
 		elements.data(), u32(elements.size()),
 		0u, // RuntimeLang
-		Null::LLVMMetadataRef(),// VTableHolder
+		Null::LLVMMetadataRef,// VTableHolder
 		ust::nullptr</char8/>(), 0s ) );
 }
 
@@ -571,7 +571,7 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadata
 
 	ust::sort_by_key( raw_elements, lambda[]( NamedEnumElement& el ) : u64 { return el[1]; } );
 
-	scoped_array LLVMMetadataRef mut elements[ raw_elements.size() ]( Null::LLVMMetadataRef() );
+	scoped_array LLVMMetadataRef mut elements[ raw_elements.size() ]( Null::LLVMMetadataRef );
 	foreach( pair : raw_elements.iter().zip( elements.iter() ) )
 	{
 		pair.second=
@@ -754,10 +754,10 @@ fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_
 		size_in_bits,
 		alignment_in_bits,
 		LLVMDIFlags(0),
-		Null::LLVMMetadataRef(), // DerivedFrom
+		Null::LLVMMetadataRef, // DerivedFrom
 		elements.data(), u32(elements.size()),
 		0u, // RuntimeLang
-		Null::LLVMMetadataRef(),// VTableHolder
+		Null::LLVMMetadataRef,// VTableHolder
 		ust::nullptr</char8/>(), 0s ) );
 
 	return di_type;

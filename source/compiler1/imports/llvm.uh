@@ -18,14 +18,10 @@
 		fn constructor() = delete;
 	}
 
-	// Create a helper function to create null ref.
+	// Create a helper variable for null reference.
 	namespace Null
 	{
-		fn ?name() : $(??opaque_class)
-		{
-			var $(??opaque_class) p= zero_init;
-			return p;
-		}
+		var $(??opaque_class) ?name = zero_init;
 	}
 ?>
 

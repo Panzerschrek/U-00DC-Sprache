@@ -166,7 +166,7 @@ fn CallingConventionInfoDefault::CalculateReturnValuePassingInfo( this, Type& t 
 	}
 
 	// Return other composites via pointer.
-	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef() );
+	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef );
 }
 
 fn CallingConventionInfoDefault::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
@@ -304,7 +304,7 @@ fn CallingConventionInfoSystemV_X86::CalculateReturnValuePassingInfo( this, Type
 	}
 
 	// Return composites via sret pointer.
-	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef() );
+	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef );
 }
 
 fn CallingConventionInfoSystemV_X86::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
@@ -436,7 +436,7 @@ fn CallingConventionInfoSystemV_X86_64::CalculateReturnValuePassingInfo( this, T
 		var u64 type_size= unsafe( LLVMABISizeOfType( data_layout_, llvm_type ) );
 		if( type_size > 16u64 )
 		{
-			return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef());
+			return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef );
 		}
 
 		if( type_size == 0u64 )
@@ -872,7 +872,7 @@ fn CallingConventionInfoMSVC_X86_64::CalculateReturnValuePassingInfo( this, Type
 	}
 
 	// Return other composites via sret pointer.
-	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef() );
+	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef );
 }
 
 fn CallingConventionInfoMSVC_X86_64::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
@@ -1008,7 +1008,7 @@ fn CallingConventionInfoMSVC_X86::CalculateReturnValuePassingInfo( this, Type& t
 	}
 
 	// Return other composites via sret pointer.
-	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef() );
+	return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef );
 }
 
 fn CallingConventionInfoMSVC_X86::CalculateFunctionCallInfo( this, FunctionType& function_type ) : CallInfo
@@ -1137,7 +1137,7 @@ fn CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( this, 
 	if( size > 32u64 )
 	{
 		// Return composites with size larger than 32 by pointer.
-		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef() );
+		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef );
 	}
 
 	if( size == 0u64 )
@@ -1180,7 +1180,7 @@ fn CallingConventionInfoSystemV_AArch64::CalculateReturnValuePassingInfo( this, 
 	if( size > 16u64 )
 	{
 		// Composites which are not Homogeneous Floating-point Aggregates with size greater than 16 are returned via "sret" pointer.
-		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef() );
+		return ReturnValuePassing( ReturnValuePassingKind::ByPointer, Null::LLVMTypeRef );
 	}
 
 	// Small composite types are returned as integers.

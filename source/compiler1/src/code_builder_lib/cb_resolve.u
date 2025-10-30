@@ -117,7 +117,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				}
 			}
 		}
-		if( function_context.destructor_end_block != Null::LLVMBasicBlockRef() )
+		if( function_context.destructor_end_block != Null::LLVMBasicBlockRef )
 		{
 			if( field.is_reference )
 			{
@@ -244,9 +244,9 @@ fn CodeBuilder::ContextualizeGlobalVariable( mut this, NamesScopePtr& names_scop
 			var VariablePtr var_ptr_copy= v_ptr_non_null;
 			with( &variable : var_ptr_copy.lock_imut().deref() )
 			{
-				if( variable.llvm_value != Null::LLVMValueRef() &&
+				if( variable.llvm_value != Null::LLVMValueRef &&
 					variable.location == Variable::Location::Pointer &&
-					unsafe( LLVMIsAGlobalVariable( variable.llvm_value ) ) != Null::LLVMValueRef() &&
+					unsafe( LLVMIsAGlobalVariable( variable.llvm_value ) ) != Null::LLVMValueRef &&
 					unsafe( LLVMIsThreadLocal( variable.llvm_value ) ) == LLVMBool::True )
 				{
 					var LLVMValueRef call_result=

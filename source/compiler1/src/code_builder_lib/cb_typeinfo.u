@@ -666,7 +666,7 @@ fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, u
 fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : VariablePtr
 {
 	var ust::vector</Type/> mut list_types;
-	scoped_array LLVMValueRef mut list_initializers[ tuple_type.element_types.size() ]( Null::LLVMValueRef() );
+	scoped_array LLVMValueRef mut list_initializers[ tuple_type.element_types.size() ]( Null::LLVMValueRef );
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
 
@@ -695,7 +695,7 @@ fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_na
 fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariablePtr
 {
 	var ust::vector</Type/> mut list_types;
-	scoped_array LLVMValueRef mut list_initializers[ function_type.params.size() ]( Null::LLVMValueRef() );
+	scoped_array LLVMValueRef mut list_initializers[ function_type.params.size() ]( Null::LLVMValueRef );
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
 

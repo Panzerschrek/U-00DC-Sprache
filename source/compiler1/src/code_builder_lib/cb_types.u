@@ -36,7 +36,7 @@ fn CodeBuilder::PrepareTypeImpl( mut this, NamesScopePtr& names_scope, FunctionC
 
 	with( &index_variable: BuildExpressionCodeEnsureVariable( names_scope, function_context, array_type.element_count ).lock_imut().deref() )
 	{
-		if( index_variable.constexpr_value != Null::LLVMValueRef() )
+		if( index_variable.constexpr_value != Null::LLVMValueRef )
 		{
 			{
 				if_var( &fundamental_type : index_variable.t.GetFundamentalType() )
@@ -370,9 +370,9 @@ fn CodeBuilder::PrepareCallingConvention(
 		{
 			if( fundamental_type.fundamental_type == U_FundamentalType::char8_ )
 			{
-				if( v.constexpr_value != Null::LLVMValueRef() )
+				if( v.constexpr_value != Null::LLVMValueRef )
 				{
-					if( unsafe( LLVMIsAConstantDataArray( v.constexpr_value ) ) != Null::LLVMValueRef() )
+					if( unsafe( LLVMIsAConstantDataArray( v.constexpr_value ) ) != Null::LLVMValueRef )
 					{
 						var size_type mut str_length= 0s;
 						var $(char8) str_start= unsafe( LLVMGetAsString( v.constexpr_value, str_length ) );

@@ -39,7 +39,7 @@ fn ConstexprFunctionEvaluator::Evaluate(
 				ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
 				cast_ref_unsafe</byte8/>( errors ) ) );
 
-	if( !errors.empty() || constant == Null::LLVMValueRef() )
+	if( !errors.empty() || constant == Null::LLVMValueRef )
 	{
 		return errors;
 	}

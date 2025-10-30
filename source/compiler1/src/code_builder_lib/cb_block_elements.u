@@ -103,12 +103,12 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	if( !scope_block.label_.empty() )
 	{
 		break_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
-		AddLoopFrame( names_scope, function_context, break_block, Null::LLVMBasicBlockRef(), scope_block.label_ );
+		AddLoopFrame( names_scope, function_context, break_block, Null::LLVMBasicBlockRef, scope_block.label_ );
 	}
 
 	var BlockElementBuildInfo mut block_element_build_info= BuildBlock( names_scope, function_context, scope_block.block );
 
-	if( break_block != Null::LLVMBasicBlockRef() )
+	if( break_block != Null::LLVMBasicBlockRef )
 	{
 		var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
 		if( !block_element_build_info.has_terminal_instruction_inside )
@@ -341,7 +341,7 @@ fn CodeBuilder::BuildVariableDeclarationImpl( mut this, NamesScopeMutPtr& names_
 	}
 	else{ halt; }
 
-	if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && constexpr_value == Null::LLVMValueRef() )
+	if( variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && constexpr_value == Null::LLVMValueRef )
 	{
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, variable_declaration.src_loc )
 	}
@@ -391,7 +391,7 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 		return; // Some error was generated before.
 	}
 
-	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && expr.constexpr_value == Null::LLVMValueRef() )
+	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && expr.constexpr_value == Null::LLVMValueRef )
 	{
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, auto_variable_declaration.src_loc )
 	}
@@ -404,7 +404,7 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 			.t= expr.t,
 			.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
-			.constexpr_value= ( is_mutable ? Null::LLVMValueRef() : expr.constexpr_value ),
+			.constexpr_value= ( is_mutable ? Null::LLVMValueRef : expr.constexpr_value ),
 			.name= auto_variable_declaration.name,
 			.src_loc= auto_variable_declaration.src_loc,
 			.referenced= auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistenceMayHaveSideEffects(expr.t)
@@ -460,7 +460,7 @@ fn CodeBuilder::BuildAutoVariableDeclarationImpl( mut this, NamesScopeMutPtr& na
 			if( expr.value_type == ValueType::Value &&
 				expr.location == Variable::Location::Pointer &&
 				LLVMTypeOf( expr.llvm_value ) == LLVMPointerType( expr.t.GetLLVMType(), 0u ) &&
-				( LLVMIsAAllocaInst( expr.llvm_value ) != Null::LLVMValueRef() || LLVMIsAArgument( expr.llvm_value ) != Null::LLVMValueRef() ) )
+				( LLVMIsAAllocaInst( expr.llvm_value ) != Null::LLVMValueRef || LLVMIsAArgument( expr.llvm_value ) != Null::LLVMValueRef ) )
 			{
 				// Just reuse "alloca" instruction or argument for move-initialization, avoid copying value into new memory location.
 				llvm_value= expr.llvm_value;
@@ -596,7 +596,7 @@ fn CodeBuilder::BuildAllocaDeclarationImpl( mut this, NamesScopeMutPtr& names_sc
 		REPORT_ERROR( UsingKeywordAsName, names_scope, alloca_declaration.src_loc )
 	}
 
-	if( function_context.coro_suspend_bb != Null::LLVMBasicBlockRef() )
+	if( function_context.coro_suspend_bb != Null::LLVMBasicBlockRef )
 	{
 		// "alloca" is impossible to use inside a coroutine, since coroutines require fixed stack size.
 		REPORT_ERROR( AllocaInsideCorouine, names_scope, alloca_declaration.src_loc )
@@ -779,7 +779,7 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 {
 	if( return_operator.expr.has</Synt::EmptyVariant/>() )
 	{
-		if( function_context.coro_suspend_bb != Null::LLVMBasicBlockRef() )
+		if( function_context.coro_suspend_bb != Null::LLVMBasicBlockRef )
 		{
 			auto coroutine_type_description= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />();
 			switch(coroutine_type_description.kind)
@@ -832,7 +832,7 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 		return;
 	}
 
-	if( function_context.coro_suspend_bb != Null::LLVMBasicBlockRef() )
+	if( function_context.coro_suspend_bb != Null::LLVMBasicBlockRef )
 	{
 		auto coroutine_kind= function_context.function_type.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.try_get</ CoroutineTypeDescription />().kind;
 		switch(coroutine_kind)
@@ -1071,11 +1071,11 @@ fn CodeBuilder::BuildReturnOperatorImpl( mut this, NamesScopePtr& names_scope, F
 
 	function_context.references_graph.RemoveNode( return_node );
 
-	if( function_context.destructor_end_block != Null::LLVMBasicBlockRef() )
+	if( function_context.destructor_end_block != Null::LLVMBasicBlockRef )
 	{
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block ) );
 	}
-	else if( ret != Null::LLVMValueRef() )
+	else if( ret != Null::LLVMValueRef )
 	{
 		unsafe( LLVMBuildRet( function_context.llvm_ir_builder, ret ) );
 	}
@@ -1853,7 +1853,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 			self.CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
 		} );
 
-	if( switch_value == Null::LLVMValueRef() )
+	if( switch_value == Null::LLVMValueRef )
 	{
 		return BlockElementBuildInfo();
 	}
@@ -1941,7 +1941,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 						all_cases_are_ok= false;
 						continue;
 					}
-					if( expression_variable.constexpr_value == Null::LLVMValueRef() )
+					if( expression_variable.constexpr_value == Null::LLVMValueRef )
 					{
 						REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 						all_cases_are_ok= false;
@@ -1986,7 +1986,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 							all_cases_are_ok= false;
 							continue;
 						}
-						if( expression_variable.constexpr_value == Null::LLVMValueRef() )
+						if( expression_variable.constexpr_value == Null::LLVMValueRef )
 						{
 							REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( expression ) )
 							all_cases_are_ok= false;
@@ -2221,7 +2221,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	var LLVMBasicBlockRef block_after_switch= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 	var LLVMBasicBlockRef mut next_case_block= zero_init;
 	var LLVMBasicBlockRef default_branch=
-		( default_branch_synt_block.empty() ? Null::LLVMBasicBlockRef() : unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) ) );
+		( default_branch_synt_block.empty() ? Null::LLVMBasicBlockRef : unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) ) );
 	var bool mut all_branches_are_terminal= true;
 
 	var LLVMTypeRef switch_llvm_type= switch_type.GetLLVMType();
@@ -2272,7 +2272,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 				}
 			}
 
-			if( value_equals == Null::LLVMValueRef() )
+			if( value_equals == Null::LLVMValueRef )
 			{
 				value_equals= current_value_equals;
 			}
@@ -2304,9 +2304,9 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	}
 
 	// Handle default branch lastly.
-	if( !default_branch_synt_block.empty() && default_branch != Null::LLVMBasicBlockRef() )
+	if( !default_branch_synt_block.empty() && default_branch != Null::LLVMBasicBlockRef )
 	{
-		if( next_case_block == Null::LLVMBasicBlockRef() )
+		if( next_case_block == Null::LLVMBasicBlockRef )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, default_branch ) );
 		}
@@ -2331,7 +2331,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 	}
 	else
 	{
-		if( next_case_block == Null::LLVMBasicBlockRef() )
+		if( next_case_block == Null::LLVMBasicBlockRef )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_switch ) );
 		}
@@ -2569,8 +2569,8 @@ fn CodeBuilder::BuildRangeForOperatorImpl( mut this, NamesScopePtr& names_scope,
 							.t= variable_type,
 							.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 							.location= Variable::Location::Pointer,
-							.constexpr_value= ( is_mutable || sequence_expression.constexpr_value == Null::LLVMValueRef()
-								? Null::LLVMValueRef()
+							.constexpr_value= ( is_mutable || sequence_expression.constexpr_value == Null::LLVMValueRef
+								? Null::LLVMValueRef
 								: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
 							.name= range_for_operator.loop_variable_name,
 							.src_loc= range_for_operator.src_loc,
@@ -2931,7 +2931,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 		REPORT_ERROR( ContinueOutsideLoop, names_scope, continue_operator.src_loc )
 		return block_element_build_info;
 	}
-	if( function_context.loops_stack[frame_index].block_for_continue == Null::LLVMBasicBlockRef() )
+	if( function_context.loops_stack[frame_index].block_for_continue == Null::LLVMBasicBlockRef )
 	{
 		// This is non-loop frame.
 		REPORT_ERROR( ContinueForBlock, names_scope, continue_operator.src_loc )
@@ -2975,7 +2975,7 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 			.t= expr.t,
 			.value_type= ( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
-			.constexpr_value= ( is_mutable ? Null::LLVMValueRef() : expr.constexpr_value ), // Constexpr is preserved for move/copy.
+			.constexpr_value= ( is_mutable ? Null::LLVMValueRef : expr.constexpr_value ), // Constexpr is preserved for move/copy.
 			.name= with_operator.variable_name,
 			.src_loc= with_operator.src_loc,
 			.referenced= with_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistenceMayHaveSideEffects(expr.t)
@@ -3042,7 +3042,7 @@ fn CodeBuilder::BuildWithOperatorImpl( mut this, NamesScopePtr& names_scope, Fun
 			if( expr.value_type == ValueType::Value &&
 				expr.location == Variable::Location::Pointer &&
 				LLVMTypeOf( expr.llvm_value ) == LLVMPointerType( expr.t.GetLLVMType(), 0u ) &&
-				( LLVMIsAAllocaInst( expr.llvm_value ) != Null::LLVMValueRef() || LLVMIsAArgument( expr.llvm_value ) != Null::LLVMValueRef() ) )
+				( LLVMIsAAllocaInst( expr.llvm_value ) != Null::LLVMValueRef || LLVMIsAArgument( expr.llvm_value ) != Null::LLVMValueRef ) )
 			{
 				// Just reuse "alloca" instruction or argument for move-initialization, avoid copying value into new memory location.
 				llvm_value= expr.llvm_value;
@@ -3163,7 +3163,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 			{
 				if( condition_variable.t == self.bool_type_ )
 				{
-					if( condition_variable.constexpr_value != Null::LLVMValueRef() )
+					if( condition_variable.constexpr_value != Null::LLVMValueRef )
 					{
 						if( unsafe( LLVMConstIntGetZExtValue( condition_variable.constexpr_value ) ) == 0u64 )
 						{
@@ -3271,7 +3271,7 @@ fn CodeBuilder::BuildBlockElementImpl( mut this, NamesScopePtr& names_scope, Fun
 			}
 		} );
 
-	if( condition_in_register == Null::LLVMValueRef() )
+	if( condition_in_register == Null::LLVMValueRef )
 	{
 		return BlockElementBuildInfo();
 	}
@@ -3334,7 +3334,7 @@ fn CodeBuilder::BuildEmptyReturn( mut this, NamesScopePtr& names_scope, Function
 		CheckReferencesPollutionBeforeReturn( names_scope, function_context, src_loc );
 	}
 
-	if( function_context.destructor_end_block != Null::LLVMBasicBlockRef() )
+	if( function_context.destructor_end_block != Null::LLVMBasicBlockRef )
 	{
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block ) );
 	}
@@ -3415,7 +3415,7 @@ fn CodeBuilder::FetchLoopFrame(
 	var size_type mut index= function_context.loops_stack.size() - 1s;
 	loop
 	{
-		var bool is_loop_frame= function_context.loops_stack[index].block_for_continue != Null::LLVMBasicBlockRef();
+		var bool is_loop_frame= function_context.loops_stack[index].block_for_continue != Null::LLVMBasicBlockRef;
 		if( is_loop_frame )
 		{
 			return index;
@@ -3566,7 +3566,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 		return;
 	}
 
-	if( component.mutability_modifier == Synt::MutabilityModifier::Constexpr && initializer_variable_lite.constexpr_value == Null::LLVMValueRef() )
+	if( component.mutability_modifier == Synt::MutabilityModifier::Constexpr && initializer_variable_lite.constexpr_value == Null::LLVMValueRef )
 	{
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, component.src_loc )
 	}
@@ -3576,7 +3576,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 		function_context.has_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 	}
 
-	var LLVMValueRef constexpr_value= ( component.mutability_modifier == Synt::MutabilityModifier::Mutable ? Null::LLVMValueRef() : initializer_variable_lite.constexpr_value );
+	var LLVMValueRef constexpr_value= ( component.mutability_modifier == Synt::MutabilityModifier::Mutable ? Null::LLVMValueRef : initializer_variable_lite.constexpr_value );
 
 	var LLVMValueRef llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, initializer_variable_lite.t.GetLLVMType(), (component.name + "\0").front() ) );
 	CreateLifetimeStart( function_context, llvm_value );
@@ -3674,8 +3674,8 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 					.location= Variable::Location::Pointer,
 					.llvm_value= CreateArrayElementGEP( function_context, array_type, variable_lite.llvm_value, u32(i) ),
 					.constexpr_value=
-						( variable_lite.constexpr_value == Null::LLVMValueRef()
-							? Null::LLVMValueRef()
+						( variable_lite.constexpr_value == Null::LLVMValueRef
+							? Null::LLVMValueRef
 							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, u32(i) ) ) ),
 					.name= ust::concat( variable.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
 					.src_loc= component.src_loc,
@@ -3707,8 +3707,8 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 					.location= Variable::Location::Pointer,
 					.llvm_value= CreateTupleElementGEP( function_context, tuple_type, variable_lite.llvm_value, u32(i) ),
 					.constexpr_value=
-						( variable_lite.constexpr_value == Null::LLVMValueRef()
-							? Null::LLVMValueRef()
+						( variable_lite.constexpr_value == Null::LLVMValueRef
+							? Null::LLVMValueRef
 							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, u32(i) ) ) ),
 					.name= ust::concat( variable.lock_imut().deref().name, "[", ust::to_string8(i), "]" ),
 					.src_loc= component.src_loc,
@@ -3854,14 +3854,14 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 			}
 
 			if( named_component.mutability_modifier == Synt::MutabilityModifier::Constexpr &&
-				variable_lite.constexpr_value == Null::LLVMValueRef() )
+				variable_lite.constexpr_value == Null::LLVMValueRef )
 			{
 				REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope, named_component.src_loc )
 				continue;
 			}
 
 			var LLVMValueRef mut constexpr_value= zero_init;
-			if( variable_lite.constexpr_value != Null::LLVMValueRef() && named_component.mutability_modifier != Synt::MutabilityModifier::Mutable )
+			if( variable_lite.constexpr_value != Null::LLVMValueRef && named_component.mutability_modifier != Synt::MutabilityModifier::Mutable )
 			{
 				unsafe // Because of LLVM calls
 				{
@@ -3869,7 +3869,7 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 
 					// Constexpr reference fields should be "GlobalVariable" or сonstexpr GEP.
 					var LLVMValueRef constant_expression= LLVMIsAConstantExpr( element ) ;
-					if( constant_expression != Null::LLVMValueRef() )
+					if( constant_expression != Null::LLVMValueRef )
 					{
 						// Assume constant GEP.
 						var LLVMValueRef global_variable= LLVMGetOperand( constant_expression, 0u );
@@ -3947,8 +3947,8 @@ fn CodeBuilder::BuildDecomposeDeclarationComponentImpl(
 					.location= Variable::Location::Pointer,
 					.llvm_value= field_address,
 					.constexpr_value=
-						( variable_lite.constexpr_value == Null::LLVMValueRef()
-							? Null::LLVMValueRef()
+						( variable_lite.constexpr_value == Null::LLVMValueRef
+							? Null::LLVMValueRef
 							: unsafe( LLVMGetAggregateElement( variable_lite.constexpr_value, field.index ) ) ),
 					.name= ust::concat( variable.lock_imut().deref().name, ".", entry.name ),
 					.src_loc= component.src_loc,
