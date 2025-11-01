@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en-us">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Emscripten-Generated Code</title>
+	</head>
+	<body>
+		<textarea class="emscripten" id="output" style="font-family: monospace; width: 768px;" rows="8"></textarea>
+		<button onClick="RunWASMScript()">
+			Run Me
+		</button>
+		</br>
+		<script type='text/javascript'>
+
+			var text_out_element = document.getElementById('output');
+			text_out_element.value = ''; // clear browser cache
+
+			var print_text_function = function(text)
+			{
+				if (arguments.length > 1)
+					text = Array.prototype.slice.call(arguments).join(' ');
+				console.log(text);
+				text_out_element.value += text + "\n";
+				text_out_element.scrollTop = text_out_element.scrollHeight;
+			};
+
+			function RunWASMScript(){ print_text_function( "TODO - print here" ); };
+
+		</script>
+	</body>
+</html>
