@@ -13,6 +13,35 @@
 		</br>
 		<script type='text/javascript'>
 
+			let wasm_file_contents_promise= fetch( 'hello_world.wasm', { credentials: 'same-origin' } ).then(
+				(response) =>
+				{
+					return response['arrayBuffer']();
+				});
+
+			var wasm_imports = {
+				abort: () => {},
+			};
+
+			var info = {
+				'env': wasm_imports,
+				'wasi_snapshot_preview1': wasm_imports,
+			};
+
+			let instantiate_promise= wasm_file_contents_promise.then(
+				(binary) =>
+				{
+					console.log(binary);
+					return WebAssembly.instantiate(binary, info);
+				});
+
+			instantiate_promise.then(
+				(module) =>
+				{
+					console.log(module);
+					console.log(module.instance.exports);
+				} );
+
 			var text_out_element = document.getElementById('output');
 			text_out_element.value = ''; // clear browser cache
 
