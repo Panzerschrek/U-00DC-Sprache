@@ -61,6 +61,17 @@ bool RunLinker(
 			produce_shared_library,
 			remove_unreferenced_symbols,
 			debug );
+	else if( triple.getArch() == llvm::Triple::wasm32 || triple.getArch() == llvm::Triple::wasm64 )
+		return RunLinkerWasm(
+			argv0,
+			additional_args,
+			sysroot,
+			triple,
+			input_temp_file_path,
+			output_file_path,
+			produce_shared_library,
+			remove_unreferenced_symbols,
+			debug );
 	else
 		return RunLinkerELFLinux(
 			argv0,

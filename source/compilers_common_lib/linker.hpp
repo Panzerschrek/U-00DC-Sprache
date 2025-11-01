@@ -76,4 +76,15 @@ bool RunLinkerELFFreeBSD(
 	bool remove_unreferenced_symbols,
 	bool debug );
 
+bool RunLinkerWasm(
+	const char* argv0,
+	llvm::ArrayRef<std::string> additional_args,
+	const std::string& sysroot,
+	const llvm::Triple& triple,
+	const std::string& input_temp_file_path,
+	const std::string& output_file_path,
+	bool produce_shared_library,
+	bool remove_unreferenced_symbols,
+	bool debug );
+
 } // namespace U

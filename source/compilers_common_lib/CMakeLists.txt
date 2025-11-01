@@ -5,7 +5,7 @@ if( U_BUILD_COMPILER )
 	if( TARGET lldCommon )
 		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "linker_stub.cpp" )
 	else()
-		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "linker.cpp" "linker_coff.cpp" "linker_elf_freebsd.cpp" "linker_elf_linux.cpp" "linker_macho.cpp" "linker_mingw.cpp" )
+		file( GLOB COMPILERS_COMMON_LIB_EXCLUDE_SOURCES "linker.cpp" "linker_coff.cpp" "linker_elf_freebsd.cpp" "linker_elf_linux.cpp" "linker_macho.cpp" "linker_mingw.cpp" "linker_wasm.cpp" )
 	endif()
 	list( REMOVE_ITEM COMPILERS_COMMON_LIB_SOURCES ${COMPILERS_COMMON_LIB_EXCLUDE_SOURCES} )
 
@@ -17,8 +17,7 @@ if( U_BUILD_COMPILER )
 		target_include_directories( CompilersCommonLib PRIVATE ${LLVM_EXTERNAL_LLD_SOURCE_DIR}/include )
 		target_include_directories( CompilersCommonLib PRIVATE ${CMAKE_BINARY_DIR}/llvm/tools/lld/include )
 
-		# TODO - use other linkers.
-		target_link_libraries( CompilersCommonLib lldCOFF lldELF lldMachO lldMinGW )
+		target_link_libraries( CompilersCommonLib lldCOFF lldELF lldMachO lldMinGW lldWasm )
 	endif()
 
 else()
