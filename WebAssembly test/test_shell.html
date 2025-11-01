@@ -19,8 +19,16 @@
 					return response['arrayBuffer']();
 				});
 
+			let write_func= () =>
+			{
+				console.log( "Write executed" );
+			};
+
 			var wasm_imports = {
 				abort: () => {},
+				write: write_func,
+				malloc: () => {},
+				free: () => {},
 			};
 
 			var info = {
@@ -40,6 +48,7 @@
 				{
 					console.log(module);
 					console.log(module.instance.exports);
+					module.instance.exports['main']();
 				} );
 
 			var text_out_element = document.getElementById('output');
