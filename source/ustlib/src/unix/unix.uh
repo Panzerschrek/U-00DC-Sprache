@@ -8,7 +8,10 @@ auto unix_impl_file_name=
 		"unix_darwin.uh",
 		ust::constexpr_string_select</ unix_is_freebsd />(
 			"unix_freebsd.uh",
-			"unix_linux.uh" ) );
+			ust::constexpr_string_select</ unix_is_emscripten /> (
+				"unix_emscripten.uh",
+				"unix_linux.uh" ) ) );
 
 var bool constexpr unix_is_freebsd= ust::constexpr_string_starts_with( compiler::target::os, "freebsd" );
 var bool constexpr unix_is_darwin= ust::constexpr_string_equals( compiler::target::vendor, "apple" ); // TODO - detect Darwin properly.
+var bool constexpr unix_is_emscripten= ust::constexpr_string_equals( compiler::target::os, "emscripten" ); // TODO - detect Darwin properly.
