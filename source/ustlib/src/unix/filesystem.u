@@ -449,7 +449,9 @@ fn copy_file_impl( filesystem_path_view src_path, filesystem_path_view dst_path,
 		}
 		var u64 src_size= move(src_size_res).try_take();
 
-		static_if( constexpr_string_equals( compiler::target::os, "linux" ) )
+		static_if(
+			constexpr_string_equals( compiler::target::os, "linux" ) ||
+			constexpr_string_equals( compiler::target::os, "emscripten" ) )
 		{
 			// Use Linux-specific "sendfile" function.
 			for( var off_t mut offset(0); offset < off_t(src_size); )
