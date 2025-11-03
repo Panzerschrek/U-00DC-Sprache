@@ -1618,3 +1618,51 @@ def TypeinfoIsGeneratedMethod_Test0():
 
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoIsDeletedMethod_Test0():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		struct A
+		{
+			fn constructor() = default;
+			fn constructor( mut this, A& other )= default;
+		}
+
+		struct B
+		{
+			fn constructor() = delete;
+			fn constructor( mut this, B& other ) = delete;
+			op==( B& l, B& r ) : bool = delete;
+		}
+
+		fn Foo()
+		{
+			// Non-deleted methods.
+			for( &el : typeinfo</A/>.functions_list )
+			{
+				static_if( StringEquals( el.name, "constructor" ) ) { static_assert( !el.is_deleted ); }
+				static_if( StringEquals( el.name, "==" ) ) { static_assert( !el.is_deleted ); }
+			}
+			// Deleted methods.
+			for( &el : typeinfo</B/>.functions_list )
+			{
+				static_if( StringEquals( el.name, "constructor" ) ) { static_assert( el.is_deleted ); }
+				static_if( StringEquals( el.name, "==" ) ) { static_assert( el.is_deleted ); }
+			}
+		}
+
+	"""
+	tests_lib.build_program( c_program_text )
