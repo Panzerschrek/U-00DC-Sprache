@@ -1615,7 +1615,6 @@ def TypeinfoIsGeneratedMethod_Test0():
 				static_if( StringEquals( el.name, "==" ) ) { static_assert( !el.is_generated ); }
 			}
 		}
-
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -1663,6 +1662,42 @@ def TypeinfoIsDeletedMethod_Test0():
 				static_if( StringEquals( el.name, "==" ) ) { static_assert( el.is_deleted ); }
 			}
 		}
+	"""
+	tests_lib.build_program( c_program_text )
 
+
+def TypeinfoIsVirtualMethod_Test0():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		class A polymorph
+		{
+			fn Foo( this );
+			fn Bar();
+			fn virtual Baz( mut this, i32 x );
+			fn virtual Lol( this, f32 x, char8& y ) : bool;
+		}
+
+		fn Foo()
+		{
+			for( &el : typeinfo</A/>.functions_list )
+			{
+				static_if( StringEquals( el.name, "Foo" ) ) { static_assert( !el.is_virtual ); }
+				static_if( StringEquals( el.name, "Bar" ) ) { static_assert( !el.is_virtual ); }
+				static_if( StringEquals( el.name, "Baz" ) ) { static_assert(  el.is_virtual ); }
+				static_if( StringEquals( el.name, "Lol" ) ) { static_assert(  el.is_virtual ); }
+			}
+		}
 	"""
 	tests_lib.build_program( c_program_text )
