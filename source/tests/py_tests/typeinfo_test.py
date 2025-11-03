@@ -1555,3 +1555,66 @@ def TypeinfoCallingConvention_Test1():
 
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoIsGeneratedMethod_Test0():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		struct A
+		{
+		}
+
+		struct B
+		{
+			fn constructor() = default;
+			fn constructor( mut this, B& other )= default;
+			op==( B& l, B& r ) : bool = default;
+		}
+
+		struct C
+		{
+			fn constructor();
+			fn constructor( mut this, C& other );
+			fn destructor();
+			op==( C& l, C& r ) : bool;
+		}
+
+		fn Foo()
+		{
+			// Implicitly-generated methods.
+			for( &el : typeinfo</A/>.functions_list )
+			{
+				static_if( StringEquals( el.name, "constructor" ) ) { static_assert( el.is_generated ); }
+				static_if( StringEquals( el.name, "destructor" ) ) { static_assert( el.is_generated ); }
+				static_if( StringEquals( el.name, "==" ) ) { static_assert( el.is_generated ); }
+			}
+			// Explicitly-generated methods.
+			for( &el : typeinfo</B/>.functions_list )
+			{
+				static_if( StringEquals( el.name, "constructor" ) ) { static_assert( el.is_generated ); }
+				static_if( StringEquals( el.name, "destructor" ) ) { static_assert( el.is_generated ); }
+				static_if( StringEquals( el.name, "==" ) ) { static_assert( el.is_generated ); }
+			}
+			// Non-generated special methods.
+			for( &el : typeinfo</C/>.functions_list )
+			{
+				static_if( StringEquals( el.name, "constructor" ) ) { static_assert( !el.is_generated ); }
+				static_if( StringEquals( el.name, "destructor" ) ) { static_assert( !el.is_generated ); }
+				static_if( StringEquals( el.name, "==" ) ) { static_assert( !el.is_generated ); }
+			}
+		}
+
+	"""
+	tests_lib.build_program( c_program_text )
