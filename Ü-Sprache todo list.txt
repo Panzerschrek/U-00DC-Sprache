@@ -24,8 +24,8 @@ General:
 *) A way to hide some names in common (imported) files - for implementation details
 *) A way to disable structs, type aliases, static asserts, other stuff in namespaces - similar to "enable_if"
 *) Investigate possibility of conditional imports
-*) Create for each function a string variable constant like "__PRETTY_FUNCTION__" in order to fetch function
-	name inside it
+*) Consider adding ways to obtain some debug information within a program - get current function name, current file
+	name, line, column. This may be useful in macros, like in "assert".
 *) Allow default constructors for interfaces
 *) Allow zero-sized fields for interfaces (to create inner reference tags, for example)
 *) Add a possibility to call external C functions with variadic number of arguments
@@ -36,7 +36,6 @@ General:
 *) Inverstigate possibility to add "with" operator (or something similar) in expression context
 *) Allow "nodiscard" flag for async functions to affect result of a call via "await"
 *) Consider making "nodiscard" flag presence configurable - based on a constant expression
-*) Operators to get current file/line/column - in order to use them in macros, like in "assert"
 *) Support unit-testing - add function-like unit tests global objects, which are compiled if special compiler flag
 	is provided, support building and running such unit-tests in the build system
 *) Allow variables decomposition in constructions "with" and "if_coro_advance"
@@ -52,12 +51,13 @@ General:
 References:
 *) Support second order inner references for coroutine types
 *) Separate reference checking for array elements while accessing via constexpr index
-*) Support reference pollution involving second order inner references
+*) Consider supporting reference pollution involving second order inner references
 
 Templates:
 *) Default template arguments for short type template form
 *) enable_if for type templates
 *) Allow template value arguments of some struct types
+*) Consider allowing value arguments of function pointer types
 *) Variable templates
 
 Lambdas:
@@ -85,6 +85,7 @@ Standart library:
 *) Formatted console output functions
 *) More type traits
 *) More math functions
+*) "ref" container - like "optional_ref", but always containing a reference
 *) "result"-like container for reference results
 *) Optimize size of the "result" container for storing an enum-like error and "void" succes type
 *) Support opening files with appending
@@ -120,7 +121,8 @@ Standart library:
 Compiler:
 *) Ensure floating-point numbers parsing always produces correct result
 	(as the floating point numbers standard requires)
-*) Support parsing 128-bit integers (store parse result in a 12-8bit unsinged integer)
+*) Support parsing 128-bit integers (store parse result in a 128-bit unsinged integer)
+*) Fix alignment mismatch for 128-bit types in C++ and in Ü
 *) Prevent infinite or near-infinite templates instantiation, possibly via a hard limit for total number of template
 	instantiations. This may prevent stack overflow in some cases.
 *) Limit number of lex/synt errors printed - to avoid printing too many of them
@@ -141,7 +143,7 @@ Compiler:
 *) Add possibility to execute an external linker (ld, ld.gold, ld.lld, link.exe, etc.)
 *) More options for internal linker
 *) Support WASM linker
-*) Fix possible UB in float->int conversion.
+*) Fix possible undefined bahavior in float->int conversion.
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
 *) Prevent execution of constexpr functions with errors
@@ -251,7 +253,7 @@ C++ header converter:
 *) Centralized packages repository
 
 Documentation:
-*) Other languages (not only russian and english)
+*) More languages (not only english and russian)
 *) Describe more language details
 *) Documentation for interpreter
 *) Describe undefined behavior
