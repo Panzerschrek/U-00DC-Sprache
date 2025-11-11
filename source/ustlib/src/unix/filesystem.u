@@ -75,6 +75,11 @@ fn file_readable::seek( mut this, u64 offset ) : io_result</void/>
 	return unsafe( seek_impl( handle_, offset ) );
 }
 
+fn file_readable::close( byval mut this ) : io_result</void/>
+{
+	return unsafe( close_file_with_error_impl( move(this).take_native_handle() ) );
+}
+
 //
 // file_writeable
 //
@@ -170,6 +175,11 @@ fn file_writeable::resize( mut this, u64 new_size ) : io_result</void/>
 fn file_writeable::seek( mut this, u64 offset ) : io_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
+}
+
+fn file_writeable::close( byval mut this ) : io_result</void/>
+{
+	return unsafe( close_file_with_error_impl( move(this).take_native_handle() ) );
 }
 
 //
@@ -277,6 +287,11 @@ fn file_readable_writeable::resize( mut this, u64 new_size ) : io_result</void/>
 fn file_readable_writeable::seek( mut this, u64 offset ) : io_result</void/>
 {
 	return unsafe( seek_impl( handle_, offset ) );
+}
+
+fn file_readable_writeable::close( byval mut this ) : io_result</void/>
+{
+	return unsafe( close_file_with_error_impl( move(this).take_native_handle() ) );
 }
 
 //
@@ -846,6 +861,17 @@ fn open_file_impl( filesystem_path_view path, open_options& options ) unsafe : i
 fn close_file_impl( native_file_handle handle ) unsafe
 {
 	unsafe( ::close( handle ) );
+}
+
+fn close_file_with_error_impl( native_file_handle handle ) unsafe : io_result</void/>
+{
+	var i32 res = unsafe( ::close( handle ) );
+	if( res != 0 )
+	{
+		return translate_errno( get_errno() );
+	}
+
+	return void();
 }
 
 fn get_metatada_impl( native_file_handle handle ) : io_result</file_metadata/>
