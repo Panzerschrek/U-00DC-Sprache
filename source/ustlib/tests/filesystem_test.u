@@ -1450,5 +1450,45 @@ fn nomangle main() call_conv( "C" ) : i32
 		assert( ust::remove_file( file_path ).is_ok(), "Failed to remove file \"" + file_path + "\"!" );
 	}
 
+	// Explicit code.
+	{
+		auto &constexpr file_data= "Мчать по звёздной магистрали, а не гнить в холодной яме";
+		auto constexpr file_data_size= typeinfo</ typeof(file_data) />.element_count;
+
+		auto& file_path= "test_file_to_write_and_close.txt";
+
+		// Write a file and close it.
+		result_match( ust::file_writeable::create( file_path ) )
+		{
+			Ok( mut f ) ->
+			{
+				auto write_res= f.write( ust::array_view_imut</char8/>( file_data ).to_byte8_range() );
+				assert( write_res.is_ok(), "Failed to write!" );
+				assert( write_res.try_deref() == file_data_size );
+
+				result_match( move(f).close() )
+				{
+					Ok(v) -> {},
+					Err(e) -> { assert( false, "Failed to close file \"" + file_path + "\"" ); }
+				}
+			},
+			Err(e) ->
+			{
+				assert( false, "Failed to open file \"" + file_path + "\"" );
+			},
+		}
+
+		// Should read it properly.
+		result_match( ust::read_file_to_string( file_path ) )
+		{
+			Ok(s) -> { assert( s == file_data, "Unexpected file contents!" ); },
+			Err(e) -> { assert( false, "Failed to read file \"" + file_path + "\" to string!" ); }
+		}
+
+		// Remove this file.
+		auto remove_res= ust::remove_file( file_path );
+		assert( remove_res.is_ok(), "Failed to remove file!" );
+	}
+
 	return 0;
 }
