@@ -58,7 +58,11 @@ fn write_byte8_range_to_file( filesystem_path_view path, array_view_imut</byte8/
 {
 	result_unwrap_or_return( mut f : file_writeable::create( path ) );
 
-	return f.write_all( range );
+	result_check_or_return( f.write_all( range ) );
+
+	result_check_or_return( move(f).close() );
+
+	return void();
 }
 
 fn write_string_view_to_file( filesystem_path_view path, string_view8 range ) : io_result</void/>

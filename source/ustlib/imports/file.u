@@ -36,6 +36,10 @@ public:
 	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : io_result</void/>;
 
+	// Explicitly close file (by moving this class instance) and return possible error.
+	// This may be necessary to handle errors possible while closing.
+	fn close( byval this ) : io_result</void/>;
+
 private:
 	native_file_handle handle_;
 }
@@ -81,6 +85,10 @@ public:
 
 	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : io_result</void/>;
+
+	// Explicitly close file (by moving this class instance) and return possible error.
+	// This may be necessary to handle errors possible while closing.
+	fn close( byval this ) : io_result</void/>;
 
 private:
 	native_file_handle handle_;
@@ -133,6 +141,10 @@ public:
 
 	// May fail if file is not seekable (sequential).
 	fn seek( mut this, u64 offset ) : io_result</void/>;
+
+	// Explicitly close file (by moving this class instance) and return possible error.
+	// This may be necessary to handle errors possible while closing.
+	fn close( byval this ) : io_result</void/>;
 
 private:
 	native_file_handle handle_;
