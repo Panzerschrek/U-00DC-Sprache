@@ -407,7 +407,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	NamesScopeFill( names_scope_ptr, auto_variable_declaration );
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_assert_ )
 {
 	// Store all static asserts in symobl table, using keyword "static_assert" as key.
 
@@ -418,24 +418,24 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		if( !prev_static_asserts.empty() )
 		{
 			auto mut lock= prev_static_asserts.try_lock_mut();
-			lock.deref().push_back(static_asert);
+			lock.deref().push_back(static_assert_);
 		}
 		else
 		{
-			REPORT_ERROR( Redefinition, names_scope_ptr, static_asert.deref().src_loc, key )
+			REPORT_ERROR( Redefinition, names_scope_ptr, static_assert_.deref().src_loc, key )
 		}
 		return;
 	}
 
 	auto mut lock= names_scope_ptr.lock_mut();
-	lock.deref().AddName( key, GlobalStaticAssertsSet( ust::make_array(static_asert) ) );
+	lock.deref().AddName( key, GlobalStaticAssertsSet( ust::make_array(static_assert_) ) );
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_assert_, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
 	ust::ignore_unused( class_type );
 	ust::ignore_unused( visibility );
-	NamesScopeFill( names_scope_ptr, static_asert );
+	NamesScopeFill( names_scope_ptr, static_assert_ );
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_ )

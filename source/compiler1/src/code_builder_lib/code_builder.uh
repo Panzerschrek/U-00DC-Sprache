@@ -229,8 +229,8 @@ private:
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::VariablesDeclaration/>& variables_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::AutoVariableDeclaration/>& auto_variable_declaration );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::AutoVariableDeclaration/>& auto_variable_declaration, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
-	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert );
-	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
+	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_assert_ );
+	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_assert_, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_ );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Mixin/>& mixin_, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility  );
 	fn NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ );
