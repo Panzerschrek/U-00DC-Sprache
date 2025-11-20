@@ -3,6 +3,16 @@ import "mixin_utils.u"
 namespace ust
 {
 
+// Create a zeroed value of given type.
+// Works not only for composites, but for scalars too.
+// It doesn't work for types, which don't support zero initializer.
+template</type T/>
+fn make_zeroed() : T
+{
+	var T t= zero_init;
+	return t;
+}
+
 // Use "auto" for return value to deduce return references/return inner references.
 
 //

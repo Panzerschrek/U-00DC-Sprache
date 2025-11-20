@@ -17,8 +17,51 @@ struct Ref
 	i32& r;
 }
 
+struct SomeComplexStruct
+{
+	i32 x;
+	f64 y;
+	bool z;
+	char8 w;
+	void v;
+	[ u16, 2 ] arr;
+	tup[ u64, char16 ] t;
+	$(u128) p;
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
+	//
+	// make_zeroed test
+	//
+
+	{
+		auto s= ust::make_zeroed</SomeComplexStruct/>();
+		halt if( s.x != 0 );
+		halt if( s.y != 0.0 );
+		halt if( s.z );
+		halt if( s.w != '\0' );
+		halt if( s.arr[0] != 0u16 );
+		halt if( s.arr[1] != 0u16 );
+		halt if( s.t[0] != 0u64 );
+		halt if( s.t[1] != '\0'c16 );
+		halt if( !ust::is_nullptr( s.p ) );
+	}
+	{
+		auto a= ust::make_zeroed</[ u8, 4 ]/>();
+		halt if( a[0] != 0u8 );
+		halt if( a[1] != 0u8 );
+		halt if( a[2] != 0u8 );
+	}
+	{
+		auto t= ust::make_zeroed</ tup[ bool, i32 ] />();
+		halt if( t[0] );
+		halt if( t[1] != 0 );
+	}
+	halt if( ust::make_zeroed</i32/>() != 0 );
+	halt if( ust::make_zeroed</f32/>() != 0.0f );
+	halt if( !ust::is_nullptr( ust::make_zeroed</$(char32)/>() ) );
+
 	//
 	// make_array test
 	//
