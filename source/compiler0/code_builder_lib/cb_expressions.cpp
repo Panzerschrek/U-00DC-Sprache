@@ -3424,10 +3424,26 @@ Value CodeBuilder::BuildBinaryOperator(
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, l_type );
 				return ErrorValue();
 			}
-			if( r_fundamental_type == nullptr || !IsUnsignedInteger( r_fundamental_type->fundamental_type ) )
+			if( r_fundamental_type == nullptr || !IsInteger( r_fundamental_type->fundamental_type ) )
 			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, r_type );
 				return ErrorValue();
+			}
+
+			if( r_var.constexpr_value != nullptr )
+			{
+				// If we have constexpr shift value allow shift of signed type but ensure it's not negative.
+				if( r_var.constexpr_value->getUniqueInteger().isNegative() )
+					REPORT_ERROR( BitshiftCountIsNegative, names_scope.GetErrors(), src_loc );
+			}
+			else
+			{
+				// For non-constexpr bitshift allow only unsigned shifts.
+				if( !IsUnsignedInteger( r_fundamental_type->fundamental_type ) )
+				{
+					REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, r_type );
+					return ErrorValue();
+				}
 			}
 
 			if( l_value_for_op != nullptr && r_value_for_op != nullptr )

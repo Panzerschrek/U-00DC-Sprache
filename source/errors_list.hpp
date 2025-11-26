@@ -24,6 +24,7 @@ PROCESS_ERROR( NoMatchBinaryOperatorForGivenTypes, "No match operator \"{2}\" fo
 PROCESS_ERROR( NotImplemented, "Sorry, {0} not implemented." )
 PROCESS_ERROR( ArraySizeIsNegative, "Array size is neagative." )
 PROCESS_ERROR( ArraySizeIsNotInteger, "Array size is not integer." )
+PROCESS_ERROR( BitshiftCountIsNegative, "Bitshift count is negative." )
 PROCESS_ERROR( BreakOutsideLoop, "Break outside loop." )
 PROCESS_ERROR( ContinueOutsideLoop, "Continue outside loop." )
 PROCESS_ERROR( ContinueForBlock, "Continue for block label." )

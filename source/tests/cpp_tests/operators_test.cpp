@@ -308,6 +308,40 @@ U_TEST(LeftShiftTest3)
 	BuildProgram( c_program_text );
 }
 
+U_TEST(LeftShiftTest4)
+{
+	// Shift unsigned value by constant shift.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( u32 x ) : u32
+		{
+			return x << 3;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooj" );
+	U_TEST_ASSERT( function != nullptr );
+
+	static const uint32_t values[]=
+	{
+		std::numeric_limits<uint32_t>::min(), std::numeric_limits<uint32_t>::max(),
+		1, 2, 34, 5, 10, 12, 16, 256, 8461631, 161681818, 4000000000, 65536, 256, 854716, 41894198,
+	};
+	for( const uint32_t value : values )
+	{
+		llvm::GenericValue args[1];
+		args[0].IntVal= llvm::APInt( 32, value );
+
+		llvm::GenericValue result_value=
+			engine->runFunction(
+				function,
+				llvm::ArrayRef<llvm::GenericValue>( args, 1 ) );
+
+		U_TEST_ASSERT( ( value << 3 ) == static_cast<uint32_t>(result_value.IntVal.getLimitedValue()) );
+	}
+}
+
 U_TEST(RightShiftTest0)
 {
 	// Shift signed value.
