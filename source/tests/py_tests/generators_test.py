@@ -1063,7 +1063,7 @@ def GeneratorsNonTrivialUsage_Test6():
 				}
 				else { break; }
 			}
-			halt if( advanced != 1u << 5u );
+			halt if( advanced != 1u << 5 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

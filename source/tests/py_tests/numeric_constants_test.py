@@ -31,10 +31,10 @@ def NumericConstants_DecimalConstants_Test0():
 def NumericConstants_DecimalConstants_Test1():
 	c_program_text= """
 		// Limits
-		static_assert( 2147483647 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
-		static_assert( i32(-2147483648) == ( (-1)<<31u ) ); // min i32
-		static_assert( 9223372036854775807i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( i64( -9223372036854775808 ) == ( (-1i64)<<63u ) ); // min i64
+		static_assert( 2147483647 == ( (1<<30) | ( (1<<30) - 1 ) ) ); // max i32
+		static_assert( i32(-2147483648) == ( (-1)<<31 ) ); // min i32
+		static_assert( 9223372036854775807i64 == ( (1i64<<62) | ( (1i64<<62) - 1i64 ) ) ); // max i64
+		static_assert( i64( -9223372036854775808 ) == ( (-1i64)<<63 ) ); // min i64
 		static_assert( 4294967295u == ~0u ); // max u32
 		static_assert( 18446744073709551615u64 == ~0u64 ); // max u64
 	"""
@@ -58,10 +58,10 @@ def NumericConstants_BinaryConstants_Test0():
 def NumericConstants_BinaryConstants_Test1():
 	c_program_text= """
 		// Limits
-		static_assert( 0b01111111111111111111111111111111 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
-		static_assert( i32(0b10000000000000000000000000000000) == ( (-1)<<31u ) ); // min i32
-		static_assert( 0b0111111111111111111111111111111111111111111111111111111111111111i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( i64( 0b1000000000000000000000000000000000000000000000000000000000000000 ) == ( (-1i64)<<63u ) ); // min i64
+		static_assert( 0b01111111111111111111111111111111 == ( (1<<30) | ( (1<<30) - 1 ) ) ); // max i32
+		static_assert( i32(0b10000000000000000000000000000000) == ( (-1)<<31 ) ); // min i32
+		static_assert( 0b0111111111111111111111111111111111111111111111111111111111111111i64 == ( (1i64<<62) | ( (1i64<<62) - 1i64 ) ) ); // max i64
+		static_assert( i64( 0b1000000000000000000000000000000000000000000000000000000000000000 ) == ( (-1i64)<<63 ) ); // min i64
 		static_assert( 0b11111111111111111111111111111111u == ~0u ); // max u32
 		static_assert( 0b1111111111111111111111111111111111111111111111111111111111111111u64== ~0u64 ); // max u64
 	"""
@@ -83,10 +83,10 @@ def NumericConstants_OctalConstants_Test0():
 def NumericConstants_OctalConstants_Test1():
 	c_program_text= """
 		// Limits
-		static_assert( 0o17777777777 == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
-		static_assert( i32(0o20000000000) == ( (-1)<<31u ) ); // min i32
-		static_assert( 0o777777777777777777777i64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( i64( 0o1000000000000000000000 ) == ( (-1i64)<<63u ) ); // min i64
+		static_assert( 0o17777777777 == ( (1<<30) | ( (1<<30) - 1 ) ) ); // max i32
+		static_assert( i32(0o20000000000) == ( (-1)<<31 ) ); // min i32
+		static_assert( 0o777777777777777777777i64 == ( (1i64<<62) | ( (1i64<<62) - 1i64 ) ) ); // max i64
+		static_assert( i64( 0o1000000000000000000000 ) == ( (-1i64)<<63 ) ); // min i64
 		static_assert( 0o37777777777u == ~0u ); // max u32
 		static_assert( 0o1777777777777777777777u64== ~0u64 ); // max u64
 	"""
@@ -110,10 +110,10 @@ def NumericConstants_HexadecimalConstants_Test0():
 def NumericConstants_HexadecimalConstants_Test1():
 	c_program_text= """
 		// Limits
-		static_assert( 0x7fffffff == ( (1<<30u) | ( (1<<30u) - 1 ) ) ); // max i32
-		static_assert( i32(0x80000000) == ( (-1)<<31u ) ); // min i32
-		static_assert( 0x7fffffffffffffffi64 == ( (1i64<<62u) | ( (1i64<<62u) - 1i64 ) ) ); // max i64
-		static_assert( i64( 0x8000000000000000 ) == ( (-1i64)<<63u ) ); // min i64
+		static_assert( 0x7fffffff == ( (1<<30) | ( (1<<30) - 1 ) ) ); // max i32
+		static_assert( i32(0x80000000) == ( (-1)<<31 ) ); // min i32
+		static_assert( 0x7fffffffffffffffi64 == ( (1i64<<62) | ( (1i64<<62) - 1i64 ) ) ); // max i64
+		static_assert( i64( 0x8000000000000000 ) == ( (-1i64)<<63 ) ); // min i64
 		static_assert( 0xffffffffu == ~0u ); // max u32
 		static_assert( 0xffffffffffffffffu64 == ~0u64 ); // max u64
 	"""
@@ -189,7 +189,7 @@ def NumericConstantsExtendedType_Test0():
 
 		// Large constants are extended to i64.
 		static_assert( same_type</ typeof(2147483648), i64 /> );
-		static_assert( 2147483648 == 1i64 << 31u );
+		static_assert( 2147483648 == 1i64 << 31 );
 		static_assert( 1234567891011 == 12345i64 * 100000000i64 + 67891011i64 );
 		static_assert( same_type</ typeof( 1234567891011 ), i64 /> );
 
@@ -211,7 +211,7 @@ def NumericConstantsExtendedType_Test1():
 
 		// Large constants with suffix "u" are extended to u64.
 		static_assert( same_type</ typeof(4294967296u), u64 /> );
-		static_assert( 4294967296u == 1u64 << 32u );
+		static_assert( 4294967296u == 1u64 << 32 );
 		static_assert( 1234567891011u == 12345u64 * 100000000u64 + 67891011u64 );
 		static_assert( same_type</ typeof( 1234567891011u ), u64 /> );
 

@@ -174,8 +174,8 @@ U_TEST( ConstantExpressionResultIsUndefinedTest0 )
 			auto c= 1.0f / 0.0f; // floating point division by zero should NOT produce undefined value
 			auto d= 1.0  % 0.0 ; // floating point remainder for zero should NOT produce undefined value
 			auto e= 85i64 % 0i64; // i64 remainder take for zero
-			auto f= i32( - (1i64 << 31u) ) / -1; // min_int / -1
-			auto g= i32( - (1i64 << 31u) ) % -1; // min_int / -1 remainder
+			auto f= i32( - (1i64 << 31) ) / -1; // min_int / -1
+			auto g= i32( - (1i64 << 31) ) % -1; // min_int / -1 remainder
 		}
 	)";
 

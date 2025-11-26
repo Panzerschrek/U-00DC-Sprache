@@ -447,7 +447,7 @@ U_TEST(RightShiftTest3)
 	// Constexpr shift value is greater, than type bit width. Should properly handle such case.
 	static const char c_program_text[]=
 	R"(
-		static_assert( (357u >> 35u) == (357u >> (35u&31u)) );
+		static_assert( (357u >> 35) == (357u >> (35&31)) );
 	)";
 
 	BuildProgram( c_program_text );
