@@ -370,6 +370,38 @@ U_TEST( ArrayIndexOutOfBoundsTest0 )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds, 10u ) );
 }
 
+U_TEST( BitshiftCountIsNegative_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto x= 13 << (-2);
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::BitshiftCountIsNegative, 4 ) );
+}
+
+U_TEST( BitshiftCountIsNegative_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto x= 72u >> (-13);
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::BitshiftCountIsNegative, 4 ) );
+}
+
 } // namespace
 
 } // namespace U
