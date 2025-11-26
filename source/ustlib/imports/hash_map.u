@@ -744,7 +744,7 @@ private:
 			// Additionaly add extra place for some tombstones, if current table contains them, this may be needed in cases
 			// when values are added and removed.
 			var size_type num_tombstones= num_occupied_slots_ - size_;
-			var size_type new_size= size_ + 1s + ( num_tombstones >> 1u );
+			var size_type new_size= size_ + 1s + ( num_tombstones >> 1 );
 			unsafe( rehash( new_size ) );
 		}
 	}
@@ -1103,7 +1103,7 @@ var size_type c_control_element_non_value_bit	( 0b10000000u );
 
 fn enable_if( typeinfo</size_type/>.size_of == 8s ) get_hash1( size_type h ) : size_type
 {
-	return h >> 7u;
+	return h >> 7;
 }
 
 fn enable_if( typeinfo</size_type/>.size_of == 8s ) get_hash2( size_type h ) : size_type
@@ -1118,7 +1118,7 @@ fn enable_if( typeinfo</size_type/>.size_of == 4s ) get_hash1( size_type h ) : s
 
 fn enable_if( typeinfo</size_type/>.size_of == 4s ) get_hash2( size_type h ) : size_type
 {
-	return h  >> 25u;
+	return h  >> 25;
 }
 
 fn calculate_capacity_for_given_size( size_type size ) : size_type
@@ -1141,7 +1141,7 @@ fn get_nearest_power_of_two_size( size_type s ) : size_type
 	var size_type mut res= 1s;
 	while( res < s )
 	{
-		res <<= 1u;
+		res <<= 1;
 	}
 	return res;
 }

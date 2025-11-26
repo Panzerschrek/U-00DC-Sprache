@@ -84,7 +84,7 @@ public:
 		{
 			// Write low and high parts separatly if size_type is 32-bit.
 			write( size_type(x) );
-			write( size_type( x >> 32u ) );
+			write( size_type( x >> 32 ) );
 		}
 	}
 
@@ -97,7 +97,7 @@ public:
 	{
 		// Write 128-bit values as pair of 64-bit values.
 		this( u64(x) );
-		this( u64( x >> 64u ) );
+		this( u64( x >> 64 ) );
 	}
 
 	op()( mut this, size_type x )
@@ -149,7 +149,7 @@ public:
 		else
 		{
 			write( size_type( u64(x) ) );
-			write( size_type( u64(x) >> 32u ) );
+			write( size_type( u64(x) >> 32 ) );
 		}
 	}
 
@@ -196,10 +196,10 @@ public:
 					// Perform reading of each byte individually.
 					// We can't just cast byte8 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
-						( size_type( u8( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
-						( size_type( u8( range.index_unchecked( i + 1s ) ) ) <<  8u ) |
-						( size_type( u8( range.index_unchecked( i + 2s ) ) ) << 16u ) |
-						( size_type( u8( range.index_unchecked( i + 3s ) ) ) << 24u );
+						( size_type( u8( range.index_unchecked( i + 0s ) ) ) <<  0 ) |
+						( size_type( u8( range.index_unchecked( i + 1s ) ) ) <<  8 ) |
+						( size_type( u8( range.index_unchecked( i + 2s ) ) ) << 16 ) |
+						( size_type( u8( range.index_unchecked( i + 3s ) ) ) << 24 );
 
 					safe( write( word ) );
 				}
@@ -214,7 +214,7 @@ public:
 				{
 					for( var size_type mut i= size_rounded; i < range.size(); ++i )
 					{
-						word <<= 8u;
+						word <<= 8;
 						word |= size_type( u8( range.index_unchecked( i ) ) );
 					}
 				}
@@ -234,14 +234,14 @@ public:
 					// Perform reading of each byte individually.
 					// We can't just cast byte8 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
-						( size_type( u8( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
-						( size_type( u8( range.index_unchecked( i + 1s ) ) ) <<  8u ) |
-						( size_type( u8( range.index_unchecked( i + 2s ) ) ) << 16u ) |
-						( size_type( u8( range.index_unchecked( i + 3s ) ) ) << 24u ) |
-						( size_type( u8( range.index_unchecked( i + 4s ) ) ) << 32u ) |
-						( size_type( u8( range.index_unchecked( i + 5s ) ) ) << 40u ) |
-						( size_type( u8( range.index_unchecked( i + 6s ) ) ) << 48u ) |
-						( size_type( u8( range.index_unchecked( i + 7s ) ) ) << 56u );
+						( size_type( u8( range.index_unchecked( i + 0s ) ) ) <<  0 ) |
+						( size_type( u8( range.index_unchecked( i + 1s ) ) ) <<  8 ) |
+						( size_type( u8( range.index_unchecked( i + 2s ) ) ) << 16 ) |
+						( size_type( u8( range.index_unchecked( i + 3s ) ) ) << 24 ) |
+						( size_type( u8( range.index_unchecked( i + 4s ) ) ) << 32 ) |
+						( size_type( u8( range.index_unchecked( i + 5s ) ) ) << 40 ) |
+						( size_type( u8( range.index_unchecked( i + 6s ) ) ) << 48 ) |
+						( size_type( u8( range.index_unchecked( i + 7s ) ) ) << 56 );
 
 					safe( write( word ) );
 				}
@@ -256,7 +256,7 @@ public:
 				{
 					for( var size_type mut i= size_rounded; i < range.size(); ++i )
 					{
-						word <<= 8u;
+						word <<= 8;
 						word |= size_type( u8( range.index_unchecked( i ) ) );
 					}
 				}
@@ -280,8 +280,8 @@ public:
 					// Perform reading of each byte16 element individually.
 					// We can't just cast byte16 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
-						( size_type( u16( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
-						( size_type( u16( range.index_unchecked( i + 1s ) ) ) << 16u );
+						( size_type( u16( range.index_unchecked( i + 0s ) ) ) <<  0 ) |
+						( size_type( u16( range.index_unchecked( i + 1s ) ) ) << 16 );
 
 					safe( write( word ) );
 				}
@@ -305,10 +305,10 @@ public:
 					// Perform reading of each byte16 element individually.
 					// We can't just cast byte16 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
-						( size_type( u16( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
-						( size_type( u16( range.index_unchecked( i + 1s ) ) ) << 16u ) |
-						( size_type( u16( range.index_unchecked( i + 2s ) ) ) << 32u ) |
-						( size_type( u16( range.index_unchecked( i + 3s ) ) ) << 48u );
+						( size_type( u16( range.index_unchecked( i + 0s ) ) ) <<  0 ) |
+						( size_type( u16( range.index_unchecked( i + 1s ) ) ) << 16 ) |
+						( size_type( u16( range.index_unchecked( i + 2s ) ) ) << 32 ) |
+						( size_type( u16( range.index_unchecked( i + 3s ) ) ) << 48 );
 
 					safe( write( word ) );
 				}
@@ -323,7 +323,7 @@ public:
 				{
 					for( var size_type mut i= size_rounded; i < range.size(); ++i )
 					{
-						word <<= 16u;
+						word <<= 16;
 						word |= size_type( u16( range.index_unchecked( i ) ) );
 					}
 				}
@@ -354,8 +354,8 @@ public:
 					// Perform reading of each byte32 element individually.
 					// We can't just cast byte16 pointer to size_type and read it, since such pointer may not be properly aligned.
 					var size_type word=
-						( size_type( u32( range.index_unchecked( i + 0s ) ) ) <<  0u ) |
-						( size_type( u32( range.index_unchecked( i + 1s ) ) ) << 32u );
+						( size_type( u32( range.index_unchecked( i + 0s ) ) ) <<  0 ) |
+						( size_type( u32( range.index_unchecked( i + 1s ) ) ) << 32 );
 
 					safe( write( word ) );
 				}
@@ -394,11 +394,11 @@ private:
 			// Strictly-speaking it's not MurmurHash3, but only its inner loop.
 
 			x*= size_type( 0xcc9e2d51u );
-			x= ( x << 15u ) | ( x >> 17u );
+			x= ( x << 15 ) | ( x >> 17 );
 			x*= size_type(0x1b873593u);
 
 			state_ ^= x;
-			state_= ( state_ << 13u ) | ( state_ >> 19u );
+			state_= ( state_ << 13 ) | ( state_ >> 19 );
 			state_= state_ * 5s + size_type( 0xe6546b64u );
 		}
 		else

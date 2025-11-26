@@ -25,13 +25,13 @@ fn ip_address_v4::to_string( this ) : string8
 {
 	return
 		concat(
-			to_string8( u8( bits_ >> 24u ) ),
+			to_string8( u8( bits_ >> 24 ) ),
 			".",
-			to_string8( u8( bits_ >> 16u ) ),
+			to_string8( u8( bits_ >> 16 ) ),
 			".",
-			to_string8( u8( bits_ >>  8u ) ),
+			to_string8( u8( bits_ >>  8 ) ),
 			".",
-			to_string8( u8( bits_ >>  0u ) ) );
+			to_string8( u8( bits_ >>  0 ) ) );
 }
 
 fn ip_address_v6::parse( string_view8 mut s ) : optional</ip_address_v6/>
@@ -60,10 +60,10 @@ fn ip_address_v6::to_string( this ) : string8
 	{
 		var size_type dst= i * 5s;
 		var u32 o0( octets[ i * 2s + 0s ] );
-		res[ dst + 0s ]= get_hex_digit( o0 >> 4u );
+		res[ dst + 0s ]= get_hex_digit( o0 >> 4 );
 		res[ dst + 1s ]= get_hex_digit( o0 & 15u );
 		var u32 o1( octets[ i * 2s + 1s ] );
-		res[ dst + 2s ]= get_hex_digit( o1 >> 4u );
+		res[ dst + 2s ]= get_hex_digit( o1 >> 4 );
 		res[ dst + 3s ]= get_hex_digit( o1 & 15u );
 	}
 
@@ -292,14 +292,14 @@ fn extract_ip_v6_address( string_view8 &mut s ) : optional</ip_address_v6/>
 
 		var [ u8, 16 ] octets
 		[
-			( parts[0] >> 8u ), ( parts[0] ),
-			( parts[1] >> 8u ), ( parts[1] ),
-			( parts[2] >> 8u ), ( parts[2] ),
-			( parts[3] >> 8u ), ( parts[3] ),
-			( parts[4] >> 8u ), ( parts[4] ),
-			( parts[5] >> 8u ), ( parts[5] ),
-			( parts[6] >> 8u ), ( parts[6] ),
-			( parts[7] >> 8u ), ( parts[7] ),
+			( parts[0] >> 8 ), ( parts[0] ),
+			( parts[1] >> 8 ), ( parts[1] ),
+			( parts[2] >> 8 ), ( parts[2] ),
+			( parts[3] >> 8 ), ( parts[3] ),
+			( parts[4] >> 8 ), ( parts[4] ),
+			( parts[5] >> 8 ), ( parts[5] ),
+			( parts[6] >> 8 ), ( parts[6] ),
+			( parts[7] >> 8 ), ( parts[7] ),
 		];
 
 		return ip_address_v6( octets );
@@ -311,14 +311,14 @@ fn extract_ip_v6_address( string_view8 &mut s ) : optional</ip_address_v6/>
 		for( var size_type mut i= 0s; i < zeros_position; ++i )
 		{
 			var u16 part= parts[i];
-			octets[ i * 2s + 0s ]= u8( part >> 8u );
+			octets[ i * 2s + 0s ]= u8( part >> 8 );
 			octets[ i * 2s + 1s ]= u8( part );
 		}
 
 		for( var size_type mut i= zeros_position + 8s - num_parts_parsed; i < 8s; ++i )
 		{
 			var u16 part= parts[ i - 8s + num_parts_parsed ];
-			octets[ i * 2s + 0s ]= u8( part >> 8u );
+			octets[ i * 2s + 0s ]= u8( part >> 8 );
 			octets[ i * 2s + 1s ]= u8( part );
 		}
 
@@ -346,7 +346,7 @@ fn extract_hex_u16( string_view8 &mut s ) : optional</u16/>
 			break;
 		}
 
-		res <<= 4u;
+		res <<= 4;
 		res += d;
 	}
 

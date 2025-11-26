@@ -52,10 +52,10 @@ fn nodiscard arena_allocator::allocate( this, size_type size_bytes ) unsafe : $(
 
 			// Exponentially grow block size, so that list of allocated blocks has small limited size.
 			// Also exponential grow strategy means asymptotic constant overhead for allocation.
-			var size_type mut new_block_size= s.current_block_size << 1s;
+			var size_type mut new_block_size= s.current_block_size << 1;
 			while( new_block_size < size_aligned_bytes )
 			{
-				new_block_size <<= 1s;
+				new_block_size <<= 1;
 			}
 
 			var $(byte8) mem= memory_allocate( new_block_size );
