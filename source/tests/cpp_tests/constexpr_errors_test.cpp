@@ -402,6 +402,20 @@ U_TEST( BitshiftCountIsNegative_Test1 )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::BitshiftCountIsNegative, 4 ) );
 }
 
+U_TEST( BitshiftCountIsNegative_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto x= 13 << (255u8); // Should be fine - shift is positive, even if it's two-compliment value is negative.
+			static_assert( x == ( 13 << 31 ) );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace
 
 } // namespace U

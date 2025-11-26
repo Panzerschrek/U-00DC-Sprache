@@ -3433,7 +3433,7 @@ Value CodeBuilder::BuildBinaryOperator(
 			if( r_var.constexpr_value != nullptr )
 			{
 				// If we have constexpr shift value allow shift of signed type but ensure it's not negative.
-				if( r_var.constexpr_value->getUniqueInteger().isNegative() )
+				if( IsSignedInteger( r_fundamental_type->fundamental_type ) && r_var.constexpr_value->getUniqueInteger().isNegative() )
 					REPORT_ERROR( BitshiftCountIsNegative, names_scope.GetErrors(), src_loc );
 			}
 			else
