@@ -481,7 +481,7 @@ U_TEST(RightShiftTest4)
 		llvm::GenericValue result_value=
 			engine->runFunction(
 				function,
-				llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
+				llvm::ArrayRef<llvm::GenericValue>( args, 1 ) );
 
 		U_TEST_ASSERT( ( value >> 2 ) == static_cast<uint32_t>(result_value.IntVal.getLimitedValue()) );
 	}
