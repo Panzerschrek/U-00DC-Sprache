@@ -338,7 +338,7 @@ def StringLiteralAsInitializator_Test2():
 			var u64 mut r(0);
 			for( auto mut i= 0s; i < typeinfo</typeof(str)/>.element_count; ++i )
 			{
-				r|= u64(str[i]) << (i << 3u);
+				r|= u64(str[i]) << (i << 3);
 			}
 			return r;
 		}

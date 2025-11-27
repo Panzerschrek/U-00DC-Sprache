@@ -1983,7 +1983,7 @@ U_TEST(EarlyTempVariablesDestruction_Test14)
 		{
 			var T mut t{ .x= 665214 };
 			t >>= S(3).x; // Must destroy temporary S(3) before call to operator >>=.
-			halt if( t.x != 665214 >> u32(3) );
+			halt if( t.x != 665214 >> 3 );
 		}
 	)";
 

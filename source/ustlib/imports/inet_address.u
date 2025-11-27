@@ -16,7 +16,7 @@ public:
 	{}
 
 	fn constructor( [ u8, 4 ] octets )
-		( bits_= ( u32(octets[0]) << 24u ) | ( u32(octets[1]) << 16u ) | ( u32(octets[2]) << 8u ) | ( u32(octets[3]) << 0u ) )
+		( bits_= ( u32(octets[0]) << 24 ) | ( u32(octets[1]) << 16 ) | ( u32(octets[2]) << 8 ) | ( u32(octets[3]) << 0 ) )
 	{}
 
 	fn constructor( mut this, ip_address_v4& other )= default;
@@ -42,7 +42,7 @@ public:
 
 	fn get_octets( this ) : [ u8, 4 ]
 	{
-		var [ u8, 4 ] octets[ ( bits_ >> 24u ), ( bits_ >> 16u ), ( bits_ >> 8u ), ( bits_ >> 0u ) ];
+		var [ u8, 4 ] octets[ ( bits_ >> 24 ), ( bits_ >> 16 ), ( bits_ >> 8 ), ( bits_ >> 0 ) ];
 		return octets;
 	}
 
@@ -63,10 +63,10 @@ public:
 
 	fn constructor( [ u8, 16 ]& octets )
 		( bits_=
-			( u128(octets[ 0]) << 120u ) | ( u128(octets[ 1]) << 112u ) | ( u128(octets[ 2]) << 104u ) | ( u128(octets[ 3]) << 96u ) |
-			( u128(octets[ 4]) <<  88u ) | ( u128(octets[ 5]) <<  80u ) | ( u128(octets[ 6]) <<  72u ) | ( u128(octets[ 7]) << 64u ) |
-			( u128(octets[ 8]) <<  56u ) | ( u128(octets[ 9]) <<  48u ) | ( u128(octets[10]) <<  40u ) | ( u128(octets[11]) << 32u ) |
-			( u128(octets[12]) <<  24u ) | ( u128(octets[13]) <<  16u ) | ( u128(octets[14]) <<   8u ) | ( u128(octets[15]) <<  0u ) )
+			( u128(octets[ 0]) << 120 ) | ( u128(octets[ 1]) << 112 ) | ( u128(octets[ 2]) << 104 ) | ( u128(octets[ 3]) << 96 ) |
+			( u128(octets[ 4]) <<  88 ) | ( u128(octets[ 5]) <<  80 ) | ( u128(octets[ 6]) <<  72 ) | ( u128(octets[ 7]) << 64 ) |
+			( u128(octets[ 8]) <<  56 ) | ( u128(octets[ 9]) <<  48 ) | ( u128(octets[10]) <<  40 ) | ( u128(octets[11]) << 32 ) |
+			( u128(octets[12]) <<  24 ) | ( u128(octets[13]) <<  16 ) | ( u128(octets[14]) <<   8 ) | ( u128(octets[15]) <<  0 ) )
 	{}
 
 	fn constructor( mut this, ip_address_v6& other )= default;
@@ -94,10 +94,10 @@ public:
 	{
 		var [ u8, 16 ] octets
 		[
-			( bits_ >> 120u ), ( bits_ >> 112u ), ( bits_ >> 104u ), ( bits_ >> 96u ),
-			( bits_ >>  88u ), ( bits_ >>  80u ), ( bits_ >>  72u ), ( bits_ >> 64u ),
-			( bits_ >>  56u ), ( bits_ >>  48u ), ( bits_ >>  40u ), ( bits_ >> 32u ),
-			( bits_ >>  24u ), ( bits_ >>  16u ), ( bits_ >>   8u ), ( bits_ >>  0u ),
+			( bits_ >> 120 ), ( bits_ >> 112 ), ( bits_ >> 104 ), ( bits_ >> 96 ),
+			( bits_ >>  88 ), ( bits_ >>  80 ), ( bits_ >>  72 ), ( bits_ >> 64 ),
+			( bits_ >>  56 ), ( bits_ >>  48 ), ( bits_ >>  40 ), ( bits_ >> 32 ),
+			( bits_ >>  24 ), ( bits_ >>  16 ), ( bits_ >>   8 ), ( bits_ >>  0 ),
 		];
 		return octets;
 	}

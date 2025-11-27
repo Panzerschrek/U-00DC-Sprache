@@ -752,20 +752,20 @@ fn CallingConventionInfoSystemV_X86_64::ClassifyType_r( this, LLVMTypeRef llvm_t
 
 	if( t_kind == LLVMTypeKind::Pointer )
 	{
-		MergeArgumentClasses( out_classes[ offset >> 3u ], ArgumentClass::Integer );
+		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
 	}
 	else if( t_kind == LLVMTypeKind::Integer )
 	{
-		MergeArgumentClasses( out_classes[ offset >> 3u ], ArgumentClass::Integer );
+		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::Integer );
 		var u32 bit_size= unsafe( LLVMGetIntTypeWidth( llvm_type ) );
 		if( bit_size > 64u )
 		{
-			MergeArgumentClasses( out_classes[ ( offset + 8u ) >> 3u ], ArgumentClass::Integer );
+			MergeArgumentClasses( out_classes[ ( offset + 8u ) >> 3 ], ArgumentClass::Integer );
 		}
 	}
 	else if( t_kind == LLVMTypeKind::Float || t_kind == LLVMTypeKind::Double )
 	{
-		MergeArgumentClasses( out_classes[ offset >> 3u ], ArgumentClass::SSE );
+		MergeArgumentClasses( out_classes[ offset >> 3 ], ArgumentClass::SSE );
 	}
 	else if( t_kind == LLVMTypeKind::Array )
 	{

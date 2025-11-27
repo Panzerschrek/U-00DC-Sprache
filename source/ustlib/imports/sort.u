@@ -160,7 +160,7 @@ fn do_sort( $(T) mut start, $(T) mut end, Compare& comp ) unsafe
 				// Doing so we fix quadratic complexity for sorted, almost sorted, reverse-sorted arrays.
 				var T &mut first= $>(start);
 				var T &mut last= $>(end - 1s);
-				var T &mut middle= $>( start + ((end - start) >> 1s) );
+				var T &mut middle= $>( start + ((end - start) >> 1) );
 
 				var bool fl= safe( comp( cast_imut(first), cast_imut(last  ) ) );
 				var bool lm= safe( comp( cast_imut(last ), cast_imut(middle) ) );

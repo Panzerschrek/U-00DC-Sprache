@@ -207,7 +207,7 @@ def DestructorsCall_ForTernaryOperatorResult_Test0():
 				auto res= ( b ? GetS(x) : GetS(y) ); // Structure, that refers to "x" or to "y"
 				// Called destructor, that increments "x" or "y"
 			}
-			return (y << 4u) | x;
+			return (y << 4) | x;
 		}
 	"""
 	tests_lib.build_program( c_program_text )

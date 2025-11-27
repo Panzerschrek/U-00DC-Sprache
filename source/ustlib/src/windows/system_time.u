@@ -8,7 +8,7 @@ fn system_time::now() : system_time
 {
 	var FILETIME mut t= zero_init;
 	unsafe( ::GetSystemTimePreciseAsFileTime( $<(t) ) );
-	return unsafe( system_time( impl_windows{ .intervals= u64(t.dwLowDateTime) | ( u64(t.dwHighDateTime) << 32u ) } ) );
+	return unsafe( system_time( impl_windows{ .intervals= u64(t.dwLowDateTime) | ( u64(t.dwHighDateTime) << 32 ) } ) );
 }
 
 } // namespace ust

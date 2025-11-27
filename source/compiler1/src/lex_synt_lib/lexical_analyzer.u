@@ -210,7 +210,7 @@ fn IntegerPower( f64 base_, u32 pow ) : f64
 {
 	var f64 mut res= 1.0, mut p= base_;
 
-	for( var u32 mut i(1); ; i <<= 1u, p*= p )
+	for( var u32 mut i(1); ; i <<= 1, p*= p )
 	{
 		if( (i & pow ) != 0u )
 		{

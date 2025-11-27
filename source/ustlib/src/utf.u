@@ -18,7 +18,7 @@ fn push_code_point_to_string( string8 &mut str, char32 code_point )
 	{
 		var [ char8, 2 ] chars
 		[
-			( 0b11000000u | (cc >>  6u) ),
+			( 0b11000000u | (cc >>  6) ),
 			( 0b10000000u | (cc &  63u) ),
 		];
 		str+= chars;
@@ -27,8 +27,8 @@ fn push_code_point_to_string( string8 &mut str, char32 code_point )
 	{
 		var [ char8, 3 ] chars
 		[
-			( 0b11100000u |  (cc >> 12u) ),
-			( 0b10000000u | ((cc >> 6u) & 63u) ),
+			( 0b11100000u |  (cc >> 12) ),
+			( 0b10000000u | ((cc >> 6) & 63u) ),
 			( 0b10000000u |  (cc  & 63u) ),
 		];
 		str+= chars;
@@ -37,9 +37,9 @@ fn push_code_point_to_string( string8 &mut str, char32 code_point )
 	{
 		var [ char8, 4 ] chars
 		[
-			( 0b11110000u |  (cc >> 18u) ),
-			( 0b10000000u | ((cc >> 12u) & 63u) ),
-			( 0b10000000u | ((cc >>  6u) & 63u) ),
+			( 0b11110000u |  (cc >> 18) ),
+			( 0b10000000u | ((cc >> 12) & 63u) ),
+			( 0b10000000u | ((cc >>  6) & 63u) ),
 			( 0b10000000u |  (cc  & 63u) ),
 		];
 		str+= chars;
@@ -59,7 +59,7 @@ fn push_code_point_to_string( string16 &mut str, char32 code_point )
 	else
 	{
 		var u32 c= u32(code_point) - 0x10000u;
-		str.push_back( char16( ( c >> 10u ) + 0xD800u ) );
+		str.push_back( char16( ( c >> 10 ) + 0xD800u ) );
 		str.push_back( char16( ( c & 0x3FFu ) + 0xDC00u ) );
 	}
 }
@@ -79,15 +79,15 @@ fn extract_code_point_or_null_from_string( string_view8 &mut str ) : char32
 	// c_bit_masks[4] - menas save first 4 bits
 	var [ u32, 9 ] constexpr c_bit_masks
 	[
-		-1u + (1u << 0u),
-		-1u + (1u << 1u),
-		-1u + (1u << 2u),
-		-1u + (1u << 3u),
-		-1u + (1u << 4u),
-		-1u + (1u << 5u),
-		-1u + (1u << 6u),
-		-1u + (1u << 7u),
-		-1u + (1u << 8u),
+		-1u + (1u << 0),
+		-1u + (1u << 1),
+		-1u + (1u << 2),
+		-1u + (1u << 3),
+		-1u + (1u << 4),
+		-1u + (1u << 5),
+		-1u + (1u << 6),
+		-1u + (1u << 7),
+		-1u + (1u << 8),
 	];
 
 	var u32 c( str.front() );
@@ -108,8 +108,8 @@ fn extract_code_point_or_null_from_string( string_view8 &mut str ) : char32
 		}
 
 		code= char32(
-			( (u32(str[0s]) & c_bit_masks[5]) << 6u ) |
-			( (u32(str[1s]) & c_bit_masks[6]) << 0u ) );
+			( (u32(str[0s]) & c_bit_masks[5]) << 6 ) |
+			( (u32(str[1s]) & c_bit_masks[6]) << 0 ) );
 
 		str= str.subrange_start(2s);
 	}
@@ -123,9 +123,9 @@ fn extract_code_point_or_null_from_string( string_view8 &mut str ) : char32
 		}
 
 		code= char32(
-			( (u32(str[0s]) & c_bit_masks[4]) << 12u ) |
-			( (u32(str[1s]) & c_bit_masks[6]) <<  6u ) |
-			( (u32(str[2s]) & c_bit_masks[6]) <<  0u ) );
+			( (u32(str[0s]) & c_bit_masks[4]) << 12 ) |
+			( (u32(str[1s]) & c_bit_masks[6]) <<  6 ) |
+			( (u32(str[2s]) & c_bit_masks[6]) <<  0 ) );
 
 		str= str.subrange_start(3s);
 	}
@@ -139,10 +139,10 @@ fn extract_code_point_or_null_from_string( string_view8 &mut str ) : char32
 		}
 
 		code= char32(
-			( (u32(str[0s]) & c_bit_masks[3]) << 18u ) |
-			( (u32(str[1s]) & c_bit_masks[6]) << 12u ) |
-			( (u32(str[2s]) & c_bit_masks[6]) <<  6u ) |
-			( (u32(str[3s]) & c_bit_masks[6]) <<  0u ) );
+			( (u32(str[0s]) & c_bit_masks[3]) << 18 ) |
+			( (u32(str[1s]) & c_bit_masks[6]) << 12 ) |
+			( (u32(str[2s]) & c_bit_masks[6]) <<  6 ) |
+			( (u32(str[3s]) & c_bit_masks[6]) <<  0 ) );
 
 		str= str.subrange_start(4s);
 	}
@@ -171,7 +171,7 @@ fn extract_code_point_or_null_from_string( string_view16 &mut str ) : char32
 		{
 			// TODO - check if this is correct.
 			var u32 paired_c( str.drop_and_get_front() );
-			c = ((c - 0xD800u) << 10u) + ( paired_c - 0xDC00u ) + 0x0010000u;
+			c = ((c - 0xD800u) << 10) + ( paired_c - 0xDC00u ) + 0x0010000u;
 		}
 		else
 		{

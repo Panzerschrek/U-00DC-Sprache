@@ -741,14 +741,14 @@ fn ManglerMSVC::EncodeNumber( this, ManglerState &mut mangler_state, u64 num )
 	{
 		// Use hex numbers with digits in range [A;Q)
 		var i64 mut hex_digit(15);
-		while((num & (u64(0xF) << u64(hex_digit << 2u))) == 0u64)
+		while((num & (u64(0xF) << u64(hex_digit << 2))) == 0u64)
 		{
 			--hex_digit; // It's impossible to reach zero here since "num" is non-zero.
 		}
 
 		while(hex_digit >= 0i64)
 		{
-			mangler_state.PushElement( char8(u64('A') + ((num >> u64(hex_digit << 2u)) & u64(0xF))) );
+			mangler_state.PushElement( char8(u64('A') + ((num >> u64(hex_digit << 2)) & u64(0xF))) );
 			--hex_digit;
 		}
 

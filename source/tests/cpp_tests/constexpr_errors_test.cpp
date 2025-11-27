@@ -174,8 +174,8 @@ U_TEST( ConstantExpressionResultIsUndefinedTest0 )
 			auto c= 1.0f / 0.0f; // floating point division by zero should NOT produce undefined value
 			auto d= 1.0  % 0.0 ; // floating point remainder for zero should NOT produce undefined value
 			auto e= 85i64 % 0i64; // i64 remainder take for zero
-			auto f= i32( - (1i64 << 31u) ) / -1; // min_int / -1
-			auto g= i32( - (1i64 << 31u) ) % -1; // min_int / -1 remainder
+			auto f= i32( - (1i64 << 31) ) / -1; // min_int / -1
+			auto g= i32( - (1i64 << 31) ) % -1; // min_int / -1 remainder
 		}
 	)";
 
@@ -368,6 +368,52 @@ U_TEST( ArrayIndexOutOfBoundsTest0 )
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  8u ) );
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  9u ) );
 	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds, 10u ) );
+}
+
+U_TEST( BitshiftCountIsNegative_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto x= 13 << (-2);
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::BitshiftCountIsNegative, 4 ) );
+}
+
+U_TEST( BitshiftCountIsNegative_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto x= 72u >> (-13);
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HasError( build_result.errors, CodeBuilderErrorCode::BitshiftCountIsNegative, 4 ) );
+}
+
+U_TEST( BitshiftCountIsNegative_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto x= 13 << (255u8); // Should be fine - shift is positive, even if it's two-compliment value is negative.
+			static_assert( x == ( 13 << 31 ) );
+		}
+	)";
+
+	BuildProgram( c_program_text );
 }
 
 } // namespace

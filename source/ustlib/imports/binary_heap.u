@@ -84,7 +84,7 @@ fn is_heap( array_view_imut</T/> range, Compare& comp ) : bool
 {
 	for( auto mut i= 1s; i < range.size(); ++i )
 	{
-		auto parent_index= (i - 1s) >> 1s;
+		auto parent_index= (i - 1s) >> 1;
 		if( comp( unsafe( range.index_unchecked( parent_index ) ), unsafe( range.index_unchecked( i ) ) ) )
 		{
 			return false;
@@ -123,7 +123,7 @@ fn push_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 		var $(T) ptr= range.data();
 		auto mut index= range.size() - 1s;
 
-		auto first_parent_index= (index - 1s) >> 1s;
+		auto first_parent_index= (index - 1s) >> 1;
 		if( safe( comp( unsafe( $>(ptr + first_parent_index ) ), unsafe( $>( ptr + index ) ) ) ) )
 		{
 			// Move new element into temporary stack storage.
@@ -141,7 +141,7 @@ fn push_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 			index= first_parent_index;
 			while( index > 0s )
 			{
-				auto parent_index= (index - 1s) >> 1s;
+				auto parent_index= (index - 1s) >> 1;
 
 				if( safe( comp( unsafe( $>(ptr + parent_index) ), new_element_ref ) ) )
 				{
@@ -236,7 +236,7 @@ fn pop_heap_unchecked( array_view_mut</T/> range, Compare& comp ) unsafe
 			// Propagate hole up, assuming last element will be placed in it.
 			while( index > 0s )
 			{
-				auto parent_index= (index - 1s) >> 1s;
+				auto parent_index= (index - 1s) >> 1;
 
 				if( safe( comp( unsafe( $>( ptr + parent_index ) ), unsafe( $>( ptr + last ) ) ) ) )
 				{

@@ -3302,10 +3302,28 @@ fn CodeBuilder::BuildBinaryOperator(
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
 		}
-		if( r_fundamental_type.empty() || !IsUnsignedInteger( r_fundamental_type.try_deref().fundamental_type ) )
+		if( r_fundamental_type.empty() || !IsInteger( r_fundamental_type.try_deref().fundamental_type ) )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope,src_loc, r_type )
 			return ErrorValue();
+		}
+
+		if( r_var.constexpr_value != Null::LLVMValueRef )
+		{
+			// If we have constexpr shift value allow shift of signed type but ensure it's not negative.
+			if( IsSignedInteger( r_fundamental_type.try_deref().fundamental_type ) &&
+				unsafe( LLVMConstIntGetSExtValue( r_var.constexpr_value ) ) < 0i64 )
+			{
+				REPORT_ERROR( BitshiftCountIsNegative, names_scope, src_loc )
+			}
+		}
+		else
+		{
+			if( !IsUnsignedInteger( r_fundamental_type.try_deref().fundamental_type ) )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope,src_loc, r_type )
+				return ErrorValue();
+			}
 		}
 
 		auto l_value_for_op= l_in_register;
