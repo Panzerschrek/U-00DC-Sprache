@@ -9,6 +9,9 @@ General:
 *) Constructor initializer for constexpr structs
 *) Allow using blocks in expression context - to have possibility to return, break from a loop, continue, use "with"
 	statement, etc
+*) Consider adding a variant of "auto" variable declaration with a block as initializer - to be able to use control
+	flow statements, variable declarations and other block elements inside it. Consider adding the same initializer for
+	non-auto variables (with explicit type name).
 *) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) More advanced macros - more context, elements, stringification, string manipulations
 *) switch-like operator for expression context
@@ -153,6 +156,7 @@ Compiler:
 *) Built-in compiler optimization hints ("assume", "likely", "unlikely", etc.)
 *) Alloca declaration - allow to specify heap fallback size limit -
 	even zero (always use heap) or infinity (always use stack)
+*) Generate debug info for generated methods
 
 Interpreter:
 *) Sdd possibility to provide proper argc/argv (not only stubs for them)
