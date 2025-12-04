@@ -83,7 +83,7 @@ public:
 	op enable_if( is_mutable )
 	[]( this, size_type index ) : T & mut @( reference_notation::return_references::param0_inner_reference0 )
 	{
-		halt if( empty() );
+		halt if( index >= size_ );
 		return unsafe( index_unchecked(index) );
 	}
 
@@ -91,7 +91,7 @@ public:
 	enable_if( !is_mutable )
 	[]( this, size_type index ) : T & imut @( reference_notation::return_references::param0_inner_reference0 )
 	{
-		halt if( empty() );
+		halt if( index >= size_ );
 		return unsafe( index_unchecked(index) );
 	}
 
