@@ -33,13 +33,15 @@ fn Lexem::ToDiagnosticString(this) : ust::string8
 	if( lexem_type == Lexem::Type::IntegerNumber )
 	{
 		halt if( text.size() < typeinfo</IntegerNumberLexemData/>.size_of );
-		auto& number_lexem_data= unsafe( cast_ref_unsafe</IntegerNumberLexemData/>( text.front() ) );
+		var IntegerNumberLexemData mut number_lexem_data= zero_init;
+		ust::single_element_array_view( number_lexem_data ).to_byte8_range().copy_from( text.range().to_byte8_range() );
 		return ust::to_string8( number_lexem_data.value );
 	}
 	if( lexem_type == Lexem::Type::FloatingPointNumber )
 	{
 		halt if( text.size() < typeinfo</FloatingPointNumberLexemData/>.size_of );
-		auto& number_lexem_data= unsafe( cast_ref_unsafe</FloatingPointNumberLexemData/>( text.front() ) );
+		var IntegerNumberLexemData mut number_lexem_data= zero_init;
+		ust::single_element_array_view( number_lexem_data ).to_byte8_range().copy_from( text.range().to_byte8_range() );
 		// For now just print only integer part. It's enough for something like errors indication.
 		return ust::to_string8( u64( number_lexem_data.value ) );
 	}
@@ -380,7 +382,7 @@ fn ContinueParsingFloatingPointNumber( f64 integer_part, Iterator &mut it, LexSy
 
 	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::FloatingPointNumber };
 	result_lexem.text.resize( typeinfo</FloatingPointNumberLexemData/>.size_of, '\0' );
-	unsafe( ust::memory_copy( result_lexem.text.range().to_byte8_range().data(), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</FloatingPointNumberLexemData/>.size_of ) );
+	result_lexem.text.range().to_byte8_range().copy_from( ust::single_element_array_view( result ).to_byte8_range() );
 	return result_lexem;
 }
 
@@ -456,7 +458,7 @@ fn ParseDecimalNumber( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& 
 
 	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::IntegerNumber };
 	result_lexem.text.resize( typeinfo</IntegerNumberLexemData/>.size_of, '\0' );
-	unsafe( ust::memory_copy( result_lexem.text.range().to_byte8_range().data(), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</IntegerNumberLexemData/>.size_of ) );
+	result_lexem.text.range().to_byte8_range().copy_from( ust::single_element_array_view( result ).to_byte8_range() );
 	return result_lexem;
 }
 
@@ -517,7 +519,7 @@ fn ParseIntegerNumberImpl( Iterator &mut it, LexSyntErrors &mut out_errors, SrcL
 
 	var Lexem mut result_lexem{ .lexem_type= Lexem::Type::IntegerNumber };
 	result_lexem.text.resize( typeinfo</IntegerNumberLexemData/>.size_of, '\0' );
-	unsafe( ust::memory_copy( result_lexem.text.range().to_byte8_range().data(), ust::ptr_cast_to_byte8( $<(result) ), typeinfo</IntegerNumberLexemData/>.size_of ) );
+	result_lexem.text.range().to_byte8_range().copy_from( ust::single_element_array_view( result ).to_byte8_range() );
 	return result_lexem;
 }
 

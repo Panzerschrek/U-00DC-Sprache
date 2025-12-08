@@ -5,12 +5,14 @@ import "lex_synt_error.uh"
 namespace U1
 {
 
+// Keep it trivial to allow using "memcpy" for it.
 struct IntegerNumberLexemData
 {
 	u64 value;
 	[ char8, 8 ] type_suffix;
 }
 
+// Keep it trivial to allow using "memcpy" for it.
 struct FloatingPointNumberLexemData
 {
 	f64 value;

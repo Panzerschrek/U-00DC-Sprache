@@ -832,9 +832,8 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		Lexem::Type::IntegerNumber ->
 		{
 			var IntegerNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc, .num= zero_init };
-			halt if( it_.front().text.size() < typeinfo</IntegerNumberLexemData/>.size_of );
 
-			unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( $<(numeric_constant.num) ), it_.front().text.range().to_byte8_range().data(), typeinfo</IntegerNumberLexemData/>.size_of ) );
+			ust::single_element_array_view( numeric_constant.num ).to_byte8_range().copy_from( it_.front().text.range().to_byte8_range() );
 
 			NextLexem();
 
@@ -843,9 +842,8 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		Lexem::Type::FloatingPointNumber ->
 		{
 			var FloatingPointNumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc, .num= zero_init };
-			halt if( it_.front().text.size() < typeinfo</FloatingPointNumberLexemData/>.size_of );
 
-			unsafe( ust::memory_copy( ust::ptr_cast_to_byte8( $<(numeric_constant.num) ), it_.front().text.range().to_byte8_range().data(), typeinfo</FloatingPointNumberLexemData/>.size_of ) );
+			ust::single_element_array_view( numeric_constant.num ).to_byte8_range().copy_from( it_.front().text.range().to_byte8_range() );
 
 			NextLexem();
 
