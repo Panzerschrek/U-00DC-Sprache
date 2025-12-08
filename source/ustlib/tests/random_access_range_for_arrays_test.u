@@ -17,6 +17,13 @@ fn GetCharRangeSize( ust::random_access_range_imut</char8/> char_range ) : size_
 
 enum SomeEnum{ EZero, EOne, ETwo, EThree }
 
+struct StructWithTrivialLayout ordered
+{
+	u32 x;
+	f32 y;
+	[ char8, 4 ] z;
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Random access range is empty by-default.
@@ -591,6 +598,39 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( arr[1][0] != 0xBC9Au16 );
 		halt if( arr[1][1] != char8( 0xDE ) );
 		halt if( arr[1][2] != i8( 0xF0u8 ) );
+	}
+	// to_byte8_range - immutable range of structs.
+	{
+		var [ StructWithTrivialLayout, 2 ] arr[ { .x= 16734u, .y= 0.25f, .z= "SPQR" }, { .x= 1674578423u, .y= -572.23f, .z= "r! 6" } ];
+
+		var ust::array_view_imut</byte8/> byte8_range= ust::array_view_imut</StructWithTrivialLayout/>(arr).to_byte8_range();
+
+		halt if( byte8_range.size() != 24s );
+
+		halt if( byte8_range[ 0s] != byte8( 0x5Eu8 ) );
+		halt if( byte8_range[ 1s] != byte8( 0x41u8 ) );
+		halt if( byte8_range[ 2s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 3s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 4s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 5s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 6s] != byte8( 0x80u8 ) );
+		halt if( byte8_range[ 7s] != byte8( 0x3Eu8 ) );
+		halt if( byte8_range[ 8s] != byte8( 'S' ) );
+		halt if( byte8_range[ 9s] != byte8( 'P' ) );
+		halt if( byte8_range[10s] != byte8( 'Q' ) );
+		halt if( byte8_range[11s] != byte8( 'R' ) );
+		halt if( byte8_range[12s] != byte8( 0xF7u8 ) );
+		halt if( byte8_range[13s] != byte8( 0x09u8 ) );
+		halt if( byte8_range[14s] != byte8( 0xD0u8 ) );
+		halt if( byte8_range[15s] != byte8( 0x63u8 ) );
+		halt if( byte8_range[16s] != byte8( 0xB8u8 ) );
+		halt if( byte8_range[17s] != byte8( 0x0Eu8 ) );
+		halt if( byte8_range[18s] != byte8( 0x0Fu8 ) );
+		halt if( byte8_range[19s] != byte8( 0xC4u8 ) );
+		halt if( byte8_range[20s] != byte8( 'r' ) );
+		halt if( byte8_range[21s] != byte8( '!' ) );
+		halt if( byte8_range[22s] != byte8( ' ' ) );
+		halt if( byte8_range[23s] != byte8( '6' ) );
 	}
 	{ // "copy_from".
 		var [ i32, 3 ] mut a0= zero_init;

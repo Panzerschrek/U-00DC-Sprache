@@ -615,10 +615,37 @@ fn constexpr can_cast_to_immutable_byte8_range() : bool
 	}
 	else static_if( typeinfo</T/>.is_class )
 	{
-		// Can't cast classes.
-		// Classes can have private fields and reading them as bytes isn't safe.
-		// Also padding bytes are possible and we should not allow reading these bytes, since this may cause UB.
-		return false;
+		// Can cast only structs with elements which are allowed to be casted.
+		// Also don't allow casting structs with padding bytes, since reading padding bytes is UB.
+		// Classes aren't allowed, since they may have non-public fields.
+
+		static_if( typeinfo</T/>.is_struct )
+		{
+			var size_type mut size_sum= 0s;
+			foreach( &el : typeinfo</T/>.fields_list )
+			{
+				if( el.is_reference )
+				{
+					// Allow reading reference fields. They have pointer size.
+					size_sum+= typeinfo</ $(byte8) />.size_of;
+				}
+				else
+				{
+					if( !can_cast_to_immutable_byte8_range</ typeof( el.type )::src_type />() )
+					{
+						return false;
+					}
+
+					size_sum+= el.type.size_of;
+				}
+			}
+
+			return size_sum == typeinfo</T/>.size_of;
+		}
+		else
+		{
+			return false;
+		}
 	}
 	else
 	{
