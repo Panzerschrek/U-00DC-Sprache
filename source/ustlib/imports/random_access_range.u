@@ -412,7 +412,8 @@ public:
 	}
 
 	// Convert this immutable range to immutable range of "byte8" elements.
-	// This is supported only for some types, like simple scalars and arrays of sclalars.
+	// This is supported only for types safe to be read as raw bytes,
+	// like some scalars and simple composites based on them (but without padding bytes).
 	template<//>
 	fn enable_if( !is_mutable && random_access_range_impl::can_cast_to_immutable_byte8_range</T/>() )
 	to_byte8_range( this )
@@ -425,7 +426,8 @@ public:
 	}
 
 	// Convert this mutable range to mutable range of "byte8" elements.
-	// This is supported only for some types, like simple numeric types, chars, byte-types and arrays of such elements.
+	// This is supported only for types safe to be written as raw bytes,
+	// like some scalars and simple composites based on them (but without padding bytes).
 	template<//>
 	fn enable_if( is_mutable && random_access_range_impl::can_cast_to_mutable_byte8_range</T/>() )
 	to_byte8_range( this )
