@@ -179,6 +179,12 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::array_view_mut</ $(f32) /> range= arr;
 		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
 	}
+	// to_byte8_range - mutable range of functions pointers can't be converted to bytes.
+	{
+		var [ fn( i32 x, bool y ) : f32, 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ fn( i32 x, bool y ) : f32 /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
 	// to_byte8_range - result inner reference is linked to source.
 	{
 		var [ i32, 3 ] mut arr= zero_init;
