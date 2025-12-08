@@ -593,12 +593,12 @@ fn constexpr can_cast_to_immutable_byte8_range() : bool
 	}
 	else static_if( typeinfo</T/>.is_array )
 	{
-		// Can cast arrays as long as can cast their elements.
+		// Can read arrays as bytes as long as can read their elements.
 		return can_cast_to_immutable_byte8_range</ typeof( typeinfo</T/>.element_type )::src_type />();
 	}
 	else static_if( typeinfo</T/>.is_tuple )
 	{
-		// Can cast tuples as long as can cast tuple elements.
+		// Can read tuples as bytes as long as can read tuple elements.
 		// Also don't allow casting tuples with padding bytes, since reading padding bytes is UB.
 
 		var size_type mut size_sum= 0s;
@@ -615,8 +615,8 @@ fn constexpr can_cast_to_immutable_byte8_range() : bool
 	}
 	else static_if( typeinfo</T/>.is_class )
 	{
-		// Can cast only structs with elements which are allowed to be casted.
-		// Also don't allow casting structs with padding bytes, since reading padding bytes is UB.
+		// Can read as bytes only structs with elements which are allowed to be read.
+		// Also don't allow reading structs with padding bytes, since reading padding bytes is UB.
 		// Classes aren't allowed, since they may have non-public fields and parents.
 
 		static_if( typeinfo</T/>.is_struct )
@@ -666,6 +666,7 @@ fn constexpr can_cast_to_mutable_byte8_range() : bool
 	else static_if( typeinfo</T/>.is_raw_pointer || typeinfo</T/>.is_function_pointer )
 	{
 		// Can't write raw pointers and function pointers as bytes, since pointers should be aligned.
+		// Writing arbitraty bytes into a function pointer is also unsafe.
 		return false;
 	}
 	else static_if( typeinfo</T/>.is_enum )
@@ -675,13 +676,13 @@ fn constexpr can_cast_to_mutable_byte8_range() : bool
 	}
 	else static_if( typeinfo</T/>.is_array )
 	{
-		// Can cast arrays as long as can cast their elements.
+		// Can write arrays as bytes as long as can write their elements.
 		return can_cast_to_mutable_byte8_range</ typeof( typeinfo</T/>.element_type )::src_type />();
 	}
 	else static_if( typeinfo</T/>.is_tuple )
 	{
-		// Can cast tuples as long as can cast tuple elements.
-		// Also don't allow casting tuples with padding bytes, since writing padding bytes is UB.
+		// Can write tuples as bytes as long as can write tuple elements.
+		// Also don't allow writing tuples with padding bytes, since writing padding bytes is UB.
 
 		var size_type mut size_sum= 0s;
 		foreach( &el : typeinfo</T/>.elements_list )
@@ -693,12 +694,12 @@ fn constexpr can_cast_to_mutable_byte8_range() : bool
 			size_sum+= el.type.size_of;
 		}
 
-		return size_sum ==  typeinfo</T/>.size_of;
+		return size_sum == typeinfo</T/>.size_of;
 	}
 	else static_if( typeinfo</T/>.is_class )
 	{
-		// Can cast only structs with elements which are allowed to be casted.
-		// Also don't allow casting structs with padding bytes, since writing padding bytes is UB.
+		// Can write as bytes only structs with elements which are allowed to be written.
+		// Also don't allow writing structs with padding bytes, since writing padding bytes is UB.
 		// Classes aren't allowed, since they may have non-public fields, parents and virtual table pointers.
 
 		static_if( typeinfo</T/>.is_struct )
