@@ -24,6 +24,13 @@ struct StructWithTrivialLayout ordered
 	[ char8, 4 ] z;
 }
 
+struct AnotherStructWithTrivialLayout ordered
+{
+	u16 x;
+	char8 y;
+	i8 z;
+}
+
 struct StructWithRef
 {
 	i32& r;
@@ -654,6 +661,32 @@ fn nomangle main() call_conv( "C" ) : i32
 		{
 			halt if( pair.first != pair.second );
 		}
+	}
+	// to_byte8_range - mutable range of structs.
+	{
+		var [ AnotherStructWithTrivialLayout, 2 ] mut arr= zero_init;
+
+		{
+			var ust::array_view_mut</byte8/> byte8_range= ust::array_view_mut</AnotherStructWithTrivialLayout/>(arr).to_byte8_range();
+
+			halt if( byte8_range.size() != 8s );
+
+			byte8_range[0s]= byte8( 0x12u8 );
+			byte8_range[1s]= byte8( 0x34u8 );
+			byte8_range[2s]= byte8( 0x56u8 );
+			byte8_range[3s]= byte8( 0x78u8 );
+			byte8_range[4s]= byte8( 0x9Au8 );
+			byte8_range[5s]= byte8( 0xBCu8 );
+			byte8_range[6s]= byte8( 0xDEu8 );
+			byte8_range[7s]= byte8( 0xF0u8 );
+		}
+
+		halt if( arr[0].x != 0x3412u16 );
+		halt if( arr[0].y != char8( 0x56 ) );
+		halt if( arr[0].z != 0x78i8 );
+		halt if( arr[1].x != 0xBC9Au16 );
+		halt if( arr[1].y != char8( 0xDE ) );
+		halt if( arr[1].z != i8( 0xF0u8 ) );
 	}
 	{ // "copy_from".
 		var [ i32, 3 ] mut a0= zero_init;
