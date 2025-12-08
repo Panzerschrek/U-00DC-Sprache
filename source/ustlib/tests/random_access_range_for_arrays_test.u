@@ -24,6 +24,11 @@ struct StructWithTrivialLayout ordered
 	[ char8, 4 ] z;
 }
 
+struct StructWithRef
+{
+	i32& r;
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Random access range is empty by-default.
@@ -631,6 +636,24 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( byte8_range[21s] != byte8( '!' ) );
 		halt if( byte8_range[22s] != byte8( ' ' ) );
 		halt if( byte8_range[23s] != byte8( '6' ) );
+	}
+	{	// to_byte8_range - immutable range of structs containing a reference field.
+		var i32 x= 1, y= 2, z= 3;
+		var [ $(i32), 3 ] ptr_arr[ unsafe( $<( cast_mut(x) ) ), unsafe( $<( cast_mut(y) ) ), unsafe( $<( cast_mut(z) ) ) ];
+		var [ StructWithRef, 3 ] arr[ { .r=x }, { .r= y }, { .r= z } ];
+
+		var ust::array_view_imut</byte8/> byte8_range_of_pointers= ust::array_view_imut</ $(i32) />(ptr_arr).to_byte8_range();
+		var ust::array_view_imut</byte8/> byte8_range= ust::array_view_imut</StructWithRef/>(arr).to_byte8_range();
+
+		// Range of structs with references inside should be equal to range of raw pointers (pointing to the same values).
+
+		halt if( byte8_range_of_pointers.size() != 3s * typeinfo</ $(i32) />.size_of );
+		halt if( byte8_range.size() != 3s * typeinfo</ $(i32) />.size_of );
+
+		foreach( pair : byte8_range_of_pointers.iter().zip( byte8_range.iter() ) )
+		{
+			halt if( pair.first != pair.second );
+		}
 	}
 	{ // "copy_from".
 		var [ i32, 3 ] mut a0= zero_init;
