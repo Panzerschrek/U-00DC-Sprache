@@ -596,9 +596,26 @@ fn constexpr can_cast_to_immutable_byte8_range() : bool
 		// Can cast arrays as long as can cast their elements.
 		return can_cast_to_immutable_byte8_range</ typeof( typeinfo</T/>.element_type )::src_type />();
 	}
-	else static_if( typeinfo</T/>.is_tuple || typeinfo</T/>.is_class )
+	else static_if( typeinfo</T/>.is_tuple )
 	{
-		// Can't cast tuples and classes.
+		// Can cast tuples as long as can cast tuple elements and as long as there are no padding bytes,
+		// since reading padding bytes is UB.
+
+		var size_type mut size_sum= 0s;
+		foreach( &el : typeinfo</T/>.elements_list )
+		{
+			if( !can_cast_to_immutable_byte8_range</ typeof( el.type )::src_type />() )
+			{
+				return false;
+			}
+			size_sum+= el.type.size_of;
+		}
+
+		return size_sum ==  typeinfo</T/>.size_of;
+	}
+	else static_if( typeinfo</T/>.is_class )
+	{
+		// Can't cast classes.
 		// Classes can have private fields and reading them as bytes isn't safe.
 		// Also padding bytes are possible and we should not allow reading these bytes, since this may cause UB.
 		return false;
