@@ -15,7 +15,11 @@ struct AWrapper{ A a; }
 
 struct BoolWrapper{ bool b; }
 
-enum SoneEnum{ A, B, C }
+struct SomeEnumWrapper{ SomeEnum e; }
+
+struct StructWithReference{ i32& r; }
+
+enum SomeEnum{ A, B, C }
 
 fn nomangle main() call_conv( "C" ) : i32
 {
@@ -121,22 +125,52 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::array_view_mut</ tup[ B ] /> range= arr;
 		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
 	}
-	// to_byte8_range - mutable range of structs can't be converted to bytes.
+	// to_byte8_range - mutable range of structs with paddings can't be converted to bytes.
 	{
-		var [ SomeStruct, 5 ] mut arr= zero_init;
-		var ust::array_view_mut</ SomeStruct /> range= arr;
+		var [ StructWithPadding, 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ StructWithPadding /> range= arr;
 		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
 	}
-	// to_byte8_range - mutable range of arrays of structs can't be converted to bytes.
+	// to_byte8_range - mutable range of arrays of structs with padding can't be converted to bytes.
 	{
-		var [ [ SomeStruct, 2 ], 5 ] mut arr= zero_init;
-		var ust::array_view_mut</ [ SomeStruct, 2 ] /> range= arr;
+		var [ [ StructWithPadding, 2 ], 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ [ StructWithPadding, 2 ] /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of classes can't be converted to bytes.
+	{
+		var [ A, 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ A /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of structs containing classes can't be converted to bytes.
+	{
+		var [ AWrapper, 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ AWrapper /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of structs containing bools can't be converted to bytes.
+	{
+		var [ BoolWrapper, 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ BoolWrapper /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of structs containing reference fields can't be converted to bytes.
+	{
+		var [ StructWithReference, 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ StructWithReference /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of structs containing enums can't be converted to bytes.
+	{
+		var [ SomeEnumWrapper, 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ SomeEnumWrapper /> range= arr;
 		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	// to_byte8_range - mutable range of enums can't be converted to bytes.
 	{
-		var [ SoneEnum, 5 ] mut arr= zero_init;
-		var ust::array_view_mut</ SoneEnum /> range= arr;
+		var [ SomeEnum, 5 ] mut arr= zero_init;
+		var ust::array_view_mut</ SomeEnum /> range= arr;
 		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	// to_byte8_range - mutable range of raw pointers can't be converted to bytes.
