@@ -565,6 +565,33 @@ fn nomangle main() call_conv( "C" ) : i32
 		halt if( byte8_range[22s] != byte8( ' ' ) );
 		halt if( byte8_range[23s] != byte8( '6' ) );
 	}
+	// to_byte8_range - mutable range of tuples.
+	{
+		type ElementType= tup[ u16, char8, i8 ];
+		var [ ElementType, 2 ] mut arr= zero_init;
+
+		{
+			var ust::array_view_mut</byte8/> byte8_range= ust::array_view_mut</ElementType/>(arr).to_byte8_range();
+
+			halt if( byte8_range.size() != 8s );
+
+			byte8_range[0s]= byte8( 0x12u8 );
+			byte8_range[1s]= byte8( 0x34u8 );
+			byte8_range[2s]= byte8( 0x56u8 );
+			byte8_range[3s]= byte8( 0x78u8 );
+			byte8_range[4s]= byte8( 0x9Au8 );
+			byte8_range[5s]= byte8( 0xBCu8 );
+			byte8_range[6s]= byte8( 0xDEu8 );
+			byte8_range[7s]= byte8( 0xF0u8 );
+		}
+
+		halt if( arr[0][0] != 0x3412u16 );
+		halt if( arr[0][1] != char8( 0x56 ) );
+		halt if( arr[0][2] != 0x78i8 );
+		halt if( arr[1][0] != 0xBC9Au16 );
+		halt if( arr[1][1] != char8( 0xDE ) );
+		halt if( arr[1][2] != i8( 0xF0u8 ) );
+	}
 	{ // "copy_from".
 		var [ i32, 3 ] mut a0= zero_init;
 		var [ i32, 2 ] a1[ 1, 2 ];
