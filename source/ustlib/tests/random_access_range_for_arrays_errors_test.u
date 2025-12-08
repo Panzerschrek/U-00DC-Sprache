@@ -85,10 +85,16 @@ fn nomangle main() call_conv( "C" ) : i32
 		var ust::array_view_mut</ bool /> range= arr;
 		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
 	}
-	// to_byte8_range - mutable range of tuples can't be converted to bytes.
+	// to_byte8_range - mutable range of tuples with padding bytes can't be converted to bytes.
 	{
-		var [ tup[ i32 ], 2 ] mut arr= zero_init;
-		var ust::array_view_mut</ tup[ i32 ] /> range= arr;
+		var [ tup[ char16, i32 ], 2 ] mut arr= zero_init;
+		var ust::array_view_mut</ tup[ char16, i32 ] /> range= arr;
+		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	// to_byte8_range - mutable range of tuples with class elements can't be converted to bytes.
+	{
+		var [ tup[ B ], 2 ] mut arr= zero_init;
+		var ust::array_view_mut</ tup[ B ] /> range= arr;
 		range.to_byte8_range(); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	// to_byte8_range - mutable range of structs can't be converted to bytes.
