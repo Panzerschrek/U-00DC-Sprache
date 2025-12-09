@@ -17,6 +17,25 @@ fn GetCharRangeSize( ust::random_access_range_imut</char8/> char_range ) : size_
 
 enum SomeEnum{ EZero, EOne, ETwo, EThree }
 
+struct StructWithTrivialLayout ordered
+{
+	u32 x;
+	f32 y;
+	[ char8, 4 ] z;
+}
+
+struct AnotherStructWithTrivialLayout ordered
+{
+	u16 x;
+	char8 y;
+	i8 z;
+}
+
+struct StructWithRef
+{
+	i32& r;
+}
+
 fn nomangle main() call_conv( "C" ) : i32
 {
 	{ // Random access range is empty by-default.
@@ -530,6 +549,144 @@ fn nomangle main() call_conv( "C" ) : i32
 
 		halt if( arr[0] != "012" );
 		halt if( arr[1] != "345" );
+	}
+	// to_byte8_range - immutable range of tuples.
+	{
+		type ElementType= tup[ u32, f32, [ char8, 4 ] ];
+		var [ ElementType, 2 ] arr[ [ 16734u, 0.25f, "SPQR" ], [ 1674578423u, -572.23f, "r! 6" ] ];
+
+		var ust::array_view_imut</byte8/> byte8_range= ust::array_view_imut</ElementType/>(arr).to_byte8_range();
+
+		halt if( byte8_range.size() != 24s );
+
+		halt if( byte8_range[ 0s] != byte8( 0x5Eu8 ) );
+		halt if( byte8_range[ 1s] != byte8( 0x41u8 ) );
+		halt if( byte8_range[ 2s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 3s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 4s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 5s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 6s] != byte8( 0x80u8 ) );
+		halt if( byte8_range[ 7s] != byte8( 0x3Eu8 ) );
+		halt if( byte8_range[ 8s] != byte8( 'S' ) );
+		halt if( byte8_range[ 9s] != byte8( 'P' ) );
+		halt if( byte8_range[10s] != byte8( 'Q' ) );
+		halt if( byte8_range[11s] != byte8( 'R' ) );
+		halt if( byte8_range[12s] != byte8( 0xF7u8 ) );
+		halt if( byte8_range[13s] != byte8( 0x09u8 ) );
+		halt if( byte8_range[14s] != byte8( 0xD0u8 ) );
+		halt if( byte8_range[15s] != byte8( 0x63u8 ) );
+		halt if( byte8_range[16s] != byte8( 0xB8u8 ) );
+		halt if( byte8_range[17s] != byte8( 0x0Eu8 ) );
+		halt if( byte8_range[18s] != byte8( 0x0Fu8 ) );
+		halt if( byte8_range[19s] != byte8( 0xC4u8 ) );
+		halt if( byte8_range[20s] != byte8( 'r' ) );
+		halt if( byte8_range[21s] != byte8( '!' ) );
+		halt if( byte8_range[22s] != byte8( ' ' ) );
+		halt if( byte8_range[23s] != byte8( '6' ) );
+	}
+	// to_byte8_range - mutable range of tuples.
+	{
+		type ElementType= tup[ u16, char8, i8 ];
+		var [ ElementType, 2 ] mut arr= zero_init;
+
+		{
+			var ust::array_view_mut</byte8/> byte8_range= ust::array_view_mut</ElementType/>(arr).to_byte8_range();
+
+			halt if( byte8_range.size() != 8s );
+
+			byte8_range[0s]= byte8( 0x12u8 );
+			byte8_range[1s]= byte8( 0x34u8 );
+			byte8_range[2s]= byte8( 0x56u8 );
+			byte8_range[3s]= byte8( 0x78u8 );
+			byte8_range[4s]= byte8( 0x9Au8 );
+			byte8_range[5s]= byte8( 0xBCu8 );
+			byte8_range[6s]= byte8( 0xDEu8 );
+			byte8_range[7s]= byte8( 0xF0u8 );
+		}
+
+		halt if( arr[0][0] != 0x3412u16 );
+		halt if( arr[0][1] != char8( 0x56 ) );
+		halt if( arr[0][2] != 0x78i8 );
+		halt if( arr[1][0] != 0xBC9Au16 );
+		halt if( arr[1][1] != char8( 0xDE ) );
+		halt if( arr[1][2] != i8( 0xF0u8 ) );
+	}
+	// to_byte8_range - immutable range of structs.
+	{
+		var [ StructWithTrivialLayout, 2 ] arr[ { .x= 16734u, .y= 0.25f, .z= "SPQR" }, { .x= 1674578423u, .y= -572.23f, .z= "r! 6" } ];
+
+		var ust::array_view_imut</byte8/> byte8_range= ust::array_view_imut</StructWithTrivialLayout/>(arr).to_byte8_range();
+
+		halt if( byte8_range.size() != 24s );
+
+		halt if( byte8_range[ 0s] != byte8( 0x5Eu8 ) );
+		halt if( byte8_range[ 1s] != byte8( 0x41u8 ) );
+		halt if( byte8_range[ 2s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 3s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 4s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 5s] != byte8( 0x00u8 ) );
+		halt if( byte8_range[ 6s] != byte8( 0x80u8 ) );
+		halt if( byte8_range[ 7s] != byte8( 0x3Eu8 ) );
+		halt if( byte8_range[ 8s] != byte8( 'S' ) );
+		halt if( byte8_range[ 9s] != byte8( 'P' ) );
+		halt if( byte8_range[10s] != byte8( 'Q' ) );
+		halt if( byte8_range[11s] != byte8( 'R' ) );
+		halt if( byte8_range[12s] != byte8( 0xF7u8 ) );
+		halt if( byte8_range[13s] != byte8( 0x09u8 ) );
+		halt if( byte8_range[14s] != byte8( 0xD0u8 ) );
+		halt if( byte8_range[15s] != byte8( 0x63u8 ) );
+		halt if( byte8_range[16s] != byte8( 0xB8u8 ) );
+		halt if( byte8_range[17s] != byte8( 0x0Eu8 ) );
+		halt if( byte8_range[18s] != byte8( 0x0Fu8 ) );
+		halt if( byte8_range[19s] != byte8( 0xC4u8 ) );
+		halt if( byte8_range[20s] != byte8( 'r' ) );
+		halt if( byte8_range[21s] != byte8( '!' ) );
+		halt if( byte8_range[22s] != byte8( ' ' ) );
+		halt if( byte8_range[23s] != byte8( '6' ) );
+	}
+	{	// to_byte8_range - immutable range of structs containing a reference field.
+		var i32 x= 1, y= 2, z= 3;
+		var [ $(i32), 3 ] ptr_arr[ unsafe( $<( cast_mut(x) ) ), unsafe( $<( cast_mut(y) ) ), unsafe( $<( cast_mut(z) ) ) ];
+		var [ StructWithRef, 3 ] arr[ { .r=x }, { .r= y }, { .r= z } ];
+
+		var ust::array_view_imut</byte8/> byte8_range_of_pointers= ust::array_view_imut</ $(i32) />(ptr_arr).to_byte8_range();
+		var ust::array_view_imut</byte8/> byte8_range= ust::array_view_imut</StructWithRef/>(arr).to_byte8_range();
+
+		// Range of structs with references inside should be equal to range of raw pointers (pointing to the same values).
+
+		halt if( byte8_range_of_pointers.size() != 3s * typeinfo</ $(i32) />.size_of );
+		halt if( byte8_range.size() != 3s * typeinfo</ $(i32) />.size_of );
+
+		foreach( pair : byte8_range_of_pointers.iter().zip( byte8_range.iter() ) )
+		{
+			halt if( pair.first != pair.second );
+		}
+	}
+	// to_byte8_range - mutable range of structs.
+	{
+		var [ AnotherStructWithTrivialLayout, 2 ] mut arr= zero_init;
+
+		{
+			var ust::array_view_mut</byte8/> byte8_range= ust::array_view_mut</AnotherStructWithTrivialLayout/>(arr).to_byte8_range();
+
+			halt if( byte8_range.size() != 8s );
+
+			byte8_range[0s]= byte8( 0x12u8 );
+			byte8_range[1s]= byte8( 0x34u8 );
+			byte8_range[2s]= byte8( 0x56u8 );
+			byte8_range[3s]= byte8( 0x78u8 );
+			byte8_range[4s]= byte8( 0x9Au8 );
+			byte8_range[5s]= byte8( 0xBCu8 );
+			byte8_range[6s]= byte8( 0xDEu8 );
+			byte8_range[7s]= byte8( 0xF0u8 );
+		}
+
+		halt if( arr[0].x != 0x3412u16 );
+		halt if( arr[0].y != char8( 0x56 ) );
+		halt if( arr[0].z != 0x78i8 );
+		halt if( arr[1].x != 0xBC9Au16 );
+		halt if( arr[1].y != char8( 0xDE ) );
+		halt if( arr[1].z != i8( 0xF0u8 ) );
 	}
 	{ // "copy_from".
 		var [ i32, 3 ] mut a0= zero_init;
