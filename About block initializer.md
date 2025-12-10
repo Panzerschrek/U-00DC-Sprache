@@ -94,3 +94,55 @@ fn Foo( i32 x ) : i32
     return inv + 128;
 }
 ```
+
+### Typical use-cases
+
+Simplifying success path code when using `ust::optional`:
+
+```
+fn Foo()
+{
+    var i32
+        {
+            var ust::optional</i32/> mut x_opt= Bar();
+
+            if( x_opt.empty() )
+            {
+                LogWarning( "Shit happens" );
+                return;
+            }
+
+            block_return x_opt.try_take();
+        } x;
+
+    // A lot of code working with "x".
+    // Doing the same using "if_var" library macro is possible, but requires wrapping the whole success path code into a separate block.
+    // ...
+}
+
+fn Bar() : ust::optional</i32/>;
+
+fn LogWarning( ust::string_view8 s );
+```
+
+Hiding/destroying intermediate variables after they aren't needed anymore:
+
+```
+fn Foo( ust::array_view_imut</u32/> arr )
+{
+    var u32
+        {
+            var u32 mut sum= 0u;
+
+            foreach( x : arr )
+            {
+                sum+= x;
+            }
+
+            block_return sum / u32( arr.size() );
+        } average;
+
+    // "sum" variable needed for intermediate claculations does no longer exist in current scope.
+    // ...
+}
+```
